@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578AbaHFIGu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 04:06:50 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51569 "EHLO
+	id S1755612AbaHFIHJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 04:07:09 -0400
+Received: from relay.parallels.com ([195.214.232.42]:51600 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755245AbaHFIGq (ORCPT
+	with ESMTP id S1755589AbaHFIHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 04:06:46 -0400
-Message-ID: <1407312379.8424.38.camel@tkhai>
-Subject: [PATCH v4 3/6] sched: Teach scheduler to understand ONRQ_MIGRATING
- state
+	Wed, 6 Aug 2014 04:07:03 -0400
+Message-ID: <1407312416.8424.47.camel@tkhai>
+Subject: [PATCH v4 5/6] sched/fair: Remove double_lock_balance() from
+ active_load_balance_cpu_stop()
 From: Kirill Tkhai <ktkhai@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <peterz@infradead.org>, <pjt@google.com>, <oleg@redhat.com>,
         <rostedt@goodmis.org>, <umgwanakikbuti@gmail.com>, <tkhai@yandex.ru>,
         <tim.c.chen@linux.intel.com>, <mingo@kernel.org>,
         <nicolas.pitre@linaro.org>
-Date: Wed, 6 Aug 2014 12:06:19 +0400
+Date: Wed, 6 Aug 2014 12:06:56 +0400
 In-Reply-To: <20140806075138.24858.23816.stgit@tkhai>
 References: <20140806075138.24858.23816.stgit@tkhai>
 Organization: Parallels
@@ -30,128 +30,150 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This is a new state which will be used to indicate that
-a task is in a process of migrating between two RQs. It
-allows to get rid of double_rq_lock(), which we used to
-use to change rq of a queued task before.
+Bad situation:
 
-Let's consider the example. To move a task between src_rq
-and dst_rq we will do the following:
+double_lock_balance() drops busiest_rq lock. The busiest_rq is *busiest*,
+and a lot of tasks and context switches there. We are dropping the lock
+and waiting for it again.
 
-	raw_spin_lock(&src_rq->lock);
-	/* p is a task which is queued on src_rq */
-	p = ...;
+Let's just detach the task and once finally unlock it!
 
-	dequeue_task(src_rq, p, 0);
-	p->on_rq = ONRQ_MIGRATING;
-	set_task_cpu(p, dst_cpu);
-	raw_spin_unlock(&src_rq->lock);
-
-	/*
-	 * Both of RQs are unlocked here.
-	 * Task p is dequeued from src_rq
-	 * but its on_rq is not zero.
-	 */
-
-	raw_spin_lock(&dst_rq->lock);
-	p->on_rq = ONRQ_QUEUED;
-	enqueue_task(dst_rq, p, 0);
-	raw_spin_unlock(&dst_rq->lock);
-
-While p->on_rq is ONRQ_MIGRATING, task is considered
-as "migrating", and other parallel scheduler actions
-with it are not available for parallel caller. The
-parallel caller's spining till migration is completed.
-
-The unavailable actions are changing of cpu affinity,
-changing of priority etc, in other words all the
-functionality which used to require task_rq(p)->lock
-before (and related to the task).
-
-To implement ONRQ_MIGRATING support we primarily are
-using the following fact. Most of scheduler users
-(from which we are protecting a migrating task) use
-task_rq_lock() and __task_rq_lock() to get the lock
-of task_rq(p). These primitives know that task's cpu
-may change, and they are spining while the lock of
-the right RQ is not held. We add one more condition
-into them, so they will be also spinning until the
-migration is finished.
+Warning: this admits unlocked using of can_migrate_task(), throttled_lb_pair(),
+and task_hot(). I've added lockdep asserts to point on this.
 
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 ---
- kernel/sched/core.c  |   14 +++++++++++---
- kernel/sched/sched.h |    6 ++++++
- 2 files changed, 17 insertions(+), 3 deletions(-)
+ kernel/sched/fair.c |   55 +++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 38 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 67e8d1e..1cf5109 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -331,9 +331,13 @@ static inline struct rq *__task_rq_lock(struct task_struct *p)
- 	lockdep_assert_held(&p->pi_lock);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index d54b72c..cfeafb1 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3297,6 +3297,8 @@ static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
+  * Ensure that neither of the group entities corresponding to src_cpu or
+  * dest_cpu are members of a throttled hierarchy when performing group
+  * load-balance operations.
++ *
++ * Note: RQs may be unlocked.
+  */
+ static inline int throttled_lb_pair(struct task_group *tg,
+ 				    int src_cpu, int dest_cpu)
+@@ -5133,6 +5135,8 @@ static int task_hot(struct task_struct *p, struct lb_env *env)
+ {
+ 	s64 delta;
  
- 	for (;;) {
-+		while (unlikely(task_migrating(p)))
-+			cpu_relax();
++	lockdep_assert_held(&env->src_rq->lock);
 +
- 		rq = task_rq(p);
- 		raw_spin_lock(&rq->lock);
--		if (likely(rq == task_rq(p)))
-+		if (likely(rq == task_rq(p) &&
-+			   !task_migrating(p)))
- 			return rq;
- 		raw_spin_unlock(&rq->lock);
- 	}
-@@ -349,10 +353,14 @@ static struct rq *task_rq_lock(struct task_struct *p, unsigned long *flags)
- 	struct rq *rq;
+ 	if (p->sched_class != &fair_sched_class)
+ 		return 0;
  
- 	for (;;) {
-+		while (unlikely(task_migrating(p)))
-+			cpu_relax();
+@@ -5252,6 +5256,9 @@ static
+ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ {
+ 	int tsk_cache_hot = 0;
 +
- 		raw_spin_lock_irqsave(&p->pi_lock, *flags);
- 		rq = task_rq(p);
- 		raw_spin_lock(&rq->lock);
--		if (likely(rq == task_rq(p)))
-+		if (likely(rq == task_rq(p) &&
-+			   !task_migrating(p)))
- 			return rq;
- 		raw_spin_unlock(&rq->lock);
- 		raw_spin_unlock_irqrestore(&p->pi_lock, *flags);
-@@ -1678,7 +1686,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
- 	success = 1; /* we're going to change ->state */
- 	cpu = task_cpu(p);
- 
--	if (task_queued(p) && ttwu_remote(p, wake_flags))
-+	if (p->on_rq && ttwu_remote(p, wake_flags))
- 		goto stat;
- 
- #ifdef CONFIG_SMP
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 2c83b6e..ac7c1c8 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -17,6 +17,7 @@ struct rq;
- 
- /* task_struct::on_rq states: */
- #define ONRQ_QUEUED	1
-+#define ONRQ_MIGRATING	2
- 
- extern __read_mostly int scheduler_running;
- 
-@@ -950,6 +951,11 @@ static inline int task_queued(struct task_struct *p)
- 	return p->on_rq == ONRQ_QUEUED;
++	lockdep_assert_held(&env->src_rq->lock);
++
+ 	/*
+ 	 * We do not migrate tasks that are:
+ 	 * 1) throttled_lb_pair, or
+@@ -5336,30 +5343,34 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
  }
  
-+static inline int task_migrating(struct task_struct *p)
-+{
-+	return p->on_rq == ONRQ_MIGRATING;
-+}
+ /*
+- * move_one_task tries to move exactly one task from busiest to this_rq, as
++ * detach_one_task tries to dequeue exactly one task from env->src_rq, as
+  * part of active balancing operations within "domain".
+- * Returns 1 if successful and 0 otherwise.
+- *
+- * Called with both runqueues locked.
++ * Returns a task if successful and NULL otherwise.
+  */
+-static int move_one_task(struct lb_env *env)
++static struct task_struct *detach_one_task(struct lb_env *env)
+ {
+ 	struct task_struct *p, *n;
+ 
++	lockdep_assert_held(&env->src_rq->lock);
 +
- #ifndef prepare_arch_switch
- # define prepare_arch_switch(next)	do { } while (0)
- #endif
+ 	list_for_each_entry_safe(p, n, &env->src_rq->cfs_tasks, se.group_node) {
+ 		if (!can_migrate_task(p, env))
+ 			continue;
+ 
+-		move_task(p, env);
++		deactivate_task(env->src_rq, p, 0);
++		p->on_rq = ONRQ_MIGRATING;
++		set_task_cpu(p, env->dst_cpu);
++
+ 		/*
+-		 * Right now, this is only the second place move_task()
+-		 * is called, so we can safely collect move_task()
+-		 * stats here rather than inside move_task().
++		 * Right now, this is only the second place where
++		 * lb_gained[env->idle] is updated (other is move_tasks)
++		 * so we can safely collect stats here rather than
++		 * inside move_tasks().
+ 		 */
+ 		schedstat_inc(env->sd, lb_gained[env->idle]);
+-		return 1;
++		return p;
+ 	}
+-	return 0;
++	return NULL;
+ }
+ 
+ static const unsigned int sched_nr_migrate_break = 32;
+@@ -6914,6 +6925,7 @@ static int active_load_balance_cpu_stop(void *data)
+ 	int target_cpu = busiest_rq->push_cpu;
+ 	struct rq *target_rq = cpu_rq(target_cpu);
+ 	struct sched_domain *sd;
++	struct task_struct *p = NULL;
+ 
+ 	raw_spin_lock_irq(&busiest_rq->lock);
+ 
+@@ -6933,9 +6945,6 @@ static int active_load_balance_cpu_stop(void *data)
+ 	 */
+ 	BUG_ON(busiest_rq == target_rq);
+ 
+-	/* move a task from busiest_rq to target_rq */
+-	double_lock_balance(busiest_rq, target_rq);
+-
+ 	/* Search for an sd spanning us and the target CPU. */
+ 	rcu_read_lock();
+ 	for_each_domain(target_cpu, sd) {
+@@ -6956,16 +6965,28 @@ static int active_load_balance_cpu_stop(void *data)
+ 
+ 		schedstat_inc(sd, alb_count);
+ 
+-		if (move_one_task(&env))
++		p = detach_one_task(&env);
++		if (p)
+ 			schedstat_inc(sd, alb_pushed);
+ 		else
+ 			schedstat_inc(sd, alb_failed);
+ 	}
+ 	rcu_read_unlock();
+-	double_unlock_balance(busiest_rq, target_rq);
+ out_unlock:
+ 	busiest_rq->active_balance = 0;
+-	raw_spin_unlock_irq(&busiest_rq->lock);
++	raw_spin_unlock(&busiest_rq->lock);
++
++	if (p) {
++		raw_spin_lock(&target_rq->lock);
++		BUG_ON(task_rq(p) != target_rq);
++		p->on_rq = ONRQ_QUEUED;
++		activate_task(target_rq, p, 0);
++		check_preempt_curr(target_rq, p, 0);
++		raw_spin_unlock(&target_rq->lock);
++	}
++
++	local_irq_enable();
++
+ 	return 0;
+ }
+ 
 
 
 
