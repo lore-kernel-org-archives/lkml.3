@@ -1,48 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231AbaHFUxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 16:53:13 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43622 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588AbaHFUxL (ORCPT
+	id S1754268AbaHFUys (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 16:54:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54425 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908AbaHFUyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 16:53:11 -0400
-Date: Wed, 06 Aug 2014 13:53:10 -0700 (PDT)
-Message-Id: <20140806.135310.1924341636144726761.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: steffen.klassert@secunet.com, minipli@googlemail.com, dborkman@redhat.com,
-        tgraf@suug.ch, joe@perches.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: [PATCH net-next 0/4 v5] pktgen: Upstreaming features useful
- for xen-netback/front testing
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1407349024-2489-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1407349024-2489-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 06 Aug 2014 13:53:11 -0700 (PDT)
+	Wed, 6 Aug 2014 16:54:45 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com
+Subject: [3.13.y.z extended stable] Patch "perf/x86/intel: ignore CondChgd bit to avoid false NMI handling" has been added to staging queue
+Date: Wed,  6 Aug 2014 13:54:35 -0700
+Message-Id: <1407358475-21676-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+X-Extended-Stable: 3.13
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Wed, 6 Aug 2014 19:17:00 +0100
+This is a note to let you know that I have just added a patch titled
 
-> This series is my work during stressing the xen network drivers, hopefully
-> others can benefit from it.
-> 1/4: Filling payload with pattern, useful for checking data correctness when the
-> packets travelling without checksum (~ intrahost VM-to-VM). Already sent it
-> separately few times, so its version number differs
-> 2/4: fine-grained buffer geometrics
-> 3/4: fix UDP checksuming
-> 4/4: sending TCP GSO packets. This is an RFC yet, as I'm not certain about all
-> things changed here
-> 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+    perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
 
-Zoltan, please resubmit this after the merge window closes and I re-open
-the net-next tree.
+to the linux-3.13.y-queue branch of the 3.13.y.z extended stable tree 
+which can be found at:
 
-Thank you.
+ http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.13.y-queue
+
+This patch is scheduled to be released in version 3.13.11.6.
+
+If you, or anyone else, feels it should not be added to this tree, please 
+reply to this email.
+
+For more information about the 3.13.y.z tree, see
+https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+
+Thanks.
+-Kamal
+
+------
+
+>From 02ed4cc520c34a3f674930833dc1113066dc3ff0 Mon Sep 17 00:00:00 2001
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Date: Wed, 25 Jun 2014 10:09:07 +0900
+Subject: perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+commit b292d7a10487aee6e74b1c18b8d95b92f40d4a4f upstream.
+
+Currently, any NMI is falsely handled by a NMI handler of NMI watchdog
+if CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR is set.
+
+For example, we use external NMI to make system panic to get crash
+dump, but in this case, the external NMI is falsely handled do to the
+issue.
+
+This commit deals with the issue simply by ignoring CondChgd bit.
+
+Here is explanation in detail.
+
+On x86 NMI watchdog uses performance monitoring feature to
+periodically signal NMI each time performance counter gets overflowed.
+
+intel_pmu_handle_irq() is called as a NMI_LOCAL handler from a NMI
+handler of NMI watchdog, perf_event_nmi_handler(). It identifies an
+owner of a given NMI by looking at overflow status bits in
+MSR_CORE_PERF_GLOBAL_STATUS MSR. If some of the bits are set, then it
+handles the given NMI as its own NMI.
+
+The problem is that the intel_pmu_handle_irq() doesn't distinguish
+CondChgd bit from other bits. Unlike the other status bits, CondChgd
+bit doesn't represent overflow status for performance counters. Thus,
+CondChgd bit cannot be thought of as a mark indicating a given NMI is
+NMI watchdog's.
+
+As a result, if CondChgd bit is set, any NMI is falsely handled by the
+NMI handler of NMI watchdog. Also, if type of the falsely handled NMI
+is either NMI_UNKNOWN, NMI_SERR or NMI_IO_CHECK, the corresponding
+action is never performed until CondChgd bit is cleared.
+
+I noticed this behavior on systems with Ivy Bridge processors: Intel
+Xeon CPU E5-2630 v2 and Intel Xeon CPU E7-8890 v2. On both systems,
+CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR has already been set
+in the beginning at boot. Then the CondChgd bit is immediately cleared
+by next wrmsr to MSR_CORE_PERF_GLOBAL_CTRL MSR and appears to remain
+0.
+
+On the other hand, on older processors such as Nehalem, Xeon E7540,
+CondChgd bit is not set in the beginning at boot.
+
+I'm not sure about exact behavior of CondChgd bit, in particular when
+this bit is set. Although I read Intel System Programmer's Manual to
+figure out that, the descriptions I found are:
+
+  In 18.9.1:
+
+  "The MSR_PERF_GLOBAL_STATUS MSR also provides a ¡sticky bit¢ to
+   indicate changes to the state of performancmonitoring hardware"
+
+  In Table 35-2 IA-32 Architectural MSRs
+
+  63 CondChg: status bits of this register has changed.
+
+These are different from the bahviour I see on the actual system as I
+explained above.
+
+At least, I think ignoring CondChgd bit should be enough for NMI
+watchdog perspective.
+
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Link: http://lkml.kernel.org/r/20140625.103503.409316067.d.hatayama@jp.fujitsu.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 0fa4f24..0b1825a 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1385,6 +1385,15 @@ again:
+ 	intel_pmu_lbr_read();
+
+ 	/*
++	 * CondChgd bit 63 doesn't mean any overflow status. Ignore
++	 * and clear the bit.
++	 */
++	if (__test_and_clear_bit(63, (unsigned long *)&status)) {
++		if (!status)
++			goto done;
++	}
++
++	/*
+ 	 * PEBS overflow sets bit 62 in the global status register
+ 	 */
+ 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
+--
+1.9.1
+
