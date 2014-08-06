@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaHFNTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 09:19:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41139 "EHLO mx2.suse.de"
+	id S1753519AbaHFNTy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 09:19:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41136 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750730AbaHFNT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 09:19:27 -0400
+	id S1751813AbaHFNT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 09:19:26 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Rafael J Wysocki <rafael.j.wysocki@intel.com>,
         Nicolas Pitre <nico@linaro.org>
 Cc: Mike Galbraith <mgalbraith@suse.de>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 4/4] cpuidle: menu: Lookup CPU runqueues less
-Date: Wed,  6 Aug 2014 14:19:21 +0100
-Message-Id: <1407331161-4642-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 3/4] cpuidle: menu: Call nr_iowait_cpu less times
+Date: Wed,  6 Aug 2014 14:19:20 +0100
+Message-Id: <1407331161-4642-4-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1407331161-4642-1-git-send-email-mgorman@suse.de>
 References: <1407331161-4642-1-git-send-email-mgorman@suse.de>
@@ -21,129 +21,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The menu governer makes separate lookups of the CPU runqueue to get
-load and number of IO waiters but it can be done with a single lookup.
+menu_select() via inline functions calls nr_iowait_cpu() twice as much
+as necessary.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- drivers/cpuidle/governors/menu.c | 17 +++++++----------
- include/linux/sched.h            |  3 +--
- kernel/sched/core.c              |  7 +++++++
- kernel/sched/proc.c              |  7 -------
- 4 files changed, 15 insertions(+), 19 deletions(-)
+ drivers/cpuidle/governors/menu.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index 90d8109..fef0225 100644
+index 373278a..90d8109 100644
 --- a/drivers/cpuidle/governors/menu.c
 +++ b/drivers/cpuidle/governors/menu.c
-@@ -135,12 +135,9 @@ struct menu_device {
- #define LOAD_INT(x) ((x) >> FSHIFT)
- #define LOAD_FRAC(x) LOAD_INT(((x) & (FIXED_1-1)) * 100)
- 
--static int get_loadavg(void)
-+static inline int get_loadavg(unsigned long load)
- {
--	unsigned long this = this_cpu_load();
--
--
--	return LOAD_INT(this) * 10 + LOAD_FRAC(this) / 10;
-+	return LOAD_INT(load) * 10 + LOAD_FRAC(load) / 10;
+@@ -143,7 +143,7 @@ static int get_loadavg(void)
+ 	return LOAD_INT(this) * 10 + LOAD_FRAC(this) / 10;
  }
  
- static inline int which_bucket(unsigned int duration, unsigned long nr_iowaiters)
-@@ -176,13 +173,13 @@ static inline int which_bucket(unsigned int duration, unsigned long nr_iowaiters
+-static inline int which_bucket(unsigned int duration)
++static inline int which_bucket(unsigned int duration, unsigned long nr_iowaiters)
+ {
+ 	int bucket = 0;
+ 
+@@ -153,7 +153,7 @@ static inline int which_bucket(unsigned int duration)
+ 	 * This allows us to calculate
+ 	 * E(duration)|iowait
+ 	 */
+-	if (nr_iowait_cpu(smp_processor_id()))
++	if (nr_iowaiters)
+ 		bucket = BUCKETS/2;
+ 
+ 	if (duration < 10)
+@@ -176,7 +176,7 @@ static inline int which_bucket(unsigned int duration)
   * to be, the higher this multiplier, and thus the higher
   * the barrier to go to an expensive C state.
   */
--static inline int performance_multiplier(unsigned long nr_iowaiters)
-+static inline int performance_multiplier(unsigned long nr_iowaiters, unsigned long load)
+-static inline int performance_multiplier(void)
++static inline int performance_multiplier(unsigned long nr_iowaiters)
  {
  	int mult = 1;
  
- 	/* for higher loadavg, we are more reluctant */
- 
--	mult += 2 * get_loadavg();
-+	mult += 2 * get_loadavg(load);
+@@ -185,7 +185,7 @@ static inline int performance_multiplier(void)
+ 	mult += 2 * get_loadavg();
  
  	/* for IO wait tasks (per cpu!) we add 5x each */
- 	mult += 10 * nr_iowaiters;
-@@ -297,7 +294,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+-	mult += 10 * nr_iowait_cpu(smp_processor_id());
++	mult += 10 * nr_iowaiters;
+ 
+ 	return mult;
+ }
+@@ -297,6 +297,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
  	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
  	int i;
  	unsigned int interactivity_req;
--	unsigned long nr_iowaiters;
-+	unsigned long nr_iowaiters, cpu_load;
++	unsigned long nr_iowaiters;
  
  	if (data->needs_update) {
  		menu_update(drv, dev);
-@@ -313,7 +310,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+@@ -312,8 +313,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
  	/* determine the expected residency time, round up */
  	data->next_timer_us = ktime_to_us(tick_nohz_get_sleep_length());
  
--	nr_iowaiters = nr_iowait_cpu(smp_processor_id());
-+	get_iowait_load(&nr_iowaiters, &cpu_load);
- 	data->bucket = which_bucket(data->next_timer_us, nr_iowaiters);
+-
+-	data->bucket = which_bucket(data->next_timer_us);
++	nr_iowaiters = nr_iowait_cpu(smp_processor_id());
++	data->bucket = which_bucket(data->next_timer_us, nr_iowaiters);
  
  	/*
-@@ -332,7 +329,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	 * Force the result of multiplication to be 64 bits even if both
+@@ -331,7 +332,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
  	 * duration / latency ratio. Adjust the latency limit if
  	 * necessary.
  	 */
--	interactivity_req = data->predicted_us / performance_multiplier(nr_iowaiters);
-+	interactivity_req = data->predicted_us / performance_multiplier(nr_iowaiters, cpu_load);
+-	interactivity_req = data->predicted_us / performance_multiplier();
++	interactivity_req = data->predicted_us / performance_multiplier(nr_iowaiters);
  	if (latency_req > interactivity_req)
  		latency_req = interactivity_req;
  
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 0376b05..a696d48 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -168,8 +168,7 @@ extern int nr_processes(void);
- extern unsigned long nr_running(void);
- extern unsigned long nr_iowait(void);
- extern unsigned long nr_iowait_cpu(int cpu);
--extern unsigned long this_cpu_load(void);
--
-+extern void get_iowait_load(unsigned long *nr_waiters, unsigned long *load);
- 
- extern void calc_global_load(unsigned long ticks);
- extern void update_cpu_load_nohz(void);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index bc1638b..cfbbbf3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2385,6 +2385,13 @@ unsigned long nr_iowait_cpu(int cpu)
- 	return atomic_read(&this->nr_iowait);
- }
- 
-+void get_iowait_load(unsigned long *nr_waiters, unsigned long *load)
-+{
-+	struct rq *this = this_rq();
-+	*nr_waiters = atomic_read(&this->nr_iowait);
-+	*load = this->cpu_load[0];
-+}
-+
- #ifdef CONFIG_SMP
- 
- /*
-diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-index 16f5a30..8ecd552 100644
---- a/kernel/sched/proc.c
-+++ b/kernel/sched/proc.c
-@@ -8,13 +8,6 @@
- 
- #include "sched.h"
- 
--unsigned long this_cpu_load(void)
--{
--	struct rq *this = this_rq();
--	return this->cpu_load[0];
--}
--
--
- /*
-  * Global load-average calculations
-  *
 -- 
 1.8.4.5
 
