@@ -1,42 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853AbaHFVIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 17:08:14 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43766 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754089AbaHFVIM (ORCPT
+	id S1754400AbaHFVLh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 17:11:37 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50390 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753508AbaHFVLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 17:08:12 -0400
-Date: Wed, 06 Aug 2014 14:08:11 -0700 (PDT)
-Message-Id: <20140806.140811.1012784433206389073.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: wei.liu2@citrix.com, Ian.Campbell@citrix.com, david.vrabel@citrix.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org
-Subject: Re: [PATCH net-next] xen-netback: Fix vif->disable handling
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1407353598-14185-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1407353598-14185-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 06 Aug 2014 14:08:12 -0700 (PDT)
+	Wed, 6 Aug 2014 17:11:35 -0400
+Date: Wed, 6 Aug 2014 22:10:51 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>
+Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        open list <linux-kernel@vger.kernel.org>
+Message-ID: <20140806211051.GA17528@sirena.org.uk>
+References: <1406755767-5910-1-git-send-email-afaerber@suse.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="w3kmj6YJmRtqQaLC"
+Content-Disposition: inline
+In-Reply-To: <1406755767-5910-1-git-send-email-afaerber@suse.de>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3] Documentation: devicetree: Fix tps65090 typos in
+ example
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Wed, 6 Aug 2014 20:33:18 +0100
 
-> In the patch called "xen-netback: Turn off the carrier if the guest is not able
-> to receive" new branches were introduced to this if statement, risking that a
-> queue with non-zero id can reenable the disabled interface.
-> 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+--w3kmj6YJmRtqQaLC
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Can you please resubmit this with curly braces added to the first if()'s
-basic block?
+On Wed, Jul 30, 2014 at 11:29:27PM +0200, Andreas F=E4rber wrote:
+> Specification and existing device trees use vsys-l{1,2}-supply,
+> not vsys_l{1,2}-supply. Fix the example to match the specification.
 
-Thanks.
+Applied.  I've previously reminded you to use subject lines appropraite
+for the subsystem, please do so - this is important for telling people
+what the patch is for.
+
+--w3kmj6YJmRtqQaLC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT4pnXAAoJELSic+t+oim9Y6EP/0DwyVyQ/+UFFITQo7zScDpp
+hm9gZqRUOyJwNJC/fP47L464R3l4CrSS3bYfOLFzUe4jcVbAjZVTzguSAaN6f59Q
+4znQM8h60K2+vhUWKSxCinz+gvzTchV17d7R4PWN/wPypWg3xjA3jI1TnHca1d59
+EN+pYG++04VtV9Z2vj94kJDQRgyOyIz6W9QesyTX6aJuGN+WhvZ/qKLQ8aOifRdF
+FDQr4QSiY8tpvrDO8/g831NFT/RyBgCJGDyodlooHZ3Q3Vnx7TXOY24QpFnc/KQ9
+yt7KFgKjKfDl4Grgwx37HO5RLeYX2PeMMp0uPZuhSn/HAR9VCk9mXN00BPK7hv1H
+lI7M0OydX1crYOout2tTAyxf2pcX5HsRLMMHABCNb8+rzpbpNxrz/tr+VQRzUlfW
+IdRxzmlKAziLCg1tuTUbwNwP239nIhaK30FH2kyfJPsxIKEwjJHpF/zbbAZK8yqm
+hnDUeB+foWf5xncYeyLJFyG2n76QL9aS3fegQffXXXmrlGtii5OXpS5L2ZGBLcmh
+8cPFgVaiHNpyCLEH5Je9HCWdBg4DNwv84Yxrag+IJOTUdh6eJhs6cqWPUm1pn+bu
+gYWxhX+4tH76gO0Y6wGoAlG2tn6YUv6diyTPdiOcyi8EYWZWZ2S20JUlLKlR+Iup
+WmLYXxzxOZ9trZuNtQX+
+=Rlq4
+-----END PGP SIGNATURE-----
+
+--w3kmj6YJmRtqQaLC--
