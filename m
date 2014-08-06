@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457AbaHFOcW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 10:32:22 -0400
-Received: from smtp6-v.fe.bosch.de ([139.15.237.11]:49765 "EHLO
-	smtp6-v.fe.bosch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaHFOcU convert rfc822-to-8bit (ORCPT
+	id S1755574AbaHFOc0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 10:32:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34856 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaHFOcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 10:32:20 -0400
-From: "Koehrer Mathias (ETAS/ESW5)" <mathias.koehrer@etas.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Nick Krause <xerofoify@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: [PATCH] Fix e1000e with Intel 82572EI that has no hardware
- timestamp support
-Thread-Topic: [PATCH] Fix e1000e with Intel 82572EI that has no hardware
- timestamp support
-Thread-Index: Ac+xgnCw6PdHzoE/S12kdgrkOgAeXA==
-Date: Wed, 6 Aug 2014 14:32:16 +0000
-Message-ID: <bbcbf584e3624059bf7a0d2186fec6b4@FE-MBX1012.de.bosch.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.5.148.126]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 6 Aug 2014 10:32:23 -0400
+Date: Wed, 6 Aug 2014 07:31:49 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: shuah.kh@samsung.com, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: devtest - new make target for build all and run
+ tests
+Message-ID: <20140806143149.GA13552@kroah.com>
+References: <1405716274-24420-1-git-send-email-shuah.kh@samsung.com>
+ <53E232E6.8060506@suse.cz>
+ <53E235DE.70604@samsung.com>
+ <53E23669.5050309@suse.cz>
 MIME-Version: 1.0
-X-TM-AS-MML: disable
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E23669.5050309@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the Intel 82527EI (driver: e1000e) there is an issue when running 
-the ptpd2 program, that leads to a kernel oops.
-The reason is here that in e1000_xmit_frame() a work queue will be 
-scheduled that has not been initialized in this case.
-The work queue "tx_hwstamp_work" will only be initialized if 
-adapter->flags & FLAG_HAS_HW_TIMESTAMP set.
-This check is missing in e1000_xmit_frame().
+On Wed, Aug 06, 2014 at 04:06:33PM +0200, Michal Marek wrote:
+> On 2014-08-06 16:04, Shuah Khan wrote:
+> > On 08/06/2014 07:51 AM, Michal Marek wrote:
+> >> On 2014-07-18 22:44, Shuah Khan wrote:
+> >>> Add a new devtest make target to enable developer testing. This
+> >>> new target does full build (make all) and then runs selftests.
+> >>
+> >> I agree with Sam that the name is rather ambiguous, but I can't suggest
+> >> a better alternative right now.
+> > 
+> > Does kselftest or kern_selftest sound better?
+> 
+> It does sound better to me than dev(ice)test, but I'm not a native
+> English speaker. Greg?
 
-The following patch adds the missing check.
+Either is fine with me, but I don't think we have '_' as any make target
+today, so perhaps "kselftest" is best?
 
-Signed-off-by: Mathias Koehrer <mathias.koehrer@etas.com>
----
- drivers/net/ethernet/intel/e1000e/netdev.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+thanks,
 
-Index: linux-3.12.26/drivers/net/ethernet/intel/e1000e/netdev.c
-===================================================================
---- linux-3.12.26.orig/drivers/net/ethernet/intel/e1000e/netdev.c	2014-08-04 10:56:56.000000000 +0200
-+++ linux-3.12.26/drivers/net/ethernet/intel/e1000e/netdev.c	2014-08-06 16:22:10.000000000 +0200
-@@ -5549,8 +5549,9 @@
- 	count = e1000_tx_map(tx_ring, skb, first, adapter->tx_fifo_limit,
- 			     nr_frags);
- 	if (count) {
--		if (unlikely((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) &&
--			     !adapter->tx_hwtstamp_skb)) {
-+		if ((adapter->flags & FLAG_HAS_HW_TIMESTAMP) && 
-+		    unlikely((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) &&
-+		    !adapter->tx_hwtstamp_skb)) {
- 			skb_shinfo(skb)->tx_flags |= SKBTX_IN_PROGRESS;
- 			tx_flags |= E1000_TX_FLAGS_HWTSTAMP;
- 			adapter->tx_hwtstamp_skb = skb_get(skb);
-
--- 
-
+greg k-h
