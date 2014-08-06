@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089AbaHFWYb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 18:24:31 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:47725 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151AbaHFWY3 (ORCPT
+	id S1754335AbaHFWYm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 18:24:42 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:58539 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151AbaHFWYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 18:24:29 -0400
-X-Originating-IP: 173.246.103.110
-Date: Wed, 6 Aug 2014 15:24:19 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, torvalds@linux-foundation.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Add "make tinyconfig" to configure the tiniest
- possible kernel
-Message-ID: <20140806222419.GA2566@jtriplet-mobl1>
-References: <20140806171344.GA15764@jtriplet-mobl1>
- <alpine.DEB.2.02.1408061504000.13545@chino.kir.corp.google.com>
+	Wed, 6 Aug 2014 18:24:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1408061504000.13545@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CA+bK7J7LQq4S70ScSynbLTjNMmP=9n3KD2suYRg9JN+pEv-Y7g@mail.gmail.com>
+References: <1403220823-19444-1-git-send-email-f.fainelli@gmail.com>
+ <CAGVrzcYfA8rCXGRW7g0JhT4GQKT8SQj+pMvCh25yoXLFGNM_Pw@mail.gmail.com>
+ <20140806165452.GN3711@ld-irv-0074> <CAL_JsqK8BiffXgpQSig5EbV3FUW7EBOn9YjZGqOcUcEJiCJ0WA@mail.gmail.com>
+ <20140806201256.GO3711@ld-irv-0074> <CA+bK7J7LQq4S70ScSynbLTjNMmP=9n3KD2suYRg9JN+pEv-Y7g@mail.gmail.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Wed, 6 Aug 2014 17:24:12 -0500
+Message-ID: <CAL_JsqL6Hzh=ZDM-CUEEvt7GWP4Q-h5OozWtGoYsAAXtzYnp2Q@mail.gmail.com>
+Subject: Re: [PATCH] of/irq: lookup 'interrupts-extended' property first
+To: Tim Bird <tbird20d@gmail.com>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 03:06:11PM -0700, David Rientjes wrote:
-> On Wed, 6 Aug 2014, Josh Triplett wrote:
-> > Since commit 5d2acfc7b974bbd3858b4dd3f2cdc6362dd8843a ("kconfig: make
-> > allnoconfig disable options behind EMBEDDED and EXPERT") in 3.15-rc1,
-> > "make allnoconfig" disables every possible config option.
-> > 
-> > However, a few configuration options (CC_OPTIMIZE_FOR_SIZE,
-> > OPTIMIZE_INLINING) produce a smaller kernel when turned on, and a few
-> > choices exist (compression, highmem, allocator) for which a non-default
-> > option produces a smaller kernel.
-> > 
-> > Add a "tinyconfig" target, which starts from allnoconfig and then sets
-> > these options to configure the tiniest possible kernel.  This provides a
-> > better baseline for embedded systems or efforts to reduce kernel size.
-> > 
-> 
-> I like it, the only comment that I have is that we already have a 
-> xenconfig patchset sitting around that adds a helper function for this 
-> functionality in the x86 Makefile that hasn't been merged yet.
-> 
-> The *config functionality is added in
-> http://marc.info/?l=linux-kernel&m=140233900403377
-> 
-> and then used in
-> http://marc.info/?l=linux-kernel&m=140233901403381
-> http://marc.info/?l=linux-kernel&m=140233904503428
-> 
-> and have been pending since June.  I was going to ask Luis to rebase and 
-> resend, but perhaps you can send the first patch along as a predecessor to 
-> your patch and then let tinyconfig use build-virtconfig?
+On Wed, Aug 6, 2014 at 4:50 PM, Tim Bird <tbird20d@gmail.com> wrote:
+> On Wed, Aug 6, 2014 at 1:12 PM, Brian Norris
+> <computersforpeace@gmail.com> wrote:
+>> On Wed, Aug 06, 2014 at 01:42:08PM -0500, Rob Herring wrote:
+>>> On Wed, Aug 6, 2014 at 11:54 AM, Brian Norris <computersforpeace@gmail.com> wrote:
+>>> > On Thu, Jul 31, 2014 at 11:00:01AM -0700, Florian Fainelli wrote:
+>>> > I think it is important that a device tree provide some flexibility on
+>>> > kernel versions. We only invented 'interrupts-extended' in Linux 3.13,
+>>> > so it's easy to have device trees that could work only on 3.13+.
+>>> >
+>>> > Typically, we might say that new features require new kernels, but this
+>>> > is a very basic piece of the DT infrastructure. In our case, we have
+>>> > hardware whose basic features can be supported by a single interrupt
+>>> > parent, and so we used the 'interrupts' property pre-3.13. But when we
+>>> > want to add some power management features, there's an additional
+>>> > interrupt parent. Under the current DT binding, we have to switch over
+>>> > to using 'interrupts-extended' exclusively, and thus we must have a
+>>> > completely new DTB for >=3.13, and this DTB no longer works with the old
+>>> > kernels.
+>>>
+>>> "Must have" to enable the new features?
+>>
+>> Yes. The new feature requires an additional interrupt parent, and so it
+>> requires interrupts-extended.
+>
+> Hold on there.  What about interrupt-map?  That was the traditional DT
+> feature for
+> supporting multi-parented interrupts.  Why couldn't the feature have been added
+> using that instead of interrupts-extended?
 
-Sure, no problem.  I ended up modifying that patch a bit, but I included
-a mini-changelog in it noting that I based it on Luis's patch.  Will
-send a 2-patch v2 series momentarily, in response to this mail.
+It could have, but interrupts-extended is much more simple to express
+for the simple case of a device's interrupts routed to more than one
+parent.
 
-- Josh Triplett
+> I know interrupts-extended is preferred, but has interrupt-map support been
+> removed from recent kernels?  I'm a bit confused.
+
+They are all still supported. It's just a question of order of parsing
+if you have find both styles.
+
+Rob
