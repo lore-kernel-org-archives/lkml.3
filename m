@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793AbaHFRFl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 13:05:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43473 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838AbaHFRFk (ORCPT
+	id S932809AbaHFRGd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 13:06:33 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:38913 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838AbaHFRGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 13:05:40 -0400
-Message-ID: <53E26060.9000508@infradead.org>
-Date: Wed, 06 Aug 2014 10:05:36 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>, trivial@kernel.org,
+	Wed, 6 Aug 2014 13:06:31 -0400
+From: Oussama Jabbari <oussama.jabbari@gmail.com>
+To: jic23@kernel.org
+Cc: gregkh@linuxfoundation.org, sachin.kamat@linaro.org, lars@metafoo.de,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] treewide: Fix typo in printk
-References: <1404229455-7248-2-git-send-email-standby24x7@gmail.com> <1407331888-26638-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1407331888-26638-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH] staging: iio: adis16060: Fix coding style problem
+Date: Wed,  6 Aug 2014 19:06:16 +0200
+Message-Id: <1407344776-2838-1-git-send-email-oussama.jabbari@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/14 06:31, Masanari Iida wrote:
-> This patch fix spelling typo in printk within vairous
+This patch fixes a warning from checkpatch.pl script :
+"WARNING: Missing a blank line after declarations"
 
-             fixes        typos                 various
+Signed-off-by: Oussama Jabbari <oussama.jabbari@gmail.com>
+---
+The reason of this patch is for completing one task
+of the Eudyptula Challenge.
 
-> part of the code.
+ drivers/staging/iio/gyro/adis16060_core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-  parts
-
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-Thanks.
-
-> ---
->  arch/blackfin/mach-common/ints-priority.c          | 2 +-
->  drivers/gpu/drm/i915/intel_bios.c                  | 2 +-
->  drivers/i2c/busses/i2c-s3c2410.c                   | 2 +-
->  drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c      | 2 +-
->  drivers/media/usb/gspca/stv06xx/stv06xx_vv6410.c   | 2 +-
->  drivers/net/bonding/bond_sysfs_slave.c             | 2 +-
->  drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c | 2 +-
->  drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c     | 2 +-
->  drivers/net/wireless/libertas_tf/main.c            | 2 +-
->  drivers/scsi/aic7xxx/Kconfig.aic79xx               | 2 +-
->  drivers/scsi/nsp32.c                               | 2 +-
->  drivers/scsi/pcmcia/nsp_cs.c                       | 2 +-
->  drivers/scsi/qla2xxx/qla_nx2.c                     | 2 +-
->  drivers/scsi/scsi_transport_fc.c                   | 2 +-
->  net/mac802154/wpan.c                               | 2 +-
->  15 files changed, 15 insertions(+), 15 deletions(-)
-
-
+diff --git a/drivers/staging/iio/gyro/adis16060_core.c b/drivers/staging/iio/gyro/adis16060_core.c
+index d5d395c..4c5869d 100644
+--- a/drivers/staging/iio/gyro/adis16060_core.c
++++ b/drivers/staging/iio/gyro/adis16060_core.c
+@@ -180,6 +180,7 @@ static int adis16060_w_probe(struct spi_device *spi)
+ 	int ret;
+ 	struct iio_dev *indio_dev = adis16060_iio_dev;
+ 	struct adis16060_state *st;
++
+ 	if (!indio_dev) {
+ 		ret =  -ENODEV;
+ 		goto error_ret;
 -- 
-~Randy
+1.7.9.5
+
