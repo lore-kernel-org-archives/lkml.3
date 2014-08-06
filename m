@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566AbaHFLYy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 07:24:54 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:47590 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754317AbaHFLYx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 07:24:53 -0400
+	id S1755661AbaHFL1b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 07:27:31 -0400
+Received: from ozlabs.org ([103.22.144.67]:42924 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754118AbaHFL1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 07:27:30 -0400
+Date: Wed, 6 Aug 2014 21:27:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Richard Weinberger <richard@nod.at>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [GIT PULL] Global signal cleanup
+Message-ID: <20140806212720.66dbd58b@canb.auug.org.au>
+In-Reply-To: <53E20F1E.2080606@nod.at>
+References: <53E20F1E.2080606@nod.at>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <s5h61i56gat.wl%tiwai@suse.de>
-References: <14048583172593@kroah.com> <8B2F6FFD0BD1E448853114367400A37306FD6FBBE9@BLRX7MCDC203.AMER.DELL.COM>
- <s5h38e9mg5v.wl%tiwai@suse.de> <8B2F6FFD0BD1E448853114367400A37306FD6FBBF8@BLRX7MCDC203.AMER.DELL.COM>
- <s5hy4w1l0s3.wl%tiwai@suse.de> <8B2F6FFD0BD1E448853114367400A37306FD6FBC06@BLRX7MCDC203.AMER.DELL.COM>
- <s5hpphdkyi6.wl%tiwai@suse.de> <8B2F6FFD0BD1E448853114367400A37306FD6FBDAB@BLRX7MCDC203.AMER.DELL.COM>
- <s5hoawvkimg.wl%tiwai@suse.de> <8B2F6FFD0BD1E448853114367400A37306FE07C773@BLRX7MCDC203.AMER.DELL.COM>
- <s5h7g3frmg7.wl%tiwai@suse.de> <8B2F6FFD0BD1E448853114367400A37306FE07CC64@BLRX7MCDC203.AMER.DELL.COM>
- <s5hlhrrizbq.wl%tiwai@suse.de> <8B2F6FFD0BD1E448853114367400A37306FE311D74@BLRX7MCDC203.AMER.DELL.COM>
- <CAL8zT=jDUyxjimFxBFk56q+B9VwZdnijrU9VF7LBm4X4mNKp+g@mail.gmail.com>
- <s5hvbq753w2.wl%tiwai@suse.de> <CAL8zT=jzFmPZ2jizrPXMGBwNReOnDw7wLHZDashavNBh9vhe2g@mail.gmail.com>
- <s5htx5r53jl.wl%tiwai@suse.de> <CAKocOOO+vahGqVtM-hE6Vp5P2vX83L+z+OVnP=ZHvE4nc9P-JQ@mail.gmail.com>
- <CAL8zT=gbqcGPMLKS+bkc3cJPJJGmzuvdr7owy+zF-bCCaEv-Gg@mail.gmail.com>
- <s5hd2ce55sl.wl%tiwai@suse.de> <CAL8zT=hbwRXRP7yNbrh9BEYzqAyipkTmrFCSqM5Z0U8hr0Yz+g@mail.gmail.com>
- <s5h7g2l6hq6.wl%tiwai@suse.de> <CAL8zT=j6DJ_JX7OT7csmuQPQj2AnwDxDvtBtui-i4PTbeGwmWw@mail.gmail.com>
- <s5h61i56gat.wl%tiwai@suse.de>
-From: Jean-Michel Hautbois <jhautbois@gmail.com>
-Date: Wed, 6 Aug 2014 13:24:37 +0200
-Message-ID: <CAL8zT=j1vCEVr9gnX4mjEaL+eNY10F4BtYHSwTyG2cYfzpT+4g@mail.gmail.com>
-Subject: Re: patch "firmware loader: allow disabling of udev as firmware
- loader" added to driver-core tree
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Shuah Khan <shuahkhan@gmail.com>, B_B_Singh@dell.com,
-        Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        Kay Sievers <kay@vrfy.org>, Ming Lei <ming.lei@canonical.com>,
-        Stefan Roese <sr@denx.de>, Tom Gundersen <teg@jklm.no>,
-        Stuart_Hayes@dell.com, Srinivas_G_Gowda@dell.com,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/E=u+L6=k3oyshtyASGDyD1V"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-06 12:52 GMT+02:00 Takashi Iwai <tiwai@suse.de>:
-> At Wed, 6 Aug 2014 12:50:28 +0200,
-> Jean-Michel Hautbois wrote:
->>
->> 2014-08-06 12:21 GMT+02:00 Takashi Iwai <tiwai@suse.de>:
->> > At Wed, 6 Aug 2014 11:44:14 +0200,
->> > Jean-Michel Hautbois wrote:
->> >>
->> >> 2014-08-06 11:24 GMT+02:00 Takashi Iwai <tiwai@suse.de>:
->> >> > At Wed, 6 Aug 2014 11:10:27 +0200,
->> >> > Jean-Michel Hautbois wrote:
->> >> >>
->> >> >> 2014-08-05 21:22 GMT+02:00 Shuah Khan <shuahkhan@gmail.com>:
->> >> >> > On Tue, Aug 5, 2014 at 10:01 AM, Takashi Iwai <tiwai@suse.de> wrote:
->> >> >> >>> Yes, it worked, if the firmware was in the /lib/firmware directory.
->> >> >> >>
->> >> >> >
->> >> >> > ok it works when the firmware is in /lib/firmware. It sounds to me the
->> >> >> > reason load fails when the firmware is under /sys/class/firmware is
->> >> >> > fw_load_from_user_helper() returns -ENOENT when
->> >> >> > CONFIG_FW_LOADER_USER_HELPER is disabled.
->> >> >> >
->> >> >> > It would be nice to see the entire dmesg with debug enabled though.
->> >> >> >
->> >> >> > -- Shuah
->> >> >>
->> >> >> It does not work with the 3.16 kernel even when firmware is in
->> >> >> /lib/firmware, it worked before this patch is applied.
->> >> >
->> >> > Hm?  3.16 doesn't contain my patch yet.  It's merged for 3.17-rc1.
->> >>
->> >> Oh, you are right of course, I am on upstream kernel and I have your
->> >> patch. I don't mean your match is causing the issue though ;-).
->> >
->> > I see.
->> >
->> >> >> Here is what I got in my dmesg :
->> >> >> [    0.307856] __allocate_fw_buf: fw-lattice-ecp3.bit buf=bd81a480
->> >> >> [    0.308029] lattice-ecp3 spi2.3: Direct firmware load for
->> >> >> lattice-ecp3.bit failed with error -2
->> >> >
->> >> > It's -ENOENT.  Are you sure that you really have
->> >> >  /lib/firmware/lattice-ecp3.bit file?
->> >>
->> >> Yes :
->> >> ls -al /lib/firmware/lattice-ecp3.bit
->> >> -rwxr-xr-x 1 root root 897753 Aug  5 15:04 /lib/firmware/lattice-ecp3.bit
->> >
->> > Then you'd better bisect...
->> > Or, at least, put a debug code to see which file is opened in the loop
->> > in fw_get_filesystem_firmware().
->>
->> Well, when this function is called, my rootfs is not yet mounted (I
->> have a dedicated partition on a SDCard)...
->> So I probably missed a step in order to get /lib/firmware before / is
->> mounted... ?
+--Sig_/E=u+L6=k3oyshtyASGDyD1V
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Wed, 06 Aug 2014 13:18:54 +0200 Richard Weinberger <richard@nod.at> wrot=
+e:
 >
-> Yeah, possibly :)  Maybe you did put /lib/firmware/* into initrd in
-> the earlier tests?
+> the following changes since commit 19583ca584d6f574384e17fe7613dfaeadcdc4=
+a6:
+>=20
+>   Linux 3.16 (2014-08-03 15:25:02 -0700)
+>=20
+> are available in the git repository at:
+>=20
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git signal-cleanup
 
-Nope, it failed and when / was mounted, it was called again and used
-the firmware thanks to udev.
-This is the CONFIG_FW_LOADER_USER_HELPER config which makes that now, right ?
-But how can I have /lib/firmware in my initrd, that is the question I
-need to answer now :).
+This has all been rebased onto v3.16 but none of the patches changed.
 
-JM
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/E=u+L6=k3oyshtyASGDyD1V
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT4hEfAAoJEMDTa8Ir7ZwVYWkP/RPnY8WkaWMtiuOF0bG3+l0b
+aWVMG7OqJkXQLvLkjgxW19AHEvkEjd89Paptp0LGKCM6XI0MQRV678aPlwI/3SXM
+KcZewCULEhgcZIo9tfXBRc0IF1pCl6HNGO+jaZCCYTCIsnrejSOV0b35O5pb6DSA
+Y44lUIb6qIAS/fMMYX97hoLzY8XxMNGeLQKiTsKjMReutVJKHi7xN7/k+4QmdQG5
+rixfygnESI6UNNG8Yu7EXeXGsn+wD4qkmCscqtcmDyrYPShP5ZdSaEUv9fadHgll
+i9wxTScY9PirTsdzDV3GeDFzdYhY6o0vnNwwEhee76+tS4oa712bT7UjhM3/QRsd
+OuP0WEoTua9JWFzFYTdLvg596hgIeL4QPh3ROcHMczxGioIqUbGbI84HujnbKerI
+3zLXmet06Wyb+u754STTkXfsqylPzF7sf59y26bBmAlwevJKDBvFahdcVlZfP3xj
+M+8YEoK90Lzi9Swglg4SLR7WEKTvA8tu3Oebw2wnwweTcar6+L7W8FCf3kO3686L
+Pv7y9Y8hcwF+owOdc5RLnF+fgBiw5WxFSWYy77TCcE1yvRXmtc7fgMJlMbJaP60I
+A0YhZzJnodHBNmapB8jERKT9LqlXU3B+PQXtfRzX1AD44BE1oOLT/yE+8P+AkJPq
+u3fPgJalIC1KVRRAY//G
+=rlUB
+-----END PGP SIGNATURE-----
+
+--Sig_/E=u+L6=k3oyshtyASGDyD1V--
