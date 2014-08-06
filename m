@@ -1,329 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474AbaHFSUd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 14:20:33 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:37492 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754641AbaHFSRD (ORCPT
+	id S1755509AbaHFSVl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 14:21:41 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:42259 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754641AbaHFSVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 14:17:03 -0400
-X-IronPort-AV: E=Sophos;i="5.01,813,1400025600"; 
-   d="scan'208";a="160023718"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: [PATCH net-next 2/2 v2] xen-netback: Turn off the carrier if the guest is not able to receive
-Date: Wed, 6 Aug 2014 19:16:11 +0100
-Message-ID: <1407348973-2433-3-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407348973-2433-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1407348973-2433-1-git-send-email-zoltan.kiss@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+	Wed, 6 Aug 2014 14:21:39 -0400
+Message-ID: <1407349295.2384.14.camel@j-VirtualBox>
+Subject: Re: [PATCH] sched: Reduce contention in update_cfs_rq_blocked_load
+From: Jason Low <jason.low2@hp.com>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Segall <bsegall@google.com>,
+        Waiman Long <Waiman.Long@hp.com>, Mel Gorman <mgorman@suse.de>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Rik van Riel <riel@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Chegu Vinod <chegu_vinod@hp.com>, Scott J Norton <scott.norton@hp.com>
+Date: Wed, 06 Aug 2014 11:21:35 -0700
+In-Reply-To: <20140804191526.GA2480@intel.com>
+References: <1407184118.11407.11.camel@j-VirtualBox>
+	 <20140804191526.GA2480@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently when the guest is not able to receive more packets, qdisc layer starts
-a timer, and when it goes off, qdisc is started again to deliver a packet again.
-This is a very slow way to drain the queues, consumes unnecessary resources and
-slows down other guests shutdown.
-This patch change the behaviour by turning the carrier off when that timer
-fires, so all the packets are freed up which were stucked waiting for that vif.
-Instead of the rx_queue_purge bool it uses the VIF_STATUS_RX_PURGE_EVENT bit to
-signal the thread that either the timeout happened or an RX interrupt arrived,
-so the thread can check what it should do. It also disables NAPI, so the guest
-can't transmit, but leaves the interrupts on, so it can resurrect.
-Only the queues which brought down the interface can enable it again, the bit
-QUEUE_STATUS_RX_STALLED makes sure of that.
+On Tue, 2014-08-05 at 03:15 +0800, Yuyang Du wrote:
+> Hi Jason,
+> 
+> I am not sure whether you noticed my latest work: rewriting per entity load average
+> 
+> http://article.gmane.org/gmane.linux.kernel/1760754
+> http://article.gmane.org/gmane.linux.kernel/1760755
+> http://article.gmane.org/gmane.linux.kernel/1760757
+> http://article.gmane.org/gmane.linux.kernel/1760756
+> 
+> which simply does not track blocked load average at all. Are you interested in
+> testing the patchset with the workload you have?
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index 4a92fc1..ef3026f 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -176,9 +176,9 @@ struct xenvif_queue { /* Per-queue data for xenvif */
- 	struct xen_netif_rx_back_ring rx;
- 	struct sk_buff_head rx_queue;
- 	RING_IDX rx_last_skb_slots;
--	bool rx_queue_purge;
-+	unsigned long status;
- 
--	struct timer_list wake_queue;
-+	struct timer_list rx_stalled;
- 
- 	struct gnttab_copy grant_copy_op[MAX_GRANT_COPY_OPS];
- 
-@@ -200,7 +200,16 @@ struct xenvif_queue { /* Per-queue data for xenvif */
- 
- enum state_bit_shift {
- 	/* This bit marks that the vif is connected */
--	VIF_STATUS_CONNECTED
-+	VIF_STATUS_CONNECTED,
-+	/* This bit signals the RX thread that queuing was stopped (in
-+	 * start_xmit), and either the timer fired or an RX interrupt came
-+	 */
-+	QUEUE_STATUS_RX_PURGE_EVENT,
-+	/* This bit tells the interrupt handler that this queue was the reason
-+	 * for the carrier off, so it should kick the thread. Only queues which
-+	 * brought it down can turn on the carrier.
-+	 */
-+	QUEUE_STATUS_RX_STALLED
- };
- 
- struct xenvif {
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index fbdadb3..48a55cd 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -78,8 +78,12 @@ int xenvif_poll(struct napi_struct *napi, int budget)
- 	/* This vif is rogue, we pretend we've there is nothing to do
- 	 * for this vif to deschedule it from NAPI. But this interface
- 	 * will be turned off in thread context later.
-+	 * Also, if a guest doesn't post enough slots to receive data on one of
-+	 * its queues, the carrier goes down and NAPI is descheduled here so
-+	 * the guest can't send more packets until it's ready to receive.
- 	 */
--	if (unlikely(queue->vif->disabled)) {
-+	if (unlikely(queue->vif->disabled ||
-+		     !netif_carrier_ok(queue->vif->dev))) {
- 		napi_complete(napi);
- 		return 0;
- 	}
-@@ -97,7 +101,16 @@ int xenvif_poll(struct napi_struct *napi, int budget)
- static irqreturn_t xenvif_rx_interrupt(int irq, void *dev_id)
- {
- 	struct xenvif_queue *queue = dev_id;
-+	struct netdev_queue *net_queue =
-+		netdev_get_tx_queue(queue->vif->dev, queue->id);
- 
-+	/* QUEUE_STATUS_RX_PURGE_EVENT is only set if either QDisc was off OR
-+	 * the carrier went down and this queue was previously blocked
-+	 */
-+	if (unlikely(netif_tx_queue_stopped(net_queue) ||
-+		     (!netif_carrier_ok(queue->vif->dev) &&
-+		      test_bit(QUEUE_STATUS_RX_STALLED, &queue->status))))
-+		set_bit(QUEUE_STATUS_RX_PURGE_EVENT, &queue->status);
- 	xenvif_kick_thread(queue);
- 
- 	return IRQ_HANDLED;
-@@ -125,16 +138,14 @@ void xenvif_wake_queue(struct xenvif_queue *queue)
- 	netif_tx_wake_queue(netdev_get_tx_queue(dev, id));
- }
- 
--/* Callback to wake the queue and drain it on timeout */
--static void xenvif_wake_queue_callback(unsigned long data)
-+/* Callback to wake the queue's thread and turn the carrier off on timeout */
-+static void xenvif_rx_stalled(unsigned long data)
- {
- 	struct xenvif_queue *queue = (struct xenvif_queue *)data;
- 
- 	if (xenvif_queue_stopped(queue)) {
--		netdev_err(queue->vif->dev, "draining TX queue\n");
--		queue->rx_queue_purge = true;
-+		set_bit(QUEUE_STATUS_RX_PURGE_EVENT, &queue->status);
- 		xenvif_kick_thread(queue);
--		xenvif_wake_queue(queue);
- 	}
- }
- 
-@@ -183,11 +194,11 @@ static int xenvif_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	 * drain.
- 	 */
- 	if (!xenvif_rx_ring_slots_available(queue, min_slots_needed)) {
--		queue->wake_queue.function = xenvif_wake_queue_callback;
--		queue->wake_queue.data = (unsigned long)queue;
-+		queue->rx_stalled.function = xenvif_rx_stalled;
-+		queue->rx_stalled.data = (unsigned long)queue;
- 		xenvif_stop_queue(queue);
--		mod_timer(&queue->wake_queue,
--			jiffies + rx_drain_timeout_jiffies);
-+		mod_timer(&queue->rx_stalled,
-+			  jiffies + rx_drain_timeout_jiffies);
- 	}
- 
- 	skb_queue_tail(&queue->rx_queue, skb);
-@@ -515,7 +526,7 @@ int xenvif_init_queue(struct xenvif_queue *queue)
- 		queue->grant_tx_handle[i] = NETBACK_INVALID_HANDLE;
- 	}
- 
--	init_timer(&queue->wake_queue);
-+	init_timer(&queue->rx_stalled);
- 
- 	netif_napi_add(queue->vif->dev, &queue->napi, xenvif_poll,
- 			XENVIF_NAPI_WEIGHT);
-@@ -666,7 +677,7 @@ void xenvif_disconnect(struct xenvif *vif)
- 		queue = &vif->queues[queue_index];
- 
- 		if (queue->task) {
--			del_timer_sync(&queue->wake_queue);
-+			del_timer_sync(&queue->rx_stalled);
- 			kthread_stop(queue->task);
- 			queue->task = NULL;
- 		}
-@@ -708,16 +719,12 @@ void xenvif_free(struct xenvif *vif)
- 	/* Here we want to avoid timeout messages if an skb can be legitimately
- 	 * stuck somewhere else. Realistically this could be an another vif's
- 	 * internal or QDisc queue. That another vif also has this
--	 * rx_drain_timeout_msecs timeout, but the timer only ditches the
--	 * internal queue. After that, the QDisc queue can put in worst case
--	 * XEN_NETIF_RX_RING_SIZE / MAX_SKB_FRAGS skbs into that another vif's
--	 * internal queue, so we need several rounds of such timeouts until we
--	 * can be sure that no another vif should have skb's from us. We are
--	 * not sending more skb's, so newly stuck packets are not interesting
--	 * for us here.
-+	 * rx_drain_timeout_msecs timeout, so give it time to drain out.
-+	 * Although if that other guest wakes up just before its timeout happens
-+	 * and takes only one skb from QDisc, it can hold onto other skbs for a
-+	 * longer period.
- 	 */
--	unsigned int worst_case_skb_lifetime = (rx_drain_timeout_msecs/1000) *
--		DIV_ROUND_UP(XENVIF_QUEUE_LENGTH, (XEN_NETIF_RX_RING_SIZE / MAX_SKB_FRAGS));
-+	unsigned int worst_case_skb_lifetime = (rx_drain_timeout_msecs/1000);
- 
- 	unregister_netdev(vif->dev);
- 
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 6c4cc0f..aa20933 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -1869,8 +1869,7 @@ void xenvif_idx_unmap(struct xenvif_queue *queue, u16 pending_idx)
- static inline int rx_work_todo(struct xenvif_queue *queue)
- {
- 	return (!skb_queue_empty(&queue->rx_queue) &&
--	       xenvif_rx_ring_slots_available(queue, queue->rx_last_skb_slots)) ||
--	       queue->rx_queue_purge;
-+	       xenvif_rx_ring_slots_available(queue, queue->rx_last_skb_slots));
- }
- 
- static inline int tx_work_todo(struct xenvif_queue *queue)
-@@ -1935,6 +1934,75 @@ static void xenvif_start_queue(struct xenvif_queue *queue)
- 		xenvif_wake_queue(queue);
- }
- 
-+/* Only called from the queue's thread, it handles the situation when the guest
-+ * doesn't post enough requests on the receiving ring.
-+ * First xenvif_start_xmit disables QDisc and start a timer, and then either the
-+ * timer fires, or the guest send an interrupt after posting new request. If it
-+ * is the timer, the carrier is turned off here.
-+ * */
-+static void xenvif_rx_purge_event(struct xenvif_queue *queue)
-+{
-+	/* Either the last unsuccesful skb or at least 1 slot should fit */
-+	int needed = queue->rx_last_skb_slots ?
-+		     queue->rx_last_skb_slots : 1;
-+
-+	/* It is assumed that if the guest post new slots after this, the RX
-+	 * interrupt will set the QUEUE_STATUS_RX_PURGE_EVENT bit and wake up
-+	 * the thread again
-+	 */
-+	set_bit(QUEUE_STATUS_RX_STALLED, &queue->status);
-+	if (!xenvif_rx_ring_slots_available(queue, needed)) {
-+		rtnl_lock();
-+		if (netif_carrier_ok(queue->vif->dev)) {
-+			/* Timer fired and there are still no slots. Turn off
-+			 * everything except the interrupts
-+			 */
-+			netif_carrier_off(queue->vif->dev);
-+			skb_queue_purge(&queue->rx_queue);
-+			queue->rx_last_skb_slots = 0;
-+			if (net_ratelimit())
-+				netdev_err(queue->vif->dev, "Carrier off due to lack of guest response on queue %d\n", queue->id);
-+		} else {
-+			/* Probably an another queue already turned the carrier
-+			 * off, make sure nothing is stucked in the internal
-+			 * queue of this queue
-+			 */
-+			skb_queue_purge(&queue->rx_queue);
-+			queue->rx_last_skb_slots = 0;
-+		}
-+		rtnl_unlock();
-+	} else if (!netif_carrier_ok(queue->vif->dev)) {
-+		unsigned int num_queues = queue->vif->num_queues;
-+		unsigned int i;
-+		/* The carrier was down, but an interrupt kicked
-+		 * the thread again after new requests were
-+		 * posted
-+		 */
-+		clear_bit(QUEUE_STATUS_RX_STALLED,
-+			  &queue->status);
-+		rtnl_lock();
-+		netif_carrier_on(queue->vif->dev);
-+		netif_tx_wake_all_queues(queue->vif->dev);
-+		rtnl_unlock();
-+
-+		for (i = 0; i < num_queues; i++) {
-+			struct xenvif_queue *temp = &queue->vif->queues[i];
-+
-+			xenvif_napi_schedule_or_enable_events(temp);
-+		}
-+		if (net_ratelimit())
-+			netdev_err(queue->vif->dev, "Carrier on again\n");
-+	} else {
-+		/* Queuing were stopped, but the guest posted
-+		 * new requests and sent an interrupt
-+		 */
-+		clear_bit(QUEUE_STATUS_RX_STALLED,
-+			  &queue->status);
-+		del_timer_sync(&queue->rx_stalled);
-+		xenvif_start_queue(queue);
-+	}
-+}
-+
- int xenvif_kthread_guest_rx(void *data)
- {
- 	struct xenvif_queue *queue = data;
-@@ -1944,8 +2012,12 @@ int xenvif_kthread_guest_rx(void *data)
- 		wait_event_interruptible(queue->wq,
- 					 rx_work_todo(queue) ||
- 					 queue->vif->disabled ||
-+					 test_bit(QUEUE_STATUS_RX_PURGE_EVENT, &queue->status) ||
- 					 kthread_should_stop());
- 
-+		if (kthread_should_stop())
-+			break;
-+
- 		/* This frontend is found to be rogue, disable it in
- 		 * kthread context. Currently this is only set when
- 		 * netback finds out frontend sends malformed packet,
-@@ -1955,24 +2027,21 @@ int xenvif_kthread_guest_rx(void *data)
- 		 */
- 		if (unlikely(queue->vif->disabled && queue->id == 0))
- 			xenvif_carrier_off(queue->vif);
--
--		if (kthread_should_stop())
--			break;
--
--		if (queue->rx_queue_purge) {
-+		else if (unlikely(test_and_clear_bit(QUEUE_STATUS_RX_PURGE_EVENT,
-+						     &queue->status))) {
-+			xenvif_rx_purge_event(queue);
-+		} else if (!netif_carrier_ok(queue->vif->dev)) {
-+			/* Another queue stalled and turned the carrier off, so
-+			 * purge the internal queue of queues which were not
-+			 * blocked
-+			 */
- 			skb_queue_purge(&queue->rx_queue);
--			queue->rx_queue_purge = false;
-+			queue->rx_last_skb_slots = 0;
- 		}
- 
- 		if (!skb_queue_empty(&queue->rx_queue))
- 			xenvif_rx_action(queue);
- 
--		if (skb_queue_empty(&queue->rx_queue) &&
--		    xenvif_queue_stopped(queue)) {
--			del_timer_sync(&queue->wake_queue);
--			xenvif_start_queue(queue);
--		}
--
- 		cond_resched();
- 	}
- 
+Hi Yuyang,
+
+I ran these tests with most of the AIM7 workloads to compare its
+performance between a 3.16 kernel and the kernel with these patches
+applied.
+
+The table below contains the percent difference between the baseline
+kernel and the kernel with the patches at various user counts. A
+positive percent means the kernel with the patches performed better,
+while a negative percent means the baseline performed better.
+
+Based on these numbers, for many of the workloads, the change was
+beneficial in those highly contended, while it had - impact in many
+of the lightly/moderately contended case (10 to 90 users).
+
+-----------------------------------------------------
+              |   10-90   |  100-1000   |  1100-2000
+              |   users   |   users     |   users
+-----------------------------------------------------
+alltests      |   -3.37%  |  -10.64%    |   -2.25%
+-----------------------------------------------------
+all_utime     |   +0.33%  |   +3.73%    |   +3.33%
+-----------------------------------------------------
+compute       |   -5.97%  |   +2.34%    |   +3.22%
+-----------------------------------------------------
+custom        |  -31.61%  |  -10.29%    |  +15.23%
+-----------------------------------------------------
+disk          |  +24.64%  |  +28.96%    |  +21.28%
+-----------------------------------------------------
+fserver       |   -1.35%  |   +4.82%    |   +9.35%
+-----------------------------------------------------
+high_systime  |   -6.73%  |   -6.28%    |  +12.36%
+-----------------------------------------------------
+shared        |  -28.31%  |  -19.99%    |   -7.10%
+-----------------------------------------------------
+short         |  -44.63%  |  -37.48%    |  -33.62%
+-----------------------------------------------------
+
+
