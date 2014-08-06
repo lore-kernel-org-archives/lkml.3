@@ -1,124 +1,400 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093AbaHFJ3c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 05:29:32 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33302 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754000AbaHFJ32 (ORCPT
+	id S1754717AbaHFJeD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 05:34:03 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:53877 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286AbaHFJd7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 05:29:28 -0400
-Message-Id: <1407317367.1360819.149688237.188FBBFC@webmail.messagingengine.com>
-X-Sasl-Enc: mongF9BFrz5aOk0s2s+BJEJ4YViQo7iQ1XDHBRI5BtsW 1407317367
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Koehrer Mathias <mathias.koehrer@etas.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Cc: e1000-devel@lists.sourceforge.net
+	Wed, 6 Aug 2014 05:33:59 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "oort10@gmail.com" <oort10@gmail.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 3/3] staging:r8190: coding style: Fixed checkpatch
+ reported Error
+Thread-Topic: [PATCH v2 3/3] staging:r8190: coding style: Fixed checkpatch
+ reported Error
+Thread-Index: AQHPrIC7Q8g/W3hCK0OWiI6ITSsXmJvDWRpw
+Date: Wed, 6 Aug 2014 09:33:56 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF1BA98@EU-MBX-02.mgc.mentorg.com>
+References: <1406785411-12538-1-git-send-email-sanjeev_sharma@mentor.com>
+ <1406785411-12538-4-git-send-email-sanjeev_sharma@mentor.com>
+In-Reply-To: <1406785411-12538-4-git-send-email-sanjeev_sharma@mentor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-36a9b403
-Subject: Re: PROBLEM: [x86] Running ptpd2 using an Intel 82572EI (e1000e) leads
- to a kernel oops (3.12.26)
-Date: Wed, 06 Aug 2014 11:29:27 +0200
-In-Reply-To: <50f83e65cecd4882b22887858bfdf484@FE-MBX1012.de.bosch.com>
-References: <50f83e65cecd4882b22887858bfdf484@FE-MBX1012.de.bosch.com>
+X-OriginalArrivalTime: 06 Aug 2014 09:33:58.0334 (UTC) FILETIME=[8C6F3DE0:01CFB159]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[added e1000-devel]
+Hello All,
 
-Hi,
+I have submitted few patches last week and also get reply from Greg that patches will show up in linux-next tree and in parallel I need to submit new patches  and now Looks like I need to
+Sync my tree with linux-next tree before start working on New set of change and as soon as I am pulling change I always get conflicts.
 
-On Mon, Aug 4, 2014, at 14:26, Koehrer Mathias (ETAS/ESW5) wrote:
-> [1.] One line summary of the problem: 
-> Running ptpd2 using an Intel 82572EI (e1000e) leads to a kernel oops
-> (3.12.26)
-> 
-> [2.] Full description of the problem/report:
-> I run the PTP daemon ptpd2 (http://ptpd.sourceforge.net/), version 2.3.1
-> on a x86 PC using an Intel 82572EI NIC (driver e1000e).
-> The ptpd2 is started as
-> ptpd2 -i eth0 --masteronly --foreground --verbose
-> I have another PC in the same network that is running the PTP slave.
-> After a couple of seconds the kernel generates an Oops.
-> 
-> Using a different network adapter works fine.
-> 
-> Thanks for any support on this!
-> 
-> [3.] Keywords (i.e., modules, networking, kernel):
-> PTP, networking, e1000e
-> 
-> [4.] Kernel information
-> 
-> [4.1.] Kernel version (from /proc/version):
-> Linux version 3.12.26-4 (user@rtpc) (gcc version 4.7.2 (Debian 4.7.2-5) )
-> #1 SMP PREEMPT Mon Aug 4 11:04:11 CEST 2014
-> 
-> [4.2.] Kernel .config file:
-> [...]
+Anyone has idea who to overcome this problem ?
 
-> ------------[ cut here ]------------
-> WARNING: CPU: 0 PID: 5358 at kernel/workqueue.c:1386
-> __queue_work+0x18f/0x300()
-> Modules linked in: e100 mii e1000 nfsd exportfs nfs lockd sunrpc igb
-> i2c_algo_bit i2c_core dca bridge stp llc e1000e smsc47b397 coretemp
-> kvm_intel kvm usb_storage tg3 psmouse ptp pps_core libphy ehci_pci pcspkr
-> processor parport_pc parport thermal_sys hwmon reiserfs sg sr_mod sd_mod
-> cdrom ahci libahci microcode uhci_hcd ehci_hcd
-> CPU: 0 PID: 5358 Comm: ptpd2 Not tainted 3.12.26-4 #1
-> Hardware name: Hewlett-Packard HP xw4600 Workstation/0AA0h, BIOS 786F3
-> v01.13 06/25/2008
->  00000000 00000000 f48dfad4 c07b2d07 00000000 f48dfb04 c0440e64 c08ee514
->  00000000 000014ee c08f4e3c 0000056a c045775f c045775f f5877100 f501f900
->  f5875e80 f48dfb14 c0440ea2 00000009 00000000 f48dfb48 c045775f f48dfb34
-> Call Trace:
->  [<c07b2d07>] dump_stack+0x4b/0x79
->  [<c0440e64>] warn_slowpath_common+0x84/0xa0
->  [<c045775f>] ? __queue_work+0x18f/0x300
->  [<c045775f>] ? __queue_work+0x18f/0x300
->  [<c0440ea2>] warn_slowpath_null+0x22/0x30
->  [<c045775f>] __queue_work+0x18f/0x300
->  [<c045795d>] queue_work_on+0x3d/0x50
->  [<f9f806e5>] schedule_work+0x15/0x20 [e1000e]
->  [<f9f845ba>] e1000_xmit_frame+0xc4a/0xcb0 [e1000e]
+Regards
+Sanjeev Sharma
 
-Quick analysis so far:
-Looks like the socket enabled hw timestamping but the network card (from
-the lspci output below) is not capable of hw timestamping. queue_work
-thus gets fed an uninitialized work struct and bails out here.
+-----Original Message-----
+From: Sanjeev Sharma [mailto:sanjeev_sharma@mentor.com] 
+Sent: Thursday, July 31, 2014 11:14 AM
+To: gregkh@linuxfoundation.org
+Cc: oort10@gmail.com; devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org; Sharma, Sanjeev; Sharma, Sanjeev
+Subject: [PATCH v2 3/3] staging:r8190: coding style: Fixed checkpatch reported Error
 
->  [<c07368bb>] ? harmonize_features+0x2b/0x1d0
->  [<c0737033>] dev_hard_start_xmit+0x2c3/0x560
->  [<c0724e61>] ? sock_alloc_send_pskb+0x161/0x380
->  [<c074d602>] sch_direct_xmit+0xa2/0x190
->  [<c0737454>] dev_queue_xmit+0x184/0x410
->  [<c075f7c1>] ip_finish_output+0x1f1/0x3c0
->  [<c076036f>] ip_mc_output+0x8f/0x140
->  [<c075fd60>] ip_local_out+0x20/0x30
->  [<c0760e4a>] ip_send_skb+0x1a/0x80
->  [<c078395a>] udp_send_skb+0x1fa/0x280
->  [<c0783ce3>] udp_sendmsg+0x2a3/0x8b0
->  [<c075e350>] ? ip_setup_cork+0xf0/0xf0
->  [<c0472cf1>] ? dequeue_task_fair+0x211/0x660
->  [<c046fa68>] ? __enqueue_entity+0x78/0x80
->  [<c078d3d0>] inet_sendmsg+0x70/0xa0
->  [<c07213e2>] sock_sendmsg+0x62/0xa0
->  [<c05c67b5>] ? _copy_from_user+0x35/0x50
->  [<c0721991>] SYSC_sendto+0xf1/0x130
->  [<c044ed4a>] ? ptrace_do_notify+0x8a/0xa0
->  [<c0721f5d>] SyS_sendto+0x2d/0x30
->  [<c0722908>] SyS_socketcall+0x1c8/0x300
->  [<c07b848f>] syscall_call+0x7/0x7
-> ---[ end trace d87b1e283af6ddc9 ]---
-> [7.] A small shell script or example program which triggers the
->      problem (if possible)
-> ptpd2 -i eth0 --masteronly --foreground --verbose
-> 
+This is a patch to the r8190_rtl8256.c file that fixes checkpatch reported space & coding style issues.
 
-> 34:00.0 Ethernet controller: Intel Corporation 82572EI Gigabit Ethernet
-> Controller (Copper) (rev 06)
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+Changes in v2:
+  - Added space character in the signed-off-by field.
 
-Bye,
-Hannes
+ drivers/staging/rtl8192u/r8190_rtl8256.c | 169 +++++++++++++++----------------
+ 1 file changed, 79 insertions(+), 90 deletions(-)
+
+diff --git a/drivers/staging/rtl8192u/r8190_rtl8256.c b/drivers/staging/rtl8192u/r8190_rtl8256.c
+index 08e1bc9..43ed768 100644
+--- a/drivers/staging/rtl8192u/r8190_rtl8256.c
++++ b/drivers/staging/rtl8192u/r8190_rtl8256.c
+@@ -23,62 +23,64 @@
+  * Return:      NONE
+  * Note:	8226 support both 20M  and 40 MHz
+  *---------------------------------------------------------------------------*/
+-void PHY_SetRF8256Bandwidth(struct net_device *dev , HT_CHANNEL_WIDTH Bandwidth)	//20M or 40M
++void PHY_SetRF8256Bandwidth(struct net_device *dev , HT_CHANNEL_WIDTH 
++Bandwidth)
+ {
+ 	u8	eRFPath;
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+ 
+-	//for(eRFPath = RF90_PATH_A; eRFPath <pHalData->NumTotalRFPath; eRFPath++)
+-	for(eRFPath = 0; eRFPath <RF90_PATH_MAX; eRFPath++)
+-	{
++	/* for(eRFPath = RF90_PATH_A; eRFPath <pHalData->NumTotalRFPath;
++	 *  eRFPath++)
++	 */
++	for (eRFPath = 0; eRFPath < RF90_PATH_MAX; eRFPath++) {
+ 		if (!rtl8192_phy_CheckIsLegalRFPath(dev, eRFPath))
+ 			continue;
+ 
+-		switch (Bandwidth)
+-		{
+-			case HT_CHANNEL_WIDTH_20:
+-				if(priv->card_8192_version == VERSION_819xU_A || priv->card_8192_version == VERSION_819xU_B)// 8256 D-cut, E-cut, xiong: consider it later!
+-				{
+-					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x0b, bMask12Bits, 0x100); //phy para:1ba
+-					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x2c, bMask12Bits, 0x3d7);
+-					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x0e, bMask12Bits, 0x021);
+-
+-					//cosa add for sd3's request 01/23/2008
+-					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x14, bMask12Bits, 0x5ab);
+-				}
+-				else
+-				{
++		switch (Bandwidth) {
++		case HT_CHANNEL_WIDTH_20:
++				if (priv->card_8192_version == VERSION_819xU_A
++					|| priv->card_8192_version
++					== VERSION_819xU_B) { /* 8256 D-cut, E-cut, xiong: consider it later! */
++					rtl8192_phy_SetRFReg(dev,
++						(RF90_RADIO_PATH_E)eRFPath,
++						0x0b, bMask12Bits, 0x100); /* phy para:1ba */
++					rtl8192_phy_SetRFReg(dev,
++						(RF90_RADIO_PATH_E)eRFPath,
++						0x2c, bMask12Bits, 0x3d7);
++					rtl8192_phy_SetRFReg(dev,
++						(RF90_RADIO_PATH_E)eRFPath,
++						0x0e, bMask12Bits, 0x021);
++
++					/* cosa add for sd3's request 01/23/2008
++					 */
++					rtl8192_phy_SetRFReg(dev,
++						(RF90_RADIO_PATH_E)eRFPath,
++						0x14, bMask12Bits, 0x5ab);
++				} else {
+ 					RT_TRACE(COMP_ERR, "PHY_SetRF8256Bandwidth(): unknown hardware version\n");
+-				}
+-
++					}
+ 				break;
+-			case HT_CHANNEL_WIDTH_20_40:
+-				if(priv->card_8192_version == VERSION_819xU_A ||priv->card_8192_version == VERSION_819xU_B)// 8256 D-cut, E-cut, xiong: consider it later!
+-				{
++		case HT_CHANNEL_WIDTH_20_40:
++				if (priv->card_8192_version == VERSION_819xU_A || 
++priv->card_8192_version == VERSION_819xU_B) { /* 8256 D-cut, E-cut, 
++xiong: consider it later! */
+ 					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x0b, bMask12Bits, 0x300); //phy para:3ba
+ 					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x2c, bMask12Bits, 0x3df);
+ 					rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x0e, bMask12Bits, 0x0a1);
+ 
+ 					//cosa add for sd3's request 01/23/2008
+-					if(priv->chan == 3 || priv->chan == 9) //I need to set priv->chan whenever current channel changes
++					if (priv->chan == 3 || priv->chan == 9)
++						//I need to set priv->chan whenever current channel changes
+ 						rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x14, bMask12Bits, 0x59b);
+ 					else
+ 						rtl8192_phy_SetRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x14, bMask12Bits, 0x5ab);
+-				}
+-				else
+-				{
++				} else {
+ 					RT_TRACE(COMP_ERR, "PHY_SetRF8256Bandwidth(): unknown hardware version\n");
+-				}
+-
+-
++					}
+ 				break;
+-			default:
+-				RT_TRACE(COMP_ERR, "PHY_SetRF8256Bandwidth(): unknown Bandwidth: %#X\n",Bandwidth);
++		default:
++				RT_TRACE(COMP_ERR, "PHY_SetRF8256Bandwidth(): unknown Bandwidth: 
++%#X\n", Bandwidth);
+ 				break;
+ 
+ 		}
+ 	}
+-	return;
+ }
+ /*--------------------------------------------------------------------------
+  * Overview:    Interface to config 8256
+@@ -95,8 +97,6 @@ void PHY_RF8256_Config(struct net_device *dev)
+ 	priv->NumTotalRFPath = RTL819X_TOTAL_RF_PATH;
+ 	// Config BB and RF
+ 	phy_RF8256_Config_ParaFile(dev);
+-
+-	return;
+ }
+ /*--------------------------------------------------------------------------
+  * Overview:    Interface to config 8256
+@@ -122,8 +122,7 @@ void phy_RF8256_Config_ParaFile(struct net_device *dev)
+ 	//3//-----------------------------------------------------------------
+ 	//3// <2> Initialize RF
+ 	//3//-----------------------------------------------------------------
+-	for(eRFPath = (RF90_RADIO_PATH_E)RF90_PATH_A; eRFPath <priv->NumTotalRFPath; eRFPath++)
+-	{
++	for (eRFPath = (RF90_RADIO_PATH_E)RF90_PATH_A; eRFPath < 
++priv->NumTotalRFPath; eRFPath++) {
+ 		if (!rtl8192_phy_CheckIsLegalRFPath(dev, eRFPath))
+ 			continue;
+ 
+@@ -133,13 +132,12 @@ void phy_RF8256_Config_ParaFile(struct net_device *dev)
+ 	//	pHalData->RfReg0Value[eRFPath] =  rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, rGlobalCtrl, bMaskDWord);
+ 
+ 		/*----Store original RFENV control type----*/
+-		switch (eRFPath)
+-		{
++		switch (eRFPath) {
+ 		case RF90_PATH_A:
+ 		case RF90_PATH_C:
+ 			u4RegValue = rtl8192_QueryBBReg(dev, pPhyReg->rfintfs, bRFSI_RFENV);
+ 			break;
+-		case RF90_PATH_B :
++		case RF90_PATH_B:
+ 		case RF90_PATH_D:
+ 			u4RegValue = rtl8192_QueryBBReg(dev, pPhyReg->rfintfs, bRFSI_RFENV<<16);
+ 			break;
+@@ -159,8 +157,7 @@ void phy_RF8256_Config_ParaFile(struct net_device *dev)
+ 
+ 		/*----Check RF block (for FPGA platform only)----*/
+ 		// TODO: this function should be removed on ASIC , Emily 2007.2.2
+-		if (rtl8192_phy_checkBBAndRF(dev, HW90_BLOCK_RF, (RF90_RADIO_PATH_E)eRFPath))
+-		{
++		if (rtl8192_phy_checkBBAndRF(dev, HW90_BLOCK_RF, 
++(RF90_RADIO_PATH_E)eRFPath)) {
+ 			RT_TRACE(COMP_ERR, "PHY_RF8256_Config():Check Radio[%d] Fail!!\n", eRFPath);
+ 			goto phy_RF8256_Config_ParaFile_Fail;
+ 		}
+@@ -168,39 +165,34 @@ void phy_RF8256_Config_ParaFile(struct net_device *dev)
+ 		RetryTimes = ConstRetryTimes;
+ 		RF3_Final_Value = 0;
+ 		/*----Initialize RF fom connfiguration file----*/
+-		switch (eRFPath)
+-		{
++		switch (eRFPath) {
+ 		case RF90_PATH_A:
+-			while(RF3_Final_Value!=RegValueToBeCheck && RetryTimes!=0)
+-			{
+-				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev,(RF90_RADIO_PATH_E)eRFPath);
++			while (RF3_Final_Value != RegValueToBeCheck && RetryTimes != 0) {
++				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev, 
++(RF90_RADIO_PATH_E)eRFPath);
+ 				RF3_Final_Value = rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, RegOffSetToBeCheck, bMask12Bits);
+ 				RT_TRACE(COMP_RF, "RF %d %d register final value: %x\n", eRFPath, RegOffSetToBeCheck, RF3_Final_Value);
+ 				RetryTimes--;
+ 			}
+ 			break;
+ 		case RF90_PATH_B:
+-			while(RF3_Final_Value!=RegValueToBeCheck && RetryTimes!=0)
+-			{
+-				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev,(RF90_RADIO_PATH_E)eRFPath);
++			while (RF3_Final_Value != RegValueToBeCheck && RetryTimes != 0) {
++				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev, 
++(RF90_RADIO_PATH_E)eRFPath);
+ 				RF3_Final_Value = rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, RegOffSetToBeCheck, bMask12Bits);
+ 				RT_TRACE(COMP_RF, "RF %d %d register final value: %x\n", eRFPath, RegOffSetToBeCheck, RF3_Final_Value);
+ 				RetryTimes--;
+ 			}
+ 			break;
+ 		case RF90_PATH_C:
+-			while(RF3_Final_Value!=RegValueToBeCheck && RetryTimes!=0)
+-			{
+-				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev,(RF90_RADIO_PATH_E)eRFPath);
++			while (RF3_Final_Value != RegValueToBeCheck && RetryTimes != 0) {
++				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev, 
++(RF90_RADIO_PATH_E)eRFPath);
+ 				RF3_Final_Value = rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, RegOffSetToBeCheck, bMask12Bits);
+ 				RT_TRACE(COMP_RF, "RF %d %d register final value: %x\n", eRFPath, RegOffSetToBeCheck, RF3_Final_Value);
+ 				RetryTimes--;
+ 			}
+ 			break;
+ 		case RF90_PATH_D:
+-			while(RF3_Final_Value!=RegValueToBeCheck && RetryTimes!=0)
+-			{
+-				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev,(RF90_RADIO_PATH_E)eRFPath);
++			while (RF3_Final_Value != RegValueToBeCheck && RetryTimes != 0) {
++				ret = rtl8192_phy_ConfigRFWithHeaderFile(dev, 
++(RF90_RADIO_PATH_E)eRFPath);
+ 				RF3_Final_Value = rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, RegOffSetToBeCheck, bMask12Bits);
+ 				RT_TRACE(COMP_RF, "RF %d %d register final value: %x\n", eRFPath, RegOffSetToBeCheck, RF3_Final_Value);
+ 				RetryTimes--;
+@@ -209,50 +201,48 @@ void phy_RF8256_Config_ParaFile(struct net_device *dev)
+ 		}
+ 
+ 		/*----Restore RFENV control type----*/;
+-		switch (eRFPath)
+-		{
++		switch (eRFPath) {
+ 		case RF90_PATH_A:
+ 		case RF90_PATH_C:
+ 			rtl8192_setBBreg(dev, pPhyReg->rfintfs, bRFSI_RFENV, u4RegValue);
+ 			break;
+-		case RF90_PATH_B :
++		case RF90_PATH_B:
+ 		case RF90_PATH_D:
+ 			rtl8192_setBBreg(dev, pPhyReg->rfintfs, bRFSI_RFENV<<16, u4RegValue);
+ 			break;
+ 		}
+ 
+-		if(ret){
++		if (ret) {
+ 			RT_TRACE(COMP_ERR, "phy_RF8256_Config_ParaFile():Radio[%d] Fail!!", eRFPath);
+ 			goto phy_RF8256_Config_ParaFile_Fail;
+ 		}
+ 
+ 	}
+ 
+-	RT_TRACE(COMP_PHY, "PHY Initialization Success\n") ;
+-	return ;
++	RT_TRACE(COMP_PHY, "PHY Initialization Success\n");
++	return;
+ 
+ phy_RF8256_Config_ParaFile_Fail:
+-	RT_TRACE(COMP_ERR, "PHY Initialization failed\n") ;
+-	return ;
++	RT_TRACE(COMP_ERR, "PHY Initialization failed\n");
+ }
+ 
+ 
+ void PHY_SetRF8256CCKTxPower(struct net_device *dev, u8 powerlevel)  {
+-	u32	TxAGC=0;
++	u32	TxAGC = 0;
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+ 	//modified by vivi, 20080109
+ 	TxAGC = powerlevel;
+ 
+-	if(priv->bDynamicTxLowPower == TRUE) //cosa 05/22/2008 for scan
+-	{
+-		if(priv->CustomerID == RT_CID_819x_Netcore)
++	if (priv->bDynamicTxLowPower == TRUE) {
++		//cosa 05/22/2008 for scan
++		if (priv->CustomerID == RT_CID_819x_Netcore)
+ 			TxAGC = 0x22;
+ 		else
+ 			TxAGC += priv->CckPwEnl;
+ 	}
+ 
+-	if(TxAGC > 0x24)
++	if (TxAGC > 0x24)
+ 		TxAGC = 0x24;
+ 	rtl8192_setBBreg(dev, rTxAGC_CCK_Mcs32, bTxAGCRateCCK, TxAGC);  } @@ -268,43 +258,42 @@ void PHY_SetRF8256OFDMTxPower(struct net_device *dev, u8 powerlevel)
+ 	u8 byte0, byte1, byte2, byte3;
+ 
+ 	powerBase0 = powerlevel + priv->TxPowerDiff;	//OFDM rates
+-	powerBase0 = (powerBase0<<24) | (powerBase0<<16) |(powerBase0<<8) |powerBase0;
++	powerBase0 = (powerBase0<<24) | (powerBase0<<16) | (powerBase0<<8) | 
++powerBase0;
+ 	powerBase1 = powerlevel;							//MCS rates
+-	powerBase1 = (powerBase1<<24) | (powerBase1<<16) |(powerBase1<<8) |powerBase1;
++	powerBase1 = (powerBase1<<24) | (powerBase1<<16) | (powerBase1<<8) | 
++powerBase1;
+ 
+-	for(index=0; index<6; index++)
+-	{
+-		writeVal = priv->MCSTxPowerLevelOriginalOffset[index] + ((index<2)?powerBase0:powerBase1);
++	for (index = 0; index < 6; index++) {
++		writeVal = priv->MCSTxPowerLevelOriginalOffset[index] + ((index < 
++2)?powerBase0:powerBase1);
+ 		byte0 = (u8)(writeVal & 0x7f);
+ 		byte1 = (u8)((writeVal & 0x7f00)>>8);
+ 		byte2 = (u8)((writeVal & 0x7f0000)>>16);
+ 		byte3 = (u8)((writeVal & 0x7f000000)>>24);
+-		if(byte0 > 0x24)	// Max power index = 0x24
++
++		if (byte0 > 0x24)
++			/* Max power index = 0x24 */
+ 			byte0 = 0x24;
+-		if(byte1 > 0x24)
++		if (byte1 > 0x24)
+ 			byte1 = 0x24;
+-		if(byte2 > 0x24)
++		if (byte2 > 0x24)
+ 			byte2 = 0x24;
+-		if(byte3 > 0x24)
++		if (byte3 > 0x24)
+ 			byte3 = 0x24;
+ 
+ 		//for tx power track
+-		if(index == 3)
+-		{
+-			writeVal_tmp = (byte3<<24) | (byte2<<16) |(byte1<<8) |byte0;
++		if (index == 3) {
++			writeVal_tmp = (byte3<<24) | (byte2<<16) | (byte1<<8) | byte0;
+ 			priv->Pwr_Track = writeVal_tmp;
+ 		}
+ 
+-		if(priv->bDynamicTxHighPower == TRUE)     //Add by Jacken 2008/03/06
+-		{
+-			// Emily, 20080613. Set low tx power for both MCS and legacy OFDM
++		if (priv->bDynamicTxHighPower == TRUE) {
++			/*Add by Jacken 2008/03/06
++			 *Emily, 20080613. Set low tx power for both MCS and legacy OFDM
++			 */
+ 			writeVal = 0x03030303;
+-		}
+-		else
+-		{
+-			writeVal = (byte3<<24) | (byte2<<16) |(byte1<<8) |byte0;
+-		}
+-		rtl8192_setBBreg(dev, RegOffset[index], 0x7f7f7f7f, writeVal);
++		} else {
++			writeVal = (byte3<<24) | (byte2<<16) | (byte1<<8) | byte0;
++			}
++			rtl8192_setBBreg(dev, RegOffset[index], 0x7f7f7f7f, writeVal);
+ 	}
+ 	return;
+ 
+--
+1.7.11.7
+
