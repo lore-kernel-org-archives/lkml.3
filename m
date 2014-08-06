@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128AbaHFGbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 02:31:55 -0400
-Received: from ozlabs.org ([103.22.144.67]:35300 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751323AbaHFGby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 02:31:54 -0400
-Date: Wed, 6 Aug 2014 16:31:44 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: linux-next: build failure after merge of the powerpc tree
-Message-ID: <20140806163144.17b87b0f@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1754707AbaHFGex (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 02:34:53 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:45104 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754317AbaHFGev (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 02:34:51 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <87fvhav3ic.fsf@x220.int.ebiederm.org>
+	<20140806144643.45e5dab8@canb.auug.org.au>
+	<87lhr2tcyx.fsf@x220.int.ebiederm.org>
+	<20140806160608.218b6944@canb.auug.org.au>
+Date: Tue, 05 Aug 2014 23:30:59 -0700
+In-Reply-To: <20140806160608.218b6944@canb.auug.org.au> (Stephen Rothwell's
+	message of "Wed, 6 Aug 2014 16:06:08 +1000")
+Message-ID: <877g2mt9i4.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/wxRMqA0QueYHEwUOUDB2LvG"; protocol="application/pgp-signature"
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX196BAo3D7RNUi+9hILAu5MY8sSaRs74olg=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.0683]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.0 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Stephen Rothwell <sfr@canb.auug.org.au>
+X-Spam-Relay-Country: 
+Subject: Re: [GIT PULL] namespace updates for v3.17-rc1
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/wxRMqA0QueYHEwUOUDB2LvG
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-Hi all,
+> Hi Eric,
+>
+>> As for missing cool tags shrug.  The people looking at my code didn't
+>> feel like saying the magic words so I didn't include cool tags.
+>
+> Maybe you should push them ... these tags are not just "cool", they
+> give less involved people some indications of what has happened in the
+> life of a patch.
 
-After merging the powerpc tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+Etiquette is a good idea where it helps things flow smoothly.  Other
+times like this standing on etiquette would have resulted in trivial
+fixes for long standing issues not going anywhere.
 
-arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
-arch/powerpc/kernel/exceptions-64s.S:865: Error: attempt to move .org backw=
-ards
-arch/powerpc/kernel/exceptions-64s.S:866: Error: attempt to move .org backw=
-ards
-arch/powerpc/kernel/exceptions-64s.S:890: Error: attempt to move .org backw=
-ards
+Althogh I will keep it in mind in the future.
 
-Its back again and I have left it broken.
+>> Which is a my long winded way of say it sounds like you are accusing me
+>> of being irresponsible, and my way of saying that I have tested and
+>
+> I did not mean to accuse, there are reasons (as you have pointed out)
+> that things get added late, or rewritten.
 
-Maybe caused by commit 0869b6fd209b ("powerpc/book3s: Add basic
-infrastructure to handle HMI in Linux").
+I really try to avoid those reasons but I missed it this round and the
+buildbot did not manage to find the comibination with a build error
+until the code hit linux-next :(
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Eric
 
---Sig_/wxRMqA0QueYHEwUOUDB2LvG
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT4cvVAAoJEMDTa8Ir7ZwVIkkP/1Xv1XQgMw5mv4a+xw59a0lI
-lixyth2h2i5HHF4GRfAt3QR/B5Kni9M7B3a0TAoipsl1xtRyIz68DweEU2mR9r9q
-kw7vnHkX50ANnVsNFrBnK4dOzeRfsVSJp+z9Xyal2hyIwP5ETSdw/dKR4JwLvnhx
-RL8SfJ/L9w4e0+gvIPA/Ip1W2NDTg8OjOuljIGd1D4Mn58JcxY+XVapxZgGE4HTf
-qc1J0WX62WzfD+cnbKT7zl9bO2SrJf2qc9BXis01g6Q6hlQEJ6mUywNCSeMLGHFo
-Byz2FKqs9c1ITKe3+jL+ldA5VMNelaAhHxwAPRtcxwmW4jL3Ib20ITH86GJS87RY
-sRhxNrdwE8aKlEGoDoz4lKhumooT7Rk55z9oQtyaDkpArOpaT3fnCOA/W7GFvNA8
-u53RIQMDQkQrc3Ym1MtK6YJUzcm2mFwnz4mJ25GZccK/PAyUSKE52s6Bu28WqYbH
-McMKfZ0VntRjYJrqDAmoa6vxQgo4Ls9shpzxp+vOznoy+13Ymi4nMERrOO/Hggt+
-03kD1kyJHWCqCBsutZrot7bdqFBcPRmZL74xNnfwYuVSVxVyIWQOhswJZQPl87Hf
-OKCu8jw0EYsC5LOPftEF3R+IOJHU1Z0d4TrSfulB5mgSOtR0hfbLGUPOHgUc+Guc
-Iy2O8lKvKlZYzzryRZ18
-=N2ti
------END PGP SIGNATURE-----
-
---Sig_/wxRMqA0QueYHEwUOUDB2LvG--
