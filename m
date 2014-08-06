@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbaHFUpw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 16:45:52 -0400
-Received: from us-mx2.synaptics.com ([192.147.44.131]:2095 "EHLO
-	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752866AbaHFUpu (ORCPT
+	id S1754158AbaHFUqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 16:46:07 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:27524 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951AbaHFUpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 16:45:50 -0400
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Wed, 06 Aug 2014 13:56:27 -0700
-From: Andrew Duggan <aduggan@synaptics.com>
-To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: [PATCH] HID: rmi: print an error if F11 is not found instead of stopping the device
-Date: Wed, 6 Aug 2014 13:37:40 -0700
-Message-ID: <1407357460-9569-1-git-send-email-aduggan@synaptics.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 6 Aug 2014 16:45:51 -0400
+Date: Wed, 6 Aug 2014 23:45:28 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Srikrishan Malik <srikrishanmalik@gmail.com>, greg@kroah.com,
+        andreas.dilger@intel.com, oleg.drokin@intel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/12] staging: lustre: Add missing spaces around
+ operators and braces.
+Message-ID: <20140806204528.GB11899@mwanda>
+References: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>
+ <1407345182-709-5-git-send-email-srikrishanmalik@gmail.com>
+ <20140806201333.GC4856@mwanda>
+ <1407357106.2736.7.camel@joe-AO725>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.2.20.38]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407357106.2736.7.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently rmi_probe will return -EIO if the device doesn't report that it has F11.
-This would indicate that something happened and the device is in the bootloader.
-We can recover the device using a userspace firmware update tool, but it needs
-access to the device through the hidraw device file. If the probe returns -EIO
-the hidraw device won't be created. So instead of failing the probe, just print
-an error message, but leave the device accessible from userspace.
+On Wed, Aug 06, 2014 at 01:31:46PM -0700, Joe Perches wrote:
+> On Wed, 2014-08-06 at 23:13 +0300, Dan Carpenter wrote:
+> > On Wed, Aug 06, 2014 at 10:42:55PM +0530, Srikrishan Malik wrote:
+> > > diff --git a/drivers/staging/lustre/lustre/mdc/mdc_reint.c b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
+> []
+> > > @@ -71,7 +71,7 @@ int mdc_resource_get_unused(struct obd_export *exp, const struct lu_fid *fid,
+> > >  			    __u64 bits)
+> > >  {
+> > >  	struct ldlm_namespace *ns = exp->exp_obd->obd_namespace;
+> > > -	ldlm_policy_data_t policy = {{0}};
+> > > +	ldlm_policy_data_t policy = {{0} };
+> > 
+> > That's odd.  Since when is a space required here?  Anyway, put one at
+> > the start too if you're goind to do that.  Or you could do it like:
+> > 
+> > 	ldlm_policy_data_t policy = {};
+> > 
+> > ?
+> 
+> It comes from a pretty old bit of checkpatch:
+> 
+> de7d4f0e (Andy Whitcroft 2007-07-15 23:37:22 -0700 3706) # closing brace should have a space following it when it has anything
+> de7d4f0e (Andy Whitcroft 2007-07-15 23:37:22 -0700 3707) # on the line
+> de7d4f0e (Andy Whitcroft 2007-07-15 23:37:22 -0700 3708)                if ($line =~ /}(?!(?:,|;|\)))\S/) {
+> 
+> Maybe it should have an } added to the test like:
+> 
+> if ($line =~ /}(?!(?:,|;|\)|}))\S/) {
+>
 
-Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
----
- drivers/hid/hid-rmi.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+Yes.  It feels like '}}' is common.
 
-diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-index 0dc2514..8389e81 100644
---- a/drivers/hid/hid-rmi.c
-+++ b/drivers/hid/hid-rmi.c
-@@ -909,10 +909,15 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 		return ret;
- 	}
- 
--	if (!test_bit(RMI_STARTED, &data->flags)) {
--		hid_hw_stop(hdev);
--		return -EIO;
--	}
-+	if (!test_bit(RMI_STARTED, &data->flags))
-+		/*
-+		 * The device maybe in the bootloader if rmi_input_configured
-+		 * failed to find F11 in the PDT. Print an error, but don't
-+		 * return an error from rmi_probe so that hidraw will be
-+		 * accessible from userspace. That way a userspace tool
-+		 * can be used to reload working firmware on the touchpad.
-+		 */
-+		hid_err(hdev, "Device failed to be properly configured\n");
- 
- 	return 0;
- }
--- 
-1.9.1
+Also it should ignore \. because this used for:
 
+ERROR: space required after that close brace '}'
+#118: FILE: ./drivers/gpu/drm/nouveau/core/engine/disp/nva3.c:118:
++}.base.base;
+
+Otherwise this test is legit and complains about bad typedefs and
+'}else{' statements.
+
+regards,
+dan carpenter
