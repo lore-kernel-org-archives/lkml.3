@@ -1,141 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645AbaHFIft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 04:35:49 -0400
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:50636
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755606AbaHFIfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 04:35:45 -0400
-From: Shengjiu Wang <shengjiu.wang@freescale.com>
-To: <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
-        <linux@arm.linux.org.uk>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>
-CC: <shengjiu.wang@freescale.com>, <Guangyu.Chen@freescale.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2 3/3] ARM: imx6q: Add the clock route from external OSC to ESAI clock
-Date: Wed, 6 Aug 2014 16:35:15 +0800
-Message-ID: <309d5e2cb941aba7d81e2d87a8237c4ef677e45c.1407313676.git.shengjiu.wang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1407313676.git.shengjiu.wang@freescale.com>
-References: <cover.1407313676.git.shengjiu.wang@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(77156001)(83072002)(4396001)(36756003)(31966008)(89996001)(50226001)(46102001)(86362001)(83322001)(26826002)(47776003)(97736001)(93916002)(102836001)(6806004)(85852003)(87936001)(44976005)(19580405001)(19580395003)(88136002)(21056001)(95666004)(87286001)(106466001)(62966002)(105606002)(74502001)(74662001)(64706001)(50986999)(85306004)(92726001)(99396002)(2201001)(104016003)(76176999)(76482001)(33646002)(107046002)(92566001)(229853001)(50466002)(81542001)(20776003)(84676001)(69596002)(104166001)(80022001)(81156004)(79102001)(68736004)(48376002)(77982001)(81342001)(32563001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB339;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+	id S1755695AbaHFIjF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 04:39:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753786AbaHFIjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 04:39:00 -0400
+Date: Wed, 6 Aug 2014 16:38:25 +0800
+From: Dave Young <dyoung@redhat.com>
+To: catalin.marinas@arm.com, will.deacon@arm.com, matt.fleming@intel.com,
+        leif.lindholm@linaro.org, ard.biesheuvel@linaro.org,
+        msalter@redhat.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] UEFI arm64: add noefi boot param
+Message-ID: <20140806083825.GA31711@dhcp-16-198.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 02951C14DC
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=shengjiu.wang@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch mainly adds the clock route from external 24.576MHz OSC to internal
-ESAI clock via analog clock2 PADs on the SoC and pll4 so that ESAI can get an
-entirely synchronous clock source against CS42888.
 
-[ 1, We found if using pll4 to generate a 24.576MHz from inernal 24.0MHz OSC,
-  we would get noise during the audio playback via ESAI->CS42888 even though
-  this generated clock's rate is equal to the external one statistically. It
-  might be resulted from the tiny difference between two clock source, which
-  might be crucial to the sensitive CODEC we use -- CS42888.
+Adding a noefi boot param like in X86 to disable efi runtime services support.
 
-  2, Ideally, we should use bypass mode for pll4 since we only need to get
-  the raw rate (24.576MHz) while currently bypass mode in clk-pllv3.c isn't
-  supported. After bypass mode implement, then we can refine this patch.]
+This will be useful for debugging uefi problems. Also it will be useful
+for later kexec/kdump work. Kexec on uefi support in X86 depends on a fixed vm
+area specific for uefi runtime 1:1 mapping, kernel will switch to a different
+page table for any uefi runtime callback in virtual mode. In arm64 similar
+work probably is necessary. But kexec boot will just works with 'noefi' with
+the limitaion of lacking runtime services. The runtime services is not critical
+for kdump kernel for now. So as for kexec/kdump just leave the 1:1 mapping a
+future work.
 
-  Expected result:
-
-  anaclk2                 0           1            24576000
-   lvds2_in               0           1            24576000
-    pll4_sel              0           1            24576000
-     pll4_audio           0           1            786432000
-      pll4_post_div       0           1            786432000
-       pll4_audio_div     0           1            786432000
-        esai_sel          0           1            786432000
-         esai_pred        0           1            98304000
-          esai_podf       0           1            24576000
-           esai_extal     0           1            24576000
-
-Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
-Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
+Signed-off-by: Dave Young <dyoung@redhat.com>
 ---
- arch/arm/mach-imx/clk-imx6q.c  |    5 +++++
- arch/arm/mach-imx/mach-imx6q.c |   28 ++++++++++++++++++++++++++++
- 2 files changed, 33 insertions(+)
+ arch/arm64/kernel/efi.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
-index 330aad3..29151cb 100644
---- a/arch/arm/mach-imx/clk-imx6q.c
-+++ b/arch/arm/mach-imx/clk-imx6q.c
-@@ -414,6 +414,10 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
- 	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
+Index: linux-2.6/arch/arm64/kernel/efi.c
+===================================================================
+--- linux-2.6.orig/arch/arm64/kernel/efi.c
++++ linux-2.6/arch/arm64/kernel/efi.c
+@@ -31,6 +31,14 @@ static efi_runtime_services_t *runtime;
  
- 	clk_register_clkdev(clk[IMX6QDL_CLK_ENET_REF], "enet_ref", NULL);
-+	clk_register_clkdev(clk[IMX6QDL_CLK_PLL4_AUDIO_DIV], "pll4_audio_div", NULL);
-+	clk_register_clkdev(clk[IMX6QDL_CLK_PLL4_SEL], "pll4_sel", NULL);
-+	clk_register_clkdev(clk[IMX6QDL_CLK_LVDS2_IN], "lvds2_in", NULL);
-+	clk_register_clkdev(clk[IMX6QDL_CLK_ESAI_EXTAL], "esai_extal", NULL);
+ static u64 efi_system_table;
  
- 	if ((imx_get_soc_revision() != IMX_CHIP_REVISION_1_0) ||
- 	    cpu_is_imx6dl()) {
-@@ -457,6 +461,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
- 
- 	/* Audio-related clocks configuration */
- 	clk_set_parent(clk[IMX6QDL_CLK_SPDIF_SEL], clk[IMX6QDL_CLK_PLL3_PFD3_454M]);
-+	clk_set_parent(clk[IMX6QDL_CLK_ESAI_SEL], clk[IMX6QDL_CLK_PLL4_AUDIO_DIV]);
- 
- 	/* All existing boards with PCIe use LVDS1 */
- 	if (IS_ENABLED(CONFIG_PCI_IMX6))
-diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
-index d51c6e9..ea24a96 100644
---- a/arch/arm/mach-imx/mach-imx6q.c
-+++ b/arch/arm/mach-imx/mach-imx6q.c
-@@ -362,6 +362,28 @@ put_node:
- 	of_node_put(np);
- }
- 
-+#define ESAI_AUDIO_MCLK 24576000
-+
-+static void __init imx6q_audio_lvds2_init(void)
++static bool disable_runtime __initdata = false;
++static int __init setup_noefi(char *arg)
 +{
-+        struct clk *pll4_sel, *lvds2_in, *pll4_audio_div, *esai_extal;
-+
-+        pll4_audio_div = clk_get_sys(NULL, "pll4_audio_div");
-+        pll4_sel = clk_get_sys(NULL, "pll4_sel");
-+        lvds2_in = clk_get_sys(NULL, "lvds2_in");
-+        esai_extal = clk_get_sys(NULL, "esai_extal");
-+        if (IS_ERR(pll4_audio_div) || IS_ERR(pll4_sel) ||
-+            IS_ERR(lvds2_in) || IS_ERR(esai_extal))
-+                return;
-+
-+        if (clk_get_rate(lvds2_in) != ESAI_AUDIO_MCLK)
-+                return;
-+
-+        clk_set_parent(pll4_sel, lvds2_in);
-+        clk_set_rate(pll4_audio_div, 786432000);
-+        clk_set_rate(esai_extal, ESAI_AUDIO_MCLK);
++	disable_runtime = true;
++	return 0;
 +}
++early_param("noefi", setup_noefi);
 +
- static struct platform_device imx6q_cpufreq_pdev = {
- 	.name = "imx6q-cpufreq",
- };
-@@ -379,6 +401,12 @@ static void __init imx6q_init_late(void)
- 		imx6q_opp_init();
- 		platform_device_register(&imx6q_cpufreq_pdev);
+ static int uefi_debug __initdata;
+ static int __init uefi_debug_setup(char *str)
+ {
+@@ -391,11 +399,14 @@ static int __init arm64_enter_virtual_mo
+ 		return -1;
  	}
-+
-+	if (of_machine_is_compatible("fsl,imx6q-sabreauto")
-+		|| of_machine_is_compatible("fsl,imx6dl-sabreauto")) {
-+		imx6q_audio_lvds2_init();
-+	}
-+
- }
  
- static void __init imx6q_map_io(void)
--- 
-1.7.9.5
-
+-	pr_info("Remapping and enabling EFI services.\n");
+-
+-	/* replace early memmap mapping with permanent mapping */
+ 	mapsize = memmap.map_end - memmap.map;
+ 	early_memunmap(memmap.map, mapsize);
++
++	if (disable_runtime)
++		return -ENODEV;
++
++	pr_info("Remapping and enabling EFI services.\n");
++	/* replace early memmap mapping with permanent mapping */
+ 	memmap.map = (__force void *)ioremap_cache((phys_addr_t)memmap.phys_map,
+ 						   mapsize);
+ 	memmap.map_end = memmap.map + mapsize;
