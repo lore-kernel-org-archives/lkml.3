@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757874AbaHFROq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 13:14:46 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:37899 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757829AbaHFROn (ORCPT
+	id S1757911AbaHFRPc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 13:15:32 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:33014 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757749AbaHFROe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 13:14:43 -0400
-From: Srikrishan Malik <srikrishanmalik@gmail.com>
-To: greg@kroah.com, andreas.dilger@intel.com, oleg.drokin@intel.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Srikrishan Malik <srikrishanmalik@gmail.com>
-Subject: [PATCH 12/12] staging: lustre: remove parentheses usage with return
-Date: Wed,  6 Aug 2014 22:43:02 +0530
-Message-Id: <1407345182-709-12-git-send-email-srikrishanmalik@gmail.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>
-References: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>
+	Wed, 6 Aug 2014 13:14:34 -0400
+X-Originating-IP: 173.246.103.110
+Date: Wed, 6 Aug 2014 10:14:25 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: Add "make tinyconfig" to configure the tiniest possible
+ kernel
+Message-ID: <20140806171344.GA15764@jtriplet-mobl1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following checkpatch error:
+Since commit 5d2acfc7b974bbd3858b4dd3f2cdc6362dd8843a ("kconfig: make
+allnoconfig disable options behind EMBEDDED and EXPERT") in 3.15-rc1,
+"make allnoconfig" disables every possible config option.
 
-ERROR: return is not a function, parentheses are not required
+However, a few configuration options (CC_OPTIMIZE_FOR_SIZE,
+OPTIMIZE_INLINING) produce a smaller kernel when turned on, and a few
+choices exist (compression, highmem, allocator) for which a non-default
+option produces a smaller kernel.
 
-Signed-off-by: Srikrishan Malik <srikrishanmalik@gmail.com>
+Add a "tinyconfig" target, which starts from allnoconfig and then sets
+these options to configure the tiniest possible kernel.  This provides a
+better baseline for embedded systems or efforts to reduce kernel size.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/staging/lustre/lustre/mdc/mdc_request.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/Makefile            | 6 ++++++
+ arch/x86/configs/tiny.config | 5 +++++
+ 2 files changed, 11 insertions(+)
+ create mode 100644 arch/x86/configs/tiny.config
 
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-index 7ccee06fd447..b67574218b69 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-@@ -2585,7 +2585,7 @@ static int mdc_process_config(struct obd_device *obd, obd_count len, void *buf)
- 			rc = 0;
- 		break;
- 	}
--	return(rc);
-+	return rc;
- }
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index c65fd96..f20abcd 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -253,6 +253,11 @@ kvmconfig:
+ 	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config $(srctree)/arch/x86/configs/kvm_guest.config
+ 	$(Q)yes "" | $(MAKE) -f $(srctree)/Makefile oldconfig
  
- 
++PHONY += tinyconfig
++tinyconfig: allnoconfig
++	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config $(srctree)/arch/x86/configs/tiny.config
++	$(Q)yes "" | $(MAKE) -f $(srctree)/Makefile oldconfig
++
+ define archhelp
+   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
+   echo  '  install      - Install kernel using'
+@@ -267,4 +272,5 @@ define archhelp
+   echo  '                  FDARGS="..."  arguments for the booted kernel'
+   echo  '                  FDINITRD=file initrd for the booted kernel'
+   echo  '  kvmconfig	- Enable additional options for guest kernel support'
++  echo  '  tinyconfig   - Configure the tiniest possible kernel'
+ endef
+diff --git a/arch/x86/configs/tiny.config b/arch/x86/configs/tiny.config
+new file mode 100644
+index 0000000..8f0e54c
+--- /dev/null
++++ b/arch/x86/configs/tiny.config
+@@ -0,0 +1,5 @@
++CONFIG_CC_OPTIMIZE_FOR_SIZE=y
++CONFIG_KERNEL_XZ=y
++CONFIG_NOHIGHMEM=y
++CONFIG_OPTIMIZE_INLINING=y
++CONFIG_SLOB=y
 -- 
-1.9.3
+2.0.1
 
