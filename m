@@ -1,83 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377AbaHFVBs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 17:01:48 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43684 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486AbaHFVBr (ORCPT
+	id S1754316AbaHFVEK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 17:04:10 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:48284 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134AbaHFVEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 17:01:47 -0400
-Date: Wed, 06 Aug 2014 14:01:46 -0700 (PDT)
-Message-Id: <20140806.140146.1448631909293617629.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: wei.liu2@citrix.com, Ian.Campbell@citrix.com, david.vrabel@citrix.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org
-Subject: Re: [PATCH net-next 0/2] xen-netback: Changes around carrier
- handling
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <53E28017.9040908@citrix.com>
-References: <1407165658-20146-1-git-send-email-zoltan.kiss@citrix.com>
-	<20140805.160748.1185917042908283028.davem@davemloft.net>
-	<53E28017.9040908@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 06 Aug 2014 14:01:47 -0700 (PDT)
+	Wed, 6 Aug 2014 17:04:07 -0400
+Date: Wed, 6 Aug 2014 14:04:01 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Ping Cheng <pinglinux@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Jason Gerecke <killertofu@gmail.com>, Przemo Firszt <przemo@firszt.eu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-input <linux-input@vger.kernel.org>
+Subject: Re: [PATCH] Input - wacom: update the ABI doc according to latest
+ changes
+Message-ID: <20140806210401.GB22889@core.coreip.homeip.net>
+References: <1407252899-10293-1-git-send-email-benjamin.tissoires@redhat.com>
+ <CAF8JNhKQAZz_a-=5qyqS4rgdv-8Lr=i=uKJMwz_iR4c7cq-cvg@mail.gmail.com>
+ <20140805213436.GC29591@mail.corp.redhat.com>
+ <CAF8JNhKR8uDB4AS5B00y-m7MCH6H8CHGegRb+W8ahS+gdtveNg@mail.gmail.com>
+ <20140806204408.GC15018@mail.corp.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140806204408.GC15018@mail.corp.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Wed, 6 Aug 2014 20:20:55 +0100
+On Wed, Aug 06, 2014 at 04:44:08PM -0400, Benjamin Tissoires wrote:
+> On Aug 05 2014 or thereabouts, Ping Cheng wrote:
+> > On Tue, Aug 5, 2014 at 2:34 PM, Benjamin Tissoires
+> > <benjamin.tissoires@redhat.com> wrote:
+> > > Hi Ping,
+> > >
+> > > On Aug 05 2014 or thereabouts, Ping Cheng wrote:
+> > >> Thank you Benjamin for updating the ABI docs. My comments are inline.
+> > >>
+> > >> With those lines updated, this patch is:
+> > >>
+> > >> Reviewed-by: Ping Cheng <pingc@wacom.com>
+> > >
+> > > Thanks!
+> > >
+> > >>
+> > >> Cheers,
+> > >>
+> > >> Ping
+> > >>
+> > >> On Tue, Aug 5, 2014 at 8:34 AM, Benjamin Tissoires
+> > >> <benjamin.tissoires@redhat.com> wrote:
+> > >> > Now the devices show up under hid no matter the connection. So update the
+> > >> > sysfs path to the shortest and common one.
+> > >> > The ABI has also been unified regarding the OLEDs, but Bluetooth handle
+> > >> > only 1-bit images instead of 4.
+> > >> >
+> > >> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> > >> > ---
+> > >> >
+> > >> > Guys,
+> > >> >
+> > >> > by updating this and working on the g-s-d client side for OLEDs, I think now
+> > >> > that we should also keep the oled*_img for Bluetooth and implement this file
+> > >> > for USB too. The user space code gets messy quite fast due to the need to
+> > >> > support old and new kernels, whereas if we handle the scrambling in the kernel,
+> > >> > it should be quite straightforward.
+> > >> > Of course, we have to keep the current button<n>_rawimg for backward
+> > >> > compatibility.
+> > >> >
+> > >> > Any thoughts?
+> > >> >
+> > >> > Cheers,
+> > >> > Benjamin
+> > >> >
+> > >> >  Documentation/ABI/testing/sysfs-driver-wacom | 56 ++++++++++------------------
+> > >> >  1 file changed, 20 insertions(+), 36 deletions(-)
+> > >> >
+> > >> > diff --git a/Documentation/ABI/testing/sysfs-driver-wacom b/Documentation/ABI/testing/sysfs-driver-wacom
+> > >> > index 7fc7810..c75ed4c 100644
+> > >> > --- a/Documentation/ABI/testing/sysfs-driver-wacom
+> > >> > +++ b/Documentation/ABI/testing/sysfs-driver-wacom
+> > >> > @@ -1,47 +1,26 @@
+> > >> > -WWhat:         /sys/class/hidraw/hidraw*/device/oled*_img
+> > >> > -Date:          June 2012
+> > >> > -Contact:       linux-bluetooth@vger.kernel.org
+> > >> > -Description:
+> > >> > -               The /sys/class/hidraw/hidraw*/device/oled*_img files control
+> > >> > -               OLED mocro displays on Intuos4 Wireless tablet. Accepted image
+> > >> > -               has to contain 256 bytes (64x32 px 1 bit colour). The format
+> > >> > -               is the same as PBM image 62x32px without header (64 bits per
+> > >> > -               horizontal line, 32 lines). An example of setting OLED No. 0:
+> > >> > -               dd bs=256 count=1 if=img_file of=[path to oled0_img]/oled0_img
+> > >> > -               The attribute is read only and no local copy of the image is
+> > >> > -               stored.
+> > >> > -
+> > >> > -What:          /sys/class/hidraw/hidraw*/device/speed
+> > >> > +What:          /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/speed
+> > >> >  Date:          April 2010
+> > >>
+> > >> Should the Date be updated?
+> > >
+> > > I don't think that this one should. The ABI is the same since April
+> > > 2010, and the "new" path works also for older kernels. So basically,
+> > > here, for Bluetooth, there has been no changes.
+> > 
+> > Oh, I see your point. But, don't we consider path part of the interface?
+> > 
+> 
+> Well, in this case, both the path /sys/class/hidraw/hidraw*/device/speed
+> and /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/speed refers to the same
+> device, even in April 2010.
+> 
+> /sys/class/hidraw/hidraw*/device is IMO not accurate because you have to
+> check all the hidraw devices to find the right one.
+> /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/speed gives you the correct
+> at first sight. This is just a fix to have a more reliable path in the
+> documentation, not a change.
 
-> The fundamental problem with netback that start_xmit place the
-> packet into an internal queue, and then the thread does the actual
-> transmission from that queue, but it doesn't know whether it will
-> succeed in a finite time period.
+Can we document this in changelog?
 
-A hardware device acts the same way when the link goes down or the
-transmitter hangs.  I do not see this situation, therefore, as
-fundamentally unique to xen-netback.
+Thanks.
 
-> I just noticed a possible problem with start_xmit: if this slot
-> estimation fails, and the packet is likely to be stalled at least for
-> a while, it still place the skb into the internal queue and return
-> NETDEV_TX_OK. Shouldn't we return NETDEV_TX_BUSY and not placing the
-> packet into the internal queue? It will be requeued later, or dropped
-> by QDisc. I think it will be more natural. But it can decrease
-> performance if these "not enough slot" situations are very frequent
-> and short living, and by the time the RX thread wakes up
-> My long term idea is to move part of the thread's work into
-> start_xmit, so it can set up the grant operations and if there isn't
-> enough slot it can return the skb to QDisc with NETDEV_TX_BUSY for
-> requeueing. Then the thread can only do the batching of the grant copy
-> operations and releasing the skbs. And we can ditch a good part of the
-> code ...
-
-Yes, it would be a slight improvement if slot availability was
-detected at ->ndo_start_xmit() time.
-
-But best would be to properly stop the queue at the _end_ of
-->ndo_start_xmit() like nearly all ethernet drivers do.
-
-And we can't do that in netback because..... your queues are too
-small.
-
-If your queues were large enough you could say "now that I've queued
-up SKB for transmit, do I still have enough slots available for a
-maxed out SKB?"  and stop the queue if the answer to that question is
-no.
-
-The queue state was not meant to be a "maybe I can queue a new packet"
-indication.  It's supposed to mean that you can absolutely take at
-least one more SKB of any size or configuration.
-
-Returning TX_BUSY from ->ndo_start_xmit() is fundamentally, therefore,
-more like an error condition rather than something that should occur
-under normal circumstances.  If your queue is up, you should be able
-to accept any one single packet.  That's the rule.
-
-Requeueing back into the qdisc is expensive and takes a lot of locks
-awkwardly.  You do not want the kernel taking this code path.
+-- 
+Dmitry
