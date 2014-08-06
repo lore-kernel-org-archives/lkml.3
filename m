@@ -1,94 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757091AbaHFTfP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 15:35:15 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50181 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753986AbaHFTfM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 15:35:12 -0400
-Date: Wed, 6 Aug 2014 20:34:53 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Nick Krause <xerofoiffy@gmail.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        "open list:SPI SUBSYSTEM" <linux-spi@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Message-ID: <20140806193453.GJ17528@sirena.org.uk>
-References: <1407347597-2168-1-git-send-email-xerofoiffy@gmail.com>
- <17153.1407349640@turing-police.cc.vt.edu>
- <CAMuHMdVJQd0Mb8aXbd9iqkabzKdw9WSR791LxqUoVEJ1g1kaHA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="id7U9qOqdBFOLQU4"
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdVJQd0Mb8aXbd9iqkabzKdw9WSR791LxqUoVEJ1g1kaHA@mail.gmail.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/1] spi: Remove unused definitions
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1757122AbaHFTfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 15:35:45 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:38513 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756414AbaHFTfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 15:35:43 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Liu hua <sdu.liu@huawei.com>,
+        Mark Salter <msalter@redhat.com>, Rabin Vincent <rabin@rab.in>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Rob Herring <robh@kernel.org>,
+        Doug Anderson <dianders@google.com>, Will Deacon <will.deacon@arm.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 3/7] arm: mm: reduce fixmap kmap from 32 to 16 CPUS
+Date: Wed,  6 Aug 2014 12:32:40 -0700
+Message-Id: <1407353564-21478-4-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407353564-21478-1-git-send-email-keescook@chromium.org>
+References: <1407353564-21478-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+More room is needed in the fixmap range for non-kmap fixmap entries. This
+reduces the kmap range from 32 to 16 CPUs. Additionally, add PTE entry for
+fixmap regardless of CONFIG_HIGHMEM.
 
---id7U9qOqdBFOLQU4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/arm/include/asm/fixmap.h | 12 ++++++++++--
+ arch/arm/mm/highmem.c         |  2 --
+ arch/arm/mm/mm.h              |  3 +++
+ arch/arm/mm/mmu.c             |  5 ++++-
+ 4 files changed, 17 insertions(+), 5 deletions(-)
 
-On Wed, Aug 06, 2014 at 08:50:15PM +0200, Geert Uytterhoeven wrote:
+diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+index 8ee7cb4f62ca..3ed08232be55 100644
+--- a/arch/arm/include/asm/fixmap.h
++++ b/arch/arm/include/asm/fixmap.h
+@@ -1,16 +1,24 @@
+ #ifndef _ASM_FIXMAP_H
+ #define _ASM_FIXMAP_H
+ 
++/*
++ * The fixmap uses 2MB. The KMAP fixmap needs 64k per CPU, so make room for
++ * 16 CPUs (taking 1MB) and leave the rest for additional fixmap areas.
++ */
+ #define FIXADDR_START		0xffc00000UL
+ #define FIXADDR_END		0xffe00000UL
+ #define FIXADDR_TOP		(FIXADDR_END - PAGE_SIZE)
+ #define FIXADDR_SIZE		(FIXADDR_END - FIXADDR_START)
+ 
+-#define FIX_KMAP_NR_PTES	(FIXADDR_SIZE >> PAGE_SHIFT)
++/* 16 PTEs per CPU (64k of 4k pages). */
++#define FIX_KMAP_NR_PTES	16
++#define FIX_KMAP_NR_CPUS	16
+ 
+ enum fixed_addresses {
++	/* Support 16 CPUs for kmap as the first region of fixmap entries. */
+ 	FIX_KMAP_BEGIN,
+-	FIX_KMAP_END = FIX_KMAP_NR_PTES - 1,
++	FIX_KMAP_END = (FIX_KMAP_NR_PTES * FIX_KMAP_NR_CPUS) - 1,
++
+ 	__end_of_fixed_addresses
+ };
+ 
+diff --git a/arch/arm/mm/highmem.c b/arch/arm/mm/highmem.c
+index 45aeaaca9052..cbbef0b533d6 100644
+--- a/arch/arm/mm/highmem.c
++++ b/arch/arm/mm/highmem.c
+@@ -18,8 +18,6 @@
+ #include <asm/tlbflush.h>
+ #include "mm.h"
+ 
+-pte_t *fixmap_page_table;
+-
+ static inline void set_fixmap_pte(int idx, pte_t pte)
+ {
+ 	unsigned long vaddr = __fix_to_virt(idx);
+diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+index ce727d47275c..c8b5b2d05b55 100644
+--- a/arch/arm/mm/mm.h
++++ b/arch/arm/mm/mm.h
+@@ -7,6 +7,9 @@
+ /* the upper-most page table pointer */
+ extern pmd_t *top_pmd;
+ 
++/* The fixmap PTE. */
++extern pte_t *fixmap_page_table;
++
+ /*
+  * 0xffff8000 to 0xffffffff is reserved for any ARM architecture
+  * specific hacks for copying pages efficiently, while 0xffff4000
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index b005a3337bc1..8dbdadc42d75 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -53,6 +53,9 @@ EXPORT_SYMBOL(empty_zero_page);
+  */
+ pmd_t *top_pmd;
+ 
++/* The fixmap PTE. */
++pte_t *fixmap_page_table;
++
+ #define CPOLICY_UNCACHED	0
+ #define CPOLICY_BUFFERED	1
+ #define CPOLICY_WRITETHROUGH	2
+@@ -1342,10 +1345,10 @@ static void __init kmap_init(void)
+ #ifdef CONFIG_HIGHMEM
+ 	pkmap_page_table = early_pte_alloc(pmd_off_k(PKMAP_BASE),
+ 		PKMAP_BASE, _PAGE_KERNEL_TABLE);
++#endif
+ 
+ 	fixmap_page_table = early_pte_alloc(pmd_off_k(FIXADDR_START),
+ 		FIXADDR_START, _PAGE_KERNEL_TABLE);
+-#endif
+ }
+ 
+ static void __init map_lowmem(void)
+-- 
+1.9.1
 
-> To be 100% sure, I tried to find with which kernel config this warning shows up.
-> It doesn't happen for omap1_defconfig with CONFIG_SPI_OMAP_100K,
-> which was the most likely culprit.
-
-> It does happen with sparc/sparc64 allmodconfig. However, changing or
-> removing the READ and WRITE definitions in drivers/spi/spi-omap-100k.c
-> doesn't have any influence on the preprocessed source files
-> ("make drivers/spi/spi-omap-100k.i", modulo line number changes),
-> for both omap1 and sparc builds.
-
-> (Nick: I believe the above is what people really want to see)
-
-> So I conclude they are really not used, and they can be safely removed.
-
-> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-Right, I'd already done the same analysis myself with looking for uses
-myself (though I didn't go looking for how to trigger).  Nick, please do
-look at the analysis Geert provided above - it is indeed exactly the
-sort of thing that people would want to see, just saying what's in the
-diff isn't enough especially given the well advertised quality problems
-with your submissions.  You really need to explain why the change you're
-making is a good idea.
-
-I've applied the change.
-
---id7U9qOqdBFOLQU4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT4oNaAAoJELSic+t+oim96ssP/A94yqu+MJ74cbKu2VKKb3nS
-OGZUEdzWs8XVwJC6rxohwzRpc0b0vDEAYFk3FUs5T9I79QzpQZYnK2GnCLeWGsiV
-iXtZV1+ilnPLpnm8cfU6U3XbIVBug2GOuhajf3ZWqnYZ5ydLqpNMNoak1FTzwKZZ
-V0GxCGZXR4tCNnRqiotL94RRDlLIfCfU4tXCaLcHIqJTxFnuDu1E7SL8DUBC89jV
-/2uYhHmlQC1gnyVEZ3jvprbwTVLlqciGiA8ffFEL8hwa0vULaiUlIkPk2O5RvKV3
-sS/TuVLNf1hi/GyNa6C91q2Zb/uzARb0OAIgM5Zr4xD75TnNlI/dKORvm1i/kr4h
-CGM/GhNCzvDE639BBCrlKR9tdi+M1AkK4s8y2/WisvUjpoxSAe3sT9BjogFnIh8O
-/FhD9emVod7XGLcejPx9ih0BA9g7BZh4BLwtA1tV/cQruW3myUieI8T2rKIagxDE
-b1Hwj4uNMHK8RwYmEmISeFT0JxCGwEoOhNutXUp6WCWkQnUBMmA4YDHnK2aXn2nX
-2R7Sn0UW7ZRJkQVVvMvmdOKRmWvamw125AQeF1VDvX4wcwvSl6+mXPDUapdzywfz
-ljWvp1SUMOy8nRqJtViqYh5KGSMfJ71xjYbUWU9BYDpYvnnt1jGr4knGqRT44mwN
-Xxhz+PVdDCbzRaWHhtHW
-=0/SR
------END PGP SIGNATURE-----
-
---id7U9qOqdBFOLQU4--
