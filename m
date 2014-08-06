@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309AbaHFTNN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 15:13:13 -0400
-Received: from mail-pa0-f65.google.com ([209.85.220.65]:61255 "EHLO
-	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755823AbaHFTNM (ORCPT
+	id S1756857AbaHFTOg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 15:14:36 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:55399 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756042AbaHFTOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 15:13:12 -0400
-Message-ID: <53e27e46.a92a460a.5141.4a24@mx.google.com>
-From: madge97811@googlemail.com
-X-Google-Original-From: MADGE97811@gmail.com
-To: linux-kernel@vger.kernel.org
-Reply-To: wended39270@gmail.com
-Subject: Re: Guaranteed Top 10 Google Placements mail-archive.com In 100 Days
-Date: Thu, 7 Aug 2014 00:43:11 +0530
+	Wed, 6 Aug 2014 15:14:34 -0400
+Date: Wed, 6 Aug 2014 12:14:30 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg KH <greg@kroah.com>
+Cc: Nick Krause <xerofoiffy@gmail.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        "open list:SPI SUBSYSTEM" <linux-spi@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] spi: Remove unused definitions
+Message-ID: <20140806191430.GA5711@roeck-us.net>
+References: <1407347597-2168-1-git-send-email-xerofoiffy@gmail.com>
+ <20140806183319.GA15654@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140806183319.GA15654@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sir / Mam
+On Wed, Aug 06, 2014 at 11:33:19AM -0700, Greg KH wrote:
+> On Wed, Aug 06, 2014 at 01:53:17PM -0400, Nick Krause wrote:
+> > Remove unused definition which cause the following warnings
+> > 
+> > drivers/spi/spi-omap-100k.c:73:0: warning: "WRITE" redefined [enabled by default]
+> > include/linux/fs.h:193:0: note: this is the location of the previous definition
+> > drivers/spi/spi-omap-100k.c:74:0: warning: "READ" redefined [enabled by default]
+> > include/linux/fs.h:192:0: note: this is the location of the previous definition
+> > 
+> > Signed-off-by: Nick Krause <xerofoiffy@gmail.com>
+> > ---
+> >  drivers/spi/spi-omap-100k.c | 4 ----
+> >  1 file changed, 4 deletions(-)
+> 
+> Nick, you were warned about this numerous times in the past.
+> 
+> By changing email addresses you have now ensured that we will never
+> listen to you, as you obviously are not listening to us.
+> 
+He does manage to get our attention, though. Also, it is not that simple -
+for my part I keep looking out for the patches just to make sure that
+we don't get any more less than well researched "fixes" into the kernel.
+I figure it pays to spend some time now instead of having to clean up
+the resulting mess if something slips by.
 
-We would like to have a chance to work on your website and get it positioned top 10 on major search engines around the world ( Google & Bing ). We are presently working with 500+ clients world wide and we have made sure all our clients rank top 10 for their best keywords. None of our clients have been caught in any of the recent google updates. We only use ethical white hat methods to deliver rankings. Our search engine packages include both onsite & off optimization, we provide complete SEO solution to our clients and not just link building packages.
-
-We understand there are many SEO Scam companies mailing you each day over and over again and I am also sure you have been robbed off a few times in past with no results at all. To make sure you we show you our WORTH, we have launched 15 DAY FREE SEO TRIAL service. We want to build your faith in our service and make sure you see results before paying for our service.
-
-Is 15 days Enough time to deliver results ?
-
-15 days is good enough a time to show you huge movements in rankings for all your keywords. We start with A) choosing the best keywords for your website, B)  Approve a final list of keywords, C) Make onsite changes D) Build links for your website. If in these 15 days you are not happy with our performance, you can cancel or decide to opt-out. You will not be billed a single dime for these 15 days.
-
-Post Trial Pricing & Package
-
-In the 15 days trial, we only work for 10 keywords so that we can show best possible results in the time span. Once the trial is over you pick one of the packages listed below :
-
-Package A ) $99 / month (10 keywords optimized ) Package B ) $149 / month ( 20 keywords optimized ) Package C ) $199 / month ( 30 keywords optimized )
-
-To Sign up for our free trial email us back with the information below so we can send you our sign up link.
-
-1) " Website You Want To Optimize "
-2) Keywords ( Optional )
-3) SEO Done Before ( Yes / No )
-
-Looking forward working with you, let us know if you would like to have more information about our company and procedures.
-Regards
-
-Mishika Sahai
-SEO Manager : T.O.B
-7 B Green Avenue, Amritsar Punjab
-
-----------------------------------------------------------------------------------------------------------------
-
-Our email above is not intended to waste your time or fill your inbox with spam. If you would not like to hear from us, email us back with NOT INTERESTED. We will never email you again.
+Guenter
