@@ -1,103 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610AbaHFQy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 12:54:59 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:53773 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932594AbaHFQy4 (ORCPT
+	id S1757584AbaHFRBz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 13:01:55 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47964 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756423AbaHFRBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 12:54:56 -0400
-Date: Wed, 6 Aug 2014 09:54:52 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] of/irq: lookup 'interrupts-extended' property first
-Message-ID: <20140806165452.GN3711@ld-irv-0074>
-References: <1403220823-19444-1-git-send-email-f.fainelli@gmail.com>
- <CAGVrzcYfA8rCXGRW7g0JhT4GQKT8SQj+pMvCh25yoXLFGNM_Pw@mail.gmail.com>
+	Wed, 6 Aug 2014 13:01:54 -0400
+Date: Wed, 6 Aug 2014 19:01:51 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: WARN_ON_ONCE(in_nmi()) hit in irq_work_queue_on
+Message-ID: <20140806170151.GC12054@laptop.lan>
+References: <20140806162113.GC14261@redhat.com>
+ <20140806164633.GY3935@laptop>
+ <20140806165610.GB12054@laptop.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGVrzcYfA8rCXGRW7g0JhT4GQKT8SQj+pMvCh25yoXLFGNM_Pw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140806165610.GB12054@laptop.lan>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant, et al,
+> Sigh, that's d84153d6c96f61a so that's been there a while, and been
+> broken equally long.
+> 
+> So this is where we run a low period (!freq) hardware event on a
+> nohz_full cpu or so? And because it throttles, we need to kick the tick
+> into action to unthrottle it.
+> 
+> I suppose there's a good reason I never build with that nohz_full
+> nonsense enabled :/
+> 
+> Not sure how we should go fix that, you can't just issue random IPIs
+> from NMI context.
 
-Can we get a comment here?
+OK, thinking one more second would've done it, how about so?
 
-On Thu, Jul 31, 2014 at 11:00:01AM -0700, Florian Fainelli wrote:
-> 2014-06-19 16:33 GMT-07:00 Florian Fainelli <f.fainelli@gmail.com>:
-> > In case the Device Tree blob passed by the boot agent supplies both an
-> > 'interrupts-extended' and an 'interrupts' property in order to allow for
-> > older kernels to be usable, prefer the new-style 'interrupts-extended'
-> > property which convey a lot more information.
-> >
-> > This allows us to have bootloaders willingly maintaining backwards
-> > compatibility with older kernels without entirely deprecating the
-> > 'interrupts' property (although that is a clear violation of the binding
-> > specified at
-> > Documentation/devicetree/bindings/interrupt-controller/interrupts.txt)
+---
+ include/linux/perf_event.h | 7 ++++---
+ kernel/events/core.c       | 8 +++++++-
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-For the patch:
-
-Acked-by: Brian Norris <computersforpeace@gmail.com>
-
-I think it is important that a device tree provide some flexibility on
-kernel versions. We only invented 'interrupts-extended' in Linux 3.13,
-so it's easy to have device trees that could work only on 3.13+.
-
-Typically, we might say that new features require new kernels, but this
-is a very basic piece of the DT infrastructure. In our case, we have
-hardware whose basic features can be supported by a single interrupt
-parent, and so we used the 'interrupts' property pre-3.13. But when we
-want to add some power management features, there's an additional
-interrupt parent. Under the current DT binding, we have to switch over
-to using 'interrupts-extended' exclusively, and thus we must have a
-completely new DTB for >=3.13, and this DTB no longer works with the old
-kernels.
-
-How's that for DT stability?
-
-On the other hand, if we support this precedence concept, then a new DTB
-can provide both the 'interrupts-extended' and 'interrupts' properties,
-and thus be compatible with both pre-3.13 and
-post-<whenever-this-is-accepted> kernels.
-
-> Any comments on this? Brian suggested that I update
-> interrupt-controller/interrupts.txt to specify the look up ordering
-> change as well.
-
-What do you think about the following DT binding doc update to accompany
-this change?
-
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-index 1486497a24c1..ce6a1a072028 100644
---- a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-+++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-@@ -4,11 +4,13 @@ Specifying interrupt information for devices
- 1) Interrupt client nodes
- -------------------------
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 707617a8c0f6..177411e3ffc4 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -421,9 +421,10 @@ struct perf_event {
+ 	struct fasync_struct		*fasync;
  
--Nodes that describe devices which generate interrupts must contain an either an
--"interrupts" property or an "interrupts-extended" property. These properties
--contain a list of interrupt specifiers, one per output interrupt. The format of
--the interrupt specifier is determined by the interrupt controller to which the
--interrupts are routed; see section 2 below for details.
-+Nodes that describe devices which generate interrupts must contain an
-+"interrupts" property, an "interrupts-extended" property, or both. If both are
-+present, the latter should take precedence; the former may be provided simply
-+for compatibility with software that does not recognize the latter. These
-+properties contain a list of interrupt specifiers, one per output interrupt. The
-+format of the interrupt specifier is determined by the interrupt controller to
-+which the interrupts are routed; see section 2 below for details.
+ 	/* delayed work for NMIs and such */
+-	int				pending_wakeup;
+-	int				pending_kill;
+-	int				pending_disable;
++	int				pending_kill      : 16;
++	int				pending_wakeup    : 1;
++	int				pending_disable   : 1;
++	int				pending_nohz_kick : 1;
+ 	struct irq_work			pending;
  
-   Example:
- 	interrupt-parent = <&intc1>;
+ 	atomic_t			event_limit;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1cf24b3e42ec..e95fca20e26f 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4258,6 +4258,11 @@ static void perf_pending_event(struct irq_work *entry)
+ 		event->pending_wakeup = 0;
+ 		perf_event_wakeup(event);
+ 	}
++
++	if (event->pending_nohz_kick) {
++		event->pending_nohz_kick = 0;
++		tick_nohz_full_kick();
++	}
+ }
+ 
+ /*
+@@ -5431,7 +5436,8 @@ static int __perf_event_overflow(struct perf_event *event,
+ 			__this_cpu_inc(perf_throttled_count);
+ 			hwc->interrupts = MAX_INTERRUPTS;
+ 			perf_log_throttle(event, 0);
+-			tick_nohz_full_kick();
++			event->pending_nohz_kick = 1;
++			irq_work_queue(&event->pending);
+ 			ret = 1;
+ 		}
+ 	}
