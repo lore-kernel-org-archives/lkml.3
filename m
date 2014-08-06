@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142AbaHFTfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 15:35:51 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:57516 "EHLO smtp.outflux.net"
+	id S1757227AbaHFTgc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 15:36:32 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:36577 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753805AbaHFTft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 15:35:49 -0400
+	id S1757105AbaHFTfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 15:35:44 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Rabin Vincent <rabin@rab.in>,
-        Liu hua <sdu.liu@huawei.com>, Mark Salter <msalter@redhat.com>,
+Cc: Kees Cook <keescook@chromium.org>, Liu hua <sdu.liu@huawei.com>,
+        Mark Salter <msalter@redhat.com>, Rabin Vincent <rabin@rab.in>,
         Nikolay Borisov <Nikolay.Borisov@arm.com>,
         Nicolas Pitre <nicolas.pitre@linaro.org>,
         Leif Lindholm <leif.lindholm@linaro.org>,
@@ -19,9 +19,9 @@ Cc: Kees Cook <keescook@chromium.org>, Rabin Vincent <rabin@rab.in>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 4/7] arm: use fixmap for text patching when text is RO
-Date: Wed,  6 Aug 2014 12:32:41 -0700
-Message-Id: <1407353564-21478-5-git-send-email-keescook@chromium.org>
+Subject: [PATCH 7/7] ARM: mm: allow text and rodata sections to be read-only
+Date: Wed,  6 Aug 2014 12:32:44 -0700
+Message-Id: <1407353564-21478-8-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407353564-21478-1-git-send-email-keescook@chromium.org>
 References: <1407353564-21478-1-git-send-email-keescook@chromium.org>
@@ -30,182 +30,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin@rab.in>
+This introduces CONFIG_DEBUG_RODATA, making kernel text and rodata
+read-only. Additionally, this splits rodata from text so that rodata can
+also be NX, which may lead to wasted memory when aligning to SECTION_SIZE.
+The read-only areas are made writable during ftrace updates.
 
-Use fixmaps for text patching when the kernel text is read-only,
-inspired by x86.  This makes jump labels and kprobes work with the
-currently available CONFIG_DEBUG_SET_MODULE_RONX and the upcoming
-CONFIG_DEBUG_RODATA options.
-
-Signed-off-by: Rabin Vincent <rabin@rab.in>
-[update for "ARM: 8031/2: change fixmap mapping region to support 32 CPUs"]
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/arm/include/asm/fixmap.h |  4 +++
- arch/arm/kernel/jump_label.c  |  2 +-
- arch/arm/kernel/patch.c       | 70 ++++++++++++++++++++++++++++++++++++++-----
- arch/arm/kernel/patch.h       | 12 +++++++-
- 4 files changed, 79 insertions(+), 9 deletions(-)
+ arch/arm/include/asm/cacheflush.h | 10 +++++++++
+ arch/arm/kernel/ftrace.c          | 19 ++++++++++++++++
+ arch/arm/kernel/vmlinux.lds.S     |  3 +++
+ arch/arm/mm/Kconfig               | 12 ++++++++++
+ arch/arm/mm/init.c                | 46 +++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 90 insertions(+)
 
-diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-index 3ed08232be55..056f2be273a3 100644
---- a/arch/arm/include/asm/fixmap.h
-+++ b/arch/arm/include/asm/fixmap.h
-@@ -19,6 +19,10 @@ enum fixed_addresses {
- 	FIX_KMAP_BEGIN,
- 	FIX_KMAP_END = (FIX_KMAP_NR_PTES * FIX_KMAP_NR_CPUS) - 1,
+diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
+index fd43f7f55b70..0cdf1e31df86 100644
+--- a/arch/arm/include/asm/cacheflush.h
++++ b/arch/arm/include/asm/cacheflush.h
+@@ -487,6 +487,16 @@ int set_memory_rw(unsigned long addr, int numpages);
+ int set_memory_x(unsigned long addr, int numpages);
+ int set_memory_nx(unsigned long addr, int numpages);
  
-+	/* Support writing RO kernel text via kprobes, jump labels, etc. */
-+	FIX_TEXT_POKE0,
-+	FIX_TEXT_POKE1,
++#ifdef CONFIG_DEBUG_RODATA
++void mark_rodata_ro(void);
++void set_kernel_text_rw(void);
++void set_kernel_text_ro(void);
++#else
++static inline void set_kernel_text_rw(void) { }
++static inline void set_kernel_text_ro(void) { }
++#endif
 +
- 	__end_of_fixed_addresses
- };
- 
-diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
-index 4ce4f789446d..afeeb9ea6f43 100644
---- a/arch/arm/kernel/jump_label.c
-+++ b/arch/arm/kernel/jump_label.c
-@@ -19,7 +19,7 @@ static void __arch_jump_label_transform(struct jump_entry *entry,
- 		insn = arm_gen_nop();
- 
- 	if (is_static)
--		__patch_text(addr, insn);
-+		__patch_text_early(addr, insn);
- 	else
- 		patch_text(addr, insn);
- }
-diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
-index 07314af47733..03dd4e39c833 100644
---- a/arch/arm/kernel/patch.c
-+++ b/arch/arm/kernel/patch.c
-@@ -1,8 +1,11 @@
- #include <linux/kernel.h>
-+#include <linux/spinlock.h>
- #include <linux/kprobes.h>
-+#include <linux/mm.h>
- #include <linux/stop_machine.h>
+ void flush_uprobe_xol_access(struct page *page, unsigned long uaddr,
+ 			     void *kaddr, unsigned long len);
++
+ #endif
+diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
+index af9a8a927a4e..b8c75e45a950 100644
+--- a/arch/arm/kernel/ftrace.c
++++ b/arch/arm/kernel/ftrace.c
+@@ -15,6 +15,7 @@
+ #include <linux/ftrace.h>
+ #include <linux/uaccess.h>
+ #include <linux/module.h>
++#include <linux/stop_machine.h>
  
  #include <asm/cacheflush.h>
-+#include <asm/fixmap.h>
- #include <asm/smp_plat.h>
  #include <asm/opcodes.h>
+@@ -35,6 +36,22 @@
  
-@@ -13,21 +16,69 @@ struct patch {
- 	unsigned int insn;
- };
+ #define	OLD_NOP		0xe1a00000	/* mov r0, r0 */
  
--void __kprobes __patch_text(void *addr, unsigned int insn)
-+static DEFINE_SPINLOCK(patch_lock);
-+
-+static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
++static int __ftrace_modify_code(void *data)
 +{
-+	unsigned int uintaddr = (uintptr_t) addr;
-+	bool module = !core_kernel_text(uintaddr);
-+	struct page *page;
++	int *command = data;
 +
-+	if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX))
-+		page = vmalloc_to_page(addr);
-+	else if (!module && IS_ENABLED(CONFIG_DEBUG_RODATA))
-+		page = virt_to_page(addr);
-+	else
-+		return addr;
++	set_kernel_text_rw();
++	ftrace_modify_all_code(*command);
++	set_kernel_text_ro();
 +
-+	if (flags)
-+		spin_lock_irqsave(&patch_lock, *flags);
-+
-+	set_fixmap(fixmap, page_to_phys(page));
-+
-+	return (void *) (__fix_to_virt(fixmap) + (uintaddr & ~PAGE_MASK));
++	return 0;
 +}
 +
-+static void __kprobes patch_unmap(int fixmap, unsigned long *flags)
++void arch_ftrace_update_code(int command)
 +{
-+	clear_fixmap(fixmap);
-+
-+	if (flags)
-+		spin_unlock_irqrestore(&patch_lock, *flags);
++	stop_machine(__ftrace_modify_code, &command, NULL);
 +}
 +
-+void __kprobes __patch_text_real(void *addr, unsigned int insn, bool remap)
+ static unsigned long ftrace_nop_replace(struct dyn_ftrace *rec)
  {
- 	bool thumb2 = IS_ENABLED(CONFIG_THUMB2_KERNEL);
-+	unsigned int uintaddr = (uintptr_t) addr;
-+	bool twopage = false;
-+	unsigned long flags;
-+	void *waddr = addr;
- 	int size;
+ 	return rec->arch.old_mcount ? OLD_NOP : NOP;
+@@ -73,6 +90,8 @@ int ftrace_arch_code_modify_prepare(void)
+ int ftrace_arch_code_modify_post_process(void)
+ {
+ 	set_all_modules_text_ro();
++	/* Make sure any TLB misses during machine stop are cleared. */
++	flush_tlb_all();
+ 	return 0;
+ }
  
-+	if (remap)
-+		waddr = patch_map(addr, FIX_TEXT_POKE0, &flags);
-+
- 	if (thumb2 && __opcode_is_thumb16(insn)) {
--		*(u16 *)addr = __opcode_to_mem_thumb16(insn);
-+		*(u16 *)waddr = __opcode_to_mem_thumb16(insn);
- 		size = sizeof(u16);
--	} else if (thumb2 && ((uintptr_t)addr & 2)) {
-+	} else if (thumb2 && (uintaddr & 2)) {
- 		u16 first = __opcode_thumb32_first(insn);
- 		u16 second = __opcode_thumb32_second(insn);
--		u16 *addrh = addr;
-+		u16 *addrh0 = waddr;
-+		u16 *addrh1 = waddr + 2;
- 
--		addrh[0] = __opcode_to_mem_thumb16(first);
--		addrh[1] = __opcode_to_mem_thumb16(second);
-+		twopage = (uintaddr & ~PAGE_MASK) == PAGE_SIZE - 2;
-+		if (twopage && remap)
-+			addrh1 = patch_map(addr + 2, FIX_TEXT_POKE1, NULL);
-+
-+		*addrh0 = __opcode_to_mem_thumb16(first);
-+		*addrh1 = __opcode_to_mem_thumb16(second);
-+
-+		if (twopage && addrh1 != addr + 2) {
-+			flush_kernel_vmap_range(addrh1, 2);
-+			patch_unmap(FIX_TEXT_POKE1, NULL);
-+		}
- 
- 		size = sizeof(u32);
- 	} else {
-@@ -36,10 +87,15 @@ void __kprobes __patch_text(void *addr, unsigned int insn)
- 		else
- 			insn = __opcode_to_mem_arm(insn);
- 
--		*(u32 *)addr = insn;
-+		*(u32 *)waddr = insn;
- 		size = sizeof(u32);
+diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+index 08fa667ef2f1..ec79e7268e09 100644
+--- a/arch/arm/kernel/vmlinux.lds.S
++++ b/arch/arm/kernel/vmlinux.lds.S
+@@ -120,6 +120,9 @@ SECTIONS
+ 			ARM_CPU_KEEP(PROC_INFO)
  	}
  
-+	if (waddr != addr) {
-+		flush_kernel_vmap_range(waddr, twopage ? size / 2 : size);
-+		patch_unmap(FIX_TEXT_POKE0, &flags);
-+	}
++#ifdef CONFIG_DEBUG_RODATA
++	. = ALIGN(1<<SECTION_SHIFT);
++#endif
+ 	RO_DATA(PAGE_SIZE)
+ 
+ 	. = ALIGN(4);
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index 0ea121dbf940..3a98cf340344 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -1016,3 +1016,15 @@ config ARM_KERNMEM_PERMS
+ 	  padded to section-size (1MiB) boundaries (because their permissions
+ 	  are different and splitting the 1M pages into 4K ones causes TLB
+ 	  performance problems), wasting memory.
 +
- 	flush_icache_range((uintptr_t)(addr),
- 			   (uintptr_t)(addr) + size);
++config DEBUG_RODATA
++	bool "Make kernel text and rodata read-only"
++	depends on ARM_KERNMEM_PERMS
++	default y
++	help
++	  If this is set, kernel text and rodata will be made read-only. This
++	  is to help catch accidental or malicious attempts to change the
++	  kernel's executable code. Additionally splits rodata from kernel
++	  text so it can be made explicitly non-executable. This creates
++	  another section-size padded region, so it can waste more memory
++	  space while gaining the read-only protections.
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index ccf392ef40d4..1a0248a9cfdb 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -626,6 +626,7 @@ struct section_perm {
+ 	unsigned long end;
+ 	pmdval_t mask;
+ 	pmdval_t prot;
++	pmdval_t clear;
+ };
+ 
+ struct section_perm nx_perms[] = {
+@@ -643,8 +644,35 @@ struct section_perm nx_perms[] = {
+ 		.mask	= ~PMD_SECT_XN,
+ 		.prot	= PMD_SECT_XN,
+ 	},
++#ifdef CONFIG_DEBUG_RODATA
++	/* Make rodata NX (set RO in ro_perms below). */
++	{
++		.start  = (unsigned long)__start_rodata,
++		.end    = (unsigned long)__init_begin,
++		.mask   = ~PMD_SECT_XN,
++		.prot   = PMD_SECT_XN,
++	},
++#endif
+ };
+ 
++#ifdef CONFIG_DEBUG_RODATA
++struct section_perm ro_perms[] = {
++	/* Make kernel code and rodata RX (set RO). */
++	{
++		.start  = (unsigned long)_stext,
++		.end    = (unsigned long)__init_begin,
++#ifdef CONFIG_ARM_LPAE
++		.mask   = ~PMD_SECT_RDONLY,
++		.prot   = PMD_SECT_RDONLY,
++#else
++		.mask   = ~(PMD_SECT_APX | PMD_SECT_AP_WRITE),
++		.prot   = PMD_SECT_APX | PMD_SECT_AP_WRITE,
++		.clear  = PMD_SECT_AP_WRITE,
++#endif
++	},
++};
++#endif
++
+ /*
+  * Updates section permissions only for the current mm (sections are
+  * copied into each mm). During startup, this is the init_mm.
+@@ -713,6 +741,24 @@ static inline void fix_kernmem_perms(void)
+ {
+ 	set_section_perms(nx_perms, prot);
  }
-diff --git a/arch/arm/kernel/patch.h b/arch/arm/kernel/patch.h
-index b4731f2dac38..77e054c2f6cd 100644
---- a/arch/arm/kernel/patch.h
-+++ b/arch/arm/kernel/patch.h
-@@ -2,6 +2,16 @@
- #define _ARM_KERNEL_PATCH_H
- 
- void patch_text(void *addr, unsigned int insn);
--void __patch_text(void *addr, unsigned int insn);
-+void __patch_text_real(void *addr, unsigned int insn, bool remap);
 +
-+static inline void __patch_text(void *addr, unsigned int insn)
++#ifdef CONFIG_DEBUG_RODATA
++void mark_rodata_ro(void)
 +{
-+	__patch_text_real(addr, insn, true);
++	set_section_perms(ro_perms, prot);
 +}
 +
-+static inline void __patch_text_early(void *addr, unsigned int insn)
++void set_kernel_text_rw(void)
 +{
-+	__patch_text_real(addr, insn, false);
++	set_section_perms(ro_perms, clear);
 +}
- 
- #endif
++
++void set_kernel_text_ro(void)
++{
++	set_section_perms(ro_perms, prot);
++}
++#endif /* CONFIG_DEBUG_RODATA */
++
+ #else
+ static inline void fix_kernmem_perms(void) { }
+ #endif /* CONFIG_ARM_KERNMEM_PERMS */
 -- 
 1.9.1
 
