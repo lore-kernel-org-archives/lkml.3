@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745AbaHFKZb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 06:25:31 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:7211 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065AbaHFKZ3 (ORCPT
+	id S1755980AbaHFKZd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 06:25:33 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:2244 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065AbaHFKZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 06:25:29 -0400
+	Wed, 6 Aug 2014 06:25:31 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 06 Aug 2014 03:16:42 -0700
+	by hqnvupgp08.nvidia.com on Wed, 06 Aug 2014 03:16:45 -0700
 From: Mikko Perttunen <mperttunen@nvidia.com>
 To: <rui.zhang@intel.com>, <edubezval@gmail.com>, <swarren@wwwdotorg.org>,
         <thierry.reding@gmail.com>
 CC: <linux-pm@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH v3 0/4] Tegra124 soctherm driver
-Date: Wed, 6 Aug 2014 13:25:02 +0300
-Message-ID: <1407320706-17440-1-git-send-email-mperttunen@nvidia.com>
+Subject: [PATCH v3 1/4] of: Add bindings for nvidia,tegra124-soctherm
+Date: Wed, 6 Aug 2014 13:25:03 +0300
+Message-ID: <1407320706-17440-2-git-send-email-mperttunen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1407320706-17440-1-git-send-email-mperttunen@nvidia.com>
+References: <1407320706-17440-1-git-send-email-mperttunen@nvidia.com>
 X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -26,38 +28,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This adds binding documentation and headers for the Tegra124
+SOCTHERM device tree node.
 
-this series adds support for the thermal monitoring features of the
-soctherm unit on the Tegra124 SoC. v2 drops support for interrupt-
-based trip points. Thermtrip (emergency thermal shutdown) still
-works when this driver is loaded and the PMC thermal reset patch
-series is applied.
+Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+---
+v3: updated text slightly, added example using define
 
-The branch is also available in my github repo,
-  git://github.com/cyndis/linux.git soctherm-v3
-
-Thanks,
-Mikko
-
-Mikko Perttunen (4):
-  of: Add bindings for nvidia,tegra124-soctherm
-  ARM: tegra: Add soctherm and thermal zones to Tegra124 device tree
-  ARM: tegra: Add thermal trip points for Jetson TK1
-  thermal: Add Tegra SOCTHERM thermal management driver
-
- .../devicetree/bindings/thermal/tegra-soctherm.txt |  53 +++
- arch/arm/boot/dts/tegra124-jetson-tk1.dts          |  32 ++
- arch/arm/boot/dts/tegra124.dtsi                    |  47 +++
- drivers/thermal/Kconfig                            |  10 +
- drivers/thermal/Makefile                           |   1 +
- drivers/thermal/tegra_soctherm.c                   | 430 +++++++++++++++++++++
- include/dt-bindings/thermal/tegra124-soctherm.h    |  13 +
- 7 files changed, 586 insertions(+)
+ .../devicetree/bindings/thermal/tegra-soctherm.txt | 53 ++++++++++++++++++++++
+ include/dt-bindings/thermal/tegra124-soctherm.h    | 13 ++++++
+ 2 files changed, 66 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/thermal/tegra-soctherm.txt
- create mode 100644 drivers/thermal/tegra_soctherm.c
  create mode 100644 include/dt-bindings/thermal/tegra124-soctherm.h
 
+diff --git a/Documentation/devicetree/bindings/thermal/tegra-soctherm.txt b/Documentation/devicetree/bindings/thermal/tegra-soctherm.txt
+new file mode 100644
+index 0000000..ecf3ed7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/thermal/tegra-soctherm.txt
+@@ -0,0 +1,53 @@
++Tegra124 SOCTHERM thermal management system
++
++The SOCTHERM IP block contains thermal sensors, support for polled
++or interrupt-based thermal monitoring, CPU and GPU throttling based
++on temperature trip points, and handling external overcurrent
++notifications. It is also used to manage emergency shutdown in an
++overheating situation.
++
++Required properties :
++- compatible : "nvidia,tegra124-soctherm".
++- reg : Should contain 1 entry:
++  - SOCTHERM register set
++- interrupts : Defines the interrupt used by SOCTHERM
++- clocks : Must contain an entry for each entry in clock-names.
++  See ../clocks/clock-bindings.txt for details.
++- clock-names : Must include the following entries:
++  - tsensor
++  - soctherm
++- resets : Must contain an entry for each entry in reset-names.
++  See ../reset/reset.txt for details.
++- reset-names : Must include the following entries:
++  - soctherm
++- #thermal-sensor-cells : Should be 1. See ./thermal.txt for a description
++    of this property. See <dt-bindings/thermal/tegra124-soctherm.h> for a
++    list of valid values when referring to thermal sensors.
++
++
++Example :
++
++	soctherm@0,700e2000 {
++		compatible = "nvidia,tegra124-soctherm";
++		reg = <0x0 0x700e2000 0x0 0x1000>;
++		interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&tegra_car TEGRA124_CLK_TSENSOR>,
++			<&tegra_car TEGRA124_CLK_SOC_THERM>;
++		clock-names = "tsensor", "soctherm";
++		resets = <&tegra_car 78>;
++		reset-names = "soctherm";
++
++		#thermal-sensor-cells = <1>;
++	};
++
++Example: referring to thermal sensors :
++
++       thermal-zones {
++                cpu {
++                        polling-delay-passive = <1000>;
++                        polling-delay = <1000>;
++
++                        thermal-sensors =
++                                <&soctherm TEGRA124_SOCTHERM_SENSOR_CPU>;
++                };
++	};
+diff --git a/include/dt-bindings/thermal/tegra124-soctherm.h b/include/dt-bindings/thermal/tegra124-soctherm.h
+new file mode 100644
+index 0000000..85aaf66
+--- /dev/null
++++ b/include/dt-bindings/thermal/tegra124-soctherm.h
+@@ -0,0 +1,13 @@
++/*
++ * This header provides constants for binding nvidia,tegra124-soctherm.
++ */
++
++#ifndef _DT_BINDINGS_THERMAL_TEGRA124_SOCTHERM_H
++#define _DT_BINDINGS_THERMAL_TEGRA124_SOCTHERM_H
++
++#define TEGRA124_SOCTHERM_SENSOR_CPU 0
++#define TEGRA124_SOCTHERM_SENSOR_MEM 1
++#define TEGRA124_SOCTHERM_SENSOR_GPU 2
++#define TEGRA124_SOCTHERM_SENSOR_PLLX 3
++
++#endif
 -- 
 1.8.1.5
 
