@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925AbaHFMZw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 08:25:52 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45109 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948AbaHFMZu (ORCPT
+	id S1755155AbaHFM2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 08:28:23 -0400
+Received: from imap.hinterhof.net ([80.69.43.37]:48442 "EHLO
+	imap.hinterhof.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064AbaHFM2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 08:25:50 -0400
-Date: Wed, 6 Aug 2014 14:25:48 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Janek Kozicki <janek_listy@wp.pl>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, markus@gutschke.com,
-        Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: 3.16 crashes on resume from Suspend-To-disk
-Message-ID: <20140806122548.GA10751@amd.pavel.ucw.cz>
-References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
- <20140804141613.GB24261@amd.pavel.ucw.cz>
- <CALGCz1oG2g-UsK7FnxRRj7R5n6yxwJey0EBcP8ctRYSGjfw==Q@mail.gmail.com>
- <11544482.e7kpiLjKfi@vostro.rjw.lan>
- <20140805115834.5e5e76f0@absurd>
+	Wed, 6 Aug 2014 08:28:22 -0400
+X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Aug 2014 08:28:21 EDT
+Date: Wed, 6 Aug 2014 14:22:10 +0200
+From: Max Vozeler <max@vozeler.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Valentina Manea <valentina.manea.m@gmail.com>, tulinizer@gmail.com,
+        stern@rowland.harvard.edu, mail@beyermatthias.de, hdegoede@redhat.com,
+        f.manzan@gmail.com, kurt@garloff.de, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, firefly@lists.rosedu.org,
+        andy.grover@gmail.com, MHoffman@luxotticaretail.com
+Subject: Re: [PATCH 0/3] usbip: move usbip out of staging
+Message-ID: <20140806122210.GC4763@x201t.vpn.hinterhof.net>
+References: <1395173483-27542-1-git-send-email-valentina.manea.m@gmail.com>
+ <20140318203324.GA25579@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140805115834.5e5e76f0@absurd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140318203324.GA25579@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-08-05 11:58:34, Janek Kozicki wrote:
-> Rafael J. Wysocki said:     (by the date of Tue, 05 Aug 2014 03:30:58 +0200)
-> 
-> > On Monday, August 04, 2014 09:06:52 AM Markus Gutschke wrote:
-> > > Thanks for checking in. And no, I have not heard from Zhang since my
-> > > last e-mail. I suspect he is still working on finding a solution. But
-> > > you are of course right, reverting the patch in the meantime might be
-> > > a good idea.
-> > 
-> > It has too many dependencies.  Besides, reverting it now (at the beginning of
-> > a merge window) won't be particularly useful anyway.
-> > 
-> > We need to fix it.
-> 
-> 
-> Hi, sorry for hijacking this thread, but apparently my other plead
-> for help got ignored in this very busy mailing list.
-> 
-> I have an up-to-date recently installed debian wheezy. I downloaded
-> https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.16.tar.xz and compiled it using:
-> 
->   cp /boot/config-`uname -r` ./.config
->   make menuconfig
->   fakeroot make-kpkg --initrd --append-to-version=-vanilla.1 kernel_image kernel_headers -j38
->   dpkg -i linux-image-3.16.0-vanilla.1_3.16.0-vanilla.1-10.00.Custom_amd64.deb linux-headers-3.16.0-vanilla.1_3.16.0-vanilla.1-10.00.Custom_amd64.deb
-> 
-> where .config was taken from debian /boot/config-3.14-0.bpo.1-amd64
-> 
-> my PC has 64GB of RAM, 32 Xeon E5-2687W cores and motherboard SuperMicro MBD-X9DRI
-> 
-> I just did 25 tries of suspend/resume cycle. I tried 4 different
-> methods of hibernation, you will find a full summary of my tries
-> (including how many failures for each method) in attached script
-> SLEEP.sh which I always used to perform hibernation.
-> 
-> The failure was always a reboot after resume had almost succeeded. In
-> cases when there was a success there was a following ---[cut
->here]--- part:
+Hi everyone,
 
-The Intel audio driver seems to be requesting firmware... Can you
-rmmod snd_hda_codec_ca0132 and similar modules, and retry hibernation?
-										Pavel
+On Tue, Mar 18, 2014 at 01:33:24PM -0700, Greg KH wrote:
+> On Tue, Mar 18, 2014 at 10:11:20PM +0200, Valentina Manea wrote:
+> > After migrating userspace code to libudev, converting usbip-host
+> > to a device driver and various bug fixes and enhancements, USB/IP
+> > is fully functional and can be moved out of staging.
+> > 
+> > This patch series moves it as following:
+> > * userspace code to tools/usb/usbip
+> > * kernel code to drivers/usb/usbip
+> > 
+> > Besides this, a warning generated in the kernel code is solved.
+> 
+> Like Joe said, use -M please.
+> 
+> Also, I'm not going to be able to do this until after 3.15-rc1 is out,
+> due to changes to this code base in multiple trees.
+> 
+> So can you resend when -rc1 is out?
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+What happened to this series, should it be resent?
+
+Do people agree that usbip is ready to migrate out of staging in
+general?
+
+The README lists these TODO items:
+
+        - more discussion about the protocol
+        - testing
+        - review of the userspace interface
+        - document the protocol
+
+The protocol has been documented and discussed in some depth. Not
+everybody seems to love it yet I don't think any significant flaws
+have been shown in the protocol.
+
+There can always be more testing. :)
+
+That leaves the userspace interface. Is it good enough to be made
+official?
+
+If so it should probably be added to Documentation/ABI.
+
+Thanks,
+
+	Max
