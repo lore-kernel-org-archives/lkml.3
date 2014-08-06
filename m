@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaHFEjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 00:39:13 -0400
-Received: from ozlabs.org ([103.22.144.67]:55695 "EHLO ozlabs.org"
+	id S1754074AbaHFElm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 00:41:42 -0400
+Received: from s87.loopia.se ([194.9.94.112]:32088 "EHLO s87.loopia.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751045AbaHFEjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 00:39:12 -0400
-Date: Wed, 6 Aug 2014 14:39:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Eric Auger <eric.auger@linaro.org>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>
-Subject: linux-next: build failure after merge of the kvm tree
-Message-ID: <20140806143904.6e935789@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/B=vuFyObA=molfM80itDfoL"; protocol="application/pgp-signature"
+	id S1750964AbaHFEll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 00:41:41 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -1
+From: Hans Wennborg <hans@hanshq.net>
+To: joe@perches.com, linux-kernel@vger.kernel.org
+Cc: Hans Wennborg <hans@hanshq.net>
+Subject: [PATCH 00/15] fix decimal printf format specifiers prefixed with 0x
+Date: Tue,  5 Aug 2014 21:41:17 -0700
+Message-Id: <1407300077-32113-1-git-send-email-hans@hanshq.net>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/B=vuFyObA=molfM80itDfoL
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+This is the second round of fixes, covering all the instances found
+with Joe Perches's regex from https://lkml.org/lkml/2014/8/3/128 in
+linux-next.
 
-Hi all,
+I have tried to split it across the different subsystems and address
+the appropriate folks on each patch.
 
-After merging the kvm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Hans Wennborg (15):
+  sparc: fix decimal printf format specifiers prefixed with 0x
+  cpufreq: fix decimal printf format specifiers prefixed with 0x
+  iommu/arm-smmu: fix decimal printf format specifiers prefixed with 0x
+  [media] dvb: fix decimal printf format specifiers prefixed with 0x
+  mfd: rtsx_usb: fix decimal printf format specifiers prefixed with 0x
+  vmxnet3: fix decimal printf format specifiers prefixed with 0x
+  mwifiex: fix decimal printf format specifiers prefixed with 0x
+  rtlwifi: rtl8192de: fix decimal printf format specifiers prefixed with 0x
+  pinctrl: pinctrl-at91.c: fix decimal printf format specifiers prefixed with 0x
+  scsi: fix decimal printf format specifiers prefixed with 0x
+  TTY: fix decimal printf format specifiers prefixed with 0x
+  usb: musb: ux500: fix decimal printf format specifiers prefixed with 0x
+  exofs: fix decimal printf format specifiers prefixed with 0x
+  xfs: fix decimal printf format specifiers prefixed with 0x
+  ASoC: fix decimal printf format specifiers prefixed with 0x
 
+ arch/sparc/kernel/smp_32.c                  | 2 +-
+ drivers/cpufreq/speedstep-smi.c             | 4 ++--
+ drivers/iommu/arm-smmu.c                    | 2 +-
+ drivers/media/dvb-frontends/mb86a16.c       | 2 +-
+ drivers/mfd/rtsx_usb.c                      | 2 +-
+ drivers/net/vmxnet3/vmxnet3_drv.c           | 2 +-
+ drivers/net/wireless/mwifiex/cfg80211.c     | 2 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/fw.c | 2 +-
+ drivers/pinctrl/pinctrl-at91.c              | 4 ++--
+ drivers/scsi/cxgbi/libcxgbi.c               | 2 +-
+ drivers/scsi/nsp32.c                        | 2 +-
+ drivers/scsi/qla2xxx/qla_target.c           | 2 +-
+ drivers/tty/moxa.c                          | 2 +-
+ drivers/usb/musb/ux500_dma.c                | 2 +-
+ fs/exofs/dir.c                              | 2 +-
+ fs/xfs/xfs_discard.c                        | 2 +-
+ sound/soc/atmel/atmel_ssc_dai.c             | 2 +-
+ sound/soc/sh/dma-sh7760.c                   | 2 +-
+ sound/soc/sh/rcar/gen.c                     | 6 +++---
+ 19 files changed, 23 insertions(+), 23 deletions(-)
 
-In file included from /scratch/sfr/next/include/linux/preempt.h:10:0,
-                 from /scratch/sfr/next/include/linux/preempt_mask.h:4,
-                 from /scratch/sfr/next/include/linux/hardirq.h:4,
-                 from /scratch/sfr/next/include/linux/kvm_host.h:10,
-                 from /scratch/sfr/next/arch/powerpc/kvm/../../../virt/kvm/=
-eventfd.c:24:
-/scratch/sfr/next/arch/powerpc/kvm/../../../virt/kvm/eventfd.c: In function=
- 'kvm_irq_has_notifier':
-/scratch/sfr/next/arch/powerpc/kvm/../../../virt/kvm/eventfd.c:879:38: erro=
-r: 'struct kvm' has no member named 'irq_ack_notifier_list'
-   hlist_for_each_entry_rcu(kian, &kvm->irq_ack_notifier_list,
-                                      ^
+-- 
+2.0.0.526.g5318336
 
-And several more of the same ...
-
-Caused by commit e4d57e1ee1ab ("KVM: Move irq notifier implementation
-into eventfd.c").  This build does not have CONFIG_HAVE_KVM_IRQCHIP
-set ...
-
-I have used the kvm tree from next-20140805 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/B=vuFyObA=molfM80itDfoL
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT4bFtAAoJEMDTa8Ir7ZwVWTUP+wWWFuYBR0yptkn5YXHO4ClF
-nEqBT4EptnceyTH4XNr7ixITXfSaNnwrKehD9yJ37Hn6Bn4H8UqeIRiRwW4HZ51Z
-os6XfgVmyH11GIGhtCNZte+Go/AbTHdLBJTCo1KlNRej9WJcyiTaX9rUIhr+JQ/y
-UHwqyXuXcemaF1Hk188gvz6lm1SQR54CuKMznGzZOSQfXYYl4UyPmiODD7JFHyhW
-EYTGifnVWbMDjRGHBjN1Z3TXK7xMAhwzawV70NyPsbm3byVa1vfEy6Cg4SuDbzuN
-AcmoGX0/RtD7dtI3f6tLT/Z5Bnzl6iz33/4RLEkEYDzoU1g1M0LM3UGu/Ot5s3sf
-Nv86BDihYLmiUTytL2Uma7bgJlpqIIuOBWdrg79bNRcHJ1EGhHEaXMcDz9ZW0V9j
-/QLXoX93BOfCI8/PrSzKncJThmJhhS8x+qr9f3Tx8eCKG2LvKK3LXdAQsTpzmQrE
-KRIb0v0jbDaCPI2/Z/duhTLaCG0P7vZmIRlRNIjzeuibFOJEACUhRw6kN1gzAmXD
-izgliNY5IsI5YoIMhrGoKBE5YZmYOLSxD0HpKMH+TGWnCvyDhtmC2JtYhLeKlGI7
-ca/IAhfiUJtyS3a2AmgV7mNA6LhAO3LrkTgW1kERkZEmfgNldqPjOjQFqmm75NF2
-Af9N3SiCK47ezYBLwD0+
-=/L4S
------END PGP SIGNATURE-----
-
---Sig_/B=vuFyObA=molfM80itDfoL--
