@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbaHFD2a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 23:28:30 -0400
-Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:5525
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751026AbaHFD22 convert rfc822-to-8bit (ORCPT
+	id S1754117AbaHFDgk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 23:36:40 -0400
+Received: from mail-yk0-f172.google.com ([209.85.160.172]:51186 "EHLO
+	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961AbaHFDgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 23:28:28 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Joe Perches <joe@perches.com>
-CC: "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jingchang Lu <jingchang.lu@freescale.com>
-Subject: RE: [PATCH] i2c: i2c-imx: Fix format warning for dev_dbg
-Thread-Topic: [PATCH] i2c: i2c-imx: Fix format warning for dev_dbg
-Thread-Index: AQHPsSLQ5r3fyNTLqUGYaK3mHkf5AJvC5YeAgAADWDA=
-Date: Wed, 6 Aug 2014 03:28:23 +0000
-Message-ID: <665de450db8e4edd8c76ce7175106b0d@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1407293685-7003-1-git-send-email-Li.Xiubo@freescale.com>
- <1407294597.31231.2.camel@joe-AO725>
-In-Reply-To: <1407294597.31231.2.camel@joe-AO725>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 02951C14DC
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(164054003)(199002)(189002)(51704005)(77982001)(76176999)(76482001)(85852003)(83072002)(19580395003)(83322001)(74316001)(54356999)(50986999)(99396002)(80022001)(110136001)(66066001)(2656002)(87936001)(74502001)(74662001)(76576001)(106116001)(31966008)(105586002)(85306004)(4396001)(106356001)(99286002)(95666004)(92566001)(101416001)(77096002)(46102001)(20776003)(64706001)(107046002)(81542001)(79102001)(33646002)(21056001)(86362001)(81342001)(24736002)(108616003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB473;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 5 Aug 2014 23:36:39 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+From: Leith Bade <leith@leithalweapon.geek.nz>
+Date: Wed, 6 Aug 2014 13:36:18 +1000
+Message-ID: <CAPDEroWq4+AA4wMroPoShEkBYwB_r5=mi8z6naXzoK4TNjXKBA@mail.gmail.com>
+Subject: USB device descriptor read error with Eaton 5E UPS
+To: linux-kernel@vger.kernel.org
+Cc: Leith Bade <leith@leithalweapon.geek.nz>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > drivers/i2c/busses/i2c-imx.c: In function i2c_imx_probe()
-> > drivers/i2c/busses/i2c-imx.c:689:2: warning: format 0x%x expects argument
-> > of type unsigned int, but argument 4 has type resource_size_t [-Wformat=]
-> >   dev_dbg(&i2c_imx->adapter.dev, "device resources from 0x%x to 0x%x\n",
-> []
-> > diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
-> []
-> > @@ -687,9 +687,9 @@ static int i2c_imx_probe(struct platform_device *pdev)
-> >
-> >  	dev_dbg(&i2c_imx->adapter.dev, "claimed irq %d\n", irq);
-> >  	dev_dbg(&i2c_imx->adapter.dev, "device resources from 0x%x to 0x%x\n",
-> > -		res->start, res->end);
-> > +		(unsigned int)res->start, (unsigned int)res->end);
-> 
-> Probably better to use:
-> 
-> 	dev_dbg(&i2c_imx->adapter.dev, "device resources: %pR\n, res);
-> 
+Hi,
 
-Yes, this is perfect.
+I recently purchased a new Easton 5E UPS. I plugged the USB cable into
+my computer so I could use the NUT UPS tools. However every so often
+NUT fails to connect to the device after a boot.
 
-> >  	dev_dbg(&i2c_imx->adapter.dev, "allocated %d bytes at 0x%x\n",
-> > -		resource_size(res), res->start);
-> > +		(unsigned int)resource_size(res), (unsigned int)res->start);
-> 
-> and remove this.
-> 
+Looking at dmesg I see errors like this:
+[    3.277075] usb 1-9: new low-speed USB device number 6 using xhci_hcd
+[    3.302091] usb 1-9: device descriptor read/8, error -32
+[    3.430241] usb 1-9: device descriptor read/8, error -32
+[    3.653526] usb 1-9: new low-speed USB device number 7 using xhci_hcd
+[    3.678473] usb 1-9: device descriptor read/8, error -32
+[    3.824288] usb 1-9: device descriptor read/8, error -32
+[    4.045977] usb 1-9: new low-speed USB device number 8 using xhci_hcd
+[    4.071018] usb 1-9: device descriptor read/8, error -32
+[    4.199046] usb 1-9: device descriptor read/8, error -32
+[    4.422439] usb 1-9: new low-speed USB device number 9 using xhci_hcd
+[    4.451464] usb 1-9: device descriptor read/8, error -32
+[    4.579618] usb 1-9: device descriptor read/8, error -32
 
-I will follow your advice.
+I have tried to plug it into every USB port (including the USB 3.0
+ones) and I still get these errors. I discovered that power cycling
+the UPS will fix it for a while, and also unplugging and replugging
+the USB cable will also fix it sometimes.
 
-Thanks,
-BRs
-Xiubo
+I have observed the problem on both an Asus P9D-I motherboard with the
+Intel C222 chipset and on the Asus H87M-E motherboard with the Intel
+H87 chipset.
 
+I emailed Eaton support but they don't know what the issue is. They
+want me to confirm that it is not Linux or PC issue before I return it
+for testing under warranty.
 
+They also said that all warranty testing is performed under Windows only :-(.
 
+How can I be sure that this is a problem with the device and not my
+computer before I return it?
+
+I am on Ubuntu Server 14.04 x86-64 bit. The kernel version is:
+Linux version 3.13.0-32-generic (buildd@kissel) (gcc version 4.8.2
+(Ubuntu 4.8.2-19ubuntu1) ) #57-Ubuntu SMP Tue Jul 15 03:51:08 UTC 2014
+(Ubuntu 3.13.0-2.57-generic 3.13.11.4)
+
+P.S. Please reply all so I can get a copy of the reply.
+
+Leith
