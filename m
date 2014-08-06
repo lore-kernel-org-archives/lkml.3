@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569AbaHFWdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 18:33:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54601 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754437AbaHFWc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 18:32:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,814,1400050800"; 
-   d="scan'208";a="572771020"
-From: "Keller, Jacob E" <jacob.e.keller@intel.com>
-To: "Fujinaka, Todd" <todd.fujinaka@intel.com>
-CC: "hannes@stressinduktion.org" <hannes@stressinduktion.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "mathias.koehrer@etas.com" <mathias.koehrer@etas.com>
-Subject: Re: [E1000-devel] PROBLEM: [x86] Running ptpd2 using an Intel
- 82572EI (e1000e) leads to a kernel oops (3.12.26)
-Thread-Topic: [E1000-devel] PROBLEM: [x86] Running ptpd2 using an Intel
- 82572EI (e1000e) leads to a kernel oops (3.12.26)
-Thread-Index: Ac+v3yzc3cSLCNWNSz2wcfBA1YE8+gBtGo2AAAzknIAADnhHAA==
-Date: Wed, 6 Aug 2014 22:32:56 +0000
-Message-ID: <1407364376.29652.3.camel@jekeller-desk1.amr.corp.intel.com>
-References: <50f83e65cecd4882b22887858bfdf484@FE-MBX1012.de.bosch.com>
-	 <1407317367.1360819.149688237.188FBBFC@webmail.messagingengine.com>
-	 <9B4A1B1917080E46B64F07F2989DADD6533AC68E@ORSMSX114.amr.corp.intel.com>
-In-Reply-To: <9B4A1B1917080E46B64F07F2989DADD6533AC68E@ORSMSX114.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [134.134.173.156]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <228CE2C8ED20CF40977538E9073499D2@intel.com>
+	id S1754590AbaHFWds (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 18:33:48 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:42957 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151AbaHFWdr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 18:33:47 -0400
+Date: Wed, 6 Aug 2014 15:33:45 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Josh Triplett <josh@joshtriplett.org>
+cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86, platform, kconfig: move kvmconfig functionality
+ to a helper
+In-Reply-To: <20140806223032.GA3517@jtriplet-mobl1>
+Message-ID: <alpine.DEB.2.02.1408061532120.13545@chino.kir.corp.google.com>
+References: <20140806222419.GA2566@jtriplet-mobl1> <20140806223032.GA3517@jtriplet-mobl1>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s76MX5El014282
 
-On Wed, 2014-08-06 at 15:38 +0000, Fujinaka, Todd wrote:
-> Looking at your patches on netdev, it appears that there are flags set in the skb that should never be set for the 82572EI as that part doesn't have hardware timestamping. This points to a bug in the ptpd code.
+On Wed, 6 Aug 2014, Josh Triplett wrote:
+
+> The new mergeconfig helper makes it easier to add other partial
+> configurations similar to kvmconfig.
 > 
-> Todd Fujinaka
-> Software Application Engineer
-> Networking Division (ND)
-> Intel Corporation
-> todd.fujinaka@intel.com
-> (503) 712-4565
+> Based on a patch by Luis R. Rodriguez <mcgrof@suse.com>.
+> Originally-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> 
+> Modified to make the helper name more general than just virtualization,
+> and factor out more of the common file path.
+> 
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
 
+For the original patch from Luis:
+Suggested-by: David Rientjes <rientjes@google.com>
 
-Surely we can bail here instead of generating a kernel oops? Even though
-ptpd may be incorrect here, we still shouldn't do this. I think this may
-be a bug in the set_ts_config possibly as well (since it shouldn't be
-able to set the hardware timestamp flags for the 82572EI
+For this patch:
+Acked-by: David Rientjes <rientjes@google.com>
 
-Thanks,
-Jake
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks for generalizing this part of the Makefile, after it's merged it 
+will make Luis's set reduce down to a single change.
