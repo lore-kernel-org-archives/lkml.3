@@ -1,197 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989AbaHFMSh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 08:18:37 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:62992 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752835AbaHFMSg (ORCPT
+	id S1755799AbaHFMTg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 08:19:36 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47653 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332AbaHFMTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 08:18:36 -0400
-Message-ID: <53E21D07.7070407@huawei.com>
-Date: Wed, 6 Aug 2014 20:18:15 +0800
-From: Liu hua <sdu.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 6 Aug 2014 08:19:34 -0400
+Message-ID: <53E21D53.30606@codeaurora.org>
+Date: Wed, 06 Aug 2014 08:19:31 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Will Deacon <Will.Deacon@arm.com>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
-        "liusdu@126.com" <liusdu@126.com>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>
-Subject: Re: [PATCH V2 1/1] GIC: introduce method to deactive interupts
-References: <1407125860-37718-1-git-send-email-sdu.liu@huawei.com> <1407125860-37718-2-git-send-email-sdu.liu@huawei.com> <53DF55AC.5030705@arm.com> <53E1EACA.6070502@huawei.com> <53E1F96C.2030307@arm.com>
-In-Reply-To: <53E1F96C.2030307@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.111.58.238]
-X-CFilter-Loop: Reflected
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Andy Gross <agross@codeaurora.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: Re: [PATCH] i2c: qup: disable clks and return instead of just returning
+ error
+References: <1407311602-15751-1-git-send-email-pramod.gurav@smartplayin.com>
+In-Reply-To: <1407311602-15751-1-git-send-email-pramod.gurav@smartplayin.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/8/6 17:46, Marc Zyngier wrote:
-> Hi Liu,
-> 
-> On 06/08/14 09:43, Liu hua wrote:
->> 于 2014/8/4 17:43, Marc Zyngier 写道:
->>> Hi Liu,
->>>
->>> On 04/08/14 05:17, Liu Hua wrote:
->>>> When using kdump on ARM platform, if kernel panics in interrupt handler
->>>> (maybe PPI), the capture kernel can not recive certain interrupt, and 
->>>> fails to boot.
->>>>
->>>> On this situation, We have read register GICC_IAR. But we have no chance
->>>> to write relative bit to register GICC_EOIR (kernel paniced before). So
->>>> the state of this type interrupt remains active. And that makes gic not
->>>> deliver this type interrupt to cpu interface.
->>>>
->>>> So we should not assume that all interrut states of GIC are inactive when
->>>> kernel inittailize the GIC. This patch will identify these type interrupts
->>>> and deactive them
->>>>
->>>> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
->>>> ---
->>>>  drivers/irqchip/irq-gic.c | 26 ++++++++++++++++++++++++++
->>>>  1 file changed, 26 insertions(+)
->>>>
->>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>>> index b2648fc..7708df1 100644
->>>> --- a/drivers/irqchip/irq-gic.c
->>>> +++ b/drivers/irqchip/irq-gic.c
->>>> @@ -351,12 +351,37 @@ static u8 gic_get_cpumask(struct gic_chip_data *gic)
->>>>  	return mask;
->>>>  }
->>>>  
->>>> +void gic_eois(u32 active, int irq_off, void __iomem *cpu_base)
->>>> +{
->>>> +	int bit = -1;
->>>> +
->>>> +	for_each_set_bit(bit, (unsigned long *)&active, 32)
->>>> +		writel_relaxed(bit + irq_off, cpu_base + GIC_CPU_EOI);
->>>> +}
->>>> +
->>>> +void gic_dist_clear_active(void __iomem *dist_base,
->>>> +			void __iomem *cpu_base, int gic_irqs)
->>>> +{
->>>> +	int irq, offset;
->>>> +	u32 active;
->>>> +
->>>> +	for (irq = 0; irq < gic_irqs; irq += 32) {
->>>> +		offset = GIC_DIST_ACTIVE_SET + irq * 4 / 32;
->>>> +		active = readl_relaxed(dist_base + offset);
->>>> +		if (!active)
->>>> +			continue;
->>>> +		gic_eois(active, irq, cpu_base);
->>>> +	}
->>>> +}
->>>> +
->>>> +
->>>>  static void __init gic_dist_init(struct gic_chip_data *gic)
->>>>  {
->>>>  	unsigned int i;
->>>>  	u32 cpumask;
->>>>  	unsigned int gic_irqs = gic->gic_irqs;
->>>>  	void __iomem *base = gic_data_dist_base(gic);
->>>> +	void __iomem *cpu_base = gic_data_cpu_base(gic);
->>>>  
->>>>  	writel_relaxed(0, base + GIC_DIST_CTRL);
->>>>  
->>>> @@ -371,6 +396,7 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
->>>>  
->>>>  	gic_dist_config(base, gic_irqs, NULL);
->>>>  
->>>> +	gic_dist_clear_active(base, cpu_base, gic_irqs);
->>>>  	writel_relaxed(1, base + GIC_DIST_CTRL);
->>>>  }
->>>
->>> So while this is solving a real issue, I don't think you can just fix it
->>> for the UP case. You'll have to fix the same thing for secondary CPUs
->>> (shouldn't be too hard to split things between local and global interrupts).
->> Hi Marc,
->>
->> Thanks very much for you reply!
->>
->> when I tried to implement your ideas. I found that: when kdump is deployed
->> and without my patch,
->>
->> (1) panic in PPI, the capture kernel can not boot up.
->> (2) panic in SPI, the capture kernel boot up regularly.
->>
->> I was confused and there may be something I did not catch. I glanced the kdump
->> code and found that function machine_kexec_mask_interrupts. It will clear the
->> GIC active state only if the IRQD_IRQ_INPROGRESS bit in d->state_use_accessors
->> is set.
->>
->> And the PPI handler does not set this flag. So there are two ways to solve this
->> problem.
->>
->>  (1) consider this problem common, as you and I thought before. we should fix secondary CPUs issues;
->>
->>
->>  (2)just set flag IRQD_IRQ_INPROGRESS in PPI. we need patch like this:
->>
->> 	-------------(2) patch start-----------
->> 	diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
->> 	index a2b28a2..0a5dfe0 100644
->> 	--- a/kernel/irq/chip.c
->> 	+++ b/kernel/irq/chip.c
->> 	@@ -677,10 +677,18 @@ void handle_percpu_devid_irq(unsigned int irq, struct irq_desc *desc)
->>         	if (chip->irq_ack)
->>                 	chip->irq_ack(&desc->irq_data);
->>
->> 	+ raw_spin_lock(&desc->lock);
->> 	+ irqd_set(&desc->irq_data, IRQD_IRQ_INPROGRESS);
->> 	+ raw_spin_unlock(&desc->lock);
->> 	+
->>         trace_irq_handler_entry(irq, action);
->>         res = action->handler(irq, dev_id);
->>         trace_irq_handler_exit(irq, action, res);
->>
->> 	+ raw_spin_lock(&desc->lock);
->> 	+ irqd_clear(&desc->irq_data, IRQD_IRQ_INPROGRESS);
->> 	+ raw_spin_unlock(&desc->lock);
->> 	+
->>         if (chip->irq_eoi)
->>                 chip->irq_eoi(&desc->irq_data);
->> 	 }
->> 	-------------(2) patch end-----------
->>
->> Way 2 seems to be needed anyway.
->> For way 1, I do not find another situation that the gic interrupt states remains active when kernel booting.
->> And for kdump process, Way 2 is enough.
->>
->> What do you think about them?
-> 
-> Your second approach doesn't work, because you can have multiple CPUs
-> handling the same PPI at the same time. Remember these are per-processor
-> interrupts, despite having the same number. So you can't just have one
-> bit, you'd need one bit per CPU (and that's not going to happen).
+Hi Pramod,
 
-Yes, But during kdump process, the crash cpu will send IPIs to other CPUs
-and wait until other CPUs reply these IPIs. So at last only the crash CPU's
-active state of PPI should be cleared. My second approach seems enough for
-this situation.
+Not a big deal, but some typos caught my eye.
 
+On 08/06/2014 03:53 AM, Pramod Gurav wrote:
+> This fixes a error handling scenario where clocks were not being disabled
+> when QUP_OUTPUT_BLOCK_SIZE returns a size greater thanat size of blk_sizes
 
-> I'm afraid that for PPIs, parsing the active bits is the only way.
+s/thanat/than the/
 
-I think so, For other situation, the second approach is not enough. I should
-expend my first solution.
+> array. So this patch adds a statement to jump to err lable to release the
 
-BTW, if we have to "parsing the active bits" as you said, Is it necessary to
-change IRQD_IRQ_INPROGRESS flag in PPI as my second patch?
+s/err lable/the error label/ or s/err lable/the fail label/
 
+Regards,
+Christopher
 
-> 
-> Thanks,
-> 
-> 	M.
-> 
-
-
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
