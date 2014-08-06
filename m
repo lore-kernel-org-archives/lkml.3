@@ -1,288 +1,389 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166AbaHFCTm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Aug 2014 22:19:42 -0400
-Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:47349
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751981AbaHFCTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Aug 2014 22:19:40 -0400
-Date: Wed, 6 Aug 2014 10:17:11 +0800
-From: Anson Huang <b20788@freescale.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-CC: <rui.zhang@intel.com>, <shawn.guo@linaro.org>, <eduardo.valentin@ti.com>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] Thermal: imx: add i.mx6sx thermal support
-Message-ID: <20140806021711.GA22654@ubuntu>
-References: <1407229963-32662-1-git-send-email-b20788@freescale.com>
- <20140805132553.GA20291@developer>
+	id S1754190AbaHFCZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Aug 2014 22:25:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46569 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751535AbaHFCZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Aug 2014 22:25:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,809,1400050800"; 
+   d="scan'208";a="554343119"
+Message-ID: <53E19175.208@intel.com>
+Date: Wed, 06 Aug 2014 10:22:45 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140805132553.GA20291@developer>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(24454002)(199002)(189002)(35382001)(51704005)(50466002)(21056001)(95666004)(1411001)(575784001)(81542001)(50986999)(44976005)(76482001)(110136001)(105586002)(81342001)(6806004)(107046002)(46102001)(77982001)(99396002)(77096002)(19580405001)(83322001)(19580395003)(16796002)(74502001)(74662001)(54356999)(33716001)(76176999)(85306004)(83072002)(85852003)(31966008)(106466001)(26826002)(81156004)(64706001)(79102001)(101416001)(42186005)(20776003)(47776003)(83506001)(23726002)(46386002)(33656002)(84676001)(102836001)(92566001)(92726001)(45336002)(4396001)(97756001)(97736001)(46406003)(80022001)(68736004)(69596002)(87936001)(42262001)(90966001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB574;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02951C14DC
-Authentication-Results: spf=none (sender IP is 192.88.158.2)
- smtp.mailfrom=root@ubuntu.am.freescale.net; 
-X-OriginatorOrg: freescale.com
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI/OSL: Remove RCU in the osl.c to avoid dead lock
+ with cpu hot plug
+References: <1407141608-28920-1-git-send-email-tianyu.lan@intel.com> <1655155.Bsn9BIJnyn@vostro.rjw.lan>
+In-Reply-To: <1655155.Bsn9BIJnyn@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 09:25:53AM -0400, Eduardo Valentin wrote:
-> Hello Anson,
+On 2014年08月06日 09:24, Rafael J. Wysocki wrote:
+> On Monday, August 04, 2014 04:40:08 PM Lan Tianyu wrote:
+>> When cpu hotplug and evaluating ACPI method happen at the same time,
+>> there is a dead lock between ACPICA namespace lock and cpu hotplug lock.
+>>
+>> During cpu hotplug, cpu core will call acpi_cpu_soft_notify() to notify
+>> Linux ACPI under cpu hotplug lock. acpi_cpu_soft_notify() calls
+>> acpi_bus_get_device() to convert ACPI handle to struct acpi_struct.
+>> ACPICA namespace lock will be held in the acpi_bus_get_device().
+>>
+>> Evaluating ACPI method may involve in accessing system mem operation
+>> region and the associated address space will be unmapped under
+>> ACPICA namespace lock after accessing. Currently, osl.c uses RCU to
+>> protect io mem pages used by ACPICA. During unmapping, synchronize_rcu()
+>> will be called in the acpi_os_map_cleanup(). Synchroize_rcu() blocks
+>> cpu hotplug via getting cpu hotplug lock. This causes dead lock with
+>> cpu hotplug. Cpu hotplug thread holds cpu hotplug lock first and
+>> then get ACPICA namespace lock. The thread of evaluating ACPI method
+>> does the converse thing. This patch is to fix it via replacing
+>> RCU with spin lock.
+>>
+>> Here is dead lock log.
+>> [   97.149005] INFO: task bash:741 blocked for more than 30 seconds.
+>> [   97.155914]       Not tainted 3.16.0-rc5+ #671
+>> [   97.160969] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> [   97.169850] bash            D ffff88014e214140     0   741    716 0x00000080
+>> [   97.177885]  ffff88009b9f3a10 0000000000000086 ffff88009dcfb840 ffff88009b9f3fd8
+>> [   97.186316]  0000000000014140 0000000000014140 ffffffff81c18460 ffffffff81c40fc8
+>> [   97.194746]  ffffffff81c40fcc ffff88009dcfb840 00000000ffffffff ffffffff81c40fd0
+>> [   97.203175] Call Trace:
+>> [   97.205946]  [<ffffffff817a1b29>] schedule_preempt_disabled+0x29/0x70
+>> [   97.213246]  [<ffffffff817a34fa>] __mutex_lock_slowpath+0xca/0x1c0
+>> [   97.220258]  [<ffffffff817a360f>] mutex_lock+0x1f/0x2f
+>> [   97.226085]  [<ffffffff810bc8cc>] get_online_cpus+0x2c/0x50
+>> [   97.232408]  [<ffffffff8111bbd4>] synchronize_sched_expedited+0x64/0x1c0
+>> [   97.240011]  [<ffffffff8111bb65>] synchronize_sched+0x45/0x50
+>> [   97.246522]  [<ffffffff81431498>] acpi_os_map_cleanup.part.7+0x14/0x3e
+>> [   97.253928]  [<ffffffff81795c54>] acpi_os_unmap_iomem+0xe2/0xea
+>> [   97.260636]  [<ffffffff81795c6a>] acpi_os_unmap_memory+0xe/0x14
+>> [   97.267355]  [<ffffffff814459bc>] acpi_ev_system_memory_region_setup+0x2d/0x97
+>> [   97.275550]  [<ffffffff81459504>] acpi_ut_update_ref_count+0x24d/0x2de
+>> [   97.282958]  [<ffffffff814596af>] acpi_ut_update_object_reference+0x11a/0x18b
+>> [   97.291055]  [<ffffffff81459282>] acpi_ut_remove_reference+0x2e/0x31
+>> [   97.298265]  [<ffffffff8144ffdf>] acpi_ns_detach_object+0x7b/0x80
+>> [   97.305180]  [<ffffffff8144ef11>] acpi_ns_delete_namespace_subtree+0x47/0x81
+>> [   97.313179]  [<ffffffff81440488>] acpi_ds_terminate_control_method+0x85/0x11b
+>> [   97.321276]  [<ffffffff81454625>] acpi_ps_parse_aml+0x164/0x289
+>> [   97.327988]  [<ffffffff81454da6>] acpi_ps_execute_method+0x1c1/0x26c
+>> [   97.335195]  [<ffffffff8144f764>] acpi_ns_evaluate+0x1c1/0x258
+>> [   97.341814]  [<ffffffff81451f86>] acpi_evaluate_object+0x126/0x22f
+>> [   97.348826]  [<ffffffff8144d1ac>] acpi_hw_execute_sleep_method+0x3d/0x68
+>> [   97.356427]  [<ffffffff8144d5cf>] ? acpi_hw_enable_all_runtime_gpes+0x17/0x19
+>> [   97.364523]  [<ffffffff8144deb0>] acpi_hw_legacy_wake+0x4d/0x9d
+>> [   97.371239]  [<ffffffff8144e599>] acpi_hw_sleep_dispatch+0x2a/0x2c
+>> [   97.378243]  [<ffffffff8144e5cb>] acpi_leave_sleep_state+0x17/0x19
+>> [   97.385252]  [<ffffffff8143335c>] acpi_pm_finish+0x3f/0x99
+>> [   97.391471]  [<ffffffff81108c49>] suspend_devices_and_enter+0x139/0x560
+>> [   97.398972]  [<ffffffff81109162>] pm_suspend+0xf2/0x370
+>> [   97.404900]  [<ffffffff81107e69>] state_store+0x79/0xf0
+>> [   97.410824]  [<ffffffff813bc4af>] kobj_attr_store+0xf/0x20
+>> [   97.417038]  [<ffffffff81284f3d>] sysfs_kf_write+0x3d/0x50
+>> [   97.423260]  [<ffffffff81284580>] kernfs_fop_write+0xe0/0x160
+>> [   97.429776]  [<ffffffff81210f47>] vfs_write+0xb7/0x1f0
+>> [   97.435602]  [<ffffffff81211ae6>] SyS_write+0x46/0xb0
+>> [   97.441334]  [<ffffffff8114d986>] ? __audit_syscall_exit+0x1f6/0x2a0
+>> [   97.448544]  [<ffffffff817a4ea9>] system_call_fastpath+0x16/0x1b
+>> [   97.455361] INFO: task async-enable-no:749 blocked for more than 30 seconds.
+>> [   97.463353]       Not tainted 3.16.0-rc5+ #671
+>> [   97.468391] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> [   97.477271] async-enable-no D ffff88014e254140     0   749      2 0x00000080
+>> [   97.485286]  ffff88009de83bf0 0000000000000046 ffff88009b850000 ffff88009de83fd8
+>> [   97.493714]  0000000000014140 0000000000014140 ffff880148305dc0 ffff880149804160
+>> [   97.502142]  7fffffffffffffff 0000000000000002 0000000000000000 ffff88009b850000
+>> [   97.510573] Call Trace:
+>> [   97.513344]  [<ffffffff817a1689>] schedule+0x29/0x70
+>> [   97.518974]  [<ffffffff817a0b49>] schedule_timeout+0x1f9/0x270
+>> [   97.525588]  [<ffffffff81284bfe>] ? __kernfs_create_file+0x7e/0xa0
+>> [   97.532599]  [<ffffffff8128546b>] ? sysfs_add_file_mode_ns+0x9b/0x160
+>> [   97.539903]  [<ffffffff817a36b2>] __down_common+0x93/0xd8
+>> [   97.546027]  [<ffffffff817a376a>] __down_timeout+0x16/0x18
+>> [   97.552252]  [<ffffffff8110546c>] down_timeout+0x4c/0x60
+>> [   97.558274]  [<ffffffff81431f97>] acpi_os_wait_semaphore+0x43/0x57
+>> [   97.565285]  [<ffffffff8145a8f4>] acpi_ut_acquire_mutex+0x48/0x88
+>> [   97.572200]  [<ffffffff81435d1b>] ? acpi_match_device+0x4f/0x4f
+>> [   97.578918]  [<ffffffff8145250f>] acpi_get_data_full+0x3a/0x8e
+>> [   97.585537]  [<ffffffff81435b30>] acpi_bus_get_device+0x23/0x40
+>> [   97.592253]  [<ffffffff8145d839>] acpi_cpu_soft_notify+0x50/0xe6
+>> [   97.599064]  [<ffffffff810e1ddc>] notifier_call_chain+0x4c/0x70
+>> [   97.605776]  [<ffffffff810e1eee>] __raw_notifier_call_chain+0xe/0x10
+>> [   97.612983]  [<ffffffff810bc993>] cpu_notify+0x23/0x50
+>> [   97.618815]  [<ffffffff810bcb98>] _cpu_up+0x168/0x180
+>> [   97.624542]  [<ffffffff810bcc5c>] _cpu_up_with_trace+0x2c/0xe0
+>> [   97.631153]  [<ffffffff810bd050>] ? disable_nonboot_cpus+0x1c0/0x1c0
+>> [   97.638360]  [<ffffffff810bd06f>] async_enable_nonboot_cpus+0x1f/0x70
+>> [   97.645670]  [<ffffffff810dda02>] kthread+0xd2/0xf0
+>> [   97.651201]  [<ffffffff810dd930>] ? insert_kthread_work+0x40/0x40
+>> [   97.658117]  [<ffffffff817a4dfc>] ret_from_fork+0x7c/0xb0
+>>
+>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>> ---
+>>  drivers/acpi/osl.c | 60 +++++++++++++++++++++++++++++-------------------------
+>>  1 file changed, 32 insertions(+), 28 deletions(-)
+>>
+>> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+>> index bad25b0..d018d95 100644
+>> --- a/drivers/acpi/osl.c
+>> +++ b/drivers/acpi/osl.c
+>> @@ -97,7 +97,7 @@ struct acpi_ioremap {
+>>  };
+>>  
+>>  static LIST_HEAD(acpi_ioremaps);
+>> -static DEFINE_MUTEX(acpi_ioremap_lock);
+>> +static DEFINE_SPINLOCK(acpi_ioremap_lock);
+>>  
+>>  static void __init acpi_osi_setup_late(void);
+>>  
+>> @@ -267,13 +267,13 @@ acpi_physical_address __init acpi_os_get_root_pointer(void)
+>>  	}
+>>  }
+>>  
+>> -/* Must be called with 'acpi_ioremap_lock' or RCU read lock held. */
+>> +/* Must be called with 'acpi_ioremap_lock'. */
+>>  static struct acpi_ioremap *
+>>  acpi_map_lookup(acpi_physical_address phys, acpi_size size)
+>>  {
+>>  	struct acpi_ioremap *map;
+>>  
+>> -	list_for_each_entry_rcu(map, &acpi_ioremaps, list)
+>> +	list_for_each_entry(map, &acpi_ioremaps, list)
+>>  		if (map->phys <= phys &&
+>>  		    phys + size <= map->phys + map->size)
+>>  			return map;
+>> @@ -281,7 +281,7 @@ acpi_map_lookup(acpi_physical_address phys, acpi_size size)
+>>  	return NULL;
+>>  }
+>>  
+>> -/* Must be called with 'acpi_ioremap_lock' or RCU read lock held. */
+>> +/* Must be called with 'acpi_ioremap_lock'. */
+>>  static void __iomem *
+>>  acpi_map_vaddr_lookup(acpi_physical_address phys, unsigned int size)
+>>  {
+>> @@ -298,29 +298,29 @@ void __iomem *acpi_os_get_iomem(acpi_physical_address phys, unsigned int size)
+>>  {
+>>  	struct acpi_ioremap *map;
+>>  	void __iomem *virt = NULL;
+>> +	unsigned long flags;
+>>  
+>> -	mutex_lock(&acpi_ioremap_lock);
+>> +	spin_lock_irqsave(&acpi_ioremap_lock, flags);
 > 
-> On Tue, Aug 05, 2014 at 05:12:43PM +0800, Anson Huang wrote:
-> > i.MX6SX has some new features of thermal interrupt function,
-> > there are LOW, HIGH and PANIC irq for thermal sensor, so add
-> > platform data to separate different thermal version;
-> > 
-> > The reset value of LOW ALARM is 0 which means the highest
-> > temp, so the LOW ALARM will be triggered once irq is enabled,
-> > so we need to correct it before enabling thermal irq;
-> > 
-> > Enable PANIC ALARM as critical trip point, it will trigger
-> > system reset via SRC module once PANIC IRQ is triggered, it
-> > is pure hardware function, so use it instead of software
-> > reset by cooling device.
-> > 
-> > Signed-off-by: Anson Huang <b20788@freescale.com>
-> > ---
-> >  .../devicetree/bindings/thermal/imx-thermal.txt    |    2 +-
-> >  drivers/thermal/imx_thermal.c                      |   88 +++++++++++++++++---
-> >  2 files changed, 76 insertions(+), 14 deletions(-)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/thermal/imx-thermal.txt b/Documentation/devicetree/bindings/thermal/imx-thermal.txt
-> > index 1f0f672..95c05b1 100644
-> > --- a/Documentation/devicetree/bindings/thermal/imx-thermal.txt
-> > +++ b/Documentation/devicetree/bindings/thermal/imx-thermal.txt
-> > @@ -1,7 +1,7 @@
-> >  * Temperature Monitor (TEMPMON) on Freescale i.MX SoCs
-> >  
-> >  Required properties:
-> > -- compatible : "fsl,imx6q-thermal"
-> > +- compatible : "fsl,imx6q-tempmon" for V1, "fsl,imx6sx-tempmon" for V2.
+> Why do you need to do _irqsave here?  It was a mutex before, after all,
+> so it can't be called from interrupt context.
 > 
-> It would be kind to document the difference between V1 and V2, don't you
-> think?
+> In other places below too.
 
-Accepted, will add some brief summary about the new feature added on V2.
+Original code uses RCU lock to protect acpi_ioremaps list in the
+acpi_os_read/write_memory() which will be called in apei_read/write().
+apei_read/write() will be called in the interrupt from APEI comments.
+
+Now replace RCU with acpi_ioremap_lock and the lock will be called in
+the interrupt. So redefine it to spin lock. From history,
+acpi_ioremap_lock was spin lock before adding RCU support.
 
 > 
-> >  - fsl,tempmon : phandle pointer to system controller that contains TEMPMON
-> >    control registers, e.g. ANATOP on imx6q.
-> >  - fsl,tempmon-data : phandle pointer to fuse controller that contains TEMPMON
-> > diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
-> > index 2c516f2..2276e74 100644
-> > --- a/drivers/thermal/imx_thermal.c
-> > +++ b/drivers/thermal/imx_thermal.c
-> > @@ -19,6 +19,7 @@
-> >  #include <linux/mfd/syscon.h>
-> >  #include <linux/module.h>
-> >  #include <linux/of.h>
-> > +#include <linux/of_device.h>
-> >  #include <linux/platform_device.h>
-> >  #include <linux/regmap.h>
-> >  #include <linux/slab.h>
-> > @@ -31,6 +32,10 @@
-> >  
-> >  #define MISC0				0x0150
-> >  #define MISC0_REFTOP_SELBIASOFF		(1 << 3)
-> > +#define MISC1				0x0160
-> > +#define MISC1_IRQ_TEMPHIGH		(1 << 29)
-> > +#define MISC1_IRQ_TEMPLOW		(1 << 28)
-> > +#define MISC1_IRQ_TEMPPANIC		(1 << 27)
-> 
-> how about using 
-> +#define MISC1_IRQ_TEMPHIGH		BIT(29)
-> +#define MISC1_IRQ_TEMPLOW		BIT(28)
-> +#define MISC1_IRQ_TEMPPANIC		BIT(27)
+>>  	map = acpi_map_lookup(phys, size);
+>>  	if (map) {
+>>  		virt = map->virt + (phys - map->phys);
+>>  		map->refcount++;
+>>  	}
+>> -	mutex_unlock(&acpi_ioremap_lock);
+>> +	spin_unlock_irqrestore(&acpi_ioremap_lock, flags);
+>>  	return virt;
+>>  }
+>>  EXPORT_SYMBOL_GPL(acpi_os_get_iomem);
+>>  
+>> -/* Must be called with 'acpi_ioremap_lock' or RCU read lock held. */
+>> +/* Must be called with 'acpi_ioremap_lock'. */
+>>  static struct acpi_ioremap *
+>>  acpi_map_lookup_virt(void __iomem *virt, acpi_size size)
+>>  {
+>>  	struct acpi_ioremap *map;
+>>  
+>> -	list_for_each_entry_rcu(map, &acpi_ioremaps, list)
+>> +	list_for_each_entry(map, &acpi_ioremaps, list)
+>>  		if (map->virt <= virt &&
+>>  		    virt + size <= map->virt + map->size)
+>>  			return map;
+>> -
+>>  	return NULL;
+>>  }
+>>  
+>> @@ -362,6 +362,7 @@ acpi_os_map_iomem(acpi_physical_address phys, acpi_size size)
+>>  	void __iomem *virt;
+>>  	acpi_physical_address pg_off;
+>>  	acpi_size pg_sz;
+>> +	unsigned long flags;
+>>  
+>>  	if (phys > ULONG_MAX) {
+>>  		printk(KERN_ERR PREFIX "Cannot map memory that high\n");
+>> @@ -371,7 +372,7 @@ acpi_os_map_iomem(acpi_physical_address phys, acpi_size size)
+>>  	if (!acpi_gbl_permanent_mmap)
+>>  		return __acpi_map_table((unsigned long)phys, size);
+>>  
+>> -	mutex_lock(&acpi_ioremap_lock);
+>> +	spin_lock_irqsave(&acpi_ioremap_lock, flags);
+>>  	/* Check if there's a suitable mapping already. */
+>>  	map = acpi_map_lookup(phys, size);
+>>  	if (map) {
+>> @@ -381,7 +382,7 @@ acpi_os_map_iomem(acpi_physical_address phys, acpi_size size)
+>>  
+>>  	map = kzalloc(sizeof(*map), GFP_KERNEL);
+>>  	if (!map) {
+>> -		mutex_unlock(&acpi_ioremap_lock);
+>> +		spin_unlock_irqrestore(&acpi_ioremap_lock, flags);
+>>  		return NULL;
+>>  	}
+>>  
+>> @@ -389,7 +390,7 @@ acpi_os_map_iomem(acpi_physical_address phys, acpi_size size)
+>>  	pg_sz = round_up(phys + size, PAGE_SIZE) - pg_off;
+>>  	virt = acpi_map(pg_off, pg_sz);
+>>  	if (!virt) {
+>> -		mutex_unlock(&acpi_ioremap_lock);
+>> +		spin_unlock_irqrestore(&acpi_ioremap_lock, flags);
+>>  		kfree(map);
+>>  		return NULL;
+>>  	}
+>> @@ -400,10 +401,10 @@ acpi_os_map_iomem(acpi_physical_address phys, acpi_size size)
+>>  	map->size = pg_sz;
+>>  	map->refcount = 1;
+>>  
+>> -	list_add_tail_rcu(&map->list, &acpi_ioremaps);
+>> +	list_add_tail(&map->list, &acpi_ioremaps);
+>>  
+>>  out:
+>> -	mutex_unlock(&acpi_ioremap_lock);
+>> +	spin_unlock_irqrestore(&acpi_ioremap_lock, flags);
+>>  	return map->virt + (phys - map->phys);
+>>  }
+>>  EXPORT_SYMBOL_GPL(acpi_os_map_iomem);
+>> @@ -418,13 +419,12 @@ EXPORT_SYMBOL_GPL(acpi_os_map_memory);
+>>  static void acpi_os_drop_map_ref(struct acpi_ioremap *map)
+>>  {
+>>  	if (!--map->refcount)
+>> -		list_del_rcu(&map->list);
+>> +		list_del(&map->list);
+>>  }
+>>  
+>>  static void acpi_os_map_cleanup(struct acpi_ioremap *map)
+>>  {
+>>  	if (!map->refcount) {
+>> -		synchronize_rcu();
+>>  		acpi_unmap(map->phys, map->virt);
+>>  		kfree(map);
+>>  	}
+>> @@ -433,21 +433,22 @@ static void acpi_os_map_cleanup(struct acpi_ioremap *map)
+>>  void __ref acpi_os_unmap_iomem(void __iomem *virt, acpi_size size)
+>>  {
+>>  	struct acpi_ioremap *map;
+>> +	unsigned long flags;
+>>  
+>>  	if (!acpi_gbl_permanent_mmap) {
+>>  		__acpi_unmap_table(virt, size);
+>>  		return;
+>>  	}
+>>  
+>> -	mutex_lock(&acpi_ioremap_lock);
+>> +	spin_lock_irqsave(&acpi_ioremap_lock, flags);
+>>  	map = acpi_map_lookup_virt(virt, size);
+>>  	if (!map) {
+>> -		mutex_unlock(&acpi_ioremap_lock);
+>> +		spin_unlock_irqrestore(&acpi_ioremap_lock, flags);
+>>  		WARN(true, PREFIX "%s: bad address %p\n", __func__, virt);
+>>  		return;
+>>  	}
+>>  	acpi_os_drop_map_ref(map);
+>> -	mutex_unlock(&acpi_ioremap_lock);
+>> +	spin_unlock_irqrestore(&acpi_ioremap_lock, flags);
+>>  
+>>  	acpi_os_map_cleanup(map);
+>>  }
+>> @@ -490,6 +491,7 @@ void acpi_os_unmap_generic_address(struct acpi_generic_address *gas)
+>>  {
+>>  	u64 addr;
+>>  	struct acpi_ioremap *map;
+>> +	unsigned long flags;
+>>  
+>>  	if (gas->space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY)
+>>  		return;
+>> @@ -499,14 +501,14 @@ void acpi_os_unmap_generic_address(struct acpi_generic_address *gas)
+>>  	if (!addr || !gas->bit_width)
+>>  		return;
+>>  
+>> -	mutex_lock(&acpi_ioremap_lock);
+>> +	spin_lock_irqsave(&acpi_ioremap_lock, flags);
+>>  	map = acpi_map_lookup(addr, gas->bit_width / 8);
+>>  	if (!map) {
+>> -		mutex_unlock(&acpi_ioremap_lock);
+>> +		spin_unlock_irqrestore(&acpi_ioremap_lock, flags);
+>>  		return;
+>>  	}
+>>  	acpi_os_drop_map_ref(map);
+>> -	mutex_unlock(&acpi_ioremap_lock);
+>> +	spin_unlock_irqrestore(&acpi_ioremap_lock, flags);
+>>  
+>>  	acpi_os_map_cleanup(map);
+>>  }
+>> @@ -939,11 +941,12 @@ acpi_os_read_memory(acpi_physical_address phys_addr, u64 *value, u32 width)
+>>  	unsigned int size = width / 8;
+>>  	bool unmap = false;
+>>  	u64 dummy;
+>> +	unsigned long flags;
+>>  
+>> -	rcu_read_lock();
+>> +	spin_lock_irqsave(&acpi_ioremap_lock, flags);
+>>  	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
+>>  	if (!virt_addr) {
+>> -		rcu_read_unlock();
+>> +		spin_unlock_irqrestore(&acpi_ioremap_lock, flags);
+>>  		virt_addr = acpi_os_ioremap(phys_addr, size);
+>>  		if (!virt_addr)
+>>  			return AE_BAD_ADDRESS;
+>> @@ -973,7 +976,7 @@ acpi_os_read_memory(acpi_physical_address phys_addr, u64 *value, u32 width)
+>>  	if (unmap)
+>>  		iounmap(virt_addr);
+>>  	else
+>> -		rcu_read_unlock();
+>> +		spin_unlock_irqrestore(&acpi_ioremap_lock, flags);
+>>  
+>>  	return AE_OK;
+>>  }
+>> @@ -997,11 +1000,12 @@ acpi_os_write_memory(acpi_physical_address phys_addr, u64 value, u32 width)
+>>  	void __iomem *virt_addr;
+>>  	unsigned int size = width / 8;
+>>  	bool unmap = false;
+>> +	unsigned long flags;
+>>  
+>> -	rcu_read_lock();
+>> +	spin_lock_irqsave(&acpi_ioremap_lock, flags);
+>>  	virt_addr = acpi_map_vaddr_lookup(phys_addr, size);
+>>  	if (!virt_addr) {
+>> -		rcu_read_unlock();
+>> +		spin_unlock_irqrestore(&acpi_ioremap_lock, flags);
+>>  		virt_addr = acpi_os_ioremap(phys_addr, size);
+>>  		if (!virt_addr)
+>>  			return AE_BAD_ADDRESS;
+>> @@ -1028,7 +1032,7 @@ acpi_os_write_memory(acpi_physical_address phys_addr, u64 value, u32 width)
+>>  	if (unmap)
+>>  		iounmap(virt_addr);
+>>  	else
+>> -		rcu_read_unlock();
+>> +		spin_unlock_irqrestore(&acpi_ioremap_lock, flags);
+>>  
+>>  	return AE_OK;
+>>  }
+>>
 > 
 
-Accepted, will improve it in V2 patch.
 
-> >  
-> >  #define TEMPSENSE0			0x0180
-> >  #define TEMPSENSE0_ALARM_VALUE_SHIFT	20
-> > @@ -43,6 +48,11 @@
-> >  
-> >  #define TEMPSENSE1			0x0190
-> >  #define TEMPSENSE1_MEASURE_FREQ		0xffff
-> > +#define TEMPSENSE2			0x0290
-> > +#define TEMPSENSE2_LOW_VALUE_SHIFT	0
-> > +#define TEMPSENSE2_LOW_VALUE_MASK	0xfff
-> > +#define TEMPSENSE2_PANIC_VALUE_SHIFT	16
-> > +#define TEMPSENSE2_PANIC_VALUE_MASK	0xfff0000
-> 
-> Are the above register offsets and (bit) masks applicable to both
-> versions? do you mind adding a comment to what is specific to V2?
-> 
-
-Accepted, will add comments in V2 patch.
-
-> >  
-> >  #define OCOTP_ANA1			0x04e0
-> >  
-> > @@ -66,6 +76,21 @@ enum imx_thermal_trip {
-> >  #define FACTOR1				15976
-> >  #define FACTOR2				4297157
-> >  
-> > +#define TEMPMON_V1			1
-> > +#define TEMPMON_V2			2
-> > +
-> 
-> where does the V1/V2 nomenclature come from? how about:
-> 
-> +#define TEMPMON_IMX6Q			1
-> +#define TEMPMON_IMX6SX			2
-> 
-
-OK.
-
-> 
-> > +struct thermal_soc_data {
-> > +	u32 version;
-> > +};
-> > +
-> > +static struct thermal_soc_data thermal_imx6q_data = {
-> > +	.version = TEMPMON_V1,
-> > +};
-> > +
-> > +static struct thermal_soc_data thermal_imx6sx_data = {
-> > +	.version = TEMPMON_V2,
-> > +};
-> > +
-> >  struct imx_thermal_data {
-> >  	struct thermal_zone_device *tz;
-> >  	struct thermal_cooling_device *cdev;
-> > @@ -79,8 +104,21 @@ struct imx_thermal_data {
-> >  	bool irq_enabled;
-> >  	int irq;
-> >  	struct clk *thermal_clk;
-> > +	const struct thermal_soc_data *socdata;
-> >  };
-> >  
-> > +static void imx_set_panic_temp(struct imx_thermal_data *data,
-> > +			       signed long panic_temp)
-> > +{
-> > +	struct regmap *map = data->tempmon;
-> > +	int critical_value;
-> > +
-> > +	critical_value = (data->c2 - panic_temp) / data->c1;
-> > +	regmap_write(map, TEMPSENSE2 + REG_CLR, TEMPSENSE2_PANIC_VALUE_MASK);
-> > +	regmap_write(map, TEMPSENSE2 + REG_SET, critical_value <<
-> > +			TEMPSENSE2_PANIC_VALUE_SHIFT);
-> > +}
-> > +
-> >  static void imx_set_alarm_temp(struct imx_thermal_data *data,
-> >  			       signed long alarm_temp)
-> >  {
-> > @@ -142,13 +180,15 @@ static int imx_get_temp(struct thermal_zone_device *tz, unsigned long *temp)
-> >  	/* See imx_get_sensor_data() for formula derivation */
-> >  	*temp = data->c2 - n_meas * data->c1;
-> >  
-> > -	/* Update alarm value to next higher trip point */
-> > -	if (data->alarm_temp == data->temp_passive && *temp >= data->temp_passive)
-> > -		imx_set_alarm_temp(data, data->temp_critical);
-> > -	if (data->alarm_temp == data->temp_critical && *temp < data->temp_passive) {
-> > -		imx_set_alarm_temp(data, data->temp_passive);
-> > -		dev_dbg(&tz->device, "thermal alarm off: T < %lu\n",
-> > -			data->alarm_temp / 1000);
-> > +	/* Update alarm value to next higher trip point, only V1 needs it */
-> > +	if (data->socdata->version == TEMPMON_V1) {
-> > +		if (data->alarm_temp == data->temp_passive && *temp >= data->temp_passive)
-> > +			imx_set_alarm_temp(data, data->temp_critical);
-> > +		if (data->alarm_temp == data->temp_critical && *temp < data->temp_passive) {
-> > +			imx_set_alarm_temp(data, data->temp_passive);
-> > +			dev_dbg(&tz->device, "thermal alarm off: T < %lu\n",
-> > +				data->alarm_temp / 1000);
-> > +		}
-> >  	}
-> >  
-> >  	if (*temp != data->last_temp) {
-> > @@ -398,8 +438,17 @@ static irqreturn_t imx_thermal_alarm_irq_thread(int irq, void *dev)
-> >  	return IRQ_HANDLED;
-> >  }
-> >  
-> > +static const struct of_device_id of_imx_thermal_match[] = {
-> > +	{ .compatible = "fsl,imx6q-tempmon", .data = &thermal_imx6q_data, },
-> > +	{ .compatible = "fsl,imx6sx-tempmon", .data = &thermal_imx6sx_data, },
-> > +	{ /* end */ }
-> > +};
-> > +MODULE_DEVICE_TABLE(of, of_imx_thermal_match);
-> > +
-> >  static int imx_thermal_probe(struct platform_device *pdev)
-> >  {
-> > +	const struct of_device_id *of_id =
-> > +		of_match_device(of_imx_thermal_match, &pdev->dev);
-> >  	struct imx_thermal_data *data;
-> >  	struct cpumask clip_cpus;
-> >  	struct regmap *map;
-> > @@ -418,6 +467,21 @@ static int imx_thermal_probe(struct platform_device *pdev)
-> >  	}
-> >  	data->tempmon = map;
-> >  
-> > +	data->socdata = of_id->data;
-> > +
-> > +	/* make sure the IRQ flag is clear before enable irq */
-> > +	regmap_write(map, MISC1 + REG_CLR, MISC1_IRQ_TEMPHIGH);
-> 
-> Shouldn't this be also done only for TEMPMON_V2? What is the benefit /
-> effect in doing for V1 ?
-> 
-
-As on i.MX6SX, these bits are set by default, so we must clear them here, since
-the TEMPHIGH is common for all i.MX6 SoCs, so I do it for both V1 and V2. But I am
-OK to move it to only for V2, as we did NOT meet any issue on V1 before. Will move
-it in patch V2.
-
-Thanks for review!
-
-Anson
-
-> > +	if (data->socdata->version == TEMPMON_V2) {
-> > +		regmap_write(map, MISC1 + REG_CLR, MISC1_IRQ_TEMPLOW |
-> > +			MISC1_IRQ_TEMPPANIC);
-> > +		/*
-> > +		 * reset value of LOW ALARM is incorrect, set it to lowest
-> > +		 * value to avoid false trigger of low alarm.
-> > +		 */
-> > +		regmap_write(map, TEMPSENSE2 + REG_SET,
-> > +			TEMPSENSE2_LOW_VALUE_MASK);
-> > +	}
-> > +
-> >  	data->irq = platform_get_irq(pdev, 0);
-> >  	if (data->irq < 0)
-> >  		return data->irq;
-> > @@ -489,6 +553,10 @@ static int imx_thermal_probe(struct platform_device *pdev)
-> >  	measure_freq = DIV_ROUND_UP(32768, 10); /* 10 Hz */
-> >  	regmap_write(map, TEMPSENSE1 + REG_SET, measure_freq);
-> >  	imx_set_alarm_temp(data, data->temp_passive);
-> > +
-> > +	if (data->socdata->version == TEMPMON_V2)
-> > +		imx_set_panic_temp(data, data->temp_critical);
-> > +
-> >  	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_POWER_DOWN);
-> >  	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_MEASURE_TEMP);
-> >  
-> > @@ -550,12 +618,6 @@ static int imx_thermal_resume(struct device *dev)
-> >  static SIMPLE_DEV_PM_OPS(imx_thermal_pm_ops,
-> >  			 imx_thermal_suspend, imx_thermal_resume);
-> >  
-> > -static const struct of_device_id of_imx_thermal_match[] = {
-> > -	{ .compatible = "fsl,imx6q-tempmon", },
-> > -	{ /* end */ }
-> > -};
-> > -MODULE_DEVICE_TABLE(of, of_imx_thermal_match);
-> > -
-> >  static struct platform_driver imx_thermal = {
-> >  	.driver = {
-> >  		.name	= "imx_thermal",
-> > -- 
-> > 1.7.9.5
-> > 
-> 
+-- 
+Best regards
+Tianyu Lan
