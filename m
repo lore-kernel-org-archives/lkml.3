@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143AbaHFRxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 13:53:21 -0400
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:41460 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754047AbaHFRxS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 13:53:18 -0400
-Date: Wed, 6 Aug 2014 13:30:40 -0400
-From: Peter Feiner <pfeiner@google.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Jerome Marchand <jmarchan@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH -mm v6 06/13] pagemap: use walk->vma instead of calling
- find_vma()
-Message-ID: <20140806173040.GA28526@google.com>
-References: <1406920849-25908-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1406920849-25908-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1754191AbaHFRyv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 13:54:51 -0400
+Received: from sf2.bxl.stone.is ([5.134.1.239]:42072 "EHLO sf2.bxl.stone.is"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754146AbaHFRyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 13:54:49 -0400
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <53E2618F.6040208@acm.org>
+Date: Wed, 06 Aug 2014 19:10:39 +0200
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406920849-25908-7-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] spin_lock_nested(): Always evaluate second argument
+References: <53CE1019.10708@acm.org> <20140722133716.cff957eff4eff1cc9c1d9968@linux-foundation.org> <alpine.DEB.2.02.1407221612330.10592@chino.kir.corp.google.com> <53E260D9.6030803@acm.org>
+In-Reply-To: <53E260D9.6030803@acm.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Filter-ID: XtLePq6GTMn8G68F0EmQvdthj6rk7ohlAkaRQG+cDaLZlN3ufQ0ZRHdy43341LQ0JYRGiu4wDuX/
+ sGw1Y7RAsZ3WBw9ZlycipwBG3jGu9D8JBgu10R0foqIRsBJqRnurUO/XCGxJVedBWv8BXp6lSPrf
+ oA0XngOaR5RLFk6kKY8+X6tyUZ34Ozy6TOwmaHPzFR2lHDoBQ4zwtMehH4SfWgLcNhHqvET8hkHK
+ 4DD3CZT4SL0VvzAbTStaxE3e6xctxkHXgTSJC2+q+O2n2sPwh+CpLQk2sgUsKd5RNPNJeN3I5L/U
+ AJH41ve/RciJD7RwcMm6IODZgOZ9Y8BEoKFU+aMoXDjs2Ljwo94KTt37C74ccBIk1Sag4dKiqCrF
+ 8eZZsQYibGPulATAPqOguWXWenmy4p4jVbvkvQrOImHI+zH4ns3e6vWEaK66hz4t87L5hVQSL57W
+ w8nd1cTP1twpFFTUuHOuOBA828Pfce2frIKvtUus/ypEW5W6Dw4DmSZF9OoIMWCP9bnVs5BJWbbt
+ 5dM+m4WpRRDP6YzwkAPgQJZcv8AnfPB9HqHgcyCJwUz8oOSQKVK4yyKUlGmQMgPOfIQtTQXMrNAv
+ J7CbCYezRVuhdlkpfoNhtgWYwB/e4S2rpoRvMJWweGFGUUnI6wOX8j4FS3UlU37B6qPMab0LB93J
+ IFkIZaBCBQxuHnm838r53JPVY43DX2xu13bzR77n10CVt0DUeFU/MBWnkHtFiUWEyj6NsnagMRqM
+ 8j9gdkiQLAkCbSNS+uGS3B2gbpH+CQoQ5a8OxA97GyhrhjQrc+GSwIY88rqRZEl0ZFXSwVn3
+X-Report-Abuse-To: spam@sf1.bxl.stone.is
+X-Filter-Fingerprint: cPaH8lomer6UwsJ3BnJDysg56Hzi1baYmi2c/60G48S0VFDyP20las9Mq1v6nXmfrqKtWpHLpkE8
+ c09GKJn2tzESbR0qDNQvD2Wz28fGl5dMqRJTan78INzQLlEGX/jFRST5X0bRoOLYozD+qqgg13U4
+ H51jyCSmLdA2hPaiVpwYWaeThsiFlmPt/lOSmjPe4E14kOfCIshTUQiezlwqTmqK95LAXg+Ea3Jb
+ F9WwpaZ//Un1C5ivAWoOksRE8XtOTT9J6CK2j8j7/AJ9TNml+IbyXSJXjZjMx+Tok7jY2RMn3BMy
+ 1LAXbQrwm8OFnukCzIqp+DPfGh5dERZ2moanpvSHZh7bSeXsAMtaPF0u443E3nrK/nhevL/uAoHg
+ xNXar0XzbLB8Pru9OEB7tNjak+6bpnvFzMd6SECQNf1u/wGWAJzP31LdUHDVnH0aZDcVCxO6ac9X
+ hDc8gFJxmNF1qg==
+X-Originating-IP: 87.238.167.34
+X-SpamExperts-Domain: stone.is
+X-SpamExperts-Username: 87.238.167.34
+Authentication-Results: bxl.stone.is; auth=pass smtp.auth=87.238.167.34
+X-SpamExperts-Outgoing-Class: ham
+X-SpamExperts-Outgoing-Evidence: Combined (0.02)
+X-Recommended-Action: accept
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 03:20:42PM -0400, Naoya Horiguchi wrote:
-> Page table walker has the information of the current vma in mm_walk, so
-> we don't have to call find_vma() in each pagemap_hugetlb_range() call.
+Evaluating a macro argument only if certain configuration options
+have been selected is confusing and error-prone. Hence always
+evaluate the second argument of spin_lock_nested().
 
-You could also get rid of a bunch of code in pagemap_pte_range:
+An intentional side effect of this patch is that it avoids that
+the following warning is reported for netif_addr_lock_nested()
+when building with CONFIG_DEBUG_LOCK_ALLOC=n and with W=1:
 
+include/linux/netdevice.h: In function 'netif_addr_lock_nested':
+include/linux/netdevice.h:2865:6: warning: variable 'subclass' set but not used [-Wunused-but-set-variable]
+  int subclass = SINGLE_DEPTH_NESTING;
+      ^
+
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- fs/proc/task_mmu.c | 33 ++++++---------------------------
- 1 file changed, 6 insertions(+), 27 deletions(-)
+ include/linux/spinlock.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 9b30bdd..e9af130 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -1035,16 +1035,14 @@ static inline void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme, struct pagemap
- static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 			     struct mm_walk *walk)
- {
--	struct vm_area_struct *vma;
-+	struct vm_area_struct *vma = walk->vma
- 	struct pagemapread *pm = walk->private;
- 	spinlock_t *ptl;
- 	pte_t *pte;
- 	int err = 0;
--	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
-+	pagemap_entry_t pme;
+diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
+index 3f2867f..485d5dc 100644
+--- a/include/linux/spinlock.h
++++ b/include/linux/spinlock.h
+@@ -197,7 +197,8 @@ static inline void do_raw_spin_unlock(raw_spinlock_t *lock) __releases(lock)
+ 		 _raw_spin_lock_nest_lock(lock, &(nest_lock)->dep_map);	\
+ 	 } while (0)
+ #else
+-# define raw_spin_lock_nested(lock, subclass)		_raw_spin_lock(lock)
++# define raw_spin_lock_nested(lock, subclass)		\
++	((void)(subclass), _raw_spin_lock(lock))
+ # define raw_spin_lock_nest_lock(lock, nest_lock)	_raw_spin_lock(lock)
+ #endif
  
--	/* find the first VMA at or above 'addr' */
--	vma = find_vma(walk->mm, addr);
--	if (vma && pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
-+	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
- 		int pmd_flags2;
- 
- 		if ((vma->vm_flags & VM_SOFTDIRTY) || pmd_soft_dirty(*pmd))
-@@ -1069,28 +1067,9 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	if (pmd_trans_unstable(pmd))
- 		return 0;
- 	for (; addr != end; addr += PAGE_SIZE) {
--		int flags2;
--
--		/* check to see if we've left 'vma' behind
--		 * and need a new, higher one */
--		if (vma && (addr >= vma->vm_end)) {
--			vma = find_vma(walk->mm, addr);
--			if (vma && (vma->vm_flags & VM_SOFTDIRTY))
--				flags2 = __PM_SOFT_DIRTY;
--			else
--				flags2 = 0;
--			pme = make_pme(PM_NOT_PRESENT(pm->v2) | PM_STATUS2(pm->v2, flags2));
--		}
--
--		/* check that 'vma' actually covers this address,
--		 * and that it isn't a huge page vma */
--		if (vma && (vma->vm_start <= addr) &&
--		    !is_vm_hugetlb_page(vma)) {
--			pte = pte_offset_map(pmd, addr);
--			pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
--			/* unmap before userspace copy */
--			pte_unmap(pte);
--		}
-+		pte = pte_offset_map(pmd, addr);
-+		pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
-+		pte_unmap(pte);
- 		err = add_to_pagemap(addr, &pme, pm);
- 		if (err)
- 			return err;
 -- 
-2.0.0.526.g5318336
+1.8.4.5
 
