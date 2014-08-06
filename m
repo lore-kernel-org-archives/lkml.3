@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656AbaHFWoD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 18:44:03 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:61019 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754361AbaHFWoB (ORCPT
+	id S1754597AbaHFWqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 18:46:24 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:59229 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063AbaHFWqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 18:44:01 -0400
-Date: Wed, 6 Aug 2014 15:43:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: "Bueso, Davidlohr" <davidlohr@hp.com>
-Cc: David Howells <dhowells@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: FRV build failure with latest kernel
-Message-ID: <20140806224356.GA5111@roeck-us.net>
-References: <53E234DC.3050409@roeck-us.net>
- <279688AD5644A043870AAB6DBEFA9ED228280EE8@G5W2714.americas.hpqcorp.net>
+	Wed, 6 Aug 2014 18:46:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <279688AD5644A043870AAB6DBEFA9ED228280EE8@G5W2714.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1406197295-10604-3-git-send-email-caesar.wang@rock-chips.com>
+References: <1406197295-10604-1-git-send-email-caesar.wang@rock-chips.com>
+	<1406197295-10604-3-git-send-email-caesar.wang@rock-chips.com>
+Date: Wed, 6 Aug 2014 15:46:21 -0700
+X-Google-Sender-Auth: Rcmb7P-5ScWd8iRrdIr4QL9jyn8
+Message-ID: <CAD=FV=V4Kp-H3CcAKZPV1jBnYX+Ntwvxx6RB13TLxS5RRPHTWA@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] pwm: rockchip: Added to support for RK3288 SoC
+From: Doug Anderson <dianders@chromium.org>
+To: Caesar Wang <caesar.wang@rock-chips.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, b.galvani@gmail.com,
+        Rob Herring <robh+dt@kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Kumar Gala <galak@codeaurora.org>, Eddie Cai <cf@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        Addy Ke <addy.ke@rock-chips.com>,
+        =?UTF-8?B?6ZmI5riQ6aOe?= <cjf@rock-chips.com>,
+        han jiang <hj@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-pwm <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 08:37:14PM +0000, Bueso, Davidlohr wrote:
-> 
-> ________________________________________
-> From: Guenter Roeck [linux@roeck-us.net]
-> Sent: Wednesday, August 06, 2014 6:59 AM
-> To: David Howells
-> Cc: linux-kernel@vger.kernel.org; Bueso, Davidlohr
-> Subject: FRV build failure with latest kernel
-> 
-> Building frv:defconfig ... failed
-> --------------
-> Error log:
-> In file included from kernel/locking/mutex.c:28:0:
-> kernel/locking/mcs_spinlock.h: In function 'mcs_spin_lock':
-> kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of function 'cpu_relax_lowlatency' [-Werror=implicit-function-declaration]https://lkml.org/lkml/2014/8/5/442
-> cc1: some warnings being treated as errors
-> make[2]: *** [kernel/locking/mutex.o] Error 1
-> 
-> Due to commit 3a6bfbc91d (arch, locking: Ciao arch_mutex_cpu_relax()), which missed frv.
-> 
-> Yeah, I sent out the fix yesterday: https://lkml.org/lkml/2014/8/5/442
-> 
-Looks like Geert was faster than me, as usual ;-).
+Caesar,
 
-Thanks, hope this will make it upstream soon.
+On Thu, Jul 24, 2014 at 3:21 AM, Caesar Wang <caesar.wang@rock-chips.com> wrote:
+> +static const struct rockchip_pwm_data pwm_data_v1 = {
+> +       .regs.duty = PWM_HRC,
+> +       .regs.period = PWM_LRC,
+> +       .regs.cntr = PWM_CNTR,
+> +       .regs.ctrl = PWM_CTRL,
+> +       .prescaler = PRESCALER,
+> +       .set_enable = rockchip_pwm_set_enable_v1,
+> +};
+> +
+> +static const struct rockchip_pwm_data pwm_data_v2 = {
+> +       .regs.duty = PWM_LRC,
+> +       .regs.period = PWM_HRC,
+> +       .regs.cntr = PWM_CNTR,
+> +       .regs.ctrl = PWM_CTRL,
+> +       .prescaler = PRESCALER-1,
+> +       .set_enable = rockchip_pwm_set_enable_v2,
+> +};
+> +
+> +static const struct rockchip_pwm_data pwm_data_vop = {
+> +       .regs.duty = PWM_LRC,
+> +       .regs.period = PWM_HRC,
+> +       .regs.cntr = PWM_CTRL,
+> +       .regs.ctrl = PWM_CNTR,
 
-Guenter
+Did you really mean to flip CTRL and CNTR here?  If so, that's super
+confusing and deserves a comment.  AKA, I think the above should not
+be:
+
+ +       .regs.cntr = PWM_CTRL,
+ +       .regs.ctrl = PWM_CNTR,
+
+...but should be
+
+ +       .regs.cntr = PWM_CNTR,
+ +       .regs.ctrl = PWM_CTRL,
+
+If you didn't mean to flip CTRL and CNTR here, then just get rid of
+pwm_data_vop and refer to pwm_data_v2.  In fact, I'd suggest that you
+totally remove the "rockchip,vop-pwm" since there's nothing different
+between "rockchip,rk3288-pwm" and "rockchip,vop-pwm".
+
+
+Have you validated Thierry's suggestion to allow you to access your
+memory range?
+
+-Doug
