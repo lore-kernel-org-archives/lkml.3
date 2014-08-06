@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420AbaHFVuu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 17:50:50 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:46415 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532AbaHFVut (ORCPT
+	id S1754465AbaHFVwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 17:52:20 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44071 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821AbaHFVwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 17:50:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140806201256.GO3711@ld-irv-0074>
-References: <1403220823-19444-1-git-send-email-f.fainelli@gmail.com>
-	<CAGVrzcYfA8rCXGRW7g0JhT4GQKT8SQj+pMvCh25yoXLFGNM_Pw@mail.gmail.com>
-	<20140806165452.GN3711@ld-irv-0074>
-	<CAL_JsqK8BiffXgpQSig5EbV3FUW7EBOn9YjZGqOcUcEJiCJ0WA@mail.gmail.com>
-	<20140806201256.GO3711@ld-irv-0074>
-Date: Wed, 6 Aug 2014 14:50:47 -0700
-Message-ID: <CA+bK7J7LQq4S70ScSynbLTjNMmP=9n3KD2suYRg9JN+pEv-Y7g@mail.gmail.com>
-Subject: Re: [PATCH] of/irq: lookup 'interrupts-extended' property first
-From: Tim Bird <tbird20d@gmail.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 6 Aug 2014 17:52:19 -0400
+Date: Wed, 06 Aug 2014 14:52:18 -0700 (PDT)
+Message-Id: <20140806.145218.1742159418901363810.davem@davemloft.net>
+To: ixaphire@qrator.net
+Cc: yoshfuji@linux-ipv6.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH net-next v2] tcp: md5: check md5 signature without
+ socket lock
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140807014953.d8c4cde302bb9b30f8efe0e1@qrator.net>
+References: <20140807014953.d8c4cde302bb9b30f8efe0e1@qrator.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 06 Aug 2014 14:52:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 6, 2014 at 1:12 PM, Brian Norris
-<computersforpeace@gmail.com> wrote:
-> On Wed, Aug 06, 2014 at 01:42:08PM -0500, Rob Herring wrote:
->> On Wed, Aug 6, 2014 at 11:54 AM, Brian Norris <computersforpeace@gmail.com> wrote:
->> > On Thu, Jul 31, 2014 at 11:00:01AM -0700, Florian Fainelli wrote:
->> > I think it is important that a device tree provide some flexibility on
->> > kernel versions. We only invented 'interrupts-extended' in Linux 3.13,
->> > so it's easy to have device trees that could work only on 3.13+.
->> >
->> > Typically, we might say that new features require new kernels, but this
->> > is a very basic piece of the DT infrastructure. In our case, we have
->> > hardware whose basic features can be supported by a single interrupt
->> > parent, and so we used the 'interrupts' property pre-3.13. But when we
->> > want to add some power management features, there's an additional
->> > interrupt parent. Under the current DT binding, we have to switch over
->> > to using 'interrupts-extended' exclusively, and thus we must have a
->> > completely new DTB for >=3.13, and this DTB no longer works with the old
->> > kernels.
->>
->> "Must have" to enable the new features?
->
-> Yes. The new feature requires an additional interrupt parent, and so it
-> requires interrupts-extended.
+From: Dmitry Popov <ixaphire@qrator.net>
+Date: Thu, 7 Aug 2014 01:49:53 +0400
 
-Hold on there.  What about interrupt-map?  That was the traditional DT
-feature for
-supporting multi-parented interrupts.  Why couldn't the feature have been added
-using that instead of interrupts-extended?
+> Since a8afca032 (tcp: md5: protects md5sig_info with RCU) tcp_md5_do_lookup
+> doesn't require socket lock, rcu_read_lock is enough. Therefore socket lock is
+> no longer required for tcp_v{4,6}_inbound_md5_hash too, so we can move these
+> calls (wrapped with rcu_read_{,un}lock) before bh_lock_sock:
+> from tcp_v{4,6}_do_rcv to tcp_v{4,6}_rcv.
+> 
+> Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
 
-I know interrupts-extended is preferred, but has interrupt-map support been
-removed from recent kernels?  I'm a bit confused.
-
- -- Tim Bird
-Senior Software Engineer, Sony Mobile
-Architecture Group Chair, CE Workgroup, Linux Foundation
+Please respin this against the current 'net' tree, it doesn't apply.
