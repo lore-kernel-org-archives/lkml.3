@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546AbaHFNsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 09:48:21 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42984 "EHLO bear.ext.ti.com"
+	id S1754092AbaHFNsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 09:48:03 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39939 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751826AbaHFNsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 09:48:19 -0400
+	id S1753923AbaHFNrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 09:47:45 -0400
 From: Jyri Sarha <jsarha@ti.com>
 To: <linux-kernel@vger.kernel.org>, <mturquette@linaro.org>,
         <dri-devel@lists.freedesktop.org>, <airlied@linux.ie>,
@@ -15,9 +15,9 @@ CC: <tony@atomide.com>, <broonie@kernel.org>,
         <liam.r.girdwood@linux.intel.com>, <peter.ujfalusi@ti.com>,
         <detheridge@ti.com>, <zonque@gmail.com>, <t-kristo@ti.com>,
         Jyri Sarha <jsarha@ti.com>
-Subject: [PATCH 7/9] ARM: dts: am335x-boneblack: Add HDMI audio support
-Date: Wed, 6 Aug 2014 16:47:22 +0300
-Message-ID: <d4658f1184b0838ebc4b358333d9e303d0fda4b1.1407332062.git.jsarha@ti.com>
+Subject: [PATCH 6/9] ARM: dts: am33xx: Add external clock provider
+Date: Wed, 6 Aug 2014 16:47:21 +0300
+Message-ID: <a6888259f9508e0cc4be720a5f17a487d1d6cd0c.1407332062.git.jsarha@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1407332062.git.jsarha@ti.com>
 References: <cover.1407332062.git.jsarha@ti.com>
@@ -27,90 +27,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds mcasp0_pins, clk_mcasp0_fixed, clk_mcasp0, mcasp0, hdmi_audio,
-and sound nodes.
+Add external clock provaider for am33xx devices.
 
 Signed-off-by: Jyri Sarha <jsarha@ti.com>
 ---
- arch/arm/boot/dts/am335x-boneblack.dts |   54 ++++++++++++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
+ arch/arm/boot/dts/am33xx.dtsi |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
-index 305975d..c3c4618 100644
---- a/arch/arm/boot/dts/am335x-boneblack.dts
-+++ b/arch/arm/boot/dts/am335x-boneblack.dts
-@@ -59,12 +59,50 @@
- 			0x1b0 0x03      /* xdma_event_intr0, OMAP_MUX_MODE3 | AM33XX_PIN_OUTPUT */
- 		>;
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 4a4e02d..5093c64 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -92,6 +92,16 @@
+ 		pinctrl-single,function-mask = <0x7f>;
  	};
-+
-+	mcasp0_pins: mcasp0_pins {
-+		pinctrl-single,pins = <
-+			0x1ac (PIN_INPUT_PULLUP | MUX_MODE0)	/* mcasp0_ahclkx.mcasp0_ahclkx */
-+			0x19c (PIN_OUTPUT_PULLDOWN | MUX_MODE2) /* mcasp0_ahclkr.mcasp0_axr2 */
-+			0x194 (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* mcasp0_fsx.mcasp0_fsx */
-+			0x190 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mcasp0_aclkx.mcasp0_aclkx */
-+			0x06c (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a11.GPIO1_27 */
-+		>;
-+	};
- };
  
- &lcdc {
- 	status = "okay";
- };
- 
-+&mcasp0	{
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&mcasp0_pins>;
-+	status = "okay";
-+	op-mode = <0>;	/* MCASP_IIS_MODE */
-+	tdm-slots = <2>;
-+	serial-dir = <	/* 0: INACTIVE, 1: TX, 2: RX */
-+			0 0 1 0
-+		>;
-+	tx-num-evt = <1>;
-+	rx-num-evt = <1>;
-+};
++	ext_clocks {
++		compatible = "ti,external-clocks";
 +
-+&ext_clocks {
-+	clk_mcasp0_fixed: clk_mcasp0_fixed {
-+	      #clock-cells = <0>;
-+	      compatible = "fixed-clock";
-+	      clock-frequency = <24576000>;
++		ext_clocks: clocks {
++		};
++
++		ext_clockdomains: clockdomains {
++		};
 +	};
 +
-+	clk_mcasp0: clk_mcasp0 {
-+	      #clock-cells = <0>;
-+	      compatible = "gpio-clock";
-+	      clocks = <&clk_mcasp0_fixed>;
-+	      enable-gpios = <&gpio1 27 0>; /* BeagleBone Black Clk enable on GPIO1_27 */
-+	};
-+};
-+
- / {
- 	hdmi {
- 		compatible = "ti,tilcdc,slave";
-@@ -74,4 +112,20 @@
- 		pinctrl-1 = <&nxp_hdmi_bonelt_off_pins>;
- 		status = "okay";
- 	};
-+
-+	hdmi_audio: hdmi_audio@0 {
-+	       compatible = "linux,hdmi-audio";
-+	       status = "okay";
-+	};
-+
-+	sound {
-+		compatible = "ti,am335x-beaglebone-black-audio";
-+		ti,model = "TI BeagleBone Black";
-+		ti,audio-codec = <&hdmi_audio>;
-+		ti,mcasp-controller = <&mcasp0>;
-+		ti,audio-routing =
-+			"HDMI Out",	"TX";
-+		clocks = <&clk_mcasp0>;
-+		clock-names = "mclk";
-+	};
- };
+ 	/*
+ 	 * XXX: Use a flat representation of the AM33XX interconnect.
+ 	 * The real AM33XX interconnect network is quite complex. Since
 -- 
 1.7.9.5
 
