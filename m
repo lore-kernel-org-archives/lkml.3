@@ -1,112 +1,609 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696AbaHFHaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 03:30:00 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44077 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaHFH37 (ORCPT
+	id S1754858AbaHFHaJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 03:30:09 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:18907 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754719AbaHFHaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 03:29:59 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Wed, 6 Aug 2014 16:37:19 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Minchan Kim <minchan@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ????????? <gunho.lee@lge.com>,
-        "'Chanho Min'" <chanho.min@lge.com>
-Subject: Re: [PATCHv2] CMA/HOTPLUG: clear buffer-head lru before page
- migration
-Message-ID: <20140806073719.GA3590@js1304-P5Q-DELUXE>
-References: <53D9A86B.20208@lge.com>
- <20140731155703.a8bc3b77af913c8b3a63090a@linux-foundation.org>
- <53DADB56.3050103@lge.com>
+	Wed, 6 Aug 2014 03:30:04 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 06 Aug 2014 00:17:17 -0700
+Message-ID: <53E1D978.9020902@nvidia.com>
+Date: Wed, 6 Aug 2014 10:30:00 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53DADB56.3050103@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eduardo Valentin <edubezval@gmail.com>
+CC: "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 4/4] thermal: Add Tegra SOCTHERM thermal management
+ driver
+References: <1407241137-32232-1-git-send-email-mperttunen@nvidia.com> <1407241137-32232-5-git-send-email-mperttunen@nvidia.com> <20140805135357.GA20458@developer>
+In-Reply-To: <20140805135357.GA20458@developer>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 01, 2014 at 09:12:06AM +0900, Gioh Kim wrote:
-> 
-> 
-> 2014-08-01 오전 7:57, Andrew Morton 쓴 글:
-> >On Thu, 31 Jul 2014 11:22:35 +0900 Gioh Kim <gioh.kim@lge.com> wrote:
-> >
-> >>The previous PATCH inserts invalidate_bh_lrus() only into CMA code.
-> >>HOTPLUG needs also dropping bh of lru.
-> >>So v2 inserts invalidate_bh_lrus() into both of CMA and HOTPLUG.
-> >>
-> >>
-> >>---------------------------- 8< ----------------------------
-> >>The bh must be free to migrate a page at which bh is mapped.
-> >>The reference count of bh is increased when it is installed
-> >>into lru so that the bh of lru must be freed before migrating the page.
-> >>
-> >>This frees every bh of lru. We could free only bh of migrating page.
-> >>But searching lru sometimes costs more than invalidating entire lru.
-> >>
-> >>Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-> >>Acked-by: Michal Nazarewicz <mina86@mina86.com>
-> >>---
-> >>  mm/memory_hotplug.c |    1 +
-> >>  mm/page_alloc.c     |    2 ++
-> >>  2 files changed, 3 insertions(+)
-> >>
-> >>diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> >>index a3797d3..1c5454f 100644
-> >>--- a/mm/memory_hotplug.c
-> >>+++ b/mm/memory_hotplug.c
-> >>@@ -1672,6 +1672,7 @@ repeat:
-> >>                 lru_add_drain_all();
-> >>                 cond_resched();
-> >>                 drain_all_pages();
-> >>+               invalidate_bh_lrus();
-> >
-> >Both of these calls should have a comment explaining why
-> >invalidate_bh_lrus() is being called.
-> >
-> >>         }
-> >>
-> >>         pfn = scan_movable_pages(start_pfn, end_pfn);
-> >>diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> >>index b99643d4..c00dedf 100644
-> >>--- a/mm/page_alloc.c
-> >>+++ b/mm/page_alloc.c
-> >>@@ -6369,6 +6369,8 @@ int alloc_contig_range(unsigned long start, unsigned long end,
-> >>         if (ret)
-> >>                 return ret;
-> >>
-> >>+       invalidate_bh_lrus();
-> >>+
-> >>         ret = __alloc_contig_migrate_range(&cc, start, end);
-> >>         if (ret)
-> >>                 goto done;
-> >
-> >I do feel that this change is likely to be beneficial, but I don't want
-> >to apply such a patch until I know what its effects are upon all
-> >alloc_contig_range() callers.  Especially hugetlb.
-> 
-> I'm very sorry to hear that.
-> How can I check the effects?
-> 
+On 05/08/14 16:53, Eduardo Valentin wrote:
+>
+> Hello Mikko,
+>
+> On Tue, Aug 05, 2014 at 03:18:57PM +0300, Mikko Perttunen wrote:
+>> This adds support for the Tegra SOCTHERM thermal sensing and management
+>> system found in the Tegra124 system-on-chip. This initial driver supports
+>> the four thermal zones with hardware-tracked trip points.
+>>
+>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+>> ---
+>>   drivers/thermal/Kconfig          |   7 +
+>>   drivers/thermal/Makefile         |   1 +
+>>   drivers/thermal/tegra_soctherm.c | 452 +++++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 460 insertions(+)
+>>   create mode 100644 drivers/thermal/tegra_soctherm.c
+>>
+>> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+>> index 693208e..6c03119 100644
+>> --- a/drivers/thermal/Kconfig
+>> +++ b/drivers/thermal/Kconfig
+>> @@ -175,6 +175,13 @@ config ARMADA_THERMAL
+>>          Enable this option if you want to have support for thermal management
+>>          controller present in Armada 370 and Armada XP SoC.
+>>
+>> +config TEGRA_SOCTHERM
+>> +     bool "Tegra SOCTHERM thermal management"
+>
+> Is it possible to be a tristate?
 
-Hello, Gioh.
+Yes. I'll change this.
 
-As you know, I generally agree this patch, but, I want to know that
-this patch really fixes your problem. There is some time difference
-between invalidate_bh_lrus() and migrate_page() so that the bh of the
-migrating page could be re-installed on bh lru again. Any
-remarkable success rate changes? If this time gap is critical, we
-should put this invalidation logic on other place.
+>
+>> +     depends on ARCH_TEGRA
+>> +     help
+>> +       Enable this option for integrated thermal management support on NVIDIA
+>> +       Tegra124 systems-on-chip.
+>> +
+>
+> Could you please improve the Kconfig help here?
 
-Thanks.
+I'll add some text about driver/hw capabilities.
+
+>
+>>   config DB8500_CPUFREQ_COOLING
+>>        tristate "DB8500 cpufreq cooling"
+>>        depends on ARCH_U8500
+>> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+>> index 31e232f..f0b94d5 100644
+>> --- a/drivers/thermal/Makefile
+>> +++ b/drivers/thermal/Makefile
+>> @@ -33,3 +33,4 @@ obj-$(CONFIG_INTEL_SOC_DTS_THERMAL) += intel_soc_dts_thermal.o
+>>   obj-$(CONFIG_TI_SOC_THERMAL) += ti-soc-thermal/
+>>   obj-$(CONFIG_ACPI_INT3403_THERMAL)   += int3403_thermal.o
+>>   obj-$(CONFIG_ST_THERMAL)     += st/
+>> +obj-$(CONFIG_TEGRA_SOCTHERM) += tegra_soctherm.o
+>> diff --git a/drivers/thermal/tegra_soctherm.c b/drivers/thermal/tegra_soctherm.c
+>> new file mode 100644
+>> index 0000000..962972d
+>> --- /dev/null
+>> +++ b/drivers/thermal/tegra_soctherm.c
+>> @@ -0,0 +1,452 @@
+>> +/*
+>> + * drivers/thermal/tegra_soctherm.c
+>> + *
+>> + * Copyright (c) 2014, NVIDIA CORPORATION.  All rights reserved.
+>> + *
+>> + * Author:
+>> + *   Mikko Perttunen <mperttunen@nvidia.com>
+>> + *
+>> + * This software is licensed under the terms of the GNU General Public
+>> + * License version 2, as published by the Free Software Foundation, and
+>> + * may be copied, distributed, and modified under those terms.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + *
+>> + */
+>> +
+>> +#include <linux/clk.h>
+>> +#include <linux/err.h>
+>> +#include <linux/io.h>
+>> +#include <linux/module.h>
+>> +#include <linux/of.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/reset.h>
+>> +#include <linux/thermal.h>
+>> +#include <linux/delay.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/bitops.h>
+>> +#include <soc/tegra/fuse.h>
+>> +
+>> +#define SENSOR_CONFIG0                               0
+>> +#define              SENSOR_CONFIG0_STOP             BIT(0)
+>> +#define              SENSOR_CONFIG0_TALL_SHIFT       8
+>> +#define              SENSOR_CONFIG0_TCALC_OVER       BIT(4)
+>> +#define              SENSOR_CONFIG0_OVER             BIT(3)
+>> +#define              SENSOR_CONFIG0_CPTR_OVER        BIT(2)
+>
+> I suppose tabulation is intentional to group shits and masks per
+> registers?
+
+Yes.
+
+>
+>> +#define SENSOR_CONFIG1                               4
+>> +#define              SENSOR_CONFIG1_TSAMPLE_SHIFT    0
+>> +#define              SENSOR_CONFIG1_TIDDQ_EN_SHIFT   15
+>> +#define              SENSOR_CONFIG1_TEN_COUNT_SHIFT  24
+>> +#define              SENSOR_CONFIG1_TEMP_ENABLE      BIT(31)
+>> +#define SENSOR_CONFIG2                               8
+>> +#define              SENSOR_CONFIG2_THERMA_SHIFT     16
+>> +#define              SENSOR_CONFIG2_THERMB_SHIFT     0
+>> +
+>> +#define SENSOR_PDIV                          0x1c0
+>> +#define              SENSOR_PDIV_T124                0x8888
+>> +#define SENSOR_HOTSPOT_OFF                   0x1c4
+>> +#define              SENSOR_HOTSPOT_OFF_T124         0x00060600
+>> +#define SENSOR_TEMP1                         0x1c8
+>> +#define SENSOR_TEMP2                         0x1cc
+>> +
+>> +#define FUSE_TSENSOR8_CALIB                  0x180
+>> +#define FUSE_SPARE_REALIGNMENT_REG_0         0x1fc
+>> +
+>> +#define NOMINAL_CALIB_FT_T124                        105
+>> +#define NOMINAL_CALIB_CP_T124                        25
+>> +
+>> +struct tegra_tsensor_configuration {
+>> +     u32 tall, tsample, tiddq_en, ten_count;
+>> +     u32 pdiv, tsample_ate, pdiv_ate;
+>> +};
+>> +
+>> +struct tegra_tsensor {
+>> +     const char *name;
+>> +     u32 base;
+>> +     struct tegra_tsensor_configuration *config;
+>> +     u32 calib_fuse_offset;
+>> +     /* Correction values used to modify values read from calibration fuses */
+>> +     s32 fuse_corr_alpha, fuse_corr_beta;
+>> +};
+>> +
+>> +struct tegra_thermctl_zone {
+>> +     void __iomem *temp_reg;
+>> +     int temp_shift;
+>> +};
+>> +
+>> +static struct tegra_tsensor_configuration t124_tsensor_config = {
+>> +     .tall = 16300,
+>> +     .tsample = 120,
+>> +     .tiddq_en = 1,
+>> +     .ten_count = 1,
+>> +     .pdiv = 8,
+>> +     .tsample_ate = 481,
+>> +     .pdiv_ate = 8
+>> +};
+>
+> The above struct is probably a const?
+
+Indeed. I'll fix it.
+
+>
+>> +
+>> +static struct tegra_tsensor t124_tsensors[] = {
+>> +     {
+>> +             .base = 0xc0,
+>> +             .name = "cpu0",
+>> +             .config = &t124_tsensor_config,
+>> +             .calib_fuse_offset = 0x098,
+>> +             .fuse_corr_alpha = 1135400,
+>> +             .fuse_corr_beta = -6266900,
+>> +     },
+>> +     {
+>> +             .base = 0xe0,
+>> +             .name = "cpu1",
+>> +             .config = &t124_tsensor_config,
+>> +             .calib_fuse_offset = 0x084,
+>> +             .fuse_corr_alpha = 1122220,
+>> +             .fuse_corr_beta = -5700700,
+>> +     },
+>> +     {
+>> +             .base = 0x100,
+>> +             .name = "cpu2",
+>> +             .config = &t124_tsensor_config,
+>> +             .calib_fuse_offset = 0x088,
+>> +             .fuse_corr_alpha = 1127000,
+>> +             .fuse_corr_beta = -6768200,
+>> +     },
+>> +     {
+>> +             .base = 0x120,
+>> +             .name = "cpu3",
+>> +             .config = &t124_tsensor_config,
+>> +             .calib_fuse_offset = 0x12c,
+>> +             .fuse_corr_alpha = 1110900,
+>> +             .fuse_corr_beta = -6232000,
+>> +     },
+>> +     {
+>> +             .base = 0x140,
+>> +             .name = "mem0",
+>> +             .config = &t124_tsensor_config,
+>> +             .calib_fuse_offset = 0x158,
+>> +             .fuse_corr_alpha = 1122300,
+>> +             .fuse_corr_beta = -5936400,
+>> +     },
+>> +     {
+>> +             .base = 0x160,
+>> +             .name = "mem1",
+>> +             .config = &t124_tsensor_config,
+>> +             .calib_fuse_offset = 0x15c,
+>> +             .fuse_corr_alpha = 1145700,
+>> +             .fuse_corr_beta = -7124600,
+>> +     },
+>> +     {
+>> +             .base = 0x180,
+>> +             .name = "gpu",
+>> +             .config = &t124_tsensor_config,
+>> +             .calib_fuse_offset = 0x154,
+>> +             .fuse_corr_alpha = 1120100,
+>> +             .fuse_corr_beta = -6000500,
+>> +     },
+>> +     {
+>> +             .base = 0x1a0,
+>> +             .name = "pllx",
+>> +             .config = &t124_tsensor_config,
+>
+> The same config is used in all sensors. Why bother creating a pointer to
+> same struct for every sensor then?
+
+Technically you could have differing configs for each sensor. But I 
+guess if anyone ever needs it they can add that feature; better to keep 
+it simple.
+
+>
+>> +             .calib_fuse_offset = 0x160,
+>> +             .fuse_corr_alpha = 1106500,
+>> +             .fuse_corr_beta = -6729300,
+>> +     },
+>> +     { .name = NULL },
+>> +};
+>
+> Same for the above?
+
+I'll change this one to use ARRAY_SIZE as well.
+
+>
+>> +
+>> +struct tegra_soctherm {
+>> +     struct reset_control *reset;
+>> +     struct clk *clock_tsensor;
+>> +     struct clk *clock_soctherm;
+>> +     void __iomem *regs;
+>> +
+>> +     struct thermal_zone_device *thermctl_tzs[4];
+>> +};
+>> +
+>> +struct tsensor_shared_calibration {
+>> +     u32 base_cp, base_ft;
+>> +     u32 actual_temp_cp, actual_temp_ft;
+>> +};
+>> +
+>> +static int calculate_shared_calibration(struct tsensor_shared_calibration *r)
+>> +{
+>> +     u32 val;
+>> +     u32 shifted_cp, shifted_ft;
+>> +     int err;
+>> +
+>> +     err = tegra_fuse_readl(FUSE_TSENSOR8_CALIB, &val);
+>> +     if (err)
+>> +             return err;
+>> +     r->base_cp = val & 0x3ff;
+>> +     r->base_ft = (val & (0x7ff << 10)) >> 10;
+>> +
+>> +     err = tegra_fuse_readl(FUSE_SPARE_REALIGNMENT_REG_0, &val);
+>> +     if (err)
+>> +             return err;
+>> +     shifted_cp = sign_extend32(val, 5);
+>> +     val = ((val & (0x1f << 21)) >> 21);
+>> +     shifted_ft = sign_extend32(val, 4);
+>> +
+>> +     r->actual_temp_cp = 2 * NOMINAL_CALIB_CP_T124 + shifted_cp;
+>> +     r->actual_temp_ft = 2 * NOMINAL_CALIB_FT_T124 + shifted_ft;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int calculate_tsensor_calibration(
+>> +     struct tegra_tsensor *sensor,
+>> +     struct tsensor_shared_calibration shared,
+>> +     u32 *calib
+>> +)
+>> +{
+>> +     u32 val;
+>> +     s32 actual_tsensor_ft, actual_tsensor_cp;
+>> +     s32 delta_sens, delta_temp;
+>> +     s32 mult, div;
+>> +     s16 therma, thermb;
+>> +     int err;
+>> +
+>> +     err = tegra_fuse_readl(sensor->calib_fuse_offset, &val);
+>> +     if (err)
+>> +             return err;
+>> +
+>> +     /* Sign extend from 13 bits to 32 bits */
+>> +     actual_tsensor_cp = (shared.base_cp * 64) +
+>> +             (s32)((val & 0xfff) | ((val & 0x1000) ? 0xfffff000 : 0x0));
+>> +     val = (val & (0x1fff << 13)) >> 13;
+>> +     /* Sign extend from 13 bits to 32 bits */
+>> +     actual_tsensor_ft = (shared.base_ft * 32) +
+>> +             (s32)((val & 0xfff) | ((val & 0x1000) ? 0xfffff000 : 0x0));
+>
+> How about having a macro for the above operation?
+
+Yeah, looks like I missed this spot when making the change to use 
+sign_extend32.
+
+>
+>> +
+>> +     delta_sens = actual_tsensor_ft - actual_tsensor_cp;
+>> +     delta_temp = shared.actual_temp_ft - shared.actual_temp_cp;
+>> +
+>> +     mult = sensor->config->pdiv * sensor->config->tsample_ate;
+>> +     div = sensor->config->tsample * sensor->config->pdiv_ate;
+>> +
+>> +     therma = div_s64((s64) delta_temp * (1LL << 13) * mult,
+>> +             (s64) delta_sens * div);
+>> +     thermb = div_s64(((s64) actual_tsensor_ft * shared.actual_temp_cp) -
+>> +             ((s64) actual_tsensor_cp * shared.actual_temp_ft),
+>> +             (s64) delta_sens);
+>> +
+>> +     therma = div_s64((s64) therma * sensor->fuse_corr_alpha,
+>> +             (s64) 1000000LL);
+>> +     thermb = div_s64((s64) thermb * sensor->fuse_corr_alpha +
+>> +             sensor->fuse_corr_beta,
+>> +             (s64) 1000000LL);
+>> +
+>> +     *calib = ((u16)(therma) << SENSOR_CONFIG2_THERMA_SHIFT) |
+>> +             ((u16)thermb << SENSOR_CONFIG2_THERMB_SHIFT);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int enable_tsensor(struct tegra_soctherm *tegra,
+>> +                       struct tegra_tsensor *sensor,
+>> +                       struct tsensor_shared_calibration shared)
+>> +{
+>> +     void * __iomem base = tegra->regs + sensor->base;
+>> +     unsigned int val;
+>> +     u32 calib;
+>> +     int err;
+>> +
+>> +     err = calculate_tsensor_calibration(sensor, shared, &calib);
+>> +     if (err)
+>> +             return err;
+>> +
+>> +     val = 0;
+>> +     val |= sensor->config->tall << SENSOR_CONFIG0_TALL_SHIFT;
+>> +     writel(val, base + SENSOR_CONFIG0);
+>> +
+>> +     val = 0;
+>> +     val |= (sensor->config->tsample - 1) << SENSOR_CONFIG1_TSAMPLE_SHIFT;
+>> +     val |= sensor->config->tiddq_en << SENSOR_CONFIG1_TIDDQ_EN_SHIFT;
+>> +     val |= sensor->config->ten_count << SENSOR_CONFIG1_TEN_COUNT_SHIFT;
+>> +     val |= SENSOR_CONFIG1_TEMP_ENABLE;
+>> +     writel(val, base + SENSOR_CONFIG1);
+>> +
+>> +     writel(calib, base + SENSOR_CONFIG2);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static inline long translate_temp(u32 val)
+>> +{
+>> +     long t;
+>> +
+>> +     t = ((val & 0xff00) >> 8) * 1000;
+>> +     if (val & 0x80)
+>> +             t += 500;
+>> +     if (val & 0x01)
+>> +             t *= -1;
+>> +
+>> +     return t;
+>> +}
+>> +
+>> +static int tegra_thermctl_get_temp(void *data, long *out_temp)
+>> +{
+>> +     struct tegra_thermctl_zone *zone = data;
+>> +     u32 val;
+>> +
+>> +     val = (readl(zone->temp_reg) >> zone->temp_shift) & 0xffff;
+>> +     *out_temp = translate_temp(val);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static struct of_device_id tegra_soctherm_of_match[] = {
+>> +     { .compatible = "nvidia,tegra124-soctherm" },
+>> +     { },
+>> +};
+>> +MODULE_DEVICE_TABLE(of, tegra_soctherm_of_match);
+>> +
+>> +static int thermctl_temp_offsets[] = {
+>> +     SENSOR_TEMP1, SENSOR_TEMP2, SENSOR_TEMP1, SENSOR_TEMP2
+>> +};
+>> +
+>> +static int thermctl_temp_shifts[] = {
+>> +     16, 16, 0, 0
+>> +};
+>
+> What are the above offsets and shifts? Are they per sensor? Can they be
+> part of your sensor data structure (tegra_tsensor_configuration)?
+
+These are for the thermctl registers, while tsensor_configuration is for 
+the 'raw' tsensors which are used internally by the hardware as a data 
+source for the thermctl stuff.
+
+>
+>> +
+>> +static int tegra_soctherm_probe(struct platform_device *pdev)
+>> +{
+>> +     struct tegra_soctherm *tegra;
+>> +     struct thermal_zone_device *tz;
+>> +     struct tsensor_shared_calibration shared_calib;
+>> +     int i;
+>> +     int err = 0;
+>> +
+>> +     struct tegra_tsensor *tsensors = t124_tsensors;
+>> +
+>> +     tegra = devm_kzalloc(&pdev->dev, sizeof(*tegra), GFP_KERNEL);
+>> +     if (!tegra)
+>> +             return -ENOMEM;
+>> +
+>> +     tegra->regs = devm_ioremap_resource(&pdev->dev,
+>> +             platform_get_resource(pdev, IORESOURCE_MEM, 0));
+>> +     if (IS_ERR(tegra->regs)) {
+>> +             dev_err(&pdev->dev, "can't get registers");
+>> +             return PTR_ERR(tegra->regs);
+>> +     }
+>> +
+>> +     tegra->reset = devm_reset_control_get(&pdev->dev, "soctherm");
+>> +     if (IS_ERR(tegra->reset)) {
+>> +             dev_err(&pdev->dev, "can't get soctherm reset\n");
+>> +             return PTR_ERR(tegra->reset);
+>> +     }
+>> +
+>> +     tegra->clock_tsensor = devm_clk_get(&pdev->dev, "tsensor");
+>> +     if (IS_ERR(tegra->clock_tsensor)) {
+>> +             dev_err(&pdev->dev, "can't get clock tsensor\n");
+>> +             return PTR_ERR(tegra->clock_tsensor);
+>> +     }
+>> +
+>> +     tegra->clock_soctherm = devm_clk_get(&pdev->dev, "soctherm");
+>> +     if (IS_ERR(tegra->clock_soctherm)) {
+>> +             dev_err(&pdev->dev, "can't get clock soctherm\n");
+>> +             return PTR_ERR(tegra->clock_soctherm);
+>> +     }
+>> +
+>> +     reset_control_assert(tegra->reset);
+>> +
+>> +     err = clk_prepare_enable(tegra->clock_soctherm);
+>> +     if (err) {
+>> +             reset_control_deassert(tegra->reset);
+>> +             return err;
+>> +     }
+>> +
+>> +     err = clk_prepare_enable(tegra->clock_tsensor);
+>> +     if (err) {
+>> +             clk_disable_unprepare(tegra->clock_soctherm);
+>> +             reset_control_deassert(tegra->reset);
+>> +             return err;
+>> +     }
+>> +
+>> +     reset_control_deassert(tegra->reset);
+>> +
+>> +     /* Initialize raw sensors */
+>> +
+>> +     err = calculate_shared_calibration(&shared_calib);
+>> +     if (err)
+>> +             goto disable_clocks;
+>> +
+>> +     for (i = 0; tsensors[i].name; ++i) {
+>> +             err = enable_tsensor(tegra, tsensors + i, shared_calib);
+>> +             if (err)
+>> +                     goto disable_clocks;
+>> +     }
+>> +
+>> +     writel(SENSOR_PDIV_T124, tegra->regs + SENSOR_PDIV);
+>> +     writel(SENSOR_HOTSPOT_OFF_T124, tegra->regs + SENSOR_HOTSPOT_OFF);
+>> +
+>> +     /* Initialize thermctl sensors */
+>> +
+>> +     for (i = 0; i < ARRAY_SIZE(tegra->thermctl_tzs); ++i) {
+>> +             struct tegra_thermctl_zone *zone =
+>> +                     devm_kzalloc(&pdev->dev, sizeof(*zone), GFP_KERNEL);
+>> +             if (!zone) {
+>> +                     err = -ENOMEM;
+>> +                     goto unregister_tzs;
+>> +             }
+>> +
+>> +             zone->temp_reg = tegra->regs + thermctl_temp_offsets[i];
+>> +             zone->temp_shift = thermctl_temp_shifts[i];
+>> +
+>> +             tz = thermal_zone_of_sensor_register(
+>> +                     &pdev->dev, i, zone, tegra_thermctl_get_temp, NULL);
+>> +             if (IS_ERR(tz)) {
+>> +                     err = PTR_ERR(tz);
+>> +                     dev_err(&pdev->dev, "failed to register sensor: %d\n",
+>> +                             err);
+>> +                     --i;
+>> +                     goto unregister_tzs;
+>> +             }
+>> +
+>> +             tegra->thermctl_tzs[i] = tz;
+>> +     }
+>> +
+>> +     return 0;
+>> +
+>> +unregister_tzs:
+>> +     for (; i >= 0; i--)
+>> +             thermal_zone_of_sensor_unregister(&pdev->dev,
+>> +                                               tegra->thermctl_tzs[i]);
+>> +
+>> +disable_clocks:
+>> +     clk_disable_unprepare(tegra->clock_tsensor);
+>> +     clk_disable_unprepare(tegra->clock_soctherm);
+>> +
+>> +     return err;
+>> +}
+>> +
+>> +static int tegra_soctherm_remove(struct platform_device *pdev)
+>> +{
+>> +     struct tegra_soctherm *tegra = platform_get_drvdata(pdev);
+>> +     int i;
+>> +
+>> +     for (i = 0; i < ARRAY_SIZE(tegra->thermctl_tzs); ++i) {
+>> +             thermal_zone_of_sensor_unregister(&pdev->dev,
+>> +                                               tegra->thermctl_tzs[i]);
+>> +     }
+>> +
+>> +     clk_disable_unprepare(tegra->clock_tsensor);
+>> +     clk_disable_unprepare(tegra->clock_soctherm);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static struct platform_driver tegra_soctherm_driver = {
+>> +     .probe = tegra_soctherm_probe,
+>> +     .remove = tegra_soctherm_remove,
+>> +     .driver = {
+>> +             .name = "tegra_soctherm",
+>> +             .of_match_table = tegra_soctherm_of_match,
+>> +     },
+>
+>
+> No suspend/resume or pm_runtime support this time?
+
+Yes. Suspend/resume is not useful yet since we don't yet support LP0. 
+The deepest suspend level we support is LP1 which doesn't reset the 
+soctherm block. At runtime we should never unclock it anyway, since that
+would prevent emergency thermal reset from working.
+
+>
+>> +};
+>> +module_platform_driver(tegra_soctherm_driver);
+>> +
+>> +MODULE_AUTHOR("Mikko Perttunen <mperttunen@nvidia.com>");
+>> +MODULE_DESCRIPTION("Tegra SOCTHERM thermal management driver");
+>> +MODULE_LICENSE("GPL v2");
+>> --
+>> 1.8.1.5
+>>
+
+Thanks, Mikko
