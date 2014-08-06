@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533AbaHFKQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 06:16:17 -0400
-Received: from smtp6-v.fe.bosch.de ([139.15.237.11]:42201 "EHLO
-	smtp6-v.fe.bosch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753806AbaHFKQP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 06:16:15 -0400
-From: "Koehrer Mathias (ETAS/ESW5)" <mathias.koehrer@etas.com>
-To: Nick Krause <xerofoify@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: PROBLEM: [x86] Running ptpd2 using an Intel 82572EI (e1000e)
- leads to a kernel oops (3.12.26)
-Thread-Topic: PROBLEM: [x86] Running ptpd2 using an Intel 82572EI (e1000e)
- leads to a kernel oops (3.12.26)
-Thread-Index: Ac+v3yzc3cSLCNWNSz2wcfBA1YE8+gBHlF+AABhU8HA=
-Date: Wed, 6 Aug 2014 10:15:43 +0000
-Message-ID: <ff2e6995521f40268c42d09e92cfe627@FE-MBX1012.de.bosch.com>
-References: <50f83e65cecd4882b22887858bfdf484@FE-MBX1012.de.bosch.com>
- <CAPDOMVieG6RoOyQM1JG5vCQ1qSgqz-cy37X9GPnkzPUTyRBFBA@mail.gmail.com>
-In-Reply-To: <CAPDOMVieG6RoOyQM1JG5vCQ1qSgqz-cy37X9GPnkzPUTyRBFBA@mail.gmail.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.5.148.126]
-Content-Type: text/plain; charset="utf-8"
+	id S1755566AbaHFKRv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 06:17:51 -0400
+Received: from mta-out1.inet.fi ([62.71.2.230]:33748 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754703AbaHFKRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 06:17:49 -0400
+Date: Wed, 6 Aug 2014 13:17:18 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Howells <dhowells@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 6/7] fs/proc/task_mmu.c: cleanup the "tail_vma" horror
+ in m_next()
+Message-ID: <20140806101718.GB30703@node.dhcp.inet.fi>
+References: <20140805194627.GA30693@redhat.com>
+ <20140805194703.GA30739@redhat.com>
 MIME-Version: 1.0
-X-TM-AS-MML: disable
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140805194703.GA30739@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s76AGNcH010470
 
-Hey Nick,
-> Hey Koehrer Mathias,
-> I am going to have to ask a few questions first, what distribution is
-> and is this a vanilla kernel?
-> If it's not just send the report to the distribution developers.
-> Regards Nick
-The distribution is Debian stable (Wheezy, V7.6).
-However, the kernel is a pure vanilla kernel.
+On Tue, Aug 05, 2014 at 09:47:03PM +0200, Oleg Nesterov wrote:
+> 1. Kill the first "vma != NULL" check. Firstly this is not possible,
+>    m_next() won't be called if ->start() or the previous ->next()
+>    returns NULL.
+> 
+>    And if it was possible the 2nd "vma != tail_vma" check is buggy,
+>    we should not wrongly return ->tail_vma.
+> 
+> 2. Make this function readable. The logic is very simple, we should
+>    return check "vma != tail" once and return "vm_next || tail_vma".
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Regards
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-Mathias
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+ Kirill A. Shutemov
