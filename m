@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757879AbaHFRWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 13:22:32 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:31597 "EHLO
+	id S1757825AbaHFRWb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 13:22:31 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:31585 "EHLO
 	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756122AbaHFRW3 (ORCPT
+	with ESMTP id S1756117AbaHFRW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 13:22:29 -0400
+	Wed, 6 Aug 2014 13:22:28 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Maarten Lankhorst <maarten.lankhorst@canonical.com>,
         Rik van Riel <riel@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Scott J Norton <scott.norton@hp.com>,
         Fengguang Wu <fengguang.wu@intel.com>,
-        Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v7 2/2] locking/selftest: Support queued rwlock
-Date: Wed,  6 Aug 2014 13:22:02 -0400
-Message-Id: <1407345722-61615-3-git-send-email-Waiman.Long@hp.com>
+        Waiman Long <Waiman.Long@hp.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH v7 1/2] locking/lockdep: Restrict the use of recursive read_lock() with qrwlock
+Date: Wed,  6 Aug 2014 13:22:01 -0400
+Message-Id: <1407345722-61615-2-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1407345722-61615-1-git-send-email-Waiman.Long@hp.com>
 References: <1407345722-61615-1-git-send-email-Waiman.Long@hp.com>
@@ -24,120 +25,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The queued rwlock does not support the use of recursive read-lock in
-the process context. With changes in the lockdep code to check and
-disallow recursive read-lock, it is also necessary for the locking
-selftest to be updated to change the process context recursive read
-locking results from SUCCESS to FAILURE for rwlock.
+Unlike the original unfair rwlock implementation, queued rwlock
+will grant lock according to the chronological sequence of the lock
+requests except when the lock requester is in the interrupt context.
+Consequently, recursive read_lock calls will now hang the process if
+there is a write_lock call somewhere in between the read_lock calls.
+
+This patch updates the lockdep implementation to look for recursive
+read_lock calls. A new read state (3) is used to mark those read_lock
+call that cannot be recursively called except in the interrupt
+context. The new read state does exhaust the 2 bits available in
+held_lock:read bit field. The addition of any new read state in the
+future may require a redesign of how all those bits are squeezed
+together in the held_lock structure.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- lib/locking-selftest.c |   56 ++++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 49 insertions(+), 7 deletions(-)
+ include/linux/lockdep.h  |   10 +++++++++-
+ kernel/locking/lockdep.c |    6 ++++++
+ 2 files changed, 15 insertions(+), 1 deletions(-)
 
-diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
-index 872a15a..62af709 100644
---- a/lib/locking-selftest.c
-+++ b/lib/locking-selftest.c
-@@ -267,19 +267,46 @@ GENERATE_TESTCASE(AA_rsem)
- #undef E
- 
- /*
-- * Special-case for read-locking, they are
-- * allowed to recurse on the same lock class:
-+ * Special-case for read-locking, they are not allowed to
-+ * recurse on the same lock class except under interrupt context:
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index 008388f..dadd6ba 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -478,16 +478,24 @@ static inline void print_irqtrace_events(struct task_struct *curr)
+  * on the per lock-class debug mode:
   */
- static void rlock_AA1(void)
- {
- 	RL(X1);
--	RL(X1); // this one should NOT fail
-+	RL(X1); // this one should fail
- }
  
- static void rlock_AA1B(void)
- {
- 	RL(X1);
--	RL(X2); // this one should NOT fail
-+	RL(X2); // this one should fail
-+}
-+
-+static void rlock_AHA1(void)
-+{
-+	RL(X1);
-+	HARDIRQ_ENTER();
-+	RL(X1);	// this one should NOT fail
-+	HARDIRQ_EXIT();
-+}
-+
-+static void rlock_AHA1B(void)
-+{
-+	RL(X1);
-+	HARDIRQ_ENTER();
-+	RL(X2);	// this one should NOT fail
-+	HARDIRQ_EXIT();
-+}
-+
-+static void rlock_ASAHA1(void)
-+{
-+	RL(X1);
-+	SOFTIRQ_ENTER();
-+	RL(X1);	// this one should NOT fail
-+	HARDIRQ_ENTER();
-+	RL(X1);	// this one should NOT fail
-+	HARDIRQ_EXIT();
-+	SOFTIRQ_EXIT();
- }
++/*
++ * Read states in the 2-bit held_lock:read field:
++ *  0: Exclusive lock
++ *  1: Shareable lock, cannot be recursively called
++ *  2: Shareable lock, can be recursively called
++ *  3: Shareable lock, cannot be recursively called except in interrupt context
++ */
+ #define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 1, n, i)
+ #define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 1, n, i)
+ #define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 1, n, i)
++#define lock_acquire_shared_irecursive(l, s, t, n, i)	lock_acquire(l, s, t, 3, 1, n, i)
  
- static void rsem_AA1(void)
-@@ -1069,7 +1096,7 @@ static inline void print_testname(const char *testname)
- 	print_testname(desc);					\
- 	dotest(name##_spin, FAILURE, LOCKTYPE_SPIN);		\
- 	dotest(name##_wlock, FAILURE, LOCKTYPE_RWLOCK);		\
--	dotest(name##_rlock, SUCCESS, LOCKTYPE_RWLOCK);		\
-+	dotest(name##_rlock, FAILURE, LOCKTYPE_RWLOCK);		\
- 	dotest(name##_mutex, FAILURE, LOCKTYPE_MUTEX);		\
- 	dotest(name##_wsem, FAILURE, LOCKTYPE_RWSEM);		\
- 	dotest(name##_rsem, FAILURE, LOCKTYPE_RWSEM);		\
-@@ -1830,14 +1857,14 @@ void locking_selftest(void)
- 	printk("  --------------------------------------------------------------------------\n");
- 	print_testname("recursive read-lock");
- 	printk("             |");
--	dotest(rlock_AA1, SUCCESS, LOCKTYPE_RWLOCK);
-+	dotest(rlock_AA1, FAILURE, LOCKTYPE_RWLOCK);
- 	printk("             |");
- 	dotest(rsem_AA1, FAILURE, LOCKTYPE_RWSEM);
- 	printk("\n");
+ #define spin_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
+ #define spin_acquire_nest(l, s, t, n, i)	lock_acquire_exclusive(l, s, t, n, i)
+ #define spin_release(l, n, i)			lock_release(l, n, i)
  
- 	print_testname("recursive read-lock #2");
- 	printk("             |");
--	dotest(rlock_AA1B, SUCCESS, LOCKTYPE_RWLOCK);
-+	dotest(rlock_AA1B, FAILURE, LOCKTYPE_RWLOCK);
- 	printk("             |");
- 	dotest(rsem_AA1B, FAILURE, LOCKTYPE_RWSEM);
- 	printk("\n");
-@@ -1856,6 +1883,21 @@ void locking_selftest(void)
- 	dotest(rsem_AA3, FAILURE, LOCKTYPE_RWSEM);
- 	printk("\n");
+ #define rwlock_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
+-#define rwlock_acquire_read(l, s, t, i)		lock_acquire_shared_recursive(l, s, t, NULL, i)
++#define rwlock_acquire_read(l, s, t, i)		lock_acquire_shared_irecursive(l, s, t, NULL, i)
+ #define rwlock_release(l, n, i)			lock_release(l, n, i)
  
-+	print_testname("recursive rlock with interrupt");
-+	printk("             |");
-+	dotest(rlock_AHA1, SUCCESS, LOCKTYPE_RWLOCK);
-+	printk("\n");
-+
-+	print_testname("recursive rlock with interrupt #2");
-+	printk("             |");
-+	dotest(rlock_AHA1B, SUCCESS, LOCKTYPE_RWLOCK);
-+	printk("\n");
-+
-+	print_testname("recursive rlock with interrupt #3");
-+	printk("             |");
-+	dotest(rlock_ASAHA1, SUCCESS, LOCKTYPE_RWLOCK);
-+	printk("\n");
-+
- 	printk("  --------------------------------------------------------------------------\n");
+ #define seqcount_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
+diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
+index d24e433..097f8ad 100644
+--- a/kernel/locking/lockdep.c
++++ b/kernel/locking/lockdep.c
+@@ -3595,6 +3595,12 @@ void lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+ 	raw_local_irq_save(flags);
+ 	check_flags(flags);
  
- 	/*
++	/*
++	 * An interrupt recursive read in interrupt context can be considered
++	 * to be the same as a recursive read from checking perspective.
++	 */
++	if ((read == 3) && in_interrupt())
++		read = 2;
+ 	current->lockdep_recursion = 1;
+ 	trace_lock_acquire(lock, subclass, trylock, read, check, nest_lock, ip);
+ 	__lock_acquire(lock, subclass, trylock, read, check,
 -- 
 1.7.1
 
