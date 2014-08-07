@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757476AbaHGRM5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 13:12:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46298 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757335AbaHGRMz (ORCPT
+	id S1757356AbaHGRNj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 13:13:39 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52181 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757335AbaHGRNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 13:12:55 -0400
-Date: Thu, 7 Aug 2014 10:12:54 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Jiri Slaby <jslaby@suse.cz>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH v2] serial: uart: add hw flow control support
- configuration
-Message-ID: <20140807171254.GA13097@kroah.com>
-References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com>
- <53E39B44.60406@hurleysoftware.com>
- <53E3A67B.6070709@ti.com>
+	Thu, 7 Aug 2014 13:13:38 -0400
+Date: Thu, 7 Aug 2014 18:13:24 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>, lgirdwood@gmail.com,
+        tiwai@suse.de, alsa-devel@alsa-project.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Message-ID: <20140807171324.GM17528@sirena.org.uk>
+References: <1407341786-14990-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+ <20140807141604.GJ8181@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xSEMfpWWEi9ZGPb2"
 Content-Disposition: inline
-In-Reply-To: <53E3A67B.6070709@ti.com>
+In-Reply-To: <20140807141604.GJ8181@intel.com>
+X-Cookie: 98% lean.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH v3] ASOC: dapm: add code to configure dai
+ link parameters
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 12:16:59PM -0400, Murali Karicheri wrote:
-> On 08/07/2014 11:29 AM, Peter Hurley wrote:
-> >On 05/01/2014 03:04 PM, Murali Karicheri wrote:
-> >>8250 uart driver currently supports only software assisted hw flow
-> >>control. The software assisted hw flow control maintains a hw_stopped
-> >>flag in the tty structure to stop and start transmission and use modem
-> >>status interrupt for the event to drive the handshake signals. This is
-> >>not needed if hw has flow control capabilities. This patch adds a
-> >>DT attribute for enabling hw flow control for a uart port. Also skip
-> >>stop and start if this flag is present in flag field of the port
-> >>structure.
-> >>
-> >>Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
-> >>
-> >>CC: Rob Herring<robh+dt@kernel.org>
-> >>CC: Pawel Moll<pawel.moll@arm.com>
-> >>CC: Mark Rutland<mark.rutland@arm.com>
-> >>CC: Ian Campbell<ijc+devicetree@hellion.org.uk>
-> >>CC: Kumar Gala<galak@codeaurora.org>
-> >>CC: Randy Dunlap<rdunlap@infradead.org>
-> >>CC: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
-> >>CC: Jiri Slaby<jslaby@suse.cz>
-> >>CC: Santosh Shilimkar<santosh.shilimkar@ti.com>
-> >>---
-> >>  .../devicetree/bindings/serial/of-serial.txt       |    1 +
-> >>  drivers/tty/serial/8250/8250_core.c                |    6 ++++--
-> >>  drivers/tty/serial/of_serial.c                     |    4 ++++
-> >>  drivers/tty/serial/serial_core.c                   |   12 +++++++++---
-> >>  4 files changed, 18 insertions(+), 5 deletions(-)
-> >>
-> >[...]
-> >
-> >>diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-> >>index b68550d..851707a 100644
-> >>--- a/drivers/tty/serial/serial_core.c
-> >>+++ b/drivers/tty/serial/serial_core.c
-> >>@@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
-> >>  			if (tty->termios.c_cflag&  CBAUD)
-> >>  				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
-> >>  		}
-> >>-
-> >>-		if (tty_port_cts_enabled(port)) {
-> >>+		/*
-> >>+		 * if hw support flow control without software intervention,
-> >>+		 * then skip the below check
-> >>+		 */
-> >>+		if (tty_port_cts_enabled(port)&&
-> >>+		    !(uport->flags&  UPF_HARD_FLOW)) {
-> >>  			spin_lock_irq(&uport->lock);
-> >>  			if (!(uport->ops->get_mctrl(uport)&  TIOCM_CTS))
-> >>  				tty->hw_stopped = 1;
-> >>@@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
-> >>
-> >>  	uport->icount.cts++;
-> >>
-> >>-	if (tty_port_cts_enabled(port)) {
-> >>+	/* skip below code if the hw flow control is supported */
-> >>+	if (tty_port_cts_enabled(port)&&
-> >>+	    !(uport->flags&  UPF_HARD_FLOW)) {
-> >Why is a modem status interrupt being generated for DCTS
-> >if autoflow control is enabled?
-> >
-> >This should be:
-> >
-> >	WARN_ON_ONCE(uport->flags&  UPF_HARD_FLOW);
-> >
-> >to indicate a mis-configured driver/device.
-> This patch is already merged to the upstream branch and if you see any
-> issue, please
-> post a patch for review.
 
-If someone points out a problem in a patch of yours that is accepted
-upstream, it is nice to provide a fix, otherwise I will just revert it
-upstream, as it looks to be incorrect.
+--xSEMfpWWEi9ZGPb2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So, should I just revert it?
+On Thu, Aug 07, 2014 at 07:46:05PM +0530, Vinod Koul wrote:
 
-greg k-h
+> I was thinking about this as well a while back, wont it make sense to let
+> machine driver expose meaningful controls for this. Just like we have fixup
+> for back-ends, we can add fixups for codec-codec links and let machine tell
+> you the parameters to configure.
+
+This is supposed to be pretty much the same thing (not looked at the
+patch yet) - the machine driver passes in a list of possible settings
+and then a control gets generated allowing the user to pick one.
+
+--xSEMfpWWEi9ZGPb2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT47OxAAoJELSic+t+oim9HjsQAJHVKaBzGY3CFmihcUB+WnMm
+xMGuc50qPuJW8GBKMH0hmEFR1yuwSRPLX2vR4SAZQ83v8xsXm1O9RDALkeSC7GZX
+Odh5mJGJ+ndyFO1COPL1UY6wxugExazL1A9uCTyLDFRfEDt23uM89CyLyxHzmeHb
+GQXt3xgwADtPRFlcsLyFM4VLZtyy5OBfOriLVozMDgvr9SRbb/hlTcQalYOuKqKo
+FZ5AnMYudhdTzhQeZHQnE8e83iW/HncJaODMWvMLQoN6jmr977LIK12gU9ZUsT4Q
+ti/nSa4oxsSvcfeUWm5BndBfEc1yUazheEtRCv0qsmWJuspKdvCGAUmyG2UerGEC
+ZEtz6bFQ/wNGbTmd1cBD1mq7p+emudFrr4xpWRmPrsAbZapCYoYS+OJ0LI6D3SEY
+fJthGa4k+H+PMQjdN5mNyphpm4HO4kQL4Khcorw2SdcRCaz/WBOR5oF+vwCPM+fJ
+ufejYhz0DKDyXXz6IUedfGcgQlMHifnDfGcI+da1TbLkyia5pmKTmGVQzBKmDU1/
+JIP2grZQO97oPKXnkR57P1/tqw6bsdakUdd43qCno6XiGG2rbRtI1xjRx5OhkTaP
+YTBqySNZFebsi5TUoU94O3VdZ89jkIayrS6Fy+COrTW8+qVpC728kFWzfmOnIfqv
+IIVnk7Ui4fy9mf+QsGxZ
+=SCMY
+-----END PGP SIGNATURE-----
+
+--xSEMfpWWEi9ZGPb2--
