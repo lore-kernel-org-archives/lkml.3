@@ -1,149 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbaHGWTK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 18:19:10 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:47650 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399AbaHGWTG (ORCPT
+	id S1755183AbaHGW1A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 18:27:00 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:15426 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaHGW05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 18:19:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407423713-4160-4-git-send-email-keescook@chromium.org>
-References: <1407423713-4160-1-git-send-email-keescook@chromium.org> <1407423713-4160-4-git-send-email-keescook@chromium.org>
-From: Rob Herring <robh@kernel.org>
-Date: Thu, 7 Aug 2014 17:18:44 -0500
-X-Google-Sender-Auth: UgFCHl27PX2ENY75eTtY3Ezw6VY
-Message-ID: <CAL_JsqJZbbH=PwDzLKSwKiW1Y=N8MLgwEkp=xQaD_ST_uB-_Rw@mail.gmail.com>
-Subject: Re: [PATCH 3/8] arm: mm: reduce fixmap kmap from 32 to 16 CPUS
-To: Kees Cook <keescook@chromium.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liu hua <sdu.liu@huawei.com>, Mark Salter <msalter@redhat.com>,
-        Rabin Vincent <rabin@rab.in>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 7 Aug 2014 18:26:57 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
+        Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v2 0/7] locking/rwsem: enable reader opt-spinning & writer respin
+Date: Thu,  7 Aug 2014 18:26:41 -0400
+Message-Id: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 7, 2014 at 10:01 AM, Kees Cook <keescook@chromium.org> wrote:
-> More room is needed in the fixmap range for non-kmap fixmap entries. This
-> reduces the kmap range from 32 to 16 CPUs.
+v1->v2:
+ - Remove patch 1 which changes preempt_enable() to
+   preempt_enable_no_resched().
+ - Remove the RWSEM_READ_OWNED macro and assume readers own the lock
+   when owner is NULL.
+ - Reduce the spin threshold to 64.
+ - Enable writer respin only if spinners are present.
 
-Do you want this merged or just doing this to get the rest of your
-series working? I'll post my patch for making the fixmap region 3MB
-(it adds back the first 1MB of the top pmd).
+This patch set improves upon the rwsem optimistic spinning patch set
+from Davidlohr to enable better performing rwsem and more aggressive
+use of optimistic spinning.
 
-> Additionally, add PTE entry for
-> fixmap regardless of CONFIG_HIGHMEM.
+By using a microbenchmark running 1 million lock-unlock operations per
+thread on a 4-socket 40-core Westmere-EX x86-64 test machine running
+3.16-rc7 based kernels, the following table shows the execution times
+with 2/10 threads running on different CPUs on the same socket where
+load is the number of pause instructions in the critical section:
 
-"Additionally" is a good flag for this patch should be split-up. It
-seems like we would want to apply this part to stable.
+  lock/r:w ratio # of threads	Load:Execution Time (ms)
+  -------------- ------------	------------------------
+  mutex		      2		1:530.7, 5:406.0, 10:472.7
+  mutex		     10		1:1848 , 5:2046 , 10:4394
 
-Rob
+Before patch:
+  rwsem/0:1	      2		1:339.4, 5:368.9, 10:394.0
+  rwsem/1:1	      2		1:2915 , 5:2621 , 10:2764
+  rwsem/10:1	      2		1:891.2, 5:779.2, 10:827.2
+  rwsem/0:1	     10		1:5618 , 5:5722 , 10:5683
+  rwsem/1:1	     10		1:14562, 5:14561, 10:14770
+  rwsem/10:1	     10		1:5914 , 5:5971 , 10:5912
 
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  arch/arm/include/asm/fixmap.h | 12 ++++++++++--
->  arch/arm/mm/highmem.c         |  2 --
->  arch/arm/mm/mm.h              |  3 +++
->  arch/arm/mm/mmu.c             |  5 ++++-
->  4 files changed, 17 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-> index 8ee7cb4f62ca..3ed08232be55 100644
-> --- a/arch/arm/include/asm/fixmap.h
-> +++ b/arch/arm/include/asm/fixmap.h
-> @@ -1,16 +1,24 @@
->  #ifndef _ASM_FIXMAP_H
->  #define _ASM_FIXMAP_H
->
-> +/*
-> + * The fixmap uses 2MB. The KMAP fixmap needs 64k per CPU, so make room for
-> + * 16 CPUs (taking 1MB) and leave the rest for additional fixmap areas.
-> + */
->  #define FIXADDR_START          0xffc00000UL
->  #define FIXADDR_END            0xffe00000UL
->  #define FIXADDR_TOP            (FIXADDR_END - PAGE_SIZE)
->  #define FIXADDR_SIZE           (FIXADDR_END - FIXADDR_START)
->
-> -#define FIX_KMAP_NR_PTES       (FIXADDR_SIZE >> PAGE_SHIFT)
-> +/* 16 PTEs per CPU (64k of 4k pages). */
-> +#define FIX_KMAP_NR_PTES       16
-> +#define FIX_KMAP_NR_CPUS       16
->
->  enum fixed_addresses {
-> +       /* Support 16 CPUs for kmap as the first region of fixmap entries. */
->         FIX_KMAP_BEGIN,
-> -       FIX_KMAP_END = FIX_KMAP_NR_PTES - 1,
-> +       FIX_KMAP_END = (FIX_KMAP_NR_PTES * FIX_KMAP_NR_CPUS) - 1,
-> +
->         __end_of_fixed_addresses
->  };
->
-> diff --git a/arch/arm/mm/highmem.c b/arch/arm/mm/highmem.c
-> index a1241ee8425e..adf264fb700b 100644
-> --- a/arch/arm/mm/highmem.c
-> +++ b/arch/arm/mm/highmem.c
-> @@ -18,8 +18,6 @@
->  #include <asm/tlbflush.h>
->  #include "mm.h"
->
-> -pte_t *fixmap_page_table;
-> -
->  static inline void set_fixmap_pte(int idx, pte_t pte)
->  {
->         unsigned long vaddr = __fix_to_virt(idx);
-> diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
-> index ce727d47275c..c8b5b2d05b55 100644
-> --- a/arch/arm/mm/mm.h
-> +++ b/arch/arm/mm/mm.h
-> @@ -7,6 +7,9 @@
->  /* the upper-most page table pointer */
->  extern pmd_t *top_pmd;
->
-> +/* The fixmap PTE. */
-> +extern pte_t *fixmap_page_table;
-> +
->  /*
->   * 0xffff8000 to 0xffffffff is reserved for any ARM architecture
->   * specific hacks for copying pages efficiently, while 0xffff4000
-> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-> index e881ed817a8b..a7a756603775 100644
-> --- a/arch/arm/mm/mmu.c
-> +++ b/arch/arm/mm/mmu.c
-> @@ -53,6 +53,9 @@ EXPORT_SYMBOL(empty_zero_page);
->   */
->  pmd_t *top_pmd;
->
-> +/* The fixmap PTE. */
-> +pte_t *fixmap_page_table;
-> +
->  #define CPOLICY_UNCACHED       0
->  #define CPOLICY_BUFFERED       1
->  #define CPOLICY_WRITETHROUGH   2
-> @@ -1342,10 +1345,10 @@ static void __init kmap_init(void)
->  #ifdef CONFIG_HIGHMEM
->         pkmap_page_table = early_pte_alloc(pmd_off_k(PKMAP_BASE),
->                 PKMAP_BASE, _PAGE_KERNEL_TABLE);
-> +#endif
->
->         fixmap_page_table = early_pte_alloc(pmd_off_k(FIXADDR_START),
->                 FIXADDR_START, _PAGE_KERNEL_TABLE);
-> -#endif
->  }
->
->  static void __init map_lowmem(void)
-> --
-> 1.9.1
->
+After patch:
+  rwsem/0:1	     2		1:334.6, 5:334.5, 10:366.9
+  rwsem/1:1	     2		1:311.0, 5:320.5, 10:300.0
+  rwsem/10:1	     2		1:184.6, 5:180.6, 10:188.9
+  rwsem/0:1	    10		1:1842 , 5:1925 , 10:2306
+  rwsem/1:1	    10		1:1668 , 5:1706 , 10:1555
+  rwsem/10:1	    10		1:1266 , 5:1294 , 10:1342
+
+% Change:
+  rwsem/0:1	     2		1: -1.4%, 5: -9.6%, 10: -6.7%
+  rwsem/1:1	     2		1:-89.3%, 5:-87.7%, 10:-89.1%
+  rwsem/10:1	     2		1:-79.3%, 5:-76.8%, 10:-77.2%
+  rwsem/0:1	    10		1:-67.2%, 5:-66.4%, 10:-59.4%
+  rwsem/1:1	    10		1:-88.5%, 5:-88.3%, 10:-89.5%
+  rwsem/10:1	    10		1:-78.6%, 5:-78.3%, 10:-77.3%
+
+It can be seen that there is dramatic reduction in the execution
+times. The new rwsem is now even faster than mutex whether it is all
+writers or a mixture of writers and readers.
+
+Running the AIM7 benchmarks on a larger 8-socket 80-core system
+(HT off), the performance improvements on some of the workloads were
+as follows:
+
+      Workload	       Before Patch	After Patch	% Change
+      --------	       ------------	-----------	--------
+  alltests (200-1000)	  337892	  345888	 + 2.4%
+  alltests (1100-2000)	  402535	  474065	 +17.8%
+  custom (200-1000)	  480651	  547522	 +13.9%
+  custom (1100-2000)	  461037	  561588	 +21.8%
+  shared (200-1000)	  420845	  458048	 + 8.8%
+  shared (1100-2000)	  428045	  473121	 +10.5%
+
+Waiman Long (7):
+  locking/rwsem: check for active writer/spinner before wakeup
+  locking/rwsem: threshold limited spinning for active readers
+  locking/rwsem: rwsem_can_spin_on_owner can be called with preemption
+    enabled
+  locking/rwsem: more aggressive use of optimistic spinning
+  locking/rwsem: move down rwsem_down_read_failed function
+  locking/rwsem: enables optimistic spinning for readers
+  locking/rwsem: allow waiting writers to go back to spinning
+
+ include/linux/osq_lock.h    |    5 +
+ kernel/locking/rwsem-xadd.c |  348 ++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 283 insertions(+), 70 deletions(-)
+
