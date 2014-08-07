@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501AbaHGRY3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 13:24:29 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53553 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757264AbaHGRY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 13:24:27 -0400
-Message-ID: <53E3B632.9050902@ti.com>
-Date: Thu, 7 Aug 2014 13:24:02 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Peter Hurley <peter@hurleysoftware.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-serial@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Jiri Slaby <jslaby@suse.cz>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH v2] serial: uart: add hw flow control support configuration
-References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com> <53E39B44.60406@hurleysoftware.com> <53E3A67B.6070709@ti.com> <20140807171254.GA13097@kroah.com>
-In-Reply-To: <20140807171254.GA13097@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932561AbaHGRY5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 13:24:57 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:62237 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932508AbaHGRYz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 13:24:55 -0400
+From: Takero Funaki <raphanus@gmail.com>
+To: davem@davemloft.net
+Cc: Takero Funaki <raphanus@gmail.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        netfilter-devel@vger.kernel.org (open list:NETFILTER/IPTABLES),
+        netfilter@vger.kernel.org (open list:NETFILTER/IPTABLES),
+        coreteam@netfilter.org (open list:NETFILTER/IPTABLES),
+        netdev@vger.kernel.org (open list:NETWORKING [GENERAL]),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] netfilter: xt_u32: Accept negative offset in AT operation
+Date: Fri,  8 Aug 2014 02:24:37 +0900
+Message-Id: <1407432277-2032-1-git-send-email-raphanus@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 01:12 PM, Greg Kroah-Hartman wrote:
-> On Thu, Aug 07, 2014 at 12:16:59PM -0400, Murali Karicheri wrote:
->> On 08/07/2014 11:29 AM, Peter Hurley wrote:
->>> On 05/01/2014 03:04 PM, Murali Karicheri wrote:
->>>> 8250 uart driver currently supports only software assisted hw flow
->>>> control. The software assisted hw flow control maintains a hw_stopped
->>>> flag in the tty structure to stop and start transmission and use modem
->>>> status interrupt for the event to drive the handshake signals. This is
->>>> not needed if hw has flow control capabilities. This patch adds a
->>>> DT attribute for enabling hw flow control for a uart port. Also skip
->>>> stop and start if this flag is present in flag field of the port
->>>> structure.
->>>>
->>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
->>>>
->>>> CC: Rob Herring<robh+dt@kernel.org>
->>>> CC: Pawel Moll<pawel.moll@arm.com>
->>>> CC: Mark Rutland<mark.rutland@arm.com>
->>>> CC: Ian Campbell<ijc+devicetree@hellion.org.uk>
->>>> CC: Kumar Gala<galak@codeaurora.org>
->>>> CC: Randy Dunlap<rdunlap@infradead.org>
->>>> CC: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
->>>> CC: Jiri Slaby<jslaby@suse.cz>
->>>> CC: Santosh Shilimkar<santosh.shilimkar@ti.com>
->>>> ---
->>>>   .../devicetree/bindings/serial/of-serial.txt       |    1 +
->>>>   drivers/tty/serial/8250/8250_core.c                |    6 ++++--
->>>>   drivers/tty/serial/of_serial.c                     |    4 ++++
->>>>   drivers/tty/serial/serial_core.c                   |   12 +++++++++---
->>>>   4 files changed, 18 insertions(+), 5 deletions(-)
->>>>
->>> [...]
->>>
->>>> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
->>>> index b68550d..851707a 100644
->>>> --- a/drivers/tty/serial/serial_core.c
->>>> +++ b/drivers/tty/serial/serial_core.c
->>>> @@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
->>>>   			if (tty->termios.c_cflag&   CBAUD)
->>>>   				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
->>>>   		}
->>>> -
->>>> -		if (tty_port_cts_enabled(port)) {
->>>> +		/*
->>>> +		 * if hw support flow control without software intervention,
->>>> +		 * then skip the below check
->>>> +		 */
->>>> +		if (tty_port_cts_enabled(port)&&
->>>> +		    !(uport->flags&   UPF_HARD_FLOW)) {
->>>>   			spin_lock_irq(&uport->lock);
->>>>   			if (!(uport->ops->get_mctrl(uport)&   TIOCM_CTS))
->>>>   				tty->hw_stopped = 1;
->>>> @@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
->>>>
->>>>   	uport->icount.cts++;
->>>>
->>>> -	if (tty_port_cts_enabled(port)) {
->>>> +	/* skip below code if the hw flow control is supported */
->>>> +	if (tty_port_cts_enabled(port)&&
->>>> +	    !(uport->flags&   UPF_HARD_FLOW)) {
->>> Why is a modem status interrupt being generated for DCTS
->>> if autoflow control is enabled?
->>>
->>> This should be:
->>>
->>> 	WARN_ON_ONCE(uport->flags&   UPF_HARD_FLOW);
->>>
->>> to indicate a mis-configured driver/device.
->> This patch is already merged to the upstream branch and if you see any
->> issue, please
->> post a patch for review.
->
-> If someone points out a problem in a patch of yours that is accepted
-> upstream, it is nice to provide a fix, otherwise I will just revert it
-> upstream, as it looks to be incorrect.
->
-> So, should I just revert it?
->
-> greg k-h
-Greg,
+Remove unnecessary uint wraparound checks which prohibited two's
+complement representation of negative number in "@" operation.
+It is required to test last N bytes of variable length formats and to be
+consistent with libxt parser which silently replaces negative number by
+its compliment.
 
-Sorry, I misunderstood it. I think it would have been better to start a 
-new thread to point this out. Anyways I will send out a patch to add 
-this and please don't revert.
+For example, --u32 '0&0xFFFF@-4=0' will read IPv4 total length header
+then add complement of -4 to test if the last 4 bytes are 0. Previously,
+it would never match as (total length)+0xFFFFFFFC always overflow.
 
-Murali
+Signed-off-by: Takero Funaki <raphanus@gmail.com>
+---
+ net/netfilter/xt_u32.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/net/netfilter/xt_u32.c b/net/netfilter/xt_u32.c
+index a95b5034..9de339d 100644
+--- a/net/netfilter/xt_u32.c
++++ b/net/netfilter/xt_u32.c
+@@ -57,12 +57,12 @@ static bool u32_match_it(const struct xt_u32 *data,
+ 				val >>= number;
+ 				break;
+ 			case XT_U32_AT:
+-				if (at + val < at)
+-					return false;
+ 				at += val;
+ 				pos = number;
+-				if (at + 4 < at || skb->len < at + 4 ||
+-				    pos > skb->len - at - 4)
++				/* unsigned integer may wraparound
++				 * to represent negative offset
++				 */
++				if (at + pos > skb->len - 4)
+ 					return false;
+ 
+ 				if (skb_copy_bits(skb, at + pos, &n,
+-- 
+1.9.1
+
