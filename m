@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479AbaHGJPZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 05:15:25 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:35846 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754519AbaHGJPX (ORCPT
+	id S1757482AbaHGJSR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 05:18:17 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:59422 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317AbaHGJSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 05:15:23 -0400
-Message-ID: <53E343A7.9060700@kernel.org>
-Date: Thu, 07 Aug 2014 10:15:19 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 7 Aug 2014 05:18:15 -0400
+Date: Thu, 7 Aug 2014 13:18:12 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: Question on release_one_tty
+Message-ID: <20140807091812.GR20553@moon>
+References: <20140807082544.GP20553@moon>
+ <53E338CA.9070503@parallels.com>
+ <20140807083423.GQ20553@moon>
+ <53E34158.9070009@parallels.com>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: kernel-janitors@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
-        linux-iio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH 3/4] iio: fix error return code
-References: <1407355938-10932-3-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1407355938-10932-3-git-send-email-Julia.Lawall@lip6.fr>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E34158.9070009@parallels.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/14 21:12, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thu, Aug 07, 2014 at 01:05:28PM +0400, Pavel Emelyanov wrote:
+> > 
+> > So how this code supposed to work then? I mean tty_driver_kref_put must never call
+> > for destruct_tty_driver, otherwise we're accessing freed memory.
 > 
-> Convert a zero return value on error to a negative one, as returned
-> elsewhere in the function.
+> mod = driver->owner;
+> tty_driver_kref_put(driver);
+> module_put(mod);
 > 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
-> 
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-I'll take the view this one is 'obviously' right.  If it isn't
-then anyone feel free to shout!
+> Check the upstream whether the same issue exists there.
 
-Applied to the togreg branch of iio.git.
+Same in tty.git
 
-Thanks,
+static void release_one_tty(struct work_struct *work)
+{
+	struct tty_struct *tty =
+		container_of(work, struct tty_struct, hangup_work);
+	struct tty_driver *driver = tty->driver;
 
-Jonathan
-> 
-> ---
->  drivers/iio/adc/xilinx-xadc-core.c |    8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/iio/adc/xilinx-xadc-core.c b/drivers/iio/adc/xilinx-xadc-core.c
-> index fd2745c..196e269 100644
-> --- a/drivers/iio/adc/xilinx-xadc-core.c
-> +++ b/drivers/iio/adc/xilinx-xadc-core.c
-> @@ -1201,12 +1201,16 @@ static int xadc_probe(struct platform_device *pdev)
->  			goto err_device_free;
->  
->  		xadc->convst_trigger = xadc_alloc_trigger(indio_dev, "convst");
-> -		if (IS_ERR(xadc->convst_trigger))
-> +		if (IS_ERR(xadc->convst_trigger)) {
-> +			ret = PTR_ERR(xadc->convst_trigger);
->  			goto err_triggered_buffer_cleanup;
-> +		}
->  		xadc->samplerate_trigger = xadc_alloc_trigger(indio_dev,
->  			"samplerate");
-> -		if (IS_ERR(xadc->samplerate_trigger))
-> +		if (IS_ERR(xadc->samplerate_trigger)) {
-> +			ret = PTR_ERR(xadc->samplerate_trigger);
->  			goto err_free_convst_trigger;
-> +		}
->  	}
->  
->  	xadc->clk = devm_clk_get(&pdev->dev, NULL);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+	if (tty->ops->cleanup)
+		tty->ops->cleanup(tty);
+
+	tty->magic = 0;
+	tty_driver_kref_put(driver);
+	module_put(driver->owner);
+
+	spin_lock(&tty_files_lock);
+	list_del_init(&tty->tty_files);
+	spin_unlock(&tty_files_lock);
+
+	put_pid(tty->pgrp);
+	put_pid(tty->session);
+	free_tty_struct(tty);
+}
+
+so I think yes, the fix is needed. I'll prepare the patch
+and test/post for review.
