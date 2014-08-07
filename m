@@ -1,62 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757831AbaHGODU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 10:03:20 -0400
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:51554 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757788AbaHGODR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 10:03:17 -0400
-From: Shuah Khan <shuah.kh@samsung.com>
-To: mmarek@suse.cz, gregkh@linuxfoundation.org, sam@ravnborg.org
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] kbuild: kselftest - new make target to build and run kernel selftests
-Date: Thu,  7 Aug 2014 08:03:12 -0600
-Message-Id: <1407420192-4928-1-git-send-email-shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.9.1
+	id S932180AbaHGOF4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 10:05:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52777 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754471AbaHGOFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 10:05:54 -0400
+Message-ID: <53E387B4.4060003@redhat.com>
+Date: Thu, 07 Aug 2014 16:05:40 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Bandan Das <bsd@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] KVM: nVMX: nested TPR shadow/threshold emulation
+References: <1407149907-13483-1-git-send-email-wanpeng.li@linux.intel.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AB505AB@SHSMSX104.ccr.corp.intel.com> <53E0B931.7010309@redhat.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AB516FF@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AB516FF@SHSMSX104.ccr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new make target "kselftest" to enable kernel testing. This
-new target builds and runs kernel selftests. Running as root is
-recommended for a complete test run as some tests don't run when
-run by non-root user.
+Il 06/08/2014 08:38, Zhang, Yang Z ha scritto:
+> Paolo Bonzini wrote on 2014-08-05:
+>> Il 05/08/2014 09:56, Zhang, Yang Z ha scritto:
+>>> Wanpeng Li wrote on 2014-08-04:
+>>>> This patch fix bug
+>>>> https://bugzilla.kernel.org/show_bug.cgi?id=61411
+>>>>
+>>>> TPR shadow/threshold feature is important to speed up the Windows guest.
+>>>> Besides, it is a must feature for certain VMM.
+>>>>
+>>>> We map virtual APIC page address and TPR threshold from L1 VMCS. If
+>>>> TPR_BELOW_THRESHOLD VM exit is triggered by L2 guest and L1
+>>>> interested in, we inject it into L1 VMM for handling.
+>>>>
+>>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>>>> ---
+>>>> v2 -> v3:
+>>>>  * nested vm entry failure if both tpr shadow and cr8 exiting bits
+>>>> are not set
+>>>> v1 -> v2:
+>>>>  * don't take L0's "virtualize APIC accesses" setting into account *
+>>>>  virtual_apic_page do exactly the same thing that is done for
+>>>>  apic_access_page * add the tpr threshold field to the read-write
+>>>>  fields for shadow
+>>>> VMCS
+>>>>
+>>>>  arch/x86/kvm/vmx.c | 38 ++++++++++++++++++++++++++++++++++++--
+>>>>  1 file changed, 36 insertions(+), 2 deletions(-)
+>>>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c index
+>>>> c604f3c..7a56e2c 100644
+>>>> --- a/arch/x86/kvm/vmx.c
+>>>> +++ b/arch/x86/kvm/vmx.c
+>>>> @@ -379,6 +379,7 @@ struct nested_vmx {
+>>>>  	 * we must keep them pinned while L2 runs. 	 */ 	struct page
+>>>>  *apic_access_page; +	struct page *virtual_apic_page; 	u64
+>>>>  msr_ia32_feature_control;
+>>>>  
+>>>>  	struct hrtimer preemption_timer; @@ -533,6 +534,7 @@ static int
+>>>>  max_shadow_read_only_fields = 	ARRAY_SIZE(shadow_read_only_fields);
+>>>>  
+>>>>  static unsigned long shadow_read_write_fields[] = { +	TPR_THRESHOLD,
+>>>>  	GUEST_RIP, 	GUEST_RSP, 	GUEST_CR0,
+>>>> @@ -2330,7 +2332,7 @@ static __init void
+>>>> nested_vmx_setup_ctls_msrs(void)
+>>>>  		CPU_BASED_MOV_DR_EXITING | CPU_BASED_UNCOND_IO_EXITING |
+>>>>  		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
+>>>>  		CPU_BASED_RDPMC_EXITING | CPU_BASED_RDTSC_EXITING |
+>>>> -		CPU_BASED_PAUSE_EXITING |
+>>>> +		CPU_BASED_PAUSE_EXITING | CPU_BASED_TPR_SHADOW |
+>>>>  		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS; 	/* 	 * We can allow some
+>>>>  features even when not supported by the @@ -6148,6 +6150,10 @@ static
+>>>>  void free_nested(struct vcpu_vmx *vmx)
+>>>>  		nested_release_page(vmx->nested.apic_access_page);
+>>>>  		vmx->nested.apic_access_page = 0; 	}
+>>>> +	if (vmx->nested.virtual_apic_page) {
+>>>> +		nested_release_page(vmx->nested.virtual_apic_page);
+>>>> +		vmx->nested.virtual_apic_page = 0;
+>>>> +	}
+>>>>
+>>>>  	nested_free_all_saved_vmcss(vmx);  } @@ -6936,7 +6942,7 @@ static
+>>>>  bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu) 	case
+>>>>  EXIT_REASON_MCE_DURING_VMENTRY: 		return 0; 	case
+>>>>  EXIT_REASON_TPR_BELOW_THRESHOLD:
+>>>> -		return 1;
+>>>> +		return nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW);
+>>>>  	case EXIT_REASON_APIC_ACCESS:
+>>>>  		return nested_cpu_has2(vmcs12,
+>>>>  			SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES);
+>>>> @@ -7057,6 +7063,9 @@ static int vmx_handle_exit(struct kvm_vcpu
+>>>> *vcpu)
+>>>>
+>>>>  static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr,
+>>>> int
+>>>> irr)  {
+>>>> +	if (is_guest_mode(vcpu))
+>>>> +		return;
+>>>> +
+>>>>  	if (irr == -1 || tpr < irr) {
+>>>>  		vmcs_write32(TPR_THRESHOLD, 0);
+>>>>  		return;
+>>>> @@ -8024,6 +8033,27 @@ static void prepare_vmcs02(struct kvm_vcpu
+>>>> *vcpu, struct vmcs12 *vmcs12)
+>>>>  	exec_control &= ~CPU_BASED_VIRTUAL_NMI_PENDING;
+>>>>  	exec_control &= ~CPU_BASED_TPR_SHADOW;
+>>>>  	exec_control |= vmcs12->cpu_based_vm_exec_control;
+>>>> +
+>>>> +	if (exec_control & CPU_BASED_TPR_SHADOW) {
+>>>> +		if (vmx->nested.virtual_apic_page)
+>>>> +			nested_release_page(vmx->nested.virtual_apic_page);
+>>>> +		vmx->nested.virtual_apic_page =
+>>>> +		   nested_get_page(vcpu, vmcs12->virtual_apic_page_addr);
+>>>> +		if (!vmx->nested.virtual_apic_page)
+>>>> +			exec_control &=
+>>>> +				~CPU_BASED_TPR_SHADOW;
+>>>> +		else
+>>>> +			vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
+>>>> +				page_to_phys(vmx->nested.virtual_apic_page));
+>>>> +
+>>>> +		if (!(exec_control & CPU_BASED_TPR_SHADOW) &&
+>>>> +			!((exec_control & CPU_BASED_CR8_LOAD_EXITING) &&
+>>>> +				(exec_control & CPU_BASED_CR8_STORE_EXITING)))
+>>>> +			nested_vmx_failValid(vcpu,
+>>>> VMXERR_ENTRY_INVALID_CONTROL_FIELD);
+>>>
+>>> I think this is not correct. The vmx->nested.virtual_apic_page may not
+>>> valid due to two reasons: 1. The virtual_apic_page_addr is not a valid
+>>> gfn. In this case, the vmx failure
+>> must be injected to L1 unconditionally regardless of the setting of
+>> CR8 load/store exiting.
+>>
+>> You're right that accesses to the APIC-access page may also end up
+>> writing to the virtual-APIC page.  Hence, if the "virtualize APIC
+>> accesses" setting is 1 in the secondary exec controls, you also have to fail the vmentry.
+>>
+>> Doing it unconditionally is not correct, but it is the simplest thing
+> 
+> Why not correct?
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- Makefile | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+On real hardware you could point the virtual-APIC page to an invalid
+address.  If CR8 load exits are enabled, CR8 store exits are enabled,
+and virtualize APIC access is disabled, the processor would never notice.
 
-diff --git a/Makefile b/Makefile
-index d0901b4..7eda9fb 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1036,6 +1036,13 @@ headers_check: headers_install
- 	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst) HDRCHECK=1
- 
- # ---------------------------------------------------------------------------
-+# Kernel selftest
-+
-+PHONY += kselftest
-+kselftest:
-+	$(Q)$(MAKE) -C tools/testing/selftests run_tests
-+
-+# ---------------------------------------------------------------------------
- # Modules
- 
- ifdef CONFIG_MODULES
-@@ -1238,6 +1245,9 @@ help:
- 	@echo  '  headerdep       - Detect inclusion cycles in headers'
- 	@$(MAKE) -f $(srctree)/scripts/Makefile.help checker-help
- 	@echo  ''
-+	@echo  'Kernel selftest'
-+	@echo  '  kselftest       - Build and run kernel selftest (run as root)'
-+	@echo  ''
- 	@echo  'Kernel packaging:'
- 	@$(MAKE) $(build)=$(package-dir) help
- 	@echo  ''
--- 
-1.9.1
+But it's okay with a comment.
 
+>>>> +
+>>>> +		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
+>>>> +	}
+>>>
+>>> Miss else here:
+>>> If L2 owns the APIC and doesn't use TPR_SHADOW, we need to setup the
+>>> vmcs02 based on vmcs01. For example, if vmcs01 is using TPR_SHADOW,
+>>> then
+>>> vmcs02 must set it. Also, we need to use vmcs01's virtual_apic_page
+>>> and TPR_THRESHOLD for vmcs02.
+>>
+>> What do you mean by "owns the APIC"?
+> 
+> Means if L2 touch L1's APIC directly, for example, if L2 not using
+> TPR_SHADOW, then move to/from CR8 will touch L1's TPR directly. And in
+> this case, L0 should aware of L1's TRP change.
+
+You're right.
+
+Paolo
