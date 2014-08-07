@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527AbaHGMwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 08:52:21 -0400
+	id S1757582AbaHGMw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 08:52:27 -0400
 Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:48815 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756266AbaHGMwT (ORCPT
+	by vger.kernel.org with ESMTP id S1757518AbaHGMwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 08:52:19 -0400
+	Thu, 7 Aug 2014 08:52:21 -0400
 X-IronPort-AV: E=Sophos;i="5.01,818,1400018400"; 
-   d="scan'208";a="88599291"
+   d="scan'208";a="88599293"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Haavard Skinnemoen <hskinnemoen@gmail.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] avr32: fix error return code
-Date: Thu,  7 Aug 2014 14:49:05 +0200
-Message-Id: <1407415749-19978-2-git-send-email-Julia.Lawall@lip6.fr>
+To: Chas Williams <chas@cmf.nrl.navy.mil>
+Cc: kernel-janitors@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] solos-pci: fix error return code
+Date: Thu,  7 Aug 2014 14:49:07 +0200
+Message-Id: <1407415749-19978-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1407415749-19978-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1407415749-19978-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -55,34 +54,19 @@ ret = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- arch/avr32/boards/hammerhead/flash.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/atm/solos-pci.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/avr32/boards/hammerhead/flash.c b/arch/avr32/boards/hammerhead/flash.c
-index 776c3cb..e86280c 100644
---- a/arch/avr32/boards/hammerhead/flash.c
-+++ b/arch/avr32/boards/hammerhead/flash.c
-@@ -190,14 +190,19 @@ static int __init hammerhead_usbh_init(void)
- 
- 	/* setup gclk0 to run from osc1 */
- 	gclk = clk_get(NULL, "gclk0");
--	if (IS_ERR(gclk))
-+	if (IS_ERR(gclk)) {
-+		ret = PTR_ERR(gclk);
- 		goto err_gclk;
-+	}
- 
- 	osc = clk_get(NULL, "osc1");
--	if (IS_ERR(osc))
-+	if (IS_ERR(osc)) {
-+		ret = PTR_ERR(osc);
- 		goto err_osc;
-+	}
- 
--	if (clk_set_parent(gclk, osc)) {
-+	ret = clk_set_parent(gclk, osc);
-+	if (ret < 0) {
- 		pr_debug("hammerhead: failed to set osc1 for USBH clock\n");
- 		goto err_set_clk;
- 	}
+diff --git a/drivers/atm/solos-pci.c b/drivers/atm/solos-pci.c
+index 943cf0d..7652e8d 100644
+--- a/drivers/atm/solos-pci.c
++++ b/drivers/atm/solos-pci.c
+@@ -1278,6 +1278,7 @@ static int fpga_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 			card->dma_bounce = kmalloc(card->nr_ports * BUF_SIZE, GFP_KERNEL);
+ 			if (!card->dma_bounce) {
+ 				dev_warn(&card->dev->dev, "Failed to allocate DMA bounce buffers\n");
++				err = -ENOMEM;
+ 				/* Fallback to MMIO doesn't work */
+ 				goto out_unmap_both;
+ 			}
 
