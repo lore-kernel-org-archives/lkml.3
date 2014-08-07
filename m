@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757719AbaHGMyo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 08:54:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34770 "EHLO mx2.suse.de"
+	id S1757742AbaHGM4F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 08:56:05 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:50655 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757478AbaHGMyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 08:54:43 -0400
-Date: Thu, 7 Aug 2014 14:54:41 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Pavel Machek <pavel@ucw.cz>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux-pm mailing list <linux-pm@lists.osdl.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: 3.15-rc: regression in suspend
-In-Reply-To: <alpine.LNX.2.00.1408071445250.6219@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1408071453370.6219@pobox.suse.cz>
-References: <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz> <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com> <20140607120614.GB5309@amd.pavel.ucw.cz> <20140607231124.GA3611@amd.pavel.ucw.cz> <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com>
- <20140609102328.GA25332@amd.pavel.ucw.cz> <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz> <20140625223522.GA5923@xo-6d-61-c0.localdomain> <alpine.LNX.2.00.1406271537000.21386@pobox.suse.cz> <20140707083908.GE5821@phenom.ffwll.local>
- <20140711192629.GA20015@amd.pavel.ucw.cz> <alpine.LNX.2.00.1408071445250.6219@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757428AbaHGM4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 08:56:03 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] clk: rockchip: add initcall to set clk defaults after syscons are available
+Date: Thu, 07 Aug 2014 14:57:38 +0200
+Message-ID: <1566610.B4NH8lpaoI@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Aug 2014, Jiri Kosina wrote:
+PLLs on Rockchip platforms report their locking state in an external
+register situated in the "General Register Files" which is provided
+through a syscon device.
 
-> The patch below seems to finally cure the problem at my system; I've just 
-> attached it to freedesktop bugzilla, but sending it to this thread as well 
-> to hopefully get as much testing coverage by affected people as possible.
-> 
-> I am going on with testing whether it really completely fixes the problem 
-> or just made it less likely.
+When the initial clk init runs, this syscon is of course not yet
+available, making it impossible to set PLLs to other frequencies
+through the assigned-rate property of the clock-controller node.
 
-Okay, after 31 suspend-resume cycles, the problem appeared again (while 
-without the patch, it triggers with 100% reliability). So it's not a 
-complete fix, it just makes the problem much less visible.
+Syscon devices are initialized through a postcore initcall, so add an
+arch_initcall to rerun the rockchip specific clock initalization when
+the GRF is available.
 
-Going back to bugzilla discussion.
+As the clock init already runs two times (through of_clk_add_provider
+and of_clk_init), a third time shouldn't hurt to much and in the best
+case wouldn't change any settings at all.
 
-> 
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] drm/i915: read HEAD register back in init_ring_common() to enforce ordering
-> 
-> Withtout this, ring initialization fails reliabily during resume with
-> 
-> 	[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head ffffff8804 tail 00000000 start 000e4000
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  drivers/gpu/drm/i915/intel_ringbuffer.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-> index 279488a..7add7ee 100644
-> --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-> +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-> @@ -517,6 +517,9 @@ static int init_ring_common(struct intel_engine_cs *ring)
->  	else
->  		ring_setup_phys_status_page(ring);
->  
-> +	/* Enforce ordering by reading HEAD register back */
-> +	I915_READ_HEAD(ring);
-> +
->  	/* Initialize the ring. This must happen _after_ we've cleared the ring
->  	 * registers with the above sequence (the readback of the HEAD registers
->  	 * also enforces ordering), otherwise the hw might lose the new ring
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+ drivers/clk/rockchip/clk.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
+diff --git a/drivers/clk/rockchip/clk.c b/drivers/clk/rockchip/clk.c
+index 9a3adb1..e14b108 100644
+--- a/drivers/clk/rockchip/clk.c
++++ b/drivers/clk/rockchip/clk.c
+@@ -23,6 +23,7 @@
+ #include <linux/slab.h>
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/clk/clk-conf.h>
+ #include <linux/mfd/syscon.h>
+ #include <linux/regmap.h>
+ #include "clk.h"
+@@ -126,6 +127,18 @@ void __init rockchip_clk_init(struct device_node *np, void __iomem *base,
+ 	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
+ }
+ 
++/**
++ * Set clock-defaults again, after grf regmap is available for PLLs.
++ */
++static int __init rockchip_clk_set_defaults(void)
++{
++	if (cru_node)
++		return of_clk_set_defaults(cru_node, true);
++
++	return 0;
++}
++arch_initcall(rockchip_clk_set_defaults);
++
+ struct regmap *rockchip_clk_get_grf(void)
+ {
+ 	if (IS_ERR(grf))
 -- 
-Jiri Kosina
-SUSE Labs
+2.0.1
+
+
