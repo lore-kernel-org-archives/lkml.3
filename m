@@ -1,81 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403AbaHGIwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 04:52:21 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:41730 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754363AbaHGIwT (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Thu, 7 Aug 2014 04:52:19 -0400
-Date: Thu, 7 Aug 2014 16:52:03 +0800
-From: joeyli <jlee@suse.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Takashi Iwai <tiwai@suse.de>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Hibernate: check unsafe page should not in e820
- reserved region
-Message-ID: <20140807085203.GF26210@linux-rxt1.site>
-References: <1407165801-24648-1-git-send-email-jlee@suse.com>
- <20140807040543.GE26210@linux-rxt1.site>
- <20140807080025.GA24700@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140807080025.GA24700@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757483AbaHGIwn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 04:52:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56124 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757406AbaHGIwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 04:52:40 -0400
+Subject: Re: [PATCH 3/5] Add the "verbose" module option.
+From: Jean Delvare <jdelvare@suse.de>
+To: Goffredo Baroncelli <kreijack@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Goffredo Baroncelli <kreijack@inwind.it>
+In-Reply-To: <1407359103-6012-4-git-send-email-kreijack@inwind.it>
+References: <1407359103-6012-1-git-send-email-kreijack@inwind.it>
+	 <1407359103-6012-4-git-send-email-kreijack@inwind.it>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Thu, 07 Aug 2014 10:52:35 +0200
+Message-ID: <1407401555.4314.14.camel@chaos.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 10:00:25AM +0200, Pavel Machek wrote:
-> Hi!
+Le Wednesday 06 August 2014 à 21:05 +0000, Goffredo Baroncelli a écrit :
+> Add a "verbose" option to control the message in the kernel log
+> verbose = 0   no message
+> verbose = 1   log only the fan speed changes
+> verbose = 2   log the fan speed changes and the temperature changes
 > 
-> > > When the machine doesn't well handle the e820 persistent when hibernate
-> > > resuming, then it may causes page fault when writing image to snapshot
-> > > buffer:
-> > > 
-> > > [   17.929495] BUG: unable to handle kernel paging request at ffff880069d4f000
-> > > [   17.933469] IP: [<ffffffff810a1cf0>] load_image_lzo+0x810/0xe40
-> > > [   17.933469] PGD 2194067 PUD 77ffff067 PMD 2197067 PTE 0
-> > > [   17.933469] Oops: 0002 [#1] SMP
-[...]
-> > > [    8.933534] PM: Failed to load hibernation image, recovering.
-> > > 
-> > > v2:
-> > >  + removed empty check of nosave_regions list.
-> > >  + fixed the typo of "region" in code for error message and patch comment.
-> > > 
-> > > Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> > > Cc: Len Brown <len.brown@intel.com>
-> > > Cc: Takashi Iwai <tiwai@suse.de>
-> > > Acked-by: Pavel Machek <pavel@ucw.cz>
-> > > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> > 
-> > I discussed with Vojtech Pavlik for this patch, he raised a situation is:
-> > 
-> > Maybe e820 changed but image kernel original pages do not fall into new e820 region.
-> > Then the hibernate will recovery success, but later kernel drivers may got problem
-> > when accessing memory. 
-> > 
-> > My idea is hashing the start/end pfn of each nosave region sequentially, put this
-> > nosave region digest to hibernate header then compare e820 digest in check_header()
-> > when hibernate resuming.
-> > 
-> > I am developing patch, then we don't need check unsafe page should not in unsave(e820)
-> > regions.
-> 
-> Actually, if you are doing such a check... it makes sense to check for
-> _all_ the regions, nosave or not. If e820 map changed at all, it is
-> not safe to resume.
-> 									Pavel
+> Signed-off-by: Goffredo Baroncelli <kreijack@inwind.it>
+> ---
+>  drivers/macintosh/therm_windtunnel.c | 39 +++++++++++++++++++++++-------------
+>  1 file changed, 25 insertions(+), 14 deletions(-)
 
-Currently nosave region only called register by e820 code, so hibernate's nosave region included e820
-reserved, ACPI data and ACPI NVS region.
+Looks overall good, minor comments inline below.
 
-I thought hashing the start/end pfn of above regions is enough.
+> diff --git a/drivers/macintosh/therm_windtunnel.c b/drivers/macintosh/therm_windtunnel.c
+> index 1e50455..7c512db 100644
+> --- a/drivers/macintosh/therm_windtunnel.c
+> +++ b/drivers/macintosh/therm_windtunnel.c
+> @@ -44,7 +44,9 @@
+>  #include <asm/sections.h>
+>  #include <asm/macio.h>
+>  
+> -#define LOG_TEMP		0			/* continuously log temperature */
+> +static int verbose = 1;
+> +module_param(verbose, int, 0644);
+> +MODULE_PARM_DESC(verbose, "Verbosity level: 0=silent, 1=log the fan tuning, 2=log the temperature");
+>  
+>  static struct {
+>  	volatile int		running;
+> @@ -157,10 +159,6 @@ tune_fan( int fan_setting )
+>  	/* write_reg( x.fan, 0x24, val, 1 ); */
+>  	write_reg( x.fan, 0x25, val, 1 );
+>  	write_reg( x.fan, 0x20, 0, 1 );
+> -	print_temp("CPU-temp: ", x.temp );
+> -	if( x.casetemp )
+> -		print_temp(", Case: ", x.casetemp );
+> -	printk(",  Fan: %d (tuned %+d)\n", 11-fan_setting, x.fan_level-fan_setting );
+>  
+>  	x.fan_level = fan_setting;
+>  }
+> @@ -168,7 +166,7 @@ tune_fan( int fan_setting )
+>  static void
+>  poll_temp( void )
+>  {
+> -	int temp, i, level, casetemp;
+> +	int temp, i, level, casetemp, tempchanged;
+>  
+>  	temp = read_reg( x.thermostat, 0, 2 );
+>  
+> @@ -179,14 +177,6 @@ poll_temp( void )
+>  	casetemp = read_reg(x.fan, 0x0b, 1) << 8;
+>  	casetemp |= (read_reg(x.fan, 0x06, 1) & 0x7) << 5;
+>  
+> -	if( LOG_TEMP && x.temp != temp ) {
+> -		print_temp("CPU-temp: ", temp );
+> -		print_temp(", Case: ", casetemp );
+> -		printk(",  Fan: %d\n", 11-x.fan_level );
+> -	}
+> -	x.temp = temp;
+> -	x.casetemp = casetemp;
+> -
+>  	level = -1;
+>  	for( i=0; (temp & 0xffff) > fan_table[i].temp ; i++ )
+>  		;
+> @@ -200,6 +190,27 @@ poll_temp( void )
+>  		level = fan_table[i].fan_up_setting;
+>  	x.upind = i;
+>  
+> +	/*
+> +	 * if verbose >0 log each fan tuning
+> +	 * if verbose >1 log each cpu temperature change
 
+Maybe this is just me but I think "verbose >= 1" and "verbose >= 2"
+would be easier to understand. Same in the code below.
 
-Regards
-Joey Lee
+> +	 */
+> +	tempchanged = x.temp != temp || x.casetemp != casetemp;
+> +	if ((verbose > 1 && tempchanged) ||
+> +	    (verbose > 0 && level >= 0)) {
+> +		printk(KERN_INFO);
+> +		print_temp("CPU-temp: ", temp);
+
+This can be written more efficiently as a single statement:
+
+		print_temp(KERN_INFO "CPU-temp: ", temp);
+
+> +		if (casetemp)
+> +			print_temp(", Case: ", casetemp);
+> +		if (level >= 0)
+> +			printk(", Fan: %d (tuned %+d)\n", 11-level,
+> +				x.fan_level-level);
+> +		else
+> +			printk(", Fan: %d\n", 11-x.fan_level);
+> +	}
+> +
+> +	x.temp = temp;
+> +	x.casetemp = casetemp;
+> +
+>  	if( level >= 0 )
+>  		tune_fan( level );
+>  }
+
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+
+-- 
+Jean Delvare
+SUSE L3 Support
+
