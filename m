@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303AbaHGIAa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 04:00:30 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51633 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754219AbaHGIA3 (ORCPT
+	id S1754931AbaHGIFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 04:05:12 -0400
+Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:3956
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754016AbaHGIFB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 04:00:29 -0400
-Date: Thu, 7 Aug 2014 10:00:25 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: joeyli <jlee@suse.com>
-Cc: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Takashi Iwai <tiwai@suse.de>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Hibernate: check unsafe page should not in e820
- reserved region
-Message-ID: <20140807080025.GA24700@amd.pavel.ucw.cz>
-References: <1407165801-24648-1-git-send-email-jlee@suse.com>
- <20140807040543.GE26210@linux-rxt1.site>
+	Thu, 7 Aug 2014 04:05:01 -0400
+From: Yao Yuan <yao.yuan@freescale.com>
+To: "fugang.duan@freescale.com" <fugang.duan@freescale.com>,
+        "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "marex@denx.de" <marex@denx.de>
+CC: "LW@KARO-electronics.de" <LW@KARO-electronics.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "Frank.Li@freescale.com" <Frank.Li@freescale.com>
+Subject: RE: [PATCH v6 1/2] i2c: imx: add DMA support for freescale i2c driver
+Thread-Topic: [PATCH v6 1/2] i2c: imx: add DMA support for freescale i2c
+ driver
+Thread-Index: AQHPsJpytXwYr0w2ukaT/Ol6wOf2kpvC3FmAgABGNsCAAX0tgIAAIoBA
+Date: Thu, 7 Aug 2014 08:04:58 +0000
+Message-ID: <c9727eaf22dc40f796793c6b127dfb9e@BL2PR03MB338.namprd03.prod.outlook.com>
+References: <1407232563-10856-1-git-send-email-yao.yuan@freescale.com>
+ <1407232563-10856-2-git-send-email-yao.yuan@freescale.com>
+ <41705e1e4c604240ba96333a03d5c544@BLUPR03MB373.namprd03.prod.outlook.com>
+ <14d042bbcfb04308bfb3a1db18e46bec@BL2PR03MB338.namprd03.prod.outlook.com>
+ <31f8f5504fc24d999f5af74338602bed@BLUPR03MB373.namprd03.prod.outlook.com>
+In-Reply-To: <31f8f5504fc24d999f5af74338602bed@BLUPR03MB373.namprd03.prod.outlook.com>
+Accept-Language: en-US, zh-CN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 029651C7A1
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(199002)(189002)(51704005)(4396001)(76576001)(2656002)(21056001)(33646002)(20776003)(83322001)(95666004)(105586002)(99286002)(106116001)(74502001)(74662001)(85852003)(106356001)(87936001)(64706001)(2201001)(83072002)(54356999)(50986999)(74316001)(76176999)(80022001)(81542001)(66066001)(86362001)(107046002)(101416001)(77982001)(85306004)(79102001)(46102001)(93886004)(76482001)(2501001)(24736002)(108616003);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB370;H:BL2PR03MB338.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140807040543.GE26210@linux-rxt1.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Fugang,
 
-> > When the machine doesn't well handle the e820 persistent when hibernate
-> > resuming, then it may causes page fault when writing image to snapshot
-> > buffer:
-> > 
-> > [   17.929495] BUG: unable to handle kernel paging request at ffff880069d4f000
-> > [   17.933469] IP: [<ffffffff810a1cf0>] load_image_lzo+0x810/0xe40
-> > [   17.933469] PGD 2194067 PUD 77ffff067 PMD 2197067 PTE 0
-> > [   17.933469] Oops: 0002 [#1] SMP
-> > ...
-> > 
-> > The ffff880069d4f000 page is in e820 reserved region of resume boot
-> > kernel:
-> > 
-> > [    0.000000] BIOS-e820: [mem 0x0000000069d4f000-0x0000000069e12fff] reserved
-> > ...
-> > [    0.000000] PM: Registered nosave memory: [mem 0x69d4f000-0x69e12fff]
-> > 
-> > So snapshot.c mark the pfn to forbidden pages map. But, this
-> > page is also in the memory bitmap in snapshot image because it's an
-> > original page used by image kernel, so it will also mark as an
-> > unsafe(free) page in prepare_image().
-> > 
-> > That means the page in e820 when resuming mark as "forbidden" and
-> > "free", it causes get_buffer() treat it as an allocated unsafe page.
-> > Then snapshot_write_next() return this page to load_image, load_image
-> > writing content to this address, but this page didn't really allocated
-> > . So, we got page fault.
-> > 
-> > Although the root cause is from BIOS, I think aggressive check and
-> > significant message in kernel will better then a page fault for
-> > issue tracking, especially when serial console unavailable.
-> > 
-> > This patch adds code in mark_unsafe_pages() for check does free pages in
-> > nosave region. If so, then it print message and return fault to stop whole
-> > S4 resume process:
-> > 
-> > [    8.166004] PM: Image loading progress:   0%
-> > [    8.658717] PM: 0x6796c000 in e820 nosave region: [mem 0x6796c000-0x6796cfff]
-> > [    8.918737] PM: Read 2511940 kbytes in 1.04 seconds (2415.32 MB/s)
-> > [    8.926633] PM: Error -14 resuming
-> > [    8.933534] PM: Failed to load hibernation image, recovering.
-> > 
-> > v2:
-> >  + removed empty check of nosave_regions list.
-> >  + fixed the typo of "region" in code for error message and patch comment.
-> > 
-> > Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> > Cc: Len Brown <len.brown@intel.com>
-> > Cc: Takashi Iwai <tiwai@suse.de>
-> > Acked-by: Pavel Machek <pavel@ucw.cz>
-> > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> 
-> I discussed with Vojtech Pavlik for this patch, he raised a situation is:
-> 
-> Maybe e820 changed but image kernel original pages do not fall into new e820 region.
-> Then the hibernate will recovery success, but later kernel drivers may got problem
-> when accessing memory. 
-> 
-> My idea is hashing the start/end pfn of each nosave region sequentially, put this
-> nosave region digest to hibernate header then compare e820 digest in check_header()
-> when hibernate resuming.
-> 
-> I am developing patch, then we don't need check unsafe page should not in unsave(e820)
-> regions.
+> >> >+	/* Waiting for Transfer complete. */
+> >> >+	while (timeout--) {
+> >> >+		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
+> >> >+		if (temp & I2SR_ICF)
+> >> >+			break;
+> >> >+		udelay(10);
+> >> >+	}
+> >> Whether there have better method like interrupt to avoid dead wait
+> >> here until timeout ?
+> >
+> >Can you give me more suggestion? We have discussed it with our team, It
+> >seems the short query wait is necessary.
+> >
+> At least, you can use schdule_timeout() instead of udelay() ?
 
-Actually, if you are doing such a check... it makes sense to check for
-_all_ the regions, nosave or not. If e820 map changed at all, it is
-not safe to resume.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+In fact, the waiting time normally is less than 10-50us, but the minimum time interval for schdule_timeout() is 1 jiffies.
+So maybe schdule_timeout() is not very necessary?
+
+
+
+
+Thanks for your review.
+
+Best Regards,
+Yuan Yao
