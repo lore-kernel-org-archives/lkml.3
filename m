@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322AbaHGTtU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 15:49:20 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:15145 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755100AbaHGTtR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755235AbaHGTtS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 15:49:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44127 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755104AbaHGTtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Aug 2014 15:49:17 -0400
-Date: Thu, 7 Aug 2014 15:49:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
- waiting for RCU-tasks
-Message-ID: <20140807154907.6f59cf6e@gandalf.local.home>
-In-Reply-To: <20140807184635.GI3588@twins.programming.kicks-ass.net>
-References: <20140805205711.7a52076c@gandalf.local.home>
-	<20140806012139.GY8101@linux.vnet.ibm.com>
-	<20140806084708.GR9918@twins.programming.kicks-ass.net>
-	<20140806120958.GZ8101@linux.vnet.ibm.com>
-	<20140806163035.GG19379@twins.programming.kicks-ass.net>
-	<20140806224518.GA8101@linux.vnet.ibm.com>
-	<20140807084544.GJ19379@twins.programming.kicks-ass.net>
-	<20140807150031.GB5821@linux.vnet.ibm.com>
-	<20140807152600.GW9918@twins.programming.kicks-ass.net>
-	<20140807172753.GG3588@twins.programming.kicks-ass.net>
-	<20140807184635.GI3588@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+Date: Thu, 7 Aug 2014 21:47:21 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Aleksei Besogonov <alex.besogonov@gmail.com>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] vm_is_stack: use for_each_thread() rather then buggy
+	while_each_thread()
+Message-ID: <20140807194721.GA5741@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Aug 2014 20:46:35 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+Aleksei hit the soft lockup during reading /proc/PID/smaps.
+David investigated the problem and suggested the right fix.
 
-> On Thu, Aug 07, 2014 at 07:27:53PM +0200, Peter Zijlstra wrote:
-> > Right, Steve (and Paul) please explain _why_ this is an 'RCU' at all?
-> > _Why_ do we have call_rcu_task(), and why is it entwined in the 'normal'
-> > RCU stuff? We've got SRCU -- which btw started out simple, without
-> > call_srcu() -- and that lives entirely independent. And SRCU is far more
-> > an actual RCU than this thing is, its got read side primitives and
-> > everything.
-> > 
-> > Also, I cannot think of any other use besides trampolines for this
-> > thing, but that might be my limited imagination.
-> 
-> Also, trampolines can end up in the return frames, right? So how can you
-> be sure when to wipe them? Passing through schedule() isn't enough for
-> that.
+while_each_thread() is racy and should die, this patch updates
+vm_is_stack().
 
-Not sure what you mean.
+Reported-and-tested-by: Aleksei Besogonov <alex.besogonov@gmail.com>
+Suggested-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: stable@vger.kernel.org
+---
+ mm/util.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-> 
-> Userspace is, but kernel threads typically don't ever end up there.
+diff --git a/mm/util.c b/mm/util.c
+index d5ea733..33e9f44 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -277,17 +277,14 @@ pid_t vm_is_stack(struct task_struct *task,
+ 
+ 	if (in_group) {
+ 		struct task_struct *t;
+-		rcu_read_lock();
+-		if (!pid_alive(task))
+-			goto done;
+ 
+-		t = task;
+-		do {
++		rcu_read_lock();
++		for_each_thread(task, t) {
+ 			if (vm_is_stack_for_task(t, vma)) {
+ 				ret = t->pid;
+ 				goto done;
+ 			}
+-		} while_each_thread(task, t);
++		}
+ done:
+ 		rcu_read_unlock();
+ 	}
+-- 
+1.5.5.1
 
-Only voluntary calls to schedule() will be a quiescent state. Preempt
-doesn't count. And no, function callbacks to not call schedule(),
-function callbacks should be treated even stricter than interrupt
-handlers. They should never call schedule() directly or even take any
-locks. Heck, they should be stricter than NMIs for that matter.
 
-Hence, once something calls schedule() directly, we know that it is not
-on a trampoline, nor is it going to return to one.
-
--- Steve
