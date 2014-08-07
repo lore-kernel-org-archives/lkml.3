@@ -1,172 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202AbaHGNI1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 09:08:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35267 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754519AbaHGNI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 09:08:26 -0400
-Date: Thu, 7 Aug 2014 15:08:22 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/4] mm: memcontrol: reduce reclaim invocations for
- higher order requests
-Message-ID: <20140807130822.GB12730@dhcp22.suse.cz>
-References: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
- <1407186897-21048-2-git-send-email-hannes@cmpxchg.org>
+	id S932307AbaHGNJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 09:09:18 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:42720 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754519AbaHGNJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 09:09:17 -0400
+Date: Thu, 7 Aug 2014 14:09:11 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Backlight for v3.17 merge-window
+Message-ID: <20140807130911.GA21618@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1407186897-21048-2-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 04-08-14 17:14:54, Johannes Weiner wrote:
-> Instead of passing the request size to direct reclaim, memcg just
-> manually loops around reclaiming SWAP_CLUSTER_MAX pages until the
-> charge can succeed.  That potentially wastes scan progress when huge
-> page allocations require multiple invocations, which always have to
-> restart from the default scan priority.
-> 
-> Pass the request size as a reclaim target to direct reclaim and leave
-> it to that code to reach the goal.
+Hi Linus,
 
-THP charge then will ask for 512 pages to be (direct) reclaimed. That
-is _a lot_ and I would expect long stalls to achieve this target. I
-would also expect quick priority drop down and potential over-reclaim
-for small and moderately sized memcgs (e.g. memcg with 1G worth of pages
-would need to drop down below DEF_PRIORITY-2 to have a chance to scan
-that many pages). All that done for a charge which can fallback to a
-single page charge.
+ The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
 
-The current code is quite hostile to THP when we are close to the limit
-but solving this by introducing long stalls instead doesn't sound like a
-proper approach to me.
+  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
 
-> Charging will still have to loop in case concurrent allocations steal
-> reclaim effort, but at least it doesn't have to loop to meet even the
-> basic request size.  This also prepares the memcg reclaim API for use
-> with the planned high limit, to reclaim excess with a single call.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  include/linux/swap.h |  3 ++-
->  mm/memcontrol.c      | 15 +++++++++------
->  mm/vmscan.c          |  3 ++-
->  3 files changed, 13 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index 1b72060f093a..473a3ae4cdd6 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -327,7 +327,8 @@ extern void lru_cache_add_active_or_unevictable(struct page *page,
->  extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
->  					gfp_t gfp_mask, nodemask_t *mask);
->  extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
-> -extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
-> +extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
-> +						  unsigned long nr_pages,
->  						  gfp_t gfp_mask, bool noswap);
->  extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
->  						gfp_t gfp_mask, bool noswap,
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index ec4dcf1b9562..ddffeeda2d52 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1793,6 +1793,7 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  }
->  
->  static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
-> +					unsigned long nr_pages,
->  					gfp_t gfp_mask,
->  					unsigned long flags)
->  {
-> @@ -1808,7 +1809,8 @@ static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
->  	for (loop = 0; loop < MEM_CGROUP_MAX_RECLAIM_LOOPS; loop++) {
->  		if (loop)
->  			drain_all_stock_async(memcg);
-> -		total += try_to_free_mem_cgroup_pages(memcg, gfp_mask, noswap);
-> +		total += try_to_free_mem_cgroup_pages(memcg, nr_pages,
-> +						      gfp_mask, noswap);
->  		/*
->  		 * Allow limit shrinkers, which are triggered directly
->  		 * by userspace, to catch signals and stop reclaim
-> @@ -1816,7 +1818,7 @@ static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
->  		 */
->  		if (total && (flags & MEM_CGROUP_RECLAIM_SHRINK))
->  			break;
-> -		if (mem_cgroup_margin(memcg))
-> +		if (mem_cgroup_margin(memcg) >= nr_pages)
->  			break;
->  		/*
->  		 * If nothing was reclaimed after two attempts, there
-> @@ -2572,7 +2574,8 @@ retry:
->  	if (!(gfp_mask & __GFP_WAIT))
->  		goto nomem;
->  
-> -	nr_reclaimed = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
-> +	nr_reclaimed = mem_cgroup_reclaim(mem_over_limit, nr_pages,
-> +					  gfp_mask, flags);
->  
->  	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
->  		goto retry;
-> @@ -3718,7 +3721,7 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
->  		if (!ret)
->  			break;
->  
-> -		mem_cgroup_reclaim(memcg, GFP_KERNEL,
-> +		mem_cgroup_reclaim(memcg, 1, GFP_KERNEL,
->  				   MEM_CGROUP_RECLAIM_SHRINK);
->  		curusage = res_counter_read_u64(&memcg->res, RES_USAGE);
->  		/* Usage is reduced ? */
-> @@ -3777,7 +3780,7 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
->  		if (!ret)
->  			break;
->  
-> -		mem_cgroup_reclaim(memcg, GFP_KERNEL,
-> +		mem_cgroup_reclaim(memcg, 1, GFP_KERNEL,
->  				   MEM_CGROUP_RECLAIM_NOSWAP |
->  				   MEM_CGROUP_RECLAIM_SHRINK);
->  		curusage = res_counter_read_u64(&memcg->memsw, RES_USAGE);
-> @@ -4028,7 +4031,7 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
->  		if (signal_pending(current))
->  			return -EINTR;
->  
-> -		progress = try_to_free_mem_cgroup_pages(memcg, GFP_KERNEL,
-> +		progress = try_to_free_mem_cgroup_pages(memcg, 1, GFP_KERNEL,
->  						false);
->  		if (!progress) {
->  			nr_retries--;
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index d698f4f7b0f2..7db33f100db4 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2747,6 +2747,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
->  }
->  
->  unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
-> +					   unsigned long nr_pages,
->  					   gfp_t gfp_mask,
->  					   bool noswap)
->  {
-> @@ -2754,7 +2755,7 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
->  	unsigned long nr_reclaimed;
->  	int nid;
->  	struct scan_control sc = {
-> -		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-> +		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
->  		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
->  				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
->  		.target_mem_cgroup = memcg,
-> -- 
-> 2.0.3
-> 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight.git tags/backlight-for-linus-3.17
+
+for you to fetch changes up to 87464cdba2aeec196e75908fbbeaf4a26753637a:
+
+  backlight: ipaq_micro: Fix sparse non static symbol warning (2014-07-31 10:31:22 +0100)
+
+----------------------------------------------------------------
+ == Changes to existing drivers ==
+  - Remove get brightness implementations in via-pmu-backlight samsung-q10
+        aat2870_bl ams369fg06 bd6107 gpio_backlight ld9040 lp855x_bl lp8788_bl
+	lv5207lp pandora_bl pwm_bl s6e63m0 tps65217_bl aty128fb atyfb_base
+	radeon_backlight s6e8ax0 nv_backlight riva/fbdev
+  - Improve error handling in jornada720_lcd
+  - Make use of new 'get optional' GPIO command in pwm_bl
+  - Fix sparse warning in ipaq_micro_bl
+
+ == New drivers/supported devices ==
+  - Add new driver for iPAQ
+
+ == (Re-)moved drivers ==
+  - None
+----------------------------------------------------------------
+Alexandre Courbot (1):
+      backlight: pwm-backlight: Use devm_gpiod_get_optional()
+
+Andrzej Hajda (2):
+      backlight: Remove trivial get_brightness implementations
+      backlight: Show brightness even if get_brightness is not implemented
+
+Lee Jones (1):
+      backlight: jornada720: Minimise code duplication and handle errors better
+
+Linus Walleij (1):
+      backlight: Add driver for iPAQ micro backlight
+
+Wei Yongjun (1):
+      backlight: ipaq_micro: Fix sparse non static symbol warning
+
+ drivers/macintosh/via-pmu-backlight.c      |  6 ---
+ drivers/platform/x86/samsung-q10.c         |  6 ---
+ drivers/video/backlight/Kconfig            |  9 ++++
+ drivers/video/backlight/Makefile           |  1 +
+ drivers/video/backlight/aat2870_bl.c       |  6 ---
+ drivers/video/backlight/ams369fg06.c       |  6 ---
+ drivers/video/backlight/backlight.c        |  2 +
+ drivers/video/backlight/bd6107.c           |  6 ---
+ drivers/video/backlight/gpio_backlight.c   |  6 ---
+ drivers/video/backlight/ipaq_micro_bl.c    | 83 ++++++++++++++++++++++++++++++
+ drivers/video/backlight/jornada720_lcd.c   | 37 ++++++-------
+ drivers/video/backlight/ld9040.c           |  6 ---
+ drivers/video/backlight/lp855x_bl.c        |  6 ---
+ drivers/video/backlight/lp8788_bl.c        |  6 ---
+ drivers/video/backlight/lv5207lp.c         |  6 ---
+ drivers/video/backlight/pandora_bl.c       |  6 ---
+ drivers/video/backlight/pwm_bl.c           | 13 +----
+ drivers/video/backlight/s6e63m0.c          |  6 ---
+ drivers/video/backlight/tps65217_bl.c      |  6 ---
+ drivers/video/fbdev/aty/aty128fb.c         |  6 ---
+ drivers/video/fbdev/aty/atyfb_base.c       |  6 ---
+ drivers/video/fbdev/aty/radeon_backlight.c |  6 ---
+ drivers/video/fbdev/exynos/s6e8ax0.c       |  6 ---
+ drivers/video/fbdev/nvidia/nv_backlight.c  |  6 ---
+ drivers/video/fbdev/riva/fbdev.c           |  6 ---
+ 25 files changed, 116 insertions(+), 143 deletions(-)
+ create mode 100644 drivers/video/backlight/ipaq_micro_bl.c
 
 -- 
-Michal Hocko
-SUSE Labs
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
