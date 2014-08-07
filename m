@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411AbaHGVBo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 17:01:44 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:10639 "EHLO
+	id S1755485AbaHGVCL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 17:02:11 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:10160 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752088AbaHGVBA (ORCPT
+	by vger.kernel.org with ESMTP id S1750874AbaHGVA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 17:01:00 -0400
+	Thu, 7 Aug 2014 17:00:58 -0400
 X-IronPort-AV: E=Sophos;i="5.01,820,1400018400"; 
-   d="scan'208";a="88647126"
+   d="scan'208";a="88647123"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Felipe Balbi <balbi@ti.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] usb: gadget: fix error return code
-Date: Thu,  7 Aug 2014 22:57:47 +0200
-Message-Id: <1407445067-4044-5-git-send-email-Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/4] gdrom: fix error return code
+Date: Thu,  7 Aug 2014 22:57:44 +0200
+Message-Id: <1407445067-4044-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1407445067-4044-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1407445067-4044-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -55,31 +53,34 @@ ret = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/usb/gadget/udc/fusb300_udc.c |    8 ++++++--
+ drivers/cdrom/gdrom.c |    8 ++++++--
  1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/gadget/udc/fusb300_udc.c b/drivers/usb/gadget/udc/fusb300_udc.c
-index d40255f..5c5d1ad 100644
---- a/drivers/usb/gadget/udc/fusb300_udc.c
-+++ b/drivers/usb/gadget/udc/fusb300_udc.c
-@@ -1398,13 +1398,17 @@ static int fusb300_probe(struct platform_device *pdev)
- 
- 	/* initialize udc */
- 	fusb300 = kzalloc(sizeof(struct fusb300), GFP_KERNEL);
--	if (fusb300 == NULL)
-+	if (fusb300 == NULL) {
-+		ret = -ENOMEM;
- 		goto clean_up;
+diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
+index 584bc31..46ecd95 100644
+--- a/drivers/cdrom/gdrom.c
++++ b/drivers/cdrom/gdrom.c
+@@ -807,16 +807,20 @@ static int probe_gdrom(struct platform_device *devptr)
+ 	if (err)
+ 		goto probe_fail_cmdirq_register;
+ 	gd.gdrom_rq = blk_init_queue(gdrom_request, &gdrom_lock);
+-	if (!gd.gdrom_rq)
++	if (!gd.gdrom_rq) {
++		err = -ENOMEM;
+ 		goto probe_fail_requestq;
 +	}
  
- 	for (i = 0; i < FUSB300_MAX_NUM_EP; i++) {
- 		_ep[i] = kzalloc(sizeof(struct fusb300_ep), GFP_KERNEL);
--		if (_ep[i] == NULL)
-+		if (_ep[i] == NULL) {
-+			ret = -ENOMEM;
- 			goto clean_up;
-+		}
- 		fusb300->ep[i] = _ep[i];
- 	}
+ 	err = probe_gdrom_setupqueue();
+ 	if (err)
+ 		goto probe_fail_toc;
+ 
+ 	gd.toc = kzalloc(sizeof(struct gdromtoc), GFP_KERNEL);
+-	if (!gd.toc)
++	if (!gd.toc) {
++		err = -ENOMEM;
+ 		goto probe_fail_toc;
++	}
+ 	add_disk(gd.disk);
+ 	return 0;
  
 
