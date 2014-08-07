@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463AbaHGMLx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 08:11:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46908 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757414AbaHGMLw (ORCPT
+	id S932170AbaHGMM5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 08:12:57 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41228 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932071AbaHGMM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 08:11:52 -0400
-Date: Thu, 7 Aug 2014 14:11:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: Re: [microcode/load_module] WARNING: CPU: 0 PID: 1444 at
- kernel/sched/core.c:7094 __might_sleep+0x51/0x16f()
-Message-ID: <20140807121137.GT9918@twins.programming.kicks-ass.net>
-References: <20140805211224.GA13480@localhost>
- <20140807104140.GN19379@twins.programming.kicks-ass.net>
- <87r40scy3k.fsf@rustcorp.com.au>
+	Thu, 7 Aug 2014 08:12:56 -0400
+Date: Thu, 7 Aug 2014 13:12:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>
+Cc: Fredrik Noring <fredrik.noring@autoliv.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
+Message-ID: <20140807121248.GY30282@n2100.arm.linux.org.uk>
+References: <C4A61A5CA4AD2246942F4BA6F20ACB80435655E9@ALVA-EXMB04.alv.autoliv.int> <20140626151424.GT32514@n2100.arm.linux.org.uk> <20140627112151.GF32514@n2100.arm.linux.org.uk> <3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int> <20140627163108.GP32514@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int> <20140806095012.GN30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int> <20140806125550.GO30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uezWbACgApK292Ml"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87r40scy3k.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 07, 2014 at 11:11:06AM +0000, Mattis Lorentzon wrote:
+> Russell,
+> 
+> > Can you ascertain whether these stalls are a result of some failure of the
+> > receive side or the transmit side - you should be able to tell that if you watch
+> > the packet counts via ifconfig on the stalled card.  Also, it would be useful to
+> > know whether the FEC interrupt was firing.
+> 
+> grep eth /proc/interrupts
+> 151:          0          0          0          0       GIC 151  2188000.ethernet
+> 166:    1205661          0          0          0  gpio-mxc   6  2188000.ethernet
+> 
+> The interrupt counter 166 increases regularly during the stalls.
+> Ifconfig indicates that the RX and TX  counters do not increase.
 
---uezWbACgApK292Ml
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hmm, I'm slightly confused.  On my iMX6Q, I have:
 
-On Thu, Aug 07, 2014 at 09:26:15PM +0930, Rusty Russell wrote:
-> Peter Zijlstra <peterz@infradead.org> writes:
-> > On Wed, Aug 06, 2014 at 05:12:24AM +0800, Fengguang Wu wrote:
-> >> Greetings,
-> >>=20
-> >> Here is a microcode/load_module error triggered by debug check commit
-> >> 64c2181bc433b17f04da8fe8592aa83cceac9606 ("sched: Debug nested
-> >> sleeps"):
->=20
-> Hmm, google lead me to that.  Yuck, that's subtle.
+150:     581754          0          0          0       GIC 150  2188000.ethernet
+151:          0          0          0          0       GIC 151  2188000.ethernet
 
-It is, hence it would be _good_ to have debug infrastructure to help
-out.
+In the DT file, we have:
 
-> > +++ b/kernel/module.c
-> > @@ -3094,6 +3094,28 @@ static int may_init_module(void)
-> >  	return 0;
-> >  }
-> > =20
-> > +int wait_finished_loading(struct module *mod)
-> > +{
->=20
-> Is this something we can generalize?  At least needs a comment on
-> why we don't just use the normal wait_event_interruptible...
+                        fec: ethernet@02188000 {
+                                compatible = "fsl,imx6q-fec";
+                                reg = <0x02188000 0x4000>;
+                                interrupts-extended =
+                                        <&intc 0 118 IRQ_TYPE_LEVEL_HIGH>,
+                                        <&intc 0 119 IRQ_TYPE_LEVEL_HIGH>;
+                                clocks = <&clks 117>, <&clks 117>, <&clks 190>;
+                                clock-names = "ipg", "ahb", "ptp";
+                                status = "disabled";
+                        };
 
-I've so far not generalized this because I feel (but maybe other people
-feel differently) that we should not do these things if at all possible,
-and thus we should not make it too easy.
+which, for the gic, would be 118 + 32 (first SPI) = 150, 119 + 32 = 151.
+Yet you seem to have nothing registered against GIC 150, instead having
+an interrupt against GPIO 6.
 
-But sure I can add a comment..
+This seems very odd, and as this is an on-SoC device, I don't see why
+you would want to bind the interrupts for the FEC device any differently
+to standard platforms.
 
---uezWbACgApK292Ml
-Content-Type: application/pgp-signature
+This could well be the cause of your stalls.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+What's GPIO 6 used for on your board?
 
-iQIcBAEBAgAGBQJT42z5AAoJEHZH4aRLwOS6JScQAJQ2cIAx98YsEnZZvZnzljHX
-GMtcgwGPhoZRWx/SJIvV2wY+nomEcewypSn9sOjsS/0/xPza9KkaK+ubz2kbTijm
-a3WZEvs/pbeYaH7mZq/PU3j5EgO7wAgwB0eA7ilnB9+OmGNag2e1ZUjwhS5lZhAN
-2mi2Ij6pXNwcZOMGZ/BgbNvuMq0rkcrCZjQN89rBRpEeatJFuN2SoJ6o/0/hMylz
-3x/Oin2SFPvDG05md3pDWHSXhD+c82MIbk9tmiH2r5TGOnrPsM9uDEycfZ86XA6N
-8I04m98PEJL4xCUIQ/hMe/VHmKe/cryv5PcTKV1ZiYPT3e4X1giTACHwAxB6PLqZ
-qXWm7X3878VblyNe8NMOI5hY/x1zYrJ9tcE8LP2klmwBS4QWdHogFgUP+qJI+3Ew
-tqADZ07/b6ilRontPy3chf3d6nCeWhMZM6/v9UN2Mka7M/i7Ca6uj9zF0gxovASB
-XdTo4JTS/fnxPJijXrP7LZ4ja8pzKnyu0xLITq72+IrhU3+tpoNwV/Deci6kf1Bx
-NCFgT/BiBX8r8d3tPIp1xQWdBMmPvJVhTWophSFrKDPXaoyOpblxiWhZN9T3K8MR
-SeAFfXfZ+9eXNCoFJRxHPGkInnEoN+uuSHBnGDapyJpc0hril3Nd/NUeD0MSP2mj
-EaschQo4E8pQ3KUHtmY9
-=vxw8
------END PGP SIGNATURE-----
-
---uezWbACgApK292Ml--
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
