@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772AbaHGGv7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 02:51:59 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:64749 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727AbaHGGv4 (ORCPT
+	id S1757254AbaHGGwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 02:52:06 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:37442 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755451AbaHGGwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 02:51:56 -0400
+	Thu, 7 Aug 2014 02:52:00 -0400
 From: Matthias Brugger <matthias.bgg@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -16,42 +16,49 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         varkabhadram@gmail.com, heiko@sntech.de, yingjoe.chen@gmail.com,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-serial@vger.kernel.org
-Subject: [PATCH v2 0/2] tty: serial: Add mediatek UART driver
-Date: Thu,  7 Aug 2014 08:51:30 +0200
-Message-Id: <1407394292-26317-1-git-send-email-matthias.bgg@gmail.com>
+Subject: [PATCH v2 2/2] DTS: serial: Add bindings documention for the Mediatek UARTs
+Date: Thu,  7 Aug 2014 08:51:32 +0200
+Message-Id: <1407394292-26317-3-git-send-email-matthias.bgg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1407394292-26317-1-git-send-email-matthias.bgg@gmail.com>
+References: <1407394292-26317-1-git-send-email-matthias.bgg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds support for the UART found in Mediatek SoCs.
-The chip is a changed version of a 8250 controller.
-Especially it introduces a new register called highspeed. The value
-in this register has to be set depending on the baudrate. The value
-in the register influences the way the divisor has to be calculated.
+This patch adds the devicetree documentation for the Mediatek UART.
 
-The patch series is build against v3.16-rc1 and tested on mt6589. Should
-work as well on mt6577 and mt6582.
-
-Thanks,
-Matthias
-
-Changes for v2:
-- drop 8250_core capability extension for the chip
-- encapsulate set_termios in the driver method
-
-Matthias Brugger (2):
-  tty: serial: 8250: Add Mediatek UART driver
-  DTS: serial: Add bindings documention for the Mediatek UARTs
-
- .../devicetree/bindings/serial/mtk-uart.txt        |   19 ++
- drivers/tty/serial/8250/8250_mtk.c                 |  302 ++++++++++++++++++++
- drivers/tty/serial/8250/Kconfig                    |    7 +
- drivers/tty/serial/8250/Makefile                   |    1 +
- 4 files changed, 329 insertions(+)
+Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+---
+ .../devicetree/bindings/serial/mtk-uart.txt        |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/serial/mtk-uart.txt
- create mode 100644 drivers/tty/serial/8250/8250_mtk.c
 
+diff --git a/Documentation/devicetree/bindings/serial/mtk-uart.txt b/Documentation/devicetree/bindings/serial/mtk-uart.txt
+new file mode 100644
+index 0000000..2bf571e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/serial/mtk-uart.txt
+@@ -0,0 +1,19 @@
++* Mediatek Universal Asynchronous Receiver/Transmitter (UART)
++
++- compatible: "mediatek,mt6577-uart"
++  Compatibility with mt6577, mt6589, mt6582
++
++- reg: The base address of the UART register bank.
++
++- interrupts: A single interrupt specifier.
++
++- clocks: Clock driving the hardware.
++
++Example:
++
++	uart0: serial@11006000 {
++		compatible = "mediatek,mt6577-uart";
++		reg = <0x11006000 0x400>;
++		interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_LOW>;
++		clocks = <&uart_clk>;
++	};
 -- 
 1.7.9.5
 
