@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701AbaHGUdN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 16:33:13 -0400
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:49214 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaHGUdM (ORCPT
+	id S1755110AbaHGUeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 16:34:15 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:48326 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399AbaHGUeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 16:33:12 -0400
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: mmarek@suse.cz
-Cc: linux-kbuild@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, brenohl@br.ibm.com,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Subject: [PATCH] deb-pkg: support ppc64 and ppc64el Debian archs
-Date: Thu,  7 Aug 2014 17:32:53 -0300
-Message-Id: <1407443573-21522-1-git-send-email-cascardo@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080720-1798-0000-0000-0000002EC43F
+	Thu, 7 Aug 2014 16:34:14 -0400
+Date: Thu, 7 Aug 2014 13:34:12 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [patch] mm, hugetlb_cgroup: align hugetlb cgroup limit to hugepage
+ size
+Message-ID: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Memcg aligns memory.limit_in_bytes to PAGE_SIZE as part of the resource counter
+since it makes no sense to allow a partial page to be charged.
+
+As a result of the hugetlb cgroup using the resource counter, it is also aligned
+to PAGE_SIZE but makes no sense unless aligned to the size of the hugepage being
+limited.
+
+Align hugetlb cgroup limit to hugepage size.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- scripts/package/builddeb |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ mm/hugetlb_cgroup.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index 35d5a58..c26c28b 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -36,6 +36,8 @@ create_package() {
- 		debarch=sparc ;;
- 	s390*)
- 		debarch=s390$(grep -q CONFIG_64BIT=y $KCONFIG_CONFIG && echo x || true) ;;
-+	ppc64*)
-+		debarch=ppc64$(grep -q CPU_LITTLE_ENDIAN=y $KCONFIG_CONFIG && echo el || true) ;;
- 	ppc*)
- 		debarch=powerpc ;;
- 	parisc*)
--- 
-1.7.1
-
+diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+--- a/mm/hugetlb_cgroup.c
++++ b/mm/hugetlb_cgroup.c
+@@ -275,6 +275,8 @@ static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
+ 		ret = res_counter_memparse_write_strategy(buf, &val);
+ 		if (ret)
+ 			break;
++		val = ALIGN(val, 1 << (huge_page_order(&hstates[idx]) +
++				       PAGE_SHIFT));
+ 		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
+ 		break;
+ 	default:
