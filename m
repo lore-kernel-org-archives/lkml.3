@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298AbaHGKKE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 06:10:04 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:42642 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650AbaHGKKB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 06:10:01 -0400
-Date: Thu, 7 Aug 2014 11:09:52 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Gyungoh Yoo <gyungoh@gmail.com>
-Cc: rdunlap@infradead.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, jg1.han@samsung.com, cooloney@gmail.com,
-        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, grant.likely@linaro.org,
-        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
-        jack.yoo@skyworksinc.com, florian.vaussard@epfl.ch,
-        thierry.reding@gmail.com, jason@lakedaemon.net, andrew@lunn.ch,
-        silvio.fricke@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH] Adding a support for Skyworks SKY81452
-Message-ID: <20140807100952.GH10136@lee--X1>
-References: <1407398738-7582-1-git-send-email-jack.yoo@skyworksinc.com>
+	id S1757425AbaHGKM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 06:12:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3512 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754413AbaHGKM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 06:12:57 -0400
+Message-ID: <53E35122.3040806@redhat.com>
+Date: Thu, 07 Aug 2014 06:12:50 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1407398738-7582-1-git-send-email-jack.yoo@skyworksinc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
+ to be held for duration of changing governors [v2]
+References: <53DB6B81.6050400@redhat.com> <53DBCBE8.6010809@codeaurora.org> <53DBE764.8050109@redhat.com> <53DBEC27.7050803@codeaurora.org> <CAKohpombG3Gj4mbm02vPNnAxzaRvQP7rb=iQ14dCFH4_+71H3w@mail.gmail.com> <53E0B657.4070007@redhat.com> <CAKohponxBdYEgY2oYuzmdaqfSRS8Uq8bZOzcb1QDmKO-z5ZBFQ@mail.gmail.com> <53E1556B.5070304@codeaurora.org> <CAKohpoky1-hj7cwnKc58svh8Z1Yas1=q4uJEK8mWcb56uqAcng@mail.gmail.com> <53E1FEE5.80305@redhat.com> <20140806150831.GB32301@codeaurora.org> <CAKohponBRn9mwpPMinsjqpHe3wTFj6aNpYk5gZaWDKht3bd5NQ@mail.gmail.com>
+In-Reply-To: <CAKohponBRn9mwpPMinsjqpHe3wTFj6aNpYk5gZaWDKht3bd5NQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 07 Aug 2014, Gyungoh Yoo wrote:
 
-> Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> ---
->  Documentation/backlight/sky81452.txt               |  25 ++
->  Documentation/devicetree/bindings/mfd/sky81452.txt |  24 ++
->  .../bindings/regulator/sky81452-regulator.txt      |  16 +
->  .../devicetree/bindings/vendor-prefixes.txt        |   1 +
->  .../video/backlight/sky81452-backlight.txt         |  20 ++
->  drivers/mfd/Kconfig                                |  12 +
->  drivers/mfd/Makefile                               |   1 +
->  drivers/mfd/sky81452.c                             | 115 +++++++
->  drivers/regulator/Kconfig                          |  11 +
->  drivers/regulator/Makefile                         |   1 +
->  drivers/regulator/sky81452-regulator.c             | 127 ++++++++
->  drivers/video/backlight/Kconfig                    |  10 +
->  drivers/video/backlight/Makefile                   |   1 +
->  drivers/video/backlight/sky81452-backlight.c       | 333 +++++++++++++++++++++
->  include/linux/mfd/sky81452.h                       |  31 ++
->  include/linux/sky81452-backlight.h                 |  46 +++
->  16 files changed, 774 insertions(+)
->  create mode 100644 Documentation/backlight/sky81452.txt
->  create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
->  create mode 100644 Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
->  create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
->  create mode 100644 drivers/mfd/sky81452.c
->  create mode 100644 drivers/regulator/sky81452-regulator.c
->  create mode 100644 drivers/video/backlight/sky81452-backlight.c
->  create mode 100644 include/linux/mfd/sky81452.h
->  create mode 100644 include/linux/sky81452-backlight.h
 
-Wow, no way.  Please split this up into separate patches.  Ideally, at
-least one per subsystem and separate ones again for the DT bindings.
+On 08/07/2014 02:36 AM, Viresh Kumar wrote:
+> On 6 August 2014 20:38, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> On 08/06, Prarit Bhargava wrote:
+>>> Are you sure you're not seeing another lockdep warning?  That was my problem --
+>>> there was an xfs related lockdep warning which then resulted in lockdep being
+>>> disabled from that point on.
+> 
+> There is a fair chance that I might be doing something really really stupid,
+> but I couldn't get the lockdep warning..
+> 
+>> Are we talking about the lockdep splat or the crash that started
+>> this thread or something else? For the lockdep splat you need the
+>> corrected patch in this thread and the per policy governor flag.
+>> I'm not sure how to recreate the crash that started this thread.
+> 
+> We are talking about the lockdep splat that would happen if we don't
+> drop locking around EXIT..
+> 
+> This is my full diff over mainline and my .config is attached.
+> Please enlighten me on what am I missing :)
 
-[...]
+That should have done it.  What are your CPUFREQ configs?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+P.
+
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 6f02485..fa11a7d 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -2200,9 +2200,7 @@ static int cpufreq_set_policy(struct
+> cpufreq_policy *policy,
+>         /* end old governor */
+>         if (old_gov) {
+>                 __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+> -               up_write(&policy->rwsem);
+>                 __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
+> -               down_write(&policy->rwsem);
+>         }
+> 
+>         /* start new governor */
+> @@ -2211,9 +2209,7 @@ static int cpufreq_set_policy(struct
+> cpufreq_policy *policy,
+>                 if (!__cpufreq_governor(policy, CPUFREQ_GOV_START))
+>                         goto out;
+> 
+> -               up_write(&policy->rwsem);
+>                 __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
+> -               down_write(&policy->rwsem);
+>         }
+> 
+>         /* new governor failed, so re-start old one */
+> diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
+> index 1e0ec57..027b6f7 100644
+> --- a/drivers/cpufreq/exynos-cpufreq.c
+> +++ b/drivers/cpufreq/exynos-cpufreq.c
+> @@ -139,7 +139,7 @@ static int exynos_cpufreq_cpu_init(struct
+> cpufreq_policy *policy)
+>  }
+> 
+>  static struct cpufreq_driver exynos_driver = {
+> -       .flags          = CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK,
+> +       .flags          = CPUFREQ_STICKY |
+> CPUFREQ_NEED_INITIAL_FREQ_CHECK | CPUFREQ_HAVE_GOVERNOR_PER_POLICY,
+>         .verify         = cpufreq_generic_frequency_table_verify,
+>         .target_index   = exynos_target,
+>         .get            = cpufreq_generic_get,
+> 
