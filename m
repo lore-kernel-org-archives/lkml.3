@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757838AbaHGN4D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 09:56:03 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:53961 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757512AbaHGN4B (ORCPT
+	id S1757853AbaHGN5X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 09:57:23 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58541 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757457AbaHGN5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 09:56:01 -0400
-Date: Thu, 7 Aug 2014 15:55:55 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, linux-pwm@vger.kernel.org,
-        devicetree@vger.kernel.org, ajitpal.singh@st.com
-Subject: Re: [PATCH v2 00/11] pwm: Introduce ST's PWM driver
-Message-ID: <20140807135554.GB27417@ulmo.nvidia.com>
-References: <1405348412-7352-1-git-send-email-lee.jones@linaro.org>
- <20140721123950.GY30888@lee--X1>
- <20140807132050.GC1540@ulmo.nvidia.com>
- <20140807135432.GB21618@lee--X1>
+	Thu, 7 Aug 2014 09:57:22 -0400
+Message-ID: <53E385BE.40100@plexistor.com>
+Date: Thu, 07 Aug 2014 16:57:18 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="i0/AhcQY5QxfSsSZ"
-Content-Disposition: inline
-In-Reply-To: <20140807135432.GB21618@lee--X1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Karel Zak <kzak@redhat.com>, Boaz Harrosh <openosd@gmail.com>
+CC: Ross Zwisler <ross.zwisler@linux.intel.com>, Jens Axboe <axboe@kernel.dk>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] brd: Request from fdisk 4k alignment
+References: <53E21125.9080308@plexistor.com> <53E21317.7080403@plexistor.com> <1407362634.2869.2.camel@rzwisler-mobl1.amr.corp.intel.com> <53E36E53.3090008@gmail.com> <20140807130042.GB9401@x2.net.home>
+In-Reply-To: <20140807130042.GB9401@x2.net.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/07/2014 04:00 PM, Karel Zak wrote:
+> On Thu, Aug 07, 2014 at 03:17:23PM +0300, Boaz Harrosh wrote:
+> 
+>>> Is there an error case that this patch fixes?  I've had page alignment checks
+>>> in my PRD direct_access code forever, and I don't know if they've ever
+>>> tripped.  
+>>>
+>>
+>> Yes! as I said above fix fdisk. You never tripped on it because partitions never
+>> worked and you never tried them. With current code fdisk is very trigger happy
+> 
+>  What do you mean with fdisk? which version?
+> 
 
---i0/AhcQY5QxfSsSZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+fdisk from util-linux 2.24.2
 
-On Thu, Aug 07, 2014 at 02:54:32PM +0100, Lee Jones wrote:
-> On Thu, 07 Aug 2014, Thierry Reding wrote:
->=20
-> > On Mon, Jul 21, 2014 at 01:39:50PM +0100, Lee Jones wrote:
-> > > Hi Thierry,
-> > >=20
-> > > Did you find some time to look at this set?
-> >=20
-> > Sorry for the long delay. I've applied patches 6-11 to the PWM tree,
-> > though I've modified patch 6 a little for consistency. The module is
-> > now named after the Kconfig option (pwm-sti rather than pwm-st). The
-> > dependencies also seem to be redundant (ARCH_STI already depends on
-> > OF), though I didn't change that just in case it's required for some
-> > other reason.
-> >=20
-> > Anyway, scream if there's anything in the PWM for-next branch that
-> > needs to be fixed up.
->=20
-> And in time for v3.17.  Nice one, thanks Thierry.
 
-Barely...
+>  The current fdisk (and cfdisk) follows I/O limits it has no problem
+>  with 4K devices. All you need is to provide all necessary information 
+>  by /sys (or ioctls).
+> 
 
-Thierry
+I was not saying that fdisk is wrong. I was saying that if my block driver
+was *not* exporting 4K physical sectors through limits.physical_block_size
+then fdisk would be happy to not align my partition start on 4k and would
+give me funny values like 34 for first sector which makes my device unusable
+because in direct_access() API we must absolutely have 4K aligned partitions.
 
---i0/AhcQY5QxfSsSZ
-Content-Type: application/pgp-signature
+>> to miss-align my partitions. Depending on size maybe not the very first one but the
+>> consecutive ones easily.
+> 
+>  it would be nice to have usable bug report...
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Hi Karel
 
-iQIcBAEBAgAGBQJT44VqAAoJEN0jrNd/PrOhn8YP/jjR9coULS8sfNmgATFZNrhj
-Xmsu3crBeAgNk9+bIYulFhI7cqsHvSp5LYA2AMM102753YluXJhwt0K1LoJZiYk8
-tpRrqrfG+whKjiG2aQscWVTGHddmnjHLQF8Lco86s6ML4RT++QGU2mdDOkXQMlE8
-nX8BtcKqDW+DOfiyH3/TQyR6L+hUJDWmoSTzp0qYJLpLa2ZjoDmOdzfFXTc3TJE/
-jAuzfoUA10sfqeMPmRerjJcwVFPWr6OJiIZf3M4Nc8feJNxfYOzmkMyVMm+Je7l9
-7SuILTwnPGlp4hF5mpLnhK1ar9AVnzAzGTH4vSomveWHTH74D4BIQOTLJt6qHS+T
-8SXCeaBxq4GUUNTHOUxrD8hG9VlqNxfBewOhzluaDNFJ9qmTsr5Fgf4JQaia0eRD
-dpKhUill9BikdUJqE0/dQXOUTwjCAnSMbn/vdSBccDMrV6wW0dHP5y2ALEPIo9vo
-sc8i/acT4wGZpNkNBxGNIKUVejBwshyN0ZW1ea6rnk2CqQE4iX8RhRLlFUF5ziEs
-AHARJogM3sYNdUluLAg8xWg0gLjD4wRInpZ8r/dMzgccxdFqekOgaIEbdrJ1rPHM
-qYkxRznzksN/1TaOISpWZn5IdJM/g3sZwtddxJYsGQJp9WfWJqEPzuN22tiovtCq
-cbupTbDlu0dhvicWVHyW
-=mzHW
------END PGP SIGNATURE-----
+Setting limits.physical_block_size = 4k; was the only way I found that could cause
+fdisk to default to 4k alignment.
 
---i0/AhcQY5QxfSsSZ--
+I was trying to play with the  heads, sectors, cylinders; values but none I tried
+would cause an alignment of 4k, not even of the first partition start.
+
+Please advise what I can do?
+
+Thanks
+Boaz
+
+>     Karel
+> 
+
