@@ -1,125 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375AbaHGJa4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 05:30:56 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:17783 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755303AbaHGJaw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 05:30:52 -0400
-X-AuditID: cbfee68d-b7f2f6d0000062f0-93-53e3474844d8
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'Bryan Wu'" <cooloney@gmail.com>,
-        "'Lee Jones'" <lee.jones@linaro.org>
-Cc: "'Rob Herring'" <robh+dt@kernel.org>,
-        "'Mark Rutland'" <mark.rutland@arm.com>,
-        "'Pawel Moll'" <pawel.moll@arm.com>,
-        "'Ian Campbell'" <ijc+devicetree@hellion.org.uk>,
-        "'Kumar Gala'" <galak@codeaurora.org>,
-        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Eric Miao'" <eric.y.miao@gmail.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Ajay Kumar'" <ajaykumar.rs@samsung.com>
-References: <1406806970-12561-1-git-send-email-thierry.reding@gmail.com>
- <20140731115429.GA12627@ulmo>
-In-reply-to: <20140731115429.GA12627@ulmo>
-Subject: Re: [RFC] pwm-backlight: Allow backlight to remain disabled on boot
-Date: Thu, 07 Aug 2014 18:30:47 +0900
-Message-id: <009e01cfb222$4555d940$d0018bc0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+stjT8hdopeKZZQ4GRVQcnKt/GbAFak0YQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBKsWRmVeSWpSXmKPExsVy+t8zQ10P98fBBr9f81gceH+QxeLozolM
-	FvOPnGO12NF2nM2i/81CVotzr1YyWlxeeInV4v7Xo4wWmx5fY7U40feB1eLyrjlsFrcv81os
-	vX6RyWLC9LUsFusevmCyaN17hN3i5655LBbr599icxDyWDNvDaNHS3MPm8flvl4mj52z7rJ7
-	rFz+hc3j1YU7LB6bVnWyedy5tofNY/OSeo++LasYPY7f2M7k8XmTXABPFJdNSmpOZllqkb5d
-	AlfGruPqBb/4KnqvXmBsYHzG3cXIySEhYCJxbsUxZghbTOLCvfVsXYxcHEICyxglHsz7zQ5T
-	dOvueiaIxCJGiWnXDkE5vxkl/rf2gLWzCahJfPlyGKxDRKBMYsb0M+wgRcwCV1kkPs25B9TB
-	AdSRIfFkCVgNp4CWxKEFS5hAbGEBH4kb+9vB5rAIqErMn3IBrJxXwFbi1lxBkDCvgKDEj8n3
-	WEBsZqDW9TuPM0HY8hKb17xlBimXEFCXePRXF+ICI4mzpzYyQ5SISOx78Y4R5BoJgTccEk/W
-	bIRaJSDxbfIhFoheWYlNB6ABISlxcMUNlgmMErOQbJ6FZPMsJJtnIVmxgJFlFaNoakFyQXFS
-	epGhXnFibnFpXrpecn7uJkZIqundwXj7gPUhxmSg9ROZpUST84GpKq8k3tDYzMjC1MTU2Mjc
-	0ow0YSVx3qSHSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGBViQn5t9PI1j302sfn5BiaG
-	pMeMxUrJNhOkv2fr2t+7+fDws68HVecHXXc6EiXNbqM/Z8+WsnmdP5gCNJpflPcoq3IoaAtu
-	EjQtmrTn6Fun4rtlBQ7sslUpP+bM93F8fWXT/PxQJckQltV8v3abhsX29y4W239KXkTLQ7Dg
-	btLTxEquYuYZSizFGYmGWsxFxYkA+cDKG0sDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOKsWRmVeSWpSXmKPExsVy+t9jAV0P98fBBvc3sFsceH+QxeLozolM
-	FvOPnGO12NF2nM2i/81CVotzr1YyWlxeeInV4v7Xo4wWmx5fY7U40feB1eLyrjlsFrcv81os
-	vX6RyWLC9LUsFusevmCyaN17hN3i5655LBbr599icxDyWDNvDaNHS3MPm8flvl4mj52z7rJ7
-	rFz+hc3j1YU7LB6bVnWyedy5tofNY/OSeo++LasYPY7f2M7k8XmTXABPVAOjTUZqYkpqkUJq
-	XnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Qf0oKZYk5pUChgMTiYiV9
-	O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjF3H1Qt+8VX0Xr3A2MD4jLuLkZNDQsBE4tbd9UwQ
-	tpjEhXvr2boYuTiEBBYxSky7dogJwvnNKPG/tYcZpIpNQE3iy5fD7CC2iECZxIzpZ9hBipgF
-	rrJIfJpzD6iDA6gjQ+LJErAaTgEtiUMLloBtEBbwkbixvx1sDouAqsT8KRfAynkFbCVuzRUE
-	CfMKCEr8mHyPBcRmBmpdv/M4E4QtL7F5zVtmkHIJAXWJR391IS4wkjh7aiMzRImIxL4X7xgn
-	MArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4ET2TGoH48oG
-	i0OMAhyMSjy8Fk2PgoVYE8uKK3MPMUpwMCuJ8FZbPw4W4k1JrKxKLcqPLyrNSS0+xGgK9OdE
-	ZinR5Hxgks0riTc0NjEzsjQyszAyMTdXEuc90GodKCSQnliSmp2aWpBaBNPHxMEp1cA4JWEf
-	W/2fJWxp3MJyD1MuCd6Rep7AULn97Pl9ZTsnJsU8XOntXal49Ym5z9ZDickx1/9fbFzLEWt5
-	/kAyq+h63w8LhTtjJL5NfR0/kaEkftNbjte/Lp1yO/Fg3UvWxGi1maUJBo9D7i/bcFa7ZLu3
-	OZO3j5g7h+KhptgLV5a4nNVdx/JwUoKCEktxRqKhFnNRcSIACJJ8InoDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1757335AbaHGJda (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 05:33:30 -0400
+Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:24429
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754057AbaHGJd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 05:33:29 -0400
+From: Shengjiu Wang <shengjiu.wang@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <timur@tabi.org>,
+        <perex@perex.cz>, <tiwai@suse.de>, <nicoleotsuka@gmail.com>,
+        <Li.Xiubo@freescale.com>, <shc_work@mail.ru>,
+        <fabio.estevam@freescale.com>, <arnd@arndb.de>
+CC: <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH V2 0/2] refine esai for tdm support
+Date: Thu, 7 Aug 2014 17:33:23 +0800
+Message-ID: <cover.1407403727.git.shengjiu.wang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(76482001)(2201001)(36756003)(92566001)(87936001)(95666004)(64706001)(87286001)(105606002)(99396002)(92726001)(102836001)(20776003)(89996001)(88136002)(21056001)(85306004)(46102001)(86362001)(77156001)(47776003)(104016003)(26826002)(68736004)(85852003)(74502001)(74662001)(81542001)(79102001)(83072002)(77982001)(229853001)(44976005)(6806004)(107046002)(84676001)(50986999)(104166001)(106466001)(93916002)(97736001)(62966002)(81342001)(31966008)(33646002)(83322001)(80022001)(4396001)(50226001)(48376002)(50466002)(1121002)(921003);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR03MB252;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 029651C7A1
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=shengjiu.wang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 31, 2014 8:55 PM, Thierry Reding wrote:
-> On Thu, Jul 31, 2014 at 01:42:50PM +0200, Thierry Reding wrote:
-> [...]
-> > @@ -317,6 +319,12 @@ static int pwm_backlight_probe(struct platform_device *pdev)
-> >  	}
-> >
-> >  	bl->props.brightness = data->dft_brightness;
-> > +
-> > +	if (data->boot_off)
-> > +		bl->props.power = FB_BLANK_POWERDOWN;
-> > +	else
-> > +		bl->props.power = FB_BLANK_UNBLANK;
-> > +
-> >  	backlight_update_status(bl);
-> 
-> Looking at this again, perhaps a more sensible thing to do would be to
-> not call backlight_update_status() in the first place. For example if
-> the board defines that backlight should be kept off at boot, but the
-> bootloader had already enabled it, then this would effectively turn off
-> the backlight again.
+These patchs is to refine esai for tdm support.
 
-(+cc Ajay Kumar)
+Changes for V2
+- update the comments according the reviewer's suggestion
+- add init value for slots and change pin to pins.
 
-Personally, I prefer not to call backlight_update_status(), when the
-backlight was already turned on by bootloader. Also, it would be better
-for subsystems such as DRM to handle the power of panel.
+Shengjiu Wang (2):
+  ASoC: fsl_esai: refine esai for TDM support
+  Revert "ASoC: fsl-esai: Add .xlate_tdm_slot_mask() support."
 
-> 
-> I think it's safe to assume that if the bootloader sets up the backlight
-> then it would also set up the display. Therefore not touching the
-> backlight state at all at probe time seems like the safest default.
-> 
-> Of course that doesn't help people who use some dumb framebuffer driver
-> and therefore nothing explicitly enables the backlight. So it would
-> still be changing behaviour for people for whom the bootloader doesn't
-> set up the backlight at all and who therefore rely on the kernel to turn
-> it on.
-> 
-> We could perhaps alleviate that pain a little by making this dependent
-> on whether or not the board is booted using DT on the assumption that
-> anything that uses DT would be "modern" enough to provide a means to
-> automatically enable the backlight at the right moment.
+ sound/soc/fsl/Kconfig    |    1 -
+ sound/soc/fsl/fsl_esai.c |   16 +++++++++++-----
+ sound/soc/fsl/fsl_esai.h |    8 ++++----
+ 3 files changed, 15 insertions(+), 10 deletions(-)
 
-I also agree with the way to use DT.
-
-Best regards,
-Jingoo Han
-
-> 
-> Thierry
+-- 
+1.7.9.5
 
