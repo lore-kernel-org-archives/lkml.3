@@ -1,178 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815AbaHGVBB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 17:01:01 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:10160 "EHLO
+	id S1755411AbaHGVBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 17:01:44 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:10639 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750760AbaHGVA6 (ORCPT
+	by vger.kernel.org with ESMTP id S1752088AbaHGVBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 17:00:58 -0400
+	Thu, 7 Aug 2014 17:01:00 -0400
 X-IronPort-AV: E=Sophos;i="5.01,820,1400018400"; 
-   d="scan'208";a="88647122"
+   d="scan'208";a="88647126"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCH 0/4] fix error return code
-Date: Thu,  7 Aug 2014 22:57:43 +0200
-Message-Id: <1407445067-4044-1-git-send-email-Julia.Lawall@lip6.fr>
+To: Felipe Balbi <balbi@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] usb: gadget: fix error return code
+Date: Thu,  7 Aug 2014 22:57:47 +0200
+Message-Id: <1407445067-4044-5-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1407445067-4044-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1407445067-4044-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The complate semantic patch that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+
+Convert a zero return value on error to a negative one, as returned
+elsewhere in the function.
+
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
 // <smpl>
-// identify a function that returns a negative return value at least once.
-@ok exists@
-identifier f,ret,i;
-expression e;
-constant c;
 @@
-
-f(...) {
-... when any
-(
-return -c@i;
-|
-ret = -c@i;
-... when != ret = e
-return ret;
-|
-if (ret < 0) { ... return ret; }
-)
-... when any
-}
-
-// identify a case where the return variable is set to a non-negative value
-// and then returned in error-handling code
-@r exists@
-identifier ret,ok.f,fn;
-expression e1,e2,e3,e4,e5,e6,x;
-statement S,S1;
-position p1,p2,p3;
+identifier ret; expression e1,e2;
 @@
-
-f(...) {
-... when any
 (
-if@p1 (\(ret < 0\|ret != 0\))
+if (\(ret < 0\|ret != 0\))
  { ... return ret; }
 |
-ret@p1 = 0
+ret = 0
 )
-... when != \(ret = e1\|ret++\|ret--\|ret+=e1\|ret-=e1\)
+... when != ret = e1
     when != &ret
-    when any
-(
- if (<+... ret = e5 ...+>) S1
-|
- if (<+... &ret ...+>) S1
-|
-if@p2(<+...x = fn(...)...+>)
- {
-  ... when != ret = e6
-      when forall
- return@p3 ret;
-}
-|
-break;
-|
-x = fn(...)
-... when != \(ret = e4\|ret++\|ret--\|ret+=e4\|ret-=e4\)
-    when != &ret
-(
- if (<+... ret = e3 ...+>) S
-|
- if (<+... &ret ...+>) S
-|
-if@p2(<+...\(x != 0\|x < 0\|x == NULL\|IS_ERR(x)\)...+>)
- {
+*if(...)
+{
   ... when != ret = e2
       when forall
- return@p3 ret;
+ return ret;
 }
-)
-)
-... when any
-}
-
-@printer depends on r@
-position p;
-identifier ok.f,pr;
-constant char [] c;
-@@
-
-f(...) { <...pr@p(...,c,...)...> }
-
-@bad0 exists@
-identifier r.ret,ok.f,g != {ERR_PTR,IS_ERR};
-position p != printer.p;
-@@
-
-f(...) { ... when any
-g@p(...,ret,...)
-... when any
- }
-
-// ignore the above if there is some path where the variable is set to
-// something else
-@bad depends on !bad0 exists@
-position r.p1,r.p2;
-statement S1,S2;
-identifier r.ret;
-expression e1;
-@@
-
-(
-if@p1 (\(ret < 0\|ret != 0\)) S1
-|
-ret@p1 = 0
-)
-... when any
- \(ret = e1\|ret++\|ret--\|ret+=e1\|ret-=e1\|&ret\)
-... when any
-if@p2(...) S2
-
-@bad1 depends on !bad0 && !bad exists@
-position r.p2;
-statement S2;
-identifier r.ret;
-expression e1;
-constant c;
-@@
-
-ret = -c
-... when != \(ret = e1\|ret++\|ret--\|ret+=e1\|ret-=e1\)
-    when != &ret
-    when any
-if@p2(...) S2
-
-// likewise ignore it if there has been an intervening return
-@bad2 depends on !bad0 && !bad && !bad1 exists@
-position r.p1,r.p2;
-identifier r.ret;
-expression e1;
-statement S2;
-constant c;
-@@
-
-ret@p1 = 0
-... when != if (...) { ... ret = e1 ... return ret; }
-    when != if (...) { ... return -c; }
-    when any
-if@p2(...) S2
-
-
-@script:python depends on !bad0 && !bad && !bad1 && !bad2@
-p1 << r.p1;
-p2 << r.p2;
-p3 << r.p3;
-@@
-
-cocci.print_main("",p1)
-cocci.print_secs("",p2)
-cocci.print_secs("",p3)
 // </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/usb/gadget/udc/fusb300_udc.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/gadget/udc/fusb300_udc.c b/drivers/usb/gadget/udc/fusb300_udc.c
+index d40255f..5c5d1ad 100644
+--- a/drivers/usb/gadget/udc/fusb300_udc.c
++++ b/drivers/usb/gadget/udc/fusb300_udc.c
+@@ -1398,13 +1398,17 @@ static int fusb300_probe(struct platform_device *pdev)
+ 
+ 	/* initialize udc */
+ 	fusb300 = kzalloc(sizeof(struct fusb300), GFP_KERNEL);
+-	if (fusb300 == NULL)
++	if (fusb300 == NULL) {
++		ret = -ENOMEM;
+ 		goto clean_up;
++	}
+ 
+ 	for (i = 0; i < FUSB300_MAX_NUM_EP; i++) {
+ 		_ep[i] = kzalloc(sizeof(struct fusb300_ep), GFP_KERNEL);
+-		if (_ep[i] == NULL)
++		if (_ep[i] == NULL) {
++			ret = -ENOMEM;
+ 			goto clean_up;
++		}
+ 		fusb300->ep[i] = _ep[i];
+ 	}
+ 
 
