@@ -1,92 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815AbaHGCbw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 22:31:52 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:51456 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754423AbaHGCbt (ORCPT
+	id S1754892AbaHGCm6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 22:42:58 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:12586 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754444AbaHGCm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 22:31:49 -0400
-X-IronPort-AV: E=Sophos;i="5.04,279,1406563200"; 
-   d="scan'208";a="34288531"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: <rjw@rjwysocki.net>, <lenb@kernel.org>
-CC: <isimatu.yasuaki@jp.fujitsu.com>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] ACPI: Check if acpi_device->handler is NULL when ACPI_HOTPLUG_MEMORY is not configured.
-Date: Fri, 8 Aug 2014 10:30:45 +0800
-Message-ID: <1407465045-4726-1-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.3
+	Wed, 6 Aug 2014 22:42:56 -0400
+Message-ID: <53E2E79F.6040903@huawei.com>
+Date: Thu, 7 Aug 2014 10:42:39 +0800
+From: Rui Xiang <rui.xiang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.71]
+To: =?windows-1252?Q?Luk=E1=9A_Czerner?= <lczerner@redhat.com>
+CC: Dave Kleikamp <dave.kleikamp@oracle.com>, <linux-ext4@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: testing result of loop-aio patchset on ext3
+References: <53C3A42E.40000@huawei.com> <alpine.LFD.2.00.1407141142520.13527@localhost.localdomain> <53C5F770.9030105@huawei.com> <alpine.LFD.2.00.1407160955010.2431@localhost.localdomain> <53C645AA.9080509@huawei.com> <alpine.LFD.2.00.1407181105410.12453@localhost.localdomain> <53CC7C47.9040001@huawei.com>
+In-Reply-To: <53CC7C47.9040001@huawei.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.22.57]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When ACPI_HOTPLUG_MEMORY is not configured, memory_device_handler.attach is not set.
-And in acpi_scan_attach_handler(), the acpi_device->handler will not be initialized.
+On 2014/7/21 10:34, Rui Xiang wrote:
+> On 2014/7/18 17:10, Lukáš Czerner wrote:
+>> On Wed, 16 Jul 2014, Rui Xiang wrote:
+>>
+>>> Date: Wed, 16 Jul 2014 17:28:10 +0800
+>>> From: Rui Xiang <rui.xiang@huawei.com>
+>>> To: Lukáš Czerner <lczerner@redhat.com>
+>>> Cc: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org,
+>>>     linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+>>>     Li Zefan <lizefan@huawei.com>
+>>> Subject: Re: testing result of loop-aio patchset on ext3
+>>>
+>>> On 2014/7/16 15:58, Lukáš Czerner wrote:
+>>>> On Wed, 16 Jul 2014, Rui Xiang wrote:
+>>>>
+>>>>> Date: Wed, 16 Jul 2014 11:54:24 +0800
+>>>>> From: Rui Xiang <rui.xiang@huawei.com>
+>>>>> To: Lukáš Czerner <lczerner@redhat.com>
+>>>>> Cc: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org,
+>>>>>     linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+>>>>>     Li Zefan <lizefan@huawei.com>
+>>>>> Subject: Re: testing result of loop-aio patchset on ext3
+>>>>>
+>>>>> On 2014/7/14 17:51, Lukáš Czerner wrote:
+>>>>>> On Mon, 14 Jul 2014, Rui Xiang wrote:
+>>>>>>
+>>>>>>> Date: Mon, 14 Jul 2014 17:34:38 +0800
+>>>>>>> From: Rui Xiang <rui.xiang@huawei.com>
+>>>>>>> To: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org
+>>>>>>> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+>>>>>>>     Li Zefan <lizefan@huawei.com>
+>>>>>>> Subject: testing result of loop-aio patchset on ext3
+>>>>>>>
+>>>>>>> Hi Dave,
+>>>>>>>
+>>>>>>> We export a container image file as a block device via loop device, but we
+>>>>>>> found it's very easy that the container rootfs gets corrupted due to power
+>>>>>>> loss.
+>>>>>>>
+>>>>>>> Your early version of loop-aio patchset said the patchset can make loop
+>>>>>>> mounted filesystems recoverable(lkml.org/lkml/2012/3/30/317), but we found
+>>>>>>> it doesn't help.
+>>>>>>>
+>>>>>>> Both the guest fs and host fs are ext3.
+>>>>>>>
+>>>>>>> The loop-aio patchset is from:
+>>>>>>> git://github.com/kleikamp/linux-shaggy.git aio_loop
+>>>>>>>
+>>>>>>> Steps:
+>>>>>>> 1. dd a 10G image, mkfs.ext3,
+>>>>>>>   # dd if=/dev/zero of=./raw_image bs=1M count=10000
+>>>>>>>   # echo y | mkfs.ext3 raw_image
+>>>>>>>
+>>>>>>> 2. losetup a loop device, mount at ./test_dir
+>>>>>>>   # losetup /dev/loop1 raw_image
+>>>>>>>   # mount /dev/loop1 ./test_dir
+>>>>>>>
+>>>>>>> 3. copy fs_mark into test_dir and run
+>>>>>>>   # ./fs_mark -d ./tmp/ -s 102400000 -n 80
+>>>>>>>
+>>>>>>> 4. during runing fs_mark, make systerm reboot indirectly.
+>>>>>>>   # echo b > /proc/sysrq-trigger
+>>>>>>>
+>>>>>>> After systerm booted up, sometimes fsck reported raw_image fs has been damaged.
+>>>>>>>
+>>>>>>> # fsck.ext3 -n raw_image
+>>>>>>> e2fsck 1.41.9 (22-Aug-2009)
+>>>>>>> Warning: skipping journal recovery because doing a read-only filesystem check.
+>>>>>>> raw_image contains a file system with errors, check forced.
+>>>>>>> Pass 1: Checking inodes, blocks, and sizes
+>>>>>>> Pass 2: Checking directory structure
+>>>>>>> Pass 3: Checking directory connectivity
+>>>>>>> Pass 4: Checking reference counts
+>>>>>>> Pass 5: Checking group summary information
+>>>>>>> Free blocks count wrong (2481348, counted=2480577).
+>>>>>>> Fix? no
+>>>>>>> Free inodes count wrong (640837, counted=640835).
+>>>>>>> Fix? no
+>>>>>>> raw_image: ********** WARNING: Filesystem still has errors **********
+>>>>>>> raw_image: 11/640848 files (0.0% non-contiguous), 78652/2560000 blocks
+>>>>>>
+>>>>>> It's not damaged, this is expected result if you're using old
+>>>>>> e2fsprogs which still treats this as an error.
+>>>>>>
+>>>>>> It's not an error because we only update superblock summary at
+>>>>>> unmount time so with unclean shutdown it's likely that it does not
+>>>>>> match the reality, but e2fsck can and will easily fix that for you.
+>>>>>>
+>>>>>> Please try e2fsprogs v1.42.3 or newer.
+>>>>>>
+>>>>>
+>>>>> Hi Lukas,
+>>>>>
+>>>>> I updated e2fsprogs to v1.42.3, and user the newer fsck.ext3 to check raw_image.
+>>>>> Exactly, the result seemed normal.
+>>>>
+>>>> Now I can see that there are much more problems than before, that's
+>>>> weird. Sorry for not making this clear, but for this kind of
+>>>> reproducers please use the most recent e2fsprogs. Also , what is the
+>>>> kernel version you're using in this test ?
+>>>>
+>>>
+>>> I use the most recent e2fsprogs 1.42.11 to check, and the error info is same as
+>>> result fscked by v1.42.3. It seems that shouldn't be the reason.
+>>>
+>>> Otherwise, the kernel version in this test is stable 3.4.
+>>
+>> In that case, this is a problem somewhere else. I'll try to
+>> reproduce and see what I can see.
+>>
+>> I assume you're not able to reproduce this on a real device ?
+>>
+> 
+> Yes, it only exits on a loop device in my test.
+> 
+> Otherwise, There was another case in this test:
+> 
+> I fsck the err image with "-n", the result contains 7 issues.
+> 
+> # fsck.ext3 -n image1
+> Warning: skipping journal recovery because doing a read-only filesystem check.
+> image1 has been mounted 36 times without being checked, check forced.
+> Pass 1: Checking inodes, blocks, and sizes
+> *Inode 16407, i_size is 643005, should be 647168.  Fix? no
+> *Inode 16407, i_blocks is 1264, should be 1272.  Fix? no
+> *Inode 409941, i_blocks is 200208, should be 16688.  Fix? no
+> Pass 2: Checking directory structure
+> Pass 3: Checking directory connectivity
+> Pass 4: Checking reference counts
+> Pass 5: Checking group summary information
+> *Block bitmap differences:  -1643951 +1644741 -(1646592--1646598) +(1648640--1648646) -(1657079--1658102) -(1658104--1659127) -(1659129--1660152) -(1660154--1661177) -(1661179--1662202) -(1662204--1663227) -(1663229--1664252) -(1664254--1665277) -(1665279--1666302) -(1666304--1667327) -(1667329--1668352) -(1668354--1669377) -(1669379--1670402) -(1670404--1671167) -(1671688--1671947) -(1671949--1672972) -(1672974--1673997) -(1673999--1675022) -(1675024--1676047) -(1676049--1677072) -(1677074--1678097) -(1678099--1679122) -(1679124--1680147) -(1680149--1680560)
+> Fix? no
+> *Free blocks count wrong for group #2 (31522, counted=31520).
+> Fix? no
+> *Free blocks count wrong for group #43 (15870, counted=15871).
+> Fix? no
+> *Free blocks count wrong for group #45 (398, counted=396).
+> Fix? no
+> *Free blocks count wrong (2203971, counted=2203968).
+> Fix? no
+> image1: ********** WARNING: Filesystem still has errors **********
+> image1: 13008/655360 files (0.3% non-contiguous), 417469/2621440 blocks
+> 
+> When I "fsck -y" the image, it seems that only fixes 1 issue.
+> 
+> # fsck.ext3 -y image1
+> image1: recovering journal
+> image1 has been mounted 36 times without being checked, check forced.
+> Pass 1: Checking inodes, blocks, and sizes
+> Pass 2: Checking directory structure
+> Pass 3: Checking directory connectivity
+> Pass 4: Checking reference counts
+> Pass 5: Checking group summary information
+> *Free blocks count wrong (2203971, counted=2203968).
+> Fix<y>? yes
+> image1: ***** FILE SYSTEM WAS MODIFIED *****
+> image1: 13008/655360 files (0.3% non-contiguous), 417472/2621440 blocks
+> 
+> So, I assume journal is revocered before fs checking while doing
+> "fsck -y", and other issues are fixed during fs revovering journal,
+>  is that?
+> 
 
-In acpi_scan_hot_remove(), it doesn't check if acpi_device->handler is NULL.
-If we do memory hot-remove without ACPI_HOTPLUG_MEMORY configured, the kernel
-will panic.
+Hi Lukas,
 
-[  250.304538] BUG: unable to handle kernel NULL pointer dereference at 0000000000000088
-[  250.304960] IP: [<ffffffff813e318f>] acpi_device_hotplug+0x1d7/0x4c4
-[  250.305120] PGD 0
-[  250.305120] Oops: 0000 [#1] SMP
-[  250.305120] Modules linked in: sd_mod(E) sr_mod(E) cdrom(E) crc_t10dif(E) crct10dif_common(E) ata_piix(E) libata(E)
-[  250.305120] CPU: 0 PID: 41 Comm: kworker/u2:1 Tainted: G            E 3.16.0-rc7--3.16-rc7-tangchen+ #20
-[  250.305120] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
-[  250.305120] Workqueue: kacpi_hotplug acpi_hotplug_work_fn
-[  250.305120] task: ffff8800182436c0 ti: ffff880018254000 task.ti: ffff880018254000
-[  250.305120] RIP: 0010:[<ffffffff813e318f>]  [<ffffffff813e318f>] acpi_device_hotplug+0x1d7/0x4c4
-[  250.305120] RSP: 0000:ffff880018257da8  EFLAGS: 00000246
-[  250.305120] RAX: 0000000000000000 RBX: ffff88001cd8d800 RCX: 0000000000000000
-[  250.305120] RDX: 0000000000000000 RSI: ffff88001e40e6f8 RDI: 0000000000000246
-[  250.305120] RBP: ffff880018257df0 R08: 0000000000000096 R09: 00000000000011a0
-[  250.305120] R10: 63735f6970636120 R11: 725f746f685f6e61 R12: 0000000000000003
-[  250.305120] R13: ffff88001cc1c400 R14: ffff88001e062028 R15: 0000000000000040
-[  250.305120] FS:  0000000000000000(0000) GS:ffff88001e400000(0000) knlGS:0000000000000000
-[  250.305120] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  250.305120] CR2: 0000000000000088 CR3: 000000001a9a2000 CR4: 00000000000006f0
-[  250.305120] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  250.305120] DR3: 0000000000000000 DR6: 0000000000000000 DR7: 0000000000000000
-[  250.305120] Stack:
-[  250.305120]  00000000523cab58 ffff88001cd8d9f8 ffff88001852d480 00000000523cab58
-[  250.305120]  ffff88001852d480 ffff880018221e40 ffff88001cc1c400 ffff88001cce2d00
-[  250.305120]  0000000000000040 ffff880018257e08 ffffffff813dc31d ffff88001852d480
-[  250.305120] Call Trace:
-[  250.305120]  [<ffffffff813dc31d>] acpi_hotplug_work_fn+0x1e/0x29
-[  250.305120]  [<ffffffff8108eefb>] process_one_work+0x17b/0x460
-[  250.305120]  [<ffffffff8108f69d>] worker_thread+0x11d/0x5b0
-[  250.305120]  [<ffffffff8108f580>] ? rescuer_thread+0x3a0/0x3a0
-[  250.305120]  [<ffffffff81096811>] kthread+0xe1/0x100
-[  250.305120]  [<ffffffff81096730>] ? kthread_create_on_node+0x1a0/0x1a0
-[  250.305120]  [<ffffffff816cc6bc>] ret_from_fork+0x7c/0xb0
-[  250.305120]  [<ffffffff81096730>] ? kthread_create_on_node+0x1a0/0x1a0
 
-This patch fixes this problem by checking if acpi_device->handler is NULL in acpi_scan_hot_remove().
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- drivers/acpi/scan.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index f775fa0..aae0ce0 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -351,7 +351,8 @@ static int acpi_scan_hot_remove(struct acpi_device *device)
- 	unsigned long long sta;
- 	acpi_status status;
- 
--	if (device->handler->hotplug.demand_offline && !acpi_force_hot_remove) {
-+	if (device->handler && device->handler->hotplug.demand_offline
-+	    && !acpi_force_hot_remove) {
- 		if (!acpi_scan_is_offline(device, true))
- 			return -EBUSY;
- 	} else {
--- 
-1.8.4.2
+> Thanks!
+> 
+>> Thanks!
+>> -Lukas
+>>
+>>>
+>>>
+>>> Thanks!
+>>>
+>>>> Thanks!
+>>>> -Lukas
+>>>>
+>>>>>
+>>>>> Then, I continue my previous test. And after testing 35 times, "fsck -n" reported image fs
+>>>>> had been damaged, too.
+>>>>>
+>>>>>  # fsck.ext3 -n image1
+>>>>> e2fsck 1.42.3.wc1 (28-May-2012)
+>>>>> Warning: skipping journal recovery because doing a read-only filesystem check.
+>>>>> image1 has been mounted 36 times without being checked, check forced.
+>>>>> Pass 1: Checking inodes, blocks, and sizes
+>>>>> Inode 16407, i_size is 597447, should be 602112.  Fix? no
+>>>>> Inode 16407, i_blocks is 1176, should be 1184.  Fix? no
+>>>>> Inode 409941, i_blocks is 200208, should be 112.  Fix? no
+>>>>> Pass 2: Checking directory structure
+>>>>> Pass 3: Checking directory connectivity
+>>>>> Pass 4: Checking reference counts
+>>>>> Pass 5: Checking group summary information
+>>>>> Block bitmap differences:  -1506836 -1506843 -(1506859--1506860) -(1660941--1661964) -(1661966--1671167) -(1671688--1686473)
+>>>>> Fix? no
+>>>>> Free blocks count wrong for group #2 (31558, counted=31556).
+>>>>> Fix? no
+>>>>> Free blocks count wrong for group #43 (15871, counted=15867).
+>>>>> Fix? no
+>>>>> Free blocks count wrong (2204041, counted=2204035).
+>>>>> Fix? no
+>>>>> image1: ********** WARNING: Filesystem still has errors **********
+>>>>> image1: 13008/655360 files (0.3% non-contiguous), 417399/2621440 blocks
+>>>>>
+>>>>> I backup the image to image_bk, and then mount the image to a dir, and cat all files in the image.
+>>>>> Steps:
+>>>>> # dd if=image1 of=image_bk
+>>>>> # mount image1 err_dir
+>>>>> # find -name '*' -exec cat > /dev/null {} \;
+>>>>>
+>>>>> There are no issues during catting, and no err in dmesg too.
+>>>>>
+>>>>> *But when I umount the image1 from err_dir, The fsck result didn't show any fs corruption info.
+>>>>>
+>>>>> I mount image_bk to err_dir and umount it with no operation directly. The result is same to iamge1.
+>>>>>
+>>>>> *So, is fs in the image as a block device via loop device damaged really, or does it have some others issues? 
+>>>>> Could you give me some opinions?
+>>>>>
+>>>>>
+>>>>> Thanks.
+>>>>>
+>>>>>
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
 
