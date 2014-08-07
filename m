@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383AbaHGGjb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 02:39:31 -0400
-Received: from smtp6-v.fe.bosch.de ([139.15.237.11]:10125 "EHLO
-	smtp6-v.fe.bosch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727AbaHGGj3 (ORCPT
+	id S1754210AbaHGGnx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 02:43:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45618 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752936AbaHGGnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 02:39:29 -0400
-From: "Koehrer Mathias (ETAS/ESW5)" <mathias.koehrer@etas.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-CC: Richard Cochran <richardcochran@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCHv2] Fix e1000e with Intel 82572EI that has no hardware
- timestamp support
-Thread-Topic: [PATCHv2] Fix e1000e with Intel 82572EI that has no hardware
- timestamp support
-Thread-Index: Ac+yCOJPocd6wkCnR6acGFASNW57K///3+cA///d+wA=
-Date: Thu, 7 Aug 2014 06:39:21 +0000
-Message-ID: <3d7aa1fcc98446b3af332b06b2d9e53f@FE-MBX1012.de.bosch.com>
-References: <fae55865c8fb40f8b2f05b56b070433c@FE-MBX1012.de.bosch.com>
- <1407393252.2244.1.camel@jtkirshe-mobl>
-In-Reply-To: <1407393252.2244.1.camel@jtkirshe-mobl>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.5.148.126]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 7 Aug 2014 02:43:52 -0400
+Message-ID: <53E32022.2090006@infradead.org>
+Date: Wed, 06 Aug 2014 23:43:46 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-TM-AS-MML: disable
+To: Chris Metcalf <cmetcalf@tilera.com>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] tile: avoid errors from truncating long strings in
+ mpipe gxio
+References: <1406383386-1400-1-git-send-email-rickard_strandqvist@spectrumdigital.se>  <53E13D78.6000903@tilera.com>  <CAFo99gZ1rOqD-RFN7Shx4mWO4kfVLCXpuxUWqOwK5uY6uwAh3Q@mail.gmail.com> <201408061838.s76Ic6lV014201@farm-0039.internal.tilera.com>
+In-Reply-To: <201408061838.s76Ic6lV014201@farm-0039.internal.tilera.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s776dZv0016078
+
+On 08/06/14 11:16, Chris Metcalf wrote:
+> Using strncpy() will just silently truncate long strings; we should
+> instead return an appropriate error.  Using strlcpy() would suffer from
+> the same problem.  Instead, use strnlen()+memcpy(), and add an
+> error-checking step to make sure the lengths are reasonable.
+> 
+> I called the convenience wrapper strscpy(), and a case could be made for
+> making it more generic (possibly with a better name), but that seems
+> outside the scope of this initial commit.
+
+Well, having looked at the function before I read this comment, my first
+thought was that it should be added to lib/string.c for general
+availability.
 
 > 
-> Thanks Mathias, I have added your patch to my queue for Dave's net tree.
-Hi Jeff,
-thanks. Sorry for the confusion... As this is was my very first patch, I did not miss any pitfall...
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> ---
+> v2: use strnlen instead of strlen
+> 
+>  arch/tile/gxio/mpipe.c | 30 +++++++++++++++++++++++++-----
+>  1 file changed, 25 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/tile/gxio/mpipe.c b/arch/tile/gxio/mpipe.c
+> index 5301a9ffbae1..27a56be8d583 100644
+> --- a/arch/tile/gxio/mpipe.c
+> +++ b/arch/tile/gxio/mpipe.c
+> @@ -29,6 +29,25 @@
+>  /* HACK: Avoid pointless "shadow" warnings. */
+>  #define link link_shadow
+>  
+> +/*
+> + * Use this routine to avoid copying too-long strings.  Unlike strncpy
+> + * or strlcpy, we don't enable programmers who don't check return codes;
+> + * partially-copied strings can be problematic.  The routine returns
+> + * the total number of bytes copied (including the trailing NUL) or
+> + * zero if the buffer wasn't big enough.
+> + */
+> +static size_t strscpy(char *dest, const char *src, size_t size)
+> +{
+> +	size_t ret = strnlen(src, size) + 1;
+> +	if (ret > size) {
+> +		if (size)
+> +			dest[0] = '\0';
+> +		return 0;
+> +	}
+> +	memcpy(dest, src, ret);
+> +	return ret;
+> +}
 
-Regards
-
-Mathias
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+~Randy
