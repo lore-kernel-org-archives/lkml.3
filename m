@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836AbaHGDqc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 23:46:32 -0400
-Received: from mail-yk0-f196.google.com ([209.85.160.196]:41665 "EHLO
-	mail-yk0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756783AbaHGDqa (ORCPT
+	id S1750920AbaHGEBh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 00:01:37 -0400
+Received: from mail-yh0-f65.google.com ([209.85.213.65]:52387 "EHLO
+	mail-yh0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731AbaHGEBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 23:46:30 -0400
+	Thu, 7 Aug 2014 00:01:36 -0400
 From: Nick Krause <xerofoiify@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        =?UTF-8?q?C=C3=A9dric=20Le=20Goater?= <clg@fr.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...),
+To: Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        "GitAuthor: Nick Krause" <xerofoiify@gmail.com>,
+        linux-cris-kernel@axis.com (open list:CRIS PORT),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] powerpc: Fix warnings about right shift count
-Date: Thu,  7 Aug 2014 05:46:38 +0200
-Message-Id: <1407383199-7919-1-git-send-email-xerofoiify@gmail.com>
+Subject: [PATCH] cris: bug: add unreachable() to silence warnings
+Date: Thu,  7 Aug 2014 06:01:14 +0200
+Message-Id: <1407384076-20060-1-git-send-email-xerofoiify@gmail.com>
 X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix warnings like the following using upper_32_bits(), discussed after mail with
-someone on kernelnewbies
+Cris BUG() have warnings like
 
-arch/powerpc/boot/addnote.c:183:3: warning: right shift count >= width of type
-arch/powerpc/boot/addnote.c:188:3: warning: right shift count >= width of type
-arch/powerpc/boot/addnote.c:206:3: warning: right shift count >= width of type
-arch/powerpc/boot/addnote.c:211:3: warning: right shift count >= width of type
+drivers/memstick/core/ms_block.c:677:1: warning: control reaches end of non-void function 
+drivers/memstick/core/ms_block.c:720:1: warning: control reaches end of non-void function 
+drivers/memstick/core/ms_block.c:654:1: warning: control reaches end of non-void function 
+drivers/memstick/core/ms_block.c:465:1: warning: control reaches end of non-void function 
+drivers/memstick/core/mspro_block.c:663:1: warning: control reaches end of non-void function 
+
+Other BUG() implementations
+have added unreachable() at end becuase of which I guess
+it does not showthese errors. We can silence them using unreachable().
 
 Signed-off-by: Nick Krause <xerofoify@gmail.com>
 ---
- arch/powerpc/boot/addnote.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/cris/include/arch-v10/arch/bug.h | 5 ++++-
+ arch/cris/include/arch-v32/arch/bug.h | 5 ++++-
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/boot/addnote.c b/arch/powerpc/boot/addnote.c
-index 9d9f6f3..4611c12 100644
---- a/arch/powerpc/boot/addnote.c
-+++ b/arch/powerpc/boot/addnote.c
-@@ -72,7 +72,7 @@ static int e_class = ELFCLASS32;
- #define PUT_16BE(off, v)(buf[off] = ((v) >> 8) & 0xff, \
- 			 buf[(off) + 1] = (v) & 0xff)
- #define PUT_32BE(off, v)(PUT_16BE((off), (v) >> 16L), PUT_16BE((off) + 2, (v)))
--#define PUT_64BE(off, v)((PUT_32BE((off), (v) >> 32L), \
-+#define PUT_64BE(off, v)((PUT_32BE((off), upper_32_bits(v)), \
- 			  PUT_32BE((off) + 4, (v))))
+diff --git a/arch/cris/include/arch-v10/arch/bug.h b/arch/cris/include/arch-v10/arch/bug.h
+index 3485d6b..40e65ad 100644
+--- a/arch/cris/include/arch-v10/arch/bug.h
++++ b/arch/cris/include/arch-v10/arch/bug.h
+@@ -43,12 +43,15 @@ struct bug_frame {
+  * not be used like this with newer versions of gcc.
+  */
+ #define BUG()								\
++do {									\
+ 	__asm__ __volatile__ ("clear.d [" __stringify(BUG_MAGIC) "]\n\t"\
+ 			      "movu.w " __stringify(__LINE__) ",$r0\n\t"\
+ 			      "jump 0f\n\t"				\
+ 			      ".section .rodata\n"			\
+ 			      "0:\t.string \"" __FILE__ "\"\n\t"	\
+-			      ".previous")
++			      ".previous");				\
++	unreachable();							\
++} while (0)
+ #endif
  
- #define GET_16LE(off)	((buf[off]) + (buf[(off)+1] << 8))
-@@ -82,7 +82,8 @@ static int e_class = ELFCLASS32;
- #define PUT_16LE(off, v) (buf[off] = (v) & 0xff, \
- 			  buf[(off) + 1] = ((v) >> 8) & 0xff)
- #define PUT_32LE(off, v) (PUT_16LE((off), (v)), PUT_16LE((off) + 2, (v) >> 16L))
--#define PUT_64LE(off, v) (PUT_32LE((off), (v)), PUT_32LE((off) + 4, (v) >> 32L))
-+#define PUT_64LE(off, v) (PUT_32LE((off), (v)), PUT_32LE((off) + 4, \
-+						upper_32_bits(v)))
- 
- #define GET_16(off)	(e_data == ELFDATA2MSB ? GET_16BE(off) : GET_16LE(off))
- #define GET_32(off)	(e_data == ELFDATA2MSB ? GET_32BE(off) : GET_32LE(off))
+ #else
+diff --git a/arch/cris/include/arch-v32/arch/bug.h b/arch/cris/include/arch-v32/arch/bug.h
+index 0f211e1..55350a3 100644
+--- a/arch/cris/include/arch-v32/arch/bug.h
++++ b/arch/cris/include/arch-v32/arch/bug.h
+@@ -10,6 +10,7 @@
+  * All other stuff is done out-of-band with exception handlers.
+  */
+ #define BUG()								\
++do {									\
+ 	__asm__ __volatile__ ("0: break 14\n\t"				\
+ 			      ".section .fixup,\"ax\"\n"		\
+ 			      "1:\n\t"					\
+@@ -21,7 +22,9 @@
+ 			      ".section __ex_table,\"a\"\n\t"		\
+ 			      ".dword 0b, 1b\n\t"			\
+ 			      ".previous\n\t"				\
+-			      : : "ri" (__FILE__), "i" (__LINE__))
++			      : : "ri" (__FILE__), "i" (__LINE__));	\
++	unreachable();
++} while (0)
+ #else
+ #define BUG() __asm__ __volatile__ ("break 14\n\t")
+ #endif
 -- 
 2.0.1
 
