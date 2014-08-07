@@ -1,162 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933022AbaHGQsH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 12:48:07 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:8959 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932330AbaHGQsE (ORCPT
+	id S933043AbaHGQsL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 12:48:11 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:33983 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932330AbaHGQsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 12:48:04 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-69-53e3adc200f4
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH] rtc: s5m: re-add support for devices without irq specified
-Date: Thu, 07 Aug 2014 18:48 +0200
-Message-id: <3505114.LnLWmLa1kW@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <2220469.b1qFJrigEi@amdc1032>
-References: <2220469.b1qFJrigEi@amdc1032>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t9jAd1Dax8HG3x4q2Kx5OJVdovXLwwt
-	zja9Ybe4vGsOm8WM8/uYLPZ3djA6sHnsmXiSzaNvyypGj+nzfjJ5fN4kF8ASxWWTkpqTWZZa
-	pG+XwJXx8s0S1oIZhhXn+7axNTA+V+9i5OSQEDCRWP/rDjuELSZx4d56ti5GLg4hgUWMEqcO
-	LmOCcFqYJBadn8UCUsUmYCUxsX0VYxcjB4eIgLZE76Q0kBpmgb2MEqdnbGcEqREW8JeYO30/
-	O0gNi4CSxK65+SBhXgFNiTc3d4AtExXwlNixfSUbiM0poCXRv6QdrFUIqGbxsxesEPWCEj8m
-	3wNbyywgL7Fv/1RWCFtLYv3O40wTGAVmISmbhaRsFpKyBYzMqxhFUwuSC4qT0nMN9YoTc4tL
-	89L1kvNzNzGCw/mZ1A7GlQ0WhxgFOBiVeHgFuh8HC7EmlhVX5h5ilOBgVhLh1QUJ8aYkVlal
-	FuXHF5XmpBYfYpTmYFES5z3Qah0oJJCeWJKanZpakFoEk2Xi4JRqYAznZXzZzvG585yq7Zz0
-	1NXZgSyPmM7a/dmnzXrwr+jTO758xxlNOtzqxebtucjHWLw2qcI3aOMSNbu34rO3zq/qWtnh
-	urhKYntLcdbzkzOcL811jJ+zTW9yjqyZWc3JH8u3BH5V/z8lSYitYOH65RLbXudv+vtIffYe
-	8/dhZQuPH+74+DSw0keJpTgj0VCLuag4EQB3Tb99YwIAAA==
+	Thu, 7 Aug 2014 12:48:08 -0400
+Message-ID: <1407430083.11943.37.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: RE: [RFC] net: Replace del_timer() with del_timer_sync()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Das, Deepak" <Deepak_Das@mentor.com>
+Cc: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 07 Aug 2014 18:48:03 +0200
+In-Reply-To: <38E11AEFEB035045A1BA4C1177FBFC424A89BEBE@EU-MBX-03.mgc.mentorg.com>
+References: <53E31A47.9000407@mentor.com>
+	,<1407394542.11943.21.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <38E11AEFEB035045A1BA4C1177FBFC424A89BEBE@EU-MBX-03.mgc.mentorg.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2014-08-07 at 15:15 +0000, Das, Deepak wrote:
 
-[ added missing linux-samsung-soc ML, sorry for the noise ]
+Please do not top post on netdev, thanks.
 
-On Thursday, August 07, 2014 06:41:02 PM Bartlomiej Zolnierkiewicz wrote:
-> The rtc-s5m driver used to support devices without irq specified
-> in the past.  Re-add this support.
+> I apologies for not explaining the scenario previously.
 > 
-> The patch fixes boot for Insignal's Exynos4412 based Origen board.
+> sk_stop_timer() is used to stop the tcp timers with expiry callback
+> tcp_write_timer(), tcp_delack_timer(), tcp_keepalive_timer(), ...
+> del_timer() is used to stop the the timer in sk_stop_timer(), which
+> might return a non-zero result even if one of these timer handler functions
+> (tcp_write_timer(), tcp_delack_timer(), tcp_keepalive_timer(), ...)
+> is already executing on another processor.
 > 
-> Error messages before the patch:
-> ...
-> [    2.095991] Unable to handle kernel NULL pointer dereference at virtual address 00000094
-> [    2.103299] pgd = c0004000
-> [    2.105944] [00000094] *pgd=00000000
-> [    2.109510] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-> [    2.114796] Modules linked in:
-> [    2.117840] CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.16.0-next-20140804-00008-ga59480f-dirty #701
-> [    2.126950] task: ea80f000 ti: ea882000 task.ti: ea882000
-> [    2.132348] PC is at regmap_irq_get_virq+0x0/0x28
-> [    2.137033] LR is at s5m_rtc_probe+0xdc/0x310
-> [    2.141360] pc : [<c02574fc>]    lr : [<c02de75c>]    psr: 80000153
-> [    2.141360] sp : ea883e48  ip : 00000000  fp : 00000000
-> [    2.152815] r10: 0000000c  r9 : c05de7ac  r8 : eaabc600
-> [    2.158024] r7 : eaa6b4d0  r6 : c0439e8c  r5 : eaabc610  r4 : eab30e50
-> [    2.164533] r3 : 00000000  r2 : 00000000  r1 : 0000000c  r0 : 00000000
-> [    2.171045] Flags: Nzcv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-> [    2.178423] Control: 10c5387d  Table: 4000404a  DAC: 00000015
-> [    2.184150] Process swapper/0 (pid: 1, stack limit = 0xea882240)
-> [    2.190139] Stack: (0xea883e48 to 0xea884000)
-> [    2.194483] 3e40:                   eab32910 00000001 c05de7ac eab329b0 00000000 eaabc610
-> [    2.202642] 3e60: c0618c68 eaabc610 c0618c68 00000000 00000000 c0618c68 0000008f c02429cc
-> [    2.210801] 3e80: c02429a0 eaabc610 c06628a8 c02415f0 eaabc610 c0618c68 eaabc644 00000000
-> [    2.218960] 3ea0: eab30d00 c024179c c0618c68 00000000 c0241710 c023ffb4 ea805478 eaadefc0
-> [    2.227119] 3ec0: c0618c68 ea115e80 c0610b10 c0240df8 c0518984 c0618c68 00000000 c0618c68
-> [    2.235278] 3ee0: 00000000 c05ecc18 c05ecc18 c0241db8 c02426a0 c05b480c 00000000 c00088a4
-> [    2.243437] 3f00: 0000009f c040f134 ea92a300 c0649fe0 ea80f000 60000153 c05efe54 00000000
-> [    2.251596] 3f20: 00000000 c05efe54 60000153 00000000 eb7ff916 eb7ff908 c0573048 c00376dc
-> [    2.259756] 3f40: c05288f0 c0572758 00000006 00000006 c05efdf4 c05c2da4 00000006 c05c2d84
-> [    2.267914] 3f60: c0626900 c059a508 c05de7ac 0000008f 00000000 c059ac94 00000006 00000006
-> [    2.276074] 3f80: c059a508 c003c3fc 00000000 c0401330 00000000 00000000 00000000 00000000
-> [    2.284233] 3fa0: 00000000 c0401338 00000000 c000e538 00000000 00000000 00000000 00000000
-> [    2.292392] 3fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> [    2.300551] 3fe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
-> [    2.308729] [<c02574fc>] (regmap_irq_get_virq) from [<c02de75c>] (s5m_rtc_probe+0xdc/0x310)
-> [    2.317057] [<c02de75c>] (s5m_rtc_probe) from [<c02429cc>] (platform_drv_probe+0x2c/0x5c)
-> [    2.325209] [<c02429cc>] (platform_drv_probe) from [<c02415f0>] (driver_probe_device+0x114/0x234)
-> [    2.334060] [<c02415f0>] (driver_probe_device) from [<c024179c>] (__driver_attach+0x8c/0x90)
-> [    2.342479] [<c024179c>] (__driver_attach) from [<c023ffb4>] (bus_for_each_dev+0x54/0x88)
-> [    2.350637] [<c023ffb4>] (bus_for_each_dev) from [<c0240df8>] (bus_add_driver+0xd8/0x1cc)
-> [    2.358796] [<c0240df8>] (bus_add_driver) from [<c0241db8>] (driver_register+0x78/0xf4)
-> [    2.366785] [<c0241db8>] (driver_register) from [<c00088a4>] (do_one_initcall+0x80/0x1d0)
-> [    2.374947] [<c00088a4>] (do_one_initcall) from [<c059ac94>] (kernel_init_freeable+0x108/0x1d4)
-> [    2.383634] [<c059ac94>] (kernel_init_freeable) from [<c0401338>] (kernel_init+0x8/0xe4)
-> [    2.391704] [<c0401338>] (kernel_init) from [<c000e538>] (ret_from_fork+0x14/0x3c)
-> [    2.399246] Code: e8bd8070 e3500000 1590009c e12fff1e (e5903094)
-> [    2.405391] ---[ end trace a954d7f019122700 ]---
-> [    2.409987] Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
-> ...
+> Following is the possible scenario :-
+> on CPU #0: sk_stop_timer() decrements the sk->sk_refcnt if del_timer(timer)
+> returns non-zero.
 > 
-> Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> patch is against next-20140804 branch of linux-next kernel
+> on CPU #1: If a timer handler callback runs then it also calls sock_put(sk)
+> which decrements sk->sk_refcnt and if the sk_refcnt becomes zero it frees the
+> structure sock pointed to by sk.
 > 
->  drivers/rtc/rtc-s5m.c | 21 ++++++++++++++-------
->  1 file changed, 14 insertions(+), 7 deletions(-)
+> if the sk->sk_refcnt decrements twice then that will cause a mismatch in the
+> number of "puts" and "holds" resulting in a malfunction of the sk->sk_refcnt mechanism.
+
+Not at all.
+
+There is no mismatch, sk_refcnt is decremented once in all cases.
+
+I believe you misunderstood del_timer_sync() / del_timer() behaviors and
+differences.
+
+In the case you describe, del_timer() should return 0, and timer
+function will call sock_put() to decrement socket refcount.
+
+The problem' of del_timer() is the following :
+
+When/If it returns 0, another cpu _might_ be running the timer, we have
+no guarantee timer function is completed.
+
+For sockets, we do not care, because the active timer owns a refcount on
+the socket. When timer is finally completed, refcount will be released.
+
 > 
-> diff --git a/drivers/rtc/rtc-s5m.c b/drivers/rtc/rtc-s5m.c
-> index 8f06250a..8754c33 100644
-> --- a/drivers/rtc/rtc-s5m.c
-> +++ b/drivers/rtc/rtc-s5m.c
-> @@ -717,12 +717,14 @@ static int s5m_rtc_probe(struct platform_device *pdev)
->  	info->device_type = s5m87xx->device_type;
->  	info->wtsr_smpl = s5m87xx->wtsr_smpl;
->  
-> -	info->irq = regmap_irq_get_virq(s5m87xx->irq_data, alarm_irq);
-> -	if (info->irq <= 0) {
-> -		ret = -EINVAL;
-> -		dev_err(&pdev->dev, "Failed to get virtual IRQ %d\n",
-> +	if (s5m87xx->irq_data) {
-> +		info->irq = regmap_irq_get_virq(s5m87xx->irq_data, alarm_irq);
-> +		if (info->irq <= 0) {
-> +			ret = -EINVAL;
-> +			dev_err(&pdev->dev, "Failed to get virtual IRQ %d\n",
->  				alarm_irq);
-> -		goto err;
-> +			goto err;
-> +		}
->  	}
->  
->  	platform_set_drvdata(pdev, info);
-> @@ -744,6 +746,11 @@ static int s5m_rtc_probe(struct platform_device *pdev)
->  		goto err;
->  	}
->  
-> +	if (!info->irq) {
-> +		dev_info(&pdev->dev, "Alarm IRQ not available\n");
-> +		return 0;
-> +	}
-> +
->  	ret = devm_request_threaded_irq(&pdev->dev, info->irq, NULL,
->  					s5m_rtc_alarm_irq, 0, "rtc-alarm0",
->  					info);
-> @@ -802,7 +809,7 @@ static int s5m_rtc_resume(struct device *dev)
->  	struct s5m_rtc_info *info = dev_get_drvdata(dev);
->  	int ret = 0;
->  
-> -	if (device_may_wakeup(dev))
-> +	if (info->irq && device_may_wakeup(dev))
->  		ret = disable_irq_wake(info->irq);
->  
->  	return ret;
-> @@ -813,7 +820,7 @@ static int s5m_rtc_suspend(struct device *dev)
->  	struct s5m_rtc_info *info = dev_get_drvdata(dev);
->  	int ret = 0;
->  
-> -	if (device_may_wakeup(dev))
-> +	if (info->irq && device_may_wakeup(dev))
->  		ret = enable_irq_wake(info->irq);
->  
->  	return ret;
+> The solution is to use del_timer_sync() instead of del_timer()
+> because del_timer_sync() will wait for timer handler functions to
+> complete execution.
+
+Except that some sk_stop_timer() callers hold the socket lock, so the
+timer will deadlock trying to acquire it.
+
+> 
+> yes, we are facing some memory corruption issues due to access of already released
+> struct sock in our environment. Our memory corruption issue looks like memory locations
+> being decremented which could be consistent with a rogue decrement of a reference counter.
+
+Is 'Your environment' some out of tree module or is it part of standard
+linux kernel ?
+
+> 
+> similar suggestion is also made by Dean Jenkins in rfcomm_dlc_clear_timer() and accepted by Marcel.
+> http://www.spinics.net/lists/linux-bluetooth/msg51132.html
+
+Fix might be good in this case, but the changelog is completely bogus.
+
+
 
