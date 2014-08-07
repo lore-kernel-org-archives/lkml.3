@@ -1,125 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaHGCQz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 22:16:55 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:63174 "EHLO
+	id S1754879AbaHGCSF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 22:18:05 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:47507 "EHLO
 	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754423AbaHGCQw convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754550AbaHGCSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 22:16:52 -0400
+	Wed, 6 Aug 2014 22:18:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <53E2D605.2000704@rock-chips.com>
-References: <1406197295-10604-1-git-send-email-caesar.wang@rock-chips.com>
-	<1406197295-10604-3-git-send-email-caesar.wang@rock-chips.com>
-	<CAD=FV=V4Kp-H3CcAKZPV1jBnYX+Ntwvxx6RB13TLxS5RRPHTWA@mail.gmail.com>
-	<53E2D605.2000704@rock-chips.com>
-Date: Wed, 6 Aug 2014 19:16:51 -0700
-X-Google-Sender-Auth: ytKCsx_sjt2sU-Fb9mub4XmeXu0
-Message-ID: <CAD=FV=Xw8tz2keCUtO+qYUmnuv=+DPGZjY9-j_2XmAcP3Luzjg@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] pwm: rockchip: Added to support for RK3288 SoC
+In-Reply-To: <CAOMZO5CsUKuAcDMzHhy32457ihGqEBTdUijDbwA7QwUqq-ukbQ@mail.gmail.com>
+References: <1407373713-26281-1-git-send-email-javier.martinez@collabora.co.uk>
+	<CAOMZO5CsUKuAcDMzHhy32457ihGqEBTdUijDbwA7QwUqq-ukbQ@mail.gmail.com>
+Date: Wed, 6 Aug 2014 19:18:02 -0700
+X-Google-Sender-Auth: Z0D2HybLEznMX0ki5D5-GaVt2dQ
+Message-ID: <CAD=FV=VinL5msfGUrxT06vDiRW2ZCGU4cJpgQ5rhxTdrZihxYw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ARM: dts: Add Peach Pit and Pi dts entry for atmel touchpad
 From: Doug Anderson <dianders@chromium.org>
-To: caesar <caesar.wang@rock-chips.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, b.galvani@gmail.com,
-        Rob Herring <robh+dt@kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Kumar Gala <galak@codeaurora.org>, Eddie Cai <cf@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        Addy Ke <addy.ke@rock-chips.com>,
-        =?UTF-8?B?6ZmI5riQ6aOe?= <cjf@rock-chips.com>,
-        han jiang <hj@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-pwm <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, Stephen Warren <swarren@nvidia.com>,
+        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Caesar,
+Fabio,
 
-On Wed, Aug 6, 2014 at 6:27 PM, caesar <caesar.wang@rock-chips.com> wrote:
-> Doug,
+On Wed, Aug 6, 2014 at 6:35 PM, Fabio Estevam <festevam@gmail.com> wrote:
+> On Wed, Aug 6, 2014 at 10:08 PM, Javier Martinez Canillas
+> <javier.martinez@collabora.co.uk> wrote:
 >
-> 在 2014年08月07日 06:46, Doug Anderson 写道:
+>> +&hsi2c_8 {
+>> +       status = "okay";
+>> +       clock-frequency = <333000>;
 >
->> Caesar,
->>
->> On Thu, Jul 24, 2014 at 3:21 AM, Caesar Wang <caesar.wang@rock-chips.com>
->> wrote:
->>>
->>> +static const struct rockchip_pwm_data pwm_data_v1 = {
->>> +       .regs.duty = PWM_HRC,
->>> +       .regs.period = PWM_LRC,
->>> +       .regs.cntr = PWM_CNTR,
->>> +       .regs.ctrl = PWM_CTRL,
->>> +       .prescaler = PRESCALER,
->>> +       .set_enable = rockchip_pwm_set_enable_v1,
->>> +};
->>> +
->>> +static const struct rockchip_pwm_data pwm_data_v2 = {
->>> +       .regs.duty = PWM_LRC,
->>> +       .regs.period = PWM_HRC,
->>> +       .regs.cntr = PWM_CNTR,
->>> +       .regs.ctrl = PWM_CTRL,
->>> +       .prescaler = PRESCALER-1,
->>> +       .set_enable = rockchip_pwm_set_enable_v2,
->>> +};
->>> +
->>> +static const struct rockchip_pwm_data pwm_data_vop = {
->>> +       .regs.duty = PWM_LRC,
->>> +       .regs.period = PWM_HRC,
->>> +       .regs.cntr = PWM_CTRL,
->>> +       .regs.ctrl = PWM_CNTR,
->>
->> Did you really mean to flip CTRL and CNTR here?  If so, that's super
->> confusing and deserves a comment.  AKA, I think the above should not
->> be:
->>
->>   +       .regs.cntr = PWM_CTRL,
->>   +       .regs.ctrl = PWM_CNTR,
->>
->> ...but should be
->>
->>   +       .regs.cntr = PWM_CNTR,
->>   +       .regs.ctrl = PWM_CTRL,
->>
->> If you didn't mean to flip CTRL and CNTR here, then just get rid of
->> pwm_data_vop and refer to pwm_data_v2.  In fact, I'd suggest that you
->> totally remove the "rockchip,vop-pwm" since there's nothing different
->> between "rockchip,rk3288-pwm" and "rockchip,vop-pwm".
->
->
-> Sorry,I think it's no problem. the  "rockchip,rk3288-pwm" and
-> "rockchip,vop-pwm" are seperate PWM controllers.
-> They are just different registers address between CNTR and CTRL .
+> Doesn't it work at the more standard 400kHz i2c frequency?
 
-OK, I looked up in the TRM.  Right, the CNTR and CTRL are flipped on
-the vop.  So I think that the only change you need is to add:
-
-#define PWM_VOP_CTRL  0x00
-#define PWM_VOP_CNTR  0x0c
-
-...then use these new #defines for the vop structure.
-
-
-As you have the code written right now it's very confusing.  The new
-#defines will fix this.
-
-
->> Have you validated Thierry's suggestion to allow you to access your
->> memory range?
->
-> Yes,we have solve it in lcdc driver.
-> The Mark Yao have the  submission in [0].
->
-> [0]: https://lkml.org/lkml/2014/8/4/20
-
-Excellent!  Then we should be able to land after you fix the above.
-
--Doug
+I'm pretty sure that they had signaling problems at 400kHz, but
+perhaps Benson will rememer.
