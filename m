@@ -1,111 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191AbaHGGZI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 02:25:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26062 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751612AbaHGGZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 02:25:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="369071315"
-Date: Thu, 7 Aug 2014 14:26:28 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Bandan Das <bsd@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] KVM: nVMX: nested TPR shadow/threshold emulation
-Message-ID: <20140807062628.GA32500@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1407149907-13483-1-git-send-email-wanpeng.li@linux.intel.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AB505AB@SHSMSX104.ccr.corp.intel.com>
- <53E0B931.7010309@redhat.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AB516FF@SHSMSX104.ccr.corp.intel.com>
+	id S1754231AbaHGG0J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 02:26:09 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:51046 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753682AbaHGG0F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 02:26:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AB516FF@SHSMSX104.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53D0A8B7.2010005@roeck-us.net>
+References: <1406139132-5404-1-git-send-email-linux@roeck-us.net>
+ <CAAVeFuKsJpSYo2DMyTdYE2J5Cu_ZD=b9o-=S0DLDccyNmwniNg@mail.gmail.com> <53D0A8B7.2010005@roeck-us.net>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 7 Aug 2014 15:25:44 +0900
+Message-ID: <CAAVeFuK5uKhpkpEnoRFGKU4G4Fey0+giz5wwmtr+OCLJHPvnLQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] gpiolib: Provide and export gpiod_export_name
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paolo,
-On Wed, Aug 06, 2014 at 06:38:06AM +0000, Zhang, Yang Z wrote:
-[...]
->>>> +
->>>> +	if (exec_control & CPU_BASED_TPR_SHADOW) {
->>>> +		if (vmx->nested.virtual_apic_page)
->>>> +			nested_release_page(vmx->nested.virtual_apic_page);
->>>> +		vmx->nested.virtual_apic_page =
->>>> +		   nested_get_page(vcpu, vmcs12->virtual_apic_page_addr);
->>>> +		if (!vmx->nested.virtual_apic_page)
->>>> +			exec_control &=
->>>> +				~CPU_BASED_TPR_SHADOW;
->>>> +		else
->>>> +			vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
->>>> +				page_to_phys(vmx->nested.virtual_apic_page));
->>>> +
->>>> +		if (!(exec_control & CPU_BASED_TPR_SHADOW) &&
->>>> +			!((exec_control & CPU_BASED_CR8_LOAD_EXITING) &&
->>>> +				(exec_control & CPU_BASED_CR8_STORE_EXITING)))
->>>> +			nested_vmx_failValid(vcpu,
->>>> VMXERR_ENTRY_INVALID_CONTROL_FIELD);
->>> 
->>> I think this is not correct. The vmx->nested.virtual_apic_page may not
->>> valid due to two reasons: 1. The virtual_apic_page_addr is not a valid
->>> gfn. In this case, the vmx failure
->> must be injected to L1 unconditionally regardless of the setting of
->> CR8 load/store exiting.
->> 
->> You're right that accesses to the APIC-access page may also end up
->> writing to the virtual-APIC page.  Hence, if the "virtualize APIC
->> accesses" setting is 1 in the secondary exec controls, you also have to fail the vmentry.
->> 
->> Doing it unconditionally is not correct, but it is the simplest thing
->
->Why not correct?
+Sorry for the delayed reply...
 
-What's your opinion?
+On Thu, Jul 24, 2014 at 3:33 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> As I explained on the other thread, I still encourage you to have
+>> these GPIOs under device nodes that give a hint of who is provided the
+>> GPIO (effectively exporting the (dev, function) tuple to user-space)
+>> instead of having them popping out under /sys/class/gpio where nobody
+>> knows where they come from and name collisions are much more likely.
+>>
+>> Your message sounds like you have no choice but have the named GPIO
+>> link under the gpiochip's device node, but this is not the case -
+>> gpio_export_link() let's you specify the device under which the link
+>> should appear. Make that device be your "scu" device and you can have
+>> a consistent sysfs path to access your GPIOs.
+>>
+> Yes, I understand, but that is not acceptable for the users - see below.
+>
+>
+>> Allowing GPIOs to pop up in the same directory with an arbitrary name
+>> is just a recipe for a mess. But that's a recipe that is already
+>> allowed thanks to that 'names' array. So I'm really confused about
+>> what to do with this patch. If you can do with gpio_export_link() (and
+>> I have not seen evidence of the contrary), please go that way instead.
+>>
+>
+> I personally don't think it is that much of a mess. Sure, once has to be
+> careful when selecting names, but I don't see a problem with that.
+>
+> I have two users for this. Interestingly the problem is pretty
+> much the same, though the applications are completely different.
+>
+> One is the company using the scu.c file. They are currently using the
+> pca953x driver approach (using the names array), but they also have
+> a new version of their product which also uses gpio pins from gpio-ich.
+> For consistency, they want all gpio pins in the same directory, meaning
+> /sys/class/gpio.
+>
+> The currently implemented solution is to have a weak pointer to the names
+> array in gpio-ch.c and override it with a pointer from scu.c.
+>
+> /* SCU specific gpio pin names. Only works if module is built into kernel.
+> */
+> static const char * const scu_ichx_gpiolib_names[128] = {
+>         [0] = "switch_interrupt",       /* GPI0 */
+>         [3] = "ac_loss_detect",         /* GPI3 */
+>         [16] = "debug_out",             /* GPO0 */
+>         [20] = "switch_reset",          /* GPO3 */
+> };
+>
+> [ switch_interrupt and switch_reset will ultimately make it into the kernel,
+>   to be used by a dsa driver, but that is besides the point. ]
+>
+> const char * const (* const ichx_gpiolib_names)[] = &scu_ichx_gpiolib_names;
+>
+> and ichx_gpiolib_names is declared as
+>
+> /* Allow overriding default gpio pin names */
+> const char * const (* const __weak ichx_gpiolib_names)[];
+>
+> in gpio-ich.c. Pretty hackish, but at least it works. Slim chance though
+> to get this accepted upstream. Since the ultimate idea is to submit all
+> this code upstream, I would prefer to find a solution which is
+> acceptable for both the user and for upstream integration.
+>
+> The second user is my employer. Same thing here, though even more complex
+> as there are several different platforms to support with different platform
+> drivers. Each platform exports a number of gpio pins to user space, often
+> with
+> the same functionality across platforms. The request here is to have all
+> those pins in the same directory, for all platforms, which again suggests
+> using /sys/class/gpio.
+>
+> Current approach is to use the "export" file to request pin exports,
+> which has its own challenges such as having to search for the pin numbers.
+> Well defined names and pins exported from the kernel would be much cleaner
+> and be easier to handle.
+>
+> Of course, I could try to come up with a new class named "gpios" or similar,
+> put everything there, and start selling that idea. Somehow that doesn't
+> sound like a good idea to me.
 
->
->> to do and it would be okay with a comment, I think.
->> 
->>> 2. The virtual_apic_page is swapped by L0. In this case, we should
->>> not inject
->> failure to L1.
->> 
->> This cannot happen, nested_get_page ends up calling hva_to_pfn with
->> atomic==false, so the page would be swapped in and pinned.
->> 
->>>> +
->>>> +		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
->>>> +	}
->>> 
->>> Miss else here:
->>> If L2 owns the APIC and doesn't use TPR_SHADOW, we need to setup the
->>> vmcs02 based on vmcs01. For example, if vmcs01 is using TPR_SHADOW,
->>> then
->>> vmcs02 must set it. Also, we need to use vmcs01's virtual_apic_page
->>> and TPR_THRESHOLD for vmcs02.
->> 
->> What do you mean by "owns the APIC"?
->
->Means if L2 touch L1's APIC directly, for example, if L2 not using TPR_SHADOW, then move to/from CR8 will touch L1's TPR directly. And in this case, L0 should aware of L1's TRP change.
->
+Or you could have a platform device which sole purpose is to request
+the GPIOs to export and export them using gpio_export() and
+gpio_export_link() using itself as the device parameters. All your
+links would then appear under the same sysfs directory, and that
+directory name would be consistent across platforms. What is wrong
+with this approach?
 
-Ditto.
-
-Regards,
-Wanpeng Li 
-
->> 
->> Paolo
->
->
->Best regards,
->Yang
->
+As for the patch itself, as I said before I am not a huge fan of
+putting randomly-named exports under /sys/class/gpio, but since there
+is a precedent with the driver GPIO names array I don't think this
+makes the situation much worse. Still I'd like you to explain me what
+I missed and why you cannot use the technique described above to
+achieve your goal with the currently existing interfaces.
