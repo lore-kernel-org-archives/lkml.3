@@ -1,99 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757781AbaHGODN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 10:03:13 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:45496 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757577AbaHGODL (ORCPT
+	id S1757831AbaHGODU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 10:03:20 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:51554 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757788AbaHGODR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 10:03:11 -0400
-Message-ID: <53E3871C.4020008@plexistor.com>
-Date: Thu, 07 Aug 2014 17:03:08 +0300
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, Ross Zwisler <ross.zwisler@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 2/4 v2] brd: Add getgeo to block ops
-References: <53E21125.9080308@plexistor.com> <53E211D9.7030102@plexistor.com>
-In-Reply-To: <53E211D9.7030102@plexistor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Aug 2014 10:03:17 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: mmarek@suse.cz, gregkh@linuxfoundation.org, sam@ravnborg.org
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] kbuild: kselftest - new make target to build and run kernel selftests
+Date: Thu,  7 Aug 2014 08:03:12 -0600
+Message-Id: <1407420192-4928-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boaz Harrosh <boaz@plexistor.com>
+Add a new make target "kselftest" to enable kernel testing. This
+new target builds and runs kernel selftests. Running as root is
+recommended for a complete test run as some tests don't run when
+run by non-root user.
 
-Some programs like fdisk, require HDIO_GETGEO to work, which requires we
-implement getgeo.
-
-We set all hd_geometry members to 1, because this way fdisk
-math will not try its crazy geometry math and get stuff totally wrong.
-
-I was trying to get some values that will make fdisk Want to align
-first sector on 4K (like 8, 16, 20, ... sectors) but nothing worked,
-I searched the net the math is not your regular simple multiplication
-at all.
-
-If you managed to get these magic values please tell me. I would love to
-solve this.
-
-But for now we use 4k physical_sector for fixing fdisk alignment
-issues, and setting these here to something that will not make
-fdisk serve us with crazy numbers.
-
-Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 ---
- drivers/block/brd.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ Makefile | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index a10a0a9..8be3747 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -19,6 +19,7 @@
- #include <linux/radix-tree.h>
- #include <linux/fs.h>
- #include <linux/slab.h>
-+#include <linux/hdreg.h>
+diff --git a/Makefile b/Makefile
+index d0901b4..7eda9fb 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1036,6 +1036,13 @@ headers_check: headers_install
+ 	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst) HDRCHECK=1
  
- #include <asm/uaccess.h>
- 
-@@ -424,6 +425,23 @@ static int brd_ioctl(struct block_device *bdev, fmode_t mode,
- 	return error;
- }
- 
-+static int brd_getgeo(struct block_device *bd, struct hd_geometry *geo)
-+{
-+	/* Just tell fdisk to get out of the way. The math here is so
-+	 * convoluted and does not make any sense at all. With all 1s
-+	 * The math just gets out of the way.
-+	 * NOTE: I was trying to get some values that will make fdisk
-+	 * Want to align first sector on 4K (like 8, 16, 20, ... sectors) but
-+	 * nothing worked, I searched the net the math is not your regular
-+	 * simple multiplication at all. If you managed to get these please
-+	 * fix here. For now we use 4k physical sectors for this
-+	 */
-+	geo->heads = 1;
-+	geo->sectors = 1;
-+	geo->cylinders = 1;
-+	return 0;
-+}
+ # ---------------------------------------------------------------------------
++# Kernel selftest
 +
- static const struct block_device_operations brd_fops = {
- 	.owner =		THIS_MODULE,
- 	.rw_page =		brd_rw_page,
-@@ -431,6 +449,7 @@ static const struct block_device_operations brd_fops = {
- #ifdef CONFIG_BLK_DEV_XIP
- 	.direct_access =	brd_direct_access,
- #endif
-+	.getgeo =		brd_getgeo,
- };
++PHONY += kselftest
++kselftest:
++	$(Q)$(MAKE) -C tools/testing/selftests run_tests
++
++# ---------------------------------------------------------------------------
+ # Modules
  
- /*
+ ifdef CONFIG_MODULES
+@@ -1238,6 +1245,9 @@ help:
+ 	@echo  '  headerdep       - Detect inclusion cycles in headers'
+ 	@$(MAKE) -f $(srctree)/scripts/Makefile.help checker-help
+ 	@echo  ''
++	@echo  'Kernel selftest'
++	@echo  '  kselftest       - Build and run kernel selftest (run as root)'
++	@echo  ''
+ 	@echo  'Kernel packaging:'
+ 	@$(MAKE) $(build)=$(package-dir) help
+ 	@echo  ''
 -- 
-1.9.3
+1.9.1
 
