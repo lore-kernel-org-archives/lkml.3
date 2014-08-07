@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378AbaHGN0P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 09:26:15 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:57061 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077AbaHGN0N (ORCPT
+	id S932402AbaHGN0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 09:26:35 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:25176 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932077AbaHGN0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 09:26:13 -0400
-Date: Thu, 7 Aug 2014 15:26:09 +0200
-From: Alexander Aring <alex.aring@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-bluetooth@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-wpan@vger.kernel.org
-Subject: Re: Modular 6LoWPAN? (was: Re: 6lowpan: introduce new net/6lowpan
- directory)
-Message-ID: <20140807132606.GB17452@omega>
-References: <CAMuHMdXnGXGqy7B2-wujVxUPA9+3ZfYhcdKb6_jpDV4P7_KMxw@mail.gmail.com>
+	Thu, 7 Aug 2014 09:26:34 -0400
+X-IronPort-AV: E=Sophos;i="5.01,818,1400018400"; 
+   d="scan'208";a="88603470"
+Date: Thu, 7 Aug 2014 15:25:46 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+cc: kernel-janitors@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] drivers/atm/atmtcp.c: fix error return code
+In-Reply-To: <20140807091012.793ef5c7@thirdoffive.cmf.nrl.navy.mil>
+Message-ID: <alpine.DEB.2.10.1408071525280.2337@hadrien>
+References: <1407415749-19978-1-git-send-email-Julia.Lawall@lip6.fr> <1407415749-19978-3-git-send-email-Julia.Lawall@lip6.fr> <20140807091012.793ef5c7@thirdoffive.cmf.nrl.navy.mil>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdXnGXGqy7B2-wujVxUPA9+3ZfYhcdKb6_jpDV4P7_KMxw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 02:37:38PM +0200, Geert Uytterhoeven wrote:
-> Hi Alexander,
-> 
-> On Wed, Aug 6, 2014 at 6:46 PM, Linux Kernel Mailing List
-> <linux-kernel@vger.kernel.org> wrote:
-> > Gitweb:     http://git.kernel.org/linus/;a=commit;h=2c6bed7cfcd3f594ed9e4d6919fa2ebea2243d19
-> > Commit:     2c6bed7cfcd3f594ed9e4d6919fa2ebea2243d19
-> > Parent:     6c53823ae0e10e723131055e1e65dd6a328a228e
-> > Refname:    refs/heads/master
-> > Author:     Alexander Aring <alex.aring@gmail.com>
-> > AuthorDate: Fri Jul 11 10:24:18 2014 +0200
-> > Committer:  Marcel Holtmann <marcel@holtmann.org>
-> > CommitDate: Sat Jul 12 01:53:30 2014 +0200
-> >
-> >     6lowpan: introduce new net/6lowpan directory
-> >
-> >     This patch moves generic code which is used by bluetooth and ieee802154
-> >     6lowpan to a new net/6lowpan directory. This directory contains generic
-> >     6LoWPAN code which is shared between bluetooth and ieee802154 MAC-Layer.
-> >
-> >     This is the IPHC - "IPv6 Header Compression" format at the moment. Which
-> >     is described by RFC 6282 [0]. The BLTE 6LoWPAN draft describes that the
-> >     IPHC is the same format like IEEE 802.15.4, see [1].
-> >
-> >     Futuremore we can put more code into this directory which is shared
-> >     between BLTE and IEEE 802.15.4 6LoWPAN like RFC 6775 or the routing
-> >     protocol RPL RFC 6550.
-> >
-> >     To avoid naming conflicts I renamed 6lowpan-y to ieee802154_6lowpan-y
-> >     in net/ieee802154/Makefile.
-> >
-> >     [0] http://tools.ietf.org/html/rfc6282
-> >     [1] http://tools.ietf.org/html/draft-ietf-6lowpan-btle-12#section-3.2
-> >     [2] http://tools.ietf.org/html/rfc6775
-> >     [3] http://tools.ietf.org/html/rfc6550
-> >
-> >     Signed-off-by: Alexander Aring <alex.aring@gmail.com>
-> >     Acked-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
-> >     Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-> 
-> > --- /dev/null
-> > +++ b/net/6lowpan/Kconfig
-> > @@ -0,0 +1,6 @@
-> > +config 6LOWPAN
-> > +       bool "6LoWPAN Support"
-> 
-> Is there any specific reason 6LOWPAN is bool instead of tristate?
-> IPV6 can be modular.
-> 
-Indeed this can be modular. I see no special reason why it should not be
-tristate. Sorry, that I didn't see this. Can you please send patches to
-change it?
+On Thu, 7 Aug 2014, chas williams - CONTRACTOR wrote:
 
-Thanks.
+> On Thu,  7 Aug 2014 14:49:06 +0200
+> Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+>
+> > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> >
+> > Convert a zero return value on error to a negative one, as returned
+> > elsewhere in the function.
+> >
+> > A simplified version of the semantic match that finds this problem is as
+> > follows: (http://coccinelle.lip6.fr/)
+> ...
+> >
+> > diff --git a/drivers/atm/atmtcp.c b/drivers/atm/atmtcp.c
+> > index 0e3f8f9..c8e4fb4 100644
+> > --- a/drivers/atm/atmtcp.c
+> > +++ b/drivers/atm/atmtcp.c
+> > @@ -299,6 +299,7 @@ static int atmtcp_c_send(struct atm_vcc *vcc,struct sk_buff *skb)
+> >  	out_vcc = find_vcc(dev, ntohs(hdr->vpi), ntohs(hdr->vci));
+> >  	read_unlock(&vcc_sklist_lock);
+> >  	if (!out_vcc) {
+> > +		result = -ESRCH;
+>
+> This should probably be -EUNATCH to match the rest of the code.
 
-- Alex
+Thanks.  I will send a new version.
 
+julia
+
+> >  		atomic_inc(&vcc->stats->tx_err);
+> >  		goto done;
+> >  	}
+> >
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
