@@ -1,120 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092AbaHGJDr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 05:03:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46229 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682AbaHGJDp (ORCPT
+	id S1757223AbaHGJE2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 05:04:28 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:30628 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016AbaHGJE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 05:03:45 -0400
-Date: Thu, 7 Aug 2014 11:03:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Subject: nohz fail (was: perf related boot hang.)
-Message-ID: <20140807090333.GL19379@twins.programming.kicks-ass.net>
-References: <20140806143621.GA13832@redhat.com>
- <20140806161934.GF19379@twins.programming.kicks-ass.net>
- <20140806194656.GA11570@redhat.com>
+	Thu, 7 Aug 2014 05:04:26 -0400
+X-IronPort-AV: E=Sophos;i="5.01,816,1400025600"; 
+   d="scan'208";a="160212982"
+Message-ID: <53E34102.8030002@citrix.com>
+Date: Thu, 7 Aug 2014 10:04:02 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8PsaJ3itJd/8Ap6i"
-Content-Disposition: inline
-In-Reply-To: <20140806194656.GA11570@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
-X-Bad-Reply: References and In-Reply-To but no 'Re:' in Subject.
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>
+CC: <gregkh@linuxfoundation.org>, <boris.ostrovsky@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [PATCH v5] Fixes to Xen pciback for 3.17.
+References: <53DBB27D.2040203@citrix.com> <20140804184318.GB9009@laptop.dumpdata.com> <75613802.20140805104438@eikelenboom.it> <53E0A45C.4050400@citrix.com> <1985206568.20140805114433@eikelenboom.it> <20140805134930.GE13057@laptop.dumpdata.com> <1724263917.20140805160443@eikelenboom.it> <182103485.20140806205959@eikelenboom.it> <20140806191831.GB30062@laptop.dumpdata.com> <1081188855.20140806212559@eikelenboom.it> <20140806193916.GA31040@laptop.dumpdata.com>
+In-Reply-To: <20140806193916.GA31040@laptop.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/08/14 20:39, Konrad Rzeszutek Wilk wrote:
+> 
+> From 00a5b6e3c9ee2c2d605879bdaebc627fa640b024 Mon Sep 17 00:00:00 2001
+> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Date: Wed, 6 Aug 2014 16:21:32 -0400
+> Subject: [PATCH] xen/pciback: Restore configuration space when detaching from
+>  a guest.
+> 
+> The commit 9eea3f7695226f9af9992cebf8e98ac0ad78b277
+> "xen/pciback: Don't deadlock when unbinding." was using
+> the version of pci_reset_function which would lock the device lock.
+> That is no good as we can dead-lock. As such we swapped to using
+> the lock-less version and requiring that the callers
+> of 'pcistub_put_pci_dev' take the device lock. And as such
+> this bug got exposed.
+> 
+> Using the lock-less version is  OK, except that we tried to
+> use 'pci_restore_state' after the lock-less version of
+> __pci_reset_function_locked - which won't work as 'state_saved'
+> is set to false. Said 'state_saved' is a toggle boolean that
+> is to be used by the sequence of a) pci_save_state/pci_restore_state
+> or b) pci_load_and_free_saved_state/pci_restore_state. We don't
+> want to use a) as the guest might have messed up the PCI
+> configuration space and we want it to revert to the state
+> when the PCI device was binded to us. Therefore we pick
+> b) to restore the configuration space.
+> 
+> To still retain the PCI configuration space, we save it once
+> more and store it on our private copy to be restored when:
+>  - Device is unbinded from pciback
+>  - Device is detached from a guest.
 
---8PsaJ3itJd/8Ap6i
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This should be folded into the original patch.
 
-On Wed, Aug 06, 2014 at 03:46:56PM -0400, Dave Jones wrote:
-> This one happened during runtime, but I got a whole stack..
->=20
->=20
->  Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 2
->  CPU: 2 PID: 7538 Comm: kworker/u8:8 Not tainted 3.16.0+ #34
->  Workqueue: btrfs-endio-write normal_work_helper [btrfs]
->   ffff880244c06c88 000000001b486fe1 ffff880244c06bf0 ffffffff8a7f1e37
->   ffffffff8ac52a18 ffff880244c06c78 ffffffff8a7ef928 0000000000000010
->   ffff880244c06c88 ffff880244c06c20 000000001b486fe1 0000000000000000
->  Call Trace:
->   <NMI>  [<ffffffff8a7f1e37>] dump_stack+0x4e/0x7a
->   [<ffffffff8a7ef928>] panic+0xd4/0x207
->   [<ffffffff8a1450e8>] watchdog_overflow_callback+0x118/0x120
->   [<ffffffff8a186b0e>] __perf_event_overflow+0xae/0x350
->   [<ffffffff8a184f80>] ? perf_event_task_disable+0xa0/0xa0
->   [<ffffffff8a01a4cf>] ? x86_perf_event_set_period+0xbf/0x150
->   [<ffffffff8a187934>] perf_event_overflow+0x14/0x20
->   [<ffffffff8a020386>] intel_pmu_handle_irq+0x206/0x410
->   [<ffffffff8a01937b>] perf_event_nmi_handler+0x2b/0x50
->   [<ffffffff8a007b72>] nmi_handle+0xd2/0x390
->   [<ffffffff8a007aa5>] ? nmi_handle+0x5/0x390
->   [<ffffffff8a0cb7f8>] ? match_held_lock+0x8/0x1b0
->   [<ffffffff8a008062>] default_do_nmi+0x72/0x1c0
->   [<ffffffff8a008268>] do_nmi+0xb8/0x100
->   [<ffffffff8a7ff66a>] end_repeat_nmi+0x1e/0x2e
->   [<ffffffff8a0cb7f8>] ? match_held_lock+0x8/0x1b0
->   [<ffffffff8a0cb7f8>] ? match_held_lock+0x8/0x1b0
->   [<ffffffff8a0cb7f8>] ? match_held_lock+0x8/0x1b0
+[...]
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -105,7 +105,7 @@ static void pcistub_device_release(struct kref *kref)
+>  	 */
+>  	__pci_reset_function_locked(dev);
+>  	if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
 
-Ok so that part is just the watchdog triggering, so the below part is
-the screwy bit:
+I dislike testing for errors like this as it looks like it's testing for
+a boolean success.  Use
 
->   <<EOE>>  <IRQ>  [<ffffffff8a0ccd2f>] lock_acquired+0xaf/0x450
->   [<ffffffff8a0f74c5>] ? lock_hrtimer_base.isra.20+0x25/0x50
->   [<ffffffff8a7fc678>] _raw_spin_lock_irqsave+0x78/0x90
->   [<ffffffff8a0f74c5>] ? lock_hrtimer_base.isra.20+0x25/0x50
->   [<ffffffff8a0f74c5>] lock_hrtimer_base.isra.20+0x25/0x50
->   [<ffffffff8a0f7723>] hrtimer_try_to_cancel+0x33/0x1e0
->   [<ffffffff8a0f78ea>] hrtimer_cancel+0x1a/0x30
->   [<ffffffff8a109237>] tick_nohz_restart+0x17/0x90
->   [<ffffffff8a10a213>] __tick_nohz_full_check+0xc3/0x100
->   [<ffffffff8a10a25e>] nohz_full_kick_work_func+0xe/0x10
->   [<ffffffff8a17c884>] irq_work_run_list+0x44/0x70
->   [<ffffffff8a17c8da>] irq_work_run+0x2a/0x50
->   [<ffffffff8a0f700b>] update_process_times+0x5b/0x70
->   [<ffffffff8a109005>] tick_sched_handle.isra.21+0x25/0x60
->   [<ffffffff8a109b81>] tick_sched_timer+0x41/0x60
->   [<ffffffff8a0f7aa2>] __run_hrtimer+0x72/0x470
->   [<ffffffff8a109b40>] ? tick_sched_do_timer+0xb0/0xb0
->   [<ffffffff8a0f8707>] hrtimer_interrupt+0x117/0x270
->   [<ffffffff8a034357>] local_apic_timer_interrupt+0x37/0x60
->   [<ffffffff8a80010f>] smp_apic_timer_interrupt+0x3f/0x50
->   [<ffffffff8a7fe52f>] apic_timer_interrupt+0x6f/0x80
+   ret = pci_load_and_free_saved_state(...);
+   if (ret < 0)
+      ...
 
-And that looks like someone trying to cancel a timer from a timer, I
-guess that won't work, seeing how cancel will wait for the timer handler
-completion etc.
+And similarly, below.
 
-This is because of the fallback irq_work_run() in the tick
-(update_process_times).
+> -		dev_dbg(&dev->dev, "Could not reload PCI state\n");
+> +		dev_info(&dev->dev, "Could not reload PCI state\n");
 
+This should be dev_warn().
 
---8PsaJ3itJd/8Ap6i
-Content-Type: application/pgp-signature
+pci_load_and_free_saved_state() won't fail because we know the state is
+valid (since we saved it from the device originally).  Warning and
+skipping the restore is fine here (and below).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+>  	else
+>  		pci_restore_state(dev);
+>  
+> @@ -257,6 +257,7 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>  {
+>  	struct pcistub_device *psdev, *found_psdev = NULL;
+>  	unsigned long flags;
+> +	struct xen_pcibk_dev_data *dev_data;
+>  
+>  	spin_lock_irqsave(&pcistub_devices_lock, flags);
+>  
+> @@ -279,9 +280,25 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>  	 * (so it's ready for the next domain)
+>  	 */
+>  	device_lock_assert(&dev->dev);
+> -	__pci_reset_function_locked(dev);
+> -	pci_restore_state(dev);
+> -
+> +	dev_data = pci_get_drvdata(dev);
+> +	if (pci_load_and_free_saved_state(dev, &dev_data->pci_saved_state))
 
-iQIcBAEBAgAGBQJT40DlAAoJEHZH4aRLwOS6VVoQAKBrZU0xscMJT7ZwREp8tUxY
-/BinSYmEoPzU8Q4uYMBCpeu6wi0Q88cifFaa8DzBLeavaV5jd6Z9bmXFSQ9VwPow
-5C8iSJl5hCm8qICntLRjejIhfLMWi4sOtMM+yltAD/PxzXlB3by/5QemPHj56Q00
-vJshs0ElRfUhyY1OvScQWKRVjg1oXbN9yDEhFuhPLV2ZPZLd0cjOnZHmj5Rvy+Vj
-PGoWpj/QodB1cWsGgvSon1O7KGJJe55YEOJPBiwyzp7P6Jwr6FDwjM6DvReJaHP/
-vOpUNbAcAv2rfT5bbQgXVUflgHaRv+HslUhcSikOsubWQSSFXH3a64QYgw5Q0v4Y
-qN2nTYKXeGKLqZAiI4FMNxASMiiBbwSIdFgneDkwWRnRV00M0+jhrXcy1b4uyPhX
-v8aPQ3FGabZWmm/paU+PYfaku5lPFW2gXlHIJ6jKGOHutSM15dK81elMBTzkJAtc
-rOW5DGFLfMFI18eSPULn3Gs0bgaZ28QkeT5yJCbZ715Ejiyxojs0hwT6X3Xw0fz6
-Wlf6J7sdQIb4FMbOij78q/+uV0Wdxj5olludwKhgD0GX7wgpfwNUBtpCtLccvbBb
-hTSdWL39zApE9DLP1Dwh0q/vhaQMHK4KZOxro9wwIliOaxy5ePJN8pb48Z9EIKdM
-6vYdJ6F+t8jkf9uZXZWX
-=JkA4
------END PGP SIGNATURE-----
+This should be pci_load_saved_state() and then you can avoid the
+pci_save_state() below.
 
---8PsaJ3itJd/8Ap6i--
+> +		dev_info(&dev->dev, "Could not reload PCI state\n");
+
+dev_warn() also.
+
+> +	else {
+> +		__pci_reset_function_locked(dev);
+> +		/*
+> +		 * The usual sequence is pci_save_state & pci_restore_state
+> +		 * but the guest might have messed the configuration space up.
+> +		 * Use the initial version (when device was binded to us).
+
+s/binded/bound/
+
+> +		pci_restore_state(dev);
+> +		/*
+> +		 * The next steps are to reload the configuration for the
+> +		 * next time we bind & unbind to a guest - or unload from
+> +		 * pciback.
+> +		 */
+> +		pci_save_state(dev);
+> +		dev_data->pci_saved_state = pci_store_saved_state(dev);
+
+You don't need this if you don't free the original state above.
+
+> +	}
+>  	/* This disables the device. */
+>  	xen_pcibk_reset_device(dev);
+
+David
