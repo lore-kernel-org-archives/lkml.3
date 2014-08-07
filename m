@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382AbaHGLLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 07:11:12 -0400
-Received: from mail6.autoliv.com ([195.33.130.243]:34194 "EHLO
-	mail6.autoliv.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416AbaHGLLK convert rfc822-to-8bit (ORCPT
+	id S932086AbaHGLON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 07:14:13 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:52089 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754265AbaHGLOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 07:11:10 -0400
-From: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Fredrik Noring <fredrik.noring@autoliv.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: Oops: 17 SMP ARM (v3.16-rc2)
-Thread-Topic: Oops: 17 SMP ARM (v3.16-rc2)
-Thread-Index: Ac+QeuMIv4ry9FBDTNKHf1ccZ0ioqQAu3GGAAAUkuuD//+tKAIABUVuA//+RU9CAAMUXAP/CyllwgHui4wD//8wREAAM+aMA//6IPIA=
-Date: Thu, 7 Aug 2014 11:11:06 +0000
-Message-ID: <C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int>
-References: <C4A61A5CA4AD2246942F4BA6F20ACB804356534D@ALVA-EXMB04.alv.autoliv.int>
- <20140626140115.GQ32514@n2100.arm.linux.org.uk>
- <C4A61A5CA4AD2246942F4BA6F20ACB80435655E9@ALVA-EXMB04.alv.autoliv.int>
- <20140626151424.GT32514@n2100.arm.linux.org.uk>
- <20140627112151.GF32514@n2100.arm.linux.org.uk>
- <3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
- <20140627163108.GP32514@n2100.arm.linux.org.uk>
- <C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int>
- <20140806095012.GN30282@n2100.arm.linux.org.uk>
- <C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int>
- <20140806125550.GO30282@n2100.arm.linux.org.uk>
-In-Reply-To: <20140806125550.GO30282@n2100.arm.linux.org.uk>
-Accept-Language: sv-SE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.14.8.137]
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 7 Aug 2014 07:14:11 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140806214216.GA16530@kroah.com>
+References: <87k36ltoob.fsf@gmail.com> <20140806214216.GA16530@kroah.com>
+From: Evgeny Budilovsky <budevg@gmail.com>
+Date: Thu, 7 Aug 2014 14:13:50 +0300
+Message-ID: <CAGDhxoe4+jU=vCDedMC4VXfuNMmqP3-E1Lu3LLStbFLbd=BRSA@mail.gmail.com>
+Subject: Re: [PATCH] staging/lustre: use rcu_dereference to access rcu
+ protected current->real_parent field
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andreas Dilger <andreas.dilger@intel.com>,
+        Oleg Drokin <green@linuxhacker.ru>, Peng Tao <bergwolf@gmail.com>,
+        Lai Siyao <lai.siyao@intel.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell,
+On Thu, Aug 7, 2014 at 12:42 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Wed, Aug 06, 2014 at 09:22:43PM +0300, Evgeny Budilovsky wrote:
+>>
+>>
+>> Signed-off-by: Evgeny Budilovsky <budevg@gmail.com>
+>
+> Why is this needed?  Is the current code a bug?  Where was the reference
+> added?  Is this causing a problem without this patch applied?  How far
+> back should it be backported, if at all?
+>
+> I need lots more details here before I can take this patch, sorry.
 
-> Can you ascertain whether these stalls are a result of some failure of the
-> receive side or the transmit side - you should be able to tell that if you watch
-> the packet counts via ifconfig on the stalled card.  Also, it would be useful to
-> know whether the FEC interrupt was firing.
+Sorry for the little information in the previous mail.
 
-grep eth /proc/interrupts
-151:          0          0          0          0       GIC 151  2188000.ethernet
-166:    1205661          0          0          0  gpio-mxc   6  2188000.ethernet
+The motivation for this patch was to clean some of the warnings that
+were generated
+on drivers/staging by the sparse utility.
 
-The interrupt counter 166 increases regularly during the stalls.
-Ifconfig indicates that the RX and TX  counters do not increase.
+For this particular case the warning was
+staging/lustre/lustre/llite/lproc_llite.c:913:51: warning: dereference
+of noderef expression
 
-> I hope you have some kind of serial console on these cards?
+And this is since current->real_parent is accessed directly and not
+trough the rcu_dereference,
+which is the common way to access it throughout the kernel.
 
-Yes, indeed. Local stimuli seems to be able to unstall the network in a
-somewhat random fashion. Running e.g. ifconfig or ping locally may
-immediately or after up to about half a minute make the network responsive.
-However, it usually degenerates again to a complete stall within seconds.
-Without local stimuli the network does not appear to recover at all. The card
-does not even respond to pings (again, most often without any apparent
-error messages).
+This is not a critical bug and in the worst case the code here may
+cause miss of statistics counter increase.
+This is why I think it is not worth to backport the patch at all.
 
-Running both of the following commands in parallel from the FC server seems
-to trigger the problem within minutes (please note that the arm card stops
-responding to both ping and ssh):
+>
+> greg k-h
 
-# while :; do ssh arm-card echo Ok; done
-# ping arm-card
 
-We have noticed the same problem on both the i.MX6 and the Zynq cards
-(using KSZ9021 and Cadence GEM drivers). However, the number of
-iterations required to trigger the problem vary. Sometimes it might stall after
-less than 100, but in other cases the stalls begin after nearly 10000 iterations.
-Once stalled (and unstalled after stimuli), the network on that particular card
-degenerates a lot more often. Apart from the kernel, IP numbers and MAC
-addresses, the software configurations are identical between the Zynq and
-the i.MX6. Perhaps the fault is unrelated to the Freescale driver?
 
-> Hmm.  Okay, I think the first thing we need to do is to work out why the
-> silent stalls are happening.
-
-Would you have any ideas on what to check next?
-
-Best regards,
-Mattis Lorentzon
-***************************************************************
-Consider the environment before printing this message.
-
-To read Autoliv's Information and Confidentiality Notice, follow this link:
-http://www.autoliv.com/disclaimer.html
-***************************************************************
-
+-- 
+Best Regards,
+Evgeny
