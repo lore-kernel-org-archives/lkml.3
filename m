@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942AbaHGG7i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 02:59:38 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:52229 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100AbaHGG7h (ORCPT
+	id S1754131AbaHGHHy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 03:07:54 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:51650 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752936AbaHGHHx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 02:59:37 -0400
-Message-ID: <53E323D1.8020209@hitachi.com>
-Date: Thu, 07 Aug 2014 15:59:29 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Wang Nan <wangnan0@huawei.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Russell King <linux@arm.linux.org.uk>,
+	Thu, 7 Aug 2014 03:07:53 -0400
+References: <20140806083825.GA31711@dhcp-16-198.nay.redhat.com> <CAKv+Gu83+OtTkM+tEkB4AKpqHg2qGXtfAxC-pQq0u9ez+VjwaA@mail.gmail.com> <20140807012847.GB20295@darkstar.nay.redhat.com>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <20140807012847.GB20295@darkstar.nay.redhat.com>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7F205346-C978-4FC1-8812-2A37AFA06312@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        peifeiyue@huawei.com, Li Zefan <lizefan@huawei.com>
-Subject: Re: Re: [RFC PATCH] kprobes: arm: enable OPTPROBES for arm 32
-References: <1407223697-74911-1-git-send-email-wangnan0@huawei.com> <53E1B2A0.1040807@hitachi.com> <53E1CA11.1030206@huawei.com>
-In-Reply-To: <53E1CA11.1030206@huawei.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+        Matt Fleming <matt.fleming@intel.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Mark Salter <msalter@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Mailer: iPad Mail (11D257)
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: Re: [PATCH 1/2] UEFI arm64: add noefi boot param
+Date: Thu, 7 Aug 2014 09:07:51 +0200
+To: Dave Young <dyoung@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/06 15:24), Wang Nan wrote:
->>> +
->>> +static void
->>> +optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
->>> +{
->>> +	unsigned long flags;
->>> +
->>> +	regs->ARM_pc = (unsigned long)op->kp.addr;
->>> +	regs->ARM_ORIG_r0 = ~0UL;
->>> +
->>> +
->>> +	local_irq_save(flags);
->>> +	/* 
->>> +	 * This is possible if op is under delayed unoptimizing.
->>> +	 * We need simulate the replaced instruction.
->>> +	 */
->>> +	if (kprobe_disabled(&op->kp)) {
->>> +		struct kprobe *p = &op->kp;
->>> +		op->kp.ainsn.insn_singlestep(p->opcode, &p->ainsn, regs);
->>> +	} else {
->>> +		kprobe_handler(regs);
->>> +	}
->>
->> You don't need brace "{}" for one statement.
->> By the way, why don't you call opt_pre_handler()?
->>
+
+
+> On 7 aug. 2014, at 03:28, Dave Young <dyoung@redhat.com> wrote:
 > 
-> I use kprobe_handler because it handles instruction emulation.
+>> On 08/06/14 at 02:40pm, Ard Biesheuvel wrote:
+>>> On 6 August 2014 10:38, Dave Young <dyoung@redhat.com> wrote:
+>>> 
+>>> Adding a noefi boot param like in X86 to disable efi runtime services support.
+>>> 
+>>> This will be useful for debugging uefi problems. Also it will be useful
+>>> for later kexec/kdump work. Kexec on uefi support in X86 depends on a fixed vm
+>>> area specific for uefi runtime 1:1 mapping, kernel will switch to a different
+>>> page table for any uefi runtime callback in virtual mode. In arm64 similar
+>>> work probably is necessary. But kexec boot will just works with 'noefi' with
+>>> the limitaion of lacking runtime services. The runtime services is not critical
+>>> for kdump kernel for now. So as for kexec/kdump just leave the 1:1 mapping a
+>>> future work.
+>> 
+>> Can we find a better name? You will still be using the UEFI memory map
+>> rather than the DT memory nodes (which will have been deleted by the
+>> stub), and things like SMBIOS and ACPI that hinge off UEFI remain
+>> enabled as well.
+> Hi, Ard
 > 
-> In addition, I'm not very sure whether skipping the complex checks
-> in kprobe_handler() is safe or not.
+> Leif suggested efi=noruntime, I think that will be better to you?
+> 
 
-That seems to do same thing on x86. Then you should do something like
-the optimized_callback() on x86 as below.
+Yes, that sounds perfect to me
 
-static void
-optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
-{
-        struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-        unsigned long flags;
+Ard.
 
-        local_irq_save(flags);
-        if (kprobe_running()) {
-                kprobes_inc_nmissed_count(&op->kp);
-        } else {
-                /* Save skipped registers */
-                regs->ARM_pc = (unsigned long)op->kp.addr;
-                regs->ARM_ORIG_r0 = ~0UL;
-
-                __this_cpu_write(current_kprobe, &op->kp);
-                kcb->kprobe_status = KPROBE_HIT_ACTIVE;
-                opt_pre_handler(&op->kp, regs);
-                __this_cpu_write(current_kprobe, NULL);
-		op->kp.ainsn.insn_singlestep(op->kp.opcode, &op->kp.ainsn, regs);
-        }
-        local_irq_restore(flags);
-}
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> Thanks for review.
+> Dave
