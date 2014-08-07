@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425AbaHGWqX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 18:46:23 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:43719 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaHGWqW (ORCPT
+	id S1755016AbaHGXCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 19:02:10 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:5987 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088AbaHGXCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 18:46:22 -0400
-Date: Thu, 7 Aug 2014 15:46:18 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Su Tao <tao.su@intel.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        LKP <lkp@01.org>, Jet Chen <jet.chen@intel.com>
-Subject: Re: [sbc_gxx] kernel BUG at include/linux/mtd/map.h:148!
-Message-ID: <20140807224618.GQ3711@ld-irv-0074>
-References: <20140805135947.GA5593@localhost>
- <CAPDOMVgN=tc_o7E19ss4j5FAG4vpgUSzuUXYLSNGfpWCvPsAwA@mail.gmail.com>
+	Thu, 7 Aug 2014 19:02:06 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 07 Aug 2014 15:49:11 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>, <linux-pm@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH 0/3] Introduce of_match_machine() helper
+Date: Fri, 8 Aug 2014 02:01:52 +0300
+Message-ID: <1407452515-2390-1-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPDOMVgN=tc_o7E19ss4j5FAG4vpgUSzuUXYLSNGfpWCvPsAwA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Some mach-specific drivers that don't require their own node in the device tree
+(for example drivers/soc/*, cpufreq, cpuidle etc.) want to match on the device
+tree root compatible property instead. Instead of open-coding (and forgetting
+to call of_node_put on the root node) everywhere, add a helper to the OF core.
 
-On Tue, Aug 05, 2014 at 08:08:57PM -0400, Nick Krause wrote:
-> On Tue, Aug 5, 2014 at 9:59 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> > Hello,
-> >
-> > This is an old BUG that still lives in linux-next.
-> >
-> > [    4.284620] device id = 2670
-> > [    4.286157] SBC-GXx flash: IO:0x258-0x259 MEM:0xdc000-0xdffff
-> > [    4.287060] ------------[ cut here ]------------
-> > [    4.287722] kernel BUG at include/linux/mtd/map.h:148!
-> > [    4.288048] invalid opcode: 0000 [#1] PREEMPT SMP
->
-> I am new , here and will try to trace your issue on linus's tree
-> unless there is a major difference between Linus's tree and
-> linux-next.
-> If there is please let me known before I start tracing this.
+Tuomas Tynkkynen (3):
+  of: Add of_match_machine helper
+  soc/tegra: Use of_match_machine in soc_is_tegra()
+  cpuidle: big.LITTLE: Use of_match_machine
 
-This is a known issue, and Fengguang has reported this before:
+ drivers/cpuidle/cpuidle-big_little.c |  6 +-----
+ drivers/of/base.c                    | 21 +++++++++++++++++++++
+ drivers/soc/tegra/common.c           |  8 +-------
+ include/linux/of.h                   |  3 +++
+ 4 files changed, 26 insertions(+), 12 deletions(-)
 
-  http://lists.infradead.org/pipermail/linux-mtd/2014-March/053019.html
+-- 
+1.8.1.5
 
-I'm still not quite sure how to solve this one. It seems to be a
-limitation of the kconfig language.
-
-Brian
