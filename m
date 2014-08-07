@@ -1,100 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314AbaHGPNu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:13:50 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:52415 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757417AbaHGPNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:13:49 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: arm@kernel.org
-Cc: heiko@sntech.de, Sonny Rao <sonnyrao@chromium.org>,
-        linux-arm-kernel@lists.infradead.org, kever.yang@rock-chips.com,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dts: Fix the sort ordering of EHCI and HSIC in rk3288.dtsi
-Date: Thu, 07 Aug 2014 17:15:03 +0200
-Message-ID: <3091007.XRV1H99NFV@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S932376AbaHGPPU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:15:20 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:65408 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757448AbaHGPPS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 11:15:18 -0400
+From: "Das, Deepak" <Deepak_Das@mentor.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC] net: Replace del_timer() with del_timer_sync()
+Thread-Topic: [RFC] net: Replace del_timer() with del_timer_sync()
+Thread-Index: Ac+yB3SjT/x3bmrMQeWh1vRBTscZ4P//+YgAgACb568=
+Date: Thu, 7 Aug 2014 15:15:07 +0000
+Message-ID: <38E11AEFEB035045A1BA4C1177FBFC424A89BEBE@EU-MBX-03.mgc.mentorg.com>
+References: <53E31A47.9000407@mentor.com>,<1407394542.11943.21.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1407394542.11943.21.camel@edumazet-glaptop2.roam.corp.google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.68]
 Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 07 Aug 2014 15:15:16.0894 (UTC) FILETIME=[650543E0:01CFB252]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EHCI and HSIC device tree nodes were added in the wrong place.
-Fix them.
+I apologies for not explaining the scenario previously.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
- arch/arm/boot/dts/rk3288.dtsi | 40 ++++++++++++++++++++--------------------
- 1 file changed, 20 insertions(+), 20 deletions(-)
+sk_stop_timer() is used to stop the tcp timers with expiry callback
+tcp_write_timer(), tcp_delack_timer(), tcp_keepalive_timer(), ...
+del_timer() is used to stop the the timer in sk_stop_timer(), which
+might return a non-zero result even if one of these timer handler functions
+(tcp_write_timer(), tcp_delack_timer(), tcp_keepalive_timer(), ...)
+is already executing on another processor.
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index e7cb008..5950b0a 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -195,6 +195,26 @@
- 		status = "disabled";
- 	};
- 
-+	usb_host0_ehci: usb@ff500000 {
-+		compatible = "generic-ehci";
-+		reg = <0xff500000 0x100>;
-+		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru HCLK_USBHOST0>;
-+		clock-names = "usbhost";
-+		status = "disabled";
-+	};
-+
-+	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
-+
-+	usb_hsic: usb@ff5c0000 {
-+		compatible = "generic-ehci";
-+		reg = <0xff5c0000 0x100>;
-+		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru HCLK_HSIC>;
-+		clock-names = "usbhost";
-+		status = "disabled";
-+	};
-+
- 	i2c0: i2c@ff650000 {
- 		compatible = "rockchip,rk3288-i2c";
- 		reg = <0xff650000 0x1000>;
-@@ -251,26 +271,6 @@
- 		status = "disabled";
- 	};
- 
--	usb_host0_ehci: usb@ff500000 {
--		compatible = "generic-ehci";
--		reg = <0xff500000 0x100>;
--		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&cru HCLK_USBHOST0>;
--		clock-names = "usbhost";
--		status = "disabled";
--	};
--
--	/* NOTE: ohci@ff520000 doesn't actually work on hardware */
--
--	usb_hsic: usb@ff5c0000 {
--		compatible = "generic-ehci";
--		reg = <0xff5c0000 0x100>;
--		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&cru HCLK_HSIC>;
--		clock-names = "usbhost";
--		status = "disabled";
--	};
--
- 	gic: interrupt-controller@ffc01000 {
- 		compatible = "arm,gic-400";
- 		interrupt-controller;
--- 
-2.0.0.526.g5318336
+Following is the possible scenario :-
+on CPU #0: sk_stop_timer() decrements the sk->sk_refcnt if del_timer(timer)
+returns non-zero.
+
+on CPU #1: If a timer handler callback runs then it also calls sock_put(sk)
+which decrements sk->sk_refcnt and if the sk_refcnt becomes zero it frees the
+structure sock pointed to by sk.
+
+if the sk->sk_refcnt decrements twice then that will cause a mismatch in the
+number of "puts" and "holds" resulting in a malfunction of the sk->sk_refcnt mechanism.
+
+The solution is to use del_timer_sync() instead of del_timer()
+because del_timer_sync() will wait for timer handler functions to
+complete execution.
+
+yes, we are facing some memory corruption issues due to access of already released
+struct sock in our environment. Our memory corruption issue looks like memory locations
+being decremented which could be consistent with a rogue decrement of a reference counter.
+
+similar suggestion is also made by Dean Jenkins in rfcomm_dlc_clear_timer() and accepted by Marcel.
+http://www.spinics.net/lists/linux-bluetooth/msg51132.html
+
+with warm regards,
+Deepak Das 
+________________________________________
+From: Eric Dumazet [eric.dumazet@gmail.com]
+Sent: Thursday, August 07, 2014 12:25 PM
+To: Das, Deepak
+Cc: davem@davemloft.net; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [RFC] net: Replace del_timer() with del_timer_sync()
+
+On Thu, 2014-08-07 at 11:48 +0530, Deepak wrote:
+> on SMP system, del_timer() might return even if the timer function
+>      is running on other cpu so sk_stop_timer() will execute __sock_put()
+>      while timer is accessing the socket on other cpu causing
+> "use-after-free".
+>
+>      This commit replaces del_timer() with del_timer_sync() in
+> sk_stop_timer().
+>      del_timer_sync() will wait untill the timer function is not running in
+>      any other cpu hence making sk_stop_timer() SMP safe.
+>
+>      Signed-off-by: Deepak Das <deepak_das@mentor.com>
+>
+> diff --git a/net/core/sock.c b/net/core/sock.c
+> index 026e01f..491a84d 100644
+> --- a/net/core/sock.c
+> +++ b/net/core/sock.c
+> @@ -2304,7 +2304,7 @@ EXPORT_SYMBOL(sk_reset_timer);
+>
+>   void sk_stop_timer(struct sock *sk, struct timer_list* timer)
+>   {
+> -       if (del_timer(timer))
+> +       if (del_timer_sync(timer))
+>                  __sock_put(sk);
+>   }
+>   EXPORT_SYMBOL(sk_stop_timer);
+
+
+There is a reason del_timer() and del_timer_sync() both exist, and both
+are SMP safe.
+
+Here, caller might block timer handler from making progress, you are
+adding a deadlock condition.
+
+In this case, there is no reason to use del_timer_sync(), you didn't
+explain why you want this to happen in the first place.
+
+If you hit a bug somewhere, please share it so that we can root cause
+it.
+
+Thanks
 
 
