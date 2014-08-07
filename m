@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623AbaHGBvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 21:51:13 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:40619 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909AbaHGBvL (ORCPT
+	id S1755004AbaHGBwC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 21:52:02 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:25360 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754853AbaHGBv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 21:51:11 -0400
-Message-ID: <53E2DB4C.3060109@oracle.com>
-Date: Wed, 06 Aug 2014 21:50:04 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 6 Aug 2014 21:51:59 -0400
+From: Xiangliang Yu <yuxiangl@marvell.com>
+To: Dan Williams <dan.j.williams@intel.com>
+CC: "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "todd.e.brandt@intel.com" <todd.e.brandt@intel.com>,
+        "lukasz.dorau@intel.com" <lukasz.dorau@intel.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Date: Wed, 6 Aug 2014 18:50:48 -0700
+Subject: RE: [PATCH 1/3] libsas: modify SATA error handler
+Thread-Topic: [PATCH 1/3] libsas: modify SATA error handler
+Thread-Index: Ac+xmupyBztQPWHIQqeyq/TYNjNtLQARlxhw
+Message-ID: <F766E4F80769BD478052FB6533FA745D5944CE8DCE@SC-VEXCH4.marvell.com>
+References: <1398346047-10276-1-git-send-email-yxlraid@gmail.com>
+	<CAP0P+NWxxxnQH1e3tXcqwud7EaV4kRRMW46Ad-PWoMWFzgy1eg@mail.gmail.com>
+	<F766E4F80769BD478052FB6533FA745D57320C6287@SC-VEXCH4.marvell.com>
+	<CAPcyv4g7zMf4UGZPYFk30kh5J_-ot6kuesEjOZJTRbL_UkpQ9g@mail.gmail.com>
+	<F766E4F80769BD478052FB6533FA745D5944CE8C71@SC-VEXCH4.marvell.com>
+ <CAPcyv4jSr7O2Qxe-ac9anJUT4KksbdNuCGd=iBFy2CJF8G5Mkw@mail.gmail.com>
+In-Reply-To: <CAPcyv4jSr7O2Qxe-ac9anJUT4KksbdNuCGd=iBFy2CJF8G5Mkw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Christoph Lameter <cl@gentwo.org>
-CC: akpm@linux-foundation.org, Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org
-Subject: Re: vmstat: On demand vmstat workers V8
-References: <alpine.DEB.2.11.1407100903130.12483@gentwo.org> <53D31101.8000107@oracle.com> <53DFFD28.2030502@oracle.com> <alpine.DEB.2.11.1408050950390.16902@gentwo.org> <53E159F6.7080603@oracle.com> <alpine.DEB.2.11.1408060908580.4346@gentwo.org>
-In-Reply-To: <alpine.DEB.2.11.1408060908580.4346@gentwo.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-07_01:2014-08-06,2014-08-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1408070024
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s771q5Pg014942
 
-On 08/06/2014 10:12 AM, Christoph Lameter wrote:
-> On Tue, 5 Aug 2014, Sasha Levin wrote:
-> 
->> > I can easily trigger it by cranking up the cpu hotplug code. Just try to
->> > frequently offline and online cpus, it should reproduce quickly.
-> Thats what I thought.
-> 
-> The test was done with this fix applied right?
-
-Nope, I never saw the patch before. Applied it and the problem goes away. Thanks!
+Hi, Dan
+I haven't receive your review comments, could you send it to me again, thanks!
+PS: I can't login my gmail, so please send mail to this count.
 
 
-Thanks,
-Sasha
+-----Original Message-----
+From: Dan Williams [mailto:dan.j.williams@intel.com] 
+Sent: 2014å¹´8æœˆ7æ—¥ 1:22
+To: Xiangliang Yu
+Cc: JBottomley@parallels.com; tj@kernel.org; todd.e.brandt@intel.com; lukasz.dorau@intel.com; linux-ide@vger.kernel.org; linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/3] libsas: modify SATA error handler
+
+On Wed, Aug 6, 2014 at 3:50 AM, Xiangliang Yu <yuxiangl@marvell.com> wrote:
+> Hi, Dan & James
+> How about the patches about support for PM?
+> Two months had passed since I submitted the patches.
+> Thanks!
+>
+
+Did you address my review comments?
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
