@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128AbaHGPbz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:31:55 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:65189 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932133AbaHGPbx (ORCPT
+	id S932544AbaHGPcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:32:14 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:60296 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932330AbaHGPcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:31:53 -0400
-Date: Thu, 7 Aug 2014 21:01:36 +0530
-From: Srikrishan Malik <srikrishanmalik@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: greg@kroah.com, andreas.dilger@intel.com, oleg.drokin@intel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/12] staging: lustre: Fix misplaced opening brace
- warnings
-Message-ID: <20140807153136.GB4185@mordor.in.ibm.com>
-Mail-Followup-To: Srikrishan Malik <srikrishanmalik@gmail.com>,
-	Dan Carpenter <dan.carpenter@oracle.com>, greg@kroah.com,
-	andreas.dilger@intel.com, oleg.drokin@intel.com,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>
- <1407345182-709-10-git-send-email-srikrishanmalik@gmail.com>
- <20140806201813.GE4856@mwanda>
+	Thu, 7 Aug 2014 11:32:10 -0400
+Date: Thu, 7 Aug 2014 11:32:07 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Rob Herring <robh@kernel.org>
+cc: Max Filippov <jcmvbkbc@gmail.com>, Kees Cook <keescook@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mark Salter <msalter@redhat.com>,
+        Liu hua <sdu.liu@huawei.com>, Rabin Vincent <rabin@rab.in>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/7] arm: use generic fixmap.h
+In-Reply-To: <CAL_JsqJgRFYTfdsY48C9QreBH=VcM3t-9AzFSV8oXLB5tVGjUw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1408071131170.6061@knanqh.ubzr>
+References: <1407353564-21478-1-git-send-email-keescook@chromium.org> <1407353564-21478-2-git-send-email-keescook@chromium.org> <CAMo8Bf+uq1vhqb7KxnNFHTZ53C1mtw_Do6dn09j7jjw_7MWF_Q@mail.gmail.com>
+ <CAL_JsqJgRFYTfdsY48C9QreBH=VcM3t-9AzFSV8oXLB5tVGjUw@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140806201813.GE4856@mwanda>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 11:18:13PM +0300, Dan Carpenter wrote:
-> On Wed, Aug 06, 2014 at 10:43:00PM +0530, Srikrishan Malik wrote:
-> > diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-> > index c03d77c9c5b8..09209171b50c 100644
-> > --- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-> > +++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-> > @@ -785,12 +785,12 @@ int mdc_enqueue(struct obd_export *exp, struct ldlm_enqueue_info *einfo,
-> >  	__u64		  flags, saved_flags = extra_lock_flags;
-> >  	int		    rc;
-> >  	struct ldlm_res_id res_id;
-> > -	static const ldlm_policy_data_t lookup_policy =
-> > -			    { .l_inodebits = { MDS_INODELOCK_LOOKUP } };
-> > -	static const ldlm_policy_data_t update_policy =
-> > -			    { .l_inodebits = { MDS_INODELOCK_UPDATE } };
-> > -	static const ldlm_policy_data_t layout_policy =
-> > -			    { .l_inodebits = { MDS_INODELOCK_LAYOUT } };
-> > +	static const ldlm_policy_data_t lookup_policy = {
-> > +				.l_inodebits = { MDS_INODELOCK_LOOKUP } };
-> > +	static const ldlm_policy_data_t update_policy = {
-> > +				.l_inodebits = { MDS_INODELOCK_UPDATE } };
-> > +	static const ldlm_policy_data_t layout_policy = {
-> > +				.l_inodebits = { MDS_INODELOCK_LAYOUT } };
-> >  	static const ldlm_policy_data_t getxattr_policy = {
-> >  			      .l_inodebits = { MDS_INODELOCK_XATTR } };
-> >  	ldlm_policy_data_t const *policy = &lookup_policy;
+On Thu, 7 Aug 2014, Rob Herring wrote:
+
+> On Thu, Aug 7, 2014 at 10:15 AM, Max Filippov <jcmvbkbc@gmail.com> wrote:
+> > Hi,
+> >
+> > On Wed, Aug 6, 2014 at 11:32 PM, Kees Cook <keescook@chromium.org> wrote:
+> >> ARM is different from other architectures in that fixmap pages are indexed
+> >> with a positive offset from FIXADDR_START.  Other architectures index with
+> >> a negative offset from FIXADDR_TOP.  In order to use the generic fixmap.h
+> >
+> > Does anybody know if there's any reason why generic fixmap.h uses negative
+> > offsets? It complicates things with no obvious benefit if you e.g. try to align
+> > virtual address in the fixmap region with physical page color (that's why I've
+> > switched xtensa to positive fixmap addressing in v3.17).
 > 
-> That looks silly before and after.  Everything is indented in a funny
-> way.
+> No, but each arch doing it differently is even more annoying.
 
-Is this better:
+Why not switching everybody to positive offsets then?
 
-	static const ldlm_policy_data_t lookup_policy = {                       
-				.l_inodebits = { MDS_INODELOCK_LOOKUP }         
-	};
 
-> 
-> regards,
-> dan carpenter
+Nicolas
