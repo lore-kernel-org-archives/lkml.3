@@ -1,108 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157AbaHGLC7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 07:02:59 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:43882 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754566AbaHGLC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 07:02:57 -0400
-Date: Thu, 7 Aug 2014 16:32:45 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] wireless: wlcore: Use devm_kzalloc
-Message-ID: <20140807110244.GA10257@himangi-Dell>
+	id S932217AbaHGLDk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 07:03:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60777 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932077AbaHGLDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 07:03:37 -0400
+Date: Thu, 7 Aug 2014 13:03:32 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, x86@kernel.org,
+        Len Brown <lenb@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: tip/x86/apic (was: Re: [Bugfix 1/2] x86, irq, PCI: Keep IRQ
+ assignment for PCI devices during suspend/hibernation)
+Message-ID: <20140807110332.GB10043@pd.tnic>
+References: <1407209178-18644-1-git-send-email-jiang.liu@linux.intel.com>
+ <1407209178-18644-2-git-send-email-jiang.liu@linux.intel.com>
+ <20140805183729.GA23068@pd.tnic>
+ <53E201FC.6010102@linux.intel.com>
+ <20140806170937.GA4895@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140806170937.GA4895@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of devm_kzalloc and does away with the
-kfrees in the probe and remove functions. Also, a couple of labels and
-the initial assignment of the ret variable in the probe function are
-removed.
+On Wed, Aug 06, 2014 at 07:09:37PM +0200, Borislav Petkov wrote:
+> On Wed, Aug 06, 2014 at 06:22:52PM +0800, Jiang Liu wrote:
+> > 	I have prepared a tree for you at
+> > https://github.com/jiangliu/linux.git suspend2
+> > 
+> > It's based on tip/master and includes:
+> > 1) the patch to fix warning caused  by USB controller
+> > 2) these two patches to fix failure of suspend/hibernation
+> > 
+> > Could you please help to check whether suspend/hibernation works as
+> > expect on your platforms?
+> 
+> Seems to work - just did 10-ish successful s/r cycles. The IO page
+> faults are still there though.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/net/wireless/ti/wlcore/spi.c | 20 ++++++--------------
- 1 file changed, 6 insertions(+), 14 deletions(-)
+Ok, tip guys, so Jörg and I talked about the IOPFs a bit and we feel
+that while they still need to be taken care of, they're harmless and
+there's no need to hold off tip/x86/apic anymore unless there are other
+problems with it.
 
-diff --git a/drivers/net/wireless/ti/wlcore/spi.c b/drivers/net/wireless/ti/wlcore/spi.c
-index 392c882..69601f6 100644
---- a/drivers/net/wireless/ti/wlcore/spi.c
-+++ b/drivers/net/wireless/ti/wlcore/spi.c
-@@ -327,23 +327,22 @@ static int wl1271_probe(struct spi_device *spi)
- 	struct wl12xx_spi_glue *glue;
- 	struct wlcore_platdev_data pdev_data;
- 	struct resource res[1];
--	int ret = -ENOMEM;
-+	int ret;
- 
- 	memset(&pdev_data, 0x00, sizeof(pdev_data));
- 
- 	pdev_data.pdata = dev_get_platdata(&spi->dev);
- 	if (!pdev_data.pdata) {
- 		dev_err(&spi->dev, "no platform data\n");
--		ret = -ENODEV;
--		goto out;
-+		return -ENODEV;
- 	}
- 
- 	pdev_data.if_ops = &spi_ops;
- 
--	glue = kzalloc(sizeof(*glue), GFP_KERNEL);
-+	glue = devm_kzalloc(&spi->dev, sizeof(*glue), GFP_KERNEL);
- 	if (!glue) {
- 		dev_err(&spi->dev, "can't allocate glue\n");
--		goto out;
-+		return -ENOMEM;
- 	}
- 
- 	glue->dev = &spi->dev;
-@@ -357,14 +356,13 @@ static int wl1271_probe(struct spi_device *spi)
- 	ret = spi_setup(spi);
- 	if (ret < 0) {
- 		dev_err(glue->dev, "spi_setup failed\n");
--		goto out_free_glue;
-+		return ret;
- 	}
- 
- 	glue->core = platform_device_alloc("wl12xx", PLATFORM_DEVID_AUTO);
- 	if (!glue->core) {
- 		dev_err(glue->dev, "can't allocate platform_device\n");
--		ret = -ENOMEM;
--		goto out_free_glue;
-+		return -ENOMEM;
- 	}
- 
- 	glue->core->dev.parent = &spi->dev;
-@@ -398,11 +396,6 @@ static int wl1271_probe(struct spi_device *spi)
- 
- out_dev_put:
- 	platform_device_put(glue->core);
--
--out_free_glue:
--	kfree(glue);
--
--out:
- 	return ret;
- }
- 
-@@ -411,7 +404,6 @@ static int wl1271_remove(struct spi_device *spi)
- 	struct wl12xx_spi_glue *glue = spi_get_drvdata(spi);
- 
- 	platform_device_unregister(glue->core);
--	kfree(glue);
- 
- 	return 0;
- }
+So, from my POV, it can go in so that it doesn't miss this merge window
+and we'd deal with the IOPFs later.
+
+I'm guessing Jiang needs to give you some updated versions of patches
+from this thread for the branch to be complete. Jiang, please add my
+
+Tested-by: Borislav Petkov <bp@suse.de>
+
+for those.
+
+Thanks to everyone involved.
+
 -- 
-1.9.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
