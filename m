@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062AbaHGSWd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 14:22:33 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:63474 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976AbaHGSWa (ORCPT
+	id S1751029AbaHGSZA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 14:25:00 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:46483 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003AbaHGSWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 14:22:30 -0400
+	Thu, 7 Aug 2014 14:22:32 -0400
 From: mathieu.poirier@linaro.org
 To: linus.walleij@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
         robherring2@gmail.com, daniel.thompson@linaro.org
@@ -17,9 +17,9 @@ Cc: mathieu.poirier@linaro.org, arve@android.com, john.stultz@linaro.org,
         r.sengupta@samsung.com, robbelibobban@gmail.com,
         Tony.Armitstead@arm.com, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/10 v3] coresight: add CoreSight core layer framework
-Date: Thu,  7 Aug 2014 12:21:37 -0600
-Message-Id: <1407435706-19441-2-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 02/10 v3] coresight-tmc: add CoreSight TMC driver
+Date: Thu,  7 Aug 2014 12:21:38 -0600
+Message-Id: <1407435706-19441-3-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407435706-19441-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1407435706-19441-1-git-send-email-mathieu.poirier@linaro.org>
@@ -29,173 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pratik Patel <pratikp@codeaurora.org>
 
-CoreSight components are compliant with the ARM CoreSight
-architecture specification and can be connected in various
-topologies to suite a particular SoCs tracing needs. These trace
-components can generally be classified as sources, links and
-sinks. Trace data produced by one or more sources flows through
-the intermediate links connecting the source to the currently
-selected sink.
+This driver manages CoreSight TMC (Trace Memory Controller) which
+can act as a link or a sink depending upon its configuration. It
+can present itself as an ETF (Embedded Trace FIFO) or ETR
+(Embedded Trace Router).
 
-CoreSight framework provides an interface for the CoreSight trace
-drivers to register themselves with. It's intended to build up a
-topological view of the CoreSight components and configure the
-right series of components on user input via debugfs.
-
-For eg., when enabling a source, framework builds up a path
-consisting of all the components connecting the source to the
-currently selected sink(s) and enables all of them.
-
-The framework also supports switching between available sinks
-and also provides status information to user space applications
-through the debugfs interface.
+ETF when configured in circular buffer mode acts as a trace
+collection sink. When configured in HW fifo mode it acts as link.
+ETR always acts as a sink and can be used to route data to memory
+allocated in RAM.
 
 Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
 Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- arch/arm/Kconfig.debug             |   9 +
- drivers/Makefile                   |   1 +
- drivers/amba/bus.c                 |   2 +-
- drivers/coresight/Makefile         |   5 +
- drivers/coresight/coresight-priv.h |  63 ++++
- drivers/coresight/coresight.c      | 638 +++++++++++++++++++++++++++++++++++++
- drivers/coresight/of_coresight.c   | 202 ++++++++++++
- include/linux/amba/bus.h           |   1 +
- include/linux/coresight.h          | 200 ++++++++++++
- 9 files changed, 1120 insertions(+), 1 deletion(-)
- create mode 100644 drivers/coresight/Makefile
- create mode 100644 drivers/coresight/coresight-priv.h
- create mode 100644 drivers/coresight/coresight.c
- create mode 100644 drivers/coresight/of_coresight.c
- create mode 100644 include/linux/coresight.h
+ arch/arm/Kconfig.debug            |  10 +
+ drivers/coresight/Makefile        |   1 +
+ drivers/coresight/coresight-tmc.c | 740 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 751 insertions(+)
+ create mode 100644 drivers/coresight/coresight-tmc.c
 
 diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 8f90595..c04d0d9 100644
+index c04d0d9..92f233f 100644
 --- a/arch/arm/Kconfig.debug
 +++ b/arch/arm/Kconfig.debug
-@@ -1257,4 +1257,13 @@ config DEBUG_SET_MODULE_RONX
- 	  against certain classes of kernel exploits.
- 	  If in doubt, say "N".
- 
-+menuconfig CORESIGHT
-+	bool "CoreSight Tracing Support"
-+	select ARM_AMBA
+@@ -1266,4 +1266,14 @@ menuconfig CORESIGHT
+ 	  a topological view of the CoreSight components based on a DT
+ 	  specification and configure the right serie of components when a
+ 	  trace source gets enabled.
++
++if CORESIGHT
++
++config CORESIGHT_LINKS_AND_SINKS
++	bool "CoreSight Link and Sink drivers"
 +	help
-+	  This framework provides a kernel interface for the CoreSight debug
-+	  and trace drivers to register themselves with. It's intended to build
-+	  a topological view of the CoreSight components based on a DT
-+	  specification and configure the right serie of components when a
-+	  trace source gets enabled.
++	  This enables support for CoreSight link and sink drivers that are
++	  responsible for transporting and collecting the trace data
++	  respectively.
++endif
  endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index f98b50d..fb58a94 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -158,3 +158,4 @@ obj-$(CONFIG_NTB)		+= ntb/
- obj-$(CONFIG_FMC)		+= fmc/
- obj-$(CONFIG_POWERCAP)		+= powercap/
- obj-$(CONFIG_MCB)		+= mcb/
-+obj-$(CONFIG_CORESIGHT)		+= coresight/
-diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-index 3cf61a1..131258b 100644
---- a/drivers/amba/bus.c
-+++ b/drivers/amba/bus.c
-@@ -327,7 +327,7 @@ int amba_device_add(struct amba_device *dev, struct resource *parent)
- 
- 		amba_put_disable_pclk(dev);
- 
--		if (cid == AMBA_CID)
-+		if (cid == AMBA_CID || cid == CORESIGHT_CID)
- 			dev->periphid = pid;
- 
- 		if (!dev->periphid)
 diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
-new file mode 100644
-index 0000000..218e3b5
---- /dev/null
+index 218e3b5..16e26c5 100644
+--- a/drivers/coresight/Makefile
 +++ b/drivers/coresight/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for CoreSight drivers.
-+#
-+obj-$(CONFIG_CORESIGHT) += coresight.o
-+obj-$(CONFIG_OF) += of_coresight.o
-diff --git a/drivers/coresight/coresight-priv.h b/drivers/coresight/coresight-priv.h
+@@ -3,3 +3,4 @@
+ #
+ obj-$(CONFIG_CORESIGHT) += coresight.o
+ obj-$(CONFIG_OF) += of_coresight.o
++obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o
+diff --git a/drivers/coresight/coresight-tmc.c b/drivers/coresight/coresight-tmc.c
 new file mode 100644
-index 0000000..241a542
+index 0000000..667c32c
 --- /dev/null
-+++ b/drivers/coresight/coresight-priv.h
-@@ -0,0 +1,63 @@
-+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef _CORESIGHT_PRIV_H
-+#define _CORESIGHT_PRIV_H
-+
-+#include <linux/bitops.h>
-+#include <linux/io.h>
-+#include <linux/coresight.h>
-+
-+/*
-+ * Coresight management registers (0xf00-0xfcc)
-+ * 0xfa0 - 0xfa4: Management	registers in PFTv1.0
-+ *		  Trace		registers in PFTv1.1
-+ */
-+#define CORESIGHT_ITCTRL	0xf00
-+#define CORESIGHT_CLAIMSET	0xfa0
-+#define CORESIGHT_CLAIMCLR	0xfa4
-+#define CORESIGHT_LAR		0xfb0
-+#define CORESIGHT_LSR		0xfb4
-+#define CORESIGHT_AUTHSTATUS	0xfb8
-+#define CORESIGHT_DEVID		0xfc8
-+#define CORESIGHT_DEVTYPE	0xfcc
-+
-+#define TIMEOUT_US		100
-+#define BMVAL(val, lsb, msb)	((val & GENMASK(msb, lsb)) >> lsb)
-+
-+static inline void CS_LOCK(void __iomem *addr)
-+{
-+	do {
-+		/* wait for things to settle */
-+		mb();
-+		writel_relaxed(0x0, addr + CORESIGHT_LAR);
-+	} while (0);
-+}
-+
-+static inline void CS_UNLOCK(void __iomem *addr)
-+{
-+	do {
-+		writel_relaxed(CORESIGHT_UNLOCK, addr + CORESIGHT_LAR);
-+		/* make sure eveyone has seen this */
-+		mb();
-+	} while (0);
-+}
-+
-+#ifdef CONFIG_CORESIGHT_SOURCE_ETM
-+extern unsigned int etm_readl_cp14(u32 off);
-+extern void etm_writel_cp14(u32 val, u32 off);
-+#else
-+static inline unsigned int etm_readl_cp14(u32 off) { return 0; }
-+static inline void etm_writel_cp14(u32 val, u32 off) {}
-+#endif
-+
-+#endif
-diff --git a/drivers/coresight/coresight.c b/drivers/coresight/coresight.c
-new file mode 100644
-index 0000000..317806c
---- /dev/null
-+++ b/drivers/coresight/coresight.c
-@@ -0,0 +1,638 @@
++++ b/drivers/coresight/coresight-tmc.c
+@@ -0,0 +1,740 @@
 +/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -215,1051 +102,727 @@ index 0000000..317806c
 +#include <linux/device.h>
 +#include <linux/io.h>
 +#include <linux/err.h>
-+#include <linux/export.h>
++#include <linux/fs.h>
++#include <linux/miscdevice.h>
++#include <linux/uaccess.h>
 +#include <linux/slab.h>
-+#include <linux/semaphore.h>
++#include <linux/dma-mapping.h>
++#include <linux/spinlock.h>
 +#include <linux/clk.h>
++#include <linux/of.h>
 +#include <linux/coresight.h>
-+#include <linux/of_platform.h>
-+#include <linux/debugfs.h>
-+#include <linux/delay.h>
++#include <linux/amba/bus.h>
 +
 +#include "coresight-priv.h"
 +
-+struct dentry *cs_debugfs_parent = NULL;
++#define TMC_RSZ			0x004
++#define TMC_STS			0x00c
++#define TMC_RRD			0x010
++#define TMC_RRP			0x014
++#define TMC_RWP			0x018
++#define TMC_TRG			0x01c
++#define TMC_CTL			0x020
++#define TMC_RWD			0x024
++#define TMC_MODE		0x028
++#define TMC_LBUFLEVEL		0x02c
++#define TMC_CBUFLEVEL		0x030
++#define TMC_BUFWM		0x034
++#define TMC_RRPHI		0x038
++#define TMC_RWPHI		0x03c
++#define TMC_AXICTL		0x110
++#define TMC_DBALO		0x118
++#define TMC_DBAHI		0x11c
++#define TMC_FFSR		0x300
++#define TMC_FFCR		0x304
++#define TMC_PSCR		0x308
++#define TMC_ITMISCOP0		0xee0
++#define TMC_ITTRFLIN		0xee8
++#define TMC_ITATBDATA0		0xeec
++#define TMC_ITATBCTR2		0xef0
++#define TMC_ITATBCTR1		0xef4
++#define TMC_ITATBCTR0		0xef8
 +
-+static LIST_HEAD(coresight_orph_conns);
-+static LIST_HEAD(coresight_devs);
-+static DEFINE_SEMAPHORE(coresight_semaphore);
++/** register description **/
++/* TMC_CTL - 0x020 */
++#define TMC_CTL_CAPT_EN		BIT(0)
++/* TMC_STS - 0x00C */
++#define TMC_STS_TRIGGERED	BIT(1)
++/* TMC_AXICTL - 0x110 */
++#define TMC_AXICTL_PROT_CTL_B0	BIT(0)
++#define TMC_AXICTL_PROT_CTL_B1	BIT(1)
++#define TMC_AXICTL_SCT_GAT_MODE	BIT(7)
++#define TMC_AXICTL_WR_BURST_LEN 0xF00
++/* TMC_FFCR - 0x304 */
++#define TMC_FFCR_EN_FMT		BIT(0)
++#define TMC_FFCR_EN_TI		BIT(1)
++#define TMC_FFCR_FON_FLIN	BIT(4)
++#define TMC_FFCR_FON_TRIG_EVT	BIT(5)
++#define TMC_FFCR_FLUSHMAN	BIT(6)
++#define TMC_FFCR_TRIGON_TRIGIN	BIT(8)
++#define TMC_FFCR_STOP_ON_FLUSH	BIT(12)
 +
-+static int coresight_find_link_inport(struct coresight_device *csdev)
++#define TMC_STS_TRIGGERED_BIT	2
++#define TMC_FFCR_FLUSHMAN_BIT	6
++
++enum tmc_config_type {
++	TMC_CONFIG_TYPE_ETB,
++	TMC_CONFIG_TYPE_ETR,
++	TMC_CONFIG_TYPE_ETF,
++};
++
++enum tmc_mode {
++	TMC_MODE_CIRCULAR_BUFFER,
++	TMC_MODE_SOFTWARE_FIFO,
++	TMC_MODE_HARDWARE_FIFO,
++};
++
++enum tmc_mem_intf_width {
++	TMC_MEM_INTF_WIDTH_32BITS	= 0x2,
++	TMC_MEM_INTF_WIDTH_64BITS	= 0x3,
++	TMC_MEM_INTF_WIDTH_128BITS	= 0x4,
++	TMC_MEM_INTF_WIDTH_256BITS	= 0x5,
++};
++
++struct tmc_drvdata {
++	void __iomem		*base;
++	struct device		*dev;
++	struct coresight_device	*csdev;
++	struct miscdevice	miscdev;
++	struct clk		*clk;
++	spinlock_t		spinlock;
++	int			read_count;
++	bool			reading;
++	char			*buf;
++	dma_addr_t		paddr;
++	void __iomem		*vaddr;
++	u32			size;
++	bool			enable;
++	enum tmc_config_type	config_type;
++	u32			trigger_cntr;
++};
++
++static void tmc_wait_for_ready(struct tmc_drvdata *drvdata)
 +{
-+	int i;
-+	struct coresight_device *parent;
-+	struct coresight_connection *conn;
-+
-+	parent = container_of(csdev->path_link.next, struct coresight_device,
-+			     path_link);
-+	for (i = 0; i < parent->nr_conns; i++) {
-+		conn = &parent->conns[i];
-+		if (conn->child_dev == csdev)
-+			return conn->child_port;
-+	}
-+
-+	pr_err("coresight: couldn't find inport, parent: %d, child: %d\n",
-+	       parent->id, csdev->id);
-+	return 0;
++	/* Ensure formatter, unformatter and hardware fifo are empty */
++	coresight_timeout(drvdata->base, TMC_STS, TMC_STS_TRIGGERED_BIT, 1);
 +}
 +
-+static int coresight_find_link_outport(struct coresight_device *csdev)
++static void tmc_flush_and_stop(struct tmc_drvdata *drvdata)
 +{
-+	int i;
-+	struct coresight_device *child;
-+	struct coresight_connection *conn;
++	u32 ffcr;
 +
-+	child = container_of(csdev->path_link.prev, struct coresight_device,
-+			      path_link);
-+	for (i = 0; i < csdev->nr_conns; i++) {
-+		conn = &csdev->conns[i];
-+		if (conn->child_dev == child)
-+			return conn->outport;
-+	}
++	ffcr = readl_relaxed(drvdata->base + TMC_FFCR);
++	ffcr |= TMC_FFCR_STOP_ON_FLUSH;
++	writel_relaxed(ffcr, drvdata->base + TMC_FFCR);
++	ffcr |= TMC_FFCR_FLUSHMAN;
++	writel_relaxed(ffcr, drvdata->base + TMC_FFCR);
++	/* Ensure flush completes */
++	coresight_timeout(drvdata->base, TMC_FFCR, TMC_FFCR_FLUSHMAN_BIT, 0);
 +
-+	pr_err("coresight: couldn't find outport, parent: %d, child: %d\n",
-+	       csdev->id, child->id);
-+	return 0;
++	tmc_wait_for_ready(drvdata);
 +}
 +
-+static int coresight_enable_sink(struct coresight_device *csdev)
++static void tmc_enable_hw(struct tmc_drvdata *drvdata)
++{
++	writel_relaxed(TMC_CTL_CAPT_EN, drvdata->base + TMC_CTL);
++}
++
++static void tmc_disable_hw(struct tmc_drvdata *drvdata)
++{
++	writel_relaxed(0x0, drvdata->base + TMC_CTL);
++}
++
++static void tmc_etb_enable_hw(struct tmc_drvdata *drvdata)
++{
++	/* Zero out the memory to help with debug */
++	memset(drvdata->buf, 0, drvdata->size);
++
++	CS_UNLOCK(drvdata->base);
++
++	writel_relaxed(TMC_MODE_CIRCULAR_BUFFER, drvdata->base + TMC_MODE);
++	writel_relaxed(TMC_FFCR_EN_FMT | TMC_FFCR_EN_TI |
++		       TMC_FFCR_FON_FLIN | TMC_FFCR_FON_TRIG_EVT |
++		       TMC_FFCR_TRIGON_TRIGIN,
++		       drvdata->base + TMC_FFCR);
++
++	writel_relaxed(drvdata->trigger_cntr, drvdata->base + TMC_TRG);
++	tmc_enable_hw(drvdata);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void tmc_etr_enable_hw(struct tmc_drvdata *drvdata)
++{
++	u32 axictl;
++
++	/* Zero out the memory to help with debug */
++	memset(drvdata->vaddr, 0, drvdata->size);
++
++	CS_UNLOCK(drvdata->base);
++
++	writel_relaxed(drvdata->size / 4, drvdata->base + TMC_RSZ);
++	writel_relaxed(TMC_MODE_CIRCULAR_BUFFER, drvdata->base + TMC_MODE);
++
++	axictl = readl_relaxed(drvdata->base + TMC_AXICTL);
++	axictl |= TMC_AXICTL_WR_BURST_LEN;
++	writel_relaxed(axictl, drvdata->base + TMC_AXICTL);
++	axictl &= ~TMC_AXICTL_SCT_GAT_MODE;
++	writel_relaxed(axictl, drvdata->base + TMC_AXICTL);
++	axictl = (axictl &
++		  ~(TMC_AXICTL_PROT_CTL_B0 | TMC_AXICTL_PROT_CTL_B1)) |
++		  TMC_AXICTL_PROT_CTL_B1;
++	writel_relaxed(axictl, drvdata->base + TMC_AXICTL);
++
++	writel_relaxed(drvdata->paddr, drvdata->base + TMC_DBALO);
++	writel_relaxed(0x0, drvdata->base + TMC_DBAHI);
++	writel_relaxed(TMC_FFCR_EN_FMT | TMC_FFCR_EN_TI |
++		       TMC_FFCR_FON_FLIN | TMC_FFCR_FON_TRIG_EVT |
++		       TMC_FFCR_TRIGON_TRIGIN,
++		       drvdata->base + TMC_FFCR);
++	writel_relaxed(drvdata->trigger_cntr, drvdata->base + TMC_TRG);
++	tmc_enable_hw(drvdata);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void tmc_etf_enable_hw(struct tmc_drvdata *drvdata)
++{
++	CS_UNLOCK(drvdata->base);
++
++	writel_relaxed(TMC_MODE_HARDWARE_FIFO, drvdata->base + TMC_MODE);
++	writel_relaxed(TMC_FFCR_EN_FMT | TMC_FFCR_EN_TI,
++		       drvdata->base + TMC_FFCR);
++	writel_relaxed(0x0, drvdata->base + TMC_BUFWM);
++	tmc_enable_hw(drvdata);
++
++	CS_LOCK(drvdata->base);
++}
++
++static int tmc_enable(struct tmc_drvdata *drvdata, enum tmc_mode mode)
 +{
 +	int ret;
++	unsigned long flags;
 +
-+	if (csdev->refcnt.sink_refcnt == 0) {
-+		if (csdev->ops->sink_ops->enable) {
-+			ret = csdev->ops->sink_ops->enable(csdev);
-+			if (ret)
-+				goto err;
-+			csdev->enable = true;
-+		}
-+	}
-+	csdev->refcnt.sink_refcnt++;
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
 +
-+	return 0;
-+err:
-+	return ret;
-+}
-+
-+static void coresight_disable_sink(struct coresight_device *csdev)
-+{
-+	if (csdev->refcnt.sink_refcnt == 1) {
-+		if (csdev->ops->sink_ops->disable) {
-+			csdev->ops->sink_ops->disable(csdev);
-+			csdev->enable = false;
-+		}
-+	}
-+	csdev->refcnt.sink_refcnt--;
-+}
-+
-+static int coresight_enable_link(struct coresight_device *csdev)
-+{
-+	int ret;
-+	int link_subtype;
-+	int refport, inport, outport;
-+
-+	inport = coresight_find_link_inport(csdev);
-+	outport = coresight_find_link_outport(csdev);
-+
-+	link_subtype = csdev->subtype.link_subtype;
-+	if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_MERG)
-+		refport = inport;
-+	else if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_SPLIT)
-+		refport = outport;
-+	else
-+		refport = 0;
-+
-+	if (csdev->refcnt.link_refcnts[refport] == 0) {
-+		if (csdev->ops->link_ops->enable) {
-+			ret = csdev->ops->link_ops->enable(csdev, inport,
-+							   outport);
-+			if (ret)
-+				goto err;
-+			csdev->enable = true;
-+		}
-+	}
-+	csdev->refcnt.link_refcnts[refport]++;
-+
-+	return 0;
-+err:
-+	return ret;
-+}
-+
-+static void coresight_disable_link(struct coresight_device *csdev)
-+{
-+	int link_subtype;
-+	int refport, inport, outport;
-+
-+	inport = coresight_find_link_inport(csdev);
-+	outport = coresight_find_link_outport(csdev);
-+
-+	link_subtype = csdev->subtype.link_subtype;
-+	if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_MERG)
-+		refport = inport;
-+	else if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_SPLIT)
-+		refport = outport;
-+	else
-+		refport = 0;
-+
-+	if (csdev->refcnt.link_refcnts[refport] == 1) {
-+		if (csdev->ops->link_ops->disable) {
-+			csdev->ops->link_ops->disable(csdev, inport, outport);
-+			csdev->enable = false;
-+		}
-+	}
-+	csdev->refcnt.link_refcnts[refport]--;
-+}
-+
-+static int coresight_enable_source(struct coresight_device *csdev)
-+{
-+	int ret;
-+
-+	if (csdev->refcnt.source_refcnt == 0) {
-+		if (csdev->ops->source_ops->enable) {
-+			ret = csdev->ops->source_ops->enable(csdev);
-+			if (ret)
-+				goto err;
-+			csdev->enable = true;
-+		}
-+	}
-+	csdev->refcnt.source_refcnt++;
-+
-+	return 0;
-+err:
-+	return ret;
-+}
-+
-+static void coresight_disable_source(struct coresight_device *csdev)
-+{
-+	if (csdev->refcnt.source_refcnt == 1) {
-+		if (csdev->ops->source_ops->disable) {
-+			csdev->ops->source_ops->disable(csdev);
-+			csdev->enable = false;
-+		}
-+	}
-+	csdev->refcnt.source_refcnt--;
-+}
-+
-+static int coresight_enable_path(struct list_head *path)
-+{
-+	int ret = 0;
-+	struct coresight_device *cd;
-+
-+	list_for_each_entry(cd, path, path_link) {
-+		if (cd == list_first_entry(path, struct coresight_device,
-+					   path_link)) {
-+			ret = coresight_enable_sink(cd);
-+		} else if (list_is_last(&cd->path_link, path)) {
-+			/* dont' enable the source just yet - this needs to
-+			 * happen at the very end when all links and sink
-+			 * along the path have been configured properly.
-+			 */
-+			;
-+		} else {
-+			ret = coresight_enable_link(cd);
-+		}
-+		if (ret)
-+			goto err;
-+	}
-+	return 0;
-+err:
-+	list_for_each_entry_continue_reverse(cd, path, path_link) {
-+		if (cd == list_first_entry(path, struct coresight_device,
-+					   path_link)) {
-+			coresight_disable_sink(cd);
-+		} else if (list_is_last(&cd->path_link, path)) {
-+			;
-+		} else {
-+			coresight_disable_link(cd);
-+		}
-+	}
-+	return ret;
-+}
-+
-+static int coresight_disable_path(struct list_head *path)
-+{
-+	struct coresight_device *cd;
-+
-+	list_for_each_entry_reverse(cd, path, path_link) {
-+		if (cd == list_first_entry(path, struct coresight_device,
-+					   path_link)) {
-+			coresight_disable_sink(cd);
-+		} else if (list_is_last(&cd->path_link, path)) {
-+			/* the source has already been stopped, no need
-+			 * to do it again here.
-+			 */
-+			;
-+		} else {
-+			coresight_disable_link(cd);
-+		}
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	if (drvdata->reading) {
++		spin_unlock_irqrestore(&drvdata->spinlock, flags);
++		clk_disable_unprepare(drvdata->clk);
++		return -EBUSY;
 +	}
 +
-+	return 0;
-+}
-+
-+static int coresight_build_paths(struct coresight_device *csdev,
-+				 struct list_head *path,
-+				 bool enable)
-+{
-+	int i, ret = -1;
-+	struct coresight_connection *conn;
-+
-+	list_add(&csdev->path_link, path);
-+
-+	if (csdev->type == CORESIGHT_DEV_TYPE_SINK && csdev->activated) {
-+		if (enable)
-+			ret = coresight_enable_path(path);
-+		else
-+			ret = coresight_disable_path(path);
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
++		tmc_etb_enable_hw(drvdata);
++	} else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		tmc_etr_enable_hw(drvdata);
 +	} else {
-+		for (i = 0; i < csdev->nr_conns; i++) {
-+			conn = &csdev->conns[i];
-+			if (coresight_build_paths(conn->child_dev,
-+						    path, enable) == 0)
-+				ret = 0;
++		if (mode == TMC_MODE_CIRCULAR_BUFFER)
++			tmc_etb_enable_hw(drvdata);
++		else
++			tmc_etf_enable_hw(drvdata);
++	}
++	drvdata->enable = true;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	dev_info(drvdata->dev, "TMC enabled\n");
++	return 0;
++}
++
++static int tmc_enable_sink(struct coresight_device *csdev)
++{
++	struct tmc_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++
++	return tmc_enable(drvdata, TMC_MODE_CIRCULAR_BUFFER);
++}
++
++static int tmc_enable_link(struct coresight_device *csdev, int inport,
++			   int outport)
++{
++	struct tmc_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++
++	return tmc_enable(drvdata, TMC_MODE_HARDWARE_FIFO);
++}
++
++static void tmc_etb_dump_hw(struct tmc_drvdata *drvdata)
++{
++	enum tmc_mem_intf_width memwidth;
++	u8 memwords;
++	char *bufp;
++	u32 read_data;
++	int i;
++
++	memwidth = BMVAL(readl_relaxed(drvdata->base + CORESIGHT_DEVID), 8, 10);
++	if (memwidth == TMC_MEM_INTF_WIDTH_32BITS)
++		memwords = 1;
++	else if (memwidth == TMC_MEM_INTF_WIDTH_64BITS)
++		memwords = 2;
++	else if (memwidth == TMC_MEM_INTF_WIDTH_128BITS)
++		memwords = 4;
++	else
++		memwords = 8;
++
++	bufp = drvdata->buf;
++	while (1) {
++		for (i = 0; i < memwords; i++) {
++			read_data = readl_relaxed(drvdata->base + TMC_RRD);
++			if (read_data == 0xFFFFFFFF)
++				return;
++			memcpy(bufp, &read_data, 4);
++			bufp += 4;
 +		}
 +	}
++}
 +
-+	if (list_first_entry(path, struct coresight_device, path_link) != csdev)
-+		pr_err("BUG, wrong device\n");
++static void tmc_etb_disable_hw(struct tmc_drvdata *drvdata)
++{
++	CS_UNLOCK(drvdata->base);
 +
-+	list_del(&csdev->path_link);
++	tmc_flush_and_stop(drvdata);
++	tmc_etb_dump_hw(drvdata);
++	tmc_disable_hw(drvdata);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void tmc_etr_dump_hw(struct tmc_drvdata *drvdata)
++{
++	u32 rwp, rwphi, val;
++
++	rwp = readl_relaxed(drvdata->base + TMC_RWP);
++	rwphi = readl_relaxed(drvdata->base + TMC_RWPHI);
++
++	val = readl_relaxed(drvdata->base + TMC_STS);
++	if (coresight_is_bit_set(val, 0, 1))
++		drvdata->buf = drvdata->vaddr + rwp - drvdata->paddr;
++	else
++		drvdata->buf = drvdata->vaddr;
++}
++
++static void tmc_etr_disable_hw(struct tmc_drvdata *drvdata)
++{
++	CS_UNLOCK(drvdata->base);
++
++	tmc_flush_and_stop(drvdata);
++	tmc_etr_dump_hw(drvdata);
++	tmc_disable_hw(drvdata);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void tmc_etf_disable_hw(struct tmc_drvdata *drvdata)
++{
++	CS_UNLOCK(drvdata->base);
++
++	tmc_flush_and_stop(drvdata);
++	tmc_disable_hw(drvdata);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void tmc_disable(struct tmc_drvdata *drvdata, enum tmc_mode mode)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	if (drvdata->reading)
++		goto out;
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
++		tmc_etb_disable_hw(drvdata);
++	} else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		tmc_etr_disable_hw(drvdata);
++	} else {
++		if (mode == TMC_MODE_CIRCULAR_BUFFER)
++			tmc_etb_disable_hw(drvdata);
++		else
++			tmc_etf_disable_hw(drvdata);
++	}
++out:
++	drvdata->enable = false;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	clk_disable_unprepare(drvdata->clk);
++
++	dev_info(drvdata->dev, "TMC disabled\n");
++}
++
++static void tmc_disable_sink(struct coresight_device *csdev)
++{
++	struct tmc_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++
++	tmc_disable(drvdata, TMC_MODE_CIRCULAR_BUFFER);
++}
++
++static void tmc_disable_link(struct coresight_device *csdev, int inport,
++			     int outport)
++{
++	struct tmc_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++
++	tmc_disable(drvdata, TMC_MODE_HARDWARE_FIFO);
++}
++
++static const struct coresight_ops_sink tmc_sink_ops = {
++	.enable		= tmc_enable_sink,
++	.disable	= tmc_disable_sink,
++};
++
++static const struct coresight_ops_link tmc_link_ops = {
++	.enable		= tmc_enable_link,
++	.disable	= tmc_disable_link,
++};
++
++static const struct coresight_ops tmc_etb_cs_ops = {
++	.sink_ops	= &tmc_sink_ops,
++};
++
++static const struct coresight_ops tmc_etr_cs_ops = {
++	.sink_ops	= &tmc_sink_ops,
++};
++
++static const struct coresight_ops tmc_etf_cs_ops = {
++	.sink_ops	= &tmc_sink_ops,
++	.link_ops	= &tmc_link_ops,
++};
++
++static int tmc_read_prepare(struct tmc_drvdata *drvdata)
++{
++	int ret;
++	unsigned long flags;
++	enum tmc_mode mode;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	if (!drvdata->enable)
++		goto out;
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
++		tmc_etb_disable_hw(drvdata);
++	} else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		tmc_etr_disable_hw(drvdata);
++	} else {
++		mode = readl_relaxed(drvdata->base + TMC_MODE);
++		if (mode == TMC_MODE_CIRCULAR_BUFFER) {
++			tmc_etb_disable_hw(drvdata);
++		} else {
++			ret = -ENODEV;
++			goto err;
++		}
++	}
++out:
++	drvdata->reading = true;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	dev_info(drvdata->dev, "TMC read start\n");
++	return 0;
++err:
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
 +	return ret;
 +}
 +
-+int coresight_enable(struct coresight_device *csdev)
++static void tmc_read_unprepare(struct tmc_drvdata *drvdata)
++{
++	unsigned long flags;
++	enum tmc_mode mode;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	if (!drvdata->enable)
++		goto out;
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
++		tmc_etb_enable_hw(drvdata);
++	} else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		tmc_etr_enable_hw(drvdata);
++	} else {
++		mode = readl_relaxed(drvdata->base + TMC_MODE);
++		if (mode == TMC_MODE_CIRCULAR_BUFFER)
++			tmc_etb_enable_hw(drvdata);
++	}
++out:
++	drvdata->reading = false;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	dev_info(drvdata->dev, "TMC read end\n");
++}
++
++static int tmc_open(struct inode *inode, struct file *file)
++{
++	struct tmc_drvdata *drvdata = container_of(file->private_data,
++						   struct tmc_drvdata, miscdev);
++	int ret = 0;
++
++	if (drvdata->read_count++)
++		goto out;
++
++	ret = tmc_read_prepare(drvdata);
++	if (ret)
++		return ret;
++out:
++	nonseekable_open(inode, file);
++
++	dev_dbg(drvdata->dev, "%s: successfully opened\n", __func__);
++	return 0;
++}
++
++static ssize_t tmc_read(struct file *file, char __user *data, size_t len,
++			loff_t *ppos)
++{
++	struct tmc_drvdata *drvdata = container_of(file->private_data,
++						   struct tmc_drvdata, miscdev);
++	char *bufp = drvdata->buf + *ppos;
++
++	if (*ppos + len > drvdata->size)
++		len = drvdata->size - *ppos;
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		if (bufp == (char *)(drvdata->vaddr + drvdata->size))
++			bufp = drvdata->vaddr;
++		else if (bufp > (char *)(drvdata->vaddr + drvdata->size))
++			bufp -= drvdata->size;
++		if ((bufp + len) > (char *)(drvdata->vaddr + drvdata->size))
++			len = (char *)(drvdata->vaddr + drvdata->size) - bufp;
++	}
++
++	if (copy_to_user(data, bufp, len)) {
++		dev_dbg(drvdata->dev, "%s: copy_to_user failed\n", __func__);
++		return -EFAULT;
++	}
++
++	*ppos += len;
++
++	dev_dbg(drvdata->dev, "%s: %d bytes copied, %d bytes left\n",
++		__func__, len, (int) (drvdata->size - *ppos));
++	return len;
++}
++
++static int tmc_release(struct inode *inode, struct file *file)
++{
++	struct tmc_drvdata *drvdata = container_of(file->private_data,
++						   struct tmc_drvdata, miscdev);
++
++	if (--drvdata->read_count) {
++		if (drvdata->read_count < 0) {
++			WARN_ONCE(1, "mismatched close\n");
++			drvdata->read_count = 0;
++		}
++		goto out;
++	}
++
++	tmc_read_unprepare(drvdata);
++out:
++	dev_dbg(drvdata->dev, "%s: released\n", __func__);
++	return 0;
++}
++
++static const struct file_operations tmc_fops = {
++	.owner		= THIS_MODULE,
++	.open		= tmc_open,
++	.read		= tmc_read,
++	.release	= tmc_release,
++	.llseek		= no_llseek,
++};
++
++static ssize_t debugfs_trigger_cntr_get(void *data, u64 *val)
++{
++	struct tmc_drvdata *drvdata = data;
++
++	*val = drvdata->trigger_cntr;
++	return 0;
++}
++
++static ssize_t debugfs_trigger_cntr_set(void *data, u64 val)
++{
++	struct tmc_drvdata *drvdata = data;
++
++	drvdata->trigger_cntr = val;
++	return 0;
++}
++CORESIGHT_DEBUGFS_ENTRY(debugfs_trigger_cntr, "trigger_cntr",
++			S_IRUGO | S_IWUSR, debugfs_trigger_cntr_get,
++			debugfs_trigger_cntr_set, "%llx\n");
++
++static const struct coresight_ops_entry *tmc_etb_attr_grps[] = {
++	&debugfs_trigger_cntr_entry,
++	NULL,
++};
++
++static const struct coresight_ops_entry *tmc_etr_attr_grps[] = {
++	&debugfs_trigger_cntr_entry,
++	NULL,
++};
++
++static const struct coresight_ops_entry *tmc_etf_attr_grps[] = {
++	&debugfs_trigger_cntr_entry,
++	NULL,
++};
++
++static int tmc_probe(struct amba_device *adev, const struct amba_id *id)
 +{
 +	int ret = 0;
-+	LIST_HEAD(path);
++	u32 devid;
++	void __iomem *base;
++	struct device *dev = &adev->dev;
++	struct coresight_platform_data *pdata = NULL;
++	struct tmc_drvdata *drvdata;
++	struct resource *res = &adev->res;
++	struct coresight_desc *desc;
++	struct device_node *np = adev->dev.of_node;
 +
-+	WARN_ON(IS_ERR_OR_NULL(csdev));
-+
-+	down(&coresight_semaphore);
-+	if (csdev->type != CORESIGHT_DEV_TYPE_SOURCE) {
-+		ret = -EINVAL;
-+		pr_err("coresight: wrong device type in %s\n", __func__);
-+		goto out;
-+	}
-+	if (csdev->enable)
-+		goto out;
-+
-+	if (coresight_build_paths(csdev, &path, true)) {
-+		pr_err("coresight: building path(s) failed\n");
-+		goto out;
++	if (np) {
++		pdata = of_get_coresight_platform_data(dev, np);
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
++		adev->dev.platform_data = pdata;
 +	}
 +
-+	if (coresight_enable_source(csdev))
-+		pr_err("coresight: source enable failed\n");
-+out:
-+	up(&coresight_semaphore);
++	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
++	if (!drvdata)
++		return -ENOMEM;
++
++	drvdata->dev = &adev->dev;
++	dev_set_drvdata(dev, drvdata);
++
++	/* validity for the resource is already checked by the AMBA core */
++	base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	drvdata->base = base;
++
++	spin_lock_init(&drvdata->spinlock);
++
++	drvdata->clk = adev->pclk;
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	devid = readl_relaxed(drvdata->base + CORESIGHT_DEVID);
++	drvdata->config_type = BMVAL(devid, 6, 7);
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		if (np)
++			ret = of_property_read_u32(np,
++						   "arm,buffer-size",
++						   &drvdata->size);
++		if (ret)
++			drvdata->size = SZ_1M;
++	} else {
++		drvdata->size = readl_relaxed(drvdata->base + TMC_RSZ) * 4;
++	}
++
++	clk_disable_unprepare(drvdata->clk);
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		drvdata->vaddr = dma_alloc_coherent(dev, drvdata->size,
++						&drvdata->paddr, GFP_KERNEL);
++		if (!drvdata->vaddr)
++			return -ENOMEM;
++
++		memset(drvdata->vaddr, 0, drvdata->size);
++		drvdata->buf = drvdata->vaddr;
++	} else {
++		drvdata->buf = devm_kzalloc(dev, drvdata->size, GFP_KERNEL);
++		if (!drvdata->buf)
++			return -ENOMEM;
++	}
++
++	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
++	if (!desc) {
++		ret = -ENOMEM;
++		goto err_devm_kzalloc;
++	}
++
++	desc->pdata = pdata;
++	desc->dev = dev;
++	desc->owner = THIS_MODULE;
++	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_BUFFER;
++
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
++		desc->type = CORESIGHT_DEV_TYPE_SINK;
++		desc->ops = &tmc_etb_cs_ops;
++		desc->debugfs_ops = tmc_etb_attr_grps;
++	} else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
++		desc->type = CORESIGHT_DEV_TYPE_SINK;
++		desc->ops = &tmc_etr_cs_ops;
++		desc->debugfs_ops = tmc_etr_attr_grps;
++	} else {
++		desc->type = CORESIGHT_DEV_TYPE_LINKSINK;
++		desc->subtype.link_subtype = CORESIGHT_DEV_SUBTYPE_LINK_FIFO;
++		desc->ops = &tmc_etf_cs_ops;
++		desc->debugfs_ops = tmc_etf_attr_grps;
++	}
++
++	drvdata->csdev = coresight_register(desc);
++	if (IS_ERR(drvdata->csdev)) {
++		ret = PTR_ERR(drvdata->csdev);
++		goto err_devm_kzalloc;
++	}
++
++	drvdata->miscdev.name = pdata->name;
++	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
++	drvdata->miscdev.fops = &tmc_fops;
++	ret = misc_register(&drvdata->miscdev);
++	if (ret)
++		goto err_misc_register;
++
++	dev_info(dev, "TMC initialized\n");
++	return 0;
++
++err_misc_register:
++	coresight_unregister(drvdata->csdev);
++err_devm_kzalloc:
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETR)
++		dma_free_coherent(dev, drvdata->size,
++				&drvdata->paddr, GFP_KERNEL);
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(coresight_enable);
 +
-+void coresight_disable(struct coresight_device *csdev)
++static int tmc_remove(struct amba_device *adev)
 +{
-+	LIST_HEAD(path);
++	struct tmc_drvdata *drvdata = amba_get_drvdata(adev);
 +
-+	WARN_ON(IS_ERR_OR_NULL(csdev));
++	misc_deregister(&drvdata->miscdev);
++	coresight_unregister(drvdata->csdev);
++	if (drvdata->config_type == TMC_CONFIG_TYPE_ETR)
++		dma_free_coherent(drvdata->dev, drvdata->size,
++				  &drvdata->paddr, GFP_KERNEL);
 +
-+	down(&coresight_semaphore);
-+	if (csdev->type != CORESIGHT_DEV_TYPE_SOURCE) {
-+		pr_err("coresight: wrong device type in %s\n", __func__);
-+		goto out;
-+	}
-+	if (!csdev->enable)
-+		goto out;
-+
-+	coresight_disable_source(csdev);
-+	if (coresight_build_paths(csdev, &path, false))
-+		pr_err("coresight: releasing path(s) failed\n");
-+
-+out:
-+	up(&coresight_semaphore);
-+}
-+EXPORT_SYMBOL_GPL(coresight_disable);
-+
-+static ssize_t debugfs_active_get(void *data, u64 *val)
-+{
-+	struct coresight_device *csdev = data;
-+
-+	*val = csdev->activated;
 +	return 0;
 +}
 +
-+static ssize_t debugfs_active_set(void *data, u64 val)
-+{
-+	struct coresight_device *csdev = data;
-+
-+	val ? (csdev->activated = 1) : (csdev->activated = 0);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_active, "active",
-+			S_IRUGO | S_IWUSR, debugfs_active_get,
-+			debugfs_active_set, "%llx\n");
-+
-+static ssize_t debugfs_enable_get(void *data, u64 *val)
-+{
-+	struct coresight_device *csdev = data;
-+
-+	*val = csdev->enable;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_enable_set(void *data, u64 val)
-+{
-+	struct coresight_device *csdev = data;
-+
-+	if (val)
-+		return coresight_enable(csdev);
-+	else
-+		coresight_disable(csdev);
-+
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_enable, "enable",
-+			S_IRUGO | S_IWUSR, debugfs_enable_get,
-+			debugfs_enable_set, "%llx\n");
-+
-+
-+static const struct coresight_ops_entry *coresight_grps_sink[] = {
-+	&debugfs_active_entry,
-+	NULL,
++static struct amba_id tmc_ids[] = {
++	{
++		.id     = 0x0003b961,
++		.mask   = 0x0003ffff,
++	},
++	{ 0, 0},
 +};
 +
-+static const struct coresight_ops_entry *coresight_grps_source[] = {
-+	&debugfs_enable_entry,
-+	NULL,
++static struct amba_driver tmc_driver = {
++	.drv = {
++		.name   = "coresight-tmc",
++		.owner  = THIS_MODULE,
++	},
++	.probe		= tmc_probe,
++	.remove		= tmc_remove,
++	.id_table	= tmc_ids,
 +};
 +
-+struct coresight_group_entries {
-+	const char *name;
-+	const struct coresight_ops_entry **entries;
-+};
-+
-+struct coresight_group_entries coresight_debugfs_entries[] = {
-+	{
-+		.name = "none",
-+	},
-+	{
-+		.name = "sink",
-+		.entries = coresight_grps_sink,
-+	},
-+	{
-+		.name = "link",
-+	},
-+	{
-+		.name = "linksink",
-+	},
-+	{
-+		.name = "source",
-+		.entries = coresight_grps_source,
-+	},
-+};
-+
-+static void coresight_device_release(struct device *dev)
++static int __init tmc_init(void)
 +{
-+	struct coresight_device *csdev = to_coresight_device(dev);
-+
-+	kfree(csdev);
++	return amba_driver_register(&tmc_driver);
 +}
++module_init(tmc_init);
 +
-+static void coresight_fixup_orphan_conns(struct coresight_device *csdev)
++static void __exit tmc_exit(void)
 +{
-+	struct coresight_connection *conn, *temp;
-+
-+	list_for_each_entry_safe(conn, temp, &coresight_orph_conns, link) {
-+		if (conn->child_id == csdev->id) {
-+			conn->child_dev = csdev;
-+			list_del(&conn->link);
-+		}
-+	}
++	amba_driver_unregister(&tmc_driver);
 +}
-+
-+static void coresight_fixup_device_conns(struct coresight_device *csdev)
-+{
-+	int i;
-+	struct coresight_device *cd;
-+	bool found;
-+
-+	for (i = 0; i < csdev->nr_conns; i++) {
-+		found = false;
-+		list_for_each_entry(cd, &coresight_devs, dev_link) {
-+			if (csdev->conns[i].child_id == cd->id) {
-+				csdev->conns[i].child_dev = cd;
-+				found = true;
-+				break;
-+			}
-+		}
-+		if (!found)
-+			list_add_tail(&csdev->conns[i].link,
-+				      &coresight_orph_conns);
-+	}
-+}
-+
-+static int debugfs_coresight_init(void)
-+{
-+	if (!cs_debugfs_parent) {
-+		cs_debugfs_parent = debugfs_create_dir("coresight", 0);
-+		if (IS_ERR(cs_debugfs_parent))
-+			return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct dentry *coresight_debugfs_desc_init(
-+				struct coresight_device *csdev,
-+				const struct coresight_ops_entry **debugfs_ops)
-+{
-+	int i = 0;
-+	struct dentry *parent;
-+	struct device *dev = &csdev->dev;
-+	const struct coresight_ops_entry *ops_entry, **ops_entries;
-+
-+	parent = debugfs_create_dir(dev_name(dev), cs_debugfs_parent);
-+	if (IS_ERR(parent))
-+		return NULL;
-+
-+	/* device-specific ops */
-+	while (debugfs_ops && debugfs_ops[i]) {
-+		ops_entry = debugfs_ops[i];
-+		if (!debugfs_create_file(ops_entry->name, ops_entry->mode,
-+					 parent, dev_get_drvdata(dev->parent),
-+					 ops_entry->ops)) {
-+			debugfs_remove_recursive(parent);
-+			return NULL;
-+		}
-+		i++;
-+	}
-+
-+	/* group-specific ops */
-+	i = 0;
-+	ops_entries = coresight_debugfs_entries[csdev->type].entries;
-+
-+	while (ops_entries && ops_entries[i]) {
-+		if (!debugfs_create_file(ops_entries[i]->name,
-+					 ops_entries[i]->mode,
-+					 parent, csdev, ops_entries[i]->ops)) {
-+			debugfs_remove_recursive(parent);
-+			return NULL;
-+		}
-+		i++;
-+	}
-+
-+	return parent;
-+}
-+
-+/*
-+ * return 1 if the bit @position in @val is set to @value
-+ */
-+int coresight_is_bit_set(u32 val, int position, int value)
-+{
-+	val &= BIT(position);
-+	val >>= position;
-+	return (val == value);
-+}
-+
-+void coresight_timeout(void __iomem *addr, u32 offset, int position, int value)
-+{
-+	int i;
-+	u32 val;
-+
-+	for (i = TIMEOUT_US; i > 0; i--) {
-+		val = __raw_readl(addr + offset);
-+		if (coresight_is_bit_set(val, position, value))
-+			return;
-+		udelay(1);
-+	}
-+
-+	WARN(1,
-+	     "coresight: timeout observed when proving at offset %#x\n",
-+	     offset);
-+}
-+
-+struct coresight_device *coresight_register(struct coresight_desc *desc)
-+{
-+	int i;
-+	int ret;
-+	int link_subtype;
-+	int nr_refcnts;
-+	int *refcnts = NULL;
-+	struct coresight_device *csdev;
-+	struct coresight_connection *conns;
-+
-+	WARN_ON(IS_ERR_OR_NULL(desc));
-+
-+	csdev = kzalloc(sizeof(*csdev), GFP_KERNEL);
-+	if (!csdev) {
-+		ret = -ENOMEM;
-+		goto err_kzalloc_csdev;
-+	}
-+
-+	csdev->id = desc->pdata->id;
-+
-+	if (desc->type == CORESIGHT_DEV_TYPE_LINK ||
-+	    desc->type == CORESIGHT_DEV_TYPE_LINKSINK) {
-+		link_subtype = desc->subtype.link_subtype;
-+		if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_MERG)
-+			nr_refcnts = desc->pdata->nr_inports;
-+		else if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_SPLIT)
-+			nr_refcnts = desc->pdata->nr_outports;
-+		else
-+			nr_refcnts = 1;
-+
-+		refcnts = kcalloc(nr_refcnts, sizeof(*refcnts), GFP_KERNEL);
-+		if (!refcnts) {
-+			ret = -ENOMEM;
-+			goto err_kzalloc_refcnts;
-+		}
-+		csdev->refcnt.link_refcnts = refcnts;
-+	}
-+
-+	csdev->nr_conns = desc->pdata->nr_outports;
-+	conns = kcalloc(csdev->nr_conns, sizeof(*conns), GFP_KERNEL);
-+	if (!conns) {
-+		ret = -ENOMEM;
-+		goto err_kzalloc_conns;
-+	}
-+
-+	for (i = 0; i < csdev->nr_conns; i++) {
-+		conns[i].outport = desc->pdata->outports[i];
-+		conns[i].child_id = desc->pdata->child_ids[i];
-+		conns[i].child_port = desc->pdata->child_ports[i];
-+	}
-+	csdev->conns = conns;
-+
-+	csdev->type = desc->type;
-+	csdev->subtype = desc->subtype;
-+	csdev->ops = desc->ops;
-+	csdev->owner = desc->owner;
-+
-+	csdev->dev.parent = desc->dev;
-+	csdev->dev.release = coresight_device_release;
-+	dev_set_name(&csdev->dev, "%s", desc->pdata->name);
-+
-+	down(&coresight_semaphore);
-+
-+	coresight_fixup_device_conns(csdev);
-+
-+	ret = debugfs_coresight_init();
-+	if (ret < 0)
-+		goto err_coresight_init;
-+
-+	csdev->de = coresight_debugfs_desc_init(csdev, desc->debugfs_ops);
-+
-+	coresight_fixup_orphan_conns(csdev);
-+
-+	list_add_tail(&csdev->dev_link, &coresight_devs);
-+	up(&coresight_semaphore);
-+
-+	return csdev;
-+
-+
-+err_coresight_init:
-+	up(&coresight_semaphore);
-+	kfree(conns);
-+err_kzalloc_conns:
-+	kfree(refcnts);
-+err_kzalloc_refcnts:
-+	kfree(csdev);
-+err_kzalloc_csdev:
-+	return ERR_PTR(ret);
-+}
-+EXPORT_SYMBOL_GPL(coresight_register);
-+
-+void coresight_unregister(struct coresight_device *csdev)
-+{
-+	WARN_ON(IS_ERR_OR_NULL(csdev));
-+
-+	down(&coresight_semaphore);
-+
-+	list_del(&csdev->dev_link);
-+	debugfs_remove_recursive(csdev->de);
-+	kfree(csdev->conns);
-+	kfree(csdev->refcnt.link_refcnts);
-+	if (list_empty(&coresight_devs))
-+		kfree(cs_debugfs_parent);
-+
-+	up(&coresight_semaphore);
-+}
-+EXPORT_SYMBOL_GPL(coresight_unregister);
++module_exit(tmc_exit);
 +
 +MODULE_LICENSE("GPL v2");
-diff --git a/drivers/coresight/of_coresight.c b/drivers/coresight/of_coresight.c
-new file mode 100644
-index 0000000..f90a024
---- /dev/null
-+++ b/drivers/coresight/of_coresight.c
-@@ -0,0 +1,202 @@
-+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/clk.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_graph.h>
-+#include <linux/coresight.h>
-+#include <asm/smp_plat.h>
-+
-+static int of_get_coresight_id(struct device_node *node, int *id)
-+{
-+	const __be32 *reg;
-+	u64 addr;
-+
-+	/* derive component id from its memory map */
-+	reg = of_get_property(node, "reg", NULL);
-+	if (reg) {
-+		addr = of_translate_address(node, reg);
-+		if (addr != OF_BAD_ADDR) {
-+			*id = addr;
-+			return 0;
-+		}
-+	}
-+
-+	/* no "reg", we have a non-configurable replicator */
-+	reg = of_get_property(node, "id", NULL);
-+	if (reg) {
-+		*id = of_read_ulong(reg, 1);
-+		return 0;
-+	}
-+
-+	return -1;
-+}
-+
-+static struct device_node *of_get_coresight_endpoint(
-+		const struct device_node *parent, struct device_node *prev)
-+{
-+	struct device_node *node = of_graph_get_next_endpoint(parent, prev);
-+
-+	of_node_put(prev);
-+	return node;
-+}
-+
-+static bool of_coresight_is_input_port(struct device_node *port)
-+{
-+	return of_find_property(port, "slave-mode", NULL);
-+}
-+
-+static void of_coresight_get_ports(struct device_node *node,
-+				   int *nr_inports, int *nr_outports)
-+{
-+	struct device_node *ep = NULL;
-+	int in = 0, out = 0;
-+
-+	do {
-+		ep = of_get_coresight_endpoint(node, ep);
-+		if (!ep)
-+			break;
-+		of_coresight_is_input_port(ep) ? in++ : out++;
-+
-+	} while (ep);
-+
-+	*nr_inports = in;
-+	*nr_outports = out;
-+}
-+
-+static int of_coresight_alloc_memory(struct device *dev,
-+			struct coresight_platform_data *pdata)
-+{
-+	/* list of output port on this component */
-+	pdata->outports = devm_kzalloc(dev, pdata->nr_outports *
-+				       sizeof(*pdata->outports),
-+				       GFP_KERNEL);
-+	if (!pdata->outports)
-+		return -ENOMEM;
-+
-+
-+	/* children connected to this component via @outport */
-+	pdata->child_ids = devm_kzalloc(dev, pdata->nr_outports *
-+					sizeof(*pdata->child_ids),
-+					GFP_KERNEL);
-+	if (!pdata->child_ids)
-+		return -ENOMEM;
-+
-+	/* port number on the child this component is connected to */
-+	pdata->child_ports = devm_kzalloc(dev, pdata->nr_outports *
-+					  sizeof(*pdata->child_ports),
-+					  GFP_KERNEL);
-+	if (!pdata->child_ports)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+struct coresight_platform_data *of_get_coresight_platform_data(
-+				struct device *dev, struct device_node *node)
-+{
-+	int id, i = 0, ret = 0;
-+	struct device_node *cpu;
-+	struct coresight_platform_data *pdata;
-+	struct of_endpoint endpoint, rendpoint;
-+	struct device_node *ep = NULL;
-+	struct device_node *rparent = NULL;
-+	struct device_node *rport = NULL;
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return ERR_PTR(-ENOMEM);
-+
-+	/* use the base address as id */
-+	ret = of_get_coresight_id(node, &id);
-+	if (ret)
-+		return ERR_PTR(-EINVAL);
-+	pdata->id = id;
-+
-+	/* use device name as debugfs handle */
-+	pdata->name = dev_name(dev);
-+
-+	/* get the number of input and output port for this component */
-+	of_coresight_get_ports(node, &pdata->nr_inports, &pdata->nr_outports);
-+
-+	if (pdata->nr_outports) {
-+		ret = of_coresight_alloc_memory(dev, pdata);
-+		if (ret)
-+			return ERR_PTR(-ENOMEM);
-+
-+		/* iterate through each port to discover topology */
-+		do {
-+			/* get a handle on a port */
-+			ep = of_get_coresight_endpoint(node, ep);
-+			if (!ep)
-+				break;
-+
-+			/* no need to deal with input ports, processing for as
-+			 * processing for output ports will deal with them.
-+			 */
-+			if (of_coresight_is_input_port(ep))
-+				continue;
-+
-+			/* get a handle on the local endpoint */
-+			ret = of_graph_parse_endpoint(ep, &endpoint);
-+
-+			if (ret)
-+				continue;
-+
-+			/* the local out port number */
-+			pdata->outports[i] = endpoint.id;
-+
-+			/* get a handle the remote port and parent
-+			 * attached to it.
-+			 */
-+			rparent = of_graph_get_remote_port_parent(ep);
-+			rport = of_graph_get_remote_port(ep);
-+
-+			if (!rparent || !rport)
-+				continue;
-+
-+			if (of_graph_parse_endpoint(rport, &rendpoint))
-+				continue;
-+
-+			ret = of_get_coresight_id(rparent, &id);
-+			if (ret)
-+				continue;
-+			pdata->child_ids[i] = id;
-+			pdata->child_ports[i] = rendpoint.id;
-+
-+			i++;
-+		} while (ep);
-+	}
-+
-+	/* affinity defaults to CPU0 */
-+	pdata->cpu = 0;
-+	cpu = of_parse_phandle(node, "cpu", 0);
-+	if (cpu) {
-+		const u32 *mpidr;
-+		int len, index;
-+
-+		mpidr = of_get_property(cpu, "reg", &len);
-+		if (mpidr && len == 4) {
-+			index = get_logical_index(be32_to_cpup(mpidr));
-+			if (index != -EINVAL)
-+				pdata->cpu = index;
-+		}
-+	}
-+
-+	return pdata;
-+}
-+EXPORT_SYMBOL_GPL(of_get_coresight_platform_data);
-diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-index fdd7e1b..cdddabe 100644
---- a/include/linux/amba/bus.h
-+++ b/include/linux/amba/bus.h
-@@ -23,6 +23,7 @@
- 
- #define AMBA_NR_IRQS	9
- #define AMBA_CID	0xb105f00d
-+#define CORESIGHT_CID	0xb105900d
- 
- struct clk;
- 
-diff --git a/include/linux/coresight.h b/include/linux/coresight.h
-new file mode 100644
-index 0000000..d82f57c
---- /dev/null
-+++ b/include/linux/coresight.h
-@@ -0,0 +1,200 @@
-+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef _LINUX_CORESIGHT_H
-+#define _LINUX_CORESIGHT_H
-+
-+#include <linux/device.h>
-+
-+/* Peripheral id registers (0xFD0-0xFEC) */
-+#define CORESIGHT_PERIPHIDR4	0xfd0
-+#define CORESIGHT_PERIPHIDR5	0xfd4
-+#define CORESIGHT_PERIPHIDR6	0xfd8
-+#define CORESIGHT_PERIPHIDR7	0xfdC
-+#define CORESIGHT_PERIPHIDR0	0xfe0
-+#define CORESIGHT_PERIPHIDR1	0xfe4
-+#define CORESIGHT_PERIPHIDR2	0xfe8
-+#define CORESIGHT_PERIPHIDR3	0xfeC
-+/* Component id registers (0xFF0-0xFFC) */
-+#define CORESIGHT_COMPIDR0	0xff0
-+#define CORESIGHT_COMPIDR1	0xff4
-+#define CORESIGHT_COMPIDR2	0xff8
-+#define CORESIGHT_COMPIDR3	0xffC
-+
-+#define ETM_ARCH_V3_3		0x23
-+#define ETM_ARCH_V3_5		0x25
-+#define PFT_ARCH_V1_1		0x31
-+
-+#define CORESIGHT_UNLOCK	0xc5acce55
-+
-+enum coresight_clk_rate {
-+	CORESIGHT_CLK_RATE_OFF,
-+	CORESIGHT_CLK_RATE_TRACE,
-+	CORESIGHT_CLK_RATE_HSTRACE,
-+};
-+
-+enum coresight_dev_type {
-+	CORESIGHT_DEV_TYPE_NONE,
-+	CORESIGHT_DEV_TYPE_SINK,
-+	CORESIGHT_DEV_TYPE_LINK,
-+	CORESIGHT_DEV_TYPE_LINKSINK,
-+	CORESIGHT_DEV_TYPE_SOURCE,
-+};
-+
-+enum coresight_dev_subtype_sink {
-+	CORESIGHT_DEV_SUBTYPE_SINK_NONE,
-+	CORESIGHT_DEV_SUBTYPE_SINK_PORT,
-+	CORESIGHT_DEV_SUBTYPE_SINK_BUFFER,
-+};
-+
-+enum coresight_dev_subtype_link {
-+	CORESIGHT_DEV_SUBTYPE_LINK_NONE,
-+	CORESIGHT_DEV_SUBTYPE_LINK_MERG,
-+	CORESIGHT_DEV_SUBTYPE_LINK_SPLIT,
-+	CORESIGHT_DEV_SUBTYPE_LINK_FIFO,
-+};
-+
-+enum coresight_dev_subtype_source {
-+	CORESIGHT_DEV_SUBTYPE_SOURCE_NONE,
-+	CORESIGHT_DEV_SUBTYPE_SOURCE_PROC,
-+	CORESIGHT_DEV_SUBTYPE_SOURCE_BUS,
-+	CORESIGHT_DEV_SUBTYPE_SOURCE_SOFTWARE,
-+};
-+
-+struct coresight_ops_entry {
-+	const char *name;
-+	umode_t mode;
-+	const struct file_operations *ops;
-+};
-+
-+struct coresight_dev_subtype {
-+	enum coresight_dev_subtype_sink sink_subtype;
-+	enum coresight_dev_subtype_link link_subtype;
-+	enum coresight_dev_subtype_source source_subtype;
-+};
-+
-+struct coresight_platform_data {
-+	int id;
-+	int cpu;
-+	const char *name;
-+	int nr_inports;
-+	int *outports;
-+	int *child_ids;
-+	int *child_ports;
-+	int nr_outports;
-+	struct clk *clk;
-+};
-+
-+struct coresight_desc {
-+	enum coresight_dev_type type;
-+	struct coresight_dev_subtype subtype;
-+	const struct coresight_ops *ops;
-+	struct coresight_platform_data *pdata;
-+	struct device *dev;
-+	const struct coresight_ops_entry **debugfs_ops;
-+	struct module *owner;
-+};
-+
-+struct coresight_connection {
-+	int outport;
-+	int child_id;
-+	int child_port;
-+	struct coresight_device *child_dev;
-+	struct list_head link;
-+};
-+
-+struct coresight_refcnt {
-+	int sink_refcnt;
-+	int *link_refcnts;
-+	int source_refcnt;
-+};
-+
-+struct coresight_device {
-+	int id;
-+	struct coresight_connection *conns;
-+	int nr_conns;
-+	enum coresight_dev_type type;
-+	struct coresight_dev_subtype subtype;
-+	const struct coresight_ops *ops;
-+	struct dentry *de;
-+	struct device dev;
-+	struct coresight_refcnt refcnt;
-+	struct list_head dev_link;
-+	struct list_head path_link;
-+	struct module *owner;
-+	bool enable;	/* true only if configured as part of a path */
-+	bool activated;	/* only valid for sinks */
-+};
-+
-+#define to_coresight_device(d) container_of(d, struct coresight_device, dev)
-+
-+#define CORESIGHT_DEBUGFS_ENTRY(__name, __entry_name,			\
-+				 __mode, __get, __set, __fmt)		\
-+DEFINE_SIMPLE_ATTRIBUTE(__name ## _ops, __get, __set, __fmt)		\
-+static const struct coresight_ops_entry __name ## _entry = {		\
-+	.name = __entry_name,						\
-+	.mode = __mode,							\
-+	.ops  = &__name ## _ops						\
-+}
-+
-+struct coresight_ops_sink {
-+	int (*enable)(struct coresight_device *csdev);
-+	void (*disable)(struct coresight_device *csdev);
-+};
-+
-+struct coresight_ops_link {
-+	int (*enable)(struct coresight_device *csdev, int iport, int oport);
-+	void (*disable)(struct coresight_device *csdev, int iport, int oport);
-+};
-+
-+struct coresight_ops_source {
-+	int (*enable)(struct coresight_device *csdev);
-+	void (*disable)(struct coresight_device *csdev);
-+};
-+
-+struct coresight_ops {
-+	const struct coresight_ops_sink *sink_ops;
-+	const struct coresight_ops_link *link_ops;
-+	const struct coresight_ops_source *source_ops;
-+};
-+
-+#ifdef CONFIG_CORESIGHT
-+extern struct coresight_device *
-+coresight_register(struct coresight_desc *desc);
-+extern void coresight_unregister(struct coresight_device *csdev);
-+extern int coresight_enable(struct coresight_device *csdev);
-+extern void coresight_disable(struct coresight_device *csdev);
-+extern int coresight_is_bit_set(u32 val, int position, int value);
-+extern void coresight_timeout(void __iomem *addr, u32 offset,
-+			      int position, int value);
-+#ifdef CONFIG_OF
-+extern struct coresight_platform_data *of_get_coresight_platform_data(
-+				struct device *dev, struct device_node *node);
-+#endif
-+#else
-+static inline struct coresight_device *
-+coresight_register(struct coresight_desc *desc) { return NULL; }
-+static inline void coresight_unregister(struct coresight_device *csdev) {}
-+static inline int
-+coresight_enable(struct coresight_device *csdev) { return -ENOSYS; }
-+static inline void coresight_disable(struct coresight_device *csdev) {}
-+static inline int coresight_is_bit_set(u32 val, int position, int value)
-+					 { return 0; }
-+static inline void coresight_timeout(void __iomem *addr, u32 offset,
-+				     int position, int value) {}
-+#ifdef CONFIG_OF
-+static inline struct coresight_platform_data *of_get_coresight_platform_data(
-+	struct device *dev, struct device_node *node) { return NULL; }
-+#endif
-+#endif
-+
-+#endif
++MODULE_DESCRIPTION("CoreSight Trace Memory Controller driver");
 -- 
 1.9.1
 
