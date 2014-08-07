@@ -1,96 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413AbaHGUn7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 16:43:59 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43076 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874AbaHGUn5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 16:43:57 -0400
-Message-ID: <53E3E50B.7050105@codeaurora.org>
-Date: Thu, 07 Aug 2014 13:43:55 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-CC: Liu hua <sdu.liu@huawei.com>, Mark Salter <msalter@redhat.com>,
-        Rabin Vincent <rabin@rab.in>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, Rob Herring <robh@kernel.org>,
-        Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 0/8] arm: support CONFIG_RODATA
-References: <1407423713-4160-1-git-send-email-keescook@chromium.org>
-In-Reply-To: <1407423713-4160-1-git-send-email-keescook@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755439AbaHGUoP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 16:44:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53972 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751275AbaHGUoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 16:44:12 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>,
+        Przemo Firszt <przemo@firszt.eu>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [PATCH v2] Input - wacom: update the ABI doc according to latest changes
+Date: Thu,  7 Aug 2014 16:43:52 -0400
+Message-Id: <1407444232-4005-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/7/2014 8:01 AM, Kees Cook wrote:
-> This is a series of patches to support CONFIG_RODATA on ARM, so that
-> the kernel text is RO, and non-text sections default to NX. To support
-> on-the-fly kernel text patching (via ftrace, kprobes, etc), fixmap
-> support has been finalized based on several versions of various patches
-> that are floating around on the mailing list. This series attempts to
-> include the least intrusive version, so that others can build on it for
-> future fixmap work.
-> 
-> The series has been heavily tested, and appears to be working correctly:
-> 
-> With CONFIG_ARM_PTDUMP, expected page table permissions are seen in
-> /sys/kernel/debug/kernel_page_tables.
-> 
-> Using CONFIG_LKDTM, the kernel now correctly detects bad accesses for
-> for the following lkdtm tests via /sys/kernel/debug/provoke-crash/DIRECT:
->         EXEC_DATA
->         WRITE_RO
->         WRITE_KERN
-> 
-> ftrace works:
->         CONFIG_FTRACE_STARTUP_TEST passes
->         Enabling tracing works:
->                 echo function > /sys/kernel/debug/tracing/current_tracer
-> 
-> kprobes works:
->         CONFIG_ARM_KPROBES_TEST passes
-> 
-> kexec works:
->         kexec will load and start a new kernel
-> 
-> Thanks to everyone who has been testing this series and working on its
-> various pieces!
-> 
-> -Kees
-> 
-> v2:
-> - fix typo in kexec merge (buildbot)
-> - flip index order for highmem pte access (lauraa)
-> - added kgdb updates (dianders)
-> 
+Now the devices show up under hid no matter the connection (for USB
+and Bluetooth, not serial nor i2c).
 
-At least twice I managed to boot a build with CONFIG_DEBUG_RODATA where
-both  cat /sys/kernel/debug/kernel_page_table and JTAG were showing no
-sections marked as read only. I haven't been able to reproduce it though
-so I'm tempted to account for it as incorrect testing on my part. I'll
-play around with it some more but if you haven't heard anything more
-you can add
+The USB devices can now be easily found under
+/sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>
 
-Tested-by: Laura Abbott <lauraa@codeaurora.org>
+The Bluetooth devices could also be found under this path since their
+inclusion (April 2010), so this patch fixes the unprecise "hidraw*" path
+for them.
 
-For boot up test, kernel_page_table/JTAG page table verification and
-simple kprobes test. 
+The ABI has been unified while setting the LEDs and OLEDs. So Bluetooth
+devices lost their own LED selector but use the USB sysfs attribute.
+For OLEDs, Bluetooth devices handle only 1-bit images instead of 4 for USB.
+The documentation has been updated to match this.
 
-Thanks,
-Laura
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
 
+changes in v2:
+- updated commit message to describe a little bit more the changes
+- updated the dates for the new path where we can find USB/Bluetooth devices
+
+ Documentation/ABI/testing/sysfs-driver-wacom | 70 +++++++++++-----------------
+ 1 file changed, 27 insertions(+), 43 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-driver-wacom b/Documentation/ABI/testing/sysfs-driver-wacom
+index 7fc7810..c4f0fed 100644
+--- a/Documentation/ABI/testing/sysfs-driver-wacom
++++ b/Documentation/ABI/testing/sysfs-driver-wacom
+@@ -1,48 +1,27 @@
+-WWhat:		/sys/class/hidraw/hidraw*/device/oled*_img
+-Date:		June 2012
+-Contact:	linux-bluetooth@vger.kernel.org
+-Description:
+-		The /sys/class/hidraw/hidraw*/device/oled*_img files control
+-		OLED mocro displays on Intuos4 Wireless tablet. Accepted image
+-		has to contain 256 bytes (64x32 px 1 bit colour). The format
+-		is the same as PBM image 62x32px without header (64 bits per
+-		horizontal line, 32 lines). An example of setting OLED No. 0:
+-		dd bs=256 count=1 if=img_file of=[path to oled0_img]/oled0_img
+-		The attribute is read only and no local copy of the image is
+-		stored.
+-
+-What:		/sys/class/hidraw/hidraw*/device/speed
++What:		/sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/speed
+ Date:		April 2010
+ Kernel Version:	2.6.35
+ Contact:	linux-bluetooth@vger.kernel.org
+ Description:
+-		The /sys/class/hidraw/hidraw*/device/speed file controls
+-		reporting speed of Wacom bluetooth tablet. Reading from
+-		this file returns 1 if tablet reports in high speed mode
++		The /sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/speed file
++		controls reporting speed of Wacom bluetooth tablet. Reading
++		from this file returns 1 if tablet reports in high speed mode
+ 		or 0 otherwise. Writing to this file one of these values
+ 		switches reporting speed.
+ 
+-What:		/sys/class/leds/0005\:056A\:00BD.0001\:selector\:*/
+-Date:		May 2012
+-Kernel Version:	3.5
+-Contact:	linux-bluetooth@vger.kernel.org
+-Description:
+-		LED selector for Intuos4 WL. There are 4 leds, but only one LED
+-		can be lit at a time. Max brightness is 127.
+-
+-What:		/sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/led
+-Date:		August 2011
++What:		/sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/led
++Date:		August 2014
+ Contact:	linux-input@vger.kernel.org
+ Description:
+ 		Attribute group for control of the status LEDs and the OLEDs.
+ 		This attribute group is only available for Intuos 4 M, L,
+-		and XL (with LEDs and OLEDs), Intuos 5 (LEDs only), and Cintiq
+-		21UX2 and Cintiq 24HD (LEDs only). Therefore its presence
+-		implicitly signifies the presence of said LEDs and OLEDs on the
+-		tablet device.
++		and XL (with LEDs and OLEDs), Intuos 4 WL, Intuos 5 (LEDs only),
++		Intuos Pro (LEDs only) and Cintiq 21UX2 and Cintiq 24HD
++		(LEDs only). Therefore its presence implicitly signifies the
++		presence of said LEDs and OLEDs on the tablet device.
+ 
+-What:		/sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/status0_luminance
+-Date:		August 2011
++What:		/sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/status0_luminance
++Date:		August 2014
+ Contact:	linux-input@vger.kernel.org
+ Description:
+ 		Writing to this file sets the status LED luminance (1..127)
+@@ -50,16 +29,16 @@ Description:
+ 		button is pressed on the stylus. This luminance level is
+ 		normally lower than the level when a button is pressed.
+ 
+-What:		/sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/status1_luminance
+-Date:		August 2011
++What:		/sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/status1_luminance
++Date:		August 2014
+ Contact:	linux-input@vger.kernel.org
+ Description:
+ 		Writing to this file sets the status LED luminance (1..127)
+ 		when the stylus touches the tablet surface, or any button is
+ 		pressed on the stylus.
+ 
+-What:		/sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/status_led0_select
+-Date:		August 2011
++What:		/sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/status_led0_select
++Date:		August 2014
+ Contact:	linux-input@vger.kernel.org
+ Description:
+ 		Writing to this file sets which one of the four (for Intuos 4
+@@ -67,23 +46,23 @@ Description:
+ 		24HD) status LEDs is active (0..3). The other three LEDs on the
+ 		same side are always inactive.
+ 
+-What:		/sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/status_led1_select
+-Date:		September 2011
++What:		/sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/status_led1_select
++Date:		August 2014
+ Contact:	linux-input@vger.kernel.org
+ Description:
+ 		Writing to this file sets which one of the left four (for Cintiq 21UX2
+ 		and Cintiq 24HD) status LEDs is active (0..3). The other three LEDs on
+ 		the left are always inactive.
+ 
+-What:		/sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/buttons_luminance
+-Date:		August 2011
++What:		/sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/buttons_luminance
++Date:		August 2014
+ Contact:	linux-input@vger.kernel.org
+ Description:
+ 		Writing to this file sets the overall luminance level (0..15)
+ 		of all eight button OLED displays.
+ 
+-What:		/sys/bus/usb/devices/<busnum>-<devnum>:<cfg>.<intf>/wacom_led/button<n>_rawimg
+-Date:		August 2011
++What:		/sys/bus/hid/devices/<bus>:<vid>:<pid>.<n>/wacom_led/button<n>_rawimg
++Date:		August 2014
+ Contact:	linux-input@vger.kernel.org
+ Description:
+ 		When writing a 1024 byte raw image in Wacom Intuos 4
+@@ -93,3 +72,8 @@ Description:
+ 		byte chunk encodes the image data for two consecutive lines on
+ 		the display. The low nibble of each byte contains the first
+ 		line, and the high nibble contains the second line.
++		When the Wacom Intuos 4 is connected over Bluetooth, the
++		image has to contain 256 bytes (64x32 px 1 bit colour).
++		The format is also scrambled, like in the USB mode, and it can
++		be summarized by converting 76543210 into GECA6420.
++					    HGFEDCBA      HFDB7531
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+2.0.4
+
