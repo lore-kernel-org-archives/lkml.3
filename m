@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485AbaHGVCL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 17:02:11 -0400
+	id S1755458AbaHGVCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 17:02:09 -0400
 Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:10160 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750874AbaHGVA6 (ORCPT
+	by vger.kernel.org with ESMTP id S1751780AbaHGVBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 17:00:58 -0400
+	Thu, 7 Aug 2014 17:01:00 -0400
 X-IronPort-AV: E=Sophos;i="5.01,820,1400018400"; 
-   d="scan'208";a="88647123"
+   d="scan'208";a="88647125"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/4] gdrom: fix error return code
-Date: Thu,  7 Aug 2014 22:57:44 +0200
-Message-Id: <1407445067-4044-2-git-send-email-Julia.Lawall@lip6.fr>
+To: Joshua Morris <josh.h.morris@us.ibm.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Philip Kelleher <pjk1939@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] block: fix error return code
+Date: Thu,  7 Aug 2014 22:57:46 +0200
+Message-Id: <1407445067-4044-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1407445067-4044-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1407445067-4044-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -53,34 +55,18 @@ ret = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/cdrom/gdrom.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/block/rsxx/core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
-index 584bc31..46ecd95 100644
---- a/drivers/cdrom/gdrom.c
-+++ b/drivers/cdrom/gdrom.c
-@@ -807,16 +807,20 @@ static int probe_gdrom(struct platform_device *devptr)
- 	if (err)
- 		goto probe_fail_cmdirq_register;
- 	gd.gdrom_rq = blk_init_queue(gdrom_request, &gdrom_lock);
--	if (!gd.gdrom_rq)
-+	if (!gd.gdrom_rq) {
-+		err = -ENOMEM;
- 		goto probe_fail_requestq;
-+	}
+diff --git a/drivers/block/rsxx/core.c b/drivers/block/rsxx/core.c
+index a8de2ee..fa8077a 100644
+--- a/drivers/block/rsxx/core.c
++++ b/drivers/block/rsxx/core.c
+@@ -942,6 +942,7 @@ static int rsxx_pci_probe(struct pci_dev *dev,
+ 	card->event_wq = create_singlethread_workqueue(DRIVER_NAME"_event");
+ 	if (!card->event_wq) {
+ 		dev_err(CARD_TO_DEV(card), "Failed card event setup.\n");
++		st = -ENOMEM;
+ 		goto failed_event_handler;
+ 	}
  
- 	err = probe_gdrom_setupqueue();
- 	if (err)
- 		goto probe_fail_toc;
- 
- 	gd.toc = kzalloc(sizeof(struct gdromtoc), GFP_KERNEL);
--	if (!gd.toc)
-+	if (!gd.toc) {
-+		err = -ENOMEM;
- 		goto probe_fail_toc;
-+	}
- 	add_disk(gd.disk);
- 	return 0;
- 
-
