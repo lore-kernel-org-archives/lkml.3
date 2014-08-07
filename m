@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780AbaHGTD0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 15:03:26 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:51402 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaHGTDY (ORCPT
+	id S1754900AbaHGTE7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 15:04:59 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52243 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaHGTE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 15:03:24 -0400
-X-Originating-IP: 173.246.103.110
-Date: Thu, 7 Aug 2014 12:02:44 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        David Rientjes <rientjes@google.com>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86: Add "make tinyconfig" to configure the tiniest
- possible kernel
-Message-ID: <20140807190243.GA5580@jtriplet-mobl1>
-References: <20140806222419.GA2566@jtriplet-mobl1>
- <20140806223152.GA14348@jtriplet-mobl1>
- <20140807160352.GB1382@ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140807160352.GB1382@ravnborg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 7 Aug 2014 15:04:57 -0400
+Date: Thu, 07 Aug 2014 12:04:54 -0700 (PDT)
+Message-Id: <20140807.120454.1646328149054855088.davem@davemloft.net>
+To: paul@paul-moore.com
+Cc: geert@linux-m68k.org, linux-security-module@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: sel_netif_init: 'err' is used uninitialized
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <5750080.46d2jsPKXX@sifl>
+References: <CAMuHMdV4VpaH1nHYO5hr66Xib5o_Pib863JzGRtg2kYcjMp2TQ@mail.gmail.com>
+	<5750080.46d2jsPKXX@sifl>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 07 Aug 2014 12:04:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s77J53nj019771
 
-On Thu, Aug 07, 2014 at 06:03:52PM +0200, Sam Ravnborg wrote:
-> On Wed, Aug 06, 2014 at 03:31:54PM -0700, Josh Triplett wrote:
-> > Since commit 5d2acfc7b974bbd3858b4dd3f2cdc6362dd8843a ("kconfig: make
-> > allnoconfig disable options behind EMBEDDED and EXPERT") in 3.15-rc1,
-> > "make allnoconfig" disables every possible config option.
-> > 
-> > However, a few configuration options (CC_OPTIMIZE_FOR_SIZE,
-> > OPTIMIZE_INLINING) produce a smaller kernel when turned on, and a few
-> > choices exist (compression, highmem, allocator) for which a non-default
-> > option produces a smaller kernel.
-> > 
-> > Add a "tinyconfig" option, which starts from allnoconfig and then sets
-> > these options to configure the tiniest possible kernel.  This provides a
-> > better baseline for embedded systems or efforts to reduce kernel size.
+From: Paul Moore <paul@paul-moore.com>
+Date: Thu, 07 Aug 2014 10:26:14 -0400
+
+> On Thursday, August 07, 2014 12:31:15 PM Geert Uytterhoeven wrote:
+>> 
+>> security/selinux/netif.c: In function ¡sel_netif_init¢:
+>> /scratch/geert/linux/linux-m68k/security/selinux/netif.c:285: warning:
+>> ¡err¢ is used uninitialized in this function
+>> 
+>> Should it just return 0, like before?
+>> Or should it return the return value of register_netdevice_notifier()
+>> instead, which also returns an error code? Or is that failure non-critical?
 > 
-> In general I dislike the whole approach where we introduce makefile
-> magic to support diverse config snippets.
-> Another approch where we factor out this from the MAkefile seems much leaner.
+> Hi,
 > 
-> And for this specific patch then this is not x86 specific at all.
-> If we keep the logic in the makefiles than we should:
-> 1) Make the infrastructure general
-> 2) Document it
-> 3) Find another home for the config snippets that are non-arch specific like this one
+> I posted a fix for this two days ago to the SELinux list (see below).  As soon 
+> as -rc1 is released and linux-next is back in business I'll be pushing the 
+> patch to the SELinux #next branch.
+> 
+>  * http://marc.info/?l=selinux&m=140727033030054&w=2
 
-I'll refactor this and resubmit.
+With respect to this and the lack-of-inline warning fix we spoke about
+yesterday, why are you waiting and only pushing such bug fixes into your
+"next" branch?
 
-> > diff --git a/arch/x86/configs/tiny.config b/arch/x86/configs/tiny.config
-> > new file mode 100644
-> > index 0000000..8f0e54c
-> > --- /dev/null
-> > +++ b/arch/x86/configs/tiny.config
-> > @@ -0,0 +1,5 @@
-> > +CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-> > +CONFIG_KERNEL_XZ=y
-> > +CONFIG_NOHIGHMEM=y
-> > +CONFIG_OPTIMIZE_INLINING=y
-> > +CONFIG_SLOB=y
-> All the above are general options that apply equal to arm than to x86.
-
-NOHIGHMEM isn't.
-
-- Josh Triplett
+Those sort of things should be sent to Linus now to correct the errors
+introduced during the merge window, as I have done last night for all
+of the networking merge fallout.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
