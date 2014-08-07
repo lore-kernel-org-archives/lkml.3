@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932970AbaHGRII (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 13:08:08 -0400
-Received: from asavdk3.altibox.net ([109.247.116.14]:60122 "EHLO
-	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932537AbaHGRIG (ORCPT
+	id S932623AbaHGRJf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 13:09:35 -0400
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:58026 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082AbaHGRJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 13:08:06 -0400
-Date: Thu, 7 Aug 2014 19:08:00 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] kbuild: escape single backslashes in macro make-cmd
-Message-ID: <20140807170800.GA1542@ravnborg.org>
-References: <20140726163551.19857.17737.stgit@zurg>
- <53E2156E.9060700@suse.cz>
- <CALYGNiO=oiiLgJRrpycO=CWyMMf8-AiDyW=Ch3ajV5W=9dtZfA@mail.gmail.com>
- <53E24365.6020405@suse.cz>
- <20140807160739.GA29726@sepie.suse.cz>
+	Thu, 7 Aug 2014 13:09:34 -0400
+Date: Thu, 7 Aug 2014 12:59:48 -0400
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        linux-atm-general@lists.sourceforge.net
+Subject: Re: [setsockopt] WARNING: CPU: 0 PID: 1444 at
+ kernel/sched/core.c:7088 __might_sleep+0x51/0x16f()
+Message-ID: <20140807125948.2b7f1472@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <20140807151741.GP19379@twins.programming.kicks-ass.net>
+References: <20140805214624.GA9973@localhost>
+	<20140807151741.GP19379@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140807160739.GA29726@sepie.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-NRLCMF-Spam-Score: () hits=0.009
+X-NRLCMF-Virus-Scanned: No virus found
+X-NRLCMF-Languages: en
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> The problem is that the bash echo does not interpred _any_ \-sequences
-> without -e. So the nicely escaped \\ stays a \\ and we get spurious
-> rebuilds with bash instead. It previously worked with bash, because the
-> backslash escaping was completely broken. You not only moved it up in
-> the chain, but also fixed it by removing one superflous level of
-> escaping.
-> 
-> I'm now testing this, i.e. dropping the backslash escaping completely
-> and doing a printf '%s\n' instead. Can you try if it works for you?
-> 
-> 
-> diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
-> index 122f95c..8a9a4e1 100644
-> --- a/scripts/Kbuild.include
-> +++ b/scripts/Kbuild.include
-> @@ -215,11 +215,13 @@ else
->  arg-check = $(if $(strip $(cmd_$@)),,1)
->  endif
->  
-> -# >'< substitution is for echo to work,
-> -# >$< substitution to preserve $ when reloading .cmd file
-> -# note: when using inline perl scripts [perl -e '...$$t=1;...']
-> -# in $(cmd_xxx) double $$ your perl vars
-> -make-cmd = $(subst \\,\\\\,$(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1))))))
-> +# Replace >$< with >$$< to preserve $ when reloading the .cmd file
-> +# (needed for make)
-> +# Replace >#< with >\#< to avoid starting a comment in the .cmd file
-> +# (needed for make)
-> +# Replace >'< with >'\''< to be able to enclose the whole string in '...'
-> +# (needed for the shell)
-> +make-cmd = $(call escsq,$(subst \#,\\\#,$(subst $$,$$$$,$(cmd_$(1)))))
-This is simpler and remotely readble - nice!
-As a bonus you added more descriptive comments
+On Thu, 7 Aug 2014 17:17:41 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-Looks good.
-You may add my:
-Reviewed-by: Sam Ravnborg <sam@ravnborg.org>
+> Subject: atm: Fix blocking in wait loop
+> 
+> One should not call blocking primitives inside a wait loop, since both
+> require task_struct::state to sleep, so the inner will destroy the outer
+> state.
+> 
+> In this instance sigd_enq() will possible sleep for alloc_skb(), now if
+> I understand the code right, we do not actually need to call sigd_enq()
+> after the initial prepare_to_wait(), because we test the termination
+> condition before schedule() anyhow.
+> 
+> So we can simply move it up a bit and avoid the entire confusion.
+> 
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  net/atm/svc.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/net/atm/svc.c b/net/atm/svc.c
+> index d8e5d0c2ebbc..445ac238b69b 100644
+> --- a/net/atm/svc.c
+> +++ b/net/atm/svc.c
+> @@ -297,8 +297,8 @@ static int svc_listen(struct socket *sock, int backlog)
+>  		goto out;
+>  	}
+>  	set_bit(ATM_VF_WAITING, &vcc->flags);
+> -	prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
+>  	sigd_enq(vcc, as_listen, NULL, NULL, &vcc->local);
+> +	prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
+>  	while (test_bit(ATM_VF_WAITING, &vcc->flags) && sigd) {
+>  		schedule();
+>  		prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
 
-	Sam
+
+This isn't the only place that we queue a message for the signalling
+daemon after a prepare_to_wait() uninterruptibly so this patch would
+be incomplete as is.
+
+What bothers me is the TASK_UNINTERRUPTIBLE -- I don't have a good
+reason why any of these should be sleeping uninterruptibly.
