@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757742AbaHGM4F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 08:56:05 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:50655 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757428AbaHGM4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 08:56:03 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] clk: rockchip: add initcall to set clk defaults after syscons are available
-Date: Thu, 07 Aug 2014 14:57:38 +0200
-Message-ID: <1566610.B4NH8lpaoI@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+	id S1757769AbaHGM4R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 08:56:17 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44753 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757438AbaHGM4E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 08:56:04 -0400
+Date: Thu, 7 Aug 2014 13:55:57 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Nick Krause <xerofoiify@gmail.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>, "David S. Miller" <davem@davemloft.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Boeckel <mathstuf@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] smsc: Undefine SMC_inb and SMC_outb before define
+Message-ID: <20140807125557.GL13703@arm.com>
+References: <1407392942-22183-1-git-send-email-xerofoiify@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407392942-22183-1-git-send-email-xerofoiify@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PLLs on Rockchip platforms report their locking state in an external
-register situated in the "General Register Files" which is provided
-through a syscon device.
+On Thu, Aug 07, 2014 at 07:29:00AM +0100, Nick Krause wrote:
+> Undefine SMC_inb and SMC_outb before redifing to prevent warning which follows
+> 
+> drivers/net/ethernet/smsc/smc91x.h:490:0: warning: "SMC_inb" redefined [enabled by default]
+> drivers/net/ethernet/smsc/smc91x.h:199:0: note: this is the location of the previous definition
+> drivers/net/ethernet/smsc/smc91x.h:491:0: warning: "SMC_outb" redefined [enabled by default]
+> drivers/net/ethernet/smsc/smc91x.h:201:0: note: this is the location of the previous definition
+> 
+> Signed-off-by: Nick Krause <xerofoify@gmail.com>
+> ---
+>  drivers/net/ethernet/smsc/smc91x.h | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/net/ethernet/smsc/smc91x.h b/drivers/net/ethernet/smsc/smc91x.h
+> index 47dce91..d1c5441 100644
+> --- a/drivers/net/ethernet/smsc/smc91x.h
+> +++ b/drivers/net/ethernet/smsc/smc91x.h
+> @@ -487,6 +487,8 @@ smc_pxa_dma_irq(int dma, void *dummy)
+>  #endif
+>  
+>  #if ! SMC_CAN_USE_8BIT
+> +#undef  SMC_inb
+> +#undef  SMC_outb
+>  #define SMC_inb(ioaddr, reg)		({ BUG(); 0; })
+>  #define SMC_outb(x, ioaddr, reg)	BUG()
+>  #define SMC_insb(a, r, p, l)		BUG()
 
-When the initial clk init runs, this syscon is of course not yet
-available, making it impossible to set PLLs to other frequencies
-through the assigned-rate property of the clock-controller node.
+Nak. The real issue here appears to be that the CONFIG_M32R code defines
+SMC_CAN_USE_8BIT as 0 but then defines SMC_inb/SMC_outb anyway.
 
-Syscon devices are initialized through a postcore initcall, so add an
-arch_initcall to rerun the rockchip specific clock initalization when
-the GRF is available.
-
-As the clock init already runs two times (through of_clk_add_provider
-and of_clk_init), a third time shouldn't hurt to much and in the best
-case wouldn't change any settings at all.
-
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
- drivers/clk/rockchip/clk.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
-diff --git a/drivers/clk/rockchip/clk.c b/drivers/clk/rockchip/clk.c
-index 9a3adb1..e14b108 100644
---- a/drivers/clk/rockchip/clk.c
-+++ b/drivers/clk/rockchip/clk.c
-@@ -23,6 +23,7 @@
- #include <linux/slab.h>
- #include <linux/clk.h>
- #include <linux/clk-provider.h>
-+#include <linux/clk/clk-conf.h>
- #include <linux/mfd/syscon.h>
- #include <linux/regmap.h>
- #include "clk.h"
-@@ -126,6 +127,18 @@ void __init rockchip_clk_init(struct device_node *np, void __iomem *base,
- 	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
- }
- 
-+/**
-+ * Set clock-defaults again, after grf regmap is available for PLLs.
-+ */
-+static int __init rockchip_clk_set_defaults(void)
-+{
-+	if (cru_node)
-+		return of_clk_set_defaults(cru_node, true);
-+
-+	return 0;
-+}
-+arch_initcall(rockchip_clk_set_defaults);
-+
- struct regmap *rockchip_clk_get_grf(void)
- {
- 	if (IS_ERR(grf))
--- 
-2.0.1
-
-
+Will
