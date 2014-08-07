@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932392AbaHGOIK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 10:08:10 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:12374 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757457AbaHGOH1 (ORCPT
+	id S932414AbaHGOJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 10:09:20 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:46070 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757377AbaHGOJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 10:07:27 -0400
-From: nick.dyer@itdev.co.uk
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 2/2] Input: atmel_mxt_ts - mXT224 DMA quirk was fixed in firmware v2.0.AA
-Date: Thu,  7 Aug 2014 15:07:18 +0100
-Message-Id: <1407420438-6289-3-git-send-email-nick.dyer@itdev.co.uk>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407420438-6289-1-git-send-email-nick.dyer@itdev.co.uk>
-References: <1407420438-6289-1-git-send-email-nick.dyer@itdev.co.uk>
+	Thu, 7 Aug 2014 10:09:18 -0400
+Message-ID: <53E38889.3000603@codethink.co.uk>
+Date: Thu, 07 Aug 2014 15:09:13 +0100
+From: Rob Jones <rob.jones@codethink.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Steven Whitehouse <swhiteho@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kernel@lists.codethink.co.uk, ian.molton@codethink.co.uk
+Subject: Re: [PATCH] seq_file: Allow private data to be supplied on seq_open
+References: <1406655593-12626-1-git-send-email-rob.jones@codethink.co.uk>	<20140806160259.GR18016@ZenIV.linux.org.uk>	<53E254F1.30605@codethink.co.uk> <87sil9sa50.fsf@x220.int.ebiederm.org> <53E37810.1050109@codethink.co.uk> <53E37FDF.50102@redhat.com>
+In-Reply-To: <53E37FDF.50102@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nick Dyer <nick.dyer@itdev.co.uk>
+Hi Steve,
 
-Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
----
- drivers/input/touchscreen/atmel_mxt_ts.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+On 07/08/14 14:32, Steven Whitehouse wrote:
+> Hi,
+>
+> On 07/08/14 13:58, Rob Jones wrote:
+> [snip]
+>>
+>> On a related subject, Having looked at a few uses of seq_file, I must
+>> say that some users seem to make assumptions about the internal
+>> workings of the module. Dangerous behaviour as only some behaviours are
+>> documented.
+>>
+>> e.g. The behaviour that "struct seq_file" pointer is stored in
+>> file->private_data is documented and can therefore be relied upon but
+>> the fact that the output buffer and its size are only defined at the
+>> first output (and can therefore be pre-defined and pre-allocated by
+>> user code) is not documented and could therefore change without warning.
+>>
+>> This second behaviour is assumed in, for example, module fs/gfs2/glock.c
+>> which could, therefore, stop working properly without warning if the
+>> internal behaviour was changed.
+>>
+> While it is undocumented, it is I understand, how this feature was
+> intended to be used, so I think that it is safe to do this in the GFS2
+> case. Here is a ref to the thread which explains how it landed up like
+> that:
+> https://www.redhat.com/archives/cluster-devel/2012-June/msg00000.html
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index da497db..67ea728 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -1424,10 +1424,12 @@ static int mxt_get_object_table(struct mxt_data *data)
- 
- 		switch (object->type) {
- 		case MXT_GEN_MESSAGE_T5:
--			if (data->info.family_id == 0x80) {
-+			if ((data->info.family_id == 0x80)
-+			    && (data->info.version < 0x20)) {
- 				/*
--				 * On mXT224 read and discard unused CRC byte
--				 * otherwise DMA reads are misaligned
-+				 * On mXT224 firmware versions prior to V2.0
-+				 * read and discard unused CRC byte otherwise
-+				 * DMA reads are misaligned
- 				 */
- 				data->T5_msg_size = mxt_obj_size(object);
- 			} else {
+No criticism was intended of that particular piece of code, It has been
+there for a couple of years and is, presumably, still working :-)
+
+It was just a general point about things needing to be written down. A
+behaviour such as you were relying on can be a very positive thing but
+it would be of much greater use if it was written down in the file docs.
+
+I completely missed seq_file_private() because I was looking at the
+docs more than the code. If it had been written down in the docs it
+would have saved me quite a bit of time, similarly, if the buffer
+allocation behaviour was documented, changes to seq_file.c would not be
+made that could break your code.
+
+God knows, I'm not a fan of unnecessary documentation but where it's
+useful I'm all for it.
+
+>
+> Steve.
+
 -- 
-1.9.1
-
+Rob Jones
+Codethink Ltd
+mailto:rob.jones@codethink.co.uk
+tel:+44 161 236 5575
