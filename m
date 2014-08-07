@@ -1,87 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143AbaHGJLP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 05:11:15 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:57859 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757211AbaHGJLN (ORCPT
+	id S1757412AbaHGJMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 05:12:21 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:35829 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754949AbaHGJMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 05:11:13 -0400
-Message-ID: <53E342AD.2070303@gmail.com>
-Date: Thu, 07 Aug 2014 12:11:09 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Thu, 7 Aug 2014 05:12:19 -0400
+Message-ID: <53E342EF.2010304@kernel.org>
+Date: Thu, 07 Aug 2014 10:12:15 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        Boaz Harrosh <boaz@plexistor.com>
-CC: Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <willy@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] brd: Fix all partitions BUGs
-References: <53E21125.9080308@plexistor.com>	 <53E2127B.1020805@plexistor.com> <1407366387.2869.3.camel@rzwisler-mobl1.amr.corp.intel.com>
-In-Reply-To: <1407366387.2869.3.camel@rzwisler-mobl1.amr.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Murilo Opsfelder Araujo <mopsfelder@gmail.com>, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+CC: gregkh@linuxfoundation.org
+Subject: Re: [PATCH v3 1/2] staging: iio: accel: Add blank lines between declarations
+ and code
+References: <1407370929-26949-1-git-send-email-mopsfelder@gmail.com> <1407370929-26949-2-git-send-email-mopsfelder@gmail.com>
+In-Reply-To: <1407370929-26949-2-git-send-email-mopsfelder@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 02:06 AM, Ross Zwisler wrote:
-> On Wed, 2014-08-06 at 14:33 +0300, Boaz Harrosh wrote:
+On 07/08/14 01:22, Murilo Opsfelder Araujo wrote:
+> This patch adds missing blank lines between declarations and code and
+> fixes lines starting by spaces, satisfying checkpatch.pl.
 > 
-> With this patch we end up in what feels like a weird place where we're half
-> using the old scheme of major/minor allocation, and half in the world of
-> dynamic major/minors.  Devices have a major of 1 and minors that increment by
-> 1, but partitions have a major of 259 (BLOCK_EXT_MAJOR):
+> Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+Applied to the togreg branch of iio.git.  Initially pushed out
+as testing for the autobuilders to play around with it.
+
+J
+> ---
+>  drivers/staging/iio/accel/adis16201_core.c | 5 +++--
+>  drivers/staging/iio/accel/adis16203_core.c | 2 ++
+>  drivers/staging/iio/accel/adis16204_core.c | 1 +
+>  drivers/staging/iio/accel/adis16209_core.c | 1 +
+>  drivers/staging/iio/accel/adis16240_core.c | 1 +
+>  drivers/staging/iio/accel/lis3l02dq_core.c | 4 ++++
+>  drivers/staging/iio/accel/lis3l02dq_ring.c | 1 +
+>  drivers/staging/iio/accel/sca3000_core.c   | 1 +
+>  8 files changed, 14 insertions(+), 2 deletions(-)
 > 
-> 	brw-rw---- 1 root disk   1, 0 Aug  6 14:10 /dev/ram0
-> 	brw-rw---- 1 root disk   1, 1 Aug  6 14:13 /dev/ram1
-> 	brw-rw---- 1 root disk 259, 0 Aug  6 14:14 /dev/ram1p1
-> 	brw-rw---- 1 root disk 259, 1 Aug  6 14:13 /dev/ram1p2
-> 	brw-rw---- 1 root disk 259, 2 Aug  6 14:14 /dev/ram1p51
+> diff --git a/drivers/staging/iio/accel/adis16201_core.c b/drivers/staging/iio/accel/adis16201_core.c
+> index 50ba1fa..7eae5fd 100644
+> --- a/drivers/staging/iio/accel/adis16201_core.c
+> +++ b/drivers/staging/iio/accel/adis16201_core.c
+> @@ -111,6 +111,7 @@ static int adis16201_write_raw(struct iio_dev *indio_dev,
+>  	int bits;
+>  	s16 val16;
+>  	u8 addr;
+> +
+>  	switch (mask) {
+>  	case IIO_CHAN_INFO_CALIBBIAS:
+>  		switch (chan->type) {
+> @@ -131,8 +132,8 @@ static int adis16201_write_raw(struct iio_dev *indio_dev,
+>  }
+>  
+>  static const struct iio_chan_spec adis16201_channels[] = {
+> -  ADIS_SUPPLY_CHAN(ADIS16201_SUPPLY_OUT, ADIS16201_SCAN_SUPPLY, 0, 12),
+> -  ADIS_TEMP_CHAN(ADIS16201_TEMP_OUT, ADIS16201_SCAN_TEMP, 0, 12),
+> +	ADIS_SUPPLY_CHAN(ADIS16201_SUPPLY_OUT, ADIS16201_SCAN_SUPPLY, 0, 12),
+> +	ADIS_TEMP_CHAN(ADIS16201_TEMP_OUT, ADIS16201_SCAN_TEMP, 0, 12),
+>  	ADIS_ACCEL_CHAN(X, ADIS16201_XACCL_OUT, ADIS16201_SCAN_ACC_X,
+>  		BIT(IIO_CHAN_INFO_CALIBBIAS), 0, 14),
+>  	ADIS_ACCEL_CHAN(Y, ADIS16201_YACCL_OUT, ADIS16201_SCAN_ACC_Y,
+> diff --git a/drivers/staging/iio/accel/adis16203_core.c b/drivers/staging/iio/accel/adis16203_core.c
+> index f472137..fbbe93f 100644
+> --- a/drivers/staging/iio/accel/adis16203_core.c
+> +++ b/drivers/staging/iio/accel/adis16203_core.c
+> @@ -37,6 +37,7 @@ static int adis16203_write_raw(struct iio_dev *indio_dev,
+>  	struct adis *st = iio_priv(indio_dev);
+>  	/* currently only one writable parameter which keeps this simple */
+>  	u8 addr = adis16203_addresses[chan->scan_index];
+> +
+>  	return adis_write_reg_16(st, addr, val & 0x3FFF);
+>  }
+>  
+> @@ -50,6 +51,7 @@ static int adis16203_read_raw(struct iio_dev *indio_dev,
+>  	int bits;
+>  	u8 addr;
+>  	s16 val16;
+> +
+>  	switch (mask) {
+>  	case IIO_CHAN_INFO_RAW:
+>  		return adis_single_conversion(indio_dev, chan,
+> diff --git a/drivers/staging/iio/accel/adis16204_core.c b/drivers/staging/iio/accel/adis16204_core.c
+> index 19eaebc..4c8acbc 100644
+> --- a/drivers/staging/iio/accel/adis16204_core.c
+> +++ b/drivers/staging/iio/accel/adis16204_core.c
+> @@ -119,6 +119,7 @@ static int adis16204_write_raw(struct iio_dev *indio_dev,
+>  	int bits;
+>  	s16 val16;
+>  	u8 addr;
+> +
+>  	switch (mask) {
+>  	case IIO_CHAN_INFO_CALIBBIAS:
+>  		switch (chan->type) {
+> diff --git a/drivers/staging/iio/accel/adis16209_core.c b/drivers/staging/iio/accel/adis16209_core.c
+> index 374dc6e..b2c7aed 100644
+> --- a/drivers/staging/iio/accel/adis16209_core.c
+> +++ b/drivers/staging/iio/accel/adis16209_core.c
+> @@ -44,6 +44,7 @@ static int adis16209_write_raw(struct iio_dev *indio_dev,
+>  	int bits;
+>  	s16 val16;
+>  	u8 addr;
+> +
+>  	switch (mask) {
+>  	case IIO_CHAN_INFO_CALIBBIAS:
+>  		switch (chan->type) {
+> diff --git a/drivers/staging/iio/accel/adis16240_core.c b/drivers/staging/iio/accel/adis16240_core.c
+> index 74ace2a..205d6d0 100644
+> --- a/drivers/staging/iio/accel/adis16240_core.c
+> +++ b/drivers/staging/iio/accel/adis16240_core.c
+> @@ -163,6 +163,7 @@ static int adis16240_write_raw(struct iio_dev *indio_dev,
+>  	int bits = 10;
+>  	s16 val16;
+>  	u8 addr;
+> +
+>  	switch (mask) {
+>  	case IIO_CHAN_INFO_CALIBBIAS:
+>  		val16 = val & ((1 << bits) - 1);
+> diff --git a/drivers/staging/iio/accel/lis3l02dq_core.c b/drivers/staging/iio/accel/lis3l02dq_core.c
+> index 898653c..f5e145c 100644
+> --- a/drivers/staging/iio/accel/lis3l02dq_core.c
+> +++ b/drivers/staging/iio/accel/lis3l02dq_core.c
+> @@ -212,6 +212,7 @@ static int lis3l02dq_write_thresh(struct iio_dev *indio_dev,
+>  				  int val, int val2)
+>  {
+>  	u16 value = val;
+> +
+>  	return lis3l02dq_spi_write_reg_s16(indio_dev,
+>  					   LIS3L02DQ_REG_THS_L_ADDR,
+>  					   value);
+> @@ -226,6 +227,7 @@ static int lis3l02dq_write_raw(struct iio_dev *indio_dev,
+>  	int ret = -EINVAL, reg;
+>  	u8 uval;
+>  	s8 sval;
+> +
+>  	switch (mask) {
+>  	case IIO_CHAN_INFO_CALIBBIAS:
+>  		if (val > 255 || val < -256)
+> @@ -302,6 +304,7 @@ static ssize_t lis3l02dq_read_frequency(struct device *dev,
+>  	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+>  	int ret, len = 0;
+>  	s8 t;
+> +
+>  	ret = lis3l02dq_spi_read_reg_8(indio_dev,
+>  				       LIS3L02DQ_REG_CTRL_1_ADDR,
+>  				       (u8 *)&t);
+> @@ -565,6 +568,7 @@ static int lis3l02dq_read_event_config(struct iio_dev *indio_dev,
+>  	u8 val;
+>  	int ret;
+>  	u8 mask = (1 << (chan->channel2*2 + (dir == IIO_EV_DIR_RISING)));
+> +
+>  	ret = lis3l02dq_spi_read_reg_8(indio_dev,
+>  				       LIS3L02DQ_REG_WAKE_UP_CFG_ADDR,
+>  				       &val);
+> diff --git a/drivers/staging/iio/accel/lis3l02dq_ring.c b/drivers/staging/iio/accel/lis3l02dq_ring.c
+> index bf33fde..1d934ee 100644
+> --- a/drivers/staging/iio/accel/lis3l02dq_ring.c
+> +++ b/drivers/staging/iio/accel/lis3l02dq_ring.c
+> @@ -19,6 +19,7 @@ static inline u16 combine_8_to_16(u8 lower, u8 upper)
+>  {
+>  	u16 _lower = lower;
+>  	u16 _upper = upper;
+> +
+>  	return _lower | (_upper << 8);
+>  }
+>  
+> diff --git a/drivers/staging/iio/accel/sca3000_core.c b/drivers/staging/iio/accel/sca3000_core.c
+> index ed30e32..bc53fedb 100644
+> --- a/drivers/staging/iio/accel/sca3000_core.c
+> +++ b/drivers/staging/iio/accel/sca3000_core.c
+> @@ -713,6 +713,7 @@ static int sca3000_read_thresh(struct iio_dev *indio_dev,
+>  	int ret, i;
+>  	struct sca3000_state *st = iio_priv(indio_dev);
+>  	int num = chan->channel2;
+> +
+>  	mutex_lock(&st->lock);
+>  	ret = sca3000_read_ctrl_reg(st, sca3000_addresses[num][1]);
+>  	mutex_unlock(&st->lock);
 > 
-
-This is when you use max_part = 1. If someone really cares, why
-would he care, but if he cares like if he wants persistent
-partition minors than he can use  max_part = 8, say and it will
-all go nice. (And if he creates 9 partitions on a device then
-the last one will be from the 259 dynamic range)
-
-So you see it is all in the user choice. If he cares at all
-because I do not see why it matters
-
-> For NVMe and PRD you get a major of 259 all around:
-> 
-> 	brw-rw---- 1 root disk 259, 0 Aug  6 16:55 /dev/pmem0
-> 	brw-rw---- 1 root disk 259, 2 Aug  6 16:55 /dev/pmem0p1
-> 	brw-rw---- 1 root disk 259, 3 Aug  6 16:55 /dev/pmem0p2
-> 	brw-rw---- 1 root disk 259, 1 Aug  6 16:54 /dev/pmem1
-> 
-> It could be that this is fine, but it just smells fishy to me I guess.
-> 
-
-If you go this way then dynamic creation with the mknod trick does not work
-because there is no association in the system with your driver. Whats so fishy
-I have read the all partitions code this is simple math really. This is the way
-it works.
-
-> Also, it looks like you can still create a new device with this patch, but you
-> can't create partitions on that device.  Not sure if this is just what you get
-> when you dynamically create a device on the fly, or if it's a symptom of
-> something larger.
-> 
-
-What? I just tried again this all works fine for me, here with fdisk.
-$ modprobe brd      # will create ram0-7
-$ mknod /dev/ram8 b 1 8
-$ fdisk /dev/ram8
-  g, n, , , +2M, n, , , , , w 
-
-I create 2 partitions 2M each and press w and it is all there.
-
-What numbers did you use ? rd_nr, max_part, and the mknod numbers. Here it
-just works fine. What did you try?
-
-Thanks
-Boaz
-
