@@ -1,1026 +1,718 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388AbaHGSWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 14:22:52 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:35230 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104AbaHGSWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 14:22:49 -0400
-From: mathieu.poirier@linaro.org
-To: linus.walleij@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
-        robherring2@gmail.com, daniel.thompson@linaro.org
-Cc: mathieu.poirier@linaro.org, arve@android.com, john.stultz@linaro.org,
-        pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
-        jonas.svennebring@avagotech.com, james.king@linaro.org,
-        panchaxari.prasannamurthy@linaro.org, marcin.jabrzyk@gmail.com,
-        r.sengupta@samsung.com, robbelibobban@gmail.com,
-        Tony.Armitstead@arm.com, patches@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/10 v3] ARM: removing support for etb/etm in "arch/arm/kernel/"
-Date: Thu,  7 Aug 2014 12:21:46 -0600
-Message-Id: <1407435706-19441-11-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407435706-19441-1-git-send-email-mathieu.poirier@linaro.org>
-References: <1407435706-19441-1-git-send-email-mathieu.poirier@linaro.org>
+	id S1755417AbaHGSW6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 14:22:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755104AbaHGSWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 14:22:55 -0400
+Message-ID: <53E3C270.1010302@redhat.com>
+Date: Thu, 07 Aug 2014 14:16:16 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Dave Hansen <dave.hansen@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [sched/numa] 096aa33863a: -21.4% hackbench.throughput, -20.2%
+ netperf.Throughput_Mbps
+References: <20140807105311.GA17655@localhost>
+In-Reply-To: <20140807105311.GA17655@localhost>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
+On 08/07/2014 06:53 AM, Fengguang Wu wrote:
+> Hi Rik,
+> 
+> We noticed the below performance regression in commit
+> 096aa33863a5e48de52d2ff30e0801b7487944f4 ("sched/numa: Decay
+> ->wakee_flips instead of zeroing")
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     122361 ± 0%     -21.4%      96140 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>     122361 ± 0%     -21.4%      96140 ± 0%  TOTAL hackbench.throughput
 
-Removing minimal support for etb/etm to favour an implentation
-that is more flexible, extensible and capable of handling more
-platforms.
+I guess the performance of that benchmark depends on it
+"slipping under the wire" after each time the kernel
+zeroes out ->wakee_flips.
 
-Also removing the only client of the old driver.  That code can
-easily be replaced by entries for etb/etm in the device tree.
+Depending on repeatedly pulling the wakee back to the same
+node as the waker suggests something else in the kernel may
+be pulling the wakee to another place in the system repeatedly,
+as well, just at a lower frequency (load balancer?).
 
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- arch/arm/Kconfig.debug                    |   8 -
- arch/arm/include/asm/hardware/coresight.h | 157 -------
- arch/arm/kernel/Makefile                  |   1 -
- arch/arm/kernel/etm.c                     | 654 ------------------------------
- arch/arm/kernel/hw_breakpoint.c           |   4 +-
- arch/arm/mach-omap2/Kconfig               |   8 -
- arch/arm/mach-omap2/Makefile              |   1 -
- arch/arm/mach-omap2/emu.c                 |  50 ---
- 8 files changed, 2 insertions(+), 881 deletions(-)
- delete mode 100644 arch/arm/include/asm/hardware/coresight.h
- delete mode 100644 arch/arm/kernel/etm.c
- delete mode 100644 arch/arm/mach-omap2/emu.c
+I have also noticed that select_idle_sibling often fails to
+find an idle sibling within the LLC domain, even when it
+exists. Fixing that bug sometimes results in lower performance.
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 886f4b2..35e608c 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -1223,14 +1223,6 @@ config EARLY_PRINTK
- 	  kernel low-level debugging functions. Add earlyprintk to your
- 	  kernel parameters to enable this console.
- 
--config OC_ETM
--	bool "On-chip ETM and ETB"
--	depends on ARM_AMBA
--	help
--	  Enables the on-chip embedded trace macrocell and embedded trace
--	  buffer driver that will allow you to collect traces of the
--	  kernel code.
--
- config ARM_KPROBES_TEST
- 	tristate "Kprobes test module"
- 	depends on KPROBES && MODULES
-diff --git a/arch/arm/include/asm/hardware/coresight.h b/arch/arm/include/asm/hardware/coresight.h
-deleted file mode 100644
-index ad774f3..0000000
---- a/arch/arm/include/asm/hardware/coresight.h
-+++ /dev/null
-@@ -1,157 +0,0 @@
--/*
-- * linux/arch/arm/include/asm/hardware/coresight.h
-- *
-- * CoreSight components' registers
-- *
-- * Copyright (C) 2009 Nokia Corporation.
-- * Alexander Shishkin
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#ifndef __ASM_HARDWARE_CORESIGHT_H
--#define __ASM_HARDWARE_CORESIGHT_H
--
--#define TRACER_ACCESSED_BIT	0
--#define TRACER_RUNNING_BIT	1
--#define TRACER_CYCLE_ACC_BIT	2
--#define TRACER_ACCESSED		BIT(TRACER_ACCESSED_BIT)
--#define TRACER_RUNNING		BIT(TRACER_RUNNING_BIT)
--#define TRACER_CYCLE_ACC	BIT(TRACER_CYCLE_ACC_BIT)
--
--#define TRACER_TIMEOUT 10000
--
--#define etm_writel(t, v, x) \
--	(writel_relaxed((v), (t)->etm_regs + (x)))
--#define etm_readl(t, x) (readl_relaxed((t)->etm_regs + (x)))
--
--/* CoreSight Management Registers */
--#define CSMR_LOCKACCESS 0xfb0
--#define CSMR_LOCKSTATUS 0xfb4
--#define CSMR_AUTHSTATUS 0xfb8
--#define CSMR_DEVID	0xfc8
--#define CSMR_DEVTYPE	0xfcc
--/* CoreSight Component Registers */
--#define CSCR_CLASS	0xff4
--
--#define CS_LAR_KEY	0xc5acce55
--
--/* ETM control register, "ETM Architecture", 3.3.1 */
--#define ETMR_CTRL		0
--#define ETMCTRL_POWERDOWN	1
--#define ETMCTRL_PROGRAM		(1 << 10)
--#define ETMCTRL_PORTSEL		(1 << 11)
--#define ETMCTRL_DO_CONTEXTID	(3 << 14)
--#define ETMCTRL_PORTMASK1	(7 << 4)
--#define ETMCTRL_PORTMASK2	(1 << 21)
--#define ETMCTRL_PORTMASK	(ETMCTRL_PORTMASK1 | ETMCTRL_PORTMASK2)
--#define ETMCTRL_PORTSIZE(x) ((((x) & 7) << 4) | (!!((x) & 8)) << 21)
--#define ETMCTRL_DO_CPRT		(1 << 1)
--#define ETMCTRL_DATAMASK	(3 << 2)
--#define ETMCTRL_DATA_DO_DATA	(1 << 2)
--#define ETMCTRL_DATA_DO_ADDR	(1 << 3)
--#define ETMCTRL_DATA_DO_BOTH	(ETMCTRL_DATA_DO_DATA | ETMCTRL_DATA_DO_ADDR)
--#define ETMCTRL_BRANCH_OUTPUT	(1 << 8)
--#define ETMCTRL_CYCLEACCURATE	(1 << 12)
--
--/* ETM configuration code register */
--#define ETMR_CONFCODE		(0x04)
--
--/* ETM trace start/stop resource control register */
--#define ETMR_TRACESSCTRL	(0x18)
--
--/* ETM trigger event register */
--#define ETMR_TRIGEVT		(0x08)
--
--/* address access type register bits, "ETM architecture",
-- * table 3-27 */
--/* - access type */
--#define ETMAAT_IFETCH		0
--#define ETMAAT_IEXEC		1
--#define ETMAAT_IEXECPASS	2
--#define ETMAAT_IEXECFAIL	3
--#define ETMAAT_DLOADSTORE	4
--#define ETMAAT_DLOAD		5
--#define ETMAAT_DSTORE		6
--/* - comparison access size */
--#define ETMAAT_JAVA		(0 << 3)
--#define ETMAAT_THUMB		(1 << 3)
--#define ETMAAT_ARM		(3 << 3)
--/* - data value comparison control */
--#define ETMAAT_NOVALCMP		(0 << 5)
--#define ETMAAT_VALMATCH		(1 << 5)
--#define ETMAAT_VALNOMATCH	(3 << 5)
--/* - exact match */
--#define ETMAAT_EXACTMATCH	(1 << 7)
--/* - context id comparator control */
--#define ETMAAT_IGNCONTEXTID	(0 << 8)
--#define ETMAAT_VALUE1		(1 << 8)
--#define ETMAAT_VALUE2		(2 << 8)
--#define ETMAAT_VALUE3		(3 << 8)
--/* - security level control */
--#define ETMAAT_IGNSECURITY	(0 << 10)
--#define ETMAAT_NSONLY		(1 << 10)
--#define ETMAAT_SONLY		(2 << 10)
--
--#define ETMR_COMP_VAL(x)	(0x40 + (x) * 4)
--#define ETMR_COMP_ACC_TYPE(x)	(0x80 + (x) * 4)
--
--/* ETM status register, "ETM Architecture", 3.3.2 */
--#define ETMR_STATUS		(0x10)
--#define ETMST_OVERFLOW		BIT(0)
--#define ETMST_PROGBIT		BIT(1)
--#define ETMST_STARTSTOP		BIT(2)
--#define ETMST_TRIGGER		BIT(3)
--
--#define etm_progbit(t)		(etm_readl((t), ETMR_STATUS) & ETMST_PROGBIT)
--#define etm_started(t)		(etm_readl((t), ETMR_STATUS) & ETMST_STARTSTOP)
--#define etm_triggered(t)	(etm_readl((t), ETMR_STATUS) & ETMST_TRIGGER)
--
--#define ETMR_TRACEENCTRL2	0x1c
--#define ETMR_TRACEENCTRL	0x24
--#define ETMTE_INCLEXCL		BIT(24)
--#define ETMR_TRACEENEVT		0x20
--#define ETMCTRL_OPTS		(ETMCTRL_DO_CPRT | \
--				ETMCTRL_DATA_DO_ADDR | \
--				ETMCTRL_BRANCH_OUTPUT | \
--				ETMCTRL_DO_CONTEXTID)
--
--/* ETM management registers, "ETM Architecture", 3.5.24 */
--#define ETMMR_OSLAR	0x300
--#define ETMMR_OSLSR	0x304
--#define ETMMR_OSSRR	0x308
--#define ETMMR_PDSR	0x314
--
--/* ETB registers, "CoreSight Components TRM", 9.3 */
--#define ETBR_DEPTH		0x04
--#define ETBR_STATUS		0x0c
--#define ETBR_READMEM		0x10
--#define ETBR_READADDR		0x14
--#define ETBR_WRITEADDR		0x18
--#define ETBR_TRIGGERCOUNT	0x1c
--#define ETBR_CTRL		0x20
--#define ETBR_FORMATTERCTRL	0x304
--#define ETBFF_ENFTC		1
--#define ETBFF_ENFCONT		BIT(1)
--#define ETBFF_FONFLIN		BIT(4)
--#define ETBFF_MANUAL_FLUSH	BIT(6)
--#define ETBFF_TRIGIN		BIT(8)
--#define ETBFF_TRIGEVT		BIT(9)
--#define ETBFF_TRIGFL		BIT(10)
--
--#define etb_writel(t, v, x) \
--	(writel_relaxed((v), (t)->etb_regs + (x)))
--#define etb_readl(t, x) (readl_relaxed((t)->etb_regs + (x)))
--
--#define etm_lock(t) do { etm_writel((t), 0, CSMR_LOCKACCESS); } while (0)
--#define etm_unlock(t) \
--	do { etm_writel((t), CS_LAR_KEY, CSMR_LOCKACCESS); } while (0)
--
--#define etb_lock(t) do { etb_writel((t), 0, CSMR_LOCKACCESS); } while (0)
--#define etb_unlock(t) \
--	do { etb_writel((t), CS_LAR_KEY, CSMR_LOCKACCESS); } while (0)
--
--#endif /* __ASM_HARDWARE_CORESIGHT_H */
--
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 38ddd9f..9e80b98 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -30,7 +30,6 @@ else
- obj-y		+= entry-armv.o
- endif
- 
--obj-$(CONFIG_OC_ETM)		+= etm.o
- obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
- obj-$(CONFIG_ISA_DMA_API)	+= dma.o
- obj-$(CONFIG_FIQ)		+= fiq.o fiqasm.o
-diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-deleted file mode 100644
-index 131a6ab..0000000
---- a/arch/arm/kernel/etm.c
-+++ /dev/null
-@@ -1,654 +0,0 @@
--/*
-- * linux/arch/arm/kernel/etm.c
-- *
-- * Driver for ARM's Embedded Trace Macrocell and Embedded Trace Buffer.
-- *
-- * Copyright (C) 2009 Nokia Corporation.
-- * Alexander Shishkin
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/types.h>
--#include <linux/io.h>
--#include <linux/sysrq.h>
--#include <linux/device.h>
--#include <linux/clk.h>
--#include <linux/amba/bus.h>
--#include <linux/fs.h>
--#include <linux/uaccess.h>
--#include <linux/miscdevice.h>
--#include <linux/vmalloc.h>
--#include <linux/mutex.h>
--#include <linux/module.h>
--#include <asm/hardware/coresight.h>
--#include <asm/sections.h>
--
--MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Alexander Shishkin");
--
--/*
-- * ETM tracer state
-- */
--struct tracectx {
--	unsigned int	etb_bufsz;
--	void __iomem	*etb_regs;
--	void __iomem	*etm_regs;
--	unsigned long	flags;
--	int		ncmppairs;
--	int		etm_portsz;
--	struct device	*dev;
--	struct clk	*emu_clk;
--	struct mutex	mutex;
--};
--
--static struct tracectx tracer;
--
--static inline bool trace_isrunning(struct tracectx *t)
--{
--	return !!(t->flags & TRACER_RUNNING);
--}
--
--static int etm_setup_address_range(struct tracectx *t, int n,
--		unsigned long start, unsigned long end, int exclude, int data)
--{
--	u32 flags = ETMAAT_ARM | ETMAAT_IGNCONTEXTID | ETMAAT_NSONLY | \
--		    ETMAAT_NOVALCMP;
--
--	if (n < 1 || n > t->ncmppairs)
--		return -EINVAL;
--
--	/* comparators and ranges are numbered starting with 1 as opposed
--	 * to bits in a word */
--	n--;
--
--	if (data)
--		flags |= ETMAAT_DLOADSTORE;
--	else
--		flags |= ETMAAT_IEXEC;
--
--	/* first comparator for the range */
--	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2));
--	etm_writel(t, start, ETMR_COMP_VAL(n * 2));
--
--	/* second comparator is right next to it */
--	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2 + 1));
--	etm_writel(t, end, ETMR_COMP_VAL(n * 2 + 1));
--
--	flags = exclude ? ETMTE_INCLEXCL : 0;
--	etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
--
--	return 0;
--}
--
--static int trace_start(struct tracectx *t)
--{
--	u32 v;
--	unsigned long timeout = TRACER_TIMEOUT;
--
--	etb_unlock(t);
--
--	etb_writel(t, 0, ETBR_FORMATTERCTRL);
--	etb_writel(t, 1, ETBR_CTRL);
--
--	etb_lock(t);
--
--	/* configure etm */
--	v = ETMCTRL_OPTS | ETMCTRL_PROGRAM | ETMCTRL_PORTSIZE(t->etm_portsz);
--
--	if (t->flags & TRACER_CYCLE_ACC)
--		v |= ETMCTRL_CYCLEACCURATE;
--
--	etm_unlock(t);
--
--	etm_writel(t, v, ETMR_CTRL);
--
--	while (!(etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
--		;
--	if (!timeout) {
--		dev_dbg(t->dev, "Waiting for progbit to assert timed out\n");
--		etm_lock(t);
--		return -EFAULT;
--	}
--
--	etm_setup_address_range(t, 1, (unsigned long)_stext,
--			(unsigned long)_etext, 0, 0);
--	etm_writel(t, 0, ETMR_TRACEENCTRL2);
--	etm_writel(t, 0, ETMR_TRACESSCTRL);
--	etm_writel(t, 0x6f, ETMR_TRACEENEVT);
--
--	v &= ~ETMCTRL_PROGRAM;
--	v |= ETMCTRL_PORTSEL;
--
--	etm_writel(t, v, ETMR_CTRL);
--
--	timeout = TRACER_TIMEOUT;
--	while (etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM && --timeout)
--		;
--	if (!timeout) {
--		dev_dbg(t->dev, "Waiting for progbit to deassert timed out\n");
--		etm_lock(t);
--		return -EFAULT;
--	}
--
--	etm_lock(t);
--
--	t->flags |= TRACER_RUNNING;
--
--	return 0;
--}
--
--static int trace_stop(struct tracectx *t)
--{
--	unsigned long timeout = TRACER_TIMEOUT;
--
--	etm_unlock(t);
--
--	etm_writel(t, 0x440, ETMR_CTRL);
--	while (!(etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
--		;
--	if (!timeout) {
--		dev_dbg(t->dev, "Waiting for progbit to assert timed out\n");
--		etm_lock(t);
--		return -EFAULT;
--	}
--
--	etm_lock(t);
--
--	etb_unlock(t);
--	etb_writel(t, ETBFF_MANUAL_FLUSH, ETBR_FORMATTERCTRL);
--
--	timeout = TRACER_TIMEOUT;
--	while (etb_readl(t, ETBR_FORMATTERCTRL) &
--			ETBFF_MANUAL_FLUSH && --timeout)
--		;
--	if (!timeout) {
--		dev_dbg(t->dev, "Waiting for formatter flush to commence "
--				"timed out\n");
--		etb_lock(t);
--		return -EFAULT;
--	}
--
--	etb_writel(t, 0, ETBR_CTRL);
--
--	etb_lock(t);
--
--	t->flags &= ~TRACER_RUNNING;
--
--	return 0;
--}
--
--static int etb_getdatalen(struct tracectx *t)
--{
--	u32 v;
--	int rp, wp;
--
--	v = etb_readl(t, ETBR_STATUS);
--
--	if (v & 1)
--		return t->etb_bufsz;
--
--	rp = etb_readl(t, ETBR_READADDR);
--	wp = etb_readl(t, ETBR_WRITEADDR);
--
--	if (rp > wp) {
--		etb_writel(t, 0, ETBR_READADDR);
--		etb_writel(t, 0, ETBR_WRITEADDR);
--
--		return 0;
--	}
--
--	return wp - rp;
--}
--
--/* sysrq+v will always stop the running trace and leave it at that */
--static void etm_dump(void)
--{
--	struct tracectx *t = &tracer;
--	u32 first = 0;
--	int length;
--
--	if (!t->etb_regs) {
--		printk(KERN_INFO "No tracing hardware found\n");
--		return;
--	}
--
--	if (trace_isrunning(t))
--		trace_stop(t);
--
--	etb_unlock(t);
--
--	length = etb_getdatalen(t);
--
--	if (length == t->etb_bufsz)
--		first = etb_readl(t, ETBR_WRITEADDR);
--
--	etb_writel(t, first, ETBR_READADDR);
--
--	printk(KERN_INFO "Trace buffer contents length: %d\n", length);
--	printk(KERN_INFO "--- ETB buffer begin ---\n");
--	for (; length; length--)
--		printk("%08x", cpu_to_be32(etb_readl(t, ETBR_READMEM)));
--	printk(KERN_INFO "\n--- ETB buffer end ---\n");
--
--	/* deassert the overflow bit */
--	etb_writel(t, 1, ETBR_CTRL);
--	etb_writel(t, 0, ETBR_CTRL);
--
--	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
--	etb_writel(t, 0, ETBR_READADDR);
--	etb_writel(t, 0, ETBR_WRITEADDR);
--
--	etb_lock(t);
--}
--
--static void sysrq_etm_dump(int key)
--{
--	dev_dbg(tracer.dev, "Dumping ETB buffer\n");
--	etm_dump();
--}
--
--static struct sysrq_key_op sysrq_etm_op = {
--	.handler = sysrq_etm_dump,
--	.help_msg = "etm-buffer-dump(v)",
--	.action_msg = "etm",
--};
--
--static int etb_open(struct inode *inode, struct file *file)
--{
--	if (!tracer.etb_regs)
--		return -ENODEV;
--
--	file->private_data = &tracer;
--
--	return nonseekable_open(inode, file);
--}
--
--static ssize_t etb_read(struct file *file, char __user *data,
--		size_t len, loff_t *ppos)
--{
--	int total, i;
--	long length;
--	struct tracectx *t = file->private_data;
--	u32 first = 0;
--	u32 *buf;
--
--	mutex_lock(&t->mutex);
--
--	if (trace_isrunning(t)) {
--		length = 0;
--		goto out;
--	}
--
--	etb_unlock(t);
--
--	total = etb_getdatalen(t);
--	if (total == t->etb_bufsz)
--		first = etb_readl(t, ETBR_WRITEADDR);
--
--	etb_writel(t, first, ETBR_READADDR);
--
--	length = min(total * 4, (int)len);
--	buf = vmalloc(length);
--
--	dev_dbg(t->dev, "ETB buffer length: %d\n", total);
--	dev_dbg(t->dev, "ETB status reg: %x\n", etb_readl(t, ETBR_STATUS));
--	for (i = 0; i < length / 4; i++)
--		buf[i] = etb_readl(t, ETBR_READMEM);
--
--	/* the only way to deassert overflow bit in ETB status is this */
--	etb_writel(t, 1, ETBR_CTRL);
--	etb_writel(t, 0, ETBR_CTRL);
--
--	etb_writel(t, 0, ETBR_WRITEADDR);
--	etb_writel(t, 0, ETBR_READADDR);
--	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
--
--	etb_lock(t);
--
--	length -= copy_to_user(data, buf, length);
--	vfree(buf);
--
--out:
--	mutex_unlock(&t->mutex);
--
--	return length;
--}
--
--static int etb_release(struct inode *inode, struct file *file)
--{
--	/* there's nothing to do here, actually */
--	return 0;
--}
--
--static const struct file_operations etb_fops = {
--	.owner = THIS_MODULE,
--	.read = etb_read,
--	.open = etb_open,
--	.release = etb_release,
--	.llseek = no_llseek,
--};
--
--static struct miscdevice etb_miscdev = {
--	.name = "tracebuf",
--	.minor = 0,
--	.fops = &etb_fops,
--};
--
--static int etb_probe(struct amba_device *dev, const struct amba_id *id)
--{
--	struct tracectx *t = &tracer;
--	int ret = 0;
--
--	ret = amba_request_regions(dev, NULL);
--	if (ret)
--		goto out;
--
--	t->etb_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
--	if (!t->etb_regs) {
--		ret = -ENOMEM;
--		goto out_release;
--	}
--
--	amba_set_drvdata(dev, t);
--
--	etb_miscdev.parent = &dev->dev;
--
--	ret = misc_register(&etb_miscdev);
--	if (ret)
--		goto out_unmap;
--
--	t->emu_clk = clk_get(&dev->dev, "emu_src_ck");
--	if (IS_ERR(t->emu_clk)) {
--		dev_dbg(&dev->dev, "Failed to obtain emu_src_ck.\n");
--		return -EFAULT;
--	}
--
--	clk_enable(t->emu_clk);
--
--	etb_unlock(t);
--	t->etb_bufsz = etb_readl(t, ETBR_DEPTH);
--	dev_dbg(&dev->dev, "Size: %x\n", t->etb_bufsz);
--
--	/* make sure trace capture is disabled */
--	etb_writel(t, 0, ETBR_CTRL);
--	etb_writel(t, 0x1000, ETBR_FORMATTERCTRL);
--	etb_lock(t);
--
--	dev_dbg(&dev->dev, "ETB AMBA driver initialized.\n");
--
--out:
--	return ret;
--
--out_unmap:
--	iounmap(t->etb_regs);
--
--out_release:
--	amba_release_regions(dev);
--
--	return ret;
--}
--
--static int etb_remove(struct amba_device *dev)
--{
--	struct tracectx *t = amba_get_drvdata(dev);
--
--	iounmap(t->etb_regs);
--	t->etb_regs = NULL;
--
--	clk_disable(t->emu_clk);
--	clk_put(t->emu_clk);
--
--	amba_release_regions(dev);
--
--	return 0;
--}
--
--static struct amba_id etb_ids[] = {
--	{
--		.id	= 0x0003b907,
--		.mask	= 0x0007ffff,
--	},
--	{ 0, 0 },
--};
--
--static struct amba_driver etb_driver = {
--	.drv		= {
--		.name	= "etb",
--		.owner	= THIS_MODULE,
--	},
--	.probe		= etb_probe,
--	.remove		= etb_remove,
--	.id_table	= etb_ids,
--};
--
--/* use a sysfs file "trace_running" to start/stop tracing */
--static ssize_t trace_running_show(struct kobject *kobj,
--				  struct kobj_attribute *attr,
--				  char *buf)
--{
--	return sprintf(buf, "%x\n", trace_isrunning(&tracer));
--}
--
--static ssize_t trace_running_store(struct kobject *kobj,
--				   struct kobj_attribute *attr,
--				   const char *buf, size_t n)
--{
--	unsigned int value;
--	int ret;
--
--	if (sscanf(buf, "%u", &value) != 1)
--		return -EINVAL;
--
--	mutex_lock(&tracer.mutex);
--	ret = value ? trace_start(&tracer) : trace_stop(&tracer);
--	mutex_unlock(&tracer.mutex);
--
--	return ret ? : n;
--}
--
--static struct kobj_attribute trace_running_attr =
--	__ATTR(trace_running, 0644, trace_running_show, trace_running_store);
--
--static ssize_t trace_info_show(struct kobject *kobj,
--				  struct kobj_attribute *attr,
--				  char *buf)
--{
--	u32 etb_wa, etb_ra, etb_st, etb_fc, etm_ctrl, etm_st;
--	int datalen;
--
--	etb_unlock(&tracer);
--	datalen = etb_getdatalen(&tracer);
--	etb_wa = etb_readl(&tracer, ETBR_WRITEADDR);
--	etb_ra = etb_readl(&tracer, ETBR_READADDR);
--	etb_st = etb_readl(&tracer, ETBR_STATUS);
--	etb_fc = etb_readl(&tracer, ETBR_FORMATTERCTRL);
--	etb_lock(&tracer);
--
--	etm_unlock(&tracer);
--	etm_ctrl = etm_readl(&tracer, ETMR_CTRL);
--	etm_st = etm_readl(&tracer, ETMR_STATUS);
--	etm_lock(&tracer);
--
--	return sprintf(buf, "Trace buffer len: %d\nComparator pairs: %d\n"
--			"ETBR_WRITEADDR:\t%08x\n"
--			"ETBR_READADDR:\t%08x\n"
--			"ETBR_STATUS:\t%08x\n"
--			"ETBR_FORMATTERCTRL:\t%08x\n"
--			"ETMR_CTRL:\t%08x\n"
--			"ETMR_STATUS:\t%08x\n",
--			datalen,
--			tracer.ncmppairs,
--			etb_wa,
--			etb_ra,
--			etb_st,
--			etb_fc,
--			etm_ctrl,
--			etm_st
--			);
--}
--
--static struct kobj_attribute trace_info_attr =
--	__ATTR(trace_info, 0444, trace_info_show, NULL);
--
--static ssize_t trace_mode_show(struct kobject *kobj,
--				  struct kobj_attribute *attr,
--				  char *buf)
--{
--	return sprintf(buf, "%d %d\n",
--			!!(tracer.flags & TRACER_CYCLE_ACC),
--			tracer.etm_portsz);
--}
--
--static ssize_t trace_mode_store(struct kobject *kobj,
--				   struct kobj_attribute *attr,
--				   const char *buf, size_t n)
--{
--	unsigned int cycacc, portsz;
--
--	if (sscanf(buf, "%u %u", &cycacc, &portsz) != 2)
--		return -EINVAL;
--
--	mutex_lock(&tracer.mutex);
--	if (cycacc)
--		tracer.flags |= TRACER_CYCLE_ACC;
--	else
--		tracer.flags &= ~TRACER_CYCLE_ACC;
--
--	tracer.etm_portsz = portsz & 0x0f;
--	mutex_unlock(&tracer.mutex);
--
--	return n;
--}
--
--static struct kobj_attribute trace_mode_attr =
--	__ATTR(trace_mode, 0644, trace_mode_show, trace_mode_store);
--
--static int etm_probe(struct amba_device *dev, const struct amba_id *id)
--{
--	struct tracectx *t = &tracer;
--	int ret = 0;
--
--	if (t->etm_regs) {
--		dev_dbg(&dev->dev, "ETM already initialized\n");
--		ret = -EBUSY;
--		goto out;
--	}
--
--	ret = amba_request_regions(dev, NULL);
--	if (ret)
--		goto out;
--
--	t->etm_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
--	if (!t->etm_regs) {
--		ret = -ENOMEM;
--		goto out_release;
--	}
--
--	amba_set_drvdata(dev, t);
--
--	mutex_init(&t->mutex);
--	t->dev = &dev->dev;
--	t->flags = TRACER_CYCLE_ACC;
--	t->etm_portsz = 1;
--
--	etm_unlock(t);
--	(void)etm_readl(t, ETMMR_PDSR);
--	/* dummy first read */
--	(void)etm_readl(&tracer, ETMMR_OSSRR);
--
--	t->ncmppairs = etm_readl(t, ETMR_CONFCODE) & 0xf;
--	etm_writel(t, 0x440, ETMR_CTRL);
--	etm_lock(t);
--
--	ret = sysfs_create_file(&dev->dev.kobj,
--			&trace_running_attr.attr);
--	if (ret)
--		goto out_unmap;
--
--	/* failing to create any of these two is not fatal */
--	ret = sysfs_create_file(&dev->dev.kobj, &trace_info_attr.attr);
--	if (ret)
--		dev_dbg(&dev->dev, "Failed to create trace_info in sysfs\n");
--
--	ret = sysfs_create_file(&dev->dev.kobj, &trace_mode_attr.attr);
--	if (ret)
--		dev_dbg(&dev->dev, "Failed to create trace_mode in sysfs\n");
--
--	dev_dbg(t->dev, "ETM AMBA driver initialized.\n");
--
--out:
--	return ret;
--
--out_unmap:
--	iounmap(t->etm_regs);
--
--out_release:
--	amba_release_regions(dev);
--
--	return ret;
--}
--
--static int etm_remove(struct amba_device *dev)
--{
--	struct tracectx *t = amba_get_drvdata(dev);
--
--	iounmap(t->etm_regs);
--	t->etm_regs = NULL;
--
--	amba_release_regions(dev);
--
--	sysfs_remove_file(&dev->dev.kobj, &trace_running_attr.attr);
--	sysfs_remove_file(&dev->dev.kobj, &trace_info_attr.attr);
--	sysfs_remove_file(&dev->dev.kobj, &trace_mode_attr.attr);
--
--	return 0;
--}
--
--static struct amba_id etm_ids[] = {
--	{
--		.id	= 0x0003b921,
--		.mask	= 0x0007ffff,
--	},
--	{ 0, 0 },
--};
--
--static struct amba_driver etm_driver = {
--	.drv		= {
--		.name   = "etm",
--		.owner  = THIS_MODULE,
--	},
--	.probe		= etm_probe,
--	.remove		= etm_remove,
--	.id_table	= etm_ids,
--};
--
--static int __init etm_init(void)
--{
--	int retval;
--
--	retval = amba_driver_register(&etb_driver);
--	if (retval) {
--		printk(KERN_ERR "Failed to register etb\n");
--		return retval;
--	}
--
--	retval = amba_driver_register(&etm_driver);
--	if (retval) {
--		amba_driver_unregister(&etb_driver);
--		printk(KERN_ERR "Failed to probe etm\n");
--		return retval;
--	}
--
--	/* not being able to install this handler is not fatal */
--	(void)register_sysrq_key('v', &sysrq_etm_op);
--
--	return 0;
--}
--
--device_initcall(etm_init);
--
-diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
-index 4d963fb..f61a9d9 100644
---- a/arch/arm/kernel/hw_breakpoint.c
-+++ b/arch/arm/kernel/hw_breakpoint.c
-@@ -29,6 +29,7 @@
- #include <linux/hw_breakpoint.h>
- #include <linux/smp.h>
- #include <linux/cpu_pm.h>
-+#include <linux/coresight.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/cputype.h>
-@@ -36,7 +37,6 @@
- #include <asm/hw_breakpoint.h>
- #include <asm/kdebug.h>
- #include <asm/traps.h>
--#include <asm/hardware/coresight.h>
- 
- /* Breakpoint currently in use for each BRP. */
- static DEFINE_PER_CPU(struct perf_event *, bp_on_reg[ARM_MAX_BRP]);
-@@ -976,7 +976,7 @@ static void reset_ctrl_regs(void *unused)
- 	 * Unconditionally clear the OS lock by writing a value
- 	 * other than CS_LAR_KEY to the access register.
- 	 */
--	ARM_DBG_WRITE(c1, c0, 4, ~CS_LAR_KEY);
-+	ARM_DBG_WRITE(c1, c0, 4, ~CORESIGHT_UNLOCK);
- 	isb();
- 
- 	/*
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index 1c1ed73..1dd79f5 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -300,14 +300,6 @@ config MACH_TI8148EVM
- 	depends on SOC_TI81XX
- 	default y
- 
--config OMAP3_EMU
--	bool "OMAP3 debugging peripherals"
--	depends on ARCH_OMAP3
--	select ARM_AMBA
--	select OC_ETM
--	help
--	  Say Y here to enable debugging hardware of omap3
--
- config OMAP3_SDRC_AC_TIMING
- 	bool "Enable SDRC AC timing register changes"
- 	depends on ARCH_OMAP3
-diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-index 8ca99e9..e8d29c4 100644
---- a/arch/arm/mach-omap2/Makefile
-+++ b/arch/arm/mach-omap2/Makefile
-@@ -226,7 +226,6 @@ obj-$(CONFIG_SOC_OMAP5)			+= omap_hwmod_54xx_data.o
- obj-$(CONFIG_SOC_DRA7XX)		+= omap_hwmod_7xx_data.o
- 
- # EMU peripherals
--obj-$(CONFIG_OMAP3_EMU)			+= emu.o
- obj-$(CONFIG_HW_PERF_EVENTS)		+= pmu.o
- 
- iommu-$(CONFIG_OMAP_IOMMU)		:= omap-iommu.o
-diff --git a/arch/arm/mach-omap2/emu.c b/arch/arm/mach-omap2/emu.c
-deleted file mode 100644
-index cbeaca2..0000000
---- a/arch/arm/mach-omap2/emu.c
-+++ /dev/null
-@@ -1,50 +0,0 @@
--/*
-- * emu.c
-- *
-- * ETM and ETB CoreSight components' resources as found in OMAP3xxx.
-- *
-- * Copyright (C) 2009 Nokia Corporation.
-- * Alexander Shishkin
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/types.h>
--#include <linux/module.h>
--#include <linux/device.h>
--#include <linux/amba/bus.h>
--#include <linux/io.h>
--#include <linux/clk.h>
--#include <linux/err.h>
--
--#include "soc.h"
--#include "iomap.h"
--
--MODULE_LICENSE("GPL");
--MODULE_AUTHOR("Alexander Shishkin");
--
--/* Cortex CoreSight components within omap3xxx EMU */
--#define ETM_BASE	(L4_EMU_34XX_PHYS + 0x10000)
--#define DBG_BASE	(L4_EMU_34XX_PHYS + 0x11000)
--#define ETB_BASE	(L4_EMU_34XX_PHYS + 0x1b000)
--#define DAPCTL		(L4_EMU_34XX_PHYS + 0x1d000)
--
--static AMBA_APB_DEVICE(omap3_etb, "etb", 0x000bb907, ETB_BASE, { }, NULL);
--static AMBA_APB_DEVICE(omap3_etm, "etm", 0x102bb921, ETM_BASE, { }, NULL);
--
--static int __init emu_init(void)
--{
--	if (!cpu_is_omap34xx())
--		return -ENODEV;
--
--	amba_device_register(&omap3_etb_device, &iomem_resource);
--	amba_device_register(&omap3_etm_device, &iomem_resource);
--
--	return 0;
--}
--
--omap_subsys_initcall(emu_init);
--- 
-1.9.1
+It appears that some of the performance results of the scheduler
+appear on the code acting in an opposite way to its documented
+intention.
+
+It may be best to revert 096aa33863a for now...
+
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1312 ± 0%     -20.2%       1046 ± 6%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       1312 ± 0%     -20.2%       1046 ± 6%  TOTAL netperf.Throughput_Mbps
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       7908 ±22%  +23831.0%    1892653 ±25%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       7908 ±22%  +23831.0%    1892653 ±25%  TOTAL cpuidle.C1-NHM.usage
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       2.35 ±33%     -96.0%       0.09 ±10%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       2.35 ±33%     -96.0%       0.09 ±10%  TOTAL perf-profile.cpu-cycles.memcpy.sctp_packet_transmit_chunk.sctp_outq_flush.sctp_outq_uncork.sctp_cmd_interpreter
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1250 ± 1%    -100.0%          0 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>       1250 ± 1%    -100.0%          0 ± 0%  TOTAL slabinfo.xfs_buf.num_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1957 ±19%    -100.0%          0 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>       1957 ±19%    -100.0%          0 ± 0%  TOTAL slabinfo.xfs_trans.num_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     288862 ±33%  +34804.6%  1.008e+08 ±27%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     288862 ±33%  +34804.6%  1.008e+08 ±27%  TOTAL cpuidle.C1-NHM.time
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       0.10 ±14%   +1423.1%       1.58 ±47%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       0.10 ±14%   +1423.1%       1.58 ±47%  TOTAL perf-profile.cpu-cycles._raw_spin_lock_bh.lock_sock_nested.sctp_recvmsg.sock_common_recvmsg.sock_recvmsg
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     341158 ±30%  +30156.8%  1.032e+08 ±27%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     341158 ±30%  +30156.8%  1.032e+08 ±27%  TOTAL cpuidle.C1E-NHM.time
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       7320 ±33%  +32271.8%    2369681 ±26%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       7320 ±33%  +32271.8%    2369681 ±26%  TOTAL cpuidle.C1E-NHM.usage
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     506973 ±31%   +3871.2%   20133029 ±25%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     506973 ±31%   +3871.2%   20133029 ±25%  TOTAL cpuidle.C3-NHM.time
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>        292 ±11%   +7707.3%      22813 ±27%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>        292 ±11%   +7707.3%      22813 ±27%  TOTAL cpuidle.C3-NHM.usage
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>    7525714 ±17%    +544.6%   48513328 ±20%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>    7525714 ±17%    +544.6%   48513328 ±20%  TOTAL cpuidle.C6-NHM.time
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1952 ±19%    -100.0%          0 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>       1952 ±19%    -100.0%          0 ± 0%  TOTAL slabinfo.xfs_trans.active_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1141 ± 0%    -100.0%          0 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>       1141 ± 0%    -100.0%          0 ± 0%  TOTAL slabinfo.xfs_buf.active_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       0.05 ±33%   +1596.2%       0.88 ±24%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       0.05 ±33%   +1596.2%       0.88 ±24%  TOTAL turbostat.%c3
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>        716 ±10%   +2369.6%      17702 ±23%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>        716 ±10%   +2369.6%      17702 ±23%  TOTAL cpuidle.C6-NHM.usage
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       0.32 ±12%    +291.8%       1.24 ± 6%  lkp-snb01/hackbench/50%-process-pipe
+>       0.32 ±12%    +291.8%       1.24 ± 6%  TOTAL perf-profile.cpu-cycles.osq_lock.__mutex_lock_slowpath.mutex_lock.pipe_write.do_sync_write
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       0.35 ± 8%    +250.9%       1.21 ± 6%  lkp-snb01/hackbench/50%-process-pipe
+>       0.35 ± 8%    +250.9%       1.21 ± 6%  TOTAL perf-profile.cpu-cycles.mutex_spin_on_owner.__mutex_lock_slowpath.mutex_lock.pipe_write.do_sync_write
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>    1108302 ± 1%     +70.8%    1893466 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>      13338 ± 1%    +523.8%      83205 ±22%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>    1121641 ± 1%     +76.2%    1976671 ± 1%  TOTAL softirqs.SCHED
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       2.43 ± 2%     +32.7%       3.23 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>       0.08 ±27%  +25202.6%      19.74 ±27%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       2.51 ± 2%    +814.9%      22.96 ±23%  TOTAL turbostat.%c1
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>    1615.95 ± 4%     +19.9%    1938.14 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>      75.27 ± 1%    +413.0%     386.09 ±21%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>    1691.22 ± 4%     +37.4%    2324.23 ± 4%  TOTAL uptime.idle
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       0.58 ±19%    +162.6%       1.52 ±13%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       0.58 ±19%    +162.6%       1.52 ±13%  TOTAL turbostat.%c6
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     704584 ± 4%    +177.7%    1956399 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>     704584 ± 4%    +177.7%    1956399 ± 1%  TOTAL cpuidle.C1E-SNB.usage
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       0.51 ± 7%    +168.4%       1.37 ± 4%  lkp-snb01/hackbench/50%-process-pipe
+>       0.51 ± 7%    +168.4%       1.37 ± 4%  TOTAL perf-profile.cpu-cycles.__mutex_lock_slowpath.mutex_lock.pipe_write.do_sync_write.vfs_write
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.65 ± 2%    +140.9%       3.97 ± 4%  lkp-snb01/hackbench/50%-process-pipe
+>       1.65 ± 2%    +140.9%       3.97 ± 4%  TOTAL perf-profile.cpu-cycles.mutex_unlock.do_sync_write.vfs_write.sys_write.system_call_fastpath
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   30881148 ± 1%    +122.3%   68651628 ± 2%  lkp-snb01/hackbench/50%-process-pipe
+>   30881148 ± 1%    +122.3%   68651628 ± 2%  TOTAL cpuidle.C1E-SNB.time
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     130315 ± 1%     -51.5%      63146 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>     130315 ± 1%     -51.5%      63146 ± 1%  TOTAL cpuidle.C7-SNB.usage
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       4.04 ± 0%     -50.5%       2.00 ± 8%  lkp-snb01/hackbench/50%-process-pipe
+>       4.04 ± 0%     -50.5%       2.00 ± 8%  TOTAL perf-profile.cpu-cycles._raw_spin_lock.try_to_wake_up.default_wake_function.autoremove_wake_function.__wake_up_common
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       9880 ± 5%     -47.0%       5238 ± 5%  lkp-snb01/hackbench/50%-process-pipe
+>       9880 ± 5%     -47.0%       5238 ± 5%  TOTAL cpuidle.C3-SNB.usage
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.40 ± 1%     -45.4%       0.76 ± 9%  lkp-snb01/hackbench/50%-process-pipe
+>       1.40 ± 1%     -45.4%       0.76 ± 9%  TOTAL perf-profile.cpu-cycles._raw_spin_lock_irq.__schedule.schedule.pipe_wait.pipe_read
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.55 ± 2%     -46.3%       0.83 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>       1.55 ± 2%     -46.3%       0.83 ± 1%  TOTAL perf-profile.cpu-cycles.select_task_rq_fair.try_to_wake_up.default_wake_function.autoremove_wake_function.__wake_up_common
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.27 ± 0%     +88.8%       2.40 ± 4%  lkp-snb01/hackbench/50%-process-pipe
+>       1.27 ± 0%     +88.8%       2.40 ± 4%  TOTAL perf-profile.cpu-cycles.mutex_lock.pipe_write.do_sync_write.vfs_write.sys_write
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>        366 ± 0%     -19.5%        295 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>         11 ± 0%     -58.2%          4 ±32%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>        377 ± 0%     -20.6%        300 ± 1%  TOTAL vmstat.procs.r
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       5.26 ± 4%     +70.0%       8.95 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>       5.26 ± 4%     +70.0%       8.95 ± 1%  TOTAL perf-profile.cpu-cycles._raw_spin_lock_irqsave.__wake_up_sync_key.pipe_write.do_sync_write.vfs_write
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.99 ± 5%     -37.2%       1.25 ± 6%  lkp-snb01/hackbench/50%-process-pipe
+>       1.99 ± 5%     -37.2%       1.25 ± 6%  TOTAL perf-profile.cpu-cycles.avc_has_perm.inode_has_perm.file_has_perm.selinux_file_permission.security_file_permission
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   41644859 ± 1%     -36.6%   26412030 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>   41644859 ± 1%     -36.6%   26412030 ± 0%  TOTAL numa-numastat.node0.local_node
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   41645708 ± 1%     -36.6%   26414565 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>   41645708 ± 1%     -36.6%   26414565 ± 0%  TOTAL numa-numastat.node0.numa_hit
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   21020151 ± 0%     -36.0%   13450417 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>   21020151 ± 0%     -36.0%   13450417 ± 0%  TOTAL numa-vmstat.node0.numa_local
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   21084898 ± 0%     -35.9%   13516547 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>   21084898 ± 0%     -35.9%   13516547 ± 0%  TOTAL numa-vmstat.node0.numa_hit
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       0.66 ± 2%     +56.1%       1.02 ± 3%  lkp-snb01/hackbench/50%-process-pipe
+>       0.66 ± 2%     +56.1%       1.02 ± 3%  TOTAL perf-profile.cpu-cycles.try_to_wake_up.default_wake_function.autoremove_wake_function.__wake_up_common.__wake_up_sync_key
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   76135896 ± 0%     -35.6%   49027766 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>   76135896 ± 0%     -35.6%   49027766 ± 0%  TOTAL proc-vmstat.pgalloc_normal
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       2075 ±17%     -25.7%       1543 ±26%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>       2075 ±17%     -25.7%       1543 ±26%  TOTAL slabinfo.blkdev_ioc.active_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       2076 ±17%     -25.4%       1549 ±27%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>       2076 ±17%     -25.4%       1549 ±27%  TOTAL slabinfo.blkdev_ioc.num_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   42478629 ± 1%     -35.0%   27615662 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>   42478629 ± 1%     -35.0%   27615662 ± 0%  TOTAL numa-numastat.node1.local_node
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   42481997 ± 1%     -35.0%   27617365 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>   42481997 ± 1%     -35.0%   27617365 ± 0%  TOTAL numa-numastat.node1.numa_hit
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   21585988 ± 1%     -34.6%   14110975 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>   21585988 ± 1%     -34.6%   14110975 ± 0%  TOTAL numa-vmstat.node1.numa_local
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   21597275 ± 1%     -34.6%   14120957 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>   21597275 ± 1%     -34.6%   14120957 ± 0%  TOTAL numa-vmstat.node1.numa_hit
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.86 ± 5%     +53.3%       2.85 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>       1.86 ± 5%     +53.3%       2.85 ± 1%  TOTAL perf-profile.cpu-cycles.idle_cpu.select_task_rq_fair.try_to_wake_up.default_wake_function.autoremove_wake_function
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       0.92 ±13%     -31.2%       0.63 ± 5%  lkp-snb01/hackbench/50%-process-pipe
+>       0.92 ±13%     -31.2%       0.63 ± 5%  TOTAL perf-profile.cpu-cycles.touch_atime.pipe_read.do_sync_read.vfs_read.sys_read
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       0.96 ± 4%     -30.4%       0.67 ± 5%  lkp-snb01/hackbench/50%-process-pipe
+>       0.96 ± 4%     -30.4%       0.67 ± 5%  TOTAL perf-profile.cpu-cycles.update_cfs_shares.enqueue_entity.enqueue_task_fair.enqueue_task.activate_task
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     128510 ± 0%     -30.7%      89002 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     128510 ± 0%     -30.7%      89002 ± 2%  TOTAL meminfo.Active(file)
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>      32134 ± 0%     -30.8%      22250 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>      32134 ± 0%     -30.8%      22250 ± 2%  TOTAL proc-vmstat.nr_active_file
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.08 ± 4%     -30.1%       0.76 ± 2%  lkp-snb01/hackbench/50%-process-pipe
+>       1.08 ± 4%     -30.1%       0.76 ± 2%  TOTAL perf-profile.cpu-cycles.__srcu_read_lock.fsnotify.vfs_write.sys_write.system_call_fastpath
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     978152 ± 3%     -21.3%     769740 ±19%  lkp-snb01/hackbench/50%-process-pipe
+>     978152 ± 3%     -21.3%     769740 ±19%  TOTAL cpuidle.C3-SNB.time
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>    8062365 ± 1%     -37.1%    5070607 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>  2.751e+08 ± 0%     -18.4%  2.245e+08 ± 6%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>  2.832e+08 ± 0%     -18.9%  2.296e+08 ± 6%  TOTAL proc-vmstat.pgalloc_dma32
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       7722 ± 1%     -24.6%       5824 ±15%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       7722 ± 1%     -24.6%       5824 ±15%  TOTAL proc-vmstat.pgactivate
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   84116763 ± 0%     -35.8%   54027061 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>   49792666 ± 0%     -20.2%   39712359 ± 6%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>  133909429 ± 0%     -30.0%   93739420 ± 2%  TOTAL proc-vmstat.numa_local
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   84120980 ± 0%     -35.8%   54031299 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>   49792666 ± 0%     -20.2%   39712359 ± 6%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>  133913646 ± 0%     -30.0%   93743658 ± 2%  TOTAL proc-vmstat.numa_hit
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     672803 ± 0%     -28.1%     483704 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     672803 ± 0%     -28.1%     483704 ± 0%  TOTAL vmstat.memory.cache
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     672747 ± 0%     -28.1%     483713 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     672747 ± 0%     -28.1%     483713 ± 0%  TOTAL meminfo.Cached
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     168187 ± 0%     -28.1%     120926 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     168187 ± 0%     -28.1%     120926 ± 0%  TOTAL proc-vmstat.nr_file_pages
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.28 ± 7%     -28.9%       0.91 ± 2%  lkp-snb01/hackbench/50%-process-pipe
+>       1.28 ± 7%     -28.9%       0.91 ± 2%  TOTAL perf-profile.cpu-cycles.copy_page_to_iter.pipe_read.do_sync_read.vfs_read.sys_read
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   84177329 ± 0%     -35.8%   54079701 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>  2.781e+08 ± 0%     -18.4%  2.269e+08 ± 6%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>  3.623e+08 ± 0%     -22.4%   2.81e+08 ± 5%  TOTAL proc-vmstat.pgfree
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     541579 ± 0%     -27.6%     392085 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     541579 ± 0%     -27.6%     392085 ± 0%  TOTAL meminfo.Inactive(file)
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     135388 ± 0%     -27.6%      98019 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     135388 ± 0%     -27.6%      98019 ± 0%  TOTAL proc-vmstat.nr_inactive_file
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     541892 ± 0%     -27.6%     392387 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     541892 ± 0%     -27.6%     392387 ± 0%  TOTAL meminfo.Inactive
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.07 ± 3%     -27.2%       0.78 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>       1.07 ± 3%     -27.2%       0.78 ± 1%  TOTAL perf-profile.cpu-cycles.__read_nocancel
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.91 ± 2%     -26.9%       1.40 ± 2%  lkp-snb01/hackbench/50%-process-pipe
+>       1.91 ± 2%     -26.9%       1.40 ± 2%  TOTAL perf-profile.cpu-cycles.copy_user_generic_string.pipe_write.do_sync_write.vfs_write.sys_write
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     153459 ± 0%     -25.8%     113813 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     153459 ± 0%     -25.8%     113813 ± 2%  TOTAL meminfo.Active
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1426 ± 2%     -25.2%       1067 ± 1%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       1426 ± 2%     -25.2%       1067 ± 1%  TOTAL slabinfo.ftrace_event_file.num_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1426 ± 2%     -25.2%       1067 ± 1%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       1426 ± 2%     -25.2%       1067 ± 1%  TOTAL slabinfo.ftrace_event_file.active_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>  4.199e+08 ± 2%     +33.3%  5.596e+08 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>  4.199e+08 ± 2%     +33.3%  5.596e+08 ± 0%  TOTAL cpuidle.C1-SNB.time
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.49 ± 1%     -25.7%       1.10 ± 2%  lkp-snb01/hackbench/50%-process-pipe
+>       1.49 ± 1%     -25.7%       1.10 ± 2%  TOTAL perf-profile.cpu-cycles.__switch_to.__read_nocancel
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.25 ± 2%     +31.6%       1.64 ± 2%  lkp-snb01/hackbench/50%-process-pipe
+>       1.25 ± 2%     +31.6%       1.64 ± 2%  TOTAL perf-profile.cpu-cycles.__fget_light.sys_write.system_call_fastpath.__write_nocancel
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     614765 ± 0%     -23.5%     470579 ± 8%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     614765 ± 0%     -23.5%     470579 ± 8%  TOTAL softirqs.TIMER
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>      11425 ± 2%     -12.9%       9951 ± 2%  lkp-snb01/hackbench/50%-process-pipe
+>       4365 ± 2%     -16.9%       3630 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>       2117 ± 2%     -34.4%       1388 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>      17908 ± 2%     -16.4%      14970 ± 2%  TOTAL slabinfo.kmalloc-128.active_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>      41164 ±12%     +20.9%      49766 ± 6%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>      41164 ±12%     +20.9%      49766 ± 6%  TOTAL meminfo.DirectMap4k
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       8060 ± 3%     -19.9%       6457 ± 4%  lkp-snb01/hackbench/50%-process-pipe
+>       8060 ± 3%     -19.9%       6457 ± 4%  TOTAL slabinfo.task_xstate.num_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       8016 ± 3%     -19.5%       6450 ± 4%  lkp-snb01/hackbench/50%-process-pipe
+>       8016 ± 3%     -19.5%       6450 ± 4%  TOTAL slabinfo.task_xstate.active_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>    3039372 ± 2%     -20.6%    2414002 ± 7%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>    3039372 ± 2%     -20.6%    2414002 ± 7%  TOTAL proc-vmstat.pgalloc_dma
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     159254 ± 1%     -19.6%     128113 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>     159254 ± 1%     -19.6%     128113 ± 1%  TOTAL proc-vmstat.numa_hint_faults_local
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       9.33 ± 2%     -16.4%       7.80 ± 7%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       9.33 ± 2%     -16.4%       7.80 ± 7%  TOTAL perf-profile.cpu-cycles.copy_user_generic_string.sctp_user_addto_chunk.sctp_datamsg_from_user.sctp_sendmsg.inet_sendmsg
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   86862453 ± 1%     +22.1%  1.061e+08 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>   86862453 ± 1%     +22.1%  1.061e+08 ± 0%  TOTAL cpuidle.C1-SNB.usage
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1.30 ± 5%     +16.2%       1.51 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>       1.30 ± 5%     +16.2%       1.51 ± 1%  TOTAL perf-profile.cpu-cycles.vfs_write.sys_write.system_call_fastpath.__write_nocancel
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>      11443 ± 2%     -12.5%      10010 ± 2%  lkp-snb01/hackbench/50%-process-pipe
+>       4574 ± 2%     -16.2%       3832 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>       2117 ± 2%     -17.7%       1741 ± 4%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>      18135 ± 2%     -14.1%      15585 ± 2%  TOTAL slabinfo.kmalloc-128.num_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     454028 ± 0%     -14.7%     387291 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>     454028 ± 0%     -14.7%     387291 ± 0%  TOTAL proc-vmstat.numa_pte_updates
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>    1129166 ± 0%     +17.1%    1322132 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>    1129166 ± 0%     +17.1%    1322132 ± 0%  TOTAL vmstat.memory.free
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>    1129151 ± 0%     +17.1%    1322021 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>    1129151 ± 0%     +17.1%    1322021 ± 0%  TOTAL meminfo.MemFree
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     282289 ± 0%     +17.1%     330504 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>     282289 ± 0%     +17.1%     330504 ± 0%  TOTAL proc-vmstat.nr_free_pages
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>    1352710 ± 1%      -9.6%    1222637 ± 2%  lkp-snb01/hackbench/50%-process-pipe
+>      59510 ± 5%     -20.1%      47545 ±10%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>    1412220 ± 2%     -10.1%    1270182 ± 2%  TOTAL softirqs.RCU
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       7978 ± 0%     -13.8%       6877 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>       7978 ± 0%     -13.8%       6877 ± 1%  TOTAL slabinfo.files_cache.num_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       7978 ± 0%     -13.8%       6877 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>       7978 ± 0%     -13.8%       6877 ± 1%  TOTAL slabinfo.files_cache.active_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>    6685911 ± 6%     -12.8%    5832341 ± 1%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>    6685911 ± 6%     -12.8%    5832341 ± 1%  TOTAL softirqs.NET_RX
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       3213 ± 1%     -14.3%       2754 ± 2%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>       2737 ± 1%     -11.8%       2414 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       5950 ± 1%     -13.1%       5168 ± 2%  TOTAL slabinfo.shared_policy_node.num_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       3213 ± 1%     -14.3%       2754 ± 2%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>       2737 ± 1%     -11.8%       2414 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>       5950 ± 1%     -13.1%       5168 ± 2%  TOTAL slabinfo.shared_policy_node.active_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>      19418 ± 1%     +14.3%      22186 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>      19418 ± 1%     +14.3%      22186 ± 0%  TOTAL softirqs.HRTIMER
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       5265 ± 1%      -9.8%       4750 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>       5265 ± 1%      -9.8%       4750 ± 1%  TOTAL slabinfo.signal_cache.active_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       5359 ± 1%      -9.5%       4851 ± 1%  lkp-snb01/hackbench/50%-process-pipe
+>       5359 ± 1%      -9.5%       4851 ± 1%  TOTAL slabinfo.signal_cache.num_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>      19262 ± 2%      -8.2%      17684 ± 3%  lkp-snb01/hackbench/50%-process-pipe
+>      19262 ± 2%      -8.2%      17684 ± 3%  TOTAL slabinfo.kmalloc-192.num_objs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>      72008 ± 0%      -8.7%      65715 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>      72008 ± 0%      -8.7%      65715 ± 0%  TOTAL proc-vmstat.pgmigrate_success
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>      72008 ± 0%      -8.7%      65715 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>      72008 ± 0%      -8.7%      65715 ± 0%  TOTAL proc-vmstat.numa_pages_migrated
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       3.05 ±36%     -67.0%       1.01 ± 4%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>       3.05 ±36%     -67.0%       1.01 ± 4%  TOTAL iostat.sdf.wrqm/s
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     873523 ± 1%     +71.8%    1501063 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>     873523 ± 1%     +71.8%    1501063 ± 0%  TOTAL vmstat.system.in
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   28067347 ± 1%     -33.7%   18595224 ± 1%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>   28067347 ± 1%     -33.7%   18595224 ± 1%  TOTAL perf-stat.iTLB-load-misses
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>  2.631e+09 ± 0%     -26.9%  1.922e+09 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>  2.631e+09 ± 0%     -26.9%  1.922e+09 ± 0%  TOTAL time.voluntary_context_switches
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       1240 ± 0%     -25.2%        928 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>       1240 ± 0%     -25.2%        928 ± 0%  TOTAL time.user_time
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>  7.586e+08 ± 0%     -39.2%  4.614e+08 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>     149744 ± 1%      +4.0%     155739 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>  7.587e+08 ± 0%     -39.2%  4.616e+08 ± 0%  TOTAL time.involuntary_context_switches
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>      99.29 ± 0%     -21.6%      77.86 ± 7%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>      99.29 ± 0%     -21.6%      77.86 ± 7%  TOTAL turbostat.%c0
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>    5681114 ± 0%     -29.0%    4034794 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>      11667 ± 0%      -9.0%      10620 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>      41698 ±10%     +15.9%      48342 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
+>    5734480 ± 0%     -28.6%    4093757 ± 0%  TOTAL vmstat.system.cs
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>     729049 ± 0%     -15.6%     615443 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>     729049 ± 0%     -15.6%     615443 ± 0%  TOTAL time.minor_page_faults
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>  1.232e+09 ± 7%     -12.6%  1.077e+09 ± 4%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>  1.232e+09 ± 7%     -12.6%  1.077e+09 ± 4%  TOTAL perf-stat.dTLB-store-misses
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>  7.771e+09 ± 0%     +10.8%  8.608e+09 ± 1%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>  7.771e+09 ± 0%     +10.8%  8.608e+09 ± 1%  TOTAL perf-stat.branch-misses
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>    7102173 ± 0%      -8.9%    6468745 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>    7102173 ± 0%      -8.9%    6468745 ± 0%  TOTAL perf-stat.context-switches
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>  7.793e+09 ± 0%     +10.2%  8.589e+09 ± 2%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>  7.793e+09 ± 0%     +10.2%  8.589e+09 ± 2%  TOTAL perf-stat.branch-load-misses
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>            ± 0%      -4.6%            ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>            ± 0%      -4.6%            ± 0%  TOTAL turbostat.Cor_W
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>  1.887e+12 ± 0%      +4.4%  1.971e+12 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>  1.887e+12 ± 0%      +4.4%  1.971e+12 ± 0%  TOTAL perf-stat.dTLB-loads
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>  1.885e+12 ± 0%      +4.4%  1.967e+12 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>  1.885e+12 ± 0%      +4.4%  1.967e+12 ± 0%  TOTAL perf-stat.L1-dcache-loads
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>            ± 0%      -3.3%            ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>            ± 0%      -3.3%            ± 0%  TOTAL turbostat.Pkg_W
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>      17763 ± 0%      +2.1%      18139 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>      17763 ± 0%      +2.1%      18139 ± 0%  TOTAL time.system_time
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>       3087 ± 0%      -1.2%       3050 ± 0%  lkp-snb01/hackbench/50%-process-pipe
+>       3087 ± 0%      -1.2%       3050 ± 0%  TOTAL time.percent_of_cpu_this_job_got
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>   6.85e+12 ± 0%      +1.5%  6.953e+12 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>   6.85e+12 ± 0%      +1.5%  6.953e+12 ± 0%  TOTAL perf-stat.ref-cycles
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>      92145 ± 0%      +0.8%      92909 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>      92145 ± 0%      +0.8%      92909 ± 0%  TOTAL iostat.sdf.wkB/s
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>  8.563e+11 ± 0%      +1.5%  8.689e+11 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>  8.563e+11 ± 0%      +1.5%  8.689e+11 ± 0%  TOTAL perf-stat.bus-cycles
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>      92292 ± 0%      +0.9%      93079 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>      92292 ± 0%      +0.9%      93079 ± 0%  TOTAL iostat.sdj.wkB/s
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>  6.859e+12 ± 0%      +1.3%  6.951e+12 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>  6.859e+12 ± 0%      +1.3%  6.951e+12 ± 0%  TOTAL perf-stat.cpu-cycles
+> 
+> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>  6.148e+12 ± 0%      +1.1%  6.217e+12 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
+>  6.148e+12 ± 0%      +1.1%  6.217e+12 ± 0%  TOTAL perf-stat.L1-icache-loads
+> 
+> 
+> Thanks,
+> Fengguang
+> 
+> 
+> 
+> _______________________________________________
+> LKP mailing list
+> LKP@linux.intel.com
+> 
 
