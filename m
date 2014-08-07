@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367AbaHGI7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 04:59:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7895 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754072AbaHGI7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 04:59:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,816,1400050800"; 
-   d="scan'208";a="465978644"
-Message-ID: <53E33F4D.7080701@intel.com>
-Date: Thu, 07 Aug 2014 16:56:45 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1757220AbaHGJCH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 05:02:07 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:35427 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754303AbaHGJCD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 05:02:03 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "toshi.kani@hp.com" <toshi.kani@hp.com>,
-        "imammedo@redhat.com" <imammedo@redhat.com>,
-        "jan.kiszka@siemens.com" <jan.kiszka@siemens.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "huawei.libin@huawei.com" <huawei.libin@huawei.com>,
-        "prarit@redhat.com" <prarit@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brandt, Todd E" <todd.e.brandt@intel.com>
-Subject: Re: [PATCH] X86/CPU: Avoid 100ms sleep for cpu offline  during S3
-References: <1407142742-29202-1-git-send-email-tianyu.lan@intel.com> <20140804102301.GB4808@pd.tnic> <53E04457.2060507@intel.com> <20140805075419.GA18234@pd.tnic> <53E0A3EE.50708@intel.com> <20140806110748.GC27033@pd.tnic> <4CFBC02C07DA244CA19D6815A05BE6EE0119E1CF@SHSMSX103.ccr.corp.intel.com> <20140806160652.GD27033@pd.tnic>
-In-Reply-To: <20140806160652.GD27033@pd.tnic>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1406250448-470-3-git-send-email-skannan@codeaurora.org>
+References: <1406250448-470-1-git-send-email-skannan@codeaurora.org>
+	<1406250448-470-3-git-send-email-skannan@codeaurora.org>
+Date: Thu, 7 Aug 2014 14:32:03 +0530
+Message-ID: <CAKohpomN_shuNTAkHEs-1+rqjM21RRZmeg41PNWY3AnSQOEGzA@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] cpufreq: Keep track of which CPU owns the
+ kobj/sysfs nodes separately
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Todd Poynor <toddpoynor@google.com>,
+        "Srivatsa S . Bhat" <srivatsa@mit.edu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年08月07日 00:06, Borislav Petkov wrote:
-> Hi,
-> 
-> On Wed, Aug 06, 2014 at 01:13:21PM +0000, Lan, Tianyu wrote:
->> Have you tried my attached kernel config file? When someone reported
->> the issue to me, I also was very hard to reproduce the issue by my
->> own config file. Maybe once 100 tries. But I can reproduced the issue
->> every time with the attached configure file on several my machines and
->> even on server.
-> 
-> first of all, please do not top-post:
-> 
-> A: Because it messes up the order in which people normally read text.
-> Q: Why is top-posting such a bad thing?
-> A: Top-posting.
-> Q: What is the most annoying thing in e-mail?
-> 
+On 25 July 2014 06:37, Saravana Kannan <skannan@codeaurora.org> wrote:
+> The ownership of the kobj doesn't need to match policy->cpu or change as
+> frequently. So, keep track of it separately.
+>
+> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+> ---
+>  drivers/cpufreq/cpufreq.c | 4 +++-
+>  include/linux/cpufreq.h   | 1 +
+>  2 files changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index ee0eb7b..af4f291 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -868,7 +868,7 @@ static int cpufreq_add_dev_symlink(struct cpufreq_policy *policy)
+>         for_each_cpu(j, policy->cpus) {
+>                 struct device *cpu_dev;
+>
+> -               if (j == policy->cpu)
+> +               if (j == policy->kobj_cpu)
+>                         continue;
+>
+>                 pr_debug("Adding link for CPU: %u\n", j);
+> @@ -917,6 +917,7 @@ static int cpufreq_add_dev_interface(struct cpufreq_policy *policy,
+>                         goto err_out_kobj_put;
+>         }
+>
+> +       policy->kobj_cpu = policy->cpu;
 
-Hi Borislav:
+Not here but in __cpufreq_add_dev()..
 
-Sorry. I replied on the Windows machines and ignored the format.I will
-notice it. Thanks fro reminder.
+>         ret = cpufreq_add_dev_symlink(policy);
+>         if (ret)
+>                 goto err_out_kobj_put;
+> @@ -1330,6 +1331,7 @@ static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
 
-> Now, it looks like the issue is timing-related, depending on when we're
-> going to see CPU_DEAD, before or after the msleep. Thus, if some distro
-> config runs more crap on the suspend path and we don't see the CPU_DEAD
-> before we sleep for 100ms, then we get to wait at least once and it
-> shows in the suspend trace.
-> 
-> So, using the completion timeout seems like a net improvement for such
-> configs and thus for any config.
+This doesn't exist anymore.
 
-Yes, that's exact.
-
--- 
-Best regards
-Tianyu Lan
+>
+>                 return -EINVAL;
+>         }
+> +       policy->kobj_cpu = cpu_dev->id;
+>
+>         return cpu_dev->id;
+>  }
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index ec4112d..91c2e38 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -68,6 +68,7 @@ struct cpufreq_policy {
+>         unsigned int            cpu;    /* cpu nr of CPU managing this policy */
+>         unsigned int            last_cpu; /* cpu nr of previous CPU that managed
+>                                            * this policy */
+> +       unsigned int            kobj_cpu; /* Tracks which CPU own the kobj */
+>         struct clk              *clk;
+>         struct cpufreq_cpuinfo  cpuinfo;/* see above */
+>
+> --
+> 1.8.2.1
+>
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
