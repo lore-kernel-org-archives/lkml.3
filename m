@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111AbaHGKBM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 06:01:12 -0400
-Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:29947
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757264AbaHGKBI convert rfc822-to-8bit (ORCPT
+	id S1757445AbaHGKBq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 06:01:46 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:60085 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756800AbaHGKBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 06:01:08 -0400
-From: "fugang.duan@freescale.com" <fugang.duan@freescale.com>
-To: Yao Yuan <yao.yuan@freescale.com>, "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "marex@denx.de" <marex@denx.de>
-CC: "LW@KARO-electronics.de" <LW@KARO-electronics.de>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "Frank.Li@freescale.com" <Frank.Li@freescale.com>
-Subject: RE: [PATCH v6 1/2] i2c: imx: add DMA support for freescale i2c driver
-Thread-Topic: [PATCH v6 1/2] i2c: imx: add DMA support for freescale i2c
- driver
-Thread-Index: AQHPsJp6xKTt7EIbSUuPcoEni/e+fJvC0RvQgABXoYCAAW7XYIAAM8cAgAAe6hA=
-Date: Thu, 7 Aug 2014 10:01:05 +0000
-Message-ID: <6537011f698c4c7faaf5b66b870afbd2@BLUPR03MB373.namprd03.prod.outlook.com>
-References: <1407232563-10856-1-git-send-email-yao.yuan@freescale.com>
- <1407232563-10856-2-git-send-email-yao.yuan@freescale.com>
- <41705e1e4c604240ba96333a03d5c544@BLUPR03MB373.namprd03.prod.outlook.com>
- <14d042bbcfb04308bfb3a1db18e46bec@BL2PR03MB338.namprd03.prod.outlook.com>
- <31f8f5504fc24d999f5af74338602bed@BLUPR03MB373.namprd03.prod.outlook.com>
- <c9727eaf22dc40f796793c6b127dfb9e@BL2PR03MB338.namprd03.prod.outlook.com>
-In-Reply-To: <c9727eaf22dc40f796793c6b127dfb9e@BL2PR03MB338.namprd03.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 029651C7A1
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(199002)(189002)(377454003)(51704005)(85306004)(83072002)(85852003)(74316001)(2656002)(76576001)(87936001)(76482001)(93886004)(77982001)(21056001)(46102001)(105586002)(99286002)(64706001)(83322001)(79102001)(19580395003)(4396001)(33646002)(107046002)(20776003)(19580405001)(101416001)(74662001)(95666004)(106356001)(86362001)(81542001)(106116001)(54356999)(74502001)(50986999)(76176999)(2201001)(80022001)(66066001)(2501001)(24736002)(108616003);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB343;H:BLUPR03MB373.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 7 Aug 2014 06:01:45 -0400
+Date: Thu, 7 Aug 2014 11:01:39 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Wei-Chun Pan <weichun.pan@advantech.com.tw>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Jean Delvare <jdelvare@suse.de>,
+        Guenter Roeck <linux@roeck-us.net>, Wolfram Sang <wsa@the-dreams.de>,
+        "Louis.Lu" <Louis.Lu@advantech.com.tw>,
+        "Neo.Lo" <neo.lo@advantech.com.tw>,
+        "Hank.Peng" <Hank.Peng@advantech.com.tw>,
+        "Kevin.Ong" <Kevin.Ong@advantech.com.tw>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] mfd: imanager2: Add Core supports for IT8516/18/28
+Message-ID: <20140807100139.GE10136@lee--X1>
+References: <1407404875-3705-1-git-send-email-weichun.pan@advantech.com.tw>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1407404875-3705-1-git-send-email-weichun.pan@advantech.com.tw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yuan Yao-B46683 Data: Thursday, August 07, 2014 4:05 PM
->To: Duan Fugang-B38611; wsa@the-dreams.de; marex@denx.de
->Cc: LW@KARO-electronics.de; mark.rutland@arm.com; shawn.guo@linaro.org;
->linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
->i2c@vger.kernel.org; Li Frank-B20596
->Subject: RE: [PATCH v6 1/2] i2c: imx: add DMA support for freescale i2c
->driver
->
->Hi Fugang,
->
->> >> >+	/* Waiting for Transfer complete. */
->> >> >+	while (timeout--) {
->> >> >+		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
->> >> >+		if (temp & I2SR_ICF)
->> >> >+			break;
->> >> >+		udelay(10);
->> >> >+	}
->> >> Whether there have better method like interrupt to avoid dead wait
->> >> here until timeout ?
->> >
->> >Can you give me more suggestion? We have discussed it with our team,
->> >It seems the short query wait is necessary.
->> >
->> At least, you can use schdule_timeout() instead of udelay() ?
->
->In fact, the waiting time normally is less than 10-50us, but the minimum
->time interval for schdule_timeout() is 1 jiffies.
->So maybe schdule_timeout() is not very necessary?
->
-Oh, if the waiting time is 10 ~ 50us, you can use usleep_range(10, 50).
+You've replied to this email as an independent message, so now there
+is little context.  When you reply, please ensure your mailer replies
+to the thread.
+
+On Thu, 07 Aug 2014, Wei-Chun Pan wrote:
+> I have a question for your comment. As your mail,
+> 
+> > > +
+> > > +static void __exit imanager2_mfd_device_exit(void) {
+> > > +	mfd_remove_devices(&ec_pdev->dev);
+> > > +	platform_device_unregister(ec_pdev);
+> > > +}
+> > > +
+> > > +module_init(imanager2_mfd_device_init);
+> > > +module_exit(imanager2_mfd_device_exit);
+> > 
+> > This is a mess.  Use module_platform_driver() instead.
+> > 
+> > > +MODULE_AUTHOR("Richard Vidal-Dorsch <richard.dorsch at
+> > > +advantech.com>");
+> > > +MODULE_DESCRIPTION("iManager2 platform device definitions v"
+> > > +DRV_VERSION); MODULE_LICENSE("GPL"); MODULE_VERSION(DRV_VERSION);
+> > 
+> 
+> How can I use module_platform_driver() and my driver exit function also can do
+> mfd_remove_devices().
+> Or any other better function install of mfd_remove_devices()?
+
+That's the point - you don't do mfd_remove_devices() in exit(), you do
+mfd_add_devices() in .probe() and mfd_remove_devices() in .remove().
+
+The only thing you want to do in init() is platform_driver_register(),
+or even better - don't have init() and exit() calls and use use
+module_platform_driver_probe() instead.
+
+> Signed-off-by: Wei-Chun Pan <weichun.pan@advantech.com.tw>
+
+Not sure why you've signed-off on an email?
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
