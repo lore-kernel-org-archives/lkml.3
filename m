@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428AbaHGTKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 15:10:12 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:64085 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827AbaHGTIw (ORCPT
+	id S1755465AbaHGTK5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 15:10:57 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:36969 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaHGTK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 15:08:52 -0400
-From: Goffredo Baroncelli <kreijack@gmail.com>
-X-Google-Original-From: Goffredo Baroncelli <kreijack@inwind.it>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jean Delvare <jdelvare@suse.de>,
-        Goffredo Baroncelli <kreijack@inwind.it>
-Subject: [PATCH 1/5] Update drivers names to the ones invoked by i2c-powermac
-Date: Thu,  7 Aug 2014 19:08:34 +0000
-Message-Id: <1407438518-4395-2-git-send-email-kreijack@inwind.it>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1407438518-4395-1-git-send-email-kreijack@inwind.it>
-References: <1407438518-4395-1-git-send-email-kreijack@inwind.it>
+	Thu, 7 Aug 2014 15:10:56 -0400
+Date: Fri, 8 Aug 2014 03:10:34 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, jhovold@gmail.com,
+        andi@lisas.de, dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Resend Re: [PATCH v6] usb:serial:pl2303: add GPIOs interface on
+ PL2303
+Message-ID: <20140807191034.GA6335@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Johan Hovold <johan@kernel.org>, gregkh@linuxfoundation.org,
+	linus.walleij@linaro.org, jhovold@gmail.com, andi@lisas.de,
+	dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20140729165709.GA3380@udknight>
+ <20140804140032.GA25529@localhost>
+ <20140804171536.GA2330@udknight>
+ <20140805135408.GD25529@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140805135408.GD25529@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update drivers names to the ones invoked by i2c-powermac:
-- therm_ds1775 -> MAC,ds1775
-- therm_adm1030 -> MAC,adm1030
-The background fan control loop is started from
-the devices probing methods.
+On Tue, Aug 05, 2014 at 03:54:08PM +0200, Johan Hovold wrote:
+> > > I noticed that setting direction to output and setting the gpio high has
+> > > no effect on the read-back value (i.e. I still read back 0) for my
+> > > pl2303hx (note that my device has no easily accessible gpios so I
+> > > haven't verified the actual state of the output pin).
+> > > 
+> > > What happens on your system? Is the read-back value still 0, even when
+> > > the GPIO output is actually high? Should we return the cached value in
+> > > this case?
+> > 
+> > If i set direction to output, then I could control gpio high and low
+> > by set 1 or 0, and the read-back value is 1 or 0 according to high and
+> > low(I test high and low by oscillscope)
+> > 
+> > I test it with my pl2303hx with only two gpios.
+> >
+> > Could you use usbmon to see whether the traffic is right according
+> > to comment in struct pl2303_gpio?
+> 
+> The traffic appears correct judging from the debug output (which I
+> trust). Output-enable is reflected in register 0x81, but the value
+> isn't.
+> 
+> What is the lsusb -v output for your device?
 
-Signed-off-by: Goffredo Baroncelli <kreijack@inwind.it>
----
- drivers/macintosh/therm_windtunnel.c | 23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+Bus 001 Device 005: ID 067b:2303 Prolific Technology, Inc. PL2303 Serial Port.
 
-diff --git a/drivers/macintosh/therm_windtunnel.c b/drivers/macintosh/therm_windtunnel.c
-index 3b4a157..a64a06f 100644
---- a/drivers/macintosh/therm_windtunnel.c
-+++ b/drivers/macintosh/therm_windtunnel.c
-@@ -334,6 +334,23 @@ do_attach( struct i2c_adapter *adapter )
- 	return 0;
- }
- 
-+static void
-+try_start_control_loop(void)
-+{
-+
-+	mutex_lock(&x.lock);
-+	if (!x.thermostat || !x.fan || x.running) {
-+		mutex_unlock(&x.lock);
-+		return;
-+	}
-+
-+	x.running = 1;
-+	mutex_unlock(&x.lock);
-+
-+	x.poll_task = kthread_run(control_loop, NULL, "g4fand");
-+
-+}
-+
- static int
- do_remove(struct i2c_client *client)
- {
-@@ -364,6 +381,7 @@ attach_fan( struct i2c_client *cl )
- 	printk("ADM1030 fan controller [@%02x]\n", cl->addr );
- 
- 	x.fan = cl;
-+	try_start_control_loop();
-  out:
- 	return 0;
- }
-@@ -397,6 +415,7 @@ attach_thermostat( struct i2c_client *cl )
- 	x.overheat_temp = os_temp;
- 	x.overheat_hyst = hyst_temp;
- 	x.thermostat = cl;
-+	try_start_control_loop();
- out:
- 	return 0;
- }
-@@ -404,8 +423,8 @@ out:
- enum chip { ds1775, adm1030 };
- 
- static const struct i2c_device_id therm_windtunnel_id[] = {
--	{ "therm_ds1775", ds1775 },
--	{ "therm_adm1030", adm1030 },
-+	{ "MAC,ds1775", ds1775 },
-+	{ "MAC,adm1030", adm1030 },
- 	{ }
- };
- 
--- 
-2.0.1
+It is strange your device doesn't work, I verify the control method by
+analyze usbmon output from linux host which has VirtualBox running 
+gpio test program, but I don't have right to distribute the gpio test
+program I think, so I can't help you to figure out why it doesn't work 
+for your device.
 
+> I suggest you just set the label to pl2303 until we have a valid
+> use-case that requires something more elaborate.
+
+Ok, but pl2303-gpio maybe a better name?
+
+Thanks.
