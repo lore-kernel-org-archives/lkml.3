@@ -1,61 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938AbaHGWFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 18:05:33 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197AbaHGWFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 18:05:31 -0400
-Message-ID: <53E3F827.9030902@nod.at>
-Date: Fri, 08 Aug 2014 00:05:27 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755333AbaHGWG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 18:06:28 -0400
+Received: from exprod5og126.obsmtp.com ([64.18.0.251]:38432 "HELO
+	exprod5og126.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755009AbaHGWGZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 18:06:25 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+In-Reply-To: <53C4BFF2.5080103@gmail.com>
+References: <1405376285-23008-1-git-send-email-isubramanian@apm.com>
+	<1405376285-23008-3-git-send-email-isubramanian@apm.com>
+	<53C4BFF2.5080103@gmail.com>
+Date: Thu, 7 Aug 2014 15:06:23 -0700
+Message-ID: <CAKh23F=Weod3uo3n7afx=_aM0qmw40qwU54RnNXsNC=L8q9fGg@mail.gmail.com>
+Subject: Re: [PATCH v9 2/4] Documentation: dts: Add bindings for APM X-Gene
+ SoC ethernet driver
+From: Iyappan Subramanian <isubramanian@apm.com>
+To: Varka Bhadram <varkabhadram@gmail.com>
+Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [GIT PULL] Global signal cleanup
-References: <53E20F1E.2080606@nod.at>	<20140806212720.66dbd58b@canb.auug.org.au>	<53E21186.3000702@nod.at>	<20140807102823.7a743bdf@canb.auug.org.au>	<53E32C5C.5010103@nod.at> <CA+55aFy0OFQ5ncwHwpah4xwxuOuMEWL+w6Dv-akTFnogpLo1yA@mail.gmail.com> <53E3E5C8.9090408@nod.at>
-In-Reply-To: <53E3E5C8.9090408@nod.at>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "jcm@redhat.com" <jcm@redhat.com>, patches <patches@apm.com>,
+        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.08.2014 22:47, schrieb Richard Weinberger:
-> Thanks for the clarification.
-> 
-> Here is what happened:
-> 
-> Branch signal_v4 is in linux-next, it never got rebased.
-> While preparing the pull request I noticed that some of the patches gained new acks
-> from various architectures.
-> So I took the *local* copy of signal_v4 added these acks using git rebase and rebased them to v3.16.
-> Then I've pushed that branch to signal-cleanup and sent you the request.
-> signal-cleanup did not exist before that.
-> My fault was rebasing my work from v3.16-rc6 to v3.16 before pushing it.
-> It won't happen again. But I never did a push -f or something like that.
-> 
-> If you feel better you can still pull from:
-> git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git signal_v4
-> 
-> It is the as-is branch from linux-next.
+On Mon, Jul 14, 2014 at 10:45 PM, Varka Bhadram <varkabhadram@gmail.com> wrote:
+> On 07/15/2014 03:48 AM, Iyappan Subramanian wrote:
+>>
+>> This patch adds documentation for APM X-Gene SoC ethernet DTS binding.
+>>
+>> Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
+>> Signed-off-by: Ravi Patel <rapatel@apm.com>
+>> Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
+>> ---
+>>   .../devicetree/bindings/net/apm-xgene-enet.txt     | 72
+>> ++++++++++++++++++++++
+>>   1 file changed, 72 insertions(+)
+>>   create mode 100644
+>> Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+>> b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+>> new file mode 100644
+>> index 0000000..3e2a295
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+>> @@ -0,0 +1,72 @@
+>> +APM X-Gene SoC Ethernet nodes
+>> +
+>> +Ethernet nodes are defined to describe on-chip ethernet interfaces in
+>> +APM X-Gene SoC.
+>> +
+>> +Required properties:
+>> +- compatible:          Should be "apm,xgene-enet"
+>> +- reg: Address and length of the register set for the device. It contains
+>> the
+>> +       information of registers in the same order as described by
+>> reg-names
+>> +- reg-names: Should contain the register set names
+>
+>
+> These are not aligned properly...
 
-Btw: This is how you can verify that I did not alter any code between the branch in linux-next
-and the one in the pull request:
+I will fix these in the next patch.
 
-$ git branch prove_signal_v4 v3.16
-$ git branch prove_signal-cleanup v3.16
-$ git checkout prove_signal_v4
-$ git pull git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git signal_v4
-$ git checkout prove_signal-cleanup
-$ git pull git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git signal-cleanup
-$ git diff prove_signal_v4..prove_signal-cleanup | wc -l
-0
+>
+> Required properties:
+> - compatble             : Should be "apm,xgene-enet"
+>
+> - reg                   : Address and length of the register set for the
+> device.
+>                           It contains the information of registers in the
+> same order
+>                           as described by reg-names
+>
+> .....
+>
+>
+>> +  "enet_csr":          Ethernet control and status register address space
+>> +  "ring_csr":          Descriptor ring control and status register
+>> address space
+>> +  "ring_cmd":          Descriptor ring command register address space
+>> +- interrupts:          Ethernet main interrupt
+>> +- clocks:              Reference to the clock entry.
+>> +- local-mac-address:   MAC address assigned to this device
+>> +- phy-connection-type: Interface type between ethernet device and PHY
+>> device
+>> +- phy-handle:          Reference to a PHY node connected to this device
+>> +
+>> +- mdio:                Device tree subnode with the following required
+>> +                       properties:
+>> +
+>> +       - compatible: Must be "apm,xgene-mdio".
+>> +       - #address-cells: Must be <1>.
+>> +       - #size-cells: Must be <0>.
+>> +
+>> +       For the phy on the mdio bus, there must be a node with the
+>> following
+>> +       fields:
+>> +
+>> +       - compatible: PHY identifier.  Please refer ./phy.txt for the
+>> format.
+>> +       - reg: The ID number for the phy.
+>> +
+>
+>
+> alignment...  :-)
 
-Again, sorry for any inconvenience caused.
+Thanks.  I will fix the alignments.
 
-Thanks,
-//richard
+>
+>
+>> +Optional properties:
+>> +- status               : Should be "ok" or "disabled" for
+>> enabled/disabled.
+>> +                         Default is "ok".
+>> +
+>> +
+>> +Example:
+>> +       menetclk: menetclk {
+>> +               compatible = "apm,xgene-device-clock";
+>> +               clock-output-names = "menetclk";
+>> +               status = "ok";
+>> +       };
+>> +
+>> +       menet: ethernet@17020000 {
+>> +               compatible = "apm,xgene-enet";
+>> +               status = "disabled";
+>> +               reg = <0x0 0x17020000 0x0 0xd100>,
+>> +                     <0x0 0X17030000 0x0 0X400>,
+>> +                     <0x0 0X10000000 0x0 0X200>;
+>> +               reg-names = "enet_csr", "ring_csr", "ring_cmd";
+>> +               interrupts = <0x0 0x3c 0x4>;
+>> +               clocks = <&menetclk 0>;
+>> +               local-mac-address = [00 01 73 00 00 01];
+>> +               phy-connection-type = "rgmii";
+>> +               phy-handle = <&menetphy>;
+>> +               mdio {
+>> +                       compatible = "apm,xgene-mdio";
+>> +                       #address-cells = <1>;
+>> +                       #size-cells = <0>;
+>> +                       menetphy: menetphy@3 {
+>> +                               compatible = "ethernet-phy-id001c.c915";
+>> +                               reg = <0x3>;
+>> +                       };
+>> +
+>> +               };
+>> +       };
+>> +
+>> +/* Board-specific peripheral configurations */
+>> +&menet {
+>> +        status = "ok";
+>> +};
+>
+>
+>
+> --
+> Regards,
+> Varka Bhadram.
+>
