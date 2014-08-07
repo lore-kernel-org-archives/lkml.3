@@ -1,116 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317AbaHGVTq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 17:19:46 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:61066 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaHGVTp (ORCPT
+	id S1751926AbaHGVXl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 17:23:41 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:59712 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069AbaHGVXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 17:19:45 -0400
-Date: Thu, 7 Aug 2014 14:19:41 -0700
-From: Matt Helsley <matt.helsley@gmail.com>
-To: Goffredo Baroncelli <kreijack@inwind.it>
-Cc: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] Export the temperatures via hwmon
-Message-ID: <20140807211941.GA2756@eieio>
-References: <1407359103-6012-1-git-send-email-kreijack@inwind.it>
- <1407359103-6012-6-git-send-email-kreijack@inwind.it>
- <20140806231803.GA5643@roeck-us.net>
- <53E31694.8050107@gmail.com>
- <53E31AB0.6070604@roeck-us.net>
- <20140807085235.2c0e63dd@endymion.delvare>
- <53E32C77.5000804@roeck-us.net>
- <53E3BC48.4020304@inwind.it>
+	Thu, 7 Aug 2014 17:23:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E3BC48.4020304@inwind.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407404095-3265-5-git-send-email-kever.yang@rock-chips.com>
+References: <1407404095-3265-1-git-send-email-kever.yang@rock-chips.com>
+	<1407404095-3265-5-git-send-email-kever.yang@rock-chips.com>
+Date: Thu, 7 Aug 2014 14:23:36 -0700
+X-Google-Sender-Auth: n-6VcSRYEE9w3e3_tMbq5rANKOI
+Message-ID: <CAD=FV=V-yb0JLJ24i5zsKzdZExJ5h8NGDD0QdG1740kc3yoEdQ@mail.gmail.com>
+Subject: Re: [PATCH v4 4/4] ARM: dts: Enable USB otg and host1(dwc) on rk3288-evb
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Paul Zimmerman <paulz@synopsys.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, wulf <wulf@rock-chips.com>,
+        lyz <lyz@rock-chips.com>, han jiang <hj@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 07:50:00PM +0200, Goffredo Baroncelli wrote:
-> On 08/07/2014 09:36 AM, Guenter Roeck wrote:
-> > On 08/06/2014 11:52 PM, Jean Delvare wrote:
-> >> Hi Guenter,
-> >>
-> >> On Wed, 06 Aug 2014 23:20:32 -0700, Guenter Roeck wrote:
-> >>> Patch 4/5 is "Return the fan speed via sysfs: /sys/devices/temperature/fan_level".
-> >>>
-> >>> So you are saying that returning the fan speed with a non-hwmon attribute works,
-> >>> but returning it with a hwmon attribute doesn't ? Not really sure if I understand
-> >>> your logic. Either fan_level doesn't return the fan speed (or an abstraction of it),
-> >>> or something in your line of argument is inconsistent.
-> >>
-> >> fan_level is a fan speed _control_ value, like pwm1. It is not a fan
-> >> speed monitoring value.
-> >>
-> > Ah, ok. The patch description doesn't seem to match, though.
-> > And why not export it as pwm1, if that is what it is ?
-> > 
-> > Guenter
-> > 
-> > 
-> 
-> the exported fan_level value is a coefficient near proportional to the speed [*];
-> so it is not the speed nor the pwm.
+Kever,
 
-> I tried to read the pwm/speed value, but when I did it, every 5/6 seconds the
-> fan seemed to stop for 1s, then the speed raised.... So I stopped the test.
-> 
-> These patches (the first two) solved a real issue: with the last kernels this
-> driver doesn't work at all, and the fan go to maximum speed (very loud !)
-> The other three are an improvement.
-> 
-> When (if) these patches will be accepted I want to write another solution,
-> but definitely not now. And even if it would work for me, it is very likely 
-> that will  be accepted because nobody is able to test it on all hardware.
-> 
-> BR
-> G.Baroncelli
-> 
-> [*] It is a bit more complicated: basically the adm1030 controls the fan speed
-> on the basis of an external temperature sensor (the "case" sensor). 
-> Higher is this temperature higher is the fan speed.
-> The pwm of the fan is computed on the basis of the following value:
-> 	- min_temp
-> 	- range_temp -> max_temp=min_temp+range_temp
-> 	- min_pwm_value
-> and of course
-> 	- "case" sensor
-> 
-> 
-> The fan_level is an index computed on the basis of the "cpu" temperature (
-> which is different from the "case" temperature referred above). This
-> temperature is used to update the min_temp above.
-> 
-> So the fan speed id computed on the basis of two external sensor:
-> - cpu sensor
-> - case sensor.
-> 
-> To complicate further the things, the range_temp is set to an undocumented 
-> value: this parameter is set via a register (0x25, bit 2:0), which accepted 
-> values between 0x00 and 0x04. However it is set to 0x07
-> 
-> See http://lxr.free-electrons.com/source/drivers/macintosh/therm_windtunnel.c#L153
-> and the adm1030 datasheet.
-> 
-> I am reluctant to change this thing because this driver is for an obsolete 
-> platform (apple stopped the powermac in 2004/2005), and bad or good I have to
-> suppose that it works. Moreover I am not in the position to test the changes 
-> outside my hardware (1 powermac DP@1Ghz mdd)
+On Thu, Aug 7, 2014 at 2:34 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> USB otg port is the usb3.0 b-port on the board.
+> USB host1 port is the host A port nearby the otg port.
+>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+>
+> ---
+>
+> Changes in v4: None
+> Changes in v3:
+> - Rebase
+>
+> Changes in v2:
+> - evb patch added in version 2
+>
+>  arch/arm/boot/dts/rk3288-evb.dtsi | 6 ++++++
+>  1 file changed, 6 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
+> index 4f57209..a322100 100644
+> --- a/arch/arm/boot/dts/rk3288-evb.dtsi
+> +++ b/arch/arm/boot/dts/rk3288-evb.dtsi
+> @@ -94,3 +94,9 @@
+>  &usb_host0_ehci {
+>         status = "okay";
+>  };
+> +&usb_host1 {
+> +       status = "okay";
+> +};
+> +&usb_otg {
+> +       status = "okay";
+> +};
 
-This seems like a valuable explanation of the meaning of the fan_level
-values. When I read the code I was wondering what the magic number "11" was
-doing for instance and this helps clear it up a little. It's a nit perhaps
-but some of this information might be useful in the commit message for that
-patch, the code, or both.
+Do you really want to enable "usb_otg" on EVB?  I think you have a
+rework on your board to enable vbus on this port, but I don't think
+it's applicable to anyone else, is it?
 
-Also, I think the patches from "Bryan" should have a "From:" attribution line
-at the start of the commit message (See Documentation/SubmittingPatches).
+I'm told that on some boards you can turn on GPIO0_12 to get vbus, but
+I don't have a board like that so I can't really test.  Even so,
+before enabling the otg port we should probably put something in the
+dts file that would turn on that vbus...
 
-Cheers,
-	-Matt Helsley
+Unless you've somehow gotten gadget mode to work on the OTG port, my
+vote would be to leave it disabled for the EVB for now.
+
+
+NOTE: keeping the otg definition in the main "r3288.dtsi" (patch 3/4)
+still makes sense because other boards may have the OTG port hooked
+up.
+
+
+-Doug
