@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422AbaHGVuQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 17:50:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24084 "EHLO mx1.redhat.com"
+	id S1754938AbaHGWFd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 18:05:33 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399AbaHGVuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 17:50:14 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Felipe Balbi <balbi@ti.com>, kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] usb: gadget: fix error return code
-References: <1407445067-4044-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1407445067-4044-5-git-send-email-Julia.Lawall@lip6.fr>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 07 Aug 2014 17:50:08 -0400
-In-Reply-To: <1407445067-4044-5-git-send-email-Julia.Lawall@lip6.fr> (Julia
-	Lawall's message of "Thu, 7 Aug 2014 22:57:47 +0200")
-Message-ID: <x49oavw9dgv.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751197AbaHGWFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 18:05:31 -0400
+Message-ID: <53E3F827.9030902@nod.at>
+Date: Fri, 08 Aug 2014 00:05:27 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [GIT PULL] Global signal cleanup
+References: <53E20F1E.2080606@nod.at>	<20140806212720.66dbd58b@canb.auug.org.au>	<53E21186.3000702@nod.at>	<20140807102823.7a743bdf@canb.auug.org.au>	<53E32C5C.5010103@nod.at> <CA+55aFy0OFQ5ncwHwpah4xwxuOuMEWL+w6Dv-akTFnogpLo1yA@mail.gmail.com> <53E3E5C8.9090408@nod.at>
+In-Reply-To: <53E3E5C8.9090408@nod.at>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Julia Lawall <Julia.Lawall@lip6.fr> writes:
+Am 07.08.2014 22:47, schrieb Richard Weinberger:
+> Thanks for the clarification.
+> 
+> Here is what happened:
+> 
+> Branch signal_v4 is in linux-next, it never got rebased.
+> While preparing the pull request I noticed that some of the patches gained new acks
+> from various architectures.
+> So I took the *local* copy of signal_v4 added these acks using git rebase and rebased them to v3.16.
+> Then I've pushed that branch to signal-cleanup and sent you the request.
+> signal-cleanup did not exist before that.
+> My fault was rebasing my work from v3.16-rc6 to v3.16 before pushing it.
+> It won't happen again. But I never did a push -f or something like that.
+> 
+> If you feel better you can still pull from:
+> git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git signal_v4
+> 
+> It is the as-is branch from linux-next.
 
-> diff --git a/drivers/usb/gadget/udc/fusb300_udc.c b/drivers/usb/gadget/udc/fusb300_udc.c
-> index d40255f..5c5d1ad 100644
-> --- a/drivers/usb/gadget/udc/fusb300_udc.c
-> +++ b/drivers/usb/gadget/udc/fusb300_udc.c
-> @@ -1398,13 +1398,17 @@ static int fusb300_probe(struct platform_device *pdev)
->  
->  	/* initialize udc */
->  	fusb300 = kzalloc(sizeof(struct fusb300), GFP_KERNEL);
-> -	if (fusb300 == NULL)
-> +	if (fusb300 == NULL) {
-> +		ret = -ENOMEM;
->  		goto clean_up;
-> +	}
->  
->  	for (i = 0; i < FUSB300_MAX_NUM_EP; i++) {
->  		_ep[i] = kzalloc(sizeof(struct fusb300_ep), GFP_KERNEL);
-> -		if (_ep[i] == NULL)
-> +		if (_ep[i] == NULL) {
-> +			ret = -ENOMEM;
->  			goto clean_up;
-> +		}
->  		fusb300->ep[i] = _ep[i];
->  	}
+Btw: This is how you can verify that I did not alter any code between the branch in linux-next
+and the one in the pull request:
 
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+$ git branch prove_signal_v4 v3.16
+$ git branch prove_signal-cleanup v3.16
+$ git checkout prove_signal_v4
+$ git pull git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git signal_v4
+$ git checkout prove_signal-cleanup
+$ git pull git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git signal-cleanup
+$ git diff prove_signal_v4..prove_signal-cleanup | wc -l
+0
+
+Again, sorry for any inconvenience caused.
+
+Thanks,
+//richard
