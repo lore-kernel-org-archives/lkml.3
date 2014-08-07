@@ -1,282 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932599AbaHGPFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:05:51 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:48736 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932358AbaHGPFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:05:24 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Liu hua <sdu.liu@huawei.com>,
-        Mark Salter <msalter@redhat.com>, Rabin Vincent <rabin@rab.in>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, Rob Herring <robh@kernel.org>,
-        Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 7/8] ARM: mm: allow non-text sections to be non-executable
-Date: Thu,  7 Aug 2014 08:01:52 -0700
-Message-Id: <1407423713-4160-8-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407423713-4160-1-git-send-email-keescook@chromium.org>
-References: <1407423713-4160-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S932580AbaHGPFu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:05:50 -0400
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:54305
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932327AbaHGPFs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 11:05:48 -0400
+Date: Thu, 7 Aug 2014 10:05:45 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Tejun Heo <htejun@gmail.com>
+cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Mike Travis <travis@sgi.com>
+Subject: percpu: Define this_cpu_cpumask_var_t_ptr
+Message-ID: <alpine.DEB.2.11.1408070959250.28468@gentwo.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds CONFIG_ARM_KERNMEM_PERMS to separate the kernel memory regions
-into section-sized areas that can have different permisions. Performs
-the NX permission changes during free_initmem, so that init memory can be
-reclaimed.
+I think I finally found the source of the nasty failures of the
+__get_cpu_var patchset:
 
-This uses section size instead of PMD size to reduce memory lost to
-padding on non-LPAE systems.
 
-Based on work by Brad Spengler, Larry Bassel, and Laura Abbott.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Subject: __get_cpu_var/cpumask_var_t: Resolve ambiguities
+
+__get_cpu_var can paper over differences in the definitions
+of cpumask_var_t and either use the address of the cpumask
+variable directly or perform a fetch of the address of the
+struct cpumask allocated elsewhere. This is important
+particularly when using per cpu cpumask_var_t declarations
+because in one case we have an offset into a per cpu area
+to handle and in the other case we need to fetch a pointer
+from the offset.
+
+This patch introduces a new macro
+
+this_cpu_cpumask_var_t_ptr()
+
+that is defined where cpumask_var_t is defined and performs
+the proper actions. All use cases where __get_cpu_var
+is used with cpumask_var_t are converted to the use
+of this_cpu_cpumask_var_t_ptr().
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
 ---
- arch/arm/kernel/vmlinux.lds.S |  17 +++++++
- arch/arm/mm/Kconfig           |   9 ++++
- arch/arm/mm/init.c            | 106 ++++++++++++++++++++++++++++++++++++++++++
- arch/arm/mm/mmu.c             |  13 +++++-
- 4 files changed, 144 insertions(+), 1 deletion(-)
+ include/linux/kernel_stat.h   |  4 ++--
+ kernel/events/callchain.c     |  4 ++--
+ kernel/events/core.c          | 24 ++++++++++++------------
+ kernel/sched/deadline.c       |  2 +-
+ kernel/sched/fair.c           |  2 +-
+ kernel/sched/rt.c             |  2 +-
+ kernel/sched/sched.h          |  4 ++--
+ kernel/taskstats.c            |  2 +-
+ kernel/time/tick-sched.c      |  4 ++--
+ kernel/user-return-notifier.c |  4 ++--
+ 10 files changed, 26 insertions(+), 26 deletions(-)
 
-diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-index 6f57cb94367f..a3d07ca2bbb4 100644
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -8,6 +8,9 @@
- #include <asm/thread_info.h>
- #include <asm/memory.h>
- #include <asm/page.h>
-+#ifdef CONFIG_ARM_KERNMEM_PERMS
-+#include <asm/pgtable.h>
-+#endif
- 	
- #define PROC_INFO							\
- 	. = ALIGN(4);							\
-@@ -90,6 +93,11 @@ SECTIONS
- 		_text = .;
- 		HEAD_TEXT
- 	}
+Index: linux/include/linux/cpumask.h
+===================================================================
+--- linux.orig/include/linux/cpumask.h	2014-08-07 09:36:05.954916998 -0500
++++ linux/include/linux/cpumask.h	2014-08-07 09:55:38.732748680 -0500
+@@ -666,10 +666,19 @@
+  *
+  * This code makes NR_CPUS length memcopy and brings to a memory corruption.
+  * cpumask_copy() provide safe copy functionality.
++ *
++ * Note that there is another evil here: If you define a cpumask_var_t
++ * as a percpu variable then the way to obtain the address of the cpumask
++ * structure differently influences what this_cpu_* operation needs to be
++ * used. Please use this_cpu_cpumask_var_t in those cases. The direct use
++ * of this_cpu_ptr() or this_cpu_read() will lead to failures when the
++ * other type of cpumask_var_t implementation is configured.
+  */
+ #ifdef CONFIG_CPUMASK_OFFSTACK
+ typedef struct cpumask *cpumask_var_t;
+
++#define this_cpu_cpumask_var_t_ptr(x) this_cpu_read(x)
 +
-+#ifdef CONFIG_ARM_KERNMEM_PERMS
-+	. = ALIGN(1<<SECTION_SHIFT);
-+#endif
-+
- 	.text : {			/* Real text segment		*/
- 		_stext = .;		/* Text and read-only data	*/
- 			__exception_text_start = .;
-@@ -145,7 +153,11 @@ SECTIONS
- 	_etext = .;			/* End of text and rodata section */
- 
- #ifndef CONFIG_XIP_KERNEL
-+# ifdef CONFIG_ARM_KERNMEM_PERMS
-+	. = ALIGN(1<<SECTION_SHIFT);
-+# else
- 	. = ALIGN(PAGE_SIZE);
-+# endif
- 	__init_begin = .;
- #endif
- 	/*
-@@ -220,7 +232,12 @@ SECTIONS
- 	. = PAGE_OFFSET + TEXT_OFFSET;
+ bool alloc_cpumask_var_node(cpumask_var_t *mask, gfp_t flags, int node);
+ bool alloc_cpumask_var(cpumask_var_t *mask, gfp_t flags);
+ bool zalloc_cpumask_var_node(cpumask_var_t *mask, gfp_t flags, int node);
+@@ -681,6 +690,8 @@
  #else
- 	__init_end = .;
-+
-+#ifdef CONFIG_ARM_KERNMEM_PERMS
-+	. = ALIGN(1<<SECTION_SHIFT);
-+#else
- 	. = ALIGN(THREAD_SIZE);
-+#endif
- 	__data_loc = .;
- #endif
- 
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index 577039a3f6e5..1fc1c30dfdc4 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -1008,3 +1008,12 @@ config ARCH_SUPPORTS_BIG_ENDIAN
- 	help
- 	  This option specifies the architecture can support big endian
- 	  operation.
-+
-+config ARM_KERNMEM_PERMS
-+	bool "Restrict kernel memory permissions"
-+	help
-+	  If this is set, kernel memory other than kernel text (and rodata)
-+	  will be made non-executable. The tradeoff is that each region is
-+	  padded to section-size (1MiB) boundaries (because their permissions
-+	  are different and splitting the 1M pages into 4K ones causes TLB
-+	  performance problems), wasting memory.
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index ad82c05bfc3a..ccf392ef40d4 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -32,6 +32,11 @@
- #include <asm/tlb.h>
- #include <asm/fixmap.h>
- 
-+#ifdef CONFIG_ARM_KERNMEM_PERMS
-+#include <asm/system_info.h>
-+#include <asm/cp15.h>
-+#endif
-+
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- 
-@@ -615,11 +620,112 @@ void __init mem_init(void)
- 	}
- }
- 
-+#ifdef CONFIG_ARM_KERNMEM_PERMS
-+struct section_perm {
-+	unsigned long start;
-+	unsigned long end;
-+	pmdval_t mask;
-+	pmdval_t prot;
-+};
-+
-+struct section_perm nx_perms[] = {
-+	/* Make pages tables, etc before _stext RW (set NX). */
-+	{
-+		.start	= PAGE_OFFSET,
-+		.end	= (unsigned long)_stext,
-+		.mask	= ~PMD_SECT_XN,
-+		.prot	= PMD_SECT_XN,
-+	},
-+	/* Make init RW (set NX). */
-+	{
-+		.start	= (unsigned long)__init_begin,
-+		.end	= (unsigned long)_sdata,
-+		.mask	= ~PMD_SECT_XN,
-+		.prot	= PMD_SECT_XN,
-+	},
-+};
-+
-+/*
-+ * Updates section permissions only for the current mm (sections are
-+ * copied into each mm). During startup, this is the init_mm.
-+ */
-+static inline void section_update(unsigned long addr, pmdval_t mask,
-+				  pmdval_t prot)
-+{
-+	struct mm_struct *mm;
-+	pmd_t *pmd;
-+
-+	mm = current->active_mm;
-+	pmd = pmd_offset(pud_offset(pgd_offset(mm, addr), addr), addr);
-+
-+#ifdef CONFIG_ARM_LPAE
-+	pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
-+#else
-+	if (addr & SECTION_SIZE)
-+		pmd[1] = __pmd((pmd_val(pmd[1]) & mask) | prot);
-+	else
-+		pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
-+#endif
-+	flush_pmd_entry(pmd);
-+	local_flush_tlb_kernel_range(addr, addr + SECTION_SIZE);
-+}
-+
-+/* Make sure extended page tables are in use. */
-+static inline bool arch_has_strict_perms(void)
-+{
-+	unsigned int cr;
-+
-+	if (cpu_architecture() < CPU_ARCH_ARMv6)
-+		return false;
-+
-+	cr = get_cr();
-+	if (!(cr & CR_XP))
-+		return false;
-+
-+	return true;
-+}
-+
-+#define set_section_perms(perms, field)	{				\
-+	size_t i;							\
-+	unsigned long addr;						\
-+									\
-+	if (!arch_has_strict_perms())					\
-+		return;							\
-+									\
-+	for (i = 0; i < ARRAY_SIZE(perms); i++) {			\
-+		if (!IS_ALIGNED(perms[i].start, SECTION_SIZE) ||	\
-+		    !IS_ALIGNED(perms[i].end, SECTION_SIZE)) {		\
-+			pr_err("BUG: section %lx-%lx not aligned to %lx\n", \
-+				perms[i].start, perms[i].end,		\
-+				SECTION_SIZE);				\
-+			continue;					\
-+		}							\
-+									\
-+		for (addr = perms[i].start;				\
-+		     addr < perms[i].end;				\
-+		     addr += SECTION_SIZE)				\
-+			section_update(addr, perms[i].mask,		\
-+				       perms[i].field);			\
-+	}								\
-+}
-+
-+static inline void fix_kernmem_perms(void)
-+{
-+	set_section_perms(nx_perms, prot);
-+}
-+#else
-+static inline void fix_kernmem_perms(void) { }
-+#endif /* CONFIG_ARM_KERNMEM_PERMS */
-+
- void free_initmem(void)
- {
- #ifdef CONFIG_HAVE_TCM
- 	extern char __tcm_start, __tcm_end;
-+#endif
-+
-+	fix_kernmem_perms();
- 
-+#ifdef CONFIG_HAVE_TCM
- 	poison_init_mem(&__tcm_start, &__tcm_end - &__tcm_start);
- 	free_reserved_area(&__tcm_start, &__tcm_end, -1, "TCM link");
- #endif
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index a7a756603775..ae7cf9556f28 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -1368,13 +1368,24 @@ static void __init map_lowmem(void)
- 		if (start >= end)
- 			break;
- 
--		if (end < kernel_x_start || start >= kernel_x_end) {
-+		if (end < kernel_x_start) {
- 			map.pfn = __phys_to_pfn(start);
- 			map.virtual = __phys_to_virt(start);
- 			map.length = end - start;
- 			map.type = MT_MEMORY_RWX;
- 
- 			create_mapping(&map);
-+		} else if (start >= kernel_x_end) {
-+			map.pfn = __phys_to_pfn(start);
-+			map.virtual = __phys_to_virt(start);
-+			map.length = end - start;
-+#ifdef CONFIG_ARM_KERNMEM_PERMS
-+			map.type = MT_MEMORY_RW;
-+#else
-+			map.type = MT_MEMORY_RWX;
-+#endif
-+
-+			create_mapping(&map);
- 		} else {
- 			/* This better cover the entire kernel */
- 			if (start < kernel_x_start) {
--- 
-1.9.1
+ typedef struct cpumask cpumask_var_t[1];
 
++#define this_cpu_cpumask_var_t_ptr(x) this_cpu_ptr(&x)
++
+ static inline bool alloc_cpumask_var(cpumask_var_t *mask, gfp_t flags)
+ {
+ 	return true;
+Index: linux/kernel/sched/deadline.c
+===================================================================
+--- linux.orig/kernel/sched/deadline.c	2014-08-07 09:36:05.954916998 -0500
++++ linux/kernel/sched/deadline.c	2014-08-07 09:36:05.902917978 -0500
+@@ -1158,7 +1158,7 @@
+ static int find_later_rq(struct task_struct *task)
+ {
+ 	struct sched_domain *sd;
+-	struct cpumask *later_mask = __get_cpu_var(local_cpu_mask_dl);
++	struct cpumask *later_mask = this_cpu_cpumask_var_t_ptr(local_cpu_mask_dl);
+ 	int this_cpu = smp_processor_id();
+ 	int best_cpu, cpu = task_cpu(task);
+
+Index: linux/kernel/sched/fair.c
+===================================================================
+--- linux.orig/kernel/sched/fair.c	2014-08-07 09:36:05.954916998 -0500
++++ linux/kernel/sched/fair.c	2014-08-07 09:36:05.906917903 -0500
+@@ -6490,7 +6490,7 @@
+ 	struct sched_group *group;
+ 	struct rq *busiest;
+ 	unsigned long flags;
+-	struct cpumask *cpus = __get_cpu_var(load_balance_mask);
++	struct cpumask *cpus = this_cpu_cpumask_var_t_ptr(load_balance_mask);
+
+ 	struct lb_env env = {
+ 		.sd		= sd,
+Index: linux/kernel/sched/rt.c
+===================================================================
+--- linux.orig/kernel/sched/rt.c	2014-08-07 09:36:05.954916998 -0500
++++ linux/kernel/sched/rt.c	2014-08-07 09:36:05.906917903 -0500
+@@ -1522,7 +1522,7 @@
+ static int find_lowest_rq(struct task_struct *task)
+ {
+ 	struct sched_domain *sd;
+-	struct cpumask *lowest_mask = __get_cpu_var(local_cpu_mask);
++	struct cpumask *lowest_mask = this_cpu_cpumask_var_t_ptr(local_cpu_mask);
+ 	int this_cpu = smp_processor_id();
+ 	int cpu      = task_cpu(task);
+
+Index: linux/arch/x86/include/asm/perf_event_p4.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/perf_event_p4.h	2014-08-07 09:36:05.954916998 -0500
++++ linux/arch/x86/include/asm/perf_event_p4.h	2014-08-07 09:36:05.910917828 -0500
+@@ -189,7 +189,7 @@
+ {
+ #ifdef CONFIG_SMP
+ 	if (smp_num_siblings == 2)
+-		return cpu != cpumask_first(__get_cpu_var(cpu_sibling_map));
++		return cpu != cpumask_first(this_cpu_cpumask_var_t_ptr(cpu_sibling_map));
+ #endif
+ 	return 0;
+ }
+Index: linux/arch/x86/oprofile/op_model_p4.c
+===================================================================
+--- linux.orig/arch/x86/oprofile/op_model_p4.c	2014-08-07 09:36:05.954916998 -0500
++++ linux/arch/x86/oprofile/op_model_p4.c	2014-08-07 09:36:05.910917828 -0500
+@@ -372,7 +372,7 @@
+ {
+ #ifdef CONFIG_SMP
+ 	int cpu = smp_processor_id();
+-	return cpu != cpumask_first(__get_cpu_var(cpu_sibling_map));
++	return cpu != cpumask_first(this_cpu_cpumask_var_t_ptr(cpu_sibling_map));
+ #endif
+ 	return 0;
+ }
