@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435AbaHGJMq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 05:12:46 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:35835 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161AbaHGJMo (ORCPT
+	id S1757463AbaHGJM5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 05:12:57 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:27791 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755052AbaHGJMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 05:12:44 -0400
-Message-ID: <53E3430B.5010209@kernel.org>
-Date: Thu, 07 Aug 2014 10:12:43 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 7 Aug 2014 05:12:54 -0400
+Date: Thu, 7 Aug 2014 17:10:50 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Weird NET_RX softirq behavior
+Message-ID: <20140807171050.77819b10@xhacker>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Murilo Opsfelder Araujo <mopsfelder@gmail.com>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-CC: gregkh@linuxfoundation.org
-Subject: Re: [PATCH v3 2/2] staging: iio: accel: sca3000_core.c: Adjust code
- to fit 80-chars limit
-References: <1407370929-26949-1-git-send-email-mopsfelder@gmail.com> <1407370929-26949-3-git-send-email-mopsfelder@gmail.com>
-In-Reply-To: <1407370929-26949-3-git-send-email-mopsfelder@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-07_04:2014-08-06,2014-08-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1408070121
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/14 01:22, Murilo Opsfelder Araujo wrote:
-> Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
-Applied to the togreg branch of iio.git.
+Hi list,
 
-Thanks,
+I observed one weird NET_RX softirq behavior:
 
-Jonathan
-> ---
->  drivers/staging/iio/accel/sca3000_core.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/iio/accel/sca3000_core.c b/drivers/staging/iio/accel/sca3000_core.c
-> index bc53fedb..e4e5639 100644
-> --- a/drivers/staging/iio/accel/sca3000_core.c
-> +++ b/drivers/staging/iio/accel/sca3000_core.c
-> @@ -506,7 +506,8 @@ static int sca3000_read_raw(struct iio_dev *indio_dev,
->  				mutex_unlock(&st->lock);
->  				return ret;
->  			}
-> -			*val = ((st->rx[0] & 0x3F) << 3) | ((st->rx[1] & 0xE0) >> 5);
-> +			*val = ((st->rx[0] & 0x3F) << 3) |
-> +			       ((st->rx[1] & 0xE0) >> 5);
->  		}
->  		mutex_unlock(&st->lock);
->  		return IIO_VAL_INT;
-> 
+
+1. CONFIG_RPS=y in kernel config file.
+
+2. only one netdev in the system: eth0. eth0 only has one interrupt which is
+all handled by CPU0. eth0 doesn't support RFS_ACCEL
+
+"cat /proc/interrupts" shows 
+
+~ # cat /proc/interrupts 
+           CPU0       CPU1       CPU2       CPU3       
+...
+ 49:         52          0          0          0       GIC  mmc1
+ 52:         53          0          0          0       GIC  mmc2
+ 56:     430365          0          0          0       GIC  eth0
+ 60:         61          0          0          0       GIC  mmc0
+...
+
+3. RPS and RFS remains disabled as default.
+
+~ # ls /sys/class/net/eth0/queues/
+rx-0  rx-1  rx-2  rx-3  tx-0
+~ # cat /sys/class/net/eth0/queues/rx-*/rps_cpus
+0
+0
+0
+0
+~ # cat /proc/sys/net/core/rps_sock_flow_entries
+0
+~ # cat /sys/class/net/eth0/queues/rx-*/rps_flow_cnt
+0
+0
+0
+0
+
+4. But NET_RX seems abnormal
+~ # cat /proc/softirqs 
+                    CPU0       CPU1       CPU2       CPU3       
+          HI:          0          0          0          0
+       TIMER:      92386        767        367        263
+      NET_TX:       6338          0          0          1
+      NET_RX:     445587        322        983          0
+       BLOCK:          0          0          0          0
+BLOCK_IOPOLL:          0          0          0          0
+     TASKLET:        150          0          0          0
+       SCHED:      31414        490        275        179
+     HRTIMER:          1          0          0          0
+         RCU:      49029        570        285        182
+
+I'm expecting NET_RX under CPU1, 2, 3 should be zero. Any suggestions
+about this abnormal behavior?
+
+Thanks in advance,
+Jisheng
