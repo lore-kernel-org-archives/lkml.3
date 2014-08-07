@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932949AbaHGR3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 13:29:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48125 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082AbaHGR3O (ORCPT
+	id S932328AbaHGRdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 13:33:44 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:52845 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757264AbaHGRdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 13:29:14 -0400
-Date: Thu, 7 Aug 2014 19:29:01 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        linux-atm-general@lists.sourceforge.net
-Subject: Re: [setsockopt] WARNING: CPU: 0 PID: 1444 at
- kernel/sched/core.c:7088 __might_sleep+0x51/0x16f()
-Message-ID: <20140807172901.GH3588@twins.programming.kicks-ass.net>
-References: <20140805214624.GA9973@localhost>
- <20140807151741.GP19379@twins.programming.kicks-ass.net>
- <20140807125948.2b7f1472@thirdoffive.cmf.nrl.navy.mil>
- <20140807172514.GY9918@twins.programming.kicks-ass.net>
+	Thu, 7 Aug 2014 13:33:43 -0400
+Message-ID: <53E3B874.80008@gmail.com>
+Date: Thu, 07 Aug 2014 10:33:40 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ca0e2zgpnh8/XhnM"
-Content-Disposition: inline
-In-Reply-To: <20140807172514.GY9918@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: Wei.Yang@windriver.com, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, acme@kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH v1] MIPS: perf: Mark pmu interupt IRQF_NO_THREAD
+References: <1407217067-1144-1-git-send-email-Wei.Yang@windriver.com> <20140807114831.GB29898@linux-mips.org>
+In-Reply-To: <20140807114831.GB29898@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/07/2014 04:48 AM, Ralf Baechle wrote:
+> On Tue, Aug 05, 2014 at 01:37:47PM +0800, Wei.Yang@windriver.com wrote:
+>
+>> From: Yang Wei <Wei.Yang@windriver.com>
+>>
+>> In RT kernel, I ran into the following calltrace, so PMU interrupts cannot
+>> be threaded
+>>
+>> in_atomic(): 1, irqs_disabled(): 1, pid: 0, name: swapper/0
+>> INFO: lockdep is turned off.
+>> Call Trace:
+>> [<ffffffff8088595c>] dump_stack+0x1c/0x50
+>> [<ffffffff801a958c>] __might_sleep+0x13c/0x148
+>> [<ffffffff80891c54>] rt_spin_lock+0x3c/0xb0
+>> [<ffffffff801ad29c>] __wake_up+0x3c/0x80
+>> [<ffffffff80243ba4>] perf_event_wakeup+0x8c/0xf8
+>> [<ffffffff80243c50>] perf_pending_event+0x40/0x78
+>> [<ffffffff8023d88c>] irq_work_run+0x74/0xc0
+>> [<ffffffff80152640>] mipsxx_pmu_handle_shared_irq+0x110/0x228
+>> [<ffffffff8015276c>] mipsxx_pmu_handle_irq+0x14/0x30
+>> [<ffffffff801ffda4>] handle_irq_event_percpu+0xbc/0x470
+>> [<ffffffff80204478>] handle_percpu_irq+0x98/0xc8
+>> [<ffffffff801ff284>] generic_handle_irq+0x4c/0x68
+>> [<ffffffff8089748c>] do_IRQ+0x2c/0x48
+>> [<ffffffff80105864>] plat_irq_dispatch+0x64/0xd0
+>
+> Hm...  I don't see why based on this backtrace you concluce the
+> handler needs to be marked IRQF_NO_THREAD.  However there's another
+> reason to mark it IRQF_NO_THREAD.  IRQ threads may be rescheduled to
+> other CPUs but this handler is fiddling with per-CPU resources.
+>
 
---Ca0e2zgpnh8/XhnM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Also by its nature, the profiling code needs synchronous access to the 
+register state of the interrupted code.  If you are running on a 
+different thread, then I don't think this would be available.
 
-On Thu, Aug 07, 2014 at 07:25:14PM +0200, Peter Zijlstra wrote:
-> > This isn't the only place that we queue a message for the signalling
-> > daemon after a prepare_to_wait() uninterruptibly so this patch would
-> > be incomplete as is.
->=20
-> I'm not sure I follow, this is the only place you do so while then going
-> to sleep. All other sites don't sleep while they're enqueued on the
-> waitqueue.
+> See https://patchwork.linux-mips.org/patch/2818/ for a similar
+> scenario a few years ago.
+>
+>    Ralf
+>
+>
 
-Argh, my brain is fried, you're quite right.  I'll go have another stab
-at it tomorrow or so.
-
---Ca0e2zgpnh8/XhnM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT47ddAAoJEHZH4aRLwOS6IJYP/AgnaGHDuGXI2z1rZGgIWO0e
-pIDb2KDWni3pMhFMX5cqHGUR9GwTSJarQa0TUrzHvxIxgOznqij+N39uFDU+5VLV
-5rr1CRzyOCCHRAP4hr8H0T6LkTResh2gbjE4EOEvZvlfFfYwjGwxNZmghzrMVcvG
-vJYRtGWU1PM4Ge3WUIFIgEEtLTlkrFowBxclsiBG5fhBMGjzUICaWs8ot+Xpni98
-s6EqE1VNnFPjJ4vvj6CiHlX/40b3bTB04IoxMEFAf3/BcYS41c1EQ3q0eKgr86+O
-hI3InH7/VWK/A9A/Q99In55nLQr/ZCVVCtFOL0QJA/2QOtNgacZKuPZyg84OnHHN
-ZHGPA2YkQhL0xL3oAgKqka2quFuA0FA18VQjkvUpTWltEu/BMLp0S/pns/GDenBi
-YkIRrJuK+bDG0KD97XNGPeRXo903BxIcuBESslp+KbC6/70WdvbIcU4q/mJvuHfV
-xW2ujDYyVf+PROsTpf3SFtWMbfzAClMrh6X2wx69VigNfQQwl2NFXpP36IzXHtfr
-7ihxVFwxhBNvkRszqkYlBg2jiluXIcHbTCnrrUn6gkP2o2qn1pmZ+WaRZU7sUW06
-EY29KFtGjvWrZCQfpp2TriAO20bpsw8m9lHe7TWYaF9194A7VHsivuufsXeKjflz
-VN5tug3v9HQCYvhaxh9O
-=Xt9h
------END PGP SIGNATURE-----
-
---Ca0e2zgpnh8/XhnM--
