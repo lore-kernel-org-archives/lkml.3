@@ -1,355 +1,929 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134AbaHGKGg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 06:06:36 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:39841 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757426AbaHGKGd (ORCPT
+	id S932212AbaHGKGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 06:06:55 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:42453 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131AbaHGKGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 06:06:33 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Cc: gleb@kernel.org, kvm@vger.kernel.org, christoffer.dall@linaro.org,
-        agraf@suse.de
-Subject: [GIT PULL] Second round of KVM changes for 3.17
-Date: Thu,  7 Aug 2014 12:06:16 +0200
-Message-Id: <1407405976-22122-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.9.3
+	Thu, 7 Aug 2014 06:06:53 -0400
+Date: Thu, 7 Aug 2014 11:06:45 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Wei-Chun Pan <weichun.pan@advantech.com.tw>
+Cc: Guenter Roeck <linux@roeck-us.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Jean Delvare <jdelvare@suse.de>, Wolfram Sang <wsa@the-dreams.de>,
+        "Louis.Lu" <Louis.Lu@advantech.com.tw>,
+        "Neo.Lo" <neo.lo@advantech.com.tw>,
+        "Hank.Peng" <Hank.Peng@advantech.com.tw>,
+        "Kevin.Ong" <Kevin.Ong@advantech.com.tw>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] hwmon: (imanager2) Add support for IT8516/18/28
+Message-ID: <20140807100645.GF10136@lee--X1>
+References: <1407403476-3634-1-git-send-email-weichun.pan@advantech.com.tw>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1407403476-3634-1-git-send-email-weichun.pan@advantech.com.tw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, 07 Aug 2014, Wei-Chun Pan wrote:
 
-The following changes since commit 5167d09ffad5b16b574d35ce3047ed34caf1e837:
+> Sorry, I sent wrong patch just now. Please ignore the mail "[PATCH 1/3]
+>  imanager2: rename io functions and remove no used functions".
+> 
+> This mail include 2 patches:
+> The first patch is shown I rename some functions.
+> The second patch is shown I moditfy code according to your comment.
+> 
+> Signed-off-by: Wei-Chun Pan <weichun.pan@advantech.com.tw>
 
-  Merge tag 'arm64-upstream' of git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux (2014-08-04 12:31:53 -0700)
+Please use Git to send patches.  All of the above is in the wrong
+order and is missing lots of context.
 
-are available in the git repository at:
+Please read:
+  Documentation/SubmittingPatches
+  Documentation/email-clients.txt
 
+> ---
+> diff --git a/drivers/hwmon/imanager2_hwm.c b/drivers/hwmon/imanager2_hwm.c
+> index 335bffb..ab63296 100644
+> --- a/drivers/hwmon/imanager2_hwm.c
+> +++ b/drivers/hwmon/imanager2_hwm.c
+> @@ -119,17 +119,17 @@ static int imanager2_volt_get_value_by_io(struct imanager2 *ec, int index,
+>  	u8 portnum;
+>  	int ret;
+>  
+> -	ret = imanager2_mbox_io_read(EC_CMD_ADC_INDEX, pin, &portnum, 1);
+> +	ret = imanager2_io_read_data(EC_CMD_ADC_INDEX, pin, &portnum, 1);
+>  	if (ret)
+>  		return ret;
+>  	if (portnum == EC_ERROR)
+>  		return -ENXIO;
+>  
+> -	ret = imanager2_mbox_io_simple_read(EC_CMD_ADC_READ_LSB, &buf[1]);
+> +	ret = imanager2_io_nooffset_readbyte(EC_CMD_ADC_READ_LSB, &buf[1]);
+>  	if (ret)
+>  		return ret;
+>  
+> -	return imanager2_mbox_io_simple_read(EC_CMD_ADC_READ_MSB, &buf[0]);
+> +	return imanager2_io_nooffset_readbyte(EC_CMD_ADC_READ_MSB, &buf[0]);
+>  }
 
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
+[...]
 
-for you to fetch changes up to c77dcacb397519b6ade8f08201a4a90a7f4f751e:
+> ---
+> > > ---
+> > >  drivers/hwmon/Kconfig         |   5 +
+> > >  drivers/hwmon/Makefile        |   1 +
+> > >  drivers/hwmon/imanager2_hwm.c | 768
+> > ++++++++++++++++++++++++++++++++++++++++++
+> > 
+> > Documentation/hwmon/imanager2_hwm missing.
 
-  KVM: Move more code under CONFIG_HAVE_KVM_IRQFD (2014-08-06 14:24:47 +0200)
+WTF?
 
-----------------------------------------------------------------
-Here are the PPC and ARM changes for KVM, which I separated because
-they had small conflicts (respectively within KVM documentation,
-and with 3.16-rc changes).  Since they were all within the subsystem,
-I took care of them.
+I'm confused my this and even more so with the stuff below this.
+What's the idea of this email?  Are you sending a patch or replying to
+a code review?  You can't do both in one submission.
 
-Stephen Rothwell reported some snags in PPC builds, but they are all
-fixed now; the latest linux-next report was clean.
+> diff --git a/Documentation/hwmon/imanager2_hwm b/Documentation/hwmon/imanager2_hwm
+> new file mode 100644
+> index 0000000..bf3d0b5
+> --- /dev/null
+> +++ b/Documentation/hwmon/imanager2_hwm
+> @@ -0,0 +1,42 @@
+> +Kernel driver imanager2_hwm
+> +===========================
+> +
+> +Supported chips:
+> +  * ITE IT8516
+> +    Prefix: 'it8516'
+> +    Addresses scanned: I/O chennel 0x029A/0x0299,
+> +                       IET mailbox chennel 0x029E/0x029F
+> +    Datasheet: Not publicly available
+> +  * ITE IT8518
+> +    Prefix: 'it8518'
+> +    Addresses scanned: I/O chennel 0x029A/0x0299,
+> +                       IET mailbox chennel 0x029E/0x029F
+> +    Datasheet: Not publicly available
+> +  * ITE IT8528
+> +    Prefix: 'it8528'
+> +    Addresses scanned: I/O chennel 0x029A/0x0299
+> +    Datasheet: Not publicly available
+> +
+> +Authors:
+> +        Richard Vidal-Dorsch <richard.dorsch@advantech.com>
+> +
+> +
+> +Description
+> +-----------
+> +
+> +This driver supports the hardware monitoring features of the IT8516, IT8518, and
+> +IT8528 chips. These features include 11 voltage sensors, 1 current sensor, 4
+> +temperature sensors, and 3 fan rotation speed sensors.
+> +
+> +ITE IT8516, IT8518, and IT8528 are are 'EC chips'. These chips are like Super I/O control boards. For IT8516 and IT 8518 The control chennel can be I/O or ITE mailbox chennel. I/O chennel is a common way but ITE mailbox chennel performance faster since it does not need to wait IBF (input buffer full) and OBF (output buffer full) to before send or get data.
+> +
+> +ITE IT8528 use an I/O chennel way to access mailbox, called I/O mailbox for cost down. Its performance the between pure I/O controller and ITE mailbox controller.
+> +
+> +
+> +sysfs-Interface
+> +---------------
+> +
+> +in[0-11]_input	- adc voltage input
+> +curr1_input	- adc current input
+> +temp[1-4]_input	- temperature input
+> +fan[1-3]_input	- fan speed input
+> 
+> > 
+> > >  3 files changed, 774 insertions(+)
+> > >  create mode 100644 drivers/hwmon/imanager2_hwm.c
+> > >
+> > > diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> > > index bc196f4..7524fc3 100644
+> > > --- a/drivers/hwmon/Kconfig
+> > > +++ b/drivers/hwmon/Kconfig
+> > > @@ -39,6 +39,11 @@ config HWMON_DEBUG_CHIP
+> > >
+> > >  comment "Native drivers"
+> > >
+> > > +config SENSORS_IMANAGER2
+> > > +	tristate "Support for Advantech iManager2 EC H.W. Monitor"
+> > > +	select MFD_CORE
+> > > +	depends on MFD_IMANAGER2
+> > > +
+> > Alphabetic order please.
+> > 
+> > >  config SENSORS_AB8500
+> > >  	tristate "AB8500 thermal monitoring"
+> > >  	depends on AB8500_GPADC && AB8500_BM
+> > > diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+> > > index c48f987..a2c8f07 100644
+> > > --- a/drivers/hwmon/Makefile
+> > > +++ b/drivers/hwmon/Makefile
+> > > @@ -146,6 +146,7 @@ obj-$(CONFIG_SENSORS_W83L785TS)	+= w83l785ts.o
+> > >  obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
+> > >  obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
+> > >  obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
+> > > +obj-$(CONFIG_SENSORS_IMANAGER2)	+= imanager2_hwm.o
+> > >
+> > Alphabetic order please.
+> > 
+>  drivers/hwmon/Kconfig  | 10 +++++-----
+>  drivers/hwmon/Makefile |  2 +-
+>  2 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> index 7524fc3..e39f8e0 100644
+> --- a/drivers/hwmon/Kconfig
+> +++ b/drivers/hwmon/Kconfig
+> @@ -39,11 +39,6 @@ config HWMON_DEBUG_CHIP
+>  
+>  comment "Native drivers"
+>  
+> -config SENSORS_IMANAGER2
+> -	tristate "Support for Advantech iManager2 EC H.W. Monitor"
+> -	select MFD_CORE
+> -	depends on MFD_IMANAGER2
+> -
+>  config SENSORS_AB8500
+>  	tristate "AB8500 thermal monitoring"
+>  	depends on AB8500_GPADC && AB8500_BM
+> @@ -576,6 +571,11 @@ config SENSORS_CORETEMP
+>  	  sensor inside your CPU. Most of the family 6 CPUs
+>  	  are supported. Check Documentation/hwmon/coretemp for details.
+>  
+> +config SENSORS_IMANAGER2
+> +	tristate "Support for Advantech iManager2 EC H.W. Monitor"
+> +	select MFD_CORE
+> +	depends on MFD_IMANAGER2
+> +
+>  config SENSORS_IT87
+>  	tristate "ITE IT87xx and compatibles"
+>  	depends on !PPC
+> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+> index a2c8f07..564b6fe 100644
+> --- a/drivers/hwmon/Makefile
+> +++ b/drivers/hwmon/Makefile
+> @@ -72,6 +72,7 @@ obj-$(CONFIG_SENSORS_I5K_AMB)	+= i5k_amb.o
+>  obj-$(CONFIG_SENSORS_IBMAEM)	+= ibmaem.o
+>  obj-$(CONFIG_SENSORS_IBMPEX)	+= ibmpex.o
+>  obj-$(CONFIG_SENSORS_IIO_HWMON) += iio_hwmon.o
+> +obj-$(CONFIG_SENSORS_IMANAGER2)	+= imanager2_hwm.o
+>  obj-$(CONFIG_SENSORS_INA209)	+= ina209.o
+>  obj-$(CONFIG_SENSORS_INA2XX)	+= ina2xx.o
+>  obj-$(CONFIG_SENSORS_IT87)	+= it87.o
+> @@ -146,7 +147,6 @@ obj-$(CONFIG_SENSORS_W83L785TS)	+= w83l785ts.o
+>  obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
+>  obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
+>  obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
+> -obj-$(CONFIG_SENSORS_IMANAGER2)	+= imanager2_hwm.o
+>  
+>  obj-$(CONFIG_PMBUS)		+= pmbus/
+> 
+> > >  obj-$(CONFIG_PMBUS)		+= pmbus/
+> > >
+> > > diff --git a/drivers/hwmon/imanager2_hwm.c
+> 
+> [...]
+> 
+> > b/drivers/hwmon/imanager2_hwm.c
+> > > new file mode 100644
+> > > index 0000000..335bffb
+> > > --- /dev/null
+> > > +++ b/drivers/hwmon/imanager2_hwm.c
+> > > @@ -0,0 +1,768 @@
+> > > +/*
+> > > + * imanager2_hwm.c - HW Monitoring interface for Advantech EC
+> > IT8516/18/28
+> > > + * Copyright (C) 2014  Richard Vidal-Dorsch <richard.dorsch@advantech.com>
+> > > + *
+> > > + * This program is free software: you can redistribute it and/or modify
+> > > + * it under the terms of the GNU General Public License as published by
+> > > + * the Free Software Foundation, either version 3 of the License, or
+> > > + * (at your option) any later version.
+> > > + *
+> > > + * This program is distributed in the hope that it will be useful,
+> > > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > > + * GNU General Public License for more details.
+> > > + *
+> > > + * You should have received a copy of the GNU General Public License
+> > > + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> > > + */
+> > > +
+> > > +#include <linux/module.h>
+> > > +#include <linux/platform_device.h>
+> > > +#include <linux/hwmon.h>
+> > > +#include <linux/hwmon-sysfs.h>
+> > > +#include <linux/mfd/imanager2_ec.h>
+> > > +
+> > > +#define DRV_NAME	"imanager2_hwm"
+> > > +#define DRV_VERSION	"4.0.1"
+> > > +
+> > > +/* ADC */
+> > > +#define EC_ADC_RESOLUTION_MAX	0x03FF	/* 10-bit */
+> > > +#define EC_ADC_VALUE_MAX	3000	/* max: 3000 mV or mA */
+> > > +
+> > > +/* Thermal */
+> > > +#define EC_THERMAL_ZONE_MAX	4
+> > > +
+> > > +enum thermaltype {
+> > > +	none,
+> > > +	sys1,
+> > > +	cpu,
+> > > +	sys3,
+> > > +	sys2,
+> > > +};
+> > > +
+> > > +struct ec_thermalzone {
+> > > +	u8 channel,
+> > > +	   addr,
+> > > +	   cmd,
+> > > +	   status,
+> > > +	   fancode,
+> > > +	   temp;
+> > > +};
+> > > +
+> > > +/* Tacho */
+> > > +#define EC_MAX_IO_FAN	3
+> > > +
+> > > +/* Voltage */
+> > > +struct volt_item {
+> > > +	u8 did;
+> > > +	const char *name;
+> > > +	int factor;
+> > > +	bool visible;
+> > > +};
+> > > +
+> > > +static struct volt_item ec_volt_table[] = {
+> > > +	{
+> > > +		.did = adcmosbat,
+> > > +		.name = "BAT CMOS",
+> > > +	},
+> > > +	{
+> > > +		.did = adcbat,
+> > > +		.name = "BAT",
+> > > +	},
+> > > +	{
+> > > +		.did = adc5vs0,
+> > > +		.name = "5V S0",
+> > > +	},
+> > > +	{
+> > > +		.did = adv5vs5,
+> > > +		.name = "5V S5",
+> > > +	},
+> > > +	{
+> > > +		.did = adc33vs0,
+> > > +		.name = "3V3 S0",
+> > > +	},
+> > > +	{
+> > > +		.did = adc33vs5,
+> > > +		.name = "3V3 S5",
+> > > +	},
+> > > +	{
+> > > +		.did = adv12vs0,
+> > > +		.name = "12V S0",
+> > > +	},
+> > > +	{
+> > > +		.did = adcvcorea,
+> > > +		.name = "Vcore A",
+> > > +	},
+> > > +	{
+> > > +		.did = adcvcoreb,
+> > > +		.name = "Vcore B",
+> > > +	},
+> > > +	{
+> > > +		.did = adcdc,
+> > > +		.name = "DC",
+> > > +	},
+> > > +	{
+> > > +		.did = adcdcstby,
+> > > +		.name = "DC Standby",
+> > > +	},
+> > > +	{
+> > > +		.did = adcdcother,
+> > > +		.name = "DC Other",
+> > > +	},
+> > > +};
+> > > +
+> > > +static int imanager2_volt_get_value_by_io(struct imanager2 *ec, int index,
+> > > +					  u8 *buf)
+> > > +{
+> > > +	u8 item = ec->table.devid2itemnum[ec_volt_table[index].did];
+> > > +	u8 pin = ec->table.pinnum[item];
+> > > +	u8 portnum;
+> > > +	int ret;
+> > > +
+> > > +	ret = imanager2_mbox_io_read(EC_CMD_ADC_INDEX, pin, &portnum, 1);
+> > > +	if (ret)
+> > > +		return ret;
+> > > +	if (portnum == EC_ERROR)
+> > > +		return -ENXIO;
+> > > +
+> > > +	ret = imanager2_mbox_io_simple_read(EC_CMD_ADC_READ_LSB, &buf[1]);
+> > > +	if (ret)
+> > > +		return ret;
+> > > +
+> > > +	return imanager2_mbox_io_simple_read(EC_CMD_ADC_READ_MSB,
+> > &buf[0]);
+> > > +}
+> > > +
+> > > +static int imanager2_volt_get_value(struct imanager2 *ec, int index,
+> > > +				    u32 *volt_mvolt)
+> > > +{
+> > > +	int ret;
+> > > +	u8 tmp[2];
+> > > +
+> > > +	mutex_lock(&ec->lock);
+> > > +
+> > > +	if (ec->flag & EC_FLAG_MAILBOX)
+> > > +		ret = imanager2_mbox_read_data(ec->flag,
+> > > +					       EC_CMD_MAILBOX_READ_HW_PIN,
+> > > +					       ec_volt_table[index].did,
+> > > +					       tmp, 2);
+> > > +	else
+> > > +		ret = imanager2_volt_get_value_by_io(ec, index, tmp);
+> > > +
+> > > +	mutex_unlock(&ec->lock);
+> > > +
+> > > +	if (ret)
+> > > +		return ret;
+> > > +
+> > > +	*volt_mvolt = (((tmp[0] << 8) | tmp[1]) & EC_ADC_RESOLUTION_MAX) *
+> > > +		      ec_volt_table[index].factor *
+> > > +		      DIV_ROUND_CLOSEST(EC_ADC_VALUE_MAX,
+> > > +					EC_ADC_RESOLUTION_MAX);
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +static void imanager2_volt_init(struct imanager2 *ec)
+> > > +{
+> > > +	u8 did;
+> > > +	int i;
+> > > +
+> > > +	for (i = 0; i < ARRAY_SIZE(ec_volt_table); i++) {
+> > > +		did = ec_volt_table[i].did;
+> > > +
+> > > +		if (ec->table.devid2itemnum[did] != EC_TABLE_ITEM_UNUSED) {
+> > > +			ec_volt_table[i].factor = 1;
+> > > +			ec_volt_table[i].visible = true;
+> > > +		} else if (ec->table.devid2itemnum[did + 1] !=
+> > > +			   EC_TABLE_ITEM_UNUSED) {
+> > > +			ec_volt_table[i].did += 1;
+> > > +			ec_volt_table[i].factor = 2;
+> > > +			ec_volt_table[i].visible = true;
+> > > +		} else if (ec->table.devid2itemnum[did + 2] !=
+> > > +			   EC_TABLE_ITEM_UNUSED) {
+> > > +			ec_volt_table[i].did += 2;
+> > > +			ec_volt_table[i].factor = 10;
+> > > +			ec_volt_table[i].visible = true;
+> > > +		} else {
+> > > +			ec_volt_table[i].visible = false;
+> > > +		}
+> > > +	}
+> > > +}
+> > > +
+> > > +static ssize_t show_in(struct device *dev, struct device_attribute *dev_attr,
+> > > +		       char *buf)
+> > > +{
+> > > +	struct imanager2 *ec = dev_get_drvdata(dev);
+> > > +	u32 val;
+> > > +	int ret = imanager2_volt_get_value(ec,
+> > > +					   to_sensor_dev_attr(dev_attr)->index,
+> > > +					   &val);
+> > > +	if (ret)
+> > > +		return ret;
+> > > +
+> > > +	return sprintf(buf, "%u\n", val);
+> > > +}
+> > > +
+> > > +static ssize_t show_in_label(struct device *dev,
+> > > +			     struct device_attribute *dev_attr, char *buf)
+> > > +{
+> > > +	return sprintf(buf, "%s\n",
+> > > +		       ec_volt_table[to_sensor_dev_attr(dev_attr)->index].name);
+> > > +}
+> > > +
+> > > +static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, show_in, NULL, 0);
+> > > +static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, show_in, NULL, 1);
+> > > +static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO, show_in, NULL, 2);
+> > > +static SENSOR_DEVICE_ATTR(in3_input, S_IRUGO, show_in, NULL, 3);
+> > > +static SENSOR_DEVICE_ATTR(in4_input, S_IRUGO, show_in, NULL, 4);
+> > > +static SENSOR_DEVICE_ATTR(in5_input, S_IRUGO, show_in, NULL, 5);
+> > > +static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, show_in, NULL, 6);
+> > > +static SENSOR_DEVICE_ATTR(in7_input, S_IRUGO, show_in, NULL, 7);
+> > > +static SENSOR_DEVICE_ATTR(in8_input, S_IRUGO, show_in, NULL, 8);
+> > > +static SENSOR_DEVICE_ATTR(in9_input, S_IRUGO, show_in, NULL, 9);
+> > > +static SENSOR_DEVICE_ATTR(in10_input, S_IRUGO, show_in, NULL, 10);
+> > > +static SENSOR_DEVICE_ATTR(in11_input, S_IRUGO, show_in, NULL, 11);
+> > > +
+> > > +static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO, show_in_label, NULL, 0);
+> > > +static SENSOR_DEVICE_ATTR(in1_label, S_IRUGO, show_in_label, NULL, 1);
+> > > +static SENSOR_DEVICE_ATTR(in2_label, S_IRUGO, show_in_label, NULL, 2);
+> > > +static SENSOR_DEVICE_ATTR(in3_label, S_IRUGO, show_in_label, NULL, 3);
+> > > +static SENSOR_DEVICE_ATTR(in4_label, S_IRUGO, show_in_label, NULL, 4);
+> > > +static SENSOR_DEVICE_ATTR(in5_label, S_IRUGO, show_in_label, NULL, 5);
+> > > +static SENSOR_DEVICE_ATTR(in6_label, S_IRUGO, show_in_label, NULL, 6);
+> > > +static SENSOR_DEVICE_ATTR(in7_label, S_IRUGO, show_in_label, NULL, 7);
+> > > +static SENSOR_DEVICE_ATTR(in8_label, S_IRUGO, show_in_label, NULL, 8);
+> > > +static SENSOR_DEVICE_ATTR(in9_label, S_IRUGO, show_in_label, NULL, 9);
+> > > +static SENSOR_DEVICE_ATTR(in10_label, S_IRUGO, show_in_label, NULL, 10);
+> > > +static SENSOR_DEVICE_ATTR(in11_label, S_IRUGO, show_in_label, NULL, 11);
+> > > +
+> > > +static struct attribute *imanager2_volt_attrs[] = {
+> > > +	&sensor_dev_attr_in0_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_in0_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_in1_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_in1_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_in2_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_in2_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_in3_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_in3_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_in4_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_in4_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_in5_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_in5_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_in6_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_in6_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_in7_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_in7_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_in8_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_in8_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_in9_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_in9_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_in10_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_in10_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_in11_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_in11_input.dev_attr.attr,
+> > > +
+> > > +	NULL
+> > > +};
+> > > +
+> > > +static umode_t imanager2_volt_mode(struct kobject *kobj, struct attribute
+> > *attr,
+> > > +				   int index)
+> > > +{
+> > > +	struct device_attribute *dev_attr;
+> > > +
+> > > +	dev_attr = container_of(attr, struct device_attribute, attr);
+> > > +	if (!ec_volt_table[to_sensor_dev_attr(dev_attr)->index].visible)
+> > > +		return 0;
+> > > +
+> > > +	return attr->mode;
+> > > +}
+> > > +
+> > > +static const struct attribute_group imanager2_volt_group = {
+> > > +	.attrs = imanager2_volt_attrs,
+> > > +	.is_visible = imanager2_volt_mode,
+> > > +};
+> > > +
+> > > +/* Current */
+> > > +struct curr_item {
+> > > +	const u8 did;
+> > > +	const char *name;
+> > > +	bool visible;
+> > > +};
+> > > +
+> > > +static struct curr_item ec_curr_table[] = {
+> > > +	{
+> > > +		.did = adccurrent,
+> > > +		.name = "IMON"
+> > > +	},
+> > > +};
+> > > +
+> > > +static int imanager2_curr_get_value(struct imanager2 *ec, int index,
+> > > +				    u32 *curr_mamp)
+> > > +{
+> > > +	int ret;
+> > > +	u8 tmp[5];
+> > > +	u16 value, factor;
+> > > +	u32 baseunit = 1;
+> > > +
+> > > +	mutex_lock(&ec->lock);
+> > > +	ret = imanager2_mbox_read_data(ec->flag,
+> > EC_CMD_MAILBOX_READ_HW_PIN,
+> > > +				       ec_curr_table[index].did, tmp,
+> > > +				       ARRAY_SIZE(tmp));
+> > > +	mutex_unlock(&ec->lock);
+> > > +
+> > > +	if (ret)
+> > > +		return ret;
+> > > +
+> > > +	value = ((tmp[0] << 8) | tmp[1]) & EC_ADC_RESOLUTION_MAX;
+> > > +	factor = (tmp[2] << 8) | tmp[3];
+> > 
+> > Is it guaranteed that factor is never 0 ? If not, this may result
+> > in a division by 0 error.
+> > 
+> 
+> @@ -326,6 +318,11 @@ static int imanager2_curr_get_value(struct imanager2 *ec, int index,
+>  	value = ((tmp[0] << 8) | tmp[1]) & EC_ADC_RESOLUTION_MAX;
+>  	factor = (tmp[2] << 8) | tmp[3];
+>  
+> +	if (!factor) {
+> +		*curr_mamp = 0;
+> +		return 0;
+> +	}
+> +
+>  	while (tmp[4]++)
+>  		baseunit *= 10;
+> 
+> > > +
+> > > +	while (tmp[4]++)
+> > > +		baseunit *= 10;
+> > > +
+> 
+> [...]
+> 
+> > > +static void imanager2_temp_init(struct imanager2 *ec)
+> > > +{
+> > > +	int i, thm, ret;
+> > > +	u8 tmltype, smbid, fanid;
+> > > +	struct ec_thermalzone zone;
+> > > +
+> > > +	for (i = 0; i < ARRAY_SIZE(ec_temp_table); i++)
+> > > +		ec_temp_table[i].visible = false;
+> > > +
+> > > +	for (thm = 0; thm < EC_THERMAL_ZONE_MAX; thm++) {
+> > > +		mutex_lock(&ec->lock);
+> > > +
+> > > +		if (ec->flag & EC_FLAG_MAILBOX) {
+> > > +			int len = sizeof(struct ec_thermalzone);
+> > 
+> > Checkpatch warning.
+> 
+> I use "./scripts/checkpatch.pl --no-tree --strict -f drivers/hwmon/imanager2_hwm"
+> but no warning shown out.
+> Can you help me to find out the warning?
+> 
+> > 
+> > > +			ret = imanager2_mbox_read_thermalzone(ec->flag, thm,
+> > > +							      &smbid, &fanid,
+> > > +							      (u8 *)&zone,
+> > > +							      &len);
+> 
+> [...]
+> 
+> > > +static struct fan_item ec_fan_table[] = {
+> > > +	{
+> > > +		.did = tacho0,
+> > > +		.name = "Fan CPU",
+> > > +		.fspeed_acpireg = 0,
+> > 
+> > It is not necessary to set such constants to 0.
+> 
+> @@ -566,20 +566,17 @@ static struct fan_item ec_fan_table[] = {
+>  	{
+>  		.did = tacho0,
+>  		.name = "Fan CPU",
+> -		.fspeed_acpireg = 0,
+> -		.visible = false
+> +		.visible = false,
+>  	},
+>  	{
+>  		.did = tacho1,
+>  		.name = "Fan SYS",
+> -		.fspeed_acpireg = 0,
+> -		.visible = false
+> +		.visible = false,
+>  	},
+>  	{
+>  		.did = tacho2,
+>  		.name = "Fan SYS2",
+> -		.fspeed_acpireg = 0,
+> -		.visible = false
+> +		.visible = false,
+>  	},
+>  };
+> 
+> > 
+> > > +		.visible = false
+> > > +	},
+> > > +	{
+> > > +		.did = tacho1,
+> > > +		.name = "Fan SYS",
+> > > +		.fspeed_acpireg = 0,
+> > > +		.visible = false
+> > > +	},
+> > > +	{
+> > > +		.did = tacho2,
+> > > +		.name = "Fan SYS2",
+> > > +		.fspeed_acpireg = 0,
+> > > +		.visible = false
+> > > +	},
+> > > +};
+> > > +
+> > > +static int imanager2_fan_get_value(struct imanager2 *ec, int index,
+> > > +				   u32 *speed_rpm)
+> > > +{
+> > > +	int ret;
+> > > +	u8 tmp[2];
+> > > +
+> > > +	mutex_lock(&ec->lock);
+> > > +
+> > > +	if (ec->flag & EC_FLAG_MAILBOX)
+> > > +		ret = imanager2_mbox_read_data(ec->flag,
+> > > +					       EC_CMD_MAILBOX_READ_HW_PIN,
+> > > +					       ec_fan_table[index].did, tmp, 2);
+> > > +	else
+> > > +		ret = imanager2_mbox_io_read(EC_CMD_ACPIRAM_READ,
+> > > +					     ec_fan_table[index].fspeed_acpireg,
+> > > +					     tmp, 2);
+> > > +
+> > > +	mutex_unlock(&ec->lock);
+> > > +
+> > > +	if (ret)
+> > > +		return ret;
+> > > +
+> > > +	if (tmp[0] == 0xFF && tmp[1] == 0xFF)
+> > > +		return -ENODEV;
+> > 
+> > That is a bit late for detecting that there is no such device.
+> > 
+> 
+> @@ -605,11 +602,11 @@ static int imanager2_fan_get_value(struct imanager2 *ec, int index,
+>  	if (ret)
+>  		return ret;
+>  
+> -	if (tmp[0] == 0xFF && tmp[1] == 0xFF)
+> -		return -ENODEV;
+> -
+>  	*speed_rpm = (tmp[0] << 8) | tmp[1];
+>  
+> +	if (*speed_rpm == 0xFFFF)
+> +		*speed_rpm = 0;
+> +
+>  	return 0;
+>  }
+> 
+> > > +
+> > > +	*speed_rpm = (tmp[0] << 8) | tmp[1];
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +#define EC_FANCTROL_SPEEDSRC_MASK	0x30
+> > > +
+> > > +static int imanager2_fan_item_init_by_io(struct imanager2 *ec, int fnum)
+> > > +{
+> > > +	int i, ret;
+> > > +	u8 tmp;
+> > > +
+> > > +	mutex_lock(&ec->lock);
+> > > +	ret = imanager2_mbox_io_read(EC_CMD_HWRAM_READ,
+> > > +				     EC_HWRAM_ADDR_FAN_CONTROL(fnum), &tmp, 1);
+> > > +	mutex_unlock(&ec->lock);
+> > > +
+> > > +	if (ret)
+> > > +		return ret;
+> > > +
+> > > +	i = ((tmp & EC_FANCTROL_SPEEDSRC_MASK) >> 4) - 1;
+> > > +	if (i < 0)
+> > > +		return -ENODEV;
+> > > +
+> > 
+> > This error return is quite pointless. See below.
+> > 
+> 
+> @@ -627,7 +624,7 @@ static int imanager2_fan_item_init_by_io(struct imanager2 *ec, int fnum)
+>  
+>  	i = ((tmp & EC_FANCTROL_SPEEDSRC_MASK) >> 4) - 1;
+>  	if (i < 0)
+> -		return -ENODEV;
+> +		return 0;
+>  
+>  	/* Unnecessary set again if it has been set. */
+>  	if (ec_fan_table[i].visible)
+> 
+> > > +	/* Unnecessary set again if it has been set. */
+> > > +	if (ec_fan_table[i].visible)
+> > > +		return 0;
+> > > +
+> > > +	ec_fan_table[i].fspeed_acpireg = EC_ACPIRAM_ADDR_FAN_SPEED_BASE(i);
+> > > +	ec_fan_table[i].visible = true;
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +static void imanager2_fan_init(struct imanager2 *ec)
+> > > +{
+> > > +	int i;
+> > > +
+> > > +	if (ec->flag & EC_FLAG_MAILBOX) {
+> > > +		for (i = 0; i < ARRAY_SIZE(ec_fan_table); i++)
+> > > +			ec_fan_table[i].visible =
+> > > +			    ec->table.devid2itemnum[ec_fan_table[i].did] !=
+> > > +			    EC_TABLE_ITEM_UNUSED;
+> > > +	} else {
+> > > +		int fnum;
+> > > +
+> > > +		for (i = 0; i < ARRAY_SIZE(ec_fan_table); i++)
+> > > +			ec_fan_table[i].visible = false;
+> > > +
+> > > +		for (fnum = 0; fnum < EC_MAX_IO_FAN; fnum++) {
+> > > +			if (imanager2_fan_item_init_by_io(ec, fnum))
+> > > +				continue;
+> > 
+> > This continue is quite pointless.
+> > 
+> 
+> @@ -654,10 +651,8 @@ static void imanager2_fan_init(struct imanager2 *ec)
+>  		for (i = 0; i < ARRAY_SIZE(ec_fan_table); i++)
+>  			ec_fan_table[i].visible = false;
+>  
+> -		for (fnum = 0; fnum < EC_MAX_IO_FAN; fnum++) {
+> -			if (imanager2_fan_item_init_by_io(ec, fnum))
+> -				continue;
+> -		}
+> +		for (fnum = 0; fnum < EC_MAX_IO_FAN; fnum++)
+> +			imanager2_fan_item_init_by_io(ec, fnum);
+>  	}
+>  }
+> 
+> > > +		}
+> > > +	}
+> > > +}
+> > > +
+> > > +static ssize_t show_fan(struct device *dev, struct device_attribute *dev_attr,
+> > > +			char *buf)
+> > > +{
+> > > +	struct imanager2 *ec = dev_get_drvdata(dev);
+> > > +	u32 val;
+> > > +	int ret = imanager2_fan_get_value(ec,
+> > > +					  to_sensor_dev_attr(dev_attr)->index,
+> > > +					  &val);
+> > > +	if (ret)
+> > > +		return ret;
+> > > +
+> > > +	return sprintf(buf, "%u\n", val);
+> > > +}
+> > > +
+> > > +static ssize_t show_fan_label(struct device *dev,
+> > > +			      struct device_attribute *dev_attr, char *buf)
+> > > +{
+> > > +	return sprintf(buf, "%s\n",
+> > > +		       ec_fan_table[to_sensor_dev_attr(dev_attr)->index].name);
+> > > +}
+> > > +
+> > > +static SENSOR_DEVICE_ATTR(fan1_input, S_IRUGO, show_fan, NULL, 0);
+> > > +static SENSOR_DEVICE_ATTR(fan2_input, S_IRUGO, show_fan, NULL, 1);
+> > > +static SENSOR_DEVICE_ATTR(fan3_input, S_IRUGO, show_fan, NULL, 2);
+> > > +
+> > > +static SENSOR_DEVICE_ATTR(fan1_label, S_IRUGO, show_fan_label, NULL, 0);
+> > > +static SENSOR_DEVICE_ATTR(fan2_label, S_IRUGO, show_fan_label, NULL, 1);
+> > > +static SENSOR_DEVICE_ATTR(fan3_label, S_IRUGO, show_fan_label, NULL, 2);
+> > > +
+> > > +static struct attribute *imanager2_fan_attrs[] = {
+> > > +	&sensor_dev_attr_fan1_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_fan1_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_fan2_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_fan2_input.dev_attr.attr,
+> > > +
+> > > +	&sensor_dev_attr_fan3_label.dev_attr.attr,
+> > > +	&sensor_dev_attr_fan3_input.dev_attr.attr,
+> > > +
+> > > +	NULL
+> > > +};
+> > > +
+> > > +static umode_t imanager2_fan_mode(struct kobject *kobj, struct attribute *attr,
+> > > +				  int index)
+> > > +{
+> > > +	struct device_attribute *dev_attr;
+> > > +
+> > > +	dev_attr = container_of(attr, struct device_attribute, attr);
+> > > +	if (!ec_fan_table[to_sensor_dev_attr(dev_attr)->index].visible)
+> > > +		return 0;
+> > > +
+> > > +	return attr->mode;
+> > > +}
+> > > +
+> > > +static const struct attribute_group imanager2_fan_group = {
+> > > +	.attrs = imanager2_fan_attrs,
+> > > +	.is_visible = imanager2_fan_mode,
+> > > +};
+> > > +
+> > > +/* Module */
+> > > +static const struct attribute_group *imanager2_hwmon_groups[] = {
+> > > +	&imanager2_volt_group,
+> > > +	&imanager2_curr_group,
+> > > +	&imanager2_temp_group,
+> > > +	&imanager2_fan_group,
+> > > +	NULL
+> > > +};
+> > > +
+> > > +static int imanager2_hwmon_probe(struct platform_device *pdev)
+> > > +{
+> > > +	struct device *hwmon_dev;
+> > > +	struct imanager2 *hwmon_ec = pdev->dev.parent->platform_data;
+> > > +
+> > > +	imanager2_volt_init(hwmon_ec);
+> > > +	imanager2_curr_init(hwmon_ec);
+> > > +	imanager2_temp_init(hwmon_ec);
+> > > +	imanager2_fan_init(hwmon_ec);
+> > > +
+> > > +	hwmon_dev = devm_hwmon_device_register_with_groups(
+> > > +			&pdev->dev, "imanager2", hwmon_ec,
+> > > +			imanager2_hwmon_groups);
+> > > +
+> > > +	if (IS_ERR(hwmon_dev))
+> > > +		return PTR_ERR(hwmon_dev);
+> > > +
+> > > +	return 0;
+> > 
+> > 	return PTR_ERR_OR_ZERO(hwmon_dev);
+> > 
+> 
+> @@ -743,10 +738,7 @@ static int imanager2_hwmon_probe(struct platform_device *pdev)
+>  			&pdev->dev, "imanager2", hwmon_ec,
+>  			imanager2_hwmon_groups);
+>  
+> -	if (IS_ERR(hwmon_dev))
+> -		return PTR_ERR(hwmon_dev);
+> -
+> -	return 0;
+> +	return PTR_ERR_OR_ZERO(hwmon_dev);
+>  }
+> 
+> > > +}
+> > > +
+> > > +static struct platform_driver imanager2_hwmon_driver = {
+> > > +	.probe = imanager2_hwmon_probe,
+> > > +	.driver = {
+> > > +			.owner = THIS_MODULE,
+> > > +			.name = DRV_NAME,
+> > > +	},
+> > > +};
+> > > +
+> > > +module_platform_driver(imanager2_hwmon_driver);
+> > > +
+> > > +MODULE_AUTHOR("Richard Vidal-Dorsch <richard.dorsch at
+> > advantech.com>");
+> > > +MODULE_DESCRIPTION("HW Monitoring interface for Advantech EC
+> > IT8516/18/28");
+> > > +MODULE_LICENSE("GPL");
+> > > +MODULE_VERSION(DRV_VERSION);
+> > >
+> > >
 
-New features for ARM include:
-- KVM VGIC v2 emulation on GICv3 hardware
-- Big-Endian support for arm/arm64 (guest and host)
-- Debug Architecture support for arm64 (arm32 is on Christoffer's todo list)
-
-And for PPC:
-- Book3S: Good number of LE host fixes, enable HV on LE
-- Book3S HV: Add in-guest debug support
-
-This release drops support for KVM on the PPC440.  As a result, the
-PPC merge removes more lines than it adds. :)
-
-I also included an x86 change, since Davidlohr tied it to an independent
-bug report and the reporter quickly provided a Tested-by; there was no
-reason to wait for -rc2.
-
-----------------------------------------------------------------
-Alex Bennée (2):
-      arm64: KVM: export demux regids as KVM_REG_ARM64
-      arm64: KVM: allow export and import of generic timer regs
-
-Alexander Graf (31):
-      KVM: PPC: Book3s PR: Disable AIL mode with OPAL
-      KVM: PPC: Book3s HV: Fix tlbie compile error
-      KVM: PPC: Book3S PR: Handle hyp doorbell exits
-      KVM: PPC: Book3S PR: Fix ABIv2 on LE
-      KVM: PPC: Book3S PR: Fix sparse endian checks
-      PPC: Add asm helpers for BE 32bit load/store
-      KVM: PPC: Book3S HV: Make HTAB code LE host aware
-      KVM: PPC: Book3S HV: Access guest VPA in BE
-      KVM: PPC: Book3S HV: Access host lppaca and shadow slb in BE
-      KVM: PPC: Book3S HV: Access XICS in BE
-      KVM: PPC: Book3S HV: Fix ABIv2 on LE
-      KVM: PPC: Book3S HV: Enable for little endian hosts
-      KVM: PPC: Book3S: Move vcore definition to end of kvm_arch struct
-      KVM: PPC: Deflect page write faults properly in kvmppc_st
-      KVM: PPC: Book3S: Stop PTE lookup on write errors
-      KVM: PPC: Book3S: Add hack for split real mode
-      KVM: PPC: Book3S: Make magic page properly 4k mappable
-      KVM: PPC: Remove 440 support
-      KVM: Rename and add argument to check_extension
-      KVM: Allow KVM_CHECK_EXTENSION on the vm fd
-      KVM: PPC: Book3S: Provide different CAPs based on HV or PR mode
-      KVM: PPC: Implement kvmppc_xlate for all targets
-      KVM: PPC: Move kvmppc_ld/st to common code
-      KVM: PPC: Remove kvmppc_bad_hva()
-      KVM: PPC: Use kvm_read_guest in kvmppc_ld
-      KVM: PPC: Handle magic page in kvmppc_ld/st
-      KVM: PPC: Separate loadstore emulation from priv emulation
-      KVM: PPC: Expose helper functions for data/inst faults
-      KVM: PPC: Remove DCR handling
-      KVM: PPC: HV: Remove generic instruction emulation
-      KVM: PPC: PR: Handle FSCR feature deselects
-
-Alexey Kardashevskiy (1):
-      KVM: PPC: Book3S: Fix LPCR one_reg interface
-
-Aneesh Kumar K.V (4):
-      KVM: PPC: BOOK3S: PR: Fix PURR and SPURR emulation
-      KVM: PPC: BOOK3S: PR: Emulate virtual timebase register
-      KVM: PPC: BOOK3S: PR: Emulate instruction counter
-      KVM: PPC: BOOK3S: HV: Update compute_tlbie_rb to handle 16MB base page
-
-Anton Blanchard (2):
-      KVM: PPC: Book3S HV: Fix ABIv2 indirect branch issue
-      KVM: PPC: Assembly functions exported to modules need _GLOBAL_TOC()
-
-Bharat Bhushan (10):
-      kvm: ppc: bookehv: Added wrapper macros for shadow registers
-      kvm: ppc: booke: Use the shared struct helpers of SRR0 and SRR1
-      kvm: ppc: booke: Use the shared struct helpers of SPRN_DEAR
-      kvm: ppc: booke: Add shared struct helpers of SPRN_ESR
-      kvm: ppc: booke: Use the shared struct helpers for SPRN_SPRG0-7
-      kvm: ppc: Add SPRN_EPR get helper function
-      kvm: ppc: bookehv: Save restore SPRN_SPRG9 on guest entry exit
-      KVM: PPC: Booke-hv: Add one reg interface for SPRG9
-      KVM: PPC: Remove comment saying SPRG1 is used for vcpu pointer
-      KVM: PPC: BOOKEHV: rename e500hv_spr to bookehv_spr
-
-Christoffer Dall (2):
-      arm/arm64: KVM: Fix and refactor unmap_range
-      Merge tag 'deps-irqchip-gic-3.17' of git://git.infradead.org/users/jcooper/linux.git
-
-Eric Auger (1):
-      ARM: KVM: Unmap IPA on memslot delete/move
-
-Kim Phillips (1):
-      ARM: KVM: user_mem_abort: support stage 2 MMIO page mapping
-
-Li Liu (1):
-      ARM: virt: fix wrong HSCTLR.EE bit setting
-
-Marc Zyngier (31):
-      arm64: GICv3 device tree binding documentation
-      arm64: boot protocol documentation update for GICv3
-      KVM: arm/arm64: vgic: move GICv2 registers to their own structure
-      KVM: ARM: vgic: introduce vgic_ops and LR manipulation primitives
-      KVM: ARM: vgic: abstract access to the ELRSR bitmap
-      KVM: ARM: vgic: abstract EISR bitmap access
-      KVM: ARM: vgic: abstract MISR decoding
-      KVM: ARM: vgic: move underflow handling to vgic_ops
-      KVM: ARM: vgic: abstract VMCR access
-      KVM: ARM: vgic: introduce vgic_enable
-      KVM: ARM: introduce vgic_params structure
-      KVM: ARM: vgic: split GICv2 backend from the main vgic code
-      KVM: ARM: vgic: revisit implementation of irqchip_in_kernel
-      arm64: KVM: remove __kvm_hyp_code_{start,end} from hyp.S
-      arm64: KVM: split GICv2 world switch from hyp code
-      arm64: KVM: move HCR_EL2.{IMO,FMO} manipulation into the vgic switch code
-      KVM: ARM: vgic: add the GICv3 backend
-      arm64: KVM: vgic: add GICv3 world switch
-      arm64: KVM: vgic: enable GICv2 emulation on top on GICv3 hardware
-      arm64: KVM: rename pm_fake handler to trap_raz_wi
-      arm64: move DBG_MDSCR_* to asm/debug-monitors.h
-      arm64: KVM: add trap handlers for AArch64 debug registers
-      arm64: KVM: common infrastructure for handling AArch32 CP14/CP15
-      arm64: KVM: use separate tables for AArch32 32 and 64bit traps
-      arm64: KVM: check ordering of all system register tables
-      arm64: KVM: add trap handlers for AArch32 debug registers
-      arm64: KVM: implement lazy world switch for debug registers
-      arm64: KVM: enable trapping of all debug registers
-      arm64: KVM: GICv3: move system register access to msr_s/mrs_s
-      KVM: arm64: GICv3: mandate page-aligned GICV region
-      arm64: KVM: fix 64bit CP15 VM access for 32bit guests
-
-Michael Neuling (1):
-      KVM: PPC: Book3S HV: Add H_SET_MODE hcall handling
-
-Mihai Caraman (8):
-      KVM: PPC: e500mc: Enhance tlb invalidation condition on vcpu schedule
-      KVM: PPC: e500: Fix default tlb for victim hint
-      KVM: PPC: e500: Emulate power management control SPR
-      KVM: PPC: e500mc: Revert "add load inst fixup"
-      KVM: PPC: Book3e: Add TLBSEL/TSIZE defines for MAS0/1
-      KVM: PPC: Book3s: Remove kvmppc_read_inst() function
-      KVM: PPC: Allow kvmppc_get_last_inst() to fail
-      KVM: PPC: Bookehv: Get vcpu's last instruction for emulation
-
-Paolo Bonzini (4):
-      Merge tag 'kvm-arm-for-3.17' of git://git.kernel.org/.../kvmarm/kvmarm into kvm
-      Merge tag 'signed-kvm-ppc-next' of git://github.com/agraf/linux-2.6 into kvm
-      KVM: PPC: drop duplicate tracepoint
-      KVM: Move more code under CONFIG_HAVE_KVM_IRQFD
-
-Paul Mackerras (10):
-      KVM: PPC: Book3S: Controls for in-kernel sPAPR hypercall handling
-      KVM: PPC: Book3S: Allow only implemented hcalls to be enabled or disabled
-      KVM: PPC: Book3S PR: Take SRCU read lock around RTAS kvm_read_guest() call
-      KVM: PPC: Book3S: Make kvmppc_ld return a more accurate error indication
-      KVM: Don't keep reference to irq routing table in irqfd struct
-      KVM: irqchip: Provide and use accessors for irq routing table
-      KVM: Move all accesses to kvm::irq_routing into irqchip.c
-      KVM: Move irq notifier implementation into eventfd.c
-      KVM: Give IRQFD its own separate enabling Kconfig option
-      KVM: PPC: Enable IRQFD support for the XICS interrupt controller
-
-Stewart Smith (2):
-      Split out struct kvmppc_vcore creation to separate function
-      Use the POWER8 Micro Partition Prefetch Engine in KVM HV on POWER8
-
-Victor Kamensky (12):
-      ARM: KVM: fix vgic V7 assembler code to work in BE image
-      ARM: KVM: handle 64bit values passed to mrcc or from mcrr instructions in BE case
-      ARM: KVM: __kvm_vcpu_run function return result fix in BE case
-      ARM: KVM: vgic mmio should hold data as LE bytes array in BE case
-      ARM: KVM: MMIO support BE host running LE code
-      ARM: KVM: one_reg coproc set and get BE fixes
-      ARM: KVM: enable KVM in Kconfig on big-endian systems
-      ARM64: KVM: MMIO support BE host running LE code
-      ARM64: KVM: store kvm_vcpu_fault_info est_el2 as word
-      ARM64: KVM: fix vgic_bitmap_get_reg function for BE 64bit case
-      ARM64: KVM: set and get of sys registers in BE case
-      ARM64: KVM: fix big endian issue in access_vm_reg for 32bit guest
-
-Wanpeng Li (2):
-      KVM: nVMX: Fix nested vmexit ack intr before load vmcs01
-      KVM: nVMX: fix "acknowledge interrupt on exit" when APICv is in use
-
- Documentation/arm64/booting.txt                  |   8 +
- Documentation/devicetree/bindings/arm/gic-v3.txt |  79 +++
- Documentation/powerpc/00-INDEX                   |   2 -
- Documentation/powerpc/kvm_440.txt                |  41 --
- Documentation/virtual/kvm/api.txt                |  60 ++-
- arch/arm/include/asm/kvm_asm.h                   |  18 +
- arch/arm/include/asm/kvm_emulate.h               |  22 +-
- arch/arm/include/asm/kvm_host.h                  |   8 +-
- arch/arm/include/asm/kvm_mmu.h                   |  12 +
- arch/arm/kernel/asm-offsets.c                    |  14 +-
- arch/arm/kernel/hyp-stub.S                       |   4 +-
- arch/arm/kvm/Kconfig                             |   2 +-
- arch/arm/kvm/Makefile                            |   1 +
- arch/arm/kvm/arm.c                               |  39 +-
- arch/arm/kvm/coproc.c                            |  88 +++-
- arch/arm/kvm/guest.c                             |  10 -
- arch/arm/kvm/init.S                              |   4 +-
- arch/arm/kvm/interrupts.S                        |   9 +-
- arch/arm/kvm/interrupts_head.S                   |  48 +-
- arch/arm/kvm/mmu.c                               | 214 +++++---
- arch/arm64/include/asm/debug-monitors.h          |  19 +-
- arch/arm64/include/asm/kvm_arm.h                 |   5 +-
- arch/arm64/include/asm/kvm_asm.h                 |  53 +-
- arch/arm64/include/asm/kvm_coproc.h              |   3 +-
- arch/arm64/include/asm/kvm_emulate.h             |  22 +
- arch/arm64/include/asm/kvm_host.h                |  48 +-
- arch/arm64/include/asm/kvm_mmu.h                 |  15 +
- arch/arm64/include/asm/virt.h                    |   4 +
- arch/arm64/kernel/asm-offsets.c                  |  26 +-
- arch/arm64/kernel/debug-monitors.c               |   9 -
- arch/arm64/kvm/Makefile                          |   4 +
- arch/arm64/kvm/guest.c                           |  68 ++-
- arch/arm64/kvm/handle_exit.c                     |   4 +-
- arch/arm64/kvm/hyp.S                             | 600 +++++++++++++++++++----
- arch/arm64/kvm/sys_regs.c                        | 546 ++++++++++++++++++---
- arch/arm64/kvm/vgic-v2-switch.S                  | 133 +++++
- arch/arm64/kvm/vgic-v3-switch.S                  | 267 ++++++++++
- arch/ia64/kvm/Kconfig                            |   1 +
- arch/ia64/kvm/kvm-ia64.c                         |   2 +-
- arch/mips/kvm/mips.c                             |   2 +-
- arch/powerpc/Kconfig.debug                       |   4 +-
- arch/powerpc/configs/ppc44x_defconfig            |   1 -
- arch/powerpc/include/asm/asm-compat.h            |   4 +
- arch/powerpc/include/asm/cache.h                 |   7 +
- arch/powerpc/include/asm/hvcall.h                |   6 +
- arch/powerpc/include/asm/kvm_44x.h               |  67 ---
- arch/powerpc/include/asm/kvm_asm.h               |   2 +-
- arch/powerpc/include/asm/kvm_book3s.h            |  51 +-
- arch/powerpc/include/asm/kvm_book3s_64.h         |  29 +-
- arch/powerpc/include/asm/kvm_booke.h             |  15 +-
- arch/powerpc/include/asm/kvm_host.h              |  28 +-
- arch/powerpc/include/asm/kvm_ppc.h               | 116 ++++-
- arch/powerpc/include/asm/mmu-book3e.h            |   8 +-
- arch/powerpc/include/asm/ppc-opcode.h            |  17 +
- arch/powerpc/include/asm/reg.h                   |  13 +-
- arch/powerpc/include/asm/time.h                  |   9 +
- arch/powerpc/include/uapi/asm/kvm.h              |   2 +
- arch/powerpc/kernel/asm-offsets.c                |   2 +
- arch/powerpc/kvm/44x.c                           | 237 ---------
- arch/powerpc/kvm/44x_emulate.c                   | 194 --------
- arch/powerpc/kvm/44x_tlb.c                       | 528 --------------------
- arch/powerpc/kvm/44x_tlb.h                       |  86 ----
- arch/powerpc/kvm/Kconfig                         |  20 +-
- arch/powerpc/kvm/Makefile                        |  18 +-
- arch/powerpc/kvm/book3s.c                        | 156 +++---
- arch/powerpc/kvm/book3s_32_mmu.c                 |   2 +-
- arch/powerpc/kvm/book3s_32_mmu_host.c            |   7 +-
- arch/powerpc/kvm/book3s_64_mmu_host.c            |   5 +-
- arch/powerpc/kvm/book3s_64_mmu_hv.c              | 145 +++---
- arch/powerpc/kvm/book3s_emulate.c                |  28 +-
- arch/powerpc/kvm/book3s_hv.c                     | 271 ++++++++--
- arch/powerpc/kvm/book3s_hv_builtin.c             |  13 +
- arch/powerpc/kvm/book3s_hv_ras.c                 |   6 +-
- arch/powerpc/kvm/book3s_hv_rm_mmu.c              | 146 +++---
- arch/powerpc/kvm/book3s_hv_rm_xics.c             |   5 +
- arch/powerpc/kvm/book3s_hv_rmhandlers.S          |  70 ++-
- arch/powerpc/kvm/book3s_paired_singles.c         |  38 +-
- arch/powerpc/kvm/book3s_pr.c                     | 223 ++++++---
- arch/powerpc/kvm/book3s_pr_papr.c                |  92 +++-
- arch/powerpc/kvm/book3s_xics.c                   |  55 ++-
- arch/powerpc/kvm/book3s_xics.h                   |   2 +
- arch/powerpc/kvm/booke.c                         | 225 +++++----
- arch/powerpc/kvm/booke.h                         |   7 -
- arch/powerpc/kvm/booke_emulate.c                 |   8 +-
- arch/powerpc/kvm/booke_interrupts.S              |   5 -
- arch/powerpc/kvm/bookehv_interrupts.S            |  60 +--
- arch/powerpc/kvm/e500_emulate.c                  |  12 +
- arch/powerpc/kvm/e500_mmu_host.c                 | 102 ++++
- arch/powerpc/kvm/e500mc.c                        |  28 +-
- arch/powerpc/kvm/emulate.c                       | 206 +-------
- arch/powerpc/kvm/emulate_loadstore.c             | 272 ++++++++++
- arch/powerpc/kvm/mpic.c                          |   4 +-
- arch/powerpc/kvm/powerpc.c                       | 181 ++++++-
- arch/powerpc/kvm/timing.c                        |   1 -
- arch/powerpc/kvm/timing.h                        |   3 -
- arch/s390/kvm/Kconfig                            |   1 +
- arch/s390/kvm/interrupt.c                        |   3 +-
- arch/s390/kvm/kvm-s390.c                         |   2 +-
- arch/x86/kvm/Kconfig                             |   1 +
- arch/x86/kvm/irq.c                               |   2 +-
- arch/x86/kvm/lapic.c                             |  52 +-
- arch/x86/kvm/vmx.c                               |   4 +-
- arch/x86/kvm/x86.c                               |   2 +-
- include/kvm/arm_arch_timer.h                     |  14 +
- include/kvm/arm_vgic.h                           | 115 ++++-
- include/linux/kvm_host.h                         |  47 +-
- include/trace/events/kvm.h                       |   8 +-
- include/uapi/linux/kvm.h                         |   6 +-
- virt/kvm/Kconfig                                 |   3 +
- virt/kvm/arm/vgic-v2.c                           | 265 ++++++++++
- virt/kvm/arm/vgic-v3.c                           | 247 ++++++++++
- virt/kvm/arm/vgic.c                              | 389 ++++++++-------
- virt/kvm/eventfd.c                               | 134 +++--
- virt/kvm/irq_comm.c                              |  24 +-
- virt/kvm/irqchip.c                               |  98 ++--
- virt/kvm/kvm_main.c                              |  62 +--
- 116 files changed, 5010 insertions(+), 2825 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/gic-v3.txt
- delete mode 100644 Documentation/powerpc/kvm_440.txt
- create mode 100644 arch/arm64/kvm/vgic-v2-switch.S
- create mode 100644 arch/arm64/kvm/vgic-v3-switch.S
- delete mode 100644 arch/powerpc/include/asm/kvm_44x.h
- delete mode 100644 arch/powerpc/kvm/44x.c
- delete mode 100644 arch/powerpc/kvm/44x_emulate.c
- delete mode 100644 arch/powerpc/kvm/44x_tlb.c
- delete mode 100644 arch/powerpc/kvm/44x_tlb.h
- create mode 100644 arch/powerpc/kvm/emulate_loadstore.c
- create mode 100644 virt/kvm/arm/vgic-v2.c
- create mode 100644 virt/kvm/arm/vgic-v3.c
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
