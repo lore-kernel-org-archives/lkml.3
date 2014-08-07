@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496AbaHGPV7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:21:59 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:46817 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932425AbaHGPV4 (ORCPT
+	id S932518AbaHGPW2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:22:28 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:52297 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932358AbaHGPWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:21:56 -0400
+	Thu, 7 Aug 2014 11:22:25 -0400
 From: Peter Griffin <peter.griffin@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         arnd@arndb.de, stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
@@ -14,9 +14,9 @@ To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         patrice.chotard@st.com
 Cc: peter.griffin@linaro.org, lee.jones@linaro.org, linux-usb@vger.kernel.org,
         devicetree@vger.kernel.org
-Subject: [PATCH v4 1/5] usb: host: ehci-st: Add EHCI support for ST STB devices
-Date: Thu,  7 Aug 2014 16:21:40 +0100
-Message-Id: <1407424904-19251-2-git-send-email-peter.griffin@linaro.org>
+Subject: [PATCH v4 2/5] usb: host: ohci-st: Add OHCI driver support for ST STB devices
+Date: Thu,  7 Aug 2014 16:21:41 +0100
+Message-Id: <1407424904-19251-3-git-send-email-peter.griffin@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407424904-19251-1-git-send-email-peter.griffin@linaro.org>
 References: <1407424904-19251-1-git-send-email-peter.griffin@linaro.org>
@@ -27,7 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the glue code required to ensure the on-chip EHCI
+This patch adds the glue code required to ensure the on-chip OHCI
 controller works on STi consumer electronics SoC's from STMicroelectronics.
 
 It mainly manages the setting and enabling of the relevant clocks and manages
@@ -35,26 +35,54 @@ the reset / power signals to the IP block.
 
 Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
 ---
- drivers/usb/host/ehci-st.c       | 363 +++++++++++++++++++++++++++++++++++++++
- drivers/usb/host/usb-st-common.h |  31 ++++
- 2 files changed, 394 insertions(+)
- create mode 100644 drivers/usb/host/ehci-st.c
- create mode 100644 drivers/usb/host/usb-st-common.h
+ drivers/usb/host/Kconfig   |   8 ++
+ drivers/usb/host/Makefile  |   1 +
+ drivers/usb/host/ohci-st.c | 337 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 346 insertions(+)
+ create mode 100644 drivers/usb/host/ohci-st.c
 
-diff --git a/drivers/usb/host/ehci-st.c b/drivers/usb/host/ehci-st.c
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 03314f8..4b577f6 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -753,6 +753,14 @@ config USB_HCD_SSB
+ 
+ 	  If unsure, say N.
+ 
++config USB_HCD_ST
++	tristate "ST USB driver for ST SoC Series"
++	depends on ARCH_STI && OF
++	select GENERIC_PHY
++	help
++	  Enable support for the on-chip OHCI & EHCI controller found on
++	  STMicroelectronics consumer electronics SoC's.
++
+ config USB_HCD_TEST_MODE
+ 	bool "HCD test mode support"
+ 	---help---
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index af89a90..df7e5ac 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -74,3 +74,4 @@ obj-$(CONFIG_USB_HCD_SSB)	+= ssb-hcd.o
+ obj-$(CONFIG_USB_FUSBH200_HCD)	+= fusbh200-hcd.o
+ obj-$(CONFIG_USB_FOTG210_HCD)	+= fotg210-hcd.o
+ obj-$(CONFIG_USB_MAX3421_HCD)	+= max3421-hcd.o
++obj-$(CONFIG_USB_HCD_ST)	+= ehci-st.o ohci-st.o
+diff --git a/drivers/usb/host/ohci-st.c b/drivers/usb/host/ohci-st.c
 new file mode 100644
-index 0000000..ac72ce3
+index 0000000..263132a
 --- /dev/null
-+++ b/drivers/usb/host/ehci-st.c
-@@ -0,0 +1,363 @@
++++ b/drivers/usb/host/ohci-st.c
+@@ -0,0 +1,337 @@
 +/*
-+ * ST EHCI driver
++ * ST OHCI driver
 + *
 + * Copyright (C) 2014 STMicroelectronics – All Rights Reserved
 + *
 + * Author: Peter Griffin <peter.griffin@linaro.org>
 + *
-+ * Derived from ehci-platform.c
++ * Derived from ohci-platform.c
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -63,55 +91,31 @@ index 0000000..ac72ce3
 +
 +#include <linux/clk.h>
 +#include <linux/dma-mapping.h>
-+#include <linux/err.h>
-+#include <linux/kernel.h>
 +#include <linux/hrtimer.h>
 +#include <linux/io.h>
++#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/of.h>
++#include <linux/err.h>
 +#include <linux/phy/phy.h>
 +#include <linux/platform_device.h>
 +#include <linux/reset.h>
++#include <linux/usb/ohci_pdriver.h>
 +#include <linux/usb.h>
 +#include <linux/usb/hcd.h>
-+#include <linux/usb/ehci_pdriver.h>
 +
-+#include "ehci.h"
++#include "ohci.h"
 +#include "usb-st-common.h"
 +
-+#define DRIVER_DESC "EHCI STMicroelectronics driver"
++#define DRIVER_DESC "OHCI STMicroelectronics driver"
 +
-+#define hcd_to_ehci_priv(h) ((struct st_platform_priv *)hcd_to_ehci(h)->priv)
++#define hcd_to_ohci_priv(h) ((struct st_platform_priv *)hcd_to_ohci(h)->priv)
 +
-+static const char hcd_name[] = "ehci-st";
++static const char hcd_name[] = "ohci-st";
 +
-+#define EHCI_CAPS_SIZE 0x10
-+#define AHB2STBUS_INSREG01 (EHCI_CAPS_SIZE + 0x84)
-+
-+static int st_ehci_platform_reset(struct usb_hcd *hcd)
-+{
-+	struct platform_device *pdev = to_platform_device(hcd->self.controller);
-+	struct usb_ehci_pdata *pdata = dev_get_platdata(&pdev->dev);
-+	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
-+	int retval;
-+	u32 threshold;
-+
-+	/* Set EHCI packet buffer IN/OUT threshold to 128 bytes */
-+	threshold = 128 | (128 << 16);
-+	writel(threshold, hcd->regs + AHB2STBUS_INSREG01);
-+
-+	ehci->caps = hcd->regs + pdata->caps_offset;
-+	retval = ehci_setup(hcd);
-+	if (retval)
-+		return retval;
-+
-+	return 0;
-+}
-+
-+static int st_ehci_platform_power_on(struct platform_device *dev)
++static int st_ohci_platform_power_on(struct platform_device *dev)
 +{
 +	struct usb_hcd *hcd = platform_get_drvdata(dev);
-+	struct st_platform_priv *priv = hcd_to_ehci_priv(hcd);
++	struct st_platform_priv *priv = hcd_to_ohci_priv(hcd);
 +	int clk, ret;
 +
 +	ret = reset_control_deassert(priv->pwr);
@@ -159,10 +163,11 @@ index 0000000..ac72ce3
 +	return ret;
 +}
 +
-+static void st_ehci_platform_power_off(struct platform_device *dev)
++static void st_ohci_platform_power_off(struct platform_device *dev)
 +{
 +	struct usb_hcd *hcd = platform_get_drvdata(dev);
-+	struct st_platform_priv *priv = hcd_to_ehci_priv(hcd);
++	struct st_platform_priv *priv = hcd_to_ohci_priv(hcd);
++
 +	int clk;
 +
 +	reset_control_assert(priv->pwr);
@@ -176,29 +181,28 @@ index 0000000..ac72ce3
 +	for (clk = USB_MAX_CLKS - 1; clk >= 0; clk--)
 +		if (priv->clks[clk])
 +			clk_disable_unprepare(priv->clks[clk]);
-+
 +}
 +
-+static struct hc_driver __read_mostly ehci_platform_hc_driver;
++static struct hc_driver __read_mostly ohci_platform_hc_driver;
 +
-+static const struct ehci_driver_overrides platform_overrides __initconst = {
-+	.reset =		st_ehci_platform_reset,
++static const struct ohci_driver_overrides platform_overrides __initconst = {
++	.product_desc =		"ST OHCI controller",
 +	.extra_priv_size =	sizeof(struct st_platform_priv),
 +};
 +
-+static struct usb_ehci_pdata ehci_platform_defaults = {
-+	.power_on =		st_ehci_platform_power_on,
-+	.power_suspend =	st_ehci_platform_power_off,
-+	.power_off =		st_ehci_platform_power_off,
++static struct usb_ohci_pdata ohci_platform_defaults = {
++	.power_on =		st_ohci_platform_power_on,
++	.power_suspend =	st_ohci_platform_power_off,
++	.power_off =		st_ohci_platform_power_off,
 +};
 +
-+static int st_ehci_platform_probe(struct platform_device *dev)
++static int st_ohci_platform_probe(struct platform_device *dev)
 +{
 +	struct usb_hcd *hcd;
 +	struct resource *res_mem;
-+	struct usb_ehci_pdata *pdata = &ehci_platform_defaults;
++	struct usb_ohci_pdata *pdata = &ohci_platform_defaults;
 +	struct st_platform_priv *priv;
-+	struct ehci_hcd *ehci;
++	struct ohci_hcd *ohci;
 +	int err, irq, clk = 0;
 +
 +	if (usb_disabled())
@@ -209,21 +213,22 @@ index 0000000..ac72ce3
 +		dev_err(&dev->dev, "no irq provided");
 +		return irq;
 +	}
++
 +	res_mem = platform_get_resource(dev, IORESOURCE_MEM, 0);
 +	if (!res_mem) {
 +		dev_err(&dev->dev, "no memory resource provided");
 +		return -ENXIO;
 +	}
 +
-+	hcd = usb_create_hcd(&ehci_platform_hc_driver, &dev->dev,
-+			     dev_name(&dev->dev));
++	hcd = usb_create_hcd(&ohci_platform_hc_driver, &dev->dev,
++			dev_name(&dev->dev));
 +	if (!hcd)
 +		return -ENOMEM;
 +
 +	platform_set_drvdata(dev, hcd);
 +	dev->dev.platform_data = pdata;
-+	priv = hcd_to_ehci_priv(hcd);
-+	ehci = hcd_to_ehci(hcd);
++	priv = hcd_to_ohci_priv(hcd);
++	ohci = hcd_to_ohci(hcd);
 +
 +	priv->phy = devm_phy_get(&dev->dev, "usb");
 +	if (IS_ERR(priv->phy)) {
@@ -253,23 +258,19 @@ index 0000000..ac72ce3
 +	priv->pwr = devm_reset_control_get_optional(&dev->dev, "power");
 +	if (IS_ERR(priv->pwr)) {
 +		err = PTR_ERR(priv->pwr);
-+		if (err == -EPROBE_DEFER)
-+			goto err_put_clks;
-+		priv->pwr = NULL;
++		goto err_put_clks;
 +	}
 +
 +	priv->rst = devm_reset_control_get_optional(&dev->dev, "softreset");
 +	if (IS_ERR(priv->rst)) {
 +		err = PTR_ERR(priv->rst);
-+		if (err == -EPROBE_DEFER)
-+			goto err_put_clks;
-+		priv->rst = NULL;
++		goto err_put_clks;
 +	}
 +
 +	if (pdata->power_on) {
 +		err = pdata->power_on(dev);
 +		if (err < 0)
-+			goto err_put_clks;
++			goto err_power;
 +	}
 +
 +	hcd->rsrc_start = res_mem->start;
@@ -278,23 +279,27 @@ index 0000000..ac72ce3
 +	hcd->regs = devm_ioremap_resource(&dev->dev, res_mem);
 +	if (IS_ERR(hcd->regs)) {
 +		err = PTR_ERR(hcd->regs);
-+		goto err_put_clks;
++		goto err_power;
 +	}
-+
 +	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
 +	if (err)
-+		goto err_put_clks;
++		goto err_power;
 +
 +	device_wakeup_enable(hcd->self.controller);
++
 +	platform_set_drvdata(dev, hcd);
 +
 +	return err;
++
++err_power:
++	if (pdata->power_off)
++		pdata->power_off(dev);
 +
 +err_put_clks:
 +	while (--clk >= 0)
 +		clk_put(priv->clks[clk]);
 +err_put_hcd:
-+	if (pdata == &ehci_platform_defaults)
++	if (pdata == &ohci_platform_defaults)
 +		dev->dev.platform_data = NULL;
 +
 +	usb_put_hcd(hcd);
@@ -302,11 +307,11 @@ index 0000000..ac72ce3
 +	return err;
 +}
 +
-+static int st_ehci_platform_remove(struct platform_device *dev)
++static int st_ohci_platform_remove(struct platform_device *dev)
 +{
 +	struct usb_hcd *hcd = platform_get_drvdata(dev);
-+	struct usb_ehci_pdata *pdata = dev_get_platdata(&dev->dev);
-+	struct st_platform_priv *priv = hcd_to_ehci_priv(hcd);
++	struct usb_ohci_pdata *pdata = dev_get_platdata(&dev->dev);
++	struct st_platform_priv *priv = hcd_to_ohci_priv(hcd);
 +	int clk;
 +
 +	usb_remove_hcd(hcd);
@@ -314,12 +319,13 @@ index 0000000..ac72ce3
 +	if (pdata->power_off)
 +		pdata->power_off(dev);
 +
++
 +	for (clk = 0; clk < USB_MAX_CLKS && priv->clks[clk]; clk++)
 +		clk_put(priv->clks[clk]);
 +
 +	usb_put_hcd(hcd);
 +
-+	if (pdata == &ehci_platform_defaults)
++	if (pdata == &ohci_platform_defaults)
 +		dev->dev.platform_data = NULL;
 +
 +	return 0;
@@ -327,36 +333,32 @@ index 0000000..ac72ce3
 +
 +#ifdef CONFIG_PM
 +
-+static int st_ehci_suspend(struct device *dev)
++static int st_ohci_suspend(struct device *dev)
 +{
 +	struct usb_hcd *hcd = dev_get_drvdata(dev);
-+	struct usb_ehci_pdata *pdata = dev_get_platdata(dev);
++	struct usb_ohci_pdata *pdata = dev->platform_data;
 +	struct platform_device *pdev =
 +		container_of(dev, struct platform_device, dev);
 +	bool do_wakeup = device_may_wakeup(dev);
 +	int ret;
 +
-+	ret = ehci_suspend(hcd, do_wakeup);
++	ret = ohci_suspend(hcd, do_wakeup);
 +	if (ret)
 +		return ret;
 +
 +	if (pdata->power_suspend)
 +		pdata->power_suspend(pdev);
 +
-+	pinctrl_pm_select_sleep_state(dev);
-+
 +	return ret;
 +}
 +
-+static int st_ehci_resume(struct device *dev)
++static int st_ohci_resume(struct device *dev)
 +{
 +	struct usb_hcd *hcd = dev_get_drvdata(dev);
-+	struct usb_ehci_pdata *pdata = dev_get_platdata(dev);
++	struct usb_ohci_pdata *pdata = dev_get_platdata(dev);
 +	struct platform_device *pdev =
 +		container_of(dev, struct platform_device, dev);
 +	int err;
-+
-+	pinctrl_pm_select_default_state(dev);
 +
 +	if (pdata->power_on) {
 +		err = pdata->power_on(pdev);
@@ -364,89 +366,52 @@ index 0000000..ac72ce3
 +			return err;
 +	}
 +
-+	ehci_resume(hcd, false);
++	ohci_resume(hcd, false);
 +	return 0;
 +}
 +
 +#endif /* CONFIG_PM */
 +
-+static SIMPLE_DEV_PM_OPS(st_ehci_pm_ops, st_ehci_suspend, st_ehci_resume);
++static SIMPLE_DEV_PM_OPS(st_ohci_pm_ops, st_ohci_suspend, st_ohci_resume);
 +
-+static const struct of_device_id st_ehci_ids[] = {
-+	{ .compatible = "st,st-ehci-300x", },
++static const struct of_device_id st_ohci_platform_ids[] = {
++	{ .compatible = "st,st-ohci-300x", },
 +	{ /* sentinel */ }
 +};
-+MODULE_DEVICE_TABLE(of, st_ehci_ids);
++MODULE_DEVICE_TABLE(of, st_ohci_platform_ids);
 +
-+static struct platform_driver ehci_platform_driver = {
-+	.probe		= st_ehci_platform_probe,
-+	.remove		= st_ehci_platform_remove,
++static struct platform_driver ohci_platform_driver = {
++	.probe		= st_ohci_platform_probe,
++	.remove		= st_ohci_platform_remove,
 +	.shutdown	= usb_hcd_platform_shutdown,
 +	.driver		= {
-+		.name	= "st-ehci",
-+		.pm	= &st_ehci_pm_ops,
-+		.of_match_table = st_ehci_ids,
++		.name	= "st-ohci",
++		.pm	= &st_ohci_pm_ops,
++		.of_match_table = st_ohci_platform_ids,
 +	}
 +};
 +
-+static int __init ehci_platform_init(void)
++static int __init ohci_platform_init(void)
 +{
 +	if (usb_disabled())
 +		return -ENODEV;
 +
 +	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
 +
-+	ehci_init_driver(&ehci_platform_hc_driver, &platform_overrides);
-+	return platform_driver_register(&ehci_platform_driver);
++	ohci_init_driver(&ohci_platform_hc_driver, &platform_overrides);
++	return platform_driver_register(&ohci_platform_driver);
 +}
-+module_init(ehci_platform_init);
++module_init(ohci_platform_init);
 +
-+static void __exit ehci_platform_cleanup(void)
++static void __exit ohci_platform_cleanup(void)
 +{
-+	platform_driver_unregister(&ehci_platform_driver);
++	platform_driver_unregister(&ohci_platform_driver);
 +}
-+module_exit(ehci_platform_cleanup);
++module_exit(ohci_platform_cleanup);
 +
 +MODULE_DESCRIPTION(DRIVER_DESC);
 +MODULE_AUTHOR("Peter Griffin <peter.griffin@linaro.org>");
 +MODULE_LICENSE("GPL");
-diff --git a/drivers/usb/host/usb-st-common.h b/drivers/usb/host/usb-st-common.h
-new file mode 100644
-index 0000000..da67402
---- /dev/null
-+++ b/drivers/usb/host/usb-st-common.h
-@@ -0,0 +1,31 @@
-+/*
-+ * ST ehci / ohci common header file
-+ *
-+ * Copyright (C) 2014 STMicroelectronics – All Rights Reserved
-+ *
-+ * Author: Peter Griffin <peter.griffin@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#ifndef __USB_ST_COMMON_H
-+#define __USB_ST_COMMON_H
-+
-+#include <linux/clk.h>
-+#include <linux/reset.h>
-+#include <linux/phy/phy.h>
-+
-+#define USB_MAX_CLKS 3
-+
-+struct st_platform_priv {
-+	struct clk *clks[USB_MAX_CLKS];
-+	struct clk *clk48;
-+	struct reset_control *rst;
-+	struct reset_control *pwr;
-+	struct phy *phy;
-+};
-+
-+#endif /* __USB_ST_COMMON_H */
 -- 
 1.9.1
 
