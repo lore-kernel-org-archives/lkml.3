@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363AbaHGSWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 14:22:48 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:48417 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104AbaHGSWg (ORCPT
+	id S1755388AbaHGSWw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 14:22:52 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:35230 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755104AbaHGSWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 14:22:36 -0400
+	Thu, 7 Aug 2014 14:22:49 -0400
 From: mathieu.poirier@linaro.org
 To: linus.walleij@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
         robherring2@gmail.com, daniel.thompson@linaro.org
@@ -17,9 +17,9 @@ Cc: mathieu.poirier@linaro.org, arve@android.com, john.stultz@linaro.org,
         r.sengupta@samsung.com, robbelibobban@gmail.com,
         Tony.Armitstead@arm.com, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/10 v3] coresight-etb: add CoreSight ETB driver
-Date: Thu,  7 Aug 2014 12:21:40 -0600
-Message-Id: <1407435706-19441-5-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 10/10 v3] ARM: removing support for etb/etm in "arch/arm/kernel/"
+Date: Thu,  7 Aug 2014 12:21:46 -0600
+Message-Id: <1407435706-19441-11-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407435706-19441-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1407435706-19441-1-git-send-email-mathieu.poirier@linaro.org>
@@ -27,566 +27,1000 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pratik Patel <pratikp@codeaurora.org>
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-This driver manages CoreSight ETB (Embedded Trace Buffer) which
-acts as a circular buffer sink collecting generated trace data.
+Removing minimal support for etb/etm to favour an implentation
+that is more flexible, extensible and capable of handling more
+platforms.
 
-Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
-Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
+Also removing the only client of the old driver.  That code can
+easily be replaced by entries for etb/etm in the device tree.
+
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- drivers/coresight/Makefile          |   3 +-
- drivers/coresight/coresight-etb10.c | 529 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 531 insertions(+), 1 deletion(-)
- create mode 100644 drivers/coresight/coresight-etb10.c
+ arch/arm/Kconfig.debug                    |   8 -
+ arch/arm/include/asm/hardware/coresight.h | 157 -------
+ arch/arm/kernel/Makefile                  |   1 -
+ arch/arm/kernel/etm.c                     | 654 ------------------------------
+ arch/arm/kernel/hw_breakpoint.c           |   4 +-
+ arch/arm/mach-omap2/Kconfig               |   8 -
+ arch/arm/mach-omap2/Makefile              |   1 -
+ arch/arm/mach-omap2/emu.c                 |  50 ---
+ 8 files changed, 2 insertions(+), 881 deletions(-)
+ delete mode 100644 arch/arm/include/asm/hardware/coresight.h
+ delete mode 100644 arch/arm/kernel/etm.c
+ delete mode 100644 arch/arm/mach-omap2/emu.c
 
-diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
-index 540df99..5dd3d98 100644
---- a/drivers/coresight/Makefile
-+++ b/drivers/coresight/Makefile
-@@ -3,4 +3,5 @@
- #
- obj-$(CONFIG_CORESIGHT) += coresight.o
- obj-$(CONFIG_OF) += of_coresight.o
--obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o
-+obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
-+					   coresight-etb10.o
-diff --git a/drivers/coresight/coresight-etb10.c b/drivers/coresight/coresight-etb10.c
-new file mode 100644
-index 0000000..0249dfc
---- /dev/null
-+++ b/drivers/coresight/coresight-etb10.c
-@@ -0,0 +1,529 @@
-+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/types.h>
-+#include <linux/device.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/fs.h>
-+#include <linux/miscdevice.h>
-+#include <linux/uaccess.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <linux/clk.h>
-+#include <linux/seq_file.h>
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 886f4b2..35e608c 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -1223,14 +1223,6 @@ config EARLY_PRINTK
+ 	  kernel low-level debugging functions. Add earlyprintk to your
+ 	  kernel parameters to enable this console.
+ 
+-config OC_ETM
+-	bool "On-chip ETM and ETB"
+-	depends on ARM_AMBA
+-	help
+-	  Enables the on-chip embedded trace macrocell and embedded trace
+-	  buffer driver that will allow you to collect traces of the
+-	  kernel code.
+-
+ config ARM_KPROBES_TEST
+ 	tristate "Kprobes test module"
+ 	depends on KPROBES && MODULES
+diff --git a/arch/arm/include/asm/hardware/coresight.h b/arch/arm/include/asm/hardware/coresight.h
+deleted file mode 100644
+index ad774f3..0000000
+--- a/arch/arm/include/asm/hardware/coresight.h
++++ /dev/null
+@@ -1,157 +0,0 @@
+-/*
+- * linux/arch/arm/include/asm/hardware/coresight.h
+- *
+- * CoreSight components' registers
+- *
+- * Copyright (C) 2009 Nokia Corporation.
+- * Alexander Shishkin
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#ifndef __ASM_HARDWARE_CORESIGHT_H
+-#define __ASM_HARDWARE_CORESIGHT_H
+-
+-#define TRACER_ACCESSED_BIT	0
+-#define TRACER_RUNNING_BIT	1
+-#define TRACER_CYCLE_ACC_BIT	2
+-#define TRACER_ACCESSED		BIT(TRACER_ACCESSED_BIT)
+-#define TRACER_RUNNING		BIT(TRACER_RUNNING_BIT)
+-#define TRACER_CYCLE_ACC	BIT(TRACER_CYCLE_ACC_BIT)
+-
+-#define TRACER_TIMEOUT 10000
+-
+-#define etm_writel(t, v, x) \
+-	(writel_relaxed((v), (t)->etm_regs + (x)))
+-#define etm_readl(t, x) (readl_relaxed((t)->etm_regs + (x)))
+-
+-/* CoreSight Management Registers */
+-#define CSMR_LOCKACCESS 0xfb0
+-#define CSMR_LOCKSTATUS 0xfb4
+-#define CSMR_AUTHSTATUS 0xfb8
+-#define CSMR_DEVID	0xfc8
+-#define CSMR_DEVTYPE	0xfcc
+-/* CoreSight Component Registers */
+-#define CSCR_CLASS	0xff4
+-
+-#define CS_LAR_KEY	0xc5acce55
+-
+-/* ETM control register, "ETM Architecture", 3.3.1 */
+-#define ETMR_CTRL		0
+-#define ETMCTRL_POWERDOWN	1
+-#define ETMCTRL_PROGRAM		(1 << 10)
+-#define ETMCTRL_PORTSEL		(1 << 11)
+-#define ETMCTRL_DO_CONTEXTID	(3 << 14)
+-#define ETMCTRL_PORTMASK1	(7 << 4)
+-#define ETMCTRL_PORTMASK2	(1 << 21)
+-#define ETMCTRL_PORTMASK	(ETMCTRL_PORTMASK1 | ETMCTRL_PORTMASK2)
+-#define ETMCTRL_PORTSIZE(x) ((((x) & 7) << 4) | (!!((x) & 8)) << 21)
+-#define ETMCTRL_DO_CPRT		(1 << 1)
+-#define ETMCTRL_DATAMASK	(3 << 2)
+-#define ETMCTRL_DATA_DO_DATA	(1 << 2)
+-#define ETMCTRL_DATA_DO_ADDR	(1 << 3)
+-#define ETMCTRL_DATA_DO_BOTH	(ETMCTRL_DATA_DO_DATA | ETMCTRL_DATA_DO_ADDR)
+-#define ETMCTRL_BRANCH_OUTPUT	(1 << 8)
+-#define ETMCTRL_CYCLEACCURATE	(1 << 12)
+-
+-/* ETM configuration code register */
+-#define ETMR_CONFCODE		(0x04)
+-
+-/* ETM trace start/stop resource control register */
+-#define ETMR_TRACESSCTRL	(0x18)
+-
+-/* ETM trigger event register */
+-#define ETMR_TRIGEVT		(0x08)
+-
+-/* address access type register bits, "ETM architecture",
+- * table 3-27 */
+-/* - access type */
+-#define ETMAAT_IFETCH		0
+-#define ETMAAT_IEXEC		1
+-#define ETMAAT_IEXECPASS	2
+-#define ETMAAT_IEXECFAIL	3
+-#define ETMAAT_DLOADSTORE	4
+-#define ETMAAT_DLOAD		5
+-#define ETMAAT_DSTORE		6
+-/* - comparison access size */
+-#define ETMAAT_JAVA		(0 << 3)
+-#define ETMAAT_THUMB		(1 << 3)
+-#define ETMAAT_ARM		(3 << 3)
+-/* - data value comparison control */
+-#define ETMAAT_NOVALCMP		(0 << 5)
+-#define ETMAAT_VALMATCH		(1 << 5)
+-#define ETMAAT_VALNOMATCH	(3 << 5)
+-/* - exact match */
+-#define ETMAAT_EXACTMATCH	(1 << 7)
+-/* - context id comparator control */
+-#define ETMAAT_IGNCONTEXTID	(0 << 8)
+-#define ETMAAT_VALUE1		(1 << 8)
+-#define ETMAAT_VALUE2		(2 << 8)
+-#define ETMAAT_VALUE3		(3 << 8)
+-/* - security level control */
+-#define ETMAAT_IGNSECURITY	(0 << 10)
+-#define ETMAAT_NSONLY		(1 << 10)
+-#define ETMAAT_SONLY		(2 << 10)
+-
+-#define ETMR_COMP_VAL(x)	(0x40 + (x) * 4)
+-#define ETMR_COMP_ACC_TYPE(x)	(0x80 + (x) * 4)
+-
+-/* ETM status register, "ETM Architecture", 3.3.2 */
+-#define ETMR_STATUS		(0x10)
+-#define ETMST_OVERFLOW		BIT(0)
+-#define ETMST_PROGBIT		BIT(1)
+-#define ETMST_STARTSTOP		BIT(2)
+-#define ETMST_TRIGGER		BIT(3)
+-
+-#define etm_progbit(t)		(etm_readl((t), ETMR_STATUS) & ETMST_PROGBIT)
+-#define etm_started(t)		(etm_readl((t), ETMR_STATUS) & ETMST_STARTSTOP)
+-#define etm_triggered(t)	(etm_readl((t), ETMR_STATUS) & ETMST_TRIGGER)
+-
+-#define ETMR_TRACEENCTRL2	0x1c
+-#define ETMR_TRACEENCTRL	0x24
+-#define ETMTE_INCLEXCL		BIT(24)
+-#define ETMR_TRACEENEVT		0x20
+-#define ETMCTRL_OPTS		(ETMCTRL_DO_CPRT | \
+-				ETMCTRL_DATA_DO_ADDR | \
+-				ETMCTRL_BRANCH_OUTPUT | \
+-				ETMCTRL_DO_CONTEXTID)
+-
+-/* ETM management registers, "ETM Architecture", 3.5.24 */
+-#define ETMMR_OSLAR	0x300
+-#define ETMMR_OSLSR	0x304
+-#define ETMMR_OSSRR	0x308
+-#define ETMMR_PDSR	0x314
+-
+-/* ETB registers, "CoreSight Components TRM", 9.3 */
+-#define ETBR_DEPTH		0x04
+-#define ETBR_STATUS		0x0c
+-#define ETBR_READMEM		0x10
+-#define ETBR_READADDR		0x14
+-#define ETBR_WRITEADDR		0x18
+-#define ETBR_TRIGGERCOUNT	0x1c
+-#define ETBR_CTRL		0x20
+-#define ETBR_FORMATTERCTRL	0x304
+-#define ETBFF_ENFTC		1
+-#define ETBFF_ENFCONT		BIT(1)
+-#define ETBFF_FONFLIN		BIT(4)
+-#define ETBFF_MANUAL_FLUSH	BIT(6)
+-#define ETBFF_TRIGIN		BIT(8)
+-#define ETBFF_TRIGEVT		BIT(9)
+-#define ETBFF_TRIGFL		BIT(10)
+-
+-#define etb_writel(t, v, x) \
+-	(writel_relaxed((v), (t)->etb_regs + (x)))
+-#define etb_readl(t, x) (readl_relaxed((t)->etb_regs + (x)))
+-
+-#define etm_lock(t) do { etm_writel((t), 0, CSMR_LOCKACCESS); } while (0)
+-#define etm_unlock(t) \
+-	do { etm_writel((t), CS_LAR_KEY, CSMR_LOCKACCESS); } while (0)
+-
+-#define etb_lock(t) do { etb_writel((t), 0, CSMR_LOCKACCESS); } while (0)
+-#define etb_unlock(t) \
+-	do { etb_writel((t), CS_LAR_KEY, CSMR_LOCKACCESS); } while (0)
+-
+-#endif /* __ASM_HARDWARE_CORESIGHT_H */
+-
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 38ddd9f..9e80b98 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -30,7 +30,6 @@ else
+ obj-y		+= entry-armv.o
+ endif
+ 
+-obj-$(CONFIG_OC_ETM)		+= etm.o
+ obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
+ obj-$(CONFIG_ISA_DMA_API)	+= dma.o
+ obj-$(CONFIG_FIQ)		+= fiq.o fiqasm.o
+diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
+deleted file mode 100644
+index 131a6ab..0000000
+--- a/arch/arm/kernel/etm.c
++++ /dev/null
+@@ -1,654 +0,0 @@
+-/*
+- * linux/arch/arm/kernel/etm.c
+- *
+- * Driver for ARM's Embedded Trace Macrocell and Embedded Trace Buffer.
+- *
+- * Copyright (C) 2009 Nokia Corporation.
+- * Alexander Shishkin
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-#include <linux/types.h>
+-#include <linux/io.h>
+-#include <linux/sysrq.h>
+-#include <linux/device.h>
+-#include <linux/clk.h>
+-#include <linux/amba/bus.h>
+-#include <linux/fs.h>
+-#include <linux/uaccess.h>
+-#include <linux/miscdevice.h>
+-#include <linux/vmalloc.h>
+-#include <linux/mutex.h>
+-#include <linux/module.h>
+-#include <asm/hardware/coresight.h>
+-#include <asm/sections.h>
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Alexander Shishkin");
+-
+-/*
+- * ETM tracer state
+- */
+-struct tracectx {
+-	unsigned int	etb_bufsz;
+-	void __iomem	*etb_regs;
+-	void __iomem	*etm_regs;
+-	unsigned long	flags;
+-	int		ncmppairs;
+-	int		etm_portsz;
+-	struct device	*dev;
+-	struct clk	*emu_clk;
+-	struct mutex	mutex;
+-};
+-
+-static struct tracectx tracer;
+-
+-static inline bool trace_isrunning(struct tracectx *t)
+-{
+-	return !!(t->flags & TRACER_RUNNING);
+-}
+-
+-static int etm_setup_address_range(struct tracectx *t, int n,
+-		unsigned long start, unsigned long end, int exclude, int data)
+-{
+-	u32 flags = ETMAAT_ARM | ETMAAT_IGNCONTEXTID | ETMAAT_NSONLY | \
+-		    ETMAAT_NOVALCMP;
+-
+-	if (n < 1 || n > t->ncmppairs)
+-		return -EINVAL;
+-
+-	/* comparators and ranges are numbered starting with 1 as opposed
+-	 * to bits in a word */
+-	n--;
+-
+-	if (data)
+-		flags |= ETMAAT_DLOADSTORE;
+-	else
+-		flags |= ETMAAT_IEXEC;
+-
+-	/* first comparator for the range */
+-	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2));
+-	etm_writel(t, start, ETMR_COMP_VAL(n * 2));
+-
+-	/* second comparator is right next to it */
+-	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2 + 1));
+-	etm_writel(t, end, ETMR_COMP_VAL(n * 2 + 1));
+-
+-	flags = exclude ? ETMTE_INCLEXCL : 0;
+-	etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
+-
+-	return 0;
+-}
+-
+-static int trace_start(struct tracectx *t)
+-{
+-	u32 v;
+-	unsigned long timeout = TRACER_TIMEOUT;
+-
+-	etb_unlock(t);
+-
+-	etb_writel(t, 0, ETBR_FORMATTERCTRL);
+-	etb_writel(t, 1, ETBR_CTRL);
+-
+-	etb_lock(t);
+-
+-	/* configure etm */
+-	v = ETMCTRL_OPTS | ETMCTRL_PROGRAM | ETMCTRL_PORTSIZE(t->etm_portsz);
+-
+-	if (t->flags & TRACER_CYCLE_ACC)
+-		v |= ETMCTRL_CYCLEACCURATE;
+-
+-	etm_unlock(t);
+-
+-	etm_writel(t, v, ETMR_CTRL);
+-
+-	while (!(etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
+-		;
+-	if (!timeout) {
+-		dev_dbg(t->dev, "Waiting for progbit to assert timed out\n");
+-		etm_lock(t);
+-		return -EFAULT;
+-	}
+-
+-	etm_setup_address_range(t, 1, (unsigned long)_stext,
+-			(unsigned long)_etext, 0, 0);
+-	etm_writel(t, 0, ETMR_TRACEENCTRL2);
+-	etm_writel(t, 0, ETMR_TRACESSCTRL);
+-	etm_writel(t, 0x6f, ETMR_TRACEENEVT);
+-
+-	v &= ~ETMCTRL_PROGRAM;
+-	v |= ETMCTRL_PORTSEL;
+-
+-	etm_writel(t, v, ETMR_CTRL);
+-
+-	timeout = TRACER_TIMEOUT;
+-	while (etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM && --timeout)
+-		;
+-	if (!timeout) {
+-		dev_dbg(t->dev, "Waiting for progbit to deassert timed out\n");
+-		etm_lock(t);
+-		return -EFAULT;
+-	}
+-
+-	etm_lock(t);
+-
+-	t->flags |= TRACER_RUNNING;
+-
+-	return 0;
+-}
+-
+-static int trace_stop(struct tracectx *t)
+-{
+-	unsigned long timeout = TRACER_TIMEOUT;
+-
+-	etm_unlock(t);
+-
+-	etm_writel(t, 0x440, ETMR_CTRL);
+-	while (!(etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
+-		;
+-	if (!timeout) {
+-		dev_dbg(t->dev, "Waiting for progbit to assert timed out\n");
+-		etm_lock(t);
+-		return -EFAULT;
+-	}
+-
+-	etm_lock(t);
+-
+-	etb_unlock(t);
+-	etb_writel(t, ETBFF_MANUAL_FLUSH, ETBR_FORMATTERCTRL);
+-
+-	timeout = TRACER_TIMEOUT;
+-	while (etb_readl(t, ETBR_FORMATTERCTRL) &
+-			ETBFF_MANUAL_FLUSH && --timeout)
+-		;
+-	if (!timeout) {
+-		dev_dbg(t->dev, "Waiting for formatter flush to commence "
+-				"timed out\n");
+-		etb_lock(t);
+-		return -EFAULT;
+-	}
+-
+-	etb_writel(t, 0, ETBR_CTRL);
+-
+-	etb_lock(t);
+-
+-	t->flags &= ~TRACER_RUNNING;
+-
+-	return 0;
+-}
+-
+-static int etb_getdatalen(struct tracectx *t)
+-{
+-	u32 v;
+-	int rp, wp;
+-
+-	v = etb_readl(t, ETBR_STATUS);
+-
+-	if (v & 1)
+-		return t->etb_bufsz;
+-
+-	rp = etb_readl(t, ETBR_READADDR);
+-	wp = etb_readl(t, ETBR_WRITEADDR);
+-
+-	if (rp > wp) {
+-		etb_writel(t, 0, ETBR_READADDR);
+-		etb_writel(t, 0, ETBR_WRITEADDR);
+-
+-		return 0;
+-	}
+-
+-	return wp - rp;
+-}
+-
+-/* sysrq+v will always stop the running trace and leave it at that */
+-static void etm_dump(void)
+-{
+-	struct tracectx *t = &tracer;
+-	u32 first = 0;
+-	int length;
+-
+-	if (!t->etb_regs) {
+-		printk(KERN_INFO "No tracing hardware found\n");
+-		return;
+-	}
+-
+-	if (trace_isrunning(t))
+-		trace_stop(t);
+-
+-	etb_unlock(t);
+-
+-	length = etb_getdatalen(t);
+-
+-	if (length == t->etb_bufsz)
+-		first = etb_readl(t, ETBR_WRITEADDR);
+-
+-	etb_writel(t, first, ETBR_READADDR);
+-
+-	printk(KERN_INFO "Trace buffer contents length: %d\n", length);
+-	printk(KERN_INFO "--- ETB buffer begin ---\n");
+-	for (; length; length--)
+-		printk("%08x", cpu_to_be32(etb_readl(t, ETBR_READMEM)));
+-	printk(KERN_INFO "\n--- ETB buffer end ---\n");
+-
+-	/* deassert the overflow bit */
+-	etb_writel(t, 1, ETBR_CTRL);
+-	etb_writel(t, 0, ETBR_CTRL);
+-
+-	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
+-	etb_writel(t, 0, ETBR_READADDR);
+-	etb_writel(t, 0, ETBR_WRITEADDR);
+-
+-	etb_lock(t);
+-}
+-
+-static void sysrq_etm_dump(int key)
+-{
+-	dev_dbg(tracer.dev, "Dumping ETB buffer\n");
+-	etm_dump();
+-}
+-
+-static struct sysrq_key_op sysrq_etm_op = {
+-	.handler = sysrq_etm_dump,
+-	.help_msg = "etm-buffer-dump(v)",
+-	.action_msg = "etm",
+-};
+-
+-static int etb_open(struct inode *inode, struct file *file)
+-{
+-	if (!tracer.etb_regs)
+-		return -ENODEV;
+-
+-	file->private_data = &tracer;
+-
+-	return nonseekable_open(inode, file);
+-}
+-
+-static ssize_t etb_read(struct file *file, char __user *data,
+-		size_t len, loff_t *ppos)
+-{
+-	int total, i;
+-	long length;
+-	struct tracectx *t = file->private_data;
+-	u32 first = 0;
+-	u32 *buf;
+-
+-	mutex_lock(&t->mutex);
+-
+-	if (trace_isrunning(t)) {
+-		length = 0;
+-		goto out;
+-	}
+-
+-	etb_unlock(t);
+-
+-	total = etb_getdatalen(t);
+-	if (total == t->etb_bufsz)
+-		first = etb_readl(t, ETBR_WRITEADDR);
+-
+-	etb_writel(t, first, ETBR_READADDR);
+-
+-	length = min(total * 4, (int)len);
+-	buf = vmalloc(length);
+-
+-	dev_dbg(t->dev, "ETB buffer length: %d\n", total);
+-	dev_dbg(t->dev, "ETB status reg: %x\n", etb_readl(t, ETBR_STATUS));
+-	for (i = 0; i < length / 4; i++)
+-		buf[i] = etb_readl(t, ETBR_READMEM);
+-
+-	/* the only way to deassert overflow bit in ETB status is this */
+-	etb_writel(t, 1, ETBR_CTRL);
+-	etb_writel(t, 0, ETBR_CTRL);
+-
+-	etb_writel(t, 0, ETBR_WRITEADDR);
+-	etb_writel(t, 0, ETBR_READADDR);
+-	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
+-
+-	etb_lock(t);
+-
+-	length -= copy_to_user(data, buf, length);
+-	vfree(buf);
+-
+-out:
+-	mutex_unlock(&t->mutex);
+-
+-	return length;
+-}
+-
+-static int etb_release(struct inode *inode, struct file *file)
+-{
+-	/* there's nothing to do here, actually */
+-	return 0;
+-}
+-
+-static const struct file_operations etb_fops = {
+-	.owner = THIS_MODULE,
+-	.read = etb_read,
+-	.open = etb_open,
+-	.release = etb_release,
+-	.llseek = no_llseek,
+-};
+-
+-static struct miscdevice etb_miscdev = {
+-	.name = "tracebuf",
+-	.minor = 0,
+-	.fops = &etb_fops,
+-};
+-
+-static int etb_probe(struct amba_device *dev, const struct amba_id *id)
+-{
+-	struct tracectx *t = &tracer;
+-	int ret = 0;
+-
+-	ret = amba_request_regions(dev, NULL);
+-	if (ret)
+-		goto out;
+-
+-	t->etb_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
+-	if (!t->etb_regs) {
+-		ret = -ENOMEM;
+-		goto out_release;
+-	}
+-
+-	amba_set_drvdata(dev, t);
+-
+-	etb_miscdev.parent = &dev->dev;
+-
+-	ret = misc_register(&etb_miscdev);
+-	if (ret)
+-		goto out_unmap;
+-
+-	t->emu_clk = clk_get(&dev->dev, "emu_src_ck");
+-	if (IS_ERR(t->emu_clk)) {
+-		dev_dbg(&dev->dev, "Failed to obtain emu_src_ck.\n");
+-		return -EFAULT;
+-	}
+-
+-	clk_enable(t->emu_clk);
+-
+-	etb_unlock(t);
+-	t->etb_bufsz = etb_readl(t, ETBR_DEPTH);
+-	dev_dbg(&dev->dev, "Size: %x\n", t->etb_bufsz);
+-
+-	/* make sure trace capture is disabled */
+-	etb_writel(t, 0, ETBR_CTRL);
+-	etb_writel(t, 0x1000, ETBR_FORMATTERCTRL);
+-	etb_lock(t);
+-
+-	dev_dbg(&dev->dev, "ETB AMBA driver initialized.\n");
+-
+-out:
+-	return ret;
+-
+-out_unmap:
+-	iounmap(t->etb_regs);
+-
+-out_release:
+-	amba_release_regions(dev);
+-
+-	return ret;
+-}
+-
+-static int etb_remove(struct amba_device *dev)
+-{
+-	struct tracectx *t = amba_get_drvdata(dev);
+-
+-	iounmap(t->etb_regs);
+-	t->etb_regs = NULL;
+-
+-	clk_disable(t->emu_clk);
+-	clk_put(t->emu_clk);
+-
+-	amba_release_regions(dev);
+-
+-	return 0;
+-}
+-
+-static struct amba_id etb_ids[] = {
+-	{
+-		.id	= 0x0003b907,
+-		.mask	= 0x0007ffff,
+-	},
+-	{ 0, 0 },
+-};
+-
+-static struct amba_driver etb_driver = {
+-	.drv		= {
+-		.name	= "etb",
+-		.owner	= THIS_MODULE,
+-	},
+-	.probe		= etb_probe,
+-	.remove		= etb_remove,
+-	.id_table	= etb_ids,
+-};
+-
+-/* use a sysfs file "trace_running" to start/stop tracing */
+-static ssize_t trace_running_show(struct kobject *kobj,
+-				  struct kobj_attribute *attr,
+-				  char *buf)
+-{
+-	return sprintf(buf, "%x\n", trace_isrunning(&tracer));
+-}
+-
+-static ssize_t trace_running_store(struct kobject *kobj,
+-				   struct kobj_attribute *attr,
+-				   const char *buf, size_t n)
+-{
+-	unsigned int value;
+-	int ret;
+-
+-	if (sscanf(buf, "%u", &value) != 1)
+-		return -EINVAL;
+-
+-	mutex_lock(&tracer.mutex);
+-	ret = value ? trace_start(&tracer) : trace_stop(&tracer);
+-	mutex_unlock(&tracer.mutex);
+-
+-	return ret ? : n;
+-}
+-
+-static struct kobj_attribute trace_running_attr =
+-	__ATTR(trace_running, 0644, trace_running_show, trace_running_store);
+-
+-static ssize_t trace_info_show(struct kobject *kobj,
+-				  struct kobj_attribute *attr,
+-				  char *buf)
+-{
+-	u32 etb_wa, etb_ra, etb_st, etb_fc, etm_ctrl, etm_st;
+-	int datalen;
+-
+-	etb_unlock(&tracer);
+-	datalen = etb_getdatalen(&tracer);
+-	etb_wa = etb_readl(&tracer, ETBR_WRITEADDR);
+-	etb_ra = etb_readl(&tracer, ETBR_READADDR);
+-	etb_st = etb_readl(&tracer, ETBR_STATUS);
+-	etb_fc = etb_readl(&tracer, ETBR_FORMATTERCTRL);
+-	etb_lock(&tracer);
+-
+-	etm_unlock(&tracer);
+-	etm_ctrl = etm_readl(&tracer, ETMR_CTRL);
+-	etm_st = etm_readl(&tracer, ETMR_STATUS);
+-	etm_lock(&tracer);
+-
+-	return sprintf(buf, "Trace buffer len: %d\nComparator pairs: %d\n"
+-			"ETBR_WRITEADDR:\t%08x\n"
+-			"ETBR_READADDR:\t%08x\n"
+-			"ETBR_STATUS:\t%08x\n"
+-			"ETBR_FORMATTERCTRL:\t%08x\n"
+-			"ETMR_CTRL:\t%08x\n"
+-			"ETMR_STATUS:\t%08x\n",
+-			datalen,
+-			tracer.ncmppairs,
+-			etb_wa,
+-			etb_ra,
+-			etb_st,
+-			etb_fc,
+-			etm_ctrl,
+-			etm_st
+-			);
+-}
+-
+-static struct kobj_attribute trace_info_attr =
+-	__ATTR(trace_info, 0444, trace_info_show, NULL);
+-
+-static ssize_t trace_mode_show(struct kobject *kobj,
+-				  struct kobj_attribute *attr,
+-				  char *buf)
+-{
+-	return sprintf(buf, "%d %d\n",
+-			!!(tracer.flags & TRACER_CYCLE_ACC),
+-			tracer.etm_portsz);
+-}
+-
+-static ssize_t trace_mode_store(struct kobject *kobj,
+-				   struct kobj_attribute *attr,
+-				   const char *buf, size_t n)
+-{
+-	unsigned int cycacc, portsz;
+-
+-	if (sscanf(buf, "%u %u", &cycacc, &portsz) != 2)
+-		return -EINVAL;
+-
+-	mutex_lock(&tracer.mutex);
+-	if (cycacc)
+-		tracer.flags |= TRACER_CYCLE_ACC;
+-	else
+-		tracer.flags &= ~TRACER_CYCLE_ACC;
+-
+-	tracer.etm_portsz = portsz & 0x0f;
+-	mutex_unlock(&tracer.mutex);
+-
+-	return n;
+-}
+-
+-static struct kobj_attribute trace_mode_attr =
+-	__ATTR(trace_mode, 0644, trace_mode_show, trace_mode_store);
+-
+-static int etm_probe(struct amba_device *dev, const struct amba_id *id)
+-{
+-	struct tracectx *t = &tracer;
+-	int ret = 0;
+-
+-	if (t->etm_regs) {
+-		dev_dbg(&dev->dev, "ETM already initialized\n");
+-		ret = -EBUSY;
+-		goto out;
+-	}
+-
+-	ret = amba_request_regions(dev, NULL);
+-	if (ret)
+-		goto out;
+-
+-	t->etm_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
+-	if (!t->etm_regs) {
+-		ret = -ENOMEM;
+-		goto out_release;
+-	}
+-
+-	amba_set_drvdata(dev, t);
+-
+-	mutex_init(&t->mutex);
+-	t->dev = &dev->dev;
+-	t->flags = TRACER_CYCLE_ACC;
+-	t->etm_portsz = 1;
+-
+-	etm_unlock(t);
+-	(void)etm_readl(t, ETMMR_PDSR);
+-	/* dummy first read */
+-	(void)etm_readl(&tracer, ETMMR_OSSRR);
+-
+-	t->ncmppairs = etm_readl(t, ETMR_CONFCODE) & 0xf;
+-	etm_writel(t, 0x440, ETMR_CTRL);
+-	etm_lock(t);
+-
+-	ret = sysfs_create_file(&dev->dev.kobj,
+-			&trace_running_attr.attr);
+-	if (ret)
+-		goto out_unmap;
+-
+-	/* failing to create any of these two is not fatal */
+-	ret = sysfs_create_file(&dev->dev.kobj, &trace_info_attr.attr);
+-	if (ret)
+-		dev_dbg(&dev->dev, "Failed to create trace_info in sysfs\n");
+-
+-	ret = sysfs_create_file(&dev->dev.kobj, &trace_mode_attr.attr);
+-	if (ret)
+-		dev_dbg(&dev->dev, "Failed to create trace_mode in sysfs\n");
+-
+-	dev_dbg(t->dev, "ETM AMBA driver initialized.\n");
+-
+-out:
+-	return ret;
+-
+-out_unmap:
+-	iounmap(t->etm_regs);
+-
+-out_release:
+-	amba_release_regions(dev);
+-
+-	return ret;
+-}
+-
+-static int etm_remove(struct amba_device *dev)
+-{
+-	struct tracectx *t = amba_get_drvdata(dev);
+-
+-	iounmap(t->etm_regs);
+-	t->etm_regs = NULL;
+-
+-	amba_release_regions(dev);
+-
+-	sysfs_remove_file(&dev->dev.kobj, &trace_running_attr.attr);
+-	sysfs_remove_file(&dev->dev.kobj, &trace_info_attr.attr);
+-	sysfs_remove_file(&dev->dev.kobj, &trace_mode_attr.attr);
+-
+-	return 0;
+-}
+-
+-static struct amba_id etm_ids[] = {
+-	{
+-		.id	= 0x0003b921,
+-		.mask	= 0x0007ffff,
+-	},
+-	{ 0, 0 },
+-};
+-
+-static struct amba_driver etm_driver = {
+-	.drv		= {
+-		.name   = "etm",
+-		.owner  = THIS_MODULE,
+-	},
+-	.probe		= etm_probe,
+-	.remove		= etm_remove,
+-	.id_table	= etm_ids,
+-};
+-
+-static int __init etm_init(void)
+-{
+-	int retval;
+-
+-	retval = amba_driver_register(&etb_driver);
+-	if (retval) {
+-		printk(KERN_ERR "Failed to register etb\n");
+-		return retval;
+-	}
+-
+-	retval = amba_driver_register(&etm_driver);
+-	if (retval) {
+-		amba_driver_unregister(&etb_driver);
+-		printk(KERN_ERR "Failed to probe etm\n");
+-		return retval;
+-	}
+-
+-	/* not being able to install this handler is not fatal */
+-	(void)register_sysrq_key('v', &sysrq_etm_op);
+-
+-	return 0;
+-}
+-
+-device_initcall(etm_init);
+-
+diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
+index 4d963fb..f61a9d9 100644
+--- a/arch/arm/kernel/hw_breakpoint.c
++++ b/arch/arm/kernel/hw_breakpoint.c
+@@ -29,6 +29,7 @@
+ #include <linux/hw_breakpoint.h>
+ #include <linux/smp.h>
+ #include <linux/cpu_pm.h>
 +#include <linux/coresight.h>
-+#include <linux/amba/bus.h>
-+
-+#include "coresight-priv.h"
-+
-+#define ETB_RAM_DEPTH_REG	0x004
-+#define ETB_STATUS_REG		0x00c
-+#define ETB_RAM_READ_DATA_REG	0x010
-+#define ETB_RAM_READ_POINTER	0x014
-+#define ETB_RAM_WRITE_POINTER	0x018
-+#define ETB_TRG			0x01c
-+#define ETB_CTL_REG		0x020
-+#define ETB_RWD_REG		0x024
-+#define ETB_FFSR		0x300
-+#define ETB_FFCR		0x304
-+#define ETB_ITMISCOP0		0xee0
-+#define ETB_ITTRFLINACK		0xee4
-+#define ETB_ITTRFLIN		0xee8
-+#define ETB_ITATBDATA0		0xeeC
-+#define ETB_ITATBCTR2		0xef0
-+#define ETB_ITATBCTR1		0xef4
-+#define ETB_ITATBCTR0		0xef8
-+
-+/** register description **/
-+/* STS - 0x00C */
-+#define ETB_STATUS_RAM_FULL	BIT(0)
-+/* CTL - 0x020 */
-+#define ETB_CTL_CAPT_EN		BIT(0)
-+/* FFCR - 0x304 */
-+#define ETB_FFCR_EN_FTC		BIT(0)
-+#define ETB_FFCR_FON_MAN	BIT(6)
-+#define ETB_FFCR_STOP_FI	BIT(12)
-+#define ETB_FFCR_STOP_TRIGGER	BIT(13)
-+
-+#define ETB_FFCR_BIT		6
-+#define ETB_FFSR_BIT		1
-+#define ETB_FRAME_SIZE_WORDS	4
-+
-+struct etb_drvdata {
-+	void __iomem		*base;
-+	struct device		*dev;
-+	struct coresight_device	*csdev;
-+	struct miscdevice	miscdev;
-+	struct clk		*clk;
-+	spinlock_t		spinlock;
-+	bool			reading;
-+	atomic_t		in_use;
-+	u8			*buf;
-+	u32			buffer_depth;
-+	bool			enable;
-+	u32			trigger_cntr;
-+};
-+
-+static unsigned int etb_get_buffer_depth(struct etb_drvdata *drvdata)
-+{
-+	int ret;
-+	u32 depth = 0;
-+
-+	ret = clk_prepare_enable(drvdata->clk);
-+	if (ret)
-+		return ret;
-+
-+	/* RO registers don't need locking */
-+	depth = readl_relaxed(drvdata->base + ETB_RAM_DEPTH_REG);
-+
-+	clk_disable_unprepare(drvdata->clk);
-+	return depth;
-+}
-+
-+static void etb_enable_hw(struct etb_drvdata *drvdata)
-+{
-+	int i;
-+	u32 depth;
-+
-+	CS_UNLOCK(drvdata->base);
-+
-+	depth = drvdata->buffer_depth;
-+	/* reset write RAM pointer address */
-+	writel_relaxed(0x0, drvdata->base + ETB_RAM_WRITE_POINTER);
-+	/* clear entire RAM buffer */
-+	for (i = 0; i < depth; i++)
-+		writel_relaxed(0x0, drvdata->base + ETB_RWD_REG);
-+
-+	/* reset write RAM pointer address */
-+	writel_relaxed(0x0, drvdata->base + ETB_RAM_WRITE_POINTER);
-+	/* reset read RAM pointer address */
-+	writel_relaxed(0x0, drvdata->base + ETB_RAM_READ_POINTER);
-+
-+	writel_relaxed(drvdata->trigger_cntr, drvdata->base + ETB_TRG);
-+	writel_relaxed(ETB_FFCR_EN_FTC | ETB_FFCR_STOP_TRIGGER,
-+		       drvdata->base + ETB_FFCR);
-+	/* ETB trace capture enable */
-+	writel_relaxed(ETB_CTL_CAPT_EN, drvdata->base + ETB_CTL_REG);
-+
-+	CS_LOCK(drvdata->base);
-+}
-+
-+static int etb_enable(struct coresight_device *csdev)
-+{
-+	struct etb_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
-+	int ret;
-+	unsigned long flags;
-+
-+	ret = clk_prepare_enable(drvdata->clk);
-+	if (ret)
-+		return ret;
-+
-+	spin_lock_irqsave(&drvdata->spinlock, flags);
-+	etb_enable_hw(drvdata);
-+	drvdata->enable = true;
-+	spin_unlock_irqrestore(&drvdata->spinlock, flags);
-+
-+	dev_info(drvdata->dev, "ETB enabled\n");
-+	return 0;
-+}
-+
-+static void etb_disable_hw(struct etb_drvdata *drvdata)
-+{
-+	u32 ffcr;
-+
-+	CS_UNLOCK(drvdata->base);
-+
-+	ffcr = readl_relaxed(drvdata->base + ETB_FFCR);
-+	/* stop formatter when a stop has completed */
-+	ffcr |= ETB_FFCR_STOP_FI;
-+	writel_relaxed(ffcr, drvdata->base + ETB_FFCR);
-+	/* manually generate a flush of the system */
-+	ffcr |= ETB_FFCR_FON_MAN;
-+	writel_relaxed(ffcr, drvdata->base + ETB_FFCR);
-+
-+	coresight_timeout(drvdata->base, ETB_FFCR, ETB_FFCR_BIT, 0);
-+
-+	/* disable trace capture */
-+	writel_relaxed(0x0, drvdata->base + ETB_CTL_REG);
-+
-+	coresight_timeout(drvdata->base, ETB_FFSR, ETB_FFSR_BIT, 1);
-+	CS_LOCK(drvdata->base);
-+}
-+
-+static void etb_dump_hw(struct etb_drvdata *drvdata)
-+{
-+	int i;
-+	u8 *buf_ptr;
-+	u32 read_data, depth;
-+	u32 read_ptr, write_ptr;
-+	u32 frame_off, frame_endoff;
-+
-+	CS_UNLOCK(drvdata->base);
-+
-+	read_ptr = readl_relaxed(drvdata->base + ETB_RAM_READ_POINTER);
-+	write_ptr = readl_relaxed(drvdata->base + ETB_RAM_WRITE_POINTER);
-+
-+	frame_off = write_ptr % ETB_FRAME_SIZE_WORDS;
-+	frame_endoff = ETB_FRAME_SIZE_WORDS - frame_off;
-+	if (frame_off) {
-+		dev_err(drvdata->dev,
-+			"write_ptr: %lu not aligned to formatter frame size\n",
-+			(unsigned long)write_ptr);
-+		dev_err(drvdata->dev, "frameoff: %lu, frame_endoff: %lu\n",
-+			(unsigned long)frame_off, (unsigned long)frame_endoff);
-+		write_ptr += frame_endoff;
-+	}
-+
-+	if ((readl_relaxed(drvdata->base + ETB_STATUS_REG)
-+		      & ETB_STATUS_RAM_FULL) == 0)
-+		writel_relaxed(0x0, drvdata->base + ETB_RAM_READ_POINTER);
-+	else
-+		writel_relaxed(write_ptr, drvdata->base + ETB_RAM_READ_POINTER);
-+
-+	depth = drvdata->buffer_depth;
-+	buf_ptr = drvdata->buf;
-+	for (i = 0; i < depth; i++) {
-+		read_data = readl_relaxed(drvdata->base +
-+					  ETB_RAM_READ_DATA_REG);
-+		*buf_ptr++ = read_data >> 0;
-+		*buf_ptr++ = read_data >> 8;
-+		*buf_ptr++ = read_data >> 16;
-+		*buf_ptr++ = read_data >> 24;
-+	}
-+
-+	if (frame_off) {
-+		buf_ptr -= (frame_endoff * 4);
-+		for (i = 0; i < frame_endoff; i++) {
-+			*buf_ptr++ = 0x0;
-+			*buf_ptr++ = 0x0;
-+			*buf_ptr++ = 0x0;
-+			*buf_ptr++ = 0x0;
-+		}
-+	}
-+
-+	writel_relaxed(read_ptr, drvdata->base + ETB_RAM_READ_POINTER);
-+
-+	CS_LOCK(drvdata->base);
-+}
-+
-+static void etb_disable(struct coresight_device *csdev)
-+{
-+	struct etb_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&drvdata->spinlock, flags);
-+	etb_disable_hw(drvdata);
-+	etb_dump_hw(drvdata);
-+	drvdata->enable = false;
-+	spin_unlock_irqrestore(&drvdata->spinlock, flags);
-+
-+	clk_disable_unprepare(drvdata->clk);
-+
-+	dev_info(drvdata->dev, "ETB disabled\n");
-+}
-+
-+static const struct coresight_ops_sink etb_sink_ops = {
-+	.enable		= etb_enable,
-+	.disable	= etb_disable,
-+};
-+
-+static const struct coresight_ops etb_cs_ops = {
-+	.sink_ops	= &etb_sink_ops,
-+};
-+
-+static void etb_dump(struct etb_drvdata *drvdata)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&drvdata->spinlock, flags);
-+	if (drvdata->enable) {
-+		etb_disable_hw(drvdata);
-+		etb_dump_hw(drvdata);
-+		etb_enable_hw(drvdata);
-+	}
-+	spin_unlock_irqrestore(&drvdata->spinlock, flags);
-+
-+	dev_info(drvdata->dev, "ETB dumped\n");
-+}
-+
-+static int etb_open(struct inode *inode, struct file *file)
-+{
-+	struct etb_drvdata *drvdata = container_of(file->private_data,
-+						   struct etb_drvdata, miscdev);
-+
-+	if (atomic_cmpxchg(&drvdata->in_use, 0, 1))
-+		return -EBUSY;
-+
-+	dev_dbg(drvdata->dev, "%s: successfully opened\n", __func__);
-+	return 0;
-+}
-+
-+static ssize_t etb_read(struct file *file, char __user *data,
-+				size_t len, loff_t *ppos)
-+{
-+	u32 depth;
-+	struct etb_drvdata *drvdata = container_of(file->private_data,
-+						   struct etb_drvdata, miscdev);
-+
-+	if (drvdata->reading == false) {
-+		etb_dump(drvdata);
-+		drvdata->reading = true;
-+	}
-+
-+	depth = drvdata->buffer_depth;
-+	if (*ppos + len > depth * 4)
-+		len = depth * 4 - *ppos;
-+
-+	if (copy_to_user(data, drvdata->buf + *ppos, len)) {
-+		dev_dbg(drvdata->dev, "%s: copy_to_user failed\n", __func__);
-+		return -EFAULT;
-+	}
-+
-+	*ppos += len;
-+
-+	dev_dbg(drvdata->dev, "%s: %d bytes copied, %d bytes left\n",
-+		__func__, len, (int) (depth * 4 - *ppos));
-+	return len;
-+}
-+
-+static int etb_release(struct inode *inode, struct file *file)
-+{
-+	struct etb_drvdata *drvdata = container_of(file->private_data,
-+						   struct etb_drvdata, miscdev);
-+
-+	drvdata->reading = false;
-+	atomic_set(&drvdata->in_use, 0);
-+
-+	dev_dbg(drvdata->dev, "%s: released\n", __func__);
-+	return 0;
-+}
-+
-+static const struct file_operations etb_fops = {
-+	.owner		= THIS_MODULE,
-+	.open		= etb_open,
-+	.read		= etb_read,
-+	.release	= etb_release,
-+	.llseek		= no_llseek,
-+};
-+
-+static ssize_t debugfs_status_show(struct seq_file *f, void *ptr)
-+{
-+	int ret;
-+	unsigned long flags;
-+	u32 etb_rdr, etb_sr, etb_rrp, etb_rwp;
-+	u32 etb_trg, etb_cr, etb_ffsr, etb_ffcr;
-+	struct etb_drvdata *drvdata = f->private;
-+
-+	ret = clk_prepare_enable(drvdata->clk);
-+	if (ret)
-+		goto out;
-+
-+	spin_lock_irqsave(&drvdata->spinlock, flags);
-+	CS_UNLOCK(drvdata->base);
-+
-+	etb_rdr = readl_relaxed(drvdata->base + ETB_RAM_DEPTH_REG);
-+	etb_sr = readl_relaxed(drvdata->base + ETB_STATUS_REG);
-+	etb_rrp = readl_relaxed(drvdata->base + ETB_RAM_READ_POINTER);
-+	etb_rwp = readl_relaxed(drvdata->base + ETB_RAM_WRITE_POINTER);
-+	etb_trg = readl_relaxed(drvdata->base + ETB_TRG);
-+	etb_cr = readl_relaxed(drvdata->base + ETB_CTL_REG);
-+	etb_ffsr = readl_relaxed(drvdata->base + ETB_FFSR);
-+	etb_ffcr = readl_relaxed(drvdata->base + ETB_FFCR);
-+
-+	CS_LOCK(drvdata->base);
-+	spin_unlock_irqrestore(&drvdata->spinlock, flags);
-+
-+	clk_disable_unprepare(drvdata->clk);
-+
-+	seq_printf(f,
-+		   "Depth:\t\t0x%x\n"
-+		   "Status:\t\t0x%x\n"
-+		   "RAM read ptr:\t0x%x\n"
-+		   "RAM wrt ptr:\t0x%x\n"
-+		   "Trigger cnt:\t0x%x\n"
-+		   "Control:\t0x%x\n"
-+		   "Flush status:\t0x%x\n"
-+		   "Flush ctrl:\t0x%x\n",
-+		   etb_rdr, etb_sr, etb_rrp, etb_rwp,
-+		   etb_trg, etb_cr, etb_ffsr, etb_ffcr);
-+out:
-+	return 0;
-+}
-+
-+static int debugfs_status_show_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, debugfs_status_show, inode->i_private);
-+}
-+
-+static const struct file_operations debugfs_status_ops = {
-+	.open = debugfs_status_show_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+
-+static const struct coresight_ops_entry debugfs_status_entry = {
-+	.name = "status",
-+	.mode = S_IRUGO,
-+	.ops = &debugfs_status_ops,
-+};
-+
-+static ssize_t debugfs_trigger_cntr_get(void *data, u64 *val)
-+{
-+	struct etb_drvdata *drvdata = data;
-+
-+	*val = drvdata->trigger_cntr;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_trigger_cntr_set(void *data, u64 val)
-+{
-+	struct etb_drvdata *drvdata = data;
-+
-+	drvdata->trigger_cntr = val;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_trigger_cntr, "trigger_cntr",
-+			S_IRUGO | S_IWUSR, debugfs_trigger_cntr_get,
-+			debugfs_trigger_cntr_set, "%llx\n");
-+
-+static const struct coresight_ops_entry *etb_attr_grps[] = {
-+	&debugfs_trigger_cntr_entry,
-+	&debugfs_status_entry,
-+	NULL,
-+};
-+
-+static int etb_probe(struct amba_device *adev, const struct amba_id *id)
-+{
-+	int ret;
-+	void __iomem *base;
-+	struct device *dev = &adev->dev;
-+	struct coresight_platform_data *pdata = NULL;
-+	struct etb_drvdata *drvdata;
-+	struct resource *res = &adev->res;
-+	struct coresight_desc *desc;
-+	struct device_node *np = adev->dev.of_node;
-+
-+	if (np) {
-+		pdata = of_get_coresight_platform_data(dev, np);
-+		if (IS_ERR(pdata))
-+			return PTR_ERR(pdata);
-+		adev->dev.platform_data = pdata;
-+	}
-+
-+	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
-+	if (!drvdata)
-+		return -ENOMEM;
-+
-+	drvdata->dev = &adev->dev;
-+	dev_set_drvdata(dev, drvdata);
-+
-+	/* validity for the resource is already checked by the AMBA core */
-+	base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
-+
-+	drvdata->base = base;
-+
-+	spin_lock_init(&drvdata->spinlock);
-+
-+	drvdata->clk = adev->pclk;
-+	ret = clk_prepare_enable(drvdata->clk);
-+	if (ret)
-+		return ret;
-+
-+	drvdata->buffer_depth =  etb_get_buffer_depth(drvdata);
-+	clk_disable_unprepare(drvdata->clk);
-+
-+	if (drvdata->buffer_depth < 0)
-+		return -EINVAL;
-+
-+	drvdata->buf = devm_kzalloc(dev,
-+				    drvdata->buffer_depth * 4, GFP_KERNEL);
-+	if (!drvdata->buf)
-+		return -ENOMEM;
-+
-+	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
-+	if (!desc)
-+		return -ENOMEM;
-+
-+	desc->type = CORESIGHT_DEV_TYPE_SINK;
-+	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_BUFFER;
-+	desc->ops = &etb_cs_ops;
-+	desc->pdata = pdata;
-+	desc->dev = dev;
-+	desc->debugfs_ops = etb_attr_grps;
-+	desc->owner = THIS_MODULE;
-+	drvdata->csdev = coresight_register(desc);
-+	if (IS_ERR(drvdata->csdev))
-+		return PTR_ERR(drvdata->csdev);
-+
-+	drvdata->miscdev.name = pdata->name;
-+	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
-+	drvdata->miscdev.fops = &etb_fops;
-+	ret = misc_register(&drvdata->miscdev);
-+	if (ret)
-+		goto err_misc_register;
-+
-+	dev_info(dev, "ETB initialized\n");
-+	return 0;
-+
-+err_misc_register:
-+	coresight_unregister(drvdata->csdev);
-+	return ret;
-+}
-+
-+static int etb_remove(struct amba_device *adev)
-+{
-+	struct etb_drvdata *drvdata = amba_get_drvdata(adev);
-+
-+	misc_deregister(&drvdata->miscdev);
-+	coresight_unregister(drvdata->csdev);
-+	return 0;
-+}
-+
-+static struct amba_id etb_ids[] = {
-+	{
-+		.id	= 0x0003b907,
-+		.mask	= 0x0003ffff,
-+	},
-+	{ 0, 0},
-+};
-+
-+static struct amba_driver etb_driver = {
-+	.drv = {
-+		.name	= "coresight-etb10",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= etb_probe,
-+	.remove		= etb_remove,
-+	.id_table	= etb_ids,
-+};
-+
-+static int __init etb_init(void)
-+{
-+	return amba_driver_register(&etb_driver);
-+}
-+module_init(etb_init);
-+
-+static void __exit etb_exit(void)
-+{
-+	amba_driver_unregister(&etb_driver);
-+}
-+module_exit(etb_exit);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("CoreSight Embedded Trace Buffer driver");
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/cputype.h>
+@@ -36,7 +37,6 @@
+ #include <asm/hw_breakpoint.h>
+ #include <asm/kdebug.h>
+ #include <asm/traps.h>
+-#include <asm/hardware/coresight.h>
+ 
+ /* Breakpoint currently in use for each BRP. */
+ static DEFINE_PER_CPU(struct perf_event *, bp_on_reg[ARM_MAX_BRP]);
+@@ -976,7 +976,7 @@ static void reset_ctrl_regs(void *unused)
+ 	 * Unconditionally clear the OS lock by writing a value
+ 	 * other than CS_LAR_KEY to the access register.
+ 	 */
+-	ARM_DBG_WRITE(c1, c0, 4, ~CS_LAR_KEY);
++	ARM_DBG_WRITE(c1, c0, 4, ~CORESIGHT_UNLOCK);
+ 	isb();
+ 
+ 	/*
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index 1c1ed73..1dd79f5 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -300,14 +300,6 @@ config MACH_TI8148EVM
+ 	depends on SOC_TI81XX
+ 	default y
+ 
+-config OMAP3_EMU
+-	bool "OMAP3 debugging peripherals"
+-	depends on ARCH_OMAP3
+-	select ARM_AMBA
+-	select OC_ETM
+-	help
+-	  Say Y here to enable debugging hardware of omap3
+-
+ config OMAP3_SDRC_AC_TIMING
+ 	bool "Enable SDRC AC timing register changes"
+ 	depends on ARCH_OMAP3
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index 8ca99e9..e8d29c4 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -226,7 +226,6 @@ obj-$(CONFIG_SOC_OMAP5)			+= omap_hwmod_54xx_data.o
+ obj-$(CONFIG_SOC_DRA7XX)		+= omap_hwmod_7xx_data.o
+ 
+ # EMU peripherals
+-obj-$(CONFIG_OMAP3_EMU)			+= emu.o
+ obj-$(CONFIG_HW_PERF_EVENTS)		+= pmu.o
+ 
+ iommu-$(CONFIG_OMAP_IOMMU)		:= omap-iommu.o
+diff --git a/arch/arm/mach-omap2/emu.c b/arch/arm/mach-omap2/emu.c
+deleted file mode 100644
+index cbeaca2..0000000
+--- a/arch/arm/mach-omap2/emu.c
++++ /dev/null
+@@ -1,50 +0,0 @@
+-/*
+- * emu.c
+- *
+- * ETM and ETB CoreSight components' resources as found in OMAP3xxx.
+- *
+- * Copyright (C) 2009 Nokia Corporation.
+- * Alexander Shishkin
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-#include <linux/types.h>
+-#include <linux/module.h>
+-#include <linux/device.h>
+-#include <linux/amba/bus.h>
+-#include <linux/io.h>
+-#include <linux/clk.h>
+-#include <linux/err.h>
+-
+-#include "soc.h"
+-#include "iomap.h"
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Alexander Shishkin");
+-
+-/* Cortex CoreSight components within omap3xxx EMU */
+-#define ETM_BASE	(L4_EMU_34XX_PHYS + 0x10000)
+-#define DBG_BASE	(L4_EMU_34XX_PHYS + 0x11000)
+-#define ETB_BASE	(L4_EMU_34XX_PHYS + 0x1b000)
+-#define DAPCTL		(L4_EMU_34XX_PHYS + 0x1d000)
+-
+-static AMBA_APB_DEVICE(omap3_etb, "etb", 0x000bb907, ETB_BASE, { }, NULL);
+-static AMBA_APB_DEVICE(omap3_etm, "etm", 0x102bb921, ETM_BASE, { }, NULL);
+-
+-static int __init emu_init(void)
+-{
+-	if (!cpu_is_omap34xx())
+-		return -ENODEV;
+-
+-	amba_device_register(&omap3_etb_device, &iomem_resource);
+-	amba_device_register(&omap3_etm_device, &iomem_resource);
+-
+-	return 0;
+-}
+-
+-omap_subsys_initcall(emu_init);
 -- 
 1.9.1
 
