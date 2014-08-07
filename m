@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247AbaHGFHB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 01:07:01 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:52845 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049AbaHGFG7 (ORCPT
+	id S1757336AbaHGFH0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 01:07:26 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:44296 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757252AbaHGFHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 01:06:59 -0400
+	Thu, 7 Aug 2014 01:07:04 -0400
+X-Originating-IP: 50.43.15.134
+Date: Wed, 6 Aug 2014 22:06:54 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Nick Krause <xerofoiify@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] bug: Add unreachable() to generic BUG() to silence
+ warnings
+Message-ID: <20140807050654.GA2340@thin>
+References: <1407374021-20682-1-git-send-email-xerofoiify@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFiDJ5-KFmf9-YBnvZae7iwMWwb6XOgOLUFA+9eRLvuk_TDXnw@mail.gmail.com>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com>
-	<1405413956-2772-21-git-send-email-lftan@altera.com>
-	<7103938.6xzUh5tnai@wuerfel>
-	<CAFiDJ5-KFmf9-YBnvZae7iwMWwb6XOgOLUFA+9eRLvuk_TDXnw@mail.gmail.com>
-Date: Thu, 7 Aug 2014 13:06:57 +0800
-X-Google-Sender-Auth: 3OEMAzSbfLE1iCjEw6VinAM6j1s
-Message-ID: <CAFiDJ5_PU7-F1K83NaujQfyKMv3vwvg+G2Vuy3=FBZeoC3_PYw@mail.gmail.com>
-Subject: Re: [PATCH v2 20/29] nios2: Cpuinfo handling
-From: Ley Foon Tan <lftan@altera.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407374021-20682-1-git-send-email-xerofoiify@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 10:43 AM, Ley Foon Tan <lftan@altera.com> wrote:
-> On Tue, Jul 15, 2014 at 5:47 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Tuesday 15 July 2014 16:45:47 Ley Foon Tan wrote:
->>> +static void *cpuinfo_start(struct seq_file *m, loff_t *pos)
->>> +{
->>> +       unsigned long i = *pos;
->>> +
->>> +       return i < num_possible_cpus() ? (void *) (i + 1) : NULL;
->>> +}
->>> +
->>> +static void *cpuinfo_next(struct seq_file *m, void *v, loff_t *pos)
->>> +{
->>> +       ++*pos;
->>> +       return cpuinfo_start(m, pos);
->>> +}
->>
->> Do you actually have SMP support?
-> Not.
->
->
->>> +const struct seq_operations cpuinfo_op = {
->>> +       .start  = cpuinfo_start,
->>> +       .next   = cpuinfo_next,
->>> +       .stop   = cpuinfo_stop,
->>> +       .show   = show_cpuinfo
->>> +};
->>
->> If not, you can use single_start/next/stop here rather than defining your own.
-> Okay, I will look into your suggestion.
-> Thanks.
+On Thu, Aug 07, 2014 at 03:13:41AM +0200, Nick Krause wrote:
+> Architectures which use generic BUG() have warnings like 
+> 
+> kernel/sched/core.c:2692:1: warning: control reaches end of non-void function [-Wreturn-type]
+> net/core/ethtool.c:236:1: warning: control reaches end of non-void function [-Wreturn-type]
+> 
+> Other BUG() implementations
+> have added unreachable() at end but generic does not. I guess
+> that is why
+> it showing these errors. We can silence them using unreachable().
+> 
+> Signed-off-by: Nick Krause <xerofoify@gmail.com>
 
-I have tried this. But, it seem that we can't use
-single_start/next/stop here. They are static functions to
-fs/seq_file.c.
+You shouldn't see those warnings.  panic() has __noreturn set, which
+should have exactly the same effect.
 
-Regards
-Ley Foon
+>  include/asm-generic/bug.h | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+> index 630dd23..effcc82 100644
+> --- a/include/asm-generic/bug.h
+> +++ b/include/asm-generic/bug.h
+> @@ -48,6 +48,7 @@ struct bug_entry {
+>  #define BUG() do { \
+>  	printk("BUG: failure at %s:%d/%s()!\n", __FILE__, __LINE__, __func__); \
+>  	panic("BUG!"); \
+> +	unreachable(); \
+>  } while (0)
+>  #endif
+>  
+> -- 
+> 2.0.1
+> 
