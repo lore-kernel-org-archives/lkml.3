@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128AbaHGFYt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 01:24:49 -0400
-Received: from mail-yk0-f194.google.com ([209.85.160.194]:65280 "EHLO
-	mail-yk0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756755AbaHGFYr (ORCPT
+	id S1757274AbaHGFZL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 01:25:11 -0400
+Received: from s87.loopia.se ([194.9.94.112]:51399 "EHLO s87.loopia.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756755AbaHGFZK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 01:24:47 -0400
-From: Nick Krause <xerofoiify@gmail.com>
-To: Petko Manolov <petkan@nucleusys.com>,
-        linux-usb@vger.kernel.org (open list:USB RTL8150 DRIVER),
-        netdev@vger.kernel.org (open list:USB RTL8150 DRIVER),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] rtl8150: Check if RSR is already defined
-Date: Thu,  7 Aug 2014 07:24:54 +0200
-Message-Id: <1407389095-31426-1-git-send-email-xerofoiify@gmail.com>
-X-Mailer: git-send-email 2.0.1
+	Thu, 7 Aug 2014 01:25:10 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -1
+Message-ID: <53E30DFB.6090309@hanshq.net>
+Date: Wed, 06 Aug 2014 22:26:19 -0700
+From: Hans Wennborg <hans@hanshq.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+MIME-Version: 1.0
+To: Larry Finger <Larry.Finger@lwfinger.net>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/15] rtlwifi: rtl8192de: fix decimal printf format specifiers
+ prefixed with 0x
+References: <1407300186-32673-1-git-send-email-hans@hanshq.net> <53E23DFE.7070209@lwfinger.net>
+In-Reply-To: <53E23DFE.7070209@lwfinger.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am getting the following warn
+On 08/06/2014 07:38 AM, Larry Finger wrote:
+> On 08/05/2014 11:43 PM, Hans Wennborg wrote:
+>> The prefix suggests the number should be printed in hex, so use
+>> the %x specifier to do that.
+>>
+>> Found by using regex suggested by Joe Perches.
+>>
+>> Signed-off-by: Hans Wennborg <hans@hanshq.net>
+>> ---
+>>   drivers/net/wireless/rtlwifi/rtl8192de/fw.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/fw.c b/drivers/net/wireless/rtlwifi/rtl8192de/fw.c
+>> index 2317707..66e1760 100644
+>> --- a/drivers/net/wireless/rtlwifi/rtl8192de/fw.c
+>> +++ b/drivers/net/wireless/rtlwifi/rtl8192de/fw.c
+>> @@ -234,7 +234,7 @@ static int _rtl92d_fw_init(struct ieee80211_hw *hw)
+>>   			 rtl_read_byte(rtlpriv, FW_MAC1_READY));
+>>   	}
+>>   	RT_TRACE(rtlpriv, COMP_FW, DBG_DMESG,
+>> -		 "Polling FW ready fail!! REG_MCUFWDL:0x%08ul\n",
+>> +		 "Polling FW ready fail!! REG_MCUFWDL:0x%08lx\n",
+>>   		 rtl_read_dword(rtlpriv, REG_MCUFWDL));
+>>   	return -1;
+>>   }
+>
+> It would be best to actually build with your patches installed. This one yields
+> the following warning:
 
-drivers/net/usb/rtl8150.c:30:0: warning: "RSR" redefined
-arch/xtensa/include/asm/processor.h:189:0: note: this is the location of the previous definition
+Terribly sorry about that, and thanks for catching it. I naively assumed 
+that the code was correct besides the decimal vs. hex issue.
 
-I wanted to remove RSR as it is not being used but it is not clear if being used
-for documenting purpose. undefining should be enough.
+>    CC [M]  drivers/net/wireless/rtlwifi/rtl8192de/fw.o
+> drivers/net/wireless/rtlwifi/rtl8192de/fw.c: In function ‘_rtl92d_fw_init’:
+> drivers/net/wireless/rtlwifi/rtl8192de/fw.c:236:2: warning: format ‘%lx’ expects
+> argument of type ‘long unsigned int’, but argument 5 has type ‘u32’ [-Wformat=]
+>    RT_TRACE(rtlpriv, COMP_FW, DBG_DMESG,
+>    ^
+>
+> The format specifier should be %04x, not %08lx.
 
-Signed-off-by: Nick Krause <xerofoify@gmail.com>
----
- drivers/net/usb/rtl8150.c | 4 ++++
- 1 file changed, 4 insertions(+)
+Shouldn't it be %08x since it's a 32-bit value?
 
-diff --git a/drivers/net/usb/rtl8150.c b/drivers/net/usb/rtl8150.c
-index 6e87e57..7d9a6ba 100644
---- a/drivers/net/usb/rtl8150.c
-+++ b/drivers/net/usb/rtl8150.c
-@@ -21,6 +21,10 @@
- #define DRIVER_AUTHOR "Petko Manolov <petkan@users.sourceforge.net>"
- #define DRIVER_DESC "rtl8150 based usb-ethernet driver"
- 
-+#ifdef RSR
-+#undef RSR
-+#endif
-+
- #define	IDR			0x0120
- #define	MAR			0x0126
- #define	CR			0x012e
--- 
-2.0.1
+ > I have no idea why gcc did not complain as %08ul is also wrong.
 
+I assume the compiler would have warned about %08lu, but %08ul takes an 
+unsigned and just prints an l afterwards.
+
+  - Hans
