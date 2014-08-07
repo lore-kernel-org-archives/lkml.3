@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002AbaHGQoj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 12:44:39 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56825 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932975AbaHGQoh (ORCPT
+	id S932889AbaHGQrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 12:47:15 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:43755 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932330AbaHGQrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 12:44:37 -0400
+	Thu, 7 Aug 2014 12:47:14 -0400
+Message-ID: <53E3AEE4.1080100@gmail.com>
+Date: Thu, 07 Aug 2014 18:52:52 +0200
+From: Goffredo Baroncelli <kreijack@gmail.com>
+Reply-To: kreijack@inwind.it
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <ABE15994-F47B-4E4B-A6FC-79C6BCAC9FF3@holtmann.org>
-References: <1407424003-15073-1-git-send-email-geert@linux-m68k.org>
-	<ABE15994-F47B-4E4B-A6FC-79C6BCAC9FF3@holtmann.org>
-Date: Thu, 7 Aug 2014 18:44:35 +0200
-X-Google-Sender-Auth: rh4CX_D4oru71dtz-vRwsunACGk
-Message-ID: <CAMuHMdU214_aDNQBH=Nk6DZwsdCB3FQY1DY0ZQ8WQGQ86dGFUQ@mail.gmail.com>
-Subject: Re: [PATCH] 6lowpan: Allow 6LoWPAN to be modular
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Alexander Aring <alex.aring@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-zigbee-devel@lists.sourceforge.net,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        linux-wpan@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jean Delvare <jdelvare@suse.de>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] Add the "verbose" module option.
+References: <1407359103-6012-1-git-send-email-kreijack@inwind.it>	<1407359103-6012-4-git-send-email-kreijack@inwind.it>	<1407401555.4314.14.camel@chaos.site>	<53E3A963.4080807@inwind.it> <20140807184316.6682aa98@endymion.delvare>
+In-Reply-To: <20140807184316.6682aa98@endymion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcel,
-
-On Thu, Aug 7, 2014 at 6:00 PM, Marcel Holtmann <marcel@holtmann.org> wrote:
->> Change config symbol 6LOWPAN from type bool to type tristate, so
->> 6LoWPAN can be built modular, just like IPV6
+On 08/07/2014 06:43 PM, Jean Delvare wrote:
+> On Thu, 07 Aug 2014 18:29:23 +0200, Goffredo Baroncelli wrote:
+>> On 08/07/2014 10:52 AM, Jean Delvare wrote:
+>>> Le Wednesday 06 August 2014 à 21:05 +0000, Goffredo Baroncelli a écrit :
+>>>> +	 */
+>>>> +	tempchanged = x.temp != temp || x.casetemp != casetemp;
+>>>> +	if ((verbose > 1 && tempchanged) ||
+>>>> +	    (verbose > 0 && level >= 0)) {
+>>>> +		printk(KERN_INFO);
+>>>> +		print_temp("CPU-temp: ", temp);
+>>>
+>>> This can be written more efficiently as a single statement:
+>>>
+>>> 		print_temp(KERN_INFO "CPU-temp: ", temp);
 >>
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> ---
->> net/6lowpan/Kconfig | 2 +-
->> 1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/net/6lowpan/Kconfig b/net/6lowpan/Kconfig
->> index 028a5c6d1f61..e4a02ef55102 100644
->> --- a/net/6lowpan/Kconfig
->> +++ b/net/6lowpan/Kconfig
->> @@ -1,5 +1,5 @@
->> config 6LOWPAN
->> -     bool "6LoWPAN Support"
->> +     tristate "6LoWPAN Support"
->
-> is this a regression from the previous CONFIG_6LOWPAN separation that we introduced? If it is, then it might be easiest if Dave just takes it into his net tree. Otherwise I take it through bluetooth-next.
+>> I suppose that KERN_* has to be in the beginning of the line. 
+> 
+> Correct.
+> 
+>> Because a single line is composed by several prink,
+> 
+> In this case, it is, but FYI, this is generally discouraged. The reason
+> is that another piece of the kernel may be calling printk at the same
+> time, and then that other message may split your own message into
+> pieces. If you run checkpatch.pl on this file, you'll see it complains
+> about this.
+> 
+>> KERN_INFO has 
+>> to be only in the first printk. To me it seems more polite to have
+>> one printk for the level, and the others (there are more than one) 
+>> for the message parts.
+> 
+> The fewer printks is better. Ideally there would be only one to avoid
+> the risk of line splitting altogether. I understand this isn't easy to
+> achieve in this case, but I still believe that you shouldn't have more
+> calls to printk than necessary, to reduce the risk.
+> 
+Ok, now I understand the reason. I will remove the first printk.
 
-I hadn't thought about that... Checking...
-
-Yes, I believe this is a regression.
-
-In v3.16, my allmodconfig build had:
-
-CONFIG_IEEE802154_6LOWPAN=m
-CONFIG_6LOWPAN_IPHC=m
-CONFIG_BT_6LOWPAN=y
-
-Without my patch it has:
-
-CONFIG_6LOWPAN=y
-CONFIG_IEEE802154_6LOWPAN=m
-CONFIG_BT_6LOWPAN=m
-
-and iphc is what's in net/6lowpan/built-in.o now.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+gpg @keyserver.linux.it: Goffredo Baroncelli (kreijackATinwind.it>
+Key fingerprint BBF5 1610 0B64 DAC6 5F7D  17B2 0EDA 9B37 8B82 E0B5
