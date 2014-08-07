@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315AbaHGNU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 09:20:59 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:39736 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757268AbaHGNU5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 09:20:57 -0400
-Date: Thu, 7 Aug 2014 15:20:52 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, linux-pwm@vger.kernel.org,
-        devicetree@vger.kernel.org, ajitpal.singh@st.com
-Subject: Re: [PATCH v2 00/11] pwm: Introduce ST's PWM driver
-Message-ID: <20140807132050.GC1540@ulmo.nvidia.com>
-References: <1405348412-7352-1-git-send-email-lee.jones@linaro.org>
- <20140721123950.GY30888@lee--X1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="da4uJneut+ArUgXk"
-Content-Disposition: inline
-In-Reply-To: <20140721123950.GY30888@lee--X1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932359AbaHGNWW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 09:22:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42542 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932325AbaHGNWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 09:22:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,818,1400050800"; 
+   d="scan'208";a="584747740"
+Message-ID: <1407417714.8334.8.camel@acox1-desk.ger.corp.intel.com>
+Subject: Re: [PATCH v2 1/2] tty: serial: 8250: Add Mediatek UART driver
+From: Alan Cox <alan@linux.intel.com>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org,
+        gregkh@linuxfoundation.org, jslaby@suse.cz, grant.likely@linaro.org,
+        varkabhadram@gmail.com, heiko@sntech.de, yingjoe.chen@gmail.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Date: Thu, 07 Aug 2014 14:21:54 +0100
+In-Reply-To: <1407394292-26317-2-git-send-email-matthias.bgg@gmail.com>
+References: <1407394292-26317-1-git-send-email-matthias.bgg@gmail.com>
+	 <1407394292-26317-2-git-send-email-matthias.bgg@gmail.com>
+Organization: Intel Corporation
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---da4uJneut+ArUgXk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> +	 * Some baudrates are not supported by the chip, so we use the next
+> +	 * lower rate supported and update termios c_flag.
 
-On Mon, Jul 21, 2014 at 01:39:50PM +0100, Lee Jones wrote:
-> Hi Thierry,
->=20
-> Did you find some time to look at this set?
+I don't see the termios updating being done now ?
 
-Sorry for the long delay. I've applied patches 6-11 to the PWM tree,
-though I've modified patch 6 a little for consistency. The module is
-now named after the Kconfig option (pwm-sti rather than pwm-st). The
-dependencies also seem to be redundant (ARCH_STI already depends on
-OF), though I didn't change that just in case it's required for some
-other reason.
+> +	data->clk = of_clk_get(np, 0);
+> +	if (IS_ERR(data->clk)) {
+> +		pr_warn("Can't get timer clock");
+> +		return PTR_ERR(data->clk);
+> +	}
+> +
+> +	err = clk_prepare_enable(data->clk);
+> +	if (err) {
+> +		pr_warn("Can't prepare clock");
 
-Anyway, scream if there's anything in the PWM for-next branch that
-needs to be fixed up.
+and these do need a newline on them. They are also not very useful as
+they don't indicate what device was involved. If you passed pdev from
+mtk8250_probe you'd be able to use dev_warn instead
 
-Thierry
+Otherwise looks great and exactly as 8250_core is intended to be used.
 
---da4uJneut+ArUgXk
-Content-Type: application/pgp-signature
+Alan
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBAgAGBQJT430yAAoJEN0jrNd/PrOhjM4P/R1u9hzekLIfuj4Gu+1FfD5j
-kGPXYIUpxmyb+1Vxm/pFpMu3meWw5WZVVmS03A0pbgs5Y/B073ez8/xa4+p1b4mA
-rL+ErG+j81coaEuBOvg5IXyMCJhQcmJLlL9nNY8u7Hdh3DSidbWTflGFohE6k+nU
-QOConR8yochj/Mi0bTGVR4HDbQnGm1eYN4G16FYybfGXsim4wgBR6GDCTlHX2AS+
-C8IUx4Pamcsa7hhMJVjD80A7E6lPLPP7FXO1Na3zZhEAtwzYWr/rZd1VS53SxS2F
-eKEP0AAnmvQXdKmN1X/WJhNY+amNaEETMBFS3m21X+SMXWanmrjGB6j/1AkUf1kN
-TOP1vfJuOEA9e8RuqeW+HrF59ToMqYVd1foNW7X+p3l3ziGP6ZHxxRnJjscPfBOt
-s18WgOB7vIOEAmVOa0ufgNQDE3zJvU06nnGiw8BV2RadZ9mksaqsy2TDmDKke/Ei
-Vwju/RHWkKOgo2HgXukc6Nhzmz6Ei+xCXYLQzLpZf4q4KdGs87sGJ+GpWnO+qTJ+
-C6XcHKv6+2W0as7Voozzv7tSjVQbCgMaU2cPgXUfrWyR1Bp31GBPTxyJqd95CZcw
-belEvIVDEwHXEgoNimQ4PerWMXcQFKruHWxSvbu3vvxkgqIuLet42LE8ufE/YF1z
-QR0A+XyrgRfJsSYOQYfc
-=LvDo
------END PGP SIGNATURE-----
-
---da4uJneut+ArUgXk--
