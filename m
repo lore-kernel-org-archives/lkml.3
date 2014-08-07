@@ -1,103 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751193AbaHGRoh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 13:44:37 -0400
-Received: from outrelay07.libero.it ([212.52.84.111]:53877 "EHLO
-	outrelay07.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735AbaHGRog (ORCPT
+	id S1753634AbaHGRrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 13:47:32 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:42938 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaHGRra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 13:44:36 -0400
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0C0208.53E3BAF3.0092,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1823
-Message-ID: <53E3BC48.4020304@inwind.it>
-Date: Thu, 07 Aug 2014 19:50:00 +0200
-From: Goffredo Baroncelli <kreijack@inwind.it>
-Reply-To: kreijack@inwind.it
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Thu, 7 Aug 2014 13:47:30 -0400
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] Export the temperatures via hwmon
-References: <1407359103-6012-1-git-send-email-kreijack@inwind.it>	<1407359103-6012-6-git-send-email-kreijack@inwind.it>	<20140806231803.GA5643@roeck-us.net>	<53E31694.8050107@gmail.com>	<53E31AB0.6070604@roeck-us.net> <20140807085235.2c0e63dd@endymion.delvare> <53E32C77.5000804@roeck-us.net>
-In-Reply-To: <53E32C77.5000804@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140807173832.GN4179@bivouac.eciton.net>
+References: <1407423713-4160-1-git-send-email-keescook@chromium.org>
+	<1407423713-4160-2-git-send-email-keescook@chromium.org>
+	<20140807173832.GN4179@bivouac.eciton.net>
+Date: Thu, 7 Aug 2014 10:47:30 -0700
+X-Google-Sender-Auth: rNiRnLvR3FUGMnPhIc58qPT0Fxk
+Message-ID: <CAGXu5jL8TzxcSf_o49sTtxoEEqLRqb-Nwm2utzsftPiqtJ6d1Q@mail.gmail.com>
+Subject: Re: [PATCH 1/8] arm: use generic fixmap.h
+From: Kees Cook <keescook@chromium.org>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Mark Salter <msalter@redhat.com>,
+        Laura Abbott <lauraa@codeaurora.org>, Liu hua <sdu.liu@huawei.com>,
+        Rabin Vincent <rabin@rab.in>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Rob Herring <robh@kernel.org>,
+        Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 09:36 AM, Guenter Roeck wrote:
-> On 08/06/2014 11:52 PM, Jean Delvare wrote:
->> Hi Guenter,
+On Thu, Aug 7, 2014 at 10:38 AM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
+> On Thu, Aug 07, 2014 at 08:01:46AM -0700, Kees Cook wrote:
+>> From: Mark Salter <msalter@redhat.com>
 >>
->> On Wed, 06 Aug 2014 23:20:32 -0700, Guenter Roeck wrote:
->>> Patch 4/5 is "Return the fan speed via sysfs: /sys/devices/temperature/fan_level".
->>>
->>> So you are saying that returning the fan speed with a non-hwmon attribute works,
->>> but returning it with a hwmon attribute doesn't ? Not really sure if I understand
->>> your logic. Either fan_level doesn't return the fan speed (or an abstraction of it),
->>> or something in your line of argument is inconsistent.
+>> ARM is different from other architectures in that fixmap pages are indexed
+>> with a positive offset from FIXADDR_START.  Other architectures index with
+>> a negative offset from FIXADDR_TOP.  In order to use the generic fixmap.h
+>> definitions, this patch redefines FIXADDR_TOP to be inclusive of the
+>> useable range.  That is, FIXADDR_TOP is the virtual address of the topmost
+>> fixed page.  The newly defined FIXADDR_END is the first virtual address
+>> past the fixed mappings.
 >>
->> fan_level is a fan speed _control_ value, like pwm1. It is not a fan
->> speed monitoring value.
+>> Signed-off-by: Mark Salter <msalter@redhat.com>
+>> Reviewed-by: Doug Anderson <dianders@chromium.org>
+>> [update for "ARM: 8031/2: change fixmap mapping region to support 32 CPUs"]
+>> [flipped highmem order, thanks to Laura Abbott]
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> Cc: Laura Abbott <lauraa@codeaurora.org>
+>> ---
+>>  arch/arm/include/asm/fixmap.h | 27 +++++++++------------------
+>>  arch/arm/mm/highmem.c         |  8 ++++++--
+>>  arch/arm/mm/init.c            |  2 +-
+>>  3 files changed, 16 insertions(+), 21 deletions(-)
 >>
-> Ah, ok. The patch description doesn't seem to match, though.
-> And why not export it as pwm1, if that is what it is ?
-> 
-> Guenter
-> 
-> 
+>> diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+>> index 74124b0d0d79..190142d174ee 100644
+>> --- a/arch/arm/include/asm/fixmap.h
+>> +++ b/arch/arm/include/asm/fixmap.h
+>> @@ -2,27 +2,18 @@
+>>  #define _ASM_FIXMAP_H
+>>
+>>  #define FIXADDR_START                0xffc00000UL
+>> -#define FIXADDR_TOP          0xffe00000UL
+>> -#define FIXADDR_SIZE         (FIXADDR_TOP - FIXADDR_START)
+>> +#define FIXADDR_END          0xffe00000UL
+>> +#define FIXADDR_TOP          (FIXADDR_END - PAGE_SIZE)
+>> +#define FIXADDR_SIZE         (FIXADDR_END - FIXADDR_START)
+>>
+>>  #define FIX_KMAP_NR_PTES     (FIXADDR_SIZE >> PAGE_SHIFT)
+>>
+>> -#define __fix_to_virt(x)     (FIXADDR_START + ((x) << PAGE_SHIFT))
+>> -#define __virt_to_fix(x)     (((x) - FIXADDR_START) >> PAGE_SHIFT)
+>> +enum fixed_addresses {
+>> +     FIX_KMAP_BEGIN,
+>> +     FIX_KMAP_END = FIX_KMAP_NR_PTES - 1,
+>> +     __end_of_fixed_addresses
+>> +};
+>>
+>> -extern void __this_fixmap_does_not_exist(void);
+>> -
+>> -static inline unsigned long fix_to_virt(const unsigned int idx)
+>> -{
+>> -     if (idx >= FIX_KMAP_NR_PTES)
+>> -             __this_fixmap_does_not_exist();
+>> -     return __fix_to_virt(idx);
+>> -}
+>> -
+>> -static inline unsigned int virt_to_fix(const unsigned long vaddr)
+>> -{
+>> -     BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
+>> -     return __virt_to_fix(vaddr);
+>> -}
+>> +#include <asm-generic/fixmap.h>
+>>
+>>  #endif
+>> diff --git a/arch/arm/mm/highmem.c b/arch/arm/mm/highmem.c
+>> index 45aeaaca9052..a1241ee8425e 100644
+>> --- a/arch/arm/mm/highmem.c
+>> +++ b/arch/arm/mm/highmem.c
+>> @@ -23,14 +23,18 @@ pte_t *fixmap_page_table;
+>>  static inline void set_fixmap_pte(int idx, pte_t pte)
+>>  {
+>>       unsigned long vaddr = __fix_to_virt(idx);
+>> -     set_pte_ext(fixmap_page_table + idx, pte, 0);
+>> +     pte_t *ppte = pte_offset_kernel(pmd_off_k(FIXADDR_START), vaddr);
+>> +
+>> +     set_pte_ext(ppte, pte, 0);
+>>       local_flush_tlb_kernel_page(vaddr);
+>>  }
+>>
+>>  static inline pte_t get_fixmap_pte(unsigned long vaddr)
+>>  {
+>>       unsigned long idx = __virt_to_fix(vaddr);
+>
+> idx is now "unused variable".
 
-the exported fan_level value is a coefficient near proportional to the speed [*];
-so it is not the speed nor the pwm.
-I tried to read the pwm/speed value, but when I did it, every 5/6 seconds the
-fan seemed to stop for 1s, then the speed raised.... So I stopped the test.
+Ah! Yes, thanks. I'll add HIGHMEM to my build cycles.
 
-These patches (the first two) solved a real issue: with the last kernels this
-driver doesn't work at all, and the fan go to maximum speed (very loud !)
-The other three are an improvement.
+>
+>> -     return *(fixmap_page_table + idx);
+>> +     pte_t *ppte = pte_offset_kernel(pmd_off_k(FIXADDR_START), vaddr);
+>> +
+>> +     return *ppte;
+>>  }
+>>
+>>  void *kmap(struct page *page)
+>> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+>> index 659c75d808dc..ad82c05bfc3a 100644
+>> --- a/arch/arm/mm/init.c
+>> +++ b/arch/arm/mm/init.c
+>> @@ -570,7 +570,7 @@ void __init mem_init(void)
+>>                       MLK(DTCM_OFFSET, (unsigned long) dtcm_end),
+>>                       MLK(ITCM_OFFSET, (unsigned long) itcm_end),
+>>  #endif
+>> -                     MLK(FIXADDR_START, FIXADDR_TOP),
+>> +                     MLK(FIXADDR_START, FIXADDR_END),
+>>                       MLM(VMALLOC_START, VMALLOC_END),
+>>                       MLM(PAGE_OFFSET, (unsigned long)high_memory),
+>>  #ifdef CONFIG_HIGHMEM
+>> --
+>> 1.9.1
+>
+> Apart from that, verified with early_ioremap/UEFI patches on TC2.
+>
+> Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
 
-When (if) these patches will be accepted I want to write another solution,
-but definitely not now. And even if it would work for me, it is very likely 
-that will  be accepted because nobody is able to test it on all hardware.
+Thanks! I've added this and fixed idx above for the future v3 of this series.
 
-BR
-G.Baroncelli
-
-[*] It is a bit more complicated: basically the adm1030 controls the fan speed
-on the basis of an external temperature sensor (the "case" sensor). 
-Higher is this temperature higher is the fan speed.
-The pwm of the fan is computed on the basis of the following value:
-	- min_temp
-	- range_temp -> max_temp=min_temp+range_temp
-	- min_pwm_value
-and of course
-	- "case" sensor
-
-
-The fan_level is an index computed on the basis of the "cpu" temperature (
-which is different from the "case" temperature referred above). This
-temperature is used to update the min_temp above.
-
-So the fan speed id computed on the basis of two external sensor:
-- cpu sensor
-- case sensor.
-
-To complicate further the things, the range_temp is set to an undocumented 
-value: this parameter is set via a register (0x25, bit 2:0), which accepted 
-values between 0x00 and 0x04. However it is set to 0x07
-
-See http://lxr.free-electrons.com/source/drivers/macintosh/therm_windtunnel.c#L153
-and the adm1030 datasheet.
-
-I am reluctant to change this thing because this driver is for an obsolete 
-platform (apple stopped the powermac in 2004/2005), and bad or good I have to
-suppose that it works. Moreover I am not in the position to test the changes 
-outside my hardware (1 powermac DP@1Ghz mdd)
-
+-Kees
 
 -- 
-gpg @keyserver.linux.it: Goffredo Baroncelli (kreijackATinwind.it>
-Key fingerprint BBF5 1610 0B64 DAC6 5F7D  17B2 0EDA 9B37 8B82 E0B5
+Kees Cook
+Chrome OS Security
