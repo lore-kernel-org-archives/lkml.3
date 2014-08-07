@@ -1,81 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558AbaHGQNT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 12:13:19 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:47032 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082AbaHGQNR (ORCPT
+	id S932366AbaHGQRd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 12:17:33 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48452 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757509AbaHGQRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 12:13:17 -0400
-X-AuditID: cbfec37c-b7fde6d000000c64-48-53e3a59c9389
-Message-id: <53E3A599.6090008@samsung.com>
-Date: Thu, 07 Aug 2014 10:13:13 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: mmarek@suse.cz, gregkh@linuxfoundation.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH v2] kbuild: kselftest - new make target to build and run
- kernel selftests
-References: <1407420192-4928-1-git-send-email-shuah.kh@samsung.com>
- <20140807155713.GA1382@ravnborg.org>
-In-reply-to: <20140807155713.GA1382@ravnborg.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.134.247]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9hX905Sx8HG0xdKmHRvHg9m8WfXTuY
-	LC7vmsNm0bLvApPFip9bGR1YPfbPXcPusWTaVTaPMwuOsHt83iQXwBLFZZOSmpNZllqkb5fA
-	lfFw/i6mgn3cFQtv97E3MDZwdjFyckgImEgcudvJDmGLSVy4t56ti5GLQ0hgGaPEno8TmCGc
-	XiaJhv1tjBDONkaJidNmMoK08ApoSZy9c4IVxGYRUJU4dGcCE4jNJqAu8fn1DrCxQgJyEk1L
-	VjOD2KICERIH+p6xQvQKSvyYfI8FxBYRUJY4fv4aK8gCZoF+RolLB96CFQkLxEtcevuTEWJQ
-	lsTspj9gcU4BQ4n+rTvBmpkFrCVWTtrGCGHLS2xe85YZol5Z4s/lU0wQvylLbNxzm20Co8gs
-	JLtnIWmfhaR9ASPzKkax0uLkguKk9NQKY73ixNzi0rx0veT83E2MkHip2cF476vNIUYBDkYl
-	Hl6LpkfBQqyJZcWVuYcYJTiYlUR4dbsfBwvxpiRWVqUW5ccXleakFh9iZOLglGpgzHX9Ec8Z
-	JePivMe3/gPTNq6MF7ua5jNr7Fty/sF3g59RcwtjlReKVezl2V+jHnbV9NiHY0aGR/70LmCW
-	iLDW/S6Wf4ll7aOj/2M+SfVqlX86vNI/+5k6g4vEh81tmT4/mb71RHzkXbjtpMy/sjtKTBlf
-	lMRm5/eurb6Stat82seGqxnqkk+7lViKMxINtZiLihMBkqREzXUCAAA=
+	Thu, 7 Aug 2014 12:17:30 -0400
+Message-ID: <53E3A67B.6070709@ti.com>
+Date: Thu, 7 Aug 2014 12:16:59 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH v2] serial: uart: add hw flow control support configuration
+References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com> <53E39B44.60406@hurleysoftware.com>
+In-Reply-To: <53E39B44.60406@hurleysoftware.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 09:57 AM, Sam Ravnborg wrote:
-> On Thu, Aug 07, 2014 at 08:03:12AM -0600, Shuah Khan wrote:
->> Add a new make target "kselftest" to enable kernel testing. This
->> new target builds and runs kernel selftests. Running as root is
->> recommended for a complete test run as some tests don't run when
->> run by non-root user.
+On 08/07/2014 11:29 AM, Peter Hurley wrote:
+> On 05/01/2014 03:04 PM, Murali Karicheri wrote:
+>> 8250 uart driver currently supports only software assisted hw flow
+>> control. The software assisted hw flow control maintains a hw_stopped
+>> flag in the tty structure to stop and start transmission and use modem
+>> status interrupt for the event to drive the handshake signals. This is
+>> not needed if hw has flow control capabilities. This patch adds a
+>> DT attribute for enabling hw flow control for a uart port. Also skip
+>> stop and start if this flag is present in flag field of the port
+>> structure.
+>>
+>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>>
+>> CC: Rob Herring<robh+dt@kernel.org>
+>> CC: Pawel Moll<pawel.moll@arm.com>
+>> CC: Mark Rutland<mark.rutland@arm.com>
+>> CC: Ian Campbell<ijc+devicetree@hellion.org.uk>
+>> CC: Kumar Gala<galak@codeaurora.org>
+>> CC: Randy Dunlap<rdunlap@infradead.org>
+>> CC: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+>> CC: Jiri Slaby<jslaby@suse.cz>
+>> CC: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>> ---
+>>   .../devicetree/bindings/serial/of-serial.txt       |    1 +
+>>   drivers/tty/serial/8250/8250_core.c                |    6 ++++--
+>>   drivers/tty/serial/of_serial.c                     |    4 ++++
+>>   drivers/tty/serial/serial_core.c                   |   12 +++++++++---
+>>   4 files changed, 18 insertions(+), 5 deletions(-)
+>>
+> [...]
 >
-> kselftest will run the test - but will not build the kerenl.
-> That is does not build the kernel is IMO a good thing -
-> as one may re-run the test while doing work on the kernel, and triggering
-> a rebuild to re-run the test is not nice.
-
-Good. That is the reason why I made the change to not run make all.
-Result of an aha moment when I was working on the v2 :)
-
+>> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+>> index b68550d..851707a 100644
+>> --- a/drivers/tty/serial/serial_core.c
+>> +++ b/drivers/tty/serial/serial_core.c
+>> @@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
+>>   			if (tty->termios.c_cflag&  CBAUD)
+>>   				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
+>>   		}
+>> -
+>> -		if (tty_port_cts_enabled(port)) {
+>> +		/*
+>> +		 * if hw support flow control without software intervention,
+>> +		 * then skip the below check
+>> +		 */
+>> +		if (tty_port_cts_enabled(port)&&
+>> +		    !(uport->flags&  UPF_HARD_FLOW)) {
+>>   			spin_lock_irq(&uport->lock);
+>>   			if (!(uport->ops->get_mctrl(uport)&  TIOCM_CTS))
+>>   				tty->hw_stopped = 1;
+>> @@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
+>>
+>>   	uport->icount.cts++;
+>>
+>> -	if (tty_port_cts_enabled(port)) {
+>> +	/* skip below code if the hw flow control is supported */
+>> +	if (tty_port_cts_enabled(port)&&
+>> +	    !(uport->flags&  UPF_HARD_FLOW)) {
+> Why is a modem status interrupt being generated for DCTS
+> if autoflow control is enabled?
 >
-> The changelog + help text needs to be updated to reflect that the kernel is not
-> built when you use "make kselftest".
-
-I will update the changelog and re-send the patch.
-
+> This should be:
 >
-> On top of this - can you please tell what plans exists to extend this.
-> When we discussed "devtest" it was said that it would not be a wrapper
-> for selftests run_tests only, but more was planned to be added.
+> 	WARN_ON_ONCE(uport->flags&  UPF_HARD_FLOW);
 >
+> to indicate a mis-configured driver/device.
+This patch is already merged to the upstream branch and if you see any 
+issue, please
+post a patch for review.
 
-I posted agenda item to ksummit-discuss this morning outlining the
-progress made in 3.17 and what's planned for 3.18 and beyond. I think
-the post is waiting for moderator approval.
+Murali
+>
+>>   		if (tty->hw_stopped) {
+>>   			if (status) {
+>>   				tty->hw_stopped = 0;
+>>
 
--- Shuah
-
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
