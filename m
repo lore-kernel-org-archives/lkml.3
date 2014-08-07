@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350AbaHGPVW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:21:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36178 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757448AbaHGPVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:21:21 -0400
-Date: Thu, 7 Aug 2014 17:21:12 +0200
-From: Karel Zak <kzak@redhat.com>
-To: Boaz Harrosh <boaz@plexistor.com>
-Cc: Boaz Harrosh <openosd@gmail.com>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>,
-        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <willy@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] brd: Request from fdisk 4k alignment
-Message-ID: <20140807152112.GD9401@x2.net.home>
-References: <53E21125.9080308@plexistor.com>
- <53E21317.7080403@plexistor.com>
- <1407362634.2869.2.camel@rzwisler-mobl1.amr.corp.intel.com>
- <53E36E53.3090008@gmail.com>
- <20140807130042.GB9401@x2.net.home>
- <53E385BE.40100@plexistor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E385BE.40100@plexistor.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	id S932433AbaHGPVv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:21:51 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:62620 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082AbaHGPVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 11:21:49 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org, linux-usb@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH v4 0/5] Add EHCI and OHCI drivers for STi SoC's
+Date: Thu,  7 Aug 2014 16:21:39 +0100
+Message-Id: <1407424904-19251-1-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 04:57:18PM +0300, Boaz Harrosh wrote:
+The series has been re-worked from v2 onwards to split out the ehci and ohci parts
+into their own drivers / devices like most other ARM platforms based on
+feedback from Arnd Bergmann (see here http://www.spinics.net/lists/linux-usb/msg111124.html. 
 
-> I was not saying that fdisk is wrong. I was saying that if my block driver
-> was *not* exporting 4K physical sectors through limits.physical_block_size
+The ehci-platform & ohci-platform have been used as a basis for this in case we
+wish to merge the drivers again in the future.
 
- yep, sorry (it's probably bad idea to read emails and listen to talks on
- conference..)
+Changes since v3:
+ - Make reset / power, clocks etc non optional dt options to simplify code
+ - Get rid of non DT boot code left over from *hci-platform drivers
+ - Remove DMA mask code
+ - Remove pre_setup func ptr and configure ahb2st bus convertor in ehci_platform_reset
+ - Unabstract and remove usb-st-common.c
+ - Have one kconfig which enables both ehci-st & ohci-st drivers
 
-> then fdisk would be happy to not align my partition start on 4k and would
-> give me funny values like 34 for first sector which makes my device unusable
-> because in direct_access() API we must absolutely have 4K aligned partitions.
-> 
-> >> to miss-align my partitions. Depending on size maybe not the very first one but the
-> >> consecutive ones easily.
-> > 
-> >  it would be nice to have usable bug report...
-> > 
-> 
-> Setting limits.physical_block_size = 4k; was the only way I found that could cause
-> fdisk to default to 4k alignment.
+Changes since v2:
+ - Based on Arnd Berghman feedback, split out into 2 devices / drivers
+ - Base drivers oh ehci-platform.c & ohci-platform.c with required extensions
+   to allow possible re-merge in the furture.
 
- fdisk uses physical sector size or minimal I/O size (greater value wins)
+Changes since v1:
+ - Correct s/OCHI/OHCI/ spelling
+ - Improve kconfig help message
+ - Various formating / spelling nits identified by Lee Jones
+ - Make driver depend on OF & remove node checks in code
+ - Use devm_ioremap_resource
+ - Remove unnecessary header files
 
-> I was trying to play with the  heads, sectors, cylinders; values but none I tried
+Peter Griffin (5):
+  usb: host: ehci-st: Add EHCI support for ST STB devices
+  usb: host: ohci-st: Add OHCI driver support for ST STB devices
+  usb: host: ehci-st: Add ehci-st devicetree bindings documentation
+  usb: host: ohci-st: Add ohci-st devicetree bindings documentation
+  MAINTAINERS: Add ehci-st.c and ohci-st.c to ARCH/STI architecture
 
- don't play with CHS, that's waste of time and it's completely ignored
- by fdisk by default
-
-> would cause an alignment of 4k, not even of the first partition start.
-> 
-> Please advise what I can do?
-
- IMHO you're right with your patch (alignment offset is IMHO bad way).
- It's all (brd) about pages, is there any reason to use something else
- for I/O limits?
-
- It would be also nice to set minimal and optimal io size, zero values
- in this case means (for userspace) that the device does not provide
- any I/O information to system. It's normal for old hw disks and then
- we use some built-in defaults, but I don't see a reason to do the
- same for virtual devices. 
-
-    Karel
+ Documentation/devicetree/bindings/usb/ehci-st.txt |  39 +++
+ Documentation/devicetree/bindings/usb/ohci-st.txt |  37 +++
+ MAINTAINERS                                       |   2 +
+ drivers/usb/host/Kconfig                          |   8 +
+ drivers/usb/host/Makefile                         |   1 +
+ drivers/usb/host/ehci-st.c                        | 363 ++++++++++++++++++++++
+ drivers/usb/host/ohci-st.c                        | 337 ++++++++++++++++++++
+ drivers/usb/host/usb-st-common.h                  |  31 ++
+ 8 files changed, 818 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/ehci-st.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/ohci-st.txt
+ create mode 100644 drivers/usb/host/ehci-st.c
+ create mode 100644 drivers/usb/host/ohci-st.c
+ create mode 100644 drivers/usb/host/usb-st-common.h
 
 -- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+1.9.1
+
