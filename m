@@ -1,109 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480AbaHGP30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:29:26 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:43181 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932071AbaHGP3Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:29:25 -0400
-Message-ID: <53E39B44.60406@hurleysoftware.com>
-Date: Thu, 07 Aug 2014 11:29:08 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S932486AbaHGPbt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:31:49 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58481 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932133AbaHGPbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 11:31:48 -0400
+Date: Thu, 7 Aug 2014 11:31:41 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4] mm: memcontrol: reduce reclaim invocations for
+ higher order requests
+Message-ID: <20140807153141.GD14734@cmpxchg.org>
+References: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
+ <1407186897-21048-2-git-send-email-hannes@cmpxchg.org>
+ <20140807130822.GB12730@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH v2] serial: uart: add hw flow control support configuration
-References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140807130822.GB12730@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 03:04 PM, Murali Karicheri wrote:
-> 8250 uart driver currently supports only software assisted hw flow
-> control. The software assisted hw flow control maintains a hw_stopped
-> flag in the tty structure to stop and start transmission and use modem
-> status interrupt for the event to drive the handshake signals. This is
-> not needed if hw has flow control capabilities. This patch adds a
-> DT attribute for enabling hw flow control for a uart port. Also skip
-> stop and start if this flag is present in flag field of the port
-> structure.
+On Thu, Aug 07, 2014 at 03:08:22PM +0200, Michal Hocko wrote:
+> On Mon 04-08-14 17:14:54, Johannes Weiner wrote:
+> > Instead of passing the request size to direct reclaim, memcg just
+> > manually loops around reclaiming SWAP_CLUSTER_MAX pages until the
+> > charge can succeed.  That potentially wastes scan progress when huge
+> > page allocations require multiple invocations, which always have to
+> > restart from the default scan priority.
+> > 
+> > Pass the request size as a reclaim target to direct reclaim and leave
+> > it to that code to reach the goal.
 > 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> THP charge then will ask for 512 pages to be (direct) reclaimed. That
+> is _a lot_ and I would expect long stalls to achieve this target. I
+> would also expect quick priority drop down and potential over-reclaim
+> for small and moderately sized memcgs (e.g. memcg with 1G worth of pages
+> would need to drop down below DEF_PRIORITY-2 to have a chance to scan
+> that many pages). All that done for a charge which can fallback to a
+> single page charge.
 > 
-> CC: Rob Herring <robh+dt@kernel.org>
-> CC: Pawel Moll <pawel.moll@arm.com>
-> CC: Mark Rutland <mark.rutland@arm.com>
-> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> CC: Kumar Gala <galak@codeaurora.org>
-> CC: Randy Dunlap <rdunlap@infradead.org>
-> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> CC: Jiri Slaby <jslaby@suse.cz>
-> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->  .../devicetree/bindings/serial/of-serial.txt       |    1 +
->  drivers/tty/serial/8250/8250_core.c                |    6 ++++--
->  drivers/tty/serial/of_serial.c                     |    4 ++++
->  drivers/tty/serial/serial_core.c                   |   12 +++++++++---
->  4 files changed, 18 insertions(+), 5 deletions(-)
-> 
+> The current code is quite hostile to THP when we are close to the limit
+> but solving this by introducing long stalls instead doesn't sound like a
+> proper approach to me.
 
-[...]
+THP latencies are actually the same when comparing high limit nr_pages
+reclaim with the current hard limit SWAP_CLUSTER_MAX reclaim, although
+system time is reduced with the high limit.
 
-> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-> index b68550d..851707a 100644
-> --- a/drivers/tty/serial/serial_core.c
-> +++ b/drivers/tty/serial/serial_core.c
-> @@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
->  			if (tty->termios.c_cflag & CBAUD)
->  				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
->  		}
-> -
-> -		if (tty_port_cts_enabled(port)) {
-> +		/*
-> +		 * if hw support flow control without software intervention,
-> +		 * then skip the below check
-> +		 */
-> +		if (tty_port_cts_enabled(port) &&
-> +		    !(uport->flags & UPF_HARD_FLOW)) {
->  			spin_lock_irq(&uport->lock);
->  			if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
->  				tty->hw_stopped = 1;
-> @@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
->  
->  	uport->icount.cts++;
->  
-> -	if (tty_port_cts_enabled(port)) {
-> +	/* skip below code if the hw flow control is supported */
-> +	if (tty_port_cts_enabled(port) &&
-> +	    !(uport->flags & UPF_HARD_FLOW)) {
+High limit reclaim with SWAP_CLUSTER_MAX has better fault latency but
+it doesn't actually contain the workload - with 1G high and a 4G load,
+the consumption at the end of the run is 3.7G.
 
-Why is a modem status interrupt being generated for DCTS
-if autoflow control is enabled?
-
-This should be:
-
-	WARN_ON_ONCE(uport->flags & UPF_HARD_FLOW);
-
-to indicate a mis-configured driver/device.
-
->  		if (tty->hw_stopped) {
->  			if (status) {
->  				tty->hw_stopped = 0;
-> 
-
+So what I'm proposing works and is of equal quality from a THP POV.
+This change is complicated enough when we stick to the facts, let's
+not make up things based on gut feeling.
