@@ -1,100 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034AbaHGVS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 17:18:28 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:4225 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750890AbaHGVS0 (ORCPT
+	id S1755317AbaHGVTq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 17:19:46 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:61066 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaHGVTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 17:18:26 -0400
-Date: Thu, 7 Aug 2014 17:18:23 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
- waiting for RCU-tasks
-Message-ID: <20140807171823.1a481290@gandalf.local.home>
-In-Reply-To: <20140807200813.GB3935@laptop>
-References: <20140806120958.GZ8101@linux.vnet.ibm.com>
-	<20140806163035.GG19379@twins.programming.kicks-ass.net>
-	<20140806224518.GA8101@linux.vnet.ibm.com>
-	<20140807084544.GJ19379@twins.programming.kicks-ass.net>
-	<20140807150031.GB5821@linux.vnet.ibm.com>
-	<20140807152600.GW9918@twins.programming.kicks-ass.net>
-	<20140807172753.GG3588@twins.programming.kicks-ass.net>
-	<20140807184635.GI3588@twins.programming.kicks-ass.net>
-	<20140807154907.6f59cf6e@gandalf.local.home>
-	<20140807155326.18481e66@gandalf.local.home>
-	<20140807200813.GB3935@laptop>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Thu, 7 Aug 2014 17:19:45 -0400
+Date: Thu, 7 Aug 2014 14:19:41 -0700
+From: Matt Helsley <matt.helsley@gmail.com>
+To: Goffredo Baroncelli <kreijack@inwind.it>
+Cc: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] Export the temperatures via hwmon
+Message-ID: <20140807211941.GA2756@eieio>
+References: <1407359103-6012-1-git-send-email-kreijack@inwind.it>
+ <1407359103-6012-6-git-send-email-kreijack@inwind.it>
+ <20140806231803.GA5643@roeck-us.net>
+ <53E31694.8050107@gmail.com>
+ <53E31AB0.6070604@roeck-us.net>
+ <20140807085235.2c0e63dd@endymion.delvare>
+ <53E32C77.5000804@roeck-us.net>
+ <53E3BC48.4020304@inwind.it>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E3BC48.4020304@inwind.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Aug 2014 22:08:13 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> OK, you've got to start over and start at the beginning, because I'm
-> really not understanding this..
+On Thu, Aug 07, 2014 at 07:50:00PM +0200, Goffredo Baroncelli wrote:
+> On 08/07/2014 09:36 AM, Guenter Roeck wrote:
+> > On 08/06/2014 11:52 PM, Jean Delvare wrote:
+> >> Hi Guenter,
+> >>
+> >> On Wed, 06 Aug 2014 23:20:32 -0700, Guenter Roeck wrote:
+> >>> Patch 4/5 is "Return the fan speed via sysfs: /sys/devices/temperature/fan_level".
+> >>>
+> >>> So you are saying that returning the fan speed with a non-hwmon attribute works,
+> >>> but returning it with a hwmon attribute doesn't ? Not really sure if I understand
+> >>> your logic. Either fan_level doesn't return the fan speed (or an abstraction of it),
+> >>> or something in your line of argument is inconsistent.
+> >>
+> >> fan_level is a fan speed _control_ value, like pwm1. It is not a fan
+> >> speed monitoring value.
+> >>
+> > Ah, ok. The patch description doesn't seem to match, though.
+> > And why not export it as pwm1, if that is what it is ?
+> > 
+> > Guenter
+> > 
+> > 
 > 
-> What is a 'trampoline' and what are you going to use them for.
+> the exported fan_level value is a coefficient near proportional to the speed [*];
+> so it is not the speed nor the pwm.
 
-Great question! :-)
+> I tried to read the pwm/speed value, but when I did it, every 5/6 seconds the
+> fan seemed to stop for 1s, then the speed raised.... So I stopped the test.
+> 
+> These patches (the first two) solved a real issue: with the last kernels this
+> driver doesn't work at all, and the fan go to maximum speed (very loud !)
+> The other three are an improvement.
+> 
+> When (if) these patches will be accepted I want to write another solution,
+> but definitely not now. And even if it would work for me, it is very likely 
+> that will  be accepted because nobody is able to test it on all hardware.
+> 
+> BR
+> G.Baroncelli
+> 
+> [*] It is a bit more complicated: basically the adm1030 controls the fan speed
+> on the basis of an external temperature sensor (the "case" sensor). 
+> Higher is this temperature higher is the fan speed.
+> The pwm of the fan is computed on the basis of the following value:
+> 	- min_temp
+> 	- range_temp -> max_temp=min_temp+range_temp
+> 	- min_pwm_value
+> and of course
+> 	- "case" sensor
+> 
+> 
+> The fan_level is an index computed on the basis of the "cpu" temperature (
+> which is different from the "case" temperature referred above). This
+> temperature is used to update the min_temp above.
+> 
+> So the fan speed id computed on the basis of two external sensor:
+> - cpu sensor
+> - case sensor.
+> 
+> To complicate further the things, the range_temp is set to an undocumented 
+> value: this parameter is set via a register (0x25, bit 2:0), which accepted 
+> values between 0x00 and 0x04. However it is set to 0x07
+> 
+> See http://lxr.free-electrons.com/source/drivers/macintosh/therm_windtunnel.c#L153
+> and the adm1030 datasheet.
+> 
+> I am reluctant to change this thing because this driver is for an obsolete 
+> platform (apple stopped the powermac in 2004/2005), and bad or good I have to
+> suppose that it works. Moreover I am not in the position to test the changes 
+> outside my hardware (1 powermac DP@1Ghz mdd)
 
-The trampoline is some code that is used to jump to and then jump
-someplace else. Currently, we use this for kprobes and ftrace. For
-ftrace we have the ftrace_caller trampoline, which is static. When
-booting, most functions in the kernel call the mcount code which
-simply returns without doing anything. This too is a "trampoline". At
-boot, we convert these calls to nops (as you already know). When we
-enable callbacks from functions, we convert those calls to call
-"ftrace_caller" which is a small assembly trampoline that will call
-some function that registered with ftrace.
+This seems like a valuable explanation of the meaning of the fan_level
+values. When I read the code I was wondering what the magic number "11" was
+doing for instance and this helps clear it up a little. It's a nit perhaps
+but some of this information might be useful in the commit message for that
+patch, the code, or both.
 
-Now why do we need the call_rcu_task() routine?
+Also, I think the patches from "Bryan" should have a "From:" attribution line
+at the start of the commit message (See Documentation/SubmittingPatches).
 
-Right now, if you register multiple callbacks to ftrace, even if they
-are not tracing the same routine, ftrace has to change ftrace_caller to
-call another trampoline (in C), that does a loop of all ops registered
-with ftrace, and compares the function to the ops hash tables to see if
-the ops function should be called for that function.
-
-What we want to do is to create a dynamic trampoline that is a copy of
-the ftrace_caller code, but instead of calling this list trampoline, it
-calls the ops function directly. This way, each ops registered with
-ftrace can have its own custom trampoline that when called will only
-call the ops function and not have to iterate over a list. This only
-happens if the function being traced only has this one ops registered.
-For functions with multiple ops attached to it, we need to call the
-list anyway. But for the majority of the cases, this is not the case.
-
-The one caveat for this is, how do we free this custom trampoline when
-the ops is done with it? Especially for users of ftrace that
-dynamically create their own ops (like perf, and ftrace instances).
-
-We need to find a way to free it, but unfortunately, there's no way to
-know when it is safe to free it. There's no way to disable preemption
-or have some other notifier to let us know if a task has jumped to this
-trampoline and has been preempted (sleeping). The only safe way to know
-that no task is on the trampoline is to remove the calls to it,
-synchronize the CPUS (so the trampolines are not even in the caches),
-and then wait for all tasks to go through some quiescent state. This
-state happens to be either not running, in userspace, or when it
-voluntarily calls schedule. Because nothing that uses this trampoline
-should do that, and if the task voluntarily calls schedule, we know
-it's not on the trampoline.
-
-Make sense?
-
--- Steve
+Cheers,
+	-Matt Helsley
