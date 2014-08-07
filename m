@@ -1,84 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720AbaHGBrc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 21:47:32 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:35178 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754120AbaHGBra (ORCPT
+	id S1754897AbaHGBsR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 21:48:17 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:56981 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754778AbaHGBsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 21:47:30 -0400
-Message-ID: <53E2DAAC.1060602@collabora.co.uk>
-Date: Thu, 07 Aug 2014 03:47:24 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Wed, 6 Aug 2014 21:48:15 -0400
+X-IronPort-AV: E=Sophos;i="5.04,279,1406563200"; 
+   d="scan'208";a="34286734"
+Message-ID: <53E2DA85.8020601@cn.fujitsu.com>
+Date: Thu, 7 Aug 2014 09:46:45 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
 MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Nick Dyer <nick.dyer@itdev.co.uk>, Stephen Warren <swarren@nvidia.com>,
-        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        linux-input@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Input: atmel_mxt_ts - Get IRQ edge/level flags on
- DT booting
-References: <1407372486-25881-1-git-send-email-javier.martinez@collabora.co.uk> <53E2D2F8.7010606@gmail.com>
-In-Reply-To: <53E2D2F8.7010606@gmail.com>
-Content-Type: text/plain; charset=windows-1252
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, <t.stanislaws@samsung.com>,
+        Gioh Kim <gioh.kim@lge.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/8] mm/page_alloc: correct to clear guard attribute
+ in DEBUG_PAGEALLOC
+References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com> <1407309517-3270-2-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1407309517-3270-2-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.225.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tomasz,
-
-Thanks a lot for your feedback.
-
-On 08/07/2014 03:14 AM, Tomasz Figa wrote:
-> Hi Javier,
+On 08/06/2014 03:18 PM, Joonsoo Kim wrote:
+> In __free_one_page(), we check the buddy page if it is guard page.
+> And, if so, we should clear guard attribute on the buddy page. But,
+> currently, we clear original page's order rather than buddy one's.
+> This doesn't have any problem, because resetting buddy's order
+> is useless and the original page's order is re-assigned soon.
+> But, it is better to correct code.
 > 
+> Additionally, I change (set/clear)_page_guard_flag() to
+> (set/clear)_page_guard() and makes these functions do all works
+> needed for guard page. This may make code more understandable.
 > 
-> Have you observed an actual failure due to this? I believe that
-
-Yes, I found this issue since the driver was not taking into account the value
-defined in the edge/level type cells from the "interrupts" DT property.
-
-Only doing the change in the following patch was not enough:
-
-[PATCH 1/1] ARM: dts: Add Peach Pit and Pi dts entry for atmel touchpad [0].
-
-> irq_of_parse_and_map() already sets up IRQ trigger type based on DT
-> data, by calling irq_create_of_mapping() which in turn calls
-> irq_set_irq_type().
->
-
-Right but somehow when the IRQ is actually requested the type is overwritten by
-the value passed to request_threaded_irq() and interrupts are not being
-generated by the device without this patch.
-
-Do you think that this is a bug in the "interrupt-parent" irqchip driver or the
-IRQ core? I'm not that familiar with the IRQ subsystem.
-
->>  
->> +	if (client->dev.of_node)
->> +		irqflags = irq_get_trigger_type(client->irq);
+> One more thing, I did in this patch, is that fixing freepage accounting.
+> If we clear guard page and link it onto isolate buddy list, we should
+> not increase freepage count.
 > 
-> It might be a bit cleaner to just assign the flags to pdata->irqflags in
-> mxt_parse_dt() instead. That would also account for the fact that pdata,
-> if provided, should have priority over DT.
+> Acked-by: Vlastimil Babka <vbabka@suse.cz>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+
+> ---
+>  mm/page_alloc.c |   29 ++++++++++++++++-------------
+>  1 file changed, 16 insertions(+), 13 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index b99643d4..e6fee4b 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -441,18 +441,28 @@ static int __init debug_guardpage_minorder_setup(char *buf)
+>  }
+>  __setup("debug_guardpage_minorder=", debug_guardpage_minorder_setup);
+>  
+> -static inline void set_page_guard_flag(struct page *page)
+> +static inline void set_page_guard(struct zone *zone, struct page *page,
+> +				unsigned int order, int migratetype)
+>  {
+>  	__set_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
+> +	set_page_private(page, order);
+> +	/* Guard pages are not available for any usage */
+> +	__mod_zone_freepage_state(zone, -(1 << order), migratetype);
+>  }
+>  
+> -static inline void clear_page_guard_flag(struct page *page)
+> +static inline void clear_page_guard(struct zone *zone, struct page *page,
+> +				unsigned int order, int migratetype)
+>  {
+>  	__clear_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
+> +	set_page_private(page, 0);
+> +	if (!is_migrate_isolate(migratetype))
+> +		__mod_zone_freepage_state(zone, (1 << order), migratetype);
+>  }
+>  #else
+> -static inline void set_page_guard_flag(struct page *page) { }
+> -static inline void clear_page_guard_flag(struct page *page) { }
+> +static inline void set_page_guard(struct zone *zone, struct page *page,
+> +				unsigned int order, int migratetype) {}
+> +static inline void clear_page_guard(struct zone *zone, struct page *page,
+> +				unsigned int order, int migratetype) {}
+>  #endif
+>  
+>  static inline void set_page_order(struct page *page, unsigned int order)
+> @@ -594,10 +604,7 @@ static inline void __free_one_page(struct page *page,
+>  		 * merge with it and move up one order.
+>  		 */
+>  		if (page_is_guard(buddy)) {
+> -			clear_page_guard_flag(buddy);
+> -			set_page_private(page, 0);
+> -			__mod_zone_freepage_state(zone, 1 << order,
+> -						  migratetype);
+> +			clear_page_guard(zone, buddy, order, migratetype);
+>  		} else {
+>  			list_del(&buddy->lru);
+>  			zone->free_area[order].nr_free--;
+> @@ -876,11 +883,7 @@ static inline void expand(struct zone *zone, struct page *page,
+>  			 * pages will stay not present in virtual address space
+>  			 */
+>  			INIT_LIST_HEAD(&page[size].lru);
+> -			set_page_guard_flag(&page[size]);
+> -			set_page_private(&page[size], high);
+> -			/* Guard pages are not available for any usage */
+> -			__mod_zone_freepage_state(zone, -(1 << high),
+> -						  migratetype);
+> +			set_page_guard(zone, &page[size], high, migratetype);
+>  			continue;
+>  		}
+>  #endif
 > 
 
-You are totally right, also this will break if CONFIG_OF is not enabled since
-dev.of_node will not be defined. While this already is taken into account for
-mxt_parse_dt() by defining an empty function.
 
-I'll change it in v2 if getting the flags from the driver is the right approach
-instead of fixing the irqchip driver or the IRQ core.
-
-> Best regards,
-> Tomasz
-> 
-
-Best regards,
-Javier
-
-[0]: http://www.spinics.net/lists/kernel/msg1802099.html
+-- 
+Thanks.
+Zhang Yanfei
