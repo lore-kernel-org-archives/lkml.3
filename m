@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086AbaHGLON (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 07:14:13 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:52089 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265AbaHGLOL (ORCPT
+	id S932180AbaHGLOa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 07:14:30 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33130 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932089AbaHGLO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 07:14:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140806214216.GA16530@kroah.com>
-References: <87k36ltoob.fsf@gmail.com> <20140806214216.GA16530@kroah.com>
-From: Evgeny Budilovsky <budevg@gmail.com>
-Date: Thu, 7 Aug 2014 14:13:50 +0300
-Message-ID: <CAGDhxoe4+jU=vCDedMC4VXfuNMmqP3-E1Lu3LLStbFLbd=BRSA@mail.gmail.com>
-Subject: Re: [PATCH] staging/lustre: use rcu_dereference to access rcu
- protected current->real_parent field
+	Thu, 7 Aug 2014 07:14:28 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andreas Dilger <andreas.dilger@intel.com>,
-        Oleg Drokin <green@linuxhacker.ru>, Peng Tao <bergwolf@gmail.com>,
-        Lai Siyao <lai.siyao@intel.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH] tty: Fix spurious poll() wakeups
+Date: Thu,  7 Aug 2014 07:14:10 -0400
+Message-Id: <1407410050-32198-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.0.4
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 7, 2014 at 12:42 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, Aug 06, 2014 at 09:22:43PM +0300, Evgeny Budilovsky wrote:
->>
->>
->> Signed-off-by: Evgeny Budilovsky <budevg@gmail.com>
->
-> Why is this needed?  Is the current code a bug?  Where was the reference
-> added?  Is this causing a problem without this patch applied?  How far
-> back should it be backported, if at all?
->
-> I need lots more details here before I can take this patch, sorry.
+When the N_TTY line discipline receives data and wakes readers to
+process the input, polling writers are also mistakenly woken. This
+is because, although readers and writers are differentiated by
+different wait queues (tty->read_wait & tty->write_wait), both
+wait queues are polled together. Thus, reader wakeups without poll
+flags still cause poll(POLLOUT) to wakeup.
 
-Sorry for the little information in the previous mail.
+For received data, wakeup readers with POLLIN. Preserve the
+unspecific wakeup in n_tty_packet_mode_flush(), as this action
+should flag both POLLIN and POLLOUT.
 
-The motivation for this patch was to clean some of the warnings that
-were generated
-on drivers/staging by the sparse utility.
+Fixes epoll_wait() for edge-triggered EPOLLOUT.
 
-For this particular case the warning was
-staging/lustre/lustre/llite/lproc_llite.c:913:51: warning: dereference
-of noderef expression
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/n_tty.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-And this is since current->real_parent is accessed directly and not
-trough the rcu_dereference,
-which is the common way to access it throughout the kernel.
-
-This is not a critical bug and in the worst case the code here may
-cause miss of statistics counter increase.
-This is why I think it is not worth to backport the patch at all.
-
->
-> greg k-h
-
-
-
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index f44f1ba..89c4cee 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1166,7 +1166,7 @@ static void n_tty_receive_break(struct tty_struct *tty)
+ 	}
+ 	put_tty_queue('\0', ldata);
+ 	if (waitqueue_active(&tty->read_wait))
+-		wake_up_interruptible(&tty->read_wait);
++		wake_up_interruptible_poll(&tty->read_wait, POLLIN);
+ }
+ 
+ /**
+@@ -1226,7 +1226,7 @@ static void n_tty_receive_parity_error(struct tty_struct *tty, unsigned char c)
+ 	} else
+ 		put_tty_queue(c, ldata);
+ 	if (waitqueue_active(&tty->read_wait))
+-		wake_up_interruptible(&tty->read_wait);
++		wake_up_interruptible_poll(&tty->read_wait, POLLIN);
+ }
+ 
+ static void
+@@ -1378,7 +1378,7 @@ handle_newline:
+ 			ldata->canon_head = ldata->read_head;
+ 			kill_fasync(&tty->fasync, SIGIO, POLL_IN);
+ 			if (waitqueue_active(&tty->read_wait))
+-				wake_up_interruptible(&tty->read_wait);
++				wake_up_interruptible_poll(&tty->read_wait, POLLIN);
+ 			return 0;
+ 		}
+ 	}
+@@ -1679,7 +1679,7 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 		L_EXTPROC(tty)) {
+ 		kill_fasync(&tty->fasync, SIGIO, POLL_IN);
+ 		if (waitqueue_active(&tty->read_wait))
+-			wake_up_interruptible(&tty->read_wait);
++			wake_up_interruptible_poll(&tty->read_wait, POLLIN);
+ 	}
+ }
+ 
 -- 
-Best Regards,
-Evgeny
+2.0.4
+
