@@ -1,111 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319AbaHGOaS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 10:30:18 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:47100 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757717AbaHGOaQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 10:30:16 -0400
-Message-ID: <53E38D74.4030004@codethink.co.uk>
-Date: Thu, 07 Aug 2014 15:30:12 +0100
-From: Rob Jones <rob.jones@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1757682AbaHGOer (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 10:34:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37045 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757488AbaHGOeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 10:34:46 -0400
+Message-ID: <53E38E81.3030301@suse.cz>
+Date: Thu, 07 Aug 2014 16:34:41 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Steven Whitehouse <swhiteho@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-CC: linux-kernel@lists.codethink.co.uk, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [Linux-kernel] [PATCH] seq_file: Allow private data to be supplied
- on seq_open
-References: <1406655593-12626-1-git-send-email-rob.jones@codethink.co.uk>	<20140806160259.GR18016@ZenIV.linux.org.uk>	<53E254F1.30605@codethink.co.uk> <87sil9sa50.fsf@x220.int.ebiederm.org> <53E37810.1050109@codethink.co.uk> <53E37FDF.50102@redhat.com> <53E38889.3000603@codethink.co.uk> <53E38A3A.5060605@codethink.co.uk> <53E38BC3.40500@redhat.com>
-In-Reply-To: <53E38BC3.40500@redhat.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/8] mm/isolation: close the two race problems related
+ to pageblock isolation
+References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com> <1407309517-3270-8-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1407309517-3270-8-git-send-email-iamjoonsoo.kim@lge.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/06/2014 09:18 AM, Joonsoo Kim wrote:
+> We got migratetype of the freeing page without holding the zone lock so
+> it could be racy. There are two cases of this race.
+>
+> 1. pages are added to isolate buddy list after restoring original
+> migratetype.
+> 2. pages are added to normal buddy list while pageblock is isolated.
+>
+> If case 1 happens, we can't allocate freepages on isolate buddy list
+> until next pageblock isolation occurs.
+> In case of 2, pages could be merged with pages on isolate buddy list and
+> located on normal buddy list. This makes freepage counting incorrect
+> and break the property of pageblock isolation.
+>
+> One solution to this problem is checking pageblock migratetype with
+> holding zone lock in __free_one_page() and I posted it before, but,
+> it didn't get welcome since it needs the hook in zone lock critical
+> section on freepath.
+>
+> This is another solution to this problem and impose most overhead on
+> pageblock isolation logic. Following is how this solution works.
+>
+> 1. Extends irq disabled period on freepath to call
+> get_pfnblock_migratetype() with irq disabled. With this, we can be
+> sure that future freed pages will see modified pageblock migratetype
+> after certain synchronization point so we don't need to hold the zone
+> lock to get correct pageblock migratetype. Although it extends irq
+> disabled period on freepath, I guess it is marginal and better than
+> adding the hook in zone lock critical section.
+>
+> 2. #1 requires IPI for synchronization and we can't hold the zone lock
 
+It would be better to explain here that the synchronization point is 
+pcplists draining.
 
-On 07/08/14 15:22, Steven Whitehouse wrote:
-> Hi,
->
-> On 07/08/14 15:16, Rob Jones wrote:
->>
->>
->> On 07/08/14 15:09, Rob Jones wrote:
->>> Hi Steve,
->>>
->>> On 07/08/14 14:32, Steven Whitehouse wrote:
->>>> Hi,
->>>>
->>>> On 07/08/14 13:58, Rob Jones wrote:
->>>> [snip]
->>>>>
->>>>> On a related subject, Having looked at a few uses of seq_file, I must
->>>>> say that some users seem to make assumptions about the internal
->>>>> workings of the module. Dangerous behaviour as only some behaviours
->>>>> are
->>>>> documented.
->>>>>
->>>>> e.g. The behaviour that "struct seq_file" pointer is stored in
->>>>> file->private_data is documented and can therefore be relied upon but
->>>>> the fact that the output buffer and its size are only defined at the
->>>>> first output (and can therefore be pre-defined and pre-allocated by
->>>>> user code) is not documented and could therefore change without
->>>>> warning.
->>>>>
->>>>> This second behaviour is assumed in, for example, module
->>>>> fs/gfs2/glock.c
->>>>> which could, therefore, stop working properly without warning if the
->>>>> internal behaviour was changed.
->>>>>
->>>> While it is undocumented, it is I understand, how this feature was
->>>> intended to be used, so I think that it is safe to do this in the GFS2
->>>> case. Here is a ref to the thread which explains how it landed up like
->>>> that:
->>>> https://www.redhat.com/archives/cluster-devel/2012-June/msg00000.html
->>>
->>> No criticism was intended of that particular piece of code, It has been
->>> there for a couple of years and is, presumably, still working :-)
->>>
->>> It was just a general point about things needing to be written down. A
->>> behaviour such as you were relying on can be a very positive thing but
->>> it would be of much greater use if it was written down in the file docs.
->>>
->>> I completely missed seq_file_private() because I was looking at the
->>
->> Sorry, that should be seq_open_private()
->>
->> Why does one never see the mistake until *after* hitting send?
->>
-> Always the way, unfortunately!
->
->>> docs more than the code. If it had been written down in the docs it
->>> would have saved me quite a bit of time, similarly, if the buffer
->>> allocation behaviour was documented, changes to seq_file.c would not be
->>> made that could break your code.
->>>
->>> God knows, I'm not a fan of unnecessary documentation but where it's
->>> useful I'm all for it.
->>>
-> Yes, very much agreed, and no doubt it would be useful in this case. I
-> hoped that the earlier thread might be a useful starting point, since it
-> explained some of the whys and wherefores,
+> during processing IPI. In this time, some pages could be moved from buddy
+> list to pcp list on page allocation path and later it could be moved again
+> from pcp list to buddy list. In this time, this page would be on isolate
 
-Well, I'm making a start by documenting seq_open_private(). Small
-steps :-)
+It is difficult to understand the problem just by reading this. I guess 
+the timelines you included while explaining the problem to me, would 
+help here :)
 
->
-> Steve.
->
->
->
+> pageblock, so, the hook is required on free_pcppages_bulk() to prevent
 
--- 
-Rob Jones
-Codethink Ltd
-mailto:rob.jones@codethink.co.uk
-tel:+44 161 236 5575
+More clearly, a recheck for pageblock's migratetype would be needed in 
+free_pcppages_bulk(), which would again impose overhead outside isolation.
+
+> misplacement. To remove this possibility, disabling and draining pcp
+> list is needed during isolation. It guaratees that there is no page on pcp
+> list on all cpus while isolation, so misplacement problem can't happen.
+>
+> Note that this doesn't fix freepage counting problem. To fix it,
+> we need more logic. Following patches will do it.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>   mm/internal.h       |    2 ++
+>   mm/page_alloc.c     |   27 ++++++++++++++++++++-------
+>   mm/page_isolation.c |   45 +++++++++++++++++++++++++++++++++------------
+>   3 files changed, 55 insertions(+), 19 deletions(-)
+>
+> diff --git a/mm/internal.h b/mm/internal.h
+> index a1b651b..81b8884 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -108,6 +108,8 @@ extern pmd_t *mm_find_pmd(struct mm_struct *mm, unsigned long address);
+>   /*
+>    * in mm/page_alloc.c
+>    */
+> +extern void zone_pcp_disable(struct zone *zone);
+> +extern void zone_pcp_enable(struct zone *zone);
+>   extern void __free_pages_bootmem(struct page *page, unsigned int order);
+>   extern void prep_compound_page(struct page *page, unsigned long order);
+>   #ifdef CONFIG_MEMORY_FAILURE
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 3e1e344..4517b1d 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -726,11 +726,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+>   			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+>   			__free_one_page(page, page_to_pfn(page), zone, 0, mt);
+>   			trace_mm_page_pcpu_drain(page, 0, mt);
+> -			if (likely(!is_migrate_isolate_page(page))) {
+> -				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
+> -				if (is_migrate_cma(mt))
+> -					__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
+> -			}
+> +			__mod_zone_freepage_state(zone, 1, mt);
+
+Could be worth mentioning that this can now be removed as it was an 
+incomplete attempt to fix freepage counting, but didn't address the 
+misplacement.
+
+>   		} while (--to_free && --batch_free && !list_empty(list));
+>   	}
+>   	spin_unlock(&zone->lock);
+> @@ -789,8 +785,8 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+>   	if (!free_pages_prepare(page, order))
+>   		return;
+>
+> -	migratetype = get_pfnblock_migratetype(page, pfn);
+>   	local_irq_save(flags);
+> +	migratetype = get_pfnblock_migratetype(page, pfn);
+>   	__count_vm_events(PGFREE, 1 << order);
+>   	set_freepage_migratetype(page, migratetype);
+>   	free_one_page(page_zone(page), page, pfn, order, migratetype);
+> @@ -1410,9 +1406,9 @@ void free_hot_cold_page(struct page *page, bool cold)
+>   	if (!free_pages_prepare(page, 0))
+>   		return;
+>
+> +	local_irq_save(flags);
+>   	migratetype = get_pfnblock_migratetype(page, pfn);
+>   	set_freepage_migratetype(page, migratetype);
+> -	local_irq_save(flags);
+>   	__count_vm_event(PGFREE);
+
+Maybe add comments to these two to make it clear that this cannot be 
+moved outside of the irq disabled part, in case anyone considers it 
+(again) in the future?
+
+> @@ -55,20 +56,32 @@ int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages)
+>   	 */
+>
+>   out:
+> -	if (!ret) {
+> -		unsigned long nr_pages;
+> -		int migratetype = get_pageblock_migratetype(page);
+> +	if (ret) {
+> +		spin_unlock_irqrestore(&zone->lock, flags);
+> +		return ret;
+> +	}
+>   on pcplists
+> -		set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+> -		nr_pages = move_freepages_block(zone, page, MIGRATE_ISOLATE);
+> +	migratetype = get_pageblock_migratetype(page);
+> +	set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+> +	spin_unlock_irqrestore(&zone->lock, flags);
+>
+> -		__mod_zone_freepage_state(zone, -nr_pages, migratetype);
+> -	}
+> +	zone_pcp_disable(zone);
+> +
+> +	/*
+> +	 * After this point, freed pages will see MIGRATE_ISOLATE as
+> +	 * their pageblock migratetype on all cpus. And pcp list has
+> +	 * no free page.
+> +	 */
+> +	on_each_cpu(drain_local_pages, NULL, 1);
+
+Is there any difference between drain_all_pages() and this, or why 
+didn't you use drain_all_pages()?
+
