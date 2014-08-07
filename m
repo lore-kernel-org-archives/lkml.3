@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454AbaHGJdl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 05:33:41 -0400
-Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:59985
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757382AbaHGJdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 05:33:38 -0400
-From: Shengjiu Wang <shengjiu.wang@freescale.com>
-To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <timur@tabi.org>,
-        <perex@perex.cz>, <tiwai@suse.de>, <nicoleotsuka@gmail.com>,
-        <Li.Xiubo@freescale.com>, <shc_work@mail.ru>,
-        <fabio.estevam@freescale.com>, <arnd@arndb.de>
-CC: <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2 2/2] Revert "ASoC: fsl-esai: Add .xlate_tdm_slot_mask() support."
-Date: Thu, 7 Aug 2014 17:33:25 +0800
-Message-ID: <5627d0f839900c33b1c15de4c21f745015d3e19d.1407403727.git.shengjiu.wang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1407403727.git.shengjiu.wang@freescale.com>
-References: <cover.1407403727.git.shengjiu.wang@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(50986999)(102836001)(89996001)(64706001)(106466001)(74662001)(79102001)(86362001)(21056001)(88136002)(6806004)(83072002)(76176999)(84676001)(19580395003)(93916002)(85852003)(20776003)(47776003)(74502001)(99396002)(62966002)(95666004)(36756003)(104016003)(2201001)(97736001)(92566001)(4396001)(83322001)(80022001)(87286001)(85306004)(77982001)(92726001)(44976005)(19580405001)(81542001)(76482001)(31966008)(68736004)(50226001)(26826002)(46102001)(87936001)(48376002)(33646002)(104166001)(105606002)(77156001)(50466002)(107046002)(229853001)(81342001)(142923001)(1121002)(921003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB255;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+	id S1757488AbaHGJds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 05:33:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29714 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757382AbaHGJdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 05:33:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,816,1400050800"; 
+   d="scan'208";a="584660896"
+Message-ID: <53E3475A.9090301@intel.com>
+Date: Thu, 07 Aug 2014 17:31:06 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 029651C7A1
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=shengjiu.wang@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI/OSL: Remove RCU in the osl.c to avoid dead lock
+ with cpu hot plug
+References: <1407141608-28920-1-git-send-email-tianyu.lan@intel.com> <1655155.Bsn9BIJnyn@vostro.rjw.lan> <53E19175.208@intel.com> <5565710.HfsfjXfcL3@vostro.rjw.lan>
+In-Reply-To: <5565710.HfsfjXfcL3@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit a603c8ee526f5ea9ad9b40710308766299ad8a69.
+On 2014年08月07日 03:09, Rafael J. Wysocki wrote:
+> On Wednesday, August 06, 2014 10:22:45 AM Lan Tianyu wrote:
+>> On 2014年08月06日 09:24, Rafael J. Wysocki wrote:
+>>> On Monday, August 04, 2014 04:40:08 PM Lan Tianyu wrote:
+> 
+> [cut]
+> 
+>>>> @@ -298,29 +298,29 @@ void __iomem *acpi_os_get_iomem(acpi_physical_address phys, unsigned int size)
+>>>>  {
+>>>>  	struct acpi_ioremap *map;
+>>>>  	void __iomem *virt = NULL;
+>>>> +	unsigned long flags;
+>>>>  
+>>>> -	mutex_lock(&acpi_ioremap_lock);
+>>>> +	spin_lock_irqsave(&acpi_ioremap_lock, flags);
+>>>
+>>> Why do you need to do _irqsave here?  It was a mutex before, after all,
+>>> so it can't be called from interrupt context.
+>>>
+>>> In other places below too.
+>>
+>> Original code uses RCU lock to protect acpi_ioremaps list in the
+>> acpi_os_read/write_memory() which will be called in apei_read/write().
+>> apei_read/write() will be called in the interrupt from APEI comments.
+> 
+> But acpi_os_get_iomem() won't be called from interrupt context and should use
+> spin_lock_irq() instead of _irqsave.  This also applies to the other places
+> that use the mutex.
 
-fsl_asoc_xlate_tdm_slot_mask() will invert the mask, which isn't fit for
-esai. The default function snd_soc_xlate_tdm_slot_mask() is ok for esai.
+Yes, that's correct. Sorry. I misunderstood what you meant.
 
-Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
----
- sound/soc/fsl/Kconfig    |    1 -
- sound/soc/fsl/fsl_esai.c |    2 --
- 2 files changed, 3 deletions(-)
+> 
+>> Now replace RCU with acpi_ioremap_lock and the lock will be called in
+>> the interrupt. So redefine it to spin lock. From history,
+>> acpi_ioremap_lock was spin lock before adding RCU support.
+> 
+> And it had scalability problems IIRC.
+> 
+> Did you consider using SRCU instead of going back to the spinlock?
 
-diff --git a/sound/soc/fsl/Kconfig b/sound/soc/fsl/Kconfig
-index f54a8fc..f3012b6 100644
---- a/sound/soc/fsl/Kconfig
-+++ b/sound/soc/fsl/Kconfig
-@@ -49,7 +49,6 @@ config SND_SOC_FSL_ESAI
- 	tristate "Enhanced Serial Audio Interface (ESAI) module support"
- 	select REGMAP_MMIO
- 	select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
--	select SND_SOC_FSL_UTILS
- 	help
- 	  Say Y if you want to add Enhanced Synchronous Audio Interface
- 	  (ESAI) support for the Freescale CPUs.
-diff --git a/sound/soc/fsl/fsl_esai.c b/sound/soc/fsl/fsl_esai.c
-index f252370..b2f6b3e 100644
---- a/sound/soc/fsl/fsl_esai.c
-+++ b/sound/soc/fsl/fsl_esai.c
-@@ -18,7 +18,6 @@
- 
- #include "fsl_esai.h"
- #include "imx-pcm.h"
--#include "fsl_utils.h"
- 
- #define FSL_ESAI_RATES		SNDRV_PCM_RATE_8000_192000
- #define FSL_ESAI_FORMATS	(SNDRV_PCM_FMTBIT_S8 | \
-@@ -612,7 +611,6 @@ static struct snd_soc_dai_ops fsl_esai_dai_ops = {
- 	.hw_params = fsl_esai_hw_params,
- 	.set_sysclk = fsl_esai_set_dai_sysclk,
- 	.set_fmt = fsl_esai_set_dai_fmt,
--	.xlate_tdm_slot_mask = fsl_asoc_xlate_tdm_slot_mask,
- 	.set_tdm_slot = fsl_esai_set_dai_tdm_slot,
- };
- 
+No, I will have a look at SRCU.
+
+> 
+> Rafael
+> 
+
+
 -- 
-1.7.9.5
-
+Best regards
+Tianyu Lan
