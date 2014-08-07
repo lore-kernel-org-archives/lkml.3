@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582AbaHGMw1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 08:52:27 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:48815 "EHLO
+	id S932187AbaHGMw0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 08:52:26 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:13031 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757518AbaHGMwV (ORCPT
+	by vger.kernel.org with ESMTP id S1757245AbaHGMwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 08:52:21 -0400
+	Thu, 7 Aug 2014 08:52:22 -0400
 X-IronPort-AV: E=Sophos;i="5.01,818,1400018400"; 
-   d="scan'208";a="88599293"
+   d="scan'208";a="88599295"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Chas Williams <chas@cmf.nrl.navy.mil>
-Cc: kernel-janitors@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] solos-pci: fix error return code
-Date: Thu,  7 Aug 2014 14:49:07 +0200
-Message-Id: <1407415749-19978-4-git-send-email-Julia.Lawall@lip6.fr>
+To: Eric Biederman <ebiederm@xmission.com>
+Cc: kernel-janitors@vger.kernel.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 5/5] kexec: fix error return code
+Date: Thu,  7 Aug 2014 14:49:09 +0200
+Message-Id: <1407415749-19978-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1407415749-19978-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1407415749-19978-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -54,19 +54,23 @@ ret = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/atm/solos-pci.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/kexec.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/atm/solos-pci.c b/drivers/atm/solos-pci.c
-index 943cf0d..7652e8d 100644
---- a/drivers/atm/solos-pci.c
-+++ b/drivers/atm/solos-pci.c
-@@ -1278,6 +1278,7 @@ static int fpga_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 			card->dma_bounce = kmalloc(card->nr_ports * BUF_SIZE, GFP_KERNEL);
- 			if (!card->dma_bounce) {
- 				dev_warn(&card->dev->dev, "Failed to allocate DMA bounce buffers\n");
-+				err = -ENOMEM;
- 				/* Fallback to MMIO doesn't work */
- 				goto out_unmap_both;
- 			}
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 0b49a0a..dcd7a1f 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -2212,8 +2212,10 @@ static int kexec_calculate_store_digests(struct kimage *image)
+ 
+ 	sha_region_sz = KEXEC_SEGMENT_MAX * sizeof(struct kexec_sha_region);
+ 	sha_regions = vzalloc(sha_region_sz);
+-	if (!sha_regions)
++	if (!sha_regions) {
++		ret = -ENOMEM;
+ 		goto out_free_desc;
++	}
+ 
+ 	desc->tfm   = tfm;
+ 	desc->flags = 0;
 
