@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853AbaHGW1e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 18:27:34 -0400
-Received: from g2t2352.austin.hp.com ([15.217.128.51]:21169 "EHLO
+	id S1755806AbaHGW1b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 18:27:31 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:21164 "EHLO
 	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755316AbaHGW1I (ORCPT
+	with ESMTP id S1755312AbaHGW1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 18:27:08 -0400
+	Thu, 7 Aug 2014 18:27:06 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
 Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr@hp.com>,
         Jason Low <jason.low2@hp.com>, Scott J Norton <scott.norton@hp.com>,
         Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v2 7/7] locking/rwsem: allow waiting writers to go back to spinning
-Date: Thu,  7 Aug 2014 18:26:48 -0400
-Message-Id: <1407450408-11679-8-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v2 6/7] locking/rwsem: enables optimistic spinning for readers
+Date: Thu,  7 Aug 2014 18:26:47 -0400
+Message-Id: <1407450408-11679-7-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com>
 References: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com>
@@ -22,142 +22,208 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More aggressive use of optimistic spinning and enabling readers to
-participate in spinning may make tasks waiting in the queue harder
-to get access to the semaphore, especially for writers who need
-exclusive access.
-
-This patch enables a waking writer to go back to the optimistic
-spinning loop as long as the owner is really running and spinners are
-present. This allows waiting writers better access to the semaphore
-as well as reduce the size of the waiting queue.
+This patch enables readers to go into the optimistic spinning loop
+so that both the readers and writers can spin together. This could
+speed up workloads that use both readers and writers.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- kernel/locking/rwsem-xadd.c |   55 +++++++++++++++++++++++++++++++++++--------
- 1 files changed, 45 insertions(+), 10 deletions(-)
+ kernel/locking/rwsem-xadd.c |  122 +++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 106 insertions(+), 16 deletions(-)
 
 diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-index 16fabe0..20adbe9 100644
+index aa03479..16fabe0 100644
 --- a/kernel/locking/rwsem-xadd.c
 +++ b/kernel/locking/rwsem-xadd.c
-@@ -355,10 +355,15 @@ wake_readers:
- 
+@@ -282,6 +282,79 @@ static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
+ 	}
  }
  
--static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
 +/*
-+ * The defval argument controls whether true or false is returned
-+ * when the owner field is NULL.
++ * Try to acquire read lock
++ *
++ * There is ambiguity when RWSEM_WAITING_BIAS < count < 0 as a writer may
++ * be active instead of having waiters. So we need to recheck the count
++ * under wait_lock to be sure.
 + */
-+static inline bool
-+rwsem_can_spin_on_owner(struct rw_semaphore *sem, bool defval)
++static inline bool rwsem_try_read_lock_unqueued(struct rw_semaphore *sem)
++{
++	long old, count = ACCESS_ONCE(sem->count);
++	bool taken = false;	/* True if lock taken */
++
++	while (!taken) {
++		if (count < RWSEM_WAITING_BIAS)
++			break;	/* Have writer and waiter */
++
++		old = count;
++		if (count >= 0 || count == RWSEM_WAITING_BIAS) {
++			count = cmpxchg(&sem->count, old,
++					old + RWSEM_ACTIVE_READ_BIAS);
++			if (count == old) {
++				/* Got the read lock */
++				taken = true;
++				/*
++				 * Try to wake up readers if lock is free
++				 */
++				if ((count == RWSEM_WAITING_BIAS) &&
++				    raw_spin_trylock_irq(&sem->wait_lock)) {
++					if (!list_empty(&sem->wait_list))
++						goto wake_readers;
++					raw_spin_unlock_irq(&sem->wait_lock);
++				}
++			}
++		} else if (!rwsem_has_active_writer(sem)) {
++			long threshold;
++
++			/*
++			 * RWSEM_WAITING_BIAS < count < 0
++			 */
++			raw_spin_lock_irq(&sem->wait_lock);
++			threshold = list_empty(&sem->wait_list)
++				  ? 0 : RWSEM_WAITING_BIAS;
++			count = ACCESS_ONCE(sem->count);
++			if (count < threshold) {
++				raw_spin_unlock_irq(&sem->wait_lock);
++				break;
++			}
++			old   = count;
++			count = cmpxchg(&sem->count, old,
++					old + RWSEM_ACTIVE_READ_BIAS);
++			if (count == old) {
++				taken = true;
++				/*
++				 * Wake up pending readers, if any,
++				 * while holding the lock.
++				 */
++				if (threshold)
++					goto wake_readers;
++			}
++			raw_spin_unlock_irq(&sem->wait_lock);
++		} else {
++			break;
++		}
++	}
++	return taken;
++
++wake_readers:
++	__rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
++	raw_spin_unlock_irq(&sem->wait_lock);
++	return true;
++
++}
++
+ static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
  {
  	struct task_struct *owner;
--	bool on_cpu = true;
-+	bool on_cpu = defval;
+@@ -350,7 +423,8 @@ bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
+  * the spinners will still fall back to sleep. On the other hand, it won't
+  * waste too many cycles when the lock owning readers are not running.
+  */
+-static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
++static bool rwsem_optimistic_spin(struct rw_semaphore *sem,
++				  enum rwsem_waiter_type type)
+ {
+ 	struct task_struct *owner;
+ 	bool taken = false;
+@@ -380,11 +454,11 @@ static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
+ 			spincnt = 0;
+ 		}
  
- 	if (need_resched())
- 		return false;
-@@ -431,7 +436,7 @@ static bool rwsem_optimistic_spin(struct rw_semaphore *sem,
- 	int  spincnt = 0;
+-		/* wait_lock will be acquired if write_lock is obtained */
+-		if (rwsem_try_write_lock_unqueued(sem)) {
+-			taken = true;
++		taken = (type == RWSEM_WAITING_FOR_WRITE)
++		      ? rwsem_try_write_lock_unqueued(sem)
++		      : rwsem_try_read_lock_unqueued(sem);
++		if (taken)
+ 			break;
+-		}
  
- 	/* sem->wait_lock should not be held when doing optimistic spinning */
--	if (!rwsem_can_spin_on_owner(sem))
-+	if (!rwsem_can_spin_on_owner(sem, true))
- 		return false;
+ 		/*
+ 		 * When there's no owner, we might have preempted between the
+@@ -410,7 +484,8 @@ done:
+ }
  
- 	preempt_disable();
-@@ -489,6 +494,12 @@ static bool rwsem_optimistic_spin(struct rw_semaphore *sem,
+ #else
+-static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
++static bool rwsem_optimistic_spin(struct rw_semaphore *sem,
++				  enum rwsem_waiter_type type)
  {
  	return false;
  }
-+
-+static inline bool
-+rwsem_can_spin_on_owner(struct rw_semaphore *sem, bool default)
-+{
-+	return false;
-+}
- #endif
- 
- /*
-@@ -558,12 +569,14 @@ __visible
- struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+@@ -422,11 +497,21 @@ static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
+ __visible
+ struct rw_semaphore __sched * rwsem_down_read_failed(struct rw_semaphore *sem)
  {
- 	long count;
--	bool waiting = true; /* any queued threads before us */
-+	bool waiting; /* any queued threads before us */
-+	bool respin;
+-	long count, adjustment = -RWSEM_ACTIVE_READ_BIAS;
++	long count, adjustment = 0;
  	struct rwsem_waiter waiter;
+ 	struct task_struct *tsk = current;
  
- 	/* undo write bias from down_write operation, stop active locking */
- 	count = rwsem_atomic_update(-RWSEM_ACTIVE_WRITE_BIAS, sem);
- 
-+optspin:
- 	/* do optimistic spinning and steal lock if possible */
- 	if (rwsem_optimistic_spin(sem, RWSEM_WAITING_FOR_WRITE))
- 		return sem;
-@@ -578,8 +591,7 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
- 	raw_spin_lock_irq(&sem->wait_lock);
- 
- 	/* account for this before adding a new element to the list */
--	if (list_empty(&sem->wait_list))
--		waiting = false;
-+	waiting = !list_empty(&sem->wait_list);
- 
+-	/* set up my own style of waitqueue */
++	/* undo read bias from down_read operation, stop active locking */
++	count = rwsem_atomic_update(-RWSEM_ACTIVE_READ_BIAS, sem);
++
++	/* do optimistic spinning and steal lock if possible */
++	if (rwsem_optimistic_spin(sem, RWSEM_WAITING_FOR_READ))
++		return sem;
++
++	/*
++	 * Optimistic spinning failed, proceed to the slowpath
++	 * and block until we can acquire the sem.
++	 */
+ 	waiter.task = tsk;
+ 	waiter.type = RWSEM_WAITING_FOR_READ;
+ 	get_task_struct(tsk);
+@@ -436,8 +521,11 @@ struct rw_semaphore __sched * rwsem_down_read_failed(struct rw_semaphore *sem)
+ 		adjustment += RWSEM_WAITING_BIAS;
  	list_add_tail(&waiter.list, &sem->wait_list);
  
-@@ -600,23 +612,46 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+-	/* we're now waiting on the lock, but no longer actively locking */
+-	count = rwsem_atomic_update(adjustment, sem);
++	/* we're now waiting on the lock */
++	if (adjustment)
++		count = rwsem_atomic_update(adjustment, sem);
++	else
++		count = ACCESS_ONCE(sem->count);
  
- 	/* wait until we successfully acquire the lock */
- 	set_current_state(TASK_UNINTERRUPTIBLE);
--	while (true) {
-+	respin = false;
-+	while (!respin) {
- 		if (rwsem_try_write_lock(count, sem))
- 			break;
- 		raw_spin_unlock_irq(&sem->wait_lock);
+ 	/* If there are no active locks, wake the front queued process(es).
+ 	 *
+@@ -445,8 +533,7 @@ struct rw_semaphore __sched * rwsem_down_read_failed(struct rw_semaphore *sem)
+ 	 * wake our own waiter to join the existing active readers !
+ 	 */
+ 	if (count == RWSEM_WAITING_BIAS ||
+-	    (count > RWSEM_WAITING_BIAS &&
+-	     adjustment != -RWSEM_ACTIVE_READ_BIAS))
++	   (count >  RWSEM_WAITING_BIAS && adjustment))
+ 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_ANY);
  
--		/* Block until there are no active lockers. */
--		do {
-+		/*
-+		 * Block until there are no active lockers or optimistic
-+		 * spinning is possible.
-+		 */
-+		while (true) {
- 			schedule();
- 			set_current_state(TASK_UNINTERRUPTIBLE);
--		} while ((count = sem->count) & RWSEM_ACTIVE_MASK);
-+			count = ACCESS_ONCE(sem->count);
-+			if (!(count & RWSEM_ACTIVE_MASK))
-+				break;
-+			/*
-+			 * Go back to optimistic spinning if the lock
-+			 * owner is really running and there are spinners.
-+			 * If there is no spinner, the task is already at
-+			 * the head of the queue or the lock owner (maybe
-+			 * readers) may not be actually running.
-+			 */
-+			if (rwsem_has_spinner(sem) &&
-+			    rwsem_can_spin_on_owner(sem, false)) {
-+				respin = true;
-+				break;
-+			}
-+		}
- 
- 		raw_spin_lock_irq(&sem->wait_lock);
- 	}
- 	__set_current_state(TASK_RUNNING);
- 
- 	list_del(&waiter.list);
-+	if (respin && list_empty(&sem->wait_list))
-+		rwsem_atomic_update(-RWSEM_WAITING_BIAS, sem);
  	raw_spin_unlock_irq(&sem->wait_lock);
-+	if (respin)
-+		goto optspin;
+@@ -478,7 +565,7 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+ 	count = rwsem_atomic_update(-RWSEM_ACTIVE_WRITE_BIAS, sem);
  
- 	return sem;
- }
+ 	/* do optimistic spinning and steal lock if possible */
+-	if (rwsem_optimistic_spin(sem))
++	if (rwsem_optimistic_spin(sem, RWSEM_WAITING_FOR_WRITE))
+ 		return sem;
+ 
+ 	/*
+@@ -549,9 +636,12 @@ struct rw_semaphore *rwsem_wake(struct rw_semaphore *sem)
+ 	 * spinlock contention which may introduce too much delay in the
+ 	 * unlock operation.
+ 	 *
+-	 * In case the spinning writer is just going to break out of the loop,
+-	 * it will still do a trylock in rwsem_down_write_failed() before
+-	 * sleeping.
++	 * In case the spinner is just going to break out of the loop, it
++	 * will still do a trylock in rwsem_down_write_failed() before
++	 * sleeping, or call __rwsem_do_wake() in rwsem_down_read_failed()
++	 * if it detects a free lock. In either cases, we won't have the
++	 * situation that the lock is free and no task is woken up from the
++	 * waiting queue.
+ 	 */
+ 	if (rwsem_has_spinner(sem)) {
+ 		if (!raw_spin_trylock_irqsave(&sem->wait_lock, flags))
 -- 
 1.7.1
 
