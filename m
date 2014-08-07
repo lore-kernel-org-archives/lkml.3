@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827AbaHGTxa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 15:53:30 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:35070 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750895AbaHGTx3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 15:53:29 -0400
-Date: Thu, 7 Aug 2014 15:53:26 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
- waiting for RCU-tasks
-Message-ID: <20140807155326.18481e66@gandalf.local.home>
-In-Reply-To: <20140807154907.6f59cf6e@gandalf.local.home>
-References: <20140805205711.7a52076c@gandalf.local.home>
-	<20140806012139.GY8101@linux.vnet.ibm.com>
-	<20140806084708.GR9918@twins.programming.kicks-ass.net>
-	<20140806120958.GZ8101@linux.vnet.ibm.com>
-	<20140806163035.GG19379@twins.programming.kicks-ass.net>
-	<20140806224518.GA8101@linux.vnet.ibm.com>
-	<20140807084544.GJ19379@twins.programming.kicks-ass.net>
-	<20140807150031.GB5821@linux.vnet.ibm.com>
-	<20140807152600.GW9918@twins.programming.kicks-ass.net>
-	<20140807172753.GG3588@twins.programming.kicks-ass.net>
-	<20140807184635.GI3588@twins.programming.kicks-ass.net>
-	<20140807154907.6f59cf6e@gandalf.local.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	id S1754976AbaHGT45 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 15:56:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41790 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751193AbaHGT44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 15:56:56 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: linux-kbuild@vger.kernel.org
+Cc: Sam Ravnborg <sam@ravnborg.org>, Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kbuild: Fix handling of backslashes in *.cmd files
+Date: Thu,  7 Aug 2014 21:56:24 +0200
+Message-Id: <1407441384-31614-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <20140807170800.GA1542@ravnborg.org>
+References: <20140807170800.GA1542@ravnborg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Aug 2014 15:49:07 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+Commit c353acba ("kbuild: make: fix if_changed when command contains
+backslashes") attempted to handle backslashes in *.cmd files, but it
+only handled double backslashes for some reason. Changing make-cmd to also
+handle single backslashes fixes rebuilds with dash, but it breaks bash
+again. The reason is that the two shells disagree about the
+interpretation of backslash sequences in the echo builtin. The way out
+of this is to print the command with printf '%s\n'. While at it,
+document what the individual parts of make-cmd do and why.
 
+Reported-and-tested-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Reviewed-by: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ scripts/Kbuild.include | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-> Only voluntary calls to schedule() will be a quiescent state. Preempt
-> doesn't count. And no, function callbacks to not call schedule(),
-> function callbacks should be treated even stricter than interrupt
-> handlers. They should never call schedule() directly or even take any
-> locks. Heck, they should be stricter than NMIs for that matter.
-> 
-> Hence, once something calls schedule() directly, we know that it is not
-> on a trampoline, nor is it going to return to one.
+diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
+index 122f95c..8a9a4e1 100644
+--- a/scripts/Kbuild.include
++++ b/scripts/Kbuild.include
+@@ -215,11 +215,13 @@ else
+ arg-check = $(if $(strip $(cmd_$@)),,1)
+ endif
+ 
+-# >'< substitution is for echo to work,
+-# >$< substitution to preserve $ when reloading .cmd file
+-# note: when using inline perl scripts [perl -e '...$$t=1;...']
+-# in $(cmd_xxx) double $$ your perl vars
+-make-cmd = $(subst \\,\\\\,$(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1))))))
++# Replace >$< with >$$< to preserve $ when reloading the .cmd file
++# (needed for make)
++# Replace >#< with >\#< to avoid starting a comment in the .cmd file
++# (needed for make)
++# Replace >'< with >'\''< to be able to enclose the whole string in '...'
++# (needed for the shell)
++make-cmd = $(call escsq,$(subst \#,\\\#,$(subst $$,$$$$,$(cmd_$(1)))))
+ 
+ # Find any prerequisites that is newer than target or that does not exist.
+ # PHONY targets skipped in both cases.
+@@ -230,7 +232,7 @@ any-prereq = $(filter-out $(PHONY),$?) $(filter-out $(PHONY) $(wildcard $^),$^)
+ if_changed = $(if $(strip $(any-prereq) $(arg-check)),                       \
+ 	@set -e;                                                             \
+ 	$(echo-cmd) $(cmd_$(1));                                             \
+-	echo 'cmd_$@ := $(make-cmd)' > $(dot-target).cmd)
++	printf '%s\n' 'cmd_$@ := $(make-cmd)' > $(dot-target).cmd)
+ 
+ # Execute the command and also postprocess generated .d dependencies file.
+ if_changed_dep = $(if $(strip $(any-prereq) $(arg-check) ),                  \
+-- 
+1.8.4.5
 
-I should also be a bit clearer here. It's not just function callbacks,
-but anything that adds a trampoline that can be called from any context
-(like for kprobes). The point is, these trampolines that can execute
-anywhere (including in NMIs), must have strict use cases. These are not
-a notifier or other generic operation that normal RCU is fine for.
-These are for really specific cases that require the call_rcu_task() to
-free.
-
-call_rcu_task() should seldom be used. The only cases really are for
-kprobes and function tracing, and perhaps other dynamic callers.
-
--- Steve
