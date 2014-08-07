@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331AbaHGNJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 09:09:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30483 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757412AbaHGNJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 09:09:52 -0400
-From: Amit Shah <amit.shah@redhat.com>
-To: jgarzik@bitpay.com
-Cc: hpa@linux.intel.com,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Amos Kong <akong@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH 1/2] rngd: add udev rule to source from hwrng if virtio-rng present
-Date: Thu,  7 Aug 2014 18:38:59 +0530
-Message-Id: <dd2ddb8458e5ab5cffceb7fac2e3f71e9e2197f3.1407416628.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1407416628.git.amit.shah@redhat.com>
-References: <cover.1407416628.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1407416628.git.amit.shah@redhat.com>
-References: <cover.1407416628.git.amit.shah@redhat.com>
+	id S1757705AbaHGNLQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 09:11:16 -0400
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:57595 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756266AbaHGNLP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 09:11:15 -0400
+Date: Thu, 7 Aug 2014 09:10:12 -0400
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] drivers/atm/atmtcp.c: fix error return code
+Message-ID: <20140807091012.793ef5c7@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <1407415749-19978-3-git-send-email-Julia.Lawall@lip6.fr>
+References: <1407415749-19978-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1407415749-19978-3-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-NRLCMF-Spam-Score: () hits=-0.001
+X-NRLCMF-Virus-Scanned: No virus found
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On KVM guests where the virtio-rng device is available, and set as the
-current rng, this udev rule will start rngd which will feed in the
-host-provided entropy to /dev/random.
+On Thu,  7 Aug 2014 14:49:06 +0200
+Julia Lawall <Julia.Lawall@lip6.fr> wrote:
 
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
----
- 90-virtio-rng.rules | 1 +
- 1 file changed, 1 insertion(+)
- create mode 100644 90-virtio-rng.rules
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Convert a zero return value on error to a negative one, as returned
+> elsewhere in the function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+...
+> 
+> diff --git a/drivers/atm/atmtcp.c b/drivers/atm/atmtcp.c
+> index 0e3f8f9..c8e4fb4 100644
+> --- a/drivers/atm/atmtcp.c
+> +++ b/drivers/atm/atmtcp.c
+> @@ -299,6 +299,7 @@ static int atmtcp_c_send(struct atm_vcc *vcc,struct sk_buff *skb)
+>  	out_vcc = find_vcc(dev, ntohs(hdr->vpi), ntohs(hdr->vci));
+>  	read_unlock(&vcc_sklist_lock);
+>  	if (!out_vcc) {
+> +		result = -ESRCH;
 
-diff --git a/90-virtio-rng.rules b/90-virtio-rng.rules
-new file mode 100644
-index 0000000..07f2f9c
---- /dev/null
-+++ b/90-virtio-rng.rules
-@@ -0,0 +1 @@
-+KERNEL=="hw_random", ATTR{rng_current}=="virtio*", RUN+="/sbin/rngd -r /dev/hwrng"
--- 
-1.9.3
+This should probably be -EUNATCH to match the rest of the code.
+
+>  		atomic_inc(&vcc->stats->tx_err);
+>  		goto done;
+>  	}
+> 
 
