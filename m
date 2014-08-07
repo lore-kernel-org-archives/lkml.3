@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477AbaHGSYQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 14:24:16 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:40141 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755180AbaHGSWn (ORCPT
+	id S1755062AbaHGSWd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 14:22:33 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:63474 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754976AbaHGSWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 14:22:43 -0400
+	Thu, 7 Aug 2014 14:22:30 -0400
 From: mathieu.poirier@linaro.org
 To: linus.walleij@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
         robherring2@gmail.com, daniel.thompson@linaro.org
@@ -17,9 +17,9 @@ Cc: mathieu.poirier@linaro.org, arve@android.com, john.stultz@linaro.org,
         r.sengupta@samsung.com, robbelibobban@gmail.com,
         Tony.Armitstead@arm.com, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/10 v3] coresight-etm: add CoreSight ETM/PTM driver
-Date: Thu,  7 Aug 2014 12:21:43 -0600
-Message-Id: <1407435706-19441-8-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 01/10 v3] coresight: add CoreSight core layer framework
+Date: Thu,  7 Aug 2014 12:21:37 -0600
+Message-Id: <1407435706-19441-2-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407435706-19441-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1407435706-19441-1-git-send-email-mathieu.poirier@linaro.org>
@@ -29,52 +29,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pratik Patel <pratikp@codeaurora.org>
 
-This driver manages CoreSight ETM (Embedded Trace Macrocell) that
-supports processor tracing. Currently supported version are ARM
-ETMv3.x and PTM1.x.
+CoreSight components are compliant with the ARM CoreSight
+architecture specification and can be connected in various
+topologies to suite a particular SoCs tracing needs. These trace
+components can generally be classified as sources, links and
+sinks. Trace data produced by one or more sources flows through
+the intermediate links connecting the source to the currently
+selected sink.
+
+CoreSight framework provides an interface for the CoreSight trace
+drivers to register themselves with. It's intended to build up a
+topological view of the CoreSight components and configure the
+right series of components on user input via debugfs.
+
+For eg., when enabling a source, framework builds up a path
+consisting of all the components connecting the source to the
+currently selected sink(s) and enables all of them.
+
+The framework also supports switching between available sinks
+and also provides status information to user space applications
+through the debugfs interface.
 
 Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
 Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- arch/arm/Kconfig.debug                 |    9 +
- arch/arm/include/asm/hardware/cp14.h   |  540 ++++++++++++
- drivers/coresight/Makefile             |    1 +
- drivers/coresight/coresight-etm-cp14.c |  506 +++++++++++
- drivers/coresight/coresight-etm.h      |  192 ++++
- drivers/coresight/coresight-etm3x.c    | 1516 ++++++++++++++++++++++++++++++++
- drivers/coresight/coresight-priv.h     |    2 +-
- 7 files changed, 2765 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/include/asm/hardware/cp14.h
- create mode 100644 drivers/coresight/coresight-etm-cp14.c
- create mode 100644 drivers/coresight/coresight-etm.h
- create mode 100644 drivers/coresight/coresight-etm3x.c
+ arch/arm/Kconfig.debug             |   9 +
+ drivers/Makefile                   |   1 +
+ drivers/amba/bus.c                 |   2 +-
+ drivers/coresight/Makefile         |   5 +
+ drivers/coresight/coresight-priv.h |  63 ++++
+ drivers/coresight/coresight.c      | 638 +++++++++++++++++++++++++++++++++++++
+ drivers/coresight/of_coresight.c   | 202 ++++++++++++
+ include/linux/amba/bus.h           |   1 +
+ include/linux/coresight.h          | 200 ++++++++++++
+ 9 files changed, 1120 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/coresight/Makefile
+ create mode 100644 drivers/coresight/coresight-priv.h
+ create mode 100644 drivers/coresight/coresight.c
+ create mode 100644 drivers/coresight/of_coresight.c
+ create mode 100644 include/linux/coresight.h
 
 diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 92f233f..886f4b2 100644
+index 8f90595..c04d0d9 100644
 --- a/arch/arm/Kconfig.debug
 +++ b/arch/arm/Kconfig.debug
-@@ -1275,5 +1275,14 @@ config CORESIGHT_LINKS_AND_SINKS
- 	  This enables support for CoreSight link and sink drivers that are
- 	  responsible for transporting and collecting the trace data
- 	  respectively.
-+
-+config CORESIGHT_SOURCE_ETM3X
-+	bool "CoreSight Embedded Trace Macrocell 3.x driver"
-+	select CORESIGHT_LINKS_AND_SINKS
+@@ -1257,4 +1257,13 @@ config DEBUG_SET_MODULE_RONX
+ 	  against certain classes of kernel exploits.
+ 	  If in doubt, say "N".
+ 
++menuconfig CORESIGHT
++	bool "CoreSight Tracing Support"
++	select ARM_AMBA
 +	help
-+	  This driver provides support for processor ETM3.x and PTM1.x modules,
-+	  which allows tracing the instructions that a processor is executing
-+	  This is primarily useful for instruction level tracing.  Depending
-+	  the ETM version data tracing may also be available.
- endif
++	  This framework provides a kernel interface for the CoreSight debug
++	  and trace drivers to register themselves with. It's intended to build
++	  a topological view of the CoreSight components based on a DT
++	  specification and configure the right serie of components when a
++	  trace source gets enabled.
  endmenu
-diff --git a/arch/arm/include/asm/hardware/cp14.h b/arch/arm/include/asm/hardware/cp14.h
+diff --git a/drivers/Makefile b/drivers/Makefile
+index f98b50d..fb58a94 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -158,3 +158,4 @@ obj-$(CONFIG_NTB)		+= ntb/
+ obj-$(CONFIG_FMC)		+= fmc/
+ obj-$(CONFIG_POWERCAP)		+= powercap/
+ obj-$(CONFIG_MCB)		+= mcb/
++obj-$(CONFIG_CORESIGHT)		+= coresight/
+diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+index 3cf61a1..131258b 100644
+--- a/drivers/amba/bus.c
++++ b/drivers/amba/bus.c
+@@ -327,7 +327,7 @@ int amba_device_add(struct amba_device *dev, struct resource *parent)
+ 
+ 		amba_put_disable_pclk(dev);
+ 
+-		if (cid == AMBA_CID)
++		if (cid == AMBA_CID || cid == CORESIGHT_CID)
+ 			dev->periphid = pid;
+ 
+ 		if (!dev->periphid)
+diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
 new file mode 100644
-index 0000000..2e7a299
+index 0000000..218e3b5
 --- /dev/null
-+++ b/arch/arm/include/asm/hardware/cp14.h
-@@ -0,0 +1,540 @@
++++ b/drivers/coresight/Makefile
+@@ -0,0 +1,5 @@
++#
++# Makefile for CoreSight drivers.
++#
++obj-$(CONFIG_CORESIGHT) += coresight.o
++obj-$(CONFIG_OF) += of_coresight.o
+diff --git a/drivers/coresight/coresight-priv.h b/drivers/coresight/coresight-priv.h
+new file mode 100644
+index 0000000..241a542
+--- /dev/null
++++ b/drivers/coresight/coresight-priv.h
+@@ -0,0 +1,63 @@
 +/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -87,1260 +139,64 @@ index 0000000..2e7a299
 + * GNU General Public License for more details.
 + */
 +
-+#ifndef __ASM_HARDWARE_CP14_H
-+#define __ASM_HARDWARE_CP14_H
++#ifndef _CORESIGHT_PRIV_H
++#define _CORESIGHT_PRIV_H
 +
-+#include <linux/types.h>
-+
-+/* Accessors for CP14 registers */
-+#define dbg_read(reg)			RCP14_##reg()
-+#define dbg_write(val, reg)		WCP14_##reg(val)
-+#define etm_read(reg)			RCP14_##reg()
-+#define etm_write(val, reg)		WCP14_##reg(val)
-+
-+/* MRC14 and MCR14 */
-+#define MRC14(op1, crn, crm, op2)					\
-+({									\
-+u32 val;								\
-+asm volatile("mrc p14, "#op1", %0, "#crn", "#crm", "#op2 : "=r" (val));	\
-+val;									\
-+})
-+
-+#define MCR14(val, op1, crn, crm, op2)					\
-+({									\
-+asm volatile("mcr p14, "#op1", %0, "#crn", "#crm", "#op2 : : "r" (val));\
-+})
-+
-+/* Debug Registers
-+ *
-+ * Available only in DBGv7
-+ * DBGECR, DBGDSCCR, DBGDSMCR, DBGDRCR
-+ *
-+ * Available only in DBGv7.1
-+ * DBGBXVRm, DBGOSDLR, DBGDEVID2, DBGDEVID1
-+ *
-+ * Read only
-+ * DBGDIDR, DBGDSCRint, DBGDTRRXint, DBGDRAR, DBGOSLSR, DBGOSSRR, DBGPRSR,
-+ * DBGPRSR, DBGDSAR, DBGAUTHSTATUS, DBGDEVID2, DBGDEVID1, DBGDEVID
-+ *
-+ * Write only
-+ * DBGDTRTXint, DBGOSLAR
-+ */
-+#define RCP14_DBGDIDR()			MRC14(0, c0, c0, 0)
-+#define RCP14_DBGDSCRint()		MRC14(0, c0, c1, 0)
-+#define RCP14_DBGDTRRXint()		MRC14(0, c0, c5, 0)
-+#define RCP14_DBGWFAR()			MRC14(0, c0, c6, 0)
-+#define RCP14_DBGVCR()			MRC14(0, c0, c7, 0)
-+#define RCP14_DBGECR()			MRC14(0, c0, c9, 0)
-+#define RCP14_DBGDSCCR()		MRC14(0, c0, c10, 0)
-+#define RCP14_DBGDSMCR()		MRC14(0, c0, c11, 0)
-+#define RCP14_DBGDTRRXext()		MRC14(0, c0, c0, 2)
-+#define RCP14_DBGDSCRext()		MRC14(0, c0, c2, 2)
-+#define RCP14_DBGDTRTXext()		MRC14(0, c0, c3, 2)
-+#define RCP14_DBGDRCR()			MRC14(0, c0, c4, 2)
-+#define RCP14_DBGBVR0()			MRC14(0, c0, c0, 4)
-+#define RCP14_DBGBVR1()			MRC14(0, c0, c1, 4)
-+#define RCP14_DBGBVR2()			MRC14(0, c0, c2, 4)
-+#define RCP14_DBGBVR3()			MRC14(0, c0, c3, 4)
-+#define RCP14_DBGBVR4()			MRC14(0, c0, c4, 4)
-+#define RCP14_DBGBVR5()			MRC14(0, c0, c5, 4)
-+#define RCP14_DBGBVR6()			MRC14(0, c0, c6, 4)
-+#define RCP14_DBGBVR7()			MRC14(0, c0, c7, 4)
-+#define RCP14_DBGBVR8()			MRC14(0, c0, c8, 4)
-+#define RCP14_DBGBVR9()			MRC14(0, c0, c9, 4)
-+#define RCP14_DBGBVR10()		MRC14(0, c0, c10, 4)
-+#define RCP14_DBGBVR11()		MRC14(0, c0, c11, 4)
-+#define RCP14_DBGBVR12()		MRC14(0, c0, c12, 4)
-+#define RCP14_DBGBVR13()		MRC14(0, c0, c13, 4)
-+#define RCP14_DBGBVR14()		MRC14(0, c0, c14, 4)
-+#define RCP14_DBGBVR15()		MRC14(0, c0, c15, 4)
-+#define RCP14_DBGBCR0()			MRC14(0, c0, c0, 5)
-+#define RCP14_DBGBCR1()			MRC14(0, c0, c1, 5)
-+#define RCP14_DBGBCR2()			MRC14(0, c0, c2, 5)
-+#define RCP14_DBGBCR3()			MRC14(0, c0, c3, 5)
-+#define RCP14_DBGBCR4()			MRC14(0, c0, c4, 5)
-+#define RCP14_DBGBCR5()			MRC14(0, c0, c5, 5)
-+#define RCP14_DBGBCR6()			MRC14(0, c0, c6, 5)
-+#define RCP14_DBGBCR7()			MRC14(0, c0, c7, 5)
-+#define RCP14_DBGBCR8()			MRC14(0, c0, c8, 5)
-+#define RCP14_DBGBCR9()			MRC14(0, c0, c9, 5)
-+#define RCP14_DBGBCR10()		MRC14(0, c0, c10, 5)
-+#define RCP14_DBGBCR11()		MRC14(0, c0, c11, 5)
-+#define RCP14_DBGBCR12()		MRC14(0, c0, c12, 5)
-+#define RCP14_DBGBCR13()		MRC14(0, c0, c13, 5)
-+#define RCP14_DBGBCR14()		MRC14(0, c0, c14, 5)
-+#define RCP14_DBGBCR15()		MRC14(0, c0, c15, 5)
-+#define RCP14_DBGWVR0()			MRC14(0, c0, c0, 6)
-+#define RCP14_DBGWVR1()			MRC14(0, c0, c1, 6)
-+#define RCP14_DBGWVR2()			MRC14(0, c0, c2, 6)
-+#define RCP14_DBGWVR3()			MRC14(0, c0, c3, 6)
-+#define RCP14_DBGWVR4()			MRC14(0, c0, c4, 6)
-+#define RCP14_DBGWVR5()			MRC14(0, c0, c5, 6)
-+#define RCP14_DBGWVR6()			MRC14(0, c0, c6, 6)
-+#define RCP14_DBGWVR7()			MRC14(0, c0, c7, 6)
-+#define RCP14_DBGWVR8()			MRC14(0, c0, c8, 6)
-+#define RCP14_DBGWVR9()			MRC14(0, c0, c9, 6)
-+#define RCP14_DBGWVR10()		MRC14(0, c0, c10, 6)
-+#define RCP14_DBGWVR11()		MRC14(0, c0, c11, 6)
-+#define RCP14_DBGWVR12()		MRC14(0, c0, c12, 6)
-+#define RCP14_DBGWVR13()		MRC14(0, c0, c13, 6)
-+#define RCP14_DBGWVR14()		MRC14(0, c0, c14, 6)
-+#define RCP14_DBGWVR15()		MRC14(0, c0, c15, 6)
-+#define RCP14_DBGWCR0()			MRC14(0, c0, c0, 7)
-+#define RCP14_DBGWCR1()			MRC14(0, c0, c1, 7)
-+#define RCP14_DBGWCR2()			MRC14(0, c0, c2, 7)
-+#define RCP14_DBGWCR3()			MRC14(0, c0, c3, 7)
-+#define RCP14_DBGWCR4()			MRC14(0, c0, c4, 7)
-+#define RCP14_DBGWCR5()			MRC14(0, c0, c5, 7)
-+#define RCP14_DBGWCR6()			MRC14(0, c0, c6, 7)
-+#define RCP14_DBGWCR7()			MRC14(0, c0, c7, 7)
-+#define RCP14_DBGWCR8()			MRC14(0, c0, c8, 7)
-+#define RCP14_DBGWCR9()			MRC14(0, c0, c9, 7)
-+#define RCP14_DBGWCR10()		MRC14(0, c0, c10, 7)
-+#define RCP14_DBGWCR11()		MRC14(0, c0, c11, 7)
-+#define RCP14_DBGWCR12()		MRC14(0, c0, c12, 7)
-+#define RCP14_DBGWCR13()		MRC14(0, c0, c13, 7)
-+#define RCP14_DBGWCR14()		MRC14(0, c0, c14, 7)
-+#define RCP14_DBGWCR15()		MRC14(0, c0, c15, 7)
-+#define RCP14_DBGDRAR()			MRC14(0, c1, c0, 0)
-+#define RCP14_DBGBXVR0()		MRC14(0, c1, c0, 1)
-+#define RCP14_DBGBXVR1()		MRC14(0, c1, c1, 1)
-+#define RCP14_DBGBXVR2()		MRC14(0, c1, c2, 1)
-+#define RCP14_DBGBXVR3()		MRC14(0, c1, c3, 1)
-+#define RCP14_DBGBXVR4()		MRC14(0, c1, c4, 1)
-+#define RCP14_DBGBXVR5()		MRC14(0, c1, c5, 1)
-+#define RCP14_DBGBXVR6()		MRC14(0, c1, c6, 1)
-+#define RCP14_DBGBXVR7()		MRC14(0, c1, c7, 1)
-+#define RCP14_DBGBXVR8()		MRC14(0, c1, c8, 1)
-+#define RCP14_DBGBXVR9()		MRC14(0, c1, c9, 1)
-+#define RCP14_DBGBXVR10()		MRC14(0, c1, c10, 1)
-+#define RCP14_DBGBXVR11()		MRC14(0, c1, c11, 1)
-+#define RCP14_DBGBXVR12()		MRC14(0, c1, c12, 1)
-+#define RCP14_DBGBXVR13()		MRC14(0, c1, c13, 1)
-+#define RCP14_DBGBXVR14()		MRC14(0, c1, c14, 1)
-+#define RCP14_DBGBXVR15()		MRC14(0, c1, c15, 1)
-+#define RCP14_DBGOSLSR()		MRC14(0, c1, c1, 4)
-+#define RCP14_DBGOSSRR()		MRC14(0, c1, c2, 4)
-+#define RCP14_DBGOSDLR()		MRC14(0, c1, c3, 4)
-+#define RCP14_DBGPRCR()			MRC14(0, c1, c4, 4)
-+#define RCP14_DBGPRSR()			MRC14(0, c1, c5, 4)
-+#define RCP14_DBGDSAR()			MRC14(0, c2, c0, 0)
-+#define RCP14_DBGITCTRL()		MRC14(0, c7, c0, 4)
-+#define RCP14_DBGCLAIMSET()		MRC14(0, c7, c8, 6)
-+#define RCP14_DBGCLAIMCLR()		MRC14(0, c7, c9, 6)
-+#define RCP14_DBGAUTHSTATUS()		MRC14(0, c7, c14, 6)
-+#define RCP14_DBGDEVID2()		MRC14(0, c7, c0, 7)
-+#define RCP14_DBGDEVID1()		MRC14(0, c7, c1, 7)
-+#define RCP14_DBGDEVID()		MRC14(0, c7, c2, 7)
-+
-+#define WCP14_DBGDTRTXint(val)		MCR14(val, 0, c0, c5, 0)
-+#define WCP14_DBGWFAR(val)		MCR14(val, 0, c0, c6, 0)
-+#define WCP14_DBGVCR(val)		MCR14(val, 0, c0, c7, 0)
-+#define WCP14_DBGECR(val)		MCR14(val, 0, c0, c9, 0)
-+#define WCP14_DBGDSCCR(val)		MCR14(val, 0, c0, c10, 0)
-+#define WCP14_DBGDSMCR(val)		MCR14(val, 0, c0, c11, 0)
-+#define WCP14_DBGDTRRXext(val)		MCR14(val, 0, c0, c0, 2)
-+#define WCP14_DBGDSCRext(val)		MCR14(val, 0, c0, c2, 2)
-+#define WCP14_DBGDTRTXext(val)		MCR14(val, 0, c0, c3, 2)
-+#define WCP14_DBGDRCR(val)		MCR14(val, 0, c0, c4, 2)
-+#define WCP14_DBGBVR0(val)		MCR14(val, 0, c0, c0, 4)
-+#define WCP14_DBGBVR1(val)		MCR14(val, 0, c0, c1, 4)
-+#define WCP14_DBGBVR2(val)		MCR14(val, 0, c0, c2, 4)
-+#define WCP14_DBGBVR3(val)		MCR14(val, 0, c0, c3, 4)
-+#define WCP14_DBGBVR4(val)		MCR14(val, 0, c0, c4, 4)
-+#define WCP14_DBGBVR5(val)		MCR14(val, 0, c0, c5, 4)
-+#define WCP14_DBGBVR6(val)		MCR14(val, 0, c0, c6, 4)
-+#define WCP14_DBGBVR7(val)		MCR14(val, 0, c0, c7, 4)
-+#define WCP14_DBGBVR8(val)		MCR14(val, 0, c0, c8, 4)
-+#define WCP14_DBGBVR9(val)		MCR14(val, 0, c0, c9, 4)
-+#define WCP14_DBGBVR10(val)		MCR14(val, 0, c0, c10, 4)
-+#define WCP14_DBGBVR11(val)		MCR14(val, 0, c0, c11, 4)
-+#define WCP14_DBGBVR12(val)		MCR14(val, 0, c0, c12, 4)
-+#define WCP14_DBGBVR13(val)		MCR14(val, 0, c0, c13, 4)
-+#define WCP14_DBGBVR14(val)		MCR14(val, 0, c0, c14, 4)
-+#define WCP14_DBGBVR15(val)		MCR14(val, 0, c0, c15, 4)
-+#define WCP14_DBGBCR0(val)		MCR14(val, 0, c0, c0, 5)
-+#define WCP14_DBGBCR1(val)		MCR14(val, 0, c0, c1, 5)
-+#define WCP14_DBGBCR2(val)		MCR14(val, 0, c0, c2, 5)
-+#define WCP14_DBGBCR3(val)		MCR14(val, 0, c0, c3, 5)
-+#define WCP14_DBGBCR4(val)		MCR14(val, 0, c0, c4, 5)
-+#define WCP14_DBGBCR5(val)		MCR14(val, 0, c0, c5, 5)
-+#define WCP14_DBGBCR6(val)		MCR14(val, 0, c0, c6, 5)
-+#define WCP14_DBGBCR7(val)		MCR14(val, 0, c0, c7, 5)
-+#define WCP14_DBGBCR8(val)		MCR14(val, 0, c0, c8, 5)
-+#define WCP14_DBGBCR9(val)		MCR14(val, 0, c0, c9, 5)
-+#define WCP14_DBGBCR10(val)		MCR14(val, 0, c0, c10, 5)
-+#define WCP14_DBGBCR11(val)		MCR14(val, 0, c0, c11, 5)
-+#define WCP14_DBGBCR12(val)		MCR14(val, 0, c0, c12, 5)
-+#define WCP14_DBGBCR13(val)		MCR14(val, 0, c0, c13, 5)
-+#define WCP14_DBGBCR14(val)		MCR14(val, 0, c0, c14, 5)
-+#define WCP14_DBGBCR15(val)		MCR14(val, 0, c0, c15, 5)
-+#define WCP14_DBGWVR0(val)		MCR14(val, 0, c0, c0, 6)
-+#define WCP14_DBGWVR1(val)		MCR14(val, 0, c0, c1, 6)
-+#define WCP14_DBGWVR2(val)		MCR14(val, 0, c0, c2, 6)
-+#define WCP14_DBGWVR3(val)		MCR14(val, 0, c0, c3, 6)
-+#define WCP14_DBGWVR4(val)		MCR14(val, 0, c0, c4, 6)
-+#define WCP14_DBGWVR5(val)		MCR14(val, 0, c0, c5, 6)
-+#define WCP14_DBGWVR6(val)		MCR14(val, 0, c0, c6, 6)
-+#define WCP14_DBGWVR7(val)		MCR14(val, 0, c0, c7, 6)
-+#define WCP14_DBGWVR8(val)		MCR14(val, 0, c0, c8, 6)
-+#define WCP14_DBGWVR9(val)		MCR14(val, 0, c0, c9, 6)
-+#define WCP14_DBGWVR10(val)		MCR14(val, 0, c0, c10, 6)
-+#define WCP14_DBGWVR11(val)		MCR14(val, 0, c0, c11, 6)
-+#define WCP14_DBGWVR12(val)		MCR14(val, 0, c0, c12, 6)
-+#define WCP14_DBGWVR13(val)		MCR14(val, 0, c0, c13, 6)
-+#define WCP14_DBGWVR14(val)		MCR14(val, 0, c0, c14, 6)
-+#define WCP14_DBGWVR15(val)		MCR14(val, 0, c0, c15, 6)
-+#define WCP14_DBGWCR0(val)		MCR14(val, 0, c0, c0, 7)
-+#define WCP14_DBGWCR1(val)		MCR14(val, 0, c0, c1, 7)
-+#define WCP14_DBGWCR2(val)		MCR14(val, 0, c0, c2, 7)
-+#define WCP14_DBGWCR3(val)		MCR14(val, 0, c0, c3, 7)
-+#define WCP14_DBGWCR4(val)		MCR14(val, 0, c0, c4, 7)
-+#define WCP14_DBGWCR5(val)		MCR14(val, 0, c0, c5, 7)
-+#define WCP14_DBGWCR6(val)		MCR14(val, 0, c0, c6, 7)
-+#define WCP14_DBGWCR7(val)		MCR14(val, 0, c0, c7, 7)
-+#define WCP14_DBGWCR8(val)		MCR14(val, 0, c0, c8, 7)
-+#define WCP14_DBGWCR9(val)		MCR14(val, 0, c0, c9, 7)
-+#define WCP14_DBGWCR10(val)		MCR14(val, 0, c0, c10, 7)
-+#define WCP14_DBGWCR11(val)		MCR14(val, 0, c0, c11, 7)
-+#define WCP14_DBGWCR12(val)		MCR14(val, 0, c0, c12, 7)
-+#define WCP14_DBGWCR13(val)		MCR14(val, 0, c0, c13, 7)
-+#define WCP14_DBGWCR14(val)		MCR14(val, 0, c0, c14, 7)
-+#define WCP14_DBGWCR15(val)		MCR14(val, 0, c0, c15, 7)
-+#define WCP14_DBGBXVR0(val)		MCR14(val, 0, c1, c0, 1)
-+#define WCP14_DBGBXVR1(val)		MCR14(val, 0, c1, c1, 1)
-+#define WCP14_DBGBXVR2(val)		MCR14(val, 0, c1, c2, 1)
-+#define WCP14_DBGBXVR3(val)		MCR14(val, 0, c1, c3, 1)
-+#define WCP14_DBGBXVR4(val)		MCR14(val, 0, c1, c4, 1)
-+#define WCP14_DBGBXVR5(val)		MCR14(val, 0, c1, c5, 1)
-+#define WCP14_DBGBXVR6(val)		MCR14(val, 0, c1, c6, 1)
-+#define WCP14_DBGBXVR7(val)		MCR14(val, 0, c1, c7, 1)
-+#define WCP14_DBGBXVR8(val)		MCR14(val, 0, c1, c8, 1)
-+#define WCP14_DBGBXVR9(val)		MCR14(val, 0, c1, c9, 1)
-+#define WCP14_DBGBXVR10(val)		MCR14(val, 0, c1, c10, 1)
-+#define WCP14_DBGBXVR11(val)		MCR14(val, 0, c1, c11, 1)
-+#define WCP14_DBGBXVR12(val)		MCR14(val, 0, c1, c12, 1)
-+#define WCP14_DBGBXVR13(val)		MCR14(val, 0, c1, c13, 1)
-+#define WCP14_DBGBXVR14(val)		MCR14(val, 0, c1, c14, 1)
-+#define WCP14_DBGBXVR15(val)		MCR14(val, 0, c1, c15, 1)
-+#define WCP14_DBGOSLAR(val)		MCR14(val, 0, c1, c0, 4)
-+#define WCP14_DBGOSSRR(val)		MCR14(val, 0, c1, c2, 4)
-+#define WCP14_DBGOSDLR(val)		MCR14(val, 0, c1, c3, 4)
-+#define WCP14_DBGPRCR(val)		MCR14(val, 0, c1, c4, 4)
-+#define WCP14_DBGITCTRL(val)		MCR14(val, 0, c7, c0, 4)
-+#define WCP14_DBGCLAIMSET(val)		MCR14(val, 0, c7, c8, 6)
-+#define WCP14_DBGCLAIMCLR(val)		MCR14(val, 0, c7, c9, 6)
-+
-+/* ETM Registers
-+ *
-+ * Available only in ETMv3.3, 3.4, 3.5
-+ * ETMASICCR, ETMTECR2, ETMFFRR, ETMVDEVR, ETMVDCR1, ETMVDCR2, ETMVDCR3,
-+ * ETMDCVRn, ETMDCMRn
-+ *
-+ * Available only in ETMv3.5 as read only
-+ * ETMIDR2
-+ *
-+ * Available only in ETMv3.5, PFTv1.0, 1.1
-+ * ETMTSEVR, ETMVMIDCVR, ETMPDCR
-+ *
-+ * Read only
-+ * ETMCCR, ETMSCR, ETMIDR, ETMCCER, ETMOSLSR
-+ * ETMLSR, ETMAUTHSTATUS, ETMDEVID, ETMDEVTYPE, ETMPIDR4, ETMPIDR5, ETMPIDR6,
-+ * ETMPIDR7, ETMPIDR0, ETMPIDR1, ETMPIDR2, ETMPIDR2, ETMPIDR3, ETMCIDR0,
-+ * ETMCIDR1, ETMCIDR2, ETMCIDR3
-+ *
-+ * Write only
-+ * ETMOSLAR, ETMLAR
-+ * Note: ETMCCER[11] controls WO nature of certain regs. Refer ETM arch spec.
-+ */
-+#define RCP14_ETMCR()			MRC14(1, c0, c0, 0)
-+#define RCP14_ETMCCR()			MRC14(1, c0, c1, 0)
-+#define RCP14_ETMTRIGGER()		MRC14(1, c0, c2, 0)
-+#define RCP14_ETMASICCR()		MRC14(1, c0, c3, 0)
-+#define RCP14_ETMSR()			MRC14(1, c0, c4, 0)
-+#define RCP14_ETMSCR()			MRC14(1, c0, c5, 0)
-+#define RCP14_ETMTSSCR()		MRC14(1, c0, c6, 0)
-+#define RCP14_ETMTECR2()		MRC14(1, c0, c7, 0)
-+#define RCP14_ETMTEEVR()		MRC14(1, c0, c8, 0)
-+#define RCP14_ETMTECR1()		MRC14(1, c0, c9, 0)
-+#define RCP14_ETMFFRR()			MRC14(1, c0, c10, 0)
-+#define RCP14_ETMFFLR()			MRC14(1, c0, c11, 0)
-+#define RCP14_ETMVDEVR()		MRC14(1, c0, c12, 0)
-+#define RCP14_ETMVDCR1()		MRC14(1, c0, c13, 0)
-+#define RCP14_ETMVDCR2()		MRC14(1, c0, c14, 0)
-+#define RCP14_ETMVDCR3()		MRC14(1, c0, c15, 0)
-+#define RCP14_ETMACVR0()		MRC14(1, c0, c0, 1)
-+#define RCP14_ETMACVR1()		MRC14(1, c0, c1, 1)
-+#define RCP14_ETMACVR2()		MRC14(1, c0, c2, 1)
-+#define RCP14_ETMACVR3()		MRC14(1, c0, c3, 1)
-+#define RCP14_ETMACVR4()		MRC14(1, c0, c4, 1)
-+#define RCP14_ETMACVR5()		MRC14(1, c0, c5, 1)
-+#define RCP14_ETMACVR6()		MRC14(1, c0, c6, 1)
-+#define RCP14_ETMACVR7()		MRC14(1, c0, c7, 1)
-+#define RCP14_ETMACVR8()		MRC14(1, c0, c8, 1)
-+#define RCP14_ETMACVR9()		MRC14(1, c0, c9, 1)
-+#define RCP14_ETMACVR10()		MRC14(1, c0, c10, 1)
-+#define RCP14_ETMACVR11()		MRC14(1, c0, c11, 1)
-+#define RCP14_ETMACVR12()		MRC14(1, c0, c12, 1)
-+#define RCP14_ETMACVR13()		MRC14(1, c0, c13, 1)
-+#define RCP14_ETMACVR14()		MRC14(1, c0, c14, 1)
-+#define RCP14_ETMACVR15()		MRC14(1, c0, c15, 1)
-+#define RCP14_ETMACTR0()		MRC14(1, c0, c0, 2)
-+#define RCP14_ETMACTR1()		MRC14(1, c0, c1, 2)
-+#define RCP14_ETMACTR2()		MRC14(1, c0, c2, 2)
-+#define RCP14_ETMACTR3()		MRC14(1, c0, c3, 2)
-+#define RCP14_ETMACTR4()		MRC14(1, c0, c4, 2)
-+#define RCP14_ETMACTR5()		MRC14(1, c0, c5, 2)
-+#define RCP14_ETMACTR6()		MRC14(1, c0, c6, 2)
-+#define RCP14_ETMACTR7()		MRC14(1, c0, c7, 2)
-+#define RCP14_ETMACTR8()		MRC14(1, c0, c8, 2)
-+#define RCP14_ETMACTR9()		MRC14(1, c0, c9, 2)
-+#define RCP14_ETMACTR10()		MRC14(1, c0, c10, 2)
-+#define RCP14_ETMACTR11()		MRC14(1, c0, c11, 2)
-+#define RCP14_ETMACTR12()		MRC14(1, c0, c12, 2)
-+#define RCP14_ETMACTR13()		MRC14(1, c0, c13, 2)
-+#define RCP14_ETMACTR14()		MRC14(1, c0, c14, 2)
-+#define RCP14_ETMACTR15()		MRC14(1, c0, c15, 2)
-+#define RCP14_ETMDCVR0()		MRC14(1, c0, c0, 3)
-+#define RCP14_ETMDCVR2()		MRC14(1, c0, c2, 3)
-+#define RCP14_ETMDCVR4()		MRC14(1, c0, c4, 3)
-+#define RCP14_ETMDCVR6()		MRC14(1, c0, c6, 3)
-+#define RCP14_ETMDCVR8()		MRC14(1, c0, c8, 3)
-+#define RCP14_ETMDCVR10()		MRC14(1, c0, c10, 3)
-+#define RCP14_ETMDCVR12()		MRC14(1, c0, c12, 3)
-+#define RCP14_ETMDCVR14()		MRC14(1, c0, c14, 3)
-+#define RCP14_ETMDCMR0()		MRC14(1, c0, c0, 4)
-+#define RCP14_ETMDCMR2()		MRC14(1, c0, c2, 4)
-+#define RCP14_ETMDCMR4()		MRC14(1, c0, c4, 4)
-+#define RCP14_ETMDCMR6()		MRC14(1, c0, c6, 4)
-+#define RCP14_ETMDCMR8()		MRC14(1, c0, c8, 4)
-+#define RCP14_ETMDCMR10()		MRC14(1, c0, c10, 4)
-+#define RCP14_ETMDCMR12()		MRC14(1, c0, c12, 4)
-+#define RCP14_ETMDCMR14()		MRC14(1, c0, c14, 4)
-+#define RCP14_ETMCNTRLDVR0()		MRC14(1, c0, c0, 5)
-+#define RCP14_ETMCNTRLDVR1()		MRC14(1, c0, c1, 5)
-+#define RCP14_ETMCNTRLDVR2()		MRC14(1, c0, c2, 5)
-+#define RCP14_ETMCNTRLDVR3()		MRC14(1, c0, c3, 5)
-+#define RCP14_ETMCNTENR0()		MRC14(1, c0, c4, 5)
-+#define RCP14_ETMCNTENR1()		MRC14(1, c0, c5, 5)
-+#define RCP14_ETMCNTENR2()		MRC14(1, c0, c6, 5)
-+#define RCP14_ETMCNTENR3()		MRC14(1, c0, c7, 5)
-+#define RCP14_ETMCNTRLDEVR0()		MRC14(1, c0, c8, 5)
-+#define RCP14_ETMCNTRLDEVR1()		MRC14(1, c0, c9, 5)
-+#define RCP14_ETMCNTRLDEVR2()		MRC14(1, c0, c10, 5)
-+#define RCP14_ETMCNTRLDEVR3()		MRC14(1, c0, c11, 5)
-+#define RCP14_ETMCNTVR0()		MRC14(1, c0, c12, 5)
-+#define RCP14_ETMCNTVR1()		MRC14(1, c0, c13, 5)
-+#define RCP14_ETMCNTVR2()		MRC14(1, c0, c14, 5)
-+#define RCP14_ETMCNTVR3()		MRC14(1, c0, c15, 5)
-+#define RCP14_ETMSQ12EVR()		MRC14(1, c0, c0, 6)
-+#define RCP14_ETMSQ21EVR()		MRC14(1, c0, c1, 6)
-+#define RCP14_ETMSQ23EVR()		MRC14(1, c0, c2, 6)
-+#define RCP14_ETMSQ31EVR()		MRC14(1, c0, c3, 6)
-+#define RCP14_ETMSQ32EVR()		MRC14(1, c0, c4, 6)
-+#define RCP14_ETMSQ13EVR()		MRC14(1, c0, c5, 6)
-+#define RCP14_ETMSQR()			MRC14(1, c0, c7, 6)
-+#define RCP14_ETMEXTOUTEVR0()		MRC14(1, c0, c8, 6)
-+#define RCP14_ETMEXTOUTEVR1()		MRC14(1, c0, c9, 6)
-+#define RCP14_ETMEXTOUTEVR2()		MRC14(1, c0, c10, 6)
-+#define RCP14_ETMEXTOUTEVR3()		MRC14(1, c0, c11, 6)
-+#define RCP14_ETMCIDCVR0()		MRC14(1, c0, c12, 6)
-+#define RCP14_ETMCIDCVR1()		MRC14(1, c0, c13, 6)
-+#define RCP14_ETMCIDCVR2()		MRC14(1, c0, c14, 6)
-+#define RCP14_ETMCIDCMR()		MRC14(1, c0, c15, 6)
-+#define RCP14_ETMIMPSPEC0()		MRC14(1, c0, c0, 7)
-+#define RCP14_ETMIMPSPEC1()		MRC14(1, c0, c1, 7)
-+#define RCP14_ETMIMPSPEC2()		MRC14(1, c0, c2, 7)
-+#define RCP14_ETMIMPSPEC3()		MRC14(1, c0, c3, 7)
-+#define RCP14_ETMIMPSPEC4()		MRC14(1, c0, c4, 7)
-+#define RCP14_ETMIMPSPEC5()		MRC14(1, c0, c5, 7)
-+#define RCP14_ETMIMPSPEC6()		MRC14(1, c0, c6, 7)
-+#define RCP14_ETMIMPSPEC7()		MRC14(1, c0, c7, 7)
-+#define RCP14_ETMSYNCFR()		MRC14(1, c0, c8, 7)
-+#define RCP14_ETMIDR()			MRC14(1, c0, c9, 7)
-+#define RCP14_ETMCCER()			MRC14(1, c0, c10, 7)
-+#define RCP14_ETMEXTINSELR()		MRC14(1, c0, c11, 7)
-+#define RCP14_ETMTESSEICR()		MRC14(1, c0, c12, 7)
-+#define RCP14_ETMEIBCR()		MRC14(1, c0, c13, 7)
-+#define RCP14_ETMTSEVR()		MRC14(1, c0, c14, 7)
-+#define RCP14_ETMAUXCR()		MRC14(1, c0, c15, 7)
-+#define RCP14_ETMTRACEIDR()		MRC14(1, c1, c0, 0)
-+#define RCP14_ETMIDR2()			MRC14(1, c1, c2, 0)
-+#define RCP14_ETMVMIDCVR()		MRC14(1, c1, c0, 1)
-+#define RCP14_ETMOSLSR()		MRC14(1, c1, c1, 4)
-+/* not available in PFTv1.1 */
-+#define RCP14_ETMOSSRR()		MRC14(1, c1, c2, 4)
-+#define RCP14_ETMPDCR()			MRC14(1, c1, c4, 4)
-+#define RCP14_ETMPDSR()			MRC14(1, c1, c5, 4)
-+#define RCP14_ETMITCTRL()		MRC14(1, c7, c0, 4)
-+#define RCP14_ETMCLAIMSET()		MRC14(1, c7, c8, 6)
-+#define RCP14_ETMCLAIMCLR()		MRC14(1, c7, c9, 6)
-+#define RCP14_ETMLSR()			MRC14(1, c7, c13, 6)
-+#define RCP14_ETMAUTHSTATUS()		MRC14(1, c7, c14, 6)
-+#define RCP14_ETMDEVID()		MRC14(1, c7, c2, 7)
-+#define RCP14_ETMDEVTYPE()		MRC14(1, c7, c3, 7)
-+#define RCP14_ETMPIDR4()		MRC14(1, c7, c4, 7)
-+#define RCP14_ETMPIDR5()		MRC14(1, c7, c5, 7)
-+#define RCP14_ETMPIDR6()		MRC14(1, c7, c6, 7)
-+#define RCP14_ETMPIDR7()		MRC14(1, c7, c7, 7)
-+#define RCP14_ETMPIDR0()		MRC14(1, c7, c8, 7)
-+#define RCP14_ETMPIDR1()		MRC14(1, c7, c9, 7)
-+#define RCP14_ETMPIDR2()		MRC14(1, c7, c10, 7)
-+#define RCP14_ETMPIDR3()		MRC14(1, c7, c11, 7)
-+#define RCP14_ETMCIDR0()		MRC14(1, c7, c12, 7)
-+#define RCP14_ETMCIDR1()		MRC14(1, c7, c13, 7)
-+#define RCP14_ETMCIDR2()		MRC14(1, c7, c14, 7)
-+#define RCP14_ETMCIDR3()		MRC14(1, c7, c15, 7)
-+
-+#define WCP14_ETMCR(val)		MCR14(val, 1, c0, c0, 0)
-+#define WCP14_ETMTRIGGER(val)		MCR14(val, 1, c0, c2, 0)
-+#define WCP14_ETMASICCR(val)		MCR14(val, 1, c0, c3, 0)
-+#define WCP14_ETMSR(val)		MCR14(val, 1, c0, c4, 0)
-+#define WCP14_ETMTSSCR(val)		MCR14(val, 1, c0, c6, 0)
-+#define WCP14_ETMTECR2(val)		MCR14(val, 1, c0, c7, 0)
-+#define WCP14_ETMTEEVR(val)		MCR14(val, 1, c0, c8, 0)
-+#define WCP14_ETMTECR1(val)		MCR14(val, 1, c0, c9, 0)
-+#define WCP14_ETMFFRR(val)		MCR14(val, 1, c0, c10, 0)
-+#define WCP14_ETMFFLR(val)		MCR14(val, 1, c0, c11, 0)
-+#define WCP14_ETMVDEVR(val)		MCR14(val, 1, c0, c12, 0)
-+#define WCP14_ETMVDCR1(val)		MCR14(val, 1, c0, c13, 0)
-+#define WCP14_ETMVDCR2(val)		MCR14(val, 1, c0, c14, 0)
-+#define WCP14_ETMVDCR3(val)		MCR14(val, 1, c0, c15, 0)
-+#define WCP14_ETMACVR0(val)		MCR14(val, 1, c0, c0, 1)
-+#define WCP14_ETMACVR1(val)		MCR14(val, 1, c0, c1, 1)
-+#define WCP14_ETMACVR2(val)		MCR14(val, 1, c0, c2, 1)
-+#define WCP14_ETMACVR3(val)		MCR14(val, 1, c0, c3, 1)
-+#define WCP14_ETMACVR4(val)		MCR14(val, 1, c0, c4, 1)
-+#define WCP14_ETMACVR5(val)		MCR14(val, 1, c0, c5, 1)
-+#define WCP14_ETMACVR6(val)		MCR14(val, 1, c0, c6, 1)
-+#define WCP14_ETMACVR7(val)		MCR14(val, 1, c0, c7, 1)
-+#define WCP14_ETMACVR8(val)		MCR14(val, 1, c0, c8, 1)
-+#define WCP14_ETMACVR9(val)		MCR14(val, 1, c0, c9, 1)
-+#define WCP14_ETMACVR10(val)		MCR14(val, 1, c0, c10, 1)
-+#define WCP14_ETMACVR11(val)		MCR14(val, 1, c0, c11, 1)
-+#define WCP14_ETMACVR12(val)		MCR14(val, 1, c0, c12, 1)
-+#define WCP14_ETMACVR13(val)		MCR14(val, 1, c0, c13, 1)
-+#define WCP14_ETMACVR14(val)		MCR14(val, 1, c0, c14, 1)
-+#define WCP14_ETMACVR15(val)		MCR14(val, 1, c0, c15, 1)
-+#define WCP14_ETMACTR0(val)		MCR14(val, 1, c0, c0, 2)
-+#define WCP14_ETMACTR1(val)		MCR14(val, 1, c0, c1, 2)
-+#define WCP14_ETMACTR2(val)		MCR14(val, 1, c0, c2, 2)
-+#define WCP14_ETMACTR3(val)		MCR14(val, 1, c0, c3, 2)
-+#define WCP14_ETMACTR4(val)		MCR14(val, 1, c0, c4, 2)
-+#define WCP14_ETMACTR5(val)		MCR14(val, 1, c0, c5, 2)
-+#define WCP14_ETMACTR6(val)		MCR14(val, 1, c0, c6, 2)
-+#define WCP14_ETMACTR7(val)		MCR14(val, 1, c0, c7, 2)
-+#define WCP14_ETMACTR8(val)		MCR14(val, 1, c0, c8, 2)
-+#define WCP14_ETMACTR9(val)		MCR14(val, 1, c0, c9, 2)
-+#define WCP14_ETMACTR10(val)		MCR14(val, 1, c0, c10, 2)
-+#define WCP14_ETMACTR11(val)		MCR14(val, 1, c0, c11, 2)
-+#define WCP14_ETMACTR12(val)		MCR14(val, 1, c0, c12, 2)
-+#define WCP14_ETMACTR13(val)		MCR14(val, 1, c0, c13, 2)
-+#define WCP14_ETMACTR14(val)		MCR14(val, 1, c0, c14, 2)
-+#define WCP14_ETMACTR15(val)		MCR14(val, 1, c0, c15, 2)
-+#define WCP14_ETMDCVR0(val)		MCR14(val, 1, c0, c0, 3)
-+#define WCP14_ETMDCVR2(val)		MCR14(val, 1, c0, c2, 3)
-+#define WCP14_ETMDCVR4(val)		MCR14(val, 1, c0, c4, 3)
-+#define WCP14_ETMDCVR6(val)		MCR14(val, 1, c0, c6, 3)
-+#define WCP14_ETMDCVR8(val)		MCR14(val, 1, c0, c8, 3)
-+#define WCP14_ETMDCVR10(val)		MCR14(val, 1, c0, c10, 3)
-+#define WCP14_ETMDCVR12(val)		MCR14(val, 1, c0, c12, 3)
-+#define WCP14_ETMDCVR14(val)		MCR14(val, 1, c0, c14, 3)
-+#define WCP14_ETMDCMR0(val)		MCR14(val, 1, c0, c0, 4)
-+#define WCP14_ETMDCMR2(val)		MCR14(val, 1, c0, c2, 4)
-+#define WCP14_ETMDCMR4(val)		MCR14(val, 1, c0, c4, 4)
-+#define WCP14_ETMDCMR6(val)		MCR14(val, 1, c0, c6, 4)
-+#define WCP14_ETMDCMR8(val)		MCR14(val, 1, c0, c8, 4)
-+#define WCP14_ETMDCMR10(val)		MCR14(val, 1, c0, c10, 4)
-+#define WCP14_ETMDCMR12(val)		MCR14(val, 1, c0, c12, 4)
-+#define WCP14_ETMDCMR14(val)		MCR14(val, 1, c0, c14, 4)
-+#define WCP14_ETMCNTRLDVR0(val)		MCR14(val, 1, c0, c0, 5)
-+#define WCP14_ETMCNTRLDVR1(val)		MCR14(val, 1, c0, c1, 5)
-+#define WCP14_ETMCNTRLDVR2(val)		MCR14(val, 1, c0, c2, 5)
-+#define WCP14_ETMCNTRLDVR3(val)		MCR14(val, 1, c0, c3, 5)
-+#define WCP14_ETMCNTENR0(val)		MCR14(val, 1, c0, c4, 5)
-+#define WCP14_ETMCNTENR1(val)		MCR14(val, 1, c0, c5, 5)
-+#define WCP14_ETMCNTENR2(val)		MCR14(val, 1, c0, c6, 5)
-+#define WCP14_ETMCNTENR3(val)		MCR14(val, 1, c0, c7, 5)
-+#define WCP14_ETMCNTRLDEVR0(val)	MCR14(val, 1, c0, c8, 5)
-+#define WCP14_ETMCNTRLDEVR1(val)	MCR14(val, 1, c0, c9, 5)
-+#define WCP14_ETMCNTRLDEVR2(val)	MCR14(val, 1, c0, c10, 5)
-+#define WCP14_ETMCNTRLDEVR3(val)	MCR14(val, 1, c0, c11, 5)
-+#define WCP14_ETMCNTVR0(val)		MCR14(val, 1, c0, c12, 5)
-+#define WCP14_ETMCNTVR1(val)		MCR14(val, 1, c0, c13, 5)
-+#define WCP14_ETMCNTVR2(val)		MCR14(val, 1, c0, c14, 5)
-+#define WCP14_ETMCNTVR3(val)		MCR14(val, 1, c0, c15, 5)
-+#define WCP14_ETMSQ12EVR(val)		MCR14(val, 1, c0, c0, 6)
-+#define WCP14_ETMSQ21EVR(val)		MCR14(val, 1, c0, c1, 6)
-+#define WCP14_ETMSQ23EVR(val)		MCR14(val, 1, c0, c2, 6)
-+#define WCP14_ETMSQ31EVR(val)		MCR14(val, 1, c0, c3, 6)
-+#define WCP14_ETMSQ32EVR(val)		MCR14(val, 1, c0, c4, 6)
-+#define WCP14_ETMSQ13EVR(val)		MCR14(val, 1, c0, c5, 6)
-+#define WCP14_ETMSQR(val)		MCR14(val, 1, c0, c7, 6)
-+#define WCP14_ETMEXTOUTEVR0(val)	MCR14(val, 1, c0, c8, 6)
-+#define WCP14_ETMEXTOUTEVR1(val)	MCR14(val, 1, c0, c9, 6)
-+#define WCP14_ETMEXTOUTEVR2(val)	MCR14(val, 1, c0, c10, 6)
-+#define WCP14_ETMEXTOUTEVR3(val)	MCR14(val, 1, c0, c11, 6)
-+#define WCP14_ETMCIDCVR0(val)		MCR14(val, 1, c0, c12, 6)
-+#define WCP14_ETMCIDCVR1(val)		MCR14(val, 1, c0, c13, 6)
-+#define WCP14_ETMCIDCVR2(val)		MCR14(val, 1, c0, c14, 6)
-+#define WCP14_ETMCIDCMR(val)		MCR14(val, 1, c0, c15, 6)
-+#define WCP14_ETMIMPSPEC0(val)		MCR14(val, 1, c0, c0, 7)
-+#define WCP14_ETMIMPSPEC1(val)		MCR14(val, 1, c0, c1, 7)
-+#define WCP14_ETMIMPSPEC2(val)		MCR14(val, 1, c0, c2, 7)
-+#define WCP14_ETMIMPSPEC3(val)		MCR14(val, 1, c0, c3, 7)
-+#define WCP14_ETMIMPSPEC4(val)		MCR14(val, 1, c0, c4, 7)
-+#define WCP14_ETMIMPSPEC5(val)		MCR14(val, 1, c0, c5, 7)
-+#define WCP14_ETMIMPSPEC6(val)		MCR14(val, 1, c0, c6, 7)
-+#define WCP14_ETMIMPSPEC7(val)		MCR14(val, 1, c0, c7, 7)
-+/* can be read only in ETMv3.4, ETMv3.5 */
-+#define WCP14_ETMSYNCFR(val)		MCR14(val, 1, c0, c8, 7)
-+#define WCP14_ETMEXTINSELR(val)		MCR14(val, 1, c0, c11, 7)
-+#define WCP14_ETMTESSEICR(val)		MCR14(val, 1, c0, c12, 7)
-+#define WCP14_ETMEIBCR(val)		MCR14(val, 1, c0, c13, 7)
-+#define WCP14_ETMTSEVR(val)		MCR14(val, 1, c0, c14, 7)
-+#define WCP14_ETMAUXCR(val)		MCR14(val, 1, c0, c15, 7)
-+#define WCP14_ETMTRACEIDR(val)		MCR14(val, 1, c1, c0, 0)
-+#define WCP14_ETMIDR2(val)		MCR14(val, 1, c1, c2, 0)
-+#define WCP14_ETMVMIDCVR(val)		MCR14(val, 1, c1, c0, 1)
-+#define WCP14_ETMOSLAR(val)		MCR14(val, 1, c1, c0, 4)
-+/* not available in PFTv1.1 */
-+#define WCP14_ETMOSSRR(val)		MCR14(val, 1, c1, c2, 4)
-+#define WCP14_ETMPDCR(val)		MCR14(val, 1, c1, c4, 4)
-+#define WCP14_ETMPDSR(val)		MCR14(val, 1, c1, c5, 4)
-+#define WCP14_ETMITCTRL(val)		MCR14(val, 1, c7, c0, 4)
-+#define WCP14_ETMCLAIMSET(val)		MCR14(val, 1, c7, c8, 6)
-+#define WCP14_ETMCLAIMCLR(val)		MCR14(val, 1, c7, c9, 6)
-+/* writes to this from CP14 interface are ignored */
-+#define WCP14_ETMLAR(val)		MCR14(val, 1, c7, c12, 6)
-+
-+#endif
-diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
-index 3a32c06..fef87bc 100644
---- a/drivers/coresight/Makefile
-+++ b/drivers/coresight/Makefile
-@@ -6,3 +6,4 @@ obj-$(CONFIG_OF) += of_coresight.o
- obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
- 					   coresight-etb10.o coresight-funnel.o \
- 					   coresight-replicator.o
-+obj-$(CONFIG_CORESIGHT_SOURCE_ETM3X) += coresight-etm3x.o coresight-etm-cp14.o
-diff --git a/drivers/coresight/coresight-etm-cp14.c b/drivers/coresight/coresight-etm-cp14.c
-new file mode 100644
-index 0000000..dfbe36b
---- /dev/null
-+++ b/drivers/coresight/coresight-etm-cp14.c
-@@ -0,0 +1,506 @@
-+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/bug.h>
-+#include <asm/hardware/cp14.h>
-+
-+#include "coresight-etm.h"
-+
-+static unsigned int etm_read_reg(u32 reg)
-+{
-+	switch (reg) {
-+	case ETMCR:
-+		return etm_read(ETMCR);
-+	case ETMCCR:
-+		return etm_read(ETMCCR);
-+	case ETMTRIGGER:
-+		return etm_read(ETMTRIGGER);
-+	case ETMSR:
-+		return etm_read(ETMSR);
-+	case ETMSCR:
-+		return etm_read(ETMSCR);
-+	case ETMTSSCR:
-+		return etm_read(ETMTSSCR);
-+	case ETMTEEVR:
-+		return etm_read(ETMTEEVR);
-+	case ETMTECR1:
-+		return etm_read(ETMTECR1);
-+	case ETMFFLR:
-+		return etm_read(ETMFFLR);
-+	case ETMACVRn(0):
-+		return etm_read(ETMACVR0);
-+	case ETMACVRn(1):
-+		return etm_read(ETMACVR1);
-+	case ETMACVRn(2):
-+		return etm_read(ETMACVR2);
-+	case ETMACVRn(3):
-+		return etm_read(ETMACVR3);
-+	case ETMACVRn(4):
-+		return etm_read(ETMACVR4);
-+	case ETMACVRn(5):
-+		return etm_read(ETMACVR5);
-+	case ETMACVRn(6):
-+		return etm_read(ETMACVR6);
-+	case ETMACVRn(7):
-+		return etm_read(ETMACVR7);
-+	case ETMACVRn(8):
-+		return etm_read(ETMACVR8);
-+	case ETMACVRn(9):
-+		return etm_read(ETMACVR9);
-+	case ETMACVRn(10):
-+		return etm_read(ETMACVR10);
-+	case ETMACVRn(11):
-+		return etm_read(ETMACVR11);
-+	case ETMACVRn(12):
-+		return etm_read(ETMACVR12);
-+	case ETMACVRn(13):
-+		return etm_read(ETMACVR13);
-+	case ETMACVRn(14):
-+		return etm_read(ETMACVR14);
-+	case ETMACVRn(15):
-+		return etm_read(ETMACVR15);
-+	case ETMACTRn(0):
-+		return etm_read(ETMACTR0);
-+	case ETMACTRn(1):
-+		return etm_read(ETMACTR1);
-+	case ETMACTRn(2):
-+		return etm_read(ETMACTR2);
-+	case ETMACTRn(3):
-+		return etm_read(ETMACTR3);
-+	case ETMACTRn(4):
-+		return etm_read(ETMACTR4);
-+	case ETMACTRn(5):
-+		return etm_read(ETMACTR5);
-+	case ETMACTRn(6):
-+		return etm_read(ETMACTR6);
-+	case ETMACTRn(7):
-+		return etm_read(ETMACTR7);
-+	case ETMACTRn(8):
-+		return etm_read(ETMACTR8);
-+	case ETMACTRn(9):
-+		return etm_read(ETMACTR9);
-+	case ETMACTRn(10):
-+		return etm_read(ETMACTR10);
-+	case ETMACTRn(11):
-+		return etm_read(ETMACTR11);
-+	case ETMACTRn(12):
-+		return etm_read(ETMACTR12);
-+	case ETMACTRn(13):
-+		return etm_read(ETMACTR13);
-+	case ETMACTRn(14):
-+		return etm_read(ETMACTR14);
-+	case ETMACTRn(15):
-+		return etm_read(ETMACTR15);
-+	case ETMCNTRLDVRn(0):
-+		return etm_read(ETMCNTRLDVR0);
-+	case ETMCNTRLDVRn(1):
-+		return etm_read(ETMCNTRLDVR1);
-+	case ETMCNTRLDVRn(2):
-+		return etm_read(ETMCNTRLDVR2);
-+	case ETMCNTRLDVRn(3):
-+		return etm_read(ETMCNTRLDVR3);
-+	case ETMCNTENRn(0):
-+		return etm_read(ETMCNTENR0);
-+	case ETMCNTENRn(1):
-+		return etm_read(ETMCNTENR1);
-+	case ETMCNTENRn(2):
-+		return etm_read(ETMCNTENR2);
-+	case ETMCNTENRn(3):
-+		return etm_read(ETMCNTENR3);
-+	case ETMCNTRLDEVRn(0):
-+		return etm_read(ETMCNTRLDEVR0);
-+	case ETMCNTRLDEVRn(1):
-+		return etm_read(ETMCNTRLDEVR1);
-+	case ETMCNTRLDEVRn(2):
-+		return etm_read(ETMCNTRLDEVR2);
-+	case ETMCNTRLDEVRn(3):
-+		return etm_read(ETMCNTRLDEVR3);
-+	case ETMCNTVRn(0):
-+		return etm_read(ETMCNTVR0);
-+	case ETMCNTVRn(1):
-+		return etm_read(ETMCNTVR1);
-+	case ETMCNTVRn(2):
-+		return etm_read(ETMCNTVR2);
-+	case ETMCNTVRn(3):
-+		return etm_read(ETMCNTVR3);
-+	case ETMSQ12EVR:
-+		return etm_read(ETMSQ12EVR);
-+	case ETMSQ21EVR:
-+		return etm_read(ETMSQ21EVR);
-+	case ETMSQ23EVR:
-+		return etm_read(ETMSQ23EVR);
-+	case ETMSQ31EVR:
-+		return etm_read(ETMSQ31EVR);
-+	case ETMSQ32EVR:
-+		return etm_read(ETMSQ32EVR);
-+	case ETMSQ13EVR:
-+		return etm_read(ETMSQ13EVR);
-+	case ETMSQR:
-+		return etm_read(ETMSQR);
-+	case ETMEXTOUTEVRn(0):
-+		return etm_read(ETMEXTOUTEVR0);
-+	case ETMEXTOUTEVRn(1):
-+		return etm_read(ETMEXTOUTEVR1);
-+	case ETMEXTOUTEVRn(2):
-+		return etm_read(ETMEXTOUTEVR2);
-+	case ETMEXTOUTEVRn(3):
-+		return etm_read(ETMEXTOUTEVR3);
-+	case ETMCIDCVRn(0):
-+		return etm_read(ETMCIDCVR0);
-+	case ETMCIDCVRn(1):
-+		return etm_read(ETMCIDCVR1);
-+	case ETMCIDCVRn(2):
-+		return etm_read(ETMCIDCVR2);
-+	case ETMCIDCMR:
-+		return etm_read(ETMCIDCMR);
-+	case ETMIMPSPEC0:
-+		return etm_read(ETMIMPSPEC0);
-+	case ETMIMPSPEC1:
-+		return etm_read(ETMIMPSPEC1);
-+	case ETMIMPSPEC2:
-+		return etm_read(ETMIMPSPEC2);
-+	case ETMIMPSPEC3:
-+		return etm_read(ETMIMPSPEC3);
-+	case ETMIMPSPEC4:
-+		return etm_read(ETMIMPSPEC4);
-+	case ETMIMPSPEC5:
-+		return etm_read(ETMIMPSPEC5);
-+	case ETMIMPSPEC6:
-+		return etm_read(ETMIMPSPEC6);
-+	case ETMIMPSPEC7:
-+		return etm_read(ETMIMPSPEC7);
-+	case ETMSYNCFR:
-+		return etm_read(ETMSYNCFR);
-+	case ETMIDR:
-+		return etm_read(ETMIDR);
-+	case ETMCCER:
-+		return etm_read(ETMCCER);
-+	case ETMEXTINSELR:
-+		return etm_read(ETMEXTINSELR);
-+	case ETMTESSEICR:
-+		return etm_read(ETMTESSEICR);
-+	case ETMEIBCR:
-+		return etm_read(ETMEIBCR);
-+	case ETMTSEVR:
-+		return etm_read(ETMTSEVR);
-+	case ETMAUXCR:
-+		return etm_read(ETMAUXCR);
-+	case ETMTRACEIDR:
-+		return etm_read(ETMTRACEIDR);
-+	case ETMVMIDCVR:
-+		return etm_read(ETMVMIDCVR);
-+	case ETMOSLSR:
-+		return etm_read(ETMOSLSR);
-+	case ETMOSSRR:
-+		return etm_read(ETMOSSRR);
-+	case ETMPDCR:
-+		return etm_read(ETMPDCR);
-+	case ETMPDSR:
-+		return etm_read(ETMPDSR);
-+	default:
-+		WARN(1, "invalid CP14 access to ETM reg: %lx",
-+							(unsigned long)reg);
-+		return 0;
-+	}
-+}
-+
-+static void etm_write_reg(u32 val, u32 reg)
-+{
-+	switch (reg) {
-+	case ETMCR:
-+		etm_write(val, ETMCR);
-+		return;
-+	case ETMTRIGGER:
-+		etm_write(val, ETMTRIGGER);
-+		return;
-+	case ETMSR:
-+		etm_write(val, ETMSR);
-+		return;
-+	case ETMTSSCR:
-+		etm_write(val, ETMTSSCR);
-+		return;
-+	case ETMTEEVR:
-+		etm_write(val, ETMTEEVR);
-+		return;
-+	case ETMTECR1:
-+		etm_write(val, ETMTECR1);
-+		return;
-+	case ETMFFLR:
-+		etm_write(val, ETMFFLR);
-+		return;
-+	case ETMACVRn(0):
-+		etm_write(val, ETMACVR0);
-+		return;
-+	case ETMACVRn(1):
-+		etm_write(val, ETMACVR1);
-+		return;
-+	case ETMACVRn(2):
-+		etm_write(val, ETMACVR2);
-+		return;
-+	case ETMACVRn(3):
-+		etm_write(val, ETMACVR3);
-+		return;
-+	case ETMACVRn(4):
-+		etm_write(val, ETMACVR4);
-+		return;
-+	case ETMACVRn(5):
-+		etm_write(val, ETMACVR5);
-+		return;
-+	case ETMACVRn(6):
-+		etm_write(val, ETMACVR6);
-+		return;
-+	case ETMACVRn(7):
-+		etm_write(val, ETMACVR7);
-+		return;
-+	case ETMACVRn(8):
-+		etm_write(val, ETMACVR8);
-+		return;
-+	case ETMACVRn(9):
-+		etm_write(val, ETMACVR9);
-+		return;
-+	case ETMACVRn(10):
-+		etm_write(val, ETMACVR10);
-+		return;
-+	case ETMACVRn(11):
-+		etm_write(val, ETMACVR11);
-+		return;
-+	case ETMACVRn(12):
-+		etm_write(val, ETMACVR12);
-+		return;
-+	case ETMACVRn(13):
-+		etm_write(val, ETMACVR13);
-+		return;
-+	case ETMACVRn(14):
-+		etm_write(val, ETMACVR14);
-+		return;
-+	case ETMACVRn(15):
-+		etm_write(val, ETMACVR15);
-+		return;
-+	case ETMACTRn(0):
-+		etm_write(val, ETMACTR0);
-+		return;
-+	case ETMACTRn(1):
-+		etm_write(val, ETMACTR1);
-+		return;
-+	case ETMACTRn(2):
-+		etm_write(val, ETMACTR2);
-+		return;
-+	case ETMACTRn(3):
-+		etm_write(val, ETMACTR3);
-+		return;
-+	case ETMACTRn(4):
-+		etm_write(val, ETMACTR4);
-+		return;
-+	case ETMACTRn(5):
-+		etm_write(val, ETMACTR5);
-+		return;
-+	case ETMACTRn(6):
-+		etm_write(val, ETMACTR6);
-+		return;
-+	case ETMACTRn(7):
-+		etm_write(val, ETMACTR7);
-+		return;
-+	case ETMACTRn(8):
-+		etm_write(val, ETMACTR8);
-+		return;
-+	case ETMACTRn(9):
-+		etm_write(val, ETMACTR9);
-+		return;
-+	case ETMACTRn(10):
-+		etm_write(val, ETMACTR10);
-+		return;
-+	case ETMACTRn(11):
-+		etm_write(val, ETMACTR11);
-+		return;
-+	case ETMACTRn(12):
-+		etm_write(val, ETMACTR12);
-+		return;
-+	case ETMACTRn(13):
-+		etm_write(val, ETMACTR13);
-+		return;
-+	case ETMACTRn(14):
-+		etm_write(val, ETMACTR14);
-+		return;
-+	case ETMACTRn(15):
-+		etm_write(val, ETMACTR15);
-+		return;
-+	case ETMCNTRLDVRn(0):
-+		etm_write(val, ETMCNTRLDVR0);
-+		return;
-+	case ETMCNTRLDVRn(1):
-+		etm_write(val, ETMCNTRLDVR1);
-+		return;
-+	case ETMCNTRLDVRn(2):
-+		etm_write(val, ETMCNTRLDVR2);
-+		return;
-+	case ETMCNTRLDVRn(3):
-+		etm_write(val, ETMCNTRLDVR3);
-+		return;
-+	case ETMCNTENRn(0):
-+		etm_write(val, ETMCNTENR0);
-+		return;
-+	case ETMCNTENRn(1):
-+		etm_write(val, ETMCNTENR1);
-+		return;
-+	case ETMCNTENRn(2):
-+		etm_write(val, ETMCNTENR2);
-+		return;
-+	case ETMCNTENRn(3):
-+		etm_write(val, ETMCNTENR3);
-+		return;
-+	case ETMCNTRLDEVRn(0):
-+		etm_write(val, ETMCNTRLDEVR0);
-+		return;
-+	case ETMCNTRLDEVRn(1):
-+		etm_write(val, ETMCNTRLDEVR1);
-+		return;
-+	case ETMCNTRLDEVRn(2):
-+		etm_write(val, ETMCNTRLDEVR2);
-+		return;
-+	case ETMCNTRLDEVRn(3):
-+		etm_write(val, ETMCNTRLDEVR3);
-+		return;
-+	case ETMCNTVRn(0):
-+		etm_write(val, ETMCNTVR0);
-+		return;
-+	case ETMCNTVRn(1):
-+		etm_write(val, ETMCNTVR1);
-+		return;
-+	case ETMCNTVRn(2):
-+		etm_write(val, ETMCNTVR2);
-+		return;
-+	case ETMCNTVRn(3):
-+		etm_write(val, ETMCNTVR3);
-+		return;
-+	case ETMSQ12EVR:
-+		etm_write(val, ETMSQ12EVR);
-+		return;
-+	case ETMSQ21EVR:
-+		etm_write(val, ETMSQ21EVR);
-+		return;
-+	case ETMSQ23EVR:
-+		etm_write(val, ETMSQ23EVR);
-+		return;
-+	case ETMSQ31EVR:
-+		etm_write(val, ETMSQ31EVR);
-+		return;
-+	case ETMSQ32EVR:
-+		etm_write(val, ETMSQ32EVR);
-+		return;
-+	case ETMSQ13EVR:
-+		etm_write(val, ETMSQ13EVR);
-+		return;
-+	case ETMSQR:
-+		etm_write(val, ETMSQR);
-+		return;
-+	case ETMEXTOUTEVRn(0):
-+		etm_write(val, ETMEXTOUTEVR0);
-+		return;
-+	case ETMEXTOUTEVRn(1):
-+		etm_write(val, ETMEXTOUTEVR1);
-+		return;
-+	case ETMEXTOUTEVRn(2):
-+		etm_write(val, ETMEXTOUTEVR2);
-+		return;
-+	case ETMEXTOUTEVRn(3):
-+		etm_write(val, ETMEXTOUTEVR3);
-+		return;
-+	case ETMCIDCVRn(0):
-+		etm_write(val, ETMCIDCVR0);
-+		return;
-+	case ETMCIDCVRn(1):
-+		etm_write(val, ETMCIDCVR1);
-+		return;
-+	case ETMCIDCVRn(2):
-+		etm_write(val, ETMCIDCVR2);
-+		return;
-+	case ETMCIDCMR:
-+		etm_write(val, ETMCIDCMR);
-+		return;
-+	case ETMIMPSPEC0:
-+		etm_write(val, ETMIMPSPEC0);
-+		return;
-+	case ETMIMPSPEC1:
-+		etm_write(val, ETMIMPSPEC1);
-+		return;
-+	case ETMIMPSPEC2:
-+		etm_write(val, ETMIMPSPEC2);
-+		return;
-+	case ETMIMPSPEC3:
-+		etm_write(val, ETMIMPSPEC3);
-+		return;
-+	case ETMIMPSPEC4:
-+		etm_write(val, ETMIMPSPEC4);
-+		return;
-+	case ETMIMPSPEC5:
-+		etm_write(val, ETMIMPSPEC5);
-+		return;
-+	case ETMIMPSPEC6:
-+		etm_write(val, ETMIMPSPEC6);
-+		return;
-+	case ETMIMPSPEC7:
-+		etm_write(val, ETMIMPSPEC7);
-+		return;
-+	case ETMSYNCFR:
-+		etm_write(val, ETMSYNCFR);
-+		return;
-+	case ETMEXTINSELR:
-+		etm_write(val, ETMEXTINSELR);
-+		return;
-+	case ETMTESSEICR:
-+		etm_write(val, ETMTESSEICR);
-+		return;
-+	case ETMEIBCR:
-+		etm_write(val, ETMEIBCR);
-+		return;
-+	case ETMTSEVR:
-+		etm_write(val, ETMTSEVR);
-+		return;
-+	case ETMAUXCR:
-+		etm_write(val, ETMAUXCR);
-+		return;
-+	case ETMTRACEIDR:
-+		etm_write(val, ETMTRACEIDR);
-+		return;
-+	case ETMVMIDCVR:
-+		etm_write(val, ETMVMIDCVR);
-+		return;
-+	case ETMOSLAR:
-+		etm_write(val, ETMOSLAR);
-+		return;
-+	case ETMOSSRR:
-+		etm_write(val, ETMOSSRR);
-+		return;
-+	case ETMPDCR:
-+		etm_write(val, ETMPDCR);
-+		return;
-+	case ETMPDSR:
-+		etm_write(val, ETMPDSR);
-+		return;
-+	default:
-+		WARN(1, "invalid CP14 access to ETM reg: %lx",
-+							(unsigned long)reg);
-+		return;
-+	}
-+}
-+
-+unsigned int etm_readl_cp14(u32 off)
-+{
-+	return etm_read_reg(off);
-+}
-+
-+void etm_writel_cp14(u32 val, u32 off)
-+{
-+	etm_write_reg(val, off);
-+}
-diff --git a/drivers/coresight/coresight-etm.h b/drivers/coresight/coresight-etm.h
-new file mode 100644
-index 0000000..8bb8e58
---- /dev/null
-+++ b/drivers/coresight/coresight-etm.h
-@@ -0,0 +1,192 @@
-+/* Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef _CORESIGHT_CORESIGHT_ETM_H
-+#define _CORESIGHT_CORESIGHT_ETM_H
-+
-+#include <linux/spinlock.h>
-+#include "coresight-priv.h"
++#include <linux/bitops.h>
++#include <linux/io.h>
++#include <linux/coresight.h>
 +
 +/*
-+ * Device registers:
-+ * 0x000 - 0x2FC: Trace         registers
-+ * 0x300 - 0x314: Management    registers
-+ * 0x318 - 0xEFC: Trace         registers
-+ *
-+ * Coresight registers
-+ * 0xF00 - 0xF9C: Management    registers
-+ * 0xFA0 - 0xFA4: Management    registers in PFTv1.0
-+ *                Trace         registers in PFTv1.1
-+ * 0xFA8 - 0xFFC: Management    registers
++ * Coresight management registers (0xf00-0xfcc)
++ * 0xfa0 - 0xfa4: Management	registers in PFTv1.0
++ *		  Trace		registers in PFTv1.1
 + */
++#define CORESIGHT_ITCTRL	0xf00
++#define CORESIGHT_CLAIMSET	0xfa0
++#define CORESIGHT_CLAIMCLR	0xfa4
++#define CORESIGHT_LAR		0xfb0
++#define CORESIGHT_LSR		0xfb4
++#define CORESIGHT_AUTHSTATUS	0xfb8
++#define CORESIGHT_DEVID		0xfc8
++#define CORESIGHT_DEVTYPE	0xfcc
 +
-+/* Trace registers (0x000-0x2FC) */
-+#define ETMCR			0x000
-+#define ETMCCR			0x004
-+#define ETMTRIGGER		0x008
-+#define ETMSR			0x010
-+#define ETMSCR			0x014
-+#define ETMTSSCR		0x018
-+#define ETMTECR2		0x01c
-+#define ETMTEEVR		0x020
-+#define ETMTECR1		0x024
-+#define ETMFFLR			0x02c
-+#define ETMACVRn(n)		(0x040 + (n * 4))
-+#define ETMACTRn(n)		(0x080 + (n * 4))
-+#define ETMCNTRLDVRn(n)		(0x140 + (n * 4))
-+#define ETMCNTENRn(n)		(0x150 + (n * 4))
-+#define ETMCNTRLDEVRn(n)	(0x160 + (n * 4))
-+#define ETMCNTVRn(n)		(0x170 + (n * 4))
-+#define ETMSQ12EVR		0x180
-+#define ETMSQ21EVR		0x184
-+#define ETMSQ23EVR		0x188
-+#define ETMSQ31EVR		0x18c
-+#define ETMSQ32EVR		0x190
-+#define ETMSQ13EVR		0x194
-+#define ETMSQR			0x19c
-+#define ETMEXTOUTEVRn(n)	(0x1a0 + (n * 4))
-+#define ETMCIDCVRn(n)		(0x1b0 + (n * 4))
-+#define ETMCIDCMR		0x1bc
-+#define ETMIMPSPEC0		0x1c0
-+#define ETMIMPSPEC1		0x1c4
-+#define ETMIMPSPEC2		0x1c8
-+#define ETMIMPSPEC3		0x1cc
-+#define ETMIMPSPEC4		0x1d0
-+#define ETMIMPSPEC5		0x1d4
-+#define ETMIMPSPEC6		0x1d8
-+#define ETMIMPSPEC7		0x1dc
-+#define ETMSYNCFR		0x1e0
-+#define ETMIDR			0x1e4
-+#define ETMCCER			0x1e8
-+#define ETMEXTINSELR		0x1ec
-+#define ETMTESSEICR		0x1f0
-+#define ETMEIBCR		0x1f4
-+#define ETMTSEVR		0x1f8
-+#define ETMAUXCR		0x1fc
-+#define ETMTRACEIDR		0x200
-+#define ETMVMIDCVR		0x240
-+/* Management registers (0x300-0x314) */
-+#define ETMOSLAR		0x300
-+#define ETMOSLSR		0x304
-+#define ETMOSSRR		0x308
-+#define ETMPDCR			0x310
-+#define ETMPDSR			0x314
-+#define ETM_MAX_ADDR_CMP	16
-+#define ETM_MAX_CNTR		4
-+#define ETM_MAX_CTXID_CMP	3
++#define TIMEOUT_US		100
++#define BMVAL(val, lsb, msb)	((val & GENMASK(msb, lsb)) >> lsb)
 +
-+/** register definition **/
-+/* ETMCR - 0x00 */
-+#define ETMCR_PWD_DWN		BIT(0)
-+#define ETMCR_STALL_MODE	BIT(7)
-+#define ETMCR_ETM_PRG		BIT(10)
-+#define ETMCR_ETM_EN		BIT(11)
-+#define ETMCR_CYC_ACC		BIT(12)
-+#define ETMCR_CTXID_SIZE	(BIT(14)|BIT(15))
-+#define ETMCR_TIMESTAMP_EN	BIT(28)
-+/* ETMPDCR - 0x310 */
-+#define ETMPDCR_PWD_UP		BIT(3)
-+/* ETMTECR1 - 0x024 */
-+#define ETMTECR1_ADDR_COMP_1	BIT(0)
-+#define ETMTECR1_INC_EXC	BIT(24)
-+#define ETMTECR1_START_STOP	BIT(25)
++static inline void CS_LOCK(void __iomem *addr)
++{
++	do {
++		/* wait for things to settle */
++		mb();
++		writel_relaxed(0x0, addr + CORESIGHT_LAR);
++	} while (0);
++}
 +
-+#define ETM_MODE_EXCLUDE	BIT(0)
-+#define ETM_MODE_CYCACC		BIT(1)
-+#define ETM_MODE_STALL		BIT(2)
-+#define ETM_MODE_TIMESTAMP	BIT(3)
-+#define ETM_MODE_CTXID		BIT(4)
-+#define ETM_MODE_ALL		0x1f
++static inline void CS_UNLOCK(void __iomem *addr)
++{
++	do {
++		writel_relaxed(CORESIGHT_UNLOCK, addr + CORESIGHT_LAR);
++		/* make sure eveyone has seen this */
++		mb();
++	} while (0);
++}
 +
-+#define ETM_EVENT_MASK		0x1ffff
-+#define ETM_SYNC_MASK		0xfff
-+#define ETM_ALL_MASK		0xffffffff
-+
-+#define ETMSR_PROG_BIT		1
-+#define ETM_SEQ_STATE_MAX_VAL	(0x2)
-+#define PORT_SIZE_MASK		(GENMASK(21, 21) | GENMASK(6, 4))
-+
-+#define ETM_HARD_WIRE_RES_A	/* Hard wired, always true */	\
-+				((0x0f << 0)	|		\
-+				/* Resource index A */		\
-+				(0x06 << 4))
-+
-+#define ETM_ADD_COMP_0		/* single addr comparator 1 */	\
-+				((0x00 << 7)	|		\
-+				/* Resource index B */		\
-+				(0x00 << 11))
-+
-+#define ETM_EVENT_NOT_A		BIT(14) /* NOT(A) */
-+
-+#define ETM_DEFAULT_EVENT_VAL	(ETM_HARD_WIRE_RES_A	|	\
-+				 ETM_ADD_COMP_0		|	\
-+				 ETM_EVENT_NOT_A)
-+
-+
-+struct etm_drvdata {
-+	void __iomem			*base;
-+	struct device			*dev;
-+	struct coresight_device		*csdev;
-+	struct clk			*clk;
-+	spinlock_t			spinlock;
-+	int				cpu;
-+	int				port_size;
-+	u8				arch;
-+	bool				use_cp14;
-+	bool				enable;
-+	bool				sticky_enable;
-+	bool				boot_enable;
-+	bool				os_unlock;
-+	u8				nr_addr_cmp;
-+	u8				nr_cntr;
-+	u8				nr_ext_inp;
-+	u8				nr_ext_out;
-+	u8				nr_ctxid_cmp;
-+	u8				reset;
-+	u32				mode;
-+	u32				ctrl;
-+	u32				trigger_event;
-+	u32				startstop_ctrl;
-+	u32				enable_event;
-+	u32				enable_ctrl1;
-+	u32				fifofull_level;
-+	u8				addr_idx;
-+	u32				addr_val[ETM_MAX_ADDR_CMP];
-+	u32				addr_acctype[ETM_MAX_ADDR_CMP];
-+	u32				addr_type[ETM_MAX_ADDR_CMP];
-+	u8				cntr_idx;
-+	u32				cntr_rld_val[ETM_MAX_CNTR];
-+	u32				cntr_event[ETM_MAX_CNTR];
-+	u32				cntr_rld_event[ETM_MAX_CNTR];
-+	u32				cntr_val[ETM_MAX_CNTR];
-+	u32				seq_12_event;
-+	u32				seq_21_event;
-+	u32				seq_23_event;
-+	u32				seq_31_event;
-+	u32				seq_32_event;
-+	u32				seq_13_event;
-+	u32				seq_curr_state;
-+	u8				ctxid_idx;
-+	u32				ctxid_val[ETM_MAX_CTXID_CMP];
-+	u32				ctxid_mask;
-+	u32				sync_freq;
-+	u32				timestamp_event;
-+};
-+
-+enum etm_addr_type {
-+	ETM_ADDR_TYPE_NONE,
-+	ETM_ADDR_TYPE_SINGLE,
-+	ETM_ADDR_TYPE_RANGE,
-+	ETM_ADDR_TYPE_START,
-+	ETM_ADDR_TYPE_STOP,
-+};
++#ifdef CONFIG_CORESIGHT_SOURCE_ETM
++extern unsigned int etm_readl_cp14(u32 off);
++extern void etm_writel_cp14(u32 val, u32 off);
++#else
++static inline unsigned int etm_readl_cp14(u32 off) { return 0; }
++static inline void etm_writel_cp14(u32 val, u32 off) {}
 +#endif
-diff --git a/drivers/coresight/coresight-etm3x.c b/drivers/coresight/coresight-etm3x.c
++
++#endif
+diff --git a/drivers/coresight/coresight.c b/drivers/coresight/coresight.c
 new file mode 100644
-index 0000000..d6b816d
+index 0000000..317806c
 --- /dev/null
-+++ b/drivers/coresight/coresight-etm3x.c
-@@ -0,0 +1,1516 @@
-+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
++++ b/drivers/coresight/coresight.c
+@@ -0,0 +1,638 @@
++/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -1359,123 +215,506 @@ index 0000000..d6b816d
 +#include <linux/device.h>
 +#include <linux/io.h>
 +#include <linux/err.h>
-+#include <linux/fs.h>
++#include <linux/export.h>
 +#include <linux/slab.h>
-+#include <linux/delay.h>
-+#include <linux/smp.h>
-+#include <linux/sysfs.h>
-+#include <linux/stat.h>
++#include <linux/semaphore.h>
 +#include <linux/clk.h>
-+#include <linux/cpu.h>
-+#include <linux/of.h>
 +#include <linux/coresight.h>
-+#include <linux/amba/bus.h>
-+#include <linux/seq_file.h>
-+#include <asm/sections.h>
++#include <linux/of_platform.h>
++#include <linux/debugfs.h>
++#include <linux/delay.h>
 +
-+#include "coresight-etm.h"
++#include "coresight-priv.h"
 +
-+#ifdef CONFIG_CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE
-+static int boot_enable = 1;
-+#else
-+static int boot_enable;
-+#endif
-+module_param_named(
-+	boot_enable, boot_enable, int, S_IRUGO
-+);
++struct dentry *cs_debugfs_parent = NULL;
 +
-+static int count; /* the number of ETM/PTM currently registered */
-+static struct etm_drvdata *etmdrvdata[NR_CPUS];
++static LIST_HEAD(coresight_orph_conns);
++static LIST_HEAD(coresight_devs);
++static DEFINE_SEMAPHORE(coresight_semaphore);
 +
-+static inline void etm_writel(struct etm_drvdata *drvdata,
-+			      u32 val, u32 off)
++static int coresight_find_link_inport(struct coresight_device *csdev)
 +{
-+	if (drvdata->use_cp14)
-+		etm_writel_cp14(val, off);
-+	else
-+		writel_relaxed(val, drvdata->base + off);
++	int i;
++	struct coresight_device *parent;
++	struct coresight_connection *conn;
++
++	parent = container_of(csdev->path_link.next, struct coresight_device,
++			     path_link);
++	for (i = 0; i < parent->nr_conns; i++) {
++		conn = &parent->conns[i];
++		if (conn->child_dev == csdev)
++			return conn->child_port;
++	}
++
++	pr_err("coresight: couldn't find inport, parent: %d, child: %d\n",
++	       parent->id, csdev->id);
++	return 0;
 +}
 +
-+static inline unsigned int etm_readl(struct etm_drvdata *drvdata, u32 off)
++static int coresight_find_link_outport(struct coresight_device *csdev)
 +{
-+	u32 val;
++	int i;
++	struct coresight_device *child;
++	struct coresight_connection *conn;
 +
-+	if (drvdata->use_cp14)
-+		val = etm_readl_cp14(off);
++	child = container_of(csdev->path_link.prev, struct coresight_device,
++			      path_link);
++	for (i = 0; i < csdev->nr_conns; i++) {
++		conn = &csdev->conns[i];
++		if (conn->child_dev == child)
++			return conn->outport;
++	}
++
++	pr_err("coresight: couldn't find outport, parent: %d, child: %d\n",
++	       csdev->id, child->id);
++	return 0;
++}
++
++static int coresight_enable_sink(struct coresight_device *csdev)
++{
++	int ret;
++
++	if (csdev->refcnt.sink_refcnt == 0) {
++		if (csdev->ops->sink_ops->enable) {
++			ret = csdev->ops->sink_ops->enable(csdev);
++			if (ret)
++				goto err;
++			csdev->enable = true;
++		}
++	}
++	csdev->refcnt.sink_refcnt++;
++
++	return 0;
++err:
++	return ret;
++}
++
++static void coresight_disable_sink(struct coresight_device *csdev)
++{
++	if (csdev->refcnt.sink_refcnt == 1) {
++		if (csdev->ops->sink_ops->disable) {
++			csdev->ops->sink_ops->disable(csdev);
++			csdev->enable = false;
++		}
++	}
++	csdev->refcnt.sink_refcnt--;
++}
++
++static int coresight_enable_link(struct coresight_device *csdev)
++{
++	int ret;
++	int link_subtype;
++	int refport, inport, outport;
++
++	inport = coresight_find_link_inport(csdev);
++	outport = coresight_find_link_outport(csdev);
++
++	link_subtype = csdev->subtype.link_subtype;
++	if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_MERG)
++		refport = inport;
++	else if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_SPLIT)
++		refport = outport;
 +	else
-+		val = readl_relaxed(drvdata->base + off);
-+	return val;
++		refport = 0;
++
++	if (csdev->refcnt.link_refcnts[refport] == 0) {
++		if (csdev->ops->link_ops->enable) {
++			ret = csdev->ops->link_ops->enable(csdev, inport,
++							   outport);
++			if (ret)
++				goto err;
++			csdev->enable = true;
++		}
++	}
++	csdev->refcnt.link_refcnts[refport]++;
++
++	return 0;
++err:
++	return ret;
++}
++
++static void coresight_disable_link(struct coresight_device *csdev)
++{
++	int link_subtype;
++	int refport, inport, outport;
++
++	inport = coresight_find_link_inport(csdev);
++	outport = coresight_find_link_outport(csdev);
++
++	link_subtype = csdev->subtype.link_subtype;
++	if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_MERG)
++		refport = inport;
++	else if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_SPLIT)
++		refport = outport;
++	else
++		refport = 0;
++
++	if (csdev->refcnt.link_refcnts[refport] == 1) {
++		if (csdev->ops->link_ops->disable) {
++			csdev->ops->link_ops->disable(csdev, inport, outport);
++			csdev->enable = false;
++		}
++	}
++	csdev->refcnt.link_refcnts[refport]--;
++}
++
++static int coresight_enable_source(struct coresight_device *csdev)
++{
++	int ret;
++
++	if (csdev->refcnt.source_refcnt == 0) {
++		if (csdev->ops->source_ops->enable) {
++			ret = csdev->ops->source_ops->enable(csdev);
++			if (ret)
++				goto err;
++			csdev->enable = true;
++		}
++	}
++	csdev->refcnt.source_refcnt++;
++
++	return 0;
++err:
++	return ret;
++}
++
++static void coresight_disable_source(struct coresight_device *csdev)
++{
++	if (csdev->refcnt.source_refcnt == 1) {
++		if (csdev->ops->source_ops->disable) {
++			csdev->ops->source_ops->disable(csdev);
++			csdev->enable = false;
++		}
++	}
++	csdev->refcnt.source_refcnt--;
++}
++
++static int coresight_enable_path(struct list_head *path)
++{
++	int ret = 0;
++	struct coresight_device *cd;
++
++	list_for_each_entry(cd, path, path_link) {
++		if (cd == list_first_entry(path, struct coresight_device,
++					   path_link)) {
++			ret = coresight_enable_sink(cd);
++		} else if (list_is_last(&cd->path_link, path)) {
++			/* dont' enable the source just yet - this needs to
++			 * happen at the very end when all links and sink
++			 * along the path have been configured properly.
++			 */
++			;
++		} else {
++			ret = coresight_enable_link(cd);
++		}
++		if (ret)
++			goto err;
++	}
++	return 0;
++err:
++	list_for_each_entry_continue_reverse(cd, path, path_link) {
++		if (cd == list_first_entry(path, struct coresight_device,
++					   path_link)) {
++			coresight_disable_sink(cd);
++		} else if (list_is_last(&cd->path_link, path)) {
++			;
++		} else {
++			coresight_disable_link(cd);
++		}
++	}
++	return ret;
++}
++
++static int coresight_disable_path(struct list_head *path)
++{
++	struct coresight_device *cd;
++
++	list_for_each_entry_reverse(cd, path, path_link) {
++		if (cd == list_first_entry(path, struct coresight_device,
++					   path_link)) {
++			coresight_disable_sink(cd);
++		} else if (list_is_last(&cd->path_link, path)) {
++			/* the source has already been stopped, no need
++			 * to do it again here.
++			 */
++			;
++		} else {
++			coresight_disable_link(cd);
++		}
++	}
++
++	return 0;
++}
++
++static int coresight_build_paths(struct coresight_device *csdev,
++				 struct list_head *path,
++				 bool enable)
++{
++	int i, ret = -1;
++	struct coresight_connection *conn;
++
++	list_add(&csdev->path_link, path);
++
++	if (csdev->type == CORESIGHT_DEV_TYPE_SINK && csdev->activated) {
++		if (enable)
++			ret = coresight_enable_path(path);
++		else
++			ret = coresight_disable_path(path);
++	} else {
++		for (i = 0; i < csdev->nr_conns; i++) {
++			conn = &csdev->conns[i];
++			if (coresight_build_paths(conn->child_dev,
++						    path, enable) == 0)
++				ret = 0;
++		}
++	}
++
++	if (list_first_entry(path, struct coresight_device, path_link) != csdev)
++		pr_err("BUG, wrong device\n");
++
++	list_del(&csdev->path_link);
++	return ret;
++}
++
++int coresight_enable(struct coresight_device *csdev)
++{
++	int ret = 0;
++	LIST_HEAD(path);
++
++	WARN_ON(IS_ERR_OR_NULL(csdev));
++
++	down(&coresight_semaphore);
++	if (csdev->type != CORESIGHT_DEV_TYPE_SOURCE) {
++		ret = -EINVAL;
++		pr_err("coresight: wrong device type in %s\n", __func__);
++		goto out;
++	}
++	if (csdev->enable)
++		goto out;
++
++	if (coresight_build_paths(csdev, &path, true)) {
++		pr_err("coresight: building path(s) failed\n");
++		goto out;
++	}
++
++	if (coresight_enable_source(csdev))
++		pr_err("coresight: source enable failed\n");
++out:
++	up(&coresight_semaphore);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(coresight_enable);
++
++void coresight_disable(struct coresight_device *csdev)
++{
++	LIST_HEAD(path);
++
++	WARN_ON(IS_ERR_OR_NULL(csdev));
++
++	down(&coresight_semaphore);
++	if (csdev->type != CORESIGHT_DEV_TYPE_SOURCE) {
++		pr_err("coresight: wrong device type in %s\n", __func__);
++		goto out;
++	}
++	if (!csdev->enable)
++		goto out;
++
++	coresight_disable_source(csdev);
++	if (coresight_build_paths(csdev, &path, false))
++		pr_err("coresight: releasing path(s) failed\n");
++
++out:
++	up(&coresight_semaphore);
++}
++EXPORT_SYMBOL_GPL(coresight_disable);
++
++static ssize_t debugfs_active_get(void *data, u64 *val)
++{
++	struct coresight_device *csdev = data;
++
++	*val = csdev->activated;
++	return 0;
++}
++
++static ssize_t debugfs_active_set(void *data, u64 val)
++{
++	struct coresight_device *csdev = data;
++
++	val ? (csdev->activated = 1) : (csdev->activated = 0);
++	return 0;
++}
++CORESIGHT_DEBUGFS_ENTRY(debugfs_active, "active",
++			S_IRUGO | S_IWUSR, debugfs_active_get,
++			debugfs_active_set, "%llx\n");
++
++static ssize_t debugfs_enable_get(void *data, u64 *val)
++{
++	struct coresight_device *csdev = data;
++
++	*val = csdev->enable;
++	return 0;
++}
++
++static ssize_t debugfs_enable_set(void *data, u64 val)
++{
++	struct coresight_device *csdev = data;
++
++	if (val)
++		return coresight_enable(csdev);
++	else
++		coresight_disable(csdev);
++
++	return 0;
++}
++CORESIGHT_DEBUGFS_ENTRY(debugfs_enable, "enable",
++			S_IRUGO | S_IWUSR, debugfs_enable_get,
++			debugfs_enable_set, "%llx\n");
++
++
++static const struct coresight_ops_entry *coresight_grps_sink[] = {
++	&debugfs_active_entry,
++	NULL,
++};
++
++static const struct coresight_ops_entry *coresight_grps_source[] = {
++	&debugfs_enable_entry,
++	NULL,
++};
++
++struct coresight_group_entries {
++	const char *name;
++	const struct coresight_ops_entry **entries;
++};
++
++struct coresight_group_entries coresight_debugfs_entries[] = {
++	{
++		.name = "none",
++	},
++	{
++		.name = "sink",
++		.entries = coresight_grps_sink,
++	},
++	{
++		.name = "link",
++	},
++	{
++		.name = "linksink",
++	},
++	{
++		.name = "source",
++		.entries = coresight_grps_source,
++	},
++};
++
++static void coresight_device_release(struct device *dev)
++{
++	struct coresight_device *csdev = to_coresight_device(dev);
++
++	kfree(csdev);
++}
++
++static void coresight_fixup_orphan_conns(struct coresight_device *csdev)
++{
++	struct coresight_connection *conn, *temp;
++
++	list_for_each_entry_safe(conn, temp, &coresight_orph_conns, link) {
++		if (conn->child_id == csdev->id) {
++			conn->child_dev = csdev;
++			list_del(&conn->link);
++		}
++	}
++}
++
++static void coresight_fixup_device_conns(struct coresight_device *csdev)
++{
++	int i;
++	struct coresight_device *cd;
++	bool found;
++
++	for (i = 0; i < csdev->nr_conns; i++) {
++		found = false;
++		list_for_each_entry(cd, &coresight_devs, dev_link) {
++			if (csdev->conns[i].child_id == cd->id) {
++				csdev->conns[i].child_dev = cd;
++				found = true;
++				break;
++			}
++		}
++		if (!found)
++			list_add_tail(&csdev->conns[i].link,
++				      &coresight_orph_conns);
++	}
++}
++
++static int debugfs_coresight_init(void)
++{
++	if (!cs_debugfs_parent) {
++		cs_debugfs_parent = debugfs_create_dir("coresight", 0);
++		if (IS_ERR(cs_debugfs_parent))
++			return -1;
++	}
++
++	return 0;
++}
++
++static struct dentry *coresight_debugfs_desc_init(
++				struct coresight_device *csdev,
++				const struct coresight_ops_entry **debugfs_ops)
++{
++	int i = 0;
++	struct dentry *parent;
++	struct device *dev = &csdev->dev;
++	const struct coresight_ops_entry *ops_entry, **ops_entries;
++
++	parent = debugfs_create_dir(dev_name(dev), cs_debugfs_parent);
++	if (IS_ERR(parent))
++		return NULL;
++
++	/* device-specific ops */
++	while (debugfs_ops && debugfs_ops[i]) {
++		ops_entry = debugfs_ops[i];
++		if (!debugfs_create_file(ops_entry->name, ops_entry->mode,
++					 parent, dev_get_drvdata(dev->parent),
++					 ops_entry->ops)) {
++			debugfs_remove_recursive(parent);
++			return NULL;
++		}
++		i++;
++	}
++
++	/* group-specific ops */
++	i = 0;
++	ops_entries = coresight_debugfs_entries[csdev->type].entries;
++
++	while (ops_entries && ops_entries[i]) {
++		if (!debugfs_create_file(ops_entries[i]->name,
++					 ops_entries[i]->mode,
++					 parent, csdev, ops_entries[i]->ops)) {
++			debugfs_remove_recursive(parent);
++			return NULL;
++		}
++		i++;
++	}
++
++	return parent;
 +}
 +
 +/*
-+ * Memory mapped writes to clear os lock are not supported on some processors
-+ * and OS lock must be unlocked before any memory mapped access on such
-+ * processors, otherwise memory mapped reads/writes will be invalid.
++ * return 1 if the bit @position in @val is set to @value
 + */
-+static void etm_os_unlock(void *info)
++int coresight_is_bit_set(u32 val, int position, int value)
 +{
-+	struct etm_drvdata *drvdata = (struct etm_drvdata *)info;
-+	/* writing any value to ETMOSLAR unlocks the trace registers */
-+	etm_writel(drvdata, 0x0, ETMOSLAR);
-+	isb();
++	val &= BIT(position);
++	val >>= position;
++	return (val == value);
 +}
 +
-+static void etm_set_pwrdwn(struct etm_drvdata *drvdata)
-+{
-+	u32 etmcr;
-+
-+	/* Ensure pending cp14 accesses complete before setting pwrdwn */
-+	mb();
-+	isb();
-+	etmcr = etm_readl(drvdata, ETMCR);
-+	etmcr |= ETMCR_PWD_DWN;
-+	etm_writel(drvdata, etmcr, ETMCR);
-+}
-+
-+static void etm_clr_pwrdwn(struct etm_drvdata *drvdata)
-+{
-+	u32 etmcr;
-+
-+	etmcr = etm_readl(drvdata, ETMCR);
-+	etmcr &= ~ETMCR_PWD_DWN;
-+	etm_writel(drvdata, etmcr, ETMCR);
-+	/* Ensure pwrup completes before subsequent cp14 accesses */
-+	mb();
-+	isb();
-+}
-+
-+static void etm_set_pwrup(struct etm_drvdata *drvdata)
-+{
-+	u32 etmpdcr;
-+
-+	etmpdcr = readl_relaxed(drvdata->base + ETMPDCR);
-+	etmpdcr |= ETMPDCR_PWD_UP;
-+	writel_relaxed(etmpdcr, drvdata->base + ETMPDCR);
-+	/* Ensure pwrup completes before subsequent cp14 accesses */
-+	mb();
-+	isb();
-+}
-+
-+static void etm_clr_pwrup(struct etm_drvdata *drvdata)
-+{
-+	u32 etmpdcr;
-+
-+	/* Ensure pending cp14 accesses complete before clearing pwrup */
-+	mb();
-+	isb();
-+	etmpdcr = readl_relaxed(drvdata->base + ETMPDCR);
-+	etmpdcr &= ~ETMPDCR_PWD_UP;
-+	writel_relaxed(etmpdcr, drvdata->base + ETMPDCR);
-+}
-+
-+static void coresight_timeout_etm(struct etm_drvdata *drvdata, u32 offset,
-+				  int position, int value)
++void coresight_timeout(void __iomem *addr, u32 offset, int position, int value)
 +{
 +	int i;
 +	u32 val;
 +
 +	for (i = TIMEOUT_US; i > 0; i--) {
-+		val = etm_readl(drvdata, offset);
++		val = __raw_readl(addr + offset);
 +		if (coresight_is_bit_set(val, position, value))
 +			return;
 +		udelay(1);
@@ -1486,1389 +725,541 @@ index 0000000..d6b816d
 +	     offset);
 +}
 +
-+
-+static void etm_set_prog(struct etm_drvdata *drvdata)
-+{
-+	u32 etmcr;
-+
-+	etmcr = etm_readl(drvdata, ETMCR);
-+	etmcr |= ETMCR_ETM_PRG;
-+	etm_writel(drvdata, etmcr, ETMCR);
-+	/*
-+	 * Recommended by spec for cp14 accesses to ensure etmcr write is
-+	 * complete before polling etmsr
-+	 */
-+	isb();
-+	coresight_timeout_etm(drvdata, ETMSR, ETMSR_PROG_BIT, 1);
-+}
-+
-+static void etm_clr_prog(struct etm_drvdata *drvdata)
-+{
-+	u32 etmcr;
-+
-+	etmcr = etm_readl(drvdata, ETMCR);
-+	etmcr &= ~ETMCR_ETM_PRG;
-+	etm_writel(drvdata, etmcr, ETMCR);
-+	/*
-+	 * Recommended by spec for cp14 accesses to ensure etmcr write is
-+	 * complete before polling etmsr
-+	 */
-+	isb();
-+	coresight_timeout_etm(drvdata, ETMSR, ETMSR_PROG_BIT, 0);
-+}
-+
-+static void etm_set_default(struct etm_drvdata *drvdata)
++struct coresight_device *coresight_register(struct coresight_desc *desc)
 +{
 +	int i;
-+
-+	drvdata->trigger_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->enable_event = ETM_HARD_WIRE_RES_A;
-+
-+	drvdata->seq_12_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->seq_21_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->seq_23_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->seq_31_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->seq_32_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->seq_13_event = ETM_DEFAULT_EVENT_VAL;
-+	drvdata->timestamp_event = ETM_DEFAULT_EVENT_VAL;
-+
-+	for (i = 0; i < drvdata->nr_cntr; i++) {
-+		drvdata->cntr_rld_val[i] = 0x0;
-+		drvdata->cntr_event[i] = ETM_DEFAULT_EVENT_VAL;
-+		drvdata->cntr_rld_event[i] = ETM_DEFAULT_EVENT_VAL;
-+		drvdata->cntr_val[i] = 0x0;
-+	}
-+
-+	drvdata->seq_curr_state = 0x0;
-+	drvdata->ctxid_idx = 0x0;
-+	for (i = 0; i < drvdata->nr_ctxid_cmp; i++)
-+		drvdata->ctxid_val[i] = 0x0;
-+	drvdata->ctxid_mask = 0x0;
-+}
-+
-+static void etm_enable_hw(void *info)
-+{
-+	int i;
-+	u32 etmcr;
-+	struct etm_drvdata *drvdata = info;
-+
-+	CS_UNLOCK(drvdata->base);
-+
-+	/* turn engine on */
-+	etm_clr_pwrdwn(drvdata);
-+	/* apply power to trace registers */
-+	etm_set_pwrup(drvdata);
-+	/* make sure all registers are accessible */
-+	etm_os_unlock(drvdata);
-+
-+	etm_set_prog(drvdata);
-+
-+	etmcr = etm_readl(drvdata, ETMCR);
-+	etmcr &= (ETMCR_PWD_DWN | ETMCR_ETM_PRG);
-+	etmcr |= drvdata->port_size;
-+	etm_writel(drvdata, drvdata->ctrl | etmcr, ETMCR);
-+	etm_writel(drvdata, drvdata->trigger_event, ETMTRIGGER);
-+	etm_writel(drvdata, drvdata->startstop_ctrl, ETMTSSCR);
-+	etm_writel(drvdata, drvdata->enable_event, ETMTEEVR);
-+	etm_writel(drvdata, drvdata->enable_ctrl1, ETMTECR1);
-+	etm_writel(drvdata, drvdata->fifofull_level, ETMFFLR);
-+	for (i = 0; i < drvdata->nr_addr_cmp; i++) {
-+		etm_writel(drvdata, drvdata->addr_val[i], ETMACVRn(i));
-+		etm_writel(drvdata, drvdata->addr_acctype[i], ETMACTRn(i));
-+	}
-+	for (i = 0; i < drvdata->nr_cntr; i++) {
-+		etm_writel(drvdata, drvdata->cntr_rld_val[i], ETMCNTRLDVRn(i));
-+		etm_writel(drvdata, drvdata->cntr_event[i], ETMCNTENRn(i));
-+		etm_writel(drvdata, drvdata->cntr_rld_event[i],
-+			   ETMCNTRLDEVRn(i));
-+		etm_writel(drvdata, drvdata->cntr_val[i], ETMCNTVRn(i));
-+	}
-+	etm_writel(drvdata, drvdata->seq_12_event, ETMSQ12EVR);
-+	etm_writel(drvdata, drvdata->seq_21_event, ETMSQ21EVR);
-+	etm_writel(drvdata, drvdata->seq_23_event, ETMSQ23EVR);
-+	etm_writel(drvdata, drvdata->seq_31_event, ETMSQ31EVR);
-+	etm_writel(drvdata, drvdata->seq_32_event, ETMSQ32EVR);
-+	etm_writel(drvdata, drvdata->seq_13_event, ETMSQ13EVR);
-+	etm_writel(drvdata, drvdata->seq_curr_state, ETMSQR);
-+	for (i = 0; i < drvdata->nr_ext_out; i++)
-+		etm_writel(drvdata, ETM_DEFAULT_EVENT_VAL, ETMEXTOUTEVRn(i));
-+	for (i = 0; i < drvdata->nr_ctxid_cmp; i++)
-+		etm_writel(drvdata, drvdata->ctxid_val[i], ETMCIDCVRn(i));
-+	etm_writel(drvdata, drvdata->ctxid_mask, ETMCIDCMR);
-+	etm_writel(drvdata, drvdata->sync_freq, ETMSYNCFR);
-+	/* no external input selected */
-+	etm_writel(drvdata, 0x0, ETMEXTINSELR);
-+	etm_writel(drvdata, drvdata->timestamp_event, ETMTSEVR);
-+	/* no auxiliary control selected */
-+	etm_writel(drvdata, 0x0, ETMAUXCR);
-+	etm_writel(drvdata, drvdata->cpu + 1, ETMTRACEIDR);
-+	/* no VMID comparator value selected */
-+	etm_writel(drvdata, 0x0, ETMVMIDCVR);
-+
-+	/* ensures trace output is enabled from this ETM */
-+	etm_writel(drvdata, drvdata->ctrl | ETMCR_ETM_EN | etmcr, ETMCR);
-+
-+	etm_clr_prog(drvdata);
-+	CS_LOCK(drvdata->base);
-+
-+	dev_dbg(drvdata->dev, "cpu: %d enable smp call done\n", drvdata->cpu);
-+}
-+
-+static int etm_enable(struct coresight_device *csdev)
-+{
-+	struct etm_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
 +	int ret;
++	int link_subtype;
++	int nr_refcnts;
++	int *refcnts = NULL;
++	struct coresight_device *csdev;
++	struct coresight_connection *conns;
 +
-+	ret = clk_prepare_enable(drvdata->clk);
-+	if (ret)
-+		goto err_clk;
++	WARN_ON(IS_ERR_OR_NULL(desc));
 +
-+	spin_lock(&drvdata->spinlock);
++	csdev = kzalloc(sizeof(*csdev), GFP_KERNEL);
++	if (!csdev) {
++		ret = -ENOMEM;
++		goto err_kzalloc_csdev;
++	}
 +
-+	/*
-+	 * Executing etm_enable_hw on the cpu whose ETM is being enabled
-+	 * ensures that register writes occur when cpu is powered.
-+	 */
-+	ret = smp_call_function_single(drvdata->cpu, etm_enable_hw, drvdata, 1);
-+	if (ret)
-+		goto err;
-+	drvdata->enable = true;
-+	drvdata->sticky_enable = true;
++	csdev->id = desc->pdata->id;
 +
-+	spin_unlock(&drvdata->spinlock);
++	if (desc->type == CORESIGHT_DEV_TYPE_LINK ||
++	    desc->type == CORESIGHT_DEV_TYPE_LINKSINK) {
++		link_subtype = desc->subtype.link_subtype;
++		if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_MERG)
++			nr_refcnts = desc->pdata->nr_inports;
++		else if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_SPLIT)
++			nr_refcnts = desc->pdata->nr_outports;
++		else
++			nr_refcnts = 1;
 +
-+	dev_info(drvdata->dev, "ETM tracing enabled\n");
-+	return 0;
-+err:
-+	spin_unlock(&drvdata->spinlock);
-+	clk_disable_unprepare(drvdata->clk);
-+err_clk:
-+	return ret;
-+}
-+
-+static void etm_disable_hw(void *info)
-+{
-+	struct etm_drvdata *drvdata = info;
-+
-+	CS_UNLOCK(drvdata->base);
-+	etm_set_prog(drvdata);
-+
-+	/* Program trace enable to low by using always false event */
-+	etm_writel(drvdata, ETM_HARD_WIRE_RES_A | ETM_EVENT_NOT_A, ETMTEEVR);
-+
-+	etm_set_pwrdwn(drvdata);
-+	CS_LOCK(drvdata->base);
-+
-+	dev_dbg(drvdata->dev, "cpu: %d disable smp call done\n", drvdata->cpu);
-+}
-+
-+static void etm_disable(struct coresight_device *csdev)
-+{
-+	struct etm_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
-+
-+	/*
-+	 * Taking hotplug lock here protects from clocks getting disabled
-+	 * with tracing being left on (crash scenario) if user disable occurs
-+	 * after cpu online mask indicates the cpu is offline but before the
-+	 * DYING hotplug callback is serviced by the ETM driver.
-+	 */
-+	get_online_cpus();
-+	spin_lock(&drvdata->spinlock);
-+
-+	/*
-+	 * Executing etm_disable_hw on the cpu whose ETM is being disabled
-+	 * ensures that register writes occur when cpu is powered.
-+	 */
-+	smp_call_function_single(drvdata->cpu, etm_disable_hw, drvdata, 1);
-+	drvdata->enable = false;
-+
-+	spin_unlock(&drvdata->spinlock);
-+	put_online_cpus();
-+
-+	clk_disable_unprepare(drvdata->clk);
-+
-+	dev_info(drvdata->dev, "ETM tracing disabled\n");
-+}
-+
-+static const struct coresight_ops_source etm_source_ops = {
-+	.enable		= etm_enable,
-+	.disable	= etm_disable,
-+};
-+
-+static const struct coresight_ops etm_cs_ops = {
-+	.source_ops	= &etm_source_ops,
-+};
-+
-+static ssize_t debugfs_nr_addr_cmp_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->nr_addr_cmp;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_nr_addr_cmp, "nr_addr_cmp",
-+			S_IRUGO, debugfs_nr_addr_cmp_get,
-+			NULL, "%llx\n");
-+
-+static ssize_t debugfs_nr_cntr_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->nr_cntr;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_nr_cntr, "nr_cntr",
-+			S_IRUGO, debugfs_nr_cntr_get,
-+			NULL, "%llx\n");
-+
-+static ssize_t debugfs_nr_ctxid_cmp_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->nr_ctxid_cmp;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_nr_ctxid_cmp, "nr_ctxid_cmp",
-+			S_IRUGO, debugfs_nr_ctxid_cmp_get,
-+			NULL, "%llx\n");
-+
-+static ssize_t debugfs_reset_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->reset;
-+	return 0;
-+}
-+
-+/* Reset to trace everything i.e. exclude nothing. */
-+static ssize_t debugfs_reset_set(void *data, u64 val)
-+{
-+	int i;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	if (val) {
-+		drvdata->mode = ETM_MODE_EXCLUDE;
-+		drvdata->ctrl = 0x0;
-+		drvdata->trigger_event = ETM_DEFAULT_EVENT_VAL;
-+		drvdata->startstop_ctrl = 0x0;
-+		drvdata->addr_idx = 0x0;
-+		for (i = 0; i < drvdata->nr_addr_cmp; i++) {
-+			drvdata->addr_val[i] = 0x0;
-+			drvdata->addr_acctype[i] = 0x0;
-+			drvdata->addr_type[i] = ETM_ADDR_TYPE_NONE;
++		refcnts = kcalloc(nr_refcnts, sizeof(*refcnts), GFP_KERNEL);
++		if (!refcnts) {
++			ret = -ENOMEM;
++			goto err_kzalloc_refcnts;
 +		}
-+		drvdata->cntr_idx = 0x0;
-+
-+		etm_set_default(drvdata);
-+	}
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_reset, "reset",
-+			S_IRUGO | S_IWUSR, debugfs_reset_get,
-+			debugfs_reset_set, "%llx\n");
-+
-+static ssize_t debugfs_mode_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->mode;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_mode_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->mode = val & ETM_MODE_ALL;
-+
-+	if (drvdata->mode & ETM_MODE_EXCLUDE)
-+		drvdata->enable_ctrl1 |= ETMTECR1_INC_EXC;
-+	else
-+		drvdata->enable_ctrl1 &= ~ETMTECR1_INC_EXC;
-+
-+	if (drvdata->mode & ETM_MODE_CYCACC)
-+		drvdata->ctrl |= ETMCR_CYC_ACC;
-+	else
-+		drvdata->ctrl &= ~ETMCR_CYC_ACC;
-+
-+	if (drvdata->mode & ETM_MODE_STALL)
-+		drvdata->ctrl |= ETMCR_STALL_MODE;
-+	else
-+		drvdata->ctrl &= ~ETMCR_STALL_MODE;
-+
-+	if (drvdata->mode & ETM_MODE_TIMESTAMP)
-+		drvdata->ctrl |= ETMCR_TIMESTAMP_EN;
-+	else
-+		drvdata->ctrl &= ~ETMCR_TIMESTAMP_EN;
-+
-+	if (drvdata->mode & ETM_MODE_CTXID)
-+		drvdata->ctrl |= ETMCR_CTXID_SIZE;
-+	else
-+		drvdata->ctrl &= ~ETMCR_CTXID_SIZE;
-+	spin_unlock(&drvdata->spinlock);
-+
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_mode, "mode",
-+			 S_IRUGO | S_IWUSR, debugfs_mode_get,
-+			 debugfs_mode_set, "%llx\n");
-+
-+static ssize_t debugfs_trigger_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->trigger_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_trigger_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->trigger_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_trigger_event, "trigger_event",
-+			S_IRUGO | S_IWUSR, debugfs_trigger_event_get,
-+			debugfs_trigger_event_set, "%llx\n");
-+
-+static ssize_t debugfs_enable_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->enable_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_enable_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->enable_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_enable_event, "enable_event",
-+			S_IRUGO | S_IWUSR, debugfs_enable_event_get,
-+			debugfs_enable_event_set, "%llx\n");
-+
-+static ssize_t debugfs_fifofull_level_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->fifofull_level;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_fifofull_level_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->fifofull_level = val;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_fifofull_level, "fifofull_level",
-+			S_IRUGO | S_IWUSR, debugfs_fifofull_level_get,
-+			debugfs_fifofull_level_set, "%llx\n");
-+
-+static ssize_t debugfs_addr_idx_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->addr_idx;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_addr_idx_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	if (val >= drvdata->nr_addr_cmp)
-+		return -EINVAL;
-+
-+	/*
-+	 * Use spinlock to ensure index doesn't change while it gets
-+	 * dereferenced multiple times within a spinlock block elsewhere.
-+	 */
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->addr_idx = val;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_addr_idx, "addr_idx",
-+			S_IRUGO | S_IWUSR, debugfs_addr_idx_get,
-+			debugfs_addr_idx_set, "%llx\n");
-+
-+static ssize_t debugfs_addr_single_get(void *data, u64 *val)
-+{
-+	u8 idx;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
-+	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_SINGLE)) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
++		csdev->refcnt.link_refcnts = refcnts;
 +	}
 +
-+	*val = drvdata->addr_val[idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_addr_single_set(void *data, u64 val)
-+{
-+	u8 idx;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
-+	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_SINGLE)) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
++	csdev->nr_conns = desc->pdata->nr_outports;
++	conns = kcalloc(csdev->nr_conns, sizeof(*conns), GFP_KERNEL);
++	if (!conns) {
++		ret = -ENOMEM;
++		goto err_kzalloc_conns;
 +	}
 +
-+	drvdata->addr_val[idx] = val;
-+	drvdata->addr_type[idx] = ETM_ADDR_TYPE_SINGLE;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_addr_single, "addr_single",
-+			S_IRUGO | S_IWUSR, debugfs_addr_single_get,
-+			debugfs_addr_single_set, "%llx\n");
-+
-+
-+static ssize_t debugfs_get_addr_range(struct seq_file *f, void *ptr)
-+{
-+	u8 idx;
-+	unsigned long val1, val2;
-+	struct etm_drvdata *drvdata = f->private;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (idx % 2 != 0) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
++	for (i = 0; i < csdev->nr_conns; i++) {
++		conns[i].outport = desc->pdata->outports[i];
++		conns[i].child_id = desc->pdata->child_ids[i];
++		conns[i].child_port = desc->pdata->child_ports[i];
 +	}
-+	if (!((drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE &&
-+	       drvdata->addr_type[idx + 1] == ETM_ADDR_TYPE_NONE) ||
-+	      (drvdata->addr_type[idx] == ETM_ADDR_TYPE_RANGE &&
-+	       drvdata->addr_type[idx + 1] == ETM_ADDR_TYPE_RANGE))) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
++	csdev->conns = conns;
 +
-+	val1 = drvdata->addr_val[idx];
-+	val2 = drvdata->addr_val[idx + 1];
-+	spin_unlock(&drvdata->spinlock);
-+	seq_printf(f, "%#lx %#lx\n", val1, val2);
++	csdev->type = desc->type;
++	csdev->subtype = desc->subtype;
++	csdev->ops = desc->ops;
++	csdev->owner = desc->owner;
 +
-+	return 0;
++	csdev->dev.parent = desc->dev;
++	csdev->dev.release = coresight_device_release;
++	dev_set_name(&csdev->dev, "%s", desc->pdata->name);
++
++	down(&coresight_semaphore);
++
++	coresight_fixup_device_conns(csdev);
++
++	ret = debugfs_coresight_init();
++	if (ret < 0)
++		goto err_coresight_init;
++
++	csdev->de = coresight_debugfs_desc_init(csdev, desc->debugfs_ops);
++
++	coresight_fixup_orphan_conns(csdev);
++
++	list_add_tail(&csdev->dev_link, &coresight_devs);
++	up(&coresight_semaphore);
++
++	return csdev;
++
++
++err_coresight_init:
++	up(&coresight_semaphore);
++	kfree(conns);
++err_kzalloc_conns:
++	kfree(refcnts);
++err_kzalloc_refcnts:
++	kfree(csdev);
++err_kzalloc_csdev:
++	return ERR_PTR(ret);
 +}
++EXPORT_SYMBOL_GPL(coresight_register);
 +
-+static int debugfs_get_addr_range_open(struct inode *inode, struct file *file)
++void coresight_unregister(struct coresight_device *csdev)
 +{
-+	return single_open(file, debugfs_get_addr_range, inode->i_private);
++	WARN_ON(IS_ERR_OR_NULL(csdev));
++
++	down(&coresight_semaphore);
++
++	list_del(&csdev->dev_link);
++	debugfs_remove_recursive(csdev->de);
++	kfree(csdev->conns);
++	kfree(csdev->refcnt.link_refcnts);
++	if (list_empty(&coresight_devs))
++		kfree(cs_debugfs_parent);
++
++	up(&coresight_semaphore);
 +}
-+
-+static ssize_t debugfs_set_addr_range(struct file *file,
-+					const char __user *user_buf,
-+					size_t count, loff_t *ppos)
-+{
-+	u8 idx;
-+	unsigned long val1, val2;
-+	struct seq_file *s = file->private_data;
-+	struct etm_drvdata *drvdata = s->private;
-+
-+	if (sscanf(user_buf, "%lx %lx", &val1, &val2) != 2)
-+		return -EINVAL;
-+	/* Lower address comparator cannot have a higher address value */
-+	if (val1 > val2)
-+		return -EINVAL;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (idx % 2 != 0) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	if (!((drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE &&
-+	       drvdata->addr_type[idx + 1] == ETM_ADDR_TYPE_NONE) ||
-+	      (drvdata->addr_type[idx] == ETM_ADDR_TYPE_RANGE &&
-+	       drvdata->addr_type[idx + 1] == ETM_ADDR_TYPE_RANGE))) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	drvdata->addr_val[idx] = val1;
-+	drvdata->addr_type[idx] = ETM_ADDR_TYPE_RANGE;
-+	drvdata->addr_val[idx + 1] = val2;
-+	drvdata->addr_type[idx + 1] = ETM_ADDR_TYPE_RANGE;
-+	drvdata->enable_ctrl1 |= (1 << (idx/2));
-+	spin_unlock(&drvdata->spinlock);
-+
-+	return count;
-+}
-+
-+static const struct file_operations debugfs_addr_range_ops = {
-+	.open = debugfs_get_addr_range_open,
-+	.read = seq_read,
-+	.write = debugfs_set_addr_range,
-+};
-+
-+static const struct coresight_ops_entry debugfs_addr_range_entry = {
-+	.name = "addr_range",
-+	.mode =  S_IRUGO | S_IWUSR,
-+	.ops = &debugfs_addr_range_ops,
-+};
-+
-+static ssize_t debugfs_addr_start_get(void *data, u64 *val)
-+{
-+	u8 idx;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
-+	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_START)) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	*val = drvdata->addr_val[idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_addr_start_set(void *data, u64 val)
-+{
-+	u8 idx;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
-+	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_START)) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	drvdata->addr_val[idx] = val;
-+	drvdata->addr_type[idx] = ETM_ADDR_TYPE_START;
-+	drvdata->startstop_ctrl |= (1 << idx);
-+	drvdata->enable_ctrl1 |= ETMTECR1_START_STOP;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_addr_start, "addr_start",
-+			S_IRUGO | S_IWUSR, debugfs_addr_start_get,
-+			debugfs_addr_start_set, "%llx\n");
-+
-+static ssize_t debugfs_addr_stop_get(void *data, u64 *val)
-+{
-+	u8 idx;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
-+	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_STOP)) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	*val = drvdata->addr_val[idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_addr_stop_set(void *data, u64 val)
-+{
-+	u8 idx;
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	idx = drvdata->addr_idx;
-+	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
-+	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_STOP)) {
-+		spin_unlock(&drvdata->spinlock);
-+		return -EINVAL;
-+	}
-+
-+	drvdata->addr_val[idx] = val;
-+	drvdata->addr_type[idx] = ETM_ADDR_TYPE_STOP;
-+	drvdata->startstop_ctrl |= (1 << (idx + 16));
-+	drvdata->enable_ctrl1 |= ETMTECR1_START_STOP;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_addr_stop, "addr_stop",
-+			S_IRUGO | S_IWUSR, debugfs_addr_stop_get,
-+			debugfs_addr_stop_set, "%llx\n");
-+
-+static ssize_t debugfs_addr_acctype_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	*val = drvdata->addr_acctype[drvdata->addr_idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_addr_acctype_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->addr_acctype[drvdata->addr_idx] = val;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_addr_acctype, "addr_acctype",
-+			S_IRUGO | S_IWUSR, debugfs_addr_acctype_get,
-+			debugfs_addr_acctype_set, "%llx\n");
-+
-+static ssize_t debugfs_cntr_idx_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata =  data;
-+
-+	*val = drvdata->cntr_idx;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_cntr_idx_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata =  data;
-+
-+	if (val >= drvdata->nr_cntr)
-+		return -EINVAL;
-+
-+	/*
-+	 * Use spinlock to ensure index doesn't change while it gets
-+	 * dereferenced multiple times within a spinlock block elsewhere.
-+	 */
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->cntr_idx = val;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_cntr_idx, "cntr_idx",
-+			 S_IRUGO | S_IWUSR, debugfs_cntr_idx_get,
-+			 debugfs_cntr_idx_set, "%llx\n");
-+
-+static ssize_t debugfs_cntr_rld_val_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	*val = drvdata->cntr_rld_val[drvdata->cntr_idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_cntr_rld_val_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->cntr_rld_val[drvdata->cntr_idx] = val;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_cntr_rld_val, "cntr_rld_val",
-+			S_IRUGO | S_IWUSR, debugfs_cntr_rld_val_get,
-+			debugfs_cntr_rld_val_set, "%llx\n");
-+
-+static ssize_t debugfs_cntr_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	*val = drvdata->cntr_event[drvdata->cntr_idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_cntr_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->cntr_event[drvdata->cntr_idx] = val & ETM_EVENT_MASK;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_cntr_event, "cntr_event",
-+			S_IRUGO | S_IWUSR, debugfs_cntr_event_get,
-+			debugfs_cntr_event_set, "%llx\n");
-+
-+static ssize_t debugfs_cntr_rld_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	*val = drvdata->cntr_rld_event[drvdata->cntr_idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_cntr_rld_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->cntr_rld_event[drvdata->cntr_idx] = val & ETM_EVENT_MASK;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_cntr_rld_event, "cntr_rld_event",
-+			S_IRUGO | S_IWUSR, debugfs_cntr_rld_event_get,
-+			debugfs_cntr_rld_event_set, "%llx\n");
-+
-+static ssize_t debugfs_cntr_val_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	*val = drvdata->cntr_val[drvdata->cntr_idx];
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+
-+static ssize_t debugfs_cntr_val_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->cntr_val[drvdata->cntr_idx] = val;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_cntr_val, "cntr_val",
-+			S_IRUGO | S_IWUSR, debugfs_cntr_val_get,
-+			debugfs_cntr_val_set, "%llx\n");
-+
-+static ssize_t debugfs_12_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_12_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_12_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->seq_12_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_12_event, "seq_12_event",
-+			 S_IRUGO | S_IWUSR, debugfs_12_event_get,
-+			 debugfs_12_event_set, "%llx\n");
-+
-+static ssize_t debugfs_21_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_21_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_21_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->seq_21_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_21_event, "seq_21_event",
-+			 S_IRUGO | S_IWUSR, debugfs_21_event_get,
-+			 debugfs_21_event_set, "%llx\n");
-+
-+static ssize_t debugfs_23_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_23_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_23_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->seq_23_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_23_event, "seq_23_event",
-+			 S_IRUGO | S_IWUSR, debugfs_23_event_get,
-+			 debugfs_23_event_set, "%llx\n");
-+
-+static ssize_t debugfs_31_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_31_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_31_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->seq_31_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_31_event, "seq_31_event",
-+			S_IRUGO | S_IWUSR, debugfs_31_event_get,
-+			debugfs_31_event_set, "%llx\n");
-+
-+static ssize_t debugfs_32_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_32_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_32_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->seq_32_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_32_event, "seq_32_event",
-+			S_IRUGO | S_IWUSR, debugfs_32_event_get,
-+			debugfs_32_event_set, "%llx\n");
-+
-+static ssize_t debugfs_13_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_13_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_13_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->seq_13_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_13_event, "seq_13_event",
-+			S_IRUGO | S_IWUSR, debugfs_13_event_get,
-+			debugfs_13_event_set, "%llx\n");
-+
-+static ssize_t debugfs_seq_curr_state_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->seq_curr_state;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_seq_curr_state_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	if (val > ETM_SEQ_STATE_MAX_VAL)
-+		return -EINVAL;
-+
-+	drvdata->seq_curr_state = val;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_seq_curr_state, "seq_curr_state",
-+			S_IRUGO | S_IWUSR, debugfs_seq_curr_state_get,
-+			debugfs_seq_curr_state_set, "%llx\n");
-+
-+static ssize_t debugfs_ctxid_idx_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->ctxid_idx;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_ctxid_idx_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	if (val >= drvdata->nr_ctxid_cmp)
-+		return -EINVAL;
-+
-+	/*
-+	 * Use spinlock to ensure index doesn't change while it gets
-+	 * dereferenced multiple times within a spinlock block elsewhere.
-+	 */
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->ctxid_idx = val;
-+	spin_unlock(&drvdata->spinlock);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_ctxid_idx, "ctxid_idx",
-+			S_IRUGO | S_IWUSR, debugfs_ctxid_idx_get,
-+			debugfs_ctxid_idx_set, "%llx\n");
-+
-+static ssize_t debugfs_ctxid_val_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	*val = drvdata->ctxid_val[drvdata->ctxid_idx];
-+	spin_unlock(&drvdata->spinlock);
-+
-+	return 0;
-+}
-+
-+static ssize_t debugfs_ctxid_val_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	spin_lock(&drvdata->spinlock);
-+	drvdata->ctxid_val[drvdata->ctxid_idx] = val;
-+	spin_unlock(&drvdata->spinlock);
-+
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_ctxid_val, "ctxid_val",
-+			S_IRUGO | S_IWUSR, debugfs_ctxid_val_get,
-+			debugfs_ctxid_val_set, "%llx\n");
-+
-+static ssize_t debugfs_ctxid_mask_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->ctxid_mask;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_ctxid_mask_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->ctxid_mask = val;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_ctxid_mask, "ctxid_mask",
-+			S_IRUGO | S_IWUSR, debugfs_ctxid_mask_get,
-+			debugfs_ctxid_mask_set, "%llx\n");
-+
-+static ssize_t debugfs_sync_freq_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->sync_freq;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_sync_freq_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->sync_freq = val & ETM_SYNC_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_sync_freq, "sync_freq",
-+			S_IRUGO | S_IWUSR, debugfs_sync_freq_get,
-+			debugfs_sync_freq_set, "%llx\n");
-+
-+static ssize_t debugfs_timestamp_event_get(void *data, u64 *val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	*val = drvdata->timestamp_event;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_timestamp_event_set(void *data, u64 val)
-+{
-+	struct etm_drvdata *drvdata = data;
-+
-+	drvdata->timestamp_event = val & ETM_EVENT_MASK;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_timestamp_event, "timestamp_event",
-+			S_IRUGO | S_IWUSR, debugfs_timestamp_event_get,
-+			debugfs_timestamp_event_set, "%llx\n");
-+
-+static ssize_t debugfs_status_get(struct seq_file *f, void *ptr)
-+{
-+	unsigned long flags;
-+	struct etm_drvdata *drvdata = f->private;
-+
-+	if (clk_prepare_enable(drvdata->clk))
-+		goto out;
-+
-+	spin_lock_irqsave(&drvdata->spinlock, flags);
-+
-+	CS_UNLOCK(drvdata->base);
-+	seq_printf(f,
-+		   "ETMCCR: 0x%08x\n"
-+		   "ETMCCER: 0x%08x\n"
-+		   "ETMSCR: 0x%08x\n"
-+		   "ETMIDR: 0x%08x\n"
-+		   "ETMCR: 0x%08x\n"
-+		   "ETMTRACEIDR: 0x%08x\n"
-+		   "Enable event: 0x%08x\n"
-+		   "Enable start/stop: 0x%08x\n"
-+		   "Enable control: CR1 0x%08x CR2 0x%08x\n",
-+		   etm_readl(drvdata, ETMCCR), etm_readl(drvdata, ETMCCER),
-+		   etm_readl(drvdata, ETMSCR), etm_readl(drvdata, ETMIDR),
-+		   etm_readl(drvdata, ETMCR), etm_readl(drvdata, ETMTRACEIDR),
-+		   etm_readl(drvdata, ETMTEEVR), etm_readl(drvdata, ETMTSSCR),
-+		   etm_readl(drvdata, ETMTECR1), etm_readl(drvdata, ETMTECR2));
-+	CS_LOCK(drvdata->base);
-+
-+	spin_unlock_irqrestore(&drvdata->spinlock, flags);
-+	clk_disable_unprepare(drvdata->clk);
-+out:
-+	return 0;
-+}
-+static int debugfs_status_show_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, debugfs_status_get, inode->i_private);
-+}
-+
-+static const struct file_operations debugfs_status_ops = {
-+	.open = debugfs_status_show_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+static const struct coresight_ops_entry debugfs_status_entry = {
-+	.name = "status",
-+	.mode =  S_IRUGO,
-+	.ops = &debugfs_status_ops,
-+};
-+
-+static const struct coresight_ops_entry *etm_attr_grps[] = {
-+	&debugfs_nr_addr_cmp_entry,
-+	&debugfs_nr_cntr_entry,
-+	&debugfs_nr_ctxid_cmp_entry,
-+	&debugfs_reset_entry,
-+	&debugfs_mode_entry,
-+	&debugfs_trigger_event_entry,
-+	&debugfs_enable_event_entry,
-+	&debugfs_fifofull_level_entry,
-+	&debugfs_addr_idx_entry,
-+	&debugfs_addr_single_entry,
-+	&debugfs_addr_range_entry,
-+	&debugfs_addr_start_entry,
-+	&debugfs_addr_stop_entry,
-+	&debugfs_addr_acctype_entry,
-+	&debugfs_cntr_idx_entry,
-+	&debugfs_cntr_rld_val_entry,
-+	&debugfs_cntr_event_entry,
-+	&debugfs_cntr_rld_event_entry,
-+	&debugfs_cntr_val_entry,
-+	&debugfs_12_event_entry,
-+	&debugfs_21_event_entry,
-+	&debugfs_23_event_entry,
-+	&debugfs_31_event_entry,
-+	&debugfs_32_event_entry,
-+	&debugfs_13_event_entry,
-+	&debugfs_seq_curr_state_entry,
-+	&debugfs_ctxid_idx_entry,
-+	&debugfs_ctxid_val_entry,
-+	&debugfs_ctxid_mask_entry,
-+	&debugfs_sync_freq_entry,
-+	&debugfs_timestamp_event_entry,
-+	&debugfs_status_entry,
-+	NULL,
-+};
-+
-+static int etm_cpu_callback(struct notifier_block *nfb, unsigned long action,
-+			    void *hcpu)
-+{
-+	unsigned int cpu = (unsigned long)hcpu;
-+
-+	if (!etmdrvdata[cpu])
-+		goto out;
-+
-+	switch (action & (~CPU_TASKS_FROZEN)) {
-+	case CPU_STARTING:
-+		spin_lock(&etmdrvdata[cpu]->spinlock);
-+		if (!etmdrvdata[cpu]->os_unlock) {
-+			etm_os_unlock(etmdrvdata[cpu]);
-+			etmdrvdata[cpu]->os_unlock = true;
-+		}
-+
-+		if (etmdrvdata[cpu]->enable)
-+			etm_enable_hw(etmdrvdata[cpu]);
-+		spin_unlock(&etmdrvdata[cpu]->spinlock);
-+		break;
-+
-+	case CPU_ONLINE:
-+		if (etmdrvdata[cpu]->boot_enable &&
-+		    !etmdrvdata[cpu]->sticky_enable)
-+			coresight_enable(etmdrvdata[cpu]->csdev);
-+		break;
-+
-+	case CPU_DYING:
-+		spin_lock(&etmdrvdata[cpu]->spinlock);
-+		if (etmdrvdata[cpu]->enable)
-+			etm_disable_hw(etmdrvdata[cpu]);
-+		spin_unlock(&etmdrvdata[cpu]->spinlock);
-+		break;
-+	}
-+out:
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block etm_cpu_notifier = {
-+	.notifier_call = etm_cpu_callback,
-+};
-+
-+static bool etm_arch_supported(u8 arch)
-+{
-+	switch (arch) {
-+	case ETM_ARCH_V3_3:
-+		break;
-+	case ETM_ARCH_V3_5:
-+		break;
-+	case PFT_ARCH_V1_1:
-+		break;
-+	default:
-+		return false;
-+	}
-+	return true;
-+}
-+
-+static void etm_init_arch_data(void *info)
-+{
-+	u32 etmidr;
-+	u32 etmccr;
-+	struct etm_drvdata *drvdata = info;
-+
-+	CS_UNLOCK(drvdata->base);
-+
-+	/* first dummy read */
-+	(void)etm_readl(drvdata, ETMPDSR);
-+	/* Provide power to ETM: ETMPDCR[3] == 1 */
-+	etm_set_pwrup(drvdata);
-+	/*
-+	 * Clear power down bit since when this bit is set writes to
-+	 * certain registers might be ignored.
-+	 */
-+	etm_clr_pwrdwn(drvdata);
-+	/*
-+	 * Set prog bit. It will be set from reset but this is included to
-+	 * ensure it is set
-+	 */
-+	etm_set_prog(drvdata);
-+
-+	/* Find all capabilities */
-+	etmidr = etm_readl(drvdata, ETMIDR);
-+	drvdata->arch = BMVAL(etmidr, 4, 11);
-+	drvdata->port_size = etm_readl(drvdata, ETMCR) & PORT_SIZE_MASK;
-+
-+	etmccr = etm_readl(drvdata, ETMCCR);
-+	drvdata->nr_addr_cmp = BMVAL(etmccr, 0, 3) * 2;
-+	drvdata->nr_cntr = BMVAL(etmccr, 13, 15);
-+	drvdata->nr_ext_inp = BMVAL(etmccr, 17, 19);
-+	drvdata->nr_ext_out = BMVAL(etmccr, 20, 22);
-+	drvdata->nr_ctxid_cmp = BMVAL(etmccr, 24, 25);
-+
-+	etm_set_pwrdwn(drvdata);
-+	etm_clr_pwrup(drvdata);
-+	CS_LOCK(drvdata->base);
-+}
-+
-+static void etm_init_default_data(struct etm_drvdata *drvdata)
-+{
-+	u32 flags = (1 << 0 | /* instruction execute*/
-+		     3 << 3 | /* ARM instruction */
-+		     0 << 5 | /* No data value comparison */
-+		     0 << 7 | /* No exact mach */
-+		     0 << 8 | /* Ignore context ID */
-+		     0 << 10); /* Security ignored */
-+
-+	drvdata->ctrl = (ETMCR_CYC_ACC | ETMCR_TIMESTAMP_EN);
-+	drvdata->enable_ctrl1 = ETMTECR1_ADDR_COMP_1;
-+	if (drvdata->nr_addr_cmp >= 2) {
-+		drvdata->addr_val[0] = (u32) _stext;
-+		drvdata->addr_val[1] = (u32) _etext;
-+		drvdata->addr_acctype[0] = flags;
-+		drvdata->addr_acctype[1] = flags;
-+		drvdata->addr_type[0] = ETM_ADDR_TYPE_RANGE;
-+		drvdata->addr_type[1] = ETM_ADDR_TYPE_RANGE;
-+	}
-+
-+	etm_set_default(drvdata);
-+}
-+
-+static int etm_probe(struct amba_device *adev, const struct amba_id *id)
-+{
-+	int ret;
-+	void __iomem *base;
-+	struct device *dev = &adev->dev;
-+	struct coresight_platform_data *pdata = NULL;
-+	struct etm_drvdata *drvdata;
-+	struct resource *res = &adev->res;
-+	struct coresight_desc *desc;
-+	struct device_node *np = adev->dev.of_node;
-+
-+	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
-+	if (!desc)
-+		return -ENOMEM;
-+
-+	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
-+	if (!drvdata)
-+		return -ENOMEM;
-+
-+	if (np) {
-+		pdata = of_get_coresight_platform_data(dev, np);
-+		if (IS_ERR(pdata))
-+			return PTR_ERR(pdata);
-+
-+		adev->dev.platform_data = pdata;
-+		drvdata->use_cp14 = of_property_read_bool(np, "arm,cp14");
-+	}
-+
-+	drvdata->dev = &adev->dev;
-+	dev_set_drvdata(dev, drvdata);
-+
-+	/* validity for the resource is already checked by the AMBA core */
-+	base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
-+
-+	drvdata->base = base;
-+
-+	spin_lock_init(&drvdata->spinlock);
-+
-+	drvdata->clk = adev->pclk;
-+	ret = clk_prepare_enable(drvdata->clk);
-+	if (ret)
-+		return ret;
-+
-+	drvdata->cpu = pdata ? pdata->cpu : 0;
-+
-+	get_online_cpus();
-+	etmdrvdata[drvdata->cpu] = drvdata;
-+
-+	if (!smp_call_function_single(drvdata->cpu, etm_os_unlock, drvdata, 1))
-+		drvdata->os_unlock = true;
-+
-+	if (smp_call_function_single(drvdata->cpu,
-+				     etm_init_arch_data,  drvdata, 1))
-+		dev_err(dev, "ETM arch init failed\n");
-+
-+	if (!count++)
-+		register_hotcpu_notifier(&etm_cpu_notifier);
-+
-+	put_online_cpus();
-+
-+	if (etm_arch_supported(drvdata->arch) == false) {
-+		ret = -EINVAL;
-+		goto err_arch_supported;
-+	}
-+	etm_init_default_data(drvdata);
-+
-+	clk_disable_unprepare(drvdata->clk);
-+
-+	desc->type = CORESIGHT_DEV_TYPE_SOURCE;
-+	desc->subtype.source_subtype = CORESIGHT_DEV_SUBTYPE_SOURCE_PROC;
-+	desc->ops = &etm_cs_ops;
-+	desc->pdata = pdata;
-+	desc->dev = dev;
-+	desc->debugfs_ops = etm_attr_grps;
-+	desc->owner = THIS_MODULE;
-+	drvdata->csdev = coresight_register(desc);
-+	if (IS_ERR(drvdata->csdev)) {
-+		ret = PTR_ERR(drvdata->csdev);
-+		goto err_arch_supported;
-+	}
-+
-+	dev_info(dev, "ETM initialized\n");
-+
-+	if (boot_enable) {
-+		coresight_enable(drvdata->csdev);
-+		drvdata->boot_enable = true;
-+	}
-+
-+	return 0;
-+
-+err_arch_supported:
-+	clk_disable_unprepare(drvdata->clk);
-+	if (--count == 0)
-+		unregister_hotcpu_notifier(&etm_cpu_notifier);
-+	return ret;
-+}
-+
-+static int etm_remove(struct amba_device *adev)
-+{
-+	struct etm_drvdata *drvdata = amba_get_drvdata(adev);
-+
-+	coresight_unregister(drvdata->csdev);
-+	if (--count == 0)
-+		unregister_hotcpu_notifier(&etm_cpu_notifier);
-+
-+	return 0;
-+}
-+
-+static struct amba_id etm_ids[] = {
-+	{	/* ETM 3.3 */
-+		.id	= 0x0003b921,
-+		.mask	= 0x0003ffff,
-+	},
-+	{	/* ETM 3.5 */
-+		.id	= 0x0003b956,
-+		.mask	= 0x0003ffff,
-+	},
-+	{	/* PTM */
-+		.id	= 0x0003b95f,
-+		.mask	= 0x0003ffff,
-+	},
-+	{ 0, 0},
-+};
-+
-+static struct amba_driver etm_driver = {
-+	.drv = {
-+		.name	= "coresight-etm3x",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= etm_probe,
-+	.remove		= etm_remove,
-+	.id_table	= etm_ids,
-+};
-+
-+int __init etm_init(void)
-+{
-+	return amba_driver_register(&etm_driver);
-+}
-+module_init(etm_init);
-+
-+void __exit etm_exit(void)
-+{
-+	amba_driver_unregister(&etm_driver);
-+}
-+module_exit(etm_exit);
++EXPORT_SYMBOL_GPL(coresight_unregister);
 +
 +MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("CoreSight Program Flow Trace driver");
-diff --git a/drivers/coresight/coresight-priv.h b/drivers/coresight/coresight-priv.h
-index 241a542..83172c4 100644
---- a/drivers/coresight/coresight-priv.h
-+++ b/drivers/coresight/coresight-priv.h
-@@ -52,7 +52,7 @@ static inline void CS_UNLOCK(void __iomem *addr)
- 	} while (0);
- }
+diff --git a/drivers/coresight/of_coresight.c b/drivers/coresight/of_coresight.c
+new file mode 100644
+index 0000000..f90a024
+--- /dev/null
++++ b/drivers/coresight/of_coresight.c
+@@ -0,0 +1,202 @@
++/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/clk.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_graph.h>
++#include <linux/coresight.h>
++#include <asm/smp_plat.h>
++
++static int of_get_coresight_id(struct device_node *node, int *id)
++{
++	const __be32 *reg;
++	u64 addr;
++
++	/* derive component id from its memory map */
++	reg = of_get_property(node, "reg", NULL);
++	if (reg) {
++		addr = of_translate_address(node, reg);
++		if (addr != OF_BAD_ADDR) {
++			*id = addr;
++			return 0;
++		}
++	}
++
++	/* no "reg", we have a non-configurable replicator */
++	reg = of_get_property(node, "id", NULL);
++	if (reg) {
++		*id = of_read_ulong(reg, 1);
++		return 0;
++	}
++
++	return -1;
++}
++
++static struct device_node *of_get_coresight_endpoint(
++		const struct device_node *parent, struct device_node *prev)
++{
++	struct device_node *node = of_graph_get_next_endpoint(parent, prev);
++
++	of_node_put(prev);
++	return node;
++}
++
++static bool of_coresight_is_input_port(struct device_node *port)
++{
++	return of_find_property(port, "slave-mode", NULL);
++}
++
++static void of_coresight_get_ports(struct device_node *node,
++				   int *nr_inports, int *nr_outports)
++{
++	struct device_node *ep = NULL;
++	int in = 0, out = 0;
++
++	do {
++		ep = of_get_coresight_endpoint(node, ep);
++		if (!ep)
++			break;
++		of_coresight_is_input_port(ep) ? in++ : out++;
++
++	} while (ep);
++
++	*nr_inports = in;
++	*nr_outports = out;
++}
++
++static int of_coresight_alloc_memory(struct device *dev,
++			struct coresight_platform_data *pdata)
++{
++	/* list of output port on this component */
++	pdata->outports = devm_kzalloc(dev, pdata->nr_outports *
++				       sizeof(*pdata->outports),
++				       GFP_KERNEL);
++	if (!pdata->outports)
++		return -ENOMEM;
++
++
++	/* children connected to this component via @outport */
++	pdata->child_ids = devm_kzalloc(dev, pdata->nr_outports *
++					sizeof(*pdata->child_ids),
++					GFP_KERNEL);
++	if (!pdata->child_ids)
++		return -ENOMEM;
++
++	/* port number on the child this component is connected to */
++	pdata->child_ports = devm_kzalloc(dev, pdata->nr_outports *
++					  sizeof(*pdata->child_ports),
++					  GFP_KERNEL);
++	if (!pdata->child_ports)
++		return -ENOMEM;
++
++	return 0;
++}
++
++struct coresight_platform_data *of_get_coresight_platform_data(
++				struct device *dev, struct device_node *node)
++{
++	int id, i = 0, ret = 0;
++	struct device_node *cpu;
++	struct coresight_platform_data *pdata;
++	struct of_endpoint endpoint, rendpoint;
++	struct device_node *ep = NULL;
++	struct device_node *rparent = NULL;
++	struct device_node *rport = NULL;
++
++	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return ERR_PTR(-ENOMEM);
++
++	/* use the base address as id */
++	ret = of_get_coresight_id(node, &id);
++	if (ret)
++		return ERR_PTR(-EINVAL);
++	pdata->id = id;
++
++	/* use device name as debugfs handle */
++	pdata->name = dev_name(dev);
++
++	/* get the number of input and output port for this component */
++	of_coresight_get_ports(node, &pdata->nr_inports, &pdata->nr_outports);
++
++	if (pdata->nr_outports) {
++		ret = of_coresight_alloc_memory(dev, pdata);
++		if (ret)
++			return ERR_PTR(-ENOMEM);
++
++		/* iterate through each port to discover topology */
++		do {
++			/* get a handle on a port */
++			ep = of_get_coresight_endpoint(node, ep);
++			if (!ep)
++				break;
++
++			/* no need to deal with input ports, processing for as
++			 * processing for output ports will deal with them.
++			 */
++			if (of_coresight_is_input_port(ep))
++				continue;
++
++			/* get a handle on the local endpoint */
++			ret = of_graph_parse_endpoint(ep, &endpoint);
++
++			if (ret)
++				continue;
++
++			/* the local out port number */
++			pdata->outports[i] = endpoint.id;
++
++			/* get a handle the remote port and parent
++			 * attached to it.
++			 */
++			rparent = of_graph_get_remote_port_parent(ep);
++			rport = of_graph_get_remote_port(ep);
++
++			if (!rparent || !rport)
++				continue;
++
++			if (of_graph_parse_endpoint(rport, &rendpoint))
++				continue;
++
++			ret = of_get_coresight_id(rparent, &id);
++			if (ret)
++				continue;
++			pdata->child_ids[i] = id;
++			pdata->child_ports[i] = rendpoint.id;
++
++			i++;
++		} while (ep);
++	}
++
++	/* affinity defaults to CPU0 */
++	pdata->cpu = 0;
++	cpu = of_parse_phandle(node, "cpu", 0);
++	if (cpu) {
++		const u32 *mpidr;
++		int len, index;
++
++		mpidr = of_get_property(cpu, "reg", &len);
++		if (mpidr && len == 4) {
++			index = get_logical_index(be32_to_cpup(mpidr));
++			if (index != -EINVAL)
++				pdata->cpu = index;
++		}
++	}
++
++	return pdata;
++}
++EXPORT_SYMBOL_GPL(of_get_coresight_platform_data);
+diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
+index fdd7e1b..cdddabe 100644
+--- a/include/linux/amba/bus.h
++++ b/include/linux/amba/bus.h
+@@ -23,6 +23,7 @@
  
--#ifdef CONFIG_CORESIGHT_SOURCE_ETM
-+#ifdef CONFIG_CORESIGHT_SOURCE_ETM3X
- extern unsigned int etm_readl_cp14(u32 off);
- extern void etm_writel_cp14(u32 val, u32 off);
- #else
+ #define AMBA_NR_IRQS	9
+ #define AMBA_CID	0xb105f00d
++#define CORESIGHT_CID	0xb105900d
+ 
+ struct clk;
+ 
+diff --git a/include/linux/coresight.h b/include/linux/coresight.h
+new file mode 100644
+index 0000000..d82f57c
+--- /dev/null
++++ b/include/linux/coresight.h
+@@ -0,0 +1,200 @@
++/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef _LINUX_CORESIGHT_H
++#define _LINUX_CORESIGHT_H
++
++#include <linux/device.h>
++
++/* Peripheral id registers (0xFD0-0xFEC) */
++#define CORESIGHT_PERIPHIDR4	0xfd0
++#define CORESIGHT_PERIPHIDR5	0xfd4
++#define CORESIGHT_PERIPHIDR6	0xfd8
++#define CORESIGHT_PERIPHIDR7	0xfdC
++#define CORESIGHT_PERIPHIDR0	0xfe0
++#define CORESIGHT_PERIPHIDR1	0xfe4
++#define CORESIGHT_PERIPHIDR2	0xfe8
++#define CORESIGHT_PERIPHIDR3	0xfeC
++/* Component id registers (0xFF0-0xFFC) */
++#define CORESIGHT_COMPIDR0	0xff0
++#define CORESIGHT_COMPIDR1	0xff4
++#define CORESIGHT_COMPIDR2	0xff8
++#define CORESIGHT_COMPIDR3	0xffC
++
++#define ETM_ARCH_V3_3		0x23
++#define ETM_ARCH_V3_5		0x25
++#define PFT_ARCH_V1_1		0x31
++
++#define CORESIGHT_UNLOCK	0xc5acce55
++
++enum coresight_clk_rate {
++	CORESIGHT_CLK_RATE_OFF,
++	CORESIGHT_CLK_RATE_TRACE,
++	CORESIGHT_CLK_RATE_HSTRACE,
++};
++
++enum coresight_dev_type {
++	CORESIGHT_DEV_TYPE_NONE,
++	CORESIGHT_DEV_TYPE_SINK,
++	CORESIGHT_DEV_TYPE_LINK,
++	CORESIGHT_DEV_TYPE_LINKSINK,
++	CORESIGHT_DEV_TYPE_SOURCE,
++};
++
++enum coresight_dev_subtype_sink {
++	CORESIGHT_DEV_SUBTYPE_SINK_NONE,
++	CORESIGHT_DEV_SUBTYPE_SINK_PORT,
++	CORESIGHT_DEV_SUBTYPE_SINK_BUFFER,
++};
++
++enum coresight_dev_subtype_link {
++	CORESIGHT_DEV_SUBTYPE_LINK_NONE,
++	CORESIGHT_DEV_SUBTYPE_LINK_MERG,
++	CORESIGHT_DEV_SUBTYPE_LINK_SPLIT,
++	CORESIGHT_DEV_SUBTYPE_LINK_FIFO,
++};
++
++enum coresight_dev_subtype_source {
++	CORESIGHT_DEV_SUBTYPE_SOURCE_NONE,
++	CORESIGHT_DEV_SUBTYPE_SOURCE_PROC,
++	CORESIGHT_DEV_SUBTYPE_SOURCE_BUS,
++	CORESIGHT_DEV_SUBTYPE_SOURCE_SOFTWARE,
++};
++
++struct coresight_ops_entry {
++	const char *name;
++	umode_t mode;
++	const struct file_operations *ops;
++};
++
++struct coresight_dev_subtype {
++	enum coresight_dev_subtype_sink sink_subtype;
++	enum coresight_dev_subtype_link link_subtype;
++	enum coresight_dev_subtype_source source_subtype;
++};
++
++struct coresight_platform_data {
++	int id;
++	int cpu;
++	const char *name;
++	int nr_inports;
++	int *outports;
++	int *child_ids;
++	int *child_ports;
++	int nr_outports;
++	struct clk *clk;
++};
++
++struct coresight_desc {
++	enum coresight_dev_type type;
++	struct coresight_dev_subtype subtype;
++	const struct coresight_ops *ops;
++	struct coresight_platform_data *pdata;
++	struct device *dev;
++	const struct coresight_ops_entry **debugfs_ops;
++	struct module *owner;
++};
++
++struct coresight_connection {
++	int outport;
++	int child_id;
++	int child_port;
++	struct coresight_device *child_dev;
++	struct list_head link;
++};
++
++struct coresight_refcnt {
++	int sink_refcnt;
++	int *link_refcnts;
++	int source_refcnt;
++};
++
++struct coresight_device {
++	int id;
++	struct coresight_connection *conns;
++	int nr_conns;
++	enum coresight_dev_type type;
++	struct coresight_dev_subtype subtype;
++	const struct coresight_ops *ops;
++	struct dentry *de;
++	struct device dev;
++	struct coresight_refcnt refcnt;
++	struct list_head dev_link;
++	struct list_head path_link;
++	struct module *owner;
++	bool enable;	/* true only if configured as part of a path */
++	bool activated;	/* only valid for sinks */
++};
++
++#define to_coresight_device(d) container_of(d, struct coresight_device, dev)
++
++#define CORESIGHT_DEBUGFS_ENTRY(__name, __entry_name,			\
++				 __mode, __get, __set, __fmt)		\
++DEFINE_SIMPLE_ATTRIBUTE(__name ## _ops, __get, __set, __fmt)		\
++static const struct coresight_ops_entry __name ## _entry = {		\
++	.name = __entry_name,						\
++	.mode = __mode,							\
++	.ops  = &__name ## _ops						\
++}
++
++struct coresight_ops_sink {
++	int (*enable)(struct coresight_device *csdev);
++	void (*disable)(struct coresight_device *csdev);
++};
++
++struct coresight_ops_link {
++	int (*enable)(struct coresight_device *csdev, int iport, int oport);
++	void (*disable)(struct coresight_device *csdev, int iport, int oport);
++};
++
++struct coresight_ops_source {
++	int (*enable)(struct coresight_device *csdev);
++	void (*disable)(struct coresight_device *csdev);
++};
++
++struct coresight_ops {
++	const struct coresight_ops_sink *sink_ops;
++	const struct coresight_ops_link *link_ops;
++	const struct coresight_ops_source *source_ops;
++};
++
++#ifdef CONFIG_CORESIGHT
++extern struct coresight_device *
++coresight_register(struct coresight_desc *desc);
++extern void coresight_unregister(struct coresight_device *csdev);
++extern int coresight_enable(struct coresight_device *csdev);
++extern void coresight_disable(struct coresight_device *csdev);
++extern int coresight_is_bit_set(u32 val, int position, int value);
++extern void coresight_timeout(void __iomem *addr, u32 offset,
++			      int position, int value);
++#ifdef CONFIG_OF
++extern struct coresight_platform_data *of_get_coresight_platform_data(
++				struct device *dev, struct device_node *node);
++#endif
++#else
++static inline struct coresight_device *
++coresight_register(struct coresight_desc *desc) { return NULL; }
++static inline void coresight_unregister(struct coresight_device *csdev) {}
++static inline int
++coresight_enable(struct coresight_device *csdev) { return -ENOSYS; }
++static inline void coresight_disable(struct coresight_device *csdev) {}
++static inline int coresight_is_bit_set(u32 val, int position, int value)
++					 { return 0; }
++static inline void coresight_timeout(void __iomem *addr, u32 offset,
++				     int position, int value) {}
++#ifdef CONFIG_OF
++static inline struct coresight_platform_data *of_get_coresight_platform_data(
++	struct device *dev, struct device_node *node) { return NULL; }
++#endif
++#endif
++
++#endif
 -- 
 1.9.1
 
