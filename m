@@ -1,122 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513AbaHGMgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 08:36:12 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:56339 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756906AbaHGMgG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 08:36:06 -0400
+	id S1757492AbaHGMgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 08:36:09 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:9437 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754597AbaHGMgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 08:36:05 -0400
+X-IronPort-AV: E=Sophos;i="5.01,818,1400025600"; 
+   d="scan'208";a="159638853"
+Message-ID: <53E372B2.6030509@citrix.com>
+Date: Thu, 7 Aug 2014 13:36:02 +0100
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdW2kb=EF-Nmem_gyUu=p7hFOTe+Q2ekHh41SaHHiWDGeg@mail.gmail.com>
-References: <CAMuHMdW2kb=EF-Nmem_gyUu=p7hFOTe+Q2ekHh41SaHHiWDGeg@mail.gmail.com>
-Date: Thu, 7 Aug 2014 21:36:05 +0900
-Message-ID: <CAAmzW4MX2birtCOUxjDdQ7c3Y+RyVkBt383HEQ=XFgnhhOsQPw@mail.gmail.com>
-Subject: Re: BUG: enable_cpucache failed for radix_tree_node, error 12 (was:
- Re: [PATCH v3 9/9] slab: remove BAD_ALIEN_MAGIC)
-From: Joonsoo Kim <js1304@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+To: David Miller <davem@davemloft.net>
+CC: <wei.liu2@citrix.com>, <Ian.Campbell@citrix.com>,
+        <david.vrabel@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: [PATCH] xen-netback: Change disable flag from bool to a bit
+References: <1407348973-2433-1-git-send-email-zoltan.kiss@citrix.com>	<1407348973-2433-5-git-send-email-zoltan.kiss@citrix.com> <20140806.140722.489043833669403528.davem@davemloft.net>
+In-Reply-To: <20140806.140722.489043833669403528.davem@davemloft.net>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-07 20:52 GMT+09:00 Geert Uytterhoeven <geert@linux-m68k.org>:
-> Hi Joonsoo,
+On 06/08/14 22:07, David Miller wrote:
+> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Date: Wed, 6 Aug 2014 19:16:13 +0100
 >
-> On Tue, Jul 1, 2014 at 10:27 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
->> BAD_ALIEN_MAGIC value isn't used anymore. So remove it.
->>
->> Acked-by: Christoph Lameter <cl@linux.com>
->> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> ---
->>  mm/slab.c |    4 +---
->>  1 file changed, 1 insertion(+), 3 deletions(-)
->>
->> diff --git a/mm/slab.c b/mm/slab.c
->> index 7820a45..60c9e11 100644
->> --- a/mm/slab.c
->> +++ b/mm/slab.c
->> @@ -470,8 +470,6 @@ static struct kmem_cache kmem_cache_boot = {
->>         .name = "kmem_cache",
->>  };
->>
->> -#define BAD_ALIEN_MAGIC 0x01020304ul
->> -
->>  static DEFINE_PER_CPU(struct delayed_work, slab_reap_work);
->>
->>  static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
->> @@ -838,7 +836,7 @@ static int transfer_objects(struct array_cache *to,
->>  static inline struct alien_cache **alloc_alien_cache(int node,
->>                                                 int limit, gfp_t gfp)
->>  {
->> -       return (struct alien_cache **)BAD_ALIEN_MAGIC;
->> +       return NULL;
->>  }
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 >
-> With latest mainline, I'm getting a crash during bootup on m68k/ARAnyM:
+> Neither this nor your "Small fixes around internal queue purging"
+> patch apply cleanly to my current tree.  I have no idea what tree you
+> are sending these patches against.
 >
-> enable_cpucache failed for radix_tree_node, error 12.
-> kernel BUG at /scratch/geert/linux/linux-m68k/mm/slab.c:1522!
-> *** TRAP #7 ***   FORMAT=0
-> Current process id is 0
-> BAD KERNEL TRAP: 00000000
-> Modules linked in:
-> PC: [<0039c92c>] kmem_cache_init_late+0x70/0x8c
-> SR: 2200  SP: 00345f90  a2: 0034c2e8
-> d0: 0000003d    d1: 00000000    d2: 00000000    d3: 003ac942
-> d4: 00000000    d5: 00000000    a0: 0034f686    a1: 0034f682
-> Process swapper (pid: 0, task=0034c2e8)
-> Frame format=0
-> Stack from 00345fc4:
->         002f69ef 002ff7e5 000005f2 000360fa 0017d806 003921d4 00000000 00000000
->         00000000 00000000 00000000 00000000 003ac942 00000000 003912d6
-> Call Trace: [<000360fa>] parse_args+0x0/0x2ca
->  [<0017d806>] strlen+0x0/0x1a
->  [<003921d4>] start_kernel+0x23c/0x428
->  [<003912d6>] _sinittext+0x2d6/0x95e
->
-> Code: f7e5 4879 002f 69ef 61ff ffca 462a 4e47 <4879> 0035 4b1c 61ff
-> fff0 0cc4 7005 23c0 0037 fd20 588f 265f 285f 4e75 48e7 301c
-> Disabling lock debugging due to kernel taint
-> Kernel panic - not syncing: Attempted to kill the idle task!
-> ---[ end Kernel panic - not syncing: Attempted to kill the idle task!
->
-> I bisected it to commit a640616822b2c3a8009b0600f20c4a76ea8a0025
-> Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Date:   Wed Aug 6 16:04:38 2014 -0700
->
->     slab: remove BAD_ALIEN_MAGIC
->
->     BAD_ALIEN_MAGIC value isn't used anymore. So remove it.
->
->     Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->     Acked-by: Christoph Lameter <cl@linux.com>
->     Cc: Pekka Enberg <penberg@kernel.org>
->     Cc: David Rientjes <rientjes@google.com>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
->
-> Error 12 is ENOMEM, so I first thought it went out-of-memory, but just reverting
-> the above commit on mainline makes it work again.
+This was an accidental submit, as I wrote in my email a minute later. 
+Sorry about it.
 
-Hello,
-
-Thanks for reporting.
-
-This patch only works for !NUMA. And if num_possible_nodes() is 1,
-then it doesn't have any effect, because alloc_alien_cache() call is always
-skipped. Is it possible !NUMA and num_possible_nodes() != 1?
-
-Could you check your config for CONFIG_NUMA and
-CONFIG_NODES_SHIFT?
-
-And, could you check booting with boot param "noaliencache"?
-
-Thanks.
+Zoli
