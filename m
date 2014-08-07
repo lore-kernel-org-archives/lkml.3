@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009AbaHGX2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 19:28:09 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36335 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbaHGX2G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 19:28:06 -0400
-Message-ID: <53E40B8E.3080100@wwwdotorg.org>
-Date: Thu, 07 Aug 2014 17:28:14 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1755152AbaHGXfb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 19:35:31 -0400
+Received: from ozlabs.org ([103.22.144.67]:34596 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751601AbaHGXf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 19:35:28 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stewart Smith <stewart@linux.vnet.ibm.com>
+Subject: Re: linux-next: build failure after merge of the modules tree
+In-Reply-To: <20140807230342.52e3a52c@canb.auug.org.au>
+References: <20140807132017.2ec9e2ad@canb.auug.org.au> <87tx5ocyz3.fsf@rustcorp.com.au> <20140807230342.52e3a52c@canb.auug.org.au>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 07 Aug 2014 22:37:50 +0930
+Message-ID: <87a97gcus9.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-tegra@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: Re: [PATCH 2/3] soc/tegra: Use of_match_machine in soc_is_tegra()
-References: <1407452515-2390-1-git-send-email-ttynkkynen@nvidia.com> <1407452515-2390-3-git-send-email-ttynkkynen@nvidia.com>
-In-Reply-To: <1407452515-2390-3-git-send-email-ttynkkynen@nvidia.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 05:01 PM, Tuomas Tynkkynen wrote:
-> Use the new helper function, also fixing a device_node refcount leak.
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
+> Hi Rusty,
+>
+> On Thu, 07 Aug 2014 21:07:20 +0930 Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>
+>> Ah, crap.  I really hate that macro magic :(
+>> 
+>> I amended to the minimal fix, so we can pretend that never happened.
+>
+> How about arch/powerpc/platforms/powernv/opal-dump.c as well?
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Hmm, I didn't see that one.
 
-I assume this will go through some common branch in arm-soc so others 
-can build on it?
+I've done that as a separate patch.
+
+Thanks,
+Rusty.
