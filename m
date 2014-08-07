@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450AbaHGKPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 06:15:35 -0400
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:41210 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533AbaHGKPd (ORCPT
+	id S1757504AbaHGKPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 06:15:52 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:36330 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757456AbaHGKPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 06:15:33 -0400
+	Thu, 7 Aug 2014 06:15:50 -0400
+Message-ID: <53E351D4.50103@kernel.org>
+Date: Thu, 07 Aug 2014 11:15:48 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <53E35122.3040806@redhat.com>
-References: <53DB6B81.6050400@redhat.com>
-	<53DBCBE8.6010809@codeaurora.org>
-	<53DBE764.8050109@redhat.com>
-	<53DBEC27.7050803@codeaurora.org>
-	<CAKohpombG3Gj4mbm02vPNnAxzaRvQP7rb=iQ14dCFH4_+71H3w@mail.gmail.com>
-	<53E0B657.4070007@redhat.com>
-	<CAKohponxBdYEgY2oYuzmdaqfSRS8Uq8bZOzcb1QDmKO-z5ZBFQ@mail.gmail.com>
-	<53E1556B.5070304@codeaurora.org>
-	<CAKohpoky1-hj7cwnKc58svh8Z1Yas1=q4uJEK8mWcb56uqAcng@mail.gmail.com>
-	<53E1FEE5.80305@redhat.com>
-	<20140806150831.GB32301@codeaurora.org>
-	<CAKohponBRn9mwpPMinsjqpHe3wTFj6aNpYk5gZaWDKht3bd5NQ@mail.gmail.com>
-	<53E35122.3040806@redhat.com>
-Date: Thu, 7 Aug 2014 15:45:32 +0530
-Message-ID: <CAKohpokLsqMMxMwh_p+kUL=He9-8cSws6onG6DCBNBVzz1=5TA@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem to
- be held for duration of changing governors [v2]
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Oussama Jabbari <oussama.jabbari@gmail.com>
+CC: gregkh@linuxfoundation.org, sachin.kamat@linaro.org, lars@metafoo.de,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: iio: adis16060: Fix coding style problem
+References: <1407344776-2838-1-git-send-email-oussama.jabbari@gmail.com>
+In-Reply-To: <1407344776-2838-1-git-send-email-oussama.jabbari@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 August 2014 15:42, Prarit Bhargava <prarit@redhat.com> wrote:
-> That should have done it.  What are your CPUFREQ configs?
+On 06/08/14 18:06, Oussama Jabbari wrote:
+> This patch fixes a warning from checkpatch.pl script :
+> "WARNING: Missing a blank line after declarations"
+> 
+> Signed-off-by: Oussama Jabbari <oussama.jabbari@gmail.com>
+Whilst I find it hard to care about this particular issue,
+I'm accepting this mainly to avoid getting the same thing
+sometime in the future!
 
-You can check the same .config I attached last time for that :)
+Anyhow, a nicely formatted patch.  The only change I would
+have suggested would be in the title which might as be more
+specific.
 
-CONFIG_CPU_FREQ=y
-CONFIG_CPU_FREQ_GOV_COMMON=y
-CONFIG_CPU_FREQ_STAT=y
-CONFIG_CPU_FREQ_STAT_DETAILS=y
-# CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE is not set
-# CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
-# CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND is not set
-CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE=y
-CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
-CONFIG_CPU_FREQ_GOV_POWERSAVE=y
-CONFIG_CPU_FREQ_GOV_USERSPACE=y
-CONFIG_CPU_FREQ_GOV_ONDEMAND=y
-CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+[PATCH] staging:iio:adis16060 Add missing blank line after declaration.
 
+Applied to the togreg branch of iio.git - initially pushed out as
+testing for the autobuilders to play with it.
 
-Anyway, has anybody tried to test what I have been trying now?
-@Prarit: You can try that on your x86 box as well, which has a
-single cluster or group of CPUs sharing clock line.
+J
+> ---
+> The reason of this patch is for completing one task
+> of the Eudyptula Challenge.
+> 
+>  drivers/staging/iio/gyro/adis16060_core.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/staging/iio/gyro/adis16060_core.c b/drivers/staging/iio/gyro/adis16060_core.c
+> index d5d395c..4c5869d 100644
+> --- a/drivers/staging/iio/gyro/adis16060_core.c
+> +++ b/drivers/staging/iio/gyro/adis16060_core.c
+> @@ -180,6 +180,7 @@ static int adis16060_w_probe(struct spi_device *spi)
+>  	int ret;
+>  	struct iio_dev *indio_dev = adis16060_iio_dev;
+>  	struct adis16060_state *st;
+> +
+>  	if (!indio_dev) {
+>  		ret =  -ENODEV;
+>  		goto error_ret;
+> 
