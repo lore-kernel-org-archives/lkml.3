@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736AbaHGQmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 12:42:32 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:8750 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932500AbaHGQmb (ORCPT
+	id S932896AbaHGQnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 12:43:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39751 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932500AbaHGQnU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 12:42:31 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-43-53e3ac75aaf9
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: sec-irq: fix support for devices without irq specified
-Date: Thu, 07 Aug 2014 18:42:28 +0200
-Message-id: <22704524.WE4thfvSda@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGLMWRmVeSWpSXmKPExsVy+t9jAd2yNY+DDV5eY7V4/cLQ4mzTG3aL
-	+1+PMlpc3jWHzeJ0N6vFxRVfmBzYPO5c28PmMe9koEffllWMHp83yQWwRHHZpKTmZJalFunb
-	JXBl3H0/kbWgiaNiams/SwPjG7YuRk4OCQETifNbO1ggbDGJC/fWA8W5OIQEFjFK/Pj9hR3C
-	aWGSOLjzOitIFZuAlcTE9lWMXYwcHCICXhK37gSB1DCDNJxf9IwJpEZYwEfi8q6l7CA2i4Cq
-	xOX1jUwg9bwCWhLT3gmBhEUFPCV2bF8JdgSvgKDEj8n3wI5gFpCX2Ld/KiuErSWxfudxpgmM
-	fLOQlM1CUjYLSdkCRuZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMGh+UxqB+PKBotDjAIc
-	jEo8vALdj4OFWBPLiitzDzFKcDArifDqgoR4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmi1DhQS
-	SE8sSc1OTS1ILYLJMnFwSjUwGhp+8923c3/z030rVv49q2ys/8z8/rQ9ZZ8/rdu7Zk/7Wq2c
-	+Rx7Xq9vVvpSOY8758HZ30qz7A83X2OybXV6sWJ9/POMc7FLT32re31Kz/+ywAlzi/6f/ZfM
-	oq4U72JgeKC/+6zehOZWrv1XvRQFqndcz7p+dmZ84BXzqcEye/Ze5rZanbeqeo4SS3FGoqEW
-	c1FxIgDRRpDKSQIAAA==
+	Thu, 7 Aug 2014 12:43:20 -0400
+Date: Thu, 7 Aug 2014 18:43:16 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: kreijack@inwind.it
+Cc: Goffredo Baroncelli <kreijack@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] Add the "verbose" module option.
+Message-ID: <20140807184316.6682aa98@endymion.delvare>
+In-Reply-To: <53E3A963.4080807@inwind.it>
+References: <1407359103-6012-1-git-send-email-kreijack@inwind.it>
+	<1407359103-6012-4-git-send-email-kreijack@inwind.it>
+	<1407401555.4314.14.camel@chaos.site>
+	<53E3A963.4080807@inwind.it>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing check for the case of device without irq specified
-in sec_irq_exit() (please note that sec_irq_init() already
-correctly handles such devices).
+On Thu, 07 Aug 2014 18:29:23 +0200, Goffredo Baroncelli wrote:
+> On 08/07/2014 10:52 AM, Jean Delvare wrote:
+> > Le Wednesday 06 August 2014 à 21:05 +0000, Goffredo Baroncelli a écrit :
+> >> +	 */
+> >> +	tempchanged = x.temp != temp || x.casetemp != casetemp;
+> >> +	if ((verbose > 1 && tempchanged) ||
+> >> +	    (verbose > 0 && level >= 0)) {
+> >> +		printk(KERN_INFO);
+> >> +		print_temp("CPU-temp: ", temp);
+> > 
+> > This can be written more efficiently as a single statement:
+> > 
+> > 		print_temp(KERN_INFO "CPU-temp: ", temp);
+> 
+> I suppose that KERN_* has to be in the beginning of the line. 
 
-This is needed for Insignal's Exynos4412 based Origen board.
+Correct.
 
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-patch is against next-20140804 branch of linux-next kernel
+> Because a single line is composed by several prink,
 
- drivers/mfd/sec-irq.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+In this case, it is, but FYI, this is generally discouraged. The reason
+is that another piece of the kernel may be calling printk at the same
+time, and then that other message may split your own message into
+pieces. If you run checkpatch.pl on this file, you'll see it complains
+about this.
 
-diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
-index f9a5786..b65a7f0 100644
---- a/drivers/mfd/sec-irq.c
-+++ b/drivers/mfd/sec-irq.c
-@@ -478,5 +478,6 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
- 
- void sec_irq_exit(struct sec_pmic_dev *sec_pmic)
- {
--	regmap_del_irq_chip(sec_pmic->irq, sec_pmic->irq_data);
-+	if (sec_pmic->irq)
-+		regmap_del_irq_chip(sec_pmic->irq, sec_pmic->irq_data);
- }
+> KERN_INFO has 
+> to be only in the first printk. To me it seems more polite to have
+> one printk for the level, and the others (there are more than one) 
+> for the message parts.
+
+The fewer printks is better. Ideally there would be only one to avoid
+the risk of line splitting altogether. I understand this isn't easy to
+achieve in this case, but I still believe that you shouldn't have more
+calls to printk than necessary, to reduce the risk.
+
 -- 
-1.8.2.3
-
-
+Jean Delvare
+SUSE L3 Support
