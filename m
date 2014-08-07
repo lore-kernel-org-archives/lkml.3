@@ -1,688 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510AbaHGSC3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 14:02:29 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:50354 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaHGSC1 (ORCPT
+	id S1751897AbaHGSL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 14:11:28 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:56754 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbaHGSL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 14:02:27 -0400
-Message-ID: <1407434537.7174.9.camel@localhost.localdomain>
-Subject: ANNOUNCE: BLD-3.16 release.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 08 Aug 2014 00:02:17 +0600
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 (3.10.2-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Aug 2014 14:11:27 -0400
+Date: Thu, 7 Aug 2014 11:11:22 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com,
+        davej@redhat.com, hpa@zytor.com, x86@kernel.org
+Subject: Re: [PATCH] [BUGFIX] x86: mm: fix rcu splat from new TLB tracepoints
+Message-ID: <20140807181122.GF5821@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140807175841.5C92D878@viggo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140807175841.5C92D878@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080718-1344-0000-0000-000003510917
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+On Thu, Aug 07, 2014 at 10:58:41AM -0700, Dave Hansen wrote:
+> 
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> This is a bug fix that needs to be pushed to mainline before the
+> 3.17 release.
+> 
+> Dave Jones reported seeing a bug from one of my TLB tracepoints:
+> 
+>         http://lkml.kernel.org/r/20140806181801.GA4605@redhat.com
+> 
+> According to Paul McKenney, the right way to fix this is adding
+> an _rcuidle suffix to the tracepoint.
+> 
+>         http://lkml.kernel.org/r/20140807065055.GA5821@linux.vnet.ibm.com
+> 
+> This patch does just that.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> Reported-by: Dave Jones <davej@redhat.com>,
+> Cc: paulmck@linux.vnet.ibm.com
 
-It's been quite a long time since the announcement of the Barbershop Load
-Distribution (BLD) Algorithm. Quite a few changes have been made, since then.
-Now it more reflects what it really should be ;-). It's a simplistic approach
-towards load balancing, typical x86 SMP boxes should run okay (tested personally)
-, but, yes it can break your boxes too. I'm looking forward to get some feedback,
-to keep further development up and going.
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-(This patch is made for kernel version 3.16.)
-
-Thanks,
-Rakib
----
-
- Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 9d76b99..847f34d 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -36,6 +36,15 @@ config BROKEN_ON_SMP
- 	depends on BROKEN || !SMP
- 	default y
- 
-+config BLD
-+	bool "An alternate CPU load distribution technique for task scheduler"
-+	depends on SMP
-+	default y
-+	help
-+	  This is an alternate CPU load distribution technique based for task
-+	  scheduler based on The Barbershop Load Distribution algorithm. Not
-+	  suitable for NUMA, should work well on SMP.
-+
- config INIT_ENV_ARG_LIMIT
- 	int
- 	default 32 if !UML
-diff --git a/kernel/sched/bld.h b/kernel/sched/bld.h
-new file mode 100644
-index 0000000..5a067c1
---- /dev/null
-+++ b/kernel/sched/bld.h
-@@ -0,0 +1,207 @@
-+#ifdef CONFIG_BLD
-+
-+static DEFINE_RWLOCK(rt_list_lock);
-+static LIST_HEAD(rt_rq_head);
-+static LIST_HEAD(cfs_rq_head);
-+static DEFINE_RWLOCK(cfs_list_lock);
-+
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+static inline struct rq *rq_of_cfs(struct cfs_rq *cfs_rq)
-+{
-+	return cfs_rq->rq;
-+}
-+#else
-+static inline struct rq *rq_of_cfs(struct cfs_rq *cfs_rq)
-+{
-+	return container_of(cfs_rq, struct rq, cfs);
-+}
-+#endif
-+
-+#ifdef CONFIG_RT_GROUP_SCHED
-+static inline struct rq *rq_of_rt(struct rt_rq *rt_rq)
-+{
-+	return rt_rq->rq;
-+}
-+#else
-+static inline struct rq *rq_of_rt(struct rt_rq *rt_rq)
-+{
-+	return container_of(rt_rq, struct rq, rt);
-+}
-+#endif
-+
-+static int select_cpu_for_wakeup(int task_type, struct cpumask *mask)
-+{
-+	int cpu = smp_processor_id(), i;
-+	unsigned long load, min_load = ULONG_MAX;
-+	struct rq *rq;
-+
-+	if (task_type) {
-+		for_each_cpu(i, mask) {
-+			rq = cpu_rq(i);
-+			load = rq->cfs.load.weight;
-+			if (load < min_load) {
-+				min_load = load;
-+				cpu = i;
-+			}
-+		}
-+	} else {
-+		min_load = -1;
-+
-+		for_each_cpu(i, mask) {
-+			rq = cpu_rq(i);
-+			load = rq->rt.lowbit;
-+			if (load > min_load) {
-+				min_load = load;
-+				cpu = i;
-+			}
-+		}
-+	}
-+
-+	return cpu;
-+}
-+
-+static int bld_pick_cpu_cfs(struct task_struct *p, int sd_flags, int wake_flags)
-+{
-+	struct cfs_rq *cfs;
-+	unsigned long flags;
-+	unsigned int cpu = smp_processor_id();
-+
-+	read_lock_irqsave(&cfs_list_lock, flags);
-+	list_for_each_entry(cfs, &cfs_rq_head, bld_cfs_list) {
-+		cpu = cpu_of(rq_of_cfs(cfs));
-+		if (cpu_online(cpu))
-+			break;
-+	}
-+	read_unlock_irqrestore(&cfs_list_lock, flags);
-+	return cpu;
-+}
-+
-+static int bld_pick_cpu_rt(struct task_struct *p, int sd_flags, int wake_flags)
-+{
-+	struct rt_rq *rt;
-+	unsigned long flags;
-+	unsigned int cpu = smp_processor_id();
-+
-+	read_lock_irqsave(&rt_list_lock, flags);
-+	list_for_each_entry(rt, &rt_rq_head, bld_rt_list) {
-+		cpu = cpu_of(rq_of_rt(rt));
-+		if (cpu_online(cpu))
-+			break;
-+	}
-+	read_unlock_irqrestore(&rt_list_lock, flags);
-+	return cpu;
-+}
-+
-+static int bld_pick_cpu_domain(struct task_struct *p, int sd_flags, int wake_flags)
-+{
-+	unsigned int cpu = smp_processor_id(), want_affine = 0;
-+	struct cpumask *tmpmask;
-+
-+	if (p->nr_cpus_allowed == 1)
-+		return task_cpu(p);
-+
-+	if (sd_flags & SD_BALANCE_WAKE) {
-+		if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p))) {
-+			want_affine = 1;
-+		}
-+	}
-+
-+	if (want_affine)
-+		tmpmask = tsk_cpus_allowed(p);
-+	else
-+		tmpmask = sched_domain_span(cpu_rq(task_cpu(p))->sd);
-+
-+	if (rt_task(p))
-+		cpu = select_cpu_for_wakeup(0, tmpmask);
-+	else
-+		cpu = select_cpu_for_wakeup(1, tmpmask);
-+
-+	return cpu;
-+}
-+
-+static void track_load_rt(struct rq *rq, struct task_struct *p)
-+{
-+	unsigned long flag;
-+	int firstbit;
-+	struct rt_rq *first;
-+	struct rt_prio_array *array = &rq->rt.active;
-+
-+	first = list_entry(rt_rq_head.next, struct rt_rq, bld_rt_list);
-+	firstbit = sched_find_first_bit(array->bitmap);
-+
-+	/* Maintaining rt.lowbit */
-+	if (firstbit <= rq->rt.lowbit)
-+		rq->rt.lowbit = p->prio;
-+
-+	if (rq->rt.lowbit < first->lowbit) {
-+		write_lock_irqsave(&rt_list_lock, flag);
-+		list_del(&rq->rt.bld_rt_list);
-+		list_add_tail(&rq->rt.bld_rt_list, &rt_rq_head);
-+		write_unlock_irqrestore(&rt_list_lock, flag);
-+	}
-+}
-+
-+static int bld_get_cpu(struct task_struct *p, int sd_flags, int wake_flags)
-+{
-+	unsigned int cpu;
-+
-+	if (sd_flags == SD_BALANCE_WAKE || (sd_flags == SD_BALANCE_EXEC && (get_nr_threads(p) > 1)))
-+		cpu = bld_pick_cpu_domain(p, sd_flags, wake_flags);
-+	else {
-+		if (rt_task(p))
-+			cpu = bld_pick_cpu_rt(p, sd_flags, wake_flags);
-+		else
-+			cpu = bld_pick_cpu_cfs(p, sd_flags, wake_flags);
-+	}
-+
-+	return cpu;
-+}
-+
-+static void bld_track_load_activate(struct rq *rq, struct task_struct *p)
-+{
-+	unsigned long flag;
-+	if (rt_task(p)) {
-+		track_load_rt(rq, p);
-+	} else {
-+		if (rq->cfs.pos != 2) {
-+			struct cfs_rq *last;
-+			last = list_entry(cfs_rq_head.prev, struct cfs_rq, bld_cfs_list);
-+			if (rq->cfs.load.weight >= last->load.weight) {
-+				write_lock_irqsave(&cfs_list_lock, flag);
-+				list_del(&rq->cfs.bld_cfs_list);
-+				list_add_tail(&rq->cfs.bld_cfs_list, &cfs_rq_head);
-+				rq->cfs.pos = 2; last->pos = 1;
-+				write_unlock_irqrestore(&cfs_list_lock, flag);
-+			}
-+		}
-+	}
-+}
-+
-+static void bld_track_load_deactivate(struct rq *rq, struct task_struct *p)
-+{
-+	unsigned long flag;
-+	if (rt_task(p)) {
-+		track_load_rt(rq, p);
-+	} else {
-+		if (rq->cfs.pos != 0) {
-+			struct cfs_rq *first;
-+			first = list_entry(cfs_rq_head.next, struct cfs_rq, bld_cfs_list);
-+			if (rq->cfs.load.weight <= first->load.weight) {
-+				write_lock_irqsave(&cfs_list_lock, flag);
-+				list_del(&rq->cfs.bld_cfs_list);
-+				list_add(&rq->cfs.bld_cfs_list, &cfs_rq_head);
-+				rq->cfs.pos = 0; first->pos = 1;
-+				write_unlock_irqrestore(&cfs_list_lock, flag);
-+			}
-+		}
-+	}
-+}
-+#else
-+static inline void bld_track_load_activate(struct rq *rq)
-+{
-+}
-+
-+static inline void bld_track_load_deactivate(struct rq *rq)
-+{
-+}
-+#endif /* CONFIG_BLD */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index bc1638b..b429ce5 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -24,6 +24,8 @@
-  *  2007-07-01  Group scheduling enhancements by Srivatsa Vaddagiri
-  *  2007-11-29  RT balancing improvements by Steven Rostedt, Gregory Haskins,
-  *              Thomas Gleixner, Mike Kravetz
-+ *  2012-Feb	The Barbershop Load Distribution (BLD) algorithm - an alternate
-+ *		CPU load distribution technique for kernel scheduler by Rakib Mullick.
-  */
- 
- #include <linux/mm.h>
-@@ -86,6 +88,7 @@
- #include "sched.h"
- #include "../workqueue_internal.h"
- #include "../smpboot.h"
-+#include "bld.h"
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/sched.h>
-@@ -831,6 +834,8 @@ static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
- 	update_rq_clock(rq);
- 	sched_info_queued(rq, p);
- 	p->sched_class->enqueue_task(rq, p, flags);
-+	if (!dl_task(p))
-+		bld_track_load_activate(rq, p);
- }
- 
- static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
-@@ -838,6 +843,8 @@ static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
- 	update_rq_clock(rq);
- 	sched_info_dequeued(rq, p);
- 	p->sched_class->dequeue_task(rq, p, flags);
-+	if (!dl_task(p))
-+		bld_track_load_deactivate(rq, p);
- }
- 
- void activate_task(struct rq *rq, struct task_struct *p, int flags)
-@@ -1398,7 +1405,14 @@ out:
- static inline
- int select_task_rq(struct task_struct *p, int cpu, int sd_flags, int wake_flags)
- {
-+#ifndef	CONFIG_BLD
- 	cpu = p->sched_class->select_task_rq(p, cpu, sd_flags, wake_flags);
-+#else
-+	if (dl_task(p))
-+		cpu = dl_sched_class.select_task_rq(p, cpu, sd_flags, wake_flags);
-+	else
-+		cpu = bld_get_cpu(p, sd_flags, wake_flags);
-+#endif
- 
- 	/*
- 	 * In order not to call set_task_cpu() on a blocking task we need
-@@ -1568,9 +1582,13 @@ void scheduler_ipi(void)
- 	 */
- 	preempt_fold_need_resched();
- 
-+#ifndef	CONFIG_BLD
- 	if (llist_empty(&this_rq()->wake_list)
- 			&& !tick_nohz_full_cpu(smp_processor_id())
- 			&& !got_nohz_idle_kick())
-+#else
-+	if (llist_empty(&this_rq()->wake_list) && !tick_nohz_full_cpu(smp_processor_id()))
-+#endif
- 		return;
- 
- 	/*
-@@ -1593,13 +1611,16 @@ void scheduler_ipi(void)
- 	/*
- 	 * Check if someone kicked us for doing the nohz idle load balance.
- 	 */
-+#ifndef	CONFIG_BLD
- 	if (unlikely(got_nohz_idle_kick())) {
- 		this_rq()->idle_balance = 1;
- 		raise_softirq_irqoff(SCHED_SOFTIRQ);
- 	}
-+#endif
- 	irq_exit();
- }
- 
-+#ifndef	CONFIG_BLD
- static void ttwu_queue_remote(struct task_struct *p, int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
-@@ -1611,6 +1632,7 @@ static void ttwu_queue_remote(struct task_struct *p, int cpu)
- 			trace_sched_wake_idle_without_ipi(cpu);
- 	}
- }
-+#endif
- 
- bool cpus_share_cache(int this_cpu, int that_cpu)
- {
-@@ -1622,7 +1644,7 @@ static void ttwu_queue(struct task_struct *p, int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
- 
--#if defined(CONFIG_SMP)
-+#if defined(CONFIG_SMP) && !defined(CONFIG_BLD)
- 	if (sched_feat(TTWU_QUEUE) && !cpus_share_cache(smp_processor_id(), cpu)) {
- 		sched_clock_cpu(cpu); /* sync clocks x-cpu */
- 		ttwu_queue_remote(p, cpu);
-@@ -1930,7 +1952,7 @@ int sched_fork(unsigned long clone_flags, struct task_struct *p)
- 	 * Silence PROVE_RCU.
- 	 */
- 	raw_spin_lock_irqsave(&p->pi_lock, flags);
--	set_task_cpu(p, cpu);
-+	__set_task_cpu(p, cpu);
- 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
- 
- #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
-@@ -2398,7 +2420,14 @@ void sched_exec(void)
- 	int dest_cpu;
- 
- 	raw_spin_lock_irqsave(&p->pi_lock, flags);
-+#ifndef	CONFIG_BLD
- 	dest_cpu = p->sched_class->select_task_rq(p, task_cpu(p), SD_BALANCE_EXEC, 0);
-+#else
-+	if (dl_task(p))
-+		dest_cpu = task_cpu(p);
-+	else
-+		dest_cpu = bld_get_cpu(p, SD_BALANCE_EXEC, 0);
-+#endif
- 	if (dest_cpu == smp_processor_id())
- 		goto unlock;
- 
-@@ -2508,8 +2537,10 @@ void scheduler_tick(void)
- 
- #ifdef CONFIG_SMP
- 	rq->idle_balance = idle_cpu(cpu);
-+#ifndef	CONFIG_BLD
- 	trigger_load_balance(rq);
- #endif
-+#endif
- 	rq_last_tick_reset(rq);
- }
- 
-@@ -6990,6 +7021,15 @@ void __init sched_init(void)
- #endif
- 		init_rq_hrtick(rq);
- 		atomic_set(&rq->nr_iowait, 0);
-+#ifdef CONFIG_BLD
-+		INIT_LIST_HEAD(&rq->cfs.bld_cfs_list);
-+		list_add_tail(&rq->cfs.bld_cfs_list, &cfs_rq_head);
-+		rq->cfs.pos = 0;
-+
-+		INIT_LIST_HEAD(&rq->rt.bld_rt_list);
-+		list_add_tail(&rq->rt.bld_rt_list, &rt_rq_head);
-+		rq->rt.lowbit = INT_MAX;
-+#endif
- 	}
- 
- 	set_load_weight(&init_task);
-@@ -7030,6 +7070,9 @@ void __init sched_init(void)
- 	init_sched_fair_class();
- 
- 	scheduler_running = 1;
-+#ifdef	CONFIG_BLD
-+	printk(KERN_INFO "BLD: An Alternate CPU load distributor activated.\n");
-+#endif
- }
- 
- #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index fea7d33..651aa1d 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4101,6 +4101,7 @@ static void task_waking_fair(struct task_struct *p)
- 	record_wakee(p);
- }
- 
-+#ifndef	CONFIG_BLD
- #ifdef CONFIG_FAIR_GROUP_SCHED
- /*
-  * effective_load() calculates the load change as seen from the root_task_group
-@@ -4550,6 +4551,7 @@ unlock:
- 
- 	return new_cpu;
- }
-+#endif	/* CONFIG_BLD */
- 
- /*
-  * Called immediately before a task is migrated to a new cpu; task_cpu(p) and
-@@ -4845,6 +4847,7 @@ simple:
- 	return p;
- 
- idle:
-+#ifndef	CONFIG_BLD
- 	new_tasks = idle_balance(rq);
- 	/*
- 	 * Because idle_balance() releases (and re-acquires) rq->lock, it is
-@@ -4856,7 +4859,7 @@ idle:
- 
- 	if (new_tasks > 0)
- 		goto again;
--
-+#endif
- 	return NULL;
- }
- 
-@@ -6931,12 +6934,40 @@ static inline int on_null_domain(struct rq *rq)
-  *   needed, they will kick the idle load balancer, which then does idle
-  *   load balancing for all the idle CPUs.
-  */
-+#ifndef	CONFIG_BLD
- static struct {
- 	cpumask_var_t idle_cpus_mask;
- 	atomic_t nr_cpus;
- 	unsigned long next_balance;     /* in jiffy units */
- } nohz ____cacheline_aligned;
- 
-+static inline void nohz_balance_exit_idle(int cpu)
-+{
-+	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
-+		/*
-+		 * Completely isolated CPUs don't ever set, so we must test.
-+		 */
-+		if (likely(cpumask_test_cpu(cpu, nohz.idle_cpus_mask))) {
-+			cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
-+			atomic_dec(&nohz.nr_cpus);
-+		}
-+		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
-+	}
-+}
-+
-+static int sched_ilb_notifier(struct notifier_block *nfb,
-+					unsigned long action, void *hcpu)
-+{
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_DYING:
-+		nohz_balance_exit_idle(smp_processor_id());
-+		return NOTIFY_OK;
-+	default:
-+		return NOTIFY_DONE;
-+	}
-+}
-+#endif	/* CONFIG_BLD */
-+
- static inline int find_new_ilb(void)
- {
- 	int ilb = cpumask_first(nohz.idle_cpus_mask);
-@@ -6975,20 +7006,6 @@ static void nohz_balancer_kick(void)
- 	return;
- }
- 
--static inline void nohz_balance_exit_idle(int cpu)
--{
--	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
--		/*
--		 * Completely isolated CPUs don't ever set, so we must test.
--		 */
--		if (likely(cpumask_test_cpu(cpu, nohz.idle_cpus_mask))) {
--			cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
--			atomic_dec(&nohz.nr_cpus);
--		}
--		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
--	}
--}
--
- static inline void set_cpu_sd_state_busy(void)
- {
- 	struct sched_domain *sd;
-@@ -7029,6 +7046,7 @@ unlock:
-  */
- void nohz_balance_enter_idle(int cpu)
- {
-+#ifndef	CONFIG_BLD
- 	/*
- 	 * If this cpu is going down, then nothing needs to be done.
- 	 */
-@@ -7047,23 +7065,10 @@ void nohz_balance_enter_idle(int cpu)
- 	cpumask_set_cpu(cpu, nohz.idle_cpus_mask);
- 	atomic_inc(&nohz.nr_cpus);
- 	set_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
--}
--
--static int sched_ilb_notifier(struct notifier_block *nfb,
--					unsigned long action, void *hcpu)
--{
--	switch (action & ~CPU_TASKS_FROZEN) {
--	case CPU_DYING:
--		nohz_balance_exit_idle(smp_processor_id());
--		return NOTIFY_OK;
--	default:
--		return NOTIFY_DONE;
--	}
-+#endif
- }
- #endif
- 
--static DEFINE_SPINLOCK(balancing);
--
- /*
-  * Scale the max load_balance interval with the number of CPUs in the system.
-  * This trades load-balance latency on larger machines for less cross talk.
-@@ -7073,6 +7078,9 @@ void update_max_interval(void)
- 	max_load_balance_interval = HZ*num_online_cpus()/10;
- }
- 
-+#ifndef	CONFIG_BLD
-+static DEFINE_SPINLOCK(balancing);
-+
- /*
-  * It checks each scheduling domain to see if it is due to be balanced,
-  * and initiates a balancing operation if so.
-@@ -7321,6 +7329,7 @@ void trigger_load_balance(struct rq *rq)
- 		nohz_balancer_kick();
- #endif
- }
-+#endif	/* CONFIG_BLD */
- 
- static void rq_online_fair(struct rq *rq)
- {
-@@ -7764,7 +7773,9 @@ const struct sched_class fair_sched_class = {
- 	.put_prev_task		= put_prev_task_fair,
- 
- #ifdef CONFIG_SMP
-+#ifndef	CONFIG_BLD
- 	.select_task_rq		= select_task_rq_fair,
-+#endif
- 	.migrate_task_rq	= migrate_task_rq_fair,
- 
- 	.rq_online		= rq_online_fair,
-@@ -7802,6 +7813,7 @@ void print_cfs_stats(struct seq_file *m, int cpu)
- 
- __init void init_sched_fair_class(void)
- {
-+#ifndef	CONFIG_BLD
- #ifdef CONFIG_SMP
- 	open_softirq(SCHED_SOFTIRQ, run_rebalance_domains);
- 
-@@ -7811,5 +7823,5 @@ __init void init_sched_fair_class(void)
- 	cpu_notifier(sched_ilb_notifier, 0);
- #endif
- #endif /* SMP */
--
-+#endif /* BLD */
- }
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index a490831..c9d22c3 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1291,6 +1291,7 @@ static void yield_task_rt(struct rq *rq)
- #ifdef CONFIG_SMP
- static int find_lowest_rq(struct task_struct *task);
- 
-+#ifndef	CONFIG_BLD
- static int
- select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
- {
-@@ -1344,6 +1345,7 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
- out:
- 	return cpu;
- }
-+#endif	/* CONFIG_BLD */
- 
- static void check_preempt_equal_prio(struct rq *rq, struct task_struct *p)
- {
-@@ -2108,7 +2110,9 @@ const struct sched_class rt_sched_class = {
- 	.put_prev_task		= put_prev_task_rt,
- 
- #ifdef CONFIG_SMP
-+#ifndef	CONFIG_BLD
- 	.select_task_rq		= select_task_rq_rt,
-+#endif
- 
- 	.set_cpus_allowed       = set_cpus_allowed_rt,
- 	.rq_online              = rq_online_rt,
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 31cc02e..1c497d2 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -358,9 +358,8 @@ struct cfs_rq {
- #endif /* CONFIG_FAIR_GROUP_SCHED */
- #endif /* CONFIG_SMP */
- 
--#ifdef CONFIG_FAIR_GROUP_SCHED
- 	struct rq *rq;	/* cpu runqueue to which this cfs_rq is attached */
--
-+#ifdef CONFIG_FAIR_GROUP_SCHED
- 	/*
- 	 * leaf cfs_rqs are those that hold tasks (lowest schedulable entity in
- 	 * a hierarchy). Non-leaf lrqs hold other higher schedulable entities
-@@ -384,6 +383,11 @@ struct cfs_rq {
- 	struct list_head throttled_list;
- #endif /* CONFIG_CFS_BANDWIDTH */
- #endif /* CONFIG_FAIR_GROUP_SCHED */
-+
-+#ifdef CONFIG_BLD
-+	struct list_head bld_cfs_list;
-+	char pos;
-+#endif
- };
- 
- static inline int rt_bandwidth_enabled(void)
-@@ -417,12 +421,16 @@ struct rt_rq {
- 	/* Nests inside the rq lock: */
- 	raw_spinlock_t rt_runtime_lock;
- 
-+	struct rq *rq;
- #ifdef CONFIG_RT_GROUP_SCHED
- 	unsigned long rt_nr_boosted;
- 
--	struct rq *rq;
- 	struct task_group *tg;
- #endif
-+#ifdef CONFIG_BLD
-+	struct list_head bld_rt_list;
-+	int lowbit;
-+#endif
- };
- 
- /* Deadline class' related fields in a runqueue */
-
-
+> ---
+> 
+>  b/arch/x86/mm/tlb.c |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff -puN arch/x86/mm/tlb.c~mm-fix-rcu-splat-from-tlb-tracepoints arch/x86/mm/tlb.c
+> --- a/arch/x86/mm/tlb.c~mm-fix-rcu-splat-from-tlb-tracepoints	2014-08-07 10:55:43.312283542 -0700
+> +++ b/arch/x86/mm/tlb.c	2014-08-07 10:56:49.763352575 -0700
+> @@ -49,7 +49,13 @@ void leave_mm(int cpu)
+>  	if (cpumask_test_cpu(cpu, mm_cpumask(active_mm))) {
+>  		cpumask_clear_cpu(cpu, mm_cpumask(active_mm));
+>  		load_cr3(swapper_pg_dir);
+> -		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+> +		/*
+> +		 * This gets called in the idle path where RCU
+> +		 * functions differently.  Tracing normally
+> +		 * uses RCU, so we have to call the tracepoint
+> +		 * specially here.
+> +		 */
+> +		trace_tlb_flush_rcuidle(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+>  	}
+>  }
+>  EXPORT_SYMBOL_GPL(leave_mm);
+> _
+> 
 
