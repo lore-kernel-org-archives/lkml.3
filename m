@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144AbaHGIfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 04:35:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55722 "EHLO mx2.suse.de"
+	id S1754448AbaHGIju (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 04:39:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55831 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756196AbaHGIfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 04:35:51 -0400
-Subject: Re: [PATCH 5/5] Export the temperatures via hwmon
+	id S1753317AbaHGIjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 04:39:48 -0400
+Subject: Re: [PATCH 2/5] Remove attach_method because un-used
 From: Jean Delvare <jdelvare@suse.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: kreijack@inwind.it, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <53E32C77.5000804@roeck-us.net>
+To: Goffredo Baroncelli <kreijack@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Goffredo Baroncelli <kreijack@inwind.it>
+In-Reply-To: <1407359103-6012-3-git-send-email-kreijack@inwind.it>
 References: <1407359103-6012-1-git-send-email-kreijack@inwind.it>
-	 <1407359103-6012-6-git-send-email-kreijack@inwind.it>
-	 <20140806231803.GA5643@roeck-us.net>	<53E31694.8050107@gmail.com>
-	 <53E31AB0.6070604@roeck-us.net> <20140807085235.2c0e63dd@endymion.delvare>
-	 <53E32C77.5000804@roeck-us.net>
+	 <1407359103-6012-3-git-send-email-kreijack@inwind.it>
 Content-Type: text/plain; charset="UTF-8"
 Organization: Suse Linux
-Date: Thu, 07 Aug 2014 10:35:45 +0200
-Message-ID: <1407400545.4314.2.camel@chaos.site>
+Date: Thu, 07 Aug 2014 10:39:43 +0200
+Message-ID: <1407400783.4314.3.camel@chaos.site>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 8bit
@@ -28,28 +26,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Thursday 07 August 2014 à 00:36 -0700, Guenter Roeck a écrit :
-> On 08/06/2014 11:52 PM, Jean Delvare wrote:
-> > Hi Guenter,
-> >
-> > On Wed, 06 Aug 2014 23:20:32 -0700, Guenter Roeck wrote:
-> >> Patch 4/5 is "Return the fan speed via sysfs: /sys/devices/temperature/fan_level".
-> >>
-> >> So you are saying that returning the fan speed with a non-hwmon attribute works,
-> >> but returning it with a hwmon attribute doesn't ? Not really sure if I understand
-> >> your logic. Either fan_level doesn't return the fan speed (or an abstraction of it),
-> >> or something in your line of argument is inconsistent.
-> >
-> > fan_level is a fan speed _control_ value, like pwm1. It is not a fan
-> > speed monitoring value.
-> >
-> Ah, ok. The patch description doesn't seem to match, though.
-> And why not export it as pwm1, if that is what it is ?
+Le Wednesday 06 August 2014 à 21:05 +0000, Goffredo Baroncelli a écrit :
+> Remove attach_method because i2c-powermac is
+> in charge to instantiate the driver directly.
+> 
+> Signed-off-by: Goffredo Baroncelli <kreijack@inwind.it>
+> ---
+>  drivers/macintosh/therm_windtunnel.c | 35 -----------------------------------
+>  1 file changed, 35 deletions(-)
+> 
+> diff --git a/drivers/macintosh/therm_windtunnel.c b/drivers/macintosh/therm_windtunnel.c
+> index a64a06f..1e50455 100644
+> --- a/drivers/macintosh/therm_windtunnel.c
+> +++ b/drivers/macintosh/therm_windtunnel.c
+> @@ -300,40 +300,6 @@ static int control_loop(void *dummy)
+>  /*	i2c probing and setup						*/
+>  /************************************************************************/
+>  
+> -static int
+> -do_attach( struct i2c_adapter *adapter )
+> -{
+> -	/* scan 0x48-0x4f (DS1775) and 0x2c-2x2f (ADM1030) */
+> -	static const unsigned short scan_ds1775[] = {
+> -		0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
+> -		I2C_CLIENT_END
+> -	};
+> -	static const unsigned short scan_adm1030[] = {
+> -		0x2c, 0x2d, 0x2e, 0x2f,
+> -		I2C_CLIENT_END
+> -	};
+> -
+> -	if( strncmp(adapter->name, "uni-n", 5) )
+> -		return 0;
+> -
+> -	if( !x.running ) {
+> -		struct i2c_board_info info;
+> -
+> -		memset(&info, 0, sizeof(struct i2c_board_info));
+> -		strlcpy(info.type, "therm_ds1775", I2C_NAME_SIZE);
+> -		i2c_new_probed_device(adapter, &info, scan_ds1775, NULL);
+> -
+> -		strlcpy(info.type, "therm_adm1030", I2C_NAME_SIZE);
+> -		i2c_new_probed_device(adapter, &info, scan_adm1030, NULL);
+> -
+> -		if( x.thermostat && x.fan ) {
+> -			x.running = 1;
+> -			x.poll_task = kthread_run(control_loop, NULL, "g4fand");
+> -		}
+> -	}
+> -	return 0;
+> -}
+> -
+>  static void
+>  try_start_control_loop(void)
+>  {
+> @@ -450,7 +416,6 @@ static struct i2c_driver g4fan_driver = {
+>  	.driver = {
+>  		.name	= "therm_windtunnel",
+>  	},
+> -	.attach_adapter = do_attach,
+>  	.probe		= do_probe,
+>  	.remove		= do_remove,
+>  	.id_table	= therm_windtunnel_id,
 
-Well, /sys/devices/temperature is a non-standard interface anyway, so it
-does not really matter. I already discussed with Goffredo the
-possibility to also expose it as pwm1 on the hwmon side, this might
-happen later.
+Acked-by: Jean Delvare <jdelvare@suse.de>
 
 -- 
 Jean Delvare
