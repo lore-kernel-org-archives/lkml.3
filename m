@@ -1,121 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757816AbaHGOgk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 10:36:40 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:64821 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757335AbaHGOgi (ORCPT
+	id S1757850AbaHGOio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 10:38:44 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:41286 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757488AbaHGOim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 10:36:38 -0400
-Date: Thu, 7 Aug 2014 16:36:49 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Pavel Machek <pavel@ucw.cz>,
-        Linux-pm mailing list <linux-pm@lists.osdl.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [Intel-gfx] 3.15-rc: regression in suspend
-Message-ID: <20140807143649.GD8727@phenom.ffwll.local>
-Mail-Followup-To: Jiri Kosina <jkosina@suse.cz>,
-	Pavel Machek <pavel@ucw.cz>,
-	Linux-pm mailing list <linux-pm@lists.osdl.org>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	"Rafael J. Wysocki" <rjw@rjwysocki.net>,
-	kernel list <linux-kernel@vger.kernel.org>
-References: <20140607120614.GB5309@amd.pavel.ucw.cz>
- <20140607231124.GA3611@amd.pavel.ucw.cz>
- <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com>
- <20140609102328.GA25332@amd.pavel.ucw.cz>
- <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
- <20140625223522.GA5923@xo-6d-61-c0.localdomain>
- <alpine.LNX.2.00.1406271537000.21386@pobox.suse.cz>
- <20140707083908.GE5821@phenom.ffwll.local>
- <20140711192629.GA20015@amd.pavel.ucw.cz>
- <alpine.LNX.2.00.1408071445250.6219@pobox.suse.cz>
+	Thu, 7 Aug 2014 10:38:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1408071445250.6219@pobox.suse.cz>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAOMZO5ACj6ER3tUMS8XsnigT=-zs4TZFmobbtmTN-+LWJFLt4Q@mail.gmail.com>
+References: <C4A61A5CA4AD2246942F4BA6F20ACB80435655E9@ALVA-EXMB04.alv.autoliv.int>
+	<20140626151424.GT32514@n2100.arm.linux.org.uk>
+	<20140627112151.GF32514@n2100.arm.linux.org.uk>
+	<3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
+	<20140627163108.GP32514@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int>
+	<20140806095012.GN30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int>
+	<20140806125550.GO30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int>
+	<20140807121248.GY30282@n2100.arm.linux.org.uk>
+	<CAOMZO5ACj6ER3tUMS8XsnigT=-zs4TZFmobbtmTN-+LWJFLt4Q@mail.gmail.com>
+Date: Thu, 7 Aug 2014 11:38:40 -0300
+Message-ID: <CAOMZO5BZdnzOuD9CcMv3bXsryT-j1A_bAjF6EAj_=BQTuxn45A@mail.gmail.com>
+Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
+From: Fabio Estevam <festevam@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>,
+        Fredrik Noring <fredrik.noring@autoliv.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Troy Kisky <troy.kisky@boundarydevices.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 02:47:21PM +0200, Jiri Kosina wrote:
-> On Fri, 11 Jul 2014, Pavel Machek wrote:
-> 
-> > > > > Ok, so I have set up machines for ktest / autobisect, and found out that 
-> > > > > 3.16-rc1 no longer has that problem. Oh well, bisect would not be fun, 
-> > > > > anyway...
-> > > > 
-> > > > I am still seeing the problem with 3.16-rc2.
-> > > 
-> > > I'm confused now. Is the bisect result
-> > > 
-> > > commit 773875bfb6737982903c42d1ee88cf60af80089c
-> > > Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > > Date:   Mon Jan 27 10:00:30 2014 +0100
-> > > 
-> > >     drm/i915: Don't set the 8to6 dither flag when not scaling
-> > > 
-> > > now the culprit or not? Or do we have 2 different bugs at hand here?
-> > 
-> > Three different issues, it seems. Two ring initialization problems,
-> > one went away in 3.16 (for me), second did not (suspend for jikos),
-> > third -- trivial issue with 8to6 dither.
-> 
-> The patch below seems to finally cure the problem at my system; I've just 
-> attached it to freedesktop bugzilla, but sending it to this thread as well 
-> to hopefully get as much testing coverage by affected people as possible.
-> 
-> I am going on with testing whether it really completely fixes the problem 
-> or just made it less likely.
+On Thu, Aug 7, 2014 at 11:20 AM, Fabio Estevam <festevam@gmail.com> wrote:
 
-Picked up for -fixes, thanks for the patch.
--Daniel
-> 
-> 
-> 
-> 
-> 
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] drm/i915: read HEAD register back in init_ring_common() to enforce ordering
-> 
-> Withtout this, ring initialization fails reliabily during resume with
-> 
-> 	[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head ffffff8804 tail 00000000 start 000e4000
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  drivers/gpu/drm/i915/intel_ringbuffer.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-> index 279488a..7add7ee 100644
-> --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-> +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-> @@ -517,6 +517,9 @@ static int init_ring_common(struct intel_engine_cs *ring)
->  	else
->  		ring_setup_phys_status_page(ring);
->  
-> +	/* Enforce ordering by reading HEAD register back */
-> +	I915_READ_HEAD(ring);
-> +
->  	/* Initialize the ring. This must happen _after_ we've cleared the ring
->  	 * registers with the above sequence (the readback of the HEAD registers
->  	 * also enforces ordering), otherwise the hw might lose the new ring
-> 
-> -- 
-> Jiri Kosina
-> SUSE Labs
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+> On a imx6q sabreauto I also get:
+>
+> 151:          0          0          0          0       GIC 151  2188000.ethernet
+> 166:       4577          0          0          0  gpio-mxc   6  2188000.ethernet
+>
+> and the GPIO1_6 interrupt comes from this commit:
+>
+> commit bc20a5d6da718f9d60da0a78f70c653c1cd16af3
+> Author: Troy Kisky <troy.kisky@boundarydevices.com>
+> Date:   Fri Dec 20 11:47:12 2013 -0700
+>
+>     ARM: dts: imx6qdl-sabreauto: use GPIO_6 for FEC interrupt.
+>
+>     This works around a hardware bug.
+>
+>     Signed-off-by: Troy Kisky <troy.kisky@boundarydevices.com>
+>     Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Actually a more descriptive commit log can be found here:
+
+commit 6261c4c8f13eb91f733e8ba6d67c409a2e841667
+Author: Troy Kisky <troy.kisky@boundarydevices.com>
+Date:   Fri Dec 20 11:47:11 2013 -0700
+
+    ARM: dts: imx6qdl-sabrelite: use GPIO_6 for FEC interrupt.
+
+    This works around a hardware bug.
+    From "Chip Errata for the i.MX 6Dual/6Quad"
+
+    ERR006687 ENET: Only the ENET wake-up interrupt request can wake the
+    system from Wait mode.
+
+    The ENET block generates many interrupts. Only one of these interrupt lines
+    is connected to the General Power Controller (GPC) block, but a logical OR
+    of all of the ENET interrupts is connected to the General
+Interrupt Controller
+    (GIC). When the system enters Wait mode, a normal RX Done or TX
+Done does not
+    wake up the system because the GPC cannot see this interrupt. This impacts
+    performance of the ENET block because its interrupts are serviced only when
+    the chip exits Wait mode due to an interrupt from some other wake-up source.
+
+    Before this patch, ping times of a Sabre Lite board are quite
+    random:
+    ping 192.168.0.13 -i.5 -c5
+    PING 192.168.0.13 (192.168.0.13) 56(84) bytes of data.
+    64 bytes from 192.168.0.13: icmp_req=1 ttl=64 time=15.7 ms
+    64 bytes from 192.168.0.13: icmp_req=2 ttl=64 time=14.4 ms
+    64 bytes from 192.168.0.13: icmp_req=3 ttl=64 time=13.4 ms
+    64 bytes from 192.168.0.13: icmp_req=4 ttl=64 time=12.4 ms
+    64 bytes from 192.168.0.13: icmp_req=5 ttl=64 time=11.4 ms
+
+    === 192.168.0.13 ping statistics ===
+    5 packets transmitted, 5 received, 0% packet loss, time 2004ms
+    rtt min/avg/max/mdev = 11.431/13.501/15.746/1.508 ms
+    ____________________________________________________
+    After this patch:
+
+    ping 192.168.0.13 -i.5 -c5
+    PING 192.168.0.13 (192.168.0.13) 56(84) bytes of data.
+    64 bytes from 192.168.0.13: icmp_req=1 ttl=64 time=0.120 ms
+    64 bytes from 192.168.0.13: icmp_req=2 ttl=64 time=0.175 ms
+    64 bytes from 192.168.0.13: icmp_req=3 ttl=64 time=0.169 ms
+    64 bytes from 192.168.0.13: icmp_req=4 ttl=64 time=0.168 ms
+    64 bytes from 192.168.0.13: icmp_req=5 ttl=64 time=0.172 ms
+
+    === 192.168.0.13 ping statistics ===
+    5 packets transmitted, 5 received, 0% packet loss, time 1999ms
+    rtt min/avg/max/mdev = 0.120/0.160/0.175/0.026 ms
+    ____________________________________________________
+
+    Also, apply same change to imx6qdl-nitrogen6x.
+
+    This change may not be appropriate for all boards.
+    Sabre Lite uses GPIO6 as a power down output for a ov5642
+    camera. As this expansion board does not yet work with mainline,
+    this is not yet a conflict. It would be nice to have an alternative
+    fix for boards where this is a problem.
+
+    For example Sabre SD uses GPIO6 for I2C3_SDA. It also
+    has long ping times currently. But cannot use this fix
+    without giving up a touchscreen.
+
+    Its ping times are also random.
+
+    ping 192.168.0.19 -i.5 -c5
+    PING 192.168.0.19 (192.168.0.19) 56(84) bytes of data.
+    64 bytes from 192.168.0.19: icmp_req=1 ttl=64 time=16.0 ms
+    64 bytes from 192.168.0.19: icmp_req=2 ttl=64 time=15.4 ms
+    64 bytes from 192.168.0.19: icmp_req=3 ttl=64 time=14.4 ms
+    64 bytes from 192.168.0.19: icmp_req=4 ttl=64 time=13.4 ms
+    64 bytes from 192.168.0.19: icmp_req=5 ttl=64 time=12.4 ms
+
+    === 192.168.0.19 ping statistics ---
+    5 packets transmitted, 5 received, 0% packet loss, time 2003ms
+    rtt min/avg/max/mdev = 12.451/14.369/16.057/1.316 ms
+
+    Signed-off-by: Troy Kisky <troy.kisky@boundarydevices.com>
+    CC: Ranjani Vaidyanathan <ra5478@freescale.com>
+    Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+
+,but I am wondering if we should also do:
+
+--- a/arch/arm/boot/dts/imx6qdl-sabreauto.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-sabreauto.dtsi
+@@ -66,6 +66,7 @@
+        pinctrl-0 = <&pinctrl_enet>;
+        phy-mode = "rgmii";
+        interrupts-extended = <&gpio1 6 IRQ_TYPE_LEVEL_HIGH>,
++                             <&intc 0 118 IRQ_TYPE_LEVEL_HIGH>,
+                              <&intc 0 119 IRQ_TYPE_LEVEL_HIGH>;
+        status = "okay";
+ };
+@@ -226,7 +227,7 @@
+                                MX6QDL_PAD_RGMII_RD2__RGMII_RD2         0x1b0b0
+                                MX6QDL_PAD_RGMII_RD3__RGMII_RD3         0x1b0b0
+                                MX6QDL_PAD_RGMII_RX_CTL__RGMII_RX_CTL   0x1b0b0
+-                               MX6QDL_PAD_GPIO_6__ENET_IRQ             0x000b1
++                               MX6QDL_PAD_GPIO_6__ENET_IRQ
+ 0x400000b1
+
+Since the Workaround for erratum ERR006687 states that the SION bit
+needs to be used:
+
+"All of the interrupts can be selected by MUX and output to pad GPIO6.
+If GPIO6 is selected to
+output ENET interrupts and GPIO6 SION is set, the resulting GPIO
+interrupt will wake the system
+from Wait mode."
