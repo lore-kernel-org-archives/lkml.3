@@ -1,294 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671AbaHGCMl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 22:12:41 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:35738 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754423AbaHGCMj (ORCPT
+	id S1754750AbaHGCQz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 22:16:55 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:63174 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754423AbaHGCQw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 22:12:39 -0400
-X-IronPort-AV: E=Sophos;i="5.04,279,1406563200"; 
-   d="scan'208";a="34287746"
-Message-ID: <53E2E042.3070803@cn.fujitsu.com>
-Date: Thu, 7 Aug 2014 10:11:14 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
+	Wed, 6 Aug 2014 22:16:52 -0400
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, <t.stanislaws@samsung.com>,
-        Gioh Kim <gioh.kim@lge.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/8] mm/page_alloc: fix pcp high, batch management
-References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com> <1407309517-3270-7-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1407309517-3270-7-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.225.89]
+In-Reply-To: <53E2D605.2000704@rock-chips.com>
+References: <1406197295-10604-1-git-send-email-caesar.wang@rock-chips.com>
+	<1406197295-10604-3-git-send-email-caesar.wang@rock-chips.com>
+	<CAD=FV=V4Kp-H3CcAKZPV1jBnYX+Ntwvxx6RB13TLxS5RRPHTWA@mail.gmail.com>
+	<53E2D605.2000704@rock-chips.com>
+Date: Wed, 6 Aug 2014 19:16:51 -0700
+X-Google-Sender-Auth: ytKCsx_sjt2sU-Fb9mub4XmeXu0
+Message-ID: <CAD=FV=Xw8tz2keCUtO+qYUmnuv=+DPGZjY9-j_2XmAcP3Luzjg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] pwm: rockchip: Added to support for RK3288 SoC
+From: Doug Anderson <dianders@chromium.org>
+To: caesar <caesar.wang@rock-chips.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, b.galvani@gmail.com,
+        Rob Herring <robh+dt@kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Kumar Gala <galak@codeaurora.org>, Eddie Cai <cf@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        Addy Ke <addy.ke@rock-chips.com>,
+        =?UTF-8?B?6ZmI5riQ6aOe?= <cjf@rock-chips.com>,
+        han jiang <hj@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-pwm <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joonsoo,
+Caesar,
 
-On 08/06/2014 03:18 PM, Joonsoo Kim wrote:
-> per cpu pages structure, aka pcp, has high and batch values to control
-> how many pages we perform caching. This values could be updated
-> asynchronously and updater should ensure that this doesn't make any
-> problem. For this purpose, pageset_update() is implemented and do some
-> memory synchronization. But, it turns out to be wrong when I implemented
-> new feature using this. There is no corresponding smp_rmb() in read-side
+On Wed, Aug 6, 2014 at 6:27 PM, caesar <caesar.wang@rock-chips.com> wrote:
+> Doug,
+>
+> 在 2014年08月07日 06:46, Doug Anderson 写道:
+>
+>> Caesar,
+>>
+>> On Thu, Jul 24, 2014 at 3:21 AM, Caesar Wang <caesar.wang@rock-chips.com>
+>> wrote:
+>>>
+>>> +static const struct rockchip_pwm_data pwm_data_v1 = {
+>>> +       .regs.duty = PWM_HRC,
+>>> +       .regs.period = PWM_LRC,
+>>> +       .regs.cntr = PWM_CNTR,
+>>> +       .regs.ctrl = PWM_CTRL,
+>>> +       .prescaler = PRESCALER,
+>>> +       .set_enable = rockchip_pwm_set_enable_v1,
+>>> +};
+>>> +
+>>> +static const struct rockchip_pwm_data pwm_data_v2 = {
+>>> +       .regs.duty = PWM_LRC,
+>>> +       .regs.period = PWM_HRC,
+>>> +       .regs.cntr = PWM_CNTR,
+>>> +       .regs.ctrl = PWM_CTRL,
+>>> +       .prescaler = PRESCALER-1,
+>>> +       .set_enable = rockchip_pwm_set_enable_v2,
+>>> +};
+>>> +
+>>> +static const struct rockchip_pwm_data pwm_data_vop = {
+>>> +       .regs.duty = PWM_LRC,
+>>> +       .regs.period = PWM_HRC,
+>>> +       .regs.cntr = PWM_CTRL,
+>>> +       .regs.ctrl = PWM_CNTR,
+>>
+>> Did you really mean to flip CTRL and CNTR here?  If so, that's super
+>> confusing and deserves a comment.  AKA, I think the above should not
+>> be:
+>>
+>>   +       .regs.cntr = PWM_CTRL,
+>>   +       .regs.ctrl = PWM_CNTR,
+>>
+>> ...but should be
+>>
+>>   +       .regs.cntr = PWM_CNTR,
+>>   +       .regs.ctrl = PWM_CTRL,
+>>
+>> If you didn't mean to flip CTRL and CNTR here, then just get rid of
+>> pwm_data_vop and refer to pwm_data_v2.  In fact, I'd suggest that you
+>> totally remove the "rockchip,vop-pwm" since there's nothing different
+>> between "rockchip,rk3288-pwm" and "rockchip,vop-pwm".
+>
+>
+> Sorry,I think it's no problem. the  "rockchip,rk3288-pwm" and
+> "rockchip,vop-pwm" are seperate PWM controllers.
+> They are just different registers address between CNTR and CTRL .
 
-Out of curiosity, what new feature are you implementing?
+OK, I looked up in the TRM.  Right, the CNTR and CTRL are flipped on
+the vop.  So I think that the only change you need is to add:
 
-IIRC, pageset_update() is used to update high and batch which can be changed
-during:
+#define PWM_VOP_CTRL  0x00
+#define PWM_VOP_CNTR  0x0c
 
-system boot
-sysfs
-memory hot-plug
-
-So it seems to me that the latter two would have the problems you described here.
-
-Thanks.
-
-> so that it can't guarantee anything. Without correct updating, system
-> could hang in free_pcppages_bulk() due to larger batch value than high.
-> To properly update this values, we need to synchronization primitives on
-> read-side, but, it hurts allocator's fastpath.
-> 
-> There is another choice for synchronization, that is, sending IPI. This
-> is somewhat expensive, but, this is really rare case so I guess it has
-> no problem here. However, reducing IPI is very helpful here. Current
-> logic handles each CPU's pcp update one by one. To reduce sending IPI,
-> we need to re-ogranize the code to handle all CPU's pcp update at one go.
-> This patch implement these requirements.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> ---
->  mm/page_alloc.c |  139 ++++++++++++++++++++++++++++++++-----------------------
->  1 file changed, 80 insertions(+), 59 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index e6fee4b..3e1e344 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -3800,7 +3800,7 @@ static void build_zonelist_cache(pg_data_t *pgdat)
->   * not check if the processor is online before following the pageset pointer.
->   * Other parts of the kernel may not check if the zone is available.
->   */
-> -static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch);
-> +static void setup_pageset(struct per_cpu_pageset __percpu *pcp);
->  static DEFINE_PER_CPU(struct per_cpu_pageset, boot_pageset);
->  static void setup_zone_pageset(struct zone *zone);
->  
-> @@ -3846,9 +3846,9 @@ static int __build_all_zonelists(void *data)
->  	 * needs the percpu allocator in order to allocate its pagesets
->  	 * (a chicken-egg dilemma).
->  	 */
-> -	for_each_possible_cpu(cpu) {
-> -		setup_pageset(&per_cpu(boot_pageset, cpu), 0);
-> +	setup_pageset(&boot_pageset);
->  
-> +	for_each_possible_cpu(cpu) {
->  #ifdef CONFIG_HAVE_MEMORYLESS_NODES
->  		/*
->  		 * We now know the "local memory node" for each node--
-> @@ -4230,24 +4230,59 @@ static int zone_batchsize(struct zone *zone)
->   * outside of boot time (or some other assurance that no concurrent updaters
->   * exist).
->   */
-> -static void pageset_update(struct per_cpu_pages *pcp, unsigned long high,
-> -		unsigned long batch)
-> +static void pageset_update(struct zone *zone, int high, int batch)
->  {
-> -       /* start with a fail safe value for batch */
-> -	pcp->batch = 1;
-> -	smp_wmb();
-> +	int cpu;
-> +	struct per_cpu_pages *pcp;
-> +
-> +	/* start with a fail safe value for batch */
-> +	for_each_possible_cpu(cpu) {
-> +		pcp = &per_cpu_ptr(zone->pageset, cpu)->pcp;
-> +		pcp->batch = 1;
-> +	}
-> +	kick_all_cpus_sync();
-> +
-> +	/* Update high, then batch, in order */
-> +	for_each_possible_cpu(cpu) {
-> +		pcp = &per_cpu_ptr(zone->pageset, cpu)->pcp;
-> +		pcp->high = high;
-> +	}
-> +	kick_all_cpus_sync();
->  
-> -       /* Update high, then batch, in order */
-> -	pcp->high = high;
-> -	smp_wmb();
-> +	for_each_possible_cpu(cpu) {
-> +		pcp = &per_cpu_ptr(zone->pageset, cpu)->pcp;
-> +		pcp->batch = batch;
-> +	}
-> +}
-> +
-> +/*
-> + * pageset_get_values_by_high() gets the high water mark for
-> + * hot per_cpu_pagelist to the value high for the pageset p.
-> + */
-> +static void pageset_get_values_by_high(int input_high,
-> +				int *output_high, int *output_batch)
-> +{
-> +	*output_batch = max(1, input_high / 4);
-> +	if ((input_high / 4) > (PAGE_SHIFT * 8))
-> +		*output_batch = PAGE_SHIFT * 8;
-> +}
->  
-> -	pcp->batch = batch;
-> +/* a companion to pageset_get_values_by_high() */
-> +static void pageset_get_values_by_batch(int input_batch,
-> +				int *output_high, int *output_batch)
-> +{
-> +	*output_high = 6 * input_batch;
-> +	*output_batch = max(1, 1 * input_batch);
->  }
->  
-> -/* a companion to pageset_set_high() */
-> -static void pageset_set_batch(struct per_cpu_pageset *p, unsigned long batch)
-> +static void pageset_get_values(struct zone *zone, int *high, int *batch)
->  {
-> -	pageset_update(&p->pcp, 6 * batch, max(1UL, 1 * batch));
-> +	if (percpu_pagelist_fraction) {
-> +		pageset_get_values_by_high(
-> +			(zone->managed_pages / percpu_pagelist_fraction),
-> +			high, batch);
-> +	} else
-> +		pageset_get_values_by_batch(zone_batchsize(zone), high, batch);
->  }
->  
->  static void pageset_init(struct per_cpu_pageset *p)
-> @@ -4263,51 +4298,38 @@ static void pageset_init(struct per_cpu_pageset *p)
->  		INIT_LIST_HEAD(&pcp->lists[migratetype]);
->  }
->  
-> -static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
-> +/* Use this only in boot time, because it doesn't do any synchronization */
-> +static void setup_pageset(struct per_cpu_pageset __percpu *pcp)
->  {
-> -	pageset_init(p);
-> -	pageset_set_batch(p, batch);
-> -}
-> -
-> -/*
-> - * pageset_set_high() sets the high water mark for hot per_cpu_pagelist
-> - * to the value high for the pageset p.
-> - */
-> -static void pageset_set_high(struct per_cpu_pageset *p,
-> -				unsigned long high)
-> -{
-> -	unsigned long batch = max(1UL, high / 4);
-> -	if ((high / 4) > (PAGE_SHIFT * 8))
-> -		batch = PAGE_SHIFT * 8;
-> -
-> -	pageset_update(&p->pcp, high, batch);
-> -}
-> -
-> -static void pageset_set_high_and_batch(struct zone *zone,
-> -				       struct per_cpu_pageset *pcp)
-> -{
-> -	if (percpu_pagelist_fraction)
-> -		pageset_set_high(pcp,
-> -			(zone->managed_pages /
-> -				percpu_pagelist_fraction));
-> -	else
-> -		pageset_set_batch(pcp, zone_batchsize(zone));
-> -}
-> +	int cpu;
-> +	int high, batch;
-> +	struct per_cpu_pageset *p;
->  
-> -static void __meminit zone_pageset_init(struct zone *zone, int cpu)
-> -{
-> -	struct per_cpu_pageset *pcp = per_cpu_ptr(zone->pageset, cpu);
-> +	pageset_get_values_by_batch(0, &high, &batch);
->  
-> -	pageset_init(pcp);
-> -	pageset_set_high_and_batch(zone, pcp);
-> +	for_each_possible_cpu(cpu) {
-> +		p = per_cpu_ptr(pcp, cpu);
-> +		pageset_init(p);
-> +		p->pcp.high = high;
-> +		p->pcp.batch = batch;
-> +	}
->  }
->  
->  static void __meminit setup_zone_pageset(struct zone *zone)
->  {
->  	int cpu;
-> +	int high, batch;
-> +	struct per_cpu_pageset *p;
-> +
-> +	pageset_get_values(zone, &high, &batch);
-> +
->  	zone->pageset = alloc_percpu(struct per_cpu_pageset);
-> -	for_each_possible_cpu(cpu)
-> -		zone_pageset_init(zone, cpu);
-> +	for_each_possible_cpu(cpu) {
-> +		p = per_cpu_ptr(zone->pageset, cpu);
-> +		pageset_init(p);
-> +		p->pcp.high = high;
-> +		p->pcp.batch = batch;
-> +	}
->  }
->  
->  /*
-> @@ -5928,11 +5950,10 @@ int percpu_pagelist_fraction_sysctl_handler(struct ctl_table *table, int write,
->  		goto out;
->  
->  	for_each_populated_zone(zone) {
-> -		unsigned int cpu;
-> +		int high, batch;
->  
-> -		for_each_possible_cpu(cpu)
-> -			pageset_set_high_and_batch(zone,
-> -					per_cpu_ptr(zone->pageset, cpu));
-> +		pageset_get_values(zone, &high, &batch);
-> +		pageset_update(zone, high, batch);
->  	}
->  out:
->  	mutex_unlock(&pcp_batch_high_lock);
-> @@ -6455,11 +6476,11 @@ void free_contig_range(unsigned long pfn, unsigned nr_pages)
->   */
->  void __meminit zone_pcp_update(struct zone *zone)
->  {
-> -	unsigned cpu;
-> +	int high, batch;
-> +
->  	mutex_lock(&pcp_batch_high_lock);
-> -	for_each_possible_cpu(cpu)
-> -		pageset_set_high_and_batch(zone,
-> -				per_cpu_ptr(zone->pageset, cpu));
-> +	pageset_get_values(zone, &high, &batch);
-> +	pageset_update(zone, high, batch);
->  	mutex_unlock(&pcp_batch_high_lock);
->  }
->  #endif
-> 
+...then use these new #defines for the vop structure.
 
 
--- 
-Thanks.
-Zhang Yanfei
+As you have the code written right now it's very confusing.  The new
+#defines will fix this.
+
+
+>> Have you validated Thierry's suggestion to allow you to access your
+>> memory range?
+>
+> Yes,we have solve it in lcdc driver.
+> The Mark Yao have the  submission in [0].
+>
+> [0]: https://lkml.org/lkml/2014/8/4/20
+
+Excellent!  Then we should be able to land after you fix the above.
+
+-Doug
