@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667AbaHGHpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 03:45:10 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:35321 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119AbaHGHpI (ORCPT
+	id S1756266AbaHGHqL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 03:46:11 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:57457 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754968AbaHGHqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 03:45:08 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Nick Dyer <nick.dyer@itdev.co.uk>, Stephen Warren <swarren@nvidia.com>,
-        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-input@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v2 1/1] Input: atmel_mxt_ts - Get IRQ edge/level flags on DT booting
-Date: Thu,  7 Aug 2014 09:44:52 +0200
-Message-Id: <1407397492-17475-1-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.0.0.rc2
+	Thu, 7 Aug 2014 03:46:09 -0400
+Date: Thu, 7 Aug 2014 09:46:04 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        gnurou@gmail.com
+Subject: Re: [PATCH] drm/panel: simple: Use devm_gpiod_get_optional()
+Message-ID: <20140807074603.GA18359@ulmo>
+References: <1406299645-29043-1-git-send-email-acourbot@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
+Content-Disposition: inline
+In-Reply-To: <1406299645-29043-1-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Atmel maXTouch driver assumed that the IRQ type flags will
-always be passed using platform data but this is not true when
-booting using Device Trees. In these setups the interrupt type
-was ignored by the driver when requesting an IRQ.
 
-This means that it will fail if a machine specified other type
-than IRQ_TYPE_NONE. The right approach is to get the IRQ flags
-that was parsed by OF from the "interrupt" Device Tree propery.
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
+On Fri, Jul 25, 2014 at 11:47:25PM +0900, Alexandre Courbot wrote:
+> Use the new devm_gpiod_get_optional() to simplify the probe code.
+>=20
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  drivers/gpu/drm/panel/panel-simple.c | 12 +++++-------
+>  1 file changed, 5 insertions(+), 7 deletions(-)
 
-This patch was first sent as a part of a two part series along
-with [PATCH 2/2] Input: atmel_mxt_ts - Add keycodes array example.
+For some reason I thought I had already applied this, but apparently I
+was mistaken. Applied now, thanks.
 
-But there are no dependencies between these two patches so there
-is no need to resend that one with no changes for v2.
+Thierry
 
-Changes since v1:
- - Assign flags to pdata->irqflags in mxt_parse_dt() instead of probe().
-   Suggested by Tomasz Figa.
+--G4iJoqBmSsgzjUCe
+Content-Type: application/pgp-signature
 
- drivers/input/touchscreen/atmel_mxt_ts.c | 3 +++
- 1 file changed, 3 insertions(+)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 03b8571..5c8cbd3 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -22,6 +22,7 @@
- #include <linux/i2c.h>
- #include <linux/i2c/atmel_mxt_ts.h>
- #include <linux/input/mt.h>
-+#include <linux/irq.h>
- #include <linux/interrupt.h>
- #include <linux/of.h>
- #include <linux/slab.h>
-@@ -2093,6 +2094,8 @@ static struct mxt_platform_data *mxt_parse_dt(struct i2c_client *client)
- 	if (!pdata)
- 		return ERR_PTR(-ENOMEM);
- 
-+	pdata->irqflags = irq_get_trigger_type(client->irq);
-+
- 	if (of_find_property(client->dev.of_node, "linux,gpio-keymap",
- 			     &proplen)) {
- 		pdata->t19_num_keys = proplen / sizeof(u32);
--- 
-2.0.0.rc2
+iQIcBAEBAgAGBQJT4y67AAoJEN0jrNd/PrOhZuAQAJ8gheTZyzRH7mo3Z+hw03eH
+fUaWUXpG5Sy/bbvd2n/bg5Wc1UN+R7v/4f2N+fXgDwkKnOlYNZV0Lrs37LYEZY1B
+MXmPNQNjzO9MtQJW5S0QxIvgPwRLhSh1viq362N6imxISkllHju26Tu3Lb9jIzOd
+1+miuCvVzd4epjT+6eKLrQev2pZi4mXGj4dRPslple7TmNkP25pnJpayi14102wu
+yVa9Jtevd9G35xTrgG5klJ4KuDviZbqtNwyijPSiG9URQPbW5/+VzQfOmOtRcX/W
+2hgwpF5cQ+I75n28xULfseynk4qMdv0XB5x4J9ltwDksqES+XfvMJPqP7Khz2LsL
+uKcKONDbrHyFjBbwKbeh2A6fSCmYS9Zbozm3HizpFfKSAA+DNZsn96kQvh3NeqCA
+rLjkQ/55NrXw9Enq4BISTa1nEifbiSf6GGMNw1eRREDQwViJoqDvEvMvBNZL3Fzy
+WrE6jCry5d5xBOb+x2Lp9ytLyUsCYnQcp0BSTWy5uo8dExMe3HAbAPN4ygXEKMBE
+Afwwb3Mr2rPPclqgDoz8zqBamJ05XUtnleaYswJB27D0vYeJgOKt+0AI70az7SiA
+fKGJJRdBnyou0jksM3Uq5GgYtvWhk/PJE/l9SJOirrIKRW7GvxQakhokQz2yzfyj
+BYxLrsbVP9BW4pAD9Cbz
+=XfW3
+-----END PGP SIGNATURE-----
 
+--G4iJoqBmSsgzjUCe--
