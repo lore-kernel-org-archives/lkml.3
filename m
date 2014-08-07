@@ -1,92 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757471AbaHGMrZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 08:47:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34523 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754471AbaHGMrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 08:47:24 -0400
-Date: Thu, 7 Aug 2014 14:47:21 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Pavel Machek <pavel@ucw.cz>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux-pm mailing list <linux-pm@lists.osdl.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: 3.15-rc: regression in suspend
-In-Reply-To: <20140711192629.GA20015@amd.pavel.ucw.cz>
-Message-ID: <alpine.LNX.2.00.1408071445250.6219@pobox.suse.cz>
-References: <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz> <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com> <20140607120614.GB5309@amd.pavel.ucw.cz> <20140607231124.GA3611@amd.pavel.ucw.cz> <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com>
- <20140609102328.GA25332@amd.pavel.ucw.cz> <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz> <20140625223522.GA5923@xo-6d-61-c0.localdomain> <alpine.LNX.2.00.1406271537000.21386@pobox.suse.cz> <20140707083908.GE5821@phenom.ffwll.local>
- <20140711192629.GA20015@amd.pavel.ucw.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757527AbaHGMwV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 08:52:21 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:48815 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756266AbaHGMwT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 08:52:19 -0400
+X-IronPort-AV: E=Sophos;i="5.01,818,1400018400"; 
+   d="scan'208";a="88599291"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] avr32: fix error return code
+Date: Thu,  7 Aug 2014 14:49:05 +0200
+Message-Id: <1407415749-19978-2-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1407415749-19978-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1407415749-19978-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jul 2014, Pavel Machek wrote:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> > > > Ok, so I have set up machines for ktest / autobisect, and found out that 
-> > > > 3.16-rc1 no longer has that problem. Oh well, bisect would not be fun, 
-> > > > anyway...
-> > > 
-> > > I am still seeing the problem with 3.16-rc2.
-> > 
-> > I'm confused now. Is the bisect result
-> > 
-> > commit 773875bfb6737982903c42d1ee88cf60af80089c
-> > Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > Date:   Mon Jan 27 10:00:30 2014 +0100
-> > 
-> >     drm/i915: Don't set the 8to6 dither flag when not scaling
-> > 
-> > now the culprit or not? Or do we have 2 different bugs at hand here?
-> 
-> Three different issues, it seems. Two ring initialization problems,
-> one went away in 3.16 (for me), second did not (suspend for jikos),
-> third -- trivial issue with 8to6 dither.
+Convert a zero return value on error to a negative one, as returned
+elsewhere in the function.
 
-The patch below seems to finally cure the problem at my system; I've just 
-attached it to freedesktop bugzilla, but sending it to this thread as well 
-to hopefully get as much testing coverage by affected people as possible.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-I am going on with testing whether it really completely fixes the problem 
-or just made it less likely.
+// <smpl>
+@@
+identifier ret; expression e1,e2;
+@@
+(
+if (\(ret < 0\|ret != 0\))
+ { ... return ret; }
+|
+ret = 0
+)
+... when != ret = e1
+    when != &ret
+*if(...)
+{
+  ... when != ret = e2
+      when forall
+ return ret;
+}
+// </smpl>
 
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-
-
-
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] drm/i915: read HEAD register back in init_ring_common() to enforce ordering
-
-Withtout this, ring initialization fails reliabily during resume with
-
-	[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head ffffff8804 tail 00000000 start 000e4000
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/avr32/boards/hammerhead/flash.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index 279488a..7add7ee 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -517,6 +517,9 @@ static int init_ring_common(struct intel_engine_cs *ring)
- 	else
- 		ring_setup_phys_status_page(ring);
+diff --git a/arch/avr32/boards/hammerhead/flash.c b/arch/avr32/boards/hammerhead/flash.c
+index 776c3cb..e86280c 100644
+--- a/arch/avr32/boards/hammerhead/flash.c
++++ b/arch/avr32/boards/hammerhead/flash.c
+@@ -190,14 +190,19 @@ static int __init hammerhead_usbh_init(void)
  
-+	/* Enforce ordering by reading HEAD register back */
-+	I915_READ_HEAD(ring);
-+
- 	/* Initialize the ring. This must happen _after_ we've cleared the ring
- 	 * registers with the above sequence (the readback of the HEAD registers
- 	 * also enforces ordering), otherwise the hw might lose the new ring
+ 	/* setup gclk0 to run from osc1 */
+ 	gclk = clk_get(NULL, "gclk0");
+-	if (IS_ERR(gclk))
++	if (IS_ERR(gclk)) {
++		ret = PTR_ERR(gclk);
+ 		goto err_gclk;
++	}
+ 
+ 	osc = clk_get(NULL, "osc1");
+-	if (IS_ERR(osc))
++	if (IS_ERR(osc)) {
++		ret = PTR_ERR(osc);
+ 		goto err_osc;
++	}
+ 
+-	if (clk_set_parent(gclk, osc)) {
++	ret = clk_set_parent(gclk, osc);
++	if (ret < 0) {
+ 		pr_debug("hammerhead: failed to set osc1 for USBH clock\n");
+ 		goto err_set_clk;
+ 	}
 
--- 
-Jiri Kosina
-SUSE Labs
