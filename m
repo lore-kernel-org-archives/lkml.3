@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383AbaHGOTn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 10:19:43 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52633 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932086AbaHGOTl (ORCPT
+	id S932413AbaHGOUl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 10:20:41 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:54322 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757502AbaHGOUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 10:19:41 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53E38AFC.6040502@roeck-us.net>
-Date: Thu, 07 Aug 2014 07:19:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 7 Aug 2014 10:20:39 -0400
 MIME-Version: 1.0
-To: Jean Delvare <jdelvare@suse.de>
-CC: kreijack@inwind.it, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] Export the temperatures via hwmon
-References: <1407359103-6012-1-git-send-email-kreijack@inwind.it>	 <1407359103-6012-6-git-send-email-kreijack@inwind.it>	 <20140806231803.GA5643@roeck-us.net>	<53E31694.8050107@gmail.com>	 <53E31AB0.6070604@roeck-us.net> <20140807085235.2c0e63dd@endymion.delvare>	 <53E32C77.5000804@roeck-us.net> <1407400545.4314.2.camel@chaos.site>
-In-Reply-To: <1407400545.4314.2.camel@chaos.site>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140807121248.GY30282@n2100.arm.linux.org.uk>
+References: <C4A61A5CA4AD2246942F4BA6F20ACB80435655E9@ALVA-EXMB04.alv.autoliv.int>
+	<20140626151424.GT32514@n2100.arm.linux.org.uk>
+	<20140627112151.GF32514@n2100.arm.linux.org.uk>
+	<3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
+	<20140627163108.GP32514@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int>
+	<20140806095012.GN30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int>
+	<20140806125550.GO30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int>
+	<20140807121248.GY30282@n2100.arm.linux.org.uk>
+Date: Thu, 7 Aug 2014 11:20:38 -0300
+Message-ID: <CAOMZO5ACj6ER3tUMS8XsnigT=-zs4TZFmobbtmTN-+LWJFLt4Q@mail.gmail.com>
+Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
+From: Fabio Estevam <festevam@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>,
+        Fredrik Noring <fredrik.noring@autoliv.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 01:35 AM, Jean Delvare wrote:
-> Le Thursday 07 August 2014 à 00:36 -0700, Guenter Roeck a écrit :
->> On 08/06/2014 11:52 PM, Jean Delvare wrote:
->>> Hi Guenter,
->>>
->>> On Wed, 06 Aug 2014 23:20:32 -0700, Guenter Roeck wrote:
->>>> Patch 4/5 is "Return the fan speed via sysfs: /sys/devices/temperature/fan_level".
->>>>
->>>> So you are saying that returning the fan speed with a non-hwmon attribute works,
->>>> but returning it with a hwmon attribute doesn't ? Not really sure if I understand
->>>> your logic. Either fan_level doesn't return the fan speed (or an abstraction of it),
->>>> or something in your line of argument is inconsistent.
->>>
->>> fan_level is a fan speed _control_ value, like pwm1. It is not a fan
->>> speed monitoring value.
->>>
->> Ah, ok. The patch description doesn't seem to match, though.
->> And why not export it as pwm1, if that is what it is ?
+On Thu, Aug 7, 2014 at 9:12 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+
+> Hmm, I'm slightly confused.  On my iMX6Q, I have:
 >
-> Well, /sys/devices/temperature is a non-standard interface anyway, so it
-> does not really matter. I already discussed with Goffredo the
+> 150:     581754          0          0          0       GIC 150  2188000.ethernet
+> 151:          0          0          0          0       GIC 151  2188000.ethernet
 
-That is true.
+Same here on a mx6qsabresd.
 
-> possibility to also expose it as pwm1 on the hwmon side, this might
-> happen later.
+> In the DT file, we have:
 >
-Ok.
+>                         fec: ethernet@02188000 {
+>                                 compatible = "fsl,imx6q-fec";
+>                                 reg = <0x02188000 0x4000>;
+>                                 interrupts-extended =
+>                                         <&intc 0 118 IRQ_TYPE_LEVEL_HIGH>,
+>                                         <&intc 0 119 IRQ_TYPE_LEVEL_HIGH>;
+>                                 clocks = <&clks 117>, <&clks 117>, <&clks 190>;
+>                                 clock-names = "ipg", "ahb", "ptp";
+>                                 status = "disabled";
+>                         };
+>
+> which, for the gic, would be 118 + 32 (first SPI) = 150, 119 + 32 = 151.
+> Yet you seem to have nothing registered against GIC 150, instead having
+> an interrupt against GPIO 6.
+>
+> This seems very odd, and as this is an on-SoC device, I don't see why
+> you would want to bind the interrupts for the FEC device any differently
+> to standard platforms.
+>
+> This could well be the cause of your stalls.
+>
+> What's GPIO 6 used for on your board?
 
-Thanks,
-Guenter
+On a imx6q sabreauto I also get:
 
+151:          0          0          0          0       GIC 151  2188000.ethernet
+166:       4577          0          0          0  gpio-mxc   6  2188000.ethernet
+
+and the GPIO1_6 interrupt comes from this commit:
+
+commit bc20a5d6da718f9d60da0a78f70c653c1cd16af3
+Author: Troy Kisky <troy.kisky@boundarydevices.com>
+Date:   Fri Dec 20 11:47:12 2013 -0700
+
+    ARM: dts: imx6qdl-sabreauto: use GPIO_6 for FEC interrupt.
+
+    This works around a hardware bug.
+
+    Signed-off-by: Troy Kisky <troy.kisky@boundarydevices.com>
+    Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
