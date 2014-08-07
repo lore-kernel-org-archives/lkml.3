@@ -1,53 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607AbaHGPWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:22:51 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:47582 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238AbaHGPWt (ORCPT
+	id S932548AbaHGPWa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:22:30 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:35206 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932425AbaHGPW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:22:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMo8Bf+uq1vhqb7KxnNFHTZ53C1mtw_Do6dn09j7jjw_7MWF_Q@mail.gmail.com>
-References: <1407353564-21478-1-git-send-email-keescook@chromium.org>
- <1407353564-21478-2-git-send-email-keescook@chromium.org> <CAMo8Bf+uq1vhqb7KxnNFHTZ53C1mtw_Do6dn09j7jjw_7MWF_Q@mail.gmail.com>
-From: Rob Herring <robh@kernel.org>
-Date: Thu, 7 Aug 2014 10:22:28 -0500
-X-Google-Sender-Auth: 1uoeQWYCFBr4q5knbl4Phcw6N1Q
-Message-ID: <CAL_JsqJgRFYTfdsY48C9QreBH=VcM3t-9AzFSV8oXLB5tVGjUw@mail.gmail.com>
-Subject: Re: [PATCH 1/7] arm: use generic fixmap.h
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mark Salter <msalter@redhat.com>, Liu hua <sdu.liu@huawei.com>,
-        Rabin Vincent <rabin@rab.in>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 7 Aug 2014 11:22:28 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org, linux-usb@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH v4 3/5] usb: host: ehci-st: Add ehci-st devicetree bindings documentation
+Date: Thu,  7 Aug 2014 16:21:42 +0100
+Message-Id: <1407424904-19251-4-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407424904-19251-1-git-send-email-peter.griffin@linaro.org>
+References: <1407424904-19251-1-git-send-email-peter.griffin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 7, 2014 at 10:15 AM, Max Filippov <jcmvbkbc@gmail.com> wrote:
-> Hi,
->
-> On Wed, Aug 6, 2014 at 11:32 PM, Kees Cook <keescook@chromium.org> wrote:
->> ARM is different from other architectures in that fixmap pages are indexed
->> with a positive offset from FIXADDR_START.  Other architectures index with
->> a negative offset from FIXADDR_TOP.  In order to use the generic fixmap.h
->
-> Does anybody know if there's any reason why generic fixmap.h uses negative
-> offsets? It complicates things with no obvious benefit if you e.g. try to align
-> virtual address in the fixmap region with physical page color (that's why I've
-> switched xtensa to positive fixmap addressing in v3.17).
+This patch documents the device tree bindings required for the
+ehci on-chip controller found in ST consumer electronics SoC's.
 
-No, but each arch doing it differently is even more annoying.
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+---
+ Documentation/devicetree/bindings/usb/ehci-st.txt | 39 +++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/ehci-st.txt
 
-Rob
+diff --git a/Documentation/devicetree/bindings/usb/ehci-st.txt b/Documentation/devicetree/bindings/usb/ehci-st.txt
+new file mode 100644
+index 0000000..fb45fa5
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/ehci-st.txt
+@@ -0,0 +1,39 @@
++ST USB EHCI controller
++
++Required properties:
++ - compatible		: must be "st,st-ehci-300x"
++ - reg			: physical base addresses of the controller and length of memory mapped
++			  region
++ - interrupts		: one EHCI interrupt should be described here
++ - pinctrl-names	: a pinctrl state named "default" must be defined
++ - pinctrl-0		: phandle referencing pin configuration of the USB controller
++See: Documentation/devicetree/bindings/pinctrl/pinctrl-binding.txt
++ - clocks		: phandle list of usb clocks
++ - clock-names		: should be "ic" for interconnect clock and "clk48"
++See: Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++ - phys			: phandle for the PHY device
++ - phy-names		: should be "usb"
++ - resets		: phandle + reset specifier pairs to the powerdown and softreset lines
++			  of the USB IP
++ - reset-names		: should be "power" and "softreset"
++See: Documentation/devicetree/bindings/reset/st,sti-powerdown.txt
++See: Documentation/devicetree/bindings/reset/reset.txt
++
++Example:
++
++	ehci1: usb@0xfe203e00 {
++		compatible = "st,st-ehci-300x";
++		reg = <0xfe203e00 0x100>;
++		interrupts = <GIC_SPI 148 IRQ_TYPE_NONE>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_usb1>;
++		clocks = <&clk_s_a1_ls 0>;
++		phys = <&usb2_phy>;
++		phy-names = "usb";
++		status = "okay";
++
++		resets = <&powerdown STIH416_USB1_POWERDOWN>,
++			 <&softreset STIH416_USB1_SOFTRESET>;
++		reset-names = "power", "softreset";
++	};
+-- 
+1.9.1
+
