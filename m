@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337AbaHGLT6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 07:19:58 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51345 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754519AbaHGLT4 (ORCPT
+	id S1757245AbaHGLaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 07:30:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33356 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754267AbaHGLaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 07:19:56 -0400
-Date: Thu, 7 Aug 2014 12:19:41 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <nicoleotsuka@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        alsa-devel@alsa-project.org, timur@tabi.org, Li.Xiubo@freescale.com,
-        devicetree@vger.kernel.org, galak@codeaurora.org,
-        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
-        pawel.moll@arm.com, robh+dt@kernel.org, b42378@freescale.com,
-        b02247@freescale.com
-Message-ID: <20140807111941.GH17528@sirena.org.uk>
-References: <1407223925-29678-1-git-send-email-nicoleotsuka@gmail.com>
+	Thu, 7 Aug 2014 07:30:04 -0400
+Date: Thu, 7 Aug 2014 13:25:07 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        Sugar <shuge@allwinnertech.com>
+Subject: Re: linux-next: Tree for Aug 6 (sun6i-dma.c)
+Message-ID: <20140807112507.GB15297@lukather>
+References: <20140806172857.44a2a900@canb.auug.org.au>
+ <53E25AFF.6030409@infradead.org>
+ <53E262BF.7040509@infradead.org>
+ <1407398174.3373.1.camel@paszta.hi.pengutronix.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Va8DSfvMR3bM4AuH"
+	protocol="application/pgp-signature"; boundary="v9Ux+11Zm5mwPlX6"
 Content-Disposition: inline
-In-Reply-To: <1407223925-29678-1-git-send-email-nicoleotsuka@gmail.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: fsl_sai: Add asynchronous mode support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1407398174.3373.1.camel@paszta.hi.pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Va8DSfvMR3bM4AuH
+--v9Ux+11Zm5mwPlX6
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Aug 05, 2014 at 03:32:05PM +0800, Nicolin Chen wrote:
-> From: Nicolin Chen <Guangyu.Chen@freescale.com>
+On Thu, Aug 07, 2014 at 09:56:14AM +0200, Philipp Zabel wrote:
+> Am Mittwoch, den 06.08.2014, 10:15 -0700 schrieb Randy Dunlap:
+> > On 08/06/14 09:42, Randy Dunlap wrote:
+> > > On 08/06/14 00:28, Stephen Rothwell wrote:
+> > >> Hi all,
+> > >>
+> > >> Please do not add code intended for v3.18 until after v3.17-rc1 is
+> > >> released.
+> > >>
+> > >> Changes since 20140805:
+> > >>
+> > >=20
+> > > on x86_64:
+> > > when CONFIG_RESET_CONTROLLER is not enabled:
+> > >=20
+> > > ../drivers/dma/sun6i-dma.c: In function 'sun6i_dma_probe':
+> > > ../drivers/dma/sun6i-dma.c:911:2: error: implicit declaration of func=
+tion 'devm_reset_control_get' [-Werror=3Dimplicit-function-declaration]
+> > >=20
+> > > Add a stub for that function?
 >=20
-> SAI supports these operation modes:
-> 1) asynchronous mode
->    Both Tx and Rx are set to be asynchronous.
+> There is no stub for this function by choice.
+> Drivers that can accept stubbed out CONFIG_RESET_CONTROLLER functions
+> should use devm_reset_control_get_optional instead.
+>=20
+> > or that driver's Kconfig entry could select RESET_CONTROLLER.
+>=20
+> Yes, please.
 
-Applied, thanks.
+A depends on would be better I guess.
 
---Va8DSfvMR3bM4AuH
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--v9Ux+11Zm5mwPlX6
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1
 
-iQIcBAEBAgAGBQJT42DJAAoJELSic+t+oim9Y6EQAIWj1A+/REEmCFveYNytG/KU
-ZTNjv3KXMmX8j6yRM4XaWoM0ZK6C2Mn0Lz611Xl4WVA1hlFmqzBGUQXuOqBig0rJ
-hxGRYS2DmcB3Aq2IugEtyHRkdhBc+wtgVToMRHKDiaVNDBgXU8zVmp0/n9ZH3wz9
-svhR4vwd1JVhl4kkn13rWTEdQdsMAbQT+kl4gQjIDRNmm8jB8XF3q6ADyQ2SqNW9
-VcFnCZ0CIkReuHURw6vxNSHhLKdZD6CcMUr4f2ZujiBBcSStxI9s9jl8Cnf09XwI
-h4w9SLc5SfiV+gtHCeni+j6mv7YljgnEMXibUe3/P+dhIJkzUR9F8umX6FtcHUTa
-qsTjfsLGNdOFmu9aXfiBEWtEJ3E4HEl745XsixwDs4nzMtjyz7E4MCzmHfW4/gXv
-Qd2vrRo69e9oAVO9hCdOv+JMFZbX8sZPKdn8VZelyK1BImf+NTgjDrWDlBVIncjd
-6FlTkGZVnQs2JDIK72Ic+76NfFYuubtdietksjyh3vwbLBUgKqgk/bXf/LzuIzkC
-eWU5ZhDwAgem6WTdD41cul3uFM1KAfI1ylqIsxHjQC2pfvhnD8oMQ9ZKPkB2YGrz
-06IOeERo3UlLzZPgDxK0mRpA324IwhjRIMybkrh6AZR41lIZ081UeCdYxcdS/Ek7
-38BqAyxYaaQkAFV5eXTU
-=/x+C
+iQIcBAEBAgAGBQJT42ITAAoJEBx+YmzsjxAgavgP/RCGy6vv89TEjrxkTWGcpGff
+NKZ47+ag42zM40LkVbmhfUbCwNXnTvoTuN2ekZ3PLyOtapV5gernOjNGbrpd2BEE
+fXE5s+PYrUnqF3oDuBUasx43KBWTNafB4IH4PofDOzAPA6rxGgddDGSL/8BrP8VF
+KEX2M6BUSCOacX7x1IDkSVS60TwsVNmcJhE7Qt1jrUlyzTopw8NsTdWyFE+YGnpQ
+lTy1jdsnA4W5VCqsEBHpbx7bavGmrlFgiHzmQ4Cn/2N2m5PtOs7SFk7krAlIWSiC
+7p2eBOdMUSxcHrCIvi0L6sBI8icRPLEJ54te1Ch/2wBUOSktUhFarpBfRuDCgJ/8
+Yfy8dkmjG8ppQCXESUdLPiN5NpLd1lZVMdGjV+gT35elvH0w0nAoebd5IPiSb9pG
+b2LMT2hAn617Zd3ZMSMG6cx7/3jhKG7u/tc1CN/eBlTfR7w6x9bj6f5GkClMrjnI
+RknW3nr/uGhGZcuuiqmWCwZ6PYwVj0m5K8WeEn/4z9NYyQzuIbx8SrK35Q2gpkwr
+n1EFbTiL9gZWfca45zZoK6rVn0FUeGdeSESrVaSN7rvGOBaNZwspTFX0DPqZMho0
+XTwDcthiG7Yfik0fe45I2lG1uphxX0EgxIKpFJX5IGYYrt1vY6frs//Lz+ihEDd2
+/RGRmEVREbkOiJaNVO0+
+=zl0W
 -----END PGP SIGNATURE-----
 
---Va8DSfvMR3bM4AuH--
+--v9Ux+11Zm5mwPlX6--
