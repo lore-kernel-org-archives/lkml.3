@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757451AbaHGGTT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 02:19:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62387 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757371AbaHGGSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 02:18:50 -0400
-Date: Thu, 7 Aug 2014 14:19:45 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Mark Salter <msalter@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
-Subject: Re: [PATCH 1/2] UEFI arm64: add noefi boot param
-Message-ID: <20140807061945.GE20295@darkstar.nay.redhat.com>
-References: <20140806083825.GA31711@dhcp-16-198.nay.redhat.com>
- <20140806130623.GI4179@bivouac.eciton.net>
- <20140806132021.GB15082@console-pimps.org>
- <20140806132941.GJ4179@bivouac.eciton.net>
- <20140806140155.GC15082@console-pimps.org>
- <CAKv+Gu8ey1iKu-_wS6yYaEXQaQMDXa+PF5Kiw+edA9a_OE1EAw@mail.gmail.com>
- <20140806141814.GD15082@console-pimps.org>
+	id S1757461AbaHGGUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 02:20:30 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:41845 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400AbaHGGU2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 02:20:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140806141814.GD15082@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <bdf5ba14c73340f7b39f6d3df2473a43@FE-MBX1012.de.bosch.com>
+References: <bbcbf584e3624059bf7a0d2186fec6b4@FE-MBX1012.de.bosch.com>
+	<20140806191744.GB6611@netboy>
+	<CAPDOMVjYkfM49E9DM0=SDDRncLQbXxR8NQE9SrsW++YycMGU5w@mail.gmail.com>
+	<20140806193211.GC6611@netboy>
+	<CAPDOMViFCifeUoOgExuG7Q6_ObGj20g59siyMxWeKN=Zr2Kbdg@mail.gmail.com>
+	<20140806195433.GD6611@netboy>
+	<bdf5ba14c73340f7b39f6d3df2473a43@FE-MBX1012.de.bosch.com>
+Date: Wed, 6 Aug 2014 23:20:27 -0700
+X-Google-Sender-Auth: NouBCSgfNLlfoGDwT3lj11rPWxY
+Message-ID: <CAL3LdT5-pyfBTC8=sn=Nk_WEzeCJweK=NyYcOepOfESz44eOhg@mail.gmail.com>
+Subject: Re: [PATCH] Fix e1000e with Intel 82572EI that has no hardware
+ timestamp support
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: "Koehrer Mathias (ETAS/ESW5)" <mathias.koehrer@etas.com>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/14 at 03:18pm, Matt Fleming wrote:
-> On Wed, 06 Aug, at 04:10:45PM, Ard Biesheuvel wrote:
-> > 
-> > Shouldn't we clear the bit here if we failed to enable runtime
-> > services for some reason? Other code may test the bit assuming that it
-> > signifies that runtime services have been enabled successfully, while
-> > this patch changes it to mean that we /intended/ to enable them, which
-> > is not quite the same thing.
-> 
-> Yep, good catch. We need to do something similar for efi_runtime_init()
-> on x86 too.
+On Wed, Aug 6, 2014 at 11:10 PM, Koehrer Mathias (ETAS/ESW5)
+<mathias.koehrer@etas.com> wrote:
+> With the Intel 82527EI (driver: e1000e) there is an issue when running
+> the ptpd2 program, that leads to a kernel oops.  The reason is here that
+> in e1000_xmit_frame() a work queue will be scheduled that has not been
+> initialized in this case.  The work queue "tx_hwstamp_work" will only be
+> initialized if adapter->flags & FLAG_HAS_HW_TIMESTAMP set.  This check
+> is missing in e1000_xmit_frame().
+>
+> The following patch adds the missing check.
+>
+> Signed-off-by: Mathias Koehrer <mathias.koehrer@etas.com>
+>
+> ---
+>  drivers/net/ethernet/intel/e1000e/netdev.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> Index: linux-3.12.26/drivers/net/ethernet/intel/e1000e/netdev.c
+> ===================================================================
+> --- linux-3.12.26.orig/drivers/net/ethernet/intel/e1000e/netdev.c       2014-08-04 10:56:56.000000000 +0200
+> +++ linux-3.12.26/drivers/net/ethernet/intel/e1000e/netdev.c    2014-08-07 08:05:17.000000000 +0200
+> @@ -5550,7 +5550,8 @@
+>                              nr_frags);
+>         if (count) {
+>                 if (unlikely((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) &&
+> -                            !adapter->tx_hwtstamp_skb)) {
+> +                            !adapter->tx_hwtstamp_skb &&
+> +                            (adapter->flags & FLAG_HAS_HW_TIMESTAMP))) {
+>                         skb_shinfo(skb)->tx_flags |= SKBTX_IN_PROGRESS;
+>                         tx_flags |= E1000_TX_FLAGS_HWTSTAMP;
+>                         adapter->tx_hwtstamp_skb = skb_get(skb);
+>
 
-The current efi_runtime_init() enables the bit after getting the efi callback
-phyaddr of SetVirtualAddressMap.
+So is this v2 of your patch?  and you are ignoring Alex's last suggestion to do:
 
-Thinking more about it, since SetVirtualAddressMap() could fail somehow it
-seems better to set EFI_RUNTIME_SERIVCES bit only when enter virtual mode
-return EFI_SUCCESS.
+  unlikely(skb->tx_flags & HW_TSTAMP) &&
+  (adapter->flags & HAS_HW_TSTAMP) &&
+  !adapter->tx_hwtstamp_skb
 
-Does it make sense to you, Matt?
+Just wondering....
 
-Thanks
-Dave
+-- 
+Cheers,
+Jeff
