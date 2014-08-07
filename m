@@ -1,125 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450AbaHGQHS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 12:07:18 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:43977 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757488AbaHGQHP (ORCPT
+	id S932576AbaHGQHo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 12:07:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39166 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932089AbaHGQHm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 12:07:15 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-78-53e3a431bff2
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Chris Ball <chris@printf.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mmc: sdhci-s3c: fix runtime PM handling on sdhci_add_host()
- failure
-Date: Thu, 07 Aug 2014 18:07:07 +0200
-Message-id: <5567000.WJnOP5ckul@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jQV3DJY+DDfZ2K1tMWneAyeLf7FNs
-	FhMub2e0uPGrjdXibNMbdovLu+awWRz5389oMeP8PiaL42vDHTg9/q56wexx59oeNo+XE3+z
-	edx4tZDJo2/LKkaPz5vkAtiiuGxSUnMyy1KL9O0SuDLuTNnJWPBPsWLJ3RXMDYwrZbsYOTkk
-	BEwk9h38xARhi0lcuLeerYuRi0NIYDqjxIlnDcwQTguTxKy9i5lBqtgErCQmtq9iBLFFBBQl
-	ji+dww5SxCywiUni89GNYEXCAmESj86vYQOxWQRUJU40vgOL8wpoSmyZ8wAsLirgKbFj+0o2
-	iLigxI/J91hAbGYBeYl9+6eyQthaEut3HmeawMg3C0nZLCRls5CULWBkXsUomlqQXFCclJ5r
-	qFecmFtcmpeul5yfu4kRHNTPpHYwrmywOMQowMGoxMMr0P04WIg1say4MvcQowQHs5IIry5I
-	iDclsbIqtSg/vqg0J7X4EKM0B4uSOO+BVutAIYH0xJLU7NTUgtQimCwTB6dUA6Ne5NQlL5J3
-	G9w8t6PmVME/zf0r+WMNhS9L5ugs1uoWz70p8K1KYuE869ObbUOW2U08OkFns9XdK/szztiI
-	SLy5XPhwb8qGEhFbD4OYx3u35/3rj919cGXmg4zaf9XyJ29Nv3Swfu6v9m9Tfi4MV/yucahu
-	0/RP2hF7TWZdPxHZu3i55eyta536lViKMxINtZiLihMBLezETGYCAAA=
+	Thu, 7 Aug 2014 12:07:42 -0400
+Date: Thu, 7 Aug 2014 18:07:39 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kbuild: escape single backslashes in macro make-cmd
+Message-ID: <20140807160739.GA29726@sepie.suse.cz>
+References: <20140726163551.19857.17737.stgit@zurg>
+ <53E2156E.9060700@suse.cz>
+ <CALYGNiO=oiiLgJRrpycO=CWyMMf8-AiDyW=Ch3ajV5W=9dtZfA@mail.gmail.com>
+ <53E24365.6020405@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <53E24365.6020405@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Runtime Power Management handling for the sdhci_add_host() failure
-case in sdhci_s3c_probe() should match the code in sdhci_s3c_remove()
-(which uses pm_runtime_disable() call which matches the earlier
-pm_runtime_enable() one).  Fix it.
+On Wed, Aug 06, 2014 at 05:01:57PM +0200, Michal Marek wrote:
+> On 2014-08-06 14:19, Konstantin Khlebnikov wrote:
+> > On Wed, Aug 6, 2014 at 3:45 PM, Michal Marek <mmarek@suse.cz> wrote:
+> >> On 2014-07-26 18:35, Konstantin Khlebnikov wrote:
+> >>> This already has been fixed in commit c353acba28fb3fa1fd05fd
+> >>> ("kbuild: make: fix if_changed when command contains backslashes")
+> >>> but escaping still isn't perfect and triggers false-positive rebuilds.
+> >>>
+> >>> For x86 problem happens every time, because rules in arch/x86/realmode/rm/
+> >>> and arch/x86/boot/ contains commands like sed -n -e 's/foo\(.*\)/\1/p'.
+> >>> Backslash in \1 isn't escaped and turns into ascii symbol with code 1.
+> >>> Macro if_changed detects command change and rebuilds target again and again.
+> >>>
+> >>> Backslash escaping conflicts with other passes because it's used for escaping
+> >>> other symbols. To avoid that current macro handles only double backslashes.
+> >>> Obviously this doesn't work for \1 like above.
+> >>>
+> >>> This patch reorders passes. It doubles all backslashes before escaping # and '
+> >>>
+> >>> Visible effect in rebuilding x86/defconfig without changes, before patch:
+> >>>
+> >>> blind@zurg:~/src/linux$ make V=2
+> >>>   CHK     include/config/kernel.release
+> >>>   CHK     include/generated/uapi/linux/version.h
+> >>>   CHK     include/generated/utsrelease.h
+> >>>   CALL    scripts/checksyscalls.sh - due to target missing
+> >>>   CHK     include/generated/compile.h
+> >>>   PASYMS  arch/x86/realmode/rm/pasyms.h - due to command line change
+> >>
+> >> With which make and shell version are you seeing this? While the patch
+> >> looks correct, I can't reproduce the error here:
+> > 
+> > /bin/sh points to dash (debian default setup).
+> > 
+> > I cannot reproduce this using bash. That explains why this bug is still here.
+> 
+> So the difference between the shells is that their 'echo' builtin treats
+> \<number> differently:
+> $ ./dash -c "echo '\2'"
+> 
+> $ ./dash -c "echo '\2'" | xxd
+> 0000000: 020a                                     ..
+> $ /bin/bash -c "echo '\2'"
+> \2
 
-This patch fixes "BUG: spinlock bad magic on CPU#0, swapper/0/1" and
-"Unbalanced pm_runtime_enable!" warnings.
+The problem is that the bash echo does not interpred _any_ \-sequences
+without -e. So the nicely escaped \\ stays a \\ and we get spurious
+rebuilds with bash instead. It previously worked with bash, because the
+backslash escaping was completely broken. You not only moved it up in
+the chain, but also fixed it by removing one superflous level of
+escaping.
 
->From the kernel log:
-...
-[    1.659631] s3c-sdhci 12530000.sdhci: sdhci_add_host() failed
-[    1.665096] BUG: spinlock bad magic on CPU#0, swapper/0/1
-[    1.670433]  lock: 0xea01e484, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
-[    1.677895] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.16.0-next-20140804-00008-ga59480f-dirty #707
-[    1.687037] [<c0013ae4>] (unwind_backtrace) from [<c0010d70>] (show_stack+0x10/0x14)
-[    1.694740] [<c0010d70>] (show_stack) from [<c04050c8>] (dump_stack+0x68/0xb8)
-[    1.701948] [<c04050c8>] (dump_stack) from [<c0052558>] (do_raw_spin_lock+0x15c/0x1a4)
-[    1.709848] [<c0052558>] (do_raw_spin_lock) from [<c040a630>] (_raw_spin_lock_irqsave+0x20/0x28)
-[    1.718619] [<c040a630>] (_raw_spin_lock_irqsave) from [<c030d7d0>] (sdhci_do_set_ios+0x1c/0x5cc)
-[    1.727464] [<c030d7d0>] (sdhci_do_set_ios) from [<c030ddfc>] (sdhci_runtime_resume_host+0x50/0x104)
-[    1.736574] [<c030ddfc>] (sdhci_runtime_resume_host) from [<c02462dc>] (pm_generic_runtime_resume+0x2c/0x40)
-[    1.746383] [<c02462dc>] (pm_generic_runtime_resume) from [<c0247898>] (__rpm_callback+0x34/0x70)
-[    1.755233] [<c0247898>] (__rpm_callback) from [<c02478fc>] (rpm_callback+0x28/0x88)
-[    1.762958] [<c02478fc>] (rpm_callback) from [<c02486f0>] (rpm_resume+0x384/0x4ec)
-[    1.770511] [<c02486f0>] (rpm_resume) from [<c02488b0>] (pm_runtime_forbid+0x58/0x64)
-[    1.778325] [<c02488b0>] (pm_runtime_forbid) from [<c030ea70>] (sdhci_s3c_probe+0x4a4/0x540)
-[    1.786749] [<c030ea70>] (sdhci_s3c_probe) from [<c02429cc>] (platform_drv_probe+0x2c/0x5c)
-[    1.795076] [<c02429cc>] (platform_drv_probe) from [<c02415f0>] (driver_probe_device+0x114/0x234)
-[    1.803929] [<c02415f0>] (driver_probe_device) from [<c024179c>] (__driver_attach+0x8c/0x90)
-[    1.812347] [<c024179c>] (__driver_attach) from [<c023ffb4>] (bus_for_each_dev+0x54/0x88)
-[    1.820506] [<c023ffb4>] (bus_for_each_dev) from [<c0240df8>] (bus_add_driver+0xd8/0x1cc)
-[    1.828665] [<c0240df8>] (bus_add_driver) from [<c0241db8>] (driver_register+0x78/0xf4)
-[    1.836652] [<c0241db8>] (driver_register) from [<c00088a4>] (do_one_initcall+0x80/0x1d0)
-[    1.844816] [<c00088a4>] (do_one_initcall) from [<c059ac94>] (kernel_init_freeable+0x108/0x1d4)
-[    1.853503] [<c059ac94>] (kernel_init_freeable) from [<c0401300>] (kernel_init+0x8/0xe4)
-[    1.861568] [<c0401300>] (kernel_init) from [<c000e538>] (ret_from_fork+0x14/0x3c)
-[    1.869582] platform 12530000.sdhci: Driver s3c-sdhci requests probe deferral
-...
-[    1.997047] s3c-sdhci 12530000.sdhci: Unbalanced pm_runtime_enable!
-...
-[    2.027235] s3c-sdhci 12530000.sdhci: sdhci_add_host() failed
-[    2.032884] platform 12530000.sdhci: Driver s3c-sdhci requests probe deferral
-...
+I'm now testing this, i.e. dropping the backslash escaping completely
+and doing a printf '%s\n' instead. Can you try if it works for you?
 
-Tested on Hardkernel's Exynos4412 based ODROID-U3 board.
 
-Fixes: 9f4e8151dbbc ("mmc: sdhci-s3c: Enable runtime power management")
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-patch is against next-20140804 branch of linux-next kernel
-
- drivers/mmc/host/sdhci-s3c.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
-index fa5954a..1e47903 100644
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@ -606,8 +606,6 @@ static int sdhci_s3c_probe(struct platform_device *pdev)
- 	ret = sdhci_add_host(host);
- 	if (ret) {
- 		dev_err(dev, "sdhci_add_host() failed\n");
--		pm_runtime_forbid(&pdev->dev);
--		pm_runtime_get_noresume(&pdev->dev);
- 		goto err_req_regs;
- 	}
+diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
+index 122f95c..8a9a4e1 100644
+--- a/scripts/Kbuild.include
++++ b/scripts/Kbuild.include
+@@ -215,11 +215,13 @@ else
+ arg-check = $(if $(strip $(cmd_$@)),,1)
+ endif
  
-@@ -618,6 +616,8 @@ static int sdhci_s3c_probe(struct platform_device *pdev)
- 	return 0;
+-# >'< substitution is for echo to work,
+-# >$< substitution to preserve $ when reloading .cmd file
+-# note: when using inline perl scripts [perl -e '...$$t=1;...']
+-# in $(cmd_xxx) double $$ your perl vars
+-make-cmd = $(subst \\,\\\\,$(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1))))))
++# Replace >$< with >$$< to preserve $ when reloading the .cmd file
++# (needed for make)
++# Replace >#< with >\#< to avoid starting a comment in the .cmd file
++# (needed for make)
++# Replace >'< with >'\''< to be able to enclose the whole string in '...'
++# (needed for the shell)
++make-cmd = $(call escsq,$(subst \#,\\\#,$(subst $$,$$$$,$(cmd_$(1)))))
  
-  err_req_regs:
-+	pm_runtime_disable(&pdev->dev);
-+
-  err_no_busclks:
- 	clk_disable_unprepare(sc->clk_io);
+ # Find any prerequisites that is newer than target or that does not exist.
+ # PHONY targets skipped in both cases.
+@@ -230,7 +232,7 @@ any-prereq = $(filter-out $(PHONY),$?) $(filter-out $(PHONY) $(wildcard $^),$^)
+ if_changed = $(if $(strip $(any-prereq) $(arg-check)),                       \
+ 	@set -e;                                                             \
+ 	$(echo-cmd) $(cmd_$(1));                                             \
+-	echo 'cmd_$@ := $(make-cmd)' > $(dot-target).cmd)
++	printf '%s\n' 'cmd_$@ := $(make-cmd)' > $(dot-target).cmd)
  
--- 
-1.8.2.3
-
-
+ # Execute the command and also postprocess generated .d dependencies file.
+ if_changed_dep = $(if $(strip $(any-prereq) $(arg-check) ),                  \
