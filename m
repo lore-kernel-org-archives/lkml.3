@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461AbaHGGUa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 02:20:30 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:41845 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400AbaHGGU2 (ORCPT
+	id S932082AbaHGGUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 02:20:40 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:59790 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757341AbaHGGUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 02:20:28 -0400
+	Thu, 7 Aug 2014 02:20:37 -0400
+Date: Wed, 6 Aug 2014 23:20:33 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: cap1106 - allow changing key mapping from
+ userspace
+Message-ID: <20140807062033.GD651@core.coreip.homeip.net>
+References: <20140721012045.GA4395@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <bdf5ba14c73340f7b39f6d3df2473a43@FE-MBX1012.de.bosch.com>
-References: <bbcbf584e3624059bf7a0d2186fec6b4@FE-MBX1012.de.bosch.com>
-	<20140806191744.GB6611@netboy>
-	<CAPDOMVjYkfM49E9DM0=SDDRncLQbXxR8NQE9SrsW++YycMGU5w@mail.gmail.com>
-	<20140806193211.GC6611@netboy>
-	<CAPDOMViFCifeUoOgExuG7Q6_ObGj20g59siyMxWeKN=Zr2Kbdg@mail.gmail.com>
-	<20140806195433.GD6611@netboy>
-	<bdf5ba14c73340f7b39f6d3df2473a43@FE-MBX1012.de.bosch.com>
-Date: Wed, 6 Aug 2014 23:20:27 -0700
-X-Google-Sender-Auth: NouBCSgfNLlfoGDwT3lj11rPWxY
-Message-ID: <CAL3LdT5-pyfBTC8=sn=Nk_WEzeCJweK=NyYcOepOfESz44eOhg@mail.gmail.com>
-Subject: Re: [PATCH] Fix e1000e with Intel 82572EI that has no hardware
- timestamp support
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: "Koehrer Mathias (ETAS/ESW5)" <mathias.koehrer@etas.com>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140721012045.GA4395@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 6, 2014 at 11:10 PM, Koehrer Mathias (ETAS/ESW5)
-<mathias.koehrer@etas.com> wrote:
-> With the Intel 82527EI (driver: e1000e) there is an issue when running
-> the ptpd2 program, that leads to a kernel oops.  The reason is here that
-> in e1000_xmit_frame() a work queue will be scheduled that has not been
-> initialized in this case.  The work queue "tx_hwstamp_work" will only be
-> initialized if adapter->flags & FLAG_HAS_HW_TIMESTAMP set.  This check
-> is missing in e1000_xmit_frame().
->
-> The following patch adds the missing check.
->
-> Signed-off-by: Mathias Koehrer <mathias.koehrer@etas.com>
->
+On Sun, Jul 20, 2014 at 06:20:49PM -0700, Dmitry Torokhov wrote:
+> Wire up support for EVIOC{G|S}KEYCODE to allow users change key mappings
+> from userspace.
+> 
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 > ---
->  drivers/net/ethernet/intel/e1000e/netdev.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> Index: linux-3.12.26/drivers/net/ethernet/intel/e1000e/netdev.c
-> ===================================================================
-> --- linux-3.12.26.orig/drivers/net/ethernet/intel/e1000e/netdev.c       2014-08-04 10:56:56.000000000 +0200
-> +++ linux-3.12.26/drivers/net/ethernet/intel/e1000e/netdev.c    2014-08-07 08:05:17.000000000 +0200
-> @@ -5550,7 +5550,8 @@
->                              nr_frags);
->         if (count) {
->                 if (unlikely((skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP) &&
-> -                            !adapter->tx_hwtstamp_skb)) {
-> +                            !adapter->tx_hwtstamp_skb &&
-> +                            (adapter->flags & FLAG_HAS_HW_TIMESTAMP))) {
->                         skb_shinfo(skb)->tx_flags |= SKBTX_IN_PROGRESS;
->                         tx_flags |= E1000_TX_FLAGS_HWTSTAMP;
->                         adapter->tx_hwtstamp_skb = skb_get(skb);
->
+> 
+> Just compiled, not tested.
 
-So is this v2 of your patch?  and you are ignoring Alex's last suggestion to do:
+*ping* Any chance you could give it a try? Thanks!
 
-  unlikely(skb->tx_flags & HW_TSTAMP) &&
-  (adapter->flags & HAS_HW_TSTAMP) &&
-  !adapter->tx_hwtstamp_skb
-
-Just wondering....
+> 
+>  drivers/input/keyboard/cap1106.c | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/input/keyboard/cap1106.c b/drivers/input/keyboard/cap1106.c
+> index f7d7a0d..180b184 100644
+> --- a/drivers/input/keyboard/cap1106.c
+> +++ b/drivers/input/keyboard/cap1106.c
+> @@ -64,7 +64,7 @@ struct cap1106_priv {
+>  	struct input_dev *idev;
+>  
+>  	/* config */
+> -	unsigned int keycodes[CAP1106_NUM_CHN];
+> +	unsigned short keycodes[CAP1106_NUM_CHN];
+>  };
+>  
+>  static const struct reg_default cap1106_reg_defaults[] = {
+> @@ -272,6 +272,12 @@ static int cap1106_i2c_probe(struct i2c_client *i2c_client,
+>  	for (i = 0; i < CAP1106_NUM_CHN; i++)
+>  		__set_bit(priv->keycodes[i], priv->idev->keybit);
+>  
+> +	__clear_bit(KEY_RESERVED, priv->idev->keybit);
+> +
+> +	priv->idev->keycode = priv->keycodes;
+> +	priv->idev->keycodesize = sizeof(priv->keycodes[0]);
+> +	priv->idev->keycodemax = ARRAY_SIZE(priv->keycodes);
+> +
+>  	priv->idev->id.vendor = CAP1106_MANUFACTURER_ID;
+>  	priv->idev->id.product = CAP1106_PRODUCT_ID;
+>  	priv->idev->id.version = rev;
+> -- 
+> 2.0.0.526.g5318336
+> 
+> 
+> -- 
+> Dmitry
 
 -- 
-Cheers,
-Jeff
+Dmitry
