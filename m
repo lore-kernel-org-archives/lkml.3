@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516AbaHGJee (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 05:34:34 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:62171 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757398AbaHGJeb (ORCPT
+	id S932107AbaHGJfR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 05:35:17 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:41909 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078AbaHGJfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 05:34:31 -0400
-Date: Thu, 7 Aug 2014 13:34:28 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] tty: Fix potential use after free in release_one_tty
-Message-ID: <20140807093428.GS20553@moon>
-References: <20140807082544.GP20553@moon>
- <53E338CA.9070503@parallels.com>
- <20140807083423.GQ20553@moon>
- <53E34158.9070009@parallels.com>
- <20140807091812.GR20553@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140807091812.GR20553@moon>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 7 Aug 2014 05:35:13 -0400
+From: Kever Yang <kever.yang@rock-chips.com>
+To: Paul Zimmerman <paulz@synopsys.com>, heiko@sntech.de
+Cc: dianders@chromium.org, olof@lixom.net, sonnyrao@chromium.org,
+        addy.ke@rock-chips.com, cf@rock-chips.com, xjq@rock-chips.com,
+        wulf@rock-chips.com, lyz@rock-chips.com, hj@rock-chips.com,
+        huangtao@rock-chips.com, Kever Yang <kever.yang@rock-chips.com>,
+        devicetree@vger.kernel.org, Matt Porter <mporter@linaro.org>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        linux-usb@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v4 0/4] Patches to add support for Rockchip dwc2 controller
+Date: Thu,  7 Aug 2014 17:34:51 +0800
+Message-Id: <1407404095-3265-1-git-send-email-kever.yang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 01:18:12PM +0400, Cyrill Gorcunov wrote:
-> > mod = driver->owner;
-> > tty_driver_kref_put(driver);
-> > module_put(mod);
-> > 
-> > Check the upstream whether the same issue exists there.
-> 
-> Same in tty.git
-> 
-> static void release_one_tty(struct work_struct *work)
-> {
----
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: tty: Fix potential use after free in release_one_tty
+These patches to add support for dwc2 controller found in
+Rockchip processors rk3066, rk3188 and rk3288,
+and enable dts for rk3288 evb.
 
-In case if we're releasing the last tty reference the following
-call sequence is possible
+Changes in v4:
+- max_transfer_size change to 65536, this should be enough
+  for most transfer, the hardware auto-detect will set this
+  to 0x7ffff which may make dma_alloc_coherent fail when
+  non-dword aligned buf from driver like usbnet happen.
+- remove EHCI and HSIC dts patch for Doug had post it seprately.
 
-tty_driver_kref_put
-  destruct_tty_driver
-    kfree(driver);
+Changes in v3:
+- EHCI and HSIC move new for version 3.
+- Rebase
 
-where @driver is used in next module_put call, which leads to
+Changes in v2:
+- Split out dr_mode and rk3288 bindings.
+- add compatible "snps,dwc2" bingding info
+- set most parameters as driver auto-detect
+- evb patch added in version 2
 
- | [ 285.964007] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
- | [ 285.964007] Workqueue: events release_one_tty
- | [ 285.964007] task: ffff8800cc7ea5f0 ti: ffff8800cb800000 task.ti: ffff8800cb800000
- | [ 285.964007] RIP: 0010:[<ffffffff810aeaf5>] [<ffffffff810aeaf5>] module_put+0x24/0xf4
- | [ 285.964007] RSP: 0018:ffff8800cb801d48 EFLAGS: 00010213
- | [ 285.964007] RAX: ffff8800cb801fd8 RBX: ffff8800ca3429d0 RCX: ffff8800cb1db400
- | [ 285.964007] RDX: 0000000000000000 RSI: ffffffff817349c1 RDI: 0000000000000001
- | [ 285.964007] RBP: ffff8800cb801d60 R08: ffff8800cd632b40 R09: 0000000000000000
- | [ 285.964007] R10: 00000000ffffffff R11: ffff88011f40a000 R12: 6b6b6b6b6b6b6b6b
- | [ 285.964007] R13: ffff8800ca342520 R14: 0000000000000000 R15: ffff88011f5d8200
- | [ 285.964007] FS: 0000000000000000(0000) GS:ffff88011f400000(0000) knlGS:0000000000000000
- | [ 285.964007] CS: 0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- | [ 285.964007] CR2: 00007faf5229d090 CR3: 0000000001c0b000 CR4: 00000000000006f0
- | [ 285.964007] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- | [ 285.964007] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- | [ 285.964007] Stack:
- | [ 285.964007] ffff8800ca3429d0 ffff8800ca342a30 ffff8800ca342520 ffff8800cb801d88
- | [ 285.964007] ffffffff8146554a ffff8800cc77cc78 ffff8800ca3429d0 ffff88011f5d3800
- | [ 285.964007] ffff8800cb801e08 ffffffff810683c1 ffffffff810682ff 0000000000000046
- | [ 285.964007] Call Trace:
- | [ 285.964007] [<ffffffff8146554a>] release_one_tty+0x54/0xa3
- | [ 285.964007] [<ffffffff810683c1>] process_one_work+0x223/0x404
- | [ 285.964007] [<ffffffff810682ff>] ? process_one_work+0x161/0x404
- | [ 285.964007] [<ffffffff81068971>] worker_thread+0x136/0x205
- | [ 285.964007] [<ffffffff8106883b>] ? rescuer_thread+0x26a/0x26a
- | [ 285.964007] [<ffffffff8106e5bf>] kthread+0xa2/0xaa
- | [ 285.964007] [<ffffffff810a4586>] ? trace_hardirqs_on_caller+0x16/0x1eb
- | [ 285.964007] [<ffffffff8106e51d>] ? __kthread_parkme+0x65/0x65
- | [ 285.964007] [<ffffffff8173f59c>] ret_from_fork+0x7c/0xb0
- | [ 285.964007] [<ffffffff8106e51d>] ? __kthread_parkme+0x65/0x65
- | [ 285.964007] Code: 09 00 5b 41 5c 5d c3 0f 1f 44 00 00 55 48 85 ff 48 89 e5 41 55 41 54 49 89 fc 53 0f 84 d3 00
- | 00 00 bf 01 00 00 00 e8 d0 a1 fc ff <49> 8b 84 24 50 02 00 00 65 48 ff 40 08 4c 8b 6d 08 0f 1f 44 00
+Kever Yang (4):
+  Documentation: dt-bindings: add dt binding info for Rockchip dwc2
+  usb: dwc2: add compatible data for rockchip soc
+  ARM: dts: add rk3288 dwc2 controller support
+  ARM: dts: Enable USB otg and host1(dwc) on rk3288-evb
 
-so simply keep a local reference to the module owner and
-use it later.
+ Documentation/devicetree/bindings/usb/dwc2.txt |  3 +++
+ arch/arm/boot/dts/rk3288-evb.dtsi              |  6 ++++++
+ arch/arm/boot/dts/rk3288.dtsi                  | 20 ++++++++++++++++++
+ drivers/usb/dwc2/platform.c                    | 29 ++++++++++++++++++++++++++
+ 4 files changed, 58 insertions(+)
 
-(Note I hit the bug on custom kernel but I think vanilla one suffers
- the same problem).
+-- 
+1.9.1
 
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Jiri Slaby <jslaby@suse.cz>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- drivers/tty/tty_io.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-Index: linux-2.6.git/drivers/tty/tty_io.c
-===================================================================
---- linux-2.6.git.orig/drivers/tty/tty_io.c
-+++ linux-2.6.git/drivers/tty/tty_io.c
-@@ -1559,13 +1559,14 @@ static void release_one_tty(struct work_
- 	struct tty_struct *tty =
- 		container_of(work, struct tty_struct, hangup_work);
- 	struct tty_driver *driver = tty->driver;
-+	struct module *owner = driver->owner;
- 
- 	if (tty->ops->cleanup)
- 		tty->ops->cleanup(tty);
- 
- 	tty->magic = 0;
- 	tty_driver_kref_put(driver);
--	module_put(driver->owner);
-+	module_put(owner);
- 
- 	spin_lock(&tty_files_lock);
- 	list_del_init(&tty->tty_files);
