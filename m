@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776AbaHGWPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 18:15:19 -0400
-Received: from exprod5og111.obsmtp.com ([64.18.0.22]:38062 "HELO
-	exprod5og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755446AbaHGWOV (ORCPT
+	id S1755399AbaHGWSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 18:18:13 -0400
+Received: from mailrelay.sea-ab.se ([91.223.232.53]:40268 "EHLO
+	mailrelay.sea-ab.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231AbaHGWSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 18:14:21 -0400
-From: Iyappan Subramanian <isubramanian@apm.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, devicetree@vger.kernel.org
-Cc: dnelson@redhat.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jcm@redhat.com, patches@apm.com,
-        Iyappan Subramanian <isubramanian@apm.com>,
-        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
-Subject: [PATCH v10 2/4] Documentation: dts: Add bindings for APM X-Gene SoC ethernet driver
-Date: Thu,  7 Aug 2014 15:14:26 -0700
-Message-Id: <1407449668-13520-3-git-send-email-isubramanian@apm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407449668-13520-1-git-send-email-isubramanian@apm.com>
-References: <1407449668-13520-1-git-send-email-isubramanian@apm.com>
+	Thu, 7 Aug 2014 18:18:12 -0400
+X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Aug 2014 18:18:12 EDT
+Date: Thu, 7 Aug 2014 23:08:34 +0100
+From: Martin Berglund <martin@rogsta.net>
+To: Forest Bond <forest@alittletooquiet.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: vt6655: wpactl.c: Fix sparse warnings
+Message-ID: <20140807220834.GA21645@licorice>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds documentation for APM X-Gene SoC ethernet DTS binding.
+Add missing __user macro casting in the function wpa_set_keys.
+This is okay since the function handles the possibility of
+param->u.wpa_key.key and param->u.wpa_key.seq pointing to
+kernelspace using a flag, fcpfkernel.
 
-Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
-Signed-off-by: Ravi Patel <rapatel@apm.com>
-Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
+Signed-off-by: Martin Berglund <martin@rogsta.net>
 ---
- .../devicetree/bindings/net/apm-xgene-enet.txt     | 66 ++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+This was submitted as part of Eudyptula challenge task 16
 
-diff --git a/Documentation/devicetree/bindings/net/apm-xgene-enet.txt b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
-new file mode 100644
-index 0000000..ebcad25
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
-@@ -0,0 +1,66 @@
-+APM X-Gene SoC Ethernet nodes
-+
-+Ethernet nodes are defined to describe on-chip ethernet interfaces in
-+APM X-Gene SoC.
-+
-+Required properties:
-+- compatible: Should be "apm,xgene-enet"
-+- reg: Address and length of the register set for the device. It contains the
-+  information of registers in the same order as described by reg-names
-+- reg-names: Should contain the register set names
-+  - "enet_csr": Ethernet control and status register address space
-+  - "ring_csr": Descriptor ring control and status register address space
-+  - "ring_cmd": Descriptor ring command register address space
-+- interrupts: Ethernet main interrupt
-+- clocks: Reference to the clock entry.
-+- local-mac-address: MAC address assigned to this device
-+- phy-connection-type: Interface type between ethernet device and PHY device
-+- phy-handle: Reference to a PHY node connected to this device
-+
-+- mdio: Device tree subnode with the following required properties:
-+  - compatible: Must be "apm,xgene-mdio".
-+  - #address-cells: Must be <1>.
-+  - #size-cells: Must be <0>.
-+
-+  For the phy on the mdio bus, there must be a node with the following fields:
-+  - compatible: PHY identifier.  Please refer ./phy.txt for the format.
-+  - reg: The ID number for the phy.
-+
-+Optional properties:
-+- status: Should be "ok" or "disabled" for enabled/disabled. Default is "ok".
-+
-+Example:
-+	menetclk: menetclk {
-+		compatible = "apm,xgene-device-clock";
-+		clock-output-names = "menetclk";
-+		status = "ok";
-+	};
-+
-+	menet: ethernet@17020000 {
-+		compatible = "apm,xgene-enet";
-+		status = "disabled";
-+		reg = <0x0 0x17020000 0x0 0xd100>,
-+		      <0x0 0X17030000 0x0 0X400>,
-+		      <0x0 0X10000000 0x0 0X200>;
-+		reg-names = "enet_csr", "ring_csr", "ring_cmd";
-+		interrupts = <0x0 0x3c 0x4>;
-+		clocks = <&menetclk 0>;
-+		local-mac-address = [00 01 73 00 00 01];
-+		phy-connection-type = "rgmii";
-+		phy-handle = <&menetphy>;
-+		mdio {
-+			compatible = "apm,xgene-mdio";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			menetphy: menetphy@3 {
-+				compatible = "ethernet-phy-id001c.c915";
-+				reg = <0x3>;
-+			};
-+
-+		};
-+	};
-+
-+/* Board-specific peripheral configurations */
-+&menet {
-+        status = "ok";
-+};
+ drivers/staging/vt6655/wpactl.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
+index 5f454ca..d75dd79 100644
+--- a/drivers/staging/vt6655/wpactl.c
++++ b/drivers/staging/vt6655/wpactl.c
+@@ -224,7 +224,9 @@ int wpa_set_keys(PSDevice pDevice, void *ctx,
+ 	} else {
+ 		spin_unlock_irq(&pDevice->lock);
+ 		if (param->u.wpa_key.key &&
+-		    copy_from_user(&abyKey[0], param->u.wpa_key.key, param->u.wpa_key.key_len)) {
++		    copy_from_user(&abyKey[0],
++				   (void __user *)param->u.wpa_key.key,
++				   param->u.wpa_key.key_len)) {
+ 			spin_lock_irq(&pDevice->lock);
+ 			return -EINVAL;
+ 		}
+@@ -262,7 +264,9 @@ int wpa_set_keys(PSDevice pDevice, void *ctx,
+ 	} else {
+ 		spin_unlock_irq(&pDevice->lock);
+ 		if (param->u.wpa_key.seq &&
+-		    copy_from_user(&abySeq[0], param->u.wpa_key.seq, param->u.wpa_key.seq_len)) {
++		    copy_from_user(&abySeq[0],
++				   (void __user *)param->u.wpa_key.seq,
++				   param->u.wpa_key.seq_len)) {
+ 			spin_lock_irq(&pDevice->lock);
+ 			return -EINVAL;
+ 		}
 -- 
-1.9.1
+1.7.10.4
 
