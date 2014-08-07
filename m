@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463AbaHGJM5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 05:12:57 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:27791 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755052AbaHGJMy (ORCPT
+	id S1757479AbaHGJPZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 05:15:25 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:35846 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754519AbaHGJPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 05:12:54 -0400
-Date: Thu, 7 Aug 2014 17:10:50 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Weird NET_RX softirq behavior
-Message-ID: <20140807171050.77819b10@xhacker>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Thu, 7 Aug 2014 05:15:23 -0400
+Message-ID: <53E343A7.9060700@kernel.org>
+Date: Thu, 07 Aug 2014 10:15:19 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: kernel-janitors@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
+        linux-iio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 3/4] iio: fix error return code
+References: <1407355938-10932-3-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1407355938-10932-3-git-send-email-Julia.Lawall@lip6.fr>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-07_04:2014-08-06,2014-08-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1408070121
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi list,
+On 06/08/14 21:12, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Convert a zero return value on error to a negative one, as returned
+> elsewhere in the function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+> 
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+I'll take the view this one is 'obviously' right.  If it isn't
+then anyone feel free to shout!
 
-I observed one weird NET_RX softirq behavior:
+Applied to the togreg branch of iio.git.
 
+Thanks,
 
-1. CONFIG_RPS=y in kernel config file.
-
-2. only one netdev in the system: eth0. eth0 only has one interrupt which is
-all handled by CPU0. eth0 doesn't support RFS_ACCEL
-
-"cat /proc/interrupts" shows 
-
-~ # cat /proc/interrupts 
-           CPU0       CPU1       CPU2       CPU3       
-...
- 49:         52          0          0          0       GIC  mmc1
- 52:         53          0          0          0       GIC  mmc2
- 56:     430365          0          0          0       GIC  eth0
- 60:         61          0          0          0       GIC  mmc0
-...
-
-3. RPS and RFS remains disabled as default.
-
-~ # ls /sys/class/net/eth0/queues/
-rx-0  rx-1  rx-2  rx-3  tx-0
-~ # cat /sys/class/net/eth0/queues/rx-*/rps_cpus
-0
-0
-0
-0
-~ # cat /proc/sys/net/core/rps_sock_flow_entries
-0
-~ # cat /sys/class/net/eth0/queues/rx-*/rps_flow_cnt
-0
-0
-0
-0
-
-4. But NET_RX seems abnormal
-~ # cat /proc/softirqs 
-                    CPU0       CPU1       CPU2       CPU3       
-          HI:          0          0          0          0
-       TIMER:      92386        767        367        263
-      NET_TX:       6338          0          0          1
-      NET_RX:     445587        322        983          0
-       BLOCK:          0          0          0          0
-BLOCK_IOPOLL:          0          0          0          0
-     TASKLET:        150          0          0          0
-       SCHED:      31414        490        275        179
-     HRTIMER:          1          0          0          0
-         RCU:      49029        570        285        182
-
-I'm expecting NET_RX under CPU1, 2, 3 should be zero. Any suggestions
-about this abnormal behavior?
-
-Thanks in advance,
-Jisheng
+Jonathan
+> 
+> ---
+>  drivers/iio/adc/xilinx-xadc-core.c |    8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/iio/adc/xilinx-xadc-core.c b/drivers/iio/adc/xilinx-xadc-core.c
+> index fd2745c..196e269 100644
+> --- a/drivers/iio/adc/xilinx-xadc-core.c
+> +++ b/drivers/iio/adc/xilinx-xadc-core.c
+> @@ -1201,12 +1201,16 @@ static int xadc_probe(struct platform_device *pdev)
+>  			goto err_device_free;
+>  
+>  		xadc->convst_trigger = xadc_alloc_trigger(indio_dev, "convst");
+> -		if (IS_ERR(xadc->convst_trigger))
+> +		if (IS_ERR(xadc->convst_trigger)) {
+> +			ret = PTR_ERR(xadc->convst_trigger);
+>  			goto err_triggered_buffer_cleanup;
+> +		}
+>  		xadc->samplerate_trigger = xadc_alloc_trigger(indio_dev,
+>  			"samplerate");
+> -		if (IS_ERR(xadc->samplerate_trigger))
+> +		if (IS_ERR(xadc->samplerate_trigger)) {
+> +			ret = PTR_ERR(xadc->samplerate_trigger);
+>  			goto err_free_convst_trigger;
+> +		}
+>  	}
+>  
+>  	xadc->clk = devm_clk_get(&pdev->dev, NULL);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
