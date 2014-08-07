@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237AbaHGOPH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 10:15:07 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:36379 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757783AbaHGOPB (ORCPT
+	id S932334AbaHGOP4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 10:15:56 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:38183 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932264AbaHGOPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 10:15:01 -0400
-Date: Thu, 7 Aug 2014 15:14:57 +0100
-From: Peter Griffin <peter.griffin@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
-        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com, lee.jones@linaro.org,
-        devicetree@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v3 1/6] usb: host: usb-st-common: Add common code
- required by ohci-st and ehci-st
-Message-ID: <20140807141457.GB12137@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1407344589-24863-1-git-send-email-peter.griffin@linaro.org>
- <1407344589-24863-2-git-send-email-peter.griffin@linaro.org>
- <201408062259.10697.arnd@arndb.de>
+	Thu, 7 Aug 2014 10:15:53 -0400
+Message-ID: <53E38A18.5090203@kernel.org>
+Date: Thu, 07 Aug 2014 15:15:52 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201408062259.10697.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
+CC: Lars-Peter Clausen <lars@metafoo.de>, Peter Meerwald <pmeerw@pmeerw.net>,
+        Hartmut Knaack <knaack.h@gmx.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        =?UTF-8?B?ImVkZGllKOiUoeaeqyki?= <cf@rock-chips.com>,
+        huangtao@rock-chips.com
+Subject: Re: [PATCH v6 2/2] dt-bindings: document Rockchip saradc
+References: <1984475.34C1XMW1q3@diego> <8132020.MqcOnlblHg@diego>
+In-Reply-To: <8132020.MqcOnlblHg@diego>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
-Thanks for reviewing, see my comments below: -
-
-> > +	if (priv->rst) {
-> > +		ret = 
-> > (priv->rst);
-> > +		if (ret)
-> > +			goto err_assert_power;
-> > +	}
+On 23/07/14 22:24, Heiko Stübner wrote:
+> This add the necessary binding documentation for the saradc found in all recent
+> processors from Rockchip.
 > 
-> I wouldn't make these optional, just call the functions
-> unconditionally and fail the probe function if they are
-> not available.
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Applied to the togreg branch of iio.git.
+I have exercised a small amount of discretion wrt to the standard 3 weeks
+as there really is very little different in here from previous versions
+and no one has raised any comments on them.
+
+It's nearly 3 weeks anyway!
+
+J
+> ---
+> changes since v5:
+> - remove clock-frquency property as described in patch 1/2
 > 
-> I'm not sure if it's worth keeping these functions in a
-> common file. You are adding complexity this way and I don't
-> think you are even saving a significant number of code lines
-> compared to just having two copies of them.
-
-I've unabstracted these common functions back into ehci-st.c and 
-ohci-st,c in V4.
-
-regards,
-
-Peter.
-
+>  .../bindings/iio/adc/rockchip-saradc.txt           | 24 ++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+> new file mode 100644
+> index 0000000..5d3ec1d
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+> @@ -0,0 +1,24 @@
+> +Rockchip Successive Approximation Register (SAR) A/D Converter bindings
+> +
+> +Required properties:
+> +- compatible: Should be "rockchip,saradc"
+> +- reg: physical base address of the controller and length of memory mapped
+> +       region.
+> +- interrupts: The interrupt number to the cpu. The interrupt specifier format
+> +              depends on the interrupt controller.
+> +- clocks: Must contain an entry for each entry in clock-names.
+> +- clock-names: Shall be "saradc" for the converter-clock, and "apb_pclk" for
+> +               the peripheral clock.
+> +- vref-supply: The regulator supply ADC reference voltage.
+> +- #io-channel-cells: Should be 1, see ../iio-bindings.txt
+> +
+> +Example:
+> +	saradc: saradc@2006c000 {
+> +		compatible = "rockchip,saradc";
+> +		reg = <0x2006c000 0x100>;
+> +		interrupts = <GIC_SPI 26 IRQ_TYPE_LEVEL_HIGH>;
+> +		clocks = <&cru SCLK_SARADC>, <&cru PCLK_SARADC>;
+> +		clock-names = "saradc", "apb_pclk";
+> +		#io-channel-cells = <1>;
+> +		vref-supply = <&vcc18>;
+> +	};
+> 
