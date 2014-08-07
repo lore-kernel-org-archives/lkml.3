@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962AbaHGVFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 17:05:40 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43190 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874AbaHGVFi (ORCPT
+	id S1754807AbaHGVR3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 17:17:29 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:34088 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaHGVRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 17:05:38 -0400
-Date: Thu, 7 Aug 2014 23:05:33 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: joeyli <jlee@suse.com>
-Cc: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Takashi Iwai <tiwai@suse.de>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Hibernate: check unsafe page should not in e820
- reserved region
-Message-ID: <20140807210532.GA7816@Nokia-N900>
-References: <1407165801-24648-1-git-send-email-jlee@suse.com>
- <20140807040543.GE26210@linux-rxt1.site>
- <20140807080025.GA24700@amd.pavel.ucw.cz>
- <20140807085203.GF26210@linux-rxt1.site>
- <20140807093957.GB28649@Nokia-N900>
- <20140807101734.GG26210@linux-rxt1.site>
+	Thu, 7 Aug 2014 17:17:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140807101734.GG26210@linux-rxt1.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1407404095-3265-4-git-send-email-kever.yang@rock-chips.com>
+References: <1407404095-3265-1-git-send-email-kever.yang@rock-chips.com>
+	<1407404095-3265-4-git-send-email-kever.yang@rock-chips.com>
+Date: Thu, 7 Aug 2014 14:17:24 -0700
+X-Google-Sender-Auth: NBDioB4TK7Ypw884CIoalYLKxTY
+Message-ID: <CAD=FV=WubCx0yn7FV_qpiW31hrOgaa4Qv0N7TdRyTtKshooYgA@mail.gmail.com>
+Subject: Re: [PATCH v4 3/4] ARM: dts: add rk3288 dwc2 controller support
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Paul Zimmerman <paulz@synopsys.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, wulf <wulf@rock-chips.com>,
+        lyz <lyz@rock-chips.com>, han jiang <hj@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-08-07 18:17:34, joeyli wrote:
-> On Thu, Aug 07, 2014 at 11:39:57AM +0200, Pavel Machek wrote:
-> > > > Actually, if you are doing such a check... it makes sense to check for
-> > > > _all_ the regions, nosave or not. If e820 map changed at all, it is
-> > > > not safe to resume.
-> > > > 									Pavel
-> > > 
-> > > Currently nosave region only called register by e820 code, so hibernate's nosave region included e820
-> > > reserved, ACPI data and ACPI NVS region.
-> > > 
-> > > I thought hashing the start/end pfn of above regions is enough.
-> > 
-> > If ammount of memory changed, for example, it is unsafe to
-> > resume. So if you are doing the check, anyway, please hash
-> > whole e820 table.
-> 
-> There already have num_physpages in header for check the total physical page number.
+Kever,
 
-Good, but if ammount of memory stayed the same, but offsets
-changed (for example), resume is unsafe, too.
+On Thu, Aug 7, 2014 at 2:34 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> rk3288 has two kind of usb controller, this add the dwc2 controller
+> for otg and host1.
+>
+> Controller can works with usb PHY default setting and Vbus on.
+>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+>
+> ---
+>
+> Changes in v4: None
+> Changes in v3:
+> - EHCI and HSIC move new for version 3.
+>
+> Changes in v2: None
+>
+>  arch/arm/boot/dts/rk3288.dtsi | 20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
 
-When I wrote that num_physpages check, I should have checked
-whole e820  table, instead. (If anything at all changed there,
-"new" kernel is running with wrong e820 info).
+This looks good to me.  I haven't been able to personally test the OTG
+port (since my board doesn't have vbus wired), but I've tested the
+Host port.
 
-You seem to be in great position to fix that mistake now...
+I would request that you re-sort by base address (ignoring uart2,
+which apparently is in the wrong place).  Please make sure you base
+atop my patch that fixes the sort order of OHCI and EHCI.  I think
+that's supposed to land any day now.
 
-						Pavel
+After changing the sort order:
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Tested-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
