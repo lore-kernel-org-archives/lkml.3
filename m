@@ -1,70 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450AbaHGRYL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 13:24:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14861 "EHLO mx1.redhat.com"
+	id S932501AbaHGRY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 13:24:29 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53553 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757264AbaHGRYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 13:24:09 -0400
-Message-ID: <1407432194.599.13.camel@deneb.redhat.com>
-Subject: Re: [PATCH 1/7] arm: use generic fixmap.h
-From: Mark Salter <msalter@redhat.com>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Rob Herring <robh@kernel.org>,
-        Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Liu hua <sdu.liu@huawei.com>, Rabin Vincent <rabin@rab.in>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 07 Aug 2014 13:23:14 -0400
-In-Reply-To: <CAMo8Bf+DP-xZGnnFFvwc1XDEGUGkj1KkYQ_x+2i_hE0a9t7NKw@mail.gmail.com>
-References: <1407353564-21478-1-git-send-email-keescook@chromium.org>
-	 <1407353564-21478-2-git-send-email-keescook@chromium.org>
-	 <CAMo8Bf+uq1vhqb7KxnNFHTZ53C1mtw_Do6dn09j7jjw_7MWF_Q@mail.gmail.com>
-	 <CAL_JsqJgRFYTfdsY48C9QreBH=VcM3t-9AzFSV8oXLB5tVGjUw@mail.gmail.com>
-	 <alpine.LFD.2.11.1408071131170.6061@knanqh.ubzr>
-	 <CAMo8Bf+DP-xZGnnFFvwc1XDEGUGkj1KkYQ_x+2i_hE0a9t7NKw@mail.gmail.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1757264AbaHGRY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 13:24:27 -0400
+Message-ID: <53E3B632.9050902@ti.com>
+Date: Thu, 7 Aug 2014 13:24:02 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Peter Hurley <peter@hurleysoftware.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-serial@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Jiri Slaby <jslaby@suse.cz>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH v2] serial: uart: add hw flow control support configuration
+References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com> <53E39B44.60406@hurleysoftware.com> <53E3A67B.6070709@ti.com> <20140807171254.GA13097@kroah.com>
+In-Reply-To: <20140807171254.GA13097@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-07 at 19:42 +0400, Max Filippov wrote:
-> On Thu, Aug 7, 2014 at 7:32 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> > On Thu, 7 Aug 2014, Rob Herring wrote:
-> >
-> >> On Thu, Aug 7, 2014 at 10:15 AM, Max Filippov <jcmvbkbc@gmail.com> wrote:
-> >> > Hi,
-> >> >
-> >> > On Wed, Aug 6, 2014 at 11:32 PM, Kees Cook <keescook@chromium.org> wrote:
-> >> >> ARM is different from other architectures in that fixmap pages are indexed
-> >> >> with a positive offset from FIXADDR_START.  Other architectures index with
-> >> >> a negative offset from FIXADDR_TOP.  In order to use the generic fixmap.h
-> >> >
-> >> > Does anybody know if there's any reason why generic fixmap.h uses negative
-> >> > offsets? It complicates things with no obvious benefit if you e.g. try to align
-> >> > virtual address in the fixmap region with physical page color (that's why I've
-> >> > switched xtensa to positive fixmap addressing in v3.17).
-> >>
-> >> No, but each arch doing it differently is even more annoying.
-> >
-> > Why not switching everybody to positive offsets then?
-> 
-> I can cook a patch if people agree that that'd be good.
-> 
+On 08/07/2014 01:12 PM, Greg Kroah-Hartman wrote:
+> On Thu, Aug 07, 2014 at 12:16:59PM -0400, Murali Karicheri wrote:
+>> On 08/07/2014 11:29 AM, Peter Hurley wrote:
+>>> On 05/01/2014 03:04 PM, Murali Karicheri wrote:
+>>>> 8250 uart driver currently supports only software assisted hw flow
+>>>> control. The software assisted hw flow control maintains a hw_stopped
+>>>> flag in the tty structure to stop and start transmission and use modem
+>>>> status interrupt for the event to drive the handshake signals. This is
+>>>> not needed if hw has flow control capabilities. This patch adds a
+>>>> DT attribute for enabling hw flow control for a uart port. Also skip
+>>>> stop and start if this flag is present in flag field of the port
+>>>> structure.
+>>>>
+>>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>>>>
+>>>> CC: Rob Herring<robh+dt@kernel.org>
+>>>> CC: Pawel Moll<pawel.moll@arm.com>
+>>>> CC: Mark Rutland<mark.rutland@arm.com>
+>>>> CC: Ian Campbell<ijc+devicetree@hellion.org.uk>
+>>>> CC: Kumar Gala<galak@codeaurora.org>
+>>>> CC: Randy Dunlap<rdunlap@infradead.org>
+>>>> CC: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+>>>> CC: Jiri Slaby<jslaby@suse.cz>
+>>>> CC: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>>>> ---
+>>>>   .../devicetree/bindings/serial/of-serial.txt       |    1 +
+>>>>   drivers/tty/serial/8250/8250_core.c                |    6 ++++--
+>>>>   drivers/tty/serial/of_serial.c                     |    4 ++++
+>>>>   drivers/tty/serial/serial_core.c                   |   12 +++++++++---
+>>>>   4 files changed, 18 insertions(+), 5 deletions(-)
+>>>>
+>>> [...]
+>>>
+>>>> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+>>>> index b68550d..851707a 100644
+>>>> --- a/drivers/tty/serial/serial_core.c
+>>>> +++ b/drivers/tty/serial/serial_core.c
+>>>> @@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
+>>>>   			if (tty->termios.c_cflag&   CBAUD)
+>>>>   				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
+>>>>   		}
+>>>> -
+>>>> -		if (tty_port_cts_enabled(port)) {
+>>>> +		/*
+>>>> +		 * if hw support flow control without software intervention,
+>>>> +		 * then skip the below check
+>>>> +		 */
+>>>> +		if (tty_port_cts_enabled(port)&&
+>>>> +		    !(uport->flags&   UPF_HARD_FLOW)) {
+>>>>   			spin_lock_irq(&uport->lock);
+>>>>   			if (!(uport->ops->get_mctrl(uport)&   TIOCM_CTS))
+>>>>   				tty->hw_stopped = 1;
+>>>> @@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
+>>>>
+>>>>   	uport->icount.cts++;
+>>>>
+>>>> -	if (tty_port_cts_enabled(port)) {
+>>>> +	/* skip below code if the hw flow control is supported */
+>>>> +	if (tty_port_cts_enabled(port)&&
+>>>> +	    !(uport->flags&   UPF_HARD_FLOW)) {
+>>> Why is a modem status interrupt being generated for DCTS
+>>> if autoflow control is enabled?
+>>>
+>>> This should be:
+>>>
+>>> 	WARN_ON_ONCE(uport->flags&   UPF_HARD_FLOW);
+>>>
+>>> to indicate a mis-configured driver/device.
+>> This patch is already merged to the upstream branch and if you see any
+>> issue, please
+>> post a patch for review.
+>
+> If someone points out a problem in a patch of yours that is accepted
+> upstream, it is nice to provide a fix, otherwise I will just revert it
+> upstream, as it looks to be incorrect.
+>
+> So, should I just revert it?
+>
+> greg k-h
+Greg,
 
-I think that would be fine. I think x86 was first and used a negative
-negative offset. Others that followed just copied that. When I did the
-generic fixmap patch, using a negative offset was the natural thing to
-do. Arm was only arch doing it differently.
+Sorry, I misunderstood it. I think it would have been better to start a 
+new thread to point this out. Anyways I will send out a patch to add 
+this and please don't revert.
 
-
+Murali
