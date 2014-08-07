@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294AbaHGNAM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 09:00:12 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:54842 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932126AbaHGNAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 09:00:11 -0400
-Date: Thu, 7 Aug 2014 15:00:04 +0200
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] avr32: fix error return code
-Message-ID: <20140807130004.GA10918@samfundet.no>
-References: <1407415749-19978-1-git-send-email-Julia.Lawall@lip6.fr>
- <1407415749-19978-2-git-send-email-Julia.Lawall@lip6.fr>
+	id S932323AbaHGNAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 09:00:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41471 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757511AbaHGNAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 09:00:50 -0400
+Date: Thu, 7 Aug 2014 15:00:42 +0200
+From: Karel Zak <kzak@redhat.com>
+To: Boaz Harrosh <openosd@gmail.com>
+Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Boaz Harrosh <boaz@plexistor.com>, Jens Axboe <axboe@kernel.dk>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] brd: Request from fdisk 4k alignment
+Message-ID: <20140807130042.GB9401@x2.net.home>
+References: <53E21125.9080308@plexistor.com>
+ <53E21317.7080403@plexistor.com>
+ <1407362634.2869.2.camel@rzwisler-mobl1.amr.corp.intel.com>
+ <53E36E53.3090008@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407415749-19978-2-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53E36E53.3090008@gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Thu 07 Aug 2014 14:49:05 +0200 or thereabout, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thu, Aug 07, 2014 at 03:17:23PM +0300, Boaz Harrosh wrote:
+
+> > Is there an error case that this patch fixes?  I've had page alignment checks
+> > in my PRD direct_access code forever, and I don't know if they've ever
+> > tripped.  
+> > 
 > 
-> Convert a zero return value on error to a negative one, as returned
-> elsewhere in the function.
+> Yes! as I said above fix fdisk. You never tripped on it because partitions never
+> worked and you never tried them. With current code fdisk is very trigger happy
 
-Excellent find, added to this for-linus branch.
+ What do you mean with fdisk? which version?
 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> identifier ret; expression e1,e2;
-> @@
-> (
-> if (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+ The current fdisk (and cfdisk) follows I/O limits it has no problem
+ with 4K devices. All you need is to provide all necessary information 
+ by /sys (or ioctls).
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> to miss-align my partitions. Depending on size maybe not the very first one but the
+> consecutive ones easily.
 
-> ---
->  arch/avr32/boards/hammerhead/flash.c |   11 ++++++++---
->  1 file changed, 8 insertions(+), 3 deletions(-)
+ it would be nice to have usable bug report...
 
-<snipp diff>
+    Karel
 
 -- 
-mvh
-Hans-Christian Egtvedt
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
