@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554AbaHGMi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 08:38:58 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:15151 "EHLO SMTP.CITRIX.COM"
+	id S1757423AbaHGMqG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 08:46:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19927 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754471AbaHGMi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 08:38:57 -0400
-X-IronPort-AV: E=Sophos;i="5.01,818,1400025600"; 
-   d="scan'208";a="159639582"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: [PATCH net-next v2] xen-netback: Fix vif->disable handling
-Date: Thu, 7 Aug 2014 13:38:38 +0100
-Message-ID: <1407415118-16365-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.9.1
+	id S1756266AbaHGMqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 08:46:03 -0400
+Message-ID: <53E374CC.2070707@redhat.com>
+Date: Thu, 07 Aug 2014 14:45:00 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+To: Ching Huang <ching2048@areca.com.tw>,
+        Christoph Hellwig <hch@infradead.org>
+CC: jbottomley@parallels.com, dan.carpenter@oracle.com, agordeev@redhat.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1.3 4/18] arcmsr: limit max. number of SCSI command request
+References: <1406882389.10378.46.camel@Centos6.3-64>	 <20140801123552.GB30397@infradead.org> <1407124855.5217.23.camel@Centos6.3-64>
+In-Reply-To: <1407124855.5217.23.camel@Centos6.3-64>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the patch called "xen-netback: Turn off the carrier if the guest is not able
-to receive" new branches were introduced to this if statement, risking that a
-queue with non-zero id can reenable the disabled interface.
+On 08/04/2014 06:00 AM, Ching Huang wrote:
+> On Fri, 2014-08-01 at 05:35 -0700, Christoph Hellwig wrote:
+>>> @@ -2220,8 +2220,7 @@ static int arcmsr_queue_command_lck(stru
+>>>  		arcmsr_handle_virtual_command(acb, cmd);
+>>>  		return 0;
+>>>  	}
+>>> -	if (atomic_read(&acb->ccboutstandingcount) >=
+>>> -			ARCMSR_MAX_OUTSTANDING_CMD)
+>>> +	if (atomic_read(&acb->ccboutstandingcount) >= acb->maxOutstanding)
+>>>  		return SCSI_MLQUEUE_HOST_BUSY;
+>> The scsi midlayer already takes care of this check for you.
+>>
+> Hello Christoph,
+>
+> We have 4 types of Adapter that some adpaters have command queue less
+> than ARCMSR_MAX_OUTSTANDING_CMD.
+> So we have to check outstanding command number here.
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org
----
-v2: fix a code style error in this "if" as well
+I think you could set the correct value of can_queue in arcmsr_probe
+after you have read the firmware spec.
 
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index aa20933..4734472 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -2025,9 +2025,15 @@ int xenvif_kthread_guest_rx(void *data)
- 		 * context so we defer it here, if this thread is
- 		 * associated with queue 0.
- 		 */
--		if (unlikely(queue->vif->disabled && queue->id == 0))
-+		if (unlikely(queue->vif->disabled && queue->id == 0)) {
- 			xenvif_carrier_off(queue->vif);
--		else if (unlikely(test_and_clear_bit(QUEUE_STATUS_RX_PURGE_EVENT,
-+		} else if (unlikely(queue->vif->disabled)) {
-+			/* kthread_stop() would be called upon this thread soon,
-+			 * be a bit proactive
-+			 */
-+			skb_queue_purge(&queue->rx_queue);
-+			queue->rx_last_skb_slots = 0;
-+		} else if (unlikely(test_and_clear_bit(QUEUE_STATUS_RX_PURGE_EVENT,
- 						     &queue->status))) {
- 			xenvif_rx_purge_event(queue);
- 		} else if (!netif_carrier_ok(queue->vif->dev)) {
+>
+> Thanks for your comment.
+> Ching
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
