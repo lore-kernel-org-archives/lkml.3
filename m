@@ -1,148 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964AbaHGTIx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 15:08:53 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47057 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970AbaHGTIv (ORCPT
+	id S1755376AbaHGTI7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 15:08:59 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:61908 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755333AbaHGTI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 15:08:51 -0400
+	Thu, 7 Aug 2014 15:08:56 -0400
 From: Goffredo Baroncelli <kreijack@gmail.com>
 X-Google-Original-From: Goffredo Baroncelli <kreijack@inwind.it>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH][v4] therm_windtunnel does not work properly on PowerMac G4
-Date: Thu,  7 Aug 2014 19:08:33 +0000
-Message-Id: <1407438518-4395-1-git-send-email-kreijack@inwind.it>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jean Delvare <jdelvare@suse.de>,
+        Goffredo Baroncelli <kreijack@inwind.it>
+Subject: [PATCH 5/5] Export the temperatures via hwmon
+Date: Thu,  7 Aug 2014 19:08:38 +0000
+Message-Id: <1407438518-4395-6-git-send-email-kreijack@inwind.it>
 X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1407438518-4395-1-git-send-email-kreijack@inwind.it>
+References: <1407438518-4395-1-git-send-email-kreijack@inwind.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Export the temperature via the hwmon subsystem.
+See the list below for the sensors exported:
 
-Hi All,
+$ cd /sys/devices/temperature/hwmon/hwmon0
+$ echo "name: $(cat name)"; for i in temp*; do echo "$i: $(cat $i)"; done
+name: therm_windtunnel
+temp1_input: 59312
+temp1_label: CPU
+temp2_input: 36750
+temp2_label: Case
+temp3_input: 37750
+temp3_label: Case2
 
-On a PowerMac G4 I noticed that between the kernel v3.2 and v3.14 I lost
-the fan management.
+The Case2 temperature is the sensor temperature inside the adm1030.
 
-I found on internet other references to this kind of problem [2]
+Signed-off-by: Goffredo Baroncelli <kreijack@inwind.it>
+---
+ drivers/macintosh/therm_windtunnel.c | 94 ++++++++++++++++++++++++++++++++++--
+ 1 file changed, 90 insertions(+), 4 deletions(-)
 
-
-**How reproduce:
-- booting with the kernel 3.2, the fan is "quite" silent.
-The module therm_windtunnel is loaded and in the log there are  
-lines like:
-
-	[ 1342.614956] CPU-temp: 58.7 C, Case: 33.7 C,  Fan: 5 (tuned +0)
-	[ 1390.637793] CPU-temp: 58.6 C, Case: 33.6 C,  Fan: 5
-
-I had also access to the temperature via the sysfs files:
-/sys/devices/temperature/case_temperature  
-/sys/devices/temperature/cpu_temperature
-
-
-- booting with the kernel 3.14, the fan is very loud. The module 
-therm_windtunnel is not loaded. In the log there aren't any message
-related to the temperature. The sysfs entries don't exist.
-
-
-** Analysis 
-In these Apple machines the module i2c-powermac requires the
-i2c drivers provided by the module therm_windtunnel.
-
-Between the kernel v3.2 and v3.14 [1] some patches changed the 
-driver name requested by the i2c-powermac module, 
-so the therm_windtunnel modules is not instantiated anymore.
-
-
-** Proposed solution
-In the following emails I sent you 5 patches to solve this 
-problem (tested on my PowerMac G4). Only the first two are strictly
-related to the problem, the others three may be skipped.
-
-1) change the driver name
-	therm_ds1775 -> MAC,ds1775
-        therm_adm1030 -> MAC,adm1030
-so the i2c driver are instantiated by i2c-powermac
-
-2) remove the (unused) method do_attach from the i2c-driver
-
-3) add a parameter to the therm_windtunnel module 
-to control the kernel log message 
-
-4) export the fan speed via sysfs
-
-5) export the temperature via the hwmon subsistem
-
-The patch 1) solve the problem. The patch 2) is a small cleanup.
-The patch 3) allow a better control of the log in dmesg.
-The patch 4) is copyied from the Bryan Christianson's patch (see
-debian bug #741663)
-The patch 5) export the temperatures via hwmon, a more standard 
-interface. I also added the internal sensor of the adm1030, which 
-I called "Case2", because it measure the same temperature /+/- 1C) 
-of the "Case" sensor.
-
-I have to highlight that I tried to export also the fan speed,
-but I was unable to get it, without affecting the fan speed:
-when I set the bit 2 (TACH 1 En) of the register 0x1 
-(Configuration 2), it seemed that the speed every 4/5s dropped,
-then it raised quickly....
-I didn't perform other test to avoid damages.
-
-Could you be so kindly to apply these patches ?
-
-PS:
-I am not LKML subscriber, so please put me in CC in case of reply.
-
-BR
-G.Baroncelli
-
-Changelog:
-v1: 2014/07/30
-	- first issue
-v2: 2014/08/01
-	- protect with a mutex the check before starting the fan 
-	  daemon (to protect from parallel drivers instantation)
-	- reduce the number of module parameters to 1 as suggested by 
-          Jean Delvare
-	- export the fan speed via sysfs
-v3: 2014/08/06
-	- export the temperatures via hwmon
-	- export the internal temperature sensor of the adm1030
-	- little cleanup due to the suggestion of checkpatch.pl (
-	  and Jean Delvare)
-	- removed the "(tune +0)" in the log.
-v4: 2014/08/07
-	- accepted some small cleanup suggestions from Jean Delvare
-	- replaced SENSOR_DEVICE_ATTR with DEVICE_ATTR, and
-	  added ATTRIBUTE_GROUPS() use
-
-[1] I think that the guilty commit is 
-commit 81e5d8646ff6bf323dddcf172aa3cef84468fa12
-Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date:   Wed Apr 18 22:16:42 2012 +0000
-    i2c/powermac: Register i2c devices from device-tree
-
-    This causes i2c-powermac to register i2c devices exposed in the
-    device-tree, enabling new-style probing of devices.
-
-    Note that we prefix the IDs with "MAC," in order to prevent the
-    generic drivers from matching. This is done on purpose as we only
-    want drivers specifically tested/designed to operate on powermacs
-    to match.
-
-    This removes the special case we had for the AMS driver, and updates
-    the driver's match table instead.
-
-    Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-
-[2] There is the debian bug #741663 which highlight the same problem. In
-the bug discussion there is a patch like the my ones.
-
-See also
-https://lists.ozlabs.org/pipermail/linuxppc-dev/2012-July/099561.html
-
+diff --git a/drivers/macintosh/therm_windtunnel.c b/drivers/macintosh/therm_windtunnel.c
+index 30a6588..f41b0d3 100644
+--- a/drivers/macintosh/therm_windtunnel.c
++++ b/drivers/macintosh/therm_windtunnel.c
+@@ -37,6 +37,8 @@
+ #include <linux/init.h>
+ #include <linux/kthread.h>
+ #include <linux/of_platform.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
+ 
+ #include <asm/prom.h>
+ #include <asm/machdep.h>
+@@ -58,9 +60,12 @@ static struct {
+ 	struct i2c_client	*thermostat;
+ 	struct i2c_client	*fan;
+ 
++	struct device		*hwmon;
++
+ 	int			overheat_temp;		/* 100% fan at this temp */
+ 	int			overheat_hyst;
+ 	int			temp;
++	int			casetemp2;
+ 	int			casetemp;
+ 	int			fan_level;		/* active fan_table setting */
+ 
+@@ -120,6 +125,66 @@ static DEVICE_ATTR(case_temperature, S_IRUGO, show_case_temperature, NULL );
+ static DEVICE_ATTR(fan_level, S_IRUGO, show_fan_level, NULL);
+ 
+ 
++static ssize_t
++show_temp1(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d%03d\n", x.temp>>8,
++					(x.temp & 0xff) * 1000 / 256);
++}
++
++static ssize_t
++show_temp1_label(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "CPU\n");
++}
++
++static ssize_t
++show_temp2(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d%03d\n", x.casetemp>>8,
++					(x.casetemp & 0xff) * 1000 / 256);
++}
++
++static ssize_t
++show_temp2_label(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "Case\n");
++}
++
++
++static ssize_t
++show_temp3(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d%03d\n", x.casetemp2>>8,
++					(x.casetemp2 & 0xff) * 1000 / 256);
++}
++
++static ssize_t
++show_temp3_label(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "Case2\n");
++}
++
++static DEVICE_ATTR(temp1_input, S_IRUGO, show_temp1, NULL);
++static DEVICE_ATTR(temp1_label, S_IRUGO, show_temp1_label, NULL);
++static DEVICE_ATTR(temp2_input, S_IRUGO, show_temp2, NULL);
++static DEVICE_ATTR(temp2_label, S_IRUGO, show_temp2_label, NULL);
++static DEVICE_ATTR(temp3_input, S_IRUGO, show_temp3, NULL);
++static DEVICE_ATTR(temp3_label, S_IRUGO, show_temp3_label, NULL);
++
++static struct attribute  *therm_windtunnel_attrs[] = {
++	&dev_attr_temp1_input.attr,
++	&dev_attr_temp1_label.attr,
++	&dev_attr_temp2_input.attr,
++	&dev_attr_temp2_label.attr,
++	&dev_attr_temp3_input.attr,
++	&dev_attr_temp3_label.attr,
++
++	NULL,
++};
++
++ATTRIBUTE_GROUPS(therm_windtunnel);
++
+ /************************************************************************/
+ /*	controller thread						*/
+ /************************************************************************/
+@@ -172,16 +237,23 @@ tune_fan( int fan_setting )
+ static void
+ poll_temp( void )
+ {
+-	int temp, i, level, casetemp, tempchanged;
++	int temp, i, level, casetemp, tempchanged, casetemp2, reg06;
+ 
++	/* temperature read from ds1775 */
+ 	temp = read_reg( x.thermostat, 0, 2 );
+ 
+ 	/* this actually occurs when the computer is loaded */
+ 	if( temp < 0 )
+ 		return;
+ 
+-	casetemp = read_reg(x.fan, 0x0b, 1) << 8;
+-	casetemp |= (read_reg(x.fan, 0x06, 1) & 0x7) << 5;
++	/*
++	 * temperatures read from the adm1030
++	 * casetemp is the external temperature sensor
++	 * casetemp2 is the internal temperature sensor
++	 */
++	reg06 = read_reg(x.fan, 0x06, 1);
++	casetemp = (read_reg(x.fan, 0x0b, 1) << 8) | (reg06 & 0x07 << 5);
++	casetemp2 = (read_reg(x.fan, 0x0a, 1) << 8) | (reg06 & 0xc0);
+ 
+ 	level = -1;
+ 	for( i=0; (temp & 0xffff) > fan_table[i].temp ; i++ )
+@@ -200,12 +272,15 @@ poll_temp( void )
+ 	 * if verbose >=1 log each fan tuning
+ 	 * if verbose >=2 log each cpu temperature change
+ 	 */
+-	tempchanged = x.temp != temp || x.casetemp != casetemp;
++	tempchanged = x.temp != temp || x.casetemp != casetemp ||
++		x.casetemp2 != casetemp2;
+ 	if ((verbose > 1 && tempchanged) ||
+ 	    (verbose > 0 && level >= 0)) {
+ 		print_temp(KERN_INFO "CPU-temp: ", temp);
+ 		if (casetemp)
+ 			print_temp(", Case: ", casetemp);
++		if (casetemp2)
++			print_temp(", Case2: ", casetemp2);
+ 		if (level >= 0)
+ 			printk(", Fan: %d (tuned %+d)\n", 11-level,
+ 				x.fan_level-level);
+@@ -215,6 +290,7 @@ poll_temp( void )
+ 
+ 	x.temp = temp;
+ 	x.casetemp = casetemp;
++	x.casetemp2 = casetemp2;
+ 
+ 	if( level >= 0 )
+ 		tune_fan( level );
+@@ -274,11 +350,21 @@ setup_hardware( void )
+ 	if (err)
+ 		printk(KERN_WARNING
+ 			"Failed to create temperature attribute file(s).\n");
++
++	x.hwmon = hwmon_device_register_with_groups(&x.of_dev->dev,
++			"therm_windtunnel", NULL,
++			therm_windtunnel_groups);
++	if (!x.hwmon)
++		dev_warn(&x.of_dev->dev, "Failed to create the hwmon device\n");
+ }
+ 
+ static void
+ restore_regs( void )
+ {
++	if (x.hwmon)
++		hwmon_device_unregister(x.hwmon);
++	x.hwmon = NULL;
++
+ 	device_remove_file( &x.of_dev->dev, &dev_attr_cpu_temperature );
+ 	device_remove_file( &x.of_dev->dev, &dev_attr_case_temperature );
+ 	device_remove_file(&x.of_dev->dev, &dev_attr_fan_level);
 -- 
-gpg @keyserver.linux.it: Goffredo Baroncelli <kreijackATinwind.it> 
-Key fingerprint BBF5 1610 0B64 DAC6 5F7D 17B2 0EDA 9B37 8B82 E0B5 
+2.0.1
+
