@@ -1,154 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849AbaHGEFs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 00:05:48 -0400
-Received: from regular1.263xmail.com ([211.150.99.134]:38974 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100AbaHGEFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 00:05:45 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: caesar.wang@rock-chips.com
-X-FST-TO: linux-doc@vger.kernel.org
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: caesar.wang@rock-chips.com
-X-UNIQUE-TAG: <03b042b76e73a2fae62a3450b7aef120>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <53E2FB0E.40301@rock-chips.com>
-Date: Thu, 07 Aug 2014 12:05:34 +0800
-From: caesar <caesar.wang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754671AbaHGEGC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 00:06:02 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:35860 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970AbaHGEGA (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Thu, 7 Aug 2014 00:06:00 -0400
+Date: Thu, 7 Aug 2014 12:05:43 +0800
+From: joeyli <jlee@suse.com>
+To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Hibernate: check unsafe page should not in e820
+ reserved region
+Message-ID: <20140807040543.GE26210@linux-rxt1.site>
+References: <1407165801-24648-1-git-send-email-jlee@suse.com>
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        =?UTF-8?B?SGVpa28gU3TDvGJu?= =?UTF-8?B?ZXI=?= <heiko@sntech.de>,
-        Beniamino Galvani <b.galvani@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Kumar Gala <galak@codeaurora.org>, Eddie Cai <cf@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        Addy Ke <addy.ke@rock-chips.com>,
-        =?UTF-8?B?6ZmI5riQ6aOe?= <cjf@rock-chips.com>,
-        han jiang <hj@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-pwm <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v4 2/2] pwm: rockchip: Added to support for RK3288 SoC
-References: <1406197295-10604-1-git-send-email-caesar.wang@rock-chips.com>	<1406197295-10604-3-git-send-email-caesar.wang@rock-chips.com>	<CAD=FV=V4Kp-H3CcAKZPV1jBnYX+Ntwvxx6RB13TLxS5RRPHTWA@mail.gmail.com>	<53E2D605.2000704@rock-chips.com>	<CAD=FV=Xw8tz2keCUtO+qYUmnuv=+DPGZjY9-j_2XmAcP3Luzjg@mail.gmail.com>	<53E2F11A.1040109@rock-chips.com>	<CAD=FV=Wuj2_q+iW2EAj7w8TvgS=C2juSu+h_iG24NvPk4UqhKQ@mail.gmail.com>	<53E2F471.6020701@rock-chips.com> <CAD=FV=XhN__4hoGu=3hSXP69-T6T7KTxRiFY4Ac4bNJAYf+6jQ@mail.gmail.com>
-In-Reply-To: <CAD=FV=XhN__4hoGu=3hSXP69-T6T7KTxRiFY4Ac4bNJAYf+6jQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407165801-24648-1-git-send-email-jlee@suse.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug,
-在 2014年08月07日 11:46, Doug Anderson 写道:
-> Caesar,
->
-> On Wed, Aug 6, 2014 at 8:37 PM, caesar <caesar.wang@rock-chips.com> wrote:
->> Doug,
->>
->> 在 2014年08月07日 11:26, Doug Anderson 写道:
->>
->>> caesar,
->>>
->>> On Wed, Aug 6, 2014 at 8:23 PM, caesar <caesar.wang@rock-chips.com> wrote:
->>>> 在 2014年08月07日 10:16, Doug Anderson 写道:
->>>>
->>>>> Caesar,
->>>>>
->>>>> On Wed, Aug 6, 2014 at 6:27 PM, caesar <caesar.wang@rock-chips.com>
->>>>> wrote:
->>>>>> Doug,
->>>>>>
->>>>>> 在 2014年08月07日 06:46, Doug Anderson 写道:
->>>>>>
->>>>>>> Caesar,
->>>>>>>
->>>>>>> On Thu, Jul 24, 2014 at 3:21 AM, Caesar Wang
->>>>>>> <caesar.wang@rock-chips.com>
->>>>>>> wrote:
->>>>>>>> +static const struct rockchip_pwm_data pwm_data_v1 = {
->>>>>>>> +       .regs.duty = PWM_HRC,
->>>>>>>> +       .regs.period = PWM_LRC,
->>>>>>>> +       .regs.cntr = PWM_CNTR,
->>>>>>>> +       .regs.ctrl = PWM_CTRL,
->>>>>>>> +       .prescaler = PRESCALER,
->>>>>>>> +       .set_enable = rockchip_pwm_set_enable_v1,
->>>>>>>> +};
->>>>>>>> +
->>>>>>>> +static const struct rockchip_pwm_data pwm_data_v2 = {
->>>>>>>> +       .regs.duty = PWM_LRC,
->>>>>>>> +       .regs.period = PWM_HRC,
->>>>>>>> +       .regs.cntr = PWM_CNTR,
->>>>>>>> +       .regs.ctrl = PWM_CTRL,
->>>>>>>> +       .prescaler = PRESCALER-1,
->>>>>>>> +       .set_enable = rockchip_pwm_set_enable_v2,
->>>>>>>> +};
->>>>>>>> +
->>>>>>>> +static const struct rockchip_pwm_data pwm_data_vop = {
->>>>>>>> +       .regs.duty = PWM_LRC,
->>>>>>>> +       .regs.period = PWM_HRC,
->>>>>>>> +       .regs.cntr = PWM_CTRL,
->>>>>>>> +       .regs.ctrl = PWM_CNTR,
->>>>>>> Did you really mean to flip CTRL and CNTR here?  If so, that's super
->>>>>>> confusing and deserves a comment.  AKA, I think the above should not
->>>>>>> be:
->>>>>>>
->>>>>>>      +       .regs.cntr = PWM_CTRL,
->>>>>>>      +       .regs.ctrl = PWM_CNTR,
->>>>>>>
->>>>>>> ...but should be
->>>>>>>
->>>>>>>      +       .regs.cntr = PWM_CNTR,
->>>>>>>      +       .regs.ctrl = PWM_CTRL,
->>>>>>>
->>>>>>> If you didn't mean to flip CTRL and CNTR here, then just get rid of
->>>>>>> pwm_data_vop and refer to pwm_data_v2.  In fact, I'd suggest that you
->>>>>>> totally remove the "rockchip,vop-pwm" since there's nothing different
->>>>>>> between "rockchip,rk3288-pwm" and "rockchip,vop-pwm".
->>>>>>
->>>>>> Sorry,I think it's no problem. the  "rockchip,rk3288-pwm" and
->>>>>> "rockchip,vop-pwm" are seperate PWM controllers.
->>>>>> They are just different registers address between CNTR and CTRL .
->>>>> OK, I looked up in the TRM.  Right, the CNTR and CTRL are flipped on
->>>>> the vop.  So I think that the only change you need is to add:
->>>>>
->>>>> #define PWM_VOP_CTRL  0x00
->>>>> #define PWM_VOP_CNTR  0x0c
->>>>>
->>>>> ...then use these new #defines for the vop structure.
->>>>>
->>>>>
->>>>> As you have the code written right now it's very confusing.  The new
->>>>> #defines will fix this.
->>>>>
->>>> yeah, I think they can be used in the same context.
->>>>
->>>> I will fix it in patch v5 if it is really need.
->>> I think you should fix this, but if Thierry doesn't think so then it's
->>> really his decision.
->> I remember In patch v2 [1],Thierry suggests me to fix it so if I have no to
->> get wrong.
->>
->> [1]: https://lkml.org/lkml/2014/7/21/113
-> I think Thierry might not have realized that they were flipped...
->
-> -Doug
->
->
->
-Maybe you are right.
-I will sent patch v5 fix the about tomorrow if it has no other problems.
+Hi experts, 
+
+On Mon, Aug 04, 2014 at 11:23:21PM +0800, Lee, Chun-Yi wrote:
+> When the machine doesn't well handle the e820 persistent when hibernate
+> resuming, then it may causes page fault when writing image to snapshot
+> buffer:
+> 
+> [   17.929495] BUG: unable to handle kernel paging request at ffff880069d4f000
+> [   17.933469] IP: [<ffffffff810a1cf0>] load_image_lzo+0x810/0xe40
+> [   17.933469] PGD 2194067 PUD 77ffff067 PMD 2197067 PTE 0
+> [   17.933469] Oops: 0002 [#1] SMP
+> ...
+> 
+> The ffff880069d4f000 page is in e820 reserved region of resume boot
+> kernel:
+> 
+> [    0.000000] BIOS-e820: [mem 0x0000000069d4f000-0x0000000069e12fff] reserved
+> ...
+> [    0.000000] PM: Registered nosave memory: [mem 0x69d4f000-0x69e12fff]
+> 
+> So snapshot.c mark the pfn to forbidden pages map. But, this
+> page is also in the memory bitmap in snapshot image because it's an
+> original page used by image kernel, so it will also mark as an
+> unsafe(free) page in prepare_image().
+> 
+> That means the page in e820 when resuming mark as "forbidden" and
+> "free", it causes get_buffer() treat it as an allocated unsafe page.
+> Then snapshot_write_next() return this page to load_image, load_image
+> writing content to this address, but this page didn't really allocated
+> . So, we got page fault.
+> 
+> Although the root cause is from BIOS, I think aggressive check and
+> significant message in kernel will better then a page fault for
+> issue tracking, especially when serial console unavailable.
+> 
+> This patch adds code in mark_unsafe_pages() for check does free pages in
+> nosave region. If so, then it print message and return fault to stop whole
+> S4 resume process:
+> 
+> [    8.166004] PM: Image loading progress:   0%
+> [    8.658717] PM: 0x6796c000 in e820 nosave region: [mem 0x6796c000-0x6796cfff]
+> [    8.918737] PM: Read 2511940 kbytes in 1.04 seconds (2415.32 MB/s)
+> [    8.926633] PM: Error -14 resuming
+> [    8.933534] PM: Failed to load hibernation image, recovering.
+> 
+> v2:
+>  + removed empty check of nosave_regions list.
+>  + fixed the typo of "region" in code for error message and patch comment.
+> 
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Takashi Iwai <tiwai@suse.de>
+> Acked-by: Pavel Machek <pavel@ucw.cz>
+> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+
+I discussed with Vojtech Pavlik for this patch, he raised a situation is:
+
+Maybe e820 changed but image kernel original pages do not fall into new e820 region.
+Then the hibernate will recovery success, but later kernel drivers may got problem
+when accessing memory. 
+
+My idea is hashing the start/end pfn of each nosave region sequentially, put this
+nosave region digest to hibernate header then compare e820 digest in check_header()
+when hibernate resuming.
+
+I am developing patch, then we don't need check unsafe page should not in unsave(e820)
+regions.
 
 
+Thanks a lot!
+Joey Lee
+
+> ---
+>  kernel/power/snapshot.c | 21 ++++++++++++++++++++-
+>  1 file changed, 20 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+> index 4fc5c32..c4b8093 100644
+> --- a/kernel/power/snapshot.c
+> +++ b/kernel/power/snapshot.c
+> @@ -954,6 +954,25 @@ static void mark_nosave_pages(struct memory_bitmap *bm)
+>  	}
+>  }
+>  
+> +static bool is_nosave_page(unsigned long pfn)
+> +{
+> +	struct nosave_region *region;
+> +
+> +	list_for_each_entry(region, &nosave_regions, list) {
+> +		if (pfn >= region->start_pfn && pfn < region->end_pfn) {
+> +			pr_err("PM: %#010llx in e820 nosave region: "
+> +			       "[mem %#010llx-%#010llx]\n",
+> +			       (unsigned long long) pfn << PAGE_SHIFT,
+> +			       (unsigned long long) region->start_pfn << PAGE_SHIFT,
+> +			       ((unsigned long long) region->end_pfn << PAGE_SHIFT)
+> +					- 1);
+> +			return true;
+> +		}
+> +	}
+> +
+> +	return false;
+> +}
+> +
+>  /**
+>   *	create_basic_memory_bitmaps - create bitmaps needed for marking page
+>   *	frames that should not be saved and free page frames.  The pointers
+> @@ -2015,7 +2034,7 @@ static int mark_unsafe_pages(struct memory_bitmap *bm)
+>  	do {
+>  		pfn = memory_bm_next_pfn(bm);
+>  		if (likely(pfn != BM_END_OF_MAP)) {
+> -			if (likely(pfn_valid(pfn)))
+> +			if (likely(pfn_valid(pfn)) && !is_nosave_page(pfn))
+>  				swsusp_set_page_free(pfn_to_page(pfn));
+>  			else
+>  				return -EFAULT;
+> -- 
+> 1.8.4.5
+> 
