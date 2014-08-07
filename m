@@ -1,44 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757492AbaHGMgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 08:36:09 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:9437 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754597AbaHGMgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 08:36:05 -0400
-X-IronPort-AV: E=Sophos;i="5.01,818,1400025600"; 
-   d="scan'208";a="159638853"
-Message-ID: <53E372B2.6030509@citrix.com>
-Date: Thu, 7 Aug 2014 13:36:02 +0100
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S932143AbaHGMhm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 08:37:42 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:54030 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306AbaHGMhl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 08:37:41 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <wei.liu2@citrix.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: Re: [PATCH] xen-netback: Change disable flag from bool to a bit
-References: <1407348973-2433-1-git-send-email-zoltan.kiss@citrix.com>	<1407348973-2433-5-git-send-email-zoltan.kiss@citrix.com> <20140806.140722.489043833669403528.davem@davemloft.net>
-In-Reply-To: <20140806.140722.489043833669403528.davem@davemloft.net>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Date: Thu, 7 Aug 2014 14:37:38 +0200
+X-Google-Sender-Auth: wdDt3C9GUC4lf7wv0wkkxRazwNE
+Message-ID: <CAMuHMdXnGXGqy7B2-wujVxUPA9+3ZfYhcdKb6_jpDV4P7_KMxw@mail.gmail.com>
+Subject: Modular 6LoWPAN? (was: Re: 6lowpan: introduce new net/6lowpan directory)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Alexander Aring <alex.aring@gmail.com>
+Cc: linux-bluetooth@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/14 22:07, David Miller wrote:
-> From: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Date: Wed, 6 Aug 2014 19:16:13 +0100
->
->> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
->
-> Neither this nor your "Small fixes around internal queue purging"
-> patch apply cleanly to my current tree.  I have no idea what tree you
-> are sending these patches against.
->
-This was an accidental submit, as I wrote in my email a minute later. 
-Sorry about it.
+Hi Alexander,
 
-Zoli
+On Wed, Aug 6, 2014 at 6:46 PM, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=2c6bed7cfcd3f594ed9e4d6919fa2ebea2243d19
+> Commit:     2c6bed7cfcd3f594ed9e4d6919fa2ebea2243d19
+> Parent:     6c53823ae0e10e723131055e1e65dd6a328a228e
+> Refname:    refs/heads/master
+> Author:     Alexander Aring <alex.aring@gmail.com>
+> AuthorDate: Fri Jul 11 10:24:18 2014 +0200
+> Committer:  Marcel Holtmann <marcel@holtmann.org>
+> CommitDate: Sat Jul 12 01:53:30 2014 +0200
+>
+>     6lowpan: introduce new net/6lowpan directory
+>
+>     This patch moves generic code which is used by bluetooth and ieee802154
+>     6lowpan to a new net/6lowpan directory. This directory contains generic
+>     6LoWPAN code which is shared between bluetooth and ieee802154 MAC-Layer.
+>
+>     This is the IPHC - "IPv6 Header Compression" format at the moment. Which
+>     is described by RFC 6282 [0]. The BLTE 6LoWPAN draft describes that the
+>     IPHC is the same format like IEEE 802.15.4, see [1].
+>
+>     Futuremore we can put more code into this directory which is shared
+>     between BLTE and IEEE 802.15.4 6LoWPAN like RFC 6775 or the routing
+>     protocol RPL RFC 6550.
+>
+>     To avoid naming conflicts I renamed 6lowpan-y to ieee802154_6lowpan-y
+>     in net/ieee802154/Makefile.
+>
+>     [0] http://tools.ietf.org/html/rfc6282
+>     [1] http://tools.ietf.org/html/draft-ietf-6lowpan-btle-12#section-3.2
+>     [2] http://tools.ietf.org/html/rfc6775
+>     [3] http://tools.ietf.org/html/rfc6550
+>
+>     Signed-off-by: Alexander Aring <alex.aring@gmail.com>
+>     Acked-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+>     Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+
+> --- /dev/null
+> +++ b/net/6lowpan/Kconfig
+> @@ -0,0 +1,6 @@
+> +config 6LOWPAN
+> +       bool "6LoWPAN Support"
+
+Is there any specific reason 6LOWPAN is bool instead of tristate?
+IPV6 can be modular.
+
+> +       depends on IPV6
+> +       ---help---
+> +         This enables IPv6 over Low power Wireless Personal Area Network -
+> +         "6LoWPAN" which is supported by IEEE 802.15.4 or Bluetooth stacks.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
