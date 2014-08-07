@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757504AbaHGKPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 06:15:52 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:36330 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757456AbaHGKPu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 06:15:50 -0400
-Message-ID: <53E351D4.50103@kernel.org>
-Date: Thu, 07 Aug 2014 11:15:48 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1757515AbaHGKRw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 06:17:52 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:49259 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755772AbaHGKRv (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Thu, 7 Aug 2014 06:17:51 -0400
+Date: Thu, 7 Aug 2014 18:17:34 +0800
+From: joeyli <jlee@suse.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Takashi Iwai <tiwai@suse.de>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Hibernate: check unsafe page should not in e820
+ reserved region
+Message-ID: <20140807101734.GG26210@linux-rxt1.site>
+References: <1407165801-24648-1-git-send-email-jlee@suse.com>
+ <20140807040543.GE26210@linux-rxt1.site>
+ <20140807080025.GA24700@amd.pavel.ucw.cz>
+ <20140807085203.GF26210@linux-rxt1.site>
+ <20140807093957.GB28649@Nokia-N900>
 MIME-Version: 1.0
-To: Oussama Jabbari <oussama.jabbari@gmail.com>
-CC: gregkh@linuxfoundation.org, sachin.kamat@linaro.org, lars@metafoo.de,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: iio: adis16060: Fix coding style problem
-References: <1407344776-2838-1-git-send-email-oussama.jabbari@gmail.com>
-In-Reply-To: <1407344776-2838-1-git-send-email-oussama.jabbari@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140807093957.GB28649@Nokia-N900>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/14 18:06, Oussama Jabbari wrote:
-> This patch fixes a warning from checkpatch.pl script :
-> "WARNING: Missing a blank line after declarations"
+On Thu, Aug 07, 2014 at 11:39:57AM +0200, Pavel Machek wrote:
+> > > Actually, if you are doing such a check... it makes sense to check for
+> > > _all_ the regions, nosave or not. If e820 map changed at all, it is
+> > > not safe to resume.
+> > > 									Pavel
+> > 
+> > Currently nosave region only called register by e820 code, so hibernate's nosave region included e820
+> > reserved, ACPI data and ACPI NVS region.
+> > 
+> > I thought hashing the start/end pfn of above regions is enough.
 > 
-> Signed-off-by: Oussama Jabbari <oussama.jabbari@gmail.com>
-Whilst I find it hard to care about this particular issue,
-I'm accepting this mainly to avoid getting the same thing
-sometime in the future!
+> If ammount of memory changed, for example, it is unsafe to
+> resume. So if you are doing the check, anyway, please hash
+> whole e820 table.
+> 						Pavel
 
-Anyhow, a nicely formatted patch.  The only change I would
-have suggested would be in the title which might as be more
-specific.
+There already have num_physpages in header for check the total physical page number.
 
-[PATCH] staging:iio:adis16060 Add missing blank line after declaration.
 
-Applied to the togreg branch of iio.git - initially pushed out as
-testing for the autobuilders to play with it.
-
-J
-> ---
-> The reason of this patch is for completing one task
-> of the Eudyptula Challenge.
-> 
->  drivers/staging/iio/gyro/adis16060_core.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/staging/iio/gyro/adis16060_core.c b/drivers/staging/iio/gyro/adis16060_core.c
-> index d5d395c..4c5869d 100644
-> --- a/drivers/staging/iio/gyro/adis16060_core.c
-> +++ b/drivers/staging/iio/gyro/adis16060_core.c
-> @@ -180,6 +180,7 @@ static int adis16060_w_probe(struct spi_device *spi)
->  	int ret;
->  	struct iio_dev *indio_dev = adis16060_iio_dev;
->  	struct adis16060_state *st;
-> +
->  	if (!indio_dev) {
->  		ret =  -ENODEV;
->  		goto error_ret;
-> 
+Regards
+Joey Lee
