@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204AbaHGLT0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 07:19:26 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:49811 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416AbaHGLTZ (ORCPT
+	id S1757337AbaHGLT6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 07:19:58 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51345 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754519AbaHGLT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 07:19:25 -0400
-Date: Thu, 7 Aug 2014 13:19:19 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Chew Chiau Ee <chiau.ee.chew@intel.com>, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pwm: lpss: remove dependency on clk framework
-Message-ID: <20140807111917.GB31751@ulmo.nvidia.com>
-References: <1399624521-26175-1-git-send-email-heikki.krogerus@linux.intel.com>
+	Thu, 7 Aug 2014 07:19:56 -0400
+Date: Thu, 7 Aug 2014 12:19:41 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Nicolin Chen <nicoleotsuka@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        alsa-devel@alsa-project.org, timur@tabi.org, Li.Xiubo@freescale.com,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
+        pawel.moll@arm.com, robh+dt@kernel.org, b42378@freescale.com,
+        b02247@freescale.com
+Message-ID: <20140807111941.GH17528@sirena.org.uk>
+References: <1407223925-29678-1-git-send-email-nicoleotsuka@gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="E39vaYmALEf/7YXx"
+	protocol="application/pgp-signature"; boundary="Va8DSfvMR3bM4AuH"
 Content-Disposition: inline
-In-Reply-To: <1399624521-26175-1-git-send-email-heikki.krogerus@linux.intel.com>
+In-Reply-To: <1407223925-29678-1-git-send-email-nicoleotsuka@gmail.com>
+X-Cookie: 98% lean.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: fsl_sai: Add asynchronous mode support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---E39vaYmALEf/7YXx
+--Va8DSfvMR3bM4AuH
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, May 09, 2014 at 11:35:21AM +0300, Heikki Krogerus wrote:
-> Unlike other Intel LPSS devices, the PWM does not have the
-> clock dividers or the gate. All we get from the clock is the
-> rate. Since PCI case uses the driver data to get the rate,
-> we can drop the clk and use the same data also in case of
-> ACPI. The frequency is the same.
+On Tue, Aug 05, 2014 at 03:32:05PM +0800, Nicolin Chen wrote:
+> From: Nicolin Chen <Guangyu.Chen@freescale.com>
 >=20
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> ---
->  drivers/pwm/pwm-lpss.c | 32 ++++++++++----------------------
->  1 file changed, 10 insertions(+), 22 deletions(-)
+> SAI supports these operation modes:
+> 1) asynchronous mode
+>    Both Tx and Rx are set to be asynchronous.
 
-Sorry for the long delay. Applied now.
+Applied, thanks.
 
-Thierry
-
---E39vaYmALEf/7YXx
-Content-Type: application/pgp-signature
+--Va8DSfvMR3bM4AuH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJT42C1AAoJEN0jrNd/PrOhicUP/1VEBEGxfkpfuJgt4a9XCyyI
-oWZ1bdZuRsk59BosAE8jAhYis8d2ZXXIvSC3tdJ0heHHPukby1ycnrno87XCliAM
-Ja18w5Hp3qyBFlMU7oGaFJ69votxsaG4WL1AkUmpRNUaRivVJn4tw5pPyPBCcYsf
-3xQowF6QOkO6Vj7IXOX7IlQvxALUk4Paagj1OeRTTHp62YVE7+Cbd/ojR95wO/n7
-RtT5SV0OycxKX837j/5/qA96rWYsdV6sPXadkS3uIfrbm93+A3D/vXYBtbBzKm9q
-668JDCCzaA49C/mpIwR8pNQ236dV3KLwLm4FVnvNlFLhpj5CHYPd6bXgzUtbPcqS
-GHdRKIkJMWphDrf7R5lObL24oVVpgbxppiXKuxnPqCNuu/ZeR+xo/CM1Fi/86w8a
-GG/FNKh6S+Pogsje6KTjnxQFivd1BN+nTvIGwJqMIfJoqneebKzrTgGHuaHEbxmT
-eaJ0OkOr+voP7xxEyx/8ZQWEzifAZoRW9e3Ma+TyUO1OJACoYaG61kw1sVM63Jlc
-UONv9aumHL+sHDPstfG70Iq/8hvQTx7v+Ka+YVfnRZgdzA9k+65Xr7MsFCz82eHd
-ZbsbnvHDnEMQwdzYJvFiqXDLOzZx0a92g/78PN9KYCqgB15k3y3q9d/DkVjXSxyd
-Pup6DU2sy+AokzKzE5AH
-=LI7F
+iQIcBAEBAgAGBQJT42DJAAoJELSic+t+oim9Y6EQAIWj1A+/REEmCFveYNytG/KU
+ZTNjv3KXMmX8j6yRM4XaWoM0ZK6C2Mn0Lz611Xl4WVA1hlFmqzBGUQXuOqBig0rJ
+hxGRYS2DmcB3Aq2IugEtyHRkdhBc+wtgVToMRHKDiaVNDBgXU8zVmp0/n9ZH3wz9
+svhR4vwd1JVhl4kkn13rWTEdQdsMAbQT+kl4gQjIDRNmm8jB8XF3q6ADyQ2SqNW9
+VcFnCZ0CIkReuHURw6vxNSHhLKdZD6CcMUr4f2ZujiBBcSStxI9s9jl8Cnf09XwI
+h4w9SLc5SfiV+gtHCeni+j6mv7YljgnEMXibUe3/P+dhIJkzUR9F8umX6FtcHUTa
+qsTjfsLGNdOFmu9aXfiBEWtEJ3E4HEl745XsixwDs4nzMtjyz7E4MCzmHfW4/gXv
+Qd2vrRo69e9oAVO9hCdOv+JMFZbX8sZPKdn8VZelyK1BImf+NTgjDrWDlBVIncjd
+6FlTkGZVnQs2JDIK72Ic+76NfFYuubtdietksjyh3vwbLBUgKqgk/bXf/LzuIzkC
+eWU5ZhDwAgem6WTdD41cul3uFM1KAfI1ylqIsxHjQC2pfvhnD8oMQ9ZKPkB2YGrz
+06IOeERo3UlLzZPgDxK0mRpA324IwhjRIMybkrh6AZR41lIZ081UeCdYxcdS/Ek7
+38BqAyxYaaQkAFV5eXTU
+=/x+C
 -----END PGP SIGNATURE-----
 
---E39vaYmALEf/7YXx--
+--Va8DSfvMR3bM4AuH--
