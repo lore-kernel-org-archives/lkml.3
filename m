@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933043AbaHGQsL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 12:48:11 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:33983 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932330AbaHGQsI (ORCPT
+	id S933062AbaHGQs1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 12:48:27 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:45937 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932330AbaHGQsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 12:48:08 -0400
-Message-ID: <1407430083.11943.37.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: RE: [RFC] net: Replace del_timer() with del_timer_sync()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Das, Deepak" <Deepak_Das@mentor.com>
-Cc: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 07 Aug 2014 18:48:03 +0200
-In-Reply-To: <38E11AEFEB035045A1BA4C1177FBFC424A89BEBE@EU-MBX-03.mgc.mentorg.com>
-References: <53E31A47.9000407@mentor.com>
-	,<1407394542.11943.21.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <38E11AEFEB035045A1BA4C1177FBFC424A89BEBE@EU-MBX-03.mgc.mentorg.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 7 Aug 2014 12:48:25 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-46-53e3add79ecf
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH] mfd: sec-irq: fix support for devices without irq specified
+Date: Thu, 07 Aug 2014 18:48:21 +0200
+Message-id: <1471646.xbSCysvkpT@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <22704524.WE4thfvSda@amdc1032>
+References: <22704524.WE4thfvSda@amdc1032>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t9jQd3rax8HG0w6L23x+oWhxdmmN+wW
+	978eZbS4vGsOm8WM8/uYLE53s1pcXPGFyYHd4861PWwe804GevRtWcXo8XmTXABLFJdNSmpO
+	Zllqkb5dAlfGlTM3WQu2cFa8+XmHpYHxI3sXIyeHhICJxPEd3cwQtpjEhXvr2boYuTiEBKYz
+	SrTfP8YC4bQwSbTNmADWwSZgJTGxfRVjFyMHh4iAhsTenhqQGmaBl4wS3bP2MoHUCAsESPxZ
+	ug/MZhFQlbi57DAriM0roClx+sAEFhBbVMBTYsf2lWwgNqeAtsSFif/A4kICWhLda96wQdQL
+	SvyYfA8sziwgL7Fv/1RWCFtLYv3O40wTGAVmISmbhaRsFpKyBYzMqxhFUwuSC4qT0nON9IoT
+	c4tL89L1kvNzNzGCw/qZ9A7GVQ0WhxgFOBiVeHgFuh8HC7EmlhVX5h5ilOBgVhLh1QUJ8aYk
+	VlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYNRZf0D4OnfWuUUO
+	xXHHHu18X71CYX79jM/yfoFadZOyfp7qdzqW9WKnwTXXDJEiLoGYVa2Gi7KbV73OlrrwJqx2
+	yyapooSg5Nlmmo5/bSK0rZYKPMjeluP9JV78VaT/S8kmIYmCvbd142qel57Lzre/9s5MdLL4
+	zB/rU9Mii3KvpU2Ks7Kcp8RSnJFoqMVcVJwIAHwrf+xnAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-07 at 15:15 +0000, Das, Deepak wrote:
 
-Please do not top post on netdev, thanks.
+[ added missing linux-samsung-soc ML, sorry for the noise ]
 
-> I apologies for not explaining the scenario previously.
+On Thursday, August 07, 2014 06:42:28 PM Bartlomiej Zolnierkiewicz wrote:
+> Add missing check for the case of device without irq specified
+> in sec_irq_exit() (please note that sec_irq_init() already
+> correctly handles such devices).
 > 
-> sk_stop_timer() is used to stop the tcp timers with expiry callback
-> tcp_write_timer(), tcp_delack_timer(), tcp_keepalive_timer(), ...
-> del_timer() is used to stop the the timer in sk_stop_timer(), which
-> might return a non-zero result even if one of these timer handler functions
-> (tcp_write_timer(), tcp_delack_timer(), tcp_keepalive_timer(), ...)
-> is already executing on another processor.
+> This is needed for Insignal's Exynos4412 based Origen board.
 > 
-> Following is the possible scenario :-
-> on CPU #0: sk_stop_timer() decrements the sk->sk_refcnt if del_timer(timer)
-> returns non-zero.
+> Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Sangbeom Kim <sbkim73@samsung.com>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+> patch is against next-20140804 branch of linux-next kernel
 > 
-> on CPU #1: If a timer handler callback runs then it also calls sock_put(sk)
-> which decrements sk->sk_refcnt and if the sk_refcnt becomes zero it frees the
-> structure sock pointed to by sk.
+>  drivers/mfd/sec-irq.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> if the sk->sk_refcnt decrements twice then that will cause a mismatch in the
-> number of "puts" and "holds" resulting in a malfunction of the sk->sk_refcnt mechanism.
-
-Not at all.
-
-There is no mismatch, sk_refcnt is decremented once in all cases.
-
-I believe you misunderstood del_timer_sync() / del_timer() behaviors and
-differences.
-
-In the case you describe, del_timer() should return 0, and timer
-function will call sock_put() to decrement socket refcount.
-
-The problem' of del_timer() is the following :
-
-When/If it returns 0, another cpu _might_ be running the timer, we have
-no guarantee timer function is completed.
-
-For sockets, we do not care, because the active timer owns a refcount on
-the socket. When timer is finally completed, refcount will be released.
-
-> 
-> The solution is to use del_timer_sync() instead of del_timer()
-> because del_timer_sync() will wait for timer handler functions to
-> complete execution.
-
-Except that some sk_stop_timer() callers hold the socket lock, so the
-timer will deadlock trying to acquire it.
-
-> 
-> yes, we are facing some memory corruption issues due to access of already released
-> struct sock in our environment. Our memory corruption issue looks like memory locations
-> being decremented which could be consistent with a rogue decrement of a reference counter.
-
-Is 'Your environment' some out of tree module or is it part of standard
-linux kernel ?
-
-> 
-> similar suggestion is also made by Dean Jenkins in rfcomm_dlc_clear_timer() and accepted by Marcel.
-> http://www.spinics.net/lists/linux-bluetooth/msg51132.html
-
-Fix might be good in this case, but the changelog is completely bogus.
-
-
+> diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
+> index f9a5786..b65a7f0 100644
+> --- a/drivers/mfd/sec-irq.c
+> +++ b/drivers/mfd/sec-irq.c
+> @@ -478,5 +478,6 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
+>  
+>  void sec_irq_exit(struct sec_pmic_dev *sec_pmic)
+>  {
+> -	regmap_del_irq_chip(sec_pmic->irq, sec_pmic->irq_data);
+> +	if (sec_pmic->irq)
+> +		regmap_del_irq_chip(sec_pmic->irq, sec_pmic->irq_data);
+>  }
 
