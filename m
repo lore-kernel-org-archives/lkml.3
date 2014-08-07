@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896AbaHGQnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 12:43:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39751 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932500AbaHGQnU convert rfc822-to-8bit (ORCPT
+	id S932973AbaHGQoW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 12:44:22 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:41089 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932913AbaHGQoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 12:43:20 -0400
-Date: Thu, 7 Aug 2014 18:43:16 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: kreijack@inwind.it
-Cc: Goffredo Baroncelli <kreijack@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] Add the "verbose" module option.
-Message-ID: <20140807184316.6682aa98@endymion.delvare>
-In-Reply-To: <53E3A963.4080807@inwind.it>
-References: <1407359103-6012-1-git-send-email-kreijack@inwind.it>
-	<1407359103-6012-4-git-send-email-kreijack@inwind.it>
-	<1407401555.4314.14.camel@chaos.site>
-	<53E3A963.4080807@inwind.it>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 7 Aug 2014 12:44:21 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-6e-53e3ace473d4
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mfd: sec-core: add missing sec_irq_init() return value checking
+Date: Thu, 07 Aug 2014 18:44:18 +0200
+Message-id: <2486284.NeLpWWu75g@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jQd0nax4HG/T/lrJ4/cLQ4mzTG3aL
+	+1+PMlpc3jWHzeJ0N6vFxRVfmBzYPO5c28PmMe9koEffllWMHp83yQWwRHHZpKTmZJalFunb
+	JXBlzH52krWgh6PizJXSBsaXbF2MnBwSAiYST9a3MUHYYhIX7q0HiwsJTGeUuNpn0cXIBWS3
+	MEn8+rsGLMEmYCUxsX0VYxcjB4eIgJfErTtBIDXMAosYJc4vegY2SFggQOLoo6uMIDaLgKrE
+	y3MbwGxeAU2JH4eWsoDYogKeEju2r2SDiAtK/Jh8DyzOLCAvsW//VFYIW0ti/c7jTBMY+WYh
+	KZuFpGwWkrIFjMyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYID85n0DsZVDRaHGAU4GJV4
+	eAW6HwcLsSaWFVfmHmKU4GBWEuHVBQnxpiRWVqUW5ccXleakFh9ilOZgURLnPdhqHSgkkJ5Y
+	kpqdmlqQWgSTZeLglGpgXNv4iL9BmsfKnsvnTsxcxl95i+/IbmD/9NB794YOpxLnuOTL5VmT
+	ykITPvdYfjjDvdHsyyrVzAoTPvcu996twaE3D6pLr4hfz9KpoNr72Lba8VfjnsKmJf8e6206
+	9VRWSGZrz6SNsr8cF1b8WnLPe+KqFu/NPZs/ZNVtD9zQ17J0z51nZpNLlViKMxINtZiLihMB
+	gaLzZUgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 07 Aug 2014 18:29:23 +0200, Goffredo Baroncelli wrote:
-> On 08/07/2014 10:52 AM, Jean Delvare wrote:
-> > Le Wednesday 06 August 2014 à 21:05 +0000, Goffredo Baroncelli a écrit :
-> >> +	 */
-> >> +	tempchanged = x.temp != temp || x.casetemp != casetemp;
-> >> +	if ((verbose > 1 && tempchanged) ||
-> >> +	    (verbose > 0 && level >= 0)) {
-> >> +		printk(KERN_INFO);
-> >> +		print_temp("CPU-temp: ", temp);
-> > 
-> > This can be written more efficiently as a single statement:
-> > 
-> > 		print_temp(KERN_INFO "CPU-temp: ", temp);
-> 
-> I suppose that KERN_* has to be in the beginning of the line. 
+sec_irq_init() can fail if it encounters unknown device type or
+on regmap_add_irq_chip() error.  Add missing sec_irq_init() return
+value checking to sec_pmic_probe().
 
-Correct.
+Tested on Insignal's Exynos4412 based Origen board.
 
-> Because a single line is composed by several prink,
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+patch is against next-20140804 branch of linux-next kernel
 
-In this case, it is, but FYI, this is generally discouraged. The reason
-is that another piece of the kernel may be calling printk at the same
-time, and then that other message may split your own message into
-pieces. If you run checkpatch.pl on this file, you'll see it complains
-about this.
+ drivers/mfd/sec-core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-> KERN_INFO has 
-> to be only in the first printk. To me it seems more polite to have
-> one printk for the level, and the others (there are more than one) 
-> for the message parts.
-
-The fewer printks is better. Ideally there would be only one to avoid
-the risk of line splitting altogether. I understand this isn't easy to
-achieve in this case, but I still believe that you shouldn't have more
-calls to printk than necessary, to reduce the risk.
-
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index dba7e2b..f498867 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -353,7 +353,9 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 	if (pdata && pdata->cfg_pmic_irq)
+ 		pdata->cfg_pmic_irq();
+ 
+-	sec_irq_init(sec_pmic);
++	ret = sec_irq_init(sec_pmic);
++	if (ret)
++		return ret;
+ 
+ 	pm_runtime_set_active(sec_pmic->dev);
+ 
 -- 
-Jean Delvare
-SUSE L3 Support
+1.8.2.3
+
+
