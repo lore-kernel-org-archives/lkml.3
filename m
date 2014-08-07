@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110AbaHGS10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 14:27:26 -0400
-Received: from smtprelay4.synopsys.com ([198.182.44.111]:40036 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaHGS1Y convert rfc822-to-8bit (ORCPT
+	id S1755031AbaHGSbC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 14:31:02 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:36386 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbaHGSbA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 14:27:24 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Kever Yang <kever.yang@rock-chips.com>,
-        "heiko@sntech.de" <heiko@sntech.de>
-CC: "dianders@chromium.org" <dianders@chromium.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "sonnyrao@chromium.org" <sonnyrao@chromium.org>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        "cf@rock-chips.com" <cf@rock-chips.com>,
-        "xjq@rock-chips.com" <xjq@rock-chips.com>,
-        "wulf@rock-chips.com" <wulf@rock-chips.com>,
-        "lyz@rock-chips.com" <lyz@rock-chips.com>,
-        "hj@rock-chips.com" <hj@rock-chips.com>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+	Thu, 7 Aug 2014 14:31:00 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] 6lowpan: Allow 6LoWPAN to be modular
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <CAMuHMdU214_aDNQBH=Nk6DZwsdCB3FQY1DY0ZQ8WQGQ86dGFUQ@mail.gmail.com>
+Date: Thu, 7 Aug 2014 11:31:11 -0700
+Cc: Alexander Aring <alex.aring@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-zigbee-devel@lists.sourceforge.net,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        linux-wpan@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v4 2/4] usb: dwc2: add compatible data for rockchip soc
-Thread-Topic: [PATCH v4 2/4] usb: dwc2: add compatible data for rockchip soc
-Thread-Index: AQHPsiLtn9dZ0AQL7EiI6xLR7fBZd5vFdFmA
-Date: Thu, 7 Aug 2014 18:26:02 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844C4DF6@US01WEMBX2.internal.synopsys.com>
-References: <1407404095-3265-1-git-send-email-kever.yang@rock-chips.com>
- <1407404095-3265-3-git-send-email-kever.yang@rock-chips.com>
-In-Reply-To: <1407404095-3265-3-git-send-email-kever.yang@rock-chips.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.240]
-Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Message-Id: <144B79BA-C835-4EF4-8FF5-533D535A5143@holtmann.org>
+References: <1407424003-15073-1-git-send-email-geert@linux-m68k.org> <ABE15994-F47B-4E4B-A6FC-79C6BCAC9FF3@holtmann.org> <CAMuHMdU214_aDNQBH=Nk6DZwsdCB3FQY1DY0ZQ8WQGQ86dGFUQ@mail.gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Kever Yang [mailto:kever.yang@gmail.com] On Behalf Of Kever Yang
-> Sent: Thursday, August 07, 2014 2:35 AM
-> 
-> This patch add compatible data for dwc2 controller found on
-> rk3066, rk3188 and rk3288 processors from rockchip.
-> 
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> Acked-by: Paul Zimmerman <paulz@synopsys.com>
-> ---
-> 
-> Changes in v4:
-> - max_transfer_size change to 65536, this should be enough
->   for most transfer, the hardware auto-detect will set this
->   to 0x7ffff which may make dma_alloc_coherent fail when
->   non-dword aligned buf from driver like usbnet happen.
+Hi Geert,
 
-Hi Kever,
+>>> Change config symbol 6LOWPAN from type bool to type tristate, so
+>>> 6LoWPAN can be built modular, just like IPV6
+>>> 
+>>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>>> ---
+>>> net/6lowpan/Kconfig | 2 +-
+>>> 1 file changed, 1 insertion(+), 1 deletion(-)
+>>> 
+>>> diff --git a/net/6lowpan/Kconfig b/net/6lowpan/Kconfig
+>>> index 028a5c6d1f61..e4a02ef55102 100644
+>>> --- a/net/6lowpan/Kconfig
+>>> +++ b/net/6lowpan/Kconfig
+>>> @@ -1,5 +1,5 @@
+>>> config 6LOWPAN
+>>> -     bool "6LoWPAN Support"
+>>> +     tristate "6LoWPAN Support"
+>> 
+>> is this a regression from the previous CONFIG_6LOWPAN separation that we introduced? If it is, then it might be easiest if Dave just takes it into his net tree. Otherwise I take it through bluetooth-next.
+> 
+> I hadn't thought about that... Checking...
+> 
+> Yes, I believe this is a regression.
+> 
+> In v3.16, my allmodconfig build had:
+> 
+> CONFIG_IEEE802154_6LOWPAN=m
+> CONFIG_6LOWPAN_IPHC=m
+> CONFIG_BT_6LOWPAN=y
+> 
+> Without my patch it has:
+> 
+> CONFIG_6LOWPAN=y
+> CONFIG_IEEE802154_6LOWPAN=m
+> CONFIG_BT_6LOWPAN=m
+> 
+> and iphc is what's in net/6lowpan/built-in.o now.
 
-Did you test this change thoroughly? I have vague memories of any
-value above 65535 causing problems, at least on my hardware. And I
-see it is set to 65535 in both pci.c and platform.c. I could be
-wrong, but I thought I should mention it.
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
 
--- 
-Paul
+Dave, I am fine if you just queue this up for 3.17-rc1.
+
+Regards
+
+Marcel
 
