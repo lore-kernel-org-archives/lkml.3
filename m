@@ -1,273 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461AbaHGMgI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 08:36:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24010 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756144AbaHGMgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 08:36:05 -0400
-Message-ID: <53E37293.50505@redhat.com>
-Date: Thu, 07 Aug 2014 14:35:31 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1757513AbaHGMgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 08:36:12 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:56339 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756906AbaHGMgG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 08:36:06 -0400
 MIME-Version: 1.0
-To: Ching Huang <ching2048@areca.com.tw>, hch@infradead.org,
-        jbottomley@parallels.com, dan.carpenter@oracle.com,
-        agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1.3 1/18] arcmsr: Revised interrupt service routine relate
- function to fix bug
-References: <1406881692.10378.34.camel@Centos6.3-64>
-In-Reply-To: <1406881692.10378.34.camel@Centos6.3-64>
+In-Reply-To: <CAMuHMdW2kb=EF-Nmem_gyUu=p7hFOTe+Q2ekHh41SaHHiWDGeg@mail.gmail.com>
+References: <CAMuHMdW2kb=EF-Nmem_gyUu=p7hFOTe+Q2ekHh41SaHHiWDGeg@mail.gmail.com>
+Date: Thu, 7 Aug 2014 21:36:05 +0900
+Message-ID: <CAAmzW4MX2birtCOUxjDdQ7c3Y+RyVkBt383HEQ=XFgnhhOsQPw@mail.gmail.com>
+Subject: Re: BUG: enable_cpucache failed for radix_tree_node, error 12 (was:
+ Re: [PATCH v3 9/9] slab: remove BAD_ALIEN_MAGIC)
+From: Joonsoo Kim <js1304@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2014 10:28 AM, Ching Huang wrote:
-> This patch rewrite the interrupt service routine relate function to fix command timeout when controller has very 
-> heavy loading.
+2014-08-07 20:52 GMT+09:00 Geert Uytterhoeven <geert@linux-m68k.org>:
+> Hi Joonsoo,
 >
-> Signed-off-by: Ching<ching2048@areca.com.tw>
-> ---
+> On Tue, Jul 1, 2014 at 10:27 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+>> BAD_ALIEN_MAGIC value isn't used anymore. So remove it.
+>>
+>> Acked-by: Christoph Lameter <cl@linux.com>
+>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> ---
+>>  mm/slab.c |    4 +---
+>>  1 file changed, 1 insertion(+), 3 deletions(-)
+>>
+>> diff --git a/mm/slab.c b/mm/slab.c
+>> index 7820a45..60c9e11 100644
+>> --- a/mm/slab.c
+>> +++ b/mm/slab.c
+>> @@ -470,8 +470,6 @@ static struct kmem_cache kmem_cache_boot = {
+>>         .name = "kmem_cache",
+>>  };
+>>
+>> -#define BAD_ALIEN_MAGIC 0x01020304ul
+>> -
+>>  static DEFINE_PER_CPU(struct delayed_work, slab_reap_work);
+>>
+>>  static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
+>> @@ -838,7 +836,7 @@ static int transfer_objects(struct array_cache *to,
+>>  static inline struct alien_cache **alloc_alien_cache(int node,
+>>                                                 int limit, gfp_t gfp)
+>>  {
+>> -       return (struct alien_cache **)BAD_ALIEN_MAGIC;
+>> +       return NULL;
+>>  }
 >
-> diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
-> --- a/drivers/scsi/arcmsr/arcmsr.h	2014-07-30 10:33:02.000000000 +0800
-> +++ b/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:02:46.000000000 +0800
-> @@ -51,7 +51,7 @@ struct device_attribute;
->  #else
->  	#define ARCMSR_MAX_FREECCB_NUM	320
->  #endif
-> -#define ARCMSR_DRIVER_VERSION		     "Driver Version 1.20.00.15 2010/08/05"
-> +#define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140428"
->  #define ARCMSR_SCSI_INITIATOR_ID						255
->  #define ARCMSR_MAX_XFER_SECTORS							512
->  #define ARCMSR_MAX_XFER_SECTORS_B						4096
-> diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
-> --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-07-30 10:32:28.000000000 +0800
-> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-01 11:02:44.000000000 +0800
-> @@ -1441,14 +1441,15 @@ static void arcmsr_hba_doorbell_isr(stru
->  	uint32_t outbound_doorbell;
->  	struct MessageUnit_A __iomem *reg = acb->pmuA;
->  	outbound_doorbell = readl(&reg->outbound_doorbell);
-> -	writel(outbound_doorbell, &reg->outbound_doorbell);
-> -	if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK) {
-> -		arcmsr_iop2drv_data_wrote_handle(acb);
-> -	}
-> -
-> -	if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_READ_OK) {
-> -		arcmsr_iop2drv_data_read_handle(acb);
-> -	}
-> +	do {
-> +		writel(outbound_doorbell, &reg->outbound_doorbell);
-> +		if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK)
-> +			arcmsr_iop2drv_data_wrote_handle(acb);
-> +		if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_READ_OK)
-> +			arcmsr_iop2drv_data_read_handle(acb);
-> +		outbound_doorbell = readl(&reg->outbound_doorbell);
-> +	} while (outbound_doorbell & (ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK
-> +		| ARCMSR_OUTBOUND_IOP331_DATA_READ_OK));
->  }
->  static void arcmsr_hbc_doorbell_isr(struct AdapterControlBlock *pACB)
->  {
-> @@ -1462,17 +1463,19 @@ static void arcmsr_hbc_doorbell_isr(stru
->  	*******************************************************************
->  	*/
->  	outbound_doorbell = readl(&reg->outbound_doorbell);
-> -	writel(outbound_doorbell, &reg->outbound_doorbell_clear);/*clear interrupt*/
-> -	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK) {
-> -		arcmsr_iop2drv_data_wrote_handle(pACB);
-> -	}
-> -	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK) {
-> -		arcmsr_iop2drv_data_read_handle(pACB);
-> -	}
-> -	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE) {
-> -		arcmsr_hbc_message_isr(pACB);    /* messenger of "driver to iop commands" */
-> -	}
-> -	return;
-> +	do {
-> +		writel(outbound_doorbell, &reg->outbound_doorbell_clear);
-> +		readl(&reg->outbound_doorbell_clear);
-> +		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK)
-> +			arcmsr_iop2drv_data_wrote_handle(pACB);
-> +		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK)
-> +			arcmsr_iop2drv_data_read_handle(pACB);
-> +		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE)
-> +			arcmsr_hbc_message_isr(pACB);
-> +		outbound_doorbell = readl(&reg->outbound_doorbell);
-> +	} while (outbound_doorbell & (ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK
-> +		| ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK
-> +		| ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE));
->  }
->  static void arcmsr_hba_postqueue_isr(struct AdapterControlBlock *acb)
->  {
-> @@ -1521,21 +1524,22 @@ static void arcmsr_hbc_postqueue_isr(str
->  	/* areca cdb command done */
->  	/* Use correct offset and size for syncing */
->  
-> -	while (readl(&phbcmu->host_int_status) &
-> -	ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR){
-> -	/* check if command done with no error*/
-> -	flag_ccb = readl(&phbcmu->outbound_queueport_low);
-> -	ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);/*frame must be 32 bytes aligned*/
-> -	arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + ccb_cdb_phy);
-> -	ccb = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
-> -	error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1) ? true : false;
-> -	/* check if command done with no error */
-> -	arcmsr_drain_donequeue(acb, ccb, error);
-> -	if (throttling == ARCMSR_HBC_ISR_THROTTLING_LEVEL) {
-> -		writel(ARCMSR_HBCMU_DRV2IOP_POSTQUEUE_THROTTLING, &phbcmu->inbound_doorbell);
-> -		break;
-> -	}
-> -	throttling++;
-> +	while ((flag_ccb = readl(&phbcmu->outbound_queueport_low)) != 0xFFFFFFFF) {
-> +		ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);
-> +		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset
-> +			+ ccb_cdb_phy);
-> +		ccb = container_of(arcmsr_cdb, struct CommandControlBlock,
-> +			arcmsr_cdb);
-> +		error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1)
-> +			? true : false;
-> +		/* check if command done with no error */
-> +		arcmsr_drain_donequeue(acb, ccb, error);
-> +		throttling++;
-> +		if (throttling == ARCMSR_HBC_ISR_THROTTLING_LEVEL) {
-> +			writel(ARCMSR_HBCMU_DRV2IOP_POSTQUEUE_THROTTLING,
-> +				&phbcmu->inbound_doorbell);
-> +			throttling = 0;
-> +		}
->  	}
->  }
->  /*
-> @@ -1584,21 +1588,22 @@ static int arcmsr_handle_hba_isr(struct 
->  	struct MessageUnit_A __iomem *reg = acb->pmuA;
->  	outbound_intstatus = readl(&reg->outbound_intstatus) &
->  		acb->outbound_int_enable;
-> -	if (!(outbound_intstatus & ARCMSR_MU_OUTBOUND_HANDLE_INT))	{
-> -		return 1;
-> -	}
-> -	writel(outbound_intstatus, &reg->outbound_intstatus);
-> -	if (outbound_intstatus & ARCMSR_MU_OUTBOUND_DOORBELL_INT)	{
-> -		arcmsr_hba_doorbell_isr(acb);
-> -	}
-> -	if (outbound_intstatus & ARCMSR_MU_OUTBOUND_POSTQUEUE_INT) {
-> -		arcmsr_hba_postqueue_isr(acb);
-> -	}
-> -	if(outbound_intstatus & ARCMSR_MU_OUTBOUND_MESSAGE0_INT) 	{
-> -		/* messenger of "driver to iop commands" */
-> -		arcmsr_hba_message_isr(acb);
-> -	}
-> -	return 0;
-> +	if (!(outbound_intstatus & ARCMSR_MU_OUTBOUND_HANDLE_INT))
-> +		return IRQ_NONE;
-> +	do {
-> +		writel(outbound_intstatus, &reg->outbound_intstatus);
-> +		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_DOORBELL_INT)
-> +			arcmsr_hba_doorbell_isr(acb);
-> +		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_POSTQUEUE_INT)
-> +			arcmsr_hba_postqueue_isr(acb);
-> +		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_MESSAGE0_INT)
-> +			arcmsr_hba_message_isr(acb);
-> +		outbound_intstatus = readl(&reg->outbound_intstatus) &
-> +			acb->outbound_int_enable;
-> +	} while (outbound_intstatus & (ARCMSR_MU_OUTBOUND_DOORBELL_INT
-> +		| ARCMSR_MU_OUTBOUND_POSTQUEUE_INT
-> +		| ARCMSR_MU_OUTBOUND_MESSAGE0_INT));
-> +	return IRQ_HANDLED;
->  }
->  
->  static int arcmsr_handle_hbb_isr(struct AdapterControlBlock *acb)
-> @@ -1608,27 +1613,25 @@ static int arcmsr_handle_hbb_isr(struct 
->  	outbound_doorbell = readl(reg->iop2drv_doorbell) &
->  				acb->outbound_int_enable;
->  	if (!outbound_doorbell)
-> -		return 1;
-> -
-> -	writel(~outbound_doorbell, reg->iop2drv_doorbell);
-> -	/*in case the last action of doorbell interrupt clearance is cached,
-> -	this action can push HW to write down the clear bit*/
-> -	readl(reg->iop2drv_doorbell);
-> -	writel(ARCMSR_DRV2IOP_END_OF_INTERRUPT, reg->drv2iop_doorbell);
-> -	if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_WRITE_OK) {
-> -		arcmsr_iop2drv_data_wrote_handle(acb);
-> -	}
-> -	if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_READ_OK) {
-> -		arcmsr_iop2drv_data_read_handle(acb);
-> -	}
-> -	if (outbound_doorbell & ARCMSR_IOP2DRV_CDB_DONE) {
-> -		arcmsr_hbb_postqueue_isr(acb);
-> -	}
-> -	if(outbound_doorbell & ARCMSR_IOP2DRV_MESSAGE_CMD_DONE) {
-> -		/* messenger of "driver to iop commands" */
-> -		arcmsr_hbb_message_isr(acb);
-> -	}
-> -	return 0;
-> +		return IRQ_NONE;
-> +	do {
-> +		writel(~outbound_doorbell, reg->iop2drv_doorbell);
-> +		writel(ARCMSR_DRV2IOP_END_OF_INTERRUPT, reg->drv2iop_doorbell);
-> +		if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_WRITE_OK)
-> +			arcmsr_iop2drv_data_wrote_handle(acb);
-> +		if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_READ_OK)
-> +			arcmsr_iop2drv_data_read_handle(acb);
-> +		if (outbound_doorbell & ARCMSR_IOP2DRV_CDB_DONE)
-> +			arcmsr_hbb_postqueue_isr(acb);
-> +		if (outbound_doorbell & ARCMSR_IOP2DRV_MESSAGE_CMD_DONE)
-> +			arcmsr_hbb_message_isr(acb);
-> +		outbound_doorbell = readl(reg->iop2drv_doorbell) &
-> +			acb->outbound_int_enable;
-> +	} while (outbound_doorbell & (ARCMSR_IOP2DRV_DATA_WRITE_OK
-> +		| ARCMSR_IOP2DRV_DATA_READ_OK
-> +		| ARCMSR_IOP2DRV_CDB_DONE
-> +		| ARCMSR_IOP2DRV_MESSAGE_CMD_DONE));
-> +	return IRQ_HANDLED;
->  }
->  
->  static int arcmsr_handle_hbc_isr(struct AdapterControlBlock *pACB)
-> @@ -1640,44 +1643,37 @@ static int arcmsr_handle_hbc_isr(struct 
->  	**   check outbound intstatus
->  	*********************************************
->  	*/
-> -	host_interrupt_status = readl(&phbcmu->host_int_status);
-> -	if (!host_interrupt_status) {
-> -		/*it must be share irq*/
-> -		return 1;
-> -	}
-> -	/* MU ioctl transfer doorbell interrupts*/
-> -	if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR) {
-> -		arcmsr_hbc_doorbell_isr(pACB);   /* messenger of "ioctl message read write" */
-> -	}
-> -	/* MU post queue interrupts*/
-> -	if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR) {
-> -		arcmsr_hbc_postqueue_isr(pACB);  /* messenger of "scsi commands" */
-> -	}
-> -	return 0;
-> +	host_interrupt_status = readl(&phbcmu->host_int_status) &
-> +		(ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR |
-> +		ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR);
-> +	if (!host_interrupt_status)
-> +		return IRQ_NONE;
-> +	do {
-> +		if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR)
-> +			arcmsr_hbc_doorbell_isr(pACB);
-> +		/* MU post queue interrupts*/
-> +		if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR)
-> +			arcmsr_hbc_postqueue_isr(pACB);
-> +		host_interrupt_status = readl(&phbcmu->host_int_status);
-> +	} while (host_interrupt_status & (ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR |
-> +		ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR));
-> +	return IRQ_HANDLED;
->  }
->  static irqreturn_t arcmsr_interrupt(struct AdapterControlBlock *acb)
->  {
->  	switch (acb->adapter_type) {
+> With latest mainline, I'm getting a crash during bootup on m68k/ARAnyM:
+>
+> enable_cpucache failed for radix_tree_node, error 12.
+> kernel BUG at /scratch/geert/linux/linux-m68k/mm/slab.c:1522!
+> *** TRAP #7 ***   FORMAT=0
+> Current process id is 0
+> BAD KERNEL TRAP: 00000000
+> Modules linked in:
+> PC: [<0039c92c>] kmem_cache_init_late+0x70/0x8c
+> SR: 2200  SP: 00345f90  a2: 0034c2e8
+> d0: 0000003d    d1: 00000000    d2: 00000000    d3: 003ac942
+> d4: 00000000    d5: 00000000    a0: 0034f686    a1: 0034f682
+> Process swapper (pid: 0, task=0034c2e8)
+> Frame format=0
+> Stack from 00345fc4:
+>         002f69ef 002ff7e5 000005f2 000360fa 0017d806 003921d4 00000000 00000000
+>         00000000 00000000 00000000 00000000 003ac942 00000000 003912d6
+> Call Trace: [<000360fa>] parse_args+0x0/0x2ca
+>  [<0017d806>] strlen+0x0/0x1a
+>  [<003921d4>] start_kernel+0x23c/0x428
+>  [<003912d6>] _sinittext+0x2d6/0x95e
+>
+> Code: f7e5 4879 002f 69ef 61ff ffca 462a 4e47 <4879> 0035 4b1c 61ff
+> fff0 0cc4 7005 23c0 0037 fd20 588f 265f 285f 4e75 48e7 301c
+> Disabling lock debugging due to kernel taint
+> Kernel panic - not syncing: Attempted to kill the idle task!
+> ---[ end Kernel panic - not syncing: Attempted to kill the idle task!
+>
+> I bisected it to commit a640616822b2c3a8009b0600f20c4a76ea8a0025
+> Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Date:   Wed Aug 6 16:04:38 2014 -0700
+>
+>     slab: remove BAD_ALIEN_MAGIC
+>
+>     BAD_ALIEN_MAGIC value isn't used anymore. So remove it.
+>
+>     Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>     Acked-by: Christoph Lameter <cl@linux.com>
+>     Cc: Pekka Enberg <penberg@kernel.org>
+>     Cc: David Rientjes <rientjes@google.com>
+>     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+>
+> Error 12 is ENOMEM, so I first thought it went out-of-memory, but just reverting
+> the above commit on mainline makes it work again.
 
-I think that you probably can assign the proper isr function in request_irq in arcmsr_probe
-and get rid of this switch.
+Hello,
 
-The changes in this patch are very close related to the hw interface which in not documented,
-the overall logic seems to be correct.
+Thanks for reporting.
 
-Reviewed-by: Tomas Henzl <thenzl@redhat.com>
+This patch only works for !NUMA. And if num_possible_nodes() is 1,
+then it doesn't have any effect, because alloc_alien_cache() call is always
+skipped. Is it possible !NUMA and num_possible_nodes() != 1?
 
+Could you check your config for CONFIG_NUMA and
+CONFIG_NODES_SHIFT?
+
+And, could you check booting with boot param "noaliencache"?
+
+Thanks.
