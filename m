@@ -1,119 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409AbaHGPrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:47:17 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58486 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932071AbaHGPrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:47:16 -0400
-Date: Thu, 7 Aug 2014 11:47:10 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/4] mm: memcontrol: add memory.current and memory.high
- to default hierarchy
-Message-ID: <20140807154710.GE14734@cmpxchg.org>
-References: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
- <1407186897-21048-3-git-send-email-hannes@cmpxchg.org>
- <20140807133614.GC12730@dhcp22.suse.cz>
+	id S932509AbaHGPr6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:47:58 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:53434 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071AbaHGPr5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 11:47:57 -0400
+Message-ID: <53E39FA9.6040503@linaro.org>
+Date: Thu, 07 Aug 2014 17:47:53 +0200
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140807133614.GC12730@dhcp22.suse.cz>
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: Re: [RFC PATCH 7/9] KVM: arm: vgic: allow dynamic mapping of physical/virtual
+ interrupts
+References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com>	<1403688530-23273-8-git-send-email-marc.zyngier@arm.com>	<53DE0584.2040405@linaro.org> <87bns0gzy8.fsf@approximate.cambridge.arm.com>
+In-Reply-To: <87bns0gzy8.fsf@approximate.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 03:36:14PM +0200, Michal Hocko wrote:
-> On Mon 04-08-14 17:14:55, Johannes Weiner wrote:
-> [...]
-> > @@ -132,6 +137,19 @@ u64 res_counter_uncharge(struct res_counter *counter, unsigned long val);
-> >  u64 res_counter_uncharge_until(struct res_counter *counter,
-> >  			       struct res_counter *top,
-> >  			       unsigned long val);
-> > +
-> > +static inline unsigned long long res_counter_high(struct res_counter *cnt)
+On 08/04/2014 03:13 PM, Marc Zyngier wrote:
+> On Sun, Aug 03 2014 at 10:48:52 am BST, Eric Auger <eric.auger@linaro.org> wrote:
+>> On 06/25/2014 11:28 AM, Marc Zyngier wrote:
+>>> In order to be able to feed physical interrupts to a guest, we need
+>>> to be able to establish the virtual-physical mapping between the two
+>>> worlds.
+>>>
+>>> As we try to keep the injection interface simple, find out what the
+>>> physical interrupt is (if any) when we actually build the LR.
+>>>
+>>> The mapping is kept in a rbtree, indexed by virtual interrupts.
+>>
+>> Hi Marc,
+>>
+>> I suspect there is a piece missing here related to bitmap state
+>> management. When using maintenance IRQ, in process_maintenance we cleared
+>> - dist->irq_pending (and new dist->irq_level)
+>> - vcpu->irq_queued
+>>
+>> Now this does not exist anymore for forwarded irqs, when a subsequent
+>> IRQ will be injected, vgic_update_irq_pending will fail in injecting the
+>> IRQ because the states are reflecting the IRQ is still in progress.
+>>
+>> Since I have a modified version of your code, using Christoffer patches
+>> I may have missed some modifications you did but at least on my side I
+>> was forced to add bitmap clearing.
+>>
+>> It is not clear to me where to put that code however. Since user-side
+>> can inject an IRQ while the previous one is not completed at guest and
+>> host level, it cannot be in update_irq_pending - or we shall prevent the
+>> user from injecting fwd IRQs - .
+Hi Marc,
+
+Christoffer suggested me to put state bitmap reset in
+__kvm_vgic_sync_hwstate where we check whether the LR were consumed. It
+seems to work fine and we do no assumption about user action.
+
 > 
-> soft limit used res_counter_soft_limit_excess which has quite a long
-> name but at least those two should be consistent.
-
-That name is horrible and a result from "soft_limit" being completely
-nondescriptive.  I really see no point in trying to be consistent with
-this stuff that we are trying hard to delete.
-
-> > @@ -2621,6 +2621,20 @@ bypass:
-> >  done_restock:
-> >  	if (batch > nr_pages)
-> >  		refill_stock(memcg, batch - nr_pages);
-> > +
-> > +	res = &memcg->res;
-> > +	while (res) {
-> > +		unsigned long long high = res_counter_high(res);
-> > +
-> > +		if (high) {
-> > +			unsigned long high_pages = high >> PAGE_SHIFT;
-> > +			struct mem_cgroup *memcg;
-> > +
-> > +			memcg = mem_cgroup_from_res_counter(res, res);
-> > +			mem_cgroup_reclaim(memcg, high_pages, gfp_mask, 0);
-> > +		}
-> > +		res = res->parent;
-> > +	}
-> >  done:
-> >  	return ret;
-> >  }
+> Interesting. Indeed, userspace shouldn't be allowed to inject a
+> forwarded interrupt (or actually the virtual interrupt that matches the
+> physical one). This interrupt is now under complete control of the
+> kernel, and shouldn't triggered by userspace.
+the user-side might only manipulate VFIO IRQ index (and not the hwirq).
+So we can make sure the physical IRQ belongs to a valid VFIO device.
 > 
-> Why haven't you followed what we do for hard limit here?
+> Now, it is completely possible that we're missing something here (or
+> actually doing too much).
+> 
+>> In my case (VFIO/IRQFD), by construction I only inject a new forwarded
+>> IRQ when the previous one was completed so I could put it in the irqfd
+>> injection function. But even irqfd is injected through eventfd trigger.
+>> We shall forbid the user-side to trigger that eventfd in place of the
+>> VFIO driver. What do you think?
+> 
+> Yup. userspace can't interfere with a forwarded interrupt, that's way
+> too dangerous.
+> 
+>> A question related to guest kill. Cannot it happen the guest sometimes
+>> does not complete the vIRQ before exiting? Currently I observe cases
+>> where when I launch qemu-system after a kill, forwarded irqs do not work
+>> properly. I am not yet sure this is the cause of my problem but just in
+>> case, can the host write into GICV_EOIR in place of guest?
+> 
+> It is quite possible that the interrupt is left active when the guest is
+> killed, which would tend to indicate that we need a way to cleanup
+> behind us. It should be enough to clear the active bit, shouldn't it?
+So in practice this will directly write into the GICC_DIR right? I will
+try this.
 
-I did.
+Best Regards
 
-> In my implementation I have the following:
->
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index a37465fcd8ae..6a797c740ea5 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2529,6 +2529,21 @@ static int memcg_cpu_hotplug_callback(struct notifier_block *nb,
->  	return NOTIFY_OK;
->  }
->  
-> +static bool high_limit_excess(struct mem_cgroup *memcg,
-> +		struct mem_cgroup **memcg_over_limit)
-> +{
-> +	struct mem_cgroup *parent = memcg;
-> +
-> +	do {
-> +		if (res_counter_limit_excess(&parent->res, RES_HIGH_LIMIT)) {
-> +			*memcg_over_limit = parent;
-> +			return true;
-> +		}
-> +	} while ((parent = parent_mem_cgroup(parent)));
-> +
-> +	return false;
-> +}
-> +
->  static int try_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  		      unsigned int nr_pages)
->  {
-> @@ -2623,6 +2638,10 @@ bypass:
->  	goto retry;
->  
->  done_restock:
-> +	/* Throttle charger a bit if it is above high limit. */
-> +	if (high_limit_excess(memcg, &mem_over_limit))
-> +		mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
+Eric
+> 
+>> Besides those problems, the patch works in my test environment
+> 
+> Thanks for testing!
+> 
+> 	M.
+> 
 
-This is not what the hard limit does.
-
-The hard limit, by its nature, can only be exceeded at one level at a
-time, so we try to charge, check the closest limit that was hit,
-reclaim, then retry.  This means we are reclaiming up the hierarchy to
-enforce the hard limit on each level.
-
-I do the same here: reclaim up the hierarchy to enforce the high limit
-on each level.
-
-Your proposal only reclaims the closest offender, leaving higher
-hierarchy levels in excess.
