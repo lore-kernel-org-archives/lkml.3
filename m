@@ -1,98 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475AbaHGGv0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 02:51:26 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:60604 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759AbaHGGvY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 02:51:24 -0400
-Date: Wed, 6 Aug 2014 23:50:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Brown, Len" <len.brown@intel.com>
-Subject: Re: suspicious RCU usage. (TLB flush tracepoints)
-Message-ID: <20140807065055.GA5821@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140806181801.GA4605@redhat.com>
- <53E29712.7050203@sr71.net>
+	id S1754910AbaHGGvp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 02:51:45 -0400
+Received: from ozlabs.org ([103.22.144.67]:45494 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753519AbaHGGvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 02:51:43 -0400
+Date: Thu, 7 Aug 2014 16:51:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sven Eckelmann <sven@narfation.org>,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
+        Ken Helias <kenhelias@firemail.de>
+Subject: linux-next: manual merge of the akpm-current tree with Linus' tree
+Message-ID: <20140807165136.60cbaf44@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E29712.7050203@sr71.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080706-0928-0000-0000-000003F12847
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_//ud=Rf09rjtE0Jd_JMe3Y3z"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 01:58:58PM -0700, Dave Hansen wrote:
-> On 08/06/2014 11:18 AM, Dave Jones wrote:
-> > ===============================
-> > [ INFO: suspicious RCU usage. ]
-> > 3.16.0+ #34 Not tainted
-> > -------------------------------
-> > include/trace/events/tlb.h:35 suspicious rcu_dereference_check() usage!
-> > 
-> > other info that might help us debug this:
-> > 
-> > RCU used illegally from idle CPU!
-> > rcu_scheduler_active = 1, debug_locks = 1
-> > RCU used illegally from extended quiescent state!
-> > no locks held by swapper/1/0.
-> > 
-> > stack backtrace:
-> > CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.16.0+ #34
-> >  0000000000000001 e7d0f46a57e60fc7 ffff880243357db0 ffffffff8a7f1e37
-> >  ffff880243360000 ffff880243357de0 ffffffff8a0cc6c5 ffff8801753693f8
-> >  ffff88023e2e2a40 0000000000000001 ffff88023e2e2a40 ffff880243357e10
-> > Call Trace:
-> >  [<ffffffff8a7f1e37>] dump_stack+0x4e/0x7a
-> >  [<ffffffff8a0cc6c5>] lockdep_rcu_suspicious+0xd5/0x110
-> >  [<ffffffff8a049f05>] leave_mm+0x1a5/0x200
-> >  [<ffffffff8a3ec8df>] intel_idle+0x16f/0x190
-> >  [<ffffffff8a6623da>] cpuidle_enter_state+0x3a/0xd0
-> >  [<ffffffff8a662557>] cpuidle_enter+0x17/0x20
-> >  [<ffffffff8a0c719c>] cpu_startup_entry+0x43c/0x800
-> >  [<ffffffff8a03232d>] start_secondary+0x29d/0x3b0
-> 
-> Wow, this is quite the trainwreck of subsystems.  We've got idle, RCU,
-> tracing and the VM all fighting with each other.  How fun!
-> 
-> The end result is that we can't use tracepoints in parts of the idle
-> thread?  That's kinda a bummer.  I'm curious why we don't see this more
-> widely.  We have a tracepoint *IMMEDIATELY* After one of the
-> rcu_idle_enter():
-> 
-> > static inline int cpu_idle_poll(void)
-> > {
-> >         rcu_idle_enter();
-> >         trace_cpu_idle_rcuidle(0, smp_processor_id());
-> 
-> Surely there are some more.
+--Sig_//ud=Rf09rjtE0Jd_JMe3Y3z
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Actually, the _rcuidle suffix prevents this splat.  I bet that the one
-added by the commit that Dave Jones pointed out omitted the _rcuidle
-suffix.  If so, just add _rcuidle to the end of the trace function
-you invoke, and it should clean things right up.
+Hi Andrew,
 
-							Thanx, Paul
+Today's linux-next merge of the akpm-current tree got a conflict in
+net/batman-adv/fragmentation.c between commit d9124268d84a
+("batman-adv: Fix out-of-order fragmentation support") from Linus' tree
+and commit ffe04af00b27 ("list: fix order of arguments for
+hlist_add_after(_rcu)") from the akpm-current tree.
 
-> The intel_idle and acpi_idle drivers both do this TLB trick, although
-> the ACPI one is needlessly obfuscated:
-> 
-> 	#define acpi_unlazy_tlb(x)      leave_mm(x)
-> 
-> vs the direct call in intel_idle:
-> 
-> 	if (state->flags & CPUIDLE_FLAG_TLB_FLUSHED)
-> 		leave_mm(cpu);
-> 
-> Can we just move the leave_mm() to be outside the rcu_idle_enter()?  If
-> not, I'm just inclined to axe the tracepoint.
-> 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc net/batman-adv/fragmentation.c
+index 022d18ab27a6,16dd40910c65..000000000000
+--- a/net/batman-adv/fragmentation.c
++++ b/net/batman-adv/fragmentation.c
+@@@ -181,14 -180,11 +181,14 @@@ static bool batadv_frag_insert_packet(s
+  			ret =3D true;
+  			goto out;
+  		}
+ +
+ +		/* store current entry because it could be the last in list */
+ +		frag_entry_last =3D frag_entry_curr;
+  	}
+ =20
+ -	/* Reached the end of the list, so insert after 'frag_entry_curr'. */
+ -	if (likely(frag_entry_curr)) {
+ -		hlist_add_behind(&frag_entry_new->list, &frag_entry_curr->list);
+ +	/* Reached the end of the list, so insert after 'frag_entry_last'. */
+ +	if (likely(frag_entry_last)) {
+- 		hlist_add_after(&frag_entry_last->list, &frag_entry_new->list);
+++		hlist_add_behind(&frag_entry_new->list, &frag_entry_last->list);
+  		chain->size +=3D skb->len - hdr_size;
+  		chain->timestamp =3D jiffies;
+  		ret =3D true;
+
+--Sig_//ud=Rf09rjtE0Jd_JMe3Y3z
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT4yH8AAoJEMDTa8Ir7ZwV4Q4QAJFEFUgY5o2Et8ufaG2tzhwQ
+g0MsDvjlnemYIK47N3Xk0TKYYZqpyW5dcCaKZfjkRM4WZXUWBesZEXnJsAih0eOb
+P4fLCghjeL8/ChIb80b40HnJqLf9aieJ5sEl92mwpl+Z6ZeAgpn1deXb+SZISYkb
+ipklnIEaz2f0sqMMJ156jfphNEn4hPX2wCWvMDLXRSu3SKeJZ0CNSOMn6o0H/06S
+FFTFZf1uDkSj6TwNO1/G+M82YdRsen6bpU6f3rbKesMrmFWru9QAbt6Mupq9iBQT
+n9LwK+gsqFtBZNd26XcttcBd+UcY+sby0HDdKVUpUMDi4sPl5Clx0wBvF4M0MSLT
+9qp7vCHTTUdFXHG1v8qS6TG5wCy8BfQ0+xf8livaxmTN3Z/fRKaNCQW5lOaIJsqg
+lWHd0dQ3UsIDK7bYftOBeH5yO2hLilsuujPE+TfCDaF/SiryDr1hgViTHe2RmM07
+/ew32MV+3b5O20u1BN7YR58lSfjnNXqnn784+eqP5LM24BAfWvHY8rRIUWfuUHjC
+b2OEBCqyaiFsvoHt+u8VCDvSfViZFycboXNKV8z8mCi2zcESz/Sul9uiR+1pe0Wd
+3Gg3O5PkiWGFyUbvYhyfcfNXgp5+Y/sTETqA05edhe0WStYTOcCrMAVs6CMZOavO
+RnWootYA/2k+0K413T4v
+=iL3b
+-----END PGP SIGNATURE-----
+
+--Sig_//ud=Rf09rjtE0Jd_JMe3Y3z--
