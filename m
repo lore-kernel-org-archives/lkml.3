@@ -1,86 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168AbaHGQw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 12:52:56 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:23676 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932330AbaHGQwx (ORCPT
+	id S932856AbaHGQzC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 12:55:02 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:49655 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932330AbaHGQzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 12:52:53 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-4c-53e3aee4ef20
-Subject: [PATCH 3/3] Smack: remove unneeded NULL-termination from securtity
- label
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Date: Thu, 07 Aug 2014 20:52:49 +0400
-Message-id: <20140807165249.13463.60191.stgit@buzz>
-In-reply-to: <20140807165233.13463.55258.stgit@buzz>
-References: <20140807165233.13463.55258.stgit@buzz>
-User-Agent: StGit/0.17.1-dirty
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t/xy7pP1j0ONji5h8/i3rZfbBZ9j4Ms
-	fuzsZbW4vGsOm8WHnkdsFucvnGN3YPO4tjvS4+PTWywefVtWMXoc3b+IzePzJrkA1igum5TU
-	nMyy1CJ9uwSujN8np7MWNPNUTJ3QyN7AeIOzi5GDQ0LAROL1fr8uRk4gU0ziwr31bF2MXBxC
-	AksZJU5cWcMO4TQySeza9JIdpEpYIFji0a8rzCA2m4CZxLZ9txlBbBEBHYl9e56DNTALzGSU
-	2Lr+FBNIgkVAVWLDzidgzbwCxhLNjQuZQTZzAm0+Oa8QJCwEFF744BwLiC0qICex8nILK0S5
-	oMSPyfdYQMqZBdQlpkzJBQkzC8hLbF7zlnkCo8AsJFWzEKpmIalawMi8ilE0tTS5oDgpPddI
-	rzgxt7g0L10vOT93EyMkpL/uYFx6zOoQowAHoxIPr8Leu8FCrIllxZW5hxglOJiVRHh1ux8H
-	C/GmJFZWpRblxxeV5qQWH2Jk4uCUamBUsu7WCGP1f6lTJOTvnH3C/ZTDg+2uNvcEnrQIPz+Z
-	F3bsQm3fvoBKhQMabmGd1x4Kxl1ieyZ6811jCff2FdpsTrOmfzs07dgClbkzhVKyPz16aDj9
-	5PNy+/Uv/6os+rqEnXVSNLsht49I3Ps5olvkj7Sv+mDIml/zxS723pfnXvkla+eJhpUosRRn
-	JBpqMRcVJwIAkGTB2kcCAAA=
+	Thu, 7 Aug 2014 12:55:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140807160739.GA29726@sepie.suse.cz>
+References: <20140726163551.19857.17737.stgit@zurg>
+	<53E2156E.9060700@suse.cz>
+	<CALYGNiO=oiiLgJRrpycO=CWyMMf8-AiDyW=Ch3ajV5W=9dtZfA@mail.gmail.com>
+	<53E24365.6020405@suse.cz>
+	<20140807160739.GA29726@sepie.suse.cz>
+Date: Thu, 7 Aug 2014 20:54:59 +0400
+Message-ID: <CALYGNiOUwnqSYgd=TYOSjcFvz0wW87kXG5DvFtg8M3nomELL0w@mail.gmail.com>
+Subject: Re: [PATCH] kbuild: escape single backslashes in macro make-cmd
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Values of extended attributes are stored as binary blobs. NULL-termination
-of them isn't required. It just wastes disk space and confuses command-line
-tools like getfattr because they have to print that zero byte at the end.
+On Thu, Aug 7, 2014 at 8:07 PM, Michal Marek <mmarek@suse.cz> wrote:
+> On Wed, Aug 06, 2014 at 05:01:57PM +0200, Michal Marek wrote:
+>> On 2014-08-06 14:19, Konstantin Khlebnikov wrote:
+>> > On Wed, Aug 6, 2014 at 3:45 PM, Michal Marek <mmarek@suse.cz> wrote:
+>> >> On 2014-07-26 18:35, Konstantin Khlebnikov wrote:
+>> >>> This already has been fixed in commit c353acba28fb3fa1fd05fd
+>> >>> ("kbuild: make: fix if_changed when command contains backslashes")
+>> >>> but escaping still isn't perfect and triggers false-positive rebuilds.
+>> >>>
+>> >>> For x86 problem happens every time, because rules in arch/x86/realmode/rm/
+>> >>> and arch/x86/boot/ contains commands like sed -n -e 's/foo\(.*\)/\1/p'.
+>> >>> Backslash in \1 isn't escaped and turns into ascii symbol with code 1.
+>> >>> Macro if_changed detects command change and rebuilds target again and again.
+>> >>>
+>> >>> Backslash escaping conflicts with other passes because it's used for escaping
+>> >>> other symbols. To avoid that current macro handles only double backslashes.
+>> >>> Obviously this doesn't work for \1 like above.
+>> >>>
+>> >>> This patch reorders passes. It doubles all backslashes before escaping # and '
+>> >>>
+>> >>> Visible effect in rebuilding x86/defconfig without changes, before patch:
+>> >>>
+>> >>> blind@zurg:~/src/linux$ make V=2
+>> >>>   CHK     include/config/kernel.release
+>> >>>   CHK     include/generated/uapi/linux/version.h
+>> >>>   CHK     include/generated/utsrelease.h
+>> >>>   CALL    scripts/checksyscalls.sh - due to target missing
+>> >>>   CHK     include/generated/compile.h
+>> >>>   PASYMS  arch/x86/realmode/rm/pasyms.h - due to command line change
+>> >>
+>> >> With which make and shell version are you seeing this? While the patch
+>> >> looks correct, I can't reproduce the error here:
+>> >
+>> > /bin/sh points to dash (debian default setup).
+>> >
+>> > I cannot reproduce this using bash. That explains why this bug is still here.
+>>
+>> So the difference between the shells is that their 'echo' builtin treats
+>> \<number> differently:
+>> $ ./dash -c "echo '\2'"
+>>
+>> $ ./dash -c "echo '\2'" | xxd
+>> 0000000: 020a                                     ..
+>> $ /bin/bash -c "echo '\2'"
+>> \2
+>
+> The problem is that the bash echo does not interpred _any_ \-sequences
+> without -e. So the nicely escaped \\ stays a \\ and we get spurious
+> rebuilds with bash instead. It previously worked with bash, because the
+> backslash escaping was completely broken. You not only moved it up in
+> the chain, but also fixed it by removing one superflous level of
+> escaping.
+>
+> I'm now testing this, i.e. dropping the backslash escaping completely
+> and doing a printf '%s\n' instead. Can you try if it works for you?
 
-This patch removes terminating zero byte from initial security label in
-smack_inode_init_security and cuts it out in function smack_inode_getsecurity
-which is used by syscall getxattr. This change seems completely safe, because
-function smk_parse_smack ignores everything after first zero byte.
+Yes, it works. I completely forgot about printf, it's much more
+reliable than echo.
 
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
----
- security/smack/smack_lsm.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+So, you can add my Acked-by/Tested-by
 
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index afa5ad0..16ae853 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -672,7 +672,7 @@ static int smack_inode_init_security(struct inode *inode, struct inode *dir,
- 	}
- 
- 	if (len)
--		*len = strlen(isp) + 1;
-+		*len = strlen(isp);
- 
- 	return 0;
- }
-@@ -1076,7 +1076,7 @@ static int smack_inode_getsecurity(const struct inode *inode,
- 
- 	if (strcmp(name, XATTR_SMACK_SUFFIX) == 0) {
- 		isp = smk_of_inode(inode);
--		ilen = strlen(isp) + 1;
-+		ilen = strlen(isp);
- 		*buffer = isp;
- 		return ilen;
- 	}
-@@ -1101,7 +1101,7 @@ static int smack_inode_getsecurity(const struct inode *inode,
- 	else
- 		return -EOPNOTSUPP;
- 
--	ilen = strlen(isp) + 1;
-+	ilen = strlen(isp);
- 	if (rc == 0) {
- 		*buffer = isp;
- 		rc = ilen;
-
+>
+>
+> diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
+> index 122f95c..8a9a4e1 100644
+> --- a/scripts/Kbuild.include
+> +++ b/scripts/Kbuild.include
+> @@ -215,11 +215,13 @@ else
+>  arg-check = $(if $(strip $(cmd_$@)),,1)
+>  endif
+>
+> -# >'< substitution is for echo to work,
+> -# >$< substitution to preserve $ when reloading .cmd file
+> -# note: when using inline perl scripts [perl -e '...$$t=1;...']
+> -# in $(cmd_xxx) double $$ your perl vars
+> -make-cmd = $(subst \\,\\\\,$(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1))))))
+> +# Replace >$< with >$$< to preserve $ when reloading the .cmd file
+> +# (needed for make)
+> +# Replace >#< with >\#< to avoid starting a comment in the .cmd file
+> +# (needed for make)
+> +# Replace >'< with >'\''< to be able to enclose the whole string in '...'
+> +# (needed for the shell)
+> +make-cmd = $(call escsq,$(subst \#,\\\#,$(subst $$,$$$$,$(cmd_$(1)))))
+>
+>  # Find any prerequisites that is newer than target or that does not exist.
+>  # PHONY targets skipped in both cases.
+> @@ -230,7 +232,7 @@ any-prereq = $(filter-out $(PHONY),$?) $(filter-out $(PHONY) $(wildcard $^),$^)
+>  if_changed = $(if $(strip $(any-prereq) $(arg-check)),                       \
+>         @set -e;                                                             \
+>         $(echo-cmd) $(cmd_$(1));                                             \
+> -       echo 'cmd_$@ := $(make-cmd)' > $(dot-target).cmd)
+> +       printf '%s\n' 'cmd_$@ := $(make-cmd)' > $(dot-target).cmd)
+>
+>  # Execute the command and also postprocess generated .d dependencies file.
+>  if_changed_dep = $(if $(strip $(any-prereq) $(arg-check) ),                  \
