@@ -1,117 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444AbaHGLwI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 07:52:08 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:39691 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754597AbaHGLwG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 07:52:06 -0400
+	id S1757457AbaHGLyE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 07:54:04 -0400
+Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:16336
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754519AbaHGLyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 07:54:03 -0400
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: <broonie@kernel.org>
+CC: <patches@opensource.wolfsonmicro.com>, <alsa-devel@alsa-project.org>,
+        <rf@opensource.wolfsonmicro.com>, <lgirdwood@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <tiwai@suse.de>, <perex@perex.cz>,
+        <ckeepax@opensource.wolfsonmicro.com>, <B18700@freescale.com>,
+        <b02247@freescale.com>
+Subject: [PATCH] ASoC: wm8962: Correct the bit offset to enable mono speaker output
+Date: Thu, 7 Aug 2014 19:55:49 +0800
+Message-ID: <1407412549-14983-1-git-send-email-nicoleotsuka@gmail.com>
+X-Mailer: git-send-email 1.8.4
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130518860393085916;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009003)(6009001)(199002)(189002)(99396002)(62966002)(21056001)(92726001)(46102001)(81542001)(2351001)(31966008)(73392001)(74662001)(48376002)(81442001)(26826002)(229853001)(61266001)(104016003)(74502001)(19580395003)(44976005)(50986999)(6806004)(19580405001)(110136001)(104166001)(86362001)(97736001)(93916002)(107046002)(77156001)(64706001)(87572001)(47776003)(82202001)(73972005)(36756003)(80022001)(89996001)(20776003)(102836001)(33646002)(81342001)(88136002)(4396001)(68736004)(84676001)(106466001)(105596002)(50466002)(79102001)(87286001)(92566001)(95666004)(85306004)(87936001)(85852003)(50226001)(55446002)(83072002)(77982001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB356;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 MIME-Version: 1.0
-Date: Thu, 7 Aug 2014 13:52:04 +0200
-X-Google-Sender-Auth: ybsyqJUNPqEXJcdyr1eARaxwhlc
-Message-ID: <CAMuHMdW2kb=EF-Nmem_gyUu=p7hFOTe+Q2ekHh41SaHHiWDGeg@mail.gmail.com>
-Subject: BUG: enable_cpucache failed for radix_tree_node, error 12 (was: Re:
- [PATCH v3 9/9] slab: remove BAD_ALIEN_MAGIC)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 029651C7A1
+Authentication-Results: spf=softfail (sender IP is 192.88.168.50)
+ smtp.mailfrom=nicoleotsuka@gmail.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joonsoo,
+As WM8962 datasheet describes for SPK_MONO bit of R51: When SPK_MONO
+is set to '1', both speakers output the signal from the left channel.
 
-On Tue, Jul 1, 2014 at 10:27 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> BAD_ALIEN_MAGIC value isn't used anymore. So remove it.
->
-> Acked-by: Christoph Lameter <cl@linux.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> ---
->  mm/slab.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
->
-> diff --git a/mm/slab.c b/mm/slab.c
-> index 7820a45..60c9e11 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -470,8 +470,6 @@ static struct kmem_cache kmem_cache_boot = {
->         .name = "kmem_cache",
->  };
->
-> -#define BAD_ALIEN_MAGIC 0x01020304ul
-> -
->  static DEFINE_PER_CPU(struct delayed_work, slab_reap_work);
->
->  static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
-> @@ -838,7 +836,7 @@ static int transfer_objects(struct array_cache *to,
->  static inline struct alien_cache **alloc_alien_cache(int node,
->                                                 int limit, gfp_t gfp)
->  {
-> -       return (struct alien_cache **)BAD_ALIEN_MAGIC;
-> +       return NULL;
->  }
+So for mono speaker widget, we shall enable Left Channel whose enable
+bit is 6 instead of 7 (Right Channel).
 
-With latest mainline, I'm getting a crash during bootup on m68k/ARAnyM:
+This patches just simply corrects the bit offset.
 
-enable_cpucache failed for radix_tree_node, error 12.
-kernel BUG at /scratch/geert/linux/linux-m68k/mm/slab.c:1522!
-*** TRAP #7 ***   FORMAT=0
-Current process id is 0
-BAD KERNEL TRAP: 00000000
-Modules linked in:
-PC: [<0039c92c>] kmem_cache_init_late+0x70/0x8c
-SR: 2200  SP: 00345f90  a2: 0034c2e8
-d0: 0000003d    d1: 00000000    d2: 00000000    d3: 003ac942
-d4: 00000000    d5: 00000000    a0: 0034f686    a1: 0034f682
-Process swapper (pid: 0, task=0034c2e8)
-Frame format=0
-Stack from 00345fc4:
-        002f69ef 002ff7e5 000005f2 000360fa 0017d806 003921d4 00000000 00000000
-        00000000 00000000 00000000 00000000 003ac942 00000000 003912d6
-Call Trace: [<000360fa>] parse_args+0x0/0x2ca
- [<0017d806>] strlen+0x0/0x1a
- [<003921d4>] start_kernel+0x23c/0x428
- [<003912d6>] _sinittext+0x2d6/0x95e
+Signed-off-by: Peter Chan <B18700@freescale.com>
+Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
+---
 
-Code: f7e5 4879 002f 69ef 61ff ffca 462a 4e47 <4879> 0035 4b1c 61ff
-fff0 0cc4 7005 23c0 0037 fd20 588f 265f 285f 4e75 48e7 301c
-Disabling lock debugging due to kernel taint
-Kernel panic - not syncing: Attempted to kill the idle task!
----[ end Kernel panic - not syncing: Attempted to kill the idle task!
+@Peter
+I cced you just to let you know that I'm merging your fix to upstream.
+And because you patch can't be applied to the upstream tree directly,
+I used my own commit with your signed-off. Thank you for the fix.
 
-I bisected it to commit a640616822b2c3a8009b0600f20c4a76ea8a0025
-Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Date:   Wed Aug 6 16:04:38 2014 -0700
+ sound/soc/codecs/wm8962.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-    slab: remove BAD_ALIEN_MAGIC
+diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
+index 1098ae3..105deec 100644
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -2185,7 +2185,7 @@ SND_SOC_DAPM_MIXER("Speaker Mixer", WM8962_MIXER_ENABLES, 1, 0,
+ 		   spkmixl, ARRAY_SIZE(spkmixl)),
+ SND_SOC_DAPM_MUX_E("Speaker PGA", WM8962_PWR_MGMT_2, 4, 0, &spkoutl_mux,
+ 		   out_pga_event, SND_SOC_DAPM_POST_PMU),
+-SND_SOC_DAPM_PGA("Speaker Output", WM8962_CLASS_D_CONTROL_1, 7, 0, NULL, 0),
++SND_SOC_DAPM_PGA("Speaker Output", WM8962_CLASS_D_CONTROL_1, 6, 0, NULL, 0),
+ SND_SOC_DAPM_OUTPUT("SPKOUT"),
+ };
+ 
+-- 
+1.8.4
 
-    BAD_ALIEN_MAGIC value isn't used anymore. So remove it.
-
-    Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-    Acked-by: Christoph Lameter <cl@linux.com>
-    Cc: Pekka Enberg <penberg@kernel.org>
-    Cc: David Rientjes <rientjes@google.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-Error 12 is ENOMEM, so I first thought it went out-of-memory, but just reverting
-the above commit on mainline makes it work again.
-
-I don't see the failure on ARM.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
