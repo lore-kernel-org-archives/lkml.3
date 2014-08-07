@@ -1,75 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623AbaHGRJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 13:09:35 -0400
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:58026 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082AbaHGRJe (ORCPT
+	id S1757476AbaHGRM5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 13:12:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46298 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757335AbaHGRMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 13:09:34 -0400
-Date: Thu, 7 Aug 2014 12:59:48 -0400
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        linux-atm-general@lists.sourceforge.net
-Subject: Re: [setsockopt] WARNING: CPU: 0 PID: 1444 at
- kernel/sched/core.c:7088 __might_sleep+0x51/0x16f()
-Message-ID: <20140807125948.2b7f1472@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <20140807151741.GP19379@twins.programming.kicks-ass.net>
-References: <20140805214624.GA9973@localhost>
-	<20140807151741.GP19379@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Thu, 7 Aug 2014 13:12:55 -0400
+Date: Thu, 7 Aug 2014 10:12:54 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Jiri Slaby <jslaby@suse.cz>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH v2] serial: uart: add hw flow control support
+ configuration
+Message-ID: <20140807171254.GA13097@kroah.com>
+References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com>
+ <53E39B44.60406@hurleysoftware.com>
+ <53E3A67B.6070709@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-NRLCMF-Spam-Score: () hits=0.009
-X-NRLCMF-Virus-Scanned: No virus found
-X-NRLCMF-Languages: en
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E3A67B.6070709@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Aug 2014 17:17:41 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+On Thu, Aug 07, 2014 at 12:16:59PM -0400, Murali Karicheri wrote:
+> On 08/07/2014 11:29 AM, Peter Hurley wrote:
+> >On 05/01/2014 03:04 PM, Murali Karicheri wrote:
+> >>8250 uart driver currently supports only software assisted hw flow
+> >>control. The software assisted hw flow control maintains a hw_stopped
+> >>flag in the tty structure to stop and start transmission and use modem
+> >>status interrupt for the event to drive the handshake signals. This is
+> >>not needed if hw has flow control capabilities. This patch adds a
+> >>DT attribute for enabling hw flow control for a uart port. Also skip
+> >>stop and start if this flag is present in flag field of the port
+> >>structure.
+> >>
+> >>Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+> >>
+> >>CC: Rob Herring<robh+dt@kernel.org>
+> >>CC: Pawel Moll<pawel.moll@arm.com>
+> >>CC: Mark Rutland<mark.rutland@arm.com>
+> >>CC: Ian Campbell<ijc+devicetree@hellion.org.uk>
+> >>CC: Kumar Gala<galak@codeaurora.org>
+> >>CC: Randy Dunlap<rdunlap@infradead.org>
+> >>CC: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+> >>CC: Jiri Slaby<jslaby@suse.cz>
+> >>CC: Santosh Shilimkar<santosh.shilimkar@ti.com>
+> >>---
+> >>  .../devicetree/bindings/serial/of-serial.txt       |    1 +
+> >>  drivers/tty/serial/8250/8250_core.c                |    6 ++++--
+> >>  drivers/tty/serial/of_serial.c                     |    4 ++++
+> >>  drivers/tty/serial/serial_core.c                   |   12 +++++++++---
+> >>  4 files changed, 18 insertions(+), 5 deletions(-)
+> >>
+> >[...]
+> >
+> >>diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+> >>index b68550d..851707a 100644
+> >>--- a/drivers/tty/serial/serial_core.c
+> >>+++ b/drivers/tty/serial/serial_core.c
+> >>@@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
+> >>  			if (tty->termios.c_cflag&  CBAUD)
+> >>  				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
+> >>  		}
+> >>-
+> >>-		if (tty_port_cts_enabled(port)) {
+> >>+		/*
+> >>+		 * if hw support flow control without software intervention,
+> >>+		 * then skip the below check
+> >>+		 */
+> >>+		if (tty_port_cts_enabled(port)&&
+> >>+		    !(uport->flags&  UPF_HARD_FLOW)) {
+> >>  			spin_lock_irq(&uport->lock);
+> >>  			if (!(uport->ops->get_mctrl(uport)&  TIOCM_CTS))
+> >>  				tty->hw_stopped = 1;
+> >>@@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
+> >>
+> >>  	uport->icount.cts++;
+> >>
+> >>-	if (tty_port_cts_enabled(port)) {
+> >>+	/* skip below code if the hw flow control is supported */
+> >>+	if (tty_port_cts_enabled(port)&&
+> >>+	    !(uport->flags&  UPF_HARD_FLOW)) {
+> >Why is a modem status interrupt being generated for DCTS
+> >if autoflow control is enabled?
+> >
+> >This should be:
+> >
+> >	WARN_ON_ONCE(uport->flags&  UPF_HARD_FLOW);
+> >
+> >to indicate a mis-configured driver/device.
+> This patch is already merged to the upstream branch and if you see any
+> issue, please
+> post a patch for review.
 
-> Subject: atm: Fix blocking in wait loop
-> 
-> One should not call blocking primitives inside a wait loop, since both
-> require task_struct::state to sleep, so the inner will destroy the outer
-> state.
-> 
-> In this instance sigd_enq() will possible sleep for alloc_skb(), now if
-> I understand the code right, we do not actually need to call sigd_enq()
-> after the initial prepare_to_wait(), because we test the termination
-> condition before schedule() anyhow.
-> 
-> So we can simply move it up a bit and avoid the entire confusion.
-> 
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->  net/atm/svc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/net/atm/svc.c b/net/atm/svc.c
-> index d8e5d0c2ebbc..445ac238b69b 100644
-> --- a/net/atm/svc.c
-> +++ b/net/atm/svc.c
-> @@ -297,8 +297,8 @@ static int svc_listen(struct socket *sock, int backlog)
->  		goto out;
->  	}
->  	set_bit(ATM_VF_WAITING, &vcc->flags);
-> -	prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
->  	sigd_enq(vcc, as_listen, NULL, NULL, &vcc->local);
-> +	prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
->  	while (test_bit(ATM_VF_WAITING, &vcc->flags) && sigd) {
->  		schedule();
->  		prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
+If someone points out a problem in a patch of yours that is accepted
+upstream, it is nice to provide a fix, otherwise I will just revert it
+upstream, as it looks to be incorrect.
 
+So, should I just revert it?
 
-This isn't the only place that we queue a message for the signalling
-daemon after a prepare_to_wait() uninterruptibly so this patch would
-be incomplete as is.
-
-What bothers me is the TASK_UNINTERRUPTIBLE -- I don't have a good
-reason why any of these should be sleeping uninterruptibly.
+greg k-h
