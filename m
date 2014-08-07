@@ -1,67 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399AbaHGWSN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 18:18:13 -0400
-Received: from mailrelay.sea-ab.se ([91.223.232.53]:40268 "EHLO
-	mailrelay.sea-ab.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231AbaHGWSM (ORCPT
+	id S1755481AbaHGWTK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 18:19:10 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:47650 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399AbaHGWTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 18:18:12 -0400
-X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Aug 2014 18:18:12 EDT
-Date: Thu, 7 Aug 2014 23:08:34 +0100
-From: Martin Berglund <martin@rogsta.net>
-To: Forest Bond <forest@alittletooquiet.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: vt6655: wpactl.c: Fix sparse warnings
-Message-ID: <20140807220834.GA21645@licorice>
+	Thu, 7 Aug 2014 18:19:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407423713-4160-4-git-send-email-keescook@chromium.org>
+References: <1407423713-4160-1-git-send-email-keescook@chromium.org> <1407423713-4160-4-git-send-email-keescook@chromium.org>
+From: Rob Herring <robh@kernel.org>
+Date: Thu, 7 Aug 2014 17:18:44 -0500
+X-Google-Sender-Auth: UgFCHl27PX2ENY75eTtY3Ezw6VY
+Message-ID: <CAL_JsqJZbbH=PwDzLKSwKiW1Y=N8MLgwEkp=xQaD_ST_uB-_Rw@mail.gmail.com>
+Subject: Re: [PATCH 3/8] arm: mm: reduce fixmap kmap from 32 to 16 CPUS
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liu hua <sdu.liu@huawei.com>, Mark Salter <msalter@redhat.com>,
+        Rabin Vincent <rabin@rab.in>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing __user macro casting in the function wpa_set_keys.
-This is okay since the function handles the possibility of
-param->u.wpa_key.key and param->u.wpa_key.seq pointing to
-kernelspace using a flag, fcpfkernel.
+On Thu, Aug 7, 2014 at 10:01 AM, Kees Cook <keescook@chromium.org> wrote:
+> More room is needed in the fixmap range for non-kmap fixmap entries. This
+> reduces the kmap range from 32 to 16 CPUs.
 
-Signed-off-by: Martin Berglund <martin@rogsta.net>
----
-This was submitted as part of Eudyptula challenge task 16
+Do you want this merged or just doing this to get the rest of your
+series working? I'll post my patch for making the fixmap region 3MB
+(it adds back the first 1MB of the top pmd).
 
- drivers/staging/vt6655/wpactl.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+> Additionally, add PTE entry for
+> fixmap regardless of CONFIG_HIGHMEM.
 
-diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
-index 5f454ca..d75dd79 100644
---- a/drivers/staging/vt6655/wpactl.c
-+++ b/drivers/staging/vt6655/wpactl.c
-@@ -224,7 +224,9 @@ int wpa_set_keys(PSDevice pDevice, void *ctx,
- 	} else {
- 		spin_unlock_irq(&pDevice->lock);
- 		if (param->u.wpa_key.key &&
--		    copy_from_user(&abyKey[0], param->u.wpa_key.key, param->u.wpa_key.key_len)) {
-+		    copy_from_user(&abyKey[0],
-+				   (void __user *)param->u.wpa_key.key,
-+				   param->u.wpa_key.key_len)) {
- 			spin_lock_irq(&pDevice->lock);
- 			return -EINVAL;
- 		}
-@@ -262,7 +264,9 @@ int wpa_set_keys(PSDevice pDevice, void *ctx,
- 	} else {
- 		spin_unlock_irq(&pDevice->lock);
- 		if (param->u.wpa_key.seq &&
--		    copy_from_user(&abySeq[0], param->u.wpa_key.seq, param->u.wpa_key.seq_len)) {
-+		    copy_from_user(&abySeq[0],
-+				   (void __user *)param->u.wpa_key.seq,
-+				   param->u.wpa_key.seq_len)) {
- 			spin_lock_irq(&pDevice->lock);
- 			return -EINVAL;
- 		}
--- 
-1.7.10.4
+"Additionally" is a good flag for this patch should be split-up. It
+seems like we would want to apply this part to stable.
 
+Rob
+
+>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  arch/arm/include/asm/fixmap.h | 12 ++++++++++--
+>  arch/arm/mm/highmem.c         |  2 --
+>  arch/arm/mm/mm.h              |  3 +++
+>  arch/arm/mm/mmu.c             |  5 ++++-
+>  4 files changed, 17 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+> index 8ee7cb4f62ca..3ed08232be55 100644
+> --- a/arch/arm/include/asm/fixmap.h
+> +++ b/arch/arm/include/asm/fixmap.h
+> @@ -1,16 +1,24 @@
+>  #ifndef _ASM_FIXMAP_H
+>  #define _ASM_FIXMAP_H
+>
+> +/*
+> + * The fixmap uses 2MB. The KMAP fixmap needs 64k per CPU, so make room for
+> + * 16 CPUs (taking 1MB) and leave the rest for additional fixmap areas.
+> + */
+>  #define FIXADDR_START          0xffc00000UL
+>  #define FIXADDR_END            0xffe00000UL
+>  #define FIXADDR_TOP            (FIXADDR_END - PAGE_SIZE)
+>  #define FIXADDR_SIZE           (FIXADDR_END - FIXADDR_START)
+>
+> -#define FIX_KMAP_NR_PTES       (FIXADDR_SIZE >> PAGE_SHIFT)
+> +/* 16 PTEs per CPU (64k of 4k pages). */
+> +#define FIX_KMAP_NR_PTES       16
+> +#define FIX_KMAP_NR_CPUS       16
+>
+>  enum fixed_addresses {
+> +       /* Support 16 CPUs for kmap as the first region of fixmap entries. */
+>         FIX_KMAP_BEGIN,
+> -       FIX_KMAP_END = FIX_KMAP_NR_PTES - 1,
+> +       FIX_KMAP_END = (FIX_KMAP_NR_PTES * FIX_KMAP_NR_CPUS) - 1,
+> +
+>         __end_of_fixed_addresses
+>  };
+>
+> diff --git a/arch/arm/mm/highmem.c b/arch/arm/mm/highmem.c
+> index a1241ee8425e..adf264fb700b 100644
+> --- a/arch/arm/mm/highmem.c
+> +++ b/arch/arm/mm/highmem.c
+> @@ -18,8 +18,6 @@
+>  #include <asm/tlbflush.h>
+>  #include "mm.h"
+>
+> -pte_t *fixmap_page_table;
+> -
+>  static inline void set_fixmap_pte(int idx, pte_t pte)
+>  {
+>         unsigned long vaddr = __fix_to_virt(idx);
+> diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+> index ce727d47275c..c8b5b2d05b55 100644
+> --- a/arch/arm/mm/mm.h
+> +++ b/arch/arm/mm/mm.h
+> @@ -7,6 +7,9 @@
+>  /* the upper-most page table pointer */
+>  extern pmd_t *top_pmd;
+>
+> +/* The fixmap PTE. */
+> +extern pte_t *fixmap_page_table;
+> +
+>  /*
+>   * 0xffff8000 to 0xffffffff is reserved for any ARM architecture
+>   * specific hacks for copying pages efficiently, while 0xffff4000
+> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+> index e881ed817a8b..a7a756603775 100644
+> --- a/arch/arm/mm/mmu.c
+> +++ b/arch/arm/mm/mmu.c
+> @@ -53,6 +53,9 @@ EXPORT_SYMBOL(empty_zero_page);
+>   */
+>  pmd_t *top_pmd;
+>
+> +/* The fixmap PTE. */
+> +pte_t *fixmap_page_table;
+> +
+>  #define CPOLICY_UNCACHED       0
+>  #define CPOLICY_BUFFERED       1
+>  #define CPOLICY_WRITETHROUGH   2
+> @@ -1342,10 +1345,10 @@ static void __init kmap_init(void)
+>  #ifdef CONFIG_HIGHMEM
+>         pkmap_page_table = early_pte_alloc(pmd_off_k(PKMAP_BASE),
+>                 PKMAP_BASE, _PAGE_KERNEL_TABLE);
+> +#endif
+>
+>         fixmap_page_table = early_pte_alloc(pmd_off_k(FIXADDR_START),
+>                 FIXADDR_START, _PAGE_KERNEL_TABLE);
+> -#endif
+>  }
+>
+>  static void __init map_lowmem(void)
+> --
+> 1.9.1
+>
