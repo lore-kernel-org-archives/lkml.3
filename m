@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757799AbaHGNzc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 09:55:32 -0400
-Received: from regular1.263xmail.com ([211.150.99.137]:49167 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757435AbaHGNzb (ORCPT
+	id S1757838AbaHGN4D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 09:56:03 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:53961 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757512AbaHGN4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 09:55:31 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: caesar.wang@rock-chips.com
-X-FST-TO: linux-doc@vger.kernel.org
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: caesar.wang@rock-chips.com
-X-UNIQUE-TAG: <d41fea89ba793e0dc889431a31c8b9ea>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <53E3854C.9070005@rock-chips.com>
-Date: Thu, 07 Aug 2014 21:55:24 +0800
-From: caesar <caesar.wang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 7 Aug 2014 09:56:01 -0400
+Date: Thu, 7 Aug 2014 15:55:55 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, linux-pwm@vger.kernel.org,
+        devicetree@vger.kernel.org, ajitpal.singh@st.com
+Subject: Re: [PATCH v2 00/11] pwm: Introduce ST's PWM driver
+Message-ID: <20140807135554.GB27417@ulmo.nvidia.com>
+References: <1405348412-7352-1-git-send-email-lee.jones@linaro.org>
+ <20140721123950.GY30888@lee--X1>
+ <20140807132050.GC1540@ulmo.nvidia.com>
+ <20140807135432.GB21618@lee--X1>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: heiko@sntech.de, b.galvani@gmail.com, robh+dt@kernel.org,
-        ijc+devicetree@hellion.org.uk, rdunlap@infradead.org,
-        galak@codeaurora.org, cf@rock-chips.com, huangtao@rock-chips.com,
-        xjq@rock-chips.com, addy.ke@rock-chips.com, cjf@rock-chips.com,
-        hj@rock-chips.com, linux-arm-kernel@lists.infradead.org,
-        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v4 2/2] pwm: rockchip: Added to support for RK3288 SoC
-References: <1406197295-10604-1-git-send-email-caesar.wang@rock-chips.com> <1406197295-10604-3-git-send-email-caesar.wang@rock-chips.com> <20140807061842.GB17340@ulmo> <53E3795E.4080607@rock-chips.com> <20140807131443.GA1540@ulmo.nvidia.com>
-In-Reply-To: <20140807131443.GA1540@ulmo.nvidia.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i0/AhcQY5QxfSsSZ"
+Content-Disposition: inline
+In-Reply-To: <20140807135432.GB21618@lee--X1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thierry,
 
-在 2014年08月07日 21:14, Thierry Reding 写道:
-> On Thu, Aug 07, 2014 at 09:04:30PM +0800, caesar wrote:
-> [...]
->> As you say, I will rewrite the about if it's really need  do so it.
->> For example:
->>
->> static const struct rockchip_pwm_data pwm_data_v1 = {
->>      .regs = {
->>                  .duty = 0x04,
->>                  .period = 0x08,
->>                  .cntr = 0x00,
->>                  .ctrl = 0x0c,
->>      },
->>      .prescaler = 2,
->>      .set_enable = rockchip_pwm_set_enable_v1,
->> };
->>
->> static const struct rockchip_pwm_data pwm_data_v2 = {
->>      .regs = {
->>                  .duty = 0x08,
->>                  .period = 0x04,
->>                  .cntr = 0x00,
->>                  .ctrl = 0x0c,
->>      },
->>      .prescaler = 1,
->>      .set_enable = rockchip_pwm_set_enable_v2,
->> };
->>
->> static const struct rockchip_pwm_data pwm_data_vop = {
->>      .regs = {
->>                  .duty = 0x08,
->>                  .period = 0x04,
->>                  .cntr = 0x0c,
->>                  .ctrl = 0x00,
->>      },
->>      .prescaler = 1,
->>      .set_enable = rockchip_pwm_set_enable_v2,
->> };
->>
->> Is that right?
-> Yes.
->
->>>> +	.set_enable = rockchip_pwm_set_enable_v2,
->>>> +};
->>> No need for the double indirection.
->> Sorry, I think is need if you mean a double indirection for ".set_enable".
-> The "double indirection" was regarding the symbolic names for registers,
-> not the .set_enable(). Sorry.
-OK,I will fix the about in patch v5 tomorrow if no other problems,Thanks!
-> Thierry
+--i0/AhcQY5QxfSsSZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Thu, Aug 07, 2014 at 02:54:32PM +0100, Lee Jones wrote:
+> On Thu, 07 Aug 2014, Thierry Reding wrote:
+>=20
+> > On Mon, Jul 21, 2014 at 01:39:50PM +0100, Lee Jones wrote:
+> > > Hi Thierry,
+> > >=20
+> > > Did you find some time to look at this set?
+> >=20
+> > Sorry for the long delay. I've applied patches 6-11 to the PWM tree,
+> > though I've modified patch 6 a little for consistency. The module is
+> > now named after the Kconfig option (pwm-sti rather than pwm-st). The
+> > dependencies also seem to be redundant (ARCH_STI already depends on
+> > OF), though I didn't change that just in case it's required for some
+> > other reason.
+> >=20
+> > Anyway, scream if there's anything in the PWM for-next branch that
+> > needs to be fixed up.
+>=20
+> And in time for v3.17.  Nice one, thanks Thierry.
 
+Barely...
+
+Thierry
+
+--i0/AhcQY5QxfSsSZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT44VqAAoJEN0jrNd/PrOhn8YP/jjR9coULS8sfNmgATFZNrhj
+Xmsu3crBeAgNk9+bIYulFhI7cqsHvSp5LYA2AMM102753YluXJhwt0K1LoJZiYk8
+tpRrqrfG+whKjiG2aQscWVTGHddmnjHLQF8Lco86s6ML4RT++QGU2mdDOkXQMlE8
+nX8BtcKqDW+DOfiyH3/TQyR6L+hUJDWmoSTzp0qYJLpLa2ZjoDmOdzfFXTc3TJE/
+jAuzfoUA10sfqeMPmRerjJcwVFPWr6OJiIZf3M4Nc8feJNxfYOzmkMyVMm+Je7l9
+7SuILTwnPGlp4hF5mpLnhK1ar9AVnzAzGTH4vSomveWHTH74D4BIQOTLJt6qHS+T
+8SXCeaBxq4GUUNTHOUxrD8hG9VlqNxfBewOhzluaDNFJ9qmTsr5Fgf4JQaia0eRD
+dpKhUill9BikdUJqE0/dQXOUTwjCAnSMbn/vdSBccDMrV6wW0dHP5y2ALEPIo9vo
+sc8i/acT4wGZpNkNBxGNIKUVejBwshyN0ZW1ea6rnk2CqQE4iX8RhRLlFUF5ziEs
+AHARJogM3sYNdUluLAg8xWg0gLjD4wRInpZ8r/dMzgccxdFqekOgaIEbdrJ1rPHM
+qYkxRznzksN/1TaOISpWZn5IdJM/g3sZwtddxJYsGQJp9WfWJqEPzuN22tiovtCq
+cbupTbDlu0dhvicWVHyW
+=mzHW
+-----END PGP SIGNATURE-----
+
+--i0/AhcQY5QxfSsSZ--
