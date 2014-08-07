@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715AbaHGR4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 13:56:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30410 "EHLO mga01.intel.com"
+	id S1754892AbaHGR7N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 13:59:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:33122 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750760AbaHGR4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 13:56:35 -0400
+	id S1750763AbaHGR7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 13:59:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,819,1400050800"; 
-   d="scan'208";a="573264775"
-Subject: [PATCH] tracing: generate RCU warnings even when tracepoints are disabled
+   d="scan'208";a="555293079"
+Subject: [PATCH] [BUGFIX] x86: mm: fix rcu splat from new TLB tracepoints
 To: linux-kernel@vger.kernel.org
 Cc: Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com, davej@redhat.com,
-        paulmck@linux.vnet.ibm.com, rostedt@goodmis.org, mingo@redhat.com
+        paulmck@linux.vnet.ibm.com, hpa@zytor.com, x86@kernel.org
 From: Dave Hansen <dave@sr71.net>
-Date: Thu, 07 Aug 2014 10:52:04 -0700
-Message-Id: <20140807175204.C257CAC5@viggo.jf.intel.com>
+Date: Thu, 07 Aug 2014 10:58:41 -0700
+Message-Id: <20140807175841.5C92D878@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,63 +23,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
+This is a bug fix that needs to be pushed to mainline before the
+3.17 release.
+
 Dave Jones reported seeing a bug from one of my TLB tracepoints:
 
-	http://lkml.kernel.org/r/20140806181801.GA4605@redhat.com
+        http://lkml.kernel.org/r/20140806181801.GA4605@redhat.com
 
-I've been running these patches for months and never saw this.
-But, a big chunk of my testing, especially with all the debugging
-enabled, was in a vm where intel_idle doesn't work.  On the
-systems where I was using intel_idle, I never had lockdep enabled
-and this tracepoint on at the same time.
+According to Paul McKenney, the right way to fix this is adding
+an _rcuidle suffix to the tracepoint.
 
-This patch ensures that whenever we have lockdep available, we do
-_some_ RCU activity at the site of the tracepoint, despite
-whether the tracepoint's condition matches or even if the
-tracepoint itself is completely disabled.  This is a bit of a
-hack, but it is pretty self-contained.
+        http://lkml.kernel.org/r/20140807065055.GA5821@linux.vnet.ibm.com
 
-I confirmed that with this patch plus lockdep I get the same
-splat as Dave Jones did, but without enabling the tracepoint
-explicitly.
+This patch does just that.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>,
+Reported-by: Dave Jones <davej@redhat.com>,
 Cc: paulmck@linux.vnet.ibm.com
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-
 ---
 
- b/include/linux/tracepoint.h |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ b/arch/x86/mm/tlb.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff -puN include/linux/tracepoint.h~easier-rcu-splat include/linux/tracepoint.h
---- a/include/linux/tracepoint.h~easier-rcu-splat	2014-08-07 10:29:32.701217956 -0700
-+++ b/include/linux/tracepoint.h	2014-08-07 10:40:35.244627014 -0700
-@@ -157,6 +157,12 @@ extern void syscall_unregfunc(void);
-  * Make sure the alignment of the structure in the __tracepoints section will
-  * not add unwanted padding between the beginning of the section and the
-  * structure. Force alignment to the same alignment as the section start.
-+ *
-+ * When lockdep is enabled, we make sure to always do the RCU portions of
-+ * the tracepoint code, regardless of whether tracing is on or we match the
-+ * condition.  This lets us find RCU issues triggered with tracepoints even
-+ * when this tracepoint is off.  This code has no purpose other than poking
-+ * RCU a bit.
-  */
- #define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args) \
- 	extern struct tracepoint __tracepoint_##name;			\
-@@ -167,6 +173,11 @@ extern void syscall_unregfunc(void);
- 				TP_PROTO(data_proto),			\
- 				TP_ARGS(data_args),			\
- 				TP_CONDITION(cond),,);			\
-+		if (IS_ENABLED(CONFIG_LOCKDEP)) {			\
-+			rcu_read_lock_sched_notrace();			\
-+			rcu_dereference_sched(__tracepoint_##name.funcs);\
-+			rcu_read_unlock_sched_notrace();		\
-+		}							\
- 	}								\
- 	__DECLARE_TRACE_RCU(name, PARAMS(proto), PARAMS(args),		\
- 		PARAMS(cond), PARAMS(data_proto), PARAMS(data_args))	\
+diff -puN arch/x86/mm/tlb.c~mm-fix-rcu-splat-from-tlb-tracepoints arch/x86/mm/tlb.c
+--- a/arch/x86/mm/tlb.c~mm-fix-rcu-splat-from-tlb-tracepoints	2014-08-07 10:55:43.312283542 -0700
++++ b/arch/x86/mm/tlb.c	2014-08-07 10:56:49.763352575 -0700
+@@ -49,7 +49,13 @@ void leave_mm(int cpu)
+ 	if (cpumask_test_cpu(cpu, mm_cpumask(active_mm))) {
+ 		cpumask_clear_cpu(cpu, mm_cpumask(active_mm));
+ 		load_cr3(swapper_pg_dir);
+-		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
++		/*
++		 * This gets called in the idle path where RCU
++		 * functions differently.  Tracing normally
++		 * uses RCU, so we have to call the tracepoint
++		 * specially here.
++		 */
++		trace_tlb_flush_rcuidle(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(leave_mm);
 _
