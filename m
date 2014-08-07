@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634AbaHGTgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 15:36:09 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:49203 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297AbaHGTgH (ORCPT
+	id S1754892AbaHGTia (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 15:38:30 -0400
+Received: from asavdk3.altibox.net ([109.247.116.14]:34424 "EHLO
+	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaHGTi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 15:36:07 -0400
+	Thu, 7 Aug 2014 15:38:29 -0400
+Date: Thu, 7 Aug 2014 21:38:24 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        David Rientjes <rientjes@google.com>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86: Add "make tinyconfig" to configure the tiniest
+ possible kernel
+Message-ID: <20140807193824.GA2351@ravnborg.org>
+References: <20140806222419.GA2566@jtriplet-mobl1>
+ <20140806223152.GA14348@jtriplet-mobl1>
+ <20140807160352.GB1382@ravnborg.org>
+ <20140807190243.GA5580@jtriplet-mobl1>
 MIME-Version: 1.0
-In-Reply-To: <20140807053344.GA5754@kroah.com>
-References: <1407388229-31807-1-git-send-email-valentina.manea.m@gmail.com>
-	<20140807053344.GA5754@kroah.com>
-Date: Thu, 7 Aug 2014 12:36:06 -0700
-Message-ID: <CABdoFFd9ZuikFyaSfOyn-babECtno50_GGNHofK1-LmhLCqeTw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] usbip: move usbip out of staging
-From: Valentina Manea <valentina.manea.m@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: =?UTF-8?B?VMO8bGluIMSwemVy?= <tulinizer@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, mail@beyermatthias.de,
-        hdegoede@redhat.com, Federico Manzan <f.manzan@gmail.com>,
-        Kurt Garloff <kurt@garloff.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Linux Kernel Community @ ROSEdu" <firefly@lists.rosedu.org>,
-        Andy Grover <andy.grover@gmail.com>, max@vozeler.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140807190243.GA5580@jtriplet-mobl1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 6, 2014 at 10:33 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Thu, Aug 07, 2014 at 08:10:25AM +0300, Valentina Manea wrote:
->> This is a resend of the patch series from March.
->>
->> After migrating userspace code to libudev, converting usbip-host
->> to a device driver and various bug fixes and enhancements, USB/IP
->> is fully functional and can be moved out of staging.
->>
->> This patch series moves it as following:
->> * userspace code to tools/usb/usbip
->> * kernel code to drivers/usb/usbip
->>
->> Besides this, a warning generated in the kernel code is solved.
->
-> What kernel version is this against?
->
+> 
+> > > diff --git a/arch/x86/configs/tiny.config b/arch/x86/configs/tiny.config
+> > > new file mode 100644
+> > > index 0000000..8f0e54c
+> > > --- /dev/null
+> > > +++ b/arch/x86/configs/tiny.config
+> > > @@ -0,0 +1,5 @@
+> > > +CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+> > > +CONFIG_KERNEL_XZ=y
+> > > +CONFIG_NOHIGHMEM=y
+> > > +CONFIG_OPTIMIZE_INLINING=y
+> > > +CONFIG_SLOB=y
+> > All the above are general options that apply equal to arm than to x86.
+> 
+> NOHIGHMEM isn't.
+You are right - as it is x86 specific it should had been prefixed
+with X86_ to document so.
 
-I rebased my tree against master in the staging tree.
+As the symbol is only relevant for X86 it will not hurt anyone else,
+so it is OK to have it.
+But it would be nice to document in tiny.config that
+this is a X86 specific symbol.
 
-> And can we get a maintainer for this code?  I don't want to see it sit
-> "ownerless" in the kernel tree.  Will you be willing to do this?
->
-
-Yes. But I should be briefed about that responsibilities will this involve.
-
-Thanks,
-Valentina
+	Sam
