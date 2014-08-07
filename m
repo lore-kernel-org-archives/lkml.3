@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016AbaHGTsz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 15:48:55 -0400
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:33808 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaHGTsy (ORCPT
+	id S1755322AbaHGTtU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 15:49:20 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:15145 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755100AbaHGTtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 15:48:54 -0400
+	Thu, 7 Aug 2014 15:49:17 -0400
+Date: Thu, 7 Aug 2014 15:49:07 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
+ waiting for RCU-tasks
+Message-ID: <20140807154907.6f59cf6e@gandalf.local.home>
+In-Reply-To: <20140807184635.GI3588@twins.programming.kicks-ass.net>
+References: <20140805205711.7a52076c@gandalf.local.home>
+	<20140806012139.GY8101@linux.vnet.ibm.com>
+	<20140806084708.GR9918@twins.programming.kicks-ass.net>
+	<20140806120958.GZ8101@linux.vnet.ibm.com>
+	<20140806163035.GG19379@twins.programming.kicks-ass.net>
+	<20140806224518.GA8101@linux.vnet.ibm.com>
+	<20140807084544.GJ19379@twins.programming.kicks-ass.net>
+	<20140807150031.GB5821@linux.vnet.ibm.com>
+	<20140807152600.GW9918@twins.programming.kicks-ass.net>
+	<20140807172753.GG3588@twins.programming.kicks-ass.net>
+	<20140807184635.GI3588@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CABdoFFd9ZuikFyaSfOyn-babECtno50_GGNHofK1-LmhLCqeTw@mail.gmail.com>
-References: <1407388229-31807-1-git-send-email-valentina.manea.m@gmail.com>
-	<20140807053344.GA5754@kroah.com>
-	<CABdoFFd9ZuikFyaSfOyn-babECtno50_GGNHofK1-LmhLCqeTw@mail.gmail.com>
-Date: Thu, 7 Aug 2014 13:48:53 -0600
-Message-ID: <CAKocOONNKZXHS1+ZDrMRu4noOCi+OmSVvhcxBrH+iNDyB1B7zw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] usbip: move usbip out of staging
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Valentina Manea <valentina.manea.m@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        =?UTF-8?B?VMO8bGluIMSwemVy?= <tulinizer@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, mail@beyermatthias.de,
-        hdegoede@redhat.com, Federico Manzan <f.manzan@gmail.com>,
-        Kurt Garloff <kurt@garloff.de>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux Kernel Community @ ROSEdu" <firefly@lists.rosedu.org>,
-        Andy Grover <andy.grover@gmail.com>, max@vozeler.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 7, 2014 at 1:36 PM, Valentina Manea
-<valentina.manea.m@gmail.com> wrote:
-> On Wed, Aug 6, 2014 at 10:33 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> On Thu, Aug 07, 2014 at 08:10:25AM +0300, Valentina Manea wrote:
->>> This is a resend of the patch series from March.
->>>
->>> After migrating userspace code to libudev, converting usbip-host
->>> to a device driver and various bug fixes and enhancements, USB/IP
->>> is fully functional and can be moved out of staging.
->>>
->>> This patch series moves it as following:
->>> * userspace code to tools/usb/usbip
->>> * kernel code to drivers/usb/usbip
->>>
->>> Besides this, a warning generated in the kernel code is solved.
->>
->> What kernel version is this against?
->>
->
-> I rebased my tree against master in the staging tree.
->
->> And can we get a maintainer for this code?  I don't want to see it sit
->> "ownerless" in the kernel tree.  Will you be willing to do this?
->>
->
-> Yes. But I should be briefed about that responsibilities will this involve.
->
+On Thu, 7 Aug 2014 20:46:35 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-If you would like a back-up, I can volunteer to be co-maintainer for this
-driver.
+> On Thu, Aug 07, 2014 at 07:27:53PM +0200, Peter Zijlstra wrote:
+> > Right, Steve (and Paul) please explain _why_ this is an 'RCU' at all?
+> > _Why_ do we have call_rcu_task(), and why is it entwined in the 'normal'
+> > RCU stuff? We've got SRCU -- which btw started out simple, without
+> > call_srcu() -- and that lives entirely independent. And SRCU is far more
+> > an actual RCU than this thing is, its got read side primitives and
+> > everything.
+> > 
+> > Also, I cannot think of any other use besides trampolines for this
+> > thing, but that might be my limited imagination.
+> 
+> Also, trampolines can end up in the return frames, right? So how can you
+> be sure when to wipe them? Passing through schedule() isn't enough for
+> that.
 
--- Shuah
+Not sure what you mean.
+
+> 
+> Userspace is, but kernel threads typically don't ever end up there.
+
+Only voluntary calls to schedule() will be a quiescent state. Preempt
+doesn't count. And no, function callbacks to not call schedule(),
+function callbacks should be treated even stricter than interrupt
+handlers. They should never call schedule() directly or even take any
+locks. Heck, they should be stricter than NMIs for that matter.
+
+Hence, once something calls schedule() directly, we know that it is not
+on a trampoline, nor is it going to return to one.
+
+-- Steve
