@@ -1,242 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389AbaHGG6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 02:58:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58087 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753727AbaHGG6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 02:58:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,816,1400050800"; 
-   d="scan'208";a="554978781"
-Message-ID: <53E32387.20801@linux.intel.com>
-Date: Thu, 07 Aug 2014 14:58:15 +0800
-From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754942AbaHGG7i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 02:59:38 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:52229 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753100AbaHGG7h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 02:59:37 -0400
+Message-ID: <53E323D1.8020209@hitachi.com>
+Date: Thu, 07 Aug 2014 15:59:29 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>
-CC: ulf.hansson@linaro.org, tgih.jun@samsung.com, aaron.lu@intel.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jackey.shen@amd.com, gregkh@linuxfoundation.org
-Subject: Re: One bug of SDHCI driver
-References: <53B249A4.2040404@linux.intel.com> <53B57B23.4020607@linux.intel.com> <53B61403.7040602@samsung.com> <53B968EB.60401@linux.intel.com> <53BC164E.4040900@linux.intel.com> <86zjgcjckz.fsf@void.printf.net> <53C497FD.2070000@linux.intel.com> <53C4AAB5.4070700@samsung.com> <53C4B0CA.1020504@samsung.com> <53CBD775.9000304@linux.intel.com> <53D125D6.3020203@linux.intel.com> <53D85CBF.3070409@linux.intel.com> <53D8691B.8080904@samsung.com> <53E0640D.2030709@linux.intel.com>
-In-Reply-To: <53E0640D.2030709@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wang Nan <wangnan0@huawei.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        peifeiyue@huawei.com, Li Zefan <lizefan@huawei.com>
+Subject: Re: Re: [RFC PATCH] kprobes: arm: enable OPTPROBES for arm 32
+References: <1407223697-74911-1-git-send-email-wangnan0@huawei.com> <53E1B2A0.1040807@hitachi.com> <53E1CA11.1030206@huawei.com>
+In-Reply-To: <53E1CA11.1030206@huawei.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-kindly reminder.
-
-Thanks,
-Zhonghui
-
-On 2014/8/5 12:56, Fu, Zhonghui wrote:
-> Hi, Jaehoon
->
-> According to your comments, I created a new patch for this issue as follows:
->
->
-> Thanks,
-> Zhonghui
->
->
-> From 6cee984e1d76ba0a3320430f8cf4318ab65fcf06 Mon Sep 17 00:00:00 2001
-> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
-> Date: Tue, 5 Aug 2014 12:44:38 +0800
-> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
->
-> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
-> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
-> the use of our own custom threaded IRQ handler, but left in an
-> unconditional wake_up_process() on that handler at resume-time.
-> Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
->
-> In addition, the check for MMC_CAP_SDIO_IRQ capability is added
-> before enable sdio IRQ.
->
-> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
-> Signed-off-by: Chris Ball <chris@printf.net>
-> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
-> ---
->  drivers/mmc/core/sdio.c     |   14 ++++++++++++--
->  drivers/mmc/core/sdio_irq.c |    4 ++--
->  2 files changed, 14 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-> index e636d9e..e04a540 100644
-> --- a/drivers/mmc/core/sdio.c
-> +++ b/drivers/mmc/core/sdio.c
-> @@ -992,8 +992,18 @@ static int mmc_sdio_resume(struct mmc_host *host)
->  		}
->  	}
->  
-> -	if (!err && host->sdio_irqs)
-> -		wake_up_process(host->sdio_irq_thread);
-> +	if (!err && host->sdio_irqs) {
-> +		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
-> +			wake_up_process(host->sdio_irq_thread);
-> +		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
-> +			mmc_release_host(host);
-> +			mmc_host_clk_hold(host);
-> +			host->ops->enable_sdio_irq(host, 1);
-> +			mmc_host_clk_release(host);
-> +			mmc_claim_host(host);
-> +		}
-> +	}
-> +
->  	mmc_release_host(host);
->  
->  	host->pm_flags &= ~MMC_PM_KEEP_POWER;
-> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
-> index 5cc13c8..696eca4 100644
-> --- a/drivers/mmc/core/sdio_irq.c
-> +++ b/drivers/mmc/core/sdio_irq.c
-> @@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
->  				host->sdio_irqs--;
->  				return err;
->  			}
-> -		} else {
-> +		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
->  			mmc_host_clk_hold(host);
->  			host->ops->enable_sdio_irq(host, 1);
->  			mmc_host_clk_release(host);
-> @@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
->  		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->  			atomic_set(&host->sdio_irq_thread_abort, 1);
->  			kthread_stop(host->sdio_irq_thread);
-> -		} else {
-> +		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
->  			mmc_host_clk_hold(host);
->  			host->ops->enable_sdio_irq(host, 0);
->  			mmc_host_clk_release(host);
-> -- 1.7.1
->
->
->
->
->
->
-> On 2014/7/30 11:40, Jaehoon Chung wrote:
->> Hi, Zhonghui.
+(2014/08/06 15:24), Wang Nan wrote:
+>>> +
+>>> +static void
+>>> +optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
+>>> +{
+>>> +	unsigned long flags;
+>>> +
+>>> +	regs->ARM_pc = (unsigned long)op->kp.addr;
+>>> +	regs->ARM_ORIG_r0 = ~0UL;
+>>> +
+>>> +
+>>> +	local_irq_save(flags);
+>>> +	/* 
+>>> +	 * This is possible if op is under delayed unoptimizing.
+>>> +	 * We need simulate the replaced instruction.
+>>> +	 */
+>>> +	if (kprobe_disabled(&op->kp)) {
+>>> +		struct kprobe *p = &op->kp;
+>>> +		op->kp.ainsn.insn_singlestep(p->opcode, &p->ainsn, regs);
+>>> +	} else {
+>>> +		kprobe_handler(regs);
+>>> +	}
 >>
->> On 07/30/2014 11:47 AM, Fu, Zhonghui wrote:
->>> Hi,
->>>
->>> In the resume function, SDIO irq must be enabled, or the interrupts from devices on SDIO bus can't be acknowledged. I also uploaded this new patch to https://bugzilla.kernel.org/show_bug.cgi?id=80151.
->>> Could you please help to review it?
->>>
->>>
->>>
->>>
->>> Thanks,
->>> Zhonghui
->>>
->>> On 2014/7/24 23:27, Fu, Zhonghui wrote:
->>>> Hi,
->>>>
->>>> Any comments for this new patch?
->>>>
->>>> Thanks,
->>>> Zhonghui
->>>> On 2014/7/20 22:51, Fu, Zhonghui wrote:
->>>>> Hi,
->>>>>
->>>>> Chris' patch is not enough to fix this bug. I made a patch as follows and verified it can work.  Could you please give out some comments about this patch?
->>>>>
->>>>>
->>>>> Thanks,
->>>>> Zhonghui
->>>>>
->>>>> >From 72d6f5b56fa04290fd3a055a3333de1d89e7c8d4 Mon Sep 17 00:00:00 2001
->>>>> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->>>>> Date: Sun, 20 Jul 2014 22:29:53 +0800
->>>>> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
->>>>>
->>>>> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
->>>>> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
->>>>> the use of our own custom threaded IRQ handler, but left in an
->>>>> unconditional wake_up_process() on that handler at resume-time.
->>>>>
->>>>> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->>>>> ---
->>>>>  drivers/mmc/core/sdio.c |   14 ++++++++++++--
->>>>>  1 files changed, 12 insertions(+), 2 deletions(-)
->>>>>
->>>>> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
->>>>> index e636d9e..8369e56 100644
->>>>> --- a/drivers/mmc/core/sdio.c
->>>>> +++ b/drivers/mmc/core/sdio.c
->>>>> @@ -992,8 +992,18 @@ static int mmc_sdio_resume(struct mmc_host *host)
->>>>>  		}
->>>>>  	}
->>>>>  
->>>>> -	if (!err && host->sdio_irqs)
->>>>> -		wake_up_process(host->sdio_irq_thread);
->>>>> +	if (!err && host->sdio_irqs) {
->>>>> +		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->>>>> +			wake_up_process(host->sdio_irq_thread);
->>>>> +		} else {
->>>>> +			mmc_release_host(host);
->>>>> +			mmc_host_clk_hold(host);
->>>>> +			host->ops->enable_sdio_irq(host, 1);
->>>>> +			mmc_host_clk_release(host);
->>>>> +			mmc_claim_host(host);
->>>>> +		}
->>>>> +	}
->> If you enable the sdio_irq, I think it needs to check whether MMC_CAP_SDIO_IRQ is set or not.
+>> You don't need brace "{}" for one statement.
+>> By the way, why don't you call opt_pre_handler()?
 >>
->>
->> Best Regards,
->> Jaehoon Chung
->>>>> +
->>>>>  	mmc_release_host(host);
->>>>>  
->>>>>  	host->pm_flags &= ~MMC_PM_KEEP_POWER;
->>>>> -- 1.7.1
->>>>>
->>>>>
->>>>>
->>>>> On 2014/7/15 12:40, Jaehoon Chung wrote:
->>>>>> From: Chris Ball <chris@printf.net>
->>>>>> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
->>>>>>
->>>>>> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
->>>>>> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
->>>>>> the use of our own custom threaded IRQ handler, but left in an
->>>>>> unconditional wake_up_process() on that handler at resume-time.
->>>>>>
->>>>>> Reported-by: Fu, Zhonghui <zhonghui.fu@linux.intel.com>
->>>>>> [Patch suggested by Jaehoon Chung]
->>>>>> Signed-off-by: Chris Ball <chris@printf.net>
->>>>>> ---
->>>>>>  drivers/mmc/core/sdio.c |    3 ++-
->>>>>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>>>>
->>>>>> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
->>>>>> index e636d9e..11cc4e0 100644
->>>>>> --- a/drivers/mmc/core/sdio.c
->>>>>> +++ b/drivers/mmc/core/sdio.c
->>>>>> @@ -992,7 +992,8 @@ static int mmc_sdio_resume(struct mmc_host *host)
->>>>>>  		}
->>>>>>  	}
->>>>>>  
->>>>>> -	if (!err && host->sdio_irqs)
->>>>>> +	if (!err && host->sdio_irqs &&
->>>>>> +			!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD))
->>>>>>  		wake_up_process(host->sdio_irq_thread);
->>>>>>  	mmc_release_host(host);
->>>>>>  
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> I use kprobe_handler because it handles instruction emulation.
+> 
+> In addition, I'm not very sure whether skipping the complex checks
+> in kprobe_handler() is safe or not.
+
+That seems to do same thing on x86. Then you should do something like
+the optimized_callback() on x86 as below.
+
+static void
+optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
+{
+        struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+        unsigned long flags;
+
+        local_irq_save(flags);
+        if (kprobe_running()) {
+                kprobes_inc_nmissed_count(&op->kp);
+        } else {
+                /* Save skipped registers */
+                regs->ARM_pc = (unsigned long)op->kp.addr;
+                regs->ARM_ORIG_r0 = ~0UL;
+
+                __this_cpu_write(current_kprobe, &op->kp);
+                kcb->kprobe_status = KPROBE_HIT_ACTIVE;
+                opt_pre_handler(&op->kp, regs);
+                __this_cpu_write(current_kprobe, NULL);
+		op->kp.ainsn.insn_singlestep(op->kp.opcode, &op->kp.ainsn, regs);
+        }
+        local_irq_restore(flags);
+}
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
