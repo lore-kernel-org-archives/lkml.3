@@ -1,180 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757638AbaHGMxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 08:53:48 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:48815 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757252AbaHGMwU (ORCPT
+	id S1757675AbaHGMx6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 08:53:58 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:49985 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757649AbaHGMxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 08:52:20 -0400
-X-IronPort-AV: E=Sophos;i="5.01,818,1400018400"; 
-   d="scan'208";a="88599290"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: coreteam@netfilter.org
-Cc: kernel-janitors@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
-        netdev@vger.kernel.org, kexec@lists.infradead.org
-Subject: [PATCH 0/5] fix error return code
-Date: Thu,  7 Aug 2014 14:49:04 +0200
-Message-Id: <1407415749-19978-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 7 Aug 2014 08:53:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAAmzW4MX2birtCOUxjDdQ7c3Y+RyVkBt383HEQ=XFgnhhOsQPw@mail.gmail.com>
+References: <CAMuHMdW2kb=EF-Nmem_gyUu=p7hFOTe+Q2ekHh41SaHHiWDGeg@mail.gmail.com>
+	<CAAmzW4MX2birtCOUxjDdQ7c3Y+RyVkBt383HEQ=XFgnhhOsQPw@mail.gmail.com>
+Date: Thu, 7 Aug 2014 14:53:54 +0200
+X-Google-Sender-Auth: nyd_e9vQxPPSrBrEKFokDIa-fCQ
+Message-ID: <CAMuHMdVC8aYwDEHnntshdVA24Nx3qAUXZfeRQNGqj=J6eExU-Q@mail.gmail.com>
+Subject: Re: BUG: enable_cpucache failed for radix_tree_node, error 12 (was:
+ Re: [PATCH v3 9/9] slab: remove BAD_ALIEN_MAGIC)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Joonsoo Kim <js1304@gmail.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The complate semantic patch that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Hi,
 
-// <smpl>
-// identify a function that returns a negative return value at least once.
-@ok exists@
-identifier f,ret,i;
-expression e;
-constant c;
-@@
+On Thu, Aug 7, 2014 at 2:36 PM, Joonsoo Kim <js1304@gmail.com> wrote:
+>> With latest mainline, I'm getting a crash during bootup on m68k/ARAnyM:
+>>
+>> enable_cpucache failed for radix_tree_node, error 12.
+>> kernel BUG at /scratch/geert/linux/linux-m68k/mm/slab.c:1522!
 
-f(...) {
-... when any
-(
-return -c@i;
-|
-ret = -c@i;
-... when != ret = e
-return ret;
-|
-if (ret < 0) { ... return ret; }
-)
-... when any
-}
+>> I bisected it to commit a640616822b2c3a8009b0600f20c4a76ea8a0025
+>> Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> Date:   Wed Aug 6 16:04:38 2014 -0700
+>>
+>>     slab: remove BAD_ALIEN_MAGIC
 
-// identify a case where the return variable is set to a non-negative value
-// and then returned in error-handling code
-@r exists@
-identifier ret,ok.f,fn;
-expression e1,e2,e3,e4,e5,e6,x;
-statement S,S1;
-position p1,p2,p3;
-@@
+> This patch only works for !NUMA. And if num_possible_nodes() is 1,
+> then it doesn't have any effect, because alloc_alien_cache() call is always
+> skipped. Is it possible !NUMA and num_possible_nodes() != 1?
+>
+> Could you check your config for CONFIG_NUMA and
+> CONFIG_NODES_SHIFT?
 
-f(...) {
-... when any
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != \(ret = e1\|ret++\|ret--\|ret+=e1\|ret-=e1\)
-    when != &ret
-    when any
-(
- if (<+... ret = e5 ...+>) S1
-|
- if (<+... &ret ...+>) S1
-|
-if@p2(<+...x = fn(...)...+>)
- {
-  ... when != ret = e6
-      when forall
- return@p3 ret;
-}
-|
-break;
-|
-x = fn(...)
-... when != \(ret = e4\|ret++\|ret--\|ret+=e4\|ret-=e4\)
-    when != &ret
-(
- if (<+... ret = e3 ...+>) S
-|
- if (<+... &ret ...+>) S
-|
-if@p2(<+...\(x != 0\|x < 0\|x == NULL\|IS_ERR(x)\)...+>)
- {
-  ... when != ret = e2
-      when forall
- return@p3 ret;
-}
-)
-)
-... when any
-}
+$ grep CONFIG_NUMA .config
+$ grep CONFIG_NODES_SHIFT .config
+CONFIG_NODES_SHIFT=3
+$
 
-@printer depends on r@
-position p;
-identifier ok.f,pr;
-constant char [] c;
-@@
+There are indeed multiple nodes:
 
-f(...) { <...pr@p(...,c,...)...> }
+On node 0 totalpages: 3584
+free_area_init_node: node 0, pgdat 003659a4, node_mem_map 00402000
+  DMA zone: 32 pages used for memmap
+  DMA zone: 0 pages reserved
+  DMA zone: 3584 pages, LIFO batch:0
+On node 1 totalpages: 65536
+free_area_init_node: node 1, pgdat 00366294, node_mem_map 00426090
+  DMA zone: 576 pages used for memmap
+  DMA zone: 0 pages reserved
+  DMA zone: 65536 pages, LIFO batch:15
 
-@bad0 exists@
-identifier r.ret,ok.f,g != {ERR_PTR,IS_ERR};
-position p != printer.p;
-@@
+> And, could you check booting with boot param "noaliencache"?
 
-f(...) { ... when any
-g@p(...,ret,...)
-... when any
- }
+That fixes the boot, too.
 
-// ignore the above if there is some path where the variable is set to
-// something else
-@bad depends on !bad0 exists@
-position r.p1,r.p2;
-statement S1,S2;
-identifier r.ret;
-expression e1;
-@@
+Thanks!
 
-(
-if@p1 (\(ret < 0\|ret != 0\)) S1
-|
-ret@p1 = 0
-)
-... when any
- \(ret = e1\|ret++\|ret--\|ret+=e1\|ret-=e1\|&ret\)
-... when any
-if@p2(...) S2
+Gr{oetje,eeting}s,
 
-@bad1 depends on !bad0 && !bad exists@
-position r.p2;
-statement S2;
-identifier r.ret;
-expression e1;
-constant c;
-@@
+                        Geert
 
-ret = -c
-... when != \(ret = e1\|ret++\|ret--\|ret+=e1\|ret-=e1\)
-    when != &ret
-    when any
-if@p2(...) S2
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-// likewise ignore it if there has been an intervening return
-@bad2 depends on !bad0 && !bad && !bad1 exists@
-position r.p1,r.p2;
-identifier r.ret;
-expression e1;
-statement S2;
-constant c;
-@@
-
-ret@p1 = 0
-... when != if (...) { ... ret = e1 ... return ret; }
-    when != if (...) { ... return -c; }
-    when any
-if@p2(...) S2
-
-
-@script:python depends on !bad0 && !bad && !bad1 && !bad2@
-p1 << r.p1;
-p2 << r.p2;
-p3 << r.p3;
-@@
-
-cocci.print_main("",p1)
-cocci.print_secs("",p2)
-cocci.print_secs("",p3)
-// </smpl>
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
