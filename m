@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932369AbaHGOHp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 10:07:45 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:62476 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932340AbaHGOHm (ORCPT
+	id S932392AbaHGOIK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 10:08:10 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:12374 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757457AbaHGOH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 10:07:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407417714.8334.8.camel@acox1-desk.ger.corp.intel.com>
-References: <1407394292-26317-1-git-send-email-matthias.bgg@gmail.com>
-	<1407394292-26317-2-git-send-email-matthias.bgg@gmail.com>
-	<1407417714.8334.8.camel@acox1-desk.ger.corp.intel.com>
-Date: Thu, 7 Aug 2014 16:07:41 +0200
-Message-ID: <CABuKBeKJ=KFc1DfvyHgD+iAC1=yLqYjjDUc0CH+1zbRQzw_DJw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] tty: serial: 8250: Add Mediatek UART driver
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>, jslaby@suse.cz,
-        Grant Likely <grant.likely@linaro.org>,
-        Varka Bhadram <varkabhadram@gmail.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Yingjoe Chen <yingjoe.chen@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 7 Aug 2014 10:07:27 -0400
+From: nick.dyer@itdev.co.uk
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Nick Dyer <nick.dyer@itdev.co.uk>
+Subject: [PATCH 2/2] Input: atmel_mxt_ts - mXT224 DMA quirk was fixed in firmware v2.0.AA
+Date: Thu,  7 Aug 2014 15:07:18 +0100
+Message-Id: <1407420438-6289-3-git-send-email-nick.dyer@itdev.co.uk>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407420438-6289-1-git-send-email-nick.dyer@itdev.co.uk>
+References: <1407420438-6289-1-git-send-email-nick.dyer@itdev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-07 15:21 GMT+02:00 Alan Cox <alan@linux.intel.com>:
->
->> +      * Some baudrates are not supported by the chip, so we use the next
->> +      * lower rate supported and update termios c_flag.
->
-> I don't see the termios updating being done now ?
+From: Nick Dyer <nick.dyer@itdev.co.uk>
 
-Please have a look on the usage of the SET_CFLAG_BAUD macro in the patch.
-I'm not sure if it is the way to go though.
+Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+---
+ drivers/input/touchscreen/atmel_mxt_ts.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
->
->> +     data->clk = of_clk_get(np, 0);
->> +     if (IS_ERR(data->clk)) {
->> +             pr_warn("Can't get timer clock");
->> +             return PTR_ERR(data->clk);
->> +     }
->> +
->> +     err = clk_prepare_enable(data->clk);
->> +     if (err) {
->> +             pr_warn("Can't prepare clock");
->
-> and these do need a newline on them. They are also not very useful as
-> they don't indicate what device was involved. If you passed pdev from
-> mtk8250_probe you'd be able to use dev_warn instead
->
-> Otherwise looks great and exactly as 8250_core is intended to be used.
->
-> Alan
->
->
-
-
-
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index da497db..67ea728 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -1424,10 +1424,12 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 
+ 		switch (object->type) {
+ 		case MXT_GEN_MESSAGE_T5:
+-			if (data->info.family_id == 0x80) {
++			if ((data->info.family_id == 0x80)
++			    && (data->info.version < 0x20)) {
+ 				/*
+-				 * On mXT224 read and discard unused CRC byte
+-				 * otherwise DMA reads are misaligned
++				 * On mXT224 firmware versions prior to V2.0
++				 * read and discard unused CRC byte otherwise
++				 * DMA reads are misaligned
+ 				 */
+ 				data->T5_msg_size = mxt_obj_size(object);
+ 			} else {
 -- 
-motzblog.wordpress.com
+1.9.1
+
