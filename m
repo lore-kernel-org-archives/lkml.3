@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496AbaHGR3G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 13:29:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46420 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082AbaHGR3E (ORCPT
+	id S932949AbaHGR3S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 13:29:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48125 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082AbaHGR3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 13:29:04 -0400
-Date: Thu, 7 Aug 2014 10:29:03 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Brian Gerst <brgerst@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@alien8.de>, Andrew Lutomriski <amluto@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dirk Hohndel <dirk@hohndel.org>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        comex <comexk@gmail.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH 3.10 12/27] x86-64, espfix: Dont leak bits 31:16 of %esp
- returning to 16-bit stack
-Message-ID: <20140807172903.GA18983@kroah.com>
-References: <20140805181344.268039690@linuxfoundation.org>
- <20140805181344.629775899@linuxfoundation.org>
- <20140806151620.GD12150@hercules>
- <20140806152417.GB15463@kroah.com>
- <20140807171355.GA28896@kroah.com>
+	Thu, 7 Aug 2014 13:29:14 -0400
+Date: Thu, 7 Aug 2014 19:29:01 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        linux-atm-general@lists.sourceforge.net
+Subject: Re: [setsockopt] WARNING: CPU: 0 PID: 1444 at
+ kernel/sched/core.c:7088 __might_sleep+0x51/0x16f()
+Message-ID: <20140807172901.GH3588@twins.programming.kicks-ass.net>
+References: <20140805214624.GA9973@localhost>
+ <20140807151741.GP19379@twins.programming.kicks-ass.net>
+ <20140807125948.2b7f1472@thirdoffive.cmf.nrl.navy.mil>
+ <20140807172514.GY9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ca0e2zgpnh8/XhnM"
 Content-Disposition: inline
-In-Reply-To: <20140807171355.GA28896@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140807172514.GY9918@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 10:13:55AM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Aug 06, 2014 at 08:24:17AM -0700, Greg Kroah-Hartman wrote:
-> > On Wed, Aug 06, 2014 at 04:16:20PM +0100, Luis Henriques wrote:
-> > > On Tue, Aug 05, 2014 at 11:14:04AM -0700, Greg Kroah-Hartman wrote:
-> > > <...>
-> > > > @@ -188,17 +193,21 @@ static void note_page(struct seq_file *m
-> > > >  		/*
-> > > >  		 * Now print the actual finished series
-> > > >  		 */
-> > > > -		seq_printf(m, "0x%0*lx-0x%0*lx   ",
-> > > > -			   width, st->start_address,
-> > > > -			   width, st->current_address);
-> > > > -
-> > > > -		delta = (st->current_address - st->start_address) >> 10;
-> > > > -		while (!(delta & 1023) && unit[1]) {
-> > > > -			delta >>= 10;
-> > > > -			unit++;
-> > > > +		if (!st->marker->max_lines ||
-> > > > +		    st->lines < st->marker->max_lines) {
-> > > > +			seq_printf(m, "0x%0*lx-0x%0*lx   ",
-> > > > +				   width, st->start_address,
-> > > > +				   width, st->current_address);
-> > > > +
-> > > > +			delta = (st->current_address - st->start_address) >> 10;
-> > > > +			while (!(delta & 1023) && unit[1]) {
-> > > > +				delta >>= 10;
-> > > > +				unit++;
-> > > > +			}
-> > > > +			seq_printf(m, "%9lu%c ", delta, *unit);
-> > > > +			printk_prot(m, st->current_prot, st->level);
-> > > >  		}
-> > > > -		seq_printf(m, "%9lu%c ", delta, *unit);
-> > > > -		printk_prot(m, st->current_prot, st->level);
-> > > > +		st->lines++;
-> > > >  
-> > > >  		/*
-> > > >  		 * We print markers for special areas of address space,
-> > > 
-> > > Hmm... the original commit has a 2nd hunk here that does seem to be
-> > > applicable to 3.10.  Was this dropped accidentally or on purpose?
-> > 
-> > I don't remember at all, sorry.  What is the hunk that I missed?
-> 
-> You are right, I somehow missed that, thanks.  I've also now fixed up
-> the ">> 10" change as well.  Good thing this is just in debugging code
-> :)
 
-And I messed it up on the 3.4 patch as well, so I'll go fix that one up
-too...
+--Ca0e2zgpnh8/XhnM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Aug 07, 2014 at 07:25:14PM +0200, Peter Zijlstra wrote:
+> > This isn't the only place that we queue a message for the signalling
+> > daemon after a prepare_to_wait() uninterruptibly so this patch would
+> > be incomplete as is.
+>=20
+> I'm not sure I follow, this is the only place you do so while then going
+> to sleep. All other sites don't sleep while they're enqueued on the
+> waitqueue.
+
+Argh, my brain is fried, you're quite right.  I'll go have another stab
+at it tomorrow or so.
+
+--Ca0e2zgpnh8/XhnM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT47ddAAoJEHZH4aRLwOS6IJYP/AgnaGHDuGXI2z1rZGgIWO0e
+pIDb2KDWni3pMhFMX5cqHGUR9GwTSJarQa0TUrzHvxIxgOznqij+N39uFDU+5VLV
+5rr1CRzyOCCHRAP4hr8H0T6LkTResh2gbjE4EOEvZvlfFfYwjGwxNZmghzrMVcvG
+vJYRtGWU1PM4Ge3WUIFIgEEtLTlkrFowBxclsiBG5fhBMGjzUICaWs8ot+Xpni98
+s6EqE1VNnFPjJ4vvj6CiHlX/40b3bTB04IoxMEFAf3/BcYS41c1EQ3q0eKgr86+O
+hI3InH7/VWK/A9A/Q99In55nLQr/ZCVVCtFOL0QJA/2QOtNgacZKuPZyg84OnHHN
+ZHGPA2YkQhL0xL3oAgKqka2quFuA0FA18VQjkvUpTWltEu/BMLp0S/pns/GDenBi
+YkIRrJuK+bDG0KD97XNGPeRXo903BxIcuBESslp+KbC6/70WdvbIcU4q/mJvuHfV
+xW2ujDYyVf+PROsTpf3SFtWMbfzAClMrh6X2wx69VigNfQQwl2NFXpP36IzXHtfr
+7ihxVFwxhBNvkRszqkYlBg2jiluXIcHbTCnrrUn6gkP2o2qn1pmZ+WaRZU7sUW06
+EY29KFtGjvWrZCQfpp2TriAO20bpsw8m9lHe7TWYaF9194A7VHsivuufsXeKjflz
+VN5tug3v9HQCYvhaxh9O
+=Xt9h
+-----END PGP SIGNATURE-----
+
+--Ca0e2zgpnh8/XhnM--
