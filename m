@@ -1,105 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936AbaHGCTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 22:19:34 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:40934 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754550AbaHGCTc (ORCPT
+	id S1754718AbaHGCYY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 22:24:24 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38935 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754120AbaHGCYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 22:19:32 -0400
+	Wed, 6 Aug 2014 22:24:22 -0400
+Message-ID: <53E2E354.6020902@codeaurora.org>
+Date: Wed, 06 Aug 2014 19:24:20 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAP_ceTwdDB76y9V-Zi2fwRwwVFiRHnAGhjiD1AJBsn21vQ9W4Q@mail.gmail.com>
-References: <CAP_ceTxk=OE3UVhNKk+WV7EG3E9Z0cOH4tZBU210Awa15OOjgw@mail.gmail.com>
- <1404863367-20413-1-git-send-email-vpalatin@chromium.org> <CACHYQ-o0FWSSHRmNhQ+id2uvHHWqVzQXQpmu31_e4OmDeVd_CQ@mail.gmail.com>
- <CAP_ceTwdDB76y9V-Zi2fwRwwVFiRHnAGhjiD1AJBsn21vQ9W4Q@mail.gmail.com>
-From: Pawel Osciak <posciak@chromium.org>
-Date: Thu, 7 Aug 2014 11:18:50 +0900
-Message-ID: <CACHYQ-rtHfVmF4DstxhWe0zWNH3ujjniVBwONBGW3f4Uw=rvkg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] [media] V4L: Add camera pan/tilt speed controls
-To: Vincent Palatin <vpalatin@chromium.org>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olofj@chromium.org>, Zach Kuznia <zork@chromium.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
+CC: Nicolas Pitre <nicolas.pitre@linaro.org>, Rob Herring <robh@kernel.org>,
+        Liu hua <sdu.liu@huawei.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Tomasz Figa <t.figa@samsung.com>, Will Deacon <will.deacon@arm.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Doug Anderson <dianders@google.com>, Rabin Vincent <rabin@rab.in>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Mark Salter <msalter@redhat.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/7] arm: use generic fixmap.h
+References: <1407353564-21478-1-git-send-email-keescook@chromium.org> <1407353564-21478-2-git-send-email-keescook@chromium.org>
+In-Reply-To: <1407353564-21478-2-git-send-email-keescook@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 7, 2014 at 12:10 AM, Vincent Palatin <vpalatin@chromium.org> wrote:
->
-> On Sun, Aug 3, 2014 at 10:52 PM, Pawel Osciak <posciak@chromium.org> wrote:
-> > This looks good to me in general (with one comment below). I don't think we
-> > can easily implement current V4L2 pan and tilt controls that are for
-> > movement by a specified amount in terms of UVC pan/tilt speed controls,
-> > which only let us set speed and direction...
-> >
-> > On Wed, Jul 9, 2014 at 8:49 AM, Vincent Palatin <vpalatin@chromium.org>
-> > wrote:
-> >>
-> >> The V4L2_CID_PAN_SPEED and V4L2_CID_TILT_SPEED controls allow to move the
-> >> camera by setting its rotation speed around its axis.
-> >>
-> >> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-> >>
-> >> ---
-> >>  Documentation/DocBook/media/v4l/compat.xml   | 10 ++++++++++
-> >>  Documentation/DocBook/media/v4l/controls.xml | 21 +++++++++++++++++++++
-> >>  drivers/media/v4l2-core/v4l2-ctrls.c         |  2 ++
-> >>  include/uapi/linux/v4l2-controls.h           |  2 ++
-> >>  4 files changed, 35 insertions(+)
-> >>
-> >> diff --git a/Documentation/DocBook/media/v4l/compat.xml
-> >> b/Documentation/DocBook/media/v4l/compat.xml
-> >> index eee6f0f..21910e9 100644
-> >> --- a/Documentation/DocBook/media/v4l/compat.xml
-> >> +++ b/Documentation/DocBook/media/v4l/compat.xml
-> >> @@ -2545,6 +2545,16 @@ fields changed from _s32 to _u32.
-> >>        </orderedlist>
-> >>      </section>
-> >>
-> >> +    <section>
-> >> +      <title>V4L2 in Linux 3.17</title>
-> >> +      <orderedlist>
-> >> +       <listitem>
-> >> +         <para>Added <constant>V4L2_CID_PAN_SPEED</constant> and
-> >> + <constant>V4L2_CID_TILT_SPEED</constant> camera controls.</para>
-> >> +       </listitem>
-> >> +      </orderedlist>
-> >> +    </section>
-> >> +
-> >>      <section id="other">
-> >>        <title>Relation of V4L2 to other Linux multimedia APIs</title>
-> >>
-> >> diff --git a/Documentation/DocBook/media/v4l/controls.xml
-> >> b/Documentation/DocBook/media/v4l/controls.xml
-> >> index 47198ee..cdf97f0 100644
-> >> --- a/Documentation/DocBook/media/v4l/controls.xml
-> >> +++ b/Documentation/DocBook/media/v4l/controls.xml
-> >> @@ -3914,6 +3914,27 @@ by exposure, white balance or focus
-> >> controls.</entry>
-> >>           </row>
-> >>           <row><entry></entry></row>
-> >>
-> >> +         <row>
-> >> +           <entry
-> >> spanname="id"><constant>V4L2_CID_PAN_SPEED</constant>&nbsp;</entry>
-> >> +           <entry>integer</entry>
-> >> +         </row><row><entry spanname="descr">This control turns the
-> >> +camera horizontally at the specific speed. The unit is undefined. A
-> >> +positive value moves the camera to the right (clockwise when viewed
-> >> +from above), a negative value to the left. A value of zero does not
-> >> +cause or stop the motion.</entry>
-> >
-> >
-> > How do we stop/start?
->
-> As mentioned in the last sentence of the paragraph above, setting 0
-> stops the movement.
-> setting non-zero value starts it if needed.
->
+On 8/6/2014 12:32 PM, Kees Cook wrote:
+> From: Mark Salter <msalter@redhat.com>
+> 
+> ARM is different from other architectures in that fixmap pages are indexed
+> with a positive offset from FIXADDR_START.  Other architectures index with
+> a negative offset from FIXADDR_TOP.  In order to use the generic fixmap.h
+> definitions, this patch redefines FIXADDR_TOP to be inclusive of the
+> useable range.  That is, FIXADDR_TOP is the virtual address of the topmost
+> fixed page.  The newly defined FIXADDR_END is the first virtual address
+> past the fixed mappings.
+> 
+> Signed-off-by: Mark Salter <msalter@redhat.com>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
+> [update for "ARM: 8031/2: change fixmap mapping region to support 32 CPUs"]
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  arch/arm/include/asm/fixmap.h | 27 +++++++++------------------
+>  arch/arm/mm/init.c            |  2 +-
+>  2 files changed, 10 insertions(+), 19 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+> index 74124b0d0d79..190142d174ee 100644
+> --- a/arch/arm/include/asm/fixmap.h
+> +++ b/arch/arm/include/asm/fixmap.h
+> @@ -2,27 +2,18 @@
+>  #define _ASM_FIXMAP_H
+>  
+>  #define FIXADDR_START		0xffc00000UL
+> -#define FIXADDR_TOP		0xffe00000UL
+> -#define FIXADDR_SIZE		(FIXADDR_TOP - FIXADDR_START)
+> +#define FIXADDR_END		0xffe00000UL
+> +#define FIXADDR_TOP		(FIXADDR_END - PAGE_SIZE)
+> +#define FIXADDR_SIZE		(FIXADDR_END - FIXADDR_START)
+>  
+>  #define FIX_KMAP_NR_PTES	(FIXADDR_SIZE >> PAGE_SHIFT)
+>  
+> -#define __fix_to_virt(x)	(FIXADDR_START + ((x) << PAGE_SHIFT))
+> -#define __virt_to_fix(x)	(((x) - FIXADDR_START) >> PAGE_SHIFT)
+> +enum fixed_addresses {
+> +	FIX_KMAP_BEGIN,
+> +	FIX_KMAP_END = FIX_KMAP_NR_PTES - 1,
+> +	__end_of_fixed_addresses
+> +};
+>  
+> -extern void __this_fixmap_does_not_exist(void);
+> -
+> -static inline unsigned long fix_to_virt(const unsigned int idx)
+> -{
+> -	if (idx >= FIX_KMAP_NR_PTES)
+> -		__this_fixmap_does_not_exist();
+> -	return __fix_to_virt(idx);
+> -}
+> -
+> -static inline unsigned int virt_to_fix(const unsigned long vaddr)
+> -{
+> -	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
+> -	return __virt_to_fix(vaddr);
+> -}
+> +#include <asm-generic/fixmap.h>
+>  
+>  #endif
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index 659c75d808dc..ad82c05bfc3a 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -570,7 +570,7 @@ void __init mem_init(void)
+>  			MLK(DTCM_OFFSET, (unsigned long) dtcm_end),
+>  			MLK(ITCM_OFFSET, (unsigned long) itcm_end),
+>  #endif
+> -			MLK(FIXADDR_START, FIXADDR_TOP),
+> +			MLK(FIXADDR_START, FIXADDR_END),
+>  			MLM(VMALLOC_START, VMALLOC_END),
+>  			MLM(PAGE_OFFSET, (unsigned long)high_memory),
+>  #ifdef CONFIG_HIGHMEM
+> 
 
-The sentence says "A value of zero does *not* cause or stop the
-motion.". Perhaps "not" is a typo then?
+I'm working off of a 3.14 kernel and with this backported 
+kmap_atomic does not actually map properly for me. This was
+
+my quick fix (not sure if we should be using __set_fixmap?). Or did
+I fail at backportery?
+
+-----8<-----
+>From ea11b54704aa0a311ab3d05fd70072679bfe1a0b Mon Sep 17 00:00:00 2001
+From: Laura Abbott <lauraa@codeaurora.org>
+Date: Wed, 6 Aug 2014 19:20:46 -0700
+Subject: [PATCH] arm: Get proper pte for fixmaps
+
+The generic fixmap.h gets indexes from high to low instead
+of low to high so the fixmap idx does not correspond to
+the array entry in fixmap_page_table. Get the proper pte
+to update.
+
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ arch/arm/mm/highmem.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mm/highmem.c b/arch/arm/mm/highmem.c
+index bedca3a..7f08e64 100644
+--- a/arch/arm/mm/highmem.c
++++ b/arch/arm/mm/highmem.c
+@@ -22,14 +22,18 @@
+ static inline void set_fixmap_pte(int idx, pte_t pte)
+ {
+ 	unsigned long vaddr = __fix_to_virt(idx);
+-	set_pte_ext(fixmap_page_table + idx, pte, 0);
++	pte_t *ppte = pte_offset_kernel(pmd_off_k(FIXADDR_START), vaddr);
++
++	set_pte_ext(ppte, pte, 0);
+ 	local_flush_tlb_kernel_page(vaddr);
+ }
+ 
+ static inline pte_t get_fixmap_pte(unsigned long vaddr)
+ {
+ 	unsigned long idx = __virt_to_fix(vaddr);
+-	return *(fixmap_page_table + idx);
++	pte_t *ppte = pte_offset_kernel(pmd_off_k(FIXADDR_START), vaddr);
++
++	return *ppte;
+ }
+ 
+ void *kmap(struct page *page)
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
