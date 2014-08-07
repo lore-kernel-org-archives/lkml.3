@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519AbaHGPD5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:03:57 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:53929 "EHLO smtp.outflux.net"
+	id S932530AbaHGPE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:04:27 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:54472 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932459AbaHGPDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:03:38 -0400
+	id S932450AbaHGPDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 11:03:37 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Doug Anderson <dianders@chromium.org>,
-        Liu hua <sdu.liu@huawei.com>, Mark Salter <msalter@redhat.com>,
-        Rabin Vincent <rabin@rab.in>,
+Cc: Kees Cook <keescook@chromium.org>,
         Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Liu hua <sdu.liu@huawei.com>, Mark Salter <msalter@redhat.com>,
+        Rabin Vincent <rabin@rab.in>, Nicolas Pitre <nicolas.pitre@linaro.org>,
         Leif Lindholm <leif.lindholm@linaro.org>,
         Tomasz Figa <t.figa@samsung.com>, Rob Herring <robh@kernel.org>,
         Doug Anderson <dianders@google.com>,
@@ -22,9 +21,9 @@ Cc: Kees Cook <keescook@chromium.org>, Doug Anderson <dianders@chromium.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 6/8] arm: kgdb: Handle read-only text / modules
-Date: Thu,  7 Aug 2014 08:01:51 -0700
-Message-Id: <1407423713-4160-7-git-send-email-keescook@chromium.org>
+Subject: [PATCH 5/8] ARM: kexec: Make .text R/W in machine_kexec
+Date: Thu,  7 Aug 2014 08:01:50 -0700
+Message-Id: <1407423713-4160-6-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407423713-4160-1-git-send-email-keescook@chromium.org>
 References: <1407423713-4160-1-git-send-email-keescook@chromium.org>
@@ -33,81 +32,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Doug Anderson <dianders@chromium.org>
+From: Nikolay Borisov <Nikolay.Borisov@arm.com>
 
-Handle the case where someone has set the text segment of the kernel
-as read-only by using the newly introduced "patch" mechanism.
+With the introduction of Kees Cook's patch to make the kernel .text
+read-only the existing method by which kexec works got broken since it
+directly pokes some values in the template code, which resides in the
+.text section.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+The current patch changes the way those values are inserted so that poking
+.text section occurs only in machine_kexec (e.g when we are about to nuke
+the old kernel and are beyond the point of return). This allows to use
+set_kernel_text_rw() to directly patch the values in the .text section.
+
+I had already sent a patch which achieved this but it was significantly
+more complicated, so this is a cleaner/straight-forward approach.
+
+Signed-off-by: Nikolay Borisov <Nikolay.Borisov@arm.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+[collapsed kexec_boot_atags (will.daecon)]
+[for bisectability, moved set_kernel_text_rw() to RODATA patch]
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/arm/kernel/Makefile |  2 +-
- arch/arm/kernel/kgdb.c   | 30 ++++++++++++++++++++++++++++++
- 2 files changed, 31 insertions(+), 1 deletion(-)
+ arch/arm/kernel/machine_kexec.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 38ddd9f83d0e..70b730766330 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -67,7 +67,7 @@ test-kprobes-objs		+= kprobes-test-arm.o
- endif
- obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
- obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
--obj-$(CONFIG_KGDB)		+= kgdb.o
-+obj-$(CONFIG_KGDB)		+= kgdb.o patch.o
- obj-$(CONFIG_ARM_UNWIND)	+= unwind.o
- obj-$(CONFIG_HAVE_TCM)		+= tcm.o
- obj-$(CONFIG_OF)		+= devtree.o
-diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
-index a74b53c1b7df..b2b9ccb6be59 100644
---- a/arch/arm/kernel/kgdb.c
-+++ b/arch/arm/kernel/kgdb.c
-@@ -12,8 +12,12 @@
- #include <linux/irq.h>
- #include <linux/kdebug.h>
- #include <linux/kgdb.h>
-+#include <linux/uaccess.h>
-+
- #include <asm/traps.h>
+diff --git a/arch/arm/kernel/machine_kexec.c b/arch/arm/kernel/machine_kexec.c
+index 8cf0996aa1a8..1ac184f2bdd8 100644
+--- a/arch/arm/kernel/machine_kexec.c
++++ b/arch/arm/kernel/machine_kexec.c
+@@ -29,6 +29,7 @@ extern unsigned long kexec_boot_atags;
  
-+#include "patch.h"
-+
- struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] =
- {
- 	{ "r0", 4, offsetof(struct pt_regs, ARM_r0)},
-@@ -244,6 +248,32 @@ void kgdb_arch_exit(void)
- 	unregister_die_notifier(&kgdb_notifier);
- }
+ static atomic_t waiting_for_crash_ipi;
  
-+int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
-+{
-+	int err;
-+
-+	/* patch_text() only supports int-sized breakpoints */
-+	if (sizeof(int) != BREAK_INSTR_SIZE)
-+		return -EINVAL;
-+
-+	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
-+				BREAK_INSTR_SIZE);
-+	if (err)
-+		return err;
-+
-+	patch_text((void *)bpt->bpt_addr,
-+		   *(unsigned int *)arch_kgdb_ops.gdb_bpt_instr);
-+
-+	return err;
-+}
-+
-+int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
-+{
-+	patch_text((void *)bpt->bpt_addr, *(unsigned int *)bpt->saved_instr);
-+
-+	return 0;
-+}
-+
++static unsigned long dt_mem;
  /*
-  * Register our undef instruction hooks with ARM undef core.
-  * We regsiter a hook specifically looking for the KGB break inst
+  * Provide a dummy crash_notes definition while crash dump arrives to arm.
+  * This prevents breakage of crash_notes attribute in kernel/ksysfs.c.
+@@ -64,7 +65,7 @@ int machine_kexec_prepare(struct kimage *image)
+ 			return err;
+ 
+ 		if (be32_to_cpu(header) == OF_DT_HEADER)
+-			kexec_boot_atags = current_segment->mem;
++			dt_mem = current_segment->mem;
+ 	}
+ 	return 0;
+ }
+@@ -166,9 +167,9 @@ void machine_kexec(struct kimage *image)
+ 	kexec_start_address = image->start;
+ 	kexec_indirection_page = page_list;
+ 	kexec_mach_type = machine_arch_type;
+-	if (!kexec_boot_atags)
+-		kexec_boot_atags = image->start - KEXEC_ARM_ZIMAGE_OFFSET + KEXEC_ARM_ATAGS_OFFSET;
+-
++	kexec_boot_atags = dt_mem ?: image->start
++				     - KEXEC_ARM_ZIMAGE_OFFSET
++				     + KEXEC_ARM_ATAGS_OFFSET;
+ 
+ 	/* copy our kernel relocation code to the control code page */
+ 	reboot_entry = fncpy(reboot_code_buffer,
 -- 
 1.9.1
 
