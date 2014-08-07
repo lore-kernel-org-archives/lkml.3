@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575AbaHGJfk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 05:35:40 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:33046 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317AbaHGJfh (ORCPT
+	id S1757597AbaHGJft (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 05:35:49 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:36825 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754273AbaHGJfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 05:35:37 -0400
+	Thu, 7 Aug 2014 05:35:46 -0400
 From: Kever Yang <kever.yang@rock-chips.com>
 To: Paul Zimmerman <paulz@synopsys.com>, heiko@sntech.de
 Cc: dianders@chromium.org, olof@lixom.net, sonnyrao@chromium.org,
@@ -19,9 +19,9 @@ Cc: dianders@chromium.org, olof@lixom.net, sonnyrao@chromium.org,
         Kumar Gala <galak@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 3/4] ARM: dts: add rk3288 dwc2 controller support
-Date: Thu,  7 Aug 2014 17:34:54 +0800
-Message-Id: <1407404095-3265-4-git-send-email-kever.yang@rock-chips.com>
+Subject: [PATCH v4 4/4] ARM: dts: Enable USB otg and host1(dwc) on rk3288-evb
+Date: Thu,  7 Aug 2014 17:34:55 +0800
+Message-Id: <1407404095-3265-5-git-send-email-kever.yang@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407404095-3265-1-git-send-email-kever.yang@rock-chips.com>
 References: <1407404095-3265-1-git-send-email-kever.yang@rock-chips.com>
@@ -29,10 +29,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rk3288 has two kind of usb controller, this add the dwc2 controller
-for otg and host1.
-
-Controller can works with usb PHY default setting and Vbus on.
+USB otg port is the usb3.0 b-port on the board.
+USB host1 port is the host A port nearby the otg port.
 
 Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
 
@@ -40,44 +38,28 @@ Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
 
 Changes in v4: None
 Changes in v3:
-- EHCI and HSIC move new for version 3.
+- Rebase
 
-Changes in v2: None
+Changes in v2:
+- evb patch added in version 2
 
- arch/arm/boot/dts/rk3288.dtsi | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ arch/arm/boot/dts/rk3288-evb.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index e7cb008..9713054 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -156,6 +156,26 @@
- 		status = "disabled";
- 	};
- 
-+	usb_host1: usb@ff540000 {
-+		compatible = "rockchip,rk3288-usb", "rockchip,rk3066-usb",
-+				"snps,dwc2";
-+		reg = <0xff540000 0x40000>;
-+		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru HCLK_USBHOST1>;
-+		clock-names = "otg";
-+		status = "disabled";
-+	};
-+
-+	usb_otg: usb@ff580000 {
-+		compatible = "rockchip,rk3288-usb", "rockchip,rk3066-usb",
-+				"snps,dwc2";
-+		reg = <0xff580000 0x40000>;
-+		interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru HCLK_OTG0>;
-+		clock-names = "otg";
-+		status = "disabled";
-+	};
-+
- 	uart2: serial@ff690000 {
- 		compatible = "rockchip,rk3288-uart", "snps,dw-apb-uart";
- 		reg = <0xff690000 0x100>;
+diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
+index 4f57209..a322100 100644
+--- a/arch/arm/boot/dts/rk3288-evb.dtsi
++++ b/arch/arm/boot/dts/rk3288-evb.dtsi
+@@ -94,3 +94,9 @@
+ &usb_host0_ehci {
+ 	status = "okay";
+ };
++&usb_host1 {
++	status = "okay";
++};
++&usb_otg {
++	status = "okay";
++};
 -- 
 1.9.1
 
