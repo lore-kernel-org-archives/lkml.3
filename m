@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757700AbaHGNtW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 09:49:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36160 "EHLO mx2.suse.de"
+	id S1757641AbaHGNv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 09:51:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51793 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757376AbaHGNtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 09:49:21 -0400
-Message-ID: <53E383DD.6090500@suse.cz>
-Date: Thu, 07 Aug 2014 15:49:17 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1757334AbaHGNvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 09:51:25 -0400
+Date: Thu, 7 Aug 2014 15:51:10 +0200
+From: Karel Zak <kzak@redhat.com>
+To: Boaz Harrosh <openosd@gmail.com>
+Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Boaz Harrosh <boaz@plexistor.com>, Jens Axboe <axboe@kernel.dk>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] brd: Request from fdisk 4k alignment
+Message-ID: <20140807135110.GC9401@x2.net.home>
+References: <53E21125.9080308@plexistor.com>
+ <53E21317.7080403@plexistor.com>
+ <1407362634.2869.2.camel@rzwisler-mobl1.amr.corp.intel.com>
+ <53E36E53.3090008@gmail.com>
+ <20140807130042.GB9401@x2.net.home>
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/8] mm/isolation: remove unstable check for isolated
- page
-References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com> <1407309517-3270-4-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1407309517-3270-4-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140807130042.GB9401@x2.net.home>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2014 09:18 AM, Joonsoo Kim wrote:
-> The check '!PageBuddy(page) && page_count(page) == 0 &&
-> migratetype == MIGRATE_ISOLATE' would mean the page on free processing.
+On Thu, Aug 07, 2014 at 03:00:42PM +0200, Karel Zak wrote:
+> On Thu, Aug 07, 2014 at 03:17:23PM +0300, Boaz Harrosh wrote:
+> 
+> > > Is there an error case that this patch fixes?  I've had page alignment checks
+> > > in my PRD direct_access code forever, and I don't know if they've ever
+> > > tripped.  
+> > > 
+> > 
+> > Yes! as I said above fix fdisk. You never tripped on it because partitions never
+> > worked and you never tried them. With current code fdisk is very trigger happy
+> 
+>  What do you mean with fdisk? which version?
 
-What is "the page on free processing"? I thought this test means the 
-page is on some CPU's pcplist?
+Oh, I read all your email more carefully now, and if I good understand
+the problem is what I/O limits the device provides to userspace rather
+than with fdisk.
 
-> Although it could go into buddy allocator within a short time,
-> futher operation such as isolate_freepages_range() in CMA, called after
-> test_page_isolated_in_pageblock(), could be failed due to this unstability
+Anyway, I think you're right that alignment_offset is not the right
+thing. It was introduced for backward compatibility with DOS-like
+partitioning tools (~magical sector 63). I have doubts it's usable for
+something else. For normal use-case should be enough to set proper
+phy-sector size or min/optimal I/O limits (e.g. zram has all the
+limits set to 4K(PAGE_SIZE)).
 
-By "unstability" you mean the page can be allocated again from the 
-pcplist instead of being freed to buddy list?
+$ lsblk --topology /dev/zram0
+NAME  ALIGNMENT MIN-IO OPT-IO PHY-SEC LOG-SEC ROTA SCHED RQ-SIZE  RA WSAME
+zram0         0   4096   4096    4096    4096    0           128 128 0B
 
-> since it requires that the page is on buddy. I think that removing
-> this unstability is good thing.
->
-> And, following patch makes isolated freepage has new status matched with
-> this condition and this check is the obstacle to that change. So remove
-> it.
+    Karel
 
-You could also say that pages from isolated pageblocks can no longer 
-appear on pcplists after the later patches.
-
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> ---
->   mm/page_isolation.c |    6 +-----
->   1 file changed, 1 insertion(+), 5 deletions(-)
->
-> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-> index d1473b2..3100f98 100644
-> --- a/mm/page_isolation.c
-> +++ b/mm/page_isolation.c
-> @@ -198,11 +198,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
->   						MIGRATE_ISOLATE);
->   			}
->   			pfn += 1 << page_order(page);
-> -		}
-> -		else if (page_count(page) == 0 &&
-> -			get_freepage_migratetype(page) == MIGRATE_ISOLATE)
-> -			pfn += 1;
-> -		else if (skip_hwpoisoned_pages && PageHWPoison(page)) {
-> +		} else if (skip_hwpoisoned_pages && PageHWPoison(page)) {
->   			/*
->   			 * The HWPoisoned page may be not in buddy
->   			 * system, and page_count() is not 0.
->
-
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
