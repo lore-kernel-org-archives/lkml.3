@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855AbaHGSOA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 14:14:00 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:51584 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaHGSN7 (ORCPT
+	id S1754907AbaHGSQR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 14:16:17 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:44431 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116AbaHGSQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 14:13:59 -0400
-Date: Thu, 7 Aug 2014 11:13:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com,
-        davej@redhat.com, rostedt@goodmis.org, mingo@redhat.com
-Subject: Re: [PATCH] tracing: generate RCU warnings even when tracepoints are
- disabled
-Message-ID: <20140807181356.GG5821@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140807175204.C257CAC5@viggo.jf.intel.com>
+	Thu, 7 Aug 2014 14:16:15 -0400
+Date: Thu, 7 Aug 2014 11:16:11 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Goffredo Baroncelli <kreijack@inwind.it>
+Cc: Jean Delvare <jdelvare@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] Export the temperatures via hwmon
+Message-ID: <20140807181611.GA7679@roeck-us.net>
+References: <1407359103-6012-1-git-send-email-kreijack@inwind.it>
+ <1407359103-6012-6-git-send-email-kreijack@inwind.it>
+ <20140806231803.GA5643@roeck-us.net>
+ <53E31694.8050107@gmail.com>
+ <53E31AB0.6070604@roeck-us.net>
+ <20140807085235.2c0e63dd@endymion.delvare>
+ <53E32C77.5000804@roeck-us.net>
+ <53E3BC48.4020304@inwind.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140807175204.C257CAC5@viggo.jf.intel.com>
+In-Reply-To: <53E3BC48.4020304@inwind.it>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080718-0928-0000-0000-000003F4BBEB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 10:52:04AM -0700, Dave Hansen wrote:
+On Thu, Aug 07, 2014 at 07:50:00PM +0200, Goffredo Baroncelli wrote:
+> On 08/07/2014 09:36 AM, Guenter Roeck wrote:
+> > On 08/06/2014 11:52 PM, Jean Delvare wrote:
+> >> Hi Guenter,
+> >>
+> >> On Wed, 06 Aug 2014 23:20:32 -0700, Guenter Roeck wrote:
+> >>> Patch 4/5 is "Return the fan speed via sysfs: /sys/devices/temperature/fan_level".
+> >>>
+> >>> So you are saying that returning the fan speed with a non-hwmon attribute works,
+> >>> but returning it with a hwmon attribute doesn't ? Not really sure if I understand
+> >>> your logic. Either fan_level doesn't return the fan speed (or an abstraction of it),
+> >>> or something in your line of argument is inconsistent.
+> >>
+> >> fan_level is a fan speed _control_ value, like pwm1. It is not a fan
+> >> speed monitoring value.
+> >>
+> > Ah, ok. The patch description doesn't seem to match, though.
+> > And why not export it as pwm1, if that is what it is ?
+> > 
+> > Guenter
+> > 
+> > 
 > 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
+> the exported fan_level value is a coefficient near proportional to the speed [*];
+> so it is not the speed nor the pwm.
+> I tried to read the pwm/speed value, but when I did it, every 5/6 seconds the
+> fan seemed to stop for 1s, then the speed raised.... So I stopped the test.
 > 
-> Dave Jones reported seeing a bug from one of my TLB tracepoints:
+> These patches (the first two) solved a real issue: with the last kernels this
+> driver doesn't work at all, and the fan go to maximum speed (very loud !)
+> The other three are an improvement.
 > 
-> 	http://lkml.kernel.org/r/20140806181801.GA4605@redhat.com
+> When (if) these patches will be accepted I want to write another solution,
+> but definitely not now. And even if it would work for me, it is very likely 
+> that will  be accepted because nobody is able to test it on all hardware.
 > 
-> I've been running these patches for months and never saw this.
-> But, a big chunk of my testing, especially with all the debugging
-> enabled, was in a vm where intel_idle doesn't work.  On the
-> systems where I was using intel_idle, I never had lockdep enabled
-> and this tracepoint on at the same time.
-> 
-> This patch ensures that whenever we have lockdep available, we do
-> _some_ RCU activity at the site of the tracepoint, despite
-> whether the tracepoint's condition matches or even if the
-> tracepoint itself is completely disabled.  This is a bit of a
-> hack, but it is pretty self-contained.
-> 
-> I confirmed that with this patch plus lockdep I get the same
-> splat as Dave Jones did, but without enabling the tracepoint
-> explicitly.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-> Cc: Dave Jones <davej@redhat.com>,
-> Cc: paulmck@linux.vnet.ibm.com
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
+Might have been easier to just drop all this non-standard code and instantiate
+the adm1030 using the adm1031 driver instead.
 
-Looks good to me, but I must defer to Steven on this one.
-
-							Thanx, Paul
-
-> ---
-> 
->  b/include/linux/tracepoint.h |   11 +++++++++++
->  1 file changed, 11 insertions(+)
-> 
-> diff -puN include/linux/tracepoint.h~easier-rcu-splat include/linux/tracepoint.h
-> --- a/include/linux/tracepoint.h~easier-rcu-splat	2014-08-07 10:29:32.701217956 -0700
-> +++ b/include/linux/tracepoint.h	2014-08-07 10:40:35.244627014 -0700
-> @@ -157,6 +157,12 @@ extern void syscall_unregfunc(void);
->   * Make sure the alignment of the structure in the __tracepoints section will
->   * not add unwanted padding between the beginning of the section and the
->   * structure. Force alignment to the same alignment as the section start.
-> + *
-> + * When lockdep is enabled, we make sure to always do the RCU portions of
-> + * the tracepoint code, regardless of whether tracing is on or we match the
-> + * condition.  This lets us find RCU issues triggered with tracepoints even
-> + * when this tracepoint is off.  This code has no purpose other than poking
-> + * RCU a bit.
->   */
->  #define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args) \
->  	extern struct tracepoint __tracepoint_##name;			\
-> @@ -167,6 +173,11 @@ extern void syscall_unregfunc(void);
->  				TP_PROTO(data_proto),			\
->  				TP_ARGS(data_args),			\
->  				TP_CONDITION(cond),,);			\
-> +		if (IS_ENABLED(CONFIG_LOCKDEP)) {			\
-> +			rcu_read_lock_sched_notrace();			\
-> +			rcu_dereference_sched(__tracepoint_##name.funcs);\
-> +			rcu_read_unlock_sched_notrace();		\
-> +		}							\
->  	}								\
->  	__DECLARE_TRACE_RCU(name, PARAMS(proto), PARAMS(args),		\
->  		PARAMS(cond), PARAMS(data_proto), PARAMS(data_args))	\
-> _
-> 
-
+Guenter
