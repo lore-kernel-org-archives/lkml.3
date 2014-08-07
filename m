@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363AbaHGVmA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 17:42:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17790 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751500AbaHGVl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 17:41:59 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 2/4] gdrom: fix error return code
-References: <1407445067-4044-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1407445067-4044-2-git-send-email-Julia.Lawall@lip6.fr>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 07 Aug 2014 17:41:54 -0400
-In-Reply-To: <1407445067-4044-2-git-send-email-Julia.Lawall@lip6.fr> (Julia
-	Lawall's message of "Thu, 7 Aug 2014 22:57:44 +0200")
-Message-ID: <x49wqak9dul.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1755028AbaHGVpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 17:45:42 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:53659 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaHGVpl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 17:45:41 -0400
+Date: Thu, 7 Aug 2014 23:45:32 +0200
+From: AdrianRemonda <adrianremonda@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8188eu: Lines over 80 characters fixed.
+Message-ID: <20140807214532.GA11670@debian>
+References: <1407192303-23519-1-git-send-email-adrianremonda@gmail.com>
+ <1407192737.16152.83.camel@joe-AO725>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407192737.16152.83.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Julia Lawall <Julia.Lawall@lip6.fr> writes:
+On Mon, Aug 04, 2014 at 03:52:17PM -0700, Joe Perches wrote:
+> On Tue, 2014-08-05 at 00:45 +0200, Adrian Remonda wrote:
+> > This is a patch to the hal/rtl8188eu_recv.c file that fixes up a "line
+> > over 80 characters" warning found by the checkpatch.pl tool.
+> []
+> > diff --git a/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c b/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
+> > index f25c87c..8be4819 100644
+> > --- a/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
+> > +++ b/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
+> > @@ -41,15 +41,19 @@ int	rtl8188eu_init_recv_priv(struct adapter *padapter)
+> >  	/* init recv_buf */
+> >  	_rtw_init_queue(&precvpriv->free_recv_buf_queue);
+> >  
+> > -	precvpriv->pallocated_recv_buf = kzalloc(NR_RECVBUFF * sizeof(struct recv_buf) + 4, GFP_KERNEL);
+> > +	precvpriv->pallocated_recv_buf =
+> > +		kzalloc(NR_RECVBUFF * sizeof(struct recv_buf) + 4, GFP_KERNEL);
+> >  	if (precvpriv->pallocated_recv_buf == NULL) {
+> >  		res = _FAIL;
+> > -		RT_TRACE(_module_rtl871x_recv_c_, _drv_err_, ("alloc recv_buf fail!\n"));
+> > +		RT_TRACE(_module_rtl871x_recv_c_, _drv_err_,
+> > +				("alloc recv_buf fail!\n"));
+> >  		goto exit;
+> >  	}
+> > -	memset(precvpriv->pallocated_recv_buf, 0, NR_RECVBUFF * sizeof(struct recv_buf) + 4);
+> > +	memset(precvpriv->pallocated_recv_buf, 0,
+> > +			NR_RECVBUFF * sizeof(struct recv_buf) + 4);
+> >  
+> > -	precvpriv->precv_buf = (u8 *)N_BYTE_ALIGMENT((size_t)(precvpriv->pallocated_recv_buf), 4);
+> > +	precvpriv->precv_buf = (u8 *)N_BYTE_ALIGMENT((size_t)
+> > +			(precvpriv->pallocated_recv_buf), 4);
+> 
+> Several bits of this are not nice.
+> 
+> the +4 seems senseless.
+> zalloc followed by a memset(,0,) is senseless.
+> N_BYTE_ALIGNMENT seems senseless as alloc is
+> suitable for any alignmet.
+> 
+> btw: The merge window is open, please be patient
+> with any staging patch during the merge window.
 
-> diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
-> index 584bc31..46ecd95 100644
-> --- a/drivers/cdrom/gdrom.c
-> +++ b/drivers/cdrom/gdrom.c
-> @@ -807,16 +807,20 @@ static int probe_gdrom(struct platform_device *devptr)
->  	if (err)
->  		goto probe_fail_cmdirq_register;
->  	gd.gdrom_rq = blk_init_queue(gdrom_request, &gdrom_lock);
-> -	if (!gd.gdrom_rq)
-> +	if (!gd.gdrom_rq) {
-> +		err = -ENOMEM;
->  		goto probe_fail_requestq;
-> +	}
->  
->  	err = probe_gdrom_setupqueue();
->  	if (err)
->  		goto probe_fail_toc;
->  
->  	gd.toc = kzalloc(sizeof(struct gdromtoc), GFP_KERNEL);
-> -	if (!gd.toc)
-> +	if (!gd.toc) {
-> +		err = -ENOMEM;
->  		goto probe_fail_toc;
-> +	}
+I have resent the changes now. Is this ok? Or should I wait until the merge
+window is close?
+Also N_BYTE_ALIGNMENT is being used by several files in the 8188, should
+I remove this macro?
 
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+
