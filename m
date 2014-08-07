@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757879AbaHGOvS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 10:51:18 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:47853 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757335AbaHGOvR (ORCPT
+	id S932277AbaHGO5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 10:57:34 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:60699 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757524AbaHGO5c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 10:51:17 -0400
-From: Rob Jones <rob.jones@codethink.co.uk>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kernel@lists.codethink.co.uk, viro@ZenIV.linux.org.uk,
-        ebiederm@xmission.com, swhiteho@redhat.com, ian.molton@codethink.co.uk,
-        rob.jones@codethink.co.uk
-Subject: [PATCH] seq_file: Document seq_open_private(), seq_release_private()
-Date: Thu,  7 Aug 2014 15:51:04 +0100
-Message-Id: <1407423064-30816-1-git-send-email-rob.jones@codethink.co.uk>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 7 Aug 2014 10:57:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <5750080.46d2jsPKXX@sifl>
+References: <CAMuHMdV4VpaH1nHYO5hr66Xib5o_Pib863JzGRtg2kYcjMp2TQ@mail.gmail.com>
+	<5750080.46d2jsPKXX@sifl>
+Date: Thu, 7 Aug 2014 16:57:30 +0200
+X-Google-Sender-Auth: d9mtOS2bJ4etUkBD6xSfLjlO1ns
+Message-ID: <CAMuHMdWyMjUW+FB5FtkoqF7pFsm3C6+VsTK7KE6q7XRFRRMOvw@mail.gmail.com>
+Subject: Re: sel_netif_init: 'err' is used uninitialized (was: Re: selinux:
+ reduce the number of calls to synchronize_net() when flushing caches)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Paul Moore <paul@paul-moore.com>
+Cc: linux-security-module@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Despite the fact that these functions have been around for years, they are
-little used (only 15 uses in 13 files at the preseht time) even though
-many other files use work-arounds to achieve the same result.
+Hi Paul,
 
-By documenting them, hopefully they will become more widely used.
+On Thu, Aug 7, 2014 at 4:26 PM, Paul Moore <paul@paul-moore.com> wrote:
+> On Thursday, August 07, 2014 12:31:15 PM Geert Uytterhoeven wrote:
+>>
+>> security/selinux/netif.c: In function ‘sel_netif_init’:
+>> /scratch/geert/linux/linux-m68k/security/selinux/netif.c:285: warning:
+>> ‘err’ is used uninitialized in this function
+>>
+>> Should it just return 0, like before?
+>> Or should it return the return value of register_netdevice_notifier()
+>> instead, which also returns an error code? Or is that failure non-critical?
+>
+> Hi,
+>
+> I posted a fix for this two days ago to the SELinux list (see below).  As soon
+> as -rc1 is released and linux-next is back in business I'll be pushing the
+> patch to the SELinux #next branch.
+>
+>  * http://marc.info/?l=selinux&m=140727033030054&w=2
 
-Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
----
- Documentation/filesystems/seq_file.txt |   33 ++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
+Thanks, I had a quick look for it, but couldn't find it.
+It's always a good idea to CC lkml for such issues in mainline.
 
-diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
-index a1e2e0d..c9b8f6b 100644
---- a/Documentation/filesystems/seq_file.txt
-+++ b/Documentation/filesystems/seq_file.txt
-@@ -226,6 +226,39 @@ be used for more than one file, you can store an arbitrary pointer in the
- private field of the seq_file structure; that value can then be retrieved
- by the iterator functions.
- 
-+There is also a wrapper function to seq_open(), seq_open_private(). It
-+kmallocs a zero filled block of memory and stores a pointer to it in the
-+private field of the seq_file structure, returning 0 on success. The
-+block size is specified in a third parameter to the function, e.g.:
-+
-+	static int ct_open(struct inode *inode, struct file *file)
-+	{
-+		return seq_open_private(file, &ct_seq_ops,
-+					sizeof(struct mystruct);
-+	}
-+
-+There is also a variant function, __seq_open_private(), which is functionally
-+identical except that, if successful, it returns the pointer to the allocated
-+memory block, allowing further initialisation e.g.:
-+
-+	static int ct_open(struct inode *inode, struct file *file)
-+	{
-+		struct mystruct *p =
-+			__seq_open_private(file, &ct_seq_ops, sizeof(*p);
-+
-+		if (!p)
-+			return -ENOMEM;
-+
-+		p->foo = bar; /* initialize my stuff */
-+			...
-+		p->baz = true;
-+
-+		return 0;
-+	}
-+
-+A corresponding close function, seq_release_private() is available which
-+frees the memory allocated in the corresponding open.
-+
- The other operations of interest - read(), llseek(), and release() - are
- all implemented by the seq_file code itself. So a virtual file's
- file_operations structure will look like:
--- 
-1.7.10.4
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
