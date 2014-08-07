@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530AbaHGNDL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 09:03:11 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:45945 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754597AbaHGNDJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 09:03:09 -0400
+	id S1757545AbaHGNEG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 09:04:06 -0400
+Received: from ozlabs.org ([103.22.144.67]:59628 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754413AbaHGNEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 09:04:04 -0400
+Date: Thu, 7 Aug 2014 23:03:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stewart Smith <stewart@linux.vnet.ibm.com>
+Subject: Re: linux-next: build failure after merge of the modules tree
+Message-ID: <20140807230342.52e3a52c@canb.auug.org.au>
+In-Reply-To: <87tx5ocyz3.fsf@rustcorp.com.au>
+References: <20140807132017.2ec9e2ad@canb.auug.org.au>
+	<87tx5ocyz3.fsf@rustcorp.com.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdVC8aYwDEHnntshdVA24Nx3qAUXZfeRQNGqj=J6eExU-Q@mail.gmail.com>
-References: <CAMuHMdW2kb=EF-Nmem_gyUu=p7hFOTe+Q2ekHh41SaHHiWDGeg@mail.gmail.com>
-	<CAAmzW4MX2birtCOUxjDdQ7c3Y+RyVkBt383HEQ=XFgnhhOsQPw@mail.gmail.com>
-	<CAMuHMdVC8aYwDEHnntshdVA24Nx3qAUXZfeRQNGqj=J6eExU-Q@mail.gmail.com>
-Date: Thu, 7 Aug 2014 22:03:09 +0900
-Message-ID: <CAAmzW4NWnMeO+Z3CQ=9Z7rUFLaPmR-w0iMhxzjO+PVgVu7OMuQ@mail.gmail.com>
-Subject: Re: BUG: enable_cpucache failed for radix_tree_node, error 12 (was:
- Re: [PATCH v3 9/9] slab: remove BAD_ALIEN_MAGIC)
-From: Joonsoo Kim <js1304@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/bRDHPQnNVMcYpHa06iQ.CaC"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-07 21:53 GMT+09:00 Geert Uytterhoeven <geert@linux-m68k.org>:
-> Hi,
->
-> On Thu, Aug 7, 2014 at 2:36 PM, Joonsoo Kim <js1304@gmail.com> wrote:
->>> With latest mainline, I'm getting a crash during bootup on m68k/ARAnyM:
->>>
->>> enable_cpucache failed for radix_tree_node, error 12.
->>> kernel BUG at /scratch/geert/linux/linux-m68k/mm/slab.c:1522!
->
->>> I bisected it to commit a640616822b2c3a8009b0600f20c4a76ea8a0025
->>> Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>> Date:   Wed Aug 6 16:04:38 2014 -0700
->>>
->>>     slab: remove BAD_ALIEN_MAGIC
->
->> This patch only works for !NUMA. And if num_possible_nodes() is 1,
->> then it doesn't have any effect, because alloc_alien_cache() call is always
->> skipped. Is it possible !NUMA and num_possible_nodes() != 1?
->>
->> Could you check your config for CONFIG_NUMA and
->> CONFIG_NODES_SHIFT?
->
-> $ grep CONFIG_NUMA .config
-> $ grep CONFIG_NODES_SHIFT .config
-> CONFIG_NODES_SHIFT=3
-> $
->
-> There are indeed multiple nodes:
->
-> On node 0 totalpages: 3584
-> free_area_init_node: node 0, pgdat 003659a4, node_mem_map 00402000
->   DMA zone: 32 pages used for memmap
->   DMA zone: 0 pages reserved
->   DMA zone: 3584 pages, LIFO batch:0
-> On node 1 totalpages: 65536
-> free_area_init_node: node 1, pgdat 00366294, node_mem_map 00426090
->   DMA zone: 576 pages used for memmap
->   DMA zone: 0 pages reserved
->   DMA zone: 65536 pages, LIFO batch:15
->
->> And, could you check booting with boot param "noaliencache"?
->
-> That fixes the boot, too.
+--Sig_/bRDHPQnNVMcYpHa06iQ.CaC
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Ah... I don't know it can be possible to be !CONFIG_NUMA and
-CONFIG_NODES_SHIFT > 0 until now. If so, I should revert this patch.
+Hi Rusty,
 
-After some more investigation, I will revert this patch tomorrow and
-notify you.
+On Thu, 07 Aug 2014 21:07:20 +0930 Rusty Russell <rusty@rustcorp.com.au> wr=
+ote:
+>
+> Ah, crap.  I really hate that macro magic :(
+>=20
+> I amended to the minimal fix, so we can pretend that never happened.
 
-Thanks for reporting!!! :)
+How about arch/powerpc/platforms/powernv/opal-dump.c as well?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/bRDHPQnNVMcYpHa06iQ.CaC
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT43lBAAoJEMDTa8Ir7ZwVLM8QAIFkK9bA6NGZHdKtyE7WV32T
+s9uJ9MiZJ+/NSdKzaZnGdzN5b1bLZjYbergn1Gy7KG/HNqkzHKeXzDMVryQi9GDL
+zIKuBcXrB3Xb9B/rDTtUCxYbH/9X7DcpS4uEeb7qf5JqLxrichWj2qLlZpCa69oW
+mv5dBW3CB0Sh+RfWqDgbzpA4IcuWRXTCjNhNqs6LfhPIpAAKAhuXinzzN6sxvvd1
+ErwBJ9Co3faPmuOgOp/PNHyesEUj9RqoPMAQBQx5uU3Ipx/v9Dusuk7WbWwM6o2H
+e1L9c+CaSUH7V8WjaSp0iKoNiQIv/PIUrsOSqk9j5gWuj2/HZksIpWANOhtUA5+r
+4wxzUsSsTD1+ERPg8IKjYEFTWqEPbNrhrQBOhQ0BsI5WwStGZPmbOIuWXMBda5yz
+0thfpFXaWYnhi5txdpXv1U6iw+gQKjDayly8t1QA7t0ZsbCPHN65EFGG+0eUyiNw
+hX4/9oyb1MSNBIXSjotFaCMExSMdOG3WJPZ++O/wLz2KoTRHUFHJGWX35ZEGO3d3
+JI/d5oZM0Rhp98hs6BrLJa0hnMZU7f90XnhY57WNexsPJZ9o2TqlKRmWXbkK7yoc
+2q1iLcRr+f9MkX43lAkx+HM79DLTzwlpoenwCkO25iT06PGmnhZ3pWgKtR7o4yM7
+2r4skL887CgGHRCaXtd3
+=swws
+-----END PGP SIGNATURE-----
+
+--Sig_/bRDHPQnNVMcYpHa06iQ.CaC--
