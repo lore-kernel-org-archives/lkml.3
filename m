@@ -1,282 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995AbaHGDJw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 23:09:52 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:12651 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754747AbaHGDJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 23:09:50 -0400
-Message-ID: <53E2EDED.2070502@huawei.com>
-Date: Thu, 7 Aug 2014 11:09:33 +0800
-From: Rui Xiang <rui.xiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755105AbaHGDMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 23:12:10 -0400
+Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:14994
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754724AbaHGDMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 23:12:08 -0400
+Date: Thu, 7 Aug 2014 11:11:36 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Shengjiu Wang <shengjiu.wang@freescale.com>
+CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <Guangyu.Chen@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 3/3] ARM: imx6q: Add the clock route from external OSC
+ to ESAI clock
+Message-ID: <20140807031135.GO2167@dragon>
+References: <cover.1407313676.git.shengjiu.wang@freescale.com>
+ <309d5e2cb941aba7d81e2d87a8237c4ef677e45c.1407313676.git.shengjiu.wang@freescale.com>
 MIME-Version: 1.0
-To: =?windows-1252?Q?Luk=E1=9A_Czerner?= <lczerner@redhat.com>
-CC: Dave Kleikamp <dave.kleikamp@oracle.com>, <linux-ext4@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: testing result of loop-aio patchset on ext3
-References: <53C3A42E.40000@huawei.com> <alpine.LFD.2.00.1407141142520.13527@localhost.localdomain> <53C5F770.9030105@huawei.com> <alpine.LFD.2.00.1407160955010.2431@localhost.localdomain> <53C645AA.9080509@huawei.com> <alpine.LFD.2.00.1407181105410.12453@localhost.localdomain> <53CC7C47.9040001@huawei.com>
-In-Reply-To: <53CC7C47.9040001@huawei.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.22.57]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <309d5e2cb941aba7d81e2d87a8237c4ef677e45c.1407313676.git.shengjiu.wang@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51704005)(24454002)(189002)(199002)(110136001)(83072002)(87936001)(54356999)(68736004)(81342001)(33716001)(107046002)(92726001)(6806004)(106466001)(105606002)(4396001)(46406003)(76176999)(21056001)(85852003)(92566001)(44976005)(46102001)(99396002)(19580395003)(80022001)(97736001)(81542001)(83322001)(50986999)(104016003)(19580405001)(74662001)(86362001)(33656002)(23726002)(31966008)(83506001)(77982001)(79102001)(57986006)(64706001)(95666004)(85306004)(97756001)(74502001)(102836001)(76482001)(50466002)(47776003)(26826002)(84676001)(20776003)(32563001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB324;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 029651C7A1
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/7/21 10:34, Rui Xiang wrote:
-> On 2014/7/18 17:10, Lukáš Czerner wrote:
->> On Wed, 16 Jul 2014, Rui Xiang wrote:
->>
->>> Date: Wed, 16 Jul 2014 17:28:10 +0800
->>> From: Rui Xiang <rui.xiang@huawei.com>
->>> To: Lukáš Czerner <lczerner@redhat.com>
->>> Cc: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org,
->>>     linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
->>>     Li Zefan <lizefan@huawei.com>
->>> Subject: Re: testing result of loop-aio patchset on ext3
->>>
->>> On 2014/7/16 15:58, Lukáš Czerner wrote:
->>>> On Wed, 16 Jul 2014, Rui Xiang wrote:
->>>>
->>>>> Date: Wed, 16 Jul 2014 11:54:24 +0800
->>>>> From: Rui Xiang <rui.xiang@huawei.com>
->>>>> To: Lukáš Czerner <lczerner@redhat.com>
->>>>> Cc: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org,
->>>>>     linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
->>>>>     Li Zefan <lizefan@huawei.com>
->>>>> Subject: Re: testing result of loop-aio patchset on ext3
->>>>>
->>>>> On 2014/7/14 17:51, Lukáš Czerner wrote:
->>>>>> On Mon, 14 Jul 2014, Rui Xiang wrote:
->>>>>>
->>>>>>> Date: Mon, 14 Jul 2014 17:34:38 +0800
->>>>>>> From: Rui Xiang <rui.xiang@huawei.com>
->>>>>>> To: Dave Kleikamp <dave.kleikamp@oracle.com>, linux-ext4@vger.kernel.org
->>>>>>> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
->>>>>>>     Li Zefan <lizefan@huawei.com>
->>>>>>> Subject: testing result of loop-aio patchset on ext3
->>>>>>>
->>>>>>> Hi Dave,
->>>>>>>
->>>>>>> We export a container image file as a block device via loop device, but we
->>>>>>> found it's very easy that the container rootfs gets corrupted due to power
->>>>>>> loss.
->>>>>>>
->>>>>>> Your early version of loop-aio patchset said the patchset can make loop
->>>>>>> mounted filesystems recoverable(lkml.org/lkml/2012/3/30/317), but we found
->>>>>>> it doesn't help.
->>>>>>>
->>>>>>> Both the guest fs and host fs are ext3.
->>>>>>>
->>>>>>> The loop-aio patchset is from:
->>>>>>> git://github.com/kleikamp/linux-shaggy.git aio_loop
->>>>>>>
->>>>>>> Steps:
->>>>>>> 1. dd a 10G image, mkfs.ext3,
->>>>>>>   # dd if=/dev/zero of=./raw_image bs=1M count=10000
->>>>>>>   # echo y | mkfs.ext3 raw_image
->>>>>>>
->>>>>>> 2. losetup a loop device, mount at ./test_dir
->>>>>>>   # losetup /dev/loop1 raw_image
->>>>>>>   # mount /dev/loop1 ./test_dir
->>>>>>>
->>>>>>> 3. copy fs_mark into test_dir and run
->>>>>>>   # ./fs_mark -d ./tmp/ -s 102400000 -n 80
->>>>>>>
->>>>>>> 4. during runing fs_mark, make systerm reboot indirectly.
->>>>>>>   # echo b > /proc/sysrq-trigger
->>>>>>>
->>>>>>> After systerm booted up, sometimes fsck reported raw_image fs has been damaged.
->>>>>>>
->>>>>>> # fsck.ext3 -n raw_image
->>>>>>> e2fsck 1.41.9 (22-Aug-2009)
->>>>>>> Warning: skipping journal recovery because doing a read-only filesystem check.
->>>>>>> raw_image contains a file system with errors, check forced.
->>>>>>> Pass 1: Checking inodes, blocks, and sizes
->>>>>>> Pass 2: Checking directory structure
->>>>>>> Pass 3: Checking directory connectivity
->>>>>>> Pass 4: Checking reference counts
->>>>>>> Pass 5: Checking group summary information
->>>>>>> Free blocks count wrong (2481348, counted=2480577).
->>>>>>> Fix? no
->>>>>>> Free inodes count wrong (640837, counted=640835).
->>>>>>> Fix? no
->>>>>>> raw_image: ********** WARNING: Filesystem still has errors **********
->>>>>>> raw_image: 11/640848 files (0.0% non-contiguous), 78652/2560000 blocks
->>>>>>
->>>>>> It's not damaged, this is expected result if you're using old
->>>>>> e2fsprogs which still treats this as an error.
->>>>>>
->>>>>> It's not an error because we only update superblock summary at
->>>>>> unmount time so with unclean shutdown it's likely that it does not
->>>>>> match the reality, but e2fsck can and will easily fix that for you.
->>>>>>
->>>>>> Please try e2fsprogs v1.42.3 or newer.
->>>>>>
->>>>>
->>>>> Hi Lukas,
->>>>>
->>>>> I updated e2fsprogs to v1.42.3, and user the newer fsck.ext3 to check raw_image.
->>>>> Exactly, the result seemed normal.
->>>>
->>>> Now I can see that there are much more problems than before, that's
->>>> weird. Sorry for not making this clear, but for this kind of
->>>> reproducers please use the most recent e2fsprogs. Also , what is the
->>>> kernel version you're using in this test ?
->>>>
->>>
->>> I use the most recent e2fsprogs 1.42.11 to check, and the error info is same as
->>> result fscked by v1.42.3. It seems that shouldn't be the reason.
->>>
->>> Otherwise, the kernel version in this test is stable 3.4.
->>
->> In that case, this is a problem somewhere else. I'll try to
->> reproduce and see what I can see.
->>
->> I assume you're not able to reproduce this on a real device ?
->>
+On Wed, Aug 06, 2014 at 04:35:15PM +0800, Shengjiu Wang wrote:
+> This patch mainly adds the clock route from external 24.576MHz OSC to internal
+> ESAI clock via analog clock2 PADs on the SoC and pll4 so that ESAI can get an
+> entirely synchronous clock source against CS42888.
 > 
-> Yes, it only exits on a loop device in my test.
+> [ 1, We found if using pll4 to generate a 24.576MHz from inernal 24.0MHz OSC,
+>   we would get noise during the audio playback via ESAI->CS42888 even though
+>   this generated clock's rate is equal to the external one statistically. It
+>   might be resulted from the tiny difference between two clock source, which
+>   might be crucial to the sensitive CODEC we use -- CS42888.
 > 
-> Otherwise, There was another case in this test:
+>   2, Ideally, we should use bypass mode for pll4 since we only need to get
+>   the raw rate (24.576MHz) while currently bypass mode in clk-pllv3.c isn't
+>   supported. After bypass mode implement, then we can refine this patch.]
+
+I meant we should implement bypass mode first.  I will give it a try.
+
+Shawn
+
 > 
-> I fsck the err image with "-n", the result contains 7 issues.
+>   Expected result:
 > 
-> # fsck.ext3 -n image1
-> Warning: skipping journal recovery because doing a read-only filesystem check.
-> image1 has been mounted 36 times without being checked, check forced.
-> Pass 1: Checking inodes, blocks, and sizes
-> *Inode 16407, i_size is 643005, should be 647168.  Fix? no
-> *Inode 16407, i_blocks is 1264, should be 1272.  Fix? no
-> *Inode 409941, i_blocks is 200208, should be 16688.  Fix? no
-> Pass 2: Checking directory structure
-> Pass 3: Checking directory connectivity
-> Pass 4: Checking reference counts
-> Pass 5: Checking group summary information
-> *Block bitmap differences:  -1643951 +1644741 -(1646592--1646598) +(1648640--1648646) -(1657079--1658102) -(1658104--1659127) -(1659129--1660152) -(1660154--1661177) -(1661179--1662202) -(1662204--1663227) -(1663229--1664252) -(1664254--1665277) -(1665279--1666302) -(1666304--1667327) -(1667329--1668352) -(1668354--1669377) -(1669379--1670402) -(1670404--1671167) -(1671688--1671947) -(1671949--1672972) -(1672974--1673997) -(1673999--1675022) -(1675024--1676047) -(1676049--1677072) -(1677074--1678097) -(1678099--1679122) -(1679124--1680147) -(1680149--1680560)
-> Fix? no
-> *Free blocks count wrong for group #2 (31522, counted=31520).
-> Fix? no
-> *Free blocks count wrong for group #43 (15870, counted=15871).
-> Fix? no
-> *Free blocks count wrong for group #45 (398, counted=396).
-> Fix? no
-> *Free blocks count wrong (2203971, counted=2203968).
-> Fix? no
-> image1: ********** WARNING: Filesystem still has errors **********
-> image1: 13008/655360 files (0.3% non-contiguous), 417469/2621440 blocks
+>   anaclk2                 0           1            24576000
+>    lvds2_in               0           1            24576000
+>     pll4_sel              0           1            24576000
+>      pll4_audio           0           1            786432000
+>       pll4_post_div       0           1            786432000
+>        pll4_audio_div     0           1            786432000
+>         esai_sel          0           1            786432000
+>          esai_pred        0           1            98304000
+>           esai_podf       0           1            24576000
+>            esai_extal     0           1            24576000
 > 
-> When I "fsck -y" the image, it seems that only fixes 1 issue.
+> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+> Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
+> ---
+>  arch/arm/mach-imx/clk-imx6q.c  |    5 +++++
+>  arch/arm/mach-imx/mach-imx6q.c |   28 ++++++++++++++++++++++++++++
+>  2 files changed, 33 insertions(+)
 > 
-> # fsck.ext3 -y image1
-> image1: recovering journal
-> image1 has been mounted 36 times without being checked, check forced.
-> Pass 1: Checking inodes, blocks, and sizes
-> Pass 2: Checking directory structure
-> Pass 3: Checking directory connectivity
-> Pass 4: Checking reference counts
-> Pass 5: Checking group summary information
-> *Free blocks count wrong (2203971, counted=2203968).
-> Fix<y>? yes
-> image1: ***** FILE SYSTEM WAS MODIFIED *****
-> image1: 13008/655360 files (0.3% non-contiguous), 417472/2621440 blocks
+> diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
+> index 330aad3..29151cb 100644
+> --- a/arch/arm/mach-imx/clk-imx6q.c
+> +++ b/arch/arm/mach-imx/clk-imx6q.c
+> @@ -414,6 +414,10 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+>  	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
+>  
+>  	clk_register_clkdev(clk[IMX6QDL_CLK_ENET_REF], "enet_ref", NULL);
+> +	clk_register_clkdev(clk[IMX6QDL_CLK_PLL4_AUDIO_DIV], "pll4_audio_div", NULL);
+> +	clk_register_clkdev(clk[IMX6QDL_CLK_PLL4_SEL], "pll4_sel", NULL);
+> +	clk_register_clkdev(clk[IMX6QDL_CLK_LVDS2_IN], "lvds2_in", NULL);
+> +	clk_register_clkdev(clk[IMX6QDL_CLK_ESAI_EXTAL], "esai_extal", NULL);
+>  
+>  	if ((imx_get_soc_revision() != IMX_CHIP_REVISION_1_0) ||
+>  	    cpu_is_imx6dl()) {
+> @@ -457,6 +461,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+>  
+>  	/* Audio-related clocks configuration */
+>  	clk_set_parent(clk[IMX6QDL_CLK_SPDIF_SEL], clk[IMX6QDL_CLK_PLL3_PFD3_454M]);
+> +	clk_set_parent(clk[IMX6QDL_CLK_ESAI_SEL], clk[IMX6QDL_CLK_PLL4_AUDIO_DIV]);
+>  
+>  	/* All existing boards with PCIe use LVDS1 */
+>  	if (IS_ENABLED(CONFIG_PCI_IMX6))
+> diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+> index d51c6e9..ea24a96 100644
+> --- a/arch/arm/mach-imx/mach-imx6q.c
+> +++ b/arch/arm/mach-imx/mach-imx6q.c
+> @@ -362,6 +362,28 @@ put_node:
+>  	of_node_put(np);
+>  }
+>  
+> +#define ESAI_AUDIO_MCLK 24576000
+> +
+> +static void __init imx6q_audio_lvds2_init(void)
+> +{
+> +        struct clk *pll4_sel, *lvds2_in, *pll4_audio_div, *esai_extal;
+> +
+> +        pll4_audio_div = clk_get_sys(NULL, "pll4_audio_div");
+> +        pll4_sel = clk_get_sys(NULL, "pll4_sel");
+> +        lvds2_in = clk_get_sys(NULL, "lvds2_in");
+> +        esai_extal = clk_get_sys(NULL, "esai_extal");
+> +        if (IS_ERR(pll4_audio_div) || IS_ERR(pll4_sel) ||
+> +            IS_ERR(lvds2_in) || IS_ERR(esai_extal))
+> +                return;
+> +
+> +        if (clk_get_rate(lvds2_in) != ESAI_AUDIO_MCLK)
+> +                return;
+> +
+> +        clk_set_parent(pll4_sel, lvds2_in);
+> +        clk_set_rate(pll4_audio_div, 786432000);
+> +        clk_set_rate(esai_extal, ESAI_AUDIO_MCLK);
+> +}
+> +
+>  static struct platform_device imx6q_cpufreq_pdev = {
+>  	.name = "imx6q-cpufreq",
+>  };
+> @@ -379,6 +401,12 @@ static void __init imx6q_init_late(void)
+>  		imx6q_opp_init();
+>  		platform_device_register(&imx6q_cpufreq_pdev);
+>  	}
+> +
+> +	if (of_machine_is_compatible("fsl,imx6q-sabreauto")
+> +		|| of_machine_is_compatible("fsl,imx6dl-sabreauto")) {
+> +		imx6q_audio_lvds2_init();
+> +	}
+> +
+>  }
+>  
+>  static void __init imx6q_map_io(void)
+> -- 
+> 1.7.9.5
 > 
-> So, I assume journal is revocered before fs checking while doing
-> "fsck -y", and other issues are fixed during fs revovering journal,
->  is that?
-> 
-
-Hi Lukas,
-
-Do you have some new opinions about this? 
-
-Otherwise, I found the issue after recovering journal was always that free blocks
-count was more than counted one during above test. 
-
-> *Free blocks count wrong (2203971, counted=2203968).
-> Fix<y>? yes
-
-
-And was that fsck result acceptable to continue using the loop device, but not a 
-damage for the filesysterm above the device?
-
-
-
-Thanks!
-
-
-> Thanks!
-> 
->> Thanks!
->> -Lukas
->>
->>>
->>>
->>> Thanks!
->>>
->>>> Thanks!
->>>> -Lukas
->>>>
->>>>>
->>>>> Then, I continue my previous test. And after testing 35 times, "fsck -n" reported image fs
->>>>> had been damaged, too.
->>>>>
->>>>>  # fsck.ext3 -n image1
->>>>> e2fsck 1.42.3.wc1 (28-May-2012)
->>>>> Warning: skipping journal recovery because doing a read-only filesystem check.
->>>>> image1 has been mounted 36 times without being checked, check forced.
->>>>> Pass 1: Checking inodes, blocks, and sizes
->>>>> Inode 16407, i_size is 597447, should be 602112.  Fix? no
->>>>> Inode 16407, i_blocks is 1176, should be 1184.  Fix? no
->>>>> Inode 409941, i_blocks is 200208, should be 112.  Fix? no
->>>>> Pass 2: Checking directory structure
->>>>> Pass 3: Checking directory connectivity
->>>>> Pass 4: Checking reference counts
->>>>> Pass 5: Checking group summary information
->>>>> Block bitmap differences:  -1506836 -1506843 -(1506859--1506860) -(1660941--1661964) -(1661966--1671167) -(1671688--1686473)
->>>>> Fix? no
->>>>> Free blocks count wrong for group #2 (31558, counted=31556).
->>>>> Fix? no
->>>>> Free blocks count wrong for group #43 (15871, counted=15867).
->>>>> Fix? no
->>>>> Free blocks count wrong (2204041, counted=2204035).
->>>>> Fix? no
->>>>> image1: ********** WARNING: Filesystem still has errors **********
->>>>> image1: 13008/655360 files (0.3% non-contiguous), 417399/2621440 blocks
->>>>>
->>>>> I backup the image to image_bk, and then mount the image to a dir, and cat all files in the image.
->>>>> Steps:
->>>>> # dd if=image1 of=image_bk
->>>>> # mount image1 err_dir
->>>>> # find -name '*' -exec cat > /dev/null {} \;
->>>>>
->>>>> There are no issues during catting, and no err in dmesg too.
->>>>>
->>>>> *But when I umount the image1 from err_dir, The fsck result didn't show any fs corruption info.
->>>>>
->>>>> I mount image_bk to err_dir and umount it with no operation directly. The result is same to iamge1.
->>>>>
->>>>> *So, is fs in the image as a block device via loop device damaged really, or does it have some others issues? 
->>>>> Could you give me some opinions?
->>>>>
->>>>>
->>>>> Thanks.
->>>>>
->>>>>
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
-
