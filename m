@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143AbaHGMhm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 08:37:42 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:54030 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaHGMhl (ORCPT
+	id S1757535AbaHGMiK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 08:38:10 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:34161 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754910AbaHGMiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 08:37:41 -0400
+	Thu, 7 Aug 2014 08:38:07 -0400
+Message-ID: <53E37329.4020002@itdev.co.uk>
+Date: Thu, 07 Aug 2014 13:38:01 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Date: Thu, 7 Aug 2014 14:37:38 +0200
-X-Google-Sender-Auth: wdDt3C9GUC4lf7wv0wkkxRazwNE
-Message-ID: <CAMuHMdXnGXGqy7B2-wujVxUPA9+3ZfYhcdKb6_jpDV4P7_KMxw@mail.gmail.com>
-Subject: Modular 6LoWPAN? (was: Re: 6lowpan: introduce new net/6lowpan directory)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alexander Aring <alex.aring@gmail.com>
-Cc: linux-bluetooth@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Stephen Warren <swarren@nvidia.com>, Yufeng Shen <miletus@chromium.org>,
+        Benson Leung <bleung@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        linux-input@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Input: atmel_mxt_ts - Add keycodes array example
+References: <1407372486-25881-1-git-send-email-javier.martinez@collabora.co.uk> <1407372486-25881-2-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1407372486-25881-2-git-send-email-javier.martinez@collabora.co.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
+On 07/08/14 01:48, Javier Martinez Canillas wrote:
+> The Atmel maXTouch driver allows to dynamically define the
+> event keycodes set that the device is capable of. This may
+> not be evident when reading the DT binding document so add
+> an example to make it easier to understand how this works.
+> 
+> Also, the current documentation says that the array limit
+> is four entries but the driver dynamically allocates the
+> keymap array and does not limit the array size.
 
-On Wed, Aug 6, 2014 at 6:46 PM, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
-> Gitweb:     http://git.kernel.org/linus/;a=commit;h=2c6bed7cfcd3f594ed9e4d6919fa2ebea2243d19
-> Commit:     2c6bed7cfcd3f594ed9e4d6919fa2ebea2243d19
-> Parent:     6c53823ae0e10e723131055e1e65dd6a328a228e
-> Refname:    refs/heads/master
-> Author:     Alexander Aring <alex.aring@gmail.com>
-> AuthorDate: Fri Jul 11 10:24:18 2014 +0200
-> Committer:  Marcel Holtmann <marcel@holtmann.org>
-> CommitDate: Sat Jul 12 01:53:30 2014 +0200
->
->     6lowpan: introduce new net/6lowpan directory
->
->     This patch moves generic code which is used by bluetooth and ieee802154
->     6lowpan to a new net/6lowpan directory. This directory contains generic
->     6LoWPAN code which is shared between bluetooth and ieee802154 MAC-Layer.
->
->     This is the IPHC - "IPv6 Header Compression" format at the moment. Which
->     is described by RFC 6282 [0]. The BLTE 6LoWPAN draft describes that the
->     IPHC is the same format like IEEE 802.15.4, see [1].
->
->     Futuremore we can put more code into this directory which is shared
->     between BLTE and IEEE 802.15.4 6LoWPAN like RFC 6775 or the routing
->     protocol RPL RFC 6550.
->
->     To avoid naming conflicts I renamed 6lowpan-y to ieee802154_6lowpan-y
->     in net/ieee802154/Makefile.
->
->     [0] http://tools.ietf.org/html/rfc6282
->     [1] http://tools.ietf.org/html/draft-ietf-6lowpan-btle-12#section-3.2
->     [2] http://tools.ietf.org/html/rfc6775
->     [3] http://tools.ietf.org/html/rfc6550
->
->     Signed-off-by: Alexander Aring <alex.aring@gmail.com>
->     Acked-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
->     Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+There is a physical limit to the number of GPIOs on the device. The number
+4 is wrong, the protocol does allow for up to 8 GPIOs. But it is a hard limit.
 
-> --- /dev/null
-> +++ b/net/6lowpan/Kconfig
-> @@ -0,0 +1,6 @@
-> +config 6LOWPAN
-> +       bool "6LoWPAN Support"
+> 
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
+>  Documentation/devicetree/bindings/input/atmel,maxtouch.txt | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+> index baef432..be50476 100644
+> --- a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+> +++ b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+> @@ -11,7 +11,7 @@ Required properties:
+>  
+>  Optional properties for main touchpad device:
+>  
+> -- linux,gpio-keymap: An array of up to 4 entries indicating the Linux
+> +- linux,gpio-keymap: An array of entries indicating the Linux
+>      keycode generated by each GPIO. Linux keycodes are defined in
+>      <dt-bindings/input/input.h>.
+>  
+> @@ -22,4 +22,10 @@ Example:
+>  		reg = <0x4b>;
+>  		interrupt-parent = <&gpio>;
+>  		interrupts = <TEGRA_GPIO(W, 3) IRQ_TYPE_LEVEL_LOW>;
+> +		linux,gpio-keymap = < BTN_LEFT
+> +				      BTN_TOOL_FINGER
+> +				      BTN_TOOL_DOUBLETAP
+> +				      BTN_TOOL_TRIPLETAP
+> +				      BTN_TOOL_QUADTAP
+> +				      BTN_TOOL_QUINTTAP >;
 
-Is there any specific reason 6LOWPAN is bool instead of tristate?
-IPV6 can be modular.
+I'm afraid you have misunderstood the impact of this change to the way that
+the GPIOs coming in to the touch controller are mapped to key codes. Look
+at the protocol guide for T19.
 
-> +       depends on IPV6
-> +       ---help---
-> +         This enables IPv6 over Low power Wireless Personal Area Network -
-> +         "6LoWPAN" which is supported by IEEE 802.15.4 or Bluetooth stacks.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+The DOUBLE/TRIPLE/QUAD/QUINTTAP stuff is filled in for us by the input core
+when we use INPUT_MT_POINTER, anyway.
