@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564AbaHGPdz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:33:55 -0400
-Received: from mail-ob0-f196.google.com ([209.85.214.196]:35802 "EHLO
-	mail-ob0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932134AbaHGPdx (ORCPT
+	id S932424AbaHGPh3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:37:29 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:47421 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071AbaHGPh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:33:53 -0400
+	Thu, 7 Aug 2014 11:37:28 -0400
+Message-ID: <53E39D2D.1060202@linux.vnet.ibm.com>
+Date: Thu, 07 Aug 2014 17:37:17 +0200
+From: "Thierry Fauck@linux.vnet.ibm.com" <thierry@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Date: Thu, 7 Aug 2014 13:10:51 +0000
-X-Google-Sender-Auth: pFL6MCtDMlO6U5cNbkgt5q5UXGg
-Message-ID: <CAHkiC-ixpiaVBzNJ6Ucng8vWdyKfgUaq2u+jJ6FR9LP6PdaVdQ@mail.gmail.com>
-Subject: Hello....!!
-From: "Dr.Dularb Lavis" <dularblavis11@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: avagin@openvz.org, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Some systems have a dynamic PAGE_SIZE value and do not
+ add a definition for PAGE_SIZE. This value will have to be retrieved using
+ getpagesize() or sysconf().
+References: <1407324866-3548-1-git-send-email-thierry@linux.vnet.ibm.com> <20140806130647.5f94c95c9621dc7d69501641@linux-foundation.org>
+In-Reply-To: <20140806130647.5f94c95c9621dc7d69501641@linux-foundation.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080715-8372-0000-0000-000000C4BD42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attention  Please,
-I am writing this letter with due respect since we have not known or
-met ourselves previously,  I am asking for your assistance. I want to
-find out if it's possible for you to deal with individual as to
-investment. I will be so glad if you can allow me and lead me to the
-right channel towards your assistance to my situation now,  I would
-like to use this opportunity to introduce myself to you.
-I am Dr.Dularb Lavis; manager Audit & Accounts department With the
-Bank Of Africa, I am writing to request your assistance to transfer
-the sum of $10.2Milion United States dollars into your accounts.
-And according to my investigations, I discovered that Mr. Lam Kok a
-private business owner, died with his next of kin and according to the
-laws and constitution guiding this banking institution stated that
-after the expiration of (12) years, if no body or person comes for the
-claim as the next of kin, the fund will be channel into national
-treasury as unclaimed fund. Because of the static of this transaction
-I want you to stand as the next of kin so that our bank will accord
-you the recognition and have the fund transfer to your account.
-The total sum will be shared as follows: 50% for me, 50% for you with
-the  expenses that would occur during the transfer of these funds will
-shall join hand together and solve it, the transfer is risk free on
-both sides hence you are going to follow my instruction till the fund
-transfer to your account.
-More details information with the text of application form will be
-forwarded to you to breakdown explaining comprehensively what require
-of you.
-Full Name.....................
-Sex.................................
-Age.......................................
-Occupation......................................
-Private Mobile Number.......................................
-Waiting  to hear from you soon.
-Dr.Dularb Lavis
+On 08/06/2014 10:06 PM, Andrew Morton wrote:
+> On Wed,  6 Aug 2014 13:34:26 +0200 Thierry FAUCK - IBM LTC <thierry@linux.vnet.ibm.com> wrote:
+>
+>> --- a/tools/testing/selftests/ptrace/peeksiginfo.c
+>> +++ b/tools/testing/selftests/ptrace/peeksiginfo.c
+>> @@ -31,6 +31,10 @@ static int sys_ptrace(int request, pid_t pid, void *addr, void *data)
+>>  #define TEST_SICODE_PRIV	-1
+>>  #define TEST_SICODE_SHARE	-2
+>>  
+>> +#ifndef PAGE_SIZE
+>> +#define PAGE_SIZE sysconf(_SC_PAGESIZE)
+>> +#endif
+>> +
+>>  #define err(fmt, ...)						\
+>>  		fprintf(stderr,					\
+>>  			"Error (%s:%d): " fmt,			\
+> More details, please.  What are "some systems"?
+>
+Sorry, about that "common description".
+A more appropriate one could be : On IBM powerpc where multiple page
+size value are supported, current ppc64 and ppc64el distro don't define
+the PAGE_SIZE variable in /usr/include as this is a dynamic value
+retrieved by the getpagesize() or sysconf() defined in unistd.h. The
+PAGE_SIZE variable sounds defined when only one value is supported by
+the kernel.
+As such, when the PAGE_SIZE definition doesn't exist system should
+retrieve the dynamic value.
+
+Is that a better explanation ?
+
+-- 
+Thierry Fauck @ linux.vnet.ibm
+
