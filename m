@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122AbaHGUQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 16:16:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47810 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874AbaHGUQC (ORCPT
+	id S1755191AbaHGUSo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 16:18:44 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:44205 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760AbaHGUSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 16:16:02 -0400
-Date: Thu, 7 Aug 2014 13:16:00 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Valentina Manea <valentina.manea.m@gmail.com>
-Cc: =?utf-8?B?VMO8bGluIMSwemVy?= <tulinizer@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, mail@beyermatthias.de,
-        hdegoede@redhat.com, Federico Manzan <f.manzan@gmail.com>,
-        Kurt Garloff <kurt@garloff.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Linux Kernel Community @ ROSEdu" <firefly@lists.rosedu.org>,
-        Andy Grover <andy.grover@gmail.com>, max@vozeler.com
-Subject: Re: [PATCH 0/3] usbip: move usbip out of staging
-Message-ID: <20140807201600.GA5720@kroah.com>
-References: <1407388229-31807-1-git-send-email-valentina.manea.m@gmail.com>
- <20140807053344.GA5754@kroah.com>
- <CABdoFFd9ZuikFyaSfOyn-babECtno50_GGNHofK1-LmhLCqeTw@mail.gmail.com>
+	Thu, 7 Aug 2014 16:18:41 -0400
+Date: Thu, 7 Aug 2014 22:18:35 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: mmarek@suse.cz, gregkh@linuxfoundation.org, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] kbuild: kselftest - new make target to build and run
+ kernel selftests
+Message-ID: <20140807201835.GA2503@ravnborg.org>
+References: <1407438466-7196-1-git-send-email-shuah.kh@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABdoFFd9ZuikFyaSfOyn-babECtno50_GGNHofK1-LmhLCqeTw@mail.gmail.com>
+In-Reply-To: <1407438466-7196-1-git-send-email-shuah.kh@samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 12:36:06PM -0700, Valentina Manea wrote:
-> On Wed, Aug 6, 2014 at 10:33 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Thu, Aug 07, 2014 at 08:10:25AM +0300, Valentina Manea wrote:
-> >> This is a resend of the patch series from March.
-> >>
-> >> After migrating userspace code to libudev, converting usbip-host
-> >> to a device driver and various bug fixes and enhancements, USB/IP
-> >> is fully functional and can be moved out of staging.
-> >>
-> >> This patch series moves it as following:
-> >> * userspace code to tools/usb/usbip
-> >> * kernel code to drivers/usb/usbip
-> >>
-> >> Besides this, a warning generated in the kernel code is solved.
-> >
-> > What kernel version is this against?
-> >
+On Thu, Aug 07, 2014 at 01:07:46PM -0600, Shuah Khan wrote:
+> Add a new make target "kselftest" to enable kernel testing. This
+> new target builds and runs kernel selftests. Running as root is
+> recommended for a complete test run as some tests don't run when
+> run by non-root user. Build, install, and boot kernel before
+> running kselftest on it.
 > 
-> I rebased my tree against master in the staging tree.
-
-Great, thanks.
-
-> > And can we get a maintainer for this code?  I don't want to see it sit
-> > "ownerless" in the kernel tree.  Will you be willing to do this?
-> >
+> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> ---
+>  Makefile | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
 > 
-> Yes. But I should be briefed about that responsibilities will this involve.
+> diff --git a/Makefile b/Makefile
+> index d0901b4..574e8da 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -1036,6 +1036,13 @@ headers_check: headers_install
+>  	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst) HDRCHECK=1
+>  
+>  # ---------------------------------------------------------------------------
+> +# Kernel selftest
+> +
+> +PHONY += kselftest
+> +kselftest:
+> +	$(Q)$(MAKE) -C tools/testing/selftests run_tests
+> +
+> +# ---------------------------------------------------------------------------
+>  # Modules
+>  
+>  ifdef CONFIG_MODULES
+> @@ -1238,6 +1245,11 @@ help:
+>  	@echo  '  headerdep       - Detect inclusion cycles in headers'
+>  	@$(MAKE) -f $(srctree)/scripts/Makefile.help checker-help
+>  	@echo  ''
+> +	@echo  'Kernel selftest'
+> +	@echo  '  kselftest       - Build and run kernel selftest (run as root)'
+> +	@echo  '                    Build, install, and boot kernel before'
+> +	@echo  '                    running kselftest on it'
+It is never good to advertise to run something as root.
+But I see that this is recommended for now so the patch has my:
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
-The top of the MAINTAINERS should have this information, look in the S:
-Status section about what type of category you are in.
+	Sam
 
-Basically I'd like you to be the one to handle patches that are sent in
-for the code, just by reviewing them, you don't have to send them on to
-me if you don't want to (some usb subsystem maintainers do do this, like
-for usb-serial and xhci), it's up to you.
-
-Also, any bug reports or questions about the code would come to you
-first, along with the rest of the linux-usb@vger developers, you aren't
-alone in this at all.
-
-Does that help explain things better?
-
-greg k-h
