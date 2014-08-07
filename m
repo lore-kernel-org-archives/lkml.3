@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756AbaHGTs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 15:48:28 -0400
-Received: from mail-pd0-f201.google.com ([209.85.192.201]:63552 "EHLO
-	mail-pd0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895AbaHGTs0 (ORCPT
+	id S1755016AbaHGTsz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 15:48:55 -0400
+Received: from mail-yk0-f176.google.com ([209.85.160.176]:33808 "EHLO
+	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760AbaHGTsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 15:48:26 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-Cc: Dinh Nguyen <dinguyen@altera.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, paulz@synopsys.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: dwc2: Read GNPTXFSIZ when in forced HOST mode.
-Date: Thu,  7 Aug 2014 12:48:11 -0700
-Message-Id: <1407440891-29295-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	Thu, 7 Aug 2014 15:48:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABdoFFd9ZuikFyaSfOyn-babECtno50_GGNHofK1-LmhLCqeTw@mail.gmail.com>
+References: <1407388229-31807-1-git-send-email-valentina.manea.m@gmail.com>
+	<20140807053344.GA5754@kroah.com>
+	<CABdoFFd9ZuikFyaSfOyn-babECtno50_GGNHofK1-LmhLCqeTw@mail.gmail.com>
+Date: Thu, 7 Aug 2014 13:48:53 -0600
+Message-ID: <CAKocOONNKZXHS1+ZDrMRu4noOCi+OmSVvhcxBrH+iNDyB1B7zw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] usbip: move usbip out of staging
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Valentina Manea <valentina.manea.m@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        =?UTF-8?B?VMO8bGluIMSwemVy?= <tulinizer@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, mail@beyermatthias.de,
+        hdegoede@redhat.com, Federico Manzan <f.manzan@gmail.com>,
+        Kurt Garloff <kurt@garloff.de>, linux-usb@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux Kernel Community @ ROSEdu" <firefly@lists.rosedu.org>,
+        Andy Grover <andy.grover@gmail.com>, max@vozeler.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The documentation for GNPTXFSIZ says that "For host mode, this field
-is always valid."  Since we're already switching to host mode for
-HPTXFSIZ, let's also read GNPTXFSIZ in host mode.
+On Thu, Aug 7, 2014 at 1:36 PM, Valentina Manea
+<valentina.manea.m@gmail.com> wrote:
+> On Wed, Aug 6, 2014 at 10:33 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> On Thu, Aug 07, 2014 at 08:10:25AM +0300, Valentina Manea wrote:
+>>> This is a resend of the patch series from March.
+>>>
+>>> After migrating userspace code to libudev, converting usbip-host
+>>> to a device driver and various bug fixes and enhancements, USB/IP
+>>> is fully functional and can be moved out of staging.
+>>>
+>>> This patch series moves it as following:
+>>> * userspace code to tools/usb/usbip
+>>> * kernel code to drivers/usb/usbip
+>>>
+>>> Besides this, a warning generated in the kernel code is solved.
+>>
+>> What kernel version is this against?
+>>
+>
+> I rebased my tree against master in the staging tree.
+>
+>> And can we get a maintainer for this code?  I don't want to see it sit
+>> "ownerless" in the kernel tree.  Will you be willing to do this?
+>>
+>
+> Yes. But I should be briefed about that responsibilities will this involve.
+>
 
-On an rk3288 SoC, without this change we see this at bootup:
-  dwc2 ff580000.usb: gnptxfsiz=00100400
-  dwc2 ff580000.usb: 128 invalid for host_nperio_tx_fifo_size. Check HW configuration.
+If you would like a back-up, I can volunteer to be co-maintainer for this
+driver.
 
-After this change we see:
-  dwc2 ff580000.usb: gnptxfsiz=04000400
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/usb/dwc2/core.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/usb/dwc2/core.c b/drivers/usb/dwc2/core.c
-index 27d2c9b..c184ed43 100644
---- a/drivers/usb/dwc2/core.c
-+++ b/drivers/usb/dwc2/core.c
-@@ -2674,23 +2674,23 @@ int dwc2_get_hwparams(struct dwc2_hsotg *hsotg)
- 	hwcfg2 = readl(hsotg->regs + GHWCFG2);
- 	hwcfg3 = readl(hsotg->regs + GHWCFG3);
- 	hwcfg4 = readl(hsotg->regs + GHWCFG4);
--	gnptxfsiz = readl(hsotg->regs + GNPTXFSIZ);
- 	grxfsiz = readl(hsotg->regs + GRXFSIZ);
- 
- 	dev_dbg(hsotg->dev, "hwcfg1=%08x\n", hwcfg1);
- 	dev_dbg(hsotg->dev, "hwcfg2=%08x\n", hwcfg2);
- 	dev_dbg(hsotg->dev, "hwcfg3=%08x\n", hwcfg3);
- 	dev_dbg(hsotg->dev, "hwcfg4=%08x\n", hwcfg4);
--	dev_dbg(hsotg->dev, "gnptxfsiz=%08x\n", gnptxfsiz);
- 	dev_dbg(hsotg->dev, "grxfsiz=%08x\n", grxfsiz);
- 
--	/* Force host mode to get HPTXFSIZ exact power on value */
-+	/* Force host mode to get HPTXFSIZ / GNPTXFSIZ exact power on value */
- 	gusbcfg = readl(hsotg->regs + GUSBCFG);
- 	gusbcfg |= GUSBCFG_FORCEHOSTMODE;
- 	writel(gusbcfg, hsotg->regs + GUSBCFG);
- 	usleep_range(100000, 150000);
- 
-+	gnptxfsiz = readl(hsotg->regs + GNPTXFSIZ);
- 	hptxfsiz = readl(hsotg->regs + HPTXFSIZ);
-+	dev_dbg(hsotg->dev, "gnptxfsiz=%08x\n", gnptxfsiz);
- 	dev_dbg(hsotg->dev, "hptxfsiz=%08x\n", hptxfsiz);
- 	gusbcfg = readl(hsotg->regs + GUSBCFG);
- 	gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
--- 
-2.0.0.526.g5318336
-
+-- Shuah
