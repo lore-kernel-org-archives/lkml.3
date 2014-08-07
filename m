@@ -1,68 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420AbaHGAsp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 20:48:45 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:35157 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753927AbaHGAsn (ORCPT
+	id S1754843AbaHGAug (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 20:50:36 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:47056 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754013AbaHGAue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 20:48:43 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Nick Dyer <nick.dyer@itdev.co.uk>, Stephen Warren <swarren@nvidia.com>,
-        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        linux-input@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 2/2] Input: atmel_mxt_ts - Add keycodes array example
-Date: Thu,  7 Aug 2014 02:48:06 +0200
-Message-Id: <1407372486-25881-2-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1407372486-25881-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1407372486-25881-1-git-send-email-javier.martinez@collabora.co.uk>
+	Wed, 6 Aug 2014 20:50:34 -0400
+X-IronPort-AV: E=Sophos;i="5.04,278,1406563200"; 
+   d="scan'208";a="34284635"
+Message-ID: <53E2CCFC.6090307@cn.fujitsu.com>
+Date: Thu, 7 Aug 2014 08:49:00 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, <t.stanislaws@samsung.com>,
+        Gioh Kim <gioh.kim@lge.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/8] fix freepage count problems in memory isolation
+References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.225.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Atmel maXTouch driver allows to dynamically define the
-event keycodes set that the device is capable of. This may
-not be evident when reading the DT binding document so add
-an example to make it easier to understand how this works.
+Hi Joonsoo,
 
-Also, the current documentation says that the array limit
-is four entries but the driver dynamically allocates the
-keymap array and does not limit the array size.
+The first 3 patches in this patchset are in a bit of mess.
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
- Documentation/devicetree/bindings/input/atmel,maxtouch.txt | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+On 08/06/2014 03:18 PM, Joonsoo Kim wrote:
+> Hello,
+> 
+> This patchset aims at fixing problems during memory isolation found by
+> testing my patchset [1].
+> 
+> These are really subtle problems so I can be wrong. If you find what I am
+> missing, please let me know.
+> 
+> Before describing bugs itself, I first explain definition of freepage.
+> 
+> 1. pages on buddy list are counted as freepage.
+> 2. pages on isolate migratetype buddy list are *not* counted as freepage.
+> 3. pages on cma buddy list are counted as CMA freepage, too.
+> 4. pages for guard are *not* counted as freepage.
+> 
+> Now, I describe problems and related patch.
+> 
+> Patch 1: If guard page are cleared and merged into isolate buddy list,
+> we should not add freepage count.
+> 
+> Patch 4: There is race conditions that results in misplacement of free
+> pages on buddy list. Then, it results in incorrect freepage count and
+> un-availability of freepage.
+> 
+> Patch 5: To count freepage correctly, we should prevent freepage from
+> being added to buddy list in some period of isolation. Without it, we
+> cannot be sure if the freepage is counted or not and miscount number
+> of freepage.
+> 
+> Patch 7: In spite of above fixes, there is one more condition for
+> incorrect freepage count. pageblock isolation could be done in pageblock
+> unit  so we can't prevent freepage from merging with page on next
+> pageblock. To fix it, start_isolate_page_range() and
+> undo_isolate_page_range() is modified to process whole range at one go.
+> With this change, if input parameter of start_isolate_page_range() and
+> undo_isolate_page_range() is properly aligned, there is no condition for
+> incorrect merging.
+> 
+> Without patchset [1], above problem doesn't happens on my CMA allocation
+> test, because CMA reserved pages aren't used at all. So there is no
+> chance for above race.
+> 
+> With patchset [1], I did simple CMA allocation test and get below result.
+> 
+> - Virtual machine, 4 cpus, 1024 MB memory, 256 MB CMA reservation
+> - run kernel build (make -j16) on background
+> - 30 times CMA allocation(8MB * 30 = 240MB) attempts in 5 sec interval
+> - Result: more than 5000 freepage count are missed
+> 
+> With patchset [1] and this patchset, I found that no freepage count are
+> missed so that I conclude that problems are solved.
+> 
+> These problems can be possible on memory hot remove users, although
+> I didn't check it further.
+> 
+> This patchset is based on linux-next-20140728.
+> Please see individual patches for more information.
+> 
+> Thanks.
+> 
+> [1]: Aggressively allocate the pages on cma reserved memory
+>      https://lkml.org/lkml/2014/5/30/291
+> 
+> Joonsoo Kim (8):
+>   mm/page_alloc: correct to clear guard attribute in DEBUG_PAGEALLOC
+>   mm/isolation: remove unstable check for isolated page
+>   mm/page_alloc: fix pcp high, batch management
+>   mm/isolation: close the two race problems related to pageblock
+>     isolation
+>   mm/isolation: change pageblock isolation logic to fix freepage
+>     counting bugs
+>   mm/isolation: factor out pre/post logic on
+>     set/unset_migratetype_isolate()
+>   mm/isolation: fix freepage counting bug on
+>     start/undo_isolat_page_range()
+>   mm/isolation: remove useless race handling related to pageblock
+>     isolation
+> 
+>  include/linux/page-isolation.h |    2 +
+>  mm/internal.h                  |    5 +
+>  mm/page_alloc.c                |  223 +++++++++++++++++-------------
+>  mm/page_isolation.c            |  292 +++++++++++++++++++++++++++++++---------
+>  4 files changed, 368 insertions(+), 154 deletions(-)
+> 
 
-diff --git a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
-index baef432..be50476 100644
---- a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
-+++ b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
-@@ -11,7 +11,7 @@ Required properties:
- 
- Optional properties for main touchpad device:
- 
--- linux,gpio-keymap: An array of up to 4 entries indicating the Linux
-+- linux,gpio-keymap: An array of entries indicating the Linux
-     keycode generated by each GPIO. Linux keycodes are defined in
-     <dt-bindings/input/input.h>.
- 
-@@ -22,4 +22,10 @@ Example:
- 		reg = <0x4b>;
- 		interrupt-parent = <&gpio>;
- 		interrupts = <TEGRA_GPIO(W, 3) IRQ_TYPE_LEVEL_LOW>;
-+		linux,gpio-keymap = < BTN_LEFT
-+				      BTN_TOOL_FINGER
-+				      BTN_TOOL_DOUBLETAP
-+				      BTN_TOOL_TRIPLETAP
-+				      BTN_TOOL_QUADTAP
-+				      BTN_TOOL_QUINTTAP >;
- 	};
+
 -- 
-2.0.0.rc2
-
+Thanks.
+Zhang Yanfei
