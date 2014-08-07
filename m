@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424AbaHGPh3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:37:29 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:47421 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071AbaHGPh2 (ORCPT
+	id S932357AbaHGPku (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:40:50 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:47603 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932086AbaHGPkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:37:28 -0400
-Message-ID: <53E39D2D.1060202@linux.vnet.ibm.com>
-Date: Thu, 07 Aug 2014 17:37:17 +0200
-From: "Thierry Fauck@linux.vnet.ibm.com" <thierry@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 7 Aug 2014 11:40:49 -0400
+Message-ID: <53E39DFE.6050501@plexistor.com>
+Date: Thu, 07 Aug 2014 18:40:46 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: avagin@openvz.org, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Some systems have a dynamic PAGE_SIZE value and do not
- add a definition for PAGE_SIZE. This value will have to be retrieved using
- getpagesize() or sysconf().
-References: <1407324866-3548-1-git-send-email-thierry@linux.vnet.ibm.com> <20140806130647.5f94c95c9621dc7d69501641@linux-foundation.org>
-In-Reply-To: <20140806130647.5f94c95c9621dc7d69501641@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
+To: Karel Zak <kzak@redhat.com>
+CC: Boaz Harrosh <openosd@gmail.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Jens Axboe <axboe@kernel.dk>, Matthew Wilcox <willy@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] brd: Request from fdisk 4k alignment
+References: <53E21125.9080308@plexistor.com> <53E21317.7080403@plexistor.com> <1407362634.2869.2.camel@rzwisler-mobl1.amr.corp.intel.com> <53E36E53.3090008@gmail.com> <20140807130042.GB9401@x2.net.home> <53E385BE.40100@plexistor.com> <20140807152112.GD9401@x2.net.home>
+In-Reply-To: <20140807152112.GD9401@x2.net.home>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080715-8372-0000-0000-000000C4BD42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2014 10:06 PM, Andrew Morton wrote:
-> On Wed,  6 Aug 2014 13:34:26 +0200 Thierry FAUCK - IBM LTC <thierry@linux.vnet.ibm.com> wrote:
->
->> --- a/tools/testing/selftests/ptrace/peeksiginfo.c
->> +++ b/tools/testing/selftests/ptrace/peeksiginfo.c
->> @@ -31,6 +31,10 @@ static int sys_ptrace(int request, pid_t pid, void *addr, void *data)
->>  #define TEST_SICODE_PRIV	-1
->>  #define TEST_SICODE_SHARE	-2
->>  
->> +#ifndef PAGE_SIZE
->> +#define PAGE_SIZE sysconf(_SC_PAGESIZE)
->> +#endif
->> +
->>  #define err(fmt, ...)						\
->>  		fprintf(stderr,					\
->>  			"Error (%s:%d): " fmt,			\
-> More details, please.  What are "some systems"?
->
-Sorry, about that "common description".
-A more appropriate one could be : On IBM powerpc where multiple page
-size value are supported, current ppc64 and ppc64el distro don't define
-the PAGE_SIZE variable in /usr/include as this is a dynamic value
-retrieved by the getpagesize() or sysconf() defined in unistd.h. The
-PAGE_SIZE variable sounds defined when only one value is supported by
-the kernel.
-As such, when the PAGE_SIZE definition doesn't exist system should
-retrieve the dynamic value.
+On 08/07/2014 06:21 PM, Karel Zak wrote:
+<>
+> 
+>  fdisk uses physical sector size or minimal I/O size (greater value wins)
+> 
 
-Is that a better explanation ?
+OK
 
--- 
-Thierry Fauck @ linux.vnet.ibm
+>> I was trying to play with the  heads, sectors, cylinders; values but none I tried
+> 
+>  don't play with CHS, that's waste of time and it's completely ignored
+>  by fdisk by default
+> 
+>> would cause an alignment of 4k, not even of the first partition start.
+>>
+>> Please advise what I can do?
+> 
+>  IMHO you're right with your patch (alignment offset is IMHO bad way).
+>  It's all (brd) about pages, is there any reason to use something else
+>  for I/O limits?
+> 
+>  It would be also nice to set minimal and optimal io size, zero values
+>  in this case means (for userspace) that the device does not provide
+>  any I/O information to system. It's normal for old hw disks and then
+>  we use some built-in defaults, but I don't see a reason to do the
+>  same for virtual devices. 
+> 
+
+Hi Ross
+
+I have by now read the all code, and Karel also confirms this from fdisk
+side. The best for us is the use of "physical sector size" but with
+our "minimal I/O size" set to 512. The later has actual bad effects in
+the Kernel code itself. But the "physical sector size" has no effect on
+Kernel code, and actually has a very good affect on fdisk which now works
+the way we would like it.
+
+Please send your review-by so Jens can pick these up for mainline
+
+>     Karel
+> 
+
+Thanks
+Boaz
 
