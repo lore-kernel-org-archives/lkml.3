@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065AbaHGQs6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 12:48:58 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:8993 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932330AbaHGQs4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 12:48:56 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-9c-53e3adf62620
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH] mfd: sec-core: add missing sec_irq_init() return value
- checking
-Date: Thu, 07 Aug 2014 18:48:52 +0200
-Message-id: <2156078.GxeZgK3rLH@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <2486284.NeLpWWu75g@amdc1032>
-References: <2486284.NeLpWWu75g@amdc1032>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t9jAd1vax8HG8z8aGXx+oWhxdmmN+wW
-	978eZbS4vGsOm8WM8/uYLE53s1pcXPGFyYHd4861PWwe804GevRtWcXo8XmTXABLFJdNSmpO
-	Zllqkb5dAlfGomWLmAv2c1a8+NXP3MD4gb2LkZNDQsBE4lXLUUYIW0ziwr31bF2MXBxCAosY
-	JebfWMUC4bQwSbQc+MMCUsUmYCUxsX0VUAcHh4iAhsTenhqQGmaBl4wS3bP2MoHUCAuESfRt
-	eApWzyKgKvH26hewOK+ApsTRLT/YQGxRAU+JHdtXgtmcAloSu3Y3gl0kBFRz9cJsZoh6QYkf
-	k++BzWEWkJfYt38qK4StJbF+53GmCYwCs5CUzUJSNgtJ2QJG5lWMoqkFyQXFSem5hnrFibnF
-	pXnpesn5uZsYwWH9TGoH48oGi0OMAhyMSjy8At2Pg4VYE8uKK3MPMUpwMCuJ8OqChHhTEiur
-	Uovy44tKc1KLDzFKc7AoifMeaLUOFBJITyxJzU5NLUgtgskycXBKNTAWTPXNEHm733H9lhMf
-	+jMqfTYVFtj53s/wZXhouez3M62QLr7jM7sKOfXniTpEv77D92G6Z6/5QquHBwQlcrkjnFeI
-	308R8wnKWvK9iGnuqconD3OfsIexm6o+U1uhO3/ambefOQ/s0rhR/6uSMeN4Wc3WlXu/vllT
-	nt2+8n3dgTaZi8p/F0xXYinOSDTUYi4qTgQA/VjPfmcCAAA=
+	id S933078AbaHGQtm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 12:49:42 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:62960 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932330AbaHGQtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 12:49:41 -0400
+X-IronPort-AV: E=Sophos;i="5.01,819,1400025600"; 
+   d="scan'208";a="159737494"
+Message-ID: <53E3AE21.50109@citrix.com>
+Date: Thu, 7 Aug 2014 17:49:37 +0100
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: <wei.liu2@citrix.com>, <Ian.Campbell@citrix.com>,
+        <david.vrabel@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: [PATCH net-next 0/2] xen-netback: Changes around carrier handling
+References: <1407165658-20146-1-git-send-email-zoltan.kiss@citrix.com> <20140805.160748.1185917042908283028.davem@davemloft.net>
+In-Reply-To: <20140805.160748.1185917042908283028.davem@davemloft.net>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/08/14 00:07, David Miller wrote:
+> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Date: Mon, 4 Aug 2014 16:20:56 +0100
+>
+>> This series starts using carrier off as a way to purge packets when the guest is
+>> not able (or willing) to receive them. It is a much faster way to get rid of
+>> packets waiting for an overwhelmed guest.
+>> The first patch changes current netback code where it relies currently on
+>> netif_carrier_ok.
+>> The second turns off the carrier if the guest times out on a queue, and only
+>> turn it on again if that queue (or queues) resurrects.
+>>
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+>
+> Applied, but I have some reservations:
+>
+> 1) This is starting to bleed what is normally qdisc type policy into the
+>     driver.
+>
+> 2) There are other drivers that could run into this kind of situation and
+>     have similar concerns, therefore we should make sure we have a consistent
+>     approach that such entities use to handle this problem.
+>
+> Part of the problem is that netif_carrier_off() only partially mimicks
+> the situation.  It expresses the "transmitter is down so packets
+> aren't going onto the wire" part, which keeps the watchdog from
+> spitting out log messages ever time it fires.  But it doesn't deal
+> with packet freeing policy meanwhile, which I guess is the part that
+> this patch series is largely trying to address.
 
-[ added missing linux-samsung-soc ML, sorry for the noise ]
+David Vrabel pointed out an important question in a reply to the 
+previous version of this series: this patch deschedule NAPI if the 
+carrier goes down. The backend doesn't receive packets from the guest. 
+DavidVr and others said we shouldn't do this, the guest should be able 
+to transmit even if it's not able/willing to receive. Other drivers 
+doesn't deschedule NAPI at carrier off as well, however the "carrier 
+off" information comes from the hardware, not from an untrusted guest 
+who is not posting buffers on the receive ring.
+I don't have any good argument why I did it the current way, other than 
+a hunch that it feels more natural.
+David, do you have an opinion on that?
 
-On Thursday, August 07, 2014 06:44:18 PM Bartlomiej Zolnierkiewicz wrote:
-> sec_irq_init() can fail if it encounters unknown device type or
-> on regmap_add_irq_chip() error.  Add missing sec_irq_init() return
-> value checking to sec_pmic_probe().
-> 
-> Tested on Insignal's Exynos4412 based Origen board.
-> 
-> Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Sangbeom Kim <sbkim73@samsung.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> patch is against next-20140804 branch of linux-next kernel
-> 
->  drivers/mfd/sec-core.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-> index dba7e2b..f498867 100644
-> --- a/drivers/mfd/sec-core.c
-> +++ b/drivers/mfd/sec-core.c
-> @@ -353,7 +353,9 @@ static int sec_pmic_probe(struct i2c_client *i2c,
->  	if (pdata && pdata->cfg_pmic_irq)
->  		pdata->cfg_pmic_irq();
->  
-> -	sec_irq_init(sec_pmic);
-> +	ret = sec_irq_init(sec_pmic);
-> +	if (ret)
-> +		return ret;
->  
->  	pm_runtime_set_active(sec_pmic->dev);
-
+Zoli
