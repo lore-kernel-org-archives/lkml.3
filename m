@@ -1,143 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938AbaHGDTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 23:19:34 -0400
-Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:12100
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754563AbaHGDTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 23:19:33 -0400
-From: "shengjiu.wang@freescale.com" <shengjiu.wang@freescale.com>
-To: Lucas Stach <l.stach@pengutronix.de>
-CC: Shawn Guo <Shawn.Guo@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH V2 2/3] ARM: clk-imx6q: Add missing lvds and anaclk clock
- to the clock tree
-Thread-Topic: [PATCH V2 2/3] ARM: clk-imx6q: Add missing lvds and anaclk clock
- to the clock tree
-Thread-Index: AQHPsVFewEgGxvdxXU62HLItfh9QrJvDpqaAgADS26A=
-Date: Thu, 7 Aug 2014 03:19:28 +0000
-Message-ID: <577ff1cbd3e045179422336b49f8408a@BY2PR03MB332.namprd03.prod.outlook.com>
-References: <cover.1407313676.git.shengjiu.wang@freescale.com>
-	 <f98c6ea35ef4fa382d8aaf4ff370530aeb5b107f.1407313676.git.shengjiu.wang@freescale.com>
- <1407336147.5208.11.camel@weser.hi.pengutronix.de>
-In-Reply-To: <1407336147.5208.11.camel@weser.hi.pengutronix.de>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.1]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 029651C7A1
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(13464003)(51704005)(189002)(199002)(377454003)(54356999)(76576001)(81342001)(77982001)(15202345003)(76176999)(81542001)(99396002)(21056001)(15975445006)(101416001)(83322001)(76482001)(19580405001)(19580395003)(79102001)(92566001)(66066001)(46102001)(83072002)(86362001)(80022001)(20776003)(85852003)(107046002)(64706001)(2656002)(99286002)(95666004)(85306004)(106116001)(4396001)(50986999)(33646002)(105586002)(74316001)(31966008)(106356001)(74502001)(74662001)(87936001)(110136001)(24736002)(108616003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB444;H:BY2PR03MB332.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1755067AbaHGDU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 23:20:26 -0400
+Received: from ozlabs.org ([103.22.144.67]:57859 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754999AbaHGDUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 23:20:24 -0400
+Date: Thu, 7 Aug 2014 13:20:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stewart Smith <stewart@linux.vnet.ibm.com>
+Subject: linux-next: build failure after merge of the modules tree
+Message-ID: <20140807132017.2ec9e2ad@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/m+wFdk.w6RaqEicndyYXp72"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s773JsIl015376
 
-Hi Stash, Shawn
+--Sig_/m+wFdk.w6RaqEicndyYXp72
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-  Do we have such API for exclusive clock? Or Do you have example for these exclusive clocks?
+Hi Rusty,
 
-Best regards
-Wang shengjiu
+After merging the modules tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
------Original Message-----
-From: Lucas Stach [mailto:l.stach@pengutronix.de] 
-Sent: Wednesday, August 06, 2014 10:42 PM
-To: Wang Shengjiu-B02247
-Cc: Guo Shawn-R65073; kernel@pengutronix.de; linux@arm.linux.org.uk; robh+dt@kernel.org; pawel.moll@arm.com; mark.rutland@arm.com; ijc+devicetree@hellion.org.uk; galak@codeaurora.org; Chen Guangyu-B42378; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 2/3] ARM: clk-imx6q: Add missing lvds and anaclk clock to the clock tree
+arch/powerpc/platforms/powernv/opal-elog.c:85:28: error: macro "__ATTR_RO" =
+passed 2 arguments, but takes just 1
+  __ATTR_RO(id, elog_id_show);
+                            ^
+arch/powerpc/platforms/powernv/opal-elog.c:85:2: error: '__ATTR_RO' undecla=
+red here (not in a function)
+  __ATTR_RO(id, elog_id_show);
+  ^
+arch/powerpc/platforms/powernv/opal-elog.c:87:32: error: macro "__ATTR_RO" =
+passed 2 arguments, but takes just 1
+  __ATTR_RO(type, elog_type_show);
+                                ^
 
-Am Mittwoch, den 06.08.2014, 16:35 +0800 schrieb Shengjiu Wang:
-> anaclk1 and anaclk2 is the clock source for lvds1_in and lvds2_in. 
-> lvds1_in and lvds2_in can be used to provide external clock source to 
-> the internal pll, such as pll4_audio and pll5_video.
-> pll4_audio and pll5_video can have multiple source, not only "osc", so 
-> add them.
-> 
-> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
-> Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
-> ---
->  arch/arm/mach-imx/clk-imx6q.c             |   12 ++++++++++--
->  include/dt-bindings/clock/imx6qdl-clock.h |    8 +++++++-
->  2 files changed, 17 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/mach-imx/clk-imx6q.c 
-> b/arch/arm/mach-imx/clk-imx6q.c index 1d6dd59..330aad3 100644
-> --- a/arch/arm/mach-imx/clk-imx6q.c
-> +++ b/arch/arm/mach-imx/clk-imx6q.c
-> @@ -73,6 +73,7 @@ static const char *lvds_sels[] = {
->  	"pll4_audio", "pll5_video", "pll8_mlb", "enet_ref",
->  	"pcie_ref_125m", "sata_ref_100m",
->  };
-> +static const char *pll_av_sels[] = { "osc", "lvds1_in", "lvds2_in", 
-> +"dummy", };
->  
->  static struct clk *clk[IMX6QDL_CLK_END];  static struct 
-> clk_onecell_data clk_data; @@ -119,6 +120,9 @@ static void __init 
-> imx6q_clocks_init(struct device_node *ccm_node)
->  	clk[IMX6QDL_CLK_CKIL] = imx_obtain_fixed_clock("ckil", 0);
->  	clk[IMX6QDL_CLK_CKIH] = imx_obtain_fixed_clock("ckih1", 0);
->  	clk[IMX6QDL_CLK_OSC] = imx_obtain_fixed_clock("osc", 0);
-> +	/* Clock source from external clock via ANACLK1/2 PADs */
-> +	clk[IMX6QDL_CLK_ANACLK1] = imx_obtain_fixed_clock("anaclk1", 0);
-> +	clk[IMX6QDL_CLK_ANACLK2] = imx_obtain_fixed_clock("anaclk2", 0);
->  
->  	np = of_find_compatible_node(NULL, NULL, "fsl,imx6q-anatop");
->  	base = of_iomap(np, 0);
-> @@ -136,8 +140,8 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
->  	clk[IMX6QDL_CLK_PLL1_SYS]      = imx_clk_pllv3(IMX_PLLV3_SYS,	"pll1_sys",	"osc", base,        0x7f);
->  	clk[IMX6QDL_CLK_PLL2_BUS]      = imx_clk_pllv3(IMX_PLLV3_GENERIC,	"pll2_bus",	"osc", base + 0x30, 0x1);
->  	clk[IMX6QDL_CLK_PLL3_USB_OTG]  = imx_clk_pllv3(IMX_PLLV3_USB,	"pll3_usb_otg",	"osc", base + 0x10, 0x3);
-> -	clk[IMX6QDL_CLK_PLL4_AUDIO]    = imx_clk_pllv3(IMX_PLLV3_AV,	"pll4_audio",	"osc", base + 0x70, 0x7f);
-> -	clk[IMX6QDL_CLK_PLL5_VIDEO]    = imx_clk_pllv3(IMX_PLLV3_AV,	"pll5_video",	"osc", base + 0xa0, 0x7f);
-> +	clk[IMX6QDL_CLK_PLL4_AUDIO]    = imx_clk_pllv3(IMX_PLLV3_AV,	"pll4_audio",	"pll4_sel", base + 0x70, 0x7f);
-> +	clk[IMX6QDL_CLK_PLL5_VIDEO]    = imx_clk_pllv3(IMX_PLLV3_AV,	"pll5_video",	"pll5_sel", base + 0xa0, 0x7f);
->  	clk[IMX6QDL_CLK_PLL6_ENET]     = imx_clk_pllv3(IMX_PLLV3_ENET,	"pll6_enet",	"osc", base + 0xe0, 0x3);
->  	clk[IMX6QDL_CLK_PLL7_USB_HOST] = imx_clk_pllv3(IMX_PLLV3_USB,	"pll7_usb_host","osc", base + 0x20, 0x3);
->  
-> @@ -169,6 +173,8 @@ static void __init imx6q_clocks_init(struct 
-> device_node *ccm_node)
->  
->  	clk[IMX6QDL_CLK_LVDS1_SEL] = imx_clk_mux("lvds1_sel", base + 0x160, 0, 5, lvds_sels, ARRAY_SIZE(lvds_sels));
->  	clk[IMX6QDL_CLK_LVDS2_SEL] = imx_clk_mux("lvds2_sel", base + 0x160, 
-> 5, 5, lvds_sels, ARRAY_SIZE(lvds_sels));
-> +	clk[IMX6QDL_CLK_PLL4_SEL]  = imx_clk_mux("pll4_sel",  base + 0x70, 14, 2, pll_av_sels, ARRAY_SIZE(pll_av_sels));
-> +	clk[IMX6QDL_CLK_PLL5_SEL]  = imx_clk_mux("pll5_sel",  base + 0xa0, 
-> +14, 2, pll_av_sels, ARRAY_SIZE(pll_av_sels));
->  
->  	/*
->  	 * lvds1_gate and lvds2_gate are pseudo-gates.  Both can be @@ 
-> -178,6 +184,8 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
->  	 */
->  	clk[IMX6QDL_CLK_LVDS1_GATE] = imx_clk_gate("lvds1_gate", "lvds1_sel", base + 0x160, 10);
->  	clk[IMX6QDL_CLK_LVDS2_GATE] = imx_clk_gate("lvds2_gate", 
-> "lvds2_sel", base + 0x160, 11);
-> +	clk[IMX6QDL_CLK_LVDS1_IN] = imx_clk_gate("lvds1_in", "anaclk1", base + 0x160, 12);
-> +	clk[IMX6QDL_CLK_LVDS2_IN] = imx_clk_gate("lvds2_in", "anaclk2", base 
-> ++ 0x160, 13);
->  
-I think we need something more clever here. With both lvds in and out modeled as a clock gate it is possible for the user to enable both at the same time. The reference manual on the contrary states that both states are mutually exclusive: "Do not enable input and output buffers simultaneously".
+And it went down hill from there ...
 
-Regards,
-Lucas
--- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
+Caused by commit ba987e9b8ab1
+("arch/powerpc/platforms/powernv/opal-elog.c: fix world-writable sysfs
+files").
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+I have used the modules tree from next-20140725 again for today.
+
+There is still the error in
+arch/powerpc/platforms/powernv/opal-dump.c ...
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/m+wFdk.w6RaqEicndyYXp72
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT4vB2AAoJEMDTa8Ir7ZwVZtAP/0BcXxCbeAdQ2twrwRK7u3he
+a5pqAoLBrMgBi6KWTc6NZ5OFfnhN+W3aJtCtqK1bxsPfX+OmDtNHg/mpU12LM6Nl
+E3CkRQQUHFxhHgg9hBW0FwhjLNiUTYA7003zWj9iZXQJnIRXM5aV7r1QsWJHIQqY
+5BtB1SPUOBhijxYic5ucx7gK//+KxL5WQTcRohYIIRk7HE3Fow0lisrmMIUo/TG1
+Z+CELDm/xNLX2w4b+cKFZGQho8wBitWynOCxQDK1PakhV+i3O1XCUCDpITcB1BG5
+bZjnN1Rb/5j+3VD9AKLCYJSWA90hw3NXjsgFKkcpw96IzeYHAlXSNzUqgR/EJPGr
+ctS+FHVh1jG6C8+OKDuCw6AbeAfJSVxU2tLeXlnEILNvUMUAur6HyJEW5i4nLX7j
+jFOV3gMeEEpdXrf7lDiSq8BHlKpiyOeDYKy2AX6wkOTiI0zjoPtyE7N/N5he8NAc
+qUA7i+ixy3iVOecbwwG4oxC3MG781nDXfuzGU7fSdj7O4mzYeQ+SK/FXgFSLgajp
+yJVtcbqCRsd2KN2tCUMALUCdhZh53+E3Dv/fTVuNxgqKUMrOOti8i/K5vqgJisrx
+9kc616OWXYVOAKkS0gev3L3Rx+ZD3NlbHS4+MHrT2kKAaAq4P4VXlJTAOP4nDVB5
+2rnYpSCmaBIn259ijgn9
+=xjB7
+-----END PGP SIGNATURE-----
+
+--Sig_/m+wFdk.w6RaqEicndyYXp72--
