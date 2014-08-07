@@ -1,143 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaHGSd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 14:33:59 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:44822 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750796AbaHGSd5 (ORCPT
+	id S1754885AbaHGSep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 14:34:45 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:61917 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378AbaHGSen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 14:33:57 -0400
-Message-ID: <53E3C685.5010600@hurleysoftware.com>
-Date: Thu, 07 Aug 2014 14:33:41 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Jiri Slaby <jslaby@suse.cz>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH v2] serial: uart: add hw flow control support configuration
-References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com> <53E39B44.60406@hurleysoftware.com> <53E3A67B.6070709@ti.com> <20140807171254.GA13097@kroah.com> <53E3B67E.80705@hurleysoftware.com> <53E3B88C.2000209@ti.com>
-In-Reply-To: <53E3B88C.2000209@ti.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Thu, 7 Aug 2014 14:34:43 -0400
+From: mathieu.poirier@linaro.org
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+Cc: pratikp@codeaurora.org, panchaxari.prasannamurthy@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mathieu.poirier@linaro.org
+Subject: [PATCH] coresight: bindings for coresight drivers
+Date: Thu,  7 Aug 2014 12:34:06 -0600
+Message-Id: <1407436446-19634-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 01:34 PM, Murali Karicheri wrote:
-> On 08/07/2014 01:25 PM, Peter Hurley wrote:
->> On 08/07/2014 01:12 PM, Greg Kroah-Hartman wrote:
->>> On Thu, Aug 07, 2014 at 12:16:59PM -0400, Murali Karicheri wrote:
->>>> On 08/07/2014 11:29 AM, Peter Hurley wrote:
->>>>> On 05/01/2014 03:04 PM, Murali Karicheri wrote:
->>>>>> 8250 uart driver currently supports only software assisted hw flow
->>>>>> control. The software assisted hw flow control maintains a hw_stopped
->>>>>> flag in the tty structure to stop and start transmission and use modem
->>>>>> status interrupt for the event to drive the handshake signals. This is
->>>>>> not needed if hw has flow control capabilities. This patch adds a
->>>>>> DT attribute for enabling hw flow control for a uart port. Also skip
->>>>>> stop and start if this flag is present in flag field of the port
->>>>>> structure.
->>>>>>
->>>>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
->>>>>>
->>>>>> CC: Rob Herring<robh+dt@kernel.org>
->>>>>> CC: Pawel Moll<pawel.moll@arm.com>
->>>>>> CC: Mark Rutland<mark.rutland@arm.com>
->>>>>> CC: Ian Campbell<ijc+devicetree@hellion.org.uk>
->>>>>> CC: Kumar Gala<galak@codeaurora.org>
->>>>>> CC: Randy Dunlap<rdunlap@infradead.org>
->>>>>> CC: Greg Kroah-Hartman<gregkh@linuxfoundation.org>
->>>>>> CC: Jiri Slaby<jslaby@suse.cz>
->>>>>> CC: Santosh Shilimkar<santosh.shilimkar@ti.com>
->>>>>> ---
->>>>>>   .../devicetree/bindings/serial/of-serial.txt       |    1 +
->>>>>>   drivers/tty/serial/8250/8250_core.c                |    6 ++++--
->>>>>>   drivers/tty/serial/of_serial.c                     |    4 ++++
->>>>>>   drivers/tty/serial/serial_core.c                   |   12 +++++++++---
->>>>>>   4 files changed, 18 insertions(+), 5 deletions(-)
->>>>>>
->>>>> [...]
->>>>>
->>>>>> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
->>>>>> index b68550d..851707a 100644
->>>>>> --- a/drivers/tty/serial/serial_core.c
->>>>>> +++ b/drivers/tty/serial/serial_core.c
->>>>>> @@ -174,8 +174,12 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
->>>>>>               if (tty->termios.c_cflag&   CBAUD)
->>>>>>                   uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
->>>>>>           }
->>>>>> -
->>>>>> -        if (tty_port_cts_enabled(port)) {
->>>>>> +        /*
->>>>>> +         * if hw support flow control without software intervention,
->>>>>> +         * then skip the below check
->>>>>> +         */
->>>>>> +        if (tty_port_cts_enabled(port)&&
->>>>>> +            !(uport->flags&   UPF_HARD_FLOW)) {
->>>>>>               spin_lock_irq(&uport->lock);
->>>>>>               if (!(uport->ops->get_mctrl(uport)&   TIOCM_CTS))
->>>>>>                   tty->hw_stopped = 1;
->>>>>> @@ -2772,7 +2776,9 @@ void uart_handle_cts_change(struct uart_port *uport, unsigned int status)
->>>>>>
->>>>>>       uport->icount.cts++;
->>>>>>
->>>>>> -    if (tty_port_cts_enabled(port)) {
->>>>>> +    /* skip below code if the hw flow control is supported */
->>>>>> +    if (tty_port_cts_enabled(port)&&
->>>>>> +        !(uport->flags&   UPF_HARD_FLOW)) {
->>>>> Why is a modem status interrupt being generated for DCTS
->>>>> if autoflow control is enabled?
->>>>>
->>>>> This should be:
->>>>>
->>>>>     WARN_ON_ONCE(uport->flags&   UPF_HARD_FLOW);
->>>>>
->>>>> to indicate a mis-configured driver/device.
->>>> This patch is already merged to the upstream branch and if you see any
->>>> issue, please
->>>> post a patch for review.
->>>
->>> If someone points out a problem in a patch of yours that is accepted
->>> upstream, it is nice to provide a fix, otherwise I will just revert it
->>> upstream, as it looks to be incorrect.
->>>
->>> So, should I just revert it?
->>
->> Greg,
->>
->> As I look this patch over further, this should just be reverted.
-> 
-> Sorry, I would suggest to fix it rather revert it.
-> 
->>
->> 1. The patch enables UPF_HARD_FLOW, but provides no throttle() and unthrottle()
->> methods for 8250, which is guaranteed to blow-up when either uart_throttle() or
->> uart_unthrottle() is called.
->>
->> 2. The patch adds capabilities which already exist, namely UART_CAP_AFE.
+From: Pratik Patel <pratikp@codeaurora.org>
 
-> AFAIK, UART_CAP_AFE is a software assisted hw flow control and it was described in my commit log as well where as this patch add support for pure h/w controlled flow  control and no software intervention is needed. Do you think uart_throttle() or  uart_unthrottle() is applicable
-> in this case?
+Coresight IP blocks allow for the support of HW assisted tracing
+on ARM SoCs.  Bindings for the currently available blocks are
+presented herein.
 
-UART_CAP_AFE is used to indicate 16750-compatible hw flow control, which is
-auto-CTS and auto-RTS flow control as described in the TI datasheet at
-http://www.ti.com/lit/ds/symlink/tl16c750.pdf
+Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
+Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ .../devicetree/bindings/arm/coresight.txt          | 205 +++++++++++++++++++++
+ 1 file changed, 205 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/coresight.txt
 
-uart_throttle() and uart_unthrottle() are used indirectly by line disciplines
-for high-level rx flow control, such as when a read buffer fills up because
-there is no userspace reader. The 8250 core doesn't define a throttle/unthrottle
-method because writing MCR to drop RTS is sufficient to disable auto-RTS.
-
-Regards,
-Peter Hurley
+diff --git a/Documentation/devicetree/bindings/arm/coresight.txt b/Documentation/devicetree/bindings/arm/coresight.txt
+new file mode 100644
+index 0000000..2ee594d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/coresight.txt
+@@ -0,0 +1,205 @@
++* CoreSight Components
++
++CoreSight components are compliant with the ARM CoreSight architecture
++specification and can be connected in various topologies to suit a particular
++SoCs tracing needs. These trace components can generally be classified as sinks,
++links and sources. Trace data produced by one or more sources flows through the
++intermediate links connecting the source to the currently selected sink. Each
++CoreSight component device should use these properties to describe its hardware
++characteristcs.
++
++Required properties for all components *except* non-configurable replicators:
++
++- compatible : name of the component used for driver matching.  Possible values
++include: "arm,coresight-etb10", "arm,coresight-tpiu", "arm,coresight-tmc",
++"arm,coresight-funnel", and "arm,coresight-etm3x".  All of these have to
++be supplemented with "arm,primecell" as drivers are using the AMBA bus
++interface.  Since non-configurable replicators don't show up on the AMBA
++bus they don't need to be post-fixed with "arm,primecell".
++
++- reg : physical base address and length of the register set(s) of the component.
++
++- clocks : the clock associated to this component.
++
++- clock-names: the name of the clock as referenced by the code.  Since we are
++using the AMBA framework, the name should be "apb_pclk".
++
++- ports or port: The representation of the component's port layout using the
++generic DT graph presentation found in "bindings/graph.txt".
++
++Non-configurable replicators:
++
++- compatible: currently supported value is "arm-replicator".  Since non-configurable
++replicators don't show up on the AMBA hey don't need to be post-fixed with
++"arm,primecell".
++
++- id: a unique number that will identify this replicator.
++
++- ports or port: same as above.
++
++Optional properties for Sinks:
++
++- coresight-default-sink: must be specified for one of the sink devices that is
++intended to be made the default sink. Other sink devices must not have this
++specified. Not specifying this property on any of the sinks is invalid.
++
++Optional properties for ETM/PTMs:
++
++- arm,cp14: must be present if the system accesses ETM/PTM management registers
++via co-processor 14.
++
++- arm,cp14: access to ETM/PTM management registers is made via cp14.
++
++- cpu: the cpu phandle this ETM/PTM is affined to. When omitted the source is
++considered to belong to CPU0.
++
++Optional property for TMC:
++
++- arm,buffer-size: size of contiguous buffer space for TMC ETR (embedded trace router)
++
++
++Example:
++
++1. Sinks
++	etb: etb@20010000 {
++		compatible = "arm,coresight-etb10", "arm,primecell";
++		reg = <0 0x20010000 0 0x1000>;
++
++		coresight-default-sink;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			etb_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator_out_port0>;
++			};
++		};
++	};
++
++	tpiu: tpiu@20030000 {
++		compatible = "arm,coresight-tpiu", "arm,primecell";
++		reg = <0 0x20030000 0 0x1000>;
++
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			tpiu_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator_out_port1>;
++			};
++		};
++	};
++
++2. Links
++	replicator {
++		/* non-configurable replicators don't show up on the
++		 * AMBA bus.  As such no need to add "arm,primecell".
++		 */
++		compatible = "arm,coresight-replicator";
++		/* this will show up in debugfs as "0.replicator" */
++		id = <0>;
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* replicator output ports */
++			port@0 {
++				reg = <0>;
++				replicator_out_port0: endpoint {
++					remote-endpoint = <&etb_in_port>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++				replicator_out_port1: endpoint {
++					remote-endpoint = <&tpiu_in_port>;
++				};
++			};
++
++			/* replicator input port */
++			port@2 {
++				reg = <0>;
++				replicator_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&funnel_out_port0>;
++				};
++			};
++		};
++	};
++
++	funnel@20040000 {
++		compatible = "arm,coresight-funnel", "arm,primecell";
++		reg = <0 0x20040000 0 0x1000>;
++
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* funnel output port */
++			port@0 {
++				reg = <0>;
++				funnel_out_port0: endpoint {
++					remote-endpoint = <&replicator_in_port0>;
++				};
++			};
++
++			/* funnel input ports */
++			port@1 {
++				reg = <0>;
++				funnel_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm0_out_port>;
++				};
++			};
++
++			port@2 {
++				reg = <1>;
++				funnel_in_port1: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm1_out_port>;
++				};
++			};
++
++			port@3 {
++				reg = <2>;
++				funnel_in_port2: endpoint {
++					slave-mode;
++					remote-endpoint = <&etm0_out_port>;
++				};
++			};
++
++		};
++	};
++
++3. Sources
++	ptm0: ptm@2201c000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2201c000 0 0x1000>;
++
++		cpu = <&cpu0>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			ptm0_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port0>;
++			};
++		};
++	};
++
++	ptm1: ptm@2201d000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2201d000 0 0x1000>;
++
++		cpu = <&cpu1>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			ptm1_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port1>;
++			};
++		};
++	};
+-- 
+1.9.1
 
