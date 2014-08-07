@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323AbaHGNAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 09:00:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757511AbaHGNAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 09:00:50 -0400
-Date: Thu, 7 Aug 2014 15:00:42 +0200
-From: Karel Zak <kzak@redhat.com>
-To: Boaz Harrosh <openosd@gmail.com>
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        Boaz Harrosh <boaz@plexistor.com>, Jens Axboe <axboe@kernel.dk>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] brd: Request from fdisk 4k alignment
-Message-ID: <20140807130042.GB9401@x2.net.home>
-References: <53E21125.9080308@plexistor.com>
- <53E21317.7080403@plexistor.com>
- <1407362634.2869.2.camel@rzwisler-mobl1.amr.corp.intel.com>
- <53E36E53.3090008@gmail.com>
+	id S1757530AbaHGNDL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 09:03:11 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:45945 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754597AbaHGNDJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 09:03:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E36E53.3090008@gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <CAMuHMdVC8aYwDEHnntshdVA24Nx3qAUXZfeRQNGqj=J6eExU-Q@mail.gmail.com>
+References: <CAMuHMdW2kb=EF-Nmem_gyUu=p7hFOTe+Q2ekHh41SaHHiWDGeg@mail.gmail.com>
+	<CAAmzW4MX2birtCOUxjDdQ7c3Y+RyVkBt383HEQ=XFgnhhOsQPw@mail.gmail.com>
+	<CAMuHMdVC8aYwDEHnntshdVA24Nx3qAUXZfeRQNGqj=J6eExU-Q@mail.gmail.com>
+Date: Thu, 7 Aug 2014 22:03:09 +0900
+Message-ID: <CAAmzW4NWnMeO+Z3CQ=9Z7rUFLaPmR-w0iMhxzjO+PVgVu7OMuQ@mail.gmail.com>
+Subject: Re: BUG: enable_cpucache failed for radix_tree_node, error 12 (was:
+ Re: [PATCH v3 9/9] slab: remove BAD_ALIEN_MAGIC)
+From: Joonsoo Kim <js1304@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 03:17:23PM +0300, Boaz Harrosh wrote:
+2014-08-07 21:53 GMT+09:00 Geert Uytterhoeven <geert@linux-m68k.org>:
+> Hi,
+>
+> On Thu, Aug 7, 2014 at 2:36 PM, Joonsoo Kim <js1304@gmail.com> wrote:
+>>> With latest mainline, I'm getting a crash during bootup on m68k/ARAnyM:
+>>>
+>>> enable_cpucache failed for radix_tree_node, error 12.
+>>> kernel BUG at /scratch/geert/linux/linux-m68k/mm/slab.c:1522!
+>
+>>> I bisected it to commit a640616822b2c3a8009b0600f20c4a76ea8a0025
+>>> Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>> Date:   Wed Aug 6 16:04:38 2014 -0700
+>>>
+>>>     slab: remove BAD_ALIEN_MAGIC
+>
+>> This patch only works for !NUMA. And if num_possible_nodes() is 1,
+>> then it doesn't have any effect, because alloc_alien_cache() call is always
+>> skipped. Is it possible !NUMA and num_possible_nodes() != 1?
+>>
+>> Could you check your config for CONFIG_NUMA and
+>> CONFIG_NODES_SHIFT?
+>
+> $ grep CONFIG_NUMA .config
+> $ grep CONFIG_NODES_SHIFT .config
+> CONFIG_NODES_SHIFT=3
+> $
+>
+> There are indeed multiple nodes:
+>
+> On node 0 totalpages: 3584
+> free_area_init_node: node 0, pgdat 003659a4, node_mem_map 00402000
+>   DMA zone: 32 pages used for memmap
+>   DMA zone: 0 pages reserved
+>   DMA zone: 3584 pages, LIFO batch:0
+> On node 1 totalpages: 65536
+> free_area_init_node: node 1, pgdat 00366294, node_mem_map 00426090
+>   DMA zone: 576 pages used for memmap
+>   DMA zone: 0 pages reserved
+>   DMA zone: 65536 pages, LIFO batch:15
+>
+>> And, could you check booting with boot param "noaliencache"?
+>
+> That fixes the boot, too.
 
-> > Is there an error case that this patch fixes?  I've had page alignment checks
-> > in my PRD direct_access code forever, and I don't know if they've ever
-> > tripped.  
-> > 
-> 
-> Yes! as I said above fix fdisk. You never tripped on it because partitions never
-> worked and you never tried them. With current code fdisk is very trigger happy
+Ah... I don't know it can be possible to be !CONFIG_NUMA and
+CONFIG_NODES_SHIFT > 0 until now. If so, I should revert this patch.
 
- What do you mean with fdisk? which version?
+After some more investigation, I will revert this patch tomorrow and
+notify you.
 
- The current fdisk (and cfdisk) follows I/O limits it has no problem
- with 4K devices. All you need is to provide all necessary information 
- by /sys (or ioctls).
-
-> to miss-align my partitions. Depending on size maybe not the very first one but the
-> consecutive ones easily.
-
- it would be nice to have usable bug report...
-
-    Karel
-
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Thanks for reporting!!! :)
