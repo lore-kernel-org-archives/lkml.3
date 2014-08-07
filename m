@@ -1,52 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110AbaHGUeP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 16:34:15 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:48326 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399AbaHGUeO (ORCPT
+	id S1755087AbaHGUjX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 16:39:23 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:44382 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760AbaHGUjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 16:34:14 -0400
-Date: Thu, 7 Aug 2014 13:34:12 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [patch] mm, hugetlb_cgroup: align hugetlb cgroup limit to hugepage
- size
-Message-ID: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 7 Aug 2014 16:39:22 -0400
+Date: Fri, 8 Aug 2014 02:09:16 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>,
+        Felipe Balbi <balbi@ti.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH] drivers/net: ethernet: Remove typedef for struct and enum
+Message-ID: <20140807203915.GA21337@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memcg aligns memory.limit_in_bytes to PAGE_SIZE as part of the resource counter
-since it makes no sense to allow a partial page to be charged.
+The Linux kernel coding style guidelines suggest not using typedefs
+for structure and enum types. This patch gets rid of the typedef for
+cardtype_t and local_info_t. Also, the names of the struct and enum
+are changed to drop the _t, to make the name look less typedef-like.
 
-As a result of the hugetlb cgroup using the resource counter, it is also aligned
-to PAGE_SIZE but makes no sense unless aligned to the size of the hugepage being
-limited.
+The following Coccinelle semantic patch detects the case for struct type:
 
-Align hugetlb cgroup limit to hugepage size.
+@tn@
+identifier i;
+type td;
+@@
 
-Signed-off-by: David Rientjes <rientjes@google.com>
+-typedef
+ struct i { ... }
+-td
+ ;
+
+@@
+type tn.td;
+identifier tn.i;
+@@
+
+-td
++ struct i
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- mm/hugetlb_cgroup.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/ethernet/fujitsu/fmvj18x_cs.c | 34 +++++++++++++++----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -275,6 +275,8 @@ static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
- 		ret = res_counter_memparse_write_strategy(buf, &val);
- 		if (ret)
- 			break;
-+		val = ALIGN(val, 1 << (huge_page_order(&hstates[idx]) +
-+				       PAGE_SHIFT));
- 		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
- 		break;
- 	default:
+diff --git a/drivers/net/ethernet/fujitsu/fmvj18x_cs.c b/drivers/net/ethernet/fujitsu/fmvj18x_cs.c
+index cfe7a74..a7139f5 100644
+--- a/drivers/net/ethernet/fujitsu/fmvj18x_cs.c
++++ b/drivers/net/ethernet/fujitsu/fmvj18x_cs.c
+@@ -99,23 +99,23 @@ static const struct ethtool_ops netdev_ethtool_ops;
+ /*
+     card type
+  */
+-typedef enum { MBH10302, MBH10304, TDK, CONTEC, LA501, UNGERMANN, 
++enum cardtype { MBH10302, MBH10304, TDK, CONTEC, LA501, UNGERMANN,
+ 	       XXX10304, NEC, KME
+-} cardtype_t;
++};
+ 
+ /*
+     driver specific data structure
+ */
+-typedef struct local_info_t {
++struct local_info {
+ 	struct pcmcia_device	*p_dev;
+     long open_time;
+     uint tx_started:1;
+     uint tx_queue;
+     u_short tx_queue_len;
+-    cardtype_t cardtype;
++    enum cardtype cardtype;
+     u_short sent;
+     u_char __iomem *base;
+-} local_info_t;
++};
+ 
+ #define MC_FILTERBREAK 64
+ 
+@@ -232,13 +232,13 @@ static const struct net_device_ops fjn_netdev_ops = {
+ 
+ static int fmvj18x_probe(struct pcmcia_device *link)
+ {
+-    local_info_t *lp;
++    struct local_info *lp;
+     struct net_device *dev;
+ 
+     dev_dbg(&link->dev, "fmvj18x_attach()\n");
+ 
+     /* Make up a FMVJ18x specific data structure */
+-    dev = alloc_etherdev(sizeof(local_info_t));
++    dev = alloc_etherdev(sizeof(struct local_info));
+     if (!dev)
+ 	return -ENOMEM;
+     lp = netdev_priv(dev);
+@@ -327,10 +327,10 @@ static int fmvj18x_ioprobe(struct pcmcia_device *p_dev, void *priv_data)
+ static int fmvj18x_config(struct pcmcia_device *link)
+ {
+     struct net_device *dev = link->priv;
+-    local_info_t *lp = netdev_priv(dev);
++    struct local_info *lp = netdev_priv(dev);
+     int i, ret;
+     unsigned int ioaddr;
+-    cardtype_t cardtype;
++    enum cardtype cardtype;
+     char *card_name = "unknown";
+     u8 *buf;
+     size_t len;
+@@ -584,7 +584,7 @@ static int fmvj18x_setup_mfc(struct pcmcia_device *link)
+     int i;
+     struct net_device *dev = link->priv;
+     unsigned int ioaddr;
+-    local_info_t *lp = netdev_priv(dev);
++    struct local_info *lp = netdev_priv(dev);
+ 
+     /* Allocate a small memory window */
+     link->resource[3]->flags = WIN_DATA_WIDTH_8|WIN_MEMORY_TYPE_AM|WIN_ENABLE;
+@@ -626,7 +626,7 @@ static void fmvj18x_release(struct pcmcia_device *link)
+ {
+ 
+     struct net_device *dev = link->priv;
+-    local_info_t *lp = netdev_priv(dev);
++    struct local_info *lp = netdev_priv(dev);
+     u_char __iomem *tmp;
+ 
+     dev_dbg(&link->dev, "fmvj18x_release\n");
+@@ -711,7 +711,7 @@ module_pcmcia_driver(fmvj18x_cs_driver);
+ static irqreturn_t fjn_interrupt(int dummy, void *dev_id)
+ {
+     struct net_device *dev = dev_id;
+-    local_info_t *lp = netdev_priv(dev);
++    struct local_info *lp = netdev_priv(dev);
+     unsigned int ioaddr;
+     unsigned short tx_stat, rx_stat;
+ 
+@@ -772,7 +772,7 @@ static irqreturn_t fjn_interrupt(int dummy, void *dev_id)
+ 
+ static void fjn_tx_timeout(struct net_device *dev)
+ {
+-    struct local_info_t *lp = netdev_priv(dev);
++    struct local_info *lp = netdev_priv(dev);
+     unsigned int ioaddr = dev->base_addr;
+ 
+     netdev_notice(dev, "transmit timed out with status %04x, %s?\n",
+@@ -802,7 +802,7 @@ static void fjn_tx_timeout(struct net_device *dev)
+ static netdev_tx_t fjn_start_xmit(struct sk_buff *skb,
+ 					struct net_device *dev)
+ {
+-    struct local_info_t *lp = netdev_priv(dev);
++    struct local_info *lp = netdev_priv(dev);
+     unsigned int ioaddr = dev->base_addr;
+     short length = skb->len;
+     
+@@ -874,7 +874,7 @@ static netdev_tx_t fjn_start_xmit(struct sk_buff *skb,
+ 
+ static void fjn_reset(struct net_device *dev)
+ {
+-    struct local_info_t *lp = netdev_priv(dev);
++    struct local_info *lp = netdev_priv(dev);
+     unsigned int ioaddr = dev->base_addr;
+     int i;
+ 
+@@ -1058,7 +1058,7 @@ static int fjn_config(struct net_device *dev, struct ifmap *map){
+ 
+ static int fjn_open(struct net_device *dev)
+ {
+-    struct local_info_t *lp = netdev_priv(dev);
++    struct local_info *lp = netdev_priv(dev);
+     struct pcmcia_device *link = lp->p_dev;
+ 
+     pr_debug("fjn_open('%s').\n", dev->name);
+@@ -1083,7 +1083,7 @@ static int fjn_open(struct net_device *dev)
+ 
+ static int fjn_close(struct net_device *dev)
+ {
+-    struct local_info_t *lp = netdev_priv(dev);
++    struct local_info *lp = netdev_priv(dev);
+     struct pcmcia_device *link = lp->p_dev;
+     unsigned int ioaddr = dev->base_addr;
+ 
+-- 
+1.9.1
+
