@@ -1,105 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347AbaHGPx4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:53:56 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:36692 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757488AbaHGPxz (ORCPT
+	id S932395AbaHGP5W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:57:22 -0400
+Received: from asavdk3.altibox.net ([109.247.116.14]:58829 "EHLO
+	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757488AbaHGP5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:53:55 -0400
-X-IronPort-AV: E=Sophos;i="5.01,818,1400025600"; 
-   d="scan'208";a="160336628"
-Message-ID: <53E3A075.2090400@citrix.com>
-Date: Thu, 7 Aug 2014 16:51:17 +0100
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 7 Aug 2014 11:57:21 -0400
+Date: Thu, 7 Aug 2014 17:57:14 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: mmarek@suse.cz, gregkh@linuxfoundation.org, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] kbuild: kselftest - new make target to build and run
+ kernel selftests
+Message-ID: <20140807155713.GA1382@ravnborg.org>
+References: <1407420192-4928-1-git-send-email-shuah.kh@samsung.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <wei.liu2@citrix.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        Paul Durrant <Paul.Durrant@citrix.com>
-Subject: Re: [PATCH net-next 0/2] xen-netback: Changes around carrier handling
-References: <1407165658-20146-1-git-send-email-zoltan.kiss@citrix.com>	<20140805.160748.1185917042908283028.davem@davemloft.net>	<53E28017.9040908@citrix.com> <20140806.140146.1448631909293617629.davem@davemloft.net>
-In-Reply-To: <20140806.140146.1448631909293617629.davem@davemloft.net>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407420192-4928-1-git-send-email-shuah.kh@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/14 22:01, David Miller wrote:
-> From: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Date: Wed, 6 Aug 2014 20:20:55 +0100
->
->> The fundamental problem with netback that start_xmit place the
->> packet into an internal queue, and then the thread does the actual
->> transmission from that queue, but it doesn't know whether it will
->> succeed in a finite time period.
->
-> A hardware device acts the same way when the link goes down or the
-> transmitter hangs.  I do not see this situation, therefore, as
-> fundamentally unique to xen-netback.
->
->> I just noticed a possible problem with start_xmit: if this slot
->> estimation fails, and the packet is likely to be stalled at least for
->> a while, it still place the skb into the internal queue and return
->> NETDEV_TX_OK. Shouldn't we return NETDEV_TX_BUSY and not placing the
->> packet into the internal queue? It will be requeued later, or dropped
->> by QDisc. I think it will be more natural. But it can decrease
->> performance if these "not enough slot" situations are very frequent
->> and short living, and by the time the RX thread wakes up
->> My long term idea is to move part of the thread's work into
->> start_xmit, so it can set up the grant operations and if there isn't
->> enough slot it can return the skb to QDisc with NETDEV_TX_BUSY for
->> requeueing. Then the thread can only do the batching of the grant copy
->> operations and releasing the skbs. And we can ditch a good part of the
->> code ...
->
-> Yes, it would be a slight improvement if slot availability was
-> detected at ->ndo_start_xmit() time.
->
-> But best would be to properly stop the queue at the _end_ of
-> ->ndo_start_xmit() like nearly all ethernet drivers do.
->
-> And we can't do that in netback because..... your queues are too
-> small.
->
-> If your queues were large enough you could say "now that I've queued
-> up SKB for transmit, do I still have enough slots available for a
-> maxed out SKB?"  and stop the queue if the answer to that question is
-> no.
->
-> The queue state was not meant to be a "maybe I can queue a new packet"
-> indication.  It's supposed to mean that you can absolutely take at
-> least one more SKB of any size or configuration.
-Ok, how about this:
-* ndo_start_xmit tries to set up the grant copy operations, something 
-which is done now in the thread
-* no estimation madness, just go ahead and try to do it
-* if the skb can fit, kick the thread
-* if it fails (not enough slots to complete the TX), then:
-   * call netif_tx_stop_queue on that queue (just like now)
-   * set up timer rx_stalled (just like now)
-   * save the state of the current skb (where the grant copy op setup is 
-halted)
-* if new slots coming in, continue to create the grant copy ops for the 
-stalled skb, and if it succeeds, kick the thread plus call 
-netif_tx_start_queue. (just like now)
-* if the timer fires, drop the stalled skb, and set the carrier off, so 
-QDisc won't bother to queue packets for a stalled interface
-* the thread will only do the actual grant copy hypercall and releasing 
-the skb
-* in any case, ndo_start_xmit should return NETDEV_TX_OK, just like now
+On Thu, Aug 07, 2014 at 08:03:12AM -0600, Shuah Khan wrote:
+> Add a new make target "kselftest" to enable kernel testing. This
+> new target builds and runs kernel selftests. Running as root is
+> recommended for a complete test run as some tests don't run when
+> run by non-root user.
+
+kselftest will run the test - but will not build the kerenl.
+That is does not build the kernel is IMO a good thing -
+as one may re-run the test while doing work on the kernel, and triggering
+a rebuild to re-run the test is not nice.
+
+The changelog + help text needs to be updated to reflect that the kernel is not
+built when you use "make kselftest".
+
+On top of this - can you please tell what plans exists to extend this.
+When we discussed "devtest" it was said that it would not be a wrapper
+for selftests run_tests only, but more was planned to be added.
 
 
->
-> Returning TX_BUSY from ->ndo_start_xmit() is fundamentally, therefore,
-> more like an error condition rather than something that should occur
-> under normal circumstances.  If your queue is up, you should be able
-> to accept any one single packet.  That's the rule.
->
-> Requeueing back into the qdisc is expensive and takes a lot of locks
-> awkwardly.  You do not want the kernel taking this code path.
-Ok, thanks for clearing that up, I thought it works differently.
+	Sam
