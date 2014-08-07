@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953AbaHGB1y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Aug 2014 21:27:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24035 "EHLO mx1.redhat.com"
+	id S1754959AbaHGBbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Aug 2014 21:31:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20898 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754886AbaHGB1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Aug 2014 21:27:43 -0400
-Date: Thu, 7 Aug 2014 09:28:47 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Mark Salter <msalter@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1754289AbaHGBbS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Aug 2014 21:31:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="368983662"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] UEFI arm64: add noefi boot param
-Message-ID: <20140807012847.GB20295@darkstar.nay.redhat.com>
-References: <20140806083825.GA31711@dhcp-16-198.nay.redhat.com>
- <CAKv+Gu83+OtTkM+tEkB4AKpqHg2qGXtfAxC-pQq0u9ez+VjwaA@mail.gmail.com>
+CC: "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: RE: [PATCH] KVM: x86: always exit on EOIs for interrupts listed in
+ the IOAPIC redir table
+Thread-Topic: [PATCH] KVM: x86: always exit on EOIs for interrupts listed in
+ the IOAPIC redir table
+Thread-Index: AQHPrBEkMevXzPHWyEW1NdRMjvzN+JvDpASg//99kwCAAT84cA==
+Date: Thu, 7 Aug 2014 01:31:14 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AB5264D@SHSMSX104.ccr.corp.intel.com>
+References: <1406736728-8516-1-git-send-email-pbonzini@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AB51BA1@SHSMSX104.ccr.corp.intel.com>
+ <53E236E6.6050206@redhat.com>
+In-Reply-To: <53E236E6.6050206@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKv+Gu83+OtTkM+tEkB4AKpqHg2qGXtfAxC-pQq0u9ez+VjwaA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/14 at 02:40pm, Ard Biesheuvel wrote:
-> On 6 August 2014 10:38, Dave Young <dyoung@redhat.com> wrote:
-> >
-> > Adding a noefi boot param like in X86 to disable efi runtime services support.
-> >
-> > This will be useful for debugging uefi problems. Also it will be useful
-> > for later kexec/kdump work. Kexec on uefi support in X86 depends on a fixed vm
-> > area specific for uefi runtime 1:1 mapping, kernel will switch to a different
-> > page table for any uefi runtime callback in virtual mode. In arm64 similar
-> > work probably is necessary. But kexec boot will just works with 'noefi' with
-> > the limitaion of lacking runtime services. The runtime services is not critical
-> > for kdump kernel for now. So as for kexec/kdump just leave the 1:1 mapping a
-> > future work.
-> >
+Paolo Bonzini wrote on 2014-08-06:
+> Il 06/08/2014 16:03, Zhang, Yang Z ha scritto:
+>> Paolo Bonzini wrote on 2014-07-31:
+>>> Probably, the guest is masking the interrupt in the redirection
+>>> table in the interrupt routine, i.e. while the interrupt is set in a LAPIC's ISR.
+>>> The simplest fix is to ignore the masking state, we would rather
+>>> have an unnecessary exit rather than a missed IRQ ACK and anyway
+>>> IOAPIC interrupts are not as performance-sensitive as for example MSIs.
+>> 
+>> I feel this fixing may hurt performance in some cases. If the mask
+>> bit is set, this means the vector in this entry may be used by other
+>> devices(like a assigned device). But here you set it in eoi exit
+>> bitmap and this will cause vmexit on each EOI which should not happen.
 > 
-> Can we find a better name? You will still be using the UEFI memory map
-> rather than the DT memory nodes (which will have been deleted by the
-> stub), and things like SMBIOS and ACPI that hinge off UEFI remain
-> enabled as well.
+> Note that this *was* reported on an assigned device.
 > 
-Hi, Ard
+> IOAPIC should not be a performance-sensitive path.  High-performance
+> assigned devices should be using MSIs.
 
-Leif suggested efi=noruntime, I think that will be better to you?
+Let me give an example to see whether my concern is a real problem:
+Guest allocates a vector and set it in IOAPIC entry to deliver interrupt. Later it masks the IOAPIC entry(means stop the corresponding device) and assign this vector to a MSI device. With this patch, even the vector is not used by IOAPIC, but it still set eoi exit bitmap unconditionally. The subsequent EOIs to MSI device will force vmexit. Could this happen?
 
-Thanks for review.
-Dave
+I think the right fixing is to check the ISR plus TMR to construct the eoi exit bitmap.
+
+> 
+> Paolo
+
+
+Best regards,
+Yang
+
