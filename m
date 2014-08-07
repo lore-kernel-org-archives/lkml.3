@@ -1,100 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345AbaHGUUK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 16:20:10 -0400
-Received: from smtprelay.synopsys.com ([198.182.44.111]:41448 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaHGUUG convert rfc822-to-8bit (ORCPT
+	id S1754962AbaHGUWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 16:22:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47828 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaHGUWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 16:20:06 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Doug Anderson <dianders@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Dinh Nguyen <dinguyen@altera.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] usb: dwc2: Read GNPTXFSIZ when in forced HOST mode.
-Thread-Topic: [PATCH] usb: dwc2: Read GNPTXFSIZ when in forced HOST mode.
-Thread-Index: AQHPsniOaDO8kH4VjEyYMuzEPM/xJJvFkmrQ
-Date: Thu, 7 Aug 2014 20:18:53 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844C4EA0@US01WEMBX2.internal.synopsys.com>
-References: <1407440891-29295-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1407440891-29295-1-git-send-email-dianders@chromium.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.240]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 7 Aug 2014 16:22:02 -0400
+Date: Thu, 7 Aug 2014 13:22:01 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] tty: Fix potential use after free in release_one_tty
+Message-ID: <20140807202201.GB6060@kroah.com>
+References: <20140807082544.GP20553@moon>
+ <53E338CA.9070503@parallels.com>
+ <20140807083423.GQ20553@moon>
+ <53E34158.9070009@parallels.com>
+ <20140807091812.GR20553@moon>
+ <20140807093428.GS20553@moon>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140807093428.GS20553@moon>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Doug Anderson [mailto:dianders@chromium.org]
-> Sent: Thursday, August 07, 2014 12:48 PM
-> 
-> The documentation for GNPTXFSIZ says that "For host mode, this field
-> is always valid."  Since we're already switching to host mode for
-> HPTXFSIZ, let's also read GNPTXFSIZ in host mode.
-> 
-> On an rk3288 SoC, without this change we see this at bootup:
->   dwc2 ff580000.usb: gnptxfsiz=00100400
->   dwc2 ff580000.usb: 128 invalid for host_nperio_tx_fifo_size. Check HW configuration.
-> 
-> After this change we see:
->   dwc2 ff580000.usb: gnptxfsiz=04000400
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+On Thu, Aug 07, 2014 at 01:34:28PM +0400, Cyrill Gorcunov wrote:
+> On Thu, Aug 07, 2014 at 01:18:12PM +0400, Cyrill Gorcunov wrote:
+> > > mod = driver->owner;
+> > > tty_driver_kref_put(driver);
+> > > module_put(mod);
+> > > 
+> > > Check the upstream whether the same issue exists there.
+> > 
+> > Same in tty.git
+> > 
+> > static void release_one_tty(struct work_struct *work)
+> > {
 > ---
->  drivers/usb/dwc2/core.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+> From: Cyrill Gorcunov <gorcunov@gmail.com>
+> Subject: tty: Fix potential use after free in release_one_tty
 > 
-> diff --git a/drivers/usb/dwc2/core.c b/drivers/usb/dwc2/core.c
-> index 27d2c9b..c184ed43 100644
-> --- a/drivers/usb/dwc2/core.c
-> +++ b/drivers/usb/dwc2/core.c
-> @@ -2674,23 +2674,23 @@ int dwc2_get_hwparams(struct dwc2_hsotg *hsotg)
->  	hwcfg2 = readl(hsotg->regs + GHWCFG2);
->  	hwcfg3 = readl(hsotg->regs + GHWCFG3);
->  	hwcfg4 = readl(hsotg->regs + GHWCFG4);
-> -	gnptxfsiz = readl(hsotg->regs + GNPTXFSIZ);
->  	grxfsiz = readl(hsotg->regs + GRXFSIZ);
+> In case if we're releasing the last tty reference the following
+> call sequence is possible
 > 
->  	dev_dbg(hsotg->dev, "hwcfg1=%08x\n", hwcfg1);
->  	dev_dbg(hsotg->dev, "hwcfg2=%08x\n", hwcfg2);
->  	dev_dbg(hsotg->dev, "hwcfg3=%08x\n", hwcfg3);
->  	dev_dbg(hsotg->dev, "hwcfg4=%08x\n", hwcfg4);
-> -	dev_dbg(hsotg->dev, "gnptxfsiz=%08x\n", gnptxfsiz);
->  	dev_dbg(hsotg->dev, "grxfsiz=%08x\n", grxfsiz);
+> tty_driver_kref_put
+>   destruct_tty_driver
+>     kfree(driver);
 > 
-> -	/* Force host mode to get HPTXFSIZ exact power on value */
-> +	/* Force host mode to get HPTXFSIZ / GNPTXFSIZ exact power on value */
->  	gusbcfg = readl(hsotg->regs + GUSBCFG);
->  	gusbcfg |= GUSBCFG_FORCEHOSTMODE;
->  	writel(gusbcfg, hsotg->regs + GUSBCFG);
->  	usleep_range(100000, 150000);
+> where @driver is used in next module_put call, which leads to
 > 
-> +	gnptxfsiz = readl(hsotg->regs + GNPTXFSIZ);
->  	hptxfsiz = readl(hsotg->regs + HPTXFSIZ);
-> +	dev_dbg(hsotg->dev, "gnptxfsiz=%08x\n", gnptxfsiz);
->  	dev_dbg(hsotg->dev, "hptxfsiz=%08x\n", hptxfsiz);
->  	gusbcfg = readl(hsotg->regs + GUSBCFG);
->  	gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
+>  | [ 285.964007] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+>  | [ 285.964007] Workqueue: events release_one_tty
+>  | [ 285.964007] task: ffff8800cc7ea5f0 ti: ffff8800cb800000 task.ti: ffff8800cb800000
+>  | [ 285.964007] RIP: 0010:[<ffffffff810aeaf5>] [<ffffffff810aeaf5>] module_put+0x24/0xf4
+>  | [ 285.964007] RSP: 0018:ffff8800cb801d48 EFLAGS: 00010213
+>  | [ 285.964007] RAX: ffff8800cb801fd8 RBX: ffff8800ca3429d0 RCX: ffff8800cb1db400
+>  | [ 285.964007] RDX: 0000000000000000 RSI: ffffffff817349c1 RDI: 0000000000000001
+>  | [ 285.964007] RBP: ffff8800cb801d60 R08: ffff8800cd632b40 R09: 0000000000000000
+>  | [ 285.964007] R10: 00000000ffffffff R11: ffff88011f40a000 R12: 6b6b6b6b6b6b6b6b
+>  | [ 285.964007] R13: ffff8800ca342520 R14: 0000000000000000 R15: ffff88011f5d8200
+>  | [ 285.964007] FS: 0000000000000000(0000) GS:ffff88011f400000(0000) knlGS:0000000000000000
+>  | [ 285.964007] CS: 0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>  | [ 285.964007] CR2: 00007faf5229d090 CR3: 0000000001c0b000 CR4: 00000000000006f0
+>  | [ 285.964007] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>  | [ 285.964007] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>  | [ 285.964007] Stack:
+>  | [ 285.964007] ffff8800ca3429d0 ffff8800ca342a30 ffff8800ca342520 ffff8800cb801d88
+>  | [ 285.964007] ffffffff8146554a ffff8800cc77cc78 ffff8800ca3429d0 ffff88011f5d3800
+>  | [ 285.964007] ffff8800cb801e08 ffffffff810683c1 ffffffff810682ff 0000000000000046
+>  | [ 285.964007] Call Trace:
+>  | [ 285.964007] [<ffffffff8146554a>] release_one_tty+0x54/0xa3
+>  | [ 285.964007] [<ffffffff810683c1>] process_one_work+0x223/0x404
+>  | [ 285.964007] [<ffffffff810682ff>] ? process_one_work+0x161/0x404
+>  | [ 285.964007] [<ffffffff81068971>] worker_thread+0x136/0x205
+>  | [ 285.964007] [<ffffffff8106883b>] ? rescuer_thread+0x26a/0x26a
+>  | [ 285.964007] [<ffffffff8106e5bf>] kthread+0xa2/0xaa
+>  | [ 285.964007] [<ffffffff810a4586>] ? trace_hardirqs_on_caller+0x16/0x1eb
+>  | [ 285.964007] [<ffffffff8106e51d>] ? __kthread_parkme+0x65/0x65
+>  | [ 285.964007] [<ffffffff8173f59c>] ret_from_fork+0x7c/0xb0
+>  | [ 285.964007] [<ffffffff8106e51d>] ? __kthread_parkme+0x65/0x65
+>  | [ 285.964007] Code: 09 00 5b 41 5c 5d c3 0f 1f 44 00 00 55 48 85 ff 48 89 e5 41 55 41 54 49 89 fc 53 0f 84 d3 00
+>  | 00 00 bf 01 00 00 00 e8 d0 a1 fc ff <49> 8b 84 24 50 02 00 00 65 48 ff 40 08 4c 8b 6d 08 0f 1f 44 00
+> 
+> so simply keep a local reference to the module owner and
+> use it later.
+> 
+> (Note I hit the bug on custom kernel but I think vanilla one suffers
+>  the same problem).
+> 
+> CC: Pavel Emelyanov <xemul@parallels.com>
+> CC: Jiri Slaby <jslaby@suse.cz>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> ---
+>  drivers/tty/tty_io.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6.git/drivers/tty/tty_io.c
+> ===================================================================
+> --- linux-2.6.git.orig/drivers/tty/tty_io.c
+> +++ linux-2.6.git/drivers/tty/tty_io.c
+> @@ -1559,13 +1559,14 @@ static void release_one_tty(struct work_
+>  	struct tty_struct *tty =
+>  		container_of(work, struct tty_struct, hangup_work);
+>  	struct tty_driver *driver = tty->driver;
+> +	struct module *owner = driver->owner;
+>  
+>  	if (tty->ops->cleanup)
+>  		tty->ops->cleanup(tty);
+>  
+>  	tty->magic = 0;
+>  	tty_driver_kref_put(driver);
+> -	module_put(driver->owner);
+> +	module_put(owner);
+>  
+>  	spin_lock(&tty_files_lock);
+>  	list_del_init(&tty->tty_files);
 
-Nice! I wonder if this is a bug in the original driver, and they
-actually meant to read this register instead of HPTXFSIZ? Well, it
-doesn't really matter I guess.
+Looks good, thanks, can you resend it in a format I can apply it in (one
+that doesn't require me to edit it by hand)?  Then I'll be glad to queue
+it up after 3.17-rc1 is out.
 
-Acked-by: Paul Zimmerman <paulz@synopsys.com>
+thanks,
 
-You may want to resend this to Greg after -rc1 is out and he reopens
-his usb-next tree.
-
--- 
-Paul
-
+greg k-h
