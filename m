@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462AbaHGTWK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 15:22:10 -0400
-Received: from outrelay08.libero.it ([212.52.84.112]:52643 "EHLO
-	outrelay08.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237AbaHGTWJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 15:22:09 -0400
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0C0208.53E3D1DA.0123,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1823
-Message-ID: <53E3D330.7060307@inwind.it>
-Date: Thu, 07 Aug 2014 21:27:44 +0200
-From: Goffredo Baroncelli <kreijack@inwind.it>
-Reply-To: kreijack@inwind.it
+	id S1751485AbaHGTbR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 15:31:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42743 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750874AbaHGTbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 15:31:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,819,1400050800"; 
+   d="scan'208";a="555334936"
+Message-ID: <53E3D3FF.70707@linux.intel.com>
+Date: Thu, 07 Aug 2014 12:31:11 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Jean Delvare <jdelvare@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] Export the temperatures via hwmon
-References: <1407359103-6012-1-git-send-email-kreijack@inwind.it> <1407359103-6012-6-git-send-email-kreijack@inwind.it> <20140806231803.GA5643@roeck-us.net> <53E31694.8050107@gmail.com> <53E31AB0.6070604@roeck-us.net> <20140807085235.2c0e63dd@endymion.delvare> <53E32C77.5000804@roeck-us.net> <53E3BC48.4020304@inwind.it> <20140807181611.GA7679@roeck-us.net>
-In-Reply-To: <20140807181611.GA7679@roeck-us.net>
+To: Amit Shah <amit.shah@redhat.com>, jgarzik@bitpay.com
+CC: Virtualization List <virtualization@lists.linux-foundation.org>,
+        Amos Kong <akong@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel@vger.kernel.org,
+        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>
+Subject: Re: [PATCH 1/2] rngd: add udev rule to source from hwrng if virtio-rng
+ present
+References: <cover.1407416628.git.amit.shah@redhat.com> <dd2ddb8458e5ab5cffceb7fac2e3f71e9e2197f3.1407416628.git.amit.shah@redhat.com>
+In-Reply-To: <dd2ddb8458e5ab5cffceb7fac2e3f71e9e2197f3.1407416628.git.amit.shah@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 08:16 PM, Guenter Roeck wrote:
-> On Thu, Aug 07, 2014 at 07:50:00PM +0200, Goffredo Baroncelli wrote:
-
->> When (if) these patches will be accepted I want to write another solution,
->> but definitely not now. And even if it would work for me, it is very likely 
->> that will  be accepted because nobody is able to test it on all hardware.
->>
-> Might have been easier to just drop all this non-standard code and instantiate
-> the adm1030 using the adm1031 driver instead.
-
-I really like the idea, and this is a possible future work; but now we can't. 
-
-We have to suppose that the current driver work (they stopped to work because
-it was changed the i2c api) and because I can't test a change on
-all the apple hardware (powermac, apple laptop...), I am allowed to make only 
-very small changes.
-
-My (our) first goal is to bring to life *this* driver.
-
-I repeat I am fully convinced that re-using the "official" i2c drive/client
-is the "right thing to do" (tm). But due to the lacking of the hardware where it
-is possible to test this module, we need to be very conservative.
-
+On 08/07/2014 06:08 AM, Amit Shah wrote:
+> On KVM guests where the virtio-rng device is available, and set as the
+> current rng, this udev rule will start rngd which will feed in the
+> host-provided entropy to /dev/random.
 > 
-> Guenter
->
-Goffredo
+> Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> ---
+>  90-virtio-rng.rules | 1 +
+>  1 file changed, 1 insertion(+)
+>  create mode 100644 90-virtio-rng.rules
+> 
+> diff --git a/90-virtio-rng.rules b/90-virtio-rng.rules
+> new file mode 100644
+> index 0000000..07f2f9c
+> --- /dev/null
+> +++ b/90-virtio-rng.rules
+> @@ -0,0 +1 @@
+> +KERNEL=="hw_random", ATTR{rng_current}=="virtio*", RUN+="/sbin/rngd -r /dev/hwrng"
+> 
 
+I'm not sure this is really right.  rngd can receive input from a number
+of sources, and I suspect it would be better to rngd to be started much
+earlier and perhaps get sent a SIGHUP to reconfigure when a hw_random
+device appears ... not just the virtio one.
 
--- 
-gpg @keyserver.linux.it: Goffredo Baroncelli (kreijackATinwind.it>
-Key fingerprint BBF5 1610 0B64 DAC6 5F7D  17B2 0EDA 9B37 8B82 E0B5
+Currently rngd exits if there is no daemon.  There are a few ways to
+deal with that: one is to run rngd on changes and leave a pid file
+around; the rngd can try to signal the old rngd or launch itself;
+another option would be to have a different rngd for each source.  To
+some degree the above is obsolete when we get khwrngd widely deployed,
+but that is a new-kernel-only kind of thing.
+
+	-hpa
+
