@@ -1,77 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477AbaHGPoH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 11:44:07 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51104 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932084AbaHGPoF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 11:44:05 -0400
-Date: Thu, 7 Aug 2014 08:43:58 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140807154358.GC5821@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <53DEE1CD.4000705@cn.fujitsu.com>
- <20140804074620.GH9918@twins.programming.kicks-ass.net>
- <53DF41ED.2020508@cn.fujitsu.com>
- <20140804115043.GA31903@linux.vnet.ibm.com>
- <20140804122515.GR19379@twins.programming.kicks-ass.net>
- <20140804145648.GE3588@twins.programming.kicks-ass.net>
- <53E029BB.2010200@cn.fujitsu.com>
- <20140805215510.GT8101@linux.vnet.ibm.com>
- <20140807084921.GK19379@twins.programming.kicks-ass.net>
+	id S932409AbaHGPrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 11:47:17 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58486 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932071AbaHGPrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 11:47:16 -0400
+Date: Thu, 7 Aug 2014 11:47:10 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/4] mm: memcontrol: add memory.current and memory.high
+ to default hierarchy
+Message-ID: <20140807154710.GE14734@cmpxchg.org>
+References: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
+ <1407186897-21048-3-git-send-email-hannes@cmpxchg.org>
+ <20140807133614.GC12730@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140807084921.GK19379@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080715-9332-0000-0000-0000019F7AB9
+In-Reply-To: <20140807133614.GC12730@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 10:49:21AM +0200, Peter Zijlstra wrote:
-> On Tue, Aug 05, 2014 at 02:55:10PM -0700, Paul E. McKenney wrote:
-> > +/* Check for nohz_full CPUs executing in userspace. */
-> > +static void check_no_hz_full_tasks(void)
-> > +{
-> > +#ifdef CONFIG_NO_HZ_FULL
-> > +	int cpu;
-> > +	struct task_struct *t;
+On Thu, Aug 07, 2014 at 03:36:14PM +0200, Michal Hocko wrote:
+> On Mon 04-08-14 17:14:55, Johannes Weiner wrote:
+> [...]
+> > @@ -132,6 +137,19 @@ u64 res_counter_uncharge(struct res_counter *counter, unsigned long val);
+> >  u64 res_counter_uncharge_until(struct res_counter *counter,
+> >  			       struct res_counter *top,
+> >  			       unsigned long val);
 > > +
-> > +	for_each_online_cpu(cpu) {
-> > +		cond_resched();
-> > +		rcu_read_lock();
-> > +		t = rcu_dynticks_task_cur(cpu);
-> > +		if (t == NULL || is_idle_task(t)) {
-> > +			rcu_read_unlock();
-> > +			continue;
-> > +		}
-> > +		if (ACCESS_ONCE(t->rcu_tasks_holdout))
-> > +			ACCESS_ONCE(t->rcu_tasks_holdout) = 0;
-> > +		rcu_read_unlock();
-> > +	}
-> > +#endif /* #ifdef CONFIG_NO_HZ_FULL */
-> > +}
+> > +static inline unsigned long long res_counter_high(struct res_counter *cnt)
 > 
-> That's not hotplug safe afaict, and I've no idea if someone pointed that
-> out already because people refuse to trim email and I can't be arsed to
-> wade through pages and pages of quoting.
+> soft limit used res_counter_soft_limit_excess which has quite a long
+> name but at least those two should be consistent.
 
-Hmmm...  That does look a bit suspicious, now that you mention it.
-After all, if a CPU is offline, its idle tasks cannot be on a
-trampoline.
+That name is horrible and a result from "soft_limit" being completely
+nondescriptive.  I really see no point in trying to be consistent with
+this stuff that we are trying hard to delete.
 
-							Thanx, Paul
+> > @@ -2621,6 +2621,20 @@ bypass:
+> >  done_restock:
+> >  	if (batch > nr_pages)
+> >  		refill_stock(memcg, batch - nr_pages);
+> > +
+> > +	res = &memcg->res;
+> > +	while (res) {
+> > +		unsigned long long high = res_counter_high(res);
+> > +
+> > +		if (high) {
+> > +			unsigned long high_pages = high >> PAGE_SHIFT;
+> > +			struct mem_cgroup *memcg;
+> > +
+> > +			memcg = mem_cgroup_from_res_counter(res, res);
+> > +			mem_cgroup_reclaim(memcg, high_pages, gfp_mask, 0);
+> > +		}
+> > +		res = res->parent;
+> > +	}
+> >  done:
+> >  	return ret;
+> >  }
+> 
+> Why haven't you followed what we do for hard limit here?
 
+I did.
+
+> In my implementation I have the following:
+>
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index a37465fcd8ae..6a797c740ea5 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2529,6 +2529,21 @@ static int memcg_cpu_hotplug_callback(struct notifier_block *nb,
+>  	return NOTIFY_OK;
+>  }
+>  
+> +static bool high_limit_excess(struct mem_cgroup *memcg,
+> +		struct mem_cgroup **memcg_over_limit)
+> +{
+> +	struct mem_cgroup *parent = memcg;
+> +
+> +	do {
+> +		if (res_counter_limit_excess(&parent->res, RES_HIGH_LIMIT)) {
+> +			*memcg_over_limit = parent;
+> +			return true;
+> +		}
+> +	} while ((parent = parent_mem_cgroup(parent)));
+> +
+> +	return false;
+> +}
+> +
+>  static int try_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  		      unsigned int nr_pages)
+>  {
+> @@ -2623,6 +2638,10 @@ bypass:
+>  	goto retry;
+>  
+>  done_restock:
+> +	/* Throttle charger a bit if it is above high limit. */
+> +	if (high_limit_excess(memcg, &mem_over_limit))
+> +		mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
+
+This is not what the hard limit does.
+
+The hard limit, by its nature, can only be exceeded at one level at a
+time, so we try to charge, check the closest limit that was hit,
+reclaim, then retry.  This means we are reclaiming up the hierarchy to
+enforce the hard limit on each level.
+
+I do the same here: reclaim up the hierarchy to enforce the high limit
+on each level.
+
+Your proposal only reclaims the closest offender, leaving higher
+hierarchy levels in excess.
