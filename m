@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382AbaHGFKq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 01:10:46 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:58313 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757245AbaHGFKn (ORCPT
+	id S932065AbaHGFKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 01:10:50 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:41444 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757245AbaHGFKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 01:10:43 -0400
+	Thu, 7 Aug 2014 01:10:48 -0400
 From: Valentina Manea <valentina.manea.m@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: tulinizer@gmail.com, stern@rowland.harvard.edu, mail@beyermatthias.de,
@@ -15,14 +15,14 @@ Cc: tulinizer@gmail.com, stern@rowland.harvard.edu, mail@beyermatthias.de,
         firefly@lists.rosedu.org, andy.grover@gmail.com, max@vozeler.com,
         Valentina Manea <valentina.manea.m@gmail.com>
 Subject: [PATCH 0/3] usbip: move usbip out of staging
-Date: Thu,  7 Aug 2014 08:10:25 +0300
-Message-Id: <1407388229-31807-1-git-send-email-valentina.manea.m@gmail.com>
+Date: Thu,  7 Aug 2014 08:10:26 +0300
+Message-Id: <1407388229-31807-2-git-send-email-valentina.manea.m@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1407388229-31807-1-git-send-email-valentina.manea.m@gmail.com>
+References: <1407388229-31807-1-git-send-email-valentina.manea.m@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-This is a resend of the patch series from March.
 
 After migrating userspace code to libudev, converting usbip-host
 to a device driver and various bug fixes and enhancements, USB/IP
