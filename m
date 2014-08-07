@@ -1,718 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417AbaHGSW6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 14:22:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51868 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755104AbaHGSWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 14:22:55 -0400
-Message-ID: <53E3C270.1010302@redhat.com>
-Date: Thu, 07 Aug 2014 14:16:16 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Dave Hansen <dave.hansen@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [sched/numa] 096aa33863a: -21.4% hackbench.throughput, -20.2%
- netperf.Throughput_Mbps
-References: <20140807105311.GA17655@localhost>
-In-Reply-To: <20140807105311.GA17655@localhost>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1755331AbaHGSWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 14:22:45 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:42892 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043AbaHGSWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 14:22:38 -0400
+From: mathieu.poirier@linaro.org
+To: linus.walleij@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
+        robherring2@gmail.com, daniel.thompson@linaro.org
+Cc: mathieu.poirier@linaro.org, arve@android.com, john.stultz@linaro.org,
+        pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
+        jonas.svennebring@avagotech.com, james.king@linaro.org,
+        panchaxari.prasannamurthy@linaro.org, marcin.jabrzyk@gmail.com,
+        r.sengupta@samsung.com, robbelibobban@gmail.com,
+        Tony.Armitstead@arm.com, patches@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 05/10 v3] coresight-funnel: add CoreSight Funnel driver
+Date: Thu,  7 Aug 2014 12:21:41 -0600
+Message-Id: <1407435706-19441-6-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407435706-19441-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1407435706-19441-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 06:53 AM, Fengguang Wu wrote:
-> Hi Rik,
-> 
-> We noticed the below performance regression in commit
-> 096aa33863a5e48de52d2ff30e0801b7487944f4 ("sched/numa: Decay
-> ->wakee_flips instead of zeroing")
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     122361 ± 0%     -21.4%      96140 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->     122361 ± 0%     -21.4%      96140 ± 0%  TOTAL hackbench.throughput
+From: Pratik Patel <pratikp@codeaurora.org>
 
-I guess the performance of that benchmark depends on it
-"slipping under the wire" after each time the kernel
-zeroes out ->wakee_flips.
+This driver manages CoreSight Funnel which acts as a link.
+Funnels have multiple input ports (typically 8) each of which
+represents an input trace data stream. These multiple input trace
+data streams are interleaved into a single output stream coming
+out of the Funnel.
 
-Depending on repeatedly pulling the wakee back to the same
-node as the waker suggests something else in the kernel may
-be pulling the wakee to another place in the system repeatedly,
-as well, just at a lower frequency (load balancer?).
+Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
+Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ drivers/coresight/Makefile           |   2 +-
+ drivers/coresight/coresight-funnel.c | 251 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 252 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/coresight/coresight-funnel.c
 
-I have also noticed that select_idle_sibling often fails to
-find an idle sibling within the LLC domain, even when it
-exists. Fixing that bug sometimes results in lower performance.
-
-It appears that some of the performance results of the scheduler
-appear on the code acting in an opposite way to its documented
-intention.
-
-It may be best to revert 096aa33863a for now...
-
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1312 ± 0%     -20.2%       1046 ± 6%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       1312 ± 0%     -20.2%       1046 ± 6%  TOTAL netperf.Throughput_Mbps
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       7908 ±22%  +23831.0%    1892653 ±25%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       7908 ±22%  +23831.0%    1892653 ±25%  TOTAL cpuidle.C1-NHM.usage
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       2.35 ±33%     -96.0%       0.09 ±10%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       2.35 ±33%     -96.0%       0.09 ±10%  TOTAL perf-profile.cpu-cycles.memcpy.sctp_packet_transmit_chunk.sctp_outq_flush.sctp_outq_uncork.sctp_cmd_interpreter
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1250 ± 1%    -100.0%          0 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->       1250 ± 1%    -100.0%          0 ± 0%  TOTAL slabinfo.xfs_buf.num_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1957 ±19%    -100.0%          0 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->       1957 ±19%    -100.0%          0 ± 0%  TOTAL slabinfo.xfs_trans.num_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     288862 ±33%  +34804.6%  1.008e+08 ±27%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     288862 ±33%  +34804.6%  1.008e+08 ±27%  TOTAL cpuidle.C1-NHM.time
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       0.10 ±14%   +1423.1%       1.58 ±47%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       0.10 ±14%   +1423.1%       1.58 ±47%  TOTAL perf-profile.cpu-cycles._raw_spin_lock_bh.lock_sock_nested.sctp_recvmsg.sock_common_recvmsg.sock_recvmsg
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     341158 ±30%  +30156.8%  1.032e+08 ±27%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     341158 ±30%  +30156.8%  1.032e+08 ±27%  TOTAL cpuidle.C1E-NHM.time
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       7320 ±33%  +32271.8%    2369681 ±26%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       7320 ±33%  +32271.8%    2369681 ±26%  TOTAL cpuidle.C1E-NHM.usage
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     506973 ±31%   +3871.2%   20133029 ±25%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     506973 ±31%   +3871.2%   20133029 ±25%  TOTAL cpuidle.C3-NHM.time
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->        292 ±11%   +7707.3%      22813 ±27%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->        292 ±11%   +7707.3%      22813 ±27%  TOTAL cpuidle.C3-NHM.usage
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->    7525714 ±17%    +544.6%   48513328 ±20%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->    7525714 ±17%    +544.6%   48513328 ±20%  TOTAL cpuidle.C6-NHM.time
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1952 ±19%    -100.0%          0 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->       1952 ±19%    -100.0%          0 ± 0%  TOTAL slabinfo.xfs_trans.active_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1141 ± 0%    -100.0%          0 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->       1141 ± 0%    -100.0%          0 ± 0%  TOTAL slabinfo.xfs_buf.active_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       0.05 ±33%   +1596.2%       0.88 ±24%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       0.05 ±33%   +1596.2%       0.88 ±24%  TOTAL turbostat.%c3
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->        716 ±10%   +2369.6%      17702 ±23%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->        716 ±10%   +2369.6%      17702 ±23%  TOTAL cpuidle.C6-NHM.usage
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       0.32 ±12%    +291.8%       1.24 ± 6%  lkp-snb01/hackbench/50%-process-pipe
->       0.32 ±12%    +291.8%       1.24 ± 6%  TOTAL perf-profile.cpu-cycles.osq_lock.__mutex_lock_slowpath.mutex_lock.pipe_write.do_sync_write
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       0.35 ± 8%    +250.9%       1.21 ± 6%  lkp-snb01/hackbench/50%-process-pipe
->       0.35 ± 8%    +250.9%       1.21 ± 6%  TOTAL perf-profile.cpu-cycles.mutex_spin_on_owner.__mutex_lock_slowpath.mutex_lock.pipe_write.do_sync_write
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->    1108302 ± 1%     +70.8%    1893466 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->      13338 ± 1%    +523.8%      83205 ±22%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->    1121641 ± 1%     +76.2%    1976671 ± 1%  TOTAL softirqs.SCHED
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       2.43 ± 2%     +32.7%       3.23 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->       0.08 ±27%  +25202.6%      19.74 ±27%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       2.51 ± 2%    +814.9%      22.96 ±23%  TOTAL turbostat.%c1
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->    1615.95 ± 4%     +19.9%    1938.14 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->      75.27 ± 1%    +413.0%     386.09 ±21%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->    1691.22 ± 4%     +37.4%    2324.23 ± 4%  TOTAL uptime.idle
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       0.58 ±19%    +162.6%       1.52 ±13%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       0.58 ±19%    +162.6%       1.52 ±13%  TOTAL turbostat.%c6
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     704584 ± 4%    +177.7%    1956399 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->     704584 ± 4%    +177.7%    1956399 ± 1%  TOTAL cpuidle.C1E-SNB.usage
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       0.51 ± 7%    +168.4%       1.37 ± 4%  lkp-snb01/hackbench/50%-process-pipe
->       0.51 ± 7%    +168.4%       1.37 ± 4%  TOTAL perf-profile.cpu-cycles.__mutex_lock_slowpath.mutex_lock.pipe_write.do_sync_write.vfs_write
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.65 ± 2%    +140.9%       3.97 ± 4%  lkp-snb01/hackbench/50%-process-pipe
->       1.65 ± 2%    +140.9%       3.97 ± 4%  TOTAL perf-profile.cpu-cycles.mutex_unlock.do_sync_write.vfs_write.sys_write.system_call_fastpath
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   30881148 ± 1%    +122.3%   68651628 ± 2%  lkp-snb01/hackbench/50%-process-pipe
->   30881148 ± 1%    +122.3%   68651628 ± 2%  TOTAL cpuidle.C1E-SNB.time
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     130315 ± 1%     -51.5%      63146 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->     130315 ± 1%     -51.5%      63146 ± 1%  TOTAL cpuidle.C7-SNB.usage
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       4.04 ± 0%     -50.5%       2.00 ± 8%  lkp-snb01/hackbench/50%-process-pipe
->       4.04 ± 0%     -50.5%       2.00 ± 8%  TOTAL perf-profile.cpu-cycles._raw_spin_lock.try_to_wake_up.default_wake_function.autoremove_wake_function.__wake_up_common
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       9880 ± 5%     -47.0%       5238 ± 5%  lkp-snb01/hackbench/50%-process-pipe
->       9880 ± 5%     -47.0%       5238 ± 5%  TOTAL cpuidle.C3-SNB.usage
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.40 ± 1%     -45.4%       0.76 ± 9%  lkp-snb01/hackbench/50%-process-pipe
->       1.40 ± 1%     -45.4%       0.76 ± 9%  TOTAL perf-profile.cpu-cycles._raw_spin_lock_irq.__schedule.schedule.pipe_wait.pipe_read
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.55 ± 2%     -46.3%       0.83 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->       1.55 ± 2%     -46.3%       0.83 ± 1%  TOTAL perf-profile.cpu-cycles.select_task_rq_fair.try_to_wake_up.default_wake_function.autoremove_wake_function.__wake_up_common
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.27 ± 0%     +88.8%       2.40 ± 4%  lkp-snb01/hackbench/50%-process-pipe
->       1.27 ± 0%     +88.8%       2.40 ± 4%  TOTAL perf-profile.cpu-cycles.mutex_lock.pipe_write.do_sync_write.vfs_write.sys_write
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->        366 ± 0%     -19.5%        295 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->         11 ± 0%     -58.2%          4 ±32%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->        377 ± 0%     -20.6%        300 ± 1%  TOTAL vmstat.procs.r
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       5.26 ± 4%     +70.0%       8.95 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->       5.26 ± 4%     +70.0%       8.95 ± 1%  TOTAL perf-profile.cpu-cycles._raw_spin_lock_irqsave.__wake_up_sync_key.pipe_write.do_sync_write.vfs_write
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.99 ± 5%     -37.2%       1.25 ± 6%  lkp-snb01/hackbench/50%-process-pipe
->       1.99 ± 5%     -37.2%       1.25 ± 6%  TOTAL perf-profile.cpu-cycles.avc_has_perm.inode_has_perm.file_has_perm.selinux_file_permission.security_file_permission
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   41644859 ± 1%     -36.6%   26412030 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->   41644859 ± 1%     -36.6%   26412030 ± 0%  TOTAL numa-numastat.node0.local_node
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   41645708 ± 1%     -36.6%   26414565 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->   41645708 ± 1%     -36.6%   26414565 ± 0%  TOTAL numa-numastat.node0.numa_hit
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   21020151 ± 0%     -36.0%   13450417 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->   21020151 ± 0%     -36.0%   13450417 ± 0%  TOTAL numa-vmstat.node0.numa_local
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   21084898 ± 0%     -35.9%   13516547 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->   21084898 ± 0%     -35.9%   13516547 ± 0%  TOTAL numa-vmstat.node0.numa_hit
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       0.66 ± 2%     +56.1%       1.02 ± 3%  lkp-snb01/hackbench/50%-process-pipe
->       0.66 ± 2%     +56.1%       1.02 ± 3%  TOTAL perf-profile.cpu-cycles.try_to_wake_up.default_wake_function.autoremove_wake_function.__wake_up_common.__wake_up_sync_key
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   76135896 ± 0%     -35.6%   49027766 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->   76135896 ± 0%     -35.6%   49027766 ± 0%  TOTAL proc-vmstat.pgalloc_normal
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       2075 ±17%     -25.7%       1543 ±26%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->       2075 ±17%     -25.7%       1543 ±26%  TOTAL slabinfo.blkdev_ioc.active_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       2076 ±17%     -25.4%       1549 ±27%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->       2076 ±17%     -25.4%       1549 ±27%  TOTAL slabinfo.blkdev_ioc.num_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   42478629 ± 1%     -35.0%   27615662 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->   42478629 ± 1%     -35.0%   27615662 ± 0%  TOTAL numa-numastat.node1.local_node
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   42481997 ± 1%     -35.0%   27617365 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->   42481997 ± 1%     -35.0%   27617365 ± 0%  TOTAL numa-numastat.node1.numa_hit
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   21585988 ± 1%     -34.6%   14110975 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->   21585988 ± 1%     -34.6%   14110975 ± 0%  TOTAL numa-vmstat.node1.numa_local
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   21597275 ± 1%     -34.6%   14120957 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->   21597275 ± 1%     -34.6%   14120957 ± 0%  TOTAL numa-vmstat.node1.numa_hit
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.86 ± 5%     +53.3%       2.85 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->       1.86 ± 5%     +53.3%       2.85 ± 1%  TOTAL perf-profile.cpu-cycles.idle_cpu.select_task_rq_fair.try_to_wake_up.default_wake_function.autoremove_wake_function
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       0.92 ±13%     -31.2%       0.63 ± 5%  lkp-snb01/hackbench/50%-process-pipe
->       0.92 ±13%     -31.2%       0.63 ± 5%  TOTAL perf-profile.cpu-cycles.touch_atime.pipe_read.do_sync_read.vfs_read.sys_read
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       0.96 ± 4%     -30.4%       0.67 ± 5%  lkp-snb01/hackbench/50%-process-pipe
->       0.96 ± 4%     -30.4%       0.67 ± 5%  TOTAL perf-profile.cpu-cycles.update_cfs_shares.enqueue_entity.enqueue_task_fair.enqueue_task.activate_task
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     128510 ± 0%     -30.7%      89002 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     128510 ± 0%     -30.7%      89002 ± 2%  TOTAL meminfo.Active(file)
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->      32134 ± 0%     -30.8%      22250 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->      32134 ± 0%     -30.8%      22250 ± 2%  TOTAL proc-vmstat.nr_active_file
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.08 ± 4%     -30.1%       0.76 ± 2%  lkp-snb01/hackbench/50%-process-pipe
->       1.08 ± 4%     -30.1%       0.76 ± 2%  TOTAL perf-profile.cpu-cycles.__srcu_read_lock.fsnotify.vfs_write.sys_write.system_call_fastpath
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     978152 ± 3%     -21.3%     769740 ±19%  lkp-snb01/hackbench/50%-process-pipe
->     978152 ± 3%     -21.3%     769740 ±19%  TOTAL cpuidle.C3-SNB.time
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->    8062365 ± 1%     -37.1%    5070607 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->  2.751e+08 ± 0%     -18.4%  2.245e+08 ± 6%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->  2.832e+08 ± 0%     -18.9%  2.296e+08 ± 6%  TOTAL proc-vmstat.pgalloc_dma32
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       7722 ± 1%     -24.6%       5824 ±15%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       7722 ± 1%     -24.6%       5824 ±15%  TOTAL proc-vmstat.pgactivate
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   84116763 ± 0%     -35.8%   54027061 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->   49792666 ± 0%     -20.2%   39712359 ± 6%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->  133909429 ± 0%     -30.0%   93739420 ± 2%  TOTAL proc-vmstat.numa_local
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   84120980 ± 0%     -35.8%   54031299 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->   49792666 ± 0%     -20.2%   39712359 ± 6%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->  133913646 ± 0%     -30.0%   93743658 ± 2%  TOTAL proc-vmstat.numa_hit
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     672803 ± 0%     -28.1%     483704 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     672803 ± 0%     -28.1%     483704 ± 0%  TOTAL vmstat.memory.cache
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     672747 ± 0%     -28.1%     483713 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     672747 ± 0%     -28.1%     483713 ± 0%  TOTAL meminfo.Cached
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     168187 ± 0%     -28.1%     120926 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     168187 ± 0%     -28.1%     120926 ± 0%  TOTAL proc-vmstat.nr_file_pages
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.28 ± 7%     -28.9%       0.91 ± 2%  lkp-snb01/hackbench/50%-process-pipe
->       1.28 ± 7%     -28.9%       0.91 ± 2%  TOTAL perf-profile.cpu-cycles.copy_page_to_iter.pipe_read.do_sync_read.vfs_read.sys_read
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   84177329 ± 0%     -35.8%   54079701 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->  2.781e+08 ± 0%     -18.4%  2.269e+08 ± 6%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->  3.623e+08 ± 0%     -22.4%   2.81e+08 ± 5%  TOTAL proc-vmstat.pgfree
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     541579 ± 0%     -27.6%     392085 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     541579 ± 0%     -27.6%     392085 ± 0%  TOTAL meminfo.Inactive(file)
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     135388 ± 0%     -27.6%      98019 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     135388 ± 0%     -27.6%      98019 ± 0%  TOTAL proc-vmstat.nr_inactive_file
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     541892 ± 0%     -27.6%     392387 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     541892 ± 0%     -27.6%     392387 ± 0%  TOTAL meminfo.Inactive
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.07 ± 3%     -27.2%       0.78 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->       1.07 ± 3%     -27.2%       0.78 ± 1%  TOTAL perf-profile.cpu-cycles.__read_nocancel
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.91 ± 2%     -26.9%       1.40 ± 2%  lkp-snb01/hackbench/50%-process-pipe
->       1.91 ± 2%     -26.9%       1.40 ± 2%  TOTAL perf-profile.cpu-cycles.copy_user_generic_string.pipe_write.do_sync_write.vfs_write.sys_write
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     153459 ± 0%     -25.8%     113813 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     153459 ± 0%     -25.8%     113813 ± 2%  TOTAL meminfo.Active
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1426 ± 2%     -25.2%       1067 ± 1%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       1426 ± 2%     -25.2%       1067 ± 1%  TOTAL slabinfo.ftrace_event_file.num_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1426 ± 2%     -25.2%       1067 ± 1%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       1426 ± 2%     -25.2%       1067 ± 1%  TOTAL slabinfo.ftrace_event_file.active_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->  4.199e+08 ± 2%     +33.3%  5.596e+08 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->  4.199e+08 ± 2%     +33.3%  5.596e+08 ± 0%  TOTAL cpuidle.C1-SNB.time
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.49 ± 1%     -25.7%       1.10 ± 2%  lkp-snb01/hackbench/50%-process-pipe
->       1.49 ± 1%     -25.7%       1.10 ± 2%  TOTAL perf-profile.cpu-cycles.__switch_to.__read_nocancel
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.25 ± 2%     +31.6%       1.64 ± 2%  lkp-snb01/hackbench/50%-process-pipe
->       1.25 ± 2%     +31.6%       1.64 ± 2%  TOTAL perf-profile.cpu-cycles.__fget_light.sys_write.system_call_fastpath.__write_nocancel
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     614765 ± 0%     -23.5%     470579 ± 8%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     614765 ± 0%     -23.5%     470579 ± 8%  TOTAL softirqs.TIMER
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->      11425 ± 2%     -12.9%       9951 ± 2%  lkp-snb01/hackbench/50%-process-pipe
->       4365 ± 2%     -16.9%       3630 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->       2117 ± 2%     -34.4%       1388 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->      17908 ± 2%     -16.4%      14970 ± 2%  TOTAL slabinfo.kmalloc-128.active_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->      41164 ±12%     +20.9%      49766 ± 6%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->      41164 ±12%     +20.9%      49766 ± 6%  TOTAL meminfo.DirectMap4k
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       8060 ± 3%     -19.9%       6457 ± 4%  lkp-snb01/hackbench/50%-process-pipe
->       8060 ± 3%     -19.9%       6457 ± 4%  TOTAL slabinfo.task_xstate.num_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       8016 ± 3%     -19.5%       6450 ± 4%  lkp-snb01/hackbench/50%-process-pipe
->       8016 ± 3%     -19.5%       6450 ± 4%  TOTAL slabinfo.task_xstate.active_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->    3039372 ± 2%     -20.6%    2414002 ± 7%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->    3039372 ± 2%     -20.6%    2414002 ± 7%  TOTAL proc-vmstat.pgalloc_dma
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     159254 ± 1%     -19.6%     128113 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->     159254 ± 1%     -19.6%     128113 ± 1%  TOTAL proc-vmstat.numa_hint_faults_local
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       9.33 ± 2%     -16.4%       7.80 ± 7%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       9.33 ± 2%     -16.4%       7.80 ± 7%  TOTAL perf-profile.cpu-cycles.copy_user_generic_string.sctp_user_addto_chunk.sctp_datamsg_from_user.sctp_sendmsg.inet_sendmsg
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   86862453 ± 1%     +22.1%  1.061e+08 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->   86862453 ± 1%     +22.1%  1.061e+08 ± 0%  TOTAL cpuidle.C1-SNB.usage
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1.30 ± 5%     +16.2%       1.51 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->       1.30 ± 5%     +16.2%       1.51 ± 1%  TOTAL perf-profile.cpu-cycles.vfs_write.sys_write.system_call_fastpath.__write_nocancel
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->      11443 ± 2%     -12.5%      10010 ± 2%  lkp-snb01/hackbench/50%-process-pipe
->       4574 ± 2%     -16.2%       3832 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->       2117 ± 2%     -17.7%       1741 ± 4%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->      18135 ± 2%     -14.1%      15585 ± 2%  TOTAL slabinfo.kmalloc-128.num_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     454028 ± 0%     -14.7%     387291 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->     454028 ± 0%     -14.7%     387291 ± 0%  TOTAL proc-vmstat.numa_pte_updates
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->    1129166 ± 0%     +17.1%    1322132 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->    1129166 ± 0%     +17.1%    1322132 ± 0%  TOTAL vmstat.memory.free
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->    1129151 ± 0%     +17.1%    1322021 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->    1129151 ± 0%     +17.1%    1322021 ± 0%  TOTAL meminfo.MemFree
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     282289 ± 0%     +17.1%     330504 ± 0%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->     282289 ± 0%     +17.1%     330504 ± 0%  TOTAL proc-vmstat.nr_free_pages
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->    1352710 ± 1%      -9.6%    1222637 ± 2%  lkp-snb01/hackbench/50%-process-pipe
->      59510 ± 5%     -20.1%      47545 ±10%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->    1412220 ± 2%     -10.1%    1270182 ± 2%  TOTAL softirqs.RCU
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       7978 ± 0%     -13.8%       6877 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->       7978 ± 0%     -13.8%       6877 ± 1%  TOTAL slabinfo.files_cache.num_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       7978 ± 0%     -13.8%       6877 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->       7978 ± 0%     -13.8%       6877 ± 1%  TOTAL slabinfo.files_cache.active_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->    6685911 ± 6%     -12.8%    5832341 ± 1%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->    6685911 ± 6%     -12.8%    5832341 ± 1%  TOTAL softirqs.NET_RX
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       3213 ± 1%     -14.3%       2754 ± 2%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->       2737 ± 1%     -11.8%       2414 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       5950 ± 1%     -13.1%       5168 ± 2%  TOTAL slabinfo.shared_policy_node.num_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       3213 ± 1%     -14.3%       2754 ± 2%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->       2737 ± 1%     -11.8%       2414 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->       5950 ± 1%     -13.1%       5168 ± 2%  TOTAL slabinfo.shared_policy_node.active_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->      19418 ± 1%     +14.3%      22186 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->      19418 ± 1%     +14.3%      22186 ± 0%  TOTAL softirqs.HRTIMER
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       5265 ± 1%      -9.8%       4750 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->       5265 ± 1%      -9.8%       4750 ± 1%  TOTAL slabinfo.signal_cache.active_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       5359 ± 1%      -9.5%       4851 ± 1%  lkp-snb01/hackbench/50%-process-pipe
->       5359 ± 1%      -9.5%       4851 ± 1%  TOTAL slabinfo.signal_cache.num_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->      19262 ± 2%      -8.2%      17684 ± 3%  lkp-snb01/hackbench/50%-process-pipe
->      19262 ± 2%      -8.2%      17684 ± 3%  TOTAL slabinfo.kmalloc-192.num_objs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->      72008 ± 0%      -8.7%      65715 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->      72008 ± 0%      -8.7%      65715 ± 0%  TOTAL proc-vmstat.pgmigrate_success
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->      72008 ± 0%      -8.7%      65715 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->      72008 ± 0%      -8.7%      65715 ± 0%  TOTAL proc-vmstat.numa_pages_migrated
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       3.05 ±36%     -67.0%       1.01 ± 4%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->       3.05 ±36%     -67.0%       1.01 ± 4%  TOTAL iostat.sdf.wrqm/s
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     873523 ± 1%     +71.8%    1501063 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->     873523 ± 1%     +71.8%    1501063 ± 0%  TOTAL vmstat.system.in
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   28067347 ± 1%     -33.7%   18595224 ± 1%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->   28067347 ± 1%     -33.7%   18595224 ± 1%  TOTAL perf-stat.iTLB-load-misses
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->  2.631e+09 ± 0%     -26.9%  1.922e+09 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->  2.631e+09 ± 0%     -26.9%  1.922e+09 ± 0%  TOTAL time.voluntary_context_switches
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       1240 ± 0%     -25.2%        928 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->       1240 ± 0%     -25.2%        928 ± 0%  TOTAL time.user_time
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->  7.586e+08 ± 0%     -39.2%  4.614e+08 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->     149744 ± 1%      +4.0%     155739 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->  7.587e+08 ± 0%     -39.2%  4.616e+08 ± 0%  TOTAL time.involuntary_context_switches
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->      99.29 ± 0%     -21.6%      77.86 ± 7%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->      99.29 ± 0%     -21.6%      77.86 ± 7%  TOTAL turbostat.%c0
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->    5681114 ± 0%     -29.0%    4034794 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->      11667 ± 0%      -9.0%      10620 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->      41698 ±10%     +15.9%      48342 ± 2%  lkp-t410/netperf/300s-200%-10K-SCTP_STREAM_MANY
->    5734480 ± 0%     -28.6%    4093757 ± 0%  TOTAL vmstat.system.cs
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->     729049 ± 0%     -15.6%     615443 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->     729049 ± 0%     -15.6%     615443 ± 0%  TOTAL time.minor_page_faults
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->  1.232e+09 ± 7%     -12.6%  1.077e+09 ± 4%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->  1.232e+09 ± 7%     -12.6%  1.077e+09 ± 4%  TOTAL perf-stat.dTLB-store-misses
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->  7.771e+09 ± 0%     +10.8%  8.608e+09 ± 1%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->  7.771e+09 ± 0%     +10.8%  8.608e+09 ± 1%  TOTAL perf-stat.branch-misses
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->    7102173 ± 0%      -8.9%    6468745 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->    7102173 ± 0%      -8.9%    6468745 ± 0%  TOTAL perf-stat.context-switches
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->  7.793e+09 ± 0%     +10.2%  8.589e+09 ± 2%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->  7.793e+09 ± 0%     +10.2%  8.589e+09 ± 2%  TOTAL perf-stat.branch-load-misses
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->            ± 0%      -4.6%            ± 0%  lkp-snb01/hackbench/50%-process-pipe
->            ± 0%      -4.6%            ± 0%  TOTAL turbostat.Cor_W
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->  1.887e+12 ± 0%      +4.4%  1.971e+12 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->  1.887e+12 ± 0%      +4.4%  1.971e+12 ± 0%  TOTAL perf-stat.dTLB-loads
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->  1.885e+12 ± 0%      +4.4%  1.967e+12 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->  1.885e+12 ± 0%      +4.4%  1.967e+12 ± 0%  TOTAL perf-stat.L1-dcache-loads
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->            ± 0%      -3.3%            ± 0%  lkp-snb01/hackbench/50%-process-pipe
->            ± 0%      -3.3%            ± 0%  TOTAL turbostat.Pkg_W
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->      17763 ± 0%      +2.1%      18139 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->      17763 ± 0%      +2.1%      18139 ± 0%  TOTAL time.system_time
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->       3087 ± 0%      -1.2%       3050 ± 0%  lkp-snb01/hackbench/50%-process-pipe
->       3087 ± 0%      -1.2%       3050 ± 0%  TOTAL time.percent_of_cpu_this_job_got
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->   6.85e+12 ± 0%      +1.5%  6.953e+12 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->   6.85e+12 ± 0%      +1.5%  6.953e+12 ± 0%  TOTAL perf-stat.ref-cycles
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->      92145 ± 0%      +0.8%      92909 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->      92145 ± 0%      +0.8%      92909 ± 0%  TOTAL iostat.sdf.wkB/s
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->  8.563e+11 ± 0%      +1.5%  8.689e+11 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->  8.563e+11 ± 0%      +1.5%  8.689e+11 ± 0%  TOTAL perf-stat.bus-cycles
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->      92292 ± 0%      +0.9%      93079 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->      92292 ± 0%      +0.9%      93079 ± 0%  TOTAL iostat.sdj.wkB/s
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->  6.859e+12 ± 0%      +1.3%  6.951e+12 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->  6.859e+12 ± 0%      +1.3%  6.951e+12 ± 0%  TOTAL perf-stat.cpu-cycles
-> 
-> b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> ---------------  -------------------------  ---------------------------
->  6.148e+12 ± 0%      +1.1%  6.217e+12 ± 0%  lkp-st02/dd-write/11HDD-JBOD-cfq-xfs-10dd
->  6.148e+12 ± 0%      +1.1%  6.217e+12 ± 0%  TOTAL perf-stat.L1-icache-loads
-> 
-> 
-> Thanks,
-> Fengguang
-> 
-> 
-> 
-> _______________________________________________
-> LKP mailing list
-> LKP@linux.intel.com
-> 
+diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
+index 5dd3d98..26a07e1 100644
+--- a/drivers/coresight/Makefile
++++ b/drivers/coresight/Makefile
+@@ -4,4 +4,4 @@
+ obj-$(CONFIG_CORESIGHT) += coresight.o
+ obj-$(CONFIG_OF) += of_coresight.o
+ obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
+-					   coresight-etb10.o
++					   coresight-etb10.o coresight-funnel.o
+diff --git a/drivers/coresight/coresight-funnel.c b/drivers/coresight/coresight-funnel.c
+new file mode 100644
+index 0000000..1792f4e
+--- /dev/null
++++ b/drivers/coresight/coresight-funnel.c
+@@ -0,0 +1,251 @@
++/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/device.h>
++#include <linux/err.h>
++#include <linux/fs.h>
++#include <linux/slab.h>
++#include <linux/clk.h>
++#include <linux/coresight.h>
++#include <linux/amba/bus.h>
++
++#include "coresight-priv.h"
++
++#define FUNNEL_FUNCTL		0x000
++#define FUNNEL_PRICTL		0x004
++
++#define FUNNEL_HOLDTIME_MASK	0xf00
++#define FUNNEL_HOLDTIME_SHFT	0x8
++#define FUNNEL_HOLDTIME		(0x7 << FUNNEL_HOLDTIME_SHFT)
++
++struct funnel_drvdata {
++	void __iomem		*base;
++	struct device		*dev;
++	struct coresight_device	*csdev;
++	struct clk		*clk;
++	u32			priority;
++};
++
++static void funnel_enable_hw(struct funnel_drvdata *drvdata, int port)
++{
++	u32 functl;
++
++	CS_UNLOCK(drvdata->base);
++
++	functl = readl_relaxed(drvdata->base + FUNNEL_FUNCTL);
++	functl &= ~FUNNEL_HOLDTIME_MASK;
++	functl |= FUNNEL_HOLDTIME;
++	functl |= (1 << port);
++	writel_relaxed(functl, drvdata->base + FUNNEL_FUNCTL);
++	writel_relaxed(drvdata->priority, drvdata->base + FUNNEL_PRICTL);
++
++	CS_LOCK(drvdata->base);
++}
++
++static int funnel_enable(struct coresight_device *csdev, int inport,
++			 int outport)
++{
++	struct funnel_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	int ret;
++
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	funnel_enable_hw(drvdata, inport);
++
++	dev_info(drvdata->dev, "FUNNEL inport %d enabled\n", inport);
++	return 0;
++}
++
++static void funnel_disable_hw(struct funnel_drvdata *drvdata, int inport)
++{
++	u32 functl;
++
++	CS_UNLOCK(drvdata->base);
++
++	functl = readl_relaxed(drvdata->base + FUNNEL_FUNCTL);
++	functl &= ~(1 << inport);
++	writel_relaxed(functl, drvdata->base + FUNNEL_FUNCTL);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void funnel_disable(struct coresight_device *csdev, int inport,
++			   int outport)
++{
++	struct funnel_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++
++	funnel_disable_hw(drvdata, inport);
++
++	clk_disable_unprepare(drvdata->clk);
++
++	dev_info(drvdata->dev, "FUNNEL inport %d disabled\n", inport);
++}
++
++static const struct coresight_ops_link funnel_link_ops = {
++	.enable		= funnel_enable,
++	.disable	= funnel_disable,
++};
++
++static const struct coresight_ops funnel_cs_ops = {
++	.link_ops	= &funnel_link_ops,
++};
++
++static ssize_t debugfs_funnel_priority_get(void *data, u64 *val)
++{
++	struct funnel_drvdata *drvdata = data;
++
++	*val = drvdata->priority;
++	return 0;
++}
++
++static ssize_t debugfs_funnel_priority_set(void *data, u64 val)
++{
++	struct funnel_drvdata *drvdata = data;
++
++	drvdata->priority = val;
++	return 0;
++}
++CORESIGHT_DEBUGFS_ENTRY(debugfs_funnel_priority, "priority",
++			S_IRUGO | S_IWUSR, debugfs_funnel_priority_get,
++			debugfs_funnel_priority_set, "%llx\n");
++
++static u32 get_funnel_ctrl_hw(struct funnel_drvdata *drvdata)
++{
++	u32 functl;
++
++	CS_UNLOCK(drvdata->base);
++	functl = readl_relaxed(drvdata->base + FUNNEL_FUNCTL);
++	CS_LOCK(drvdata->base);
++
++	return functl;
++}
++
++static ssize_t debugfs_funnel_ctrl_get(void *data, u64 *val)
++{
++	struct funnel_drvdata *drvdata = data;
++
++	if (clk_prepare_enable(drvdata->clk))
++		goto out;
++
++	*val = get_funnel_ctrl_hw(drvdata);
++	clk_disable_unprepare(drvdata->clk);
++out:
++	return 0;
++}
++CORESIGHT_DEBUGFS_ENTRY(debugfs_funnel_ctrl, "funnel_ctrl",
++			S_IRUGO, debugfs_funnel_ctrl_get,
++			NULL, "%llx\n");
++
++static const struct coresight_ops_entry *funnel_attr_grps[] = {
++	&debugfs_funnel_priority_entry,
++	&debugfs_funnel_ctrl_entry,
++	NULL,
++};
++
++static int funnel_probe(struct amba_device *adev, const struct amba_id *id)
++{
++	void __iomem *base;
++	struct device *dev = &adev->dev;
++	struct coresight_platform_data *pdata = NULL;
++	struct funnel_drvdata *drvdata;
++	struct resource *res = &adev->res;
++	struct coresight_desc *desc;
++	struct device_node *np = adev->dev.of_node;
++
++	if (np) {
++		pdata = of_get_coresight_platform_data(dev, np);
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
++		adev->dev.platform_data = pdata;
++	}
++
++	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
++	if (!drvdata)
++		return -ENOMEM;
++
++	drvdata->dev = &adev->dev;
++	dev_set_drvdata(dev, drvdata);
++
++	/* validity for the resource is already checked by the AMBA core */
++	base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	drvdata->base = base;
++
++	drvdata->clk = adev->pclk;
++
++	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
++	if (!desc)
++		return -ENOMEM;
++
++	desc->type = CORESIGHT_DEV_TYPE_LINK;
++	desc->subtype.link_subtype = CORESIGHT_DEV_SUBTYPE_LINK_MERG;
++	desc->ops = &funnel_cs_ops;
++	desc->pdata = pdata;
++	desc->dev = dev;
++	desc->debugfs_ops = funnel_attr_grps;
++	desc->owner = THIS_MODULE;
++	drvdata->csdev = coresight_register(desc);
++	if (IS_ERR(drvdata->csdev))
++		return PTR_ERR(drvdata->csdev);
++
++	dev_info(dev, "FUNNEL initialized\n");
++	return 0;
++}
++
++static int funnel_remove(struct amba_device *adev)
++{
++	struct funnel_drvdata *drvdata = amba_get_drvdata(adev);
++
++	coresight_unregister(drvdata->csdev);
++	return 0;
++}
++
++static struct amba_id funnel_ids[] = {
++	{
++		.id     = 0x0003b908,
++		.mask   = 0x0003ffff,
++	},
++	{ 0, 0},
++};
++
++static struct amba_driver funnel_driver = {
++	.drv = {
++		.name	= "coresight-funnel",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= funnel_probe,
++	.remove		= funnel_remove,
++	.id_table	= funnel_ids,
++};
++
++static int __init funnel_init(void)
++{
++	return amba_driver_register(&funnel_driver);
++}
++module_init(funnel_init);
++
++static void __exit funnel_exit(void)
++{
++	amba_driver_unregister(&funnel_driver);
++}
++module_exit(funnel_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("CoreSight Funnel driver");
+-- 
+1.9.1
 
