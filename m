@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079AbaHGViV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 17:38:21 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:59870 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754701AbaHGViH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 17:38:07 -0400
-From: Adrian Remonda <adrianremonda@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Adrian Remonda <adrianremonda@gmail.com>
-Subject: [PATCHv2 2/2] Staging: rtl8188eu: Removed unnecessarry code.
-Date: Thu,  7 Aug 2014 23:37:51 +0200
-Message-Id: <1407447471-11632-2-git-send-email-adrianremonda@gmail.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1407447471-11632-1-git-send-email-adrianremonda@gmail.com>
-References: <1407447471-11632-1-git-send-email-adrianremonda@gmail.com>
+	id S1755335AbaHGVlg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 17:41:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9116 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751197AbaHGVle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 17:41:34 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/4] umem: fix error return code
+References: <1407445067-4044-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1407445067-4044-3-git-send-email-Julia.Lawall@lip6.fr>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 07 Aug 2014 17:41:29 -0400
+In-Reply-To: <1407445067-4044-3-git-send-email-Julia.Lawall@lip6.fr> (Julia
+	Lawall's message of "Thu, 7 Aug 2014 22:57:45 +0200")
+Message-ID: <x491tssasfq.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch clear some code that was not doing any help.
-Pointed out by Larry.Finger
+Julia Lawall <Julia.Lawall@lip6.fr> writes:
 
-Signed-off-by: Adrian Remonda <adrianremonda@gmail.com>
----
- drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+> diff --git a/drivers/block/umem.c b/drivers/block/umem.c
+> index 4cf81b5..371e819 100644
+> --- a/drivers/block/umem.c
+> +++ b/drivers/block/umem.c
+> @@ -881,6 +881,7 @@ static int mm_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+>  	if (card->mm_pages[0].desc == NULL ||
+>  	    card->mm_pages[1].desc == NULL) {
+>  		dev_printk(KERN_ERR, &card->dev->dev, "alloc failed\n");
+> +		ret = -ENOMEM;
+>  		goto failed_alloc;
+>  	}
+>  	reset_page(&card->mm_pages[0]);
+> @@ -891,8 +892,10 @@ static int mm_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+>  	card->biotail = &card->bio;
+>  
+>  	card->queue = blk_alloc_queue(GFP_KERNEL);
+> -	if (!card->queue)
+> +	if (!card->queue) {
+> +		ret = -ENOMEM;
+>  		goto failed_alloc;
+> +	}
 
-diff --git a/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c b/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
-index 8be4819..bc275b2 100644
---- a/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
-+++ b/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
-@@ -42,18 +42,15 @@ int	rtl8188eu_init_recv_priv(struct adapter *padapter)
- 	_rtw_init_queue(&precvpriv->free_recv_buf_queue);
- 
- 	precvpriv->pallocated_recv_buf =
--		kzalloc(NR_RECVBUFF * sizeof(struct recv_buf) + 4, GFP_KERNEL);
-+		kzalloc(NR_RECVBUFF * sizeof(struct recv_buf), GFP_KERNEL);
- 	if (precvpriv->pallocated_recv_buf == NULL) {
- 		res = _FAIL;
- 		RT_TRACE(_module_rtl871x_recv_c_, _drv_err_,
- 				("alloc recv_buf fail!\n"));
- 		goto exit;
- 	}
--	memset(precvpriv->pallocated_recv_buf, 0,
--			NR_RECVBUFF * sizeof(struct recv_buf) + 4);
- 
--	precvpriv->precv_buf = (u8 *)N_BYTE_ALIGMENT((size_t)
--			(precvpriv->pallocated_recv_buf), 4);
-+	precvpriv->precv_buf = precvpriv->pallocated_recv_buf;
- 
- 
- 	precvbuf = (struct recv_buf *)precvpriv->precv_buf;
--- 
-2.0.4
-
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
