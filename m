@@ -1,154 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751289AbaHHRm5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 13:42:57 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:48986 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaHHRm4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 13:42:56 -0400
-Message-ID: <53E50C1B.9080507@gmail.com>
-Date: Fri, 08 Aug 2014 19:42:51 +0200
-From: Mario Kleiner <mario.kleiner.de@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-CC: Ben Skeggs <skeggsb@gmail.com>, Alex Deucher <alexdeucher@gmail.com>,
-        =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>,
-        Thomas Hellstrom <thellstrom@vmware.com>, m.szyprowski@samsung.com,
-        LKML <linux-kernel@vger.kernel.org>, kamal@canonical.com,
-        ben@decadent.org.uk, Mario Kleiner <mario.kleiner.de@gmail.com>
-Subject: CONFIG_DMA_CMA causes ttm performance problems/hangs.
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751438AbaHHRpL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 13:45:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29900 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751200AbaHHRpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 13:45:07 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH v4 0/17] x86: entry.S optimizations
+Date: Fri,  8 Aug 2014 19:44:23 +0200
+Message-Id: <1407519880-6719-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Version 4 of the patchset.
 
-there is a rather severe performance problem i accidentally found when 
-trying to give Linux 3.16.0 a final test on a x86_64 MacBookPro under 
-Ubuntu 14.04 LTS with nouveau as graphics driver.
+Please consider applying at least two first patches, they are definitely safe,
+and the second one fixes a latent bug.
 
-I was lazy and just installed the Ubuntu precompiled mainline kernel. 
-That kernel happens to have CONFIG_DMA_CMA=y set, with a default CMA 
-(contiguous memory allocator) size of 64 MB. Older Ubuntu kernels 
-weren't compiled with CMA, so i only observed this on 3.16, but previous 
-kernels would likely be affected too.
+Changes since v3:
+= simplified iret stack handling on SYSCALL64 fastpath:
+  got rid of FIXUP_TOP_OF_STACK and RESTORE_TOP_OF_STACK,
+  got rid of thread_struct::usersp.
+= save_paranoid cleaned up.
+= folded test_in_nmi and IA32_ARG_FIXUP macros into their users.
+= got rid of KERNEL_STACK_OFFSET.
+= other small optimizations.
+= fixed comments about SYSCALL from 32bit mode.
 
-After a few minutes of regular desktop use like switching workspaces, 
-scrolling text in a terminal window, Firefox with multiple tabs open, 
-Thunderbird etc. (tested with KDE/Kwin, with/without desktop 
-composition), i get chunky desktop updates, then multi-second freezes, 
-after a few minutes the desktop hangs for over a minute on almost any 
-GUI action like switching windows etc. --> Unuseable.
+Changes since v2:
+= fixed pre-existing latent bug: wrong symbolic constant usage: R11->ARGOFFSET
+= per Oleg's request, added comments about various syscall instructions
 
-ftrace'ing shows the culprit being this callchain (typical good/bad 
-example ftrace snippets at the end of this mail):
+Changes since v1 (mainly in patch 4/6):
+= Reverted changes to "partial pt_regs saving" on interrupt path.
+= Folded PARTIAL_FRAME macro into DEFAULT_FRAME. Patch v1
+  had a bug (incorrect dwarf debug info generation).
+= Corrected more comments.
+= Added use of SAVE_* macros to error_entry and save_paranoid.
+= Added another cleanup rename patch.
 
-...ttm dma coherent memory allocations, e.g., from 
-__ttm_dma_alloc_page() ... --> dma_alloc_coherent() --> platform 
-specific hooks ... -> dma_generic_alloc_coherent() [on x86_64] --> 
-dma_alloc_from_contiguous()
+TODO:
+= "idtentry" macro uses a subroutine to factor out a largish
+  common code block. "interrupt" macro inlines a similar
+  block every time (~20 instances). Maybe factor it out?
 
-dma_alloc_from_contiguous() is a no-op without CONFIG_DMA_CMA, or when 
-the machine is booted with kernel boot cmdline parameter "cma=0", so it 
-triggers the fast alloc_pages_node() fallback at least on x86_64.
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Oleg Nesterov <oleg@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: Andy Lutomirski <luto@amacapital.net>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: X86 ML <x86@kernel.org>
+CC: Alexei Starovoitov <ast@plumgrid.com>
+CC: Will Drewry <wad@chromium.org>
+CC: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org
 
-With CMA, this function becomes progressively more slow with every 
-minute of desktop use, e.g., runtimes going up from < 0.3 usecs to 
-hundreds or thousands of microseconds (before it gives up and 
-alloc_pages_node() fallback is used), so this causes the 
-multi-second/minute hangs of the desktop.
 
-So it seems ttm memory allocations quickly fragment and/or exhaust the 
-CMA memory area, and dma_alloc_from_contiguous() tries very hard to find 
-a fitting hole big enough to satisfy allocations with a retry loop (see 
-http://lxr.free-electrons.com/source/drivers/base/dma-contiguous.c#L339) 
-that takes forever.
+Denys Vlasenko (17):
+  x86: entry_64.S: delete unused code
+  x86: ia32entry.S: fix wrong symbolic constant usage: R11->ARGOFFSET
+  x86: open-code register save/restore in trace_hardirqs thunks
+  x86: entry_64.S: fold SAVE_ARGS_IRQ macro into its sole user
+  x86: entry_64.S: always allocate complete "struct pt_regs"
+  x86: mass removal of ARGOFFSET
+  x86: rename some macros and labels, no code changes
+  x86: add comments about various syscall instructions, no code changes
+  x86: entry_64.S: move save_paranoid and ret_from_fork closer to their
+    users
+  x86: entry_64.S: rename save_paranoid to paranoid_entry, no code
+    changes
+  x86: entry_64.S: fold test_in_nmi macro into its only user
+  x86: get rid of KERNEL_STACK_OFFSET
+  x86: ia32entry.S: fold IA32_ARG_FIXUP macro into its callers
+  x86: ia32entry.S: use mov instead of push/pop where possible
+  x86: code shrink in paranoid_exit
+  x86: entry_64.S: trivial optimization for ENOSYS
+  x86: simplify iret stack handling on SYSCALL64 fastpath
 
-This is not good, also not for other devices which actually need a 
-non-fragmented CMA for DMA, so what to do? I doubt most current gpus 
-still need physically contiguous dma memory, maybe with exception of 
-some embedded gpus?
+ arch/x86/ia32/ia32entry.S              | 366 +++++++++--------
+ arch/x86/include/asm/calling.h         | 226 +++++------
+ arch/x86/include/asm/compat.h          |   2 +-
+ arch/x86/include/asm/irqflags.h        |   4 +-
+ arch/x86/include/asm/processor.h       |   1 -
+ arch/x86/include/asm/ptrace.h          |  21 +-
+ arch/x86/include/asm/thread_info.h     |   8 +-
+ arch/x86/include/uapi/asm/ptrace-abi.h |  16 +-
+ arch/x86/include/uapi/asm/ptrace.h     |  13 +-
+ arch/x86/kernel/cpu/common.c           |   2 +-
+ arch/x86/kernel/entry_64.S             | 708 ++++++++++++++-------------------
+ arch/x86/kernel/preempt.S              |  16 +-
+ arch/x86/kernel/process_32.c           |   3 +-
+ arch/x86/kernel/process_64.c           |  11 +-
+ arch/x86/kernel/smpboot.c              |   3 +-
+ arch/x86/lib/thunk_64.S                |  29 +-
+ arch/x86/syscalls/syscall_64.tbl       |   2 +-
+ arch/x86/um/sys_call_table_64.c        |   2 +-
+ arch/x86/xen/smp.c                     |   3 +-
+ 19 files changed, 699 insertions(+), 737 deletions(-)
 
-My naive approach would be to add a new gfp_t flag a la ___GFP_AVOIDCMA, 
-and make callers of dma_alloc_from_contiguous() refrain from doing so if 
-they have some fallback for getting memory. And then add that flag to 
-ttm's ttm_dma_populate() gfp_flags, e.g., around here: 
-http://lxr.free-electrons.com/source/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c#L884
-
-However i'm not familiar enough with memory management, so likely 
-greater minds here have much better ideas on how to deal with this?
-
-thanks,
--mario
-
-Typical snippet from an example trace of a badly stalling desktop with 
-CMA (alloc_pages_node() fallback may have been missing in this traces 
-ftrace_filter settings):
-
-1)               |                          ttm_dma_pool_get_pages [ttm]() {
-  1)               | ttm_dma_page_pool_fill_locked [ttm]() {
-  1)               | ttm_dma_pool_alloc_new_pages [ttm]() {
-  1)               | __ttm_dma_alloc_page [ttm]() {
-  1)               | dma_generic_alloc_coherent() {
-  1) ! 1873.071 us | dma_alloc_from_contiguous();
-  1) ! 1874.292 us |                                  }
-  1) ! 1875.400 us |                                }
-  1)               | __ttm_dma_alloc_page [ttm]() {
-  1)               | dma_generic_alloc_coherent() {
-  1) ! 1868.372 us | dma_alloc_from_contiguous();
-  1) ! 1869.586 us |                                  }
-  1) ! 1870.053 us |                                }
-  1)               | __ttm_dma_alloc_page [ttm]() {
-  1)               | dma_generic_alloc_coherent() {
-  1) ! 1871.085 us | dma_alloc_from_contiguous();
-  1) ! 1872.240 us |                                  }
-  1) ! 1872.669 us |                                }
-  1)               | __ttm_dma_alloc_page [ttm]() {
-  1)               | dma_generic_alloc_coherent() {
-  1) ! 1888.934 us | dma_alloc_from_contiguous();
-  1) ! 1890.179 us |                                  }
-  1) ! 1890.608 us |                                }
-  1)   0.048 us    | ttm_set_pages_caching [ttm]();
-  1) ! 7511.000 us |                              }
-  1) ! 7511.306 us |                            }
-  1) ! 7511.623 us |                          }
-
-The good case (with cma=0 kernel cmdline, so dma_alloc_from_contiguous() 
-no-ops,)
-
-0)               |                          ttm_dma_pool_get_pages [ttm]() {
-  0)               | ttm_dma_page_pool_fill_locked [ttm]() {
-  0)               | ttm_dma_pool_alloc_new_pages [ttm]() {
-  0)               | __ttm_dma_alloc_page [ttm]() {
-  0)               | dma_generic_alloc_coherent() {
-  0)   0.171 us    | dma_alloc_from_contiguous();
-  0)   0.849 us    | __alloc_pages_nodemask();
-  0)   3.029 us    |                                  }
-  0)   3.882 us    |                                }
-  0)               | __ttm_dma_alloc_page [ttm]() {
-  0)               | dma_generic_alloc_coherent() {
-  0)   0.037 us    | dma_alloc_from_contiguous();
-  0)   0.163 us    | __alloc_pages_nodemask();
-  0)   1.408 us    |                                  }
-  0)   1.719 us    |                                }
-  0)               | __ttm_dma_alloc_page [ttm]() {
-  0)               | dma_generic_alloc_coherent() {
-  0)   0.035 us    | dma_alloc_from_contiguous();
-  0)   0.153 us    | __alloc_pages_nodemask();
-  0)   1.454 us    |                                  }
-  0)   1.720 us    |                                }
-  0)               | __ttm_dma_alloc_page [ttm]() {
-  0)               | dma_generic_alloc_coherent() {
-  0)   0.036 us    | dma_alloc_from_contiguous();
-  0)   0.112 us    | __alloc_pages_nodemask();
-  0)   1.211 us    |                                  }
-  0)   1.541 us    |                                }
-  0)   0.035 us    | ttm_set_pages_caching [ttm]();
-  0) + 10.902 us   |                              }
-  0) + 11.577 us   |                            }
-  0) + 11.988 us   |                          }
+-- 
+1.8.1.4
 
