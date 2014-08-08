@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759614AbaHHW3s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:29:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40194 "EHLO
+	id S1759633AbaHHWaV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:30:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40189 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756568AbaHHUlw (ORCPT
+	with ESMTP id S1756546AbaHHUlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:41:52 -0400
+	Fri, 8 Aug 2014 16:41:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 139/259] tracing: Add TRACE_ITER_PRINTK flag check in __trace_puts/__trace_bputs
-Date: Fri,  8 Aug 2014 13:39:22 -0700
-Message-Id: <1407530482-4483-140-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 150/259] drm/radeon: set default bl level to something reasonable
+Date: Fri,  8 Aug 2014 13:39:33 -0700
+Message-Id: <1407530482-4483-151-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,47 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit f0160a5a2912267c02cfe692eac955c360de5fdf upstream.
+commit 201bb62402e0227375c655446ea04fcd0acf7287 upstream.
 
-The TRACE_ITER_PRINTK check in __trace_puts/__trace_bputs is missing,
-so add it, to be consistent with __trace_printk/__trace_bprintk.
-Those functions are all called by the same function: trace_printk().
+If the value in the scratch register is 0, set it to the
+max level.  This fixes an issue where the console fb blanking
+code calls back into the backlight driver on unblank and then
+sets the backlight level to 0 after the driver has already
+set the mode and enabled the backlight.
 
-Link: http://lkml.kernel.org/p/51E7A7D6.8090900@huawei.com
+bugs:
+https://bugs.freedesktop.org/show_bug.cgi?id=81382
+https://bugs.freedesktop.org/show_bug.cgi?id=70207
 
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Tested-by: David Heidelberger <david.heidelberger@ixit.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/trace/trace.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/gpu/drm/radeon/atombios_encoders.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index d3db296..83cb797 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -456,6 +456,9 @@ int __trace_puts(unsigned long ip, const char *str, int size)
- 	int alloc;
- 	int pc;
+diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
+index 95ac45e..a3ab59a 100644
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -183,7 +183,6 @@ void radeon_atom_backlight_init(struct radeon_encoder *radeon_encoder,
+ 	struct backlight_properties props;
+ 	struct radeon_backlight_privdata *pdata;
+ 	struct radeon_encoder_atom_dig *dig;
+-	u8 backlight_level;
+ 	char bl_name[16];
  
-+	if (!(trace_flags & TRACE_ITER_PRINTK))
-+		return 0;
-+
- 	pc = preempt_count();
+ 	/* Mac laptops with multiple GPUs use the gmux driver for backlight
+@@ -222,12 +221,17 @@ void radeon_atom_backlight_init(struct radeon_encoder *radeon_encoder,
  
- 	if (unlikely(tracing_selftest_running || tracing_disabled))
-@@ -503,6 +506,9 @@ int __trace_bputs(unsigned long ip, const char *str)
- 	int size = sizeof(struct bputs_entry);
- 	int pc;
+ 	pdata->encoder = radeon_encoder;
  
-+	if (!(trace_flags & TRACE_ITER_PRINTK))
-+		return 0;
-+
- 	pc = preempt_count();
+-	backlight_level = radeon_atom_get_backlight_level_from_reg(rdev);
+-
+ 	dig = radeon_encoder->enc_priv;
+ 	dig->bl_dev = bd;
  
- 	if (unlikely(tracing_selftest_running || tracing_disabled))
+ 	bd->props.brightness = radeon_atom_backlight_get_brightness(bd);
++	/* Set a reasonable default here if the level is 0 otherwise
++	 * fbdev will attempt to turn the backlight on after console
++	 * unblanking and it will try and restore 0 which turns the backlight
++	 * off again.
++	 */
++	if (bd->props.brightness == 0)
++		bd->props.brightness = RADEON_MAX_BL_LEVEL;
+ 	bd->props.power = FB_BLANK_UNBLANK;
+ 	backlight_update_status(bd);
+ 
 -- 
 1.9.1
 
