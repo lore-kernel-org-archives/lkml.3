@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666AbaHHQUD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 12:20:03 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:34511 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755950AbaHHQUA (ORCPT
+	id S1756676AbaHHQVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 12:21:53 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:54702 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755624AbaHHQVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 12:20:00 -0400
-Date: Fri, 8 Aug 2014 09:19:56 -0700
+	Fri, 8 Aug 2014 12:21:51 -0400
+Date: Fri, 8 Aug 2014 09:21:46 -0700
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: nick.dyer@itdev.co.uk
-Cc: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 1/2] Input: atmel_mxt_ts - simplify mxt_initialize a bit
-Message-ID: <20140808161956.GB26820@core.coreip.homeip.net>
-References: <20140807165932.GA23198@core.coreip.homeip.net>
- <1407513483-30050-1-git-send-email-nick.dyer@itdev.co.uk>
- <1407513483-30050-2-git-send-email-nick.dyer@itdev.co.uk>
- <20140808161901.GA26820@core.coreip.homeip.net>
+To: Nick Dyer <nick.dyer@itdev.co.uk>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Stephen Warren <swarren@nvidia.com>,
+        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomasz Figa <tomasz.figa@gmail.com>, linux-input@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] Input: atmel_mxt_ts - Get IRQ edge/level flags on
+ DT booting
+Message-ID: <20140808162146.GC26820@core.coreip.homeip.net>
+References: <1407397492-17475-1-git-send-email-javier.martinez@collabora.co.uk>
+ <53E4D9A5.908@itdev.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140808161901.GA26820@core.coreip.homeip.net>
+In-Reply-To: <53E4D9A5.908@itdev.co.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 09:19:01AM -0700, Dmitry Torokhov wrote:
-> On Fri, Aug 08, 2014 at 04:58:02PM +0100, nick.dyer@itdev.co.uk wrote:
-> > From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+On Fri, Aug 08, 2014 at 03:07:33PM +0100, Nick Dyer wrote:
+> On 07/08/14 08:44, Javier Martinez Canillas wrote:
+> > The Atmel maXTouch driver assumed that the IRQ type flags will
+> > always be passed using platform data but this is not true when
+> > booting using Device Trees. In these setups the interrupt type
+> > was ignored by the driver when requesting an IRQ.
 > > 
-> > I think having control flow with 2 goto/labels/flags is quite hard to read,
-> > this version is a bit more readable IMO.
+> > This means that it will fail if a machine specified other type
+> > than IRQ_TYPE_NONE. The right approach is to get the IRQ flags
+> > that was parsed by OF from the "interrupt" Device Tree propery.
 > > 
-> > Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+> > Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 > 
-> Nick, are there any changes from the version I posted? (If not then I do
-> not need to drop my patch from the queue and re-import this one).
+> I'm happy for this to go in if Dmitry will accept it. It does seem to be a
+> quirk of some platforms that it is necessary, but it's only one line.
 
-Ah, sorry, should have read all my email before replying...
+I'd rather not as it masks the deeper platform issue. There might be
+other drovers also expecting platform/OF code set up interrupt triggers
+and working/not working by chance.
+
+Can we figure out why the platform in question needs this change?
+
+Thanks.
 
 -- 
 Dmitry
