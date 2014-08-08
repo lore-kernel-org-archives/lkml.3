@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918AbaHHIVc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 04:21:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48457 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752258AbaHHIV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 04:21:28 -0400
-Date: Fri, 8 Aug 2014 10:21:26 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, hugetlb_cgroup: align hugetlb cgroup limit to
- hugepage size
-Message-ID: <20140808082126.GA4004@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756097AbaHHIYE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 04:24:04 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:53488
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752894AbaHHIYA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 04:24:00 -0400
+X-IronPort-AV: E=Sophos;i="5.01,823,1400018400"; 
+   d="scan'208";a="74291464"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Joshua Morris <josh.h.morris@us.ibm.com>, Jeff Moyer <jmoyer@redhat.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Philip Kelleher <pjk1939@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] block: add abort on failure
+Date: Fri,  8 Aug 2014 10:20:50 +0200
+Message-Id: <1407486050-9375-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 07-08-14 13:34:12, David Rientjes wrote:
-> Memcg aligns memory.limit_in_bytes to PAGE_SIZE as part of the resource counter
-> since it makes no sense to allow a partial page to be charged.
-> 
-> As a result of the hugetlb cgroup using the resource counter, it is also aligned
-> to PAGE_SIZE but makes no sense unless aligned to the size of the hugepage being
-> limited.
-> 
-> Align hugetlb cgroup limit to hugepage size.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-huge_page_shift as proposed by Aneesh looks better.
+Initializing card seems to be critical to the rest of the probe process, so
+abort the probe function if the calls to rsxx_load_config and
+rsxx_get_num_targets do not succeed.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Suggested by Jeff Moyer.
 
-> ---
->  mm/hugetlb_cgroup.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-> --- a/mm/hugetlb_cgroup.c
-> +++ b/mm/hugetlb_cgroup.c
-> @@ -275,6 +275,8 @@ static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
->  		ret = res_counter_memparse_write_strategy(buf, &val);
->  		if (ret)
->  			break;
-> +		val = ALIGN(val, 1 << (huge_page_order(&hstates[idx]) +
-> +				       PAGE_SHIFT));
->  		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
->  		break;
->  	default:
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
--- 
-Michal Hocko
-SUSE Labs
+---
+ drivers/block/rsxx/core.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/block/rsxx/core.c b/drivers/block/rsxx/core.c
+index a8de2ee..ae2805b 100644
+--- a/drivers/block/rsxx/core.c
++++ b/drivers/block/rsxx/core.c
+@@ -915,15 +915,19 @@ static int rsxx_pci_probe(struct pci_dev *dev,
+ 
+ 	/************* Load Card Config *************/
+ 	st = rsxx_load_config(card);
+-	if (st)
++	if (st) {
+ 		dev_err(CARD_TO_DEV(card),
+ 			"Failed loading card config\n");
++		goto failed_dma_setup;
++	}
+ 
+ 	/************* Setup DMA Engine *************/
+ 	st = rsxx_get_num_targets(card, &card->n_targets);
+-	if (st)
++	if (st) {
+ 		dev_info(CARD_TO_DEV(card),
+ 			"Failed reading the number of DMA targets\n");
++		goto failed_dma_setup;
++	}
+ 
+ 	card->ctrl = kzalloc(card->n_targets * sizeof(*card->ctrl), GFP_KERNEL);
+ 	if (!card->ctrl) {
+
