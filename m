@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933650AbaHHVIv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:08:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41238 "EHLO
+	id S933487AbaHHVJV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:09:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41223 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932963AbaHHUxM (ORCPT
+	with ESMTP id S932936AbaHHUxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:53:12 -0400
+	Fri, 8 Aug 2014 16:53:04 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: Alexei Starovoitov <ast@plumgrid.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 212/259] net: fix inet_getid() and ipv6_select_ident() bugs
-Date: Fri,  8 Aug 2014 13:40:35 -0700
-Message-Id: <1407530482-4483-213-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 217/259] net: filter: fix typo in sparc BPF JIT
+Date: Fri,  8 Aug 2014 13:40:40 -0700
+Message-Id: <1407530482-4483-218-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,89 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
-[ Upstream commit 39c36094d78c39e038c1e499b2364e13bce36f54 ]
+[ Upstream commit 569810d1e3278907264f5b115281fca3f0038d53 ]
 
-I noticed we were sending wrong IPv4 ID in TCP flows when MTU discovery
-is disabled.
-Note how GSO/TSO packets do not have monotonically incrementing ID.
+fix typo in sparc codegen for SKF_AD_IFINDEX and SKF_AD_HATYPE
+classic BPF extensions
 
-06:37:41.575531 IP (id 14227, proto: TCP (6), length: 4396)
-06:37:41.575534 IP (id 14272, proto: TCP (6), length: 65212)
-06:37:41.575544 IP (id 14312, proto: TCP (6), length: 57972)
-06:37:41.575678 IP (id 14317, proto: TCP (6), length: 7292)
-06:37:41.575683 IP (id 14361, proto: TCP (6), length: 63764)
-
-It appears I introduced this bug in linux-3.1.
-
-inet_getid() must return the old value of peer->ip_id_count,
-not the new one.
-
-Lets revert this part, and remove the prevention of
-a null identification field in IPv6 Fragment Extension Header,
-which is dubious and not even done properly.
-
-Fixes: 87c48fa3b463 ("ipv6: make fragment identifications less predictable")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: 2809a2087cc4 ("net: filter: Just In Time compiler for sparc")
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/net/inetpeer.h |  9 +--------
- net/ipv6/output_core.c | 11 +++--------
- 2 files changed, 4 insertions(+), 16 deletions(-)
+ arch/sparc/net/bpf_jit_comp.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/include/net/inetpeer.h b/include/net/inetpeer.h
-index f4e127a..9a93930 100644
---- a/include/net/inetpeer.h
-+++ b/include/net/inetpeer.h
-@@ -178,16 +178,9 @@ static inline void inet_peer_refcheck(const struct inet_peer *p)
- /* can be called with or without local BH being disabled */
- static inline int inet_getid(struct inet_peer *p, int more)
- {
--	int old, new;
- 	more++;
- 	inet_peer_refcheck(p);
--	do {
--		old = atomic_read(&p->ip_id_count);
--		new = old + more;
--		if (!new)
--			new = 1;
--	} while (atomic_cmpxchg(&p->ip_id_count, old, new) != old);
--	return new;
-+	return atomic_add_return(more, &p->ip_id_count) - more;
- }
+diff --git a/arch/sparc/net/bpf_jit_comp.c b/arch/sparc/net/bpf_jit_comp.c
+index 01fe994..649828f 100644
+--- a/arch/sparc/net/bpf_jit_comp.c
++++ b/arch/sparc/net/bpf_jit_comp.c
+@@ -83,9 +83,9 @@ static void bpf_flush_icache(void *start_, void *end_)
+ #define BNE		(F2(0, 2) | CONDNE)
  
- #endif /* _NET_INETPEER_H */
-diff --git a/net/ipv6/output_core.c b/net/ipv6/output_core.c
-index 827f795..b31a012 100644
---- a/net/ipv6/output_core.c
-+++ b/net/ipv6/output_core.c
-@@ -10,7 +10,7 @@
- void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
- {
- 	static atomic_t ipv6_fragmentation_id;
--	int old, new;
-+	int ident;
- 
- #if IS_ENABLED(CONFIG_IPV6)
- 	if (rt && !(rt->dst.flags & DST_NOPEER)) {
-@@ -26,13 +26,8 @@ void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
- 		}
- 	}
+ #ifdef CONFIG_SPARC64
+-#define BNE_PTR		(F2(0, 1) | CONDNE | (2 << 20))
++#define BE_PTR		(F2(0, 1) | CONDE | (2 << 20))
+ #else
+-#define BNE_PTR		BNE
++#define BE_PTR		BNE
  #endif
--	do {
--		old = atomic_read(&ipv6_fragmentation_id);
--		new = old + 1;
--		if (!new)
--			new = 1;
--	} while (atomic_cmpxchg(&ipv6_fragmentation_id, old, new) != old);
--	fhdr->identification = htonl(new);
-+	ident = atomic_inc_return(&ipv6_fragmentation_id);
-+	fhdr->identification = htonl(ident);
- }
- EXPORT_SYMBOL(ipv6_select_ident);
  
+ #define SETHI(K, REG)	\
+@@ -600,7 +600,7 @@ void bpf_jit_compile(struct sk_filter *fp)
+ 			case BPF_S_ANC_IFINDEX:
+ 				emit_skb_loadptr(dev, r_A);
+ 				emit_cmpi(r_A, 0);
+-				emit_branch(BNE_PTR, cleanup_addr + 4);
++				emit_branch(BE_PTR, cleanup_addr + 4);
+ 				emit_nop();
+ 				emit_load32(r_A, struct net_device, ifindex, r_A);
+ 				break;
+@@ -613,7 +613,7 @@ void bpf_jit_compile(struct sk_filter *fp)
+ 			case BPF_S_ANC_HATYPE:
+ 				emit_skb_loadptr(dev, r_A);
+ 				emit_cmpi(r_A, 0);
+-				emit_branch(BNE_PTR, cleanup_addr + 4);
++				emit_branch(BE_PTR, cleanup_addr + 4);
+ 				emit_nop();
+ 				emit_load16(r_A, struct net_device, type, r_A);
+ 				break;
 -- 
 1.9.1
 
