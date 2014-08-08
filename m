@@ -1,160 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645AbaHHNK0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 09:10:26 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:61000 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763AbaHHNKV (ORCPT
+	id S1756740AbaHHNOR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 09:14:17 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:48010 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739AbaHHNOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 09:10:21 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov
-Subject: [GIT PULL] SELinux/NetLabel fixes for 3.17 (attempt #2)
-Date: Fri, 08 Aug 2014 09:10:17 -0400
-Message-ID: <5355928.XToauGObnx@sifl>
-User-Agent: KMail/4.13.3 (Linux/3.15.7-gentoo; KDE/4.13.3; x86_64; ; )
+	Fri, 8 Aug 2014 09:14:16 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <53E4B338.3040904@suse.com>
+References: <53E4B338.3040904@suse.com>
+Date: Fri, 8 Aug 2014 15:14:15 +0200
+Message-ID: <CAKMK7uEqfLudZbj1ArKJVXET69d+g+SA3=GtXQ0zXi+FeudAag@mail.gmail.com>
+Subject: Re: Usage of _PAGE_PCD et al in i915 driver
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Juergen Gross <jgross@suse.com>
+Cc: Ben Widawsky <benjamin.widawsky@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        "Barnes, Jesse" <jbarnes@virtuousgeek.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[NOTE: Apologies for the resend, my mail last night didn't directly include 
-Linus on the mail, which I'm told is very important.]
+Adding relevant mailing lists.
 
-Hello All,
+On Fri, Aug 8, 2014 at 1:23 PM, Juergen Gross <jgross@suse.com> wrote:
+> I'm just about to create a patch for full PAT support in the Linux
+> kernel, including Xen. For this purpose I introduce a translation
+> between cache modes and pte bits.
+>
+> Scanning the kernel sources for usage of the cache mode bits in the
+> pte I discovered  drivers/gpu/drm/i915/i915_gem_gtt.h is using
+> _PAGE_PCD, _PAGE_PWT and _PAGE_PAT. I think those defines are used
+> to create ptes not for usage by the main processor, but for the
+> graphics processor. Is this true? In this case I'd suggest to define
+> i915-specific macros instead of using the x86 ones.
 
-Two small patches to fix a couple of build warnings in SELinux and NetLabel.  
-The patches are obvious enough that I don't think any additional explanation 
-is necessary, but it basically boils down to the usual: I was stupid, and 
-these patches fix some of the stupid.
-
-Both patches were posted earlier this week to the SELinux list, and that is 
-where they sat as I didn't think there were noteworthy enough to go upstream 
-at this point in time, but DaveM would rather see them upstream now so who am 
-I to argue.  As the patches are both very small, I'm including the combines 
-changes with this pull request in case anyone wants to scrutinize them any 
-further.
-
-Enjoy,
--Paul
-
---
-The following changes since commit 4fbe63d1c773cceef3fe1f6ed0c9c268f4f24760:
-
-  netlabel: shorter names for the NetLabel catmap funcs/structs
-            (2014-08-01 11:17:37 -0400)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/pcmoore/selinux stable-3.17
-
-for you to fetch changes up to 942ba3646543aeb3e5729c35d10ac43424bf0b68:
-
-  selinux: remove unused variabled in the netport, netnode, and netif
-           caches (2014-08-07 20:55:30 -0400)
-
-----------------------------------------------------------------
-Paul Moore (2):
-      netlabel: fix the netlbl_catmap_setlong() dummy function
-      selinux: remove unused variabled in the netport, netnode, and netif
-               caches
-
- include/net/netlabel.h     | 8 ++++----
- security/selinux/netif.c   | 4 ++--
- security/selinux/netnode.c | 3 +--
- security/selinux/netport.c | 3 +--
- 4 files changed, 8 insertions(+), 10 deletions(-)
-
-diff --git a/include/net/netlabel.h b/include/net/netlabel.h
-index a4fc39b..7b5a300 100644
---- a/include/net/netlabel.h
-+++ b/include/net/netlabel.h
-@@ -524,10 +524,10 @@ static inline int netlbl_catmap_setrng(struct 
-netlbl_lsm_catmap **catmap,
- {
- 	return 0;
- }
--static int netlbl_catmap_setlong(struct netlbl_lsm_catmap **catmap,
--				 u32 offset,
--				 unsigned long bitmap,
--				 gfp_t flags)
-+static inline int netlbl_catmap_setlong(struct netlbl_lsm_catmap **catmap,
-+					u32 offset,
-+					unsigned long bitmap,
-+					gfp_t flags)
- {
- 	return 0;
- }
-diff --git a/security/selinux/netif.c b/security/selinux/netif.c
-index 3c3de4c..50ce177 100644
---- a/security/selinux/netif.c
-+++ b/security/selinux/netif.c
-@@ -272,7 +272,7 @@ static struct notifier_block sel_netif_netdev_notifier = {
- 
- static __init int sel_netif_init(void)
- {
--	int i, err;
-+	int i;
- 
- 	if (!selinux_enabled)
- 		return 0;
-@@ -282,7 +282,7 @@ static __init int sel_netif_init(void)
- 
- 	register_netdevice_notifier(&sel_netif_netdev_notifier);
- 
--	return err;
-+	return 0;
- }
- 
- __initcall(sel_netif_init);
-diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
-index ddf3152..da923f8 100644
---- a/security/selinux/netnode.c
-+++ b/security/selinux/netnode.c
-@@ -303,7 +303,6 @@ void sel_netnode_flush(void)
- static __init int sel_netnode_init(void)
- {
- 	int iter;
--	int ret;
- 
- 	if (!selinux_enabled)
- 		return 0;
-@@ -313,7 +312,7 @@ static __init int sel_netnode_init(void)
- 		sel_netnode_hash[iter].size = 0;
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- __initcall(sel_netnode_init);
-diff --git a/security/selinux/netport.c b/security/selinux/netport.c
-index 73ac678..3311cc3 100644
---- a/security/selinux/netport.c
-+++ b/security/selinux/netport.c
-@@ -237,7 +237,6 @@ void sel_netport_flush(void)
- static __init int sel_netport_init(void)
- {
- 	int iter;
--	int ret;
- 
- 	if (!selinux_enabled)
- 		return 0;
-@@ -247,7 +246,7 @@ static __init int sel_netport_init(void)
- 		sel_netport_hash[iter].size = 0;
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- __initcall(sel_netport_init);
-
+Yeah, those are gpu specific PAT tables, but the hw engineers
+specifically designed this to match, and we've tried to follow the cpu
+side to match it. Especially in the future that will be somewhat
+important, since we want to fully share the entire address space
+between cpu and gpu on the next platform. Jesse is working on that.
+-Daniel
 -- 
-paul moore
-www.paul-moore.com
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
