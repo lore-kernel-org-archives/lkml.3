@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637AbaHHVmi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:42:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60758 "EHLO
+	id S933210AbaHHVnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:43:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60746 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933587AbaHHVhE (ORCPT
+	with ESMTP id S933579AbaHHVhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:37:04 -0400
+	Fri, 8 Aug 2014 17:37:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sven Eckelmann <sven@narfation.org>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
-        Antonio Quartulli <antonio@meshcoding.com>
-Subject: [PATCH 3.15 17/26] batman-adv: Fix out-of-order fragmentation support
-Date: Fri,  8 Aug 2014 14:35:24 -0700
-Message-Id: <20140808213414.380410189@linuxfoundation.org>
+        Christopher Alexander Tobias Schulze 
+	<cat.schulze@alice-dsl.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 22/26] bbc-i2c: Fix BBC I2C envctrl on SunBlade 2000
+Date: Fri,  8 Aug 2014 14:35:29 -0700
+Message-Id: <20140808213414.588821941@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
 References: <20140808213413.648794968@linuxfoundation.org>
@@ -30,70 +30,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Eckelmann <sven@narfation.org>
+From: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
 
-[ Upstream commit d9124268d84a836f14a6ead54ff9d8eee4c43be5 ]
+[ Upstream commit 5cdceab3d5e02eb69ea0f5d8fa9181800baf6f77 ]
 
-batadv_frag_insert_packet was unable to handle out-of-order packets because it
-dropped them directly. This is caused by the way the fragmentation lists is
-checked for the correct place to insert a fragmentation entry.
+Fix regression in bbc i2c temperature and fan control on some Sun systems
+that causes the driver to refuse to load due to the bbc_i2c_bussel resource not
+being present on the (second) i2c bus where the temperature sensors and fan
+control are located. (The check for the number of resources was removed when
+the driver was ported to a pure OF driver in mid 2008.)
 
-The fragmentation code keeps the fragments in lists. The fragmentation entries
-are kept in descending order of sequence number. The list is traversed and each
-entry is compared with the new fragment. If the current entry has a smaller
-sequence number than the new fragment then the new one has to be inserted
-before the current entry. This ensures that the list is still in descending
-order.
-
-An out-of-order packet with a smaller sequence number than all entries in the
-list still has to be added to the end of the list. The used hlist has no
-information about the last entry in the list inside hlist_head and thus the
-last entry has to be calculated differently. Currently the code assumes that
-the iterator variable of hlist_for_each_entry can be used for this purpose
-after the hlist_for_each_entry finished. This is obviously wrong because the
-iterator variable is always NULL when the list was completely traversed.
-
-Instead the information about the last entry has to be stored in a different
-variable.
-
-This problem was introduced in 610bfc6bc99bc83680d190ebc69359a05fc7f605
-("batman-adv: Receive fragmented packets and merge").
-
-Signed-off-by: Sven Eckelmann <sven@narfation.org>
-Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
-Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
+Signed-off-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/batman-adv/fragmentation.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/sbus/char/bbc_envctrl.c |    6 ++++++
+ drivers/sbus/char/bbc_i2c.c     |   11 ++++++++---
+ 2 files changed, 14 insertions(+), 3 deletions(-)
 
---- a/net/batman-adv/fragmentation.c
-+++ b/net/batman-adv/fragmentation.c
-@@ -128,6 +128,7 @@ static bool batadv_frag_insert_packet(st
- {
- 	struct batadv_frag_table_entry *chain;
- 	struct batadv_frag_list_entry *frag_entry_new = NULL, *frag_entry_curr;
-+	struct batadv_frag_list_entry *frag_entry_last = NULL;
- 	struct batadv_frag_packet *frag_packet;
- 	uint8_t bucket;
- 	uint16_t seqno, hdr_size = sizeof(struct batadv_frag_packet);
-@@ -180,11 +181,14 @@ static bool batadv_frag_insert_packet(st
- 			ret = true;
- 			goto out;
- 		}
-+
-+		/* store current entry because it could be the last in list */
-+		frag_entry_last = frag_entry_curr;
- 	}
+--- a/drivers/sbus/char/bbc_envctrl.c
++++ b/drivers/sbus/char/bbc_envctrl.c
+@@ -452,6 +452,9 @@ static void attach_one_temp(struct bbc_i
+ 	if (!tp)
+ 		return;
  
--	/* Reached the end of the list, so insert after 'frag_entry_curr'. */
--	if (likely(frag_entry_curr)) {
--		hlist_add_after(&frag_entry_curr->list, &frag_entry_new->list);
-+	/* Reached the end of the list, so insert after 'frag_entry_last'. */
-+	if (likely(frag_entry_last)) {
-+		hlist_add_after(&frag_entry_last->list, &frag_entry_new->list);
- 		chain->size += skb->len - hdr_size;
- 		chain->timestamp = jiffies;
- 		ret = true;
++	INIT_LIST_HEAD(&tp->bp_list);
++	INIT_LIST_HEAD(&tp->glob_list);
++
+ 	tp->client = bbc_i2c_attach(bp, op);
+ 	if (!tp->client) {
+ 		kfree(tp);
+@@ -497,6 +500,9 @@ static void attach_one_fan(struct bbc_i2
+ 	if (!fp)
+ 		return;
+ 
++	INIT_LIST_HEAD(&fp->bp_list);
++	INIT_LIST_HEAD(&fp->glob_list);
++
+ 	fp->client = bbc_i2c_attach(bp, op);
+ 	if (!fp->client) {
+ 		kfree(fp);
+--- a/drivers/sbus/char/bbc_i2c.c
++++ b/drivers/sbus/char/bbc_i2c.c
+@@ -300,13 +300,18 @@ static struct bbc_i2c_bus * attach_one_i
+ 	if (!bp)
+ 		return NULL;
+ 
++	INIT_LIST_HEAD(&bp->temps);
++	INIT_LIST_HEAD(&bp->fans);
++
+ 	bp->i2c_control_regs = of_ioremap(&op->resource[0], 0, 0x2, "bbc_i2c_regs");
+ 	if (!bp->i2c_control_regs)
+ 		goto fail;
+ 
+-	bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
+-	if (!bp->i2c_bussel_reg)
+-		goto fail;
++	if (op->num_resources == 2) {
++		bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
++		if (!bp->i2c_bussel_reg)
++			goto fail;
++	}
+ 
+ 	bp->waiting = 0;
+ 	init_waitqueue_head(&bp->wq);
 
 
