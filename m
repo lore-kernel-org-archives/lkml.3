@@ -1,151 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758196AbaHHUsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:48:47 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:36945 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756713AbaHHUsm (ORCPT
+	id S1758209AbaHHUtA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:49:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40688 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756713AbaHHUsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:48:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140808202549.GA25352@mail.hallyn.com>
-References: <20140807165233.13463.55258.stgit@buzz>
-	<20140807165243.13463.74200.stgit@buzz>
-	<20140808202549.GA25352@mail.hallyn.com>
-Date: Sat, 9 Aug 2014 00:48:41 +0400
-Message-ID: <CALYGNiMyYmBHnuUWFuwOhg2k-wYJdbEHWqM8DpHZAebDuT9ZVA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] Smack: handle zero-length security labels without panic
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        linux-security-module@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 8 Aug 2014 16:48:55 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, Ian Kent <raven@themaw.net>,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Thorsten Diehl <thorsten.diehl@de.ibm.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 052/259] /proc/stat: convert to single_open_size()
+Date: Fri,  8 Aug 2014 13:37:55 -0700
+Message-Id: <1407530482-4483-53-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
+References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 9, 2014 at 12:25 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> Quoting Konstantin Khlebnikov (k.khlebnikov@samsung.com):
->> Zero-length security labels are invalid but kernel should handle them.
->>
->> This patch fixes kernel panic after setting zero-length security labels:
->> # attr -S -s "SMACK64" -V "" file
->>
->> And after writing zero-length string into smackfs files syslog and onlycp:
->> # python -c 'import os; os.write(1, "")' > /smack/syslog
->>
->> The problem is caused by brain-damaged logic in function smk_parse_smack()
->> which takes pointer to buffer and its length but if length below or equal zero
->> it thinks that the buffer is zero-terminated. Unfortunately callers of this
->> function are widely used and proper fix requires serious refactoring.
->>
->> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
->
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
->
->>
->> ---
->>
->> Example:
->>
->> [   28.063935] BUG: unable to handle kernel NULL pointer dereference at           (null)
->> [   28.064623] IP: [<ffffffff812ea780>] strlen+0x0/0x30
->> [   28.064623] PGD 29a77067 PUD 2972d067 PMD 0
->> [   28.064623] Oops: 0000 [#1] SMP
->> [   28.064623] Modules linked in:
->> [   28.064623] CPU: 0 PID: 824 Comm: attr Not tainted 3.16.0+ #6
->> [   28.064623] task: ffff880029bd88c0 ti: ffff8800297d0000 task.ti: ffff8800297d0000
->> [   28.064623] RIP: 0010:[<ffffffff812ea780>]  [<ffffffff812ea780>] strlen+0x0/0x30
->> [   28.064623] RSP: 0018:ffff8800297d3ca8  EFLAGS: 00010246
->> [   28.064623] RAX: 0000000000000001 RBX: ffff880029c096c0 RCX: 0000000000000001
->> [   28.064623] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
->> [   28.064623] RBP: ffff8800297d3cd0 R08: ffffffff81e3d940 R09: ffff88002a3e8588
->> [   28.064623] R10: 8080808080808080 R11: 0000000000000000 R12: 0000000000000000
->> [   28.064623] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
->> [   28.064623] FS:  00007effe391a700(0000) GS:ffff88002a400000(0000) knlGS:0000000000000000
->> [   28.064623] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->> [   28.064623] CR2: 0000000000000000 CR3: 00000000297a1000 CR4: 00000000001406b0
->> [   28.064623] Stack:
->> [   28.064623]  ffffffff812a6fa5 ffff880029c096c0 0000000000000001 0000000000000000
->> [   28.064623]  0000000000000000 ffff8800297d3cf8 ffffffff812a70ae ffff880029c096c0
->> [   28.064623]  0000000000000001 0000000000000000 ffff8800297d3d88 ffffffff812a64dc
->> [   28.064623] Call Trace:
->> [   28.064623]  [<ffffffff812a6fa5>] ? smk_parse_smack+0xe5/0x110
->> [   28.064623]  [<ffffffff812a70ae>] smk_import_entry+0xe/0x130
->> [   28.064623]  [<ffffffff812a64dc>] smack_inode_setxattr+0x11c/0x280
->> [   28.064623]  [<ffffffff8116a767>] ? lookup_fast+0x177/0x2e0
->> [   28.064623]  [<ffffffff81177001>] ? dput+0x21/0x1a0
->> [   28.064623]  [<ffffffff812a0eeb>] security_inode_setxattr+0x1b/0x30
->> [   28.064623]  [<ffffffff8118488f>] vfs_setxattr+0x6f/0xb0
->> [   28.064623]  [<ffffffff81184a76>] setxattr+0x1a6/0x1f0
->> [   28.064623]  [<ffffffff8116af6d>] ? final_putname+0x1d/0x40
->> [   28.064623]  [<ffffffff8116b1c4>] ? putname+0x24/0x40
->> [   28.064623]  [<ffffffff8117144a>] ? user_path_at_empty+0x5a/0xa0
->> [   28.064623]  [<ffffffff81162b84>] ? __sb_start_write+0x44/0xe0
->> [   28.064623]  [<ffffffff8113cd21>] ? do_brk+0x241/0x320
->> [   28.064623]  [<ffffffff81184d97>] SyS_lsetxattr+0x87/0xe0
->> [   28.064623]  [<ffffffff81806f69>] system_call_fastpath+0x16/0x1b
->> [   28.064623] Code: 89 f8 48 89 e5 f6 82 40 3e a6 81 20 74 15 0f 1f 44 00 00 48 83 c0 01 0f b6 10 f6 82 40 3e a6 81 20 75 f0 5d c3 66 0f 1f 44 00 00 <80> 3f 00 55 48 89 e5 74 15 48 89 f8 0f 1f 40 00 48 83 c0 01 80
->> [   28.064623] RIP  [<ffffffff812ea780>] strlen+0x0/0x30
->> [   28.064623]  RSP <ffff8800297d3ca8>
->> [   28.064623] CR2: 0000000000000000
->> [   28.093561] ---[ end trace de1055429a98a5be ]---
->> ---
->>  security/smack/smack_lsm.c |    2 +-
->>  security/smack/smackfs.c   |    4 ++--
->>  2 files changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
->> index b11ab23..afa5ad0 100644
->> --- a/security/smack/smack_lsm.c
->> +++ b/security/smack/smack_lsm.c
->> @@ -923,7 +923,7 @@ static int smack_inode_setxattr(struct dentry *dentry, const char *name,
->>               rc = -EPERM;
->>
->>       if (rc == 0 && check_import) {
->> -             skp = smk_import_entry(value, size);
->> +             skp = size ? smk_import_entry(value, size) : NULL;
->>               if (skp == NULL || (check_star &&
->>                   (skp == &smack_known_star || skp == &smack_known_web)))
->>                       rc = -EINVAL;
->> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
->> index 3c720ff..56a1439 100644
->> --- a/security/smack/smackfs.c
->> +++ b/security/smack/smackfs.c
->> @@ -1677,7 +1677,7 @@ static ssize_t smk_write_onlycap(struct file *file, const char __user *buf,
->>       if (smack_onlycap != NULL && smack_onlycap != skp)
->>               return -EPERM;
->>
->> -     data = kzalloc(count, GFP_KERNEL);
->> +     data = kzalloc(count + 1, GFP_KERNEL);
->>       if (data == NULL)
->>               return -ENOMEM;
->>
->> @@ -2228,7 +2228,7 @@ static ssize_t smk_write_syslog(struct file *file, const char __user *buf,
->>       if (!smack_privileged(CAP_MAC_ADMIN))
->>               return -EPERM;
->>
->
-> How about putting a comment here explaining that this way if len is 0 you
-> make sure to have '\0' to avoid parsing problems?
+3.13.11.6 -stable review patch.  If anyone has any objections, please let me know.
 
-There are plenty of these comments. That design is uncommon and
-extremely dangerous,
-it cannot be neutralized just by a comment.
+------------------
 
-Probably magic length '0' might be replaced with magic '-1' which is much safer.
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
->
->> -     data = kzalloc(count, GFP_KERNEL);
->> +     data = kzalloc(count + 1, GFP_KERNEL);
->>       if (data == NULL)
->>               return -ENOMEM;
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+commit f74373a5cc7a0155d232c4e999648c7a95435bb2 upstream.
+
+These two patches are supposed to "fix" failed order-4 memory
+allocations which have been observed when reading /proc/stat.  The
+problem has been observed on s390 as well as on x86.
+
+To address the problem change the seq_file memory allocations to
+fallback to use vmalloc, so that allocations also work if memory is
+fragmented.
+
+This approach seems to be simpler and less intrusive than changing
+/proc/stat to use an interator.  Also it "fixes" other users as well,
+which use seq_file's single_open() interface.
+
+This patch (of 2):
+
+Use seq_file's single_open_size() to preallocate a buffer that is large
+enough to hold the whole output, instead of open coding it.  Also
+calculate the requested size using the number of online cpus instead of
+possible cpus, since the size of the output only depends on the number
+of online cpus.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: Ian Kent <raven@themaw.net>
+Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+Cc: Thorsten Diehl <thorsten.diehl@de.ibm.com>
+Cc: Andrea Righi <andrea@betterlinux.com>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ fs/proc/stat.c | 22 ++--------------------
+ 1 file changed, 2 insertions(+), 20 deletions(-)
+
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index 1cf86c0..ccc657e 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -184,29 +184,11 @@ static int show_stat(struct seq_file *p, void *v)
+ 
+ static int stat_open(struct inode *inode, struct file *file)
+ {
+-	size_t size = 1024 + 128 * num_possible_cpus();
+-	char *buf;
+-	struct seq_file *m;
+-	int res;
++	size_t size = 1024 + 128 * num_online_cpus();
+ 
+ 	/* minimum size to display an interrupt count : 2 bytes */
+ 	size += 2 * nr_irqs;
+-
+-	/* don't ask for more than the kmalloc() max size */
+-	if (size > KMALLOC_MAX_SIZE)
+-		size = KMALLOC_MAX_SIZE;
+-	buf = kmalloc(size, GFP_KERNEL);
+-	if (!buf)
+-		return -ENOMEM;
+-
+-	res = single_open(file, show_stat, NULL);
+-	if (!res) {
+-		m = file->private_data;
+-		m->buf = buf;
+-		m->size = ksize(buf);
+-	} else
+-		kfree(buf);
+-	return res;
++	return single_open_size(file, show_stat, NULL, size);
+ }
+ 
+ static const struct file_operations proc_stat_operations = {
+-- 
+1.9.1
+
