@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933461AbaHHWd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:33:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40102 "EHLO
+	id S1759431AbaHHWeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:34:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40099 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756047AbaHHUli (ORCPT
+	with ESMTP id S1756020AbaHHUli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:41:38 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hugh Dickins <hughd@google.com>, Konstantin Khlebnikov <koct9i@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Xufeng Zhang <xufeng.zhang@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 009/259] shmem: fix splicing from a hole while it's punched
-Date: Fri,  8 Aug 2014 13:37:12 -0700
-Message-Id: <1407530482-4483-10-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 004/259] sctp: Fix sk_ack_backlog wrap-around problem
+Date: Fri,  8 Aug 2014 13:37:07 -0700
+Message-Id: <1407530482-4483-5-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -32,132 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-commit b1a366500bd537b50c3aad26dc7df083ec03a448 upstream.
+commit d3217b15a19a4779c39b212358a5c71d725822ee upstream.
 
-shmem_fault() is the actual culprit in trinity's hole-punch starvation,
-and the most significant cause of such problems: since a page faulted is
-one that then appears page_mapped(), needing unmap_mapping_range() and
-i_mmap_mutex to be unmapped again.
+Consider the scenario:
+For a TCP-style socket, while processing the COOKIE_ECHO chunk in
+sctp_sf_do_5_1D_ce(), after it has passed a series of sanity check,
+a new association would be created in sctp_unpack_cookie(), but afterwards,
+some processing maybe failed, and sctp_association_free() will be called to
+free the previously allocated association, in sctp_association_free(),
+sk_ack_backlog value is decremented for this socket, since the initial
+value for sk_ack_backlog is 0, after the decrement, it will be 65535,
+a wrap-around problem happens, and if we want to establish new associations
+afterward in the same socket, ABORT would be triggered since sctp deem the
+accept queue as full.
+Fix this issue by only decrementing sk_ack_backlog for associations in
+the endpoint's list.
 
-But it is not the only way in which a page can be brought into a hole in
-the radix_tree while that hole is being punched; and Vlastimil's testing
-implies that if enough other processors are busy filling in the hole,
-then shmem_undo_range() can be kept from completing indefinitely.
-
-shmem_file_splice_read() is the main other user of SGP_CACHE, which can
-instantiate shmem pagecache pages in the read-only case (without holding
-i_mutex, so perhaps concurrently with a hole-punch).  Probably it's
-silly not to use SGP_READ already (using the ZERO_PAGE for holes): which
-ought to be safe, but might bring surprises - not a change to be rushed.
-
-shmem_read_mapping_page_gfp() is an internal interface used by
-drivers/gpu/drm GEM (and next by uprobes): it should be okay.  And
-shmem_file_read_iter() uses the SGP_DIRTY variant of SGP_CACHE, when
-called internally by the kernel (perhaps for a stacking filesystem,
-which might rely on holes to be reserved): it's unclear whether it could
-be provoked to keep hole-punch busy or not.
-
-We could apply the same umbrella as now used in shmem_fault() to
-shmem_file_splice_read() and the others; but it looks ugly, and use over
-a range raises questions - should it actually be per page? can these get
-starved themselves?
-
-The origin of this part of the problem is my v3.1 commit d0823576bf4b
-("mm: pincer in truncate_inode_pages_range"), once it was duplicated
-into shmem.c.  It seemed like a nice idea at the time, to ensure
-(barring RCU lookup fuzziness) that there's an instant when the entire
-hole is empty; but the indefinitely repeated scans to ensure that make
-it vulnerable.
-
-Revert that "enhancement" to hole-punch from shmem_undo_range(), but
-retain the unproblematic rescanning when it's truncating; add a couple
-of comments there.
-
-Remove the "indices[0] >= end" test: that is now handled satisfactorily
-by the inner loop, and mem_cgroup_uncharge_start()/end() are too light
-to be worth avoiding here.
-
-But if we do not always loop indefinitely, we do need to handle the case
-of swap swizzled back to page before shmem_free_swap() gets it: add a
-retry for that case, as suggested by Konstantin Khlebnikov; and for the
-case of page swizzled back to swap, as suggested by Johannes Weiner.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Suggested-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Lukas Czerner <lczerner@redhat.com>
-Cc: Dave Jones <davej@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.11: used hughd's backport to 3.10.50 ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Fix-suggested-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reference: CVE-2014-4667
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/shmem.c | 24 +++++++++++++++---------
- 1 file changed, 15 insertions(+), 9 deletions(-)
+ net/sctp/associola.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index f83d9db..de64924 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -534,22 +534,19 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
- 		return;
+diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+index 31ed008..6524fa8 100644
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -372,7 +372,7 @@ void sctp_association_free(struct sctp_association *asoc)
+ 	/* Only real associations count against the endpoint, so
+ 	 * don't bother for if this is a temporary association.
+ 	 */
+-	if (!asoc->temp) {
++	if (!list_empty(&asoc->asocs)) {
+ 		list_del(&asoc->asocs);
  
- 	index = start;
--	for ( ; ; ) {
-+	while (index < end) {
- 		cond_resched();
- 		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
- 				min(end - index, (pgoff_t)PAGEVEC_SIZE),
- 							pvec.pages, indices);
- 		if (!pvec.nr) {
--			if (index == start || unfalloc)
-+			/* If all gone or hole-punch or unfalloc, we're done */
-+			if (index == start || end != -1)
- 				break;
-+			/* But if truncating, restart to make sure all gone */
- 			index = start;
- 			continue;
- 		}
--		if ((index == start || unfalloc) && indices[0] >= end) {
--			shmem_deswap_pagevec(&pvec);
--			pagevec_release(&pvec);
--			break;
--		}
- 		mem_cgroup_uncharge_start();
- 		for (i = 0; i < pagevec_count(&pvec); i++) {
- 			struct page *page = pvec.pages[i];
-@@ -561,8 +558,12 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
- 			if (radix_tree_exceptional_entry(page)) {
- 				if (unfalloc)
- 					continue;
--				nr_swaps_freed += !shmem_free_swap(mapping,
--								index, page);
-+				if (shmem_free_swap(mapping, index, page)) {
-+					/* Swap was replaced by page: retry */
-+					index--;
-+					break;
-+				}
-+				nr_swaps_freed++;
- 				continue;
- 			}
- 
-@@ -571,6 +572,11 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
- 				if (page->mapping == mapping) {
- 					VM_BUG_ON(PageWriteback(page));
- 					truncate_inode_page(mapping, page);
-+				} else {
-+					/* Page was replaced by swap: retry */
-+					unlock_page(page);
-+					index--;
-+					break;
- 				}
- 			}
- 			unlock_page(page);
+ 		/* Decrement the backlog value for a TCP-style listening
 -- 
 1.9.1
 
