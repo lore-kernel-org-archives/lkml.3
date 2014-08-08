@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933070AbaHHV7y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:59:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60526 "EHLO
+	id S1758105AbaHHV74 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:59:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60530 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933128AbaHHVgZ (ORCPT
+	with ESMTP id S933125AbaHHVgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 17:36:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Yulong Pei <ypei@redhat.com>, Michal Schmidt <mschmidt@redhat.com>,
+        Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 20/39] sparc64: Fix huge PMD invalidation.
-Date: Fri,  8 Aug 2014 14:35:06 -0700
-Message-Id: <20140808213355.838984285@linuxfoundation.org>
+Subject: [PATCH 3.14 02/39] bnx2x: fix crash during TSO tunneling
+Date: Fri,  8 Aug 2014 14:34:48 -0700
+Message-Id: <20140808213355.084596064@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -28,98 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
 
-[ Upstream commit 51e5ef1bb7ab0e5fa7de4e802da5ab22fe35f0bf ]
+[ Upstream commit fe26566d8a05151ba1dce75081f6270f73ec4ae1 ]
 
-On sparc64 "present" and "valid" are seperate PTE bits, this allows us to
-naturally distinguish between the user explicitly asking for PROT_NONE
-with mprotect() and other situations.
+When TSO packet is transmitted additional BD w/o mapping is used
+to describe the packed. The BD needs special handling in tx
+completion.
 
-However we weren't handling this properly in the huge PMD paths.
+kernel: Call Trace:
+kernel: <IRQ>  [<ffffffff815e19ba>] dump_stack+0x19/0x1b
+kernel: [<ffffffff8105dee1>] warn_slowpath_common+0x61/0x80
+kernel: [<ffffffff8105df5c>] warn_slowpath_fmt+0x5c/0x80
+kernel: [<ffffffff814a8c0d>] ? find_iova+0x4d/0x90
+kernel: [<ffffffff814ab0e2>] intel_unmap_page.part.36+0x142/0x160
+kernel: [<ffffffff814ad0e6>] intel_unmap_page+0x26/0x30
+kernel: [<ffffffffa01f55d7>] bnx2x_free_tx_pkt+0x157/0x2b0 [bnx2x]
+kernel: [<ffffffffa01f8dac>] bnx2x_tx_int+0xac/0x220 [bnx2x]
+kernel: [<ffffffff8101a0d9>] ? read_tsc+0x9/0x20
+kernel: [<ffffffffa01f8fdb>] bnx2x_poll+0xbb/0x3c0 [bnx2x]
+kernel: [<ffffffff814d041a>] net_rx_action+0x15a/0x250
+kernel: [<ffffffff81067047>] __do_softirq+0xf7/0x290
+kernel: [<ffffffff815f3a5c>] call_softirq+0x1c/0x30
+kernel: [<ffffffff81014d25>] do_softirq+0x55/0x90
+kernel: [<ffffffff810673e5>] irq_exit+0x115/0x120
+kernel: [<ffffffff815f4358>] do_IRQ+0x58/0xf0
+kernel: [<ffffffff815e94ad>] common_interrupt+0x6d/0x6d
+kernel: <EOI>  [<ffffffff810bbff7>] ? clockevents_notify+0x127/0x140
+kernel: [<ffffffff814834df>] ? cpuidle_enter_state+0x4f/0xc0
+kernel: [<ffffffff81483615>] cpuidle_idle_call+0xc5/0x200
+kernel: [<ffffffff8101bc7e>] arch_cpu_idle+0xe/0x30
+kernel: [<ffffffff810b4725>] cpu_startup_entry+0xf5/0x290
+kernel: [<ffffffff815cfee1>] start_secondary+0x265/0x27b
+kernel: ---[ end trace 11aa7726f18d7e80 ]---
 
-First of all, the page table walker in the TSB miss path only checks
-for _PAGE_PMD_HUGE.  So the generic pmdp_invalidate() would clear
-_PAGE_PRESENT but the TLB miss paths would still load it into the TLB
-as a valid huge PMD.
-
-Fix this by clearing the valid bit in pmdp_invalidate(), and also
-checking the valid bit in USER_PGTABLE_CHECK_PMD_HUGE using "brgez"
-since _PAGE_VALID is bit 63 in both the sun4u and sun4v pte layouts.
-
+Fixes: a848ade408b ("bnx2x: add CSUM and TSO support for encapsulation protocols")
+Reported-by: Yulong Pei <ypei@redhat.com>
+Cc: Michal Schmidt <mschmidt@redhat.com>
+Signed-off-by: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/pgtable_64.h |   18 ++++--------------
- arch/sparc/include/asm/tsb.h        |    3 ++-
- arch/sparc/mm/tlb.c                 |   11 +++++++++++
- 3 files changed, 17 insertions(+), 15 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x.h     |    1 +
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    9 +++++++++
+ 2 files changed, 10 insertions(+)
 
---- a/arch/sparc/include/asm/pgtable_64.h
-+++ b/arch/sparc/include/asm/pgtable_64.h
-@@ -719,20 +719,6 @@ static inline pmd_t pmd_mkwrite(pmd_t pm
- 	return __pmd(pte_val(pte));
- }
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
+@@ -337,6 +337,7 @@ struct sw_tx_bd {
+ 	u8		flags;
+ /* Set on the first BD descriptor when there is a split BD */
+ #define BNX2X_TSO_SPLIT_BD		(1<<0)
++#define BNX2X_HAS_SECOND_PBD		(1<<1)
+ };
  
--static inline pmd_t pmd_mknotpresent(pmd_t pmd)
--{
--	unsigned long mask;
--
--	if (tlb_type == hypervisor)
--		mask = _PAGE_PRESENT_4V;
--	else
--		mask = _PAGE_PRESENT_4U;
--
--	pmd_val(pmd) &= ~mask;
--
--	return pmd;
--}
--
- static inline pmd_t pmd_mksplitting(pmd_t pmd)
- {
- 	pte_t pte = __pte(pmd_val(pmd));
-@@ -893,6 +879,10 @@ extern void update_mmu_cache(struct vm_a
- extern void update_mmu_cache_pmd(struct vm_area_struct *vma, unsigned long addr,
- 				 pmd_t *pmd);
+ struct sw_rx_page {
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -223,6 +223,12 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
+ 	--nbd;
+ 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
  
-+#define __HAVE_ARCH_PMDP_INVALIDATE
-+extern void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
-+			    pmd_t *pmdp);
++	if (tx_buf->flags & BNX2X_HAS_SECOND_PBD) {
++		/* Skip second parse bd... */
++		--nbd;
++		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
++	}
 +
- #define __HAVE_ARCH_PGTABLE_DEPOSIT
- extern void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
- 				       pgtable_t pgtable);
---- a/arch/sparc/include/asm/tsb.h
-+++ b/arch/sparc/include/asm/tsb.h
-@@ -171,7 +171,8 @@ extern struct tsb_phys_patch_entry __tsb
- 	andcc		REG1, REG2, %g0;		\
- 	be,pt		%xcc, 700f;			\
- 	 sethi		%hi(4 * 1024 * 1024), REG2;	\
--	andn		REG1, REG2, REG1;		\
-+	brgez,pn	REG1, FAIL_LABEL;		\
-+	 andn		REG1, REG2, REG1;		\
- 	and		VADDR, REG2, REG2;		\
- 	brlz,pt		REG1, PTE_LABEL;		\
- 	 or		REG1, REG2, REG1;		\
---- a/arch/sparc/mm/tlb.c
-+++ b/arch/sparc/mm/tlb.c
-@@ -193,6 +193,17 @@ void set_pmd_at(struct mm_struct *mm, un
- 	}
- }
- 
-+void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
-+		     pmd_t *pmdp)
-+{
-+	pmd_t entry = *pmdp;
+ 	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
+ 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
+ 		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
+@@ -3868,6 +3874,9 @@ netdev_tx_t bnx2x_start_xmit(struct sk_b
+ 			/* set encapsulation flag in start BD */
+ 			SET_FLAG(tx_start_bd->general_data,
+ 				 ETH_TX_START_BD_TUNNEL_EXIST, 1);
 +
-+	pmd_val(entry) &= ~_PAGE_VALID;
++			tx_buf->flags |= BNX2X_HAS_SECOND_PBD;
 +
-+	set_pmd_at(vma->vm_mm, address, pmdp, entry);
-+	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
-+}
-+
- void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
- 				pgtable_t pgtable)
- {
+ 			nbd++;
+ 		} else if (xmit_type & XMIT_CSUM) {
+ 			/* Set PBD in checksum offload case w/o encapsulation */
 
 
