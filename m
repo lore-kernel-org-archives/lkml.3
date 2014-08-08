@@ -1,106 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759318AbaHHW0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:26:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40350 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaHHUpR (ORCPT
+	id S1759586AbaHHW0f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:26:35 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:36292 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157AbaHHW0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:45:17 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Kevin Hao <haokexin@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 161/259] libata: support the ata host which implements a queue depth less than 32
-Date: Fri,  8 Aug 2014 13:39:44 -0700
-Message-Id: <1407530482-4483-162-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Fri, 8 Aug 2014 18:26:31 -0400
+Message-ID: <53E54E91.9060905@collabora.co.uk>
+Date: Sat, 09 Aug 2014 00:26:25 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, Stephen Warren <swarren@nvidia.com>,
+        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Abraham <thomas.ab@samsung.com>
+Subject: Re: [PATCH v2 1/1] Input: atmel_mxt_ts - Get IRQ edge/level flags
+ on DT booting
+References: <1407397492-17475-1-git-send-email-javier.martinez@collabora.co.uk>	<53E4D9A5.908@itdev.co.uk>	<20140808162146.GC26820@core.coreip.homeip.net>	<53E4FD1B.6060600@collabora.co.uk>	<53E5170C.10302@collabora.co.uk> <CAD=FV=WSNqjHLLbTh1LBF3RFrCnWnj498hivivcmx1SbuYp=Hw@mail.gmail.com>
+In-Reply-To: <CAD=FV=WSNqjHLLbTh1LBF3RFrCnWnj498hivivcmx1SbuYp=Hw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.6 -stable review patch.  If anyone has any objections, please let me know.
+Hello Doug,
 
-------------------
+On 08/08/2014 10:54 PM, Doug Anderson wrote:
+> Hi,
+>>
+>> To fix the issue a variation of patch [0] will be posted that moves the IRQ
+>> pinmux setup from .irq_set_type to the .irq_request_resources function handler.
+>> That way the pin will be setup as IRQ regardless of the the trigger type [1]
+>> when someone calls request_[threaded]_irq().
+>>
+>> Only the mentioned patch fixes the issue but Tomasz said that even a call to
+>> gpio_direction_{input,output} can change the pin configuration so he will post
+>> another patch that will add a bit mask to samsung_pin_bank to prevent any pinmux
+>> reconfiguration.
+> 
+> Would just making a device tree change fix this?  AKA for the pin, do:
+> 
+>   samsung,pin-function = <0xf>;
+> 
 
-From: Kevin Hao <haokexin@gmail.com>
+Yes, when configuring the pin as 0xf (GPIO interrupt) instead of 0x0 (GPIO
+input) the issue is not present indeed. So after Nick answer my question about
+what I got wrong with the "linux,gpio-keymap" property, I will change the pin
+function when re-posing the DTS changes for the atmel touchpad.
 
-commit 1871ee134b73fb4cadab75752a7152ed2813c751 upstream.
+> I have some vague recollection that I set interrupts to pin-function
+> "0" by default for some reason (assuming they would go to 0xf when
+> interrupts were enabled).  ...but I can't for the life of me remember
+> if it was a good reason or just seemed like the right thing to do.
+> 
 
-The sata on fsl mpc8315e is broken after the commit 8a4aeec8d2d6
-("libata/ahci: accommodate tag ordered controllers"). The reason is
-that the ata controller on this SoC only implement a queue depth of
-16. When issuing the commands in tag order, all the commands in tag
-16 ~ 31 are mapped to tag 0 unconditionally and then causes the sata
-malfunction. It makes no senses to use a 32 queue in software while
-the hardware has less queue depth. So consider the queue depth
-implemented by the hardware when requesting a command tag.
+It would be great to know if there is a good reason. I see indeed that all
+pinctrl setup in the Peach Pit/Pi and Snow DTS that involves interrupts are
+using 0x0 as the pin function. Since as Tomasz explained Samsung SoC makes a
+difference between GPIO-IRQ and GPIO input I guess that it's better to change
+those to 0xf instead. What do you think?
 
-Fixes: 8a4aeec8d2d6 ("libata/ahci: accommodate tag ordered controllers")
-Signed-off-by: Kevin Hao <haokexin@gmail.com>
-Acked-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/ata/libata-core.c | 22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+Regardless of this though I think that both the patch to move the IRQ
+pinmux setup from .irq_set_type to the .irq_request_resources and the patch to
+to prevent any pinmux reconfiguration are good improvements to avoid future
+issues like the one we found here.
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 62fda16..0172e30 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4787,6 +4787,10 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
-  *	ata_qc_new - Request an available ATA command, for queueing
-  *	@ap: target port
-  *
-+ *	Some ATA host controllers may implement a queue depth which is less
-+ *	than ATA_MAX_QUEUE. So we shouldn't allocate a tag which is beyond
-+ *	the hardware limitation.
-+ *
-  *	LOCKING:
-  *	None.
-  */
-@@ -4794,14 +4798,16 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
- static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
- {
- 	struct ata_queued_cmd *qc = NULL;
--	unsigned int i, tag;
-+	unsigned int i, tag, max_queue;
-+
-+	max_queue = ap->scsi_host->can_queue;
- 
- 	/* no command while frozen */
- 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
- 		return NULL;
- 
--	for (i = 0; i < ATA_MAX_QUEUE; i++) {
--		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
-+	for (i = 0, tag = ap->last_tag + 1; i < max_queue; i++, tag++) {
-+		tag = tag < max_queue ? tag : 0;
- 
- 		/* the last tag is reserved for internal command. */
- 		if (tag == ATA_TAG_INTERNAL)
-@@ -6184,6 +6190,16 @@ int ata_host_register(struct ata_host *host, struct scsi_host_template *sht)
- {
- 	int i, rc;
- 
-+	/*
-+	 * The max queue supported by hardware must not be greater than
-+	 * ATA_MAX_QUEUE.
-+	 */
-+	if (sht->can_queue > ATA_MAX_QUEUE) {
-+		dev_err(host->dev, "BUG: the hardware max queue is too large\n");
-+		WARN_ON(1);
-+		return -EINVAL;
-+	}
-+
- 	/* host must have been started */
- 	if (!(host->flags & ATA_HOST_STARTED)) {
- 		dev_err(host->dev, "BUG: trying to register unstarted host\n");
--- 
-1.9.1
+> -Doug
+> 
 
+Best regards,
+Javier
