@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142AbaHHOFh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 10:05:37 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:56326 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126AbaHHOFg (ORCPT
+	id S1756763AbaHHOHl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 10:07:41 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:35208 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756506AbaHHOHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 10:05:36 -0400
+	Fri, 8 Aug 2014 10:07:37 -0400
+Message-ID: <53E4D9A5.908@itdev.co.uk>
+Date: Fri, 08 Aug 2014 15:07:33 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <CAOMZO5ACj6ER3tUMS8XsnigT=-zs4TZFmobbtmTN-+LWJFLt4Q@mail.gmail.com>
-References: <C4A61A5CA4AD2246942F4BA6F20ACB80435655E9@ALVA-EXMB04.alv.autoliv.int>
-	<20140626151424.GT32514@n2100.arm.linux.org.uk>
-	<20140627112151.GF32514@n2100.arm.linux.org.uk>
-	<3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
-	<20140627163108.GP32514@n2100.arm.linux.org.uk>
-	<C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int>
-	<20140806095012.GN30282@n2100.arm.linux.org.uk>
-	<C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int>
-	<20140806125550.GO30282@n2100.arm.linux.org.uk>
-	<C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int>
-	<20140807121248.GY30282@n2100.arm.linux.org.uk>
-	<CAOMZO5ACj6ER3tUMS8XsnigT=-zs4TZFmobbtmTN-+LWJFLt4Q@mail.gmail.com>
-Date: Fri, 8 Aug 2014 11:05:34 -0300
-Message-ID: <CAOMZO5BXtXMXqdXjvZWy7E040wwxcxxnKDRMdFzsS12hdgr0ag@mail.gmail.com>
-Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
-From: Fabio Estevam <festevam@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>,
-        Fredrik Noring <fredrik.noring@autoliv.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Stephen Warren <swarren@nvidia.com>, Yufeng Shen <miletus@chromium.org>,
+        Benson Leung <bleung@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomasz Figa <tomasz.figa@gmail.com>, linux-input@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] Input: atmel_mxt_ts - Get IRQ edge/level flags
+ on DT booting
+References: <1407397492-17475-1-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1407397492-17475-1-git-send-email-javier.martinez@collabora.co.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mattis,
+On 07/08/14 08:44, Javier Martinez Canillas wrote:
+> The Atmel maXTouch driver assumed that the IRQ type flags will
+> always be passed using platform data but this is not true when
+> booting using Device Trees. In these setups the interrupt type
+> was ignored by the driver when requesting an IRQ.
+> 
+> This means that it will fail if a machine specified other type
+> than IRQ_TYPE_NONE. The right approach is to get the IRQ flags
+> that was parsed by OF from the "interrupt" Device Tree propery.
+> 
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-On Thu, Aug 7, 2014 at 11:20 AM, Fabio Estevam <festevam@gmail.com> wrote:
-> On Thu, Aug 7, 2014 at 9:12 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->
->> Hmm, I'm slightly confused.  On my iMX6Q, I have:
->>
->> 150:     581754          0          0          0       GIC 150  2188000.ethernet
->> 151:          0          0          0          0       GIC 151  2188000.ethernet
->
-> Same here on a mx6qsabresd.
->
->> In the DT file, we have:
->>
->>                         fec: ethernet@02188000 {
->>                                 compatible = "fsl,imx6q-fec";
->>                                 reg = <0x02188000 0x4000>;
->>                                 interrupts-extended =
->>                                         <&intc 0 118 IRQ_TYPE_LEVEL_HIGH>,
->>                                         <&intc 0 119 IRQ_TYPE_LEVEL_HIGH>;
->>                                 clocks = <&clks 117>, <&clks 117>, <&clks 190>;
->>                                 clock-names = "ipg", "ahb", "ptp";
->>                                 status = "disabled";
->>                         };
->>
->> which, for the gic, would be 118 + 32 (first SPI) = 150, 119 + 32 = 151.
->> Yet you seem to have nothing registered against GIC 150, instead having
->> an interrupt against GPIO 6.
->>
->> This seems very odd, and as this is an on-SoC device, I don't see why
->> you would want to bind the interrupts for the FEC device any differently
->> to standard platforms.
->>
->> This could well be the cause of your stalls.
->>
->> What's GPIO 6 used for on your board?
->
-> On a imx6q sabreauto I also get:
->
-> 151:          0          0          0          0       GIC 151  2188000.ethernet
-> 166:       4577          0          0          0  gpio-mxc   6  2188000.ethernet
+I'm happy for this to go in if Dmitry will accept it. It does seem to be a
+quirk of some platforms that it is necessary, but it's only one line.
 
-Could you remove 'interrupts-extended'  from the FEC node and also
-MX6QDL_PAD_GPIO_6__ENET_IRQ from the pinctrl node and test again?
+Thanks for spending so much time debugging this.
+
+Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+
+> ---
+> 
+> This patch was first sent as a part of a two part series along
+> with [PATCH 2/2] Input: atmel_mxt_ts - Add keycodes array example.
+> 
+> But there are no dependencies between these two patches so there
+> is no need to resend that one with no changes for v2.
+> 
+> Changes since v1:
+>  - Assign flags to pdata->irqflags in mxt_parse_dt() instead of probe().
+>    Suggested by Tomasz Figa.
+> 
+>  drivers/input/touchscreen/atmel_mxt_ts.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+> index 03b8571..5c8cbd3 100644
+> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
+> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/i2c.h>
+>  #include <linux/i2c/atmel_mxt_ts.h>
+>  #include <linux/input/mt.h>
+> +#include <linux/irq.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/of.h>
+>  #include <linux/slab.h>
+> @@ -2093,6 +2094,8 @@ static struct mxt_platform_data *mxt_parse_dt(struct i2c_client *client)
+>  	if (!pdata)
+>  		return ERR_PTR(-ENOMEM);
+>  
+> +	pdata->irqflags = irq_get_trigger_type(client->irq);
+> +
+>  	if (of_find_property(client->dev.of_node, "linux,gpio-keymap",
+>  			     &proplen)) {
+>  		pdata->t19_num_keys = proplen / sizeof(u32);
+> 
