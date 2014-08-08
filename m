@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637AbaHHUvy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:51:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41062 "EHLO
+	id S932656AbaHHUv6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:51:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41080 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932580AbaHHUvs (ORCPT
+	with ESMTP id S932632AbaHHUvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:48 -0400
+	Fri, 8 Aug 2014 16:51:54 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 238/259] ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix
-Date: Fri,  8 Aug 2014 13:41:01 -0700
-Message-Id: <1407530482-4483-239-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 216/259] sh_eth: fix SH7619/771x support
+Date: Fri,  8 Aug 2014 13:40:39 -0700
+Message-Id: <1407530482-4483-217-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -29,127 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-[ Upstream commit 7f502361531e9eecb396cf99bdc9e9a59f7ebd7f ]
+[ Upstream commit d8b0426af5b67973585712c9af36b86f6ea97815 ]
 
-We have two different ways to handle changes to sk->sk_dst
+Commit 4a55530f38e4 (net: sh_eth: modify the definitions of register) managed
+to leave out the E-DMAC register entries in sh_eth_offset_fast_sh3_sh2[], thus
+totally breaking SH7619/771x support.  Add the missing entries using  the data
+from before that commit.
 
-First way (used by TCP) assumes socket lock is owned by caller, and use
-no extra lock : __sk_dst_set() & __sk_dst_reset()
-
-Another way (used by UDP) uses sk_dst_lock because socket lock is not
-always taken. Note that sk_dst_lock is not softirq safe.
-
-These ways are not inter changeable for a given socket type.
-
-ipv4_sk_update_pmtu(), added in linux-3.8, added a race, as it used
-the socket lock as synchronization, but users might be UDP sockets.
-
-Instead of converting sk_dst_lock to a softirq safe version, use xchg()
-as we did for sk_rx_dst in commit e47eb5dfb296b ("udp: ipv4: do not use
-sk_dst_lock from softirq context")
-
-In a follow up patch, we probably can remove sk_dst_lock, as it is
-only used in IPv6.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Fixes: 9cb3a50c5f63e ("ipv4: Invalidate the socket cached route on pmtu events if possible")
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Acked-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/net/sock.h | 12 ++++++------
- net/ipv4/route.c   | 15 ++++++++-------
- 2 files changed, 14 insertions(+), 13 deletions(-)
+ drivers/net/ethernet/renesas/sh_eth.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index e7ad8ac..f901631 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1781,9 +1781,11 @@ __sk_dst_set(struct sock *sk, struct dst_entry *dst)
- static inline void
- sk_dst_set(struct sock *sk, struct dst_entry *dst)
- {
--	spin_lock(&sk->sk_dst_lock);
--	__sk_dst_set(sk, dst);
--	spin_unlock(&sk->sk_dst_lock);
-+	struct dst_entry *old_dst;
+diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
+index dc19d37..8d002f1 100644
+--- a/drivers/net/ethernet/renesas/sh_eth.c
++++ b/drivers/net/ethernet/renesas/sh_eth.c
+@@ -247,6 +247,27 @@ static const u16 sh_eth_offset_fast_sh4[SH_ETH_MAX_REGISTER_OFFSET] = {
+ };
+ 
+ static const u16 sh_eth_offset_fast_sh3_sh2[SH_ETH_MAX_REGISTER_OFFSET] = {
++	[EDMR]		= 0x0000,
++	[EDTRR]		= 0x0004,
++	[EDRRR]		= 0x0008,
++	[TDLAR]		= 0x000c,
++	[RDLAR]		= 0x0010,
++	[EESR]		= 0x0014,
++	[EESIPR]	= 0x0018,
++	[TRSCER]	= 0x001c,
++	[RMFCR]		= 0x0020,
++	[TFTR]		= 0x0024,
++	[FDR]		= 0x0028,
++	[RMCR]		= 0x002c,
++	[EDOCR]		= 0x0030,
++	[FCFTR]		= 0x0034,
++	[RPADIR]	= 0x0038,
++	[TRIMD]		= 0x003c,
++	[RBWAR]		= 0x0040,
++	[RDFAR]		= 0x0044,
++	[TBRAR]		= 0x004c,
++	[TDFAR]		= 0x0050,
 +
-+	sk_tx_queue_clear(sk);
-+	old_dst = xchg(&sk->sk_dst_cache, dst);
-+	dst_release(old_dst);
- }
- 
- static inline void
-@@ -1795,9 +1797,7 @@ __sk_dst_reset(struct sock *sk)
- static inline void
- sk_dst_reset(struct sock *sk)
- {
--	spin_lock(&sk->sk_dst_lock);
--	__sk_dst_reset(sk);
--	spin_unlock(&sk->sk_dst_lock);
-+	sk_dst_set(sk, NULL);
- }
- 
- struct dst_entry *__sk_dst_check(struct sock *sk, u32 cookie);
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index a25c6e7..566bfa5 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1032,7 +1032,7 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
- 	const struct iphdr *iph = (const struct iphdr *) skb->data;
- 	struct flowi4 fl4;
- 	struct rtable *rt;
--	struct dst_entry *dst;
-+	struct dst_entry *odst = NULL;
- 	bool new = false;
- 
- 	bh_lock_sock(sk);
-@@ -1040,16 +1040,17 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
- 	if (!ip_sk_accept_pmtu(sk))
- 		goto out;
- 
--	rt = (struct rtable *) __sk_dst_get(sk);
-+	odst = sk_dst_get(sk);
- 
--	if (sock_owned_by_user(sk) || !rt) {
-+	if (sock_owned_by_user(sk) || !odst) {
- 		__ipv4_sk_update_pmtu(skb, sk, mtu);
- 		goto out;
- 	}
- 
- 	__build_flow_key(&fl4, sk, iph, 0, 0, 0, 0, 0);
- 
--	if (!__sk_dst_check(sk, 0)) {
-+	rt = (struct rtable *)odst;
-+	if (odst->obsolete && odst->ops->check(odst, 0) == NULL) {
- 		rt = ip_route_output_flow(sock_net(sk), &fl4, sk);
- 		if (IS_ERR(rt))
- 			goto out;
-@@ -1059,8 +1060,7 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
- 
- 	__ip_rt_update_pmtu((struct rtable *) rt->dst.path, &fl4, mtu);
- 
--	dst = dst_check(&rt->dst, 0);
--	if (!dst) {
-+	if (!dst_check(&rt->dst, 0)) {
- 		if (new)
- 			dst_release(&rt->dst);
- 
-@@ -1072,10 +1072,11 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
- 	}
- 
- 	if (new)
--		__sk_dst_set(sk, &rt->dst);
-+		sk_dst_set(sk, &rt->dst);
- 
- out:
- 	bh_unlock_sock(sk);
-+	dst_release(odst);
- }
- EXPORT_SYMBOL_GPL(ipv4_sk_update_pmtu);
- 
+ 	[ECMR]		= 0x0160,
+ 	[ECSR]		= 0x0164,
+ 	[ECSIPR]	= 0x0168,
 -- 
 1.9.1
 
