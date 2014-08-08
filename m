@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461AbaHHGU2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 02:20:28 -0400
-Received: from ozlabs.org ([103.22.144.67]:53228 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193AbaHHGU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 02:20:27 -0400
-Date: Fri, 8 Aug 2014 16:20:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: linux-next: manual merge of the akpm tree with the vfs tree
-Message-ID: <20140808162018.7f009c02@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1755799AbaHHGWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 02:22:13 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:39507 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193AbaHHGWJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 02:22:09 -0400
+X-Original-SENDERIP: 10.177.223.133
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Fri, 8 Aug 2014 15:22:07 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/8] mm/isolation: remove unstable check for isolated
+ page
+Message-ID: <20140808062206.GA6150@js1304-P5Q-DELUXE>
+References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1407309517-3270-4-git-send-email-iamjoonsoo.kim@lge.com>
+ <53E383DD.6090500@suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/T6gu_8HRI.5kn/SuaKclQz3"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E383DD.6090500@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/T6gu_8HRI.5kn/SuaKclQz3
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Aug 07, 2014 at 03:49:17PM +0200, Vlastimil Babka wrote:
+> On 08/06/2014 09:18 AM, Joonsoo Kim wrote:
+> >The check '!PageBuddy(page) && page_count(page) == 0 &&
+> >migratetype == MIGRATE_ISOLATE' would mean the page on free processing.
+> 
+> What is "the page on free processing"? I thought this test means the
+> page is on some CPU's pcplist?
 
-Hi Andrew,
+Yes, you are right.
 
-Today's linux-next merge of the akpm tree got a conflict in
-include/linux/fs.h between commit ed44724b79d8 ("acct: switch to
-__kernel_write()") from the vfs tree and commit "fs.h: remove
-unnecessary extern prototypes" from the akpm tree.
+> 
+> >Although it could go into buddy allocator within a short time,
+> >futher operation such as isolate_freepages_range() in CMA, called after
+> >test_page_isolated_in_pageblock(), could be failed due to this unstability
+> 
+> By "unstability" you mean the page can be allocated again from the
+> pcplist instead of being freed to buddy list?
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Yes.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> >since it requires that the page is on buddy. I think that removing
+> >this unstability is good thing.
+> >
+> >And, following patch makes isolated freepage has new status matched with
+> >this condition and this check is the obstacle to that change. So remove
+> >it.
+> 
+> You could also say that pages from isolated pageblocks can no longer
+> appear on pcplists after the later patches.
 
-diff --cc include/linux/fs.h
-index 94187721ad41,dccf4bcc21bb..000000000000
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@@ -2357,16 -2356,15 +2357,16 @@@ static inline void i_readcount_inc(stru
-  	return;
-  }
-  #endif
-- extern int do_pipe_flags(int *, int);
-+ int do_pipe_flags(int *, int);
- =20
-- extern int kernel_read(struct file *, loff_t, char *, unsigned long);
-- extern ssize_t kernel_write(struct file *, const char *, size_t, loff_t);
-- extern ssize_t __kernel_write(struct file *, const char *, size_t, loff_t=
- *);
-- extern struct file * open_exec(const char *);
-+ int kernel_read(struct file *, loff_t, char *, unsigned long);
-+ ssize_t kernel_write(struct file *, const char *, size_t, loff_t);
-++ssize_t __kernel_write(struct file *, const char *, size_t, loff_t *);
-+ struct file * open_exec(const char *);
-  =20
-  /* fs/dcache.c -- generic fs support functions */
-- extern int is_subdir(struct dentry *, struct dentry *);
-- extern int path_is_under(struct path *, struct path *);
-+ int is_subdir(struct dentry *, struct dentry *);
-+ int path_is_under(struct path *, struct path *);
- =20
-  #include <linux/err.h>
- =20
+Okay. I will do it.
 
---Sig_/T6gu_8HRI.5kn/SuaKclQz3
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT5GwnAAoJEMDTa8Ir7ZwV8JUP/1DfXMOyKdeRvzZuT9X0xmXj
-GIMMvG44zWxVDaPw4TJgqYhvovSJCUUPLNhg1p1E3GcbbNIpiRfiCLToQiI0sVcK
-iMaoED8Wx4QAIJFyyZvcfKcDLdoaJiZJnubQb7f+tX4vBBpmGAgwTwidYoG6HwC8
-IxyqSv0XCkHSD4YOeX24gd3yXEdHK8eOFrhC4ncDg9N675onWsdAE7+6hU1Y8tDo
-56TIXakCGPqtlEbz5a+N1ROmoRhhtol2i/oaM1bY3AI7vpP/iyBsQwiVRyJCRn/3
-6FYXt77pB/1anEI5Zm9MJER9FzUHen8NIaSYfEprCVuxcYdJlZc9/hPYAtaQybre
-Z8bD5buhzhBIcdKT8Ey3i3lBSyjMvNIZzRTJa7/eL78siooR/fYNeC02qlqczruK
-06Wj7NAY9VQr1t3cqXr3Buc6r+ZVQnc0/7LVu5dWNWmyItMNwjRCRRqyPzbjnUpl
-ofXgzMo6pES+ywJyJHueinuZg7PnPiKgYPjN6yxvKgQaa4wAdIOsv6cSJAemrucb
-cJvMJDRzW/vyt0TWirgJeDFCg27EkVSi51R+85vy1ijD2KSjTxPnbIeuKm1oRcGT
-nVGV6qgYfSsdsWW+zPYzV0B1QGhj/Q9cOQ82s5bt2gHUUmwWEERoUmKTgq8wElil
-HB4Nf3lbmDWPV/6ANU/W
-=PcVF
------END PGP SIGNATURE-----
-
---Sig_/T6gu_8HRI.5kn/SuaKclQz3--
+Thanks.
