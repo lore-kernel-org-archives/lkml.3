@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780AbaHHUwf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:52:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41156 "EHLO
+	id S932861AbaHHUws (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:52:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41179 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932716AbaHHUwb (ORCPT
+	with ESMTP id S932801AbaHHUwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:52:31 -0400
+	Fri, 8 Aug 2014 16:52:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Maxim Patlasov <mpatlasov@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 193/259] mm/page-writeback.c: fix divide by zero in bdi_dirty_limits()
-Date: Fri,  8 Aug 2014 13:40:16 -0700
-Message-Id: <1407530482-4483-194-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 205/259] net: Add variants of capable for use on netlink messages
+Date: Fri,  8 Aug 2014 13:40:28 -0700
+Message-Id: <1407530482-4483-206-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -32,48 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Patlasov <MPatlasov@parallels.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit f6789593d5cea42a4ecb1cbeab6a23ade5ebbba7 upstream.
+[ Upstream commit aa4cf9452f469f16cea8c96283b641b4576d4a7b ]
 
-Under memory pressure, it is possible for dirty_thresh, calculated by
-global_dirty_limits() in balance_dirty_pages(), to equal zero.  Then, if
-strictlimit is true, bdi_dirty_limits() tries to resolve the proportion:
+netlink_net_capable - The common case use, for operations that are safe on a network namespace
+netlink_capable - For operations that are only known to be safe for the global root
+netlink_ns_capable - The general case of capable used to handle special cases
 
-  bdi_bg_thresh : bdi_thresh = background_thresh : dirty_thresh
+__netlink_ns_capable - Same as netlink_ns_capable except taking a netlink_skb_parms instead of
+		       the skbuff of a netlink message.
 
-by dividing by zero.
-
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/page-writeback.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/linux/netlink.h  |  7 ++++++
+ net/netlink/af_netlink.c | 65 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 72 insertions(+)
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index d013dba..9f45f87 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1324,9 +1324,9 @@ static inline void bdi_dirty_limits(struct backing_dev_info *bdi,
- 	*bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
+diff --git a/include/linux/netlink.h b/include/linux/netlink.h
+index 7a6c396..8d11541 100644
+--- a/include/linux/netlink.h
++++ b/include/linux/netlink.h
+@@ -171,4 +171,11 @@ extern int netlink_add_tap(struct netlink_tap *nt);
+ extern int __netlink_remove_tap(struct netlink_tap *nt);
+ extern int netlink_remove_tap(struct netlink_tap *nt);
  
- 	if (bdi_bg_thresh)
--		*bdi_bg_thresh = div_u64((u64)*bdi_thresh *
--					 background_thresh,
--					 dirty_thresh);
-+		*bdi_bg_thresh = dirty_thresh ? div_u64((u64)*bdi_thresh *
-+							background_thresh,
-+							dirty_thresh) : 0;
++bool __netlink_ns_capable(const struct netlink_skb_parms *nsp,
++			  struct user_namespace *ns, int cap);
++bool netlink_ns_capable(const struct sk_buff *skb,
++			struct user_namespace *ns, int cap);
++bool netlink_capable(const struct sk_buff *skb, int cap);
++bool netlink_net_capable(const struct sk_buff *skb, int cap);
++
+ #endif	/* __LINUX_NETLINK_H */
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index 5f0e9bd..bd0ce97 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1352,6 +1352,71 @@ retry:
+ 	return err;
+ }
  
- 	/*
- 	 * In order to avoid the stacked BDI deadlock we need
++/**
++ * __netlink_ns_capable - General netlink message capability test
++ * @nsp: NETLINK_CB of the socket buffer holding a netlink command from userspace.
++ * @user_ns: The user namespace of the capability to use
++ * @cap: The capability to use
++ *
++ * Test to see if the opener of the socket we received the message
++ * from had when the netlink socket was created and the sender of the
++ * message has has the capability @cap in the user namespace @user_ns.
++ */
++bool __netlink_ns_capable(const struct netlink_skb_parms *nsp,
++			struct user_namespace *user_ns, int cap)
++{
++	return sk_ns_capable(nsp->sk, user_ns, cap);
++}
++EXPORT_SYMBOL(__netlink_ns_capable);
++
++/**
++ * netlink_ns_capable - General netlink message capability test
++ * @skb: socket buffer holding a netlink command from userspace
++ * @user_ns: The user namespace of the capability to use
++ * @cap: The capability to use
++ *
++ * Test to see if the opener of the socket we received the message
++ * from had when the netlink socket was created and the sender of the
++ * message has has the capability @cap in the user namespace @user_ns.
++ */
++bool netlink_ns_capable(const struct sk_buff *skb,
++			struct user_namespace *user_ns, int cap)
++{
++	return __netlink_ns_capable(&NETLINK_CB(skb), user_ns, cap);
++}
++EXPORT_SYMBOL(netlink_ns_capable);
++
++/**
++ * netlink_capable - Netlink global message capability test
++ * @skb: socket buffer holding a netlink command from userspace
++ * @cap: The capability to use
++ *
++ * Test to see if the opener of the socket we received the message
++ * from had when the netlink socket was created and the sender of the
++ * message has has the capability @cap in all user namespaces.
++ */
++bool netlink_capable(const struct sk_buff *skb, int cap)
++{
++	return netlink_ns_capable(skb, &init_user_ns, cap);
++}
++EXPORT_SYMBOL(netlink_capable);
++
++/**
++ * netlink_net_capable - Netlink network namespace message capability test
++ * @skb: socket buffer holding a netlink command from userspace
++ * @cap: The capability to use
++ *
++ * Test to see if the opener of the socket we received the message
++ * from had when the netlink socket was created and the sender of the
++ * message has has the capability @cap over the network namespace of
++ * the socket we received the message from.
++ */
++bool netlink_net_capable(const struct sk_buff *skb, int cap)
++{
++	return netlink_ns_capable(skb, sock_net(skb->sk)->user_ns, cap);
++}
++EXPORT_SYMBOL(netlink_net_capable);
++
+ static inline int netlink_allowed(const struct socket *sock, unsigned int flag)
+ {
+ 	return (nl_table[sock->sk->sk_protocol].flags & flag) ||
 -- 
 1.9.1
 
