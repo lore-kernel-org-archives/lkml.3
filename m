@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835AbaHHUrX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:47:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40525 "EHLO
+	id S1758036AbaHHUra (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:47:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40537 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757995AbaHHUrT (ORCPT
+	with ESMTP id S1757995AbaHHUrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:47:19 -0400
+	Fri, 8 Aug 2014 16:47:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 026/259] USB: ftdi_sio: fix null deref at port probe
-Date: Fri,  8 Aug 2014 13:37:29 -0700
-Message-Id: <1407530482-4483-27-git-send-email-kamal@canonical.com>
+Cc: Ulrich Obergfell <uobergfe@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 028/259] scsi_error: fix invalid setting of host byte
+Date: Fri,  8 Aug 2014 13:37:31 -0700
+Message-Id: <1407530482-4483-29-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -26,54 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Ulrich Obergfell <uobergfe@redhat.com>
 
-commit aea1ae8760314e072bf1b773521e9de5d5dda10d upstream.
+commit 8922a908908ff947f1f211e07e2e97f1169ad3cb upstream.
 
-Fix NULL-pointer dereference when probing an interface with no
-endpoints.
+After scsi_try_to_abort_cmd returns, the eh_abort_handler may have
+already found that the command has completed in the device, causing
+the host_byte to be nonzero (e.g. it could be DID_ABORT).  When
+this happens, ORing DID_TIME_OUT into the host byte will corrupt
+the result field and initiate an unwanted command retry.
 
-These devices have two bulk endpoints per interface, but this avoids
-crashing the kernel if a user forces a non-FTDI device to be probed.
+Fix this by using set_host_byte instead, following the model of
+commit 2082ebc45af9c9c648383b8cde0dc1948eadbf31.
 
-Note that the iterator variable was made unsigned in order to avoid
-a maybe-uninitialized compiler warning for ep_desc after the loop.
-
-Fixes: 895f28badce9 ("USB: ftdi_sio: fix hi-speed device packet size
-calculation")
-
-Reported-by: Mike Remski <mremski@mutualink.net>
-Tested-by: Mike Remski <mremski@mutualink.net>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Ulrich Obergfell <uobergfe@redhat.com>
+[Fix all instances according to review comments. - Paolo]
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Ewan D. Milne <emilne@redhat.com>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
+[ kamal: backport to 3.13-stable (only one instance of this) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/scsi/scsi_error.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index f009887..244c00f 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1567,14 +1567,17 @@ static void ftdi_set_max_packet_size(struct usb_serial_port *port)
- 	struct usb_device *udev = serial->dev;
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index e8bee9f..09f930d 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -161,7 +161,7 @@ enum blk_eh_timer_return scsi_times_out(struct request *req)
+ 	else if (host->hostt->eh_timed_out)
+ 		rtn = host->hostt->eh_timed_out(scmd);
  
- 	struct usb_interface *interface = serial->interface;
--	struct usb_endpoint_descriptor *ep_desc = &interface->cur_altsetting->endpoint[1].desc;
-+	struct usb_endpoint_descriptor *ep_desc;
+-	scmd->result |= DID_TIME_OUT << 16;
++	set_host_byte(scmd, DID_TIME_OUT);
  
- 	unsigned num_endpoints;
--	int i;
-+	unsigned i;
- 
- 	num_endpoints = interface->cur_altsetting->desc.bNumEndpoints;
- 	dev_info(&udev->dev, "Number of endpoints %d\n", num_endpoints);
- 
-+	if (!num_endpoints)
-+		return;
-+
- 	/* NOTE: some customers have programmed FT232R/FT245R devices
- 	 * with an endpoint size of 0 - not good.  In this case, we
- 	 * want to override the endpoint descriptor setting and use a
+ 	if (unlikely(rtn == BLK_EH_NOT_HANDLED &&
+ 		     !scsi_eh_scmd_add(scmd, SCSI_EH_CANCEL_CMD)))
 -- 
 1.9.1
 
