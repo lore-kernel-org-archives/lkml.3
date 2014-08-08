@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758802AbaHHWNr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:13:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60363 "EHLO
+	id S1758784AbaHHWNo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:13:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60346 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757879AbaHHVf6 (ORCPT
+	with ESMTP id S1758582AbaHHVf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 17:35:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 13/23] sparc64: Handle 32-bit tasks properly in compute_effective_address().
-Date: Fri,  8 Aug 2014 14:34:58 -0700
-Message-Id: <20140808213316.332513865@linuxfoundation.org>
+Subject: [PATCH 3.4 14/23] sparc64: Fix top-level fault handling bugs.
+Date: Fri,  8 Aug 2014 14:34:59 -0700
+Message-Id: <20140808213316.367025492@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213315.769217722@linuxfoundation.org>
 References: <20140808213315.769217722@linuxfoundation.org>
@@ -30,45 +30,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit d037d16372bbe4d580342bebbb8826821ad9edf0 ]
+[ Upstream commit 70ffc6ebaead783ac8dafb1e87df0039bb043596 ]
 
-If we have a 32-bit task we must chop off the top 32-bits of the
-64-bit value just as the cpu would.
+Make get_user_insn() able to cope with huge PMDs.
+
+Next, make do_fault_siginfo() more robust when get_user_insn() can't
+actually fetch the instruction.  In particular, use the MMU announced
+fault address when that happens, instead of calling
+compute_effective_address() and computing garbage.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/unaligned_64.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ arch/sparc/mm/fault_64.c |   84 +++++++++++++++++++++++++++++------------------
+ 1 file changed, 53 insertions(+), 31 deletions(-)
 
---- a/arch/sparc/kernel/unaligned_64.c
-+++ b/arch/sparc/kernel/unaligned_64.c
-@@ -156,17 +156,23 @@ static unsigned long *fetch_reg_addr(uns
- unsigned long compute_effective_address(struct pt_regs *regs,
- 					unsigned int insn, unsigned int rd)
- {
-+	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
- 	unsigned int rs1 = (insn >> 14) & 0x1f;
- 	unsigned int rs2 = insn & 0x1f;
--	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
-+	unsigned long addr;
+--- a/arch/sparc/mm/fault_64.c
++++ b/arch/sparc/mm/fault_64.c
+@@ -95,38 +95,51 @@ static unsigned int get_user_insn(unsign
+ 	pte_t *ptep, pte;
+ 	unsigned long pa;
+ 	u32 insn = 0;
+-	unsigned long pstate;
  
- 	if (insn & 0x2000) {
- 		maybe_flush_windows(rs1, 0, rd, from_kernel);
--		return (fetch_reg(rs1, regs) + sign_extend_imm13(insn));
-+		addr = (fetch_reg(rs1, regs) + sign_extend_imm13(insn));
- 	} else {
- 		maybe_flush_windows(rs1, rs2, rd, from_kernel);
--		return (fetch_reg(rs1, regs) + fetch_reg(rs2, regs));
-+		addr = (fetch_reg(rs1, regs) + fetch_reg(rs2, regs));
- 	}
+-	if (pgd_none(*pgdp))
+-		goto outret;
++	if (pgd_none(*pgdp) || unlikely(pgd_bad(*pgdp)))
++		goto out;
+ 	pudp = pud_offset(pgdp, tpc);
+-	if (pud_none(*pudp))
+-		goto outret;
+-	pmdp = pmd_offset(pudp, tpc);
+-	if (pmd_none(*pmdp))
+-		goto outret;
+-
+-	/* This disables preemption for us as well. */
+-	__asm__ __volatile__("rdpr %%pstate, %0" : "=r" (pstate));
+-	__asm__ __volatile__("wrpr %0, %1, %%pstate"
+-				: : "r" (pstate), "i" (PSTATE_IE));
+-	ptep = pte_offset_map(pmdp, tpc);
+-	pte = *ptep;
+-	if (!pte_present(pte))
++	if (pud_none(*pudp) || unlikely(pud_bad(*pudp)))
+ 		goto out;
+ 
+-	pa  = (pte_pfn(pte) << PAGE_SHIFT);
+-	pa += (tpc & ~PAGE_MASK);
++	/* This disables preemption for us as well. */
++	local_irq_disable();
+ 
+-	/* Use phys bypass so we don't pollute dtlb/dcache. */
+-	__asm__ __volatile__("lduwa [%1] %2, %0"
+-			     : "=r" (insn)
+-			     : "r" (pa), "i" (ASI_PHYS_USE_EC));
++	pmdp = pmd_offset(pudp, tpc);
++	if (pmd_none(*pmdp) || unlikely(pmd_bad(*pmdp)))
++		goto out_irq_enable;
+ 
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	if (pmd_trans_huge(*pmdp)) {
++		if (pmd_trans_splitting(*pmdp))
++			goto out_irq_enable;
 +
-+	if (!from_kernel && test_thread_flag(TIF_32BIT))
-+		addr &= 0xffffffff;
++		pa  = pmd_pfn(*pmdp) << PAGE_SHIFT;
++		pa += tpc & ~HPAGE_MASK;
 +
-+	return addr;
++		/* Use phys bypass so we don't pollute dtlb/dcache. */
++		__asm__ __volatile__("lduwa [%1] %2, %0"
++				     : "=r" (insn)
++				     : "r" (pa), "i" (ASI_PHYS_USE_EC));
++	} else
++#endif
++	{
++		ptep = pte_offset_map(pmdp, tpc);
++		pte = *ptep;
++		if (pte_present(pte)) {
++			pa  = (pte_pfn(pte) << PAGE_SHIFT);
++			pa += (tpc & ~PAGE_MASK);
++
++			/* Use phys bypass so we don't pollute dtlb/dcache. */
++			__asm__ __volatile__("lduwa [%1] %2, %0"
++					     : "=r" (insn)
++					     : "r" (pa), "i" (ASI_PHYS_USE_EC));
++		}
++		pte_unmap(ptep);
++	}
++out_irq_enable:
++	local_irq_enable();
+ out:
+-	pte_unmap(ptep);
+-	__asm__ __volatile__("wrpr %0, 0x0, %%pstate" : : "r" (pstate));
+-outret:
+ 	return insn;
  }
  
- /* This is just to make gcc think die_if_kernel does return... */
+@@ -154,7 +167,8 @@ show_signal_msg(struct pt_regs *regs, in
+ extern unsigned long compute_effective_address(struct pt_regs *, unsigned int, unsigned int);
+ 
+ static void do_fault_siginfo(int code, int sig, struct pt_regs *regs,
+-			     unsigned int insn, int fault_code)
++			     unsigned long fault_addr, unsigned int insn,
++			     int fault_code)
+ {
+ 	unsigned long addr;
+ 	siginfo_t info;
+@@ -162,10 +176,18 @@ static void do_fault_siginfo(int code, i
+ 	info.si_code = code;
+ 	info.si_signo = sig;
+ 	info.si_errno = 0;
+-	if (fault_code & FAULT_CODE_ITLB)
++	if (fault_code & FAULT_CODE_ITLB) {
+ 		addr = regs->tpc;
+-	else
+-		addr = compute_effective_address(regs, insn, 0);
++	} else {
++		/* If we were able to probe the faulting instruction, use it
++		 * to compute a precise fault address.  Otherwise use the fault
++		 * time provided address which may only have page granularity.
++		 */
++		if (insn)
++			addr = compute_effective_address(regs, insn, 0);
++		else
++			addr = fault_addr;
++	}
+ 	info.si_addr = (void __user *) addr;
+ 	info.si_trapno = 0;
+ 
+@@ -240,7 +262,7 @@ static void __kprobes do_kernel_fault(st
+ 		/* The si_code was set to make clear whether
+ 		 * this was a SEGV_MAPERR or SEGV_ACCERR fault.
+ 		 */
+-		do_fault_siginfo(si_code, SIGSEGV, regs, insn, fault_code);
++		do_fault_siginfo(si_code, SIGSEGV, regs, address, insn, fault_code);
+ 		return;
+ 	}
+ 
+@@ -515,7 +537,7 @@ do_sigbus:
+ 	 * Send a sigbus, regardless of whether we were in kernel
+ 	 * or user mode.
+ 	 */
+-	do_fault_siginfo(BUS_ADRERR, SIGBUS, regs, insn, fault_code);
++	do_fault_siginfo(BUS_ADRERR, SIGBUS, regs, address, insn, fault_code);
+ 
+ 	/* Kernel mode? Handle exceptions or die */
+ 	if (regs->tstate & TSTATE_PRIV)
 
 
