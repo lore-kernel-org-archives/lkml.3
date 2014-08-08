@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866AbaHHWO2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:14:28 -0400
+	id S932457AbaHHWOZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:14:25 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:60327 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757030AbaHHVfx (ORCPT
+	with ESMTP id S1758577AbaHHVf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:35:53 -0400
+	Fri, 8 Aug 2014 17:35:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Doug Leith <doug.leith@nuim.ie>,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
+        Kirill Tkhai <tkhai@yandex.ru>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 05/23] tcp: Fix integer-overflow in TCP vegas
-Date: Fri,  8 Aug 2014 14:34:50 -0700
-Message-Id: <20140808213315.998631140@linuxfoundation.org>
+Subject: [PATCH 3.4 12/23] sparc64: Make itc_sync_lock raw
+Date: Fri,  8 Aug 2014 14:34:57 -0700
+Message-Id: <20140808213316.281786636@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213315.769217722@linuxfoundation.org>
 References: <20140808213315.769217722@linuxfoundation.org>
@@ -34,40 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-[ Upstream commit 1f74e613ded11517db90b2bd57e9464d9e0fb161 ]
+[ Upstream commit 49b6c01f4c1de3b5e5427ac5aba80f9f6d27837a ]
 
-In vegas we do a multiplication of the cwnd and the rtt. This
-may overflow and thus their result is stored in a u64. However, we first
-need to cast the cwnd so that actually 64-bit arithmetic is done.
+One more place where we must not be able
+to be preempted or to be interrupted in RT.
 
-Then, we need to do do_div to allow this to be used on 32-bit arches.
+Always actually disable interrupts during
+synchronization cycle.
 
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Laight <David.Laight@ACULAB.COM>
-Cc: Doug Leith <doug.leith@nuim.ie>
-Fixes: 8d3a564da34e (tcp: tcp_vegas cong avoid fix)
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_vegas.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/sparc/kernel/smp_64.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/ipv4/tcp_vegas.c
-+++ b/net/ipv4/tcp_vegas.c
-@@ -218,7 +218,8 @@ static void tcp_vegas_cong_avoid(struct
- 			 * This is:
- 			 *     (actual rate in segments) * baseRTT
- 			 */
--			target_cwnd = tp->snd_cwnd * vegas->baseRTT / rtt;
-+			target_cwnd = (u64)tp->snd_cwnd * vegas->baseRTT;
-+			do_div(target_cwnd, rtt);
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -151,7 +151,7 @@ void cpu_panic(void)
+ #define NUM_ROUNDS	64	/* magic value */
+ #define NUM_ITERS	5	/* likewise */
  
- 			/* Calculate the difference between the window we had,
- 			 * and the window we would like to have. This quantity
+-static DEFINE_SPINLOCK(itc_sync_lock);
++static DEFINE_RAW_SPINLOCK(itc_sync_lock);
+ static unsigned long go[SLAVE + 1];
+ 
+ #define DEBUG_TICK_SYNC	0
+@@ -259,7 +259,7 @@ static void smp_synchronize_one_tick(int
+ 	go[MASTER] = 0;
+ 	membar_safe("#StoreLoad");
+ 
+-	spin_lock_irqsave(&itc_sync_lock, flags);
++	raw_spin_lock_irqsave(&itc_sync_lock, flags);
+ 	{
+ 		for (i = 0; i < NUM_ROUNDS*NUM_ITERS; i++) {
+ 			while (!go[MASTER])
+@@ -270,7 +270,7 @@ static void smp_synchronize_one_tick(int
+ 			membar_safe("#StoreLoad");
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&itc_sync_lock, flags);
++	raw_spin_unlock_irqrestore(&itc_sync_lock, flags);
+ }
+ 
+ #if defined(CONFIG_SUN_LDOMS) && defined(CONFIG_HOTPLUG_CPU)
 
 
