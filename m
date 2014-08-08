@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933019AbaHHVnP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:43:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60758 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933582AbaHHVhD (ORCPT
+	id S933224AbaHHVn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:43:59 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:45236 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932263AbaHHVny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:37:03 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Binderman <dcb314@hotmail.com>,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 25/26] arch/sparc/math-emu/math_32.c: drop stray break operator
-Date: Fri,  8 Aug 2014 14:35:32 -0700
-Message-Id: <20140808213414.719270526@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
-References: <20140808213413.648794968@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 8 Aug 2014 17:43:54 -0400
+Date: Fri, 8 Aug 2014 14:43:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+Message-ID: <20140808214347.GH5821@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140707224841.GA10101@linux.vnet.ibm.com>
+ <1405085703-14822-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <53E48D18.8080007@redhat.com>
+ <20140808162502.GX5821@linux.vnet.ibm.com>
+ <20140808173710.GA13483@grmbl.mre>
+ <20140808181835.GD5821@linux.vnet.ibm.com>
+ <20140808183424.GB13483@grmbl.mre>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140808183424.GB13483@grmbl.mre>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080821-1344-0000-0000-0000035809E0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Sat, Aug 09, 2014 at 12:04:24AM +0530, Amit Shah wrote:
+> On (Fri) 08 Aug 2014 [11:18:35], Paul E. McKenney wrote:
 
-------------------
+[ . . . ]
 
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+> > Hmmm... What happens if you boot a7d7a143d0b4cb1914705884ca5c25e322dba693
+> > with the kernel parameter "acpi=off"?
+> 
+> That doesn't change anything - still hangs.
+> 
+> I intend to look at this more on Monday, though - turning in for
+> today.  In the meantime, if there's anything else you'd like me to
+> try, please let me know.
 
-[ Upstream commit 093758e3daede29cb4ce6aedb111becf9d4bfc57 ]
+OK, given that I still cannot reproduce it, I do need your help with
+the diagnostics.  And so what sorts of diagnostics work for you in
+the hung state?  Are you able to dump ftrace buffers?
 
-This commit is a guesswork, but it seems to make sense to drop this
-break, as otherwise the following line is never executed and becomes
-dead code. And that following line actually saves the result of
-local calculation by the pointer given in function argument. So the
-proposed change makes sense if this code in the whole makes sense (but I
-am unable to analyze it in the whole).
+If you are able to dump ftrace buffers, please enable rcu:rcu_nocb_wake
+and send me the resulting trace.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81641
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/math-emu/math_32.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/sparc/math-emu/math_32.c
-+++ b/arch/sparc/math-emu/math_32.c
-@@ -499,7 +499,7 @@ static int do_one_mathemu(u32 insn, unsi
- 		case 0: fsr = *pfsr;
- 			if (IR == -1) IR = 2;
- 			/* fcc is always fcc0 */
--			fsr &= ~0xc00; fsr |= (IR << 10); break;
-+			fsr &= ~0xc00; fsr |= (IR << 10);
- 			*pfsr = fsr;
- 			break;
- 		case 1: rd->s = IR; break;
-
+							Thanx, Paul
 
