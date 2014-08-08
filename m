@@ -1,114 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758781AbaHHVjX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:39:23 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58590 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758713AbaHHVib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:38:31 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: linux-mm@kvack.org
-Cc: Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 3/4] mm: memcontrol: add memory.max to default hierarchy
-Date: Fri,  8 Aug 2014 17:38:13 -0400
-Message-Id: <1407533894-25845-4-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.0.3
-In-Reply-To: <1407533894-25845-1-git-send-email-hannes@cmpxchg.org>
-References: <1407533894-25845-1-git-send-email-hannes@cmpxchg.org>
+	id S933704AbaHHVh3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:37:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60691 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933524AbaHHVgz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 17:36:55 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Hauke Merthens <hauke-m@hauke-m.de>, Jonas Gorski <jogo@openwrt.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 06/26] net: phy: re-apply PHY fixups during phy_register_device
+Date: Fri,  8 Aug 2014 14:35:13 -0700
+Message-Id: <20140808213413.920847791@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
+References: <20140808213413.648794968@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In untrusted environments, a strict upper memory limit on a cgroup can
-be necessary, to protect against bugs or malicious users.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-Provide memory.max, a limit that can not be breached and will trigger
-group-internal OOM killing once page reclaim can no longer enforce it.
+------------------
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+From: Florian Fainelli <f.fainelli@gmail.com>
+
+[ Upstream commit d92f5dec6325079c550889883af51db1b77d5623 ]
+
+Commit 87aa9f9c61ad ("net: phy: consolidate PHY reset in phy_init_hw()")
+moved the call to phy_scan_fixups() in phy_init_hw() after a software
+reset is performed.
+
+By the time phy_init_hw() is called in phy_device_register(), no driver
+has been bound to this PHY yet, so all the checks in phy_init_hw()
+against the PHY driver and the PHY driver's config_init function will
+return 0. We will therefore never call phy_scan_fixups() as we should.
+
+Fix this by calling phy_scan_fixups() and check for its return value to
+restore the intended functionality.
+
+This broke PHY drivers which do register an early PHY fixup callback to
+intercept the PHY probing and do things like changing the 32-bits unique
+PHY identifier when a pseudo-PHY address has been used, as well as
+board-specific PHY fixups that need to be applied during driver probe
+time.
+
+Reported-by: Hauke Merthens <hauke-m@hauke-m.de>
+Reported-by: Jonas Gorski <jogo@openwrt.org>
+Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- Documentation/cgroups/unified-hierarchy.txt |  5 +++++
- mm/memcontrol.c                             | 35 +++++++++++++++++++++++++++++
- 2 files changed, 40 insertions(+)
+ drivers/net/phy/phy_device.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/cgroups/unified-hierarchy.txt b/Documentation/cgroups/unified-hierarchy.txt
-index 2d91530b8d6c..ef1db728a035 100644
---- a/Documentation/cgroups/unified-hierarchy.txt
-+++ b/Documentation/cgroups/unified-hierarchy.txt
-@@ -372,6 +372,10 @@ estimate of the average working set size and then make upward
- adjustments based on monitoring high limit excess, workload
- performance, and the global memory situation.
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -354,7 +354,7 @@ int phy_device_register(struct phy_devic
+ 	phydev->bus->phy_map[phydev->addr] = phydev;
  
-+In untrusted environments, users may wish to limit the amount of high
-+limit excess in order to contain buggy or malicious workloads.  For
-+that purpose, a hard upper limit can be set through 'memory.max'.
-+
- 4.3.3.2 Misc changes
- 
- - use_hierarchy is on by default and the cgroup file for the flag is
-@@ -380,6 +384,7 @@ performance, and the global memory situation.
- - memory.usage_in_bytes is renamed to memory.current to be in line
-   with the new limit naming scheme
- 
-+
- 5. Planned Changes
- 
- 5-1. CAP for resource control
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 81627387fbd7..a69ff21c8a9a 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6253,6 +6253,36 @@ static ssize_t memory_high_write(struct kernfs_open_file *of,
- 	return nbytes;
- }
- 
-+static u64 memory_max_read(struct cgroup_subsys_state *css,
-+			   struct cftype *cft)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-+
-+	return res_counter_read_u64(&memcg->res, RES_LIMIT);
-+}
-+
-+static ssize_t memory_max_write(struct kernfs_open_file *of,
-+				char *buf, size_t nbytes, loff_t off)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(of_css(of));
-+	u64 max;
-+	int ret;
-+
-+	if (mem_cgroup_is_root(memcg))
-+		return -EINVAL;
-+
-+	buf = strim(buf);
-+	ret = res_counter_memparse_write_strategy(buf, &max);
-+	if (ret)
-+		return ret;
-+
-+	ret = mem_cgroup_resize_limit(memcg, max);
-+	if (ret)
-+		return ret;
-+
-+	return nbytes;
-+}
-+
- static struct cftype memory_files[] = {
- 	{
- 		.name = "current",
-@@ -6263,6 +6293,11 @@ static struct cftype memory_files[] = {
- 		.read_u64 = memory_high_read,
- 		.write = memory_high_write,
- 	},
-+	{
-+		.name = "max",
-+		.read_u64 = memory_max_read,
-+		.write = memory_max_write,
-+	},
- };
- 
- struct cgroup_subsys memory_cgrp_subsys = {
--- 
-2.0.3
+ 	/* Run all of the fixups for this PHY */
+-	err = phy_init_hw(phydev);
++	err = phy_scan_fixups(phydev);
+ 	if (err) {
+ 		pr_err("PHY %d failed to initialize\n", phydev->addr);
+ 		goto out;
+
 
