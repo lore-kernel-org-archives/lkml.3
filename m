@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933615AbaHHVHK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:07:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41285 "EHLO
+	id S933617AbaHHVHi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:07:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41279 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933015AbaHHUx1 (ORCPT
+	with ESMTP id S932954AbaHHUxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:53:27 -0400
+	Fri, 8 Aug 2014 16:53:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 203/259] net: Move the permission check in sock_diag_put_filterinfo to packet_diag_dump
-Date: Fri,  8 Aug 2014 13:40:26 -0700
-Message-Id: <1407530482-4483-204-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 215/259] sh_eth: use RNC mode for packet reception
+Date: Fri,  8 Aug 2014 13:40:38 -0700
+Message-Id: <1407530482-4483-216-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,104 +28,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Ben Dooks <ben.dooks@codethink.co.uk>
 
-[ Upstream commit a53b72c83a4216f2eb883ed45a0cbce014b8e62d ]
+[ Upstream commit 530aa2d0d9d55ab2775d47621ddf4b5b15bc1110 ]
 
-The permission check in sock_diag_put_filterinfo is wrong, and it is so removed
-from it's sources it is not clear why it is wrong.  Move the computation
-into packet_diag_dump and pass a bool of the result into sock_diag_filterinfo.
+The current behaviour of the sh_eth driver is not to use the RNC bit
+for the receive ring. This means that every packet recieved is not only
+generating an IRQ but it also stops the receive ring DMA as well until
+the driver re-enables it after unloading the packet.
 
-This does not yet correct the capability check but instead simply moves it to make
-it clear what is going on.
+This means that a number of the following errors are generated due to
+the receive packet FIFO overflowing due to nowhere to put packets:
 
-Reported-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+	net eth0: Receive FIFO Overflow
+
+Since feedback from Yoshihiro Shimoda shows that every supported LSI
+for this driver should have the bit enabled it seems the best way is
+to remove the RMCR default value from the per-system data and just
+write it when initialising the RMCR value. This is discussed in
+the message (http://www.spinics.net/lists/netdev/msg284912.html).
+
+I have tested the RMCR_RNC configuration with NFS root filesystem and
+the driver has not failed yet.  There are further test reports from
+Sergei Shtylov and others for both the R8A7790 and R8A7791.
+
+There is also feedback fron Cao Minh Hiep[1] which reports the
+same issue in (http://comments.gmane.org/gmane.linux.network/316285)
+showing this fixes issues with losing UDP datagrams under iperf.
+
+Tested-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+Acked-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+Acked-by: Simon Horman <horms+renesas@verge.net.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/sock_diag.h | 2 +-
- net/core/sock_diag.c      | 4 ++--
- net/packet/diag.c         | 7 ++++++-
- 3 files changed, 9 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/renesas/sh_eth.c | 10 ++--------
+ drivers/net/ethernet/renesas/sh_eth.h |  2 --
+ 2 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/sock_diag.h b/include/linux/sock_diag.h
-index 302ab80..46cca4c 100644
---- a/include/linux/sock_diag.h
-+++ b/include/linux/sock_diag.h
-@@ -23,7 +23,7 @@ int sock_diag_check_cookie(void *sk, __u32 *cookie);
- void sock_diag_save_cookie(void *sk, __u32 *cookie);
+diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
+index d256ce1..dc19d37 100644
+--- a/drivers/net/ethernet/renesas/sh_eth.c
++++ b/drivers/net/ethernet/renesas/sh_eth.c
+@@ -483,7 +483,6 @@ static struct sh_eth_cpu_data sh7757_data = {
+ 	.register_type	= SH_ETH_REG_FAST_SH4,
  
- int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attr);
--int sock_diag_put_filterinfo(struct sock *sk,
-+int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
- 			     struct sk_buff *skb, int attrtype);
+ 	.eesipr_value	= DMAC_M_RFRMER | DMAC_M_ECI | 0x003fffff,
+-	.rmcr_value	= RMCR_RNC,
  
- #endif
-diff --git a/net/core/sock_diag.c b/net/core/sock_diag.c
-index 6a7fae2..c38e7a2 100644
---- a/net/core/sock_diag.c
-+++ b/net/core/sock_diag.c
-@@ -49,7 +49,7 @@ int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attrtype)
- }
- EXPORT_SYMBOL_GPL(sock_diag_put_meminfo);
+ 	.tx_check	= EESR_FTC | EESR_CND | EESR_DLC | EESR_CD | EESR_RTO,
+ 	.eesr_err_check	= EESR_TWB | EESR_TABT | EESR_RABT | EESR_RFE |
+@@ -561,7 +560,6 @@ static struct sh_eth_cpu_data sh7757_data_giga = {
+ 			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
+ 			  EESR_TDE | EESR_ECI,
+ 	.fdr_value	= 0x0000072f,
+-	.rmcr_value	= RMCR_RNC,
  
--int sock_diag_put_filterinfo(struct sock *sk,
-+int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
- 			     struct sk_buff *skb, int attrtype)
- {
- 	struct nlattr *attr;
-@@ -57,7 +57,7 @@ int sock_diag_put_filterinfo(struct sock *sk,
- 	unsigned int len;
- 	int err = 0;
+ 	.irq_flags	= IRQF_SHARED,
+ 	.apr		= 1,
+@@ -689,7 +687,6 @@ static struct sh_eth_cpu_data r8a7740_data = {
+ 			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
+ 			  EESR_TDE | EESR_ECI,
+ 	.fdr_value	= 0x0000070f,
+-	.rmcr_value	= RMCR_RNC,
  
--	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN)) {
-+	if (!may_report_filterinfo) {
- 		nla_reserve(skb, attrtype, 0);
- 		return 0;
- 	}
-diff --git a/net/packet/diag.c b/net/packet/diag.c
-index ec8b6e8..01cd1ac 100644
---- a/net/packet/diag.c
-+++ b/net/packet/diag.c
-@@ -127,6 +127,7 @@ static int pdiag_put_fanout(struct packet_sock *po, struct sk_buff *nlskb)
+ 	.apr		= 1,
+ 	.mpr		= 1,
+@@ -738,9 +735,6 @@ static void sh_eth_set_default_cpu_data(struct sh_eth_cpu_data *cd)
+ 	if (!cd->fdr_value)
+ 		cd->fdr_value = DEFAULT_FDR_INIT;
  
- static int sk_diag_fill(struct sock *sk, struct sk_buff *skb,
- 			struct packet_diag_req *req,
-+			bool may_report_filterinfo,
- 			struct user_namespace *user_ns,
- 			u32 portid, u32 seq, u32 flags, int sk_ino)
- {
-@@ -171,7 +172,8 @@ static int sk_diag_fill(struct sock *sk, struct sk_buff *skb,
- 		goto out_nlmsg_trim;
+-	if (!cd->rmcr_value)
+-		cd->rmcr_value = DEFAULT_RMCR_VALUE;
+-
+ 	if (!cd->tx_check)
+ 		cd->tx_check = DEFAULT_TX_CHECK;
  
- 	if ((req->pdiag_show & PACKET_SHOW_FILTER) &&
--	    sock_diag_put_filterinfo(sk, skb, PACKET_DIAG_FILTER))
-+	    sock_diag_put_filterinfo(may_report_filterinfo, sk, skb,
-+				     PACKET_DIAG_FILTER))
- 		goto out_nlmsg_trim;
+@@ -1193,8 +1187,8 @@ static int sh_eth_dev_init(struct net_device *ndev, bool start)
+ 	sh_eth_write(ndev, mdp->cd->fdr_value, FDR);
+ 	sh_eth_write(ndev, 0, TFTR);
  
- 	return nlmsg_end(skb, nlh);
-@@ -187,9 +189,11 @@ static int packet_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
- 	struct packet_diag_req *req;
- 	struct net *net;
- 	struct sock *sk;
-+	bool may_report_filterinfo;
+-	/* Frame recv control */
+-	sh_eth_write(ndev, mdp->cd->rmcr_value, RMCR);
++	/* Frame recv control (enable multiple-packets per rx irq) */
++	sh_eth_write(ndev, RMCR_RNC, RMCR);
  
- 	net = sock_net(skb->sk);
- 	req = nlmsg_data(cb->nlh);
-+	may_report_filterinfo = ns_capable(net->user_ns, CAP_NET_ADMIN);
+ 	sh_eth_write(ndev, DESC_I_RINT8 | DESC_I_RINT5 | DESC_I_TINT2, TRSCER);
  
- 	mutex_lock(&net->packet.sklist_lock);
- 	sk_for_each(sk, &net->packet.sklist) {
-@@ -199,6 +203,7 @@ static int packet_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
- 			goto next;
+diff --git a/drivers/net/ethernet/renesas/sh_eth.h b/drivers/net/ethernet/renesas/sh_eth.h
+index f32c169..de985a3 100644
+--- a/drivers/net/ethernet/renesas/sh_eth.h
++++ b/drivers/net/ethernet/renesas/sh_eth.h
+@@ -324,7 +324,6 @@ enum TD_STS_BIT {
+ enum RMCR_BIT {
+ 	RMCR_RNC = 0x00000001,
+ };
+-#define DEFAULT_RMCR_VALUE	0x00000000
  
- 		if (sk_diag_fill(sk, skb, req,
-+				 may_report_filterinfo,
- 				 sk_user_ns(NETLINK_CB(cb->skb).sk),
- 				 NETLINK_CB(cb->skb).portid,
- 				 cb->nlh->nlmsg_seq, NLM_F_MULTI,
+ /* ECMR */
+ enum FELIC_MODE_BIT {
+@@ -473,7 +472,6 @@ struct sh_eth_cpu_data {
+ 	unsigned long fdr_value;
+ 	unsigned long fcftr_value;
+ 	unsigned long rpadir_value;
+-	unsigned long rmcr_value;
+ 
+ 	/* interrupt checking mask */
+ 	unsigned long tx_check;
 -- 
 1.9.1
 
