@@ -1,85 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563AbaHHMlk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 08:41:40 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:48035 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752863AbaHHMlf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 08:41:35 -0400
-From: Avinash Patil <patila@marvell.com>
-To: Hans Wennborg <hans@hanshq.net>, Amitkumar Karwar <akarwar@marvell.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 8 Aug 2014 05:40:16 -0700
-Subject: RE: [PATCH 07/15] mwifiex: fix decimal printf format specifiers
- prefixed with 0x
-Thread-Topic: [PATCH 07/15] mwifiex: fix decimal printf format specifiers
- prefixed with 0x
-Thread-Index: Ac+xMYF1q43N4fQhQ/uMw1DeTEdNkwB1Gabd
-Message-ID: <CBACCFA0AEB13A41977475BCF3E896FC4781147BD8@SC-VEXCH2.marvell.com>
-References: <1407300175-32635-1-git-send-email-hans@hanshq.net>
-In-Reply-To: <1407300175-32635-1-git-send-email-hans@hanshq.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756686AbaHHMnK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 08:43:10 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:20894 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753593AbaHHMnF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 08:43:05 -0400
+X-IronPort-AV: E=Sophos;i="5.01,825,1400025600"; 
+   d="scan'208";a="160657787"
+Message-ID: <53E4C5D5.2090103@citrix.com>
+Date: Fri, 8 Aug 2014 13:43:01 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-08_03:2014-08-08,2014-08-08,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1408080150
+To: Stefan Bader <stefan.bader@canonical.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Kees Cook <keescook@chromium.org>, David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [Xen-devel] Xen PV domain regression with KASLR enabled (kernel
+ 3.16)
+References: <53E4B281.5050302@canonical.com>
+In-Reply-To: <53E4B281.5050302@canonical.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+On 08/08/14 12:20, Stefan Bader wrote:
+> Unfortunately I have not yet figured out why this happens, but can confirm by
+> compiling with or without CONFIG_RANDOMIZE_BASE being set that without KASLR all
+> is ok, but with it enabled there are issues (actually a dom0 does not even boot
+> as a follow up error).
+> 
+> Details can be seen in [1] but basically this is always some portion of a
+> vmalloc allocation failing after hitting a freshly allocated PTE space not being
+> PTE_NONE (usually from a module load triggered by systemd-udevd). In the
+> non-dom0 case this repeats many times but ends in a guest that allows login. In
+> the dom0 case there is a more fatal error at some point causing a crash.
+> 
+> I have not tried this for a normal PV guest but for dom0 it also does not help
+> to add "nokaslr" to the kernel command-line.
 
->The prefix suggests the number should be printed in hex, so use the %x specifier to do that.
+Maybe it's overlapping with regions of the virtual address space
+reserved for Xen?  What the the VA that fails?
 
-Acked-by: Avinash Patil <patila@marvell.com>
-
-Thanks,
-Avinash.
-
-________________________________________
-From: linux-wireless-owner@vger.kernel.org [linux-wireless-owner@vger.kernel.org] On Behalf Of Hans Wennborg [hans@hanshq.net]
-Sent: Wednesday, August 06, 2014 10:12 AM
-To: Amitkumar Karwar; linux-wireless@vger.kernel.org; linux-kernel@vger.kernel.org
-Cc: Hans Wennborg
-Subject: [PATCH 07/15] mwifiex: fix decimal printf format specifiers prefixed with 0x
-
-The prefix suggests the number should be printed in hex, so use
-the %x specifier to do that.
-
-Found by using regex suggested by Joe Perches.
-
-Signed-off-by: Hans Wennborg <hans@hanshq.net>
----
- drivers/net/wireless/mwifiex/cfg80211.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
-index e2e6bf1..2856f0e 100644
---- a/drivers/net/wireless/mwifiex/cfg80211.c
-+++ b/drivers/net/wireless/mwifiex/cfg80211.c
-@@ -246,7 +246,7 @@ mwifiex_cfg80211_remain_on_channel(struct wiphy *wiphy,
-        }
-
-        if (priv->roc_cfg.cookie) {
--               wiphy_dbg(wiphy, "info: ongoing ROC, cookie = 0x%llu\n",
-+               wiphy_dbg(wiphy, "info: ongoing ROC, cookie = 0x%llx\n",
-                          priv->roc_cfg.cookie);
-                return -EBUSY;
-        }
---
-2.0.0.526.g5318336
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+David
