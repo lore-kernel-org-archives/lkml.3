@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932652AbaHHVdW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:33:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40628 "EHLO
+	id S1758381AbaHHVdj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:33:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40615 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821AbaHHUrz (ORCPT
+	with ESMTP id S1758092AbaHHUru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:47:55 -0400
+	Fri, 8 Aug 2014 16:47:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oneukum@suse.de>, Johan Hovold <johan@kernel.org>,
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Andre van Herk <andre.van.herk@prodrive-technologies.com>,
+        Stef van Os <stef.van.os@prodrive-technologies.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 025/259] USB: option: add device ID for SpeedUp SU9800 usb 3g modem
-Date: Fri,  8 Aug 2014 13:37:28 -0700
-Message-Id: <1407530482-4483-26-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 195/259] rapidio/tsi721_dma: fix failure to obtain transaction descriptor
+Date: Fri,  8 Aug 2014 13:40:18 -0700
+Message-Id: <1407530482-4483-196-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,50 +34,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-commit 1cab4c68e339086cdaff7535848e878e8f261fca upstream.
+commit 0193ed8225e1a79ed64632106ec3cc81798cb13c upstream.
 
-Reported by Alif Mubarak Ahmad:
+This is a bug fix for the situation when function tsi721_desc_get() fails
+to obtain a free transaction descriptor.
 
-This device vendor and product id is 1c9e:9800
-It is working as serial interface with generic usbserial driver.
-I thought it is more suitable to use usbserial option driver, which has
-better capability distinguishing between modem serial interface and
-micro sd storage interface.
+The bug usually results in a memory access crash dump when data transfer
+scatter-gather list has more entries than size of hardware buffer
+descriptors ring.  This fix ensures that error is properly returned to a
+caller instead of an invalid entry.
 
-[ johan: style changes ]
+This patch is applicable to kernel versions starting from v3.5.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Tested-by: Alif Mubarak Ahmad <alive4ever@live.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Andre van Herk <andre.van.herk@prodrive-technologies.com>
+Cc: Stef van Os <stef.van.os@prodrive-technologies.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/option.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/rapidio/devices/tsi721_dma.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 948a19f..407396d 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -352,6 +352,9 @@ static void option_instat_callback(struct urb *urb);
- /* Zoom */
- #define ZOOM_PRODUCT_4597			0x9607
+diff --git a/drivers/rapidio/devices/tsi721_dma.c b/drivers/rapidio/devices/tsi721_dma.c
+index 91245f5..47257b6 100644
+--- a/drivers/rapidio/devices/tsi721_dma.c
++++ b/drivers/rapidio/devices/tsi721_dma.c
+@@ -287,6 +287,12 @@ struct tsi721_tx_desc *tsi721_desc_get(struct tsi721_bdma_chan *bdma_chan)
+ 			"desc %p not ACKed\n", tx_desc);
+ 	}
  
-+/* SpeedUp SU9800 usb 3g modem */
-+#define SPEEDUP_PRODUCT_SU9800			0x9800
++	if (ret == NULL) {
++		dev_dbg(bdma_chan->dchan.device->dev,
++			"%s: unable to obtain tx descriptor\n", __func__);
++		goto err_out;
++	}
 +
- /* Haier products */
- #define HAIER_VENDOR_ID				0x201e
- #define HAIER_PRODUCT_CE100			0x2009
-@@ -1577,6 +1580,7 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
-   	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
-   	},
-+	{ USB_DEVICE_INTERFACE_CLASS(LONGCHEER_VENDOR_ID, SPEEDUP_PRODUCT_SU9800, 0xff) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
- 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
+ 	i = bdma_chan->wr_count_next % bdma_chan->bd_num;
+ 	if (i == bdma_chan->bd_num - 1) {
+ 		i = 0;
+@@ -297,7 +303,7 @@ struct tsi721_tx_desc *tsi721_desc_get(struct tsi721_bdma_chan *bdma_chan)
+ 	tx_desc->txd.phys = bdma_chan->bd_phys +
+ 				i * sizeof(struct tsi721_dma_desc);
+ 	tx_desc->hw_desc = &((struct tsi721_dma_desc *)bdma_chan->bd_base)[i];
+-
++err_out:
+ 	spin_unlock_bh(&bdma_chan->lock);
+ 
+ 	return ret;
 -- 
 1.9.1
 
