@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226AbaHHHVm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 03:21:42 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:61689 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756018AbaHHHVj (ORCPT
+	id S1755865AbaHHHZW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 03:25:22 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:36748 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193AbaHHHZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 03:21:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFLxGvxi80hNNFwquvF6veX23m_ph1UC9m1onLK5eNjrzu5DKA@mail.gmail.com>
-References: <1405413956-2772-1-git-send-email-lftan@altera.com>
-	<1405413956-2772-17-git-send-email-lftan@altera.com>
-	<CAFLxGvxi80hNNFwquvF6veX23m_ph1UC9m1onLK5eNjrzu5DKA@mail.gmail.com>
-Date: Fri, 8 Aug 2014 15:21:36 +0800
-X-Google-Sender-Auth: g_TZ3s9ZJ2Qv2Be8N2AMd8quFkg
-Message-ID: <CAFiDJ599JbMv97GdEV6vyXQ4ThXb6n5VXn==+Zr-gEBm9gp7iQ@mail.gmail.com>
-Subject: Re: [PATCH v2 16/29] nios2: Signal handling support
-From: Ley Foon Tan <lftan@altera.com>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 8 Aug 2014 03:25:20 -0400
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Jeremiah Mahler <jmmahler@gmail.com>
+Subject: [PATCH linux-next] arch/x86/mm: sparse 'tlb_single_page_flush_ceiling' warning
+Date: Fri,  8 Aug 2014 00:24:31 -0700
+Message-Id: <1407482671-23856-1-git-send-email-jmmahler@gmail.com>
+X-Mailer: git-send-email 2.1.0.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 18, 2014 at 4:04 PM, Richard Weinberger
-<richard.weinberger@gmail.com> wrote:
+A sparse warning is generated about 'tlb_single_page_flush_ceiling'
+not being declared.
 
->> +
->> +#include <asm/ucontext.h>
->> +#include <asm/cacheflush.h>
->> +
->> +#define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
->> +
->> +static int do_signal(struct pt_regs *regs, int in_syscall);
->
-> Do you really need this prototype?
-Yes, we don't need this. Will remove this.
+  arch/x86/mm/tlb.c:177:15: warning: symbol
+  'tlb_single_page_flush_ceiling' was not declared. Should it be static?
 
+Since it isn't used anywhere outside this file, fix the warning by
+making it static.
 
+Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
+---
+ arch/x86/mm/tlb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->> +
->> +asmlinkage int do_rt_sigreturn(struct switch_stack *sw)
->> +{
->> +       struct pt_regs *regs = (struct pt_regs *)(sw + 1);
->> +       /* Verify, can we follow the stack back */
->> +       struct rt_sigframe *frame = (struct rt_sigframe *) regs->sp;
->> +       sigset_t set;
->> +       int rval;
->> +
->> +       if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
->> +               goto badframe;
->> +
->> +       if (__copy_from_user(&set, &frame->uc.uc_sigmask, sizeof(set)))
->> +               goto badframe;
->> +
->> +       sigdelsetmask(&set, ~_BLOCKABLE);
->> +       spin_lock_irq(&current->sighand->siglock);
->> +       current->blocked = set;
->> +       recalc_sigpending();
->> +       spin_unlock_irq(&current->sighand->siglock);
->
-> Why aren't you using set_current_blocked() here?
-Okay, will change to use set_current_blocked().
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 1fe3398..fff4a4c 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -174,7 +174,7 @@ void flush_tlb_current_task(void)
+  *
+  * This is in units of pages.
+  */
+-unsigned long tlb_single_page_flush_ceiling = 33;
++static unsigned long tlb_single_page_flush_ceiling = 33;
+ 
+ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 				unsigned long end, unsigned long vmflag)
+-- 
+2.1.0.rc1
 
->> +static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
->> +                         struct pt_regs *regs)
->> +{
->> +       struct rt_sigframe *frame;
->> +       int err = 0;
->> +
->> +       frame = get_sigframe(ksig, regs, sizeof(*frame));
->> +
->> +       if (ksig->ka.sa.sa_flags & SA_SIGINFO)
->> +               err |= copy_siginfo_to_user(&frame->info, &ksig->info);
->> +
->> +       /* Create the ucontext.  */
->> +       err |= __put_user(0, &frame->uc.uc_flags);
->> +       err |= __put_user(0, &frame->uc.uc_link);
->> +       err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
->> +       err |= rt_setup_ucontext(&frame->uc, regs);
->> +       err |= copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
->
-> You neither check nor propagate this error code.
-Okay, will add error handling here.
-
-Thanks.
-
-Regards
-Ley Foon
