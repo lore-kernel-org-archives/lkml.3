@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933764AbaHHWJp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:09:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60343 "EHLO
+	id S933803AbaHHWKa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:10:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60374 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758627AbaHHVgH (ORCPT
+	with ESMTP id S1758619AbaHHVgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:07 -0400
+	Fri, 8 Aug 2014 17:36:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Yulong Pei <ypei@redhat.com>, Michal Schmidt <mschmidt@redhat.com>,
+        Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 04/24] net: sendmsg: fix NULL pointer dereference
-Date: Fri,  8 Aug 2014 14:34:57 -0700
-Message-Id: <20140808213335.605378710@linuxfoundation.org>
+Subject: [PATCH 3.10 01/24] bnx2x: fix crash during TSO tunneling
+Date: Fri,  8 Aug 2014 14:34:54 -0700
+Message-Id: <20140808213335.479075768@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213335.421758947@linuxfoundation.org>
 References: <20140808213335.421758947@linuxfoundation.org>
@@ -32,127 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+From: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
 
-[ Upstream commit 40eea803c6b2cfaab092f053248cbeab3f368412 ]
+[ Upstream commit fe26566d8a05151ba1dce75081f6270f73ec4ae1 ]
 
-Sasha's report:
-	> While fuzzing with trinity inside a KVM tools guest running the latest -next
-	> kernel with the KASAN patchset, I've stumbled on the following spew:
-	>
-	> [ 4448.949424] ==================================================================
-	> [ 4448.951737] AddressSanitizer: user-memory-access on address 0
-	> [ 4448.952988] Read of size 2 by thread T19638:
-	> [ 4448.954510] CPU: 28 PID: 19638 Comm: trinity-c76 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
-	> [ 4448.956823]  ffff88046d86ca40 0000000000000000 ffff880082f37e78 ffff880082f37a40
-	> [ 4448.958233]  ffffffffb6e47068 ffff880082f37a68 ffff880082f37a58 ffffffffb242708d
-	> [ 4448.959552]  0000000000000000 ffff880082f37a88 ffffffffb24255b1 0000000000000000
-	> [ 4448.961266] Call Trace:
-	> [ 4448.963158] dump_stack (lib/dump_stack.c:52)
-	> [ 4448.964244] kasan_report_user_access (mm/kasan/report.c:184)
-	> [ 4448.965507] __asan_load2 (mm/kasan/kasan.c:352)
-	> [ 4448.966482] ? netlink_sendmsg (net/netlink/af_netlink.c:2339)
-	> [ 4448.967541] netlink_sendmsg (net/netlink/af_netlink.c:2339)
-	> [ 4448.968537] ? get_parent_ip (kernel/sched/core.c:2555)
-	> [ 4448.970103] sock_sendmsg (net/socket.c:654)
-	> [ 4448.971584] ? might_fault (mm/memory.c:3741)
-	> [ 4448.972526] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3740)
-	> [ 4448.973596] ? verify_iovec (net/core/iovec.c:64)
-	> [ 4448.974522] ___sys_sendmsg (net/socket.c:2096)
-	> [ 4448.975797] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-	> [ 4448.977030] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
-	> [ 4448.978197] ? lock_release_non_nested (kernel/locking/lockdep.c:3434 (discriminator 1))
-	> [ 4448.979346] ? check_chain_key (kernel/locking/lockdep.c:2188)
-	> [ 4448.980535] __sys_sendmmsg (net/socket.c:2181)
-	> [ 4448.981592] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
-	> [ 4448.982773] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
-	> [ 4448.984458] ? syscall_trace_enter (arch/x86/kernel/ptrace.c:1500 (discriminator 2))
-	> [ 4448.985621] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
-	> [ 4448.986754] SyS_sendmmsg (net/socket.c:2201)
-	> [ 4448.987708] tracesys (arch/x86/kernel/entry_64.S:542)
-	> [ 4448.988929] ==================================================================
+When TSO packet is transmitted additional BD w/o mapping is used
+to describe the packed. The BD needs special handling in tx
+completion.
 
-This reports means that we've come to netlink_sendmsg() with msg->msg_name == NULL and msg->msg_namelen > 0.
+kernel: Call Trace:
+kernel: <IRQ>  [<ffffffff815e19ba>] dump_stack+0x19/0x1b
+kernel: [<ffffffff8105dee1>] warn_slowpath_common+0x61/0x80
+kernel: [<ffffffff8105df5c>] warn_slowpath_fmt+0x5c/0x80
+kernel: [<ffffffff814a8c0d>] ? find_iova+0x4d/0x90
+kernel: [<ffffffff814ab0e2>] intel_unmap_page.part.36+0x142/0x160
+kernel: [<ffffffff814ad0e6>] intel_unmap_page+0x26/0x30
+kernel: [<ffffffffa01f55d7>] bnx2x_free_tx_pkt+0x157/0x2b0 [bnx2x]
+kernel: [<ffffffffa01f8dac>] bnx2x_tx_int+0xac/0x220 [bnx2x]
+kernel: [<ffffffff8101a0d9>] ? read_tsc+0x9/0x20
+kernel: [<ffffffffa01f8fdb>] bnx2x_poll+0xbb/0x3c0 [bnx2x]
+kernel: [<ffffffff814d041a>] net_rx_action+0x15a/0x250
+kernel: [<ffffffff81067047>] __do_softirq+0xf7/0x290
+kernel: [<ffffffff815f3a5c>] call_softirq+0x1c/0x30
+kernel: [<ffffffff81014d25>] do_softirq+0x55/0x90
+kernel: [<ffffffff810673e5>] irq_exit+0x115/0x120
+kernel: [<ffffffff815f4358>] do_IRQ+0x58/0xf0
+kernel: [<ffffffff815e94ad>] common_interrupt+0x6d/0x6d
+kernel: <EOI>  [<ffffffff810bbff7>] ? clockevents_notify+0x127/0x140
+kernel: [<ffffffff814834df>] ? cpuidle_enter_state+0x4f/0xc0
+kernel: [<ffffffff81483615>] cpuidle_idle_call+0xc5/0x200
+kernel: [<ffffffff8101bc7e>] arch_cpu_idle+0xe/0x30
+kernel: [<ffffffff810b4725>] cpu_startup_entry+0xf5/0x290
+kernel: [<ffffffff815cfee1>] start_secondary+0x265/0x27b
+kernel: ---[ end trace 11aa7726f18d7e80 ]---
 
-After this report there was no usual "Unable to handle kernel NULL pointer dereference"
-and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
-
-This bug was introduced in f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
-(net: rework recvmsg handler msg_name and msg_namelen logic).
-Commit message states that:
-	"Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
-	 non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
-	 affect sendto as it would bail out earlier while trying to copy-in the
-	 address."
-But in fact this affects sendto when address 0 is mapped and contains
-socket address structure in it. In such case copy-in address will succeed,
-verify_iovec() function will successfully exit with msg->msg_namelen > 0
-and msg->msg_name == NULL.
-
-This patch fixes it by setting msg_namelen to 0 if msg_name == NULL.
-
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: <stable@vger.kernel.org>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Fixes: a848ade408b ("bnx2x: add CSUM and TSO support for encapsulation protocols")
+Reported-by: Yulong Pei <ypei@redhat.com>
+Cc: Michal Schmidt <mschmidt@redhat.com>
+Signed-off-by: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/compat.c     |    9 +++++----
- net/core/iovec.c |    6 +++---
- 2 files changed, 8 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x.h     |    1 +
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    9 +++++++++
+ 2 files changed, 10 insertions(+)
 
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -85,7 +85,7 @@ int verify_compat_iovec(struct msghdr *k
- {
- 	int tot_len;
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
+@@ -312,6 +312,7 @@ struct sw_tx_bd {
+ 	u8		flags;
+ /* Set on the first BD descriptor when there is a split BD */
+ #define BNX2X_TSO_SPLIT_BD		(1<<0)
++#define BNX2X_HAS_SECOND_PBD		(1<<1)
+ };
  
--	if (kern_msg->msg_namelen) {
-+	if (kern_msg->msg_name && kern_msg->msg_namelen) {
- 		if (mode == VERIFY_READ) {
- 			int err = move_addr_to_kernel(kern_msg->msg_name,
- 						      kern_msg->msg_namelen,
-@@ -93,10 +93,11 @@ int verify_compat_iovec(struct msghdr *k
- 			if (err < 0)
- 				return err;
- 		}
--		if (kern_msg->msg_name)
--			kern_msg->msg_name = kern_address;
--	} else
-+		kern_msg->msg_name = kern_address;
-+	} else {
- 		kern_msg->msg_name = NULL;
-+		kern_msg->msg_namelen = 0;
+ struct sw_rx_page {
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -180,6 +180,12 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
+ 	--nbd;
+ 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ 
++	if (tx_buf->flags & BNX2X_HAS_SECOND_PBD) {
++		/* Skip second parse bd... */
++		--nbd;
++		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
 +	}
- 
- 	tot_len = iov_from_user_compat_to_kern(kern_iov,
- 					  (struct compat_iovec __user *)kern_msg->msg_iov,
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -39,7 +39,7 @@ int verify_iovec(struct msghdr *m, struc
- {
- 	int size, ct, err;
- 
--	if (m->msg_namelen) {
-+	if (m->msg_name && m->msg_namelen) {
- 		if (mode == VERIFY_READ) {
- 			void __user *namep;
- 			namep = (void __user __force *) m->msg_name;
-@@ -48,10 +48,10 @@ int verify_iovec(struct msghdr *m, struc
- 			if (err < 0)
- 				return err;
- 		}
--		if (m->msg_name)
--			m->msg_name = address;
-+		m->msg_name = address;
- 	} else {
- 		m->msg_name = NULL;
-+		m->msg_namelen = 0;
- 	}
- 
- 	size = m->msg_iovlen * sizeof(struct iovec);
++
+ 	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
+ 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
+ 		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
+@@ -3755,6 +3761,9 @@ netdev_tx_t bnx2x_start_xmit(struct sk_b
+ 			/* set encapsulation flag in start BD */
+ 			SET_FLAG(tx_start_bd->general_data,
+ 				 ETH_TX_START_BD_TUNNEL_EXIST, 1);
++
++			tx_buf->flags |= BNX2X_HAS_SECOND_PBD;
++
+ 			nbd++;
+ 		} else if (xmit_type & XMIT_CSUM) {
+ 			/* Set PBD in checksum offload case w/o encapsulation */
 
 
