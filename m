@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208AbaHHRph (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 13:45:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53385 "EHLO mx1.redhat.com"
+	id S932237AbaHHRtl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 13:49:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48492 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760AbaHHRpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 13:45:32 -0400
+	id S1751446AbaHHRpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 13:45:17 -0400
 From: Denys Vlasenko <dvlasenk@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Denys Vlasenko <dvlasenk@redhat.com>,
@@ -15,22 +15,28 @@ Cc: Denys Vlasenko <dvlasenk@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
         Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
         Kees Cook <keescook@chromium.org>
-Subject: [PATCH 07/17] x86: rename some macros and labels, no code changes
-Date: Fri,  8 Aug 2014 19:44:30 +0200
-Message-Id: <1407519880-6719-8-git-send-email-dvlasenk@redhat.com>
+Subject: [PATCH 03/17] x86: open-code register save/restore in trace_hardirqs thunks
+Date: Fri,  8 Aug 2014 19:44:26 +0200
+Message-Id: <1407519880-6719-4-git-send-email-dvlasenk@redhat.com>
 In-Reply-To: <1407519880-6719-1-git-send-email-dvlasenk@redhat.com>
 References: <1407519880-6719-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename LOAD_ARGS32 to RESTORE_REGS32 to match other RESTORE_* macros.
-The "ARGS" part was misleading anyway - we are restoring registers,
-not arguments.
+This is a preparatory patch for change in "struct pt_regs"
+handling in entry_64.S.
 
-Similarly, rename [retint_]restore_args to [retint_]restore_c_regs:
-at these labels, we restore registers clobbered by C ABI;
-rename int_restore_rest to int_restore_extra_regs.
+trace_hardirqs thunks were (ab)using a part of pt_regs
+handling code, namely SAVE_ARGS/RESTORE_ARGS macros,
+to save/restore registers across C function calls.
+
+Since SAVE_ARGS is going to be changed, open-code
+register saving/restoring here.
+
+Incidentally, this removes a bit of dead code:
+one SAVE_ARGS was just to emit a CFI annotation,
+but it also generated unreachable assembly insns.
 
 Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
 CC: Linus Torvalds <torvalds@linux-foundation.org>
@@ -44,121 +50,60 @@ CC: Will Drewry <wad@chromium.org>
 CC: Kees Cook <keescook@chromium.org>
 CC: linux-kernel@vger.kernel.org
 ---
- arch/x86/ia32/ia32entry.S  | 10 +++++-----
- arch/x86/kernel/entry_64.S | 16 ++++++++--------
- 2 files changed, 13 insertions(+), 13 deletions(-)
+ arch/x86/lib/thunk_64.S | 29 ++++++++++++++++++++++++-----
+ 1 file changed, 24 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 20eba33..4402bbe 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -51,7 +51,7 @@
- 	.endm
+diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
+index 92d9fea..c1c9131 100644
+--- a/arch/x86/lib/thunk_64.S
++++ b/arch/x86/lib/thunk_64.S
+@@ -16,10 +16,20 @@
+ \name:
+ 	CFI_STARTPROC
  
- 	/*
--	 * Reload arg registers from stack in case ptrace changed them.
-+	 * Reload registers from stack in case ptrace changed them.
- 	 * We don't reload %eax because syscall_trace_enter() returned
- 	 * the %rax value we should see.  Instead, we just truncate that
- 	 * value to 32 bits again as we did on entry from user mode.
-@@ -60,7 +60,7 @@
- 	 * If it's -1 to make us punt the syscall, then (u32)-1 is still
- 	 * an appropriately invalid value.
- 	 */
--	.macro LOAD_ARGS32 _r9=0
-+	.macro RESTORE_REGS32 _r9=0
- 	.if \_r9
- 	movl R9(%rsp),%r9d
+-	/* this one pushes 9 elems, the next one would be %rIP */
+-	SAVE_ARGS
++	subq  $9*8, %rsp
++	CFI_ADJUST_CFA_OFFSET 9*8
++	movq_cfi rdi, 8*8
++	movq_cfi rsi, 7*8
++	movq_cfi rdx, 6*8
++	movq_cfi rcx, 5*8
++	movq_cfi rax, 4*8
++	movq_cfi r8,  3*8
++	movq_cfi r9,  2*8
++	movq_cfi r10, 1*8
++	movq_cfi r11, 0*8
+ 
+ 	.if \put_ret_addr_in_rdi
++	/* 9*8(%rsp) is return addr on stack */
+ 	movq_cfi_restore 9*8, rdi
  	.endif
-@@ -247,7 +247,7 @@ sysenter_tracesys:
- 	movq	$-ENOSYS,RAX(%rsp)/* ptrace can change this for a bad syscall */
- 	movq	%rsp,%rdi        /* &pt_regs -> arg1 */
- 	call	syscall_trace_enter
--	LOAD_ARGS32	/* reload args from stack in case ptrace changed it */
-+	RESTORE_REGS32	/* reload regs from stack in case ptrace changed it */
- 	RESTORE_EXTRA_REGS
- 	cmpq	$(IA32_NR_syscalls-1),%rax
- 	ja	int_ret_from_sys_call /* sysenter_tracesys has set RAX(%rsp) */
-@@ -364,7 +364,7 @@ cstar_tracesys:
- 	movq $-ENOSYS,RAX(%rsp)	/* ptrace can change this for a bad syscall */
- 	movq %rsp,%rdi        /* &pt_regs -> arg1 */
- 	call syscall_trace_enter
--	LOAD_ARGS32 1	/* reload args from stack in case ptrace changed it */
-+	RESTORE_REGS32 1	/* reload regs from stack in case ptrace changed it */
- 	RESTORE_EXTRA_REGS
- 	xchgl %ebp,%r9d
- 	cmpq $(IA32_NR_syscalls-1),%rax
-@@ -442,7 +442,7 @@ ia32_tracesys:
- 	movq $-ENOSYS,RAX(%rsp)	/* ptrace can change this for a bad syscall */
- 	movq %rsp,%rdi        /* &pt_regs -> arg1 */
- 	call syscall_trace_enter
--	LOAD_ARGS32	/* reload args from stack in case ptrace changed it */
-+	RESTORE_REGS32	/* reload args from stack in case ptrace changed it */
- 	RESTORE_EXTRA_REGS
- 	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja  int_ret_from_sys_call	/* ia32_tracesys has set RAX(%rsp) */
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 8c6a01d..e9bbe02 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -62,7 +62,7 @@
  
- 
- #ifndef CONFIG_PREEMPT
--#define retint_kernel retint_restore_args
-+#define retint_kernel retint_restore_c_regs
+@@ -38,11 +48,20 @@
+ 	THUNK lockdep_sys_exit_thunk,lockdep_sys_exit
  #endif
  
- #ifdef CONFIG_PARAVIRT
-@@ -494,7 +494,7 @@ int_check_syscall_exit_work:
- 	call syscall_trace_leave
- 	popq_cfi %rdi
- 	andl $~(_TIF_WORK_SYSCALL_EXIT|_TIF_SYSCALL_EMU),%edi
--	jmp int_restore_rest
-+	jmp int_restore_extra_regs
- 
- int_signal:
- 	testl $_TIF_DO_NOTIFY_MASK,%edx
-@@ -503,7 +503,7 @@ int_signal:
- 	xorl %esi,%esi		# oldset -> arg2
- 	call do_notify_resume
- 1:	movl $_TIF_WORK_MASK,%edi
--int_restore_rest:
-+int_restore_extra_regs:
- 	RESTORE_EXTRA_REGS
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
-@@ -742,15 +742,15 @@ retint_swapgs:		/* return to user-space */
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_IRETQ
- 	SWAPGS
--	jmp restore_args
-+	jmp restore_c_regs
- 
--retint_restore_args:	/* return to kernel space */
-+retint_restore_c_regs:	/* return to kernel space */
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	/*
- 	 * The iretq could re-enable interrupts:
- 	 */
- 	TRACE_IRQS_IRETQ
--restore_args:
-+restore_c_regs:
- 	RESTORE_C_REGS
- 	REMOVE_PTREGS_FROM_STACK 8
- 
-@@ -855,9 +855,9 @@ retint_signal:
- 	/* rcx:	 threadinfo. interrupts off. */
- ENTRY(retint_kernel)
- 	cmpl $0,PER_CPU_VAR(__preempt_count)
--	jnz  retint_restore_args
-+	jnz  retint_restore_c_regs
- 	bt   $9,EFLAGS(%rsp)	/* interrupts off? */
--	jnc  retint_restore_args
-+	jnc  retint_restore_c_regs
- 	call preempt_schedule_irq
- 	jmp exit_intr
- #endif
+-	/* SAVE_ARGS below is used only for the .cfi directives it contains. */
+ 	CFI_STARTPROC
+-	SAVE_ARGS
++	CFI_ADJUST_CFA_OFFSET 9*8
+ restore:
+-	RESTORE_ARGS
++	movq_cfi_restore 0*8, r11
++	movq_cfi_restore 1*8, r10
++	movq_cfi_restore 2*8, r9
++	movq_cfi_restore 3*8, r8
++	movq_cfi_restore 4*8, rax
++	movq_cfi_restore 5*8, rcx
++	movq_cfi_restore 6*8, rdx
++	movq_cfi_restore 7*8, rsi
++	movq_cfi_restore 8*8, rdi
++	addq 9*8, %rsp
++	CFI_ADJUST_CFA_OFFSET -9*8
+ 	ret
+ 	CFI_ENDPROC
+ 	_ASM_NOKPROBE(restore)
 -- 
 1.8.1.4
 
