@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932963AbaHHVYQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:24:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40881 "EHLO
+	id S933368AbaHHVYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:24:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40878 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175AbaHHUun (ORCPT
+	with ESMTP id S932170AbaHHUun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:50:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Sandeen <sandeen@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Dmitry Popov <ixaphire@qrator.net>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 069/259] ext4: disable synchronous transaction batching if max_batch_time==0
-Date: Fri,  8 Aug 2014 13:38:12 -0700
-Message-Id: <1407530482-4483-70-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 229/259] ip_tunnel: fix ip_tunnel_lookup
+Date: Fri,  8 Aug 2014 13:40:52 -0700
+Message-Id: <1407530482-4483-230-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,57 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Dmitry Popov <ixaphire@qrator.net>
 
-commit 5dd214248f94d430d70e9230bda72f2654ac88a8 upstream.
+[ Upstream commit e0056593b61253f1a8a9941dacda22e73b963cdc ]
 
-The mount manpage says of the max_batch_time option,
+This patch fixes 3 similar bugs where incoming packets might be routed into
+wrong non-wildcard tunnels:
 
-	This optimization can be turned off entirely
-	by setting max_batch_time to 0.
+1) Consider the following setup:
+    ip address add 1.1.1.1/24 dev eth0
+    ip address add 1.1.1.2/24 dev eth0
+    ip tunnel add ipip1 remote 2.2.2.2 local 1.1.1.1 mode ipip dev eth0
+    ip link set ipip1 up
 
-But the code doesn't do that.  So fix the code to do
-that.
+Incoming ipip packets from 2.2.2.2 were routed into ipip1 even if it has dst =
+1.1.1.2. Moreover even if there was wildcard tunnel like
+   ip tunnel add ipip0 remote 2.2.2.2 local any mode ipip dev eth0
+but it was created before explicit one (with local 1.1.1.1), incoming ipip
+packets with src = 2.2.2.2 and dst = 1.1.1.2 were still routed into ipip1.
 
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Same issue existed with all tunnels that use ip_tunnel_lookup (gre, vti)
+
+2)  ip address add 1.1.1.1/24 dev eth0
+    ip tunnel add ipip1 remote 2.2.146.85 local 1.1.1.1 mode ipip dev eth0
+    ip link set ipip1 up
+
+Incoming ipip packets with dst = 1.1.1.1 were routed into ipip1, no matter what
+src address is. Any remote ip address which has ip_tunnel_hash = 0 raised this
+issue, 2.2.146.85 is just an example, there are more than 4 million of them.
+And again, wildcard tunnel like
+   ip tunnel add ipip0 remote any local 1.1.1.1 mode ipip dev eth0
+wouldn't be ever matched if it was created before explicit tunnel like above.
+
+Gre & vti tunnels had the same issue.
+
+3)  ip address add 1.1.1.1/24 dev eth0
+    ip tunnel add gre1 remote 2.2.146.84 local 1.1.1.1 key 1 mode gre dev eth0
+    ip link set gre1 up
+
+Any incoming gre packet with key = 1 were routed into gre1, no matter what
+src/dst addresses are. Any remote ip address which has ip_tunnel_hash = 0 raised
+the issue, 2.2.146.84 is just an example, there are more than 4 million of them.
+Wildcard tunnel like
+   ip tunnel add gre2 remote any local any key 1 mode gre dev eth0
+wouldn't be ever matched if it was created before explicit tunnel like above.
+
+All this stuff happened because while looking for a wildcard tunnel we didn't
+check that matched tunnel is a wildcard one. Fixed.
+
+Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/super.c       | 2 --
- fs/jbd2/transaction.c | 5 ++++-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ net/ipv4/ip_tunnel.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index a81a3da..25b327e 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1519,8 +1519,6 @@ static int handle_mount_opt(struct super_block *sb, char *opt, int token,
- 			arg = JBD2_DEFAULT_MAX_COMMIT_AGE;
- 		sbi->s_commit_interval = HZ * arg;
- 	} else if (token == Opt_max_batch_time) {
--		if (arg == 0)
--			arg = EXT4_DEF_MAX_BATCH_TIME;
- 		sbi->s_max_batch_time = arg;
- 	} else if (token == Opt_min_batch_time) {
- 		sbi->s_min_batch_time = arg;
-diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
-index 60bb365..f8a5d6a 100644
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -1590,9 +1590,12 @@ int jbd2_journal_stop(handle_t *handle)
- 	 * to perform a synchronous write.  We do this to detect the
- 	 * case where a single process is doing a stream of sync
- 	 * writes.  No point in waiting for joiners in that case.
-+	 *
-+	 * Setting max_batch_time to 0 disables this completely.
- 	 */
- 	pid = current->pid;
--	if (handle->h_sync && journal->j_last_sync_writer != pid) {
-+	if (handle->h_sync && journal->j_last_sync_writer != pid &&
-+	    journal->j_max_batch_time) {
- 		u64 commit_time, trans_time;
+diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
+index a39c5cf..d4e7bd7 100644
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -166,6 +166,7 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
  
- 		journal->j_last_sync_writer = pid;
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+ 		if (remote != t->parms.iph.daddr ||
++		    t->parms.iph.saddr != 0 ||
+ 		    !(t->dev->flags & IFF_UP))
+ 			continue;
+ 
+@@ -182,10 +183,11 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+ 	head = &itn->tunnels[hash];
+ 
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+-		if ((local != t->parms.iph.saddr &&
+-		     (local != t->parms.iph.daddr ||
+-		      !ipv4_is_multicast(local))) ||
+-		    !(t->dev->flags & IFF_UP))
++		if ((local != t->parms.iph.saddr || t->parms.iph.daddr != 0) &&
++		    (local != t->parms.iph.daddr || !ipv4_is_multicast(local)))
++			continue;
++
++		if (!(t->dev->flags & IFF_UP))
+ 			continue;
+ 
+ 		if (!ip_tunnel_key_match(&t->parms, flags, key))
+@@ -202,6 +204,8 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+ 
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+ 		if (t->parms.i_key != key ||
++		    t->parms.iph.saddr != 0 ||
++		    t->parms.iph.daddr != 0 ||
+ 		    !(t->dev->flags & IFF_UP))
+ 			continue;
+ 
 -- 
 1.9.1
 
