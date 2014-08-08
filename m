@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933127AbaHHUyA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:54:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41369 "EHLO
+	id S933153AbaHHUyH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:54:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41371 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758013AbaHHUxx (ORCPT
+	with ESMTP id S1758042AbaHHUxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:53:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Matthias Brugger <matthias.bgg@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 094/259] drm/radeon: fix typo in golden register setup on evergreen
-Date: Fri,  8 Aug 2014 13:38:37 -0700
-Message-Id: <1407530482-4483-95-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 122/259] irqchip: gic: Add support for cortex a7 compatible string
+Date: Fri,  8 Aug 2014 13:39:05 -0700
+Message-Id: <1407530482-4483-123-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,61 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Matthias Brugger <matthias.bgg@gmail.com>
 
-commit 6abafb78f9881b4891baf74ab4e9f090ae45230e upstream.
+commit a97e8027b1d28eafe6bafe062556c1ec926a49c6 upstream.
 
-Fixes hangs on driver load on some cards.
+Patch 0a68214b "ARM: DT: Add binding for GIC virtualization extentions (VGIC)" added
+the "arm,cortex-a7-gic" compatible string, but the corresponding IRQCHIP_DECLARE
+was never added to the gic driver.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=76998
+To let real Cortex-A7 SoCs use it, add the necessary declaration to the device driver.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+Link: https://lkml.kernel.org/r/1404388732-28890-1-git-send-email-matthias.bgg@gmail.com
+Fixes: 0a68214b76ca ("ARM: DT: Add binding for GIC virtualization extentions (VGIC)")
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/evergreen.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/irqchip/irq-gic.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 4c84deb..47463d8 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -188,7 +188,7 @@ static const u32 evergreen_golden_registers[] =
- 	0x8c1c, 0xffffffff, 0x00001010,
- 	0x28350, 0xffffffff, 0x00000000,
- 	0xa008, 0xffffffff, 0x00010000,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x9508, 0xffffffff, 0x00000002,
- 	0x913c, 0x0000000f, 0x0000000a
- };
-@@ -475,7 +475,7 @@ static const u32 cedar_golden_registers[] =
- 	0x8c1c, 0xffffffff, 0x00001010,
- 	0x28350, 0xffffffff, 0x00000000,
- 	0xa008, 0xffffffff, 0x00010000,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x9508, 0xffffffff, 0x00000002
- };
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index ac2d41b..ecf2565 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -1010,6 +1010,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+ }
+ IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
+ IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
++IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
+ IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
+ IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
  
-@@ -634,7 +634,7 @@ static const u32 juniper_mgcg_init[] =
- static const u32 supersumo_golden_registers[] =
- {
- 	0x5eb4, 0xffffffff, 0x00000002,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x7030, 0xffffffff, 0x00000011,
- 	0x7c30, 0xffffffff, 0x00000011,
- 	0x6104, 0x01000300, 0x00000000,
-@@ -718,7 +718,7 @@ static const u32 sumo_golden_registers[] =
- static const u32 wrestler_golden_registers[] =
- {
- 	0x5eb4, 0xffffffff, 0x00000002,
--	0x5cc, 0xffffffff, 0x00000001,
-+	0x5c4, 0xffffffff, 0x00000001,
- 	0x7030, 0xffffffff, 0x00000011,
- 	0x7c30, 0xffffffff, 0x00000011,
- 	0x6104, 0x01000300, 0x00000000,
 -- 
 1.9.1
 
