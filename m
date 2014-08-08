@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101AbaHHUrv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:47:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40587 "EHLO
+	id S1758117AbaHHUr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:47:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40620 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758063AbaHHUrm (ORCPT
+	with ESMTP id S1758097AbaHHUrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:47:42 -0400
+	Fri, 8 Aug 2014 16:47:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
+        Jonathan Cameron <jic23@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 191/259] ARM: fix alignment of keystone page table fixup
-Date: Fri,  8 Aug 2014 13:40:14 -0700
-Message-Id: <1407530482-4483-192-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 023/259] iio: of_iio_channel_get_by_name() returns non-null pointers for error legs
+Date: Fri,  8 Aug 2014 13:37:26 -0700
+Message-Id: <1407530482-4483-24-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,44 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 
-commit 823a19cd3b91b0729d7417f1848413846be61712 upstream.
+commit a2c12493ed7e63a18cef33a71686d12ffcd6600e upstream.
 
-If init_mm.brk is not section aligned, the LPAE fixup code will miss
-updating the final PMD.  Fix this by aligning map_end.
+Currently in the inkern.c code for IIO framework, the function
+of_iio_channel_get_by_name() will return a non-NULL pointer when
+it cannot find a channel using of_iio_channel_get() and when it
+tries to search for 'io-channel-ranges' property and fails. This
+is incorrect behaviour as the function which calls this expects
+a NULL pointer for failure. This patch rectifies the issue.
 
-Fixes: a77e0c7b2774 ("ARM: mm: Recreate kernel mappings in early_paging_init()")
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/mm/mmu.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/iio/inkern.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index dd0949f..b8c90c5 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -1352,8 +1352,8 @@ void __init early_paging_init(const struct machine_desc *mdesc,
- 		return;
+diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+index 0cf5f8e..1e8e94d 100644
+--- a/drivers/iio/inkern.c
++++ b/drivers/iio/inkern.c
+@@ -183,7 +183,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+ 		else if (name && index >= 0) {
+ 			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+ 				np->full_name, name ? name : "", index);
+-			return chan;
++			return NULL;
+ 		}
  
- 	/* remap kernel code and data */
--	map_start = init_mm.start_code;
--	map_end   = init_mm.brk;
-+	map_start = init_mm.start_code & PMD_MASK;
-+	map_end   = ALIGN(init_mm.brk, PMD_SIZE);
- 
- 	/* get a handle on things... */
- 	pgd0 = pgd_offset_k(0);
-@@ -1388,7 +1388,7 @@ void __init early_paging_init(const struct machine_desc *mdesc,
+ 		/*
+@@ -193,8 +193,9 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+ 		 */
+ 		np = np->parent;
+ 		if (np && !of_get_property(np, "io-channel-ranges", NULL))
+-			break;
++			return NULL;
  	}
++
+ 	return chan;
+ }
  
- 	/* remap pmds for kernel mapping */
--	phys = __pa(map_start) & PMD_MASK;
-+	phys = __pa(map_start);
- 	do {
- 		*pmdk++ = __pmd(phys | pmdprot);
- 		phys += PMD_SIZE;
+@@ -317,6 +318,7 @@ struct iio_channel *iio_channel_get(struct device *dev,
+ 		if (channel != NULL)
+ 			return channel;
+ 	}
++
+ 	return iio_channel_get_sys(name, channel_name);
+ }
+ EXPORT_SYMBOL_GPL(iio_channel_get);
 -- 
 1.9.1
 
