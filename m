@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838AbaHHFhK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 01:37:10 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17343 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937AbaHHFhI (ORCPT
+	id S1756031AbaHHFh1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 01:37:27 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:19237 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755860AbaHHFhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 01:37:08 -0400
+	Fri, 8 Aug 2014 01:37:19 -0400
 From: Ethan Zhao <ethan.zhao@oracle.com>
 To: bhelgaas@google.com, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, gleb@kernel.org, pbonzini@redhat.com,
@@ -15,42 +15,38 @@ To: bhelgaas@google.com, linux-pci@vger.kernel.org,
         xen-devel@lists.xenproject.org
 Cc: alex.williamson@redhat.com, alexander.h.duyck@intel.com,
         ethan.kernel@gmail.com
-Subject: [PATCH v3 0/4 resend] Introduce device assignment flag operation helper function 
-Date: Fri,  8 Aug 2014 13:36:03 +0800
-Message-Id: <1407476167-18935-1-git-send-email-ethan.zhao@oracle.com>
+Subject: [PATCH 4/4] PCI: use device flag operation helper function in iov.c
+Date: Fri,  8 Aug 2014 13:36:07 +0800
+Message-Id: <1407476167-18935-5-git-send-email-ethan.zhao@oracle.com>
 X-Mailer: git-send-email 1.7.1
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <1407476167-18935-1-git-send-email-ethan.zhao@oracle.com>
+References: <1407476167-18935-1-git-send-email-ethan.zhao@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set introduces three PCI device flag operation helper functions
-when set pci device PF/VF to assigned or deassigned status also check it.
-and patch 2,3,4 apply these helper functions to KVM,XEN and PCI.
+Use device flag operation helper functions when check device
+assignment status.
 
-v2: simplify unnecessory ternary operation in function pci_is_dev_assigned().
-v3: amend helper function naming.
-
-Appreciate suggestion from
-alex.williamson@redhat.com,
-david.vrabel@citrix.com,
-alexander.h.duyck@intel.com
-
-Resend for v3.16 building.
-
-Thanks,
-Ethan
+Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
 ---
-Ethan Zhao (4):
-  PCI: introduce helper functions for device flag operation
-  KVM: use pci device flag operation helper functions
-  xen-pciback: use pci device flag operation helper function
-  PCI: use device flag operation helper function in iov.c
+ drivers/pci/iov.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
- drivers/pci/iov.c                  |    2 +-
- drivers/xen/xen-pciback/pci_stub.c |    4 ++--
- include/linux/pci.h                |   13 +++++++++++++
- virt/kvm/assigned-dev.c            |    2 +-
- virt/kvm/iommu.c                   |    4 ++--
- 5 files changed, 19 insertions(+), 6 deletions(-)
+diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+index cb6f247..4d109c0 100644
+--- a/drivers/pci/iov.c
++++ b/drivers/pci/iov.c
+@@ -633,7 +633,7 @@ int pci_vfs_assigned(struct pci_dev *dev)
+ 		 * our dev as the physical function and the assigned bit is set
+ 		 */
+ 		if (vfdev->is_virtfn && (vfdev->physfn == dev) &&
+-		    (vfdev->dev_flags & PCI_DEV_FLAGS_ASSIGNED))
++			pci_is_dev_assigned(vfdev))
+ 			vfs_assigned++;
+ 
+ 		vfdev = pci_get_device(dev->vendor, dev_id, vfdev);
+-- 
+1.7.1
 
