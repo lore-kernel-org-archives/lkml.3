@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050AbaHHPTh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 11:19:37 -0400
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:41473 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757024AbaHHPTe (ORCPT
+	id S1756988AbaHHPT3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 11:19:29 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:63787 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756332AbaHHPT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 11:19:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407508946.4915.10.camel@mtksdaap41>
-References: <1407505411-2207-1-git-send-email-srv_yingjoe.chen@mediatek.com>
-	<1407505411-2207-3-git-send-email-srv_yingjoe.chen@mediatek.com>
-	<CABuKBeL-dcs+pDW3jUeRWNijyYwx4VUdUB=CjGXoGmQUCifQ5Q@mail.gmail.com>
-	<1407508946.4915.10.camel@mtksdaap41>
-Date: Fri, 8 Aug 2014 17:19:34 +0200
-Message-ID: <CABuKBeKsEHc3wi60FACFz+sUaVZMx9o=j8a+avQq5DsFHJMj+A@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] arm: mediatek: Add support for GIC interrupt
- polarity extension.
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: "Joe.C" <srv_yingjoe.chen@mediatek.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Jonas Jensen <jonas.jensen@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        open list <linux-kernel@vger.kernel.org>,
-        srv_heupstream <srv_heupstream@mediatek.com>,
-        Hsien-Chun Yen <hc.yen@mediatek.com>,
-        =?UTF-8?B?RWRkaWUgSHVhbmcgKOm7g+aZuuWCkSk=?= 
-	<eddie.huang@mediatek.com>,
-        Nathan Chung <nathan.chung@mediatek.com>,
-        Yuhau Chen <yh.chen@mediatek.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 8 Aug 2014 11:19:27 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: [PATCH trivial 4/4] init/Kconfig: Spelling s/compuation/computation/, double "the"
+Date: Fri,  8 Aug 2014 17:19:15 +0200
+Message-Id: <1407511155-5264-4-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407511155-5264-1-git-send-email-geert@linux-m68k.org>
+References: <1407511155-5264-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-08 16:42 GMT+02:00 Joe.C <srv_yingjoe.chen@mediatek.com>:
-> On Fri, 2014-08-08 at 16:19 +0200, Matthias Brugger wrote:
->> 2014-08-08 15:43 GMT+02:00 Joe.C <srv_yingjoe.chen@mediatek.com>:
->> > From: "Joe.C" <yingjoe.chen@mediatek.com>
->> >
->> > Mediatek SoCs have an interrupt polarity extension which allows
->> > to swap the polarity for given interrupts.
->>
->> Please use ./script/checkpatch.pl, all 4 patches have errors.
->
-> Could you send me your result?
-> I ran checkpatch.pl again on these patches but didn't see any error.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Luis R. Rodriguez <mcgrof@suse.com>
+---
+ init/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I get a whole bunch of:
-ERROR: DOS line endings
-
-I suppose it's because of the configuration of your mail client.
-
-Best regards,
-Matthias
-
->
-> Joe.C
->
->
-
-
-
+diff --git a/init/Kconfig b/init/Kconfig
+index 5aec7006c8bb..a5f8bc426f7c 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -843,7 +843,7 @@ config LOG_CPU_MAX_BUF_SHIFT
+ 	  used as it forces an exact (power of two) size of the ring buffer.
+ 
+ 	  The number of possible CPUs is used for this computation ignoring
+-	  hotplugging making the compuation optimal for the the worst case
++	  hotplugging making the computation optimal for the worst case
+ 	  scenerio while allowing a simple algorithm to be used from bootup.
+ 
+ 	  Examples shift values and their meaning:
 -- 
-motzblog.wordpress.com
+1.9.1
+
