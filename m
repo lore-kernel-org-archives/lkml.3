@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033AbaHHIPN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 04:15:13 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:55822 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894AbaHHIPI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 04:15:08 -0400
-X-Greylist: delayed 167439 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Aug 2014 04:15:08 EDT
+	id S1755918AbaHHIVc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 04:21:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48457 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752258AbaHHIV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 04:21:28 -0400
+Date: Fri, 8 Aug 2014 10:21:26 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, hugetlb_cgroup: align hugetlb cgroup limit to
+ hugepage size
+Message-ID: <20140808082126.GA4004@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <1407339461-24483-1-git-send-email-tiwai@suse.de>
-References: <1407339461-24483-1-git-send-email-tiwai@suse.de>
-From: Jean-Michel Hautbois <jhautbois@gmail.com>
-Date: Fri, 8 Aug 2014 10:14:52 +0200
-Message-ID: <CAL8zT=iNYKeVEvhSMD5UP0mth1d3hQm9GQb5mxWTwLEv2e2LiQ@mail.gmail.com>
-Subject: Re: [PATCH] misc: lattice-ecp3-config: Add missing MODULE_FIRMWARE()
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-06 17:37 GMT+02:00 Takashi Iwai <tiwai@suse.de>:
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+On Thu 07-08-14 13:34:12, David Rientjes wrote:
+> Memcg aligns memory.limit_in_bytes to PAGE_SIZE as part of the resource counter
+> since it makes no sense to allow a partial page to be charged.
+> 
+> As a result of the hugetlb cgroup using the resource counter, it is also aligned
+> to PAGE_SIZE but makes no sense unless aligned to the size of the hugepage being
+> limited.
+> 
+> Align hugetlb cgroup limit to hugepage size.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
+
+huge_page_shift as proposed by Aneesh looks better.
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
 > ---
->  drivers/misc/lattice-ecp3-config.c | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/misc/lattice-ecp3-config.c b/drivers/misc/lattice-ecp3-config.c
-> index 7ffdb589841e..643c9eda69dd 100644
-> --- a/drivers/misc/lattice-ecp3-config.c
-> +++ b/drivers/misc/lattice-ecp3-config.c
-> @@ -242,3 +242,4 @@ module_spi_driver(lattice_ecp3_driver);
->  MODULE_AUTHOR("Stefan Roese <sr@denx.de>");
->  MODULE_DESCRIPTION("Lattice ECP3 FPGA configuration via SPI");
->  MODULE_LICENSE("GPL");
-> +MODULE_FIRMWARE(FIRMWARE_NAME);
-> --
-> 2.0.3
->
+>  mm/hugetlb_cgroup.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -275,6 +275,8 @@ static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
+>  		ret = res_counter_memparse_write_strategy(buf, &val);
+>  		if (ret)
+>  			break;
+> +		val = ALIGN(val, 1 << (huge_page_order(&hstates[idx]) +
+> +				       PAGE_SHIFT));
+>  		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
+>  		break;
+>  	default:
 
-It works on my i.MX6 platform.
-
-Tested-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-
-Thanks,
-JM
+-- 
+Michal Hocko
+SUSE Labs
