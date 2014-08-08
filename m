@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758362AbaHHUuH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:50:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40755 "EHLO
+	id S1758376AbaHHUuK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:50:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40771 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758282AbaHHUtu (ORCPT
+	with ESMTP id S1756838AbaHHUuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:49:50 -0400
+	Fri, 8 Aug 2014 16:50:00 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 053/259] nick kvfree() from apparmor
-Date: Fri,  8 Aug 2014 13:37:56 -0700
-Message-Id: <1407530482-4483-54-git-send-email-kamal@canonical.com>
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 056/259] ptrace,x86: force IRET path after a ptrace_stop()
+Date: Fri,  8 Aug 2014 13:37:59 -0700
+Message-Id: <1407530482-4483-57-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -26,97 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Tejun Heo <tj@kernel.org>
 
-commit 39f1f78d53b9bcbca91967380c5f0f2305a5c55f upstream.
+commit b9cd18de4db3c9ffa7e17b0dc0ca99ed5aa4d43a upstream.
 
-too many places open-code it
+The 'sysret' fastpath does not correctly restore even all regular
+registers, much less any segment registers or reflags values.  That is
+very much part of why it's faster than 'iret'.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-[ kamal: picked for 3.13-stable for backport convenience ]
+Normally that isn't a problem, because the normal ptrace() interface
+catches the process using the signal handler infrastructure, which
+always returns with an iret.
+
+However, some paths can get caught using ptrace_event() instead of the
+signal path, and for those we need to make sure that we aren't going to
+return to user space using 'sysret'.  Otherwise the modifications that
+may have been done to the register set by the tracer wouldn't
+necessarily take effect.
+
+Fix it by forcing IRET path by setting TIF_NOTIFY_RESUME from
+arch_ptrace_stop_needed() which is invoked from ptrace_stop().
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/mm.h                   |  2 ++
- mm/util.c                            | 10 ++++++++++
- security/apparmor/include/apparmor.h |  1 -
- security/apparmor/lib.c              | 14 --------------
- 4 files changed, 12 insertions(+), 15 deletions(-)
+ arch/x86/include/asm/ptrace.h | 16 ++++++++++++++++
+ include/linux/ptrace.h        |  3 +++
+ 2 files changed, 19 insertions(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 5360b82..4506b84 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -352,6 +352,8 @@ static inline int is_vmalloc_or_module_addr(const void *x)
- }
+diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
+index 942a086..68e9f00 100644
+--- a/arch/x86/include/asm/ptrace.h
++++ b/arch/x86/include/asm/ptrace.h
+@@ -232,6 +232,22 @@ static inline unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs,
+ 
+ #define ARCH_HAS_USER_SINGLE_STEP_INFO
+ 
++/*
++ * When hitting ptrace_stop(), we cannot return using SYSRET because
++ * that does not restore the full CPU state, only a minimal set.  The
++ * ptracer can change arbitrary register values, which is usually okay
++ * because the usual ptrace stops run off the signal delivery path which
++ * forces IRET; however, ptrace_event() stops happen in arbitrary places
++ * in the kernel and don't force IRET path.
++ *
++ * So force IRET path after a ptrace stop.
++ */
++#define arch_ptrace_stop_needed(code, info)				\
++({									\
++	set_thread_flag(TIF_NOTIFY_RESUME);				\
++	false;								\
++})
++
+ struct user_desc;
+ extern int do_get_thread_area(struct task_struct *p, int idx,
+ 			      struct user_desc __user *info);
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index 077904c..cc79eff 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -334,6 +334,9 @@ static inline void user_single_step_siginfo(struct task_struct *tsk,
+  * calling arch_ptrace_stop() when it would be superfluous.  For example,
+  * if the thread has not been back to user mode since the last stop, the
+  * thread state might indicate that nothing needs to be done.
++ *
++ * This is guaranteed to be invoked once before a task stops for ptrace and
++ * may include arch-specific operations necessary prior to a ptrace stop.
+  */
+ #define arch_ptrace_stop_needed(code, info)	(0)
  #endif
- 
-+extern void kvfree(const void *addr);
-+
- static inline void compound_lock(struct page *page)
- {
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-diff --git a/mm/util.c b/mm/util.c
-index 808f375..8636d3d 100644
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -9,6 +9,7 @@
- #include <linux/swapops.h>
- #include <linux/mman.h>
- #include <linux/hugetlb.h>
-+#include <linux/vmalloc.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -386,6 +387,15 @@ unsigned long vm_mmap(struct file *file, unsigned long addr,
- }
- EXPORT_SYMBOL(vm_mmap);
- 
-+void kvfree(const void *addr)
-+{
-+	if (is_vmalloc_addr(addr))
-+		vfree(addr);
-+	else
-+		kfree(addr);
-+}
-+EXPORT_SYMBOL(kvfree);
-+
- struct address_space *page_mapping(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
-diff --git a/security/apparmor/include/apparmor.h b/security/apparmor/include/apparmor.h
-index 8fb1488..97130f8 100644
---- a/security/apparmor/include/apparmor.h
-+++ b/security/apparmor/include/apparmor.h
-@@ -66,7 +66,6 @@ extern int apparmor_initialized __initdata;
- char *aa_split_fqname(char *args, char **ns_name);
- void aa_info_message(const char *str);
- void *__aa_kvmalloc(size_t size, gfp_t flags);
--void kvfree(void *buffer);
- 
- static inline void *kvmalloc(size_t size)
- {
-diff --git a/security/apparmor/lib.c b/security/apparmor/lib.c
-index 6968992..c1827e0 100644
---- a/security/apparmor/lib.c
-+++ b/security/apparmor/lib.c
-@@ -104,17 +104,3 @@ void *__aa_kvmalloc(size_t size, gfp_t flags)
- 	}
- 	return buffer;
- }
--
--/**
-- * kvfree - free an allocation do by kvmalloc
-- * @buffer: buffer to free (MAYBE_NULL)
-- *
-- * Free a buffer allocated by kvmalloc
-- */
--void kvfree(void *buffer)
--{
--	if (is_vmalloc_addr(buffer))
--		vfree(buffer);
--	else
--		kfree(buffer);
--}
 -- 
 1.9.1
 
