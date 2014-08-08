@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756414AbaHHRJX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 13:09:23 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:58515 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812AbaHHRJW (ORCPT
+	id S1756650AbaHHRMT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 13:12:19 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:53837 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941AbaHHRMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 13:09:22 -0400
-Date: Fri, 8 Aug 2014 10:09:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, bobby.prani@gmail.com,
-        masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
- waiting for RCU-tasks
-Message-ID: <20140808170916.GB5821@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140807155326.18481e66@gandalf.local.home>
- <20140807200813.GB3935@laptop>
- <20140807171823.1a481290@gandalf.local.home>
- <20140808064020.GZ9918@twins.programming.kicks-ass.net>
- <20140808101221.21056900@gandalf.local.home>
- <20140808143413.GB9918@twins.programming.kicks-ass.net>
- <20140808105858.171da847@gandalf.local.home>
- <20140808162714.GG9918@twins.programming.kicks-ass.net>
- <20140808163905.GA5821@linux.vnet.ibm.com>
- <20140808165112.GI9918@twins.programming.kicks-ass.net>
+	Fri, 8 Aug 2014 13:12:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140808165112.GI9918@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080817-0928-0000-0000-000003FAC1BA
+In-Reply-To: <20140808075316.GA21919@www.outflux.net>
+References: <20140808075316.GA21919@www.outflux.net>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Fri, 8 Aug 2014 13:11:55 -0400
+X-Google-Sender-Auth: BPk0E-nKq-x8X7gV9nmSXiUDyaY
+Message-ID: <CALZtONBNEg7kzUtwKihQuAU48MNh5NjhZcWoOxe-1-vgWqSLiw@mail.gmail.com>
+Subject: Re: [PATCH] mm/zpool: use prefixed module loading
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Linux-MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 06:51:12PM +0200, Peter Zijlstra wrote:
-> On Fri, Aug 08, 2014 at 09:39:05AM -0700, Paul E. McKenney wrote:
-> > On Fri, Aug 08, 2014 at 06:27:14PM +0200, Peter Zijlstra wrote:
-> > > On Fri, Aug 08, 2014 at 10:58:58AM -0400, Steven Rostedt wrote:
-> > > 
-> > > > > > No, they are also used by optimized kprobes. This is why optimized
-> > > > > > kprobes depend on !CONFIG_PREEMPT. [ added Masami to the discussion ].
-> > > > > 
-> > > > > How do those work? Is that one where the INT3 relocates the instruction
-> > > > > stream into an alternative 'text' and that JMPs back into the original
-> > > > > stream at the end?
-> > > > 
-> > > > No, it's where we replace the 'int3' with a jump to a trampoline that
-> > > > simulates an INT3. Speeds things up quite a bit.
-> > > 
-> > > OK, so the trivial 'fix' for that is to patch the probe site like:
-> > > 
-> > > 	preempt_disable();		INC	GS:%__preempt_count
-> > > 	call trampoline;		CALL	0xDEADBEEF
-> > > 	preempt_enable();		DEC	GS:%__preempt_count
-> > > 					JNZ	1f
-> > > 					CALL	___preempt_schedule
-> > > 				1f:
-> > > 
-> > > At which point the preempt_disable/enable() are the read side primitives
-> > > and call_rcu_sched/synchronize_sched are sufficient to release it.
-> > 
-> > Unless this is done in idle, at which point RCU-sched is studiously
-> > ignoring any preempt_disable() sections.
-> 
-> Well, given that kprobes is already using it, it 'must' be good ;-) I
-> suspect much of the idle loop is marked with __kprobe or so, or nobody
-> has been brave enough to try.
+On Fri, Aug 8, 2014 at 3:53 AM, Kees Cook <keescook@chromium.org> wrote:
+> To avoid potential format string expansion via module parameters,
+> do not use the zpool type directly in request_module() without a
+> format string. Additionally, to avoid arbitrary modules being loaded
+> via zpool API (e.g. via the zswap_zpool_type module parameter) add a
+> "zpool-" prefix to the requested module, as well as module aliases for
+> the existing zpool types (zbud and zsmalloc).
+>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  mm/zbud.c     | 1 +
+>  mm/zpool.c    | 2 +-
+>  mm/zsmalloc.c | 1 +
+>  3 files changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/mm/zbud.c b/mm/zbud.c
+> index a05790b1915e..aa74f7addab1 100644
+> --- a/mm/zbud.c
+> +++ b/mm/zbud.c
+> @@ -619,3 +619,4 @@ module_exit(exit_zbud);
+>  MODULE_LICENSE("GPL");
+>  MODULE_AUTHOR("Seth Jennings <sjenning@linux.vnet.ibm.com>");
+>  MODULE_DESCRIPTION("Buddy Allocator for Compressed Pages");
+> +MODULE_ALIAS("zpool-zbud");
 
-Not seeing much in the way of __kprobe, so guessing lack of bravery.
+If we keep this, I'd recommend putting this inside the #ifdef
+CONFIG_ZPOOL section, to keep all the zpool stuff together in zbud and
+zsmalloc.
 
-							Thanx, Paul
+> diff --git a/mm/zpool.c b/mm/zpool.c
+> index e40612a1df00..739cdf0d183a 100644
+> --- a/mm/zpool.c
+> +++ b/mm/zpool.c
+> @@ -150,7 +150,7 @@ struct zpool *zpool_create_pool(char *type, gfp_t gfp, struct zpool_ops *ops)
+>         driver = zpool_get_driver(type);
+>
+>         if (!driver) {
+> -               request_module(type);
+> +               request_module("zpool-%s", type);
 
+I agree with a change of (type) to ("%s", type), but what's the need
+to prefix "zpool-"?  Anyone who has access to modify the
+zswap_zpool_type parameter is already root and can just as easily load
+any module they want.  Additionally, the zswap_compressor parameter
+also runs through request_module() (in crypto/api.c) and could be used
+to load any kernel module.
+
+I'd prefer to leave out the "zpool-" prefix unless there is a specific
+reason to include it.
+
+>                 driver = zpool_get_driver(type);
+>         }
+>
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index 4e2fc83cb394..36af729eb3f6 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -1199,3 +1199,4 @@ module_exit(zs_exit);
+>
+>  MODULE_LICENSE("Dual BSD/GPL");
+>  MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
+> +MODULE_ALIAS("zpool-zsmalloc");
+> --
+> 1.9.1
+>
+>
+> --
+> Kees Cook
+> Chrome OS Security
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
