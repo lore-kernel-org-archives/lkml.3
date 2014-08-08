@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210AbaHHVnS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:43:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60746 "EHLO
+	id S933133AbaHHVnR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:43:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60753 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933579AbaHHVhB (ORCPT
+	with ESMTP id S933551AbaHHVhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:37:01 -0400
+	Fri, 8 Aug 2014 17:37:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Alexander Tobias Schulze 
-	<cat.schulze@alice-dsl.net>,
+        Sowmini Varadhan <sowmini.varadhan@oracle.com>,
+        Karl Volz <karl.volz@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 22/26] bbc-i2c: Fix BBC I2C envctrl on SunBlade 2000
-Date: Fri,  8 Aug 2014 14:35:29 -0700
-Message-Id: <20140808213414.588821941@linuxfoundation.org>
+Subject: [PATCH 3.15 24/26] sparc64: ldc_connect() should not return EINVAL when handshake is in progress.
+Date: Fri,  8 Aug 2014 14:35:31 -0700
+Message-Id: <20140808213414.676495792@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
 References: <20140808213413.648794968@linuxfoundation.org>
@@ -30,69 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
 
-[ Upstream commit 5cdceab3d5e02eb69ea0f5d8fa9181800baf6f77 ]
+[ Upstream commit 4ec1b01029b4facb651b8ef70bc20a4be4cebc63 ]
 
-Fix regression in bbc i2c temperature and fan control on some Sun systems
-that causes the driver to refuse to load due to the bbc_i2c_bussel resource not
-being present on the (second) i2c bus where the temperature sensors and fan
-control are located. (The check for the number of resources was removed when
-the driver was ported to a pure OF driver in mid 2008.)
+The LDC handshake could have been asynchronously triggered
+after ldc_bind() enables the ldc_rx() receive interrupt-handler
+(and thus intercepts incoming control packets)
+and before vio_port_up() calls ldc_connect(). If that is the case,
+ldc_connect() should return 0 and let the state-machine
+progress.
 
-Signed-off-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+Acked-by: Karl Volz <karl.volz@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/sbus/char/bbc_envctrl.c |    6 ++++++
- drivers/sbus/char/bbc_i2c.c     |   11 ++++++++---
- 2 files changed, 14 insertions(+), 3 deletions(-)
+ arch/sparc/kernel/ldc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/sbus/char/bbc_envctrl.c
-+++ b/drivers/sbus/char/bbc_envctrl.c
-@@ -452,6 +452,9 @@ static void attach_one_temp(struct bbc_i
- 	if (!tp)
- 		return;
+--- a/arch/sparc/kernel/ldc.c
++++ b/arch/sparc/kernel/ldc.c
+@@ -1336,7 +1336,7 @@ int ldc_connect(struct ldc_channel *lp)
+ 	if (!(lp->flags & LDC_FLAG_ALLOCED_QUEUES) ||
+ 	    !(lp->flags & LDC_FLAG_REGISTERED_QUEUES) ||
+ 	    lp->hs_state != LDC_HS_OPEN)
+-		err = -EINVAL;
++		err = ((lp->hs_state > LDC_HS_OPEN) ? 0 : -EINVAL);
+ 	else
+ 		err = start_handshake(lp);
  
-+	INIT_LIST_HEAD(&tp->bp_list);
-+	INIT_LIST_HEAD(&tp->glob_list);
-+
- 	tp->client = bbc_i2c_attach(bp, op);
- 	if (!tp->client) {
- 		kfree(tp);
-@@ -497,6 +500,9 @@ static void attach_one_fan(struct bbc_i2
- 	if (!fp)
- 		return;
- 
-+	INIT_LIST_HEAD(&fp->bp_list);
-+	INIT_LIST_HEAD(&fp->glob_list);
-+
- 	fp->client = bbc_i2c_attach(bp, op);
- 	if (!fp->client) {
- 		kfree(fp);
---- a/drivers/sbus/char/bbc_i2c.c
-+++ b/drivers/sbus/char/bbc_i2c.c
-@@ -300,13 +300,18 @@ static struct bbc_i2c_bus * attach_one_i
- 	if (!bp)
- 		return NULL;
- 
-+	INIT_LIST_HEAD(&bp->temps);
-+	INIT_LIST_HEAD(&bp->fans);
-+
- 	bp->i2c_control_regs = of_ioremap(&op->resource[0], 0, 0x2, "bbc_i2c_regs");
- 	if (!bp->i2c_control_regs)
- 		goto fail;
- 
--	bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
--	if (!bp->i2c_bussel_reg)
--		goto fail;
-+	if (op->num_resources == 2) {
-+		bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
-+		if (!bp->i2c_bussel_reg)
-+			goto fail;
-+	}
- 
- 	bp->waiting = 0;
- 	init_waitqueue_head(&bp->wq);
 
 
