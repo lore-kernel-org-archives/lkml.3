@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758375AbaHHVci (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:32:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40641 "EHLO
+	id S932640AbaHHVc6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:32:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40630 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758119AbaHHUsD (ORCPT
+	with ESMTP id S1758063AbaHHUr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:48:03 -0400
+	Fri, 8 Aug 2014 16:47:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Jonathan Cameron <jic23@kernel.org>,
+Cc: Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 022/259] staging: iio/ad7291: fix error code in ad7291_probe()
-Date: Fri,  8 Aug 2014 13:37:25 -0700
-Message-Id: <1407530482-4483-23-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 184/259] powerpc/perf: Fix MMCR2 handling for EBB
+Date: Fri,  8 Aug 2014 13:40:07 -0700
+Message-Id: <1407530482-4483-185-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,45 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Michael Ellerman <mpe@ellerman.id.au>
 
-commit b70e19c222a64018d308ebc80333575aff9f4e51 upstream.
+commit 8903461c9bc56fcb041fb92d054e2529951770b6 upstream.
 
-We should be returning a negative error code instead of success here.
+In the recent commit b50a6c584bb4 "Clear MMCR2 when enabling PMU", I
+screwed up the handling of MMCR2 for tasks using EBB.
 
-This would have been detected by GCC, except that the "ret" variable was
-initialized with a bogus value to disable GCC's uninitialized variable
-warnings.  I've cleaned that up, as well.
+We must make sure we set MMCR2 *before* ebb_switch_in(), otherwise we
+overwrite the value of MMCR2 that userspace may have written. That
+potentially breaks a task that uses EBB and manually uses MMCR2 for
+event freezing.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Fixes: b50a6c584bb4 ("powerpc/perf: Clear MMCR2 when enabling PMU")
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/iio/adc/ad7291.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/perf/core-book3s.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/iio/adc/ad7291.c b/drivers/staging/iio/adc/ad7291.c
-index d13f8ae..6c88359 100644
---- a/drivers/staging/iio/adc/ad7291.c
-+++ b/drivers/staging/iio/adc/ad7291.c
-@@ -465,7 +465,7 @@ static int ad7291_probe(struct i2c_client *client,
- 	struct ad7291_platform_data *pdata = client->dev.platform_data;
- 	struct ad7291_chip_info *chip;
- 	struct iio_dev *indio_dev;
--	int ret = 0;
-+	int ret;
+diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+index 57a8ff9..36a8bdd 100644
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -1159,14 +1159,14 @@ static void power_pmu_enable(struct pmu *pmu)
+ 	cpuhw->mmcr[0] |= MMCR0_PMXE | MMCR0_FCECE;
  
- 	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*chip));
- 	if (!indio_dev)
-@@ -475,7 +475,7 @@ static int ad7291_probe(struct i2c_client *client,
- 	if (pdata && pdata->use_external_ref) {
- 		chip->reg = devm_regulator_get(&client->dev, "vref");
- 		if (IS_ERR(chip->reg))
--			return ret;
-+			return PTR_ERR(chip->reg);
+  out_enable:
++	if (ppmu->flags & PPMU_ARCH_207S)
++		mtspr(SPRN_MMCR2, 0);
++
+ 	mmcr0 = ebb_switch_in(ebb, cpuhw->mmcr[0]);
  
- 		ret = regulator_enable(chip->reg);
- 		if (ret)
+ 	mb();
+ 	write_mmcr0(cpuhw, mmcr0);
+ 
+-	if (ppmu->flags & PPMU_ARCH_207S)
+-		mtspr(SPRN_MMCR2, 0);
+-
+ 	/*
+ 	 * Enable instruction sampling if necessary
+ 	 */
 -- 
 1.9.1
 
