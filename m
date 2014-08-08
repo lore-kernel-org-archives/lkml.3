@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758902AbaHHVlc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:41:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60774 "EHLO
+	id S1758884AbaHHVla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:41:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60782 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933597AbaHHVhF (ORCPT
+	with ESMTP id S933604AbaHHVhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 17:37:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergey Popov <pinkbyte@gentoo.org>, Dmitry Popov <ixaphire@qrator.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Dave Jones <davej@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 01/17] ip_tunnel(ipv4): fix tunnels with "local any remote $remote_ip"
-Date: Fri,  8 Aug 2014 14:35:23 -0700
-Message-Id: <20140808213457.572871955@linuxfoundation.org>
+Subject: [PATCH 3.16 10/17] sctp: fix possible seqlock seadlock in sctp_packet_transmit()
+Date: Fri,  8 Aug 2014 14:35:32 -0700
+Message-Id: <20140808213457.936622210@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213457.511493898@linuxfoundation.org>
 References: <20140808213457.511493898@linuxfoundation.org>
@@ -29,126 +31,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Popov <ixaphire@qrator.net>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 95cb5745983c222867cc9ac593aebb2ad67d72c0 ]
+[ Upstream commit 757efd32d5ce31f67193cc0e6a56e4dffcc42fb1 ]
 
-Ipv4 tunnels created with "local any remote $ip" didn't work properly since
-7d442fab0 (ipv4: Cache dst in tunnels). 99% of packets sent via those tunnels
-had src addr = 0.0.0.0. That was because only dst_entry was cached, although
-fl4.saddr has to be cached too. Every time ip_tunnel_xmit used cached dst_entry
-(tunnel_rtable_get returned non-NULL), fl4.saddr was initialized with
-tnl_params->saddr (= 0 in our case), and wasn't changed until iptunnel_xmit().
+Dave reported following splat, caused by improper use of
+IP_INC_STATS_BH() in process context.
 
-This patch adds saddr to ip_tunnel->dst_cache, fixing this issue.
+BUG: using __this_cpu_add() in preemptible [00000000] code: trinity-c117/14551
+caller is __this_cpu_preempt_check+0x13/0x20
+CPU: 3 PID: 14551 Comm: trinity-c117 Not tainted 3.16.0+ #33
+ ffffffff9ec898f0 0000000047ea7e23 ffff88022d32f7f0 ffffffff9e7ee207
+ 0000000000000003 ffff88022d32f818 ffffffff9e397eaa ffff88023ee70b40
+ ffff88022d32f970 ffff8801c026d580 ffff88022d32f828 ffffffff9e397ee3
+Call Trace:
+ [<ffffffff9e7ee207>] dump_stack+0x4e/0x7a
+ [<ffffffff9e397eaa>] check_preemption_disabled+0xfa/0x100
+ [<ffffffff9e397ee3>] __this_cpu_preempt_check+0x13/0x20
+ [<ffffffffc0839872>] sctp_packet_transmit+0x692/0x710 [sctp]
+ [<ffffffffc082a7f2>] sctp_outq_flush+0x2a2/0xc30 [sctp]
+ [<ffffffff9e0d985c>] ? mark_held_locks+0x7c/0xb0
+ [<ffffffff9e7f8c6d>] ? _raw_spin_unlock_irqrestore+0x5d/0x80
+ [<ffffffffc082b99a>] sctp_outq_uncork+0x1a/0x20 [sctp]
+ [<ffffffffc081e112>] sctp_cmd_interpreter.isra.23+0x1142/0x13f0 [sctp]
+ [<ffffffffc081c86b>] sctp_do_sm+0xdb/0x330 [sctp]
+ [<ffffffff9e0b8f1b>] ? preempt_count_sub+0xab/0x100
+ [<ffffffffc083b350>] ? sctp_cname+0x70/0x70 [sctp]
+ [<ffffffffc08389ca>] sctp_primitive_ASSOCIATE+0x3a/0x50 [sctp]
+ [<ffffffffc083358f>] sctp_sendmsg+0x88f/0xe30 [sctp]
+ [<ffffffff9e0d673a>] ? lock_release_holdtime.part.28+0x9a/0x160
+ [<ffffffff9e0d62ce>] ? put_lock_stats.isra.27+0xe/0x30
+ [<ffffffff9e73b624>] inet_sendmsg+0x104/0x220
+ [<ffffffff9e73b525>] ? inet_sendmsg+0x5/0x220
+ [<ffffffff9e68ac4e>] sock_sendmsg+0x9e/0xe0
+ [<ffffffff9e1c0c09>] ? might_fault+0xb9/0xc0
+ [<ffffffff9e1c0bae>] ? might_fault+0x5e/0xc0
+ [<ffffffff9e68b234>] SYSC_sendto+0x124/0x1c0
+ [<ffffffff9e0136b0>] ? syscall_trace_enter+0x250/0x330
+ [<ffffffff9e68c3ce>] SyS_sendto+0xe/0x10
+ [<ffffffff9e7f9be4>] tracesys+0xdd/0xe2
 
-Reported-by: Sergey Popov <pinkbyte@gentoo.org>
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+This is a followup of commits f1d8cba61c3c4b ("inet: fix possible
+seqlock deadlocks") and 7f88c6b23afbd315 ("ipv6: fix possible seqlock
+deadlock in ip6_finish_output2")
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/ip_tunnels.h |    1 +
- net/ipv4/ip_tunnel.c     |   29 ++++++++++++++++++-----------
- 2 files changed, 19 insertions(+), 11 deletions(-)
+ net/sctp/output.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/ip_tunnels.h
-+++ b/include/net/ip_tunnels.h
-@@ -40,6 +40,7 @@ struct ip_tunnel_prl_entry {
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -599,7 +599,7 @@ out:
+ 	return err;
+ no_route:
+ 	kfree_skb(nskb);
+-	IP_INC_STATS_BH(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
++	IP_INC_STATS(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
  
- struct ip_tunnel_dst {
- 	struct dst_entry __rcu 		*dst;
-+	__be32				 saddr;
- };
- 
- struct ip_tunnel {
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -69,23 +69,25 @@ static unsigned int ip_tunnel_hash(__be3
- }
- 
- static void __tunnel_dst_set(struct ip_tunnel_dst *idst,
--			     struct dst_entry *dst)
-+			     struct dst_entry *dst, __be32 saddr)
- {
- 	struct dst_entry *old_dst;
- 
- 	dst_clone(dst);
- 	old_dst = xchg((__force struct dst_entry **)&idst->dst, dst);
- 	dst_release(old_dst);
-+	idst->saddr = saddr;
- }
- 
--static void tunnel_dst_set(struct ip_tunnel *t, struct dst_entry *dst)
-+static void tunnel_dst_set(struct ip_tunnel *t,
-+			   struct dst_entry *dst, __be32 saddr)
- {
--	__tunnel_dst_set(this_cpu_ptr(t->dst_cache), dst);
-+	__tunnel_dst_set(this_cpu_ptr(t->dst_cache), dst, saddr);
- }
- 
- static void tunnel_dst_reset(struct ip_tunnel *t)
- {
--	tunnel_dst_set(t, NULL);
-+	tunnel_dst_set(t, NULL, 0);
- }
- 
- void ip_tunnel_dst_reset_all(struct ip_tunnel *t)
-@@ -93,20 +95,25 @@ void ip_tunnel_dst_reset_all(struct ip_t
- 	int i;
- 
- 	for_each_possible_cpu(i)
--		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL);
-+		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL, 0);
- }
- EXPORT_SYMBOL(ip_tunnel_dst_reset_all);
- 
--static struct rtable *tunnel_rtable_get(struct ip_tunnel *t, u32 cookie)
-+static struct rtable *tunnel_rtable_get(struct ip_tunnel *t,
-+					u32 cookie, __be32 *saddr)
- {
-+	struct ip_tunnel_dst *idst;
- 	struct dst_entry *dst;
- 
- 	rcu_read_lock();
--	dst = rcu_dereference(this_cpu_ptr(t->dst_cache)->dst);
-+	idst = this_cpu_ptr(t->dst_cache);
-+	dst = rcu_dereference(idst->dst);
- 	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
- 		dst = NULL;
- 	if (dst) {
--		if (dst->obsolete && dst->ops->check(dst, cookie) == NULL) {
-+		if (!dst->obsolete || dst->ops->check(dst, cookie)) {
-+			*saddr = idst->saddr;
-+		} else {
- 			tunnel_dst_reset(t);
- 			dst_release(dst);
- 			dst = NULL;
-@@ -367,7 +374,7 @@ static int ip_tunnel_bind_dev(struct net
- 
- 		if (!IS_ERR(rt)) {
- 			tdev = rt->dst.dev;
--			tunnel_dst_set(tunnel, &rt->dst);
-+			tunnel_dst_set(tunnel, &rt->dst, fl4.saddr);
- 			ip_rt_put(rt);
- 		}
- 		if (dev->type != ARPHRD_ETHER)
-@@ -610,7 +617,7 @@ void ip_tunnel_xmit(struct sk_buff *skb,
- 	init_tunnel_flow(&fl4, protocol, dst, tnl_params->saddr,
- 			 tunnel->parms.o_key, RT_TOS(tos), tunnel->parms.link);
- 
--	rt = connected ? tunnel_rtable_get(tunnel, 0) : NULL;
-+	rt = connected ? tunnel_rtable_get(tunnel, 0, &fl4.saddr) : NULL;
- 
- 	if (!rt) {
- 		rt = ip_route_output_key(tunnel->net, &fl4);
-@@ -620,7 +627,7 @@ void ip_tunnel_xmit(struct sk_buff *skb,
- 			goto tx_error;
- 		}
- 		if (connected)
--			tunnel_dst_set(tunnel, &rt->dst);
-+			tunnel_dst_set(tunnel, &rt->dst, fl4.saddr);
- 	}
- 
- 	if (rt->dst.dev == dev) {
+ 	/* FIXME: Returning the 'err' will effect all the associations
+ 	 * associated with a socket, although only one of the paths of the
 
 
