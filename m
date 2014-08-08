@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759320AbaHHVux (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:50:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60691 "EHLO
+	id S1759304AbaHHVuv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:50:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60695 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933506AbaHHVgw (ORCPT
+	with ESMTP id S933508AbaHHVgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 17:36:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 16/26] iovec: make sure the caller actually wants anything in memcpy_fromiovecend
-Date: Fri,  8 Aug 2014 14:35:23 -0700
-Message-Id: <20140808213414.340153683@linuxfoundation.org>
+        Steffen Klassert <steffen.klassert@secunet.com>
+Subject: [PATCH 3.15 02/26] xfrm: Fix refcount imbalance in xfrm_lookup
+Date: Fri,  8 Aug 2014 14:35:09 -0700
+Message-Id: <20140808213413.746931745@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
 References: <20140808213413.648794968@linuxfoundation.org>
@@ -29,32 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit 06ebb06d49486676272a3c030bfeef4bd969a8e6 ]
+[ Upstream commit b7eea4545ea775df957460f58eb56085a8892856 ]
 
-Check for cases when the caller requests 0 bytes instead of running off
-and dereferencing potentially invalid iovecs.
+xfrm_lookup must return a dst_entry with a refcount for the caller.
+Git commit 1a1ccc96abb ("xfrm: Remove caching of xfrm_policy_sk_bundles")
+removed this refcount for the socket policy case accidentally.
+This patch restores it and sets DST_NOCACHE flag to make sure
+that the dst_entry is freed when the refcount becomes null.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: 1a1ccc96abb ("xfrm: Remove caching of xfrm_policy_sk_bundles")
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/iovec.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/xfrm/xfrm_policy.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -107,6 +107,10 @@ EXPORT_SYMBOL(memcpy_toiovecend);
- int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
- 			int offset, int len)
- {
-+	/* No data? Done! */
-+	if (len == 0)
-+		return 0;
-+
- 	/* Skip over the finished iovecs */
- 	while (offset >= iov->iov_len) {
- 		offset -= iov->iov_len;
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -2107,6 +2107,8 @@ struct dst_entry *xfrm_lookup(struct net
+ 				goto no_transform;
+ 			}
+ 
++			dst_hold(&xdst->u.dst);
++			xdst->u.dst.flags |= DST_NOCACHE;
+ 			route = xdst->route;
+ 		}
+ 	}
 
 
