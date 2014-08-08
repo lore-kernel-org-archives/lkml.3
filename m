@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933133AbaHHVnR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:43:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60753 "EHLO
+	id S933019AbaHHVnP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:43:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60758 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933551AbaHHVhD (ORCPT
+	with ESMTP id S933582AbaHHVhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 17:37:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sowmini Varadhan <sowmini.varadhan@oracle.com>,
-        Karl Volz <karl.volz@oracle.com>,
+        David Binderman <dcb314@hotmail.com>,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 24/26] sparc64: ldc_connect() should not return EINVAL when handshake is in progress.
-Date: Fri,  8 Aug 2014 14:35:31 -0700
-Message-Id: <20140808213414.676495792@linuxfoundation.org>
+Subject: [PATCH 3.15 25/26] arch/sparc/math-emu/math_32.c: drop stray break operator
+Date: Fri,  8 Aug 2014 14:35:32 -0700
+Message-Id: <20140808213414.719270526@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
 References: <20140808213413.648794968@linuxfoundation.org>
@@ -30,35 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-[ Upstream commit 4ec1b01029b4facb651b8ef70bc20a4be4cebc63 ]
+[ Upstream commit 093758e3daede29cb4ce6aedb111becf9d4bfc57 ]
 
-The LDC handshake could have been asynchronously triggered
-after ldc_bind() enables the ldc_rx() receive interrupt-handler
-(and thus intercepts incoming control packets)
-and before vio_port_up() calls ldc_connect(). If that is the case,
-ldc_connect() should return 0 and let the state-machine
-progress.
+This commit is a guesswork, but it seems to make sense to drop this
+break, as otherwise the following line is never executed and becomes
+dead code. And that following line actually saves the result of
+local calculation by the pointer given in function argument. So the
+proposed change makes sense if this code in the whole makes sense (but I
+am unable to analyze it in the whole).
 
-Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
-Acked-by: Karl Volz <karl.volz@oracle.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81641
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/ldc.c |    2 +-
+ arch/sparc/math-emu/math_32.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/kernel/ldc.c
-+++ b/arch/sparc/kernel/ldc.c
-@@ -1336,7 +1336,7 @@ int ldc_connect(struct ldc_channel *lp)
- 	if (!(lp->flags & LDC_FLAG_ALLOCED_QUEUES) ||
- 	    !(lp->flags & LDC_FLAG_REGISTERED_QUEUES) ||
- 	    lp->hs_state != LDC_HS_OPEN)
--		err = -EINVAL;
-+		err = ((lp->hs_state > LDC_HS_OPEN) ? 0 : -EINVAL);
- 	else
- 		err = start_handshake(lp);
- 
+--- a/arch/sparc/math-emu/math_32.c
++++ b/arch/sparc/math-emu/math_32.c
+@@ -499,7 +499,7 @@ static int do_one_mathemu(u32 insn, unsi
+ 		case 0: fsr = *pfsr;
+ 			if (IR == -1) IR = 2;
+ 			/* fcc is always fcc0 */
+-			fsr &= ~0xc00; fsr |= (IR << 10); break;
++			fsr &= ~0xc00; fsr |= (IR << 10);
+ 			*pfsr = fsr;
+ 			break;
+ 		case 1: rd->s = IR; break;
 
 
