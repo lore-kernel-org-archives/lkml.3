@@ -1,126 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842AbaHHOtW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 10:49:22 -0400
-Received: from outrelay08.libero.it ([212.52.84.112]:38272 "EHLO
-	outrelay08.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663AbaHHOtU (ORCPT
+	id S1756909AbaHHOwW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 10:52:22 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:36102 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752904AbaHHOwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 10:49:20 -0400
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0C0206.53E4E361.00D5,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1823
-Message-ID: <53E4E4B8.4060900@inwind.it>
-Date: Fri, 08 Aug 2014 16:54:48 +0200
-From: Goffredo Baroncelli <kreijack@inwind.it>
-Reply-To: kreijack@inwind.it
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Fri, 8 Aug 2014 10:52:20 -0400
+Message-ID: <53E4E41D.4070703@collabora.co.uk>
+Date: Fri, 08 Aug 2014 16:52:13 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Matt Helsley <matt.helsley@gmail.com>
-CC: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] Export the temperatures via hwmon
-References: <1407359103-6012-1-git-send-email-kreijack@inwind.it> <1407359103-6012-6-git-send-email-kreijack@inwind.it> <20140806231803.GA5643@roeck-us.net> <53E31694.8050107@gmail.com> <53E31AB0.6070604@roeck-us.net> <20140807085235.2c0e63dd@endymion.delvare> <53E32C77.5000804@roeck-us.net> <53E3BC48.4020304@inwind.it> <20140807211941.GA2756@eieio>
-In-Reply-To: <20140807211941.GA2756@eieio>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Nick Dyer <nick.dyer@itdev.co.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Stephen Warren <swarren@nvidia.com>, Yufeng Shen <miletus@chromium.org>,
+        Benson Leung <bleung@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        linux-input@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Input: atmel_mxt_ts - Add keycodes array example
+References: <1407372486-25881-1-git-send-email-javier.martinez@collabora.co.uk> <1407372486-25881-2-git-send-email-javier.martinez@collabora.co.uk> <53E37329.4020002@itdev.co.uk>
+In-Reply-To: <53E37329.4020002@itdev.co.uk>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 11:19 PM, Matt Helsley wrote:
-> On Thu, Aug 07, 2014 at 07:50:00PM +0200, Goffredo Baroncelli wrote:
->> On 08/07/2014 09:36 AM, Guenter Roeck wrote:
->>> On 08/06/2014 11:52 PM, Jean Delvare wrote:
->>>> Hi Guenter,
->>>>
->>>> On Wed, 06 Aug 2014 23:20:32 -0700, Guenter Roeck wrote:
->>>>> Patch 4/5 is "Return the fan speed via sysfs: /sys/devices/temperature/fan_level".
->>>>>
->>>>> So you are saying that returning the fan speed with a non-hwmon attribute works,
->>>>> but returning it with a hwmon attribute doesn't ? Not really sure if I understand
->>>>> your logic. Either fan_level doesn't return the fan speed (or an abstraction of it),
->>>>> or something in your line of argument is inconsistent.
->>>>
->>>> fan_level is a fan speed _control_ value, like pwm1. It is not a fan
->>>> speed monitoring value.
->>>>
->>> Ah, ok. The patch description doesn't seem to match, though.
->>> And why not export it as pwm1, if that is what it is ?
->>>
->>> Guenter
->>>
->>>
->>
->> the exported fan_level value is a coefficient near proportional to the speed [*];
->> so it is not the speed nor the pwm.
+Hello Nick,
+
+On 08/07/2014 02:38 PM, Nick Dyer wrote:
+>> 
+>> Also, the current documentation says that the array limit
+>> is four entries but the driver dynamically allocates the
+>> keymap array and does not limit the array size.
 > 
->> I tried to read the pwm/speed value, but when I did it, every 5/6 seconds the
->> fan seemed to stop for 1s, then the speed raised.... So I stopped the test.
->>
->> These patches (the first two) solved a real issue: with the last kernels this
->> driver doesn't work at all, and the fan go to maximum speed (very loud !)
->> The other three are an improvement.
->>
->> When (if) these patches will be accepted I want to write another solution,
->> but definitely not now. And even if it would work for me, it is very likely 
->> that will  be accepted because nobody is able to test it on all hardware.
->>
->> BR
->> G.Baroncelli
->>
->> [*] It is a bit more complicated: basically the adm1030 controls the fan speed
->> on the basis of an external temperature sensor (the "case" sensor). 
->> Higher is this temperature higher is the fan speed.
->> The pwm of the fan is computed on the basis of the following value:
->> 	- min_temp
->> 	- range_temp -> max_temp=min_temp+range_temp
->> 	- min_pwm_value
->> and of course
->> 	- "case" sensor
->>
->>
->> The fan_level is an index computed on the basis of the "cpu" temperature (
->> which is different from the "case" temperature referred above). This
->> temperature is used to update the min_temp above.
->>
->> So the fan speed id computed on the basis of two external sensor:
->> - cpu sensor
->> - case sensor.
->>
->> To complicate further the things, the range_temp is set to an undocumented 
->> value: this parameter is set via a register (0x25, bit 2:0), which accepted 
->> values between 0x00 and 0x04. However it is set to 0x07
->>
->> See http://lxr.free-electrons.com/source/drivers/macintosh/therm_windtunnel.c#L153
->> and the adm1030 datasheet.
->>
->> I am reluctant to change this thing because this driver is for an obsolete 
->> platform (apple stopped the powermac in 2004/2005), and bad or good I have to
->> suppose that it works. Moreover I am not in the position to test the changes 
->> outside my hardware (1 powermac DP@1Ghz mdd)
+> There is a physical limit to the number of GPIOs on the device. The number
+> 4 is wrong, the protocol does allow for up to 8 GPIOs. But it is a hard limit.
+>
+
+Thanks a lot for the explanation, then I guess s/4/8 is enough.
+
+>> 
+>> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+>> ---
+>>  Documentation/devicetree/bindings/input/atmel,maxtouch.txt | 8 +++++++-
+>>  1 file changed, 7 insertions(+), 1 deletion(-)
+>> 
+>> diff --git a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+>> index baef432..be50476 100644
+>> --- a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+>> +++ b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+>> @@ -11,7 +11,7 @@ Required properties:
+>>  
+>>  Optional properties for main touchpad device:
+>>  
+>> -- linux,gpio-keymap: An array of up to 4 entries indicating the Linux
+>> +- linux,gpio-keymap: An array of entries indicating the Linux
+>>      keycode generated by each GPIO. Linux keycodes are defined in
+>>      <dt-bindings/input/input.h>.
+>>  
+>> @@ -22,4 +22,10 @@ Example:
+>>  		reg = <0x4b>;
+>>  		interrupt-parent = <&gpio>;
+>>  		interrupts = <TEGRA_GPIO(W, 3) IRQ_TYPE_LEVEL_LOW>;
+>> +		linux,gpio-keymap = < BTN_LEFT
+>> +				      BTN_TOOL_FINGER
+>> +				      BTN_TOOL_DOUBLETAP
+>> +				      BTN_TOOL_TRIPLETAP
+>> +				      BTN_TOOL_QUADTAP
+>> +				      BTN_TOOL_QUINTTAP >;
 > 
-> This seems like a valuable explanation of the meaning of the fan_level
-> values. When I read the code I was wondering what the magic number "11" was
-> doing for instance and this helps clear it up a little. It's a nit perhaps
-> but some of this information might be useful in the commit message for that
-> patch, the code, or both.
+> I'm afraid you have misunderstood the impact of this change to the way that
+> the GPIOs coming in to the touch controller are mapped to key codes. Look
 
-I will take in account your suggestion. In case of another revision, I will improve the comment.
+Unfortunately there are no boards in mainline using this "linux,gpio-keymap"
+property so I tried to figure out what the expected values were by reading the
+driver. So is more than possible that I got them wrong.
 
+By passing all these keycodes the touchpad worked as expected for me and the
+driver did the same than the Chrome OS driver that has these keycodes hardcoded
+when is_tp is true.
 
-
-> Also, I think the patches from "Bryan" should have a "From:" attribution line
-> at the start of the commit message (See Documentation/SubmittingPatches).
-
-Thanks for the suggestion. In case of another revision I will put the "From:" tag.
-
-> Cheers,
-> 	-Matt Helsley
+> at the protocol guide for T19.
 > 
 
+I don't have access to proper documentation and I wouldn't expect people to have
+access to non-public docs in order to use a Device Tree binding.
 
--- 
-gpg @keyserver.linux.it: Goffredo Baroncelli (kreijackATinwind.it>
-Key fingerprint BBF5 1610 0B64 DAC6 5F7D  17B2 0EDA 9B37 8B82 E0B5
+That's why I wanted to document an example, so using this property could be
+easier for others and they shouldn't have to look at the driver in order to
+figure it out (and getting it wrong as you said :) )
+
+So it would be great if you could provide an example on how this is supposed to
+be used.
+
+> The DOUBLE/TRIPLE/QUAD/QUINTTAP stuff is filled in for us by the input core
+> when we use INPUT_MT_POINTER, anyway.
+> 
+
+Thanks for the hint, I didn't know that this was the case but I just looked at
+input_mt_init_slots() [0] and indeed those are not needed.
+
+Best regards,
+Javier
+
+[0]: http://lxr.free-electrons.com/source/drivers/input/input-mt.c#L69
