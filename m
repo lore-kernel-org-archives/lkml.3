@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629AbaHHKpS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 06:45:18 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54288 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755216AbaHHKpQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 06:45:16 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53E4AA35.1060703@roeck-us.net>
-Date: Fri, 08 Aug 2014 03:45:09 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1756676AbaHHKpb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 06:45:31 -0400
+Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:7704
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755216AbaHHKpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 06:45:22 -0400
+Date: Fri, 8 Aug 2014 12:45:11 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 
+	Thunderbird/31.0
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] arch,locking: Ciao arch_mutex_cpu_relax()
-References: <1403288473.10903.2.camel@buesod1.americas.hpqcorp.net>	 <20140623065835.GF19860@laptop.programming.kicks-ass.net>	 <1403622415.15523.4.camel@buesod1.americas.hpqcorp.net>	 <20140625062510.GB4260@osiris>	 <CA+55aFx3UQG42cYrUWrTDT9CnpnRwVta6C9N_0FH1wvyDMxPgw@mail.gmail.com>	 <1404079773.2619.4.camel@buesod1.americas.hpqcorp.net>	 <CAMuHMdX2ZCEd=J_Gpf-W+Zyqg27r4C6ULZgO=pg2houR-FXLvg@mail.gmail.com>	 <1407260539.6493.3.camel@buesod1.americas.hpqcorp.net> <1407460714.2513.19.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1407460714.2513.19.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Julia Lawall <Julia.Lawall@lip6.fr>,
+        Michal Simek <michal.simek@xilinx.com>
+CC: <kernel-janitors@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 12/14] ll_temac: delete unneeded test before of_node_put
+References: <1407492475-26283-12-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1407492475-26283-12-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+X-RCIS-Action: ALLOW
+X-imss-version: 2.032
+X-imss-result: Passed
+X-imss-scanInfo: M:P L:N SM:0
+X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:3.51.1032(14006.000)
+X-imss-scores: Clean:99.90000 C:2 M:3 S:5 R:5
+X-imss-settings: Baseline:1 C:1 M:1 S:1 R:1 (0.0000 0.0000)
+Message-ID: <8c6f53e8-f0ae-4b5e-b852-50603bff0060@BN1BFFO11FD029.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009004)(6009001)(438002)(24454002)(51704005)(164054003)(377454003)(479174003)(189002)(199002)(77982001)(85306004)(65806001)(74662001)(47776003)(80022001)(33646002)(4396001)(1496007)(104016003)(79102001)(64706001)(106466001)(21056001)(107046002)(81542001)(74316001)(70736001)(74502001)(20776003)(50466002)(76482001)(102836001)(50986999)(99396002)(54356999)(76176999)(15202345003)(46102001)(85852003)(83072002)(83506001)(6806004)(95666004)(86362001)(81342001)(87936001)(44976005)(31696002)(23676002)(92726001)(83322001)(15975445006)(19580405001)(19580395003)(65826006)(107986001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB053;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02973C87BC
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 06:18 PM, Davidlohr Bueso wrote:
-> On Tue, 2014-08-05 at 10:42 -0700, Davidlohr Bueso wrote:
->> On Tue, 2014-08-05 at 15:04 +0200, Geert Uytterhoeven wrote:
->>> It looks like you forgot to update frv?  It's been failing on -next since a
->>> few days:
->
-> Anyway developers can be alerted sooner about this (ie: while its still
-> in -next phase), like automated emails or something? This would be extra
-> nice for those archs that are harder to get tested.
->
-Not sure if that would help. After all, images are being built.
-People just don't care enough to have a look.
+On 08/08/2014 12:07 PM, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Of_node_put supports NULL as its argument, so the initial test is not
+> necessary.
+> 
+> Suggested by Uwe Kleine-König.
+> 
+> The semantic patch that fixes this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression e;
+> @@
+> 
+> -if (e)
+>    of_node_put(e);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+>  drivers/net/ethernet/xilinx/ll_temac_main.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+> index 8a6e5c2..36f4459 100644
+> --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
+> +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+> @@ -1148,8 +1148,7 @@ static int temac_of_remove(struct platform_device *op)
+>  	temac_mdio_teardown(lp);
+>  	unregister_netdev(ndev);
+>  	sysfs_remove_group(&lp->dev->kobj, &temac_attr_group);
+> -	if (lp->phy_node)
+> -		of_node_put(lp->phy_node);
+> +	of_node_put(lp->phy_node);
+>  	lp->phy_node = NULL;
+>  	iounmap(lp->regs);
+>  	if (lp->sdma_regs)
 
-FWIW, next-20140808 build results on my build/test farm:
-	total: 132 pass: 120 fail: 12
-Failed builds:
-	frv:defconfig
-	mips:nlm_xlp_defconfig
-	openrisc:defconfig
-	powerpc:allmodconfig (binutils 2.23 and 2.24)
-	powerpc:mpc83xx_defconfig (ditto)
-	powerpc:mpc85xx_defconfig (ditto)
-	powerpc:mpc85xx_smp_defconfig (ditto)
-	unicore32:defconfig
+Reviewed-by: Michal Simek <michal.simek@xilinx.com>
 
-with qemu test runs failing for arm, mips, mips64, and ppc.
+Thanks,
+Michal
 
-Which points to the next problem: I simply do not have the time to track down
-all those failures, and I would guess neither do others who might be interested.
-Geert is doing an excellent job trying to report and fix things, but quite frankly
-sometimes one feels like Sisyphus trying to keep builds clean.
 
-Guenter
 
