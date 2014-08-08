@@ -1,63 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075AbaHHFiT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 01:38:19 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19225 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755887AbaHHFhP (ORCPT
+	id S1756114AbaHHFjw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 01:39:52 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:44361 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755517AbaHHFju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 01:37:15 -0400
-From: Ethan Zhao <ethan.zhao@oracle.com>
-To: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gleb@kernel.org, pbonzini@redhat.com,
-        kvm@vger.kernel.org, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        xen-devel@lists.xenproject.org
-Cc: alex.williamson@redhat.com, alexander.h.duyck@intel.com,
-        ethan.kernel@gmail.com
-Subject: [PATCH 3/4] xen-pciback: use pci device flag operation helper function
-Date: Fri,  8 Aug 2014 13:36:06 +0800
-Message-Id: <1407476167-18935-4-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1407476167-18935-1-git-send-email-ethan.zhao@oracle.com>
-References: <1407476167-18935-1-git-send-email-ethan.zhao@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 8 Aug 2014 01:39:50 -0400
+Message-ID: <1407476387.2513.39.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2 1/7] locking/rwsem: check for active writer/spinner
+ before wakeup
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, aswin@hp.com
+Date: Thu, 07 Aug 2014 22:39:47 -0700
+In-Reply-To: <1407458726.2513.12.camel@buesod1.americas.hpqcorp.net>
+References: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com>
+	 <1407450408-11679-2-git-send-email-Waiman.Long@hp.com>
+	 <1407458726.2513.12.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use pci device flag operation helper functions when set device
-to assigned or deassigned state.
+On Thu, 2014-08-07 at 17:45 -0700, Davidlohr Bueso wrote:
+> On Thu, 2014-08-07 at 18:26 -0400, Waiman Long wrote:
+> > On a highly contended rwsem, spinlock contention due to the slow
+> > rwsem_wake() call can be a significant portion of the total CPU cycles
+> > used. With writer lock stealing and writer optimistic spinning, there
+> > is also a pretty good chance that the lock may have been stolen
+> > before the waker wakes up the waiters. The woken tasks, if any,
+> > will have to go back to sleep again.
+> 
+> Good catch! And this applies to mutexes as well. How about something
+> like this:
+> 
+> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+> index dadbf88..e037588 100644
+> --- a/kernel/locking/mutex.c
+> +++ b/kernel/locking/mutex.c
+> @@ -707,6 +707,20 @@ EXPORT_SYMBOL_GPL(__ww_mutex_lock_interruptible);
+>  
+>  #endif
+>  
+> +#if defined(CONFIG_DEBUG_MUTEXES) || defined(CONFIG_MUTEX_SPIN_ON_OWNER)
 
-Acked-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+If DEBUG, we don't clear the owner when unlocking. This can just be 
+
++#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+
+> +static inline bool mutex_has_owner(struct mutex *lock)
+> +{
+> +	struct task_struct *owner = ACCESS_ONCE(lock->owner);
+> +
+> +	return owner != NULL;
+> +}
+> +#else
+> +static inline bool mutex_has_owner(struct mutex *lock)
+> +{
+> +	return false;
+> +}
+> +#endif
+> +
+>  /*
+>   * Release the lock, slowpath:
+>   */
+> @@ -734,6 +748,15 @@ __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
+>  	mutex_release(&lock->dep_map, nested, _RET_IP_);
+>  	debug_mutex_unlock(lock);
+>  
+> +	/*
+> +	 * Abort the wakeup operation if there is an active writer as the
+> +	 * lock was stolen. mutex_unlock() should have cleared the owner field
+> +	 * before calling this function. If that field is now set, there must
+> +	 * be an active writer present.
+> +	 */
+> +	if (mutex_has_owner(lock))
+> +		goto done;
+
+Err so we actually deadlock here because we do the check with the
+lock->wait_lock held and at the same time another task comes into the
+slowpath of a mutex_lock() call which also tries to take the wait_lock.
+Ending up with hung tasks. Here's a more tested patch against
+peterz-queue, survives aim7 and kernel builds on a 80core box. Thanks.
+
+
+8<---------------------------------------------------------------
+From: Davidlohr Bueso <davidlohr@hp.com>
+Subject: [PATCH] locking/mutex: Do not falsely wake-up tasks
+
+Mutexes lock-stealing functionality allows another task to
+skip its turn in the wait-queue and atomically acquire the lock.
+This is fine and a nice optimization, however, when releasing
+the mutex, we always wakeup the next task in FIFO order. When
+the lock has been stolen this leads to wasting waking up a
+task just to immediately realize it cannot acquire the lock
+and just go back to sleep. This is specially true on highly
+contended mutexes that stress the wait_lock.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
- drivers/xen/xen-pciback/pci_stub.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/locking/mutex.c | 32 +++++++++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index d57a173..e593921 100644
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -133,7 +133,7 @@ static void pcistub_device_release(struct kref *kref)
- 	xen_pcibk_config_free_dyn_fields(dev);
- 	xen_pcibk_config_free_dev(dev);
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index dadbf88..52e1136 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -383,12 +383,26 @@ done:
  
--	dev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
-+	pci_clear_dev_assigned(dev);
- 	pci_dev_put(dev);
+ 	return false;
+ }
++
++static inline bool mutex_has_owner(struct mutex *lock)
++{
++	struct task_struct *owner = ACCESS_ONCE(lock->owner);
++
++	return owner != NULL;
++}
++
+ #else
++
+ static bool mutex_optimistic_spin(struct mutex *lock,
+ 				  struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
+ {
+ 	return false;
+ }
++
++static inline bool mutex_has_owner(struct mutex *lock)
++{
++	return false;
++}
+ #endif
  
- 	kfree(psdev);
-@@ -413,7 +413,7 @@ static int pcistub_init_device(struct pci_dev *dev)
- 	dev_dbg(&dev->dev, "reset device\n");
- 	xen_pcibk_reset_device(dev);
+ __visible __used noinline
+@@ -730,6 +744,23 @@ __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
+ 	if (__mutex_slowpath_needs_to_unlock())
+ 		atomic_set(&lock->count, 1);
  
--	dev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
-+	pci_set_dev_assigned(dev);
- 	return 0;
++/*
++ * Skipping the mutex_has_owner() check when DEBUG, allows us to
++ * avoid taking the wait_lock in order to do not call mutex_release()
++ * and debug_mutex_unlock() when !DEBUG. This can otherwise result in
++ * deadlocks when another task enters the lock's slowpath in mutex_lock().
++ */
++#ifndef CONFIG_DEBUG_MUTEXES
++	/*
++	 * Abort the wakeup operation if there is an another mutex owner, as the
++	 * lock was stolen. mutex_unlock() should have cleared the owner field
++	 * before calling this function. If that field is now set, another task
++	 * must have acquired the mutex.
++	 */
++	if (mutex_has_owner(lock))
++		return;
++#endif
++
+ 	spin_lock_mutex(&lock->wait_lock, flags);
+ 	mutex_release(&lock->dep_map, nested, _RET_IP_);
+ 	debug_mutex_unlock(lock);
+@@ -744,7 +775,6 @@ __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
  
- config_release:
+ 		wake_up_process(waiter->task);
+ 	}
+-
+ 	spin_unlock_mutex(&lock->wait_lock, flags);
+ }
+ 
 -- 
-1.7.1
+1.8.1.4
+
+
 
