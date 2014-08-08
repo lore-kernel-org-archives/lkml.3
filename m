@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758258AbaHHUtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:49:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40706 "EHLO
+	id S1758267AbaHHUtT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:49:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40718 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758228AbaHHUtG (ORCPT
+	with ESMTP id S1758228AbaHHUtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:49:06 -0400
+	Fri, 8 Aug 2014 16:49:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Maxime Bizon <mbizon@freebox.fr>, Tejun Heo <tj@kernel.org>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 058/259] workqueue: fix dev_set_uevent_suppress() imbalance
-Date: Fri,  8 Aug 2014 13:38:01 -0700
-Message-Id: <1407530482-4483-59-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 038/259] ext4: Fix hole punching for files with indirect blocks
+Date: Fri,  8 Aug 2014 13:37:41 -0700
+Message-Id: <1407530482-4483-39-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,33 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxime Bizon <mbizon@freebox.fr>
+From: Jan Kara <jack@suse.cz>
 
-commit bddbceb688c6d0decaabc7884fede319d02f96c8 upstream.
+commit a93cd4cf86466caa49cfe64607bea7f0bde3f916 upstream.
 
-Uevents are suppressed during attributes registration, but never
-restored, so kobject_uevent() does nothing.
+Hole punching code for files with indirect blocks wrongly computed
+number of blocks which need to be cleared when traversing the indirect
+block tree. That could result in punching more blocks than actually
+requested and thus effectively cause a data loss. For example:
 
-Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Fixes: 226223ab3c4118ddd10688cc2c131135848371ab
+fallocate -n -p 10240000 4096
+
+will punch the range 10240000 - 12632064 instead of the range 1024000 -
+10244096. Fix the calculation.
+
+Fixes: 8bad6fc813a3a5300f51369c39d315679fd88c72
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/workqueue.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/indirect.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 1b23f5b..61212c9 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3415,6 +3415,7 @@ int workqueue_sysfs_register(struct workqueue_struct *wq)
- 		}
- 	}
- 
-+	dev_set_uevent_suppress(&wq_dev->dev, false);
- 	kobject_uevent(&wq_dev->dev.kobj, KOBJ_ADD);
- 	return 0;
- }
+diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
+index 3b91d24..e6574d7 100644
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -1318,16 +1318,24 @@ static int free_hole_blocks(handle_t *handle, struct inode *inode,
+ 		blk = *i_data;
+ 		if (level > 0) {
+ 			ext4_lblk_t first2;
++			ext4_lblk_t count2;
++
+ 			bh = sb_bread(inode->i_sb, le32_to_cpu(blk));
+ 			if (!bh) {
+ 				EXT4_ERROR_INODE_BLOCK(inode, le32_to_cpu(blk),
+ 						       "Read failure");
+ 				return -EIO;
+ 			}
+-			first2 = (first > offset) ? first - offset : 0;
++			if (first > offset) {
++				first2 = first - offset;
++				count2 = count;
++			} else {
++				first2 = 0;
++				count2 = count - (offset - first);
++			}
+ 			ret = free_hole_blocks(handle, inode, bh,
+ 					       (__le32 *)bh->b_data, level - 1,
+-					       first2, count - offset,
++					       first2, count2,
+ 					       inode->i_sb->s_blocksize >> 2);
+ 			if (ret) {
+ 				brelse(bh);
 -- 
 1.9.1
 
