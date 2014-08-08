@@ -1,96 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583AbaHHNHQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 09:07:16 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:33568 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755969AbaHHNHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 09:07:12 -0400
-Message-ID: <53E4CB7B.7020705@interlog.com>
-Date: Fri, 08 Aug 2014 15:07:07 +0200
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1756645AbaHHNK0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 09:10:26 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:61000 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752763AbaHHNKV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 09:10:21 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov
+Subject: [GIT PULL] SELinux/NetLabel fixes for 3.17 (attempt #2)
+Date: Fri, 08 Aug 2014 09:10:17 -0400
+Message-ID: <5355928.XToauGObnx@sifl>
+User-Agent: KMail/4.13.3 (Linux/3.15.7-gentoo; KDE/4.13.3; x86_64; ; )
 MIME-Version: 1.0
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Hannes Reinecke <hare@suse.de>
-CC: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-scsi@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [RFC PATCH -logging 00/10] scsi/constants: Output continuous
- error messages on trace
-References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal>
-In-Reply-To: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-08-08 01:50 PM, Yoshihiro YUNOMAE wrote:
-> Hi All,
->
-> This patch set introduces new traceevents in order to output continuous error
-> messages. Current SCSI printk messages in upstream kernel can be divided by and
-> mixed with other messages. Even if each error message has its device id,
-> sometimes we can easily be lost in mixed logs because the message's device id
-> is separated from it's body. To avoid it, I'd like to use traceevents to
-> store error messages into the ftrace or perf buuffer, because traceevents
-> are atomically commited to the buffer.
->
-> In this patch set, all printk messages are removed based on a local
-> discussion with Hannes, but I think printk messages should be kept because all
-> users don't enable traceevents and rsyslog can store as files.
->
-> However, if printk of logging branch is kept, the messages are duplicate and
-> it can induce stack overflow by using local buffer(*1).
->
->   (*1) https://lkml.org/lkml/2014/5/20/742
->
-> So, my suggestion is follows:
->
-> 1) printk
-> Keeps current implemntation of upstream kernel.
-> The messages are divided and can be mixed, but all users can check the error
-> messages without any settings.
->
-> 2) traceevents
-> To get the complete messages, we can use ftrace or perf (or something on them).
-> Users can always understand correct messages, but they need to set up the
-> tracers.
->
-> This patch set is based on Hannes' logging branch:
-> http://git.kernel.org/cgit/linux/kernel/git/hare/scsi-devel.git/log/?h=logging
->
-> [1/10] ~  [6/10]: just cleanup for logging branch
-> [7/10] ~ [10/10]: introduce new traceevents
->
-> Any comments are welcome!
+[NOTE: Apologies for the resend, my mail last night didn't directly include 
+Linus on the mail, which I'm told is very important.]
 
-In sg3_utils there are now string yielding equivalents
-to the sense buffer "print" functions. They take a form
-like this:
-   char * get_sense_str(const unsigned char * sense_buffer,
-                        int sb_len, int blen, char * b);
+Hello All,
 
-So this just does the hard work of decoding the sense buffer
-(or saying it is invalid) the result of which it places in
-buffer 'b'. And 'b' is returned (so this function can be in
-the arguments of a driver's printing function).
+Two small patches to fix a couple of build warnings in SELinux and NetLabel.  
+The patches are obvious enough that I don't think any additional explanation 
+is necessary, but it basically boils down to the usual: I was stupid, and 
+these patches fix some of the stupid.
 
-Adding such string functions would give other parts of the
-SCSI subsystem the capability of tailoring their own
-messages that include sense data information.
+Both patches were posted earlier this week to the SELinux list, and that is 
+where they sat as I didn't think there were noteworthy enough to go upstream 
+at this point in time, but DaveM would rather see them upstream now so who am 
+I to argue.  As the patches are both very small, I'm including the combines 
+changes with this pull request in case anyone wants to scrutinize them any 
+further.
 
+Enjoy,
+-Paul
 
-Existing sense buffer "print" function could be kept and
-implemented using the newer "_str" variants. Would that
-be worth the trouble?
+--
+The following changes since commit 4fbe63d1c773cceef3fe1f6ed0c9c268f4f24760:
 
-Doug Gilbert
+  netlabel: shorter names for the NetLabel catmap funcs/structs
+            (2014-08-01 11:17:37 -0400)
 
+are available in the git repository at:
+
+  git://git.infradead.org/users/pcmoore/selinux stable-3.17
+
+for you to fetch changes up to 942ba3646543aeb3e5729c35d10ac43424bf0b68:
+
+  selinux: remove unused variabled in the netport, netnode, and netif
+           caches (2014-08-07 20:55:30 -0400)
+
+----------------------------------------------------------------
+Paul Moore (2):
+      netlabel: fix the netlbl_catmap_setlong() dummy function
+      selinux: remove unused variabled in the netport, netnode, and netif
+               caches
+
+ include/net/netlabel.h     | 8 ++++----
+ security/selinux/netif.c   | 4 ++--
+ security/selinux/netnode.c | 3 +--
+ security/selinux/netport.c | 3 +--
+ 4 files changed, 8 insertions(+), 10 deletions(-)
+
+diff --git a/include/net/netlabel.h b/include/net/netlabel.h
+index a4fc39b..7b5a300 100644
+--- a/include/net/netlabel.h
++++ b/include/net/netlabel.h
+@@ -524,10 +524,10 @@ static inline int netlbl_catmap_setrng(struct 
+netlbl_lsm_catmap **catmap,
+ {
+ 	return 0;
+ }
+-static int netlbl_catmap_setlong(struct netlbl_lsm_catmap **catmap,
+-				 u32 offset,
+-				 unsigned long bitmap,
+-				 gfp_t flags)
++static inline int netlbl_catmap_setlong(struct netlbl_lsm_catmap **catmap,
++					u32 offset,
++					unsigned long bitmap,
++					gfp_t flags)
+ {
+ 	return 0;
+ }
+diff --git a/security/selinux/netif.c b/security/selinux/netif.c
+index 3c3de4c..50ce177 100644
+--- a/security/selinux/netif.c
++++ b/security/selinux/netif.c
+@@ -272,7 +272,7 @@ static struct notifier_block sel_netif_netdev_notifier = {
+ 
+ static __init int sel_netif_init(void)
+ {
+-	int i, err;
++	int i;
+ 
+ 	if (!selinux_enabled)
+ 		return 0;
+@@ -282,7 +282,7 @@ static __init int sel_netif_init(void)
+ 
+ 	register_netdevice_notifier(&sel_netif_netdev_notifier);
+ 
+-	return err;
++	return 0;
+ }
+ 
+ __initcall(sel_netif_init);
+diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
+index ddf3152..da923f8 100644
+--- a/security/selinux/netnode.c
++++ b/security/selinux/netnode.c
+@@ -303,7 +303,6 @@ void sel_netnode_flush(void)
+ static __init int sel_netnode_init(void)
+ {
+ 	int iter;
+-	int ret;
+ 
+ 	if (!selinux_enabled)
+ 		return 0;
+@@ -313,7 +312,7 @@ static __init int sel_netnode_init(void)
+ 		sel_netnode_hash[iter].size = 0;
+ 	}
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ __initcall(sel_netnode_init);
+diff --git a/security/selinux/netport.c b/security/selinux/netport.c
+index 73ac678..3311cc3 100644
+--- a/security/selinux/netport.c
++++ b/security/selinux/netport.c
+@@ -237,7 +237,6 @@ void sel_netport_flush(void)
+ static __init int sel_netport_init(void)
+ {
+ 	int iter;
+-	int ret;
+ 
+ 	if (!selinux_enabled)
+ 		return 0;
+@@ -247,7 +246,7 @@ static __init int sel_netport_init(void)
+ 		sel_netport_hash[iter].size = 0;
+ 	}
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ __initcall(sel_netport_init);
+
+-- 
+paul moore
+www.paul-moore.com
 
