@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532AbaHHCFA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 22:05:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:5085 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754999AbaHHCE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 22:04:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,821,1400050800"; 
-   d="scan'208";a="466316403"
-Date: Fri, 8 Aug 2014 02:02:39 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Segall <bsegall@google.com>,
-        Waiman Long <Waiman.Long@hp.com>, Mel Gorman <mgorman@suse.de>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Rik van Riel <riel@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Chegu Vinod <chegu_vinod@hp.com>, Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH] sched: Reduce contention in update_cfs_rq_blocked_load
-Message-ID: <20140807180239.GC2480@intel.com>
-References: <1407184118.11407.11.camel@j-VirtualBox>
- <20140804191526.GA2480@intel.com>
- <1407349295.2384.14.camel@j-VirtualBox>
+	id S1755543AbaHHCHj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 22:07:39 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:39465 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754999AbaHHCHh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 22:07:37 -0400
+Message-ID: <53E430E2.3040709@hitachi.com>
+Date: Fri, 08 Aug 2014 11:07:30 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407349295.2384.14.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wang Nan <wangnan0@huawei.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        peifeiyue@huawei.com, Li Zefan <lizefan@huawei.com>
+Subject: Re: [RFC PATCH] kprobes: arm: enable OPTPROBES for arm 32
+References: <1407223697-74911-1-git-send-email-wangnan0@huawei.com> <53E1B2A0.1040807@hitachi.com> <53E1CA11.1030206@huawei.com> <53E323D1.8020209@hitachi.com> <53E42704.3090909@huawei.com>
+In-Reply-To: <53E42704.3090909@huawei.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 11:21:35AM -0700, Jason Low wrote:
-> I ran these tests with most of the AIM7 workloads to compare its
-> performance between a 3.16 kernel and the kernel with these patches
-> applied.
+(2014/08/08 10:25), Wang Nan wrote:
+> On 2014/8/7 14:59, Masami Hiramatsu wrote:
+>> (2014/08/06 15:24), Wang Nan wrote:
+>>>>> +
+>>>>> +static void
+>>>>> +optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
+>>>>> +{
+>>>>> +	unsigned long flags;
+>>>>> +
+>>>>> +	regs->ARM_pc = (unsigned long)op->kp.addr;
+>>>>> +	regs->ARM_ORIG_r0 = ~0UL;
+>>>>> +
+>>>>> +
+>>>>> +	local_irq_save(flags);
+>>>>> +	/* 
+>>>>> +	 * This is possible if op is under delayed unoptimizing.
+>>>>> +	 * We need simulate the replaced instruction.
+>>>>> +	 */
+>>>>> +	if (kprobe_disabled(&op->kp)) {
+>>>>> +		struct kprobe *p = &op->kp;
+>>>>> +		op->kp.ainsn.insn_singlestep(p->opcode, &p->ainsn, regs);
+>>>>> +	} else {
+>>>>> +		kprobe_handler(regs);
+>>>>> +	}
+>>>>
+>>>> You don't need brace "{}" for one statement.
+>>>> By the way, why don't you call opt_pre_handler()?
+>>>>
+>>>
+>>> I use kprobe_handler because it handles instruction emulation.
+>>>
+>>> In addition, I'm not very sure whether skipping the complex checks
+>>> in kprobe_handler() is safe or not.
+>>
+>> That seems to do same thing on x86. Then you should do something like
+>> the optimized_callback() on x86 as below.
+>>
+>> static void
+>> optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
+>> {
+>>         struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+>>         unsigned long flags;
+>>
+>>         local_irq_save(flags);
+>>         if (kprobe_running()) {
+>>                 kprobes_inc_nmissed_count(&op->kp);
 > 
-> The table below contains the percent difference between the baseline
-> kernel and the kernel with the patches at various user counts. A
-> positive percent means the kernel with the patches performed better,
-> while a negative percent means the baseline performed better.
-> 
-> Based on these numbers, for many of the workloads, the change was
-> beneficial in those highly contended, while it had - impact in many
-> of the lightly/moderately contended case (10 to 90 users).
-> 
-> -----------------------------------------------------
->               |   10-90   |  100-1000   |  1100-2000
->               |   users   |   users     |   users
-> -----------------------------------------------------
-> alltests      |   -3.37%  |  -10.64%    |   -2.25%
-> -----------------------------------------------------
-> all_utime     |   +0.33%  |   +3.73%    |   +3.33%
-> -----------------------------------------------------
-> compute       |   -5.97%  |   +2.34%    |   +3.22%
-> -----------------------------------------------------
-> custom        |  -31.61%  |  -10.29%    |  +15.23%
-> -----------------------------------------------------
-> disk          |  +24.64%  |  +28.96%    |  +21.28%
-> -----------------------------------------------------
-> fserver       |   -1.35%  |   +4.82%    |   +9.35%
-> -----------------------------------------------------
-> high_systime  |   -6.73%  |   -6.28%    |  +12.36%
-> -----------------------------------------------------
-> shared        |  -28.31%  |  -19.99%    |   -7.10%
-> -----------------------------------------------------
-> short         |  -44.63%  |  -37.48%    |  -33.62%
-> -----------------------------------------------------
-> 
-Thanks, Jason. Sorry for late response.
+> In this case we still need a singlestep, right?
 
-What about the variation of the tests? The machine you test on?
+Ah, right! and if the singlestep requires setting up the regs->ARM_pc,
+we also do that before this check. So the right code will be;
 
-Yuyang
+static void
+optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
+{
+	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+	unsigned long flags;
+
+	local_irq_save(flags);
+	/* Save skipped registers */
+	regs->ARM_pc = (unsigned long)op->kp.addr;
+	regs->ARM_ORIG_r0 = ~0UL;
+
+        if (kprobe_running())
+		kprobes_inc_nmissed_count(&op->kp);
+        else {
+		__this_cpu_write(current_kprobe, &op->kp);
+ 		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
+		opt_pre_handler(&op->kp, regs);
+		__this_cpu_write(current_kprobe, NULL);
+	}
+	op->kp.ainsn.insn_singlestep(op->kp.opcode, &op->kp.ainsn, regs);
+	local_irq_restore(flags);
+}
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
