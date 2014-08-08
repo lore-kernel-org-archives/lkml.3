@@ -1,83 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756887AbaHHQnn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 12:43:43 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:59291 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756410AbaHHQnm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 12:43:42 -0400
-Date: Fri, 8 Aug 2014 12:43:40 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        bobby.prani@gmail.com, masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
- waiting for RCU-tasks
-Message-ID: <20140808124340.376376ed@gandalf.local.home>
-In-Reply-To: <20140808162714.GG9918@twins.programming.kicks-ass.net>
-References: <20140807172753.GG3588@twins.programming.kicks-ass.net>
-	<20140807184635.GI3588@twins.programming.kicks-ass.net>
-	<20140807154907.6f59cf6e@gandalf.local.home>
-	<20140807155326.18481e66@gandalf.local.home>
-	<20140807200813.GB3935@laptop>
-	<20140807171823.1a481290@gandalf.local.home>
-	<20140808064020.GZ9918@twins.programming.kicks-ass.net>
-	<20140808101221.21056900@gandalf.local.home>
-	<20140808143413.GB9918@twins.programming.kicks-ass.net>
-	<20140808105858.171da847@gandalf.local.home>
-	<20140808162714.GG9918@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1757095AbaHHQqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 12:46:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12296 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756767AbaHHQqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 12:46:08 -0400
+Date: Fri, 8 Aug 2014 11:45:52 -0500
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: (ltc-kernel 9786) [PATCH ftrace/core v4 0/4] ftrace, kprobes:
+ Introduce IPMODIFY flag for ftrace_ops to detect conflicts
+Message-ID: <20140808164552.GA14429@treble.redhat.com>
+References: <20140728052215.29491.23631.stgit@kbuild-fedora.novalocal>
+ <53E4AEE9.2010000@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53E4AEE9.2010000@hitachi.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Aug 2014 18:27:14 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+On Fri, Aug 08, 2014 at 08:05:13PM +0900, Masami Hiramatsu wrote:
+> Ping?
 
-> On Fri, Aug 08, 2014 at 10:58:58AM -0400, Steven Rostedt wrote:
+For the series:
+
+Tested-by: Josh Poimboeuf <jpoimboe@redhat.com>
+
 > 
-> > > > No, they are also used by optimized kprobes. This is why optimized
-> > > > kprobes depend on !CONFIG_PREEMPT. [ added Masami to the discussion ].
-> > > 
-> > > How do those work? Is that one where the INT3 relocates the instruction
-> > > stream into an alternative 'text' and that JMPs back into the original
-> > > stream at the end?
+> BTW, I'd like to add this testcase if ftracetest is accepted.
+> 
+> Thank you,
+> 
+> (2014/07/28 14:22), Masami Hiramatsu wrote:
+> > Hi,
 > > 
-> > No, it's where we replace the 'int3' with a jump to a trampoline that
-> > simulates an INT3. Speeds things up quite a bit.
+> > Here is the 4th version of the series of patches which introduces
+> > IPMODIFY flag for ftrace_ops to detect conflicts of ftrace users
+> > who can modify regs->ip in their handler.
+> > This version is basically an update of previous version, and
+> > I've splitted a patch which adding IPMODIFY to kprobes from ftrace
+> > IPMODIFY introducing patch.
+> > 
+> > Currently, only kprobes can change the regs->ip in the handler,
+> > but recently kpatch is also want to change it. Moreover, since
+> > the ftrace itself exported to modules, it might be considerable
+> > senario.
+> > 
+> > Here we talked on github.
+> >  https://github.com/dynup/kpatch/issues/47
+> > 
+> > To protect modified regs-ip from each other, this series
+> > introduces FTRACE_OPS_FL_IPMODIFY flag and ftrace now ensures
+> > the flag can be set on each function entry location. If there
+> > is someone who already reserve regs->ip on target function
+> > entry, ftrace_set_filter_ip or register_ftrace_function will
+> > return -EBUSY. Users must handle that.
+> > The ftrace_ops with IPMODIFY flag requires at least one
+> > entry for filter hash, and its notrace_hash must be empty,
+> > because the IPMODIFY action is very address sensitve and
+> > user must consider the ip address.
+> > 
+> > The 3rd patch adds a special reservation of IPMODIFY on the
+> > jprobed address, since it is the only user who will change
+> > the regs->ip. Other kprobes do not change it anymore. 
+> > 
+> > Here is the new testcase.
+> > -------
+> > #!/bin/bash
+> > 
+> > echo "IPMODIFY test"
+> > ADDR=0x`grep do_fork /proc/kallsyms | cut -f 1 -d" "`
+> > 
+> > echo "Case1: kprobe->jprobe->ipmodify(fail)"
+> > modprobe kprobe_example
+> > modprobe jprobe_example
+> > insmod ./ipmodify.ko target=$ADDR && echo "Case1: [FAIL]" || echo "Case1: [OK]"
+> > rmmod kprobe_example jprobe_example
+> > 
+> > echo "Case2: jprobe->kprobe->ipmodify(fail)"
+> > modprobe jprobe_example
+> > modprobe kprobe_example
+> > insmod ./ipmodify.ko target=$ADDR && echo "Case2: [FAIL]" || echo "Case2: [OK]"
+> > rmmod kprobe_example jprobe_example
+> > 
+> > echo "Case3: jprobe->ipmodify(fail)"
+> > modprobe jprobe_example
+> > insmod ./ipmodify.ko target=$ADDR && echo "Case3: [FAIL]" || echo "Case3: [OK]"
+> > rmmod jprobe_example
+> > 
+> > echo "Case4: ipmodify->jprobe(fail)"
+> > insmod ./ipmodify.ko target=$ADDR
+> > modprobe jprobe_example && echo "Case4: [FAIL]" || echo "Case4: [OK]"
+> > rmmod ipmodify
+> > 
+> > echo "Case5: ipmodify->kprobe->jprobe(fail)"
+> > insmod ./ipmodify.ko target=$ADDR
+> > modprobe kprobe_example
+> > modprobe jprobe_example && echo "Case5: [FAIL]" || echo "Case5: [OK]"
+> > rmmod ipmodify kprobe_example
+> > 
+> > echo "Case6: ipmodify with targeting all functions(fail)"
+> > insmod ./ipmodify.ko && echo "Case6: [FAIL]" || echo "Case6: [OK]"
+> > rmmod ipmodify
+> > 
+> > echo "Case7: ipmodify with notrace filter (fail)"
+> > insmod ./ipmodify.ko target=$ADDR noexp="do_fork" && echo "Case7: [FAIL]" || echo "Case7: [OK]"
+> > rmmod ipmodify
+> > -------
+> > 
+> > And ipmodify.c
+> > -------
+> > #include <linux/kernel.h>
+> > #include <linux/module.h>
+> > #include <linux/ftrace.h>
+> > 
+> > 
+> > static void ftrace_ipmodify_handler(unsigned long a0, unsigned long a1,
+> >                                 struct ftrace_ops *op, struct pt_regs *regs)
+> > {
+> >         return;
+> > }
+> > 
+> > static struct ftrace_ops test_ops __read_mostly = {
+> >         .func = ftrace_ipmodify_handler,
+> >         .flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
+> > };
+> > 
+> > static unsigned long target;
+> > module_param(target, ulong, 0444);
+> > static char *noexp = "";
+> > module_param(noexp, charp, 0444);
+> > 
+> > static int __init ipmodify_init(void)
+> > {
+> >         int ret;
+> >         unsigned long ip = target;
+> > 
+> >         if (strlen(noexp) != 0) {
+> >                 ret = ftrace_set_notrace(&test_ops, noexp, 0, 0);
+> >                 pr_err("ipmodify_test: set notrace \"%s\", ret = %d\n",
+> >                         noexp, ret);
+> >         }
+> >         if (ret < 0)
+> >                 return ret;
+> > 
+> >         ret = ftrace_set_filter_ip(&test_ops, ip, 0, 0);
+> >         pr_err("ipmodify_test: set filter ip 0x%lx, ret = %d\n", ip, ret);
+> > 
+> >         if (ret >= 0) {
+> >                 ret = register_ftrace_function(&test_ops);
+> >                 pr_err("ipmodify_test: register ftrace on 0x%lx, ret = %d\n",
+> >                         ip, ret);
+> >         }
+> > 
+> >         return ret;
+> > }
+> > 
+> > static void __exit ipmodify_exit(void)
+> > {
+> >         int ret;
+> >         unsigned long ip = target;
+> > 
+> >         ret = unregister_ftrace_function(&test_ops);
+> >         pr_err("ipmodify_test: unregister ftrace on 0x%lx, ret = %d\n", ip, ret);
+> >         if (ret >= 0) {
+> >                 ret = ftrace_set_filter_ip(&test_ops, ip, 1, 0);
+> >                 pr_err("ipmodify_test: clear filter ip 0x%lx, ret = %d\n",
+> >                         ip, ret);
+> >         }
+> > }
+> > 
+> > module_init(ipmodify_init)
+> > module_exit(ipmodify_exit)
+> > MODULE_LICENSE("GPL");
+> > -------
+> > 
+> > Thank you,
+> > 
+> > ---
+> > 
+> > Masami Hiramatsu (4):
+> >       kprobes/ftrace: Recover original IP if pre_handler doesn't change it
+> >       ftrace, kprobes: Support IPMODIFY flag to find IP modify conflict
+> >       kprobes: Add IPMODIFY flag to kprobe_ftrace_ops
+> >       kprobes: Set IPMODIFY flag only if the probe can change regs->ip
+> > 
+> > 
+> >  Documentation/kprobes.txt        |   12 +--
+> >  Documentation/trace/ftrace.txt   |    5 +
+> >  arch/x86/kernel/kprobes/ftrace.c |    9 ++
+> >  include/linux/ftrace.h           |   16 ++++
+> >  kernel/kprobes.c                 |  123 +++++++++++++++++++++++++++++----
+> >  kernel/trace/ftrace.c            |  143 +++++++++++++++++++++++++++++++++++++-
+> >  6 files changed, 279 insertions(+), 29 deletions(-)
+> > 
+> > --
+> > 
+> > 
 > 
-> OK, so the trivial 'fix' for that is to patch the probe site like:
 > 
-> 	preempt_disable();		INC	GS:%__preempt_count
-> 	call trampoline;		CALL	0xDEADBEEF
-> 	preempt_enable();		DEC	GS:%__preempt_count
-> 					JNZ	1f
-> 					CALL	___preempt_schedule
-> 				1f:
-> 
-> At which point the preempt_disable/enable() are the read side primitives
-> and call_rcu_sched/synchronize_sched are sufficient to release it.
-> 
-> With the per-cpu preempt count stuff we have on x86 that is 4
-> instructions for the preempt_*() stuff -- they're 'big' instructions
-> though, since 3 have memops and 2 have a segment prefix.
+> -- 
+> Masami HIRAMATSU
+> IT Management Research Dept. Linux Technology Center
+> Hitachi, Ltd., Yokohama Research Laboratory
+> E-mail: masami.hiramatsu.pt@hitachi.com
 > 
 > 
 
-Now the question is, how do you do that atomically? And safely.
-Currently, all we replace at the call sites is a nop that is added by
-gcc -pg and us replacing the call mcount with it. That looks much more
-complex than our current solution.
-
--- Steve
+-- 
+Josh
