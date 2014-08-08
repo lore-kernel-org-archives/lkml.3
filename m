@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758359AbaHHWbA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:31:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40184 "EHLO
+	id S1759714AbaHHWdD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:33:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40108 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756522AbaHHUlu (ORCPT
+	with ESMTP id S1755887AbaHHUln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:41:50 -0400
+	Fri, 8 Aug 2014 16:41:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Sven Wegener <sven.wegener@stealer.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 149/259] drm/radeon: avoid leaking edid data
-Date: Fri,  8 Aug 2014 13:39:32 -0700
-Message-Id: <1407530482-4483-150-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 006/259] x86_32, entry: Store badsys error code in %eax
+Date: Fri,  8 Aug 2014 13:37:09 -0700
+Message-Id: <1407530482-4483-7-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,44 +28,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Sven Wegener <sven.wegener@stealer.net>
 
-commit 0ac66effe7fcdee55bda6d5d10d3372c95a41920 upstream.
+commit 8142b215501f8b291a108a202b3a053a265b03dd upstream.
 
-In some cases we fetch the edid in the detect() callback
-in order to determine what sort of monitor is connected.
-If that happens, don't fetch the edid again in the get_modes()
-callback or we will leak the edid.
+Commit 554086d ("x86_32, entry: Do syscall exit work on badsys
+(CVE-2014-4508)") introduced a regression in the x86_32 syscall entry
+code, resulting in syscall() not returning proper errors for undefined
+syscalls on CPUs supporting the sysenter feature.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+The following code:
+
+> int result = syscall(666);
+> printf("result=%d errno=%d error=%s\n", result, errno, strerror(errno));
+
+results in:
+
+> result=666 errno=0 error=Success
+
+Obviously, the syscall return value is the called syscall number, but it
+should have been an ENOSYS error. When run under ptrace it behaves
+correctly, which makes it hard to debug in the wild:
+
+> result=-1 errno=38 error=Function not implemented
+
+The %eax register is the return value register. For debugging via ptrace
+the syscall entry code stores the complete register context on the
+stack. The badsys handlers only store the ENOSYS error code in the
+ptrace register set and do not set %eax like a regular syscall handler
+would. The old resume_userspace call chain contains code that clobbers
+%eax and it restores %eax from the ptrace registers afterwards. The same
+goes for the ptrace-enabled call chain. When ptrace is not used, the
+syscall return value is the passed-in syscall number from the untouched
+%eax register.
+
+Use %eax as the return value register in syscall_badsys and
+sysenter_badsys, like a real syscall handler does, and have the caller
+push the value onto the stack for ptrace access.
+
+Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
+Link: http://lkml.kernel.org/r/alpine.LNX.2.11.1407221022380.31021@titan.int.lan.stealer.net
+Reviewed-and-tested-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_display.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ arch/x86/kernel/entry_32.S | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-index f3514ea..f41c080 100644
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -753,6 +753,10 @@ int radeon_ddc_get_modes(struct radeon_connector *radeon_connector)
- 	struct radeon_device *rdev = dev->dev_private;
- 	int ret = 0;
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 6491353..c87810b 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -433,8 +433,8 @@ sysenter_do_call:
+ 	cmpl $(NR_syscalls), %eax
+ 	jae sysenter_badsys
+ 	call *sys_call_table(,%eax,4)
+-	movl %eax,PT_EAX(%esp)
+ sysenter_after_call:
++	movl %eax,PT_EAX(%esp)
+ 	LOCKDEP_SYS_EXIT
+ 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	TRACE_IRQS_OFF
+@@ -514,6 +514,7 @@ ENTRY(system_call)
+ 	jae syscall_badsys
+ syscall_call:
+ 	call *sys_call_table(,%eax,4)
++syscall_after_call:
+ 	movl %eax,PT_EAX(%esp)		# store the return value
+ syscall_exit:
+ 	LOCKDEP_SYS_EXIT
+@@ -683,12 +684,12 @@ syscall_fault:
+ END(syscall_fault)
  
-+	/* don't leak the edid if we already fetched it in detect() */
-+	if (radeon_connector->edid)
-+		goto got_edid;
-+
- 	/* on hw with routers, select right port */
- 	if (radeon_connector->router.ddc_valid)
- 		radeon_router_select_ddc_port(radeon_connector);
-@@ -792,6 +796,7 @@ int radeon_ddc_get_modes(struct radeon_connector *radeon_connector)
- 			radeon_connector->edid = radeon_bios_get_hardcoded_edid(rdev);
- 	}
- 	if (radeon_connector->edid) {
-+got_edid:
- 		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
- 		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
- 		drm_edid_to_eld(&radeon_connector->base, radeon_connector->edid);
+ syscall_badsys:
+-	movl $-ENOSYS,PT_EAX(%esp)
+-	jmp syscall_exit
++	movl $-ENOSYS,%eax
++	jmp syscall_after_call
+ END(syscall_badsys)
+ 
+ sysenter_badsys:
+-	movl $-ENOSYS,PT_EAX(%esp)
++	movl $-ENOSYS,%eax
+ 	jmp sysenter_after_call
+ END(syscall_badsys)
+ 	CFI_ENDPROC
 -- 
 1.9.1
 
