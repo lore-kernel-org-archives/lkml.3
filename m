@@ -1,59 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676AbaHHQVx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 12:21:53 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:54702 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624AbaHHQVv (ORCPT
+	id S1756733AbaHHQWj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 12:22:39 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:6120 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752646AbaHHQWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 12:21:51 -0400
-Date: Fri, 8 Aug 2014 09:21:46 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Nick Dyer <nick.dyer@itdev.co.uk>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Stephen Warren <swarren@nvidia.com>,
-        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-input@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+	Fri, 8 Aug 2014 12:22:38 -0400
+X-IronPort-AV: E=Sophos;i="5.01,825,1400018400"; 
+   d="scan'208";a="88743809"
+Date: Fri, 8 Aug 2014 18:22:09 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Josh Morris <josh.h.morris@us.ibm.com>
+cc: Jeff Moyer <jmoyer@redhat.com>, kernel-janitors@vger.kernel.org,
+        Philip Kelleher <pjk1939@linux.vnet.ibm.com>, dan.carpenter@oracle.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] Input: atmel_mxt_ts - Get IRQ edge/level flags on
- DT booting
-Message-ID: <20140808162146.GC26820@core.coreip.homeip.net>
-References: <1407397492-17475-1-git-send-email-javier.martinez@collabora.co.uk>
- <53E4D9A5.908@itdev.co.uk>
+Subject: Re: [PATCH] block: add abort on failure
+In-Reply-To: <OF8E178B75.111E73DE-ON86257D2E.00561BEC-86257D2E.00590C0D@us.ibm.com>
+Message-ID: <alpine.DEB.2.10.1408081821110.2348@hadrien>
+References: <1407486050-9375-1-git-send-email-Julia.Lawall@lip6.fr> <alpine.DEB.2.10.1408081129150.2348@hadrien> <OF8E178B75.111E73DE-ON86257D2E.00561BEC-86257D2E.00590C0D@us.ibm.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E4D9A5.908@itdev.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1681931489-1407514929=:2348"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 03:07:33PM +0100, Nick Dyer wrote:
-> On 07/08/14 08:44, Javier Martinez Canillas wrote:
-> > The Atmel maXTouch driver assumed that the IRQ type flags will
-> > always be passed using platform data but this is not true when
-> > booting using Device Trees. In these setups the interrupt type
-> > was ignored by the driver when requesting an IRQ.
-> > 
-> > This means that it will fail if a machine specified other type
-> > than IRQ_TYPE_NONE. The right approach is to get the IRQ flags
-> > that was parsed by OF from the "interrupt" Device Tree propery.
-> > 
-> > Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> 
-> I'm happy for this to go in if Dmitry will accept it. It does seem to be a
-> quirk of some platforms that it is necessary, but it's only one line.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I'd rather not as it masks the deeper platform issue. There might be
-other drovers also expecting platform/OF code set up interrupt triggers
-and working/not working by chance.
+--8323329-1681931489-1407514929=:2348
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-Can we figure out why the platform in question needs this change?
 
-Thanks.
 
--- 
-Dmitry
+On Fri, 8 Aug 2014, Josh Morris wrote:
+
+> Howdy Julia,
+>
+> It is by design that we complete the probe despite failures in
+> rsxx_load_config() and rsxx_get_num_targets(). The reason is that we will be
+> unable to debug and fix the issue without a driver loaded.
+>
+> In the case that the on-card config has been corrupted we will need the
+> driver loaded to reset or repair the configuration.
+>
+> I couldn't find a place where we were derefrencing card->ctrl outside of a
+> loop that checked the index against n_targets. That should prevent the
+> driver from dereferencing an 0 size array.  So I believe we still want the
+> probe to complete in this case so we can debug the hardware.
+
+OK.  I also looked for such a reference and didn't see one.
+
+Thanks for the feedback.
+
+julia
+
+>
+> Cheers!
+>
+> Josh
+>
+>
+>
+> From:        Julia Lawall <julia.lawall@lip6.fr>
+> To:        Josh Morris/Houston/IBM@IBMUS,
+> Cc:        Jeff Moyer <jmoyer@redhat.com>, kernel-janitors@vger.kernel.org,
+> Philip Kelleher <pjk1939@linux.vnet.ibm.com>, dan.carpenter@oracle.com,
+> linux-kernel@vger.kernel.org
+> Date:        08/08/2014 04:31 AM
+> Subject:        Re: [PATCH] block: add abort on failure
+>
+> ____________________________________________________________________________
+>
+>
+>
+> On Fri, 8 Aug 2014, Julia Lawall wrote:
+>
+> > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> >
+> > Initializing card seems to be critical to the rest of the probe process,
+> so
+> > abort the probe function if the calls to rsxx_load_config and
+> > rsxx_get_num_targets do not succeed.
+>
+> Note that this is not tested.  Nevertheless, at least the first failure
+> will leave card in an unknown partially initialized state, which seems
+> undesirable.
+>
+> julia
+>
+>
+> > Suggested by Jeff Moyer.
+> >
+> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> >
+> > ---
+> >  drivers/block/rsxx/core.c |    8 ++++++--
+> >  1 file changed, 6 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/block/rsxx/core.c b/drivers/block/rsxx/core.c
+> > index a8de2ee..ae2805b 100644
+> > --- a/drivers/block/rsxx/core.c
+> > +++ b/drivers/block/rsxx/core.c
+> > @@ -915,15 +915,19 @@ static int rsxx_pci_probe(struct pci_dev *dev,
+> >
+> >                   /************* Load Card Config *************/
+> >                   st = rsxx_load_config(card);
+> > -                 if (st)
+> > +                 if (st) {
+> >                                    dev_err(CARD_TO_DEV(card),
+> >                                                     "Failed loading card
+> config\n");
+> > +                                  goto failed_dma_setup;
+> > +                 }
+> >
+> >                   /************* Setup DMA Engine *************/
+> >                   st = rsxx_get_num_targets(card, &card->n_targets);
+> > -                 if (st)
+> > +                 if (st) {
+> >                                    dev_info(CARD_TO_DEV(card),
+> >                                                     "Failed reading the
+> number of DMA targets\n");
+> > +                                  goto failed_dma_setup;
+> > +                 }
+> >
+> >                   card->ctrl = kzalloc(card->n_targets *
+> sizeof(*card->ctrl), GFP_KERNEL);
+> >                   if (!card->ctrl) {
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kernel-janitors"
+> in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+>
+>
+>
+>
+--8323329-1681931489-1407514929=:2348--
