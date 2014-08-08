@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751043AbaHHR0n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 13:26:43 -0400
-Received: from natalenko.name ([78.47.77.148]:56247 "EHLO natalenko.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750738AbaHHR0l convert rfc822-to-8bit (ORCPT
+	id S1751277AbaHHR1U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 13:27:20 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:25668 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751157AbaHHR1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 13:26:41 -0400
-DMARC-Filter: OpenDMARC Filter v1.2.0 natalenko.name 01EB5A5B8
-Authentication-Results: mail.natalenko.name; dmarc=none header.from=natalenko.name
-From: Oleksandr Natalenko <oleksandr@natalenko.name>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org
-Subject: Re: [BUG] oops in cpufreq driver with AMD Kaveri CPU
-Date: Fri, 08 Aug 2014 20:26:29 +0300
-Message-ID: <2218871.DzMQ58ssQz@spock>
-User-Agent: KMail/4.13.3 (Linux/3.15.0-pf5; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <2651364.4shODVy8cx@spock>
-References: <4708675.eITUXPv8Ih@spock> <2651364.4shODVy8cx@spock>
+	Fri, 8 Aug 2014 13:27:19 -0400
+Date: Fri, 8 Aug 2014 13:27:16 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        bobby.prani@gmail.com, masami.hiramatsu.pt@hitachi.com
+Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
+ waiting for RCU-tasks
+Message-ID: <20140808132716.28aa1c14@gandalf.local.home>
+In-Reply-To: <20140808162714.GG9918@twins.programming.kicks-ass.net>
+References: <20140807172753.GG3588@twins.programming.kicks-ass.net>
+	<20140807184635.GI3588@twins.programming.kicks-ass.net>
+	<20140807154907.6f59cf6e@gandalf.local.home>
+	<20140807155326.18481e66@gandalf.local.home>
+	<20140807200813.GB3935@laptop>
+	<20140807171823.1a481290@gandalf.local.home>
+	<20140808064020.GZ9918@twins.programming.kicks-ass.net>
+	<20140808101221.21056900@gandalf.local.home>
+	<20140808143413.GB9918@twins.programming.kicks-ass.net>
+	<20140808105858.171da847@gandalf.local.home>
+	<20140808162714.GG9918@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Filled up detailed bugreport on bugzilla:
+On Fri, 8 Aug 2014 18:27:14 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-https://bugzilla.kernel.org/show_bug.cgi?id=81701
+> On Fri, Aug 08, 2014 at 10:58:58AM -0400, Steven Rostedt wrote:
+> 
+> > > > No, they are also used by optimized kprobes. This is why optimized
+> > > > kprobes depend on !CONFIG_PREEMPT. [ added Masami to the discussion ].
+> > > 
+> > > How do those work? Is that one where the INT3 relocates the instruction
+> > > stream into an alternative 'text' and that JMPs back into the original
+> > > stream at the end?
+> > 
+> > No, it's where we replace the 'int3' with a jump to a trampoline that
+> > simulates an INT3. Speeds things up quite a bit.
+> 
+> OK, so the trivial 'fix' for that is to patch the probe site like:
+> 
+> 	preempt_disable();		INC	GS:%__preempt_count
+> 	call trampoline;		CALL	0xDEADBEEF
+> 	preempt_enable();		DEC	GS:%__preempt_count
+> 					JNZ	1f
+> 					CALL	___preempt_schedule
+> 				1f:
+> 
+> At which point the preempt_disable/enable() are the read side primitives
+> and call_rcu_sched/synchronize_sched are sufficient to release it.
+> 
+> With the per-cpu preempt count stuff we have on x86 that is 4
+> instructions for the preempt_*() stuff -- they're 'big' instructions
+> though, since 3 have memops and 2 have a segment prefix.
+> 
+> 
 
-On Thursday 07 August 2014 23:53:17 Oleksandr Natalenko wrote:
-> Disabling cpufreq code in kernel config works around this issue.
-> 
-> Is this bug related to sleeping in atomic context, which is caused by
-> improper GFP_KERNEL usage instead of GFP_ATOMIC? Should I test tat patch,
-> or there will be another fix?
-> 
-> On Tuesday 05 August 2014 00:39:11 Oleksandr Natalenko wrote:
-> > Hello.
-> > 
-> > Occasionally I get my machine hung completely. Fortunately, I've got and
-> > saved oops listing using netconsole before hang, and here it is [1].
-> > 
-> > Here is little piece of oops from the link above:
-> > 
-> > ===
-> > [15051.270461] BUG: unable to handle kernel paging request at
-> > 00000000ff5ae8e4 [15051.271583] IP: [<ffffffff8109ae6e>]
-> > srcu_notifier_call_chain+0xe/0x20 …
-> > [15051.956205] Call Trace:
-> > [15051.980641]  [<ffffffff81606085>] ?
-> > __cpufreq_notify_transition+0x95/0x1e0 [15052.005640] 
-> > [<ffffffff816081ee>]
-> > cpufreq_notify_transition+0x3e/0x70 [15052.030240]  [<ffffffff816083d8>]
-> > cpufreq_freq_transition_begin+0xe8/0x130 [15052.054522]
-> > [<ffffffff813b8940>] ? ucs2_strncmp+0x70/0x70
-> > [15052.078208]  [<ffffffff816089bf>] __target_index+0xbf/0x1a0
-> > [15052.101348]  [<ffffffff81608b9c>] __cpufreq_driver_target+0xfc/0x160
-> > [15052.124250]  [<ffffffff8160b0d4>] od_check_cpu+0xa4/0xb0
-> > [15052.146789]  [<ffffffff8160c9ec>] dbs_check_cpu+0x16c/0x1c0
-> > [15052.168935]  [<ffffffff8160b4dd>] od_dbs_timer+0x11d/0x180
-> > [15052.190607]  [<ffffffff8108e6ff>] process_one_work+0x17f/0x4c0
-> > [15052.211825]  [<ffffffff8108f46b>] worker_thread+0x11b/0x3f0
-> > [15052.232490]  [<ffffffff8108f350>] ? create_and_start_worker+0x80/0x80
-> > [15052.253127]  [<ffffffff81096479>] kthread+0xc9/0xe0
-> > [15052.273292]  [<ffffffff810963b0>] ? flush_kthread_worker+0xb0/0xb0
-> > [15052.293487]  [<ffffffff81793efc>] ret_from_fork+0x7c/0xb0
-> > [15052.313544]  [<ffffffff810963b0>] ? flush_kthread_worker+0xb0/0xb0
-> > …
-> > ===
-> > 
-> > Also here is my lspci [2] and cpuinfo [3] as well.
-> > 
-> > Vanilla 3.15.8 and 3.16.0 are affected as well as latest Ubuntu 3.13
-> > kernel.
-> > 
-> > No visible reason to trigger the bug. After hang machine doesn't respond
-> > via network, there's no disk IO, and also it doesn't respond to pressing
-> > power button in order to perform soft off.
-> > 
-> > [1] https://gist.github.com/085af9da81197faf6637
-> > [2] https://gist.github.com/318ebda5576b099590b8
-> > [3] https://gist.github.com/9c1307463c7ad6835b2d
--- 
-Oleksandr post-factum Natalenko, MSc
-pf-kernel community
-https://natalenko.name/
+Well, this looks like it may make kprobes a bit more complex, and even
+slow down slightly the optimized probe.
+
+Also note that if we add call_rcu_tasks(), then perf function tracing
+can be called directly instead of being added to the trampoline that
+disables and enables preemption before calling it.
+
+-- Steve
