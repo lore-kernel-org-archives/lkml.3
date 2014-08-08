@@ -1,153 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024AbaHHGro (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 02:47:44 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:48362
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755865AbaHHGrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 02:47:39 -0400
-From: Shengjiu Wang <shengjiu.wang@freescale.com>
-To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <timur@tabi.org>,
-        <perex@perex.cz>, <tiwai@suse.de>, <nicoleotsuka@gmail.com>,
-        <Li.Xiubo@freescale.com>, <shc_work@mail.ru>,
-        <fabio.estevam@freescale.com>, <arnd@arndb.de>
-CC: <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH V4 1/2] ASoC: fsl_esai: refine esai for TDM support
-Date: Fri, 8 Aug 2014 14:47:21 +0800
-Message-ID: <5428d24b20316f690b2b1119724ebf5cbd0fa1c0.1407480333.git.shengjiu.wang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1407480333.git.shengjiu.wang@freescale.com>
-References: <cover.1407480333.git.shengjiu.wang@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(99396002)(50986999)(50226001)(68736004)(47776003)(93916002)(62966002)(33646002)(64706001)(85306004)(20776003)(81542001)(76176999)(86362001)(92726001)(229853001)(102836001)(85852003)(2201001)(97736001)(104016003)(77156001)(48376002)(92566001)(77982001)(46102001)(84676001)(107046002)(83072002)(83322001)(106466001)(89996001)(105606002)(19580405001)(79102001)(76482001)(87936001)(19580395003)(81342001)(26826002)(4396001)(21056001)(74502001)(88136002)(44976005)(36756003)(104166001)(31966008)(6806004)(50466002)(95666004)(87286001)(80022001)(74662001)(1121002)(921003);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB245;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+	id S1755935AbaHHGuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 02:50:46 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:52674 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547AbaHHGum (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 02:50:42 -0400
+Date: Thu, 7 Aug 2014 23:50:38 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: cap1106 - allow changing key mapping from
+ userspace
+Message-ID: <20140808065038.GC8103@core.coreip.homeip.net>
+References: <20140721012045.GA4395@core.coreip.homeip.net>
+ <20140807062033.GD651@core.coreip.homeip.net>
+ <53E321B0.9040701@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 02973C87BC
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=shengjiu.wang@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E321B0.9040701@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Original driver didn't store the number of slots, just fix the slot number
-to 2, use this default number to calculate bclk and pins for TX/RX.
-In this patch, add one parameter for slots, and update the calculation of
-bclk and pins of TX/RX. Then driver will be compatible with slots > 2 in
-TDM mode.
+On Thu, Aug 07, 2014 at 08:50:24AM +0200, Daniel Mack wrote:
+> Hi Dmitry,
+> 
+> On 08/07/2014 08:20 AM, Dmitry Torokhov wrote:
+> > On Sun, Jul 20, 2014 at 06:20:49PM -0700, Dmitry Torokhov wrote:
+> >> Wire up support for EVIOC{G|S}KEYCODE to allow users change key mappings
+> >> from userspace.
+> >>
+> >> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> >> ---
+> >>
+> >> Just compiled, not tested.
+> > 
+> > *ping* Any chance you could give it a try? Thanks!
+> 
+> Oh, sorry, I didn't realize you're waiting for me on this.
+> 
+> Unfortunately, I can't test it myself anymore, as I had to return the
+> board I found this chip on. But as the change looks very straight
+> forward, I'd suggest you just apply that patch and I ask the vendor to
+> give it a quick try. In case of any problems, I'll let you know. Does
+> that sound feasible?
 
-Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
----
- sound/soc/fsl/fsl_esai.c |   14 +++++++++++---
- sound/soc/fsl/fsl_esai.h |    8 ++++----
- 2 files changed, 15 insertions(+), 7 deletions(-)
+OK, I'll put you down as reviewed-by then so we can share the glory (and the
+blame ;))
 
-diff --git a/sound/soc/fsl/fsl_esai.c b/sound/soc/fsl/fsl_esai.c
-index 72d154e..f252370 100644
---- a/sound/soc/fsl/fsl_esai.c
-+++ b/sound/soc/fsl/fsl_esai.c
-@@ -38,6 +38,7 @@
-  * @fsysclk: system clock source to derive HCK, SCK and FS
-  * @fifo_depth: depth of tx/rx FIFO
-  * @slot_width: width of each DAI slot
-+ * @slots: number of slots
-  * @hck_rate: clock rate of desired HCKx clock
-  * @sck_rate: clock rate of desired SCKx clock
-  * @hck_dir: the direction of HCKx pads
-@@ -56,6 +57,7 @@ struct fsl_esai {
- 	struct clk *fsysclk;
- 	u32 fifo_depth;
- 	u32 slot_width;
-+	u32 slots;
- 	u32 hck_rate[2];
- 	u32 sck_rate[2];
- 	bool hck_dir[2];
-@@ -363,6 +365,7 @@ static int fsl_esai_set_dai_tdm_slot(struct snd_soc_dai *dai, u32 tx_mask,
- 			   ESAI_xSMB_xS_MASK, ESAI_xSMB_xS(rx_mask));
- 
- 	esai_priv->slot_width = slot_width;
-+	esai_priv->slots = slots;
- 
- 	return 0;
- }
-@@ -510,10 +513,11 @@ static int fsl_esai_hw_params(struct snd_pcm_substream *substream,
- 	bool tx = substream->stream == SNDRV_PCM_STREAM_PLAYBACK;
- 	u32 width = snd_pcm_format_width(params_format(params));
- 	u32 channels = params_channels(params);
-+	u32 pins = DIV_ROUND_UP(channels, esai_priv->slots);
- 	u32 bclk, mask, val;
- 	int ret;
- 
--	bclk = params_rate(params) * esai_priv->slot_width * 2;
-+	bclk = params_rate(params) * esai_priv->slot_width * esai_priv->slots;
- 
- 	ret = fsl_esai_set_bclk(dai, tx, bclk);
- 	if (ret)
-@@ -530,7 +534,7 @@ static int fsl_esai_hw_params(struct snd_pcm_substream *substream,
- 	mask = ESAI_xFCR_xFR_MASK | ESAI_xFCR_xWA_MASK | ESAI_xFCR_xFWM_MASK |
- 	      (tx ? ESAI_xFCR_TE_MASK | ESAI_xFCR_TIEN : ESAI_xFCR_RE_MASK);
- 	val = ESAI_xFCR_xWA(width) | ESAI_xFCR_xFWM(esai_priv->fifo_depth) |
--	     (tx ? ESAI_xFCR_TE(channels) | ESAI_xFCR_TIEN : ESAI_xFCR_RE(channels));
-+	     (tx ? ESAI_xFCR_TE(pins) | ESAI_xFCR_TIEN : ESAI_xFCR_RE(pins));
- 
- 	regmap_update_bits(esai_priv->regmap, REG_ESAI_xFCR(tx), mask, val);
- 
-@@ -565,6 +569,7 @@ static int fsl_esai_trigger(struct snd_pcm_substream *substream, int cmd,
- 	struct fsl_esai *esai_priv = snd_soc_dai_get_drvdata(dai);
- 	bool tx = substream->stream == SNDRV_PCM_STREAM_PLAYBACK;
- 	u8 i, channels = substream->runtime->channels;
-+	u32 pins = DIV_ROUND_UP(channels, esai_priv->slots);
- 
- 	switch (cmd) {
- 	case SNDRV_PCM_TRIGGER_START:
-@@ -579,7 +584,7 @@ static int fsl_esai_trigger(struct snd_pcm_substream *substream, int cmd,
- 
- 		regmap_update_bits(esai_priv->regmap, REG_ESAI_xCR(tx),
- 				   tx ? ESAI_xCR_TE_MASK : ESAI_xCR_RE_MASK,
--				   tx ? ESAI_xCR_TE(channels) : ESAI_xCR_RE(channels));
-+				   tx ? ESAI_xCR_TE(pins) : ESAI_xCR_RE(pins));
- 		break;
- 	case SNDRV_PCM_TRIGGER_SUSPEND:
- 	case SNDRV_PCM_TRIGGER_STOP:
-@@ -783,6 +788,9 @@ static int fsl_esai_probe(struct platform_device *pdev)
- 	/* Set a default slot size */
- 	esai_priv->slot_width = 32;
- 
-+	/* Set a default slot number */
-+	esai_priv->slots = 2;
-+
- 	/* Set a default master/slave state */
- 	esai_priv->slave_mode = true;
- 
-diff --git a/sound/soc/fsl/fsl_esai.h b/sound/soc/fsl/fsl_esai.h
-index 75e1403..91a550f 100644
---- a/sound/soc/fsl/fsl_esai.h
-+++ b/sound/soc/fsl/fsl_esai.h
-@@ -130,8 +130,8 @@
- #define ESAI_xFCR_RE_WIDTH	4
- #define ESAI_xFCR_TE_MASK	(((1 << ESAI_xFCR_TE_WIDTH) - 1) << ESAI_xFCR_xE_SHIFT)
- #define ESAI_xFCR_RE_MASK	(((1 << ESAI_xFCR_RE_WIDTH) - 1) << ESAI_xFCR_xE_SHIFT)
--#define ESAI_xFCR_TE(x) 	((ESAI_xFCR_TE_MASK >> (ESAI_xFCR_TE_WIDTH - ((x + 1) >> 1))) & ESAI_xFCR_TE_MASK)
--#define ESAI_xFCR_RE(x) 	((ESAI_xFCR_RE_MASK >> (ESAI_xFCR_RE_WIDTH - ((x + 1) >> 1))) & ESAI_xFCR_RE_MASK)
-+#define ESAI_xFCR_TE(x) 	((ESAI_xFCR_TE_MASK >> (ESAI_xFCR_TE_WIDTH - x)) & ESAI_xFCR_TE_MASK)
-+#define ESAI_xFCR_RE(x) 	((ESAI_xFCR_RE_MASK >> (ESAI_xFCR_RE_WIDTH - x)) & ESAI_xFCR_RE_MASK)
- #define ESAI_xFCR_xFR_SHIFT	1
- #define ESAI_xFCR_xFR_MASK	(1 << ESAI_xFCR_xFR_SHIFT)
- #define ESAI_xFCR_xFR		(1 << ESAI_xFCR_xFR_SHIFT)
-@@ -272,8 +272,8 @@
- #define ESAI_xCR_RE_WIDTH	4
- #define ESAI_xCR_TE_MASK	(((1 << ESAI_xCR_TE_WIDTH) - 1) << ESAI_xCR_xE_SHIFT)
- #define ESAI_xCR_RE_MASK	(((1 << ESAI_xCR_RE_WIDTH) - 1) << ESAI_xCR_xE_SHIFT)
--#define ESAI_xCR_TE(x) 		((ESAI_xCR_TE_MASK >> (ESAI_xCR_TE_WIDTH - ((x + 1) >> 1))) & ESAI_xCR_TE_MASK)
--#define ESAI_xCR_RE(x) 		((ESAI_xCR_RE_MASK >> (ESAI_xCR_RE_WIDTH - ((x + 1) >> 1))) & ESAI_xCR_RE_MASK)
-+#define ESAI_xCR_TE(x) 		((ESAI_xCR_TE_MASK >> (ESAI_xCR_TE_WIDTH - x)) & ESAI_xCR_TE_MASK)
-+#define ESAI_xCR_RE(x) 		((ESAI_xCR_RE_MASK >> (ESAI_xCR_RE_WIDTH - x)) & ESAI_xCR_RE_MASK)
- 
- /*
-  * Transmit Clock Control Register -- REG_ESAI_TCCR 0xD8
+Thanks.
+
 -- 
-1.7.9.5
-
+Dmitry
