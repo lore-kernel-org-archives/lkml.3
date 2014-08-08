@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691AbaHHHHa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 03:07:30 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:45285 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756303AbaHHHEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 03:04:32 -0400
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        scottwood@freescale.com
-Subject: [PATCH 13/20] powerpc/8xx: Don't use MD_TWC for walk
-Message-Id: <20140808070343.F2BF71ABD49@localhost.localdomain>
-Date: Fri,  8 Aug 2014 09:03:43 +0200 (CEST)
+	id S1756283AbaHHHIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 03:08:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50277 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931AbaHHHES (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 03:04:18 -0400
+Date: Fri, 8 Aug 2014 09:04:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: kan.liang@intel.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] perf, x86: Fix :pp without LBR
+Message-ID: <20140808070413.GC3935@laptop>
+References: <1407456534-15747-1-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407456534-15747-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MD_TWC can only be used properly with 4k pages.
-So lets calculate level 2 table index by ourselves.
+On Thu, Aug 07, 2014 at 05:08:54PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> This fixes a side effect of Kan's earlier patch to probe the LBRs at boot
+> time. Normally when the LBRs are disabled cycles:pp is disabled too.
+> So for example cycles:pp doesn't work.
+> 
+> However this is not needed with PEBSv2 and later (Haswell) because
+> it does not need LBRs to correct the IP-off-by-one.
+> 
+> So add an extra check for PEBSv2 that also allows :pp
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 2879ecd..0646d3b 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -387,7 +387,7 @@ int x86_pmu_hw_config(struct perf_event *event)
+>  			precise++;
+>  
+>  			/* Support for IP fixup */
+> -			if (x86_pmu.lbr_nr)
+> +			if (x86_pmu.lbr_nr || x86_pmu.intel_cap.pebs_format >= 2)
+>  				precise++;
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-
----
- arch/powerpc/kernel/head_8xx.S |   30 +++++++++++++-----------------
- 1 files changed, 13 insertions(+), 17 deletions(-)
-
-diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index 25c782d..5671c76 100644
---- a/arch/powerpc/kernel/head_8xx.S
-+++ b/arch/powerpc/kernel/head_8xx.S
-@@ -297,8 +297,6 @@ InstructionTLBMiss:
- 	addi	r11, r10, -0x1000
- 	tlbie	r11
- #endif
--	DO_8xx_CPU6(0x3780, r3)
--	mtspr	SPRN_MD_EPN, r10	/* Have to use MD_EPN for walk, MI_EPN can't */
- 
- 	/* If we are faulting a kernel address, we have to use the
- 	 * kernel page tables.
-@@ -325,10 +323,9 @@ InstructionTLBMiss:
- 	ori	r11,r11,1		/* Set valid bit */
- 	DO_8xx_CPU6(0x2b80, r3)
- 	mtspr	SPRN_MI_TWC, r11	/* Set segment attributes */
--	DO_8xx_CPU6(0x3b80, r3)
--	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
--	mfspr	r11, SPRN_MD_TWC	/* ....and get the pte address */
--	lwz	r10, 0(r11)	/* Get the pte */
-+	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
-+	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
-+	lwzx	r10, r10, r11	/* Get the pte */
- 
- #ifdef CONFIG_SWAP
- 	andi.	r11, r10, _PAGE_ACCESSED | _PAGE_PRESENT
-@@ -393,12 +390,13 @@ DataStoreTLBMiss:
- 
- 	/* We have a pte table, so load fetch the pte from the table.
- 	 */
--	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
--	DO_8xx_CPU6(0x3b80, r3)
--	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
--	mfspr	r10, SPRN_MD_TWC	/* ....and get the pte address */
--	lwz	r10, 0(r10)	/* Get the pte */
-+	mtcr	r11
-+	mfspr	r11, SPRN_MD_EPN	/* Get address of fault */
-+	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
-+	lwzx	r10, r10, r11	/* Get the pte */
- 
-+	mfcr	r11
-+	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
- 	/* Insert the Guarded flag into the TWC from the Linux PTE.
- 	 * It is bit 27 of both the Linux PTE and the TWC (at least
- 	 * I got that right :-).  It will be better when we can put
-@@ -522,17 +520,15 @@ FixupDAR:/* Entry point for dcbx workaround. */
- 	/* fetch instruction from memory. */
- 	mfspr	r10, SPRN_SRR0
- 	andis.	r11, r10, 0x8000	/* Address >= 0x80000000 */
--	DO_8xx_CPU6(0x3780, r3)
--	mtspr	SPRN_MD_EPN, r10
- 	mfspr	r11, SPRN_M_TW	/* Get level 1 table base address */
- 	beq-	3f		/* Branch if user space */
- 	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
- 3:	rlwinm	r10, r10, 12, 20, 29	/* Extract level 1 index */
- 	lwzx	r11, r10, r11	/* Get the level 1 entry */
--	DO_8xx_CPU6(0x3b80, r3)
--	mtspr	SPRN_MD_TWC, r11	/* Load pte table base address */
--	mfspr	r11, SPRN_MD_TWC	/* ....and get the pte address */
--	lwz	r11, 0(r11)	/* Get the pte */
-+	rlwinm	r10, r11,0,0,19	/* Extract page descriptor page address */
-+	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
-+	rlwinm	r11, r11, 22, 20, 29	/* Extract level 2 index */
-+	lwzx	r11, r10, r11	/* Get the pte */
- #ifdef CONFIG_8xx_CPU6
- 	lwz	r3, 8(r0)	/* restore r3 from memory */
- #endif
--- 
-1.7.1
-
+Thanks
