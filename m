@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756380AbaHHNVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 09:21:16 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43890 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752322AbaHHNVN (ORCPT
+	id S1756641AbaHHNXd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 09:23:33 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:16967 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115AbaHHNXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 09:21:13 -0400
-Date: Fri, 8 Aug 2014 14:21:05 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Juri Lelli <juri.lelli@arm.com>
-Cc: linux-kernel@vger.kernel.org, lorenzo.pieralisi@arm.com,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH] cpuidle/cpuidle-big_little: fix reading cpu id part
-	number
-Message-ID: <20140808132105.GB30282@n2100.arm.linux.org.uk>
-References: <1407501757-15231-1-git-send-email-juri.lelli@arm.com>
+	Fri, 8 Aug 2014 09:23:30 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 08 Aug 2014 06:10:34 -0700
+Message-ID: <53E4CF4E.6010500@nvidia.com>
+Date: Fri, 8 Aug 2014 16:23:26 +0300
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407501757-15231-1-git-send-email-juri.lelli@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: Re: [PATCH 1/3] of: Add of_match_machine helper
+References: <1407452515-2390-1-git-send-email-ttynkkynen@nvidia.com> <1407452515-2390-2-git-send-email-ttynkkynen@nvidia.com> <20140808094123.GC5387@ulmo>
+In-Reply-To: <20140808094123.GC5387@ulmo>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 01:42:37PM +0100, Juri Lelli wrote:
-> Commit af040ffc9ba1 ("ARM: make it easier to check the CPU part number
-> correctly") changed ARM_CPU_PART_X masks, and the way they are returned and
-> checked against. Usage of read_cpuid_part_number() is now deprecated, and
-> calling places updated accordingly. This actually broke cpuidle-big_little
-> initialization, as bl_idle_driver_init() performs a check using and hardcoded
-> mask on cpu_id.
+
+
+On 08/08/14 12:41, Thierry Reding wrote:
 > 
-> Update the check to reflect changes on ARM_CPU_PART_X masks. Also,
-> make the check easier to understand.
+>> +const struct of_device_id *of_match_machine(const struct of_device_id *matches)
+>> +{
+>> +	const struct of_device_id *match;
+>> +	struct device_node *root;
+>> +
+>> +	root = of_find_node_by_path("/");
+>> +	if (!root)
+>> +		return NULL;
+>> +
+>> +	match = of_match_node(matches, root);
+>> +	of_node_put(root);
+>> +	return match;
+>> +}
+>> +EXPORT_SYMBOL(of_match_machine);
+> 
+> I wonder if of_find_node_by_path("/") is somewhat overkill here. Perhaps
+> simply of_node_get(of_allnodes) would be more appropriate here since the
+> function is implemented in the core?
 
-I don't like this "let's work out our own way to check the CPU type"
-stuff which people seem to create.  Let's try and do the job better
-and have some proper interfaces to do this kind of thing.
-
-Maybe we should have smp_cpuid_part(cpu) which returns the CPU vendor/
-part identifier for the particular CPU in an efficient manner.
+of_machine_is_compatible() uses of_find_node_by_path("/") as well, of_allnodes
+seems to be only used when during iterating. So I'd prefer to have them
+consistent.
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+nvpublic
