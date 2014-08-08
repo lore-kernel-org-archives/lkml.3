@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955AbaHHUrE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:47:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40488 "EHLO
+	id S1756835AbaHHUrX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:47:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40525 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757935AbaHHUrA (ORCPT
+	with ESMTP id S1757995AbaHHUrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:47:00 -0400
+	Fri, 8 Aug 2014 16:47:19 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Meerwald <pmeerw@pmeerw.net>,
-        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 183/259] iio:bma180: Missing check for frequency fractional part
-Date: Fri,  8 Aug 2014 13:40:06 -0700
-Message-Id: <1407530482-4483-184-git-send-email-kamal@canonical.com>
+Cc: Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 026/259] USB: ftdi_sio: fix null deref at port probe
+Date: Fri,  8 Aug 2014 13:37:29 -0700
+Message-Id: <1407530482-4483-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -29,37 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Meerwald <pmeerw@pmeerw.net>
+From: Johan Hovold <johan@kernel.org>
 
-commit 9b2a4d35a6ceaf217be61ed8eb3c16986244f640 upstream.
+commit aea1ae8760314e072bf1b773521e9de5d5dda10d upstream.
 
-val2 should be zero
+Fix NULL-pointer dereference when probing an interface with no
+endpoints.
 
-This will make no difference for correct inputs but will reject
-incorrect ones with a decimal part in the value written to the sysfs
-interface.
+These devices have two bulk endpoints per interface, but this avoids
+crashing the kernel if a user forces a non-FTDI device to be probed.
 
-Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
-Cc: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Note that the iterator variable was made unsigned in order to avoid
+a maybe-uninitialized compiler warning for ep_desc after the loop.
+
+Fixes: 895f28badce9 ("USB: ftdi_sio: fix hi-speed device packet size
+calculation")
+
+Reported-by: Mike Remski <mremski@mutualink.net>
+Tested-by: Mike Remski <mremski@mutualink.net>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/iio/accel/bma180.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/ftdi_sio.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/iio/accel/bma180.c b/drivers/iio/accel/bma180.c
-index 8d5ea9b..93ff0ba 100644
---- a/drivers/iio/accel/bma180.c
-+++ b/drivers/iio/accel/bma180.c
-@@ -376,6 +376,8 @@ static int bma180_write_raw(struct iio_dev *indio_dev,
- 		mutex_unlock(&data->mutex);
- 		return ret;
- 	case IIO_CHAN_INFO_LOW_PASS_FILTER_3DB_FREQUENCY:
-+		if (val2)
-+			return -EINVAL;
- 		mutex_lock(&data->mutex);
- 		ret = bma180_set_bw(data, val);
- 		mutex_unlock(&data->mutex);
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index f009887..244c00f 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -1567,14 +1567,17 @@ static void ftdi_set_max_packet_size(struct usb_serial_port *port)
+ 	struct usb_device *udev = serial->dev;
+ 
+ 	struct usb_interface *interface = serial->interface;
+-	struct usb_endpoint_descriptor *ep_desc = &interface->cur_altsetting->endpoint[1].desc;
++	struct usb_endpoint_descriptor *ep_desc;
+ 
+ 	unsigned num_endpoints;
+-	int i;
++	unsigned i;
+ 
+ 	num_endpoints = interface->cur_altsetting->desc.bNumEndpoints;
+ 	dev_info(&udev->dev, "Number of endpoints %d\n", num_endpoints);
+ 
++	if (!num_endpoints)
++		return;
++
+ 	/* NOTE: some customers have programmed FT232R/FT245R devices
+ 	 * with an endpoint size of 0 - not good.  In this case, we
+ 	 * want to override the endpoint descriptor setting and use a
 -- 
 1.9.1
 
