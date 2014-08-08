@@ -1,93 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594AbaHHTNt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 15:13:49 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39650 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002AbaHHTNr (ORCPT
+	id S1752200AbaHHTQq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 15:16:46 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:62878 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaHHTQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 15:13:47 -0400
-Date: Fri, 8 Aug 2014 21:13:26 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140808191326.GE3935@laptop>
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
- <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 8 Aug 2014 15:16:45 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: airlied@linux.ie, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, rdunlap@infradead.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] Documentation: DocBook: Rename drm_stub.c to drm_drv.c cause 'make xmldocs' failed
+Date: Sat,  9 Aug 2014 04:16:34 +0900
+Message-Id: <1407525394-29821-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.1.0.rc0.52.gaa544bf
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch fixed 'make xmldocs' failed on linus's tree and
+linux-next as of 8th/Aug,2014.
 
+When drm merge for 3.17-rc1 happen,  a file was renamed from
+drm_stub.c to drm_drv.c.
+But Documentation/DocBook/drm.tmpl still have an old file name.
 
-So I think you can make the entire thing work with
-rcu_note_context_switch().
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ Documentation/DocBook/drm.tmpl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-If we have the sync thing do something like:
+diff --git a/Documentation/DocBook/drm.tmpl b/Documentation/DocBook/drm.tmpl
+index 1d3756d..bacefc5 100644
+--- a/Documentation/DocBook/drm.tmpl
++++ b/Documentation/DocBook/drm.tmpl
+@@ -315,7 +315,7 @@ char *date;</synopsis>
+         <function>drm_dev_unregister()</function> followed by a call to
+         <function>drm_dev_unref()</function>.
+       </para>
+-!Edrivers/gpu/drm/drm_stub.c
++!Edrivers/gpu/drm/drm_drv.c
+     </sect2>
+     <sect2>
+       <title>Driver Load</title>
+-- 
+2.1.0.rc0.52.gaa544bf
 
-
-	for_each_task(t) {
-		atomic_inc(&rcu_tasks);
-		atomic_or(&t->rcu_attention, RCU_TASK);
-		smp_mb__after_atomic();
-		if (!t->on_rq) {
-			if (atomic_test_and_clear(&t->rcu_attention, RCU_TASK))
-				atomic_dec(&rcu_tasks);
-		}
-	}
-
-	wait_event(&rcu_tasks_wq, !atomic_read(&rcu_tasks));
-
-
-And then we have rcu_task_note_context_switch() (as called from
-rcu_note_context_switch) do:
-
-
-	/* we want actual context switches, ignore preemption */
-	if (preempt_count() & PREEMPT_ACTIVE)
-		return;
-
-	/* if not marked for RCU attention, bail */
-	if (!(atomic_read(&t->rcu_attention) & RCU_TASK))
-		return;
-
-	/* raced with sync_rcu_task(), all done */
-	if (!atomic_test_and_clear(&t->rcu_attention, RCU_TASK))
-		return;
-
-	/* not the last.. */
-	if (!atomic_dec_and_test(&rcu_tasks))
-		return;
-
-	wake_up(&rcu_task_rq);
-
-
-The idea is to share rcu_attention with rcu_preempt, such that we only
-touch a single 'extra' cacheline in case RCU doesn't need to pay
-attention to this task.
-
-Also, it would be good if we can manage to squeeze this variable in a
-cacheline that's already touched by the schedule() so as not to incur
-undue overhead.
-
-And on that, you probably should change rcu_sched_rq() to read:
-
-	this_cpu_inc(rcu_sched_data.passed_quiesce);
-
-That avoids touching the per-cpu data offset.
-
-And it would be very good if we could avoid the unconditional IRQ flag
-fiddling in rcu_preempt_note_context_switch(), them expensive, this
-looks entirely feasibly in the 'normal' case where
-t->rcu_read_unlock_special doesn't have RCU_READ_UNLOCK_NEED_QS set.
