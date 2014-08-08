@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894AbaHHV7V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:59:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60544 "EHLO
+	id S933070AbaHHV7y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:59:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60526 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933158AbaHHVg1 (ORCPT
+	with ESMTP id S933128AbaHHVgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:27 -0400
+	Fri, 8 Aug 2014 17:36:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 22/39] sparc64: Fix hex values in comment above pte_modify().
-Date: Fri,  8 Aug 2014 14:35:08 -0700
-Message-Id: <20140808213355.936020068@linuxfoundation.org>
+Subject: [PATCH 3.14 20/39] sparc64: Fix huge PMD invalidation.
+Date: Fri,  8 Aug 2014 14:35:06 -0700
+Message-Id: <20140808213355.838984285@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -30,29 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit c2e4e676adb40ea764af79d3e08be954e14a0f4c ]
+[ Upstream commit 51e5ef1bb7ab0e5fa7de4e802da5ab22fe35f0bf ]
 
-When _PAGE_SPECIAL and _PAGE_PMD_HUGE were added to the mask, the
-comment was not updated.
+On sparc64 "present" and "valid" are seperate PTE bits, this allows us to
+naturally distinguish between the user explicitly asking for PROT_NONE
+with mprotect() and other situations.
+
+However we weren't handling this properly in the huge PMD paths.
+
+First of all, the page table walker in the TSB miss path only checks
+for _PAGE_PMD_HUGE.  So the generic pmdp_invalidate() would clear
+_PAGE_PRESENT but the TLB miss paths would still load it into the TLB
+as a valid huge PMD.
+
+Fix this by clearing the valid bit in pmdp_invalidate(), and also
+checking the valid bit in USER_PGTABLE_CHECK_PMD_HUGE using "brgez"
+since _PAGE_VALID is bit 63 in both the sun4u and sun4v pte layouts.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/pgtable_64.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/sparc/include/asm/pgtable_64.h |   18 ++++--------------
+ arch/sparc/include/asm/tsb.h        |    3 ++-
+ arch/sparc/mm/tlb.c                 |   11 +++++++++++
+ 3 files changed, 17 insertions(+), 15 deletions(-)
 
 --- a/arch/sparc/include/asm/pgtable_64.h
 +++ b/arch/sparc/include/asm/pgtable_64.h
-@@ -258,8 +258,8 @@ static inline pte_t pte_modify(pte_t pte
- {
- 	unsigned long mask, tmp;
+@@ -719,20 +719,6 @@ static inline pmd_t pmd_mkwrite(pmd_t pm
+ 	return __pmd(pte_val(pte));
+ }
  
--	/* SUN4U: 0x600307ffffffecb8 (negated == 0x9ffcf80000001347)
--	 * SUN4V: 0x30ffffffffffee17 (negated == 0xcf000000000011e8)
-+	/* SUN4U: 0x630107ffffffecb8 (negated == 0x9cfef80000001347)
-+	 * SUN4V: 0x33ffffffffffee17 (negated == 0xcc000000000011e8)
- 	 *
- 	 * Even if we use negation tricks the result is still a 6
- 	 * instruction sequence, so don't try to play fancy and just
+-static inline pmd_t pmd_mknotpresent(pmd_t pmd)
+-{
+-	unsigned long mask;
+-
+-	if (tlb_type == hypervisor)
+-		mask = _PAGE_PRESENT_4V;
+-	else
+-		mask = _PAGE_PRESENT_4U;
+-
+-	pmd_val(pmd) &= ~mask;
+-
+-	return pmd;
+-}
+-
+ static inline pmd_t pmd_mksplitting(pmd_t pmd)
+ {
+ 	pte_t pte = __pte(pmd_val(pmd));
+@@ -893,6 +879,10 @@ extern void update_mmu_cache(struct vm_a
+ extern void update_mmu_cache_pmd(struct vm_area_struct *vma, unsigned long addr,
+ 				 pmd_t *pmd);
+ 
++#define __HAVE_ARCH_PMDP_INVALIDATE
++extern void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
++			    pmd_t *pmdp);
++
+ #define __HAVE_ARCH_PGTABLE_DEPOSIT
+ extern void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
+ 				       pgtable_t pgtable);
+--- a/arch/sparc/include/asm/tsb.h
++++ b/arch/sparc/include/asm/tsb.h
+@@ -171,7 +171,8 @@ extern struct tsb_phys_patch_entry __tsb
+ 	andcc		REG1, REG2, %g0;		\
+ 	be,pt		%xcc, 700f;			\
+ 	 sethi		%hi(4 * 1024 * 1024), REG2;	\
+-	andn		REG1, REG2, REG1;		\
++	brgez,pn	REG1, FAIL_LABEL;		\
++	 andn		REG1, REG2, REG1;		\
+ 	and		VADDR, REG2, REG2;		\
+ 	brlz,pt		REG1, PTE_LABEL;		\
+ 	 or		REG1, REG2, REG1;		\
+--- a/arch/sparc/mm/tlb.c
++++ b/arch/sparc/mm/tlb.c
+@@ -193,6 +193,17 @@ void set_pmd_at(struct mm_struct *mm, un
+ 	}
+ }
+ 
++void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
++		     pmd_t *pmdp)
++{
++	pmd_t entry = *pmdp;
++
++	pmd_val(entry) &= ~_PAGE_VALID;
++
++	set_pmd_at(vma->vm_mm, address, pmdp, entry);
++	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
++}
++
+ void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
+ 				pgtable_t pgtable)
+ {
 
 
