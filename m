@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422AbaHHFrr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 01:47:47 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:55948 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbaHHFrq (ORCPT
+	id S1755924AbaHHFsI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 01:48:08 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:45746 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755543AbaHHFsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 01:47:46 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, hugetlb_cgroup: align hugetlb cgroup limit to hugepage size
-In-Reply-To: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Fri, 08 Aug 2014 11:17:37 +0530
-Message-ID: <87sil7mt1i.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14080805-2674-0000-0000-0000014E0259
+	Fri, 8 Aug 2014 01:48:04 -0400
+Message-ID: <1407476878.3604.0.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: Weird NET_RX softirq behavior
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: Dmitry Popov <ixaphire@qrator.net>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 08 Aug 2014 07:47:58 +0200
+In-Reply-To: <20140808103734.677bff7e@xhacker>
+References: <20140807171050.77819b10@xhacker>
+	 <20140807181813.37b73927513266381d55ad0d@qrator.net>
+	 <20140808103734.677bff7e@xhacker>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Rientjes <rientjes@google.com> writes:
+On Fri, 2014-08-08 at 10:37 +0800, Jisheng Zhang wrote:
+> nd and recive 7 packets so far, about 1400bytes. Seems small
+> comparing with the CPU1 and CPU2 NET_RX softirq numbers, right?
+> 
+> Any other possible case?
 
-> Memcg aligns memory.limit_in_bytes to PAGE_SIZE as part of the resource counter
-> since it makes no sense to allow a partial page to be charged.
->
-> As a result of the hugetlb cgroup using the resource counter, it is also aligned
-> to PAGE_SIZE but makes no sense unless aligned to the size of the hugepage being
-> limited.
->
-> Align hugetlb cgroup limit to hugepage size.
->
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  mm/hugetlb_cgroup.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-> --- a/mm/hugetlb_cgroup.c
-> +++ b/mm/hugetlb_cgroup.c
-> @@ -275,6 +275,8 @@ static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
->  		ret = res_counter_memparse_write_strategy(buf, &val);
->  		if (ret)
->  			break;
-> +		val = ALIGN(val, 1 << (huge_page_order(&hstates[idx]) +
-> +				       PAGE_SHIFT));
+Multicast loop. Check dev_loopback_xmit() and its callers.
 
-you can use  1UL << huge_page_shift(hstate); ?
-
->  		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
->  		break;
->  	default:
->
-
--aneesh
 
