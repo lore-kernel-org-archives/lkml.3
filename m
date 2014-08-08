@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933630AbaHHVH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:07:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41270 "EHLO
+	id S933453AbaHHVIe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:08:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41260 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756704AbaHHUxV (ORCPT
+	with ESMTP id S932985AbaHHUxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:53:21 -0400
+	Fri, 8 Aug 2014 16:53:18 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Greg Thelen <gthelen@google.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 200/259] dm bufio: fully initialize shrinker
-Date: Fri,  8 Aug 2014 13:40:23 -0700
-Message-Id: <1407530482-4483-201-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 223/259] ipv4: fix a race in ip4_datagram_release_cb()
+Date: Fri,  8 Aug 2014 13:40:46 -0700
+Message-Id: <1407530482-4483-224-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,47 +29,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Thelen <gthelen@google.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit d8c712ea471ce7a4fd1734ad2211adf8469ddddc upstream.
+[ Upstream commit 9709674e68646cee5a24e3000b3558d25412203a ]
 
-1d3d4437eae1 ("vmscan: per-node deferred work") added a flags field to
-struct shrinker assuming that all shrinkers were zero filled.  The dm
-bufio shrinker is not zero filled, which leaves arbitrary kmalloc() data
-in flags.  So far the only defined flags bit is SHRINKER_NUMA_AWARE.
-But there are proposed patches which add other bits to shrinker.flags
-(e.g. memcg awareness).
+Alexey gave a AddressSanitizer[1] report that finally gave a good hint
+at where was the origin of various problems already reported by Dormando
+in the past [2]
 
-Rather than simply initializing the shrinker, this patch uses kzalloc()
-when allocating the dm_bufio_client to ensure that the embedded shrinker
-and any other similar structures are zeroed.
+Problem comes from the fact that UDP can have a lockless TX path, and
+concurrent threads can manipulate sk_dst_cache, while another thread,
+is holding socket lock and calls __sk_dst_set() in
+ip4_datagram_release_cb() (this was added in linux-3.8)
 
-This fixes theoretical over aggressive shrinking of dm bufio objects.
-If the uninitialized dm_bufio_client.shrinker.flags contains
-SHRINKER_NUMA_AWARE then shrink_slab() would call the dm shrinker for
-each numa node rather than just once.  This has been broken since 3.12.
+It seems that all we need to do is to use sk_dst_check() and
+sk_dst_set() so that all the writers hold same spinlock
+(sk->sk_dst_lock) to prevent corruptions.
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Acked-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+TCP stack do not need this protection, as all sk_dst_cache writers hold
+the socket lock.
+
+[1]
+https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+
+AddressSanitizer: heap-use-after-free in ipv4_dst_check
+Read of size 2 by thread T15453:
+ [<ffffffff817daa3a>] ipv4_dst_check+0x1a/0x90 ./net/ipv4/route.c:1116
+ [<ffffffff8175b789>] __sk_dst_check+0x89/0xe0 ./net/core/sock.c:531
+ [<ffffffff81830a36>] ip4_datagram_release_cb+0x46/0x390 ??:0
+ [<ffffffff8175eaea>] release_sock+0x17a/0x230 ./net/core/sock.c:2413
+ [<ffffffff81830882>] ip4_datagram_connect+0x462/0x5d0 ??:0
+ [<ffffffff81846d06>] inet_dgram_connect+0x76/0xd0 ./net/ipv4/af_inet.c:534
+ [<ffffffff817580ac>] SYSC_connect+0x15c/0x1c0 ./net/socket.c:1701
+ [<ffffffff817596ce>] SyS_connect+0xe/0x10 ./net/socket.c:1682
+ [<ffffffff818b0a29>] system_call_fastpath+0x16/0x1b
+./arch/x86/kernel/entry_64.S:629
+
+Freed by thread T15455:
+ [<ffffffff8178d9b8>] dst_destroy+0xa8/0x160 ./net/core/dst.c:251
+ [<ffffffff8178de25>] dst_release+0x45/0x80 ./net/core/dst.c:280
+ [<ffffffff818304c1>] ip4_datagram_connect+0xa1/0x5d0 ??:0
+ [<ffffffff81846d06>] inet_dgram_connect+0x76/0xd0 ./net/ipv4/af_inet.c:534
+ [<ffffffff817580ac>] SYSC_connect+0x15c/0x1c0 ./net/socket.c:1701
+ [<ffffffff817596ce>] SyS_connect+0xe/0x10 ./net/socket.c:1682
+ [<ffffffff818b0a29>] system_call_fastpath+0x16/0x1b
+./arch/x86/kernel/entry_64.S:629
+
+Allocated by thread T15453:
+ [<ffffffff8178d291>] dst_alloc+0x81/0x2b0 ./net/core/dst.c:171
+ [<ffffffff817db3b7>] rt_dst_alloc+0x47/0x50 ./net/ipv4/route.c:1406
+ [<     inlined    >] __ip_route_output_key+0x3e8/0xf70
+__mkroute_output ./net/ipv4/route.c:1939
+ [<ffffffff817dde08>] __ip_route_output_key+0x3e8/0xf70 ./net/ipv4/route.c:2161
+ [<ffffffff817deb34>] ip_route_output_flow+0x14/0x30 ./net/ipv4/route.c:2249
+ [<ffffffff81830737>] ip4_datagram_connect+0x317/0x5d0 ??:0
+ [<ffffffff81846d06>] inet_dgram_connect+0x76/0xd0 ./net/ipv4/af_inet.c:534
+ [<ffffffff817580ac>] SYSC_connect+0x15c/0x1c0 ./net/socket.c:1701
+ [<ffffffff817596ce>] SyS_connect+0xe/0x10 ./net/socket.c:1682
+ [<ffffffff818b0a29>] system_call_fastpath+0x16/0x1b
+./arch/x86/kernel/entry_64.S:629
+
+[2]
+<4>[196727.311203] general protection fault: 0000 [#1] SMP
+<4>[196727.311224] Modules linked in: xt_TEE xt_dscp xt_DSCP macvlan bridge coretemp crc32_pclmul ghash_clmulni_intel gpio_ich microcode ipmi_watchdog ipmi_devintf sb_edac edac_core lpc_ich mfd_core tpm_tis tpm tpm_bios ipmi_si ipmi_msghandler isci igb libsas i2c_algo_bit ixgbe ptp pps_core mdio
+<4>[196727.311333] CPU: 17 PID: 0 Comm: swapper/17 Not tainted 3.10.26 #1
+<4>[196727.311344] Hardware name: Supermicro X9DRi-LN4+/X9DR3-LN4+/X9DRi-LN4+/X9DR3-LN4+, BIOS 3.0 07/05/2013
+<4>[196727.311364] task: ffff885e6f069700 ti: ffff885e6f072000 task.ti: ffff885e6f072000
+<4>[196727.311377] RIP: 0010:[<ffffffff815f8c7f>]  [<ffffffff815f8c7f>] ipv4_dst_destroy+0x4f/0x80
+<4>[196727.311399] RSP: 0018:ffff885effd23a70  EFLAGS: 00010282
+<4>[196727.311409] RAX: dead000000200200 RBX: ffff8854c398ecc0 RCX: 0000000000000040
+<4>[196727.311423] RDX: dead000000100100 RSI: dead000000100100 RDI: dead000000200200
+<4>[196727.311437] RBP: ffff885effd23a80 R08: ffffffff815fd9e0 R09: ffff885d5a590800
+<4>[196727.311451] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+<4>[196727.311464] R13: ffffffff81c8c280 R14: 0000000000000000 R15: ffff880e85ee16ce
+<4>[196727.311510] FS:  0000000000000000(0000) GS:ffff885effd20000(0000) knlGS:0000000000000000
+<4>[196727.311554] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+<4>[196727.311581] CR2: 00007a46751eb000 CR3: 0000005e65688000 CR4: 00000000000407e0
+<4>[196727.311625] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+<4>[196727.311669] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+<4>[196727.311713] Stack:
+<4>[196727.311733]  ffff8854c398ecc0 ffff8854c398ecc0 ffff885effd23ab0 ffffffff815b7f42
+<4>[196727.311784]  ffff88be6595bc00 ffff8854c398ecc0 0000000000000000 ffff8854c398ecc0
+<4>[196727.311834]  ffff885effd23ad0 ffffffff815b86c6 ffff885d5a590800 ffff8816827821c0
+<4>[196727.311885] Call Trace:
+<4>[196727.311907]  <IRQ>
+<4>[196727.311912]  [<ffffffff815b7f42>] dst_destroy+0x32/0xe0
+<4>[196727.311959]  [<ffffffff815b86c6>] dst_release+0x56/0x80
+<4>[196727.311986]  [<ffffffff81620bd5>] tcp_v4_do_rcv+0x2a5/0x4a0
+<4>[196727.312013]  [<ffffffff81622b5a>] tcp_v4_rcv+0x7da/0x820
+<4>[196727.312041]  [<ffffffff815fd9e0>] ? ip_rcv_finish+0x360/0x360
+<4>[196727.312070]  [<ffffffff815de02d>] ? nf_hook_slow+0x7d/0x150
+<4>[196727.312097]  [<ffffffff815fd9e0>] ? ip_rcv_finish+0x360/0x360
+<4>[196727.312125]  [<ffffffff815fda92>] ip_local_deliver_finish+0xb2/0x230
+<4>[196727.312154]  [<ffffffff815fdd9a>] ip_local_deliver+0x4a/0x90
+<4>[196727.312183]  [<ffffffff815fd799>] ip_rcv_finish+0x119/0x360
+<4>[196727.312212]  [<ffffffff815fe00b>] ip_rcv+0x22b/0x340
+<4>[196727.312242]  [<ffffffffa0339680>] ? macvlan_broadcast+0x160/0x160 [macvlan]
+<4>[196727.312275]  [<ffffffff815b0c62>] __netif_receive_skb_core+0x512/0x640
+<4>[196727.312308]  [<ffffffff811427fb>] ? kmem_cache_alloc+0x13b/0x150
+<4>[196727.312338]  [<ffffffff815b0db1>] __netif_receive_skb+0x21/0x70
+<4>[196727.312368]  [<ffffffff815b0fa1>] netif_receive_skb+0x31/0xa0
+<4>[196727.312397]  [<ffffffff815b1ae8>] napi_gro_receive+0xe8/0x140
+<4>[196727.312433]  [<ffffffffa00274f1>] ixgbe_poll+0x551/0x11f0 [ixgbe]
+<4>[196727.312463]  [<ffffffff815fe00b>] ? ip_rcv+0x22b/0x340
+<4>[196727.312491]  [<ffffffff815b1691>] net_rx_action+0x111/0x210
+<4>[196727.312521]  [<ffffffff815b0db1>] ? __netif_receive_skb+0x21/0x70
+<4>[196727.312552]  [<ffffffff810519d0>] __do_softirq+0xd0/0x270
+<4>[196727.312583]  [<ffffffff816cef3c>] call_softirq+0x1c/0x30
+<4>[196727.312613]  [<ffffffff81004205>] do_softirq+0x55/0x90
+<4>[196727.312640]  [<ffffffff81051c85>] irq_exit+0x55/0x60
+<4>[196727.312668]  [<ffffffff816cf5c3>] do_IRQ+0x63/0xe0
+<4>[196727.312696]  [<ffffffff816c5aaa>] common_interrupt+0x6a/0x6a
+<4>[196727.312722]  <EOI>
+<1>[196727.313071] RIP  [<ffffffff815f8c7f>] ipv4_dst_destroy+0x4f/0x80
+<4>[196727.313100]  RSP <ffff885effd23a70>
+<4>[196727.313377] ---[ end trace 64b3f14fae0f2e29 ]---
+<0>[196727.380908] Kernel panic - not syncing: Fatal exception in interrupt
+
+Reported-by: Alexey Preobrazhensky <preobr@google.com>
+Reported-by: dormando <dormando@rydia.ne>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: 8141ed9fcedb2 ("ipv4: Add a socket release callback for datagram sockets")
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-bufio.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/datagram.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index 54bdd923..5056c45 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -1511,7 +1511,7 @@ struct dm_bufio_client *dm_bufio_client_create(struct block_device *bdev, unsign
- 	BUG_ON(block_size < 1 << SECTOR_SHIFT ||
- 	       (block_size & (block_size - 1)));
+diff --git a/net/ipv4/datagram.c b/net/ipv4/datagram.c
+index 19e3637..5f3dc1d 100644
+--- a/net/ipv4/datagram.c
++++ b/net/ipv4/datagram.c
+@@ -86,18 +86,26 @@ out:
+ }
+ EXPORT_SYMBOL(ip4_datagram_connect);
  
--	c = kmalloc(sizeof(*c), GFP_KERNEL);
-+	c = kzalloc(sizeof(*c), GFP_KERNEL);
- 	if (!c) {
- 		r = -ENOMEM;
- 		goto bad_client;
++/* Because UDP xmit path can manipulate sk_dst_cache without holding
++ * socket lock, we need to use sk_dst_set() here,
++ * even if we own the socket lock.
++ */
+ void ip4_datagram_release_cb(struct sock *sk)
+ {
+ 	const struct inet_sock *inet = inet_sk(sk);
+ 	const struct ip_options_rcu *inet_opt;
+ 	__be32 daddr = inet->inet_daddr;
++	struct dst_entry *dst;
+ 	struct flowi4 fl4;
+ 	struct rtable *rt;
+ 
+-	if (! __sk_dst_get(sk) || __sk_dst_check(sk, 0))
+-		return;
+-
+ 	rcu_read_lock();
++
++	dst = __sk_dst_get(sk);
++	if (!dst || !dst->obsolete || dst->ops->check(dst, 0)) {
++		rcu_read_unlock();
++		return;
++	}
+ 	inet_opt = rcu_dereference(inet->inet_opt);
+ 	if (inet_opt && inet_opt->opt.srr)
+ 		daddr = inet_opt->opt.faddr;
+@@ -105,8 +113,10 @@ void ip4_datagram_release_cb(struct sock *sk)
+ 				   inet->inet_saddr, inet->inet_dport,
+ 				   inet->inet_sport, sk->sk_protocol,
+ 				   RT_CONN_FLAGS(sk), sk->sk_bound_dev_if);
+-	if (!IS_ERR(rt))
+-		__sk_dst_set(sk, &rt->dst);
++
++	dst = !IS_ERR(rt) ? &rt->dst : NULL;
++	sk_dst_set(sk, dst);
++
+ 	rcu_read_unlock();
+ }
+ EXPORT_SYMBOL_GPL(ip4_datagram_release_cb);
 -- 
 1.9.1
 
