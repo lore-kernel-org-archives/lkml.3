@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756476AbaHHKLT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 06:11:19 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:7447 "EHLO
+	id S1756416AbaHHKLQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 06:11:16 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:7449 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756250AbaHHKLN (ORCPT
+	by vger.kernel.org with ESMTP id S1756296AbaHHKLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 06:11:13 -0400
 X-IronPort-AV: E=Sophos;i="5.01,824,1400018400"; 
-   d="scan'208";a="88704753"
+   d="scan'208";a="88704754"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
         linux-kernel@vger.kernel.org,
         =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
-Subject: =?UTF-8?q?=5BPATCH=205/14=5D=20powerpc/mpc5xxx=3A=20delete=20unneeded=20test=20before=20of=5Fnode=5Fput?=
-Date: Fri,  8 Aug 2014 12:07:46 +0200
-Message-Id: <1407492475-26283-5-git-send-email-Julia.Lawall@lip6.fr>
+Subject: =?UTF-8?q?=5BPATCH=204/14=5D=20powerpc/pseries=3A=20delete=20unneeded=20test=20before=20of=5Fnode=5Fput?=
+Date: Fri,  8 Aug 2014 12:07:47 +0200
+Message-Id: <1407492475-26283-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -49,21 +49,21 @@ expression e;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- arch/powerpc/sysdev/mpc5xxx_clocks.c |    3 +--
+ arch/powerpc/platforms/pseries/iommu.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/mpc5xxx_clocks.c b/arch/powerpc/sysdev/mpc5xxx_clocks.c
-index 5492dc5..f4f0301 100644
---- a/arch/powerpc/sysdev/mpc5xxx_clocks.c
-+++ b/arch/powerpc/sysdev/mpc5xxx_clocks.c
-@@ -26,8 +26,7 @@ unsigned long mpc5xxx_get_bus_frequency(struct device_node *node)
- 		of_node_put(node);
- 		node = np;
- 	}
--	if (node)
--		of_node_put(node);
-+	of_node_put(node);
+diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
+index 33b552f..2ea6831 100644
+--- a/arch/powerpc/platforms/pseries/iommu.c
++++ b/arch/powerpc/platforms/pseries/iommu.c
+@@ -575,8 +575,7 @@ static void pci_dma_bus_setup_pSeries(struct pci_bus *bus)
+ 	while (isa_dn && isa_dn != dn)
+ 		isa_dn = isa_dn->parent;
  
- 	return p_bus_freq ? *p_bus_freq : 0;
- }
+-	if (isa_dn_orig)
+-		of_node_put(isa_dn_orig);
++	of_node_put(isa_dn_orig);
+ 
+ 	/* Count number of direct PCI children of the PHB. */
+ 	for (children = 0, tmp = dn->child; tmp; tmp = tmp->sibling)
 
