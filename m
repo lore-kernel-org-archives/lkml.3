@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759491AbaHHWEw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:04:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60456 "EHLO
+	id S932732AbaHHVgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:36:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60343 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932768AbaHHVgO (ORCPT
+	with ESMTP id S1758518AbaHHVfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:14 -0400
+	Fri, 8 Aug 2014 17:35:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Eric Dumazet <edumazet@google.com>,
         Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 09/24] net: Correctly set segment mac_len in skb_segment().
-Date: Fri,  8 Aug 2014 14:35:02 -0700
-Message-Id: <20140808213335.810739535@linuxfoundation.org>
+Subject: [PATCH 3.4 08/23] net: Correctly set segment mac_len in skb_segment().
+Date: Fri,  8 Aug 2014 14:34:53 -0700
+Message-Id: <20140808213316.117652190@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140808213335.421758947@linuxfoundation.org>
-References: <20140808213335.421758947@linuxfoundation.org>
+In-Reply-To: <20140808213315.769217722@linuxfoundation.org>
+References: <20140808213315.769217722@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
@@ -72,7 +72,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
-@@ -2810,7 +2810,6 @@ struct sk_buff *skb_segment(struct sk_bu
+@@ -2748,7 +2748,6 @@ struct sk_buff *skb_segment(struct sk_bu
  		tail = nskb;
  
  		__copy_skb_header(nskb, skb);
@@ -80,13 +80,13 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  
  		/* nskb and skb might have different headroom */
  		if (nskb->ip_summed == CHECKSUM_PARTIAL)
-@@ -2820,6 +2819,7 @@ struct sk_buff *skb_segment(struct sk_bu
+@@ -2758,6 +2757,7 @@ struct sk_buff *skb_segment(struct sk_bu
  		skb_set_network_header(nskb, skb->mac_len);
  		nskb->transport_header = (nskb->network_header +
  					  skb_network_header_len(skb));
 +		skb_reset_mac_len(nskb);
+ 		skb_copy_from_linear_data(skb, nskb->data, doffset);
  
- 		skb_copy_from_linear_data_offset(skb, -tnl_hlen,
- 						 nskb->data - tnl_hlen,
+ 		if (fskb != skb_shinfo(skb)->frag_list)
 
 
