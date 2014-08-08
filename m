@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745AbaHHFqq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 01:46:46 -0400
-Received: from ozlabs.org ([103.22.144.67]:40702 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752423AbaHHFqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 01:46:45 -0400
-Date: Fri, 8 Aug 2014 15:46:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: linux-next: manual merge of the akpm-current tree with Linus' tree
-Message-ID: <20140808154638.79a06c16@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1755422AbaHHFrr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 01:47:47 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:55948 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816AbaHHFrq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 01:47:46 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, hugetlb_cgroup: align hugetlb cgroup limit to hugepage size
+In-Reply-To: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Fri, 08 Aug 2014 11:17:37 +0530
+Message-ID: <87sil7mt1i.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/X+o1xbfDld6o_K4FnibHE0W"; protocol="application/pgp-signature"
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080805-2674-0000-0000-0000014E0259
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/X+o1xbfDld6o_K4FnibHE0W
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+David Rientjes <rientjes@google.com> writes:
 
-Hi Andrew,
+> Memcg aligns memory.limit_in_bytes to PAGE_SIZE as part of the resource counter
+> since it makes no sense to allow a partial page to be charged.
+>
+> As a result of the hugetlb cgroup using the resource counter, it is also aligned
+> to PAGE_SIZE but makes no sense unless aligned to the size of the hugepage being
+> limited.
+>
+> Align hugetlb cgroup limit to hugepage size.
+>
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  mm/hugetlb_cgroup.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -275,6 +275,8 @@ static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
+>  		ret = res_counter_memparse_write_strategy(buf, &val);
+>  		if (ret)
+>  			break;
+> +		val = ALIGN(val, 1 << (huge_page_order(&hstates[idx]) +
+> +				       PAGE_SHIFT));
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-mm/memcontrol.c between commit 61e02c745721 ("mm: memcontrol: clean up
-reclaim size variable use in try_charge()") from Linus' tree and
-various commits from the akpm-current tree.
+you can use  1UL << huge_page_shift(hstate); ?
 
-I fixed it up (I think) and can carry the fix as necessary (no action
-is required).
+>  		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
+>  		break;
+>  	default:
+>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-aneesh
 
---Sig_/X+o1xbfDld6o_K4FnibHE0W
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT5GRCAAoJEMDTa8Ir7ZwVS4QP/0w0Rwe0oRwanYoNTc0E2BzW
-uK4K1HUyCvwD3m6SJBEN5dlZeCN+wPeT2Eo5Uwv0KciN5cGJNy4s6lo44ZAfILCM
-72Zuun1Hg5ETz8xbq2zoriMpTTOchDFce9FJaBRJPFedGjdmSu7Wq8XtEmaBdsW1
-VRGVakvu3Y40XH75+Z6BQAFavvEIPy2vgmDPvQGHr5StTAshurc48lVQrF7ga7Vc
-sRW+BzDwZeR1Y0g+bbLPJxF82jpWGlXxycWDaWEDraJZyY2CBg+OnraQ7fwMahSk
-m/gUppK3E11GqcAaF67+O7+0CPs0I7yOjsu5d96sj7r/TGFwZLuplR0MMzQiLvfx
-nb5hbeyiasQhRIC61plV5MF+LuEktoouAyiXbedo0Olw5NHmiETy3m/ipEX6Fy5E
-8Tz1YJij6efY+oNtPdt52N8Wev6ynEhTb8aOaqmSqEsqpc3ZGuRd1PuSln9BLL9r
-ZW7pZhCnoaHbtxZLKbS6O2Xgnt54ChmnwLO+iKTf+hV42oVnd0T3k7tU+fXSyISd
-Gz9JVaZ7p+Wm4lqVfnvUrj6cpizoxpQN17QQAGnqAG/oe2EJgkT5yi8HMIdvPo77
-B9q5M5fub9xQ45AcsP8mCj8Kuyb7TsEgK9uVwG2m2qPkEtVVSKl+KzGoEgz3x792
-9PI3Fr7AGc/7vNlwxY9n
-=GaLE
------END PGP SIGNATURE-----
-
---Sig_/X+o1xbfDld6o_K4FnibHE0W--
