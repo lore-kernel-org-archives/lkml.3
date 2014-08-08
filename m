@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511AbaHHNqZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 09:46:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54081 "EHLO
+	id S1756747AbaHHNr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 09:47:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54091 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244AbaHHNqW (ORCPT
+	with ESMTP id S1752739AbaHHNr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 09:46:22 -0400
-Date: Fri, 8 Aug 2014 06:45:49 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dexuan Cui <decui@microsoft.com>
-Cc: "olaf@aepfle.de" <olaf@aepfle.de>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Shao <huishao@microsoft.com>,
-        "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
-Message-ID: <20140808134549.GD4427@kroah.com>
-References: <DC7803B42427924284F2D5252E076A3B4476A479@SINEX14MBXC416.southpacific.corp.microsoft.com>
- <53CCD6F2.6020909@nod.at>
- <20140721091851.GA28171@aepfle.de>
- <20140721.143225.2040366896972949930.davem@davemloft.net>
- <CAFLxGvyfy1UkxN6_-c_ST7f8n7DvqYsCPKChWmt9CerWb0dh7g@mail.gmail.com>
- <EE124450C0AAF944A40DD71E61F878C99149D0@SINEX14MBXC417.southpacific.corp.microsoft.com>
- <20140808033220.GB10503@kroah.com>
- <EE124450C0AAF944A40DD71E61F878C991569A@SINEX14MBXC417.southpacific.corp.microsoft.com>
+	Fri, 8 Aug 2014 09:47:58 -0400
+Date: Fri, 8 Aug 2014 06:47:25 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Martin Berglund <martin@rogsta.net>
+Cc: devel@driverdev.osuosl.org, Forest Bond <forest@alittletooquiet.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: vt6655: wpactl.c: Fix sparse warnings
+Message-ID: <20140808134725.GE4427@kroah.com>
+References: <20140807220834.GA21645@licorice>
+ <20140808021813.GB22340@kroah.com>
+ <20140808070755.GA12023@astc-ogir.Teknik.UU.SE>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <EE124450C0AAF944A40DD71E61F878C991569A@SINEX14MBXC417.southpacific.corp.microsoft.com>
+In-Reply-To: <20140808070755.GA12023@astc-ogir.Teknik.UU.SE>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 08:11:20AM +0000, Dexuan Cui wrote:
-> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > Sent: Friday, August 8, 2014 11:32 AM
-> > > Hi Richard and all,
-> > >
-> > > IMO the most feasible and need-the-least-change solution may be:
-> > > the hyperv network VSC driver passes the event
-> > > RNDIS_STATUS_NETWORK_CHANGE to the udev daemon?
-> > >
-> > > In this way, every distro only needs to add a udev rule, which should
-> > > be simple.
+On Fri, Aug 08, 2014 at 09:07:55AM +0200, Martin Berglund wrote:
+> On Thu, Aug 07, 2014 at 07:18:13PM -0700, Greg Kroah-Hartman wrote:
+> > On Thu, Aug 07, 2014 at 11:08:34PM +0100, Martin Berglund wrote:
+> > > Add missing __user macro casting in the function wpa_set_keys.
+> > > This is okay since the function handles the possibility of
+> > > param->u.wpa_key.key and param->u.wpa_key.seq pointing to
+> > > kernelspace using a flag, fcpfkernel.
+> > > 
+> > > Signed-off-by: Martin Berglund <martin@rogsta.net>
+> > > ---
+> > > This was submitted as part of Eudyptula challenge task 16
+> > > 
+> > >  drivers/staging/vt6655/wpactl.c |    8 ++++++--
+> > >  1 file changed, 6 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
+> > > index 5f454ca..d75dd79 100644
+> > > --- a/drivers/staging/vt6655/wpactl.c
+> > > +++ b/drivers/staging/vt6655/wpactl.c
+> > > @@ -224,7 +224,9 @@ int wpa_set_keys(PSDevice pDevice, void *ctx,
+> > >  	} else {
+> > >  		spin_unlock_irq(&pDevice->lock);
+> > >  		if (param->u.wpa_key.key &&
+> > > -		    copy_from_user(&abyKey[0], param->u.wpa_key.key, param->u.wpa_key.key_len)) {
+> > > +		    copy_from_user(&abyKey[0],
+> > > +				   (void __user *)param->u.wpa_key.key,
 > > 
-> > No, don't do that, again, act like any other network device, drop the
-> > link and bring it up when it comes back.
+> > Would it be better to mark this pointer as __user in the structure
+> > itself?  Or is it also used as a kernel structure in other places?
+> > 
+> > thanks,
 > > 
 > > greg k-h
 > 
-> Hi Greg,
-> Thanks for the comment!
-> 
-> Do you mean tearing down the net device and re-creating it (by
-> register_netdev() and unregister_netdev)?
+> Yes, the structure is used as a kernel structure in some other places. 
+> Even this function is sometimes called with the pointers in the
+> structure pointing to kernel memory. However, that is correctly
+> handled with a flag also sent to the function.
 
-No, don't you have link-detect for your network device?  Toggle that, I
-thought patches to do this were posted a while ago...
+Ugh, that's a mess.  And should be cleaned up...
 
-But if you really want to tear the whole network device down and then
-back up again, sure, that would also work.
+> As a side note: there are some uses of memcpy in this file that
+> might be good to switch to copy_from/to_user but it's not as clear
+> to me if these pointers never can point to kernel memory (because of
+> the mixing of the two). For example all copying of ssid and bssid.
 
-good luck,
+That also is not good, if memcpy is used for userspace memory pointers,
+bad things can happen on some machines...
+
+Look at how this was fixed up in the other staging vt* driver, odds are
+you can do the same thing here, right?
+
+thanks,
 
 greg k-h
