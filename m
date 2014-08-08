@@ -1,100 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403AbaHHJgx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 05:36:53 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:41913 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756361AbaHHJgv (ORCPT
+	id S1756245AbaHHJld (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 05:41:33 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:62613 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939AbaHHJl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 05:36:51 -0400
-Date: Fri, 8 Aug 2014 11:37:01 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Chris Wilson <chris@chris-wilson.co.uk>, Daniel Vetter <daniel@ffwll.ch>,
-        oscar.mateo@intel.com, intel-gfx@lists.freedesktop.org,
-        Greg KH <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Intel-gfx] [PATCH 45/53] drm/i915/bdw: Do not call
- intel_runtime_pm_get() in an interrupt
-Message-ID: <20140808093701.GO8727@phenom.ffwll.local>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	oscar.mateo@intel.com, intel-gfx@lists.freedesktop.org,
-	Greg KH <gregkh@linuxfoundation.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <1402673891-14618-1-git-send-email-oscar.mateo@intel.com>
- <1402673891-14618-46-git-send-email-oscar.mateo@intel.com>
- <20140618205413.GH5821@phenom.ffwll.local>
- <20140726102738.GA21056@nuc-i3427.alporthouse.com>
- <20140728085406.GX4747@phenom.ffwll.local>
- <20140729073748.GD21570@nuc-i3427.alporthouse.com>
- <20140729102636.GK4747@phenom.ffwll.local>
- <20140808092040.GD3021@nuc-i3427.alporthouse.com>
+	Fri, 8 Aug 2014 05:41:29 -0400
+Date: Fri, 8 Aug 2014 11:41:25 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-tegra@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: Re: [PATCH 1/3] of: Add of_match_machine helper
+Message-ID: <20140808094123.GC5387@ulmo>
+References: <1407452515-2390-1-git-send-email-ttynkkynen@nvidia.com>
+ <1407452515-2390-2-git-send-email-ttynkkynen@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jy6Sn24JjFx/iggw"
 Content-Disposition: inline
-In-Reply-To: <20140808092040.GD3021@nuc-i3427.alporthouse.com>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
+In-Reply-To: <1407452515-2390-2-git-send-email-ttynkkynen@nvidia.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 10:20:40AM +0100, Chris Wilson wrote:
-> On Tue, Jul 29, 2014 at 12:26:36PM +0200, Daniel Vetter wrote:
-> > On Tue, Jul 29, 2014 at 08:37:48AM +0100, Chris Wilson wrote:
-> > > On Mon, Jul 28, 2014 at 10:54:06AM +0200, Daniel Vetter wrote:
-> > > > On Sat, Jul 26, 2014 at 11:27:38AM +0100, Chris Wilson wrote:
-> > > > > On Wed, Jun 18, 2014 at 10:54:13PM +0200, Daniel Vetter wrote:
-> > > > > > On Fri, Jun 13, 2014 at 04:38:03PM +0100, oscar.mateo@intel.com wrote:
-> > > > > > > From: Oscar Mateo <oscar.mateo@intel.com>
-> > > > > > > 
-> > > > > > > Or with a spinlock grabbed, because it might sleep, which is not
-> > > > > > > a nice thing to do. Instead, do the runtime_pm get/put together
-> > > > > > > with the create/destroy request, and handle the forcewake get/put
-> > > > > > > directly.
-> > > > > > > 
-> > > > > > > Signed-off-by: Oscar Mateo <oscar.mateo@intel.com>
-> > > > > > 
-> > > > > > Looks like a fixup that should be squashed into relevant earlier patches.
-> > > > > 
-> > > > > The whole gen6_gt_force_wake_get() calling intel_runtime_pm_get() is
-> > > > > broken due to this - we must be able to read registers in atomic
-> > > > > context!
-> > > > > 
-> > > > > Please revert c8c8fb33b37766acf6474784b0d5245dab9a1690
-> > > > 
-> > > > force_wake_get can't call runtime_pm_get becuase pm_get can sleep. So if
-> > > > you want to read registers from atomic context you have to have a runtime
-> > > > pm reference from someone else.
-> > > 
-> > > Nope. That cannot work.
-> > 
-> > Well it works currently. So where do you see the problem?
-> 
-> Sampling registers from an timer - in particular, we really do not want
-> to disable runtime pm whilst trying to monitor the impact of runtime pm.
 
-In that case you can grab a runtime pm reference iff the device is powered
-on already. Which won't call anything scary, just amounts to an
-atomic_add_unless or so, and then drop it again. 
+--jy6Sn24JjFx/iggw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Unfortunately there doesn't seem to be such a thing around already, so
-need to add it first. Greg, how much would you freak out if we add
-something like
+On Fri, Aug 08, 2014 at 02:01:53AM +0300, Tuomas Tynkkynen wrote:
+> Add of_match_machine function to test the device tree root for an
+> of_match array. This can be useful when testing SoC versions at runtime,
+> for example.
+>=20
+> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+> ---
+>  drivers/of/base.c  | 21 +++++++++++++++++++++
+>  include/linux/of.h |  3 +++
+>  2 files changed, 24 insertions(+)
+>=20
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index d8574ad..37798ea 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -977,6 +977,27 @@ struct device_node *of_find_matching_node_and_match(=
+struct device_node *from,
+>  EXPORT_SYMBOL(of_find_matching_node_and_match);
+> =20
+>  /**
+> + * of_match_machine - Tell if root of device tree has a matching of_matc=
+h struct
+> + *	@matches:	array of of device match structures to search in
+> + *
+> + *	Returns the result of of_match_node for the root node.
+> + */
 
-/**
- * pm_runtime_get_unless_suspended - grab a rpm ref if the device is on
- * 
- * Returns true if an rpm ref has been acquire, false otherwise. Can be
- * called from atomic context to e.g. sample perfomance counters (where we
- * obviously don't want to disturb system state if everything is off atm).
- */
-static inline bool pm_runtime_get_unless_suspended(struct device *dev)
-{
-	return atomic_add_unless(&dev->power.usage_count, 1, 0);
-}
+I was going to say that this kerneldoc is weirdly formatted, but when I
+looked at the other kerneldoc comments in this file it seems that they
+use similarly weird formatting...
 
-Cheers, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> +const struct of_device_id *of_match_machine(const struct of_device_id *m=
+atches)
+> +{
+> +	const struct of_device_id *match;
+> +	struct device_node *root;
+> +
+> +	root =3D of_find_node_by_path("/");
+> +	if (!root)
+> +		return NULL;
+> +
+> +	match =3D of_match_node(matches, root);
+> +	of_node_put(root);
+> +	return match;
+> +}
+> +EXPORT_SYMBOL(of_match_machine);
+
+I wonder if of_find_node_by_path("/") is somewhat overkill here. Perhaps
+simply of_node_get(of_allnodes) would be more appropriate here since the
+function is implemented in the core?
+
+Thierry
+
+--jy6Sn24JjFx/iggw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT5JtDAAoJEN0jrNd/PrOhAMoQAJmn0fEnb/b1lt3a+d+kS0JT
+Ll8hWzjUy3/C6wH7enSRF+IuishkYq9GBdQhd5sEuNxOw3IQBvNOfFUYOa8VF+ps
+1/wOVmviYU0gyK8PTdtGJnXuFChG8kxuGq01hnOnue0UZ2KD+o+0Ihl5wHdXOpBW
+O+NiddN24l33kcR6KoMTU95R+xOozKuUjiRHQGZDiSUbwN4u+vUcyptVv/lQlwtv
+P0zrREqb8GNiGg5CLeTr38E7SY10NY4ZxGmy5rxNTazxgai2wNFy+kzV3e509t4b
+GN53vmkeB/hwOafE5lLSn1LV7IWggCHnAC86mb+E6f3NctEdQstXlwZuag6ATX0g
+p0AtabEJD6JnGO2R5PKL33RfeWQB3J1ozIhNRnDe+ajcsYVAOKjAGpjyx3q3D5M+
+R68r7SIPr/kox0d+BaAhh9+xnZnEX2y+3lCEJIUTDCY0k9W/OjUl64LWRDs3cb7H
+zQeYbErtDjrmoIps6Btaask6tlKtLoVOCTnijuOW38Xg5UX4ZrGGjFfbTX6eM02l
+gMYQdhAvrVD9vFiq7l6J5FyLwZv7KXbdreMT2SLK96JK4muyzyYDGBOGeFA4Nr3x
+cVqeS8OOPh8cVTaTrwiuvGC/VFzTq6wGu0OM6Ws+t7gJV9b/6XNUAsyW2ST4xpky
+f94msh57NEoPl3XGM8Rt
+=hWNI
+-----END PGP SIGNATURE-----
+
+--jy6Sn24JjFx/iggw--
