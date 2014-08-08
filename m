@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678AbaHHF7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 01:59:55 -0400
-Received: from smtprelay02.ispgateway.de ([80.67.31.25]:51864 "EHLO
+	id S1755624AbaHHGAv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 02:00:51 -0400
+Received: from smtprelay02.ispgateway.de ([80.67.31.29]:59309 "EHLO
 	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547AbaHHF7y (ORCPT
+	with ESMTP id S1751824AbaHHGAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 01:59:54 -0400
+	Fri, 8 Aug 2014 02:00:49 -0400
 From: Christoph Jaeger <email@christophjaeger.info>
 To: shigekatsu.tateno@atmel.com, gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Christoph Jaeger <email@christophjaeger.info>
-Subject: [PATCH 07/10 v2] staging: ozwpan: Use slab cache for oz_urb_link allocation
-Date: Fri,  8 Aug 2014 07:59:24 +0200
-Message-Id: <1407477564-32617-1-git-send-email-email@christophjaeger.info>
+Subject: [PATCH 08/10 v2] staging: ozwpan: Use slab cache for oz_elt_info allocation
+Date: Fri,  8 Aug 2014 08:00:42 +0200
+Message-Id: <1407477642-32719-1-git-send-email-email@christophjaeger.info>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1407156896-3246-8-git-send-email-email@christophjaeger.info>
-References: <1407156896-3246-8-git-send-email-email@christophjaeger.info>
+In-Reply-To: <1407156896-3246-9-git-send-email-email@christophjaeger.info>
+References: <1407156896-3246-9-git-send-email-email@christophjaeger.info>
 X-Df-Sender: MTg4NDM4Mw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,142 +28,232 @@ Signed-off-by: Christoph Jaeger <email@christophjaeger.info>
 ---
 v2: Don't use likely()/unlikely().
 
- drivers/staging/ozwpan/ozhcd.c | 70 ++++++++----------------------------------
- 1 file changed, 12 insertions(+), 58 deletions(-)
+ drivers/staging/ozwpan/ozeltbuf.c | 68 ++-------------------------------------
+ drivers/staging/ozwpan/ozeltbuf.h |  5 ---
+ drivers/staging/ozwpan/ozpd.c     |  2 --
+ drivers/staging/ozwpan/ozpd.h     |  2 ++
+ drivers/staging/ozwpan/ozproto.c  |  9 ++++++
+ drivers/staging/ozwpan/ozproto.h  |  2 ++
+ 6 files changed, 16 insertions(+), 72 deletions(-)
 
-diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
-index 30bd928..1142f57 100644
---- a/drivers/staging/ozwpan/ozhcd.c
-+++ b/drivers/staging/ozwpan/ozhcd.c
-@@ -45,10 +45,6 @@
-  */
- #define OZ_PLAT_DEV_NAME	"ozwpan"
+diff --git a/drivers/staging/ozwpan/ozeltbuf.c b/drivers/staging/ozwpan/ozeltbuf.c
+index f6e6481..389ab1a 100644
+--- a/drivers/staging/ozwpan/ozeltbuf.c
++++ b/drivers/staging/ozwpan/ozeltbuf.c
+@@ -10,9 +10,6 @@
+ #include "ozeltbuf.h"
+ #include "ozpd.h"
  
--/* Maximum number of free urb links that can be kept in the pool.
-- */
--#define OZ_MAX_LINK_POOL_SIZE	16
+-#define OZ_ELT_INFO_MAGIC_USED	0x35791057
+-#define OZ_ELT_INFO_MAGIC_FREE	0x78940102
 -
- /* Get endpoint object from the containing link.
+ /*
+  * Context: softirq-serialized
   */
- #define ep_from_link(__e) container_of((__e), struct oz_endpoint, link)
-@@ -75,6 +71,8 @@ struct oz_urb_link {
- 	unsigned submit_counter;
- };
- 
-+static struct kmem_cache *oz_urb_link_cache;
-+
- /* Holds state information about a USB endpoint.
-  */
- #define OZ_EP_BUFFER_SIZE_ISOC  (1024 * 24)
-@@ -198,9 +196,6 @@ static struct platform_device *g_plat_dev;
- static struct oz_hcd *g_ozhcd;
- static DEFINE_SPINLOCK(g_hcdlock);	/* Guards g_ozhcd. */
- static const char g_hcd_name[] = "Ozmo WPAN";
--static struct list_head *g_link_pool;
--static int g_link_pool_size;
--static DEFINE_SPINLOCK(g_link_lock);
- static DEFINE_SPINLOCK(g_tasklet_lock);
- static struct tasklet_struct g_urb_process_tasklet;
- static struct tasklet_struct g_urb_cancel_tasklet;
-@@ -265,68 +260,22 @@ static int oz_get_port_from_addr(struct oz_hcd *ozhcd, u8 bus_addr)
+@@ -22,7 +19,6 @@ void oz_elt_buf_init(struct oz_elt_buf *buf)
+ 	INIT_LIST_HEAD(&buf->stream_list);
+ 	INIT_LIST_HEAD(&buf->order_list);
+ 	INIT_LIST_HEAD(&buf->isoc_list);
+-	buf->max_free_elts = 32;
+ 	spin_lock_init(&buf->lock);
  }
  
- /*
-- * Allocates an urb link, first trying the pool but going to heap if empty.
-  * Context: any
-  */
- static struct oz_urb_link *oz_alloc_urb_link(void)
- {
--	struct oz_urb_link *urbl = NULL;
--	unsigned long irq_state;
--
--	spin_lock_irqsave(&g_link_lock, irq_state);
--	if (g_link_pool) {
--		urbl = container_of(g_link_pool, struct oz_urb_link, link);
--		g_link_pool = urbl->link.next;
--		--g_link_pool_size;
+@@ -49,14 +45,6 @@ void oz_elt_buf_term(struct oz_elt_buf *buf)
+ 			kfree(ei);
+ 		}
+ 	}
+-	/* Free any elelment in the pool. */
+-	while (buf->elt_pool) {
+-		struct oz_elt_info *ei =
+-			container_of(buf->elt_pool, struct oz_elt_info, link);
+-		buf->elt_pool = buf->elt_pool->next;
+-		kfree(ei);
 -	}
--	spin_unlock_irqrestore(&g_link_lock, irq_state);
--	if (urbl == NULL)
--		urbl = kmalloc(sizeof(struct oz_urb_link), GFP_ATOMIC);
--	return urbl;
-+	return kmem_cache_alloc(oz_urb_link_cache, GFP_ATOMIC);
+-	buf->free_elts = 0;
  }
  
  /*
-- * Frees an urb link by putting it in the pool if there is enough space or
-- * deallocating it to heap otherwise.
-  * Context: any
-  */
- static void oz_free_urb_link(struct oz_urb_link *urbl)
+@@ -66,27 +54,8 @@ struct oz_elt_info *oz_elt_info_alloc(struct oz_elt_buf *buf)
  {
--	if (urbl) {
--		unsigned long irq_state;
--
--		spin_lock_irqsave(&g_link_lock, irq_state);
--		if (g_link_pool_size < OZ_MAX_LINK_POOL_SIZE) {
--			urbl->link.next = g_link_pool;
--			g_link_pool = &urbl->link;
--			urbl = NULL;
--			g_link_pool_size++;
+ 	struct oz_elt_info *ei;
+ 
+-	spin_lock_bh(&buf->lock);
+-	if (buf->free_elts && buf->elt_pool) {
+-		ei = container_of(buf->elt_pool, struct oz_elt_info, link);
+-		buf->elt_pool = ei->link.next;
+-		buf->free_elts--;
+-		spin_unlock_bh(&buf->lock);
+-		if (ei->magic != OZ_ELT_INFO_MAGIC_FREE) {
+-			oz_dbg(ON, "%s: ei with bad magic: 0x%x\n",
+-			       __func__, ei->magic);
 -		}
--		spin_unlock_irqrestore(&g_link_lock, irq_state);
--		kfree(urbl);
+-	} else {
+-		spin_unlock_bh(&buf->lock);
+-		ei = kmalloc(sizeof(struct oz_elt_info), GFP_ATOMIC);
+-	}
++	ei = kmem_cache_zalloc(oz_elt_info_cache, GFP_ATOMIC);
+ 	if (ei) {
+-		ei->flags = 0;
+-		ei->app_id = 0;
+-		ei->callback = NULL;
+-		ei->context = 0;
+-		ei->stream = NULL;
+-		ei->magic = OZ_ELT_INFO_MAGIC_USED;
+ 		INIT_LIST_HEAD(&ei->link);
+ 		INIT_LIST_HEAD(&ei->link_order);
+ 	}
+@@ -99,17 +68,8 @@ struct oz_elt_info *oz_elt_info_alloc(struct oz_elt_buf *buf)
+  */
+ void oz_elt_info_free(struct oz_elt_buf *buf, struct oz_elt_info *ei)
+ {
+-	if (ei) {
+-		if (ei->magic == OZ_ELT_INFO_MAGIC_USED) {
+-			buf->free_elts++;
+-			ei->link.next = buf->elt_pool;
+-			buf->elt_pool = &ei->link;
+-			ei->magic = OZ_ELT_INFO_MAGIC_FREE;
+-		} else {
+-			oz_dbg(ON, "%s: bad magic ei: %p magic: 0x%x\n",
+-			       __func__, ei, ei->magic);
+-		}
+-	}
++	if (ei)
++		kmem_cache_free(oz_elt_info_cache, ei);
+ }
+ 
+ /*------------------------------------------------------------------------------
+@@ -313,25 +273,3 @@ int oz_are_elts_available(struct oz_elt_buf *buf)
+ {
+ 	return buf->order_list.next != &buf->order_list;
+ }
+-
+-void oz_trim_elt_pool(struct oz_elt_buf *buf)
+-{
+-	struct list_head *free = NULL;
+-	struct list_head *e;
+-
+-	spin_lock_bh(&buf->lock);
+-	while (buf->free_elts > buf->max_free_elts) {
+-		e = buf->elt_pool;
+-		buf->elt_pool = e->next;
+-		e->next = free;
+-		free = e;
+-		buf->free_elts--;
+-	}
+-	spin_unlock_bh(&buf->lock);
+-	while (free) {
+-		struct oz_elt_info *ei =
+-			container_of(free, struct oz_elt_info, link);
+-		free = free->next;
+-		kfree(ei);
 -	}
 -}
--
--/*
-- * Deallocates all the urb links in the pool.
-- * Context: unknown
-- */
--static void oz_empty_link_pool(void)
--{
--	struct list_head *e;
--	unsigned long irq_state;
-+	if (!urbl)
-+		return;
+diff --git a/drivers/staging/ozwpan/ozeltbuf.h b/drivers/staging/ozwpan/ozeltbuf.h
+index 3846432..f09f5fe 100644
+--- a/drivers/staging/ozwpan/ozeltbuf.h
++++ b/drivers/staging/ozwpan/ozeltbuf.h
+@@ -34,7 +34,6 @@ struct oz_elt_info {
+ 	struct oz_elt_stream *stream;
+ 	u8 data[sizeof(struct oz_elt) + OZ_MAX_ELT_PAYLOAD];
+ 	int length;
+-	unsigned magic;
+ };
+ /* Flags values */
+ #define OZ_EI_F_MARKED		0x1
+@@ -44,9 +43,6 @@ struct oz_elt_buf {
+ 	struct list_head stream_list;
+ 	struct list_head order_list;
+ 	struct list_head isoc_list;
+-	struct list_head *elt_pool;
+-	int free_elts;
+-	int max_free_elts;
+ 	u8 tx_seq_num[OZ_NB_APPS];
+ };
  
--	spin_lock_irqsave(&g_link_lock, irq_state);
--	e = g_link_pool;
--	g_link_pool = NULL;
--	g_link_pool_size = 0;
--	spin_unlock_irqrestore(&g_link_lock, irq_state);
--	while (e) {
--		struct oz_urb_link *urbl =
--			container_of(e, struct oz_urb_link, link);
--		e = e->next;
--		kfree(urbl);
--	}
-+	kmem_cache_free(oz_urb_link_cache, urbl);
+@@ -64,7 +60,6 @@ int oz_queue_elt_info(struct oz_elt_buf *buf, u8 isoc, u8 id,
+ int oz_select_elts_for_tx(struct oz_elt_buf *buf, u8 isoc, unsigned *len,
+ 		unsigned max_len, struct list_head *list);
+ int oz_are_elts_available(struct oz_elt_buf *buf);
+-void oz_trim_elt_pool(struct oz_elt_buf *buf);
+ 
+ #endif /* _OZELTBUF_H */
+ 
+diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
+index 6c4b13f..c6fddb8 100644
+--- a/drivers/staging/ozwpan/ozpd.c
++++ b/drivers/staging/ozwpan/ozpd.c
+@@ -504,8 +504,6 @@ static void oz_retire_frame(struct oz_pd *pd, struct oz_tx_frame *f)
+ 		spin_unlock_bh(&pd->elt_buff.lock);
+ 	}
+ 	oz_tx_frame_free(pd, f);
+-	if (pd->elt_buff.free_elts > pd->elt_buff.max_free_elts)
+-		oz_trim_elt_pool(&pd->elt_buff);
  }
  
  /*
-@@ -2311,7 +2260,6 @@ static int oz_plat_remove(struct platform_device *dev)
- 	oz_dbg(ON, "Removing hcd\n");
- 	usb_remove_hcd(hcd);
- 	usb_put_hcd(hcd);
--	oz_empty_link_pool();
- 	return 0;
+diff --git a/drivers/staging/ozwpan/ozpd.h b/drivers/staging/ozwpan/ozpd.h
+index 3b3b3ce..43a26ea 100644
+--- a/drivers/staging/ozwpan/ozpd.h
++++ b/drivers/staging/ozwpan/ozpd.h
+@@ -130,4 +130,6 @@ void oz_handle_app_elt(struct oz_pd *pd, u8 app_id, struct oz_elt *elt);
+ void oz_apps_init(void);
+ void oz_apps_term(void);
+ 
++extern struct kmem_cache *oz_elt_info_cache;
++
+ #endif /* Sentry */
+diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
+index 549fe7f..b592e96 100644
+--- a/drivers/staging/ozwpan/ozproto.c
++++ b/drivers/staging/ozwpan/ozproto.c
+@@ -11,6 +11,7 @@
+ #include <linux/etherdevice.h>
+ #include <linux/errno.h>
+ #include <linux/ieee80211.h>
++#include <linux/slab.h>
+ #include "ozdbg.h"
+ #include "ozprotocol.h"
+ #include "ozeltbuf.h"
+@@ -51,6 +52,8 @@ static u8 g_session_id;
+ static u16 g_apps = 0x1;
+ static int g_processing_rx;
+ 
++struct kmem_cache *oz_elt_info_cache;
++
+ /*
+  * Context: softirq-serialized
+  */
+@@ -479,6 +482,8 @@ void oz_protocol_term(void)
+ 	}
+ 	spin_unlock_bh(&g_polling_lock);
+ 	oz_dbg(ON, "Protocol stopped\n");
++
++	kmem_cache_destroy(oz_elt_info_cache);
  }
  
-@@ -2341,6 +2289,11 @@ int oz_hcd_init(void)
- 
- 	if (usb_disabled())
- 		return -ENODEV;
-+
-+	oz_urb_link_cache = KMEM_CACHE(oz_urb_link, 0);
-+	if (!oz_urb_link_cache)
+ /*
+@@ -762,6 +767,10 @@ static char *oz_get_next_device_name(char *s, char *dname, int max_size)
+  */
+ int oz_protocol_init(char *devs)
+ {
++	oz_elt_info_cache = KMEM_CACHE(oz_elt_info, 0);
++	if (!oz_elt_info_cache)
 +		return -ENOMEM;
 +
- 	tasklet_init(&g_urb_process_tasklet, oz_urb_process_tasklet, 0);
- 	tasklet_init(&g_urb_cancel_tasklet, oz_urb_cancel_tasklet, 0);
- 	err = platform_driver_register(&g_oz_plat_drv);
-@@ -2380,4 +2333,5 @@ void oz_hcd_term(void)
- 	platform_device_unregister(g_plat_dev);
- 	platform_driver_unregister(&g_oz_plat_drv);
- 	oz_dbg(ON, "Pending urbs:%d\n", atomic_read(&g_pending_urbs));
-+	kmem_cache_destroy(oz_urb_link_cache);
- }
+ 	skb_queue_head_init(&g_rx_queue);
+ 	if (devs[0] == '*') {
+ 		oz_binding_add(NULL);
+diff --git a/drivers/staging/ozwpan/ozproto.h b/drivers/staging/ozwpan/ozproto.h
+index f1d30c4..b0f7459 100644
+--- a/drivers/staging/ozwpan/ozproto.h
++++ b/drivers/staging/ozwpan/ozproto.h
+@@ -65,4 +65,6 @@ enum hrtimer_restart oz_pd_timeout_event(struct hrtimer *timer);
+ int oz_get_pd_status_list(char *pd_list, int max_count);
+ int oz_get_binding_list(char *buf, int max_if);
+ 
++extern struct kmem_cache *oz_elt_info_cache;
++
+ #endif /* _OZPROTO_H */
 -- 
 1.9.1
 
