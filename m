@@ -1,247 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181AbaHHRUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 13:20:32 -0400
-Received: from mx1.HRZ.Uni-Dortmund.DE ([129.217.128.51]:61333 "EHLO
-	unimail.uni-dortmund.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622AbaHHRUb (ORCPT
+	id S1751043AbaHHR0n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 13:26:43 -0400
+Received: from natalenko.name ([78.47.77.148]:56247 "EHLO natalenko.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750738AbaHHR0l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 13:20:31 -0400
-X-Greylist: delayed 3201 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Aug 2014 13:20:30 EDT
-From: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
+	Fri, 8 Aug 2014 13:26:41 -0400
+DMARC-Filter: OpenDMARC Filter v1.2.0 natalenko.name 01EB5A5B8
+Authentication-Results: mail.natalenko.name; dmarc=none header.from=natalenko.name
+From: Oleksandr Natalenko <oleksandr@natalenko.name>
 To: linux-kernel@vger.kernel.org
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        andreas.dilger@intel.com, oleg.drokin@intel.com,
-        Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
-Subject: [PATCH] drivers: staging: lustre: fix sparse warnings / delete unused function
-Date: Fri,  8 Aug 2014 18:26:22 +0200
-Message-Id: <1407515182-24287-1-git-send-email-benedict.boerger@cs.tu-dortmund.de>
-X-Mailer: git-send-email 1.9.1
+Cc: linux-pm@vger.kernel.org
+Subject: Re: [BUG] oops in cpufreq driver with AMD Kaveri CPU
+Date: Fri, 08 Aug 2014 20:26:29 +0300
+Message-ID: <2218871.DzMQ58ssQz@spock>
+User-Agent: KMail/4.13.3 (Linux/3.15.0-pf5; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <2651364.4shODVy8cx@spock>
+References: <4708675.eITUXPv8Ih@spock> <2651364.4shODVy8cx@spock>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers: staging: lustre: fix sparse warning: symbol XYZ was
-not declared. Should it be static?
+Filled up detailed bugreport on bugzilla:
 
-This was done by declaring them static. This could be done because the functions
-were used only in this file.
+https://bugzilla.kernel.org/show_bug.cgi?id=81701
 
-Deleted the function lnet_print_text_bufs because it were unused.
-
-Compiled without an error.
-Done to complete a eudyptula task.
-
-Signed-off-by: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
----
- drivers/staging/lustre/lnet/lnet/config.c | 57 ++++++++++++-------------------
- 1 file changed, 21 insertions(+), 36 deletions(-)
-
-diff --git a/drivers/staging/lustre/lnet/lnet/config.c b/drivers/staging/lustre/lnet/lnet/config.c
-index 7c8b947..ede664b 100644
---- a/drivers/staging/lustre/lnet/lnet/config.c
-+++ b/drivers/staging/lustre/lnet/lnet/config.c
-@@ -47,7 +47,7 @@ static int lnet_tbnob;			/* track text buf allocation */
- #define LNET_MAX_TEXTBUF_NOB     (64<<10)	/* bound allocation */
- #define LNET_SINGLE_TEXTBUF_NOB  (4<<10)
- 
--void
-+static void
- lnet_syntax(char *name, char *str, int offset, int width)
- {
- 	static char dots[LNET_SINGLE_TEXTBUF_NOB];
-@@ -64,7 +64,7 @@ lnet_syntax(char *name, char *str, int offset, int width)
- 			    (width < 1) ? 0 : width - 1, dashes);
- }
- 
--int
-+static int
- lnet_issep(char c)
- {
- 	switch (c) {
-@@ -77,7 +77,7 @@ lnet_issep(char c)
- 	}
- }
- 
--int
-+static int
- lnet_net_unique(__u32 net, struct list_head *nilist)
- {
- 	struct list_head       *tmp;
-@@ -108,7 +108,7 @@ lnet_ni_free(struct lnet_ni *ni)
- 	LIBCFS_FREE(ni, sizeof(*ni));
- }
- 
--lnet_ni_t *
-+static lnet_ni_t *
- lnet_ni_alloc(__u32 net, struct cfs_expr_list *el, struct list_head *nilist)
- {
- 	struct lnet_tx_queue	*tq;
-@@ -365,7 +365,7 @@ lnet_parse_networks(struct list_head *nilist, char *networks)
- 	return -EINVAL;
- }
- 
--lnet_text_buf_t *
-+static lnet_text_buf_t *
- lnet_new_text_buf(int str_len)
- {
- 	lnet_text_buf_t *ltb;
-@@ -394,14 +394,14 @@ lnet_new_text_buf(int str_len)
- 	return ltb;
- }
- 
--void
-+static void
- lnet_free_text_buf(lnet_text_buf_t *ltb)
- {
- 	lnet_tbnob -= ltb->ltb_size;
- 	LIBCFS_FREE(ltb, ltb->ltb_size);
- }
- 
--void
-+static void
- lnet_free_text_bufs(struct list_head *tbs)
- {
- 	lnet_text_buf_t  *ltb;
-@@ -414,22 +414,7 @@ lnet_free_text_bufs(struct list_head *tbs)
- 	}
- }
- 
--void
--lnet_print_text_bufs(struct list_head *tbs)
--{
--	struct list_head	*tmp;
--	lnet_text_buf_t   *ltb;
--
--	list_for_each(tmp, tbs) {
--		ltb = list_entry(tmp, lnet_text_buf_t, ltb_list);
--
--		CDEBUG(D_WARNING, "%s\n", ltb->ltb_text);
--	}
--
--	CDEBUG(D_WARNING, "%d allocated\n", lnet_tbnob);
--}
--
--int
-+static int
- lnet_str2tbs_sep(struct list_head *tbs, char *str)
- {
- 	struct list_head	pending;
-@@ -487,7 +472,7 @@ lnet_str2tbs_sep(struct list_head *tbs, char *str)
- 	return 0;
- }
- 
--int
-+static int
- lnet_expand1tb(struct list_head *list,
- 	       char *str, char *sep1, char *sep2,
- 	       char *item, int itemlen)
-@@ -512,7 +497,7 @@ lnet_expand1tb(struct list_head *list,
- 	return 0;
- }
- 
--int
-+static int
- lnet_str2tbs_expand(struct list_head *tbs, char *str)
- {
- 	char	      num[16];
-@@ -592,7 +577,7 @@ lnet_str2tbs_expand(struct list_head *tbs, char *str)
- 	return -1;
- }
- 
--int
-+static int
- lnet_parse_hops(char *str, unsigned int *hops)
- {
- 	int     len = strlen(str);
-@@ -605,7 +590,7 @@ lnet_parse_hops(char *str, unsigned int *hops)
- 
- #define LNET_PRIORITY_SEPARATOR (':')
- 
--int
-+static int
- lnet_parse_priority(char *str, unsigned int *priority, char **token)
- {
- 	int   nob;
-@@ -635,7 +620,7 @@ lnet_parse_priority(char *str, unsigned int *priority, char **token)
- 	return 0;
- }
- 
--int
-+static int
- lnet_parse_route(char *str, int *im_a_router)
- {
- 	/* static scratch buffer OK (single threaded) */
-@@ -778,7 +763,7 @@ lnet_parse_route(char *str, int *im_a_router)
- 	return myrc;
- }
- 
--int
-+static int
- lnet_parse_route_tbs(struct list_head *tbs, int *im_a_router)
- {
- 	lnet_text_buf_t   *ltb;
-@@ -819,7 +804,7 @@ lnet_parse_routes(char *routes, int *im_a_router)
- 	return rc;
- }
- 
--int
-+static int
- lnet_match_network_token(char *token, int len, __u32 *ipaddrs, int nip)
- {
- 	LIST_HEAD(list);
-@@ -838,7 +823,7 @@ lnet_match_network_token(char *token, int len, __u32 *ipaddrs, int nip)
- 	return rc;
- }
- 
--int
-+static int
- lnet_match_network_tokens(char *net_entry, __u32 *ipaddrs, int nip)
- {
- 	static char tokens[LNET_SINGLE_TEXTBUF_NOB];
-@@ -895,7 +880,7 @@ lnet_match_network_tokens(char *net_entry, __u32 *ipaddrs, int nip)
- 	return 1;
- }
- 
--__u32
-+static __u32
- lnet_netspec2net(char *netspec)
- {
- 	char   *bracket = strchr(netspec, '(');
-@@ -912,7 +897,7 @@ lnet_netspec2net(char *netspec)
- 	return net;
- }
- 
--int
-+static int
- lnet_splitnets(char *source, struct list_head *nets)
- {
- 	int	       offset = 0;
-@@ -992,7 +977,7 @@ lnet_splitnets(char *source, struct list_head *nets)
- 	}
- }
- 
--int
-+static int
- lnet_match_networks(char **networksp, char *ip2nets, __u32 *ipaddrs, int nip)
- {
- 	static char	networks[LNET_SINGLE_TEXTBUF_NOB];
-@@ -1112,13 +1097,13 @@ lnet_match_networks(char **networksp, char *ip2nets, __u32 *ipaddrs, int nip)
- 	return count;
- }
- 
--void
-+static void
- lnet_ipaddr_free_enumeration(__u32 *ipaddrs, int nip)
- {
- 	LIBCFS_FREE(ipaddrs, nip * sizeof(*ipaddrs));
- }
- 
--int
-+static int
- lnet_ipaddr_enumerate(__u32 **ipaddrsp)
- {
- 	int	up;
+On Thursday 07 August 2014 23:53:17 Oleksandr Natalenko wrote:
+> Disabling cpufreq code in kernel config works around this issue.
+> 
+> Is this bug related to sleeping in atomic context, which is caused by
+> improper GFP_KERNEL usage instead of GFP_ATOMIC? Should I test tat patch,
+> or there will be another fix?
+> 
+> On Tuesday 05 August 2014 00:39:11 Oleksandr Natalenko wrote:
+> > Hello.
+> > 
+> > Occasionally I get my machine hung completely. Fortunately, I've got and
+> > saved oops listing using netconsole before hang, and here it is [1].
+> > 
+> > Here is little piece of oops from the link above:
+> > 
+> > ===
+> > [15051.270461] BUG: unable to handle kernel paging request at
+> > 00000000ff5ae8e4 [15051.271583] IP: [<ffffffff8109ae6e>]
+> > srcu_notifier_call_chain+0xe/0x20 …
+> > [15051.956205] Call Trace:
+> > [15051.980641]  [<ffffffff81606085>] ?
+> > __cpufreq_notify_transition+0x95/0x1e0 [15052.005640] 
+> > [<ffffffff816081ee>]
+> > cpufreq_notify_transition+0x3e/0x70 [15052.030240]  [<ffffffff816083d8>]
+> > cpufreq_freq_transition_begin+0xe8/0x130 [15052.054522]
+> > [<ffffffff813b8940>] ? ucs2_strncmp+0x70/0x70
+> > [15052.078208]  [<ffffffff816089bf>] __target_index+0xbf/0x1a0
+> > [15052.101348]  [<ffffffff81608b9c>] __cpufreq_driver_target+0xfc/0x160
+> > [15052.124250]  [<ffffffff8160b0d4>] od_check_cpu+0xa4/0xb0
+> > [15052.146789]  [<ffffffff8160c9ec>] dbs_check_cpu+0x16c/0x1c0
+> > [15052.168935]  [<ffffffff8160b4dd>] od_dbs_timer+0x11d/0x180
+> > [15052.190607]  [<ffffffff8108e6ff>] process_one_work+0x17f/0x4c0
+> > [15052.211825]  [<ffffffff8108f46b>] worker_thread+0x11b/0x3f0
+> > [15052.232490]  [<ffffffff8108f350>] ? create_and_start_worker+0x80/0x80
+> > [15052.253127]  [<ffffffff81096479>] kthread+0xc9/0xe0
+> > [15052.273292]  [<ffffffff810963b0>] ? flush_kthread_worker+0xb0/0xb0
+> > [15052.293487]  [<ffffffff81793efc>] ret_from_fork+0x7c/0xb0
+> > [15052.313544]  [<ffffffff810963b0>] ? flush_kthread_worker+0xb0/0xb0
+> > …
+> > ===
+> > 
+> > Also here is my lspci [2] and cpuinfo [3] as well.
+> > 
+> > Vanilla 3.15.8 and 3.16.0 are affected as well as latest Ubuntu 3.13
+> > kernel.
+> > 
+> > No visible reason to trigger the bug. After hang machine doesn't respond
+> > via network, there's no disk IO, and also it doesn't respond to pressing
+> > power button in order to perform soft off.
+> > 
+> > [1] https://gist.github.com/085af9da81197faf6637
+> > [2] https://gist.github.com/318ebda5576b099590b8
+> > [3] https://gist.github.com/9c1307463c7ad6835b2d
 -- 
-1.9.1
-
+Oleksandr post-factum Natalenko, MSc
+pf-kernel community
+https://natalenko.name/
