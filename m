@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759850AbaHHWgu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:36:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40066 "EHLO
+	id S1759835AbaHHWgr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:36:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40068 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666AbaHHUlh (ORCPT
+	with ESMTP id S1753672AbaHHUlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:41:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 005/259] mm: hugetlb: fix copy_hugetlb_page_range()
-Date: Fri,  8 Aug 2014 13:37:08 -0700
-Message-Id: <1407530482-4483-6-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 016/259] ext4: Fix buffer double free in ext4_alloc_branch()
+Date: Fri,  8 Aug 2014 13:37:19 -0700
+Message-Id: <1407530482-4483-17-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -29,72 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 0253d634e0803a8376a0d88efee0bf523d8673f9 upstream.
+commit c5c7b8ddfbf8cb3b2291e515a34ab1b8982f5a2d upstream.
 
-Commit 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
-migration/hwpoisoned entry") changed the order of
-huge_ptep_set_wrprotect() and huge_ptep_get(), which leads to breakage
-in some workloads like hugepage-backed heap allocation via libhugetlbfs.
-This patch fixes it.
+Error recovery in ext4_alloc_branch() calls ext4_forget() even for
+buffer corresponding to indirect block it did not allocate. This leads
+to brelse() being called twice for that buffer (once from ext4_forget()
+and once from cleanup in ext4_ind_map_blocks()) leading to buffer use
+count misaccounting. Eventually (but often much later because there
+are other users of the buffer) we will see messages like:
+VFS: brelse: Trying to free free buffer
 
-The test program for the problem is shown below:
+Another manifestation of this problem is an error:
+JBD2 unexpected failure: jbd2_journal_revoke: !buffer_revoked(bh);
+inconsistent data on disk
 
-  $ cat heap.c
-  #include <unistd.h>
-  #include <stdlib.h>
-  #include <string.h>
+The fix is easy - don't forget buffer we did not allocate. Also add an
+explanatory comment because the indexing at ext4_alloc_branch() is
+somewhat subtle.
 
-  #define HPS 0x200000
-
-  int main() {
-  	int i;
-  	char *p = malloc(HPS);
-  	memset(p, '1', HPS);
-  	for (i = 0; i < 5; i++) {
-  		if (!fork()) {
-  			memset(p, '2', HPS);
-  			p = malloc(HPS);
-  			memset(p, '3', HPS);
-  			free(p);
-  			return 0;
-  		}
-  	}
-  	sleep(1);
-  	free(p);
-  	return 0;
-  }
-
-  $ export HUGETLB_MORECORE=yes ; export HUGETLB_NO_PREFAULT= ; hugectl --heap ./heap
-
-Fixes 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
-migration/hwpoisoned entry"), so is applicable to -stable kernels which
-include it.
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reported-by: Guillaume Morin <guillaume@morinfr.org>
-Suggested-by: Guillaume Morin <guillaume@morinfr.org>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/hugetlb.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/indirect.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 1984a3d..d821a7e 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2421,6 +2421,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
- 		} else {
- 			if (cow)
- 				huge_ptep_set_wrprotect(src, addr, src_pte);
-+			entry = huge_ptep_get(src_pte);
- 			ptepage = pte_page(entry);
- 			get_page(ptepage);
- 			page_dup_rmap(ptepage);
+diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
+index 594009f..3b91d24 100644
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -389,7 +389,13 @@ static int ext4_alloc_branch(handle_t *handle, struct inode *inode,
+ 	return 0;
+ failed:
+ 	for (; i >= 0; i--) {
+-		if (i != indirect_blks && branch[i].bh)
++		/*
++		 * We want to ext4_forget() only freshly allocated indirect
++		 * blocks.  Buffer for new_blocks[i-1] is at branch[i].bh and
++		 * buffer at branch[0].bh is indirect block / inode already
++		 * existing before ext4_alloc_branch() was called.
++		 */
++		if (i > 0 && i != indirect_blks && branch[i].bh)
+ 			ext4_forget(handle, 1, inode, branch[i].bh,
+ 				    branch[i].bh->b_blocknr);
+ 		ext4_free_blocks(handle, inode, NULL, new_blocks[i],
 -- 
 1.9.1
 
