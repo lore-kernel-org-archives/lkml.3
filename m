@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964805AbaHHWWW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:22:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40468 "EHLO
+	id S1758997AbaHHWWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:22:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40446 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757908AbaHHUqw (ORCPT
+	with ESMTP id S1757869AbaHHUqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:46:52 -0400
+	Fri, 8 Aug 2014 16:46:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 190/259] crypto: arm-aes - fix encryption of unaligned data
-Date: Fri,  8 Aug 2014 13:40:13 -0700
-Message-Id: <1407530482-4483-191-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 249/259] appletalk: Fix socket referencing in skb
+Date: Fri,  8 Aug 2014 13:41:12 -0700
+Message-Id: <1407530482-4483-250-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,70 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-commit f3c400ef473e00c680ea713a66196b05870b3710 upstream.
+[ Upstream commit 36beddc272c111689f3042bf3d10a64d8a805f93 ]
 
-Fix the same alignment bug as in arm64 - we need to pass residue
-unprocessed bytes as the last argument to blkcipher_walk_done.
+Setting just skb->sk without taking its reference and setting a
+destructor is invalid. However, in the places where this was done, skb
+is used in a way not requiring skb->sk setting. So dropping the setting
+of skb->sk.
+Thanks to Eric Dumazet <eric.dumazet@gmail.com> for correct solution.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79441
+Reported-by: Ed Martin <edman007@edman007.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/crypto/aesbs-glue.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ net/appletalk/ddp.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/arch/arm/crypto/aesbs-glue.c b/arch/arm/crypto/aesbs-glue.c
-index 4522366..15468fb 100644
---- a/arch/arm/crypto/aesbs-glue.c
-+++ b/arch/arm/crypto/aesbs-glue.c
-@@ -137,7 +137,7 @@ static int aesbs_cbc_encrypt(struct blkcipher_desc *desc,
- 				dst += AES_BLOCK_SIZE;
- 			} while (--blocks);
- 		}
--		err = blkcipher_walk_done(desc, &walk, 0);
-+		err = blkcipher_walk_done(desc, &walk, walk.nbytes % AES_BLOCK_SIZE);
- 	}
- 	return err;
- }
-@@ -158,7 +158,7 @@ static int aesbs_cbc_decrypt(struct blkcipher_desc *desc,
- 		bsaes_cbc_encrypt(walk.src.virt.addr, walk.dst.virt.addr,
- 				  walk.nbytes, &ctx->dec, walk.iv);
- 		kernel_neon_end();
--		err = blkcipher_walk_done(desc, &walk, 0);
-+		err = blkcipher_walk_done(desc, &walk, walk.nbytes % AES_BLOCK_SIZE);
- 	}
- 	while (walk.nbytes) {
- 		u32 blocks = walk.nbytes / AES_BLOCK_SIZE;
-@@ -182,7 +182,7 @@ static int aesbs_cbc_decrypt(struct blkcipher_desc *desc,
- 			dst += AES_BLOCK_SIZE;
- 			src += AES_BLOCK_SIZE;
- 		} while (--blocks);
--		err = blkcipher_walk_done(desc, &walk, 0);
-+		err = blkcipher_walk_done(desc, &walk, walk.nbytes % AES_BLOCK_SIZE);
- 	}
- 	return err;
- }
-@@ -268,7 +268,7 @@ static int aesbs_xts_encrypt(struct blkcipher_desc *desc,
- 		bsaes_xts_encrypt(walk.src.virt.addr, walk.dst.virt.addr,
- 				  walk.nbytes, &ctx->enc, walk.iv);
- 		kernel_neon_end();
--		err = blkcipher_walk_done(desc, &walk, 0);
-+		err = blkcipher_walk_done(desc, &walk, walk.nbytes % AES_BLOCK_SIZE);
- 	}
- 	return err;
- }
-@@ -292,7 +292,7 @@ static int aesbs_xts_decrypt(struct blkcipher_desc *desc,
- 		bsaes_xts_decrypt(walk.src.virt.addr, walk.dst.virt.addr,
- 				  walk.nbytes, &ctx->dec, walk.iv);
- 		kernel_neon_end();
--		err = blkcipher_walk_done(desc, &walk, 0);
-+		err = blkcipher_walk_done(desc, &walk, walk.nbytes % AES_BLOCK_SIZE);
- 	}
- 	return err;
- }
+diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
+index 7d424ac..43e875c 100644
+--- a/net/appletalk/ddp.c
++++ b/net/appletalk/ddp.c
+@@ -1489,8 +1489,6 @@ static int atalk_rcv(struct sk_buff *skb, struct net_device *dev,
+ 		goto drop;
+ 
+ 	/* Queue packet (standard) */
+-	skb->sk = sock;
+-
+ 	if (sock_queue_rcv_skb(sock, skb) < 0)
+ 		goto drop;
+ 
+@@ -1644,7 +1642,6 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
+ 	if (!skb)
+ 		goto out;
+ 
+-	skb->sk = sk;
+ 	skb_reserve(skb, ddp_dl->header_length);
+ 	skb_reserve(skb, dev->hard_header_len);
+ 	skb->dev = dev;
 -- 
 1.9.1
 
