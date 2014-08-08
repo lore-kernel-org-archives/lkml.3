@@ -1,180 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391AbaHHGpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 02:45:47 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:41210 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193AbaHHGpq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 02:45:46 -0400
-X-Original-SENDERIP: 10.177.223.133
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Fri, 8 Aug 2014 15:45:44 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/8] mm/isolation: change pageblock isolation logic to
- fix freepage counting bugs
-Message-ID: <20140808064544.GC6150@js1304-P5Q-DELUXE>
-References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1407309517-3270-9-git-send-email-iamjoonsoo.kim@lge.com>
- <53E39805.4040503@suse.cz>
+	id S1755796AbaHHGrZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 02:47:25 -0400
+Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:55359
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754080AbaHHGrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 02:47:24 -0400
+From: Shengjiu Wang <shengjiu.wang@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <timur@tabi.org>,
+        <perex@perex.cz>, <tiwai@suse.de>, <nicoleotsuka@gmail.com>,
+        <Li.Xiubo@freescale.com>, <shc_work@mail.ru>,
+        <fabio.estevam@freescale.com>, <arnd@arndb.de>
+CC: <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH V4 0/2]  refine esai for tdm support
+Date: Fri, 8 Aug 2014 14:47:20 +0800
+Message-ID: <cover.1407480333.git.shengjiu.wang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(44976005)(102836001)(83322001)(6806004)(46102001)(81542001)(106466001)(85306004)(84676001)(107046002)(68736004)(105606002)(229853001)(97736001)(104016003)(33646002)(95666004)(26826002)(50466002)(64706001)(4396001)(50226001)(48376002)(47776003)(20776003)(80022001)(21056001)(77156001)(81342001)(50986999)(36756003)(76482001)(74502001)(104166001)(77982001)(62966002)(87286001)(87936001)(79102001)(89996001)(93916002)(86362001)(88136002)(92726001)(92566001)(2201001)(83072002)(99396002)(74662001)(85852003)(31966008)(1121002)(921003);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR0301MB0621;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E39805.4040503@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 02973C87BC
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=shengjiu.wang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 05:15:17PM +0200, Vlastimil Babka wrote:
-> On 08/06/2014 09:18 AM, Joonsoo Kim wrote:
-> >Current pageblock isolation logic has a problem that results in incorrect
-> >freepage counting. move_freepages_block() doesn't return number of
-> >moved pages so freepage count could be wrong if some pages are freed
-> >inbetween set_pageblock_migratetype() and move_freepages_block(). Although
-> >we fix move_freepages_block() to return number of moved pages, the problem
-> 
->     ^ could
+These patchs is to refine esai for tdm support.
 
-Yes, but fixing that is not needed because this patch changes
-isolation process and, after that, that behaviour have any problem.
+Changes for V4
+- update the comments for patch 2
 
-> 
-> >wouldn't be fixed completely because buddy allocator doesn't care if merged
-> >pages are on different buddy list or not. If some page on normal buddy list
-> >is merged with isolated page and moved to isolate buddy list, freepage
-> >count should be subtracted, but, it didn't and can't now.
-> 
-> ... but it's not done now and doing that would impose unwanted
-> overhead on buddy merging.
+Changes for V3
+- update the comments for patch 2
 
-Yes, we don't want more overhead on buddy merging so this patch
-introduces PageIsolated() in order to avoid merge problem.
+Changes for V2
+- update the comments according the reviewer's suggestion
+- add init value for slots and change pin to pins.
 
-> Also the analogous problem exists when undoing isolation?
 
-There is no merge problem in new (un)isolation process of this patch except
-for the page more than pageblock order. This case will be fixed in patch 7.
+Shengjiu Wang (2):
+  ASoC: fsl_esai: refine esai for TDM support
+  Revert "ASoC: fsl-esai: Add .xlate_tdm_slot_mask() support."
 
-> >Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >---
-> >  include/linux/page-isolation.h |    2 +
-> >  mm/internal.h                  |    3 ++
-> >  mm/page_alloc.c                |   28 ++++++-----
-> >  mm/page_isolation.c            |  107 ++++++++++++++++++++++++++++++++++++----
-> >  4 files changed, 118 insertions(+), 22 deletions(-)
-> >
-> >diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-> >index 3fff8e7..3dd39fe 100644
-> >--- a/include/linux/page-isolation.h
-> >+++ b/include/linux/page-isolation.h
-> >@@ -21,6 +21,8 @@ static inline bool is_migrate_isolate(int migratetype)
-> >  }
-> >  #endif
-> >
-> >+void deactivate_isolated_page(struct zone *zone, struct page *page,
-> >+				unsigned int order);
-> >  bool has_unmovable_pages(struct zone *zone, struct page *page, int count,
-> >  			 bool skip_hwpoisoned_pages);
-> >  void set_pageblock_migratetype(struct page *page, int migratetype);
-> >diff --git a/mm/internal.h b/mm/internal.h
-> >index 81b8884..c70750a 100644
-> >--- a/mm/internal.h
-> >+++ b/mm/internal.h
-> >@@ -110,6 +110,9 @@ extern pmd_t *mm_find_pmd(struct mm_struct *mm, unsigned long address);
-> >   */
-> >  extern void zone_pcp_disable(struct zone *zone);
-> >  extern void zone_pcp_enable(struct zone *zone);
-> >+extern void __free_one_page(struct page *page, unsigned long pfn,
-> >+		struct zone *zone, unsigned int order,
-> >+		int migratetype);
-> >  extern void __free_pages_bootmem(struct page *page, unsigned int order);
-> >  extern void prep_compound_page(struct page *page, unsigned long order);
-> >  #ifdef CONFIG_MEMORY_FAILURE
-> >diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> >index 4517b1d..82da4a8 100644
-> >--- a/mm/page_alloc.c
-> >+++ b/mm/page_alloc.c
-> >@@ -571,7 +571,7 @@ static inline int page_is_buddy(struct page *page, struct page *buddy,
-> >   * -- nyc
-> >   */
-> >
-> >-static inline void __free_one_page(struct page *page,
-> >+void __free_one_page(struct page *page,
-> >  		unsigned long pfn,
-> >  		struct zone *zone, unsigned int order,
-> >  		int migratetype)
-> >@@ -738,14 +738,19 @@ static void free_one_page(struct zone *zone,
-> >  				int migratetype)
-> >  {
-> >  	unsigned long nr_scanned;
-> >+
-> >+	if (unlikely(is_migrate_isolate(migratetype))) {
-> >+		deactivate_isolated_page(zone, page, order);
-> >+		return;
-> >+	}
-> >+
-> 
-> This would be more effectively done in the callers, which is where
-> migratetype is determined - there are two:
-> - free_hot_cold_page() already has this test, so just call deactivation
->   instead of free_one_page() - one test less in this path!
-> - __free_pages_ok() could add the test to call deactivation, and
-> since you remove another test in the hunk below, the net result is
-> the same in this path.
+ sound/soc/fsl/Kconfig    |    1 -
+ sound/soc/fsl/fsl_esai.c |   16 +++++++++++-----
+ sound/soc/fsl/fsl_esai.h |    8 ++++----
+ 3 files changed, 15 insertions(+), 10 deletions(-)
 
-Okay. Will do.
+-- 
+1.7.9.5
 
-> >--- a/mm/page_isolation.c
-> >+++ b/mm/page_isolation.c
-> >@@ -9,6 +9,75 @@
-> >  #include <linux/hugetlb.h>
-> >  #include "internal.h"
-> >
-> >+#define ISOLATED_PAGE_MAPCOUNT_VALUE (-64)
-> >+
-> >+static inline int PageIsolated(struct page *page)
-> >+{
-> >+	return atomic_read(&page->_mapcount) == ISOLATED_PAGE_MAPCOUNT_VALUE;
-> >+}
-> >+
-> >+static inline void __SetPageIsolated(struct page *page)
-> >+{
-> >+	VM_BUG_ON_PAGE(atomic_read(&page->_mapcount) != -1, page);
-> >+	atomic_set(&page->_mapcount, ISOLATED_PAGE_MAPCOUNT_VALUE);
-> >+}
-> >+
-> >+static inline void __ClearPageIsolated(struct page *page)
-> >+{
-> >+	VM_BUG_ON_PAGE(!PageIsolated(page), page);
-> >+	atomic_set(&page->_mapcount, -1);
-> >+}
-> 
-> Hmm wasn't the convention for atomic updates to be without the __ prefix?
-
-I copy-and_paste code for PageBuddy(). :)
-I guess that __ prefix here means that we should call it with holding
-the zone lock. atomic operation is used to satisfy type definition of
-page->_mapcount.
-
-Thanks.
