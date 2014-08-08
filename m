@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492AbaHHHFD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 03:05:03 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:45343 "EHLO mailhub1.si.c-s.fr"
+	id S1756513AbaHHHFG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 03:05:06 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:45332 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756436AbaHHHEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756435AbaHHHEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 03:04:55 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -12,42 +12,95 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH 19/20] powerpc/8xx: _PMD_PRESENT already set in level 1 entries
-Message-Id: <20140808070346.2AEE21ABD4F@localhost.localdomain>
-Date: Fri,  8 Aug 2014 09:03:46 +0200 (CEST)
+Subject: [PATCH 15/20] powerpc/8xx: Const for TLB RPN forced value
+Message-Id: <20140808070344.CC3621ABD4B@localhost.localdomain>
+Date: Fri,  8 Aug 2014 09:03:44 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a PMD entry is valid, _PMD_PRESENT is set. Therefore, forcing that bit
-during TLB loading is useless.
+Value 0x00f0 is used to force bits in TLB level 2 entry. This value is linked
+to the page size and will vary when we change the page size. Lets define a const
+for it in order to have it at only one place.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
- arch/powerpc/kernel/head_8xx.S |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/head_8xx.S |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
 
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index e47e6c0..99438d8 100644
+index 43fdb5c..a8945af 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -339,7 +339,6 @@ InstructionTLBMiss:
- 	/* We have a pte table, so load the MI_TWC with the attributes
- 	 * for this "segment."
+@@ -40,6 +40,13 @@
+ #else
+ #define DO_8xx_CPU6(val, reg)
+ #endif
++
++/*
++ * Value for the bits that have fixed value in RPN entries.
++ * Also used for tagging DAR for DTLBerror.
++ */
++#define RPN_PATTERN	0x00f0
++
+ 	__HEAD
+ _ENTRY(_stext);
+ _ENTRY(_start);
+@@ -211,7 +218,7 @@ MachineCheck:
+ 	EXCEPTION_PROLOG
+ 	mfspr r4,SPRN_DAR
+ 	stw r4,_DAR(r11)
+-	li r5,0x00f0
++	li r5,RPN_PATTERN
+ 	mtspr SPRN_DAR,r5	/* Tag DAR, to be used in DTLB Error */
+ 	mfspr r5,SPRN_DSISR
+ 	stw r5,_DSISR(r11)
+@@ -237,7 +244,7 @@ Alignment:
+ 	EXCEPTION_PROLOG
+ 	mfspr	r4,SPRN_DAR
+ 	stw	r4,_DAR(r11)
+-	li	r5,0x00f0
++	li	r5,RPN_PATTERN
+ 	mtspr	SPRN_DAR,r5	/* Tag DAR, to be used in DTLB Error */
+ 	mfspr	r5,SPRN_DSISR
+ 	stw	r5,_DSISR(r11)
+@@ -340,7 +347,7 @@ InstructionTLBMiss:
+ 	 * set.  All other Linux PTE bits control the behavior
+ 	 * of the MMU.
  	 */
--	ori	r11,r11,1		/* Set valid bit */
- 	MTSPR_CPU6(SPRN_MI_TWC, r11, r3)	/* Set segment attributes */
- 	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
- 	/* Extract level 2 index */
-@@ -416,7 +415,6 @@ DataStoreTLBMiss:
- 	lwzx	r10, r10, r11	/* Get the pte */
+-	li	r11, 0x00f0
++	li	r11, RPN_PATTERN
+ 	rlwimi	r10, r11, 0, 0x07f8	/* Set 24-27, clear 21-23,28 */
+ 	DO_8xx_CPU6(0x2d80, r3)
+ 	mtspr	SPRN_MI_RPN, r10	/* Update TLB entry */
+@@ -444,7 +451,7 @@ DataStoreTLBMiss:
+ 	 * set.  All other Linux PTE bits control the behavior
+ 	 * of the MMU.
+ 	 */
+-2:	li	r11, 0x00f0
++2:	li	r11, RPN_PATTERN
+ 	rlwimi	r10, r11, 0, 24, 28	/* Set 24-27, clear 28 */
+ 	DO_8xx_CPU6(0x3d80, r3)
+ 	mtspr	SPRN_MD_RPN, r10	/* Update TLB entry */
+@@ -478,7 +485,7 @@ DataTLBError:
+ 	EXCEPTION_PROLOG_0
  
- 	mfcr	r11
--	ori	r11, r11, 1	/* Set valid bit in physical L2 page */
- 	/* Insert the Guarded flag into the TWC from the Linux PTE.
- 	 * It is bit 27 of both the Linux PTE and the TWC (at least
- 	 * I got that right :-).  It will be better when we can put
+ 	mfspr	r11, SPRN_DAR
+-	cmpwi	cr0, r11, 0x00f0
++	cmpwi	cr0, r11, RPN_PATTERN
+ 	beq-	FixupDAR	/* must be a buggy dcbX, icbi insn. */
+ DARFixed:/* Return from dcbx instruction bug workaround */
+ 	EXCEPTION_PROLOG_1
+@@ -487,7 +494,7 @@ DARFixed:/* Return from dcbx instruction bug workaround */
+ 	stw	r10,_DSISR(r11)
+ 	mr	r5,r10
+ 	mfspr	r4,SPRN_DAR
+-	li	r10,0x00f0
++	li	r10,RPN_PATTERN
+ 	mtspr	SPRN_DAR,r10	/* Tag DAR, to be used in DTLB Error */
+ 	EXC_XFER_LITE(0x1400, handle_page_fault)
+ 
 -- 
 1.7.1
 
