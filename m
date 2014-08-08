@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932839AbaHHUwq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:52:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41171 "EHLO
+	id S1751450AbaHHVLG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:11:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41185 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932716AbaHHUwh (ORCPT
+	with ESMTP id S932827AbaHHUwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:52:37 -0400
+	Fri, 8 Aug 2014 16:52:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Milan Broz <gmazyland@gmail.com>, Herbert Xu <herbert@gondor.apana.org.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 185/259] ath9k: fix aggregation session lockup
-Date: Fri,  8 Aug 2014 13:40:08 -0700
-Message-Id: <1407530482-4483-186-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 197/259] crypto: af_alg - properly label AF_ALG socket
+Date: Fri,  8 Aug 2014 13:40:20 -0700
+Message-Id: <1407530482-4483-198-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,46 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Milan Broz <gmazyland@gmail.com>
 
-commit c01fac1c77a00227f706a1654317023e3f4ac7f0 upstream.
+commit 4c63f83c2c2e16a13ce274ee678e28246bd33645 upstream.
 
-If an aggregation session fails, frames still end up in the driver queue
-with IEEE80211_TX_CTL_AMPDU set.
-This causes tx for the affected station/tid to stall, since
-ath_tx_get_tid_subframe returning packets to send.
+Th AF_ALG socket was missing a security label (e.g. SELinux)
+which means that socket was in "unlabeled" state.
 
-Fix this by clearing IEEE80211_TX_CTL_AMPDU as long as no aggregation
-session is running.
+This was recently demonstrated in the cryptsetup package
+(cryptsetup v1.6.5 and later.)
+See https://bugzilla.redhat.com/show_bug.cgi?id=1115120
 
-Reported-by: Antonio Quartulli <antonio@open-mesh.com>
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch clones the sock's label from the parent sock
+and resolves the issue (similar to AF_BLUETOOTH protocol family).
+
+Signed-off-by: Milan Broz <gmazyland@gmail.com>
+Acked-by: Paul Moore <paul@paul-moore.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/xmit.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ crypto/af_alg.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
-index 6fa2d35..62744cb 100644
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -904,6 +904,15 @@ ath_tx_get_tid_subframe(struct ath_softc *sc, struct ath_txq *txq,
+diff --git a/crypto/af_alg.c b/crypto/af_alg.c
+index 966f893..6a3ad80 100644
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -21,6 +21,7 @@
+ #include <linux/module.h>
+ #include <linux/net.h>
+ #include <linux/rwsem.h>
++#include <linux/security.h>
  
- 		tx_info = IEEE80211_SKB_CB(skb);
- 		tx_info->flags &= ~IEEE80211_TX_CTL_CLEAR_PS_FILT;
-+
-+		/*
-+		 * No aggregation session is running, but there may be frames
-+		 * from a previous session or a failed attempt in the queue.
-+		 * Send them out as normal data frames
-+		 */
-+		if (!tid->active)
-+			tx_info->flags &= ~IEEE80211_TX_CTL_AMPDU;
-+
- 		if (!(tx_info->flags & IEEE80211_TX_CTL_AMPDU)) {
- 			bf->bf_state.bf_type = 0;
- 			return bf;
+ struct alg_type_list {
+ 	const struct af_alg_type *type;
+@@ -243,6 +244,7 @@ int af_alg_accept(struct sock *sk, struct socket *newsock)
+ 
+ 	sock_init_data(newsock, sk2);
+ 	sock_graft(sk2, newsock);
++	security_sk_clone(sk, sk2);
+ 
+ 	err = type->accept(ask->private, sk2);
+ 	if (err) {
 -- 
 1.9.1
 
