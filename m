@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932962AbaHHVnM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:43:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60750 "EHLO
+	id S932925AbaHHVol (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:44:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60743 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933212AbaHHVhD (ORCPT
+	with ESMTP id S933553AbaHHVg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:37:03 -0400
+	Fri, 8 Aug 2014 17:36:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Alexander Tobias Schulze 
-	<cat.schulze@alice-dsl.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 23/26] sunsab: Fix detection of BREAK on sunsab serial console
-Date: Fri,  8 Aug 2014 14:35:30 -0700
-Message-Id: <20140808213414.629803464@linuxfoundation.org>
+Subject: [PATCH 3.15 21/26] sparc64: Guard against flushing openfirmware mappings.
+Date: Fri,  8 Aug 2014 14:35:28 -0700
+Message-Id: <20140808213414.554297971@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
 References: <20140808213413.648794968@linuxfoundation.org>
@@ -30,43 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit fe418231b195c205701c0cc550a03f6c9758fd9e ]
+[ Upstream commit 4ca9a23765da3260058db3431faf5b4efd8cf926 ]
 
-Fix detection of BREAK on sunsab serial console: BREAK detection was only
-performed when there were also serial characters received simultaneously.
-To handle all BREAKs correctly, the check for BREAK and the corresponding
-call to uart_handle_break() must also be done if count == 0, therefore
-duplicate this code fragment and pull it out of the loop over the received
-characters.
+Based almost entirely upon a patch by Christopher Alexander Tobias
+Schulze.
 
-Patch applies to 3.16-rc6.
+In commit db64fe02258f1507e13fe5212a989922323685ce ("mm: rewrite vmap
+layer") lazy VMAP tlb flushing was added to the vmalloc layer.  This
+causes problems on sparc64.
 
-Signed-off-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+Sparc64 has two VMAP mapped regions and they are not contiguous with
+eachother.  First we have the malloc mapping area, then another
+unrelated region, then the vmalloc region.
+
+This "another unrelated region" is where the firmware is mapped.
+
+If the lazy TLB flushing logic in the vmalloc code triggers after
+we've had both a module unload and a vfree or similar, it will pass an
+address range that goes from somewhere inside the malloc region to
+somewhere inside the vmalloc region, and thus covering the
+openfirmware area entirely.
+
+The sparc64 kernel learns about openfirmware's dynamic mappings in
+this region early in the boot, and then services TLB misses in this
+area.  But openfirmware has some locked TLB entries which are not
+mentioned in those dynamic mappings and we should thus not disturb
+them.
+
+These huge lazy TLB flush ranges causes those openfirmware locked TLB
+entries to be removed, resulting in all kinds of problems including
+hard hangs and crashes during reboot/reset.
+
+Besides causing problems like this, such huge TLB flush ranges are
+also incredibly inefficient.  A plea has been made with the author of
+the VMAP lazy TLB flushing code, but for now we'll put a safety guard
+into our flush_tlb_kernel_range() implementation.
+
+Since the implementation has become non-trivial, stop defining it as a
+macro and instead make it a function in a C source file.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/tty/serial/sunsab.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/sparc/include/asm/tlbflush_64.h |   12 ++----------
+ arch/sparc/mm/init_64.c              |   23 +++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 10 deletions(-)
 
---- a/drivers/tty/serial/sunsab.c
-+++ b/drivers/tty/serial/sunsab.c
-@@ -157,6 +157,15 @@ receive_chars(struct uart_sunsab_port *u
- 	    (up->port.line == up->port.cons->index))
- 		saw_console_brk = 1;
+--- a/arch/sparc/include/asm/tlbflush_64.h
++++ b/arch/sparc/include/asm/tlbflush_64.h
+@@ -34,6 +34,8 @@ static inline void flush_tlb_range(struc
+ {
+ }
  
-+	if (count == 0) {
-+		if (unlikely(stat->sreg.isr1 & SAB82532_ISR1_BRK)) {
-+			stat->sreg.isr0 &= ~(SAB82532_ISR0_PERR |
-+					     SAB82532_ISR0_FERR);
-+			up->port.icount.brk++;
-+			uart_handle_break(&up->port);
-+		}
-+	}
++void flush_tlb_kernel_range(unsigned long start, unsigned long end);
 +
- 	for (i = 0; i < count; i++) {
- 		unsigned char ch = buf[i], flag;
+ #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
  
+ extern void flush_tlb_pending(void);
+@@ -48,11 +50,6 @@ extern void __flush_tlb_kernel_range(uns
+ 
+ #ifndef CONFIG_SMP
+ 
+-#define flush_tlb_kernel_range(start,end) \
+-do {	flush_tsb_kernel_range(start,end); \
+-	__flush_tlb_kernel_range(start,end); \
+-} while (0)
+-
+ static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
+ {
+ 	__flush_tlb_page(CTX_HWBITS(mm->context), vaddr);
+@@ -63,11 +60,6 @@ static inline void global_flush_tlb_page
+ extern void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end);
+ extern void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr);
+ 
+-#define flush_tlb_kernel_range(start, end) \
+-do {	flush_tsb_kernel_range(start,end); \
+-	smp_flush_tlb_kernel_range(start, end); \
+-} while (0)
+-
+ #define global_flush_tlb_page(mm, vaddr) \
+ 	smp_flush_tlb_page(mm, vaddr)
+ 
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2702,3 +2702,26 @@ void hugetlb_setup(struct pt_regs *regs)
+ 	}
+ }
+ #endif
++
++#ifdef CONFIG_SMP
++#define do_flush_tlb_kernel_range	smp_flush_tlb_kernel_range
++#else
++#define do_flush_tlb_kernel_range	__flush_tlb_kernel_range
++#endif
++
++void flush_tlb_kernel_range(unsigned long start, unsigned long end)
++{
++	if (start < HI_OBP_ADDRESS && end > LOW_OBP_ADDRESS) {
++		if (start < LOW_OBP_ADDRESS) {
++			flush_tsb_kernel_range(start, LOW_OBP_ADDRESS);
++			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
++		}
++		if (end > HI_OBP_ADDRESS) {
++			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
++			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
++		}
++	} else {
++		flush_tsb_kernel_range(start, end);
++		do_flush_tlb_kernel_range(start, end);
++	}
++}
 
 
