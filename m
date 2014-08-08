@@ -1,109 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237AbaHHRtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 13:49:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48492 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446AbaHHRpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 13:45:17 -0400
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 03/17] x86: open-code register save/restore in trace_hardirqs thunks
-Date: Fri,  8 Aug 2014 19:44:26 +0200
-Message-Id: <1407519880-6719-4-git-send-email-dvlasenk@redhat.com>
-In-Reply-To: <1407519880-6719-1-git-send-email-dvlasenk@redhat.com>
-References: <1407519880-6719-1-git-send-email-dvlasenk@redhat.com>
+	id S1751310AbaHHRya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 13:54:30 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:51320 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044AbaHHRy3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 13:54:29 -0400
+From: microcai <microcaicai@gmail.com>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: linux-kernel@vger.kernel.org, Wanzhao Cai <microcaicai@gmail.com>
+Subject: [PATCH] mfd: lpc_ich: add support for Intel Z97 chipset
+Date: Sat,  9 Aug 2014 01:55:19 +0800
+Message-Id: <1407520519-1755-1-git-send-email-microcaicai@gmail.com>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a preparatory patch for change in "struct pt_regs"
-handling in entry_64.S.
+From: Wanzhao Cai <microcaicai@gmail.com>
 
-trace_hardirqs thunks were (ab)using a part of pt_regs
-handling code, namely SAVE_ARGS/RESTORE_ARGS macros,
-to save/restore registers across C function calls.
+This patch adds the LPC Controller Device IDs found on ASUS Z97-A mother broad.
 
-Since SAVE_ARGS is going to be changed, open-code
-register saving/restoring here.
+lspci output for this mother broad:
 
-Incidentally, this removes a bit of dead code:
-one SAVE_ARGS was just to emit a CFI annotation,
-but it also generated unreachable assembly insns.
+00:1f.0 ISA bridge [0601]: Intel Corporation 9 Series Chipset Family Z97 LPC Controller [8086:8cc4]
+	Subsystem: ASUSTeK Computer Inc. Device [1043:8534]
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr-
+	DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR-
+	<PERR- INTx-
+	Latency: 0
+	Capabilities: [e0] Vendor
+	Specific Information: Len=0c <?>
+	Kernel driver in use: lpc_ich
+	Kernel modules: lpc_ich
 
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Andy Lutomirski <luto@amacapital.net>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: X86 ML <x86@kernel.org>
-CC: Alexei Starovoitov <ast@plumgrid.com>
-CC: Will Drewry <wad@chromium.org>
-CC: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org
+Signed-off-by: microcai <microcaicai@gmail.com>
 ---
- arch/x86/lib/thunk_64.S | 29 ++++++++++++++++++++++++-----
- 1 file changed, 24 insertions(+), 5 deletions(-)
+ drivers/mfd/lpc_ich.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/lib/thunk_64.S b/arch/x86/lib/thunk_64.S
-index 92d9fea..c1c9131 100644
---- a/arch/x86/lib/thunk_64.S
-+++ b/arch/x86/lib/thunk_64.S
-@@ -16,10 +16,20 @@
- \name:
- 	CFI_STARTPROC
- 
--	/* this one pushes 9 elems, the next one would be %rIP */
--	SAVE_ARGS
-+	subq  $9*8, %rsp
-+	CFI_ADJUST_CFA_OFFSET 9*8
-+	movq_cfi rdi, 8*8
-+	movq_cfi rsi, 7*8
-+	movq_cfi rdx, 6*8
-+	movq_cfi rcx, 5*8
-+	movq_cfi rax, 4*8
-+	movq_cfi r8,  3*8
-+	movq_cfi r9,  2*8
-+	movq_cfi r10, 1*8
-+	movq_cfi r11, 0*8
- 
- 	.if \put_ret_addr_in_rdi
-+	/* 9*8(%rsp) is return addr on stack */
- 	movq_cfi_restore 9*8, rdi
- 	.endif
- 
-@@ -38,11 +48,20 @@
- 	THUNK lockdep_sys_exit_thunk,lockdep_sys_exit
- #endif
- 
--	/* SAVE_ARGS below is used only for the .cfi directives it contains. */
- 	CFI_STARTPROC
--	SAVE_ARGS
-+	CFI_ADJUST_CFA_OFFSET 9*8
- restore:
--	RESTORE_ARGS
-+	movq_cfi_restore 0*8, r11
-+	movq_cfi_restore 1*8, r10
-+	movq_cfi_restore 2*8, r9
-+	movq_cfi_restore 3*8, r8
-+	movq_cfi_restore 4*8, rax
-+	movq_cfi_restore 5*8, rcx
-+	movq_cfi_restore 6*8, rdx
-+	movq_cfi_restore 7*8, rsi
-+	movq_cfi_restore 8*8, rdi
-+	addq 9*8, %rsp
-+	CFI_ADJUST_CFA_OFFSET -9*8
- 	ret
- 	CFI_ENDPROC
- 	_ASM_NOKPROBE(restore)
+diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
+index 7d8482f..e4b37c0 100644
+--- a/drivers/mfd/lpc_ich.c
++++ b/drivers/mfd/lpc_ich.c
+@@ -738,6 +738,7 @@ static const struct pci_device_id lpc_ich_ids[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x1f3b), LPC_AVN},
+ 	{ PCI_VDEVICE(INTEL, 0x0f1c), LPC_BAYTRAIL},
+ 	{ PCI_VDEVICE(INTEL, 0x2390), LPC_COLETO},
++	{ PCI_VDEVICE(INTEL, 0x8cc4), LPC_WPT_LP},
+ 	{ PCI_VDEVICE(INTEL, 0x9cc1), LPC_WPT_LP},
+ 	{ PCI_VDEVICE(INTEL, 0x9cc2), LPC_WPT_LP},
+ 	{ PCI_VDEVICE(INTEL, 0x9cc3), LPC_WPT_LP},
 -- 
-1.8.1.4
+2.0.4
 
