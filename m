@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933004AbaHHUxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:53:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41251 "EHLO
+	id S933071AbaHHUxf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:53:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41292 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932954AbaHHUxP (ORCPT
+	with ESMTP id S932981AbaHHUx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:53:15 -0400
+	Fri, 8 Aug 2014 16:53:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Bin Gao <bin.gao@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Stefani Seibold <stefani@seibold.net>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+Cc: Shradha Shah <sshah@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 110/259] x86, tsc: Fix cpufreq lockup
-Date: Fri,  8 Aug 2014 13:38:53 -0700
-Message-Id: <1407530482-4483-111-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 222/259] sfc: PIO:Restrict to 64bit arch and use 64-bit writes.
+Date: Fri,  8 Aug 2014 13:40:45 -0700
+Message-Id: <1407530482-4483-223-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -33,58 +28,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Jon Cooper <jcooper@solarflare.com>
 
-commit 3896c329df8092661dac80f55a8c3f60136fd61a upstream.
+[ Upstream commit daf37b556e437ec1ea1a597dcfeff338068380e1 ]
 
-Mauro reported that his AMD X2 using the powernow-k8 cpufreq driver
-locked up when doing cpu hotplug.
+Fixes:ee45fd92c739
+("sfc: Use TX PIO for sufficiently small packets")
 
-Because we called set_cyc2ns_scale() from the time_cpufreq_notifier()
-unconditionally, it gets called multiple times for each freq change,
-instead of only the once, when the tsc_khz value actually changes.
+The linux net driver uses memcpy_toio() in order to copy into
+the PIO buffers.
+Even on a 64bit machine this causes 32bit accesses to a write-
+combined memory region.
+There are hardware limitations that mean that only 64bit
+naturally aligned accesses are safe in all cases.
+Due to being write-combined memory region two 32bit accesses
+may be coalesced to form a 64bit non 64bit aligned access.
+Solution was to open-code the memory copy routines using pointers
+and to only enable PIO for x86_64 machines.
 
-Because it gets called more than once, we run out of cyc2ns data slots
-and stall, waiting for a free one, but because we're half way offline,
-there's no consumers to free slots.
+Not tested on platforms other than x86_64 because this patch
+disables the PIO feature on other platforms.
+Compile-tested on x86 to ensure that works.
 
-By placing the call inside the condition that actually changes tsc_khz
-we avoid superfluous calls and avoid the problem.
+The WARN_ON_ONCE() code in the previous version of this patch
+has been moved into the internal sfc debug driver as the
+assertion was unnecessary in the upstream kernel code.
 
-Reported-by: Mauro <registosites@hotmail.com>
-Tested-by: Mauro <registosites@hotmail.com>
-Fixes: 20d1c86a5776 ("sched/clock, x86: Rewrite cyc2ns() to avoid the need to disable IRQs")
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Bin Gao <bin.gao@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+This bug fix applies to v3.13 and v3.14 stable branches.
+
+Signed-off-by: Shradha Shah <sshah@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/tsc.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/sfc/io.h |  7 +++++++
+ drivers/net/ethernet/sfc/tx.c | 22 +++++++++++++++++-----
+ 2 files changed, 24 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 930e5d4..66af9af 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -722,9 +722,9 @@ static int time_cpufreq_notifier(struct notifier_block *nb, unsigned long val,
- 		tsc_khz = cpufreq_scale(tsc_khz_ref, ref_freq, freq->new);
- 		if (!(freq->flags & CPUFREQ_CONST_LOOPS))
- 			mark_tsc_unstable("cpufreq changes");
--	}
+diff --git a/drivers/net/ethernet/sfc/io.h b/drivers/net/ethernet/sfc/io.h
+index 4d3f119..afb94aa 100644
+--- a/drivers/net/ethernet/sfc/io.h
++++ b/drivers/net/ethernet/sfc/io.h
+@@ -66,10 +66,17 @@
+ #define EFX_USE_QWORD_IO 1
+ #endif
  
--	set_cyc2ns_scale(tsc_khz, freq->cpu);
-+		set_cyc2ns_scale(tsc_khz, freq->cpu);
-+	}
++/* Hardware issue requires that only 64-bit naturally aligned writes
++ * are seen by hardware. Its not strictly necessary to restrict to
++ * x86_64 arch, but done for safety since unusual write combining behaviour
++ * can break PIO.
++ */
++#ifdef CONFIG_X86_64
+ /* PIO is a win only if write-combining is possible */
+ #ifdef ARCH_HAS_IOREMAP_WC
+ #define EFX_USE_PIO 1
+ #endif
++#endif
  
- 	return 0;
+ #ifdef EFX_USE_QWORD_IO
+ static inline void _efx_writeq(struct efx_nic *efx, __le64 value,
+diff --git a/drivers/net/ethernet/sfc/tx.c b/drivers/net/ethernet/sfc/tx.c
+index c49d1fb..105b3ca 100644
+--- a/drivers/net/ethernet/sfc/tx.c
++++ b/drivers/net/ethernet/sfc/tx.c
+@@ -189,6 +189,18 @@ struct efx_short_copy_buffer {
+ 	u8 buf[L1_CACHE_BYTES];
+ };
+ 
++/* Copy in explicit 64-bit writes. */
++static void efx_memcpy_64(void __iomem *dest, void *src, size_t len)
++{
++	u64 *src64 = src;
++	u64 __iomem *dest64 = dest;
++	size_t l64 = len / 8;
++	size_t i;
++
++	for (i = 0; i < l64; i++)
++		writeq(src64[i], &dest64[i]);
++}
++
+ /* Copy to PIO, respecting that writes to PIO buffers must be dword aligned.
+  * Advances piobuf pointer. Leaves additional data in the copy buffer.
+  */
+@@ -198,7 +210,7 @@ static void efx_memcpy_toio_aligned(struct efx_nic *efx, u8 __iomem **piobuf,
+ {
+ 	int block_len = len & ~(sizeof(copy_buf->buf) - 1);
+ 
+-	memcpy_toio(*piobuf, data, block_len);
++	efx_memcpy_64(*piobuf, data, block_len);
+ 	*piobuf += block_len;
+ 	len -= block_len;
+ 
+@@ -230,7 +242,7 @@ static void efx_memcpy_toio_aligned_cb(struct efx_nic *efx, u8 __iomem **piobuf,
+ 		if (copy_buf->used < sizeof(copy_buf->buf))
+ 			return;
+ 
+-		memcpy_toio(*piobuf, copy_buf->buf, sizeof(copy_buf->buf));
++		efx_memcpy_64(*piobuf, copy_buf->buf, sizeof(copy_buf->buf));
+ 		*piobuf += sizeof(copy_buf->buf);
+ 		data += copy_to_buf;
+ 		len -= copy_to_buf;
+@@ -245,7 +257,7 @@ static void efx_flush_copy_buffer(struct efx_nic *efx, u8 __iomem *piobuf,
+ {
+ 	/* if there's anything in it, write the whole buffer, including junk */
+ 	if (copy_buf->used)
+-		memcpy_toio(piobuf, copy_buf->buf, sizeof(copy_buf->buf));
++		efx_memcpy_64(piobuf, copy_buf->buf, sizeof(copy_buf->buf));
  }
+ 
+ /* Traverse skb structure and copy fragments in to PIO buffer.
+@@ -304,8 +316,8 @@ efx_enqueue_skb_pio(struct efx_tx_queue *tx_queue, struct sk_buff *skb)
+ 		 */
+ 		BUILD_BUG_ON(L1_CACHE_BYTES >
+ 			     SKB_DATA_ALIGN(sizeof(struct skb_shared_info)));
+-		memcpy_toio(tx_queue->piobuf, skb->data,
+-			    ALIGN(skb->len, L1_CACHE_BYTES));
++		efx_memcpy_64(tx_queue->piobuf, skb->data,
++			      ALIGN(skb->len, L1_CACHE_BYTES));
+ 	}
+ 
+ 	EFX_POPULATE_QWORD_5(buffer->option,
 -- 
 1.9.1
 
