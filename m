@@ -1,133 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757678AbaHHVQt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:16:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41035 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932519AbaHHUvk (ORCPT
+	id S1757074AbaHHVQo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:16:44 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:33147
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932544AbaHHUvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:40 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 072/259] intel_pstate: don't touch turbo bit if turbo disabled or unavailable.
-Date: Fri,  8 Aug 2014 13:38:15 -0700
-Message-Id: <1407530482-4483-73-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Fri, 8 Aug 2014 16:51:41 -0400
+Date: Fri, 8 Aug 2014 22:51:37 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Cc: Casey Schaufler <casey@schaufler-ca.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Morris <james.l.morris@oracle.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH 3/3] Smack: remove unneeded NULL-termination from
+ securtity label
+Message-ID: <20140808205137.GD25352@mail.hallyn.com>
+References: <20140807165233.13463.55258.stgit@buzz>
+ <20140807165249.13463.60191.stgit@buzz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140807165249.13463.60191.stgit@buzz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.6 -stable review patch.  If anyone has any objections, please let me know.
+Quoting Konstantin Khlebnikov (k.khlebnikov@samsung.com):
+> Values of extended attributes are stored as binary blobs. NULL-termination
+> of them isn't required. It just wastes disk space and confuses command-line
+> tools like getfattr because they have to print that zero byte at the end.
+> 
+> This patch removes terminating zero byte from initial security label in
+> smack_inode_init_security and cuts it out in function smack_inode_getsecurity
+> which is used by syscall getxattr. This change seems completely safe, because
+> function smk_parse_smack ignores everything after first zero byte.
+> 
+> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 
-------------------
+selinux doesn't seem to do it this way, and apparmor doesn't use these
+at all, but your reasoning does seem correct.
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-commit dd5fbf70f96dbfd7ee432096a1f979b2b3267856 upstream.
-
-If turbo is disabled in the BIOS bit 38 should be set in
-MSR_IA32_MISC_ENABLE register per section 14.3.2.1 of the SDM Vol 3
-document 325384-050US Feb 2014.  If this bit is set do *not* attempt
-to disable trubo via the MSR_IA32_PERF_CTL register.  On some systems
-trying to disable turbo via MSR_IA32_PERF_CTL will cause subsequent
-writes to MSR_IA32_PERF_CTL not take affect, in fact reading
-MSR_IA32_PERF_CTL will not show the IDA/Turbo DISENGAGE bit(32) as
-set. A write of bit 32 to zero returns to normal operation.
-
-Also deal with the case where the processor does not support
-turbo and the BIOS does not report the fact in MSR_IA32_MISC_ENABLE
-but does report the max and turbo P states as the same value.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=64251
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/cpufreq/intel_pstate.c | 22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 37ef477..fbfdde1 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -132,6 +132,7 @@ static struct pstate_funcs pstate_funcs;
- 
- struct perf_limits {
- 	int no_turbo;
-+	int turbo_disabled;
- 	int max_perf_pct;
- 	int min_perf_pct;
- 	int32_t max_perf;
-@@ -291,7 +292,10 @@ static ssize_t store_no_turbo(struct kobject *a, struct attribute *b,
- 	if (ret != 1)
- 		return -EINVAL;
- 	limits.no_turbo = clamp_t(int, input, 0 , 1);
--
-+	if (limits.turbo_disabled) {
-+		pr_warn("Turbo disabled by BIOS or unavailable on processor\n");
-+		limits.no_turbo = limits.turbo_disabled;
-+	}
- 	return count;
- }
- 
-@@ -385,7 +389,7 @@ static void byt_set_pstate(struct cpudata *cpudata, int pstate)
- 	u32 vid;
- 
- 	val = pstate << 8;
--	if (limits.no_turbo)
-+	if (limits.no_turbo && !limits.turbo_disabled)
- 		val |= (u64)1 << 32;
- 
- 	vid_fp = cpudata->vid.min + mul_fp(
-@@ -452,7 +456,7 @@ static void core_set_pstate(struct cpudata *cpudata, int pstate)
- 	u64 val;
- 
- 	val = pstate << 8;
--	if (limits.no_turbo)
-+	if (limits.no_turbo && !limits.turbo_disabled)
- 		val |= (u64)1 << 32;
- 
- 	wrmsrl(MSR_IA32_PERF_CTL, val);
-@@ -732,7 +736,7 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
- 		limits.min_perf = int_tofp(1);
- 		limits.max_perf_pct = 100;
- 		limits.max_perf = int_tofp(1);
--		limits.no_turbo = 0;
-+		limits.no_turbo = limits.turbo_disabled;
- 		return 0;
- 	}
- 	limits.min_perf_pct = (policy->min * 100) / policy->cpuinfo.max_freq;
-@@ -772,6 +776,7 @@ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
- {
- 	struct cpudata *cpu;
- 	int rc;
-+	u64 misc_en;
- 
- 	rc = intel_pstate_init_cpu(policy->cpu);
- 	if (rc)
-@@ -779,8 +784,13 @@ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
- 
- 	cpu = all_cpu_data[policy->cpu];
- 
--	if (!limits.no_turbo &&
--		limits.min_perf_pct == 100 && limits.max_perf_pct == 100)
-+	rdmsrl(MSR_IA32_MISC_ENABLE, misc_en);
-+	if (misc_en & MSR_IA32_MISC_ENABLE_TURBO_DISABLE ||
-+		cpu->pstate.max_pstate == cpu->pstate.turbo_pstate) {
-+		limits.turbo_disabled = 1;
-+		limits.no_turbo = 1;
-+	}
-+	if (limits.min_perf_pct == 100 && limits.max_perf_pct == 100)
- 		policy->policy = CPUFREQ_POLICY_PERFORMANCE;
- 	else
- 		policy->policy = CPUFREQ_POLICY_POWERSAVE;
--- 
-1.9.1
-
+> ---
+>  security/smack/smack_lsm.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index afa5ad0..16ae853 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -672,7 +672,7 @@ static int smack_inode_init_security(struct inode *inode, struct inode *dir,
+>  	}
+>  
+>  	if (len)
+> -		*len = strlen(isp) + 1;
+> +		*len = strlen(isp);
+>  
+>  	return 0;
+>  }
+> @@ -1076,7 +1076,7 @@ static int smack_inode_getsecurity(const struct inode *inode,
+>  
+>  	if (strcmp(name, XATTR_SMACK_SUFFIX) == 0) {
+>  		isp = smk_of_inode(inode);
+> -		ilen = strlen(isp) + 1;
+> +		ilen = strlen(isp);
+>  		*buffer = isp;
+>  		return ilen;
+>  	}
+> @@ -1101,7 +1101,7 @@ static int smack_inode_getsecurity(const struct inode *inode,
+>  	else
+>  		return -EOPNOTSUPP;
+>  
+> -	ilen = strlen(isp) + 1;
+> +	ilen = strlen(isp);
+>  	if (rc == 0) {
+>  		*buffer = isp;
+>  		rc = ilen;
