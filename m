@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759304AbaHHVuv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:50:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60695 "EHLO
+	id S1759342AbaHHVvh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:51:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60683 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933508AbaHHVgw (ORCPT
+	with ESMTP id S933498AbaHHVgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:52 -0400
+	Fri, 8 Aug 2014 17:36:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>
-Subject: [PATCH 3.15 02/26] xfrm: Fix refcount imbalance in xfrm_lookup
-Date: Fri,  8 Aug 2014 14:35:09 -0700
-Message-Id: <20140808213413.746931745@linuxfoundation.org>
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 14/26] macvlan: Initialize vlan_features to turn on offload support.
+Date: Fri,  8 Aug 2014 14:35:21 -0700
+Message-Id: <20140808213414.262200746@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
 References: <20140808213413.648794968@linuxfoundation.org>
@@ -28,33 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit b7eea4545ea775df957460f58eb56085a8892856 ]
+[ Upstream commit 081e83a78db9b0ae1f5eabc2dedecc865f509b98 ]
 
-xfrm_lookup must return a dst_entry with a refcount for the caller.
-Git commit 1a1ccc96abb ("xfrm: Remove caching of xfrm_policy_sk_bundles")
-removed this refcount for the socket policy case accidentally.
-This patch restores it and sets DST_NOCACHE flag to make sure
-that the dst_entry is freed when the refcount becomes null.
+Macvlan devices do not initialize vlan_features.  As a result,
+any vlan devices configured on top of macvlans perform very poorly.
+Initialize vlan_features based on the vlan features of the lower-level
+device.
 
-Fixes: 1a1ccc96abb ("xfrm: Remove caching of xfrm_policy_sk_bundles")
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/xfrm/xfrm_policy.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/macvlan.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
-@@ -2107,6 +2107,8 @@ struct dst_entry *xfrm_lookup(struct net
- 				goto no_transform;
- 			}
- 
-+			dst_hold(&xdst->u.dst);
-+			xdst->u.dst.flags |= DST_NOCACHE;
- 			route = xdst->route;
- 		}
- 	}
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -547,6 +547,7 @@ static int macvlan_init(struct net_devic
+ 				  (lowerdev->state & MACVLAN_STATE_MASK);
+ 	dev->features 		= lowerdev->features & MACVLAN_FEATURES;
+ 	dev->features		|= ALWAYS_ON_FEATURES;
++	dev->vlan_features	= lowerdev->vlan_features & MACVLAN_FEATURES;
+ 	dev->gso_max_size	= lowerdev->gso_max_size;
+ 	dev->iflink		= lowerdev->ifindex;
+ 	dev->hard_header_len	= lowerdev->hard_header_len;
 
 
