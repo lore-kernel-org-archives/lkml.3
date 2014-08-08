@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410AbaHHMdG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 08:33:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52686 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755942AbaHHMdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 08:33:03 -0400
-Date: Fri, 8 Aug 2014 14:32:58 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/4] mm: memcontrol: reduce reclaim invocations for
- higher order requests
-Message-ID: <20140808123258.GK4004@dhcp22.suse.cz>
-References: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
- <1407186897-21048-2-git-send-email-hannes@cmpxchg.org>
- <20140807130822.GB12730@dhcp22.suse.cz>
- <20140807153141.GD14734@cmpxchg.org>
+	id S1756605AbaHHMgG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 08:36:06 -0400
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:53999 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379AbaHHMgD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 08:36:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140807153141.GD14734@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1406217076-17150-1-git-send-email-tomasz.nowicki@linaro.org>
+References: <1406217076-17150-1-git-send-email-tomasz.nowicki@linaro.org>
+Date: Fri, 8 Aug 2014 14:36:02 +0200
+Message-ID: <CACRpkdZmKJmaTRBpDrzd7+EhPuFeScr6jEHC8+0z6-4knjFqkA@mail.gmail.com>
+Subject: Re: [RFC] ACPI: Add GPIO-signaled event simulator.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 07-08-14 11:31:41, Johannes Weiner wrote:
-> On Thu, Aug 07, 2014 at 03:08:22PM +0200, Michal Hocko wrote:
-> > On Mon 04-08-14 17:14:54, Johannes Weiner wrote:
-> > > Instead of passing the request size to direct reclaim, memcg just
-> > > manually loops around reclaiming SWAP_CLUSTER_MAX pages until the
-> > > charge can succeed.  That potentially wastes scan progress when huge
-> > > page allocations require multiple invocations, which always have to
-> > > restart from the default scan priority.
-> > > 
-> > > Pass the request size as a reclaim target to direct reclaim and leave
-> > > it to that code to reach the goal.
-> > 
-> > THP charge then will ask for 512 pages to be (direct) reclaimed. That
-> > is _a lot_ and I would expect long stalls to achieve this target. I
-> > would also expect quick priority drop down and potential over-reclaim
-> > for small and moderately sized memcgs (e.g. memcg with 1G worth of pages
-> > would need to drop down below DEF_PRIORITY-2 to have a chance to scan
-> > that many pages). All that done for a charge which can fallback to a
-> > single page charge.
-> > 
-> > The current code is quite hostile to THP when we are close to the limit
-> > but solving this by introducing long stalls instead doesn't sound like a
-> > proper approach to me.
-> 
-> THP latencies are actually the same when comparing high limit nr_pages
-> reclaim with the current hard limit SWAP_CLUSTER_MAX reclaim,
+On Thu, Jul 24, 2014 at 5:51 PM, Tomasz Nowicki
+<tomasz.nowicki@linaro.org> wrote:
 
-Are you sure about this? I fail to see how they can be same as THP
-allocations/charges are __GFP_NORETRY so there is only one reclaim
-round for the hard limit reclaim followed by the charge failure if
-it is not successful.
+> GPIO signaled events is quite new thing in Linux kernel.
+> AFAIK, there are not many board which can take advantage of it.
+> However, GPIO events are very useful feature during work on ACPI
+> subsystems.
 
-> although system time is reduced with the high limit.
-> High limit reclaim with SWAP_CLUSTER_MAX has better fault latency but
-> it doesn't actually contain the workload - with 1G high and a 4G load,
-> the consumption at the end of the run is 3.7G.
+Overall this seems like a pretty nice debug feature.
 
-Wouldn't it help to simply fail the charge and allow the charger to
-fallback for THP allocations if the usage is above high limit too
-much? The follow up single page charge fallback would be still
-throttled.
+> This commit emulates GPIO h/w behaviour and consists on read/write
+> operation to debugfs file. GPIO device instance is still required in DSDT
+> table along with _AEI resources and event methods.
+>
+> Reading from file provides pin to GPIO device map e.g. :
+> $ cat /sys/kernel/debug/acpi/gpio_event
+> GPIO device name: /__SB.GPI0
+> Available GPIO pin map:
+> /__SB.GPI0 <-> pin 0x100
+>
+> Based on that, user can trigger method corresponding to device pin number:
+> $ echo "/__SB.GPI0 0x100" > /sys/kernel/debug/acpi/gpio_event
 
-> So what I'm proposing works and is of equal quality from a THP POV.
-> This change is complicated enough when we stick to the facts, let's
-> not make up things based on gut feeling.
+I need input from Rafael and Mika as to whether this is a
+good interface.
 
-Agreed and I would expect those _facts_ to be part of the changelog.
--- 
-Michal Hocko
-SUSE Labs
+It seems a bit confusing for me: why do you have to extract
+a number from one file and then insert the same magic number
+somewhere else?
+
+Yours,
+Linus Walleij
