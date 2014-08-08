@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383AbaHHVgK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:36:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60346 "EHLO
+	id S933687AbaHHWIh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:08:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60333 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758532AbaHHVfz (ORCPT
+	with ESMTP id S1758635AbaHHVgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:35:55 -0400
+	Fri, 8 Aug 2014 17:36:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 09/23] iovec: make sure the caller actually wants anything in memcpy_fromiovecend
-Date: Fri,  8 Aug 2014 14:34:54 -0700
-Message-Id: <20140808213316.160523609@linuxfoundation.org>
+Subject: [PATCH 3.10 08/24] macvlan: Initialize vlan_features to turn on offload support.
+Date: Fri,  8 Aug 2014 14:35:01 -0700
+Message-Id: <20140808213335.763802058@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140808213315.769217722@linuxfoundation.org>
-References: <20140808213315.769217722@linuxfoundation.org>
+In-Reply-To: <20140808213335.421758947@linuxfoundation.org>
+References: <20140808213335.421758947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,36 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit 06ebb06d49486676272a3c030bfeef4bd969a8e6 ]
+[ Upstream commit 081e83a78db9b0ae1f5eabc2dedecc865f509b98 ]
 
-Check for cases when the caller requests 0 bytes instead of running off
-and dereferencing potentially invalid iovecs.
+Macvlan devices do not initialize vlan_features.  As a result,
+any vlan devices configured on top of macvlans perform very poorly.
+Initialize vlan_features based on the vlan features of the lower-level
+device.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/iovec.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/macvlan.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -157,6 +157,10 @@ EXPORT_SYMBOL(memcpy_fromiovec);
- int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
- 			int offset, int len)
- {
-+	/* No data? Done! */
-+	if (len == 0)
-+		return 0;
-+
- 	/* Skip over the finished iovecs */
- 	while (offset >= iov->iov_len) {
- 		offset -= iov->iov_len;
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -500,6 +500,7 @@ static int macvlan_init(struct net_devic
+ 				  (lowerdev->state & MACVLAN_STATE_MASK);
+ 	dev->features 		= lowerdev->features & MACVLAN_FEATURES;
+ 	dev->features		|= NETIF_F_LLTX;
++	dev->vlan_features	= lowerdev->vlan_features & MACVLAN_FEATURES;
+ 	dev->gso_max_size	= lowerdev->gso_max_size;
+ 	dev->iflink		= lowerdev->ifindex;
+ 	dev->hard_header_len	= lowerdev->hard_header_len;
 
 
