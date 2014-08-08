@@ -1,49 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756315AbaHHJgg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 05:36:36 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:55906 "EHLO
+	id S1756403AbaHHJgx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 05:36:53 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:41913 "EHLO
 	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894AbaHHJge (ORCPT
+	with ESMTP id S1756361AbaHHJgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 05:36:34 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] driver core: Add missing parameter description to kerneldoc
-Date: Fri,  8 Aug 2014 11:36:31 +0200
-Message-Id: <1407490591-15754-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.4
+	Fri, 8 Aug 2014 05:36:51 -0400
+Date: Fri, 8 Aug 2014 11:37:01 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Chris Wilson <chris@chris-wilson.co.uk>, Daniel Vetter <daniel@ffwll.ch>,
+        oscar.mateo@intel.com, intel-gfx@lists.freedesktop.org,
+        Greg KH <gregkh@linuxfoundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Intel-gfx] [PATCH 45/53] drm/i915/bdw: Do not call
+ intel_runtime_pm_get() in an interrupt
+Message-ID: <20140808093701.GO8727@phenom.ffwll.local>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	oscar.mateo@intel.com, intel-gfx@lists.freedesktop.org,
+	Greg KH <gregkh@linuxfoundation.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <1402673891-14618-1-git-send-email-oscar.mateo@intel.com>
+ <1402673891-14618-46-git-send-email-oscar.mateo@intel.com>
+ <20140618205413.GH5821@phenom.ffwll.local>
+ <20140726102738.GA21056@nuc-i3427.alporthouse.com>
+ <20140728085406.GX4747@phenom.ffwll.local>
+ <20140729073748.GD21570@nuc-i3427.alporthouse.com>
+ <20140729102636.GK4747@phenom.ffwll.local>
+ <20140808092040.GD3021@nuc-i3427.alporthouse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140808092040.GD3021@nuc-i3427.alporthouse.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On Fri, Aug 08, 2014 at 10:20:40AM +0100, Chris Wilson wrote:
+> On Tue, Jul 29, 2014 at 12:26:36PM +0200, Daniel Vetter wrote:
+> > On Tue, Jul 29, 2014 at 08:37:48AM +0100, Chris Wilson wrote:
+> > > On Mon, Jul 28, 2014 at 10:54:06AM +0200, Daniel Vetter wrote:
+> > > > On Sat, Jul 26, 2014 at 11:27:38AM +0100, Chris Wilson wrote:
+> > > > > On Wed, Jun 18, 2014 at 10:54:13PM +0200, Daniel Vetter wrote:
+> > > > > > On Fri, Jun 13, 2014 at 04:38:03PM +0100, oscar.mateo@intel.com wrote:
+> > > > > > > From: Oscar Mateo <oscar.mateo@intel.com>
+> > > > > > > 
+> > > > > > > Or with a spinlock grabbed, because it might sleep, which is not
+> > > > > > > a nice thing to do. Instead, do the runtime_pm get/put together
+> > > > > > > with the create/destroy request, and handle the forcewake get/put
+> > > > > > > directly.
+> > > > > > > 
+> > > > > > > Signed-off-by: Oscar Mateo <oscar.mateo@intel.com>
+> > > > > > 
+> > > > > > Looks like a fixup that should be squashed into relevant earlier patches.
+> > > > > 
+> > > > > The whole gen6_gt_force_wake_get() calling intel_runtime_pm_get() is
+> > > > > broken due to this - we must be able to read registers in atomic
+> > > > > context!
+> > > > > 
+> > > > > Please revert c8c8fb33b37766acf6474784b0d5245dab9a1690
+> > > > 
+> > > > force_wake_get can't call runtime_pm_get becuase pm_get can sleep. So if
+> > > > you want to read registers from atomic context you have to have a runtime
+> > > > pm reference from someone else.
+> > > 
+> > > Nope. That cannot work.
+> > 
+> > Well it works currently. So where do you see the problem?
+> 
+> Sampling registers from an timer - in particular, we really do not want
+> to disable runtime pm whilst trying to monitor the impact of runtime pm.
 
-The deferred_probe_work_func() takes a single parameter but the
-kerneldoc doesn't describe it.
+In that case you can grab a runtime pm reference iff the device is powered
+on already. Which won't call anything scary, just amounts to an
+atomic_add_unless or so, and then drop it again. 
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
-Note that since the function is locally scoped there isn't all that much
-point in having a kerneldoc comment for it, but since it's already there
-might as well make it correct.
+Unfortunately there doesn't seem to be such a thing around already, so
+need to add it first. Greg, how much would you freak out if we add
+something like
 
- drivers/base/dd.c | 1 +
- 1 file changed, 1 insertion(+)
+/**
+ * pm_runtime_get_unless_suspended - grab a rpm ref if the device is on
+ * 
+ * Returns true if an rpm ref has been acquire, false otherwise. Can be
+ * called from atomic context to e.g. sample perfomance counters (where we
+ * obviously don't want to disturb system state if everything is off atm).
+ */
+static inline bool pm_runtime_get_unless_suspended(struct device *dev)
+{
+	return atomic_add_unless(&dev->power.usage_count, 1, 0);
+}
 
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index e4ffbcf2f519..e8d417bb65bd 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -56,6 +56,7 @@ static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
- 
- /**
-  * deferred_probe_work_func() - Retry probing devices in the active list.
-+ * @work: work queue for deferred probe processing
-  */
- static void deferred_probe_work_func(struct work_struct *work)
- {
+Cheers, Daniel
 -- 
-2.0.4
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
