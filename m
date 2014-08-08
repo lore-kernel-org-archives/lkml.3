@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933091AbaHHUxk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:53:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41311 "EHLO
+	id S1757966AbaHHUxw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:53:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41329 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933069AbaHHUxf (ORCPT
+	with ESMTP id S933093AbaHHUxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:53:35 -0400
+	Fri, 8 Aug 2014 16:53:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <gnehzuil.liu@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 087/259] drm/i915: Don't clobber the GTT when it's within stolen memory
-Date: Fri,  8 Aug 2014 13:38:30 -0700
-Message-Id: <1407530482-4483-88-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 102/259] ext4: fix a potential deadlock in __ext4_es_shrink()
+Date: Fri,  8 Aug 2014 13:38:45 -0700
+Message-Id: <1407530482-4483-103-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,96 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit f1e1c2129b79cfdaf07bca37c5a10569fe021abe upstream.
+commit 3f1f9b851311a76226140b55b1ea22111234a7c2 upstream.
 
-On most gen2-4 platforms the GTT can be (or maybe always is?)
-inside the stolen memory region. If that's the case, reduce the
-size of the stolen memory appropriately to make make sure we
-don't clobber the GTT.
+This fixes the following lockdep complaint:
 
-v2: Deal with gen4 36 bit physical address
+[ INFO: possible circular locking dependency detected ]
+3.16.0-rc2-mm1+ #7 Tainted: G           O
+-------------------------------------------------------
+kworker/u24:0/4356 is trying to acquire lock:
+ (&(&sbi->s_es_lru_lock)->rlock){+.+.-.}, at: [<ffffffff81285fff>] __ext4_es_shrink+0x4f/0x2e0
 
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=80151
-Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+but task is already holding lock:
+ (&ei->i_es_lock){++++-.}, at: [<ffffffff81286961>] ext4_es_insert_extent+0x71/0x180
+
+which lock already depends on the new lock.
+
+ Possible unsafe locking scenario:
+
+       CPU0                    CPU1
+       ----                    ----
+  lock(&ei->i_es_lock);
+                               lock(&(&sbi->s_es_lru_lock)->rlock);
+                               lock(&ei->i_es_lock);
+  lock(&(&sbi->s_es_lru_lock)->rlock);
+
+ *** DEADLOCK ***
+
+6 locks held by kworker/u24:0/4356:
+ #0:  ("writeback"){.+.+.+}, at: [<ffffffff81071d00>] process_one_work+0x180/0x560
+ #1:  ((&(&wb->dwork)->work)){+.+.+.}, at: [<ffffffff81071d00>] process_one_work+0x180/0x560
+ #2:  (&type->s_umount_key#22){++++++}, at: [<ffffffff811a9c74>] grab_super_passive+0x44/0x90
+ #3:  (jbd2_handle){+.+...}, at: [<ffffffff812979f9>] start_this_handle+0x189/0x5f0
+ #4:  (&ei->i_data_sem){++++..}, at: [<ffffffff81247062>] ext4_map_blocks+0x132/0x550
+ #5:  (&ei->i_es_lock){++++-.}, at: [<ffffffff81286961>] ext4_es_insert_extent+0x71/0x180
+
+stack backtrace:
+CPU: 0 PID: 4356 Comm: kworker/u24:0 Tainted: G           O   3.16.0-rc2-mm1+ #7
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+Workqueue: writeback bdi_writeback_workfn (flush-253:0)
+ ffffffff8213dce0 ffff880014b07538 ffffffff815df0bb 0000000000000007
+ ffffffff8213e040 ffff880014b07588 ffffffff815db3dd ffff880014b07568
+ ffff880014b07610 ffff88003b868930 ffff88003b868908 ffff88003b868930
+Call Trace:
+ [<ffffffff815df0bb>] dump_stack+0x4e/0x68
+ [<ffffffff815db3dd>] print_circular_bug+0x1fb/0x20c
+ [<ffffffff810a7a3e>] __lock_acquire+0x163e/0x1d00
+ [<ffffffff815e89dc>] ? retint_restore_args+0xe/0xe
+ [<ffffffff815ddc7b>] ? __slab_alloc+0x4a8/0x4ce
+ [<ffffffff81285fff>] ? __ext4_es_shrink+0x4f/0x2e0
+ [<ffffffff810a8707>] lock_acquire+0x87/0x120
+ [<ffffffff81285fff>] ? __ext4_es_shrink+0x4f/0x2e0
+ [<ffffffff8128592d>] ? ext4_es_free_extent+0x5d/0x70
+ [<ffffffff815e6f09>] _raw_spin_lock+0x39/0x50
+ [<ffffffff81285fff>] ? __ext4_es_shrink+0x4f/0x2e0
+ [<ffffffff8119760b>] ? kmem_cache_alloc+0x18b/0x1a0
+ [<ffffffff81285fff>] __ext4_es_shrink+0x4f/0x2e0
+ [<ffffffff812869b8>] ext4_es_insert_extent+0xc8/0x180
+ [<ffffffff812470f4>] ext4_map_blocks+0x1c4/0x550
+ [<ffffffff8124c4c4>] ext4_writepages+0x6d4/0xd00
+	...
+
+Reported-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reported-by: Minchan Kim <minchan@kernel.org>
+Cc: Zheng Liu <gnehzuil.liu@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_gem_stolen.c | 44 ++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/i915/i915_reg.h        |  3 +++
- 2 files changed, 47 insertions(+)
+ fs/ext4/extents_status.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
-index 4a699d2..6471872 100644
---- a/drivers/gpu/drm/i915/i915_gem_stolen.c
-+++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
-@@ -74,6 +74,50 @@ static unsigned long i915_stolen_to_physical(struct drm_device *dev)
- 	if (base == 0)
- 		return 0;
+diff --git a/fs/ext4/extents_status.c b/fs/ext4/extents_status.c
+index 3981ff7..171b9fa 100644
+--- a/fs/ext4/extents_status.c
++++ b/fs/ext4/extents_status.c
+@@ -962,10 +962,10 @@ retry:
+ 			continue;
+ 		}
  
-+	/* make sure we don't clobber the GTT if it's within stolen memory */
-+	if (INTEL_INFO(dev)->gen <= 4 && !IS_G33(dev) && !IS_G4X(dev)) {
-+		struct {
-+			u32 start, end;
-+		} stolen[2] = {
-+			{ .start = base, .end = base + dev_priv->gtt.stolen_size, },
-+			{ .start = base, .end = base + dev_priv->gtt.stolen_size, },
-+		};
-+		u64 gtt_start, gtt_end;
-+
-+		gtt_start = I915_READ(PGTBL_CTL);
-+		if (IS_GEN4(dev))
-+			gtt_start = (gtt_start & PGTBL_ADDRESS_LO_MASK) |
-+				(gtt_start & PGTBL_ADDRESS_HI_MASK) << 28;
-+		else
-+			gtt_start &= PGTBL_ADDRESS_LO_MASK;
-+		gtt_end = gtt_start + gtt_total_entries(dev_priv->gtt) * 4;
-+
-+		if (gtt_start >= stolen[0].start && gtt_start < stolen[0].end)
-+			stolen[0].end = gtt_start;
-+		if (gtt_end > stolen[1].start && gtt_end <= stolen[1].end)
-+			stolen[1].start = gtt_end;
-+
-+		/* pick the larger of the two chunks */
-+		if (stolen[0].end - stolen[0].start >
-+		    stolen[1].end - stolen[1].start) {
-+			base = stolen[0].start;
-+			dev_priv->gtt.stolen_size = stolen[0].end - stolen[0].start;
-+		} else {
-+			base = stolen[1].start;
-+			dev_priv->gtt.stolen_size = stolen[1].end - stolen[1].start;
-+		}
-+
-+		if (stolen[0].start != stolen[1].start ||
-+		    stolen[0].end != stolen[1].end) {
-+			DRM_DEBUG_KMS("GTT within stolen memory at 0x%llx-0x%llx\n",
-+				      (unsigned long long) gtt_start,
-+				      (unsigned long long) gtt_end - 1);
-+			DRM_DEBUG_KMS("Stolen memory adjusted to 0x%x-0x%x\n",
-+				      base, base + (u32) dev_priv->gtt.stolen_size - 1);
-+		}
-+	}
-+
-+
- 	/* Verify that nothing else uses this physical address. Stolen
- 	 * memory should be reserved by the BIOS and hidden from the
- 	 * kernel. So if the region is already marked as busy, something
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 9a1a96a..7047e35 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -628,6 +628,9 @@
- /*
-  * Instruction and interrupt control regs
-  */
-+#define PGTBL_CTL	0x02020
-+#define   PGTBL_ADDRESS_LO_MASK	0xfffff000 /* bits [31:12] */
-+#define   PGTBL_ADDRESS_HI_MASK	0x000000f0 /* bits [35:32] (gen4) */
- #define PGTBL_ER	0x02024
- #define RENDER_RING_BASE	0x02000
- #define BSD_RING_BASE		0x04000
+-		if (ei->i_es_lru_nr == 0 || ei == locked_ei)
++		if (ei->i_es_lru_nr == 0 || ei == locked_ei ||
++		    !write_trylock(&ei->i_es_lock))
+ 			continue;
+ 
+-		write_lock(&ei->i_es_lock);
+ 		shrunk = __es_try_to_reclaim_extents(ei, nr_to_scan);
+ 		if (ei->i_es_lru_nr == 0)
+ 			list_del_init(&ei->i_es_lru);
 -- 
 1.9.1
 
