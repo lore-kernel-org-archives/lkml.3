@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144AbaHHELd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 00:11:33 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:57150 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaHHELb convert rfc822-to-8bit (ORCPT
+	id S1754678AbaHHEOL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 00:14:11 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:58476 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751816AbaHHEOI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 00:11:31 -0400
-From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "oort10@gmail.com" <oort10@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] staging:r819xU: coding style: Fixed commenting style
-Thread-Topic: [PATCH] staging:r819xU: coding style: Fixed commenting style
-Thread-Index: AQHPsgly3szt5P2MVE+Y/yDRZN6SZpvFPVcAgADb4IA=
-Date: Fri, 8 Aug 2014 04:11:28 +0000
-Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF259BF@EU-MBX-02.mgc.mentorg.com>
-References: <1407393957-27948-1-git-send-email-sanjeev_sharma@mentor.com>
- <20140807160312.GA8014@kroah.com>
-In-Reply-To: <20140807160312.GA8014@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.202.0.76]
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 8 Aug 2014 00:14:08 -0400
+X-Greylist: delayed 627 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Aug 2014 00:14:07 EDT
+Subject: Re: [PATCH] staging/lustre: use rcu_dereference to access rcu protected current->real_parent field
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Oleg Drokin <green@linuxhacker.ru>
+In-Reply-To: <20140808034951.GA6626@kroah.com>
+Date: Fri, 8 Aug 2014 00:03:20 -0400
+Cc: Evgeny Budilovsky <budevg@gmail.com>, devel@driverdev.osuosl.org,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Peng Tao <bergwolf@gmail.com>, linux-kernel@vger.kernel.org,
+        Lai Siyao <lai.siyao@intel.com>
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 08 Aug 2014 04:11:30.0695 (UTC) FILETIME=[D52B5170:01CFB2BE]
+Message-Id: <DFF36154-06AC-4D7E-87F5-259B73CB059B@linuxhacker.ru>
+References: <87k36ltoob.fsf@gmail.com> <20140806214216.GA16530@kroah.com> <CAGDhxoe4+jU=vCDedMC4VXfuNMmqP3-E1Lu3LLStbFLbd=BRSA@mail.gmail.com> <20140808034951.GA6626@kroah.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Opps, I forget.
+Hello!
 
-Let me correct and send V2 patch.
+On Aug 7, 2014, at 11:49 PM, Greg Kroah-Hartman wrote:
+>> 
+>> This is not a critical bug and in the worst case the code here may
+>> cause miss of statistics counter increase.
+>> This is why I think it is not worth to backport the patch at all.
+> You are right, and if this is just for some random "statistics" file,
+> can we just delete the whole function?
 
-Regards
-Sanjeev Sharma
+I hope not!
+This is used all around the client to tally up various operations executed counts.
 
------Original Message-----
-From: Greg KH [mailto:gregkh@linuxfoundation.org] 
-Sent: Thursday, August 07, 2014 9:33 PM
-To: Sharma, Sanjeev
-Cc: devel@driverdev.osuosl.org; oort10@gmail.com; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging:r819xU: coding style: Fixed commenting style
+The statistic is then used by various userspace monitoring tools.
 
-On Thu, Aug 07, 2014 at 12:15:57PM +0530, Sanjeev Sharma wrote:
-> This is a patch to the r819xU_phyreg.h file that fixes commenting 
-> style warning
-> 
-> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-> ---
->  drivers/staging/rtl8192u/r819xU_phyreg.h | 188 
-> ++++++++++++++++---------------
->  1 file changed, 97 insertions(+), 91 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8192u/r819xU_phyreg.h 
-> b/drivers/staging/rtl8192u/r819xU_phyreg.h
-> index 64285d6..f07d2f1 100644
-> --- a/drivers/staging/rtl8192u/r819xU_phyreg.h
-> +++ b/drivers/staging/rtl8192u/r819xU_phyreg.h
-> @@ -2,10 +2,10 @@
->  #define _R819XU_PHYREG_H
->  
->  
-> -#define   RF_DATA				0x1d4					// FW will write RF data in the register.
-> +#define   RF_DATA				0x1d4					/* FW will write RF data in the register.*/
->  
-> -//Register   //duplicate register due to connection: RF_Mode, TRxRN, NumOf L-STF
-> -//page 1
-> +/* Register   //duplicate register due to connection: RF_Mode, TRxRN, NumOf L-STF */
-
-Does that line look correct?
-
+Bye,
+    Oleg
