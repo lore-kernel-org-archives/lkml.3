@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392AbaHHHKr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 03:10:47 -0400
-Received: from mailrelay.sea-ab.se ([91.223.232.53]:42195 "EHLO
-	mailrelay.sea-ab.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547AbaHHHKq (ORCPT
+	id S1756484AbaHHHLO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 03:11:14 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46884 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755960AbaHHHLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 03:10:46 -0400
-Date: Fri, 8 Aug 2014 09:07:55 +0200
-From: Martin Berglund <martin@rogsta.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Forest Bond <forest@alittletooquiet.net>,
-        Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: vt6655: wpactl.c: Fix sparse warnings
-Message-ID: <20140808070755.GA12023@astc-ogir.Teknik.UU.SE>
-References: <20140807220834.GA21645@licorice>
- <20140808021813.GB22340@kroah.com>
+	Fri, 8 Aug 2014 03:11:11 -0400
+Date: Fri, 8 Aug 2014 09:11:03 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Segall <bsegall@google.com>,
+        Waiman Long <Waiman.Long@hp.com>, Mel Gorman <mgorman@suse.de>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Rik van Riel <riel@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>
+Subject: Re: [PATCH] sched: Reduce contention in update_cfs_rq_blocked_load
+Message-ID: <20140808071103.GD3935@laptop>
+References: <1407184118.11407.11.camel@j-VirtualBox>
+ <20140804191526.GA2480@intel.com>
+ <1407349295.2384.14.camel@j-VirtualBox>
+ <20140807180239.GC2480@intel.com>
+ <1407471532.8365.18.camel@j-VirtualBox>
+ <20140807223007.GD2480@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140808021813.GB22340@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140807223007.GD2480@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 07:18:13PM -0700, Greg Kroah-Hartman wrote:
-> On Thu, Aug 07, 2014 at 11:08:34PM +0100, Martin Berglund wrote:
-> > Add missing __user macro casting in the function wpa_set_keys.
-> > This is okay since the function handles the possibility of
-> > param->u.wpa_key.key and param->u.wpa_key.seq pointing to
-> > kernelspace using a flag, fcpfkernel.
-> > 
-> > Signed-off-by: Martin Berglund <martin@rogsta.net>
-> > ---
-> > This was submitted as part of Eudyptula challenge task 16
-> > 
-> >  drivers/staging/vt6655/wpactl.c |    8 ++++++--
-> >  1 file changed, 6 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
-> > index 5f454ca..d75dd79 100644
-> > --- a/drivers/staging/vt6655/wpactl.c
-> > +++ b/drivers/staging/vt6655/wpactl.c
-> > @@ -224,7 +224,9 @@ int wpa_set_keys(PSDevice pDevice, void *ctx,
-> >  	} else {
-> >  		spin_unlock_irq(&pDevice->lock);
-> >  		if (param->u.wpa_key.key &&
-> > -		    copy_from_user(&abyKey[0], param->u.wpa_key.key, param->u.wpa_key.key_len)) {
-> > +		    copy_from_user(&abyKey[0],
-> > +				   (void __user *)param->u.wpa_key.key,
-> 
-> Would it be better to mark this pointer as __user in the structure
-> itself?  Or is it also used as a kernel structure in other places?
-> 
-> thanks,
-> 
-> greg k-h
+On Fri, Aug 08, 2014 at 06:30:08AM +0800, Yuyang Du wrote:
+> > > > -----------------------------------------------------
+> > > >               |   10-90   |  100-1000   |  1100-2000
+> > > >               |   users   |   users     |   users
+> > > > -----------------------------------------------------
+> > > > alltests      |   -3.37%  |  -10.64%    |   -2.25%
+> > > > -----------------------------------------------------
+> > > > all_utime     |   +0.33%  |   +3.73%    |   +3.33%
+> > > > -----------------------------------------------------
+> > > > compute       |   -5.97%  |   +2.34%    |   +3.22%
+> > > > -----------------------------------------------------
+> > > > custom        |  -31.61%  |  -10.29%    |  +15.23%
+> > > > -----------------------------------------------------
+> > > > disk          |  +24.64%  |  +28.96%    |  +21.28%
+> > > > -----------------------------------------------------
+> > > > fserver       |   -1.35%  |   +4.82%    |   +9.35%
+> > > > -----------------------------------------------------
+> > > > high_systime  |   -6.73%  |   -6.28%    |  +12.36%
+> > > > -----------------------------------------------------
+> > > > shared        |  -28.31%  |  -19.99%    |   -7.10%
+> > > > -----------------------------------------------------
+> > > > short         |  -44.63%  |  -37.48%    |  -33.62%
+> > > > -----------------------------------------------------
 
-Yes, the structure is used as a kernel structure in some other places. 
-Even this function is sometimes called with the pointers in the
-structure pointing to kernel memory. However, that is correctly
-handled with a flag also sent to the function.
+> Thanks a lot, Jason.
+> 
+> So for this particular set of workloads on a big machine, I think the
+> result is mixed and overall "neutral", but I expected the variation probably
+> could be bigger especially for light workloads.
+> 
+> Any comment from the maintainers and others? Ping Peter and Ben, I haven't
+> heard from you for the 5th version.
 
-As a side note: there are some uses of memcpy in this file that
-might be good to switch to copy_from/to_user but it's not as clear
-to me if these pointers never can point to kernel memory (because of
-the mixing of the two). For example all copying of ssid and bssid.
-
-Cheers,
-                Martin
+Been a bit busy.. but in general I worry about the performance decrease
+on the lighter loads. I should probably run some workloads on my 2
+socket and 4 socket machines, but the coming few weeks will be very busy
+and I'm afraid I'll not get around to it in a timely manner.
