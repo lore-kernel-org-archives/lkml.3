@@ -1,257 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522AbaHHW7f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:59:35 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:38769 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaHHW7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 18:59:34 -0400
+	id S1752959AbaHHW77 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:59:59 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38771 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751584AbaHHW7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 18:59:54 -0400
+Message-ID: <53E55647.9010800@ti.com>
+Date: Fri, 8 Aug 2014 18:59:19 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1407519880-6719-18-git-send-email-dvlasenk@redhat.com>
-References: <1407519880-6719-1-git-send-email-dvlasenk@redhat.com> <1407519880-6719-18-git-send-email-dvlasenk@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sat, 9 Aug 2014 07:59:11 +0900
-Message-ID: <CALCETrXDjOPR9kEwx9fJFFz=A1jRKPBbfpoe8XztchktrUaz0Q@mail.gmail.com>
-Subject: Re: [PATCH 17/17] x86: simplify iret stack handling on SYSCALL64 fastpath
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Jiri Slaby <jslaby@suse.cz>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v2] serial: uart: add hw flow control support configuration
+References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com> <53E39B44.60406@hurleysoftware.com> <53E3A67B.6070709@ti.com> <20140807171254.GA13097@kroah.com> <53E3B67E.80705@hurleysoftware.com> <53E3B88C.2000209@ti.com> <53E3C685.5010600@hurleysoftware.com> <53E3E597.7070305@ti.com> <53E405B6.7030602@hurleysoftware.com> <53E526CB.6060504@ti.com> <53E536CB.9080503@hurleysoftware.com> <53E53AD2.3020100@ti.com> <53E54A80.5070900@hurleysoftware.com>
+In-Reply-To: <53E54A80.5070900@hurleysoftware.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 9, 2014 at 2:44 AM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
-> Before this patch, rcx and r11 were saved in pt_regs->rcx
-> and pt_regs->r11. Which looks natural, but requires messy
-> shuffling to/from iret stack whenever ptrace or e.g. iopl
-> wants to modify return address or flags - because that's
-> how these registers are used by SYSCALL/SYSRET.
+On 08/08/2014 06:09 PM, Peter Hurley wrote:
+> On 08/08/2014 05:02 PM, Murali Karicheri wrote:
+>> On 08/08/2014 04:44 PM, Peter Hurley wrote:
+>>> On 08/08/2014 03:36 PM, Murali Karicheri wrote:
+>>>> On 08/07/2014 07:03 PM, Peter Hurley wrote:
+>>>
+>>> [...]
+>>>
+>>>>> But I realize now that a different question needs asking:
+>>>>> Is the MSR read showing delta CTS set when AFE is on, ever?
+>>>>
+>>>> Unfortunately this was tested on a customer board that I don't have access to and can't check this out right away. I am trying to findout if I can get some hardware to test the patch to address the issue being discussed. Customer board is currently using RTS and CTS lines and the same works fine for them with this patch.
+>>>
+>>> Ok.
+>>>
+>>>
+>>>>> Because serial8250_modem_status() assumes the answer is no for
+>>>>> _all_ AFE-capable devices, and if yes, would mean that serial8250_modem_status()
+>>>>> is broken if AFE is on.
+>>>>
+>>>> As per Keystone UART spec
+>>>>
+>>>> bit 0 in MSR: DCTS: Change in CTS indicator bit. DCTS indicates that the CTS input has changed state since the last time it was read by the CPU. When DCTS is set (autoflow control is not enabled and the modem status interrupt is enabled), a modem status interrupt is generated. When autoflow control is enabled, no interrupt is generated
+>>>>
+>>>> So based on this, there shouldn't be any CTS change if AFE is enabled and will indicate change if AFE is disabled. Probably add WARN_ON_ONCE() as you suggested to detect any offending h/w.
+>>>
+>>> That's identical wording to the 16750 datasheet.
+>>>
+>>> But notice that it only says "no interrupt is generated" when AFE is on.
+>>> It doesn't say if the MSR is read, that DCTS won't be set. And that's
+>>> an important difference for how serial8250_modem_status() works.
+>>>
+>>> [...]
+>>>
+>>>
+>>>>>>> uart_throttle() and uart_unthrottle() are used indirectly by line disciplines
+>>>>>>> for high-level rx flow control, such as when a read buffer fills up because
+>>>>>>> there is no userspace reader. The 8250 core doesn't define a throttle/unthrottle
+>>>>>>> method because writing MCR to drop RTS is sufficient to disable auto-RTS.
+>>>>>>
+>>>>>> As per spec. hardware has rx threshold levels set to trigger an RTS level change to tell
+>>>>>> the remote from sending more bytes. So if h/w flow control is enabled, then not sure why
+>>>>>> uart_throttle() is to be doing anything when h/w flow control is supported? A dummy
+>>>>>> function required to satisfy the line discipline?
+>>>>>
+>>>>> I understand how auto-RTS works.
+>>>>>
+>>>>> Let's pretend for a moment that uart_throttle() does nothing when
+>>>>> auto-RTS is enabled:
+>>>>>
+>>>>> 1. tty buffers start to fill up because no process is reading the data.
+>>>>> 2. The throttle threshold is reached.
+>>>>> 3. uart_throttle() is called but does nothing.
+>>>>> 4. more data arrives and the DR interrupt is triggered
+>>>>> 5. serial8250_rx_chars() reads in the new data.
+>>>>> 6. tty buffers keep filling up even though the driver was told to throttle
+>>>>> 7. eventually the tty buffers will cap at about 64KB and start counting
+>>>>>       buf_overrun errors
+>>>>>
+>>>> Ok.
+>>>>
+>>>> Couple of observation on the AFE implementation in 8250 driver prior to my patch.
+>>>>
+>>>>   From the discussion so far, AFE is actually hardware assisted hardware flow control. Auto CTS is sw assisted hardware flow control
+>>>> where sw uses RTS line for recieve side flow control and I assume it uses MCR RTS bit for this where AFE does this automatically. From
+>>>> the 16550 or Keystone UART spec, I can't find how RTS line can be asserted to do this through sw instead of hardware doing it automatically. Spec says
+>>>>
+>>>> MCR RTS bit: RTS control. When AFE = 1, the RTS bit determines th
+>>>> e autoflow control enabled. Note that all UARTs do not support this feature. See the device-specific data manual for supported features. If this feature is not available, this bit is reserved and should be cleared to 0.
+>>>> 0 = UARTn_RTS is disabled, only UARTn_CTS is enabled.
+>>>> 1 = UARTn_RTS and UARTn_CTS are enabled.
+>>>>
+>>>> Then since AFE was already supported before my patch for FIFO size 32bytes or higher, I am wondering why there was no implementation of throttle()/unthrottle() to begin with and why UPF_HARD_FLOW flag is not set at all if AFE implemented in 8250 driver is hw assisted, hw flow control. Also what do these API supposed to do?
+>>>
+>>> uart_throttle() does _not_ call ops->throttle() unless either
+>>> UPF_SOFT_FLOW and/or UPF_HARD_FLOW is set in uport->flags.
+>>>
+>>
+>> Not based on port flag. Here is the actual code in serial_core.c as I see it.
 >
-> This patch saves rcx and r11 in pt_regs->rip and pt_regs->flags,
-> and uses these values for SYSRET64 insn. Shuffling is eliminated.
+> You're misreading the code.
 >
-> On slow path, the values are saved in both locations - thus, ptrace
-> can modify rcx, and on syscall exit rcx will be different from
-> return address... don't see why that can be useful but anyway,
-> it works.
 >
-> The lazy store of pt_regs->cs and pt_regs->ss is retained -
-> tests have shown that these insns do take ~2 cycles on fast path.
+>> static void uart_throttle(struct tty_struct *tty)
+>> {
+>>      struct uart_state *state = tty->driver_data;
+>>      struct uart_port *port = state->uart_port;
+>>      uint32_t mask = 0;
+>>
+>>      if (I_IXOFF(tty))
+>>          mask |= UPF_SOFT_FLOW;
+>>      if (tty->termios.c_cflag&  CRTSCTS)
+>>          mask |= UPF_HARD_FLOW;
 >
-> FIXUP_TOP_OF_STACK and RESTORE_TOP_OF_STACK macros are replaced
-> by a simpler single macro, STORE_IRET_FRAME_CS_SS.
+> mask = UPF_HARD_FLOW
 >
-> stub_iopl is no longer needed: pt_regs->flags needs no fixing up.
+> port->flags does not have UPF_HARD_FLOW set so
 >
-> PER_CPU(old_rsp) usage is simplified - now it is used only
-> as temp storage, and userspace stack pointer is immediately stored
-> in pt_regs->sp on syscall entry, instead of being used later,
-> on syscall exit. This allows to get rid of thread_struct::usersp.
+>           (port->flags&  mask) == false
 >
-> Testing shows that syscall fast path is ~54.3 ns before
-> and after the patch (on 2.7 GHz Sandy Bridge CPU).
->
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> CC: Linus Torvalds <torvalds@linux-foundation.org>
-> CC: Oleg Nesterov <oleg@redhat.com>
-> CC: "H. Peter Anvin" <hpa@zytor.com>
-> CC: Andy Lutomirski <luto@amacapital.net>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: X86 ML <x86@kernel.org>
-> CC: Alexei Starovoitov <ast@plumgrid.com>
-> CC: Will Drewry <wad@chromium.org>
-> CC: Kees Cook <keescook@chromium.org>
-> CC: linux-kernel@vger.kernel.org
-> ---
->  arch/x86/include/asm/calling.h   |  18 +++--
->  arch/x86/include/asm/compat.h    |   2 +-
->  arch/x86/include/asm/processor.h |   1 -
->  arch/x86/include/asm/ptrace.h    |   8 +--
->  arch/x86/kernel/entry_64.S       | 140 +++++++++++++++++----------------------
->  arch/x86/kernel/process_64.c     |   8 +--
->  arch/x86/syscalls/syscall_64.tbl |   2 +-
->  arch/x86/um/sys_call_table_64.c  |   2 +-
->  8 files changed, 78 insertions(+), 103 deletions(-)
->
-> diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
-> index aa9113e..7afbcea 100644
-> --- a/arch/x86/include/asm/calling.h
-> +++ b/arch/x86/include/asm/calling.h
-> @@ -95,7 +95,7 @@ For 32-bit we have the following conventions - kernel is built with
->         CFI_ADJUST_CFA_OFFSET 15*8+\addskip
->         .endm
->
-> -       .macro SAVE_C_REGS_HELPER offset=0 rcx=1 r8plus=1
-> +       .macro SAVE_C_REGS_HELPER offset=0 rcx=1 r8910=1 r11=1
->         movq_cfi rdi, 14*8+\offset
->         movq_cfi rsi, 13*8+\offset
->         movq_cfi rdx, 12*8+\offset
-> @@ -103,21 +103,26 @@ For 32-bit we have the following conventions - kernel is built with
->         movq_cfi rcx, 11*8+\offset
->         .endif
->         movq_cfi rax, 10*8+\offset
-> -       .if \r8plus
-> +       .if \r8910
->         movq_cfi r8,  9*8+\offset
->         movq_cfi r9,  8*8+\offset
->         movq_cfi r10, 7*8+\offset
-> +       .endif
-> +       .if \r11
->         movq_cfi r11, 6*8+\offset
->         .endif
->         .endm
->         .macro SAVE_C_REGS offset=0
-> -       SAVE_C_REGS_HELPER \offset, 1, 1
-> +       SAVE_C_REGS_HELPER \offset, 1, 1, 1
->         .endm
->         .macro SAVE_C_REGS_EXCEPT_R891011
-> -       SAVE_C_REGS_HELPER 0, 1, 0
-> +       SAVE_C_REGS_HELPER 0, 1, 0, 0
->         .endm
->         .macro SAVE_C_REGS_EXCEPT_RCX_R891011
-> -       SAVE_C_REGS_HELPER 0, 0, 0
-> +       SAVE_C_REGS_HELPER 0, 0, 0, 0
-> +       .endm
-> +       .macro SAVE_C_REGS_EXCEPT_RCX_R11
-> +       SAVE_C_REGS_HELPER 0, 0, 1, 0
->         .endm
->
->         .macro SAVE_EXTRA_REGS offset=0
-> @@ -171,6 +176,9 @@ For 32-bit we have the following conventions - kernel is built with
->         .macro RESTORE_C_REGS_EXCEPT_RCX
->         RESTORE_C_REGS_HELPER 1,0,1,1,1
->         .endm
-> +       .macro RESTORE_C_REGS_EXCEPT_RCX_R11
-> +       RESTORE_C_REGS_HELPER 1,0,0,1,1
-> +       .endm
->         .macro RESTORE_RSI_RDI
->         RESTORE_C_REGS_HELPER 0,0,0,0,0
->         .endm
-> diff --git a/arch/x86/include/asm/compat.h b/arch/x86/include/asm/compat.h
-> index 59c6c40..acdee09 100644
-> --- a/arch/x86/include/asm/compat.h
-> +++ b/arch/x86/include/asm/compat.h
-> @@ -301,7 +301,7 @@ static inline void __user *arch_compat_alloc_user_space(long len)
->                 sp = task_pt_regs(current)->sp;
->         } else {
->                 /* -128 for the x32 ABI redzone */
-> -               sp = this_cpu_read(old_rsp) - 128;
-> +               sp = task_pt_regs(current)->sp - 128;
->         }
->
->         return (void __user *)round_down(sp - len, 16);
-> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-> index a4ea023..33c86c6 100644
-> --- a/arch/x86/include/asm/processor.h
-> +++ b/arch/x86/include/asm/processor.h
-> @@ -474,7 +474,6 @@ struct thread_struct {
->  #ifdef CONFIG_X86_32
->         unsigned long           sysenter_cs;
->  #else
-> -       unsigned long           usersp; /* Copy from PDA */
->         unsigned short          es;
->         unsigned short          ds;
->         unsigned short          fsindex;
-> diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
-> index c822b35..271c779 100644
-> --- a/arch/x86/include/asm/ptrace.h
-> +++ b/arch/x86/include/asm/ptrace.h
-> @@ -140,12 +140,8 @@ static inline bool user_64bit_mode(struct pt_regs *regs)
->  #endif
->  }
->
-> -#define current_user_stack_pointer()   this_cpu_read(old_rsp)
-> -/* ia32 vs. x32 difference */
-> -#define compat_user_stack_pointer()    \
-> -       (test_thread_flag(TIF_IA32)     \
-> -        ? current_pt_regs()->sp        \
-> -        : this_cpu_read(old_rsp))
-> +#define current_user_stack_pointer()   current_pt_regs()->sp
-> +#define compat_user_stack_pointer()    current_pt_regs()->sp
->  #endif
->
->  #ifdef CONFIG_X86_32
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 5d639a6..efe9780 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -24,8 +24,6 @@
->   * - CFI macros are used to generate dwarf2 unwind information for better
->   * backtraces. They don't change any code.
->   * - ENTRY/END Define functions in the symbol table.
-> - * - FIXUP_TOP_OF_STACK/RESTORE_TOP_OF_STACK - Fix up the hardware stack
-> - * frame that is otherwise undefined after a SYSCALL
->   * - TRACE_IRQ_* - Trace hard interrupt state for lock debugging.
->   * - idtentry - Define exception entry points.
->   */
-> @@ -121,29 +119,13 @@ ENDPROC(native_usergs_sysret64)
->  #endif
->
->  /*
-> - * C code is not supposed to know about undefined top of stack. Every time
-> - * a C function with an pt_regs argument is called from the SYSCALL based
-> - * fast path FIXUP_TOP_OF_STACK is needed.
-> - * RESTORE_TOP_OF_STACK syncs the syscall state after any possible ptregs
-> - * manipulation.
-> + * struct pt_regs is not fully populated on the fast path
-> + * (rcx, r11, cs and ss are not filled in).
-> + * This macro populates segment registers in iret frame.
->   */
-> -
-> -       /* %rsp:at FRAMEEND */
-> -       .macro FIXUP_TOP_OF_STACK tmp offset=0
-> -       movq PER_CPU_VAR(old_rsp),\tmp
-> -       movq \tmp,RSP+\offset(%rsp)
-> -       movq $__USER_DS,SS+\offset(%rsp)
-> -       movq $__USER_CS,CS+\offset(%rsp)
-> -       movq $-1,RCX+\offset(%rsp)
-> -       movq R11+\offset(%rsp),\tmp  /* get eflags */
-> -       movq \tmp,EFLAGS+\offset(%rsp)
-> -       .endm
-> -
-> -       .macro RESTORE_TOP_OF_STACK tmp offset=0
-> -       movq RSP+\offset(%rsp),\tmp
-> -       movq \tmp,PER_CPU_VAR(old_rsp)
-> -       movq EFLAGS+\offset(%rsp),\tmp
-> -       movq \tmp,R11+\offset(%rsp)
-> +       .macro STORE_IRET_FRAME_CS_SS offset=0
-> +       movq    $__USER_CS,CS+\offset(%rsp)
-> +       movq    $__USER_DS,SS+\offset(%rsp)
->         .endm
->
->  /*
-> @@ -226,12 +208,16 @@ ENDPROC(native_usergs_sysret64)
->   * Interrupts are off on entry.
->   * Only called from user space.
->   *
-> - * XXX if we had a free scratch register we could save the RSP into the stack frame
-> - *      and report it properly in ps. Unfortunately we haven't.
-> - *
->   * When user can change the frames always force IRET. That is because
->   * it deals with uncanonical addresses better. SYSRET has trouble
->   * with them due to bugs in both AMD and Intel CPUs.
-> + *
-> + * When returning through fast path, userspace sees rcx = return address,
-> + * r11 = rflags. When returning through iret (e.g. if audit is active),
-> + * these registers may contain garbage.
-> + * For ptrace we manage to avoid that: when we hit slow path on entry,
-> + * we do save rcx and r11 in pt_regs, so ptrace on exit also sees them.
-> + * If slow path is entered only on exit, there will be garbage.
 
-I don't like this.  At least the current code puts something
-deterministic in there (-1) for the slow path, even though it's wrong
-and makes the slow path behave visibly differently from the fast path.
+Ok. My bad.
 
-Leaking uninitialized data here is extra bad, though.  Keep in mind
-that, when a syscall entry is interrupted before fully setting up
-pt_regs, the interrupt frame overlaps task_pt_regs, so it's possible,
-depending on the stack slot ordering, for a kernel secret
-(kernel_stack?) to end up somewhere in task_pt_regs.
+>>      if (port->flags&  mask) {
+>>          port->ops->throttle(port);
+>>          mask&= ~port->flags;
+>>      }
+>>
+>>      if (mask&  UPF_SOFT_FLOW)
+>>          uart_send_xchar(tty, STOP_CHAR(tty));
+>>
+>>      if (mask&  UPF_HARD_FLOW)
+>>          uart_clear_mctrl(port, TIOCM_RTS);
+>> }
+>
+> [...]
+>
+>>>> Based on my above discussion, there are few things required to be done on top of AFE and some of it is done by my patch and the remaining thing to be addressed in another patch.
+>>>
+>>> Assuming that AFE, as already implemented in the 8250 driver, works as expected,
+>>> the fifo level check seems to be the only hurdle, right?
+>>
+>> Also how uart_set_termios() expect to work without my patch? that is needed as well.
+>
+> That looks buggy, even if UPF_HARD_FLOW is set.
+>
+> But that's my point: the most general cases should be fixed, if necessary.
+> Then, a trivial change to override the fifo size check from firmware is all you'll need
 
---Andy
+
+But then it seems like UPF_HARD_FLOW flag was introduced by 
+dba05832cbe4f305dfd998fb26d7c685d91fbbd8 SERIAL: core: add hardware 
+assisted h/w flow control support and I worked my patch around this. 
+This is misleading.
+
+Assume we don't use the UPF_HARD_FLOW anymore. Then in 
+uart_set_termios(), how does it know if the port has hw assisted hw flow 
+control? What is the other bug you mentioned?
+>
+>
+>>>>>> I want to work to fix this rather than revert this change as our customer is already using this feature.
+>>>>>
+>>>>> 3.16 was released 4 days ago.
+>>>>
+>>>> As I said, I will work to address this with priority.
+>>>
+>>> My point was that I'm not understanding how your customer could be using this
+>>> feature when it came out 4 days ago, but yet now you can't even test on the
+>>> hardware?
+>>
+>> This fix was back ported to v3.13 that the customer is using.
+>
+> Ok, so your customer is running a custom kernel. Then I don't see the problem with backing
+> this change out, rather than building on top of it.
+
+Customer will soon be switching to newer kernel and this become an 
+issue. So this must be addressed even if it requires a different fix.
+At this point, I still think a fix is workable if we can make use of
+existing UPF_HARD_FLOW flag that is meant for this scenario.
+
+Assuming we re-use auto-flow-control instead of the has-hw-flow-control, 
+and discard UPF_HARD_FLOW, we need to fix
+
+1. limit to 32 bytes for fifo size as we have 16 bytes for keystone uart
+2. uart_prt_startup() support for the hw flow control
+3. uart_set_termios(), avoid stopping the hardware if port has hw flow
+    control
+
+For 1) no idea why 32 byte limit is required and for hw flow control 
+this is not needed. For 2) and 3, how does the serial core driver knows 
+if the uart port has the AFE capability with out using the flag.
+
+I will restart this thread after my vacation. Meanwhile if you have 
+suggestions as to how to deal with 1-3, please respond so that I can 
+work on a patch based on it.
+
+Thanks and regards,
+
+Murali
+>
+> Regards,
+> Peter Hurley
+>
+>
+
