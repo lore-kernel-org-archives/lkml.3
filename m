@@ -1,21 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932725AbaHHUwT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:52:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41113 "EHLO
+	id S932760AbaHHUw1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:52:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41136 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932682AbaHHUwJ (ORCPT
+	with ESMTP id S932716AbaHHUwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:52:09 -0400
+	Fri, 8 Aug 2014 16:52:19 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yuchung Cheng <ycheng@google.com>, Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: David Rientjes <rientjes@google.com>, Bob Liu <lliubbo@gmail.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Hedi Berriche <hedi@sgi.com>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 214/259] tcp: fix cwnd undo on DSACK in F-RTO
-Date: Fri,  8 Aug 2014 13:40:37 -0700
-Message-Id: <1407530482-4483-215-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 194/259] mm, thp: do not allow thp faults to avoid cpuset restrictions
+Date: Fri,  8 Aug 2014 13:40:17 -0700
+Message-Id: <1407530482-4483-195-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,53 +35,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuchung Cheng <ycheng@google.com>
+From: David Rientjes <rientjes@google.com>
 
-[ Upstream commit 0cfa5c07d6d1d7f8e710fc671c5ba1ce85e09fa4 ]
+commit b104a35d32025ca740539db2808aa3385d0f30eb upstream.
 
-This bug is discovered by an recent F-RTO issue on tcpm list
-https://www.ietf.org/mail-archive/web/tcpm/current/msg08794.html
+The page allocator relies on __GFP_WAIT to determine if ALLOC_CPUSET
+should be set in allocflags.  ALLOC_CPUSET controls if a page allocation
+should be restricted only to the set of allowed cpuset mems.
 
-The bug is that currently F-RTO does not use DSACK to undo cwnd in
-certain cases: upon receiving an ACK after the RTO retransmission in
-F-RTO, and the ACK has DSACK indicating the retransmission is spurious,
-the sender only calls tcp_try_undo_loss() if some never retransmisted
-data is sacked (FLAG_ORIG_DATA_SACKED).
+Transparent hugepages clears __GFP_WAIT when defrag is disabled to prevent
+the fault path from using memory compaction or direct reclaim.  Thus, it
+is unfairly able to allocate outside of its cpuset mems restriction as a
+side-effect.
 
-The correct behavior is to unconditionally call tcp_try_undo_loss so
-the DSACK information is used properly to undo the cwnd reduction.
+This patch ensures that ALLOC_CPUSET is only cleared when the gfp mask is
+truly GFP_ATOMIC by verifying it is also not a thp allocation.
 
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Alex Thorlton <athorlton@sgi.com>
+Tested-by: Alex Thorlton <athorlton@sgi.com>
+Cc: Bob Liu <lliubbo@gmail.com>
+Cc: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Hedi Berriche <hedi@sgi.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/tcp_input.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ mm/page_alloc.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index c53b7f3..320cfe1 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -2680,13 +2680,12 @@ static void tcp_process_loss(struct sock *sk, int flag, bool is_dupack)
- 	bool recovered = !before(tp->snd_una, tp->high_seq);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index c4133b4..9aad4f1 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2419,7 +2419,7 @@ static inline int
+ gfp_to_alloc_flags(gfp_t gfp_mask)
+ {
+ 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
+-	const gfp_t wait = gfp_mask & __GFP_WAIT;
++	const bool atomic = !(gfp_mask & (__GFP_WAIT | __GFP_NO_KSWAPD));
  
- 	if (tp->frto) { /* F-RTO RFC5682 sec 3.1 (sack enhanced version). */
--		if (flag & FLAG_ORIG_SACK_ACKED) {
--			/* Step 3.b. A timeout is spurious if not all data are
--			 * lost, i.e., never-retransmitted data are (s)acked.
--			 */
--			tcp_try_undo_loss(sk, true);
-+		/* Step 3.b. A timeout is spurious if not all data are
-+		 * lost, i.e., never-retransmitted data are (s)acked.
-+		 */
-+		if (tcp_try_undo_loss(sk, flag & FLAG_ORIG_SACK_ACKED))
- 			return;
--		}
-+
- 		if (after(tp->snd_nxt, tp->high_seq) &&
- 		    (flag & FLAG_DATA_SACKED || is_dupack)) {
- 			tp->frto = 0; /* Loss was real: 2nd part of step 3.a */
+ 	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
+ 	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
+@@ -2428,20 +2428,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	 * The caller may dip into page reserves a bit more if the caller
+ 	 * cannot run direct reclaim, or if the caller has realtime scheduling
+ 	 * policy or is asking for __GFP_HIGH memory.  GFP_ATOMIC requests will
+-	 * set both ALLOC_HARDER (!wait) and ALLOC_HIGH (__GFP_HIGH).
++	 * set both ALLOC_HARDER (atomic == true) and ALLOC_HIGH (__GFP_HIGH).
+ 	 */
+ 	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
+ 
+-	if (!wait) {
++	if (atomic) {
+ 		/*
+-		 * Not worth trying to allocate harder for
+-		 * __GFP_NOMEMALLOC even if it can't schedule.
++		 * Not worth trying to allocate harder for __GFP_NOMEMALLOC even
++		 * if it can't schedule.
+ 		 */
+-		if  (!(gfp_mask & __GFP_NOMEMALLOC))
++		if (!(gfp_mask & __GFP_NOMEMALLOC))
+ 			alloc_flags |= ALLOC_HARDER;
+ 		/*
+-		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
+-		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
++		 * Ignore cpuset mems for GFP_ATOMIC rather than fail, see the
++		 * comment for __cpuset_node_allowed_softwall().
+ 		 */
+ 		alloc_flags &= ~ALLOC_CPUSET;
+ 	} else if (unlikely(rt_task(current)) && !in_interrupt())
 -- 
 1.9.1
 
