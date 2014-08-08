@@ -1,150 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802AbaHHO7E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 10:59:04 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:40600 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752570AbaHHO7C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 10:59:02 -0400
-Date: Fri, 8 Aug 2014 10:58:58 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        bobby.prani@gmail.com, masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
- waiting for RCU-tasks
-Message-ID: <20140808105858.171da847@gandalf.local.home>
-In-Reply-To: <20140808143413.GB9918@twins.programming.kicks-ass.net>
-References: <20140807150031.GB5821@linux.vnet.ibm.com>
-	<20140807152600.GW9918@twins.programming.kicks-ass.net>
-	<20140807172753.GG3588@twins.programming.kicks-ass.net>
-	<20140807184635.GI3588@twins.programming.kicks-ass.net>
-	<20140807154907.6f59cf6e@gandalf.local.home>
-	<20140807155326.18481e66@gandalf.local.home>
-	<20140807200813.GB3935@laptop>
-	<20140807171823.1a481290@gandalf.local.home>
-	<20140808064020.GZ9918@twins.programming.kicks-ass.net>
-	<20140808101221.21056900@gandalf.local.home>
-	<20140808143413.GB9918@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1756833AbaHHPDp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 11:03:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23147 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753974AbaHHPDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 11:03:44 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org
+Subject: [patch] dm: propagate QUEUE_FLAG_NO_SG_MERGE
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 08 Aug 2014 11:03:41 -0400
+Message-ID: <x49iom3hvle.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Aug 2014 16:34:13 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+Hi,
 
-> On Fri, Aug 08, 2014 at 10:12:21AM -0400, Steven Rostedt wrote:
-> > > Ok, so they're purely used in the function prologue/epilogue callchain.
-> > 
-> > No, they are also used by optimized kprobes. This is why optimized
-> > kprobes depend on !CONFIG_PREEMPT. [ added Masami to the discussion ].
-> 
-> How do those work? Is that one where the INT3 relocates the instruction
-> stream into an alternative 'text' and that JMPs back into the original
-> stream at the end?
+Commit 05f1dd5 introduced a new queue flag: QUEUE_FLAG_NO_SG_MERGE.
+This gets set by default in blk_mq_init_queue for mq-enabled devices.
+The effect of the flag is to bypass the SG segment merging.  Instead,
+the bio->bi_vcnt is used as the number of hardware segments.
 
-No, it's where we replace the 'int3' with a jump to a trampoline that
-simulates an INT3. Speeds things up quite a bit.
+With a device mapper target on top of a device with
+QUEUE_FLAG_NO_SG_MERGE set, we can end up sending down more segments
+than a driver is prepared to handle.  I ran into this when backporting
+the virtio_blk mq support.  It triggerred this BUG_ON, in
+virtio_queue_rq:
 
-> 
-> And what is there to make sure the kprobe itself doesn't do 'funny'?
+        BUG_ON(req->nr_phys_segments + 2 > vblk->sg_elems);
 
-Well, kprobes, like function callbacks are just restricted like
-interrupt handlers are. If they break, they break. They should know
-better ;-)
+The queue's max is set here:
+        blk_queue_max_segments(q, vblk->sg_elems-2);
 
-> 
-> > Which reminds me. On !CONFIG_PREEMPT, call_rcu_task() should be
-> > equivalent to call_rcu_sched().
-> 
-> Sure, as long as you make absolutely sure none of that code ends up
-> calling cond_resched()/might_sleep() etc. Which I think you already said
-> was true, so no worries there.
+Basically, what happens is that a bio is built up for the dm device
+(which does not have the QUEUE_FLAG_NO_SG_MERGE flag set) using
+bio_add_page.  That path will call into __blk_recalc_rq_segments, so
+what you end up with is bi_phys_segments being much smaller than bi_vcnt
+(and bi_vcnt grows beyond the maximum sg elements).  Then, when the bio
+is submitted, it gets cloned.  When the cloned bio is submitted, it will
+end up in blk_recount_segments, here:
 
-Right. There's no guarantees that someone wont do such a stupid thing.
-But then, there's no guarantees that someone wont register an NMI
-callback with the same code too.
+        if (test_bit(QUEUE_FLAG_NO_SG_MERGE, &q->queue_flags))
+                bio->bi_phys_segments = bio->bi_vcnt;
 
-> 
-> > > And you don't want to use synchronize_tasks() because registering a trace
-> > > functions is atomic ?
-> > 
-> > No. Has nothing to do with registering the trace function. The issue is
-> > that we have no idea when a task happens to be on a trampoline after it
-> > is registered. For example:
-> > 
-> > ops adds a callback to sys_read:
-> > 
-> > sys_read() {
-> >  call trampoline ->
-> >     set up regs for function call.
-> >     <interrupt>
-> >       preempt_schedule();
-> > 
-> >       [ new task runs for long time ]
-> > 
-> > 
-> > While this new task is running, we remove the trampoline and want to
-> > free it. Say this new task keeps the other task from running for
-> > minutes! We call synchronize_sched() or any other rcu call, and all
-> > grace periods finish and we free the trampoline. The sys_read() no
-> > longer calls our trampoline. Doesn't matter, because that task is still
-> > on it. Now we schedule that task back. It's on a trampoline that has
-> > just been freed! BOOM. It's executing code that no longer exits.
-> 
-> Sure, I get that part. What I was getting as is _WHY_ you need
-> call_rcu_task(), why isn't synchronize_tasks() good enough?
+and now we've set bio->bi_phys_segments to a number that is beyond what
+was registered as queue_max_segments by the driver.
 
-Oh, because that synchronize_tasks() may take minutes. And that means
-we wont be able to return for a long time. The only thing I can really
-see using call_rcu_task() is something that needs to free its data. Why
-wait around when all you're going to do is call free? It's basically
-just a garbage collector.
+The right way to fix this is to propagate the queue flag up the stack.
+Attached is a patch that does this, tested and confirmed to fix the
+problem in my environment.
 
-> 
-> > > No need for extra allocations and fancy means of getting rid of them,
-> > > and only a few bytes extra wrt the existing function.
-> > 
-> > This doesn't address the issue we want to solve.
-> > 
-> > Say we have 1000 functions we want to trace with 1000 different
-> > callbacks. Each of theses functions has one call back. How do you solve
-> > that with your solution? Today, we do the list for every function. That
-> > is, for each of these 1000 functions, we run through 1000 ops looking
-> > for the ops that registered for this function. Not very efficient is it?
-> 
-> Ah, but you didn't say that, didn't you :-)
+The rules for propagating the flag are simple:
+- if the flag is set for any underlying device, it must be set for the
+  upper device
+- consequently, if the flag is not set for any underlying device, it
+  should not be set for the upper device.
 
-I just thought it was implied ;-)
+stable notes: this patch should be applied to 3.16.
 
-> 
-> > What we want to do today, is to create a dynamic trampoline for each of
-> > theses 1000 functions. Each function will call a separate trampoline
-> > that will only call the function that was registered to it. That way,
-> > we can have 1000 different ops registered to 1000 different functions
-> > and still have the same performance.
-> 
-> And how will you limit the amount of memory tied up in this? This looks
-> like a good way to tie up an immense amount of memory fast.
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
 
-Well, these operations are currently only allowed by root. Thus, it's
-the thing that root should be careful about. The trampolines are small,
-and it will take a hell of a lot of callbacks to cause issues.
-
-The thing I'm worried about is to make sure they get freed. Otherwise a
-leak will cause more issues than anything else. Which also means we
-need to have a way to expedite call_rcu_tasks() if need be.
-
--- Steve
+diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+index 5f59f1e..bf756d1 100644
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -1386,6 +1386,14 @@ static int device_is_not_random(struct dm_target *ti, struct dm_dev *dev,
+ 	return q && !blk_queue_add_random(q);
+ }
+ 
++static int queue_supports_sg_merge(struct dm_target *ti, struct dm_dev *dev,
++				   sector_t start, sector_t len, void *data)
++{
++	struct request_queue *q = bdev_get_queue(dev->bdev);
++
++	return q && !test_bit(QUEUE_FLAG_NO_SG_MERGE, &q->queue_flags);
++}
++
+ static bool dm_table_all_devices_attribute(struct dm_table *t,
+ 					   iterate_devices_callout_fn func)
+ {
+@@ -1464,6 +1472,9 @@ void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,
+ 	if (!dm_table_supports_write_same(t))
+ 		q->limits.max_write_same_sectors = 0;
+ 
++	if (!dm_table_all_devices_attribute(t, queue_supports_sg_merge))
++		queue_flag_set_unlocked(QUEUE_FLAG_NO_SG_MERGE, q);
++
+ 	dm_table_set_integrity(t);
+ 
+ 	/*
