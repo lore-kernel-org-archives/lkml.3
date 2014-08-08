@@ -1,184 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870AbaHHGBY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 02:01:24 -0400
-Received: from smtprelay04.ispgateway.de ([80.67.31.31]:40184 "EHLO
-	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755759AbaHHGBX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 02:01:23 -0400
-From: Christoph Jaeger <email@christophjaeger.info>
-To: shigekatsu.tateno@atmel.com, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Christoph Jaeger <email@christophjaeger.info>
-Subject: [PATCH 09/10 v2] staging: ozwpan: Use slab cache for oz_tx_frame allocation
-Date: Fri,  8 Aug 2014 08:01:09 +0200
-Message-Id: <1407477669-329-1-git-send-email-email@christophjaeger.info>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1407156896-3246-10-git-send-email-email@christophjaeger.info>
-References: <1407156896-3246-10-git-send-email-email@christophjaeger.info>
-X-Df-Sender: MTg4NDM4Mw==
+	id S1755517AbaHHGFH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 02:05:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62673 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752547AbaHHGFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 02:05:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,823,1400050800"; 
+   d="scan'208";a="581815413"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [Bugfix] x86, irq, PCI: Keep IRQ assignment for PCI devices during suspend/hibernation
+Date: Fri,  8 Aug 2014 14:07:51 +0800
+Message-Id: <1407478071-29399-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20140807113346.GA24225@gmail.com>
+References: <20140807113346.GA24225@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a slab cache rather than rolling our own free list.
+Now IOAPIC driver dynamically allocates IRQ numbers for IOAPIC pins.
+We need to keep IRQ assignment for PCI devices during suspend/hibernation,
+otherwise it may cause failure of suspend/hibernation due to:
+1) Device driver calls pci_enable_device() to allocate an IRQ number
+   and register interrupt handler on the returned IRQ.
+2) Device driver's suspend callback calls pci_disable_device() and
+   release assigned IRQ in turn.
+3) Device driver's resume callback calls pci_enable_device() to
+   allocate IRQ number again. A different IRQ number may be assigned
+   by IOAPIC driver this time.
+4) Now the hardware delivers interrupt to the new IRQ but interrupt
+   handler is still registered against the old IRQ, so it breaks
+   suspend/hibernation.
 
-Signed-off-by: Christoph Jaeger <email@christophjaeger.info>
+To fix this issue, we keep IRQ assignment during suspend/hibernation.
+Flag pci_dev.dev.power.is_prepared is used to detect that
+pci_disable_device() is called during suspend/hibernation.
+
+Reported-and-Tested-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
-v2: Don't use likely()/unlikely().
+Hi Ingo,
+	Could you please help to apply this patch onto 
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-apic-for-linus?
+	It fixes the suspend/hibernation failure reported by Borislav.
+Thanks!
+Gerry
+---
+ arch/x86/pci/intel_mid_pci.c |    2 +-
+ arch/x86/pci/irq.c           |    3 ++-
+ drivers/acpi/pci_irq.c       |    4 ++++
+ 3 files changed, 7 insertions(+), 2 deletions(-)
 
- drivers/staging/ozwpan/ozpd.c    | 41 ++++++----------------------------------
- drivers/staging/ozwpan/ozpd.h    |  3 +--
- drivers/staging/ozwpan/ozproto.c |  8 ++++++++
- drivers/staging/ozwpan/ozproto.h |  1 +
- 4 files changed, 16 insertions(+), 37 deletions(-)
-
-diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
-index c6fddb8..e849d8a 100644
---- a/drivers/staging/ozwpan/ozpd.c
-+++ b/drivers/staging/ozwpan/ozpd.c
-@@ -21,8 +21,6 @@
- #include <linux/uaccess.h>
- #include <net/psnap.h>
+diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
+index 09fece368592..3865116c51fb 100644
+--- a/arch/x86/pci/intel_mid_pci.c
++++ b/arch/x86/pci/intel_mid_pci.c
+@@ -229,7 +229,7 @@ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
  
--#define OZ_MAX_TX_POOL_SIZE	6
--
- static struct oz_tx_frame *oz_tx_frame_alloc(struct oz_pd *pd);
- static void oz_tx_frame_free(struct oz_pd *pd, struct oz_tx_frame *f);
- static void oz_tx_isoc_free(struct oz_pd *pd, struct oz_tx_frame *f);
-@@ -177,13 +175,6 @@ static void oz_pd_free(struct work_struct *work)
- 		e = e->next;
- 		kfree(fwell);
+ static void intel_mid_pci_irq_disable(struct pci_dev *dev)
+ {
+-	if (dev->irq > 0)
++	if (!dev->dev.power.is_prepared && dev->irq > 0)
+ 		mp_unmap_irq(dev->irq);
+ }
+ 
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index 748cfe8ab322..bc1a2c341891 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -1256,7 +1256,8 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 
+ static void pirq_disable_irq(struct pci_dev *dev)
+ {
+-	if (io_apic_assign_pci_irqs && dev->irq) {
++	if (io_apic_assign_pci_irqs && !dev->dev.power.is_prepared &&
++	    dev->irq) {
+ 		mp_unmap_irq(dev->irq);
+ 		dev->irq = 0;
  	}
--	/* Deallocate all frames in tx pool.
--	 */
--	while (pd->tx_pool) {
--		e = pd->tx_pool;
--		pd->tx_pool = e->next;
--		kfree(container_of(e, struct oz_tx_frame, link));
--	}
- 	if (pd->net_dev)
- 		dev_put(pd->net_dev);
- 	kfree(pd);
-@@ -333,17 +324,9 @@ int oz_pd_sleep(struct oz_pd *pd)
-  */
- static struct oz_tx_frame *oz_tx_frame_alloc(struct oz_pd *pd)
- {
--	struct oz_tx_frame *f = NULL;
-+	struct oz_tx_frame *f;
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index 6ba463ceccc6..c96887d5289e 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -481,6 +481,10 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
+ 	if (!pin)
+ 		return;
  
--	spin_lock_bh(&pd->tx_frame_lock);
--	if (pd->tx_pool) {
--		f = container_of(pd->tx_pool, struct oz_tx_frame, link);
--		pd->tx_pool = pd->tx_pool->next;
--		pd->tx_pool_count--;
--	}
--	spin_unlock_bh(&pd->tx_frame_lock);
--	if (f == NULL)
--		f = kmalloc(sizeof(struct oz_tx_frame), GFP_ATOMIC);
-+	f = kmem_cache_alloc(oz_tx_frame_cache, GFP_ATOMIC);
- 	if (f) {
- 		f->total_size = sizeof(struct oz_hdr);
- 		INIT_LIST_HEAD(&f->link);
-@@ -359,13 +342,9 @@ static void oz_tx_isoc_free(struct oz_pd *pd, struct oz_tx_frame *f)
- {
- 	pd->nb_queued_isoc_frames--;
- 	list_del_init(&f->link);
--	if (pd->tx_pool_count < OZ_MAX_TX_POOL_SIZE) {
--		f->link.next = pd->tx_pool;
--		pd->tx_pool = &f->link;
--		pd->tx_pool_count++;
--	} else {
--		kfree(f);
--	}
++	/* Keep IOAPIC pin configuration when suspending */
++	if (dev->dev.power.is_prepared)
++		return;
 +
-+	kmem_cache_free(oz_tx_frame_cache, f);
-+
- 	oz_dbg(TX_FRAMES, "Releasing ISOC Frame isoc_nb= %d\n",
- 	       pd->nb_queued_isoc_frames);
- }
-@@ -375,15 +354,7 @@ static void oz_tx_isoc_free(struct oz_pd *pd, struct oz_tx_frame *f)
-  */
- static void oz_tx_frame_free(struct oz_pd *pd, struct oz_tx_frame *f)
- {
--	spin_lock_bh(&pd->tx_frame_lock);
--	if (pd->tx_pool_count < OZ_MAX_TX_POOL_SIZE) {
--		f->link.next = pd->tx_pool;
--		pd->tx_pool = &f->link;
--		pd->tx_pool_count++;
--		f = NULL;
--	}
--	spin_unlock_bh(&pd->tx_frame_lock);
--	kfree(f);
-+	kmem_cache_free(oz_tx_frame_cache, f);
- }
- 
- /*
-diff --git a/drivers/staging/ozwpan/ozpd.h b/drivers/staging/ozwpan/ozpd.h
-index 43a26ea..212fab0 100644
---- a/drivers/staging/ozwpan/ozpd.h
-+++ b/drivers/staging/ozwpan/ozpd.h
-@@ -90,8 +90,6 @@ struct oz_pd {
- 	unsigned	max_stream_buffering;
- 	int		nb_queued_frames;
- 	int		nb_queued_isoc_frames;
--	struct list_head *tx_pool;
--	int		tx_pool_count;
- 	spinlock_t	tx_frame_lock;
- 	struct list_head *last_sent_frame;
- 	struct list_head tx_queue;
-@@ -131,5 +129,6 @@ void oz_apps_init(void);
- void oz_apps_term(void);
- 
- extern struct kmem_cache *oz_elt_info_cache;
-+extern struct kmem_cache *oz_tx_frame_cache;
- 
- #endif /* Sentry */
-diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
-index b592e96..db6ef99 100644
---- a/drivers/staging/ozwpan/ozproto.c
-+++ b/drivers/staging/ozwpan/ozproto.c
-@@ -53,6 +53,7 @@ static u16 g_apps = 0x1;
- static int g_processing_rx;
- 
- struct kmem_cache *oz_elt_info_cache;
-+struct kmem_cache *oz_tx_frame_cache;
- 
- /*
-  * Context: softirq-serialized
-@@ -483,6 +484,7 @@ void oz_protocol_term(void)
- 	spin_unlock_bh(&g_polling_lock);
- 	oz_dbg(ON, "Protocol stopped\n");
- 
-+	kmem_cache_destroy(oz_tx_frame_cache);
- 	kmem_cache_destroy(oz_elt_info_cache);
- }
- 
-@@ -771,6 +773,12 @@ int oz_protocol_init(char *devs)
- 	if (!oz_elt_info_cache)
- 		return -ENOMEM;
- 
-+	oz_tx_frame_cache = KMEM_CACHE(oz_tx_frame, 0);
-+	if (!oz_tx_frame_cache) {
-+		kmem_cache_destroy(oz_elt_info_cache);
-+		return -ENOMEM;
-+	}
-+
- 	skb_queue_head_init(&g_rx_queue);
- 	if (devs[0] == '*') {
- 		oz_binding_add(NULL);
-diff --git a/drivers/staging/ozwpan/ozproto.h b/drivers/staging/ozwpan/ozproto.h
-index b0f7459..73cc69b 100644
---- a/drivers/staging/ozwpan/ozproto.h
-+++ b/drivers/staging/ozwpan/ozproto.h
-@@ -66,5 +66,6 @@ int oz_get_pd_status_list(char *pd_list, int max_count);
- int oz_get_binding_list(char *buf, int max_if);
- 
- extern struct kmem_cache *oz_elt_info_cache;
-+extern struct kmem_cache *oz_tx_frame_cache;
- 
- #endif /* _OZPROTO_H */
+ 	entry = acpi_pci_irq_lookup(dev, pin);
+ 	if (!entry)
+ 		return;
 -- 
-1.9.1
+1.7.10.4
 
