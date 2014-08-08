@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933724AbaHHVhk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:37:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60704 "EHLO
+	id S933739AbaHHVhr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:37:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933521AbaHHVgy (ORCPT
+	with ESMTP id S933619AbaHHVhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:54 -0400
+	Fri, 8 Aug 2014 17:37:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yulong Pei <ypei@redhat.com>, Michal Schmidt <mschmidt@redhat.com>,
-        Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>,
+        Prashant Sreedharan <prashant@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 04/26] bnx2x: fix crash during TSO tunneling
-Date: Fri,  8 Aug 2014 14:35:11 -0700
-Message-Id: <20140808213413.833963397@linuxfoundation.org>
+Subject: [PATCH 3.16 11/17] tg3: Modify tg3_tso_bug() to handle multiple TX rings
+Date: Fri,  8 Aug 2014 14:35:33 -0700
+Message-Id: <20140808213457.977999010@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
-References: <20140808213413.648794968@linuxfoundation.org>
+In-Reply-To: <20140808213457.511493898@linuxfoundation.org>
+References: <20140808213457.511493898@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,89 +26,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
+From: Prashant Sreedharan <prashant@broadcom.com>
 
-[ Upstream commit fe26566d8a05151ba1dce75081f6270f73ec4ae1 ]
+[ Upstream commit 4d8fdc95c60e90d84c8257a0067ff4b1729a3757 ]
 
-When TSO packet is transmitted additional BD w/o mapping is used
-to describe the packed. The BD needs special handling in tx
-completion.
+tg3_tso_bug() was originally designed to handle only HW TX ring 0, Commit
+d3f6f3a1d818410c17445bce4f4caab52eb102f1 ("tg3: Prevent page allocation failure
+during TSO workaround") changed the driver logic to use tg3_tso_bug() for all
+HW TX rings that are enabled. This patch fixes the regression by modifying
+tg3_tso_bug() to handle multiple HW TX rings.
 
-kernel: Call Trace:
-kernel: <IRQ>  [<ffffffff815e19ba>] dump_stack+0x19/0x1b
-kernel: [<ffffffff8105dee1>] warn_slowpath_common+0x61/0x80
-kernel: [<ffffffff8105df5c>] warn_slowpath_fmt+0x5c/0x80
-kernel: [<ffffffff814a8c0d>] ? find_iova+0x4d/0x90
-kernel: [<ffffffff814ab0e2>] intel_unmap_page.part.36+0x142/0x160
-kernel: [<ffffffff814ad0e6>] intel_unmap_page+0x26/0x30
-kernel: [<ffffffffa01f55d7>] bnx2x_free_tx_pkt+0x157/0x2b0 [bnx2x]
-kernel: [<ffffffffa01f8dac>] bnx2x_tx_int+0xac/0x220 [bnx2x]
-kernel: [<ffffffff8101a0d9>] ? read_tsc+0x9/0x20
-kernel: [<ffffffffa01f8fdb>] bnx2x_poll+0xbb/0x3c0 [bnx2x]
-kernel: [<ffffffff814d041a>] net_rx_action+0x15a/0x250
-kernel: [<ffffffff81067047>] __do_softirq+0xf7/0x290
-kernel: [<ffffffff815f3a5c>] call_softirq+0x1c/0x30
-kernel: [<ffffffff81014d25>] do_softirq+0x55/0x90
-kernel: [<ffffffff810673e5>] irq_exit+0x115/0x120
-kernel: [<ffffffff815f4358>] do_IRQ+0x58/0xf0
-kernel: [<ffffffff815e94ad>] common_interrupt+0x6d/0x6d
-kernel: <EOI>  [<ffffffff810bbff7>] ? clockevents_notify+0x127/0x140
-kernel: [<ffffffff814834df>] ? cpuidle_enter_state+0x4f/0xc0
-kernel: [<ffffffff81483615>] cpuidle_idle_call+0xc5/0x200
-kernel: [<ffffffff8101bc7e>] arch_cpu_idle+0xe/0x30
-kernel: [<ffffffff810b4725>] cpu_startup_entry+0xf5/0x290
-kernel: [<ffffffff815cfee1>] start_secondary+0x265/0x27b
-kernel: ---[ end trace 11aa7726f18d7e80 ]---
-
-Fixes: a848ade408b ("bnx2x: add CSUM and TSO support for encapsulation protocols")
-Reported-by: Yulong Pei <ypei@redhat.com>
-Cc: Michal Schmidt <mschmidt@redhat.com>
-Signed-off-by: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
+Signed-off-by: Prashant Sreedharan <prashant@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x.h     |    1 +
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    9 +++++++++
- 2 files changed, 10 insertions(+)
+ drivers/net/ethernet/broadcom/tg3.c |   22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-@@ -346,6 +346,7 @@ struct sw_tx_bd {
- 	u8		flags;
- /* Set on the first BD descriptor when there is a split BD */
- #define BNX2X_TSO_SPLIT_BD		(1<<0)
-+#define BNX2X_HAS_SECOND_PBD		(1<<1)
- };
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -7830,17 +7830,18 @@ static int tigon3_dma_hwbug_workaround(s
  
- struct sw_rx_page {
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -227,6 +227,12 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
- 	--nbd;
- 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ static netdev_tx_t tg3_start_xmit(struct sk_buff *, struct net_device *);
  
-+	if (tx_buf->flags & BNX2X_HAS_SECOND_PBD) {
-+		/* Skip second parse bd... */
-+		--nbd;
-+		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
-+	}
-+
- 	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
- 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
- 		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
-@@ -3877,6 +3883,9 @@ netdev_tx_t bnx2x_start_xmit(struct sk_b
- 			/* set encapsulation flag in start BD */
- 			SET_FLAG(tx_start_bd->general_data,
- 				 ETH_TX_START_BD_TUNNEL_EXIST, 1);
-+
-+			tx_buf->flags |= BNX2X_HAS_SECOND_PBD;
-+
- 			nbd++;
- 		} else if (xmit_type & XMIT_CSUM) {
- 			/* Set PBD in checksum offload case w/o encapsulation */
+-/* Use GSO to workaround a rare TSO bug that may be triggered when the
+- * TSO header is greater than 80 bytes.
++/* Use GSO to workaround all TSO packets that meet HW bug conditions
++ * indicated in tg3_tx_frag_set()
+  */
+-static int tg3_tso_bug(struct tg3 *tp, struct sk_buff *skb)
++static int tg3_tso_bug(struct tg3 *tp, struct tg3_napi *tnapi,
++		       struct netdev_queue *txq, struct sk_buff *skb)
+ {
+ 	struct sk_buff *segs, *nskb;
+ 	u32 frag_cnt_est = skb_shinfo(skb)->gso_segs * 3;
+ 
+ 	/* Estimate the number of fragments in the worst case */
+-	if (unlikely(tg3_tx_avail(&tp->napi[0]) <= frag_cnt_est)) {
+-		netif_stop_queue(tp->dev);
++	if (unlikely(tg3_tx_avail(tnapi) <= frag_cnt_est)) {
++		netif_tx_stop_queue(txq);
+ 
+ 		/* netif_tx_stop_queue() must be done before checking
+ 		 * checking tx index in tg3_tx_avail() below, because in
+@@ -7848,13 +7849,14 @@ static int tg3_tso_bug(struct tg3 *tp, s
+ 		 * netif_tx_queue_stopped().
+ 		 */
+ 		smp_mb();
+-		if (tg3_tx_avail(&tp->napi[0]) <= frag_cnt_est)
++		if (tg3_tx_avail(tnapi) <= frag_cnt_est)
+ 			return NETDEV_TX_BUSY;
+ 
+-		netif_wake_queue(tp->dev);
++		netif_tx_wake_queue(txq);
+ 	}
+ 
+-	segs = skb_gso_segment(skb, tp->dev->features & ~(NETIF_F_TSO | NETIF_F_TSO6));
++	segs = skb_gso_segment(skb, tp->dev->features &
++				    ~(NETIF_F_TSO | NETIF_F_TSO6));
+ 	if (IS_ERR(segs) || !segs)
+ 		goto tg3_tso_bug_end;
+ 
+@@ -7930,7 +7932,7 @@ static netdev_tx_t tg3_start_xmit(struct
+ 		if (!skb_is_gso_v6(skb)) {
+ 			if (unlikely((ETH_HLEN + hdr_len) > 80) &&
+ 			    tg3_flag(tp, TSO_BUG))
+-				return tg3_tso_bug(tp, skb);
++				return tg3_tso_bug(tp, tnapi, txq, skb);
+ 
+ 			ip_csum = iph->check;
+ 			ip_tot_len = iph->tot_len;
+@@ -8061,7 +8063,7 @@ static netdev_tx_t tg3_start_xmit(struct
+ 				iph->tot_len = ip_tot_len;
+ 			}
+ 			tcph->check = tcp_csum;
+-			return tg3_tso_bug(tp, skb);
++			return tg3_tso_bug(tp, tnapi, txq, skb);
+ 		}
+ 
+ 		/* If the workaround fails due to memory/mapping
 
 
