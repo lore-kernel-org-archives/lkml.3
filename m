@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434AbaHHUvK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:51:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40909 "EHLO
+	id S932922AbaHHVVU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:21:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40944 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932343AbaHHUu4 (ORCPT
+	with ESMTP id S932413AbaHHUvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:50:56 -0400
+	Fri, 8 Aug 2014 16:51:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 076/259] ACPI / EC: Avoid race condition related to advance_transaction()
-Date: Fri,  8 Aug 2014 13:38:19 -0700
-Message-Id: <1407530482-4483-77-git-send-email-kamal@canonical.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 066/259] ext4: fix unjournalled bg descriptor while initializing inode bitmap
+Date: Fri,  8 Aug 2014 13:38:09 -0700
+Message-Id: <1407530482-4483-67-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,94 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 66b42b78bc1e816f92b662e8888c89195e4199e1 upstream.
+commit 61c219f5814277ecb71d64cb30297028d6665979 upstream.
 
-The advance_transaction() will be invoked from the IRQ context GPE handler
-and the task context ec_poll(). The handling of this function is locked so
-that the EC state machine are ensured to be advanced sequentially.
+The first time that we allocate from an uninitialized inode allocation
+bitmap, if the block allocation bitmap is also uninitalized, we need
+to get write access to the block group descriptor before we start
+modifying the block group descriptor flags and updating the free block
+count, etc.  Otherwise, there is the potential of a bad journal
+checksum (if journal checksums are enabled), and of the file system
+becoming inconsistent if we crash at exactly the wrong time.
 
-But there is a problem. Before invoking advance_transaction(), EC_SC(R) is
-read. Then for advance_transaction(), there could be race condition around
-the lock from both contexts. The first one reading the register could fail
-this race and when it passes the stale register value to the state machine
-advancement code, the hardware condition is totally different from when
-the register is read. And the hardware accesses determined from the wrong
-hardware status can break the EC state machine. And there could be cases
-that the functionalities of the platform firmware are seriously affected.
-For example:
- 1. When 2 EC_DATA(W) writes compete the IBF=0, the 2nd EC_DATA(W) write may
-    be invalid due to IBF=1 after the 1st EC_DATA(W) write. Then the
-    hardware will either refuse to respond a next EC_SC(W) write of the next
-    command or discard the current WR_EC command when it receives a EC_SC(W)
-    write of the next command.
- 2. When 1 EC_SC(W) write and 1 EC_DATA(W) write compete the IBF=0, the
-    EC_DATA(W) write may be invalid due to IBF=1 after the EC_SC(W) write.
-    The next EC_DATA(R) could never be responded by the hardware. This is
-    the root cause of the reported issue.
-
-Fix this issue by moving the EC_SC(R) access into the lock so that we can
-ensure that the state machine is advanced consistently.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
-Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
-Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
-Reported-by: Barton Xu <tank.xuhan@gmail.com>
-Tested-by: Steffen Weber <steffen.weber@gmail.com>
-Tested-by: Arthur Chen <axchen@nvidia.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/ec.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ fs/ext4/ialloc.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 98e9985..a2de920 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -173,12 +173,15 @@ static void start_transaction(struct acpi_ec *ec)
- 	acpi_ec_write_cmd(ec, ec->curr->command);
- }
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 0ee59a6..64bb32f1 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -851,6 +851,13 @@ got:
+ 		goto out;
+ 	}
  
--static void advance_transaction(struct acpi_ec *ec, u8 status)
-+static void advance_transaction(struct acpi_ec *ec)
- {
- 	unsigned long flags;
- 	struct transaction *t;
-+	u8 status;
++	BUFFER_TRACE(group_desc_bh, "get_write_access");
++	err = ext4_journal_get_write_access(handle, group_desc_bh);
++	if (err) {
++		ext4_std_error(sb, err);
++		goto out;
++	}
++
+ 	/* We may have to initialize the block bitmap if it isn't already */
+ 	if (ext4_has_group_desc_csum(sb) &&
+ 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
+@@ -887,13 +894,6 @@ got:
+ 		}
+ 	}
  
- 	spin_lock_irqsave(&ec->lock, flags);
-+	pr_debug("===== %s =====\n", in_interrupt() ? "IRQ" : "TASK");
-+	status = acpi_ec_read_status(ec);
- 	t = ec->curr;
- 	if (!t)
- 		goto unlock;
-@@ -241,7 +244,7 @@ static int ec_poll(struct acpi_ec *ec)
- 						msecs_to_jiffies(1)))
- 					return 0;
- 			}
--			advance_transaction(ec, acpi_ec_read_status(ec));
-+			advance_transaction(ec);
- 		} while (time_before(jiffies, delay));
- 		pr_debug("controller reset, restart transaction\n");
- 		spin_lock_irqsave(&ec->lock, flags);
-@@ -661,11 +664,8 @@ static u32 acpi_ec_gpe_handler(acpi_handle gpe_device,
- 	u32 gpe_number, void *data)
- {
- 	struct acpi_ec *ec = data;
--	u8 status = acpi_ec_read_status(ec);
+-	BUFFER_TRACE(group_desc_bh, "get_write_access");
+-	err = ext4_journal_get_write_access(handle, group_desc_bh);
+-	if (err) {
+-		ext4_std_error(sb, err);
+-		goto out;
+-	}
 -
--	pr_debug("~~~> interrupt, status:0x%02x\n", status);
- 
--	advance_transaction(ec, status);
-+	advance_transaction(ec);
- 	if (ec_transaction_done(ec) &&
- 	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
- 		wake_up(&ec->wait);
+ 	/* Update the relevant bg descriptor fields */
+ 	if (ext4_has_group_desc_csum(sb)) {
+ 		int free;
 -- 
 1.9.1
 
