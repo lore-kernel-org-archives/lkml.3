@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758442AbaHHUua (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:50:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40819 "EHLO
+	id S933373AbaHHVZf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:25:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40843 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758418AbaHHUuX (ORCPT
+	with ESMTP id S1758418AbaHHUub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:50:23 -0400
+	Fri, 8 Aug 2014 16:50:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Li RongQing <roy.qing.li@gmail.com>,
+Cc: Tyler Hall <tylerwhall@gmail.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Andre Naujoks <nautsch2@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 240/259] vlan: free percpu stats in device destructor
-Date: Fri,  8 Aug 2014 13:41:03 -0700
-Message-Id: <1407530482-4483-241-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 230/259] slip: Fix deadlock in write_wakeup
+Date: Fri,  8 Aug 2014 13:40:53 -0700
+Message-Id: <1407530482-4483-231-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,100 +30,206 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Tyler Hall <tylerwhall@gmail.com>
 
-[ Upstream commit a48e5fafecfb9c0c807d7e7284b5ff884dfb7a3a ]
+[ Upstream commit 661f7fda21b15ec52f57fcd397c03370acc28688 ]
 
-Madalin-Cristian reported crashs happening after a recent commit
-(5a4ae5f6e7d4 "vlan: unnecessary to check if vlan_pcpu_stats is NULL")
+Use schedule_work() to avoid potentially taking the spinlock in
+interrupt context.
 
------------------------------------------------------------------------
-root@p5040ds:~# vconfig add eth8 1
-root@p5040ds:~# vconfig rem eth8.1
-Unable to handle kernel paging request for data at address 0x2bc88028
-Faulting instruction address: 0xc058e950
-Oops: Kernel access of bad area, sig: 11 [#1]
-SMP NR_CPUS=8 CoreNet Generic
-Modules linked in:
-CPU: 3 PID: 2167 Comm: vconfig Tainted: G        W     3.16.0-rc3-00346-g65e85bf #2
-task: e7264d90 ti: e2c2c000 task.ti: e2c2c000
-NIP: c058e950 LR: c058ea30 CTR: c058e900
-REGS: e2c2db20 TRAP: 0300   Tainted: G        W      (3.16.0-rc3-00346-g65e85bf)
-MSR: 00029002 <CE,EE,ME>  CR: 48000428  XER: 20000000
-DEAR: 2bc88028 ESR: 00000000
-GPR00: c047299c e2c2dbd0 e7264d90 00000000 2bc88000 00000000 ffffffff 00000000
-GPR08: 0000000f 00000000 000000ff 00000000 28000422 10121928 10100000 10100000
-GPR16: 10100000 00000000 c07c5968 00000000 00000000 00000000 e2c2dc48 e7838000
-GPR24: c07c5bac c07c58a8 e77290cc c07b0000 00000000 c05de6c0 e7838000 e2c2dc48
-NIP [c058e950] vlan_dev_get_stats64+0x50/0x170
-LR [c058ea30] vlan_dev_get_stats64+0x130/0x170
-Call Trace:
-[e2c2dbd0] [ffffffea] 0xffffffea (unreliable)
-[e2c2dc20] [c047299c] dev_get_stats+0x4c/0x140
-[e2c2dc40] [c0488ca8] rtnl_fill_ifinfo+0x3d8/0x960
-[e2c2dd70] [c0489f4c] rtmsg_ifinfo+0x6c/0x110
-[e2c2dd90] [c04731d4] rollback_registered_many+0x344/0x3b0
-[e2c2ddd0] [c047332c] rollback_registered+0x2c/0x50
-[e2c2ddf0] [c0476058] unregister_netdevice_queue+0x78/0xf0
-[e2c2de00] [c058d800] unregister_vlan_dev+0xc0/0x160
-[e2c2de20] [c058e360] vlan_ioctl_handler+0x1c0/0x550
-[e2c2de90] [c045d11c] sock_ioctl+0x28c/0x2f0
-[e2c2deb0] [c010d070] do_vfs_ioctl+0x90/0x7b0
-[e2c2df20] [c010d7d0] SyS_ioctl+0x40/0x80
-[e2c2df40] [c000f924] ret_from_syscall+0x0/0x3c
+Commit cc9fa74e2a ("slip/slcan: added locking in wakeup function") added
+necessary locking to the wakeup function and 367525c8c2/ddcde142be ("can:
+slcan: Fix spinlock variant") converted it to spin_lock_bh() because the lock
+is also taken in timers.
 
-Fix this problem by freeing percpu stats from dev->destructor() instead
-of ndo_uninit()
+Disabling softirqs is not sufficient, however, as tty drivers may call
+write_wakeup from interrupt context. This driver calls tty->ops->write() with
+its spinlock held, which may immediately cause an interrupt on the same CPU and
+subsequent spin_bug().
 
-Reported-by: Madalin-Cristian Bucur <madalin.bucur@freescale.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Madalin-Cristian Bucur <madalin.bucur@freescale.com>
-Fixes: 5a4ae5f6e7d4 ("vlan: unnecessary to check if vlan_pcpu_stats is NULL")
-Cc: Li RongQing <roy.qing.li@gmail.com>
+Simply converting to spin_lock_irq/irqsave() prevents this deadlock, but
+causes lockdep to point out a possible circular locking dependency
+between these locks:
+
+(&(&sl->lock)->rlock){-.....}, at: slip_write_wakeup
+(&port_lock_key){-.....}, at: serial8250_handle_irq.part.13
+
+The slip transmit is holding the slip spinlock when calling the tty write.
+This grabs the port lock. On an interrupt, the handler grabs the port
+lock and calls write_wakeup which grabs the slip lock. This could be a
+problem if a serial interrupt occurs on another CPU during the slip
+transmit.
+
+To deal with these issues, don't grab the lock in the wakeup function by
+deferring the writeout to a workqueue. Also hold the lock during close
+when de-assigning the tty pointer to safely disarm the worker and
+timers.
+
+This bug is easily reproducible on the first transmit when slip is
+used with the standard 8250 serial driver.
+
+[<c0410b7c>] (spin_bug+0x0/0x38) from [<c006109c>] (do_raw_spin_lock+0x60/0x1d0)
+ r5:eab27000 r4:ec02754c
+[<c006103c>] (do_raw_spin_lock+0x0/0x1d0) from [<c04185c0>] (_raw_spin_lock+0x28/0x2c)
+ r10:0000001f r9:eabb814c r8:eabb8140 r7:40070193 r6:ec02754c r5:eab27000
+ r4:ec02754c r3:00000000
+[<c0418598>] (_raw_spin_lock+0x0/0x2c) from [<bf3a0220>] (slip_write_wakeup+0x50/0xe0 [slip])
+ r4:ec027540 r3:00000003
+[<bf3a01d0>] (slip_write_wakeup+0x0/0xe0 [slip]) from [<c026e420>] (tty_wakeup+0x48/0x68)
+ r6:00000000 r5:ea80c480 r4:eab27000 r3:bf3a01d0
+[<c026e3d8>] (tty_wakeup+0x0/0x68) from [<c028a8ec>] (uart_write_wakeup+0x2c/0x30)
+ r5:ed68ea90 r4:c06790d8
+[<c028a8c0>] (uart_write_wakeup+0x0/0x30) from [<c028dc44>] (serial8250_tx_chars+0x114/0x170)
+[<c028db30>] (serial8250_tx_chars+0x0/0x170) from [<c028dffc>] (serial8250_handle_irq+0xa0/0xbc)
+ r6:000000c2 r5:00000060 r4:c06790d8 r3:00000000
+[<c028df5c>] (serial8250_handle_irq+0x0/0xbc) from [<c02933a4>] (dw8250_handle_irq+0x38/0x64)
+ r7:00000000 r6:edd2f390 r5:000000c2 r4:c06790d8
+[<c029336c>] (dw8250_handle_irq+0x0/0x64) from [<c028d2f4>] (serial8250_interrupt+0x44/0xc4)
+ r6:00000000 r5:00000000 r4:c06791c4 r3:c029336c
+[<c028d2b0>] (serial8250_interrupt+0x0/0xc4) from [<c0067fe4>] (handle_irq_event_percpu+0xb4/0x2b0)
+ r10:c06790d8 r9:eab27000 r8:00000000 r7:00000000 r6:0000001f r5:edd52980
+ r4:ec53b6c0 r3:c028d2b0
+[<c0067f30>] (handle_irq_event_percpu+0x0/0x2b0) from [<c006822c>] (handle_irq_event+0x4c/0x6c)
+ r10:c06790d8 r9:eab27000 r8:c0673ae0 r7:c05c2020 r6:ec53b6c0 r5:edd529d4
+ r4:edd52980
+[<c00681e0>] (handle_irq_event+0x0/0x6c) from [<c006b140>] (handle_level_irq+0xe8/0x100)
+ r6:00000000 r5:edd529d4 r4:edd52980 r3:00022000
+[<c006b058>] (handle_level_irq+0x0/0x100) from [<c00676f8>] (generic_handle_irq+0x30/0x40)
+ r5:0000001f r4:0000001f
+[<c00676c8>] (generic_handle_irq+0x0/0x40) from [<c000f57c>] (handle_IRQ+0xd0/0x13c)
+ r4:ea997b18 r3:000000e0
+[<c000f4ac>] (handle_IRQ+0x0/0x13c) from [<c00086c4>] (armada_370_xp_handle_irq+0x4c/0x118)
+ r8:000003ff r7:ea997b18 r6:ffffffff r5:60070013 r4:c0674dc0
+[<c0008678>] (armada_370_xp_handle_irq+0x0/0x118) from [<c0013840>] (__irq_svc+0x40/0x70)
+Exception stack(0xea997b18 to 0xea997b60)
+7b00:                                                       00000001 20070013
+7b20: 00000000 0000000b 20070013 eab27000 20070013 00000000 ed10103e eab27000
+7b40: c06790d8 ea997b74 ea997b60 ea997b60 c04186c0 c04186c8 60070013 ffffffff
+ r9:eab27000 r8:ed10103e r7:ea997b4c r6:ffffffff r5:60070013 r4:c04186c8
+[<c04186a4>] (_raw_spin_unlock_irqrestore+0x0/0x54) from [<c0288fc0>] (uart_start+0x40/0x44)
+ r4:c06790d8 r3:c028ddd8
+[<c0288f80>] (uart_start+0x0/0x44) from [<c028982c>] (uart_write+0xe4/0xf4)
+ r6:0000003e r5:00000000 r4:ed68ea90 r3:0000003e
+[<c0289748>] (uart_write+0x0/0xf4) from [<bf3a0d20>] (sl_xmit+0x1c4/0x228 [slip])
+ r10:ed388e60 r9:0000003c r8:ffffffdd r7:0000003e r6:ec02754c r5:ea717eb8
+ r4:ec027000
+[<bf3a0b5c>] (sl_xmit+0x0/0x228 [slip]) from [<c0368d74>] (dev_hard_start_xmit+0x39c/0x6d0)
+ r8:eaf163c0 r7:ec027000 r6:ea717eb8 r5:00000000 r4:00000000
+
+Signed-off-by: Tyler Hall <tylerwhall@gmail.com>
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Andre Naujoks <nautsch2@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/8021q/vlan_dev.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/net/slip/slip.c | 36 ++++++++++++++++++++++++++----------
+ drivers/net/slip/slip.h |  1 +
+ 2 files changed, 27 insertions(+), 10 deletions(-)
 
-diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
-index 731ede4..df13d18 100644
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -632,8 +632,6 @@ static void vlan_dev_uninit(struct net_device *dev)
- 	struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
- 	int i;
+diff --git a/drivers/net/slip/slip.c b/drivers/net/slip/slip.c
+index ad4a94e..8752644 100644
+--- a/drivers/net/slip/slip.c
++++ b/drivers/net/slip/slip.c
+@@ -83,6 +83,7 @@
+ #include <linux/delay.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
++#include <linux/workqueue.h>
+ #include "slip.h"
+ #ifdef CONFIG_INET
+ #include <linux/ip.h>
+@@ -416,36 +417,46 @@ static void sl_encaps(struct slip *sl, unsigned char *icp, int len)
+ #endif
+ }
  
--	free_percpu(vlan->vlan_pcpu_stats);
--	vlan->vlan_pcpu_stats = NULL;
- 	for (i = 0; i < ARRAY_SIZE(vlan->egress_priority_map); i++) {
- 		while ((pm = vlan->egress_priority_map[i]) != NULL) {
- 			vlan->egress_priority_map[i] = pm->next;
-@@ -793,6 +791,15 @@ static const struct net_device_ops vlan_netdev_ops = {
- 	.ndo_get_lock_subclass  = vlan_dev_get_lock_subclass,
- };
+-/*
+- * Called by the driver when there's room for more data.  If we have
+- * more packets to send, we send them here.
+- */
+-static void slip_write_wakeup(struct tty_struct *tty)
++/* Write out any remaining transmit buffer. Scheduled when tty is writable */
++static void slip_transmit(struct work_struct *work)
+ {
++	struct slip *sl = container_of(work, struct slip, tx_work);
+ 	int actual;
+-	struct slip *sl = tty->disc_data;
  
-+static void vlan_dev_free(struct net_device *dev)
++	spin_lock_bh(&sl->lock);
+ 	/* First make sure we're connected. */
+-	if (!sl || sl->magic != SLIP_MAGIC || !netif_running(sl->dev))
++	if (!sl->tty || sl->magic != SLIP_MAGIC || !netif_running(sl->dev)) {
++		spin_unlock_bh(&sl->lock);
+ 		return;
++	}
+ 
+-	spin_lock_bh(&sl->lock);
+ 	if (sl->xleft <= 0)  {
+ 		/* Now serial buffer is almost free & we can start
+ 		 * transmission of another packet */
+ 		sl->dev->stats.tx_packets++;
+-		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
++		clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
+ 		spin_unlock_bh(&sl->lock);
+ 		sl_unlock(sl);
+ 		return;
+ 	}
+ 
+-	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
++	actual = sl->tty->ops->write(sl->tty, sl->xhead, sl->xleft);
+ 	sl->xleft -= actual;
+ 	sl->xhead += actual;
+ 	spin_unlock_bh(&sl->lock);
+ }
+ 
++/*
++ * Called by the driver when there's room for more data.
++ * Schedule the transmit.
++ */
++static void slip_write_wakeup(struct tty_struct *tty)
 +{
-+	struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
++	struct slip *sl = tty->disc_data;
 +
-+	free_percpu(vlan->vlan_pcpu_stats);
-+	vlan->vlan_pcpu_stats = NULL;
-+	free_netdev(dev);
++	schedule_work(&sl->tx_work);
 +}
 +
- void vlan_setup(struct net_device *dev)
+ static void sl_tx_timeout(struct net_device *dev)
  {
- 	ether_setup(dev);
-@@ -802,7 +809,7 @@ void vlan_setup(struct net_device *dev)
- 	dev->tx_queue_len	= 0;
+ 	struct slip *sl = netdev_priv(dev);
+@@ -749,6 +760,7 @@ static struct slip *sl_alloc(dev_t line)
+ 	sl->magic       = SLIP_MAGIC;
+ 	sl->dev	      	= dev;
+ 	spin_lock_init(&sl->lock);
++	INIT_WORK(&sl->tx_work, slip_transmit);
+ 	sl->mode        = SL_MODE_DEFAULT;
+ #ifdef CONFIG_SLIP_SMART
+ 	/* initialize timer_list struct */
+@@ -872,8 +884,12 @@ static void slip_close(struct tty_struct *tty)
+ 	if (!sl || sl->magic != SLIP_MAGIC || sl->tty != tty)
+ 		return;
  
- 	dev->netdev_ops		= &vlan_netdev_ops;
--	dev->destructor		= free_netdev;
-+	dev->destructor		= vlan_dev_free;
- 	dev->ethtool_ops	= &vlan_ethtool_ops;
++	spin_lock_bh(&sl->lock);
+ 	tty->disc_data = NULL;
+ 	sl->tty = NULL;
++	spin_unlock_bh(&sl->lock);
++
++	flush_work(&sl->tx_work);
  
- 	memset(dev->broadcast, 0, ETH_ALEN);
+ 	/* VSV = very important to remove timers */
+ #ifdef CONFIG_SLIP_SMART
+diff --git a/drivers/net/slip/slip.h b/drivers/net/slip/slip.h
+index 67673cf..cf32aad 100644
+--- a/drivers/net/slip/slip.h
++++ b/drivers/net/slip/slip.h
+@@ -53,6 +53,7 @@ struct slip {
+   struct tty_struct	*tty;		/* ptr to TTY structure		*/
+   struct net_device	*dev;		/* easy for intr handling	*/
+   spinlock_t		lock;
++  struct work_struct	tx_work;	/* Flushes transmit buffer	*/
+ 
+ #ifdef SL_INCLUDE_CSLIP
+   struct slcompress	*slcomp;	/* for header compression 	*/
 -- 
 1.9.1
 
