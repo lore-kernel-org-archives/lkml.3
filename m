@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283AbaHHUut (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:50:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40858 "EHLO
+	id S1757586AbaHHUvF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:51:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40900 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043AbaHHUug (ORCPT
+	with ESMTP id S932139AbaHHUuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:50:36 -0400
+	Fri, 8 Aug 2014 16:50:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 080/259] ACPI / battery: Retry to get battery information if failed during probing
-Date: Fri,  8 Aug 2014 13:38:23 -0700
-Message-Id: <1407530482-4483-81-git-send-email-kamal@canonical.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 082/259] workqueue: zero cpumask of wq_numa_possible_cpumask on init
+Date: Fri,  8 Aug 2014 13:38:25 -0700
+Message-Id: <1407530482-4483-83-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,80 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-commit 75646e758a0ecbed5024454507d5be5b9ea9dcbf upstream.
+commit 5a6024f1604eef119cf3a6fa413fe0261a81a8f3 upstream.
 
-Some machines (eg. Lenovo Z480) ECs are not stable during boot up
-and causes battery driver fails to be loaded due to failure of getting
-battery information from EC sometimes. After several retries, the
-operation will work. This patch is to retry to get battery information 5
-times if the first try fails.
+When hot-adding and onlining CPU, kernel panic occurs, showing following
+call trace.
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=75581
-Reported-and-tested-by: naszar <naszar@ya.ru>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[ kamal: backport to 3.13-stable: acpi_battery_update takes 1 arg ]
+  BUG: unable to handle kernel paging request at 0000000000001d08
+  IP: [<ffffffff8114acfd>] __alloc_pages_nodemask+0x9d/0xb10
+  PGD 0
+  Oops: 0000 [#1] SMP
+  ...
+  Call Trace:
+   [<ffffffff812b8745>] ? cpumask_next_and+0x35/0x50
+   [<ffffffff810a3283>] ? find_busiest_group+0x113/0x8f0
+   [<ffffffff81193bc9>] ? deactivate_slab+0x349/0x3c0
+   [<ffffffff811926f1>] new_slab+0x91/0x300
+   [<ffffffff815de95a>] __slab_alloc+0x2bb/0x482
+   [<ffffffff8105bc1c>] ? copy_process.part.25+0xfc/0x14c0
+   [<ffffffff810a3c78>] ? load_balance+0x218/0x890
+   [<ffffffff8101a679>] ? sched_clock+0x9/0x10
+   [<ffffffff81105ba9>] ? trace_clock_local+0x9/0x10
+   [<ffffffff81193d1c>] kmem_cache_alloc_node+0x8c/0x200
+   [<ffffffff8105bc1c>] copy_process.part.25+0xfc/0x14c0
+   [<ffffffff81114d0d>] ? trace_buffer_unlock_commit+0x4d/0x60
+   [<ffffffff81085a80>] ? kthread_create_on_node+0x140/0x140
+   [<ffffffff8105d0ec>] do_fork+0xbc/0x360
+   [<ffffffff8105d3b6>] kernel_thread+0x26/0x30
+   [<ffffffff81086652>] kthreadd+0x2c2/0x300
+   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
+   [<ffffffff815f20ec>] ret_from_fork+0x7c/0xb0
+   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
+
+In my investigation, I found the root cause is wq_numa_possible_cpumask.
+All entries of wq_numa_possible_cpumask is allocated by
+alloc_cpumask_var_node(). And these entries are used without initializing.
+So these entries have wrong value.
+
+When hot-adding and onlining CPU, wq_update_unbound_numa() is called.
+wq_update_unbound_numa() calls alloc_unbound_pwq(). And alloc_unbound_pwq()
+calls get_unbound_pool(). In get_unbound_pool(), worker_pool->node is set
+as follow:
+
+3592         /* if cpumask is contained inside a NUMA node, we belong to that node */
+3593         if (wq_numa_enabled) {
+3594                 for_each_node(node) {
+3595                         if (cpumask_subset(pool->attrs->cpumask,
+3596                                            wq_numa_possible_cpumask[node])) {
+3597                                 pool->node = node;
+3598                                 break;
+3599                         }
+3600                 }
+3601         }
+
+But wq_numa_possible_cpumask[node] does not have correct cpumask. So, wrong
+node is selected. As a result, kernel panic occurs.
+
+By this patch, all entries of wq_numa_possible_cpumask are allocated by
+zalloc_cpumask_var_node to initialize them. And the panic disappeared.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: bce903809ab3 ("workqueue: add wq_numa_tbl_len and wq_numa_possible_cpumask[]")
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/battery.c | 27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
+ kernel/workqueue.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index 17dc8a9..2928e95 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -34,6 +34,7 @@
- #include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/suspend.h>
-+#include <linux/delay.h>
- #include <asm/unaligned.h>
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 61212c9..92cac4b 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -5025,7 +5025,7 @@ static void __init wq_numa_init(void)
+ 	BUG_ON(!tbl);
  
- #ifdef CONFIG_ACPI_PROCFS_POWER
-@@ -1071,6 +1072,28 @@ static struct dmi_system_id bat_dmi_table[] = {
- 	{},
- };
+ 	for_each_node(node)
+-		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
++		BUG_ON(!zalloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
+ 				node_online(node) ? node : NUMA_NO_NODE));
  
-+/*
-+ * Some machines'(E,G Lenovo Z480) ECs are not stable
-+ * during boot up and this causes battery driver fails to be
-+ * probed due to failure of getting battery information
-+ * from EC sometimes. After several retries, the operation
-+ * may work. So add retry code here and 20ms sleep between
-+ * every retries.
-+ */
-+static int acpi_battery_update_retry(struct acpi_battery *battery)
-+{
-+	int retry, ret;
-+
-+	for (retry = 5; retry; retry--) {
-+		ret = acpi_battery_update(battery);
-+		if (!ret)
-+			break;
-+
-+		msleep(20);
-+	}
-+	return ret;
-+}
-+
- static int acpi_battery_add(struct acpi_device *device)
- {
- 	int result = 0;
-@@ -1089,9 +1112,11 @@ static int acpi_battery_add(struct acpi_device *device)
- 	mutex_init(&battery->sysfs_lock);
- 	if (acpi_has_method(battery->device->handle, "_BIX"))
- 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
--	result = acpi_battery_update(battery);
-+
-+	result = acpi_battery_update_retry(battery);
- 	if (result)
- 		goto fail;
-+
- #ifdef CONFIG_ACPI_PROCFS_POWER
- 	result = acpi_battery_add_fs(device);
- #endif
+ 	for_each_possible_cpu(cpu) {
 -- 
 1.9.1
 
