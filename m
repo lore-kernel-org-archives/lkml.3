@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933739AbaHHVhr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:37:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60785 "EHLO
+	id S964782AbaHHVhh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:37:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60695 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933619AbaHHVhG (ORCPT
+	with ESMTP id S933206AbaHHVgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:37:06 -0400
+	Fri, 8 Aug 2014 17:36:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Prashant Sreedharan <prashant@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
+        Sergey Popov <pinkbyte@gentoo.org>, Dmitry Popov <ixaphire@qrator.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 11/17] tg3: Modify tg3_tso_bug() to handle multiple TX rings
-Date: Fri,  8 Aug 2014 14:35:33 -0700
-Message-Id: <20140808213457.977999010@linuxfoundation.org>
+Subject: [PATCH 3.15 07/26] ip_tunnel(ipv4): fix tunnels with "local any remote $remote_ip"
+Date: Fri,  8 Aug 2014 14:35:14 -0700
+Message-Id: <20140808213413.965887227@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140808213457.511493898@linuxfoundation.org>
-References: <20140808213457.511493898@linuxfoundation.org>
+In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
+References: <20140808213413.648794968@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,89 +25,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Prashant Sreedharan <prashant@broadcom.com>
+From: Dmitry Popov <ixaphire@qrator.net>
 
-[ Upstream commit 4d8fdc95c60e90d84c8257a0067ff4b1729a3757 ]
+[ Upstream commit 95cb5745983c222867cc9ac593aebb2ad67d72c0 ]
 
-tg3_tso_bug() was originally designed to handle only HW TX ring 0, Commit
-d3f6f3a1d818410c17445bce4f4caab52eb102f1 ("tg3: Prevent page allocation failure
-during TSO workaround") changed the driver logic to use tg3_tso_bug() for all
-HW TX rings that are enabled. This patch fixes the regression by modifying
-tg3_tso_bug() to handle multiple HW TX rings.
+Ipv4 tunnels created with "local any remote $ip" didn't work properly since
+7d442fab0 (ipv4: Cache dst in tunnels). 99% of packets sent via those tunnels
+had src addr = 0.0.0.0. That was because only dst_entry was cached, although
+fl4.saddr has to be cached too. Every time ip_tunnel_xmit used cached dst_entry
+(tunnel_rtable_get returned non-NULL), fl4.saddr was initialized with
+tnl_params->saddr (= 0 in our case), and wasn't changed until iptunnel_xmit().
 
-Signed-off-by: Prashant Sreedharan <prashant@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
+This patch adds saddr to ip_tunnel->dst_cache, fixing this issue.
+
+Reported-by: Sergey Popov <pinkbyte@gentoo.org>
+Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/tg3.c |   22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ include/net/ip_tunnels.h |    1 +
+ net/ipv4/ip_tunnel.c     |   29 ++++++++++++++++++-----------
+ 2 files changed, 19 insertions(+), 11 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -7830,17 +7830,18 @@ static int tigon3_dma_hwbug_workaround(s
+--- a/include/net/ip_tunnels.h
++++ b/include/net/ip_tunnels.h
+@@ -40,6 +40,7 @@ struct ip_tunnel_prl_entry {
  
- static netdev_tx_t tg3_start_xmit(struct sk_buff *, struct net_device *);
+ struct ip_tunnel_dst {
+ 	struct dst_entry __rcu 		*dst;
++	__be32				 saddr;
+ };
  
--/* Use GSO to workaround a rare TSO bug that may be triggered when the
-- * TSO header is greater than 80 bytes.
-+/* Use GSO to workaround all TSO packets that meet HW bug conditions
-+ * indicated in tg3_tx_frag_set()
-  */
--static int tg3_tso_bug(struct tg3 *tp, struct sk_buff *skb)
-+static int tg3_tso_bug(struct tg3 *tp, struct tg3_napi *tnapi,
-+		       struct netdev_queue *txq, struct sk_buff *skb)
+ struct ip_tunnel {
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -69,23 +69,25 @@ static unsigned int ip_tunnel_hash(__be3
+ }
+ 
+ static void __tunnel_dst_set(struct ip_tunnel_dst *idst,
+-			     struct dst_entry *dst)
++			     struct dst_entry *dst, __be32 saddr)
  {
- 	struct sk_buff *segs, *nskb;
- 	u32 frag_cnt_est = skb_shinfo(skb)->gso_segs * 3;
+ 	struct dst_entry *old_dst;
  
- 	/* Estimate the number of fragments in the worst case */
--	if (unlikely(tg3_tx_avail(&tp->napi[0]) <= frag_cnt_est)) {
--		netif_stop_queue(tp->dev);
-+	if (unlikely(tg3_tx_avail(tnapi) <= frag_cnt_est)) {
-+		netif_tx_stop_queue(txq);
+ 	dst_clone(dst);
+ 	old_dst = xchg((__force struct dst_entry **)&idst->dst, dst);
+ 	dst_release(old_dst);
++	idst->saddr = saddr;
+ }
  
- 		/* netif_tx_stop_queue() must be done before checking
- 		 * checking tx index in tg3_tx_avail() below, because in
-@@ -7848,13 +7849,14 @@ static int tg3_tso_bug(struct tg3 *tp, s
- 		 * netif_tx_queue_stopped().
- 		 */
- 		smp_mb();
--		if (tg3_tx_avail(&tp->napi[0]) <= frag_cnt_est)
-+		if (tg3_tx_avail(tnapi) <= frag_cnt_est)
- 			return NETDEV_TX_BUSY;
+-static void tunnel_dst_set(struct ip_tunnel *t, struct dst_entry *dst)
++static void tunnel_dst_set(struct ip_tunnel *t,
++			   struct dst_entry *dst, __be32 saddr)
+ {
+-	__tunnel_dst_set(this_cpu_ptr(t->dst_cache), dst);
++	__tunnel_dst_set(this_cpu_ptr(t->dst_cache), dst, saddr);
+ }
  
--		netif_wake_queue(tp->dev);
-+		netif_tx_wake_queue(txq);
+ static void tunnel_dst_reset(struct ip_tunnel *t)
+ {
+-	tunnel_dst_set(t, NULL);
++	tunnel_dst_set(t, NULL, 0);
+ }
+ 
+ void ip_tunnel_dst_reset_all(struct ip_tunnel *t)
+@@ -93,20 +95,25 @@ void ip_tunnel_dst_reset_all(struct ip_t
+ 	int i;
+ 
+ 	for_each_possible_cpu(i)
+-		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL);
++		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL, 0);
+ }
+ EXPORT_SYMBOL(ip_tunnel_dst_reset_all);
+ 
+-static struct rtable *tunnel_rtable_get(struct ip_tunnel *t, u32 cookie)
++static struct rtable *tunnel_rtable_get(struct ip_tunnel *t,
++					u32 cookie, __be32 *saddr)
+ {
++	struct ip_tunnel_dst *idst;
+ 	struct dst_entry *dst;
+ 
+ 	rcu_read_lock();
+-	dst = rcu_dereference(this_cpu_ptr(t->dst_cache)->dst);
++	idst = this_cpu_ptr(t->dst_cache);
++	dst = rcu_dereference(idst->dst);
+ 	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
+ 		dst = NULL;
+ 	if (dst) {
+-		if (dst->obsolete && dst->ops->check(dst, cookie) == NULL) {
++		if (!dst->obsolete || dst->ops->check(dst, cookie)) {
++			*saddr = idst->saddr;
++		} else {
+ 			tunnel_dst_reset(t);
+ 			dst_release(dst);
+ 			dst = NULL;
+@@ -366,7 +373,7 @@ static int ip_tunnel_bind_dev(struct net
+ 
+ 		if (!IS_ERR(rt)) {
+ 			tdev = rt->dst.dev;
+-			tunnel_dst_set(tunnel, &rt->dst);
++			tunnel_dst_set(tunnel, &rt->dst, fl4.saddr);
+ 			ip_rt_put(rt);
+ 		}
+ 		if (dev->type != ARPHRD_ETHER)
+@@ -610,7 +617,7 @@ void ip_tunnel_xmit(struct sk_buff *skb,
+ 	init_tunnel_flow(&fl4, protocol, dst, tnl_params->saddr,
+ 			 tunnel->parms.o_key, RT_TOS(tos), tunnel->parms.link);
+ 
+-	rt = connected ? tunnel_rtable_get(tunnel, 0) : NULL;
++	rt = connected ? tunnel_rtable_get(tunnel, 0, &fl4.saddr) : NULL;
+ 
+ 	if (!rt) {
+ 		rt = ip_route_output_key(tunnel->net, &fl4);
+@@ -620,7 +627,7 @@ void ip_tunnel_xmit(struct sk_buff *skb,
+ 			goto tx_error;
+ 		}
+ 		if (connected)
+-			tunnel_dst_set(tunnel, &rt->dst);
++			tunnel_dst_set(tunnel, &rt->dst, fl4.saddr);
  	}
  
--	segs = skb_gso_segment(skb, tp->dev->features & ~(NETIF_F_TSO | NETIF_F_TSO6));
-+	segs = skb_gso_segment(skb, tp->dev->features &
-+				    ~(NETIF_F_TSO | NETIF_F_TSO6));
- 	if (IS_ERR(segs) || !segs)
- 		goto tg3_tso_bug_end;
- 
-@@ -7930,7 +7932,7 @@ static netdev_tx_t tg3_start_xmit(struct
- 		if (!skb_is_gso_v6(skb)) {
- 			if (unlikely((ETH_HLEN + hdr_len) > 80) &&
- 			    tg3_flag(tp, TSO_BUG))
--				return tg3_tso_bug(tp, skb);
-+				return tg3_tso_bug(tp, tnapi, txq, skb);
- 
- 			ip_csum = iph->check;
- 			ip_tot_len = iph->tot_len;
-@@ -8061,7 +8063,7 @@ static netdev_tx_t tg3_start_xmit(struct
- 				iph->tot_len = ip_tot_len;
- 			}
- 			tcph->check = tcp_csum;
--			return tg3_tso_bug(tp, skb);
-+			return tg3_tso_bug(tp, tnapi, txq, skb);
- 		}
- 
- 		/* If the workaround fails due to memory/mapping
+ 	if (rt->dst.dev == dev) {
 
 
