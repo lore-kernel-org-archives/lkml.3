@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811AbaHHRFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 13:05:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40494 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756207AbaHHRFc (ORCPT
+	id S1756414AbaHHRJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 13:09:23 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:58515 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752812AbaHHRJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 13:05:32 -0400
-Date: Fri, 8 Aug 2014 14:04:28 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: Alexander Holler <holler@ahsoftware.de>, linux-mtd@lists.infradead.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/27] mtd: nand: pxa3xx: show device structure in sysfs
-Message-ID: <20140808170428.GA6094@arch.cereza>
-References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de>
- <1401142372-14148-10-git-send-email-holler@ahsoftware.de>
- <1401160341.192042842@f271.i.mail.ru>
+	Fri, 8 Aug 2014 13:09:22 -0400
+Date: Fri, 8 Aug 2014 10:09:16 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, bobby.prani@gmail.com,
+        masami.hiramatsu.pt@hitachi.com
+Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
+ waiting for RCU-tasks
+Message-ID: <20140808170916.GB5821@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140807155326.18481e66@gandalf.local.home>
+ <20140807200813.GB3935@laptop>
+ <20140807171823.1a481290@gandalf.local.home>
+ <20140808064020.GZ9918@twins.programming.kicks-ass.net>
+ <20140808101221.21056900@gandalf.local.home>
+ <20140808143413.GB9918@twins.programming.kicks-ass.net>
+ <20140808105858.171da847@gandalf.local.home>
+ <20140808162714.GG9918@twins.programming.kicks-ass.net>
+ <20140808163905.GA5821@linux.vnet.ibm.com>
+ <20140808165112.GI9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401160341.192042842@f271.i.mail.ru>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140808165112.GI9918@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080817-0928-0000-0000-000003FAC1BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Picking on this old thread...
-
-On 27 May 07:12 AM, Alexander Shiyan wrote:
-> > diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
-> > index 7588fe2..7f62e7c 100644
-> > --- a/drivers/mtd/nand/pxa3xx_nand.c
-> > +++ b/drivers/mtd/nand/pxa3xx_nand.c
-> > @@ -1584,8 +1584,7 @@ static int alloc_nand_resource(struct platform_device *pdev)
-> >  		host->mtd = mtd;
-> >  		host->cs = cs;
-> >  		host->info_data = info;
-> > -		mtd->priv = host;
-> > -		mtd->owner = THIS_MODULE;
-> > +		mtd_setup_common_members(mtd, host, pdev);
-> >  
-> >  		chip->ecc.read_page	= pxa3xx_nand_read_page_hwecc;
-> >  		chip->ecc.write_page	= pxa3xx_nand_write_page_hwecc;
-> > -- 
+On Fri, Aug 08, 2014 at 06:51:12PM +0200, Peter Zijlstra wrote:
+> On Fri, Aug 08, 2014 at 09:39:05AM -0700, Paul E. McKenney wrote:
+> > On Fri, Aug 08, 2014 at 06:27:14PM +0200, Peter Zijlstra wrote:
+> > > On Fri, Aug 08, 2014 at 10:58:58AM -0400, Steven Rostedt wrote:
+> > > 
+> > > > > > No, they are also used by optimized kprobes. This is why optimized
+> > > > > > kprobes depend on !CONFIG_PREEMPT. [ added Masami to the discussion ].
+> > > > > 
+> > > > > How do those work? Is that one where the INT3 relocates the instruction
+> > > > > stream into an alternative 'text' and that JMPs back into the original
+> > > > > stream at the end?
+> > > > 
+> > > > No, it's where we replace the 'int3' with a jump to a trampoline that
+> > > > simulates an INT3. Speeds things up quite a bit.
+> > > 
+> > > OK, so the trivial 'fix' for that is to patch the probe site like:
+> > > 
+> > > 	preempt_disable();		INC	GS:%__preempt_count
+> > > 	call trampoline;		CALL	0xDEADBEEF
+> > > 	preempt_enable();		DEC	GS:%__preempt_count
+> > > 					JNZ	1f
+> > > 					CALL	___preempt_schedule
+> > > 				1f:
+> > > 
+> > > At which point the preempt_disable/enable() are the read side primitives
+> > > and call_rcu_sched/synchronize_sched are sufficient to release it.
+> > 
+> > Unless this is done in idle, at which point RCU-sched is studiously
+> > ignoring any preempt_disable() sections.
 > 
-> Should we add "driver.owner = THIS_MODULE" field for struct platform_driver in this case?
-> 
+> Well, given that kprobes is already using it, it 'must' be good ;-) I
+> suspect much of the idle loop is marked with __kprobe or so, or nobody
+> has been brave enough to try.
 
-As far as I can see, for platform drivers, the owner of the driver is fixed to
-THIS_MODULE in __platform_driver_register().
+Not seeing much in the way of __kprobe, so guessing lack of bravery.
 
-If there's anything left to fix for this driver, please let me know.
+							Thanx, Paul
 
-Thanks,
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
