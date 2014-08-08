@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758545AbaHHVet (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:34:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40578 "EHLO
+	id S1758573AbaHHVf1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:35:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40562 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758058AbaHHUrj (ORCPT
+	with ESMTP id S1757021AbaHHUrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:47:39 -0400
+	Fri, 8 Aug 2014 16:47:33 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Meerwald <pmeerw@pmeerw.net>,
-        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>,
-        Jonathan Cameron <jic23@kernel.org>,
+Cc: George Cherian <george.cherian@ti.com>,
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 182/259] iio:bma180: Fix scale factors to report correct acceleration units
-Date: Fri,  8 Aug 2014 13:40:05 -0700
-Message-Id: <1407530482-4483-183-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 189/259] can: c_can_platform: Fix raminit, use devm_ioremap() instead of devm_ioremap_resource()
+Date: Fri,  8 Aug 2014 13:40:12 -0700
+Message-Id: <1407530482-4483-190-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -29,59 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Meerwald <pmeerw@pmeerw.net>
+From: George Cherian <george.cherian@ti.com>
 
-commit 381676d5e86596b11e22a62f196e192df6091373 upstream.
+commit 33cf75656923ff11d67a937a4f8e9344f58cea77 upstream.
 
-The userspace interface for acceleration sensors is documented as using
-m/s^2 units [Documentation/ABI/testing/sysfs-bus-iio]
+The raminit register is shared register for both can0 and can1. Since commit:
 
-The fullscale raw values for the BMA80 corresponds to -/+ 1, 1.5, 2, etc G
-depending on the selected mode.
+    32766ff net: can: Convert to use devm_ioremap_resource
 
-The scale table was converting to G rather than m/s^2.
-Change the scaling table to match the documented interface.
+devm_ioremap_resource() is used to map raminit register. When using both
+interfaces the mapping for the can1 interface fails, leading to a non
+functional can interface.
 
-See commit 71702e6e, iio: mma8452: Use correct acceleration units,
-for a related fix.
-
-Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
-Cc: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/iio/accel/bma180.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/can/c_can/c_can_platform.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/iio/accel/bma180.c b/drivers/iio/accel/bma180.c
-index 28b3928..8d5ea9b 100644
---- a/drivers/iio/accel/bma180.c
-+++ b/drivers/iio/accel/bma180.c
-@@ -68,13 +68,13 @@
- /* Defaults values */
- #define BMA180_DEF_PMODE	0
- #define BMA180_DEF_BW		20
--#define BMA180_DEF_SCALE	250
-+#define BMA180_DEF_SCALE	2452
+diff --git a/drivers/net/can/c_can/c_can_platform.c b/drivers/net/can/c_can/c_can_platform.c
+index d66ac26..873b83a 100644
+--- a/drivers/net/can/c_can/c_can_platform.c
++++ b/drivers/net/can/c_can/c_can_platform.c
+@@ -194,7 +194,8 @@ static int c_can_plat_probe(struct platform_device *pdev)
+ 			priv->instance = pdev->id;
  
- /* Available values for sysfs */
- #define BMA180_FLP_FREQ_AVAILABLE \
- 	"10 20 40 75 150 300"
- #define BMA180_SCALE_AVAILABLE \
--	"0.000130 0.000190 0.000250 0.000380 0.000500 0.000990 0.001980"
-+	"0.001275 0.001863 0.002452 0.003727 0.004903 0.009709 0.019417"
- 
- struct bma180_data {
- 	struct i2c_client *client;
-@@ -94,7 +94,7 @@ enum bma180_axis {
- };
- 
- static int bw_table[] = { 10, 20, 40, 75, 150, 300 }; /* Hz */
--static int scale_table[] = { 130, 190, 250, 380, 500, 990, 1980 };
-+static int scale_table[] = { 1275, 1863, 2452, 3727, 4903, 9709, 19417 };
- 
- static int bma180_get_acc_reg(struct bma180_data *data, enum bma180_axis axis)
- {
+ 		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-		priv->raminit_ctrlreg = devm_ioremap_resource(&pdev->dev, res);
++		priv->raminit_ctrlreg = devm_ioremap(&pdev->dev, res->start,
++						     resource_size(res));
+ 		if (IS_ERR(priv->raminit_ctrlreg) || (int)priv->instance < 0)
+ 			dev_info(&pdev->dev, "control memory is not used for raminit\n");
+ 		else
 -- 
 1.9.1
 
