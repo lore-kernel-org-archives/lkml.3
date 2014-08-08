@@ -1,170 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932929AbaHHVgP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:36:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60422 "EHLO
+	id S1759491AbaHHWEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:04:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60456 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758421AbaHHVgJ (ORCPT
+	with ESMTP id S932768AbaHHVgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:09 -0400
+	Fri, 8 Aug 2014 17:36:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.10 00/24] 3.10.53-stable review
-Date: Fri,  8 Aug 2014 14:34:53 -0700
-Message-Id: <20140808213335.421758947@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 09/24] net: Correctly set segment mac_len in skb_segment().
+Date: Fri,  8 Aug 2014 14:35:02 -0700
+Message-Id: <20140808213335.810739535@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140808213335.421758947@linuxfoundation.org>
+References: <20140808213335.421758947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.10.53 release.
-There are 24 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Aug 10 21:33:26 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.53-rc1.gz
-and the diffstat can be found below.
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-thanks,
+[ Upstream commit fcdfe3a7fa4cb74391d42b6a26dc07c20dab1d82 ]
 
-greg k-h
+When performing segmentation, the mac_len value is copied right
+out of the original skb.  However, this value is not always set correctly
+(like when the packet is VLAN-tagged) and we'll end up copying a bad
+value.
 
--------------
-Pseudo-Shortlog of commits:
+One way to demonstrate this is to configure a VM which tags
+packets internally and turn off VLAN acceleration on the forwarding
+bridge port.  The packets show up corrupt like this:
+16:18:24.985548 52:54:00:ab:be:25 > 52:54:00:26:ce:a3, ethertype 802.1Q
+(0x8100), length 1518: vlan 100, p 0, ethertype 0x05e0,
+        0x0000:  8cdb 1c7c 8cdb 0064 4006 b59d 0a00 6402 ...|...d@.....d.
+        0x0010:  0a00 6401 9e0d b441 0a5e 64ec 0330 14fa ..d....A.^d..0..
+        0x0020:  29e3 01c9 f871 0000 0101 080a 000a e833)....q.........3
+        0x0030:  000f 8c75 6e65 7470 6572 6600 6e65 7470 ...unetperf.netp
+        0x0040:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
+        0x0050:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
+        0x0060:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
+        ...
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.10.53-rc1
+This also leads to awful throughput as GSO packets are dropped and
+cause retransmissions.
 
-Andrey Utkin <andrey.krieger.utkin@gmail.com>
-    arch/sparc/math-emu/math_32.c: drop stray break operator
+The solution is to set the mac_len using the values already available
+in then new skb.  We've already adjusted all of the header offset, so we
+might as well correctly figure out the mac_len using skb_reset_mac_len().
+After this change, packets are segmented correctly and performance
+is restored.
 
-Sowmini Varadhan <sowmini.varadhan@oracle.com>
-    sparc64: ldc_connect() should not return EINVAL when handshake is in progress.
+CC: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/core/skbuff.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
-    sunsab: Fix detection of BREAK on sunsab serial console
-
-Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
-    bbc-i2c: Fix BBC I2C envctrl on SunBlade 2000
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Guard against flushing openfirmware mappings.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Do not insert non-valid PTEs into the TSB hash table.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Add membar to Niagara2 memcpy code.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix huge TSB mapping on pre-UltraSPARC-III cpus.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Don't bark so loudly about 32-bit tasks generating 64-bit fault addresses.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix top-level fault handling bugs.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Handle 32-bit tasks properly in compute_effective_address().
-
-Kirill Tkhai <tkhai@yandex.ru>
-    sparc64: Make itc_sync_lock raw
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix argument sign extension for compat_sys_futex().
-
-Eric Dumazet <edumazet@google.com>
-    sctp: fix possible seqlock seadlock in sctp_packet_transmit()
-
-Sasha Levin <sasha.levin@oracle.com>
-    iovec: make sure the caller actually wants anything in memcpy_fromiovecend
-
-Vlad Yasevich <vyasevic@redhat.com>
-    net: Correctly set segment mac_len in skb_segment().
-
-Vlad Yasevich <vyasevic@redhat.com>
-    macvlan: Initialize vlan_features to turn on offload support.
-
-Daniel Borkmann <dborkman@redhat.com>
-    net: sctp: inherit auth_capable on INIT collisions
-
-Christoph Paasch <christoph.paasch@uclouvain.be>
-    tcp: Fix integer-overflow in TCP vegas
-
-Christoph Paasch <christoph.paasch@uclouvain.be>
-    tcp: Fix integer-overflows in TCP veno
-
-Andrey Ryabinin <ryabinin.a.a@gmail.com>
-    net: sendmsg: fix NULL pointer dereference
-
-Eric Dumazet <edumazet@google.com>
-    ip: make IP identifiers less predictable
-
-Eric Dumazet <edumazet@google.com>
-    inetpeer: get rid of ip_id_count
-
-Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
-    bnx2x: fix crash during TSO tunneling
-
-
--------------
-
-Diffstat:
-
- Makefile                                        |   4 +-
- arch/sparc/include/asm/pgtable_64.h             |   6 +-
- arch/sparc/include/asm/tlbflush_64.h            |  12 +--
- arch/sparc/kernel/ldc.c                         |   2 +-
- arch/sparc/kernel/smp_64.c                      |   6 +-
- arch/sparc/kernel/sys32.S                       |   2 +-
- arch/sparc/kernel/unaligned_64.c                |  12 ++-
- arch/sparc/lib/NG2memcpy.S                      |   1 +
- arch/sparc/math-emu/math_32.c                   |   2 +-
- arch/sparc/mm/fault_64.c                        | 102 +++++++++++++-----------
- arch/sparc/mm/init_64.c                         |  27 +++++++
- arch/sparc/mm/tsb.c                             |  14 +++-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x.h     |   1 +
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   9 +++
- drivers/net/macvlan.c                           |   1 +
- drivers/net/ppp/pptp.c                          |   2 +-
- drivers/net/vxlan.c                             |   2 +-
- drivers/sbus/char/bbc_envctrl.c                 |   6 ++
- drivers/sbus/char/bbc_i2c.c                     |  11 ++-
- drivers/tty/serial/sunsab.c                     |   9 +++
- include/net/inetpeer.h                          |  16 +---
- include/net/ip.h                                |  31 ++++---
- include/net/ipv6.h                              |  11 ++-
- include/net/secure_seq.h                        |   2 -
- net/compat.c                                    |   9 ++-
- net/core/iovec.c                                |  10 ++-
- net/core/secure_seq.c                           |  25 ------
- net/core/skbuff.c                               |   2 +-
- net/ipv4/igmp.c                                 |   4 +-
- net/ipv4/inetpeer.c                             |  18 -----
- net/ipv4/ip_output.c                            |   7 +-
- net/ipv4/ip_tunnel.c                            |   2 +-
- net/ipv4/ipmr.c                                 |   2 +-
- net/ipv4/raw.c                                  |   2 +-
- net/ipv4/route.c                                |  69 ++++++++++------
- net/ipv4/tcp_vegas.c                            |   3 +-
- net/ipv4/tcp_veno.c                             |   2 +-
- net/ipv4/xfrm4_mode_tunnel.c                    |   2 +-
- net/ipv6/ip6_output.c                           |  17 ++++
- net/ipv6/output_core.c                          |  23 ------
- net/ipv6/sit.c                                  |   2 +-
- net/netfilter/ipvs/ip_vs_xmit.c                 |   2 +-
- net/sctp/associola.c                            |   1 +
- net/sctp/output.c                               |   2 +-
- 44 files changed, 270 insertions(+), 225 deletions(-)
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2810,7 +2810,6 @@ struct sk_buff *skb_segment(struct sk_bu
+ 		tail = nskb;
+ 
+ 		__copy_skb_header(nskb, skb);
+-		nskb->mac_len = skb->mac_len;
+ 
+ 		/* nskb and skb might have different headroom */
+ 		if (nskb->ip_summed == CHECKSUM_PARTIAL)
+@@ -2820,6 +2819,7 @@ struct sk_buff *skb_segment(struct sk_bu
+ 		skb_set_network_header(nskb, skb->mac_len);
+ 		nskb->transport_header = (nskb->network_header +
+ 					  skb_network_header_len(skb));
++		skb_reset_mac_len(nskb);
+ 
+ 		skb_copy_from_linear_data_offset(skb, -tnl_hlen,
+ 						 nskb->data - tnl_hlen,
 
 
