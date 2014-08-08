@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933629AbaHHWIB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:08:01 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:65282 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932666AbaHHWH4 (ORCPT
+	id S932383AbaHHVgK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:36:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60346 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758532AbaHHVfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 18:07:56 -0400
-Date: Fri, 8 Aug 2014 15:07:53 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [patch v2] mm, hugetlb_cgroup: align hugetlb cgroup limit to hugepage
- size
-In-Reply-To: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1408081507180.15603@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 8 Aug 2014 17:35:55 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 09/23] iovec: make sure the caller actually wants anything in memcpy_fromiovecend
+Date: Fri,  8 Aug 2014 14:34:54 -0700
+Message-Id: <20140808213316.160523609@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140808213315.769217722@linuxfoundation.org>
+References: <20140808213315.769217722@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memcg aligns memory.limit_in_bytes to PAGE_SIZE as part of the resource counter
-since it makes no sense to allow a partial page to be charged.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-As a result of the hugetlb cgroup using the resource counter, it is also aligned
-to PAGE_SIZE but makes no sense unless aligned to the size of the hugepage being
-limited.
+------------------
 
-Align hugetlb cgroup limit to hugepage size.
+From: Sasha Levin <sasha.levin@oracle.com>
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: David Rientjes <rientjes@google.com>
+[ Upstream commit 06ebb06d49486676272a3c030bfeef4bd969a8e6 ]
+
+Check for cases when the caller requests 0 bytes instead of running off
+and dereferencing potentially invalid iovecs.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- v2: use huge_page_order() per Aneesh
-     Sorry for not cc'ing you initially, get_maintainer.pl failed me
+ net/core/iovec.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
- mm/hugetlb_cgroup.c | 1 +
- 1 file changed, 1 insertion(+)
+--- a/net/core/iovec.c
++++ b/net/core/iovec.c
+@@ -157,6 +157,10 @@ EXPORT_SYMBOL(memcpy_fromiovec);
+ int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+ 			int offset, int len)
+ {
++	/* No data? Done! */
++	if (len == 0)
++		return 0;
++
+ 	/* Skip over the finished iovecs */
+ 	while (offset >= iov->iov_len) {
+ 		offset -= iov->iov_len;
 
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -275,6 +275,7 @@ static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
- 		ret = res_counter_memparse_write_strategy(buf, &val);
- 		if (ret)
- 			break;
-+		val = ALIGN(val, 1ULL << huge_page_shift(&hstates[idx]));
- 		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
- 		break;
- 	default:
+
