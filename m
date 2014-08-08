@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275AbaHHBae (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 21:30:34 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:54301 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088AbaHHBaa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 21:30:30 -0400
+	id S1756307AbaHHBdR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 21:33:17 -0400
+Received: from ozlabs.org ([103.22.144.67]:52706 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755313AbaHHBdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 21:33:14 -0400
+Date: Fri, 8 Aug 2014 11:33:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stewart Smith <stewart@linux.vnet.ibm.com>
+Subject: Re: linux-next: build failure after merge of the modules tree
+Message-ID: <20140808113307.4f505bba@canb.auug.org.au>
+In-Reply-To: <87a97gcus9.fsf@rustcorp.com.au>
+References: <20140807132017.2ec9e2ad@canb.auug.org.au>
+	<87tx5ocyz3.fsf@rustcorp.com.au>
+	<20140807230342.52e3a52c@canb.auug.org.au>
+	<87a97gcus9.fsf@rustcorp.com.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1407456941-16232-3-git-send-email-andi@firstfloor.org>
-References: <1407456941-16232-1-git-send-email-andi@firstfloor.org>
-	<1407456941-16232-3-git-send-email-andi@firstfloor.org>
-Date: Fri, 8 Aug 2014 03:30:30 +0200
-Message-ID: <CABPqkBTm7kPQszxPOGv5yUMzQ=PeW8BNgF6+jXMVDL-UjZQM-Q@mail.gmail.com>
-Subject: Re: [PATCH 2/4] perf, x86: Don't mark DataLA addresses as store
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/WAf/iwj1xNJ1u6/qC3WMTLa"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 8, 2014 at 2:15 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Haswell supports reporting the data address for a range
-> of PEBS events, including:
->
-> UOPS_RETIRED.ALL
-> MEM_UOPS_RETIRED.STLB_MISS_LOADS
-> MEM_UOPS_RETIRED.STLB_MISS_STORES
-> MEM_UOPS_RETIRED.LOCK_LOADS
-> MEM_UOPS_RETIRED.SPLIT_LOADS
-> MEM_UOPS_RETIRED.SPLIT_STORES
-> MEM_UOPS_RETIRED.ALL_LOADS
-> MEM_UOPS_RETIRED.ALL_STORES
-> MEM_LOAD_UOPS_RETIRED.L1_HIT
-> MEM_LOAD_UOPS_RETIRED.L2_HIT
-> MEM_LOAD_UOPS_RETIRED.L3_HIT
-> MEM_LOAD_UOPS_RETIRED.L1_MISS
-> MEM_LOAD_UOPS_RETIRED.L2_MISS
-> MEM_LOAD_UOPS_RETIRED.L3_MISS
-> MEM_LOAD_UOPS_RETIRED.HIT_LFB
-> MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_MISS
-> MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_HIT
-> MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_HITM
-> MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_NONE
-> MEM_LOAD_UOPS_L3_MISS_RETIRED.LOCAL_DRAM
->
-> This facility was already enabled earlier with the original Haswell
-> perf changes.
->
-> However these addresses were always reports as stores by perf, which is wrong,
-> as they could be loads or NA too.
->
-> This patch uses the load/store/na flags added earlier to report the correct
-> operation based on the event type. For some events this is NA.
->
-> v2: Supports load/stores/na again instead of marking everything NA
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_ds.c | 13 ++++++++++---
->  1 file changed, 10 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> index aca77e9..855c19e 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -108,13 +108,19 @@ static u64 precise_store_data(u64 status)
->         return val;
->  }
->
-> -static u64 precise_store_data_hsw(struct perf_event *event, u64 status)
-> +static u64 precise_store_data_hsw(struct perf_event *event, u64 status,
-> +                                 unsigned flags)
->  {
->         union perf_mem_data_src dse;
->         u64 cfg = event->hw.config & INTEL_ARCH_EVENT_MASK;
->
->         dse.val = 0;
-No. This is not valid. You are not initializing all the field later on.
-Needs to be:
-          dse.val = PERF_MEM_NA
-(which is defined in my patch).
+--Sig_/WAf/iwj1xNJ1u6/qC3WMTLa
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> -       dse.mem_op = PERF_MEM_OP_STORE;
-> +       if (flags & PERF_X86_EVENT_PEBS_LD_HSW)
-> +               dse.mem_op = PERF_MEM_OP_LOAD;
-> +       else if (flags & PERF_X86_EVENT_PEBS_ST_HSW)
-> +               dse.mem_op = PERF_MEM_OP_STORE;
-> +       else
-> +               dse.mem_op = PERF_MEM_OP_NA;
->         dse.mem_lvl = PERF_MEM_LVL_NA;
->
-But you have LOCK, SNOOP TLB, ....
-So it is better to initialize globally dse.val once, and then patch
-based on what you can gather.
+Hi Rusty,
 
-I will repost the whole series with my fixes and cleanups.
-
->         /*
-> @@ -868,7 +874,8 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
->                                          PERF_X86_EVENT_PEBS_LD_HSW|
->                                          PERF_X86_EVENT_PEBS_NA_HSW))
->                                 data.data_src.val =
-> -                                       precise_store_data_hsw(event, pebs->dse);
-> +                                       precise_store_data_hsw(event, pebs->dse,
-> +                                                              event->hw.flags);
->                         else
->                                 data.data_src.val = precise_store_data(pebs->dse);
->                 }
-> --
-> 1.9.3
+On Thu, 07 Aug 2014 22:37:50 +0930 Rusty Russell <rusty@rustcorp.com.au> wr=
+ote:
 >
+> Stephen Rothwell <sfr@canb.auug.org.au> writes:
+> > Hi Rusty,
+> >
+> > On Thu, 07 Aug 2014 21:07:20 +0930 Rusty Russell <rusty@rustcorp.com.au=
+> wrote:
+> >>
+> >> Ah, crap.  I really hate that macro magic :(
+> >>=20
+> >> I amended to the minimal fix, so we can pretend that never happened.
+> >
+> > How about arch/powerpc/platforms/powernv/opal-dump.c as well?
+>=20
+> Hmm, I didn't see that one.
+
+It was in the original report, but I guess a bit hidden by all the guff
+the gcc spews out these days.
+
+> I've done that as a separate patch.
+
+Thanks.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/WAf/iwj1xNJ1u6/qC3WMTLa
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT5CjYAAoJEMDTa8Ir7ZwV0uEQAJb9if9ScMmA6AbU8P13Vdsi
+VLTedbLJluRO0XnlbQIBh87kWlAXl5BNyqg46rMNx4odHqUJz51L0jcM9TITjxup
+DoZL/t03kRjJdpfFmhKdq/UJSjyeWmlQNBV7lquEYRLgwLkmgdGAE1omd6m8SVs1
+6N3xAbW2KGH2fZM8POaQo22s9QTkFwOAkao7rYnQrWqBV+Ub4WPlEhPwxBaot7AA
+a+Q2qdHE+UG8iDMQb7lXorzvHDhjMIlBs7/EoCzvOkHqowNrx+VtnFSKY2+88wFy
+bGua2UXnTdnVkbPxqVBI5My+I6QhABQ5Ot+tbUu8Jo0vI+DQvewTMgEDAB/yQcKt
+YnP5uwDaWsub9vOx+VSiEmlMs1iUtPs3JTeNBIeAVlYKuO9ymwcVtc8OzM6ZQX8p
+5zl31/6Av8NMUBLUrtKViPc/9Lzh7vy8ljrHOL+JmjBE24fiu/at0ZTwTtQcMltI
+JxSIEYTw/72f88CKpcQggD6R9/PiQyGoH0RFMHl7qNeV8xxkEles0NiB9iTLg7vX
+7m5qikm53MbYkJ7WssZsapWC/Knl5DCHJEPP0UNWj8zhy0hbUk2jO8FAOW4QcUJm
+6uSTSL3gAW6CYAC8gwLiW5KxtSl4rZpP+n3/DX1coKvSEnWFVbsj6nZ6aqo/Yf5t
+QbJe2QS1NzxSMYl8fScP
+=bQ5W
+-----END PGP SIGNATURE-----
+
+--Sig_/WAf/iwj1xNJ1u6/qC3WMTLa--
