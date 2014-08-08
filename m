@@ -1,107 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471AbaHHDVs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 23:21:48 -0400
-Received: from ozlabs.org ([103.22.144.67]:46641 "EHLO ozlabs.org"
+	id S1755518AbaHHDXy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 23:23:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19219 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755016AbaHHDVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 23:21:44 -0400
-Date: Fri, 8 Aug 2014 13:21:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [GIT PULL] Global signal cleanup
-Message-ID: <20140808132135.47e16442@canb.auug.org.au>
-In-Reply-To: <CA+55aFy0OFQ5ncwHwpah4xwxuOuMEWL+w6Dv-akTFnogpLo1yA@mail.gmail.com>
-References: <53E20F1E.2080606@nod.at>
-	<20140806212720.66dbd58b@canb.auug.org.au>
-	<53E21186.3000702@nod.at>
-	<20140807102823.7a743bdf@canb.auug.org.au>
-	<53E32C5C.5010103@nod.at>
-	<CA+55aFy0OFQ5ncwHwpah4xwxuOuMEWL+w6Dv-akTFnogpLo1yA@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1755016AbaHHDXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 23:23:52 -0400
+Date: Thu, 7 Aug 2014 23:23:44 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, ebiederm@xmission.com,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: fault injection caused oops in proc_flush_task
+Message-ID: <20140808032344.GA22783@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	ebiederm@xmission.com, Al Viro <viro@zeniv.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/aYcb.0iqbNNUc2fOzR=SUL_"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/aYcb.0iqbNNUc2fOzR=SUL_
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Because I don't have enough oopses in my life, I decided to play
+with the fault injection code today. It's not something I hear about
+people trying too often, so I wondered what horrors lurk..
 
-Hi all,
+So I ran this..
 
-On Thu, 7 Aug 2014 08:53:56 -1000 Linus Torvalds <torvalds@linux-foundation=
-.org> wrote:
->
-> On Wed, Aug 6, 2014 at 9:35 PM, Richard Weinberger <richard@nod.at> wrote:
-> >
-> > It would be nice to see these rules written down somewhere.
->=20
-> The rules have been pretty clear: "don't rebase public trees".
->=20
-> That's always been the basic rule. There are _exceptions_ when
-> rebasing is the right thing to do, and they all boil down to "lesser
-> of two evils", but the evils really have to be pretty big.
->=20
-> Possible reasons to rebase:
->=20
->  (a) It's not public yet. You haven't pushed to kernel.org or any
-> other public site, and nobody saw you do it.
+#!/bin/bash
 
-So this would not be in linux-next, so I don't care :-)
+for FAILTYPE in failslab fail_page_alloc
+do
+ echo N > /sys/kernel/debug/$FAILTYPE/task-filter
+ echo 50 > /sys/kernel/debug/$FAILTYPE/probability
+ echo 500 > /sys/kernel/debug/$FAILTYPE/interval
+ echo -1 > /sys/kernel/debug/$FAILTYPE/times
+ echo 0 > /sys/kernel/debug/$FAILTYPE/space
+ echo 0 > /sys/kernel/debug/$FAILTYPE/verbose
+ echo 2 > /sys/kernel/debug/$FAILTYPE/ignore-gfp-wait
+done
 
->  (b) You *really* screwed up, and the downsides of rebasing are
-> smaller than the downsides of exposing it.
->=20
->      As in "oops, that half-way commit doesn't even compile or work at
-> all, so leaving it in that state will screw up anybody trying to find
-> other bugs with 'git bisect'"
->=20
->      At the same time, if you do this just before pushing to me, maybe
-> you should take a step back and say "oops, my tree was completely
-> broken, maybe I shouldn't push this to Linus just after fixing it".
+And then ran my usual fuzzing session, and saw this ..
 
-And this is fine but shouldn't happen just before sending a pull
-request (as Linus said).  But may also require informing anyone who
-depends on your tree (especially if that other tree is also in
-linux-next ... otherwise I could easily end up with both versions).
+Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+CPU: 2 PID: 8506 Comm: trinity-c124 Not tainted 3.16.0+ #41
+task: ffff880227fc95e0 ti: ffff8800929a0000 task.ti: ffff8800929a0000
+RIP: 0010:[<ffffffff8624a8f9>]  [<ffffffff8624a8f9>] proc_flush_task+0x99/0x1b0
+RSP: 0018:ffff8800929a3d40  EFLAGS: 00010246
+RAX: 0000000000000001 RBX: ffff8800929a3d6b RCX: 0000000000000000
+RDX: ffff8800929a3d6c RSI: ffff8800929a3d58 RDI: 0000000000000000
+RBP: ffff8800929a3da8 R08: 000000000000000a R09: 000000000000fffb
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000001
+R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000002
+FS:  00007f019c95d700(0000) GS:ffff88024d100000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000000 CR3: 00000000959e7000 CR4: 00000000001407e0
+DR0: 000000000249e000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+Stack:
+ ffff88022ad836c0 00000002929a3d58 ffff88022ad836c0 0000000132313068
+ ffff8800929a3d6b 373231003277b6b0 ffff88022377b600 00000000898577d0
+ ffff88022377b6b0 000000000000278f 0000000000000010 0000000000000000
+Call Trace:
+ [<ffffffff8607738c>] release_task+0x4c/0x4a0
+ [<ffffffff86078aca>] wait_consider_task+0x70a/0xbe0
+ [<ffffffff860790e4>] do_wait+0x144/0x2d0
+ [<ffffffff8607967b>] SyS_wait4+0x7b/0x100
+ [<ffffffff86077110>] ? task_stopped_code+0x60/0x60
+ [<ffffffff8676371f>] tracesys+0xdd/0xe2
+Code: d4 e0 a9 86 48 03 45 a8 89 4d a4 44 8b 78 30 48 8b 40 38 44 89 f9 4c 8b a8 40 08 00 00 31 c0 e8 6e 21 0f 00 48 8d 75 b0 89 45 b4 <49> 8b 7d 00 e8 4e 8b fa ff 48 85 c0 49 89 c6 74 18 48 89 c7 e8 
+RIP  [<ffffffff8624a8f9>] proc_flush_task+0x99/0x1b0
 
->  (c) You want to clean things up, and you're not even remotely ready
-> to push things upstream, and while people have *seen* your work,
-> nobody relies on it or uses it.
 
-And this should not be in linux-next yet, so again I don't care and
-shouldn't see it.
+Right before the oops, the last thing fault injection logged wrt that pid was..
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+FAULT_INJECTION: forcing a failure
+CPU: 0 PID: 8506 Comm: trinity-c124 Not tainted 3.16.0+ #41
+ 0000000000000032 00000000898577d0 ffff8800929a3b08 ffffffff86759797
+ ffffffff86c6a300 ffff8800929a3b28 ffffffff86358c30 0000000000008020
+ 0000000000008020 ffff8800929a3b38 ffffffff861c6850 ffff8800929a3b88
+Call Trace:
+ [<ffffffff86759797>] dump_stack+0x4e/0x7a
+ [<ffffffff86358c30>] should_fail+0x100/0x110
+ [<ffffffff861c6850>] should_failslab+0x40/0x50
+ [<ffffffff861c32de>] kmem_cache_alloc+0x5e/0x270
+ [<ffffffff86331e99>] ida_pre_get+0x69/0xf0
+ [<ffffffff86245c80>] ? proc_fill_super+0xa0/0xa0
+ [<ffffffff861da749>] get_anon_bdev+0x39/0x120
+ [<ffffffff86245c80>] ? proc_fill_super+0xa0/0xa0
+ [<ffffffff861da846>] set_anon_super+0x16/0x30
+ [<ffffffff8624605d>] proc_set_super+0x1d/0x80
+ [<ffffffff861db64a>] sget+0x33a/0x400
+ [<ffffffff86246040>] ? proc_root_lookup+0x40/0x40
+ [<ffffffff86245ed7>] proc_mount+0xa7/0x150
+ [<ffffffff861dc338>] mount_fs+0x38/0x1c0
+ [<ffffffff861f9574>] vfs_kern_mount+0x64/0x120
+ [<ffffffff861f9649>] kern_mount_data+0x19/0x30
+ [<ffffffff8624611c>] pid_ns_prepare_proc+0x1c/0x30
+ [<ffffffff86094334>] alloc_pid+0x474/0x4c0
+ [<ffffffff86047e10>] ? flush_tlb_mm_range+0x80/0x200
+ [<ffffffff8600207d>] ? copy_thread+0x11d/0x2c0
+ [<ffffffff86074140>] copy_process.part.29+0xab0/0x1be0
+ [<ffffffff8607542d>] do_fork+0xdd/0x400
+ [<ffffffff860a258b>] ? preempt_count_sub+0xab/0x100
+ [<ffffffff8634b563>] ? __this_cpu_preempt_check+0x13/0x20
+ [<ffffffff860757d6>] SyS_clone+0x16/0x20
+ [<ffffffff86763869>] stub_clone+0x69/0x90
+ [<ffffffff8676371f>] ? tracesys+0xdd/0xe2
 
---Sig_/aYcb.0iqbNNUc2fOzR=SUL_
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Should proc_flush_task just be checking for a NULL upid->ns ?
+Or is there something in the pid_ns_prepare_proc failure path
+that we're failing to undo ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+thoughts?
 
-iQIcBAEBCAAGBQJT5EJEAAoJEMDTa8Ir7ZwV+BMP/iOP+hmBdpp5FtfdZ+LD2IS4
-8i2TgQdxgort25B9/jBkiA7XI4ojZyeFwWHZCLZsXhYHLpnDFzwMHSc4fTVn3dV8
-pysRsVbS+h6bCXV4csVIWfxEMvwA6ltPJ96Avqj0W4wQaWiZa54iH5KLagmVtPbK
-ZoQKd+au8Dt7wbKJHHoasBxxi3XK59RgKLx4/sUXC/MVI89ebu1YDTG6QCHIvD50
-pA6lzl2LjGU2wykTce8Swe4SkKp+sM5y0N/pp1RFfjqWAyOg63vDYEYSNY8XgXGs
-3H1UObfE2i9F7dgNLIUYBlmEmNm9MfCJQwpoyVgLsFOunl8H4SqIlSNVoZPjlL5I
-AKHLjFI1wCxPAr/RQlHJzVr+AWLFom3KYX/1zmIgwURMWcLpoARixs5Qz4icAI/x
-2Kprbxc2OTDZdkIqE52JOr47Q2QIfHsVBJQF1CIVbJW7N4hFicmCHRasdXF7XCt5
-pEWzCGwBE3lhUFe/LKyMTt0bDPFfuMa3LqWQ1MtumFAmohkhot7HMhkHWjEizYQ1
-E17Y44iFCLaMMlmTSHWkgKzgcsKq1N+0fiINZPU0UFtC8Ywo5N8puuA9fwvSCh14
-q7maJPGhN/d142KJN8pb4aqgAYhvIbOy4Jmq5n05QSI3XLcIfxbcJJPKaza39KPj
-75f3Zw0vmACvN9dahIb2
-=4sSH
------END PGP SIGNATURE-----
+I don't know how feasible it would be to hit that in real life
+without the fault injection stuff, but an oops can't be the right
+thing to do in any case.
 
---Sig_/aYcb.0iqbNNUc2fOzR=SUL_--
+	Dave
