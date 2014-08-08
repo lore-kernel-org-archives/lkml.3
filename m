@@ -1,157 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751363AbaHHXp2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 19:45:28 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:35859 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaHHXpW (ORCPT
+	id S1751479AbaHHXsX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 19:48:23 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:36318 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343AbaHHXsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 19:45:22 -0400
-Date: Fri, 8 Aug 2014 16:45:18 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mtd@lists.infradead.org, Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] MTD updates for 3.17-rc1
-Message-ID: <20140808234518.GT3711@ld-irv-0074>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 8 Aug 2014 19:48:21 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Tomasz Figa <t.figa@samsung.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, Stephen Warren <swarren@nvidia.com>,
+        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomasz Figa <tomasz.figa@gmail.com>, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH 1/1] pinctrl: exynos: Lock GPIOs as interrupts when used as EINTs
+Date: Sat,  9 Aug 2014 01:48:05 +0200
+Message-Id: <1407541685-20021-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Tomasz Figa <t.figa@samsung.com>
 
-The following changes since commit 9a3c4145af32125c5ee39c0272662b47307a8323:
+Currently after configuring a GPIO pin as an interrupt related pinmux
+registers are changed, but there is no protection from calling
+gpio_direction_*() in a badly written driver, which would cause the same
+pinmux register to be reconfigured for regular input/output and this
+disabling interrupt capability of the pin.
 
-  Linux 3.16-rc6 (2014-07-20 21:04:16 -0700)
+This patch addresses this issue by moving pinmux reconfiguration to
+.irq_{request,release}_resources() callback of irq_chip and calling
+gpio_lock_as_irq() helper to prevent reconfiguration of pin direction.
 
-are available in the git repository at:
+Setting up a GPIO interrupt on Samsung SoCs is a two-step operation -
+in addition to trigger configuration in a dedicated register, the pinmux
+must be also reconfigured to GPIO interrupt, which is a different function
+than normal GPIO input, although I/O-wise they both behave in the same way
+and gpio_get_value() can be used on a pin configured as IRQ as well.
 
-  git://git.infradead.org/linux-mtd.git tags/for-linus-20140808
+Such design implies subtleties such as gpio_direction_input() not having
+to fail if a pin is already configured as an interrupt nor change the
+configuration to normal input. But the FLAG_USED_AS_IRQ set in gpiolib by
+gpio_lock_as_irq() is only used to check that gpio_direction_output() is
+not called, it's not used to prevent gpio_direction_input() to be called.
+So this is not a complete solution for Samsung SoCs but it's definitely a
+move in the right direction.
 
-for you to fetch changes up to 2a500afe1e0e84c7a126df693dbd01353756dcfa:
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+[javier: use request resources instead of startup and expand commit message]
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
 
-  mtd: gpmi: make blockmark swapping optional (2014-07-27 22:06:31 -0700)
+This patch solves the issue explained in https://lkml.org/lkml/2014/8/8/461
 
-----------------------------------------------------------------
-MTD updates for 3.17-rc1
+ drivers/pinctrl/samsung/pinctrl-exynos.c  | 69 ++++++++++++++++++++++++++++---
+ drivers/pinctrl/samsung/pinctrl-samsung.h |  1 +
+ 2 files changed, 64 insertions(+), 6 deletions(-)
 
-AMD-compatible CFI driver:
- - Support OTP programming for Micron M29EW family
- - Increase buffer write timeout, according to detected flash parameter info
+diff --git a/drivers/pinctrl/samsung/pinctrl-exynos.c b/drivers/pinctrl/samsung/pinctrl-exynos.c
+index 003bfd8..d7154ed 100644
+--- a/drivers/pinctrl/samsung/pinctrl-exynos.c
++++ b/drivers/pinctrl/samsung/pinctrl-exynos.c
+@@ -127,14 +127,10 @@ static int exynos_irq_set_type(struct irq_data *irqd, unsigned int type)
+ 	struct irq_chip *chip = irq_data_get_irq_chip(irqd);
+ 	struct exynos_irq_chip *our_chip = to_exynos_irq_chip(chip);
+ 	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
+-	struct samsung_pin_bank_type *bank_type = bank->type;
+ 	struct samsung_pinctrl_drv_data *d = bank->drvdata;
+-	unsigned int pin = irqd->hwirq;
+-	unsigned int shift = EXYNOS_EINT_CON_LEN * pin;
++	unsigned int shift = EXYNOS_EINT_CON_LEN * irqd->hwirq;
+ 	unsigned int con, trig_type;
+ 	unsigned long reg_con = our_chip->eint_con + bank->eint_offset;
+-	unsigned long flags;
+-	unsigned int mask;
+ 
+ 	switch (type) {
+ 	case IRQ_TYPE_EDGE_RISING:
+@@ -167,8 +163,32 @@ static int exynos_irq_set_type(struct irq_data *irqd, unsigned int type)
+ 	con |= trig_type << shift;
+ 	writel(con, d->virt_base + reg_con);
+ 
++	return 0;
++}
++
++static int exynos_irq_request_resources(struct irq_data *irqd)
++{
++	struct irq_chip *chip = irq_data_get_irq_chip(irqd);
++	struct exynos_irq_chip *our_chip = to_exynos_irq_chip(chip);
++	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
++	struct samsung_pin_bank_type *bank_type = bank->type;
++	struct samsung_pinctrl_drv_data *d = bank->drvdata;
++	unsigned int shift = EXYNOS_EINT_CON_LEN * irqd->hwirq;
++	unsigned long reg_con = our_chip->eint_con + bank->eint_offset;
++	unsigned long flags;
++	unsigned int mask;
++	unsigned int con;
++	int ret;
++
++	ret = gpio_lock_as_irq(&bank->gpio_chip, irqd->hwirq);
++	if (ret) {
++		dev_err(bank->gpio_chip.dev, "unable to lock pin %s-%lu IRQ\n",
++			bank->name, irqd->hwirq);
++		return ret;
++	}
++
+ 	reg_con = bank->pctl_offset + bank_type->reg_offset[PINCFG_TYPE_FUNC];
+-	shift = pin * bank_type->fld_width[PINCFG_TYPE_FUNC];
++	shift = irqd->hwirq * bank_type->fld_width[PINCFG_TYPE_FUNC];
+ 	mask = (1 << bank_type->fld_width[PINCFG_TYPE_FUNC]) - 1;
+ 
+ 	spin_lock_irqsave(&bank->slock, flags);
+@@ -180,9 +200,42 @@ static int exynos_irq_set_type(struct irq_data *irqd, unsigned int type)
+ 
+ 	spin_unlock_irqrestore(&bank->slock, flags);
+ 
++	exynos_irq_unmask(irqd);
++
+ 	return 0;
+ }
+ 
++static void exynos_irq_release_resources(struct irq_data *irqd)
++{
++	struct irq_chip *chip = irq_data_get_irq_chip(irqd);
++	struct exynos_irq_chip *our_chip = to_exynos_irq_chip(chip);
++	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
++	struct samsung_pin_bank_type *bank_type = bank->type;
++	struct samsung_pinctrl_drv_data *d = bank->drvdata;
++	unsigned int shift = EXYNOS_EINT_CON_LEN * irqd->hwirq;
++	unsigned long reg_con = our_chip->eint_con + bank->eint_offset;
++	unsigned long flags;
++	unsigned int mask;
++	unsigned int con;
++
++	reg_con = bank->pctl_offset + bank_type->reg_offset[PINCFG_TYPE_FUNC];
++	shift = irqd->hwirq * bank_type->fld_width[PINCFG_TYPE_FUNC];
++	mask = (1 << bank_type->fld_width[PINCFG_TYPE_FUNC]) - 1;
++
++	exynos_irq_mask(irqd);
++
++	spin_lock_irqsave(&bank->slock, flags);
++
++	con = readl(d->virt_base + reg_con);
++	con &= ~(mask << shift);
++	con |= FUNC_INPUT << shift;
++	writel(con, d->virt_base + reg_con);
++
++	spin_unlock_irqrestore(&bank->slock, flags);
++
++	gpio_unlock_as_irq(&bank->gpio_chip, irqd->hwirq);
++}
++
+ /*
+  * irq_chip for gpio interrupts.
+  */
+@@ -193,6 +246,8 @@ static struct exynos_irq_chip exynos_gpio_irq_chip = {
+ 		.irq_mask = exynos_irq_mask,
+ 		.irq_ack = exynos_irq_ack,
+ 		.irq_set_type = exynos_irq_set_type,
++		.irq_request_resources = exynos_irq_request_resources,
++		.irq_release_resources = exynos_irq_release_resources,
+ 	},
+ 	.eint_con = EXYNOS_GPIO_ECON_OFFSET,
+ 	.eint_mask = EXYNOS_GPIO_EMASK_OFFSET,
+@@ -336,6 +391,8 @@ static struct exynos_irq_chip exynos_wkup_irq_chip = {
+ 		.irq_ack = exynos_irq_ack,
+ 		.irq_set_type = exynos_irq_set_type,
+ 		.irq_set_wake = exynos_wkup_irq_set_wake,
++		.irq_request_resources = exynos_irq_request_resources,
++		.irq_release_resources = exynos_irq_release_resources,
+ 	},
+ 	.eint_con = EXYNOS_WKUP_ECON_OFFSET,
+ 	.eint_mask = EXYNOS_WKUP_EMASK_OFFSET,
+diff --git a/drivers/pinctrl/samsung/pinctrl-samsung.h b/drivers/pinctrl/samsung/pinctrl-samsung.h
+index 2b88232..5cedc9d 100644
+--- a/drivers/pinctrl/samsung/pinctrl-samsung.h
++++ b/drivers/pinctrl/samsung/pinctrl-samsung.h
+@@ -26,6 +26,7 @@
+ #include <linux/gpio.h>
+ 
+ /* pinmux function number for pin as gpio output line */
++#define FUNC_INPUT	0x0
+ #define FUNC_OUTPUT	0x1
+ 
+ /**
+-- 
+2.0.0.rc2
 
-NAND
- - Add helpers for retrieving ONFI timing modes
- - GPMI: provide option to disable bad block marker swapping (required for
-     Ka-On electronics platforms)
-
-SPI NOR
- - EON EN25QH128 support
- - Support new Flag Status Register (FSR) on a few Micron flash
-
-Common
- - New sysfs entries for bad block and ECC stats
-
-And a few miscellaneous refactorings, cleanups, and driver improvements
-
-----------------------------------------------------------------
-Atsushi Nemoto (1):
-      mtd: maps: rbtx4939-flash: delete an unused variable in rbtx4939_flash_remove
-
-Bean Huo (1):
-      mtd: cfi_cmdset_0002: fix do_write_buffer() timeout error
-
-Bo Shen (1):
-      mtd: atmel_nand: make ecc parameters same as definition
-
-Boris BREZILLON (2):
-      mtd: nand: define struct nand_timings
-      mtd: nand: add ONFI timing mode to nand_timings converter
-
-Brian Norris (3):
-      mtd: lpc32xx: drop bitflip_threshold initialization
-      mtd: bf5xx_nand: drop no-op PM support
-      Merge tag 'v3.16-rc6' into MTD development branch
-
-Christian Riesch (4):
-      mtd: cfi_cmdset_0002: Add support for reading OTP
-      mtd: cfi_cmdset_0002: Invalidate cache after entering/exiting OTP memory
-      mtd: cfi_cmdset_0002: Add support for writing OTP memory
-      mtd: cfi_cmdset_0002: Add support for locking OTP memory
-
-Ezequiel Garcia (3):
-      mtd: Add sysfs attributes to expose the ECC stats fields
-      mtd: Introduce mtd_block_isreserved()
-      mtd: Account for BBT blocks when a partition is being allocated
-
-Fabian Frederick (3):
-      fs/jffs2/acl.c: remove null test before kfree
-      fs/jffs2/xattr.c: remove null test before kfree
-      mtd: phram: replace kmalloc/strcpy by kstrdup
-
-Geert Uytterhoeven (1):
-      mtd: cmdlinepart: Spelling s/trucate/truncate/
-
-Josh Wu (1):
-      mtd: atmel_nand: NFC: support multiple interrupt handling
-
-Kevin Hao (2):
-      mtd/ftl: drop the useless VirtualPageMap in partition_t
-      mtd/ftl: fix the double free of the buffers allocated in build_maps()
-
-Lothar Waﬂmann (3):
-      mtd: gpmi: remove useless (void *) type casts and spaces between type casts and variables
-      mtd: gpmi: remove line breaks from error messages and improve wording
-      mtd: gpmi: make blockmark swapping optional
-
-Rob Ward (1):
-      mtd: phram: Fix whitespace issues
-
-Sergey Ryazanov (1):
-      mtd: spi-nor: add support for EON EN25QH128
-
-Vasily Khoruzhick (1):
-      mtd: s3c2410: Move to clk_prepare_enable/clk_disable_unprepare
-
-Wu, Josh (2):
-      mtd: atmel_nand: add NFC status error check
-      mtd: atmel_nand: implement the nfc_device_ready() by checking the R/B bit
-
-grmoore@altera.com (2):
-      mtd: spi-nor: add support for flag status register on Micron chips
-      mtd: denali: use 8 bytes for READID command
-
- Documentation/ABI/testing/sysfs-class-mtd          |  38 +++
- .../devicetree/bindings/mtd/gpmi-nand.txt          |  10 +
- drivers/mtd/chips/cfi_cmdset_0002.c                | 375 +++++++++++++++++++--
- drivers/mtd/cmdlinepart.c                          |   2 +-
- drivers/mtd/devices/phram.c                        |   7 +-
- drivers/mtd/ftl.c                                  |   4 -
- drivers/mtd/maps/rbtx4939-flash.c                  |   2 -
- drivers/mtd/mtdcore.c                              |  59 +++-
- drivers/mtd/mtdpart.c                              |  13 +-
- drivers/mtd/nand/Makefile                          |   2 +-
- drivers/mtd/nand/atmel_nand.c                      | 142 ++++++--
- drivers/mtd/nand/atmel_nand_nfc.h                  |   4 +
- drivers/mtd/nand/bf5xx_nand.c                      |  24 --
- drivers/mtd/nand/denali.c                          |   6 +-
- drivers/mtd/nand/gpmi-nand/gpmi-nand.c             |  71 ++--
- drivers/mtd/nand/lpc32xx_mlc.c                     |   6 -
- drivers/mtd/nand/lpc32xx_slc.c                     |   6 -
- drivers/mtd/nand/nand_base.c                       |  18 +
- drivers/mtd/nand/nand_bbt.c                        |  14 +
- drivers/mtd/nand/nand_timings.c                    | 253 ++++++++++++++
- drivers/mtd/nand/s3c2410.c                         |   4 +-
- drivers/mtd/spi-nor/spi-nor.c                      |  53 +++
- fs/jffs2/acl.c                                     |   3 +-
- fs/jffs2/xattr.c                                   |   3 +-
- include/linux/mtd/mtd.h                            |   2 +
- include/linux/mtd/nand.h                           |  53 +++
- include/linux/mtd/spi-nor.h                        |   4 +
- 27 files changed, 1032 insertions(+), 146 deletions(-)
- create mode 100644 drivers/mtd/nand/nand_timings.c
