@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759040AbaHHVq0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:46:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60860 "EHLO
+	id S1758990AbaHHVqS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:46:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60825 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758954AbaHHVqN (ORCPT
+	with ESMTP id S1758928AbaHHVqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:46:13 -0400
+	Fri, 8 Aug 2014 17:46:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Binderman <dcb314@hotmail.com>,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 17/17] arch/sparc/math-emu/math_32.c: drop stray break operator
-Date: Fri,  8 Aug 2014 14:35:39 -0700
-Message-Id: <20140808213458.220740626@linuxfoundation.org>
+Subject: [PATCH 3.16 05/17] macvlan: Initialize vlan_features to turn on offload support.
+Date: Fri,  8 Aug 2014 14:35:27 -0700
+Message-Id: <20140808213457.734069436@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213457.511493898@linuxfoundation.org>
 References: <20140808213457.511493898@linuxfoundation.org>
@@ -30,36 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit 093758e3daede29cb4ce6aedb111becf9d4bfc57 ]
+[ Upstream commit 081e83a78db9b0ae1f5eabc2dedecc865f509b98 ]
 
-This commit is a guesswork, but it seems to make sense to drop this
-break, as otherwise the following line is never executed and becomes
-dead code. And that following line actually saves the result of
-local calculation by the pointer given in function argument. So the
-proposed change makes sense if this code in the whole makes sense (but I
-am unable to analyze it in the whole).
+Macvlan devices do not initialize vlan_features.  As a result,
+any vlan devices configured on top of macvlans perform very poorly.
+Initialize vlan_features based on the vlan features of the lower-level
+device.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81641
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/math-emu/math_32.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/macvlan.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/sparc/math-emu/math_32.c
-+++ b/arch/sparc/math-emu/math_32.c
-@@ -499,7 +499,7 @@ static int do_one_mathemu(u32 insn, unsi
- 		case 0: fsr = *pfsr;
- 			if (IR == -1) IR = 2;
- 			/* fcc is always fcc0 */
--			fsr &= ~0xc00; fsr |= (IR << 10); break;
-+			fsr &= ~0xc00; fsr |= (IR << 10);
- 			*pfsr = fsr;
- 			break;
- 		case 1: rd->s = IR; break;
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -646,6 +646,7 @@ static int macvlan_init(struct net_devic
+ 				  (lowerdev->state & MACVLAN_STATE_MASK);
+ 	dev->features 		= lowerdev->features & MACVLAN_FEATURES;
+ 	dev->features		|= ALWAYS_ON_FEATURES;
++	dev->vlan_features	= lowerdev->vlan_features & MACVLAN_FEATURES;
+ 	dev->gso_max_size	= lowerdev->gso_max_size;
+ 	dev->iflink		= lowerdev->ifindex;
+ 	dev->hard_header_len	= lowerdev->hard_header_len;
 
 
