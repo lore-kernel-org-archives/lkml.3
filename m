@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803AbaHHLuz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 07:50:55 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:45784 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756563AbaHHLuY (ORCPT
+	id S1756844AbaHHLvF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 07:51:05 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:48358 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756583AbaHHLu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 07:50:24 -0400
-X-AuditID: 85900ec0-cff26b9000001514-51-53e4b97d0864
-Subject: [RFC PATCH 06/10] scsi/sd: Delete extra scsi_show_extd_sense() in
- sd_print_sense_hdr()
+	Fri, 8 Aug 2014 07:50:27 -0400
+X-AuditID: 85900ec0-d0927b9000001514-52-53e4b97f270c
+Subject: [RFC PATCH 07/10] scsi/trace: Use scsi_show_result trace point
+ instead of printk
 From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 To: Hannes Reinecke <hare@suse.de>
 Cc: linux-scsi@vger.kernel.org,
@@ -20,8 +20,8 @@ Cc: linux-scsi@vger.kernel.org,
         Doug Gilbert <dgilbert@interlog.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Christoph Hellwig <hch@lst.de>
-Date: Fri, 08 Aug 2014 11:50:19 +0000
-Message-ID: <20140808115019.6768.99063.stgit@yuno-kbuild.novalocal>
+Date: Fri, 08 Aug 2014 11:50:22 +0000
+Message-ID: <20140808115022.6768.33712.stgit@yuno-kbuild.novalocal>
 In-Reply-To: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal>
 References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal>
 User-Agent: StGit/0.17-dirty
@@ -33,12 +33,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sd_print_sense_hdr() calls scsi_show_extd_sense(),
-but scsi_print_sense_hdr() also calls scsi_show_extd_sense().
-We can get same result, so we delete it.
+Current SCSI trace has hostbyte table and driverbyte table, so we don't need to
+have the same table in scsi/constants.c.
 
-Note:
-Calling scsi_show_extd_sense() is introduced in fdd8b297.
+- Result examples
+
+<Before> (printk)
+sd 2:0:0:0: [sda] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
+
+<After> (ftrace)
+scsi_show_result: host_no=2 channel=0 id=0 lun=0 [sda] result=(driver=DRIVER_SENSE host=DID_OK)
 
 Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 Cc: Hannes Reinecke <hare@suse.de>
@@ -49,20 +53,156 @@ Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
 Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- drivers/scsi/sd.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/scsi/constants.c    |   52 -------------------------------------------
+ drivers/scsi/scsi_trace.c   |   16 +++++++++++++
+ include/trace/events/scsi.h |   38 +++++++++++++++++++++++++++++++
+ 3 files changed, 53 insertions(+), 53 deletions(-)
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 8d7204a..22dd214 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -3286,8 +3286,6 @@ static void sd_print_sense_hdr(struct scsi_disk *sdkp,
- 			       struct scsi_sense_hdr *sshdr)
- {
- 	scsi_print_sense_hdr(sdkp->device, sdkp->disk->disk_name, sshdr);
--	scsi_show_extd_sense(sdkp->device, sdkp->disk->disk_name,
--			     sshdr->asc, sshdr->ascq);
+diff --git a/drivers/scsi/constants.c b/drivers/scsi/constants.c
+index 6fad6b4..f7b7f32 100644
+--- a/drivers/scsi/constants.c
++++ b/drivers/scsi/constants.c
+@@ -1488,55 +1488,3 @@ void scsi_print_sense(struct scsi_cmnd *cmd)
+ 			   SCSI_SENSE_BUFFERSIZE);
  }
+ EXPORT_SYMBOL(scsi_print_sense);
+-
+-#ifdef CONFIG_SCSI_CONSTANTS
+-
+-static const char * const hostbyte_table[]={
+-"DID_OK", "DID_NO_CONNECT", "DID_BUS_BUSY", "DID_TIME_OUT", "DID_BAD_TARGET",
+-"DID_ABORT", "DID_PARITY", "DID_ERROR", "DID_RESET", "DID_BAD_INTR",
+-"DID_PASSTHROUGH", "DID_SOFT_ERROR", "DID_IMM_RETRY", "DID_REQUEUE",
+-"DID_TRANSPORT_DISRUPTED", "DID_TRANSPORT_FAILFAST", "DID_TARGET_FAILURE",
+-"DID_NEXUS_FAILURE" };
+-#define NUM_HOSTBYTE_STRS ARRAY_SIZE(hostbyte_table)
+-
+-static const char * const driverbyte_table[]={
+-"DRIVER_OK", "DRIVER_BUSY", "DRIVER_SOFT",  "DRIVER_MEDIA", "DRIVER_ERROR",
+-"DRIVER_INVALID", "DRIVER_TIMEOUT", "DRIVER_HARD", "DRIVER_SENSE"};
+-#define NUM_DRIVERBYTE_STRS ARRAY_SIZE(driverbyte_table)
+-
+-void scsi_show_result(struct scsi_device *sdev, const char *name, int result)
+-{
+-	int hb = host_byte(result);
+-	int db = driver_byte(result);
+-	const char *hb_string;
+-	const char *db_string;
+-
+-	hb_string = (hb < NUM_HOSTBYTE_STRS) ? hostbyte_table[hb] : "invalid";
+-	db_string = (db < NUM_DRIVERBYTE_STRS) ?
+-		driverbyte_table[db] : "invalid";
+-
+-
+-	sdev_printk(KERN_INFO, sdev,
+-		    "[%s] Result: hostbyte=%s driverbyte=%s\n",
+-		    name, hb_string, db_string);
+-}
+-
+-#else
+-
+-void scsi_show_result(struct scsi_device *sdev, const char *name, int result)
+-{
+-	sdev_printk(KERN_INFO, sdev,
+-		    "[%s] Result: hostbyte=0x%02x driverbyte=0x%02x\n",
+-		    name, host_byte(result), driver_byte(result));
+-}
+-
+-#endif
+-EXPORT_SYMBOL(scsi_show_result);
+-
+-void scsi_print_result(struct scsi_cmnd *cmd)
+-{
+-	const char *devname = cmd->request->rq_disk ?
+-		cmd->request->rq_disk->disk_name : "scsi";
+-	scsi_show_result(cmd->device, devname, cmd->result);
+-}
+-EXPORT_SYMBOL(scsi_print_result);
+diff --git a/drivers/scsi/scsi_trace.c b/drivers/scsi/scsi_trace.c
+index 2bea4f0..6ffbc40 100644
+--- a/drivers/scsi/scsi_trace.c
++++ b/drivers/scsi/scsi_trace.c
+@@ -19,6 +19,8 @@
+ #include <linux/trace_seq.h>
+ #include <trace/events/scsi.h>
  
- static void sd_print_result(struct scsi_disk *sdkp, int result)
++#include <scsi/scsi_dbg.h>
++
+ #define SERVICE_ACTION16(cdb) (cdb[1] & 0x1f)
+ #define SERVICE_ACTION32(cdb) ((cdb[8] << 8) | cdb[9])
+ 
+@@ -286,3 +288,17 @@ scsi_trace_parse_cdb(struct trace_seq *p, unsigned char *cdb, int len)
+ 		return scsi_trace_misc(p, cdb, len);
+ 	}
+ }
++
++void scsi_show_result(struct scsi_device *sdev, const char *name, int result)
++{
++	trace_scsi_show_result(sdev, name, result);
++}
++EXPORT_SYMBOL(scsi_show_result);
++
++void scsi_print_result(struct scsi_cmnd *cmd)
++{
++	const char *devname = cmd->request->rq_disk ?
++		cmd->request->rq_disk->disk_name : "scsi";
++	scsi_show_result(cmd->device, devname, cmd->result);
++}
++EXPORT_SYMBOL(scsi_print_result);
+diff --git a/include/trace/events/scsi.h b/include/trace/events/scsi.h
+index 8aecdc2..0675195 100644
+--- a/include/trace/events/scsi.h
++++ b/include/trace/events/scsi.h
+@@ -123,7 +123,11 @@
+ 		scsi_hostbyte_name(DID_IMM_RETRY),		\
+ 		scsi_hostbyte_name(DID_REQUEUE),		\
+ 		scsi_hostbyte_name(DID_TRANSPORT_DISRUPTED),	\
+-		scsi_hostbyte_name(DID_TRANSPORT_FAILFAST))
++		scsi_hostbyte_name(DID_TRANSPORT_FAILFAST),	\
++		scsi_hostbyte_name(DID_TARGET_FAILURE),		\
++		scsi_hostbyte_name(DID_NEXUS_FAILURE),		\
++		scsi_hostbyte_name(DID_ALLOC_FAILURE),		\
++		scsi_hostbyte_name(DID_MEDIUM_ERROR))
+ 
+ #define scsi_driverbyte_name(result)	{ result, #result }
+ #define show_driverbyte_name(val)				\
+@@ -359,6 +363,38 @@ TRACE_EVENT(scsi_eh_wakeup,
+ 	TP_printk("host_no=%u", __entry->host_no)
+ );
+ 
++TRACE_EVENT(scsi_show_result,
++
++	TP_PROTO(struct scsi_device *sdev, const char *devname, int result),
++
++	TP_ARGS(sdev, devname, result),
++
++	TP_STRUCT__entry(
++		__field( unsigned int,	host_no	)
++		__field( unsigned int,	channel	)
++		__field( unsigned int,	id	)
++		__field( unsigned int,	lun	)
++		__string(devname,	devname	)
++		__field( int,		result	)
++	),
++
++	TP_fast_assign(
++		__entry->host_no	= sdev->host->host_no;
++		__entry->channel	= sdev->channel;
++		__entry->id		= sdev->id;
++		__entry->lun		= sdev->lun;
++		__assign_str(devname, devname);
++		__entry->result		= result;
++	),
++
++	TP_printk("host_no=%u channel=%u id=%u lun=%u [%s] result=(driver=%s "\
++		  "host=%s)",
++		  __entry->host_no, __entry->channel, __entry->id, __entry->lun,
++		  __get_str(devname),
++		  show_driverbyte_name(driver_byte(__entry->result)),
++		  show_hostbyte_name(host_byte(__entry->result)))
++);
++
+ #endif /*  _TRACE_SCSI_H */
+ 
+ /* This part must be outside protection */
 
