@@ -1,207 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375AbaHHAJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 20:09:49 -0400
-Received: from mail-pa0-f73.google.com ([209.85.220.73]:36559 "EHLO
-	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827AbaHHAJq (ORCPT
+	id S1755442AbaHHALn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 20:11:43 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:58496 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaHHALi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 20:09:46 -0400
-From: Andrew Hunter <ahh@google.com>
-To: linux-kernel@vger.kernel.org, john.stultz@linaro.org, tglx@linutronix.de,
-        unmobile@gmail.com, pjt@google.com, jacobsa@google.com
-Cc: Andrew Hunter <ahh@google.com>
-Subject: [PATCH] sched: fix timeval conversion to jiffies
-Date: Thu,  7 Aug 2014 17:09:18 -0700
-Message-Id: <1407456558-18509-1-git-send-email-ahh@google.com>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	Thu, 7 Aug 2014 20:11:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844C4EA0@US01WEMBX2.internal.synopsys.com>
+References: <1407440891-29295-1-git-send-email-dianders@chromium.org>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C4EA0@US01WEMBX2.internal.synopsys.com>
+Date: Thu, 7 Aug 2014 17:11:37 -0700
+X-Google-Sender-Auth: uYOcoslbXE9wCZBP4ErlKVG5Zto
+Message-ID: <CAD=FV=XXP-0G=rxSkf-6=UznHj4ZqrLL3U+qQnNGdx_cLRGBPw@mail.gmail.com>
+Subject: Re: [PATCH] usb: dwc2: Read GNPTXFSIZ when in forced HOST mode.
+From: Doug Anderson <dianders@chromium.org>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-timeval_to_jiffies rounding was broken.  It essentially computed
-(eliding seconds)
+Paul,
 
-jiffies = usec  * (NSEC_PER_USEC/TICK_NSEC)
+On Thu, Aug 7, 2014 at 1:18 PM, Paul Zimmerman
+<Paul.Zimmerman@synopsys.com> wrote:
+>> From: Doug Anderson [mailto:dianders@chromium.org]
+>> Sent: Thursday, August 07, 2014 12:48 PM
+>>
+>> The documentation for GNPTXFSIZ says that "For host mode, this field
+>> is always valid."  Since we're already switching to host mode for
+>> HPTXFSIZ, let's also read GNPTXFSIZ in host mode.
+>>
+>> On an rk3288 SoC, without this change we see this at bootup:
+>>   dwc2 ff580000.usb: gnptxfsiz=00100400
+>>   dwc2 ff580000.usb: 128 invalid for host_nperio_tx_fifo_size. Check HW configuration.
+>>
+>> After this change we see:
+>>   dwc2 ff580000.usb: gnptxfsiz=04000400
+>>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> ---
+>>  drivers/usb/dwc2/core.c | 6 +++---
+>>  1 file changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/usb/dwc2/core.c b/drivers/usb/dwc2/core.c
+>> index 27d2c9b..c184ed43 100644
+>> --- a/drivers/usb/dwc2/core.c
+>> +++ b/drivers/usb/dwc2/core.c
+>> @@ -2674,23 +2674,23 @@ int dwc2_get_hwparams(struct dwc2_hsotg *hsotg)
+>>       hwcfg2 = readl(hsotg->regs + GHWCFG2);
+>>       hwcfg3 = readl(hsotg->regs + GHWCFG3);
+>>       hwcfg4 = readl(hsotg->regs + GHWCFG4);
+>> -     gnptxfsiz = readl(hsotg->regs + GNPTXFSIZ);
+>>       grxfsiz = readl(hsotg->regs + GRXFSIZ);
+>>
+>>       dev_dbg(hsotg->dev, "hwcfg1=%08x\n", hwcfg1);
+>>       dev_dbg(hsotg->dev, "hwcfg2=%08x\n", hwcfg2);
+>>       dev_dbg(hsotg->dev, "hwcfg3=%08x\n", hwcfg3);
+>>       dev_dbg(hsotg->dev, "hwcfg4=%08x\n", hwcfg4);
+>> -     dev_dbg(hsotg->dev, "gnptxfsiz=%08x\n", gnptxfsiz);
+>>       dev_dbg(hsotg->dev, "grxfsiz=%08x\n", grxfsiz);
+>>
+>> -     /* Force host mode to get HPTXFSIZ exact power on value */
+>> +     /* Force host mode to get HPTXFSIZ / GNPTXFSIZ exact power on value */
+>>       gusbcfg = readl(hsotg->regs + GUSBCFG);
+>>       gusbcfg |= GUSBCFG_FORCEHOSTMODE;
+>>       writel(gusbcfg, hsotg->regs + GUSBCFG);
+>>       usleep_range(100000, 150000);
+>>
+>> +     gnptxfsiz = readl(hsotg->regs + GNPTXFSIZ);
+>>       hptxfsiz = readl(hsotg->regs + HPTXFSIZ);
+>> +     dev_dbg(hsotg->dev, "gnptxfsiz=%08x\n", gnptxfsiz);
+>>       dev_dbg(hsotg->dev, "hptxfsiz=%08x\n", hptxfsiz);
+>>       gusbcfg = readl(hsotg->regs + GUSBCFG);
+>>       gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
+>
+> Nice! I wonder if this is a bug in the original driver, and they
+> actually meant to read this register instead of HPTXFSIZ? Well, it
+> doesn't really matter I guess.
+>
+> Acked-by: Paul Zimmerman <paulz@synopsys.com>
+>
+> You may want to resend this to Greg after -rc1 is out and he reopens
+> his usb-next tree.
 
-by using scaling arithmetic, which took the best approximation of
-NSEC_PER_USEC/TICK_NSEC with denominator of 2^USEC_JIFFIE_SC =
-x/(2^USEC_JIFFIE_SC), and computed:
+Thanks!
 
-jiffies = (usec * x) >> USEC_JIFFIE_SC
+...do you think this is a fix that needs to go in for 3.17?  Is it
+affecting anyone there?
 
-and it rounded this calculation up in the intermediate form (since we
-can't necessarily exactly represent TICK_NSEC in usec.) But the
-scaling arithmetic is a (very slight) *over*approximation of the true
-value: rounding the division up by adding 2^USEC_JIFFIE_SC - 1, when
-the error in scaling was added in, was sufficient to add one jiffie to
-the final result.
-
-In particular, with HZ=1000, we consistently computed that 10000 usec
-was 11 jiffies; the same was true for any exact multiple of
-TICK_NSEC. This is obviously bad as a general rule, and caused
-observable user problems with setitimer() at the very least:
-
-setitimer(ITIMER_PROF, &val, NULL);
-setitimer(ITIMER_PROF, NULL, &val);
-
-would actually add a tick to val!
-
-We could possibly still round in the intermediate form, adding
-something less than 2^USEC_JIFFIE_SC - 1, but easier still is to
-convert usec->nsec, round in nanoseconds, and then convert using
-time*spec*_to_jiffies.  This adds one constant multiplication, and is
-not observably slower in microbenchmarks on recent x86 hardware.
-
-Tested: the following program:
-
-int main() {
-  struct itimerval zero = {{0, 0}, {0, 0}};
-  /* Initially set to 10 ms. */
-  struct itimerval initial = zero;
-  initial.it_interval.tv_usec = 10000;
-  setitimer(ITIMER_PROF, &initial, NULL);
-  /* Save and restore several times. */
-  for (size_t i = 0; i < 10; ++i) {
-    struct itimerval prev;
-    setitimer(ITIMER_PROF, &zero, &prev);
-    /* on old kernels, this goes up by TICK_USEC every iteration */
-    printf("previous value: %ld %ld %ld %ld\n",
-           prev.it_interval.tv_sec, prev.it_interval.tv_usec,
-           prev.it_value.tv_sec, prev.it_value.tv_usec);
-    setitimer(ITIMER_PROF, &prev, NULL);
-  }
-    return 0;
-}
-
-Signed-off-by: Andrew Hunter <ahh@google.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Reported-by: Aaron Jacobs <jacobsa@google.com>
-Change-Id: I7cd0f0764847fd055d39531f54e6ea3dd3ce5453
----
- include/linux/jiffies.h | 12 -----------
- kernel/time.c           | 54 +++++++++++++++++++++++++++----------------------
- 2 files changed, 30 insertions(+), 36 deletions(-)
-
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index 1f44466..c367cbd 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -258,23 +258,11 @@ extern unsigned long preset_lpj;
- #define SEC_JIFFIE_SC (32 - SHIFT_HZ)
- #endif
- #define NSEC_JIFFIE_SC (SEC_JIFFIE_SC + 29)
--#define USEC_JIFFIE_SC (SEC_JIFFIE_SC + 19)
- #define SEC_CONVERSION ((unsigned long)((((u64)NSEC_PER_SEC << SEC_JIFFIE_SC) +\
-                                 TICK_NSEC -1) / (u64)TICK_NSEC))
- 
- #define NSEC_CONVERSION ((unsigned long)((((u64)1 << NSEC_JIFFIE_SC) +\
-                                         TICK_NSEC -1) / (u64)TICK_NSEC))
--#define USEC_CONVERSION  \
--                    ((unsigned long)((((u64)NSEC_PER_USEC << USEC_JIFFIE_SC) +\
--                                        TICK_NSEC -1) / (u64)TICK_NSEC))
--/*
-- * USEC_ROUND is used in the timeval to jiffie conversion.  See there
-- * for more details.  It is the scaled resolution rounding value.  Note
-- * that it is a 64-bit value.  Since, when it is applied, we are already
-- * in jiffies (albit scaled), it is nothing but the bits we will shift
-- * off.
-- */
--#define USEC_ROUND (u64)(((u64)1 << USEC_JIFFIE_SC) - 1)
- /*
-  * The maximum jiffie value is (MAX_INT >> 1).  Here we translate that
-  * into seconds.  The 64-bit case will overflow if we are not careful,
-diff --git a/kernel/time.c b/kernel/time.c
-index 7c7964c..3c49ab4 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -496,17 +496,20 @@ EXPORT_SYMBOL(usecs_to_jiffies);
-  * that a remainder subtract here would not do the right thing as the
-  * resolution values don't fall on second boundries.  I.e. the line:
-  * nsec -= nsec % TICK_NSEC; is NOT a correct resolution rounding.
-+ * Note that due to the small error in the multiplier here, this
-+ * rounding is incorrect for sufficiently large values of tv_nsec, but
-+ * well formed timespecs should have tv_nsec < NSEC_PER_SEC, so we're
-+ * OK.
-  *
-  * Rather, we just shift the bits off the right.
-  *
-  * The >> (NSEC_JIFFIE_SC - SEC_JIFFIE_SC) converts the scaled nsec
-  * value to a scaled second value.
-  */
--unsigned long
--timespec_to_jiffies(const struct timespec *value)
-+static unsigned long
-+__timespec_to_jiffies(unsigned long sec, long nsec)
- {
--	unsigned long sec = value->tv_sec;
--	long nsec = value->tv_nsec + TICK_NSEC - 1;
-+	nsec = nsec + TICK_NSEC - 1;
- 
- 	if (sec >= MAX_SEC_IN_JIFFIES){
- 		sec = MAX_SEC_IN_JIFFIES;
-@@ -517,6 +520,13 @@ timespec_to_jiffies(const struct timespec *value)
- 		 (NSEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
- 
- }
-+
-+unsigned long
-+timespec_to_jiffies(const struct timespec *value)
-+{
-+	return __timespec_to_jiffies(value->tv_sec, value->tv_nsec);
-+}
-+
- EXPORT_SYMBOL(timespec_to_jiffies);
- 
- void
-@@ -533,31 +543,27 @@ jiffies_to_timespec(const unsigned long jiffies, struct timespec *value)
- }
- EXPORT_SYMBOL(jiffies_to_timespec);
- 
--/* Same for "timeval"
-+/*
-+ * We could use a similar algorithm to timespec_to_jiffies (with a
-+ * different multiplier for usec instead of nsec). But this has a
-+ * problem with rounding: we can't exactly add TICK_NSEC - 1 to the
-+ * usec value, since it's not necessarily integral.
-  *
-- * Well, almost.  The problem here is that the real system resolution is
-- * in nanoseconds and the value being converted is in micro seconds.
-- * Also for some machines (those that use HZ = 1024, in-particular),
-- * there is a LARGE error in the tick size in microseconds.
--
-- * The solution we use is to do the rounding AFTER we convert the
-- * microsecond part.  Thus the USEC_ROUND, the bits to be shifted off.
-- * Instruction wise, this should cost only an additional add with carry
-- * instruction above the way it was done above.
-+ * We could instead round in the intermediate scaled representation
-+ * (i.e. in units of 1/2^(large scale) jiffies) but that's also
-+ * perilous: the scaling introduces a small positive error, which
-+ * combined with a division-rounding-upward (i.e. adding 2^(scale) - 1
-+ * units to the intermediate before shifting) leads to accidental
-+ * overflow and overestimates.
-+ *
-+ * At the cost of one additional multiplication by a constant, just
-+ * use the timespec implementation.
-  */
- unsigned long
- timeval_to_jiffies(const struct timeval *value)
- {
--	unsigned long sec = value->tv_sec;
--	long usec = value->tv_usec;
--
--	if (sec >= MAX_SEC_IN_JIFFIES){
--		sec = MAX_SEC_IN_JIFFIES;
--		usec = 0;
--	}
--	return (((u64)sec * SEC_CONVERSION) +
--		(((u64)usec * USEC_CONVERSION + USEC_ROUND) >>
--		 (USEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
-+	return __timespec_to_jiffies(value->tv_sec,
-+				     value->tv_usec * NSEC_PER_USEC);
- }
- EXPORT_SYMBOL(timeval_to_jiffies);
- 
--- 
-2.0.0.526.g5318336
-
+-Doug
