@@ -1,387 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498AbaHHJqi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 05:46:38 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:47394 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755914AbaHHJqe (ORCPT
+	id S1756522AbaHHJrC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 05:47:02 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:47854 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939AbaHHJq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 05:46:34 -0400
-From: Xiangliang Yu <yuxiangl@marvell.com>
-To: Dan Williams <dan.j.williams@intel.com>, Xiangliang Yu <yxlraid@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, James Bottomley <JBottomley@parallels.com>,
-        Todd E Brandt <todd.e.brandt@intel.com>,
-        Lukasz Dorau <lukasz.dorau@intel.com>,
-        IDE/ATA development list <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Fri, 8 Aug 2014 02:46:17 -0700
-Subject: RE: [PATCH 1/3] libsas: modify SATA error handler
-Thread-Topic: [PATCH 1/3] libsas: modify SATA error handler
-Thread-Index: Ac+ymt4UhfP84MCSQFmNNQ+2ju4hOQAR9GtA
-Message-ID: <F766E4F80769BD478052FB6533FA745D5944CE9331@SC-VEXCH4.marvell.com>
-References: <1398346047-10276-1-git-send-email-yxlraid@gmail.com>
-	<CAPcyv4jZaR0x4ChMvBYCCq-sUgyvf6CraKj+Tn+qmcvUbxwezQ@mail.gmail.com>
- <CAPcyv4hQxtHdAXDvj9cF1prTpH0unJ7VX1ZjA5aJq8UeVhNC2Q@mail.gmail.com>
-In-Reply-To: <CAPcyv4hQxtHdAXDvj9cF1prTpH0unJ7VX1ZjA5aJq8UeVhNC2Q@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Fri, 8 Aug 2014 05:46:59 -0400
+Date: Fri, 8 Aug 2014 11:46:55 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, linux-pwm@vger.kernel.org,
+        devicetree@vger.kernel.org, ajitpal.singh@st.com
+Subject: Re: [PATCH v2 06/11] pwm: sti: Add new driver for ST's PWM IP
+Message-ID: <20140808094655.GC15852@ulmo>
+References: <1405348412-7352-1-git-send-email-lee.jones@linaro.org>
+ <1405348412-7352-7-git-send-email-lee.jones@linaro.org>
+ <20140807142344.GA11095@ulmo.nvidia.com>
+ <20140808073802.GC21618@lee--X1>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-08_02:2014-08-06,2014-08-08,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1408080114
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KDt/GgjP6HVcx58l"
+Content-Disposition: inline
+In-Reply-To: <20140808073802.GC21618@lee--X1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s789kgZT023335
 
-Hi, Dan
 
-> Hi, some notes below:
->
-> On Thu, Apr 24, 2014 at 6:27 AM, Xiangliang Yu <yxlraid@gmail.com> wrote:
->> Add support for SATA port softreset and port multiplier error 
->> handling.
->
-> Some more detailed notes about the approach and any caveats would be 
-> appreciated.
->
->>
->> Signed-off-by: Xiangliang Yu <yxlraid@gmail.com>
->> ---
->>  drivers/scsi/libsas/sas_ata.c |  226 ++++++++++++++++++++++++++++++++++++++++-
->>  include/scsi/libsas.h         |    6 +
->>  2 files changed, 231 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/scsi/libsas/sas_ata.c 
->> b/drivers/scsi/libsas/sas_ata.c index 766098a..29a19fd 100644
->> --- a/drivers/scsi/libsas/sas_ata.c
->> +++ b/drivers/scsi/libsas/sas_ata.c
->> @@ -442,6 +442,226 @@ static int sas_ata_hard_reset(struct ata_link *link, unsigned int *class,
->>         return ret;
->>  }
->>
->> +static void sas_ata_freeze(struct ata_port *ap) {
->> +       struct domain_device *dev = ap->private_data;
->> +       struct sas_ha_struct *sas_ha = dev->port->ha;
->> +       struct Scsi_Host *host = sas_ha->core.shost;
->> +       struct sas_internal *i = to_sas_internal(host->transportt);
->> +
->> +       if (i->dft->lldd_dev_freeze)
->> +               i->dft->lldd_dev_freeze(dev); }
->> +
->> +static void sas_ata_thaw(struct ata_port *ap) {
->> +       struct domain_device *dev = ap->private_data;
->> +       struct sas_ha_struct *sas_ha = dev->port->ha;
->> +       struct Scsi_Host *host = sas_ha->core.shost;
->> +       struct sas_internal *i = to_sas_internal(host->transportt);
->> +
->> +       if (i->dft->lldd_dev_thaw)
->> +               i->dft->lldd_dev_thaw(dev); }
->> +
->> +static int sas_ata_wait_task_done(struct sas_task *task, unsigned long timeout,
->> +               int (*check_done)(struct sas_task *task)) {
->
-> Why do we need a custom check_done() routine?  Since we have a 
-> sas_task we can use the normal completion infrastructure.  See 
-> smp_execute_task().
+--KDt/GgjP6HVcx58l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You are right, I'll change it
+On Fri, Aug 08, 2014 at 08:38:02AM +0100, Lee Jones wrote:
+> On Thu, 07 Aug 2014, Thierry Reding wrote:
+> > On Mon, Jul 14, 2014 at 03:33:27PM +0100, Lee Jones wrote:
+> > [...]
+> > > +static int sti_pwm_probe(struct platform_device *pdev)
+> > > +{
+> > [...]
+> > > +	pc->clk =3D of_clk_get_by_name(np, "pwm");
+> >=20
+> > This didn't compile because the np variable isn't declared. It was easy
+> > to fix up, so I did, but please be more careful next time that the
+> > patches you submit at least compile (preferably without sparse warnings
+> > of which I also fixed up a couple).
+>=20
+> That's annoying, I thought I did build test the final changes.
+> However, there's a mistake in the Makefile meaning that it wasn't
+> building with no warning/error messages - it actually wasn't building
+> at all!  Sorry about that Thierry.
+>=20
+> I guess if you can build the driver, you've already fixed that?
 
->
->> +       struct ata_port *ap = task->uldd_task;
->> +       unsigned long deadline;
->> +       int done;
->> +
->> +       if (!check_done) {
->> +               SAS_DPRINTK("check function is null.\n");
->> +               return -1;
->> +       }
->> +
->> +       deadline = ata_deadline(jiffies, timeout);
->> +       done = check_done(task);
->> +
->> +       while (done && time_before(jiffies, deadline)) {
->> +               ata_msleep(ap, 1);
->> +
->> +               done = check_done(task);
->
-> This can simply be:
->
-> completion_done(&task->slow_task->completion)
+Yes, it should be all taken care of in the PWM for-next branch.
 
-Yes
+Thierry
 
->
->> +       }
->> +
->> +       return done;
->> +}
->> +
->> +static int sas_ata_exec_polled_cmd(struct ata_port *ap, struct ata_taskfile *tf,
->> +               int pmp, unsigned long timeout) {
->> +       struct domain_device *dev = ap->private_data;
->> +       struct sas_ha_struct *sas_ha = dev->port->ha;
->> +       struct Scsi_Host *host = sas_ha->core.shost;
->> +       struct sas_internal *i = to_sas_internal(host->transportt);
->> +       struct sas_task *task = NULL;
->> +       int ret = -1;
->> +
->> +       if (!i->dft->lldd_execute_task) {
->> +               SAS_DPRINTK("execute function is null.\n");
->> +               return ret;
->> +       }
->> +
->> +       task = sas_alloc_task(GFP_ATOMIC);
->
-> I think this can be downgraded to GFP_NOIO.  We're in a sleepable context.
+--KDt/GgjP6HVcx58l
+Content-Type: application/pgp-signature
 
-Yes, got it
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
->
->> +       if (!task) {
->> +               SAS_DPRINTK("failed to alloc sas task.\n");
->> +               goto fail;
->> +       }
->> +
->> +       task->dev = dev;
->> +       task->task_proto = SAS_PROTOCOL_SATA;
->> +       task->uldd_task = ap;
->> +
->> +       ata_tf_to_fis(tf, pmp, 0, (u8 *)&task->ata_task.fis);
->> +       task->ata_task.retry_count = 1;
->> +       task->task_state_flags = SAS_TASK_STATE_PENDING;
->> +       task->task_state_flags |= SAS_TASK_NEED_DEV_RESET;
->> +
->> +       ret = i->dft->lldd_execute_task(task, 1, GFP_ATOMIC);
->
-> Same here.
->
->> +       if (ret) {
->> +               SAS_DPRINTK("failed to send internal task.\n");
->> +               goto fail;
->> +       }
->> +
->> +       if (timeout) {
->> +               ret = sas_ata_wait_task_done(task, timeout,
->> +                               i->dft->lldd_wait_task_done);
->> +               if (ret) {
->> +                       SAS_DPRINTK("get wrong status.\n");
->> +                       goto fail;
->> +               }
->> +       }
->> +       list_del_init(&task->list);
->> +       sas_free_task(task);
->> +
->> +       return 0;
->> +fail:
->> +       if (task) {
->> +               list_del_init(&task->list);
->> +               sas_free_task(task);
->> +       }
->> +
->> +       return ret;
->> +}
->> +
->> +static int sas_ata_soft_reset(struct ata_link *link, unsigned int *class,
->> +                             unsigned long deadline) {
->> +       struct ata_taskfile tf;
->> +       struct ata_port *ap = link->ap;
->> +       struct domain_device *dev = ap->private_data;
->> +       struct sas_ha_struct *sas_ha = dev->port->ha;
->> +       struct Scsi_Host *host = sas_ha->core.shost;
->> +       struct sas_internal *i = to_sas_internal(host->transportt);
->> +       struct sas_phy *phy;
->> +       unsigned long now, msecs;
->> +       unsigned int pmp;
->> +       int ret = -1;
->> +       int (*check_ready)(struct ata_link *link);
->> +
->> +       phy = sas_get_local_phy(dev);
->> +       if (scsi_is_sas_phy_local(phy))
->> +               check_ready = local_ata_check_ready;
->> +       else
->> +               check_ready = smp_ata_check_ready;
->> +       sas_put_local_phy(phy);
->
-> Does this attempt to support expander attached port multiplier's?
-> Last I checked expanders do not support this so we should just fail 
-> this for non-local phys.
+iQIcBAEBAgAGBQJT5JyPAAoJEN0jrNd/PrOhiYsQALs5+YuEzMr3gzPXaVvgP5vj
+3Nm7+3jH8UgNUqQMbw3gJjitkn50nP4Uowe6+xKQs16cSkM5aGHY2I5nnzVH9ftT
+hbisisxFb6VaOUWGAfFnuKzIlG/EAPu/Nlh/T5ED2DyDwB3Blkqo+ztfsfhzKOHe
+e04uywaHiEA1MKnBxyxplgjJPm4uK18XsDf0SRxZCait5DCTRTe7OsaRv5a/f7vv
+ui6c1fc5Hmha8yspQFI5nTCEl6gcZMMq10aTso3ShMrufvQ9fT685+GrgA4QfLf0
+V+U6gl5n57OBhS1veXaF5eoneq7OsKIUjyGXtlLN5I0aeOSaQ0ayBe/NYJYP6P5t
+zOuH7dhqPcvOlj2behCAkJLMiecLBpZVLtIZZ0alGIcc1D3DToYDYbZTP3Nzvd7A
+52l1WNcwnXcTWfd2uLULj7qZSMiKzzSuGKJMgEq8JnkDnK9uzPDiIQF/L9wBdT3z
+bLIOEgyGpfUfWSgxXKSTUv/qWtoUWei5CrOq5gmFAPI/gvG5iB/SQ40y0eJ7PnSw
+7bDPLEbZf91hOxHXtUCLhR0RUrSQff7u5s6QAfrSO1tf3ABVFDoTVsTqRbwVLk4f
+TfVSDeyfAydTnM+bOgabER3Wc46ho9E4GPnrugYF1527sLWZMFHousKTS0JYVNCT
+Qx2gqPa6LplU0ViRocgM
+=rVJs
+-----END PGP SIGNATURE-----
 
-Sorry, I copy it from hard_reset function, and I'll clear the code;
-
->
->> +
->> +       pmp = sata_srst_pmp(link);
->> +
->> +       msecs = 0;
->> +       now = jiffies;
->> +       if (time_after(deadline, now))
->> +               msecs = jiffies_to_msecs(deadline - now);
->> +
->> +       memset(&tf, 0, sizeof(struct ata_taskfile));
->> +       tf.ctl = ATA_SRST;
->> +       tf.device = ATA_DEVICE_OBS;
->> +
->> +       if (sas_ata_exec_polled_cmd(ap, &tf, pmp, msecs)) {
->> +               ret = -EIO;
->> +               goto fail;
->> +       }
->> +
->> +       tf.ctl &= ~ATA_SRST;
->> +       sas_ata_exec_polled_cmd(ap, &tf, pmp, msecs);
->
-> What about lldd's that do not know how to handle ATA_SRST?  I think we 
-> need preparation patches to make SRST support opt-in, or teach all 
-> lldds how to handle these SRST sas_tasks.
-
-I think lldds have different actions to handle SRST because there is no unified standard.
-But it should be easy to support it.
-Later, I'll submit a mvsas patch to show how to support it. 
-
->
->> +
->> +       ret = ata_wait_after_reset(link, deadline, check_ready);
->> +       if (ret) {
->> +               SAS_DPRINTK("device is not ready.\n");
->> +               ret = -EIO;
->> +               goto fail;
->> +       } else {
->> +               if (i->dft->lldd_dev_classify)
->> +                       *class = i->dft->lldd_dev_classify(dev);
->> +       }
->> +
->> +       return 0;
->> +
->> +fail:
->> +       SAS_DPRINTK("failed to reset.\n");
->> +       return ret;
->> +}
->> +
->> +/* According sata 3.0 spec 13.15.4.2, enable the device port */ 
->> +static int sas_ata_pmp_hard_reset(struct ata_link *link, unsigned int *class,
->> +                             unsigned long deadline) {
->> +       struct ata_port *ap = link->ap;
->> +       struct domain_device *dev = ap->private_data;
->> +       struct sas_ha_struct *sas_ha = dev->port->ha;
->> +       struct Scsi_Host *host = sas_ha->core.shost;
->> +       struct sas_internal *i = to_sas_internal(host->transportt);
->> +       int ret = -1;
->> +       u32 scontrol = 0;
->> +
->> +       set_bit(SAS_DEV_RESET, &dev->state);
->> +
->> +       ret = sata_scr_read(link, SCR_CONTROL, &scontrol);
->
-> I think a comment is needed clarifying that these reads generate 
-> sas_tasks to a pmp and are not trying to read/write local SCR 
-> registers that do not exist on a SAS hba.
->
-
-I think the situation can't happen here.
-
->> +       if (ret)
->> +               goto error;
->> +
->> +       /* enable device port */
->> +       scontrol = 0x1;
->> +       ret = sata_scr_write(link, SCR_CONTROL, scontrol);
->> +       if (ret)
->> +               goto error;
->> +
->> +       ata_msleep(ap, 1);
->> +
->> +       scontrol = 0x0;
->> +       ret = sata_scr_write(link, SCR_CONTROL, scontrol);
->> +       if (ret)
->> +               goto error;
->> +
->> +       ata_msleep(ap, 10);
->> +
->> +       /* check device link status */
->> +       if (ata_link_offline(link)) {
->> +               SAS_DPRINTK("link is offline.\n");
->> +               goto error;
->> +       }
->> +
->> +       /* clear X bit */
->> +       scontrol = 0xFFFFFFFF;
->> +       ret = sata_scr_write(link, SCR_ERROR, scontrol);
->> +       if (ret)
->> +               goto error;
->> +
->> +       /* may be need to wait for device sig */
->> +       ata_msleep(ap, 3);
->> +
->> +       /* check device class */
->> +       if (i->dft->lldd_dev_classify)
->> +               *class = i->dft->lldd_dev_classify(dev);
->> +
->> +       return 0;
->> +
->> +error:
->> +       SAS_DPRINTK("failed to hard reset.\n");
->> +       return ret;
->> +}
->> +
->>  /*
->>   * notify the lldd to forget the sas_task for this internal ata command
->>   * that bypasses scsi-eh
->> @@ -551,8 +771,12 @@ void sas_ata_end_eh(struct ata_port *ap)  static 
->> struct ata_port_operations sas_sata_ops = {
->>         .prereset               = ata_std_prereset,
->>         .hardreset              = sas_ata_hard_reset,
->> +       .softreset              = sas_ata_soft_reset,
->> +       .pmp_hardreset          = sas_ata_pmp_hard_reset,
->> +       .freeze                 = sas_ata_freeze,
->> +       .thaw                   = sas_ata_thaw,
->>         .postreset              = ata_std_postreset,
->> -       .error_handler          = ata_std_error_handler,
->> +       .error_handler          = sata_pmp_error_handler,
->>         .post_internal_cmd      = sas_ata_post_internal,
->>         .qc_defer               = ata_std_qc_defer,
->>         .qc_prep                = ata_noop_qc_prep,
->> diff --git a/include/scsi/libsas.h b/include/scsi/libsas.h index 
->> ef7872c..a26466a 100644
->> --- a/include/scsi/libsas.h
->> +++ b/include/scsi/libsas.h
->> @@ -689,6 +689,12 @@ struct sas_domain_function_template {
->>         /* GPIO support */
->>         int (*lldd_write_gpio)(struct sas_ha_struct *, u8 reg_type,
->>                                u8 reg_index, u8 reg_count, u8 
->> *write_data);
->> +
->> +       /* ATA EH functions */
->> +       void (*lldd_dev_freeze)(struct domain_device *);
->
-> Why do we need to pass this all the way through to the lldd?  Can we 
-> get away with emulating this in sas_ata.c.
->
-
-Because SAS HBAs spec haven't a unified standard, not like AHCI.
-But I think we can delete the interface because we don't disable interrupt 
-during EH now.
-
->> +       void (*lldd_dev_thaw)(struct domain_device *);
->
-> Same note as lldd_dev_freeze
->
->> +       int (*lldd_wait_task_done)(struct sas_task *);
->
-> Should not be needed.
->
->> +       int (*lldd_dev_classify)(struct domain_device *);
->
-> I think this belongs in a different patch set.  If we solve device 
-> re-classification for soft reset we need to do the same for the 
-> sas_ata_hard_reset path.
-
-Could you explain more details? Thanks!
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--KDt/GgjP6HVcx58l--
