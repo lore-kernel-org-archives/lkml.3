@@ -1,54 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654AbaHHMP6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 08:15:58 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:56011 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755989AbaHHMP4 (ORCPT
+	id S1756572AbaHHMSM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 08:18:12 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:53867 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755969AbaHHMSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 08:15:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140807085024.GE27051@dragon>
-References: <1407309129-5562-1-git-send-email-b20788@freescale.com>
-	<20140807085024.GE27051@dragon>
-Date: Fri, 8 Aug 2014 08:15:54 -0400
-Message-ID: <CAC-25o_C1ijr64NyA22JqfS9Z90-v9iseaYzcf1ojy_QNXzExA@mail.gmail.com>
-Subject: Re: [PATCH V3] Thermal: imx: add i.mx6sx thermal support
-From: "edubezval@gmail.com" <edubezval@gmail.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Anson Huang <b20788@freescale.com>, Zhang Rui <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 8 Aug 2014 08:18:09 -0400
+Subject: [PATCH v2 4/17] arcmsr: limit max. number of SCSI command request
+From: Ching Huang <ching2048@areca.com.tw>
+To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Aug 2014 20:17:59 +0800
+Message-ID: <1407500279.5099.21.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Shawn,
+From: Ching Huang <ching2048@areca.com.tw>
 
-On Thu, Aug 7, 2014 at 4:50 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
-> On Wed, Aug 06, 2014 at 03:12:09PM +0800, Anson Huang wrote:
->> i.MX6SX has some new features of thermal interrupt function,
->> there are LOW, HIGH and PANIC irq for thermal sensor, so add
->> platform data to separate different thermal version;
->>
->> The reset value of LOW ALARM is 0 which means the highest
->> temp, so the LOW ALARM will be triggered once irq is enabled,
->> so we need to correct it before enabling thermal irq;
->>
->> Enable PANIC ALARM as critical trip point, it will trigger
->> system reset via SRC module once PANIC IRQ is triggered, it
->> is pure hardware function, so use it instead of software
->> reset by cooling device.
->>
->> Signed-off-by: Anson Huang <b20788@freescale.com>
->
-> Tested-by: Shawn Guo <shawn.guo@linaro.org>
+This patch limits the max. number of SCSI command request to avoid command overflow.
 
-Thanks!
+Changes in v2 4/17:
+* set the correct host->can_queue value after read adapter's limitation.
 
-Did you have the chance to test on both? i.MX6Q and i.MX6SX?
+Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+---
 
--- 
-Eduardo Bezerra Valentin
+Thanks to Tomas's advice.
+
+diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+--- a/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:24:06.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:22:36.000000000 +0800
+@@ -45,11 +45,12 @@
+ #include <linux/interrupt.h>
+ struct device_attribute;
+ /*The limit of outstanding scsi command that firmware can handle*/
+-#define ARCMSR_MAX_OUTSTANDING_CMD						256
+ #ifdef CONFIG_XEN
+ 	#define ARCMSR_MAX_FREECCB_NUM	160
++#define ARCMSR_MAX_OUTSTANDING_CMD	155
+ #else
+ 	#define ARCMSR_MAX_FREECCB_NUM	320
++#define ARCMSR_MAX_OUTSTANDING_CMD	255
+ #endif
+ #define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140428"
+ #define ARCMSR_SCSI_INITIATOR_ID						255
+@@ -598,6 +599,7 @@ struct AdapterControlBlock
+ 				#define	FW_DEADLOCK	0x0010
+ 	atomic_t 			rq_map_token;
+ 	atomic_t			ante_token_value;
++	uint32_t	maxOutstanding;
+ 	int		msix_vector_count;
+ };/* HW_DEVICE_EXTENSION */
+ /*
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-08 19:03:48.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-08 19:35:46.000000000 +0800
+@@ -134,7 +134,7 @@ static struct scsi_host_template arcmsr_
+ 	.eh_bus_reset_handler	= arcmsr_bus_reset,
+ 	.bios_param		= arcmsr_bios_param,
+ 	.change_queue_depth	= arcmsr_adjust_disk_queue_depth,
+-	.can_queue		= ARCMSR_MAX_FREECCB_NUM,
++	.can_queue		= ARCMSR_MAX_OUTSTANDING_CMD,
+ 	.this_id			= ARCMSR_SCSI_INITIATOR_ID,
+ 	.sg_tablesize	        	= ARCMSR_DEFAULT_SG_ENTRIES, 
+ 	.max_sectors    	    	= ARCMSR_MAX_XFER_SECTORS_C, 
+@@ -693,7 +693,7 @@ static int arcmsr_probe(struct pci_dev *
+ 	host->max_lun = ARCMSR_MAX_TARGETLUN;
+ 	host->max_id = ARCMSR_MAX_TARGETID;		/*16:8*/
+ 	host->max_cmd_len = 16;	 			/*this is issue of 64bit LBA ,over 2T byte*/
+-	host->can_queue = ARCMSR_MAX_FREECCB_NUM;	/* max simultaneous cmds */		
++	host->can_queue = ARCMSR_MAX_OUTSTANDING_CMD;	/* max simultaneous cmds */		
+ 	host->cmd_per_lun = ARCMSR_MAX_CMD_PERLUN;	    
+ 	host->this_id = ARCMSR_SCSI_INITIATOR_ID;
+ 	host->unique_id = (bus << 8) | dev_fun;
+@@ -2215,9 +2215,6 @@ static int arcmsr_queue_command_lck(stru
+ 		arcmsr_handle_virtual_command(acb, cmd);
+ 		return 0;
+ 	}
+-	if (atomic_read(&acb->ccboutstandingcount) >=
+-			ARCMSR_MAX_OUTSTANDING_CMD)
+-		return SCSI_MLQUEUE_HOST_BUSY;
+ 	ccb = arcmsr_get_freeccb(acb);
+ 	if (!ccb)
+ 		return SCSI_MLQUEUE_HOST_BUSY;
+@@ -2427,12 +2424,27 @@ static bool arcmsr_get_hbc_config(struct
+ }
+ static bool arcmsr_get_firmware_spec(struct AdapterControlBlock *acb)
+ {
+-	if (acb->adapter_type == ACB_ADAPTER_TYPE_A)
+-		return arcmsr_get_hba_config(acb);
+-	else if (acb->adapter_type == ACB_ADAPTER_TYPE_B)
+-		return arcmsr_get_hbb_config(acb);
++	bool rtn = false;
++
++	switch (acb->adapter_type) {
++	case ACB_ADAPTER_TYPE_A:
++		rtn = arcmsr_get_hba_config(acb);
++		break;
++	case ACB_ADAPTER_TYPE_B:
++		rtn = arcmsr_get_hbb_config(acb);
++		break;
++	case ACB_ADAPTER_TYPE_C:
++		rtn = arcmsr_get_hbc_config(acb);
++		break;
++	default:
++		break;
++	}
++	if(acb->firm_numbers_queue > ARCMSR_MAX_OUTSTANDING_CMD)
++		acb->maxOutstanding = ARCMSR_MAX_OUTSTANDING_CMD;
+ 	else
+-		return arcmsr_get_hbc_config(acb);
++		acb->maxOutstanding = acb->firm_numbers_queue - 1;
++	acb->host->can_queue = acb->maxOutstanding;
++	return rtn;
+ }
+ 
+ static int arcmsr_polling_hba_ccbdone(struct AdapterControlBlock *acb,
+
+
