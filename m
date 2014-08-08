@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793AbaHHWbN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:31:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40169 "EHLO
+	id S1759667AbaHHWbG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:31:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40171 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756512AbaHHUlt (ORCPT
+	with ESMTP id S1756517AbaHHUlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:41:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Niu Yawei <yawei.niu@intel.com>, Jan Kara <jack@suse.cz>,
+Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 142/259] quota: missing lock in dqcache_shrink_scan()
-Date: Fri,  8 Aug 2014 13:39:25 -0700
-Message-Id: <1407530482-4483-143-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 133/259] hwmon: (da9055) Don't use dash in the name attribute
+Date: Fri,  8 Aug 2014 13:39:16 -0700
+Message-Id: <1407530482-4483-134-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,43 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Niu Yawei <yawei.niu@gmail.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit d68aab6b8f572406aa93b45ef6483934dd3b54a6 upstream.
+commit 6b00f440dd678d786389a7100a2e03fe44478431 upstream.
 
-Commit 1ab6c4997e04 (fs: convert fs shrinkers to new scan/count API)
-accidentally removed locking from quota shrinker. Fix it -
-dqcache_shrink_scan() should use dq_list_lock to protect the
-scan on free_dquots list.
+Dashes are not allowed in hwmon name attributes.
+Use "da9055" instead of "da9055-hwmon".
 
-Fixes: 1ab6c4997e04a00c50c6d786c2f046adc0d1f5de
-Signed-off-by: Niu Yawei <yawei.niu@intel.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/quota/dquot.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/hwmon/da9055-hwmon.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-index cfc8dcc..ce87c90 100644
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -702,6 +702,7 @@ dqcache_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 	struct dquot *dquot;
- 	unsigned long freed = 0;
- 
-+	spin_lock(&dq_list_lock);
- 	head = free_dquots.prev;
- 	while (head != &free_dquots && sc->nr_to_scan) {
- 		dquot = list_entry(head, struct dquot, dq_free);
-@@ -713,6 +714,7 @@ dqcache_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 		freed++;
- 		head = free_dquots.prev;
- 	}
-+	spin_unlock(&dq_list_lock);
- 	return freed;
+diff --git a/drivers/hwmon/da9055-hwmon.c b/drivers/hwmon/da9055-hwmon.c
+index 029ecab..1b275a2 100644
+--- a/drivers/hwmon/da9055-hwmon.c
++++ b/drivers/hwmon/da9055-hwmon.c
+@@ -204,7 +204,7 @@ static ssize_t da9055_hwmon_show_name(struct device *dev,
+ 				      struct device_attribute *devattr,
+ 				      char *buf)
+ {
+-	return sprintf(buf, "da9055-hwmon\n");
++	return sprintf(buf, "da9055\n");
  }
  
+ static ssize_t show_label(struct device *dev,
 -- 
 1.9.1
 
