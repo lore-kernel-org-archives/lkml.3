@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758346AbaHHUuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:50:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40741 "EHLO
+	id S1758362AbaHHUuH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:50:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40755 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758270AbaHHUto (ORCPT
+	with ESMTP id S1758282AbaHHUtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:49:44 -0400
+	Fri, 8 Aug 2014 16:49:50 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 044/259] drm/radeon/dpm: fix typo in vddci setup for eg/btc
-Date: Fri,  8 Aug 2014 13:37:47 -0700
-Message-Id: <1407530482-4483-45-git-send-email-kamal@canonical.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 053/259] nick kvfree() from apparmor
+Date: Fri,  8 Aug 2014 13:37:56 -0700
+Message-Id: <1407530482-4483-54-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,38 +26,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit e07929810f0a19ddd756558290c7d72827cbfcd9 upstream.
+commit 39f1f78d53b9bcbca91967380c5f0f2305a5c55f upstream.
 
-We were using the vddc mask rather than the vddci mask.
+too many places open-code it
 
-Bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=79071
-
-Possibly also fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=68571
-
-Noticed-by:  Jonathan Howard <jonathan@unbiased.name>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[ kamal: picked for 3.13-stable for backport convenience ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/cypress_dpm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/mm.h                   |  2 ++
+ mm/util.c                            | 10 ++++++++++
+ security/apparmor/include/apparmor.h |  1 -
+ security/apparmor/lib.c              | 14 --------------
+ 4 files changed, 12 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/cypress_dpm.c b/drivers/gpu/drm/radeon/cypress_dpm.c
-index 920e1e4..b5a0077 100644
---- a/drivers/gpu/drm/radeon/cypress_dpm.c
-+++ b/drivers/gpu/drm/radeon/cypress_dpm.c
-@@ -1551,7 +1551,7 @@ int cypress_populate_smc_voltage_tables(struct radeon_device *rdev,
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 5360b82..4506b84 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -352,6 +352,8 @@ static inline int is_vmalloc_or_module_addr(const void *x)
+ }
+ #endif
  
- 		table->voltageMaskTable.highMask[RV770_SMC_VOLTAGEMASK_VDDCI] = 0;
- 		table->voltageMaskTable.lowMask[RV770_SMC_VOLTAGEMASK_VDDCI] =
--			cpu_to_be32(eg_pi->vddc_voltage_table.mask_low);
-+			cpu_to_be32(eg_pi->vddci_voltage_table.mask_low);
++extern void kvfree(const void *addr);
++
+ static inline void compound_lock(struct page *page)
+ {
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+diff --git a/mm/util.c b/mm/util.c
+index 808f375..8636d3d 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -9,6 +9,7 @@
+ #include <linux/swapops.h>
+ #include <linux/mman.h>
+ #include <linux/hugetlb.h>
++#include <linux/vmalloc.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -386,6 +387,15 @@ unsigned long vm_mmap(struct file *file, unsigned long addr,
+ }
+ EXPORT_SYMBOL(vm_mmap);
+ 
++void kvfree(const void *addr)
++{
++	if (is_vmalloc_addr(addr))
++		vfree(addr);
++	else
++		kfree(addr);
++}
++EXPORT_SYMBOL(kvfree);
++
+ struct address_space *page_mapping(struct page *page)
+ {
+ 	struct address_space *mapping = page->mapping;
+diff --git a/security/apparmor/include/apparmor.h b/security/apparmor/include/apparmor.h
+index 8fb1488..97130f8 100644
+--- a/security/apparmor/include/apparmor.h
++++ b/security/apparmor/include/apparmor.h
+@@ -66,7 +66,6 @@ extern int apparmor_initialized __initdata;
+ char *aa_split_fqname(char *args, char **ns_name);
+ void aa_info_message(const char *str);
+ void *__aa_kvmalloc(size_t size, gfp_t flags);
+-void kvfree(void *buffer);
+ 
+ static inline void *kvmalloc(size_t size)
+ {
+diff --git a/security/apparmor/lib.c b/security/apparmor/lib.c
+index 6968992..c1827e0 100644
+--- a/security/apparmor/lib.c
++++ b/security/apparmor/lib.c
+@@ -104,17 +104,3 @@ void *__aa_kvmalloc(size_t size, gfp_t flags)
  	}
- 
- 	return 0;
+ 	return buffer;
+ }
+-
+-/**
+- * kvfree - free an allocation do by kvmalloc
+- * @buffer: buffer to free (MAYBE_NULL)
+- *
+- * Free a buffer allocated by kvmalloc
+- */
+-void kvfree(void *buffer)
+-{
+-	if (is_vmalloc_addr(buffer))
+-		vfree(buffer);
+-	else
+-		kfree(buffer);
+-}
 -- 
 1.9.1
 
