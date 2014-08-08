@@ -1,162 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757870AbaHHVfy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:35:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60289 "EHLO
+	id S1758620AbaHHVgG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:36:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60333 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932527AbaHHVfr (ORCPT
+	with ESMTP id S1757853AbaHHVfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:35:47 -0400
+	Fri, 8 Aug 2014 17:35:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.4 00/23] 3.4.103-stable review
-Date: Fri,  8 Aug 2014 14:34:45 -0700
-Message-Id: <20140808213315.769217722@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 06/23] net: sctp: inherit auth_capable on INIT collisions
+Date: Fri,  8 Aug 2014 14:34:51 -0700
+Message-Id: <20140808213316.039487064@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140808213315.769217722@linuxfoundation.org>
+References: <20140808213315.769217722@linuxfoundation.org>
 User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.103 release.
-There are 23 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Aug 10 21:33:01 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.103-rc1.gz
-and the diffstat can be found below.
+From: Daniel Borkmann <dborkman@redhat.com>
 
-thanks,
+[ Upstream commit 1be9a950c646c9092fb3618197f7b6bfb50e82aa ]
 
-greg k-h
+Jason reported an oops caused by SCTP on his ARM machine with
+SCTP authentication enabled:
 
--------------
-Pseudo-Shortlog of commits:
+Internal error: Oops: 17 [#1] ARM
+CPU: 0 PID: 104 Comm: sctp-test Not tainted 3.13.0-68744-g3632f30c9b20-dirty #1
+task: c6eefa40 ti: c6f52000 task.ti: c6f52000
+PC is at sctp_auth_calculate_hmac+0xc4/0x10c
+LR is at sg_init_table+0x20/0x38
+pc : [<c024bb80>]    lr : [<c00f32dc>]    psr: 40000013
+sp : c6f538e8  ip : 00000000  fp : c6f53924
+r10: c6f50d80  r9 : 00000000  r8 : 00010000
+r7 : 00000000  r6 : c7be4000  r5 : 00000000  r4 : c6f56254
+r3 : c00c8170  r2 : 00000001  r1 : 00000008  r0 : c6f1e660
+Flags: nZcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 0005397f  Table: 06f28000  DAC: 00000015
+Process sctp-test (pid: 104, stack limit = 0xc6f521c0)
+Stack: (0xc6f538e8 to 0xc6f54000)
+[...]
+Backtrace:
+[<c024babc>] (sctp_auth_calculate_hmac+0x0/0x10c) from [<c0249af8>] (sctp_packet_transmit+0x33c/0x5c8)
+[<c02497bc>] (sctp_packet_transmit+0x0/0x5c8) from [<c023e96c>] (sctp_outq_flush+0x7fc/0x844)
+[<c023e170>] (sctp_outq_flush+0x0/0x844) from [<c023ef78>] (sctp_outq_uncork+0x24/0x28)
+[<c023ef54>] (sctp_outq_uncork+0x0/0x28) from [<c0234364>] (sctp_side_effects+0x1134/0x1220)
+[<c0233230>] (sctp_side_effects+0x0/0x1220) from [<c02330b0>] (sctp_do_sm+0xac/0xd4)
+[<c0233004>] (sctp_do_sm+0x0/0xd4) from [<c023675c>] (sctp_assoc_bh_rcv+0x118/0x160)
+[<c0236644>] (sctp_assoc_bh_rcv+0x0/0x160) from [<c023d5bc>] (sctp_inq_push+0x6c/0x74)
+[<c023d550>] (sctp_inq_push+0x0/0x74) from [<c024a6b0>] (sctp_rcv+0x7d8/0x888)
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.103-rc1
+While we already had various kind of bugs in that area
+ec0223ec48a9 ("net: sctp: fix sctp_sf_do_5_1D_ce to verify if
+we/peer is AUTH capable") and b14878ccb7fa ("net: sctp: cache
+auth_enable per endpoint"), this one is a bit of a different
+kind.
 
-Andrey Utkin <andrey.krieger.utkin@gmail.com>
-    arch/sparc/math-emu/math_32.c: drop stray break operator
+Giving a bit more background on why SCTP authentication is
+needed can be found in RFC4895:
 
-Sowmini Varadhan <sowmini.varadhan@oracle.com>
-    sparc64: ldc_connect() should not return EINVAL when handshake is in progress.
+  SCTP uses 32-bit verification tags to protect itself against
+  blind attackers. These values are not changed during the
+  lifetime of an SCTP association.
 
-Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
-    sunsab: Fix detection of BREAK on sunsab serial console
+  Looking at new SCTP extensions, there is the need to have a
+  method of proving that an SCTP chunk(s) was really sent by
+  the original peer that started the association and not by a
+  malicious attacker.
 
-Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
-    bbc-i2c: Fix BBC I2C envctrl on SunBlade 2000
+To cause this bug, we're triggering an INIT collision between
+peers; normal SCTP handshake where both sides intent to
+authenticate packets contains RANDOM; CHUNKS; HMAC-ALGO
+parameters that are being negotiated among peers:
 
-David S. Miller <davem@davemloft.net>
-    sparc64: Guard against flushing openfirmware mappings.
+  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
+  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
+  -------------------- COOKIE-ECHO -------------------->
+  <-------------------- COOKIE-ACK ---------------------
 
-David S. Miller <davem@davemloft.net>
-    sparc64: Do not insert non-valid PTEs into the TSB hash table.
+RFC4895 says that each endpoint therefore knows its own random
+number and the peer's random number *after* the association
+has been established. The local and peer's random number along
+with the shared key are then part of the secret used for
+calculating the HMAC in the AUTH chunk.
 
-David S. Miller <davem@davemloft.net>
-    sparc64: Add membar to Niagara2 memcpy code.
+Now, in our scenario, we have 2 threads with 1 non-blocking
+SEQ_PACKET socket each, setting up common shared SCTP_AUTH_KEY
+and SCTP_AUTH_ACTIVE_KEY properly, and each of them calling
+sctp_bindx(3), listen(2) and connect(2) against each other,
+thus the handshake looks similar to this, e.g.:
 
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix huge TSB mapping on pre-UltraSPARC-III cpus.
+  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
+  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
+  <--------- INIT[RANDOM; CHUNKS; HMAC-ALGO] -----------
+  -------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] -------->
+  ...
 
-David S. Miller <davem@davemloft.net>
-    sparc64: Don't bark so loudly about 32-bit tasks generating 64-bit fault addresses.
+Since such collisions can also happen with verification tags,
+the RFC4895 for AUTH rather vaguely says under section 6.1:
 
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix top-level fault handling bugs.
+  In case of INIT collision, the rules governing the handling
+  of this Random Number follow the same pattern as those for
+  the Verification Tag, as explained in Section 5.2.4 of
+  RFC 2960 [5]. Therefore, each endpoint knows its own Random
+  Number and the peer's Random Number after the association
+  has been established.
 
-David S. Miller <davem@davemloft.net>
-    sparc64: Handle 32-bit tasks properly in compute_effective_address().
+In RFC2960, section 5.2.4, we're eventually hitting Action B:
 
-Kirill Tkhai <tkhai@yandex.ru>
-    sparc64: Make itc_sync_lock raw
+  B) In this case, both sides may be attempting to start an
+     association at about the same time but the peer endpoint
+     started its INIT after responding to the local endpoint's
+     INIT. Thus it may have picked a new Verification Tag not
+     being aware of the previous Tag it had sent this endpoint.
+     The endpoint should stay in or enter the ESTABLISHED
+     state but it MUST update its peer's Verification Tag from
+     the State Cookie, stop any init or cookie timers that may
+     running and send a COOKIE ACK.
 
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix argument sign extension for compat_sys_futex().
+In other words, the handling of the Random parameter is the
+same as behavior for the Verification Tag as described in
+Action B of section 5.2.4.
 
-Eric Dumazet <edumazet@google.com>
-    sctp: fix possible seqlock seadlock in sctp_packet_transmit()
+Looking at the code, we exactly hit the sctp_sf_do_dupcook_b()
+case which triggers an SCTP_CMD_UPDATE_ASSOC command to the
+side effect interpreter, and in fact it properly copies over
+peer_{random, hmacs, chunks} parameters from the newly created
+association to update the existing one.
 
-Sasha Levin <sasha.levin@oracle.com>
-    iovec: make sure the caller actually wants anything in memcpy_fromiovecend
+Also, the old asoc_shared_key is being released and based on
+the new params, sctp_auth_asoc_init_active_key() updated.
+However, the issue observed in this case is that the previous
+asoc->peer.auth_capable was 0, and has *not* been updated, so
+that instead of creating a new secret, we're doing an early
+return from the function sctp_auth_asoc_init_active_key()
+leaving asoc->asoc_shared_key as NULL. However, we now have to
+authenticate chunks from the updated chunk list (e.g. COOKIE-ACK).
 
-Vlad Yasevich <vyasevic@redhat.com>
-    net: Correctly set segment mac_len in skb_segment().
+That in fact causes the server side when responding with ...
 
-Vlad Yasevich <vyasevic@redhat.com>
-    macvlan: Initialize vlan_features to turn on offload support.
+  <------------------ AUTH; COOKIE-ACK -----------------
 
-Daniel Borkmann <dborkman@redhat.com>
-    net: sctp: inherit auth_capable on INIT collisions
+... to trigger a NULL pointer dereference, since in
+sctp_packet_transmit(), it discovers that an AUTH chunk is
+being queued for xmit, and thus it calls sctp_auth_calculate_hmac().
 
-Christoph Paasch <christoph.paasch@uclouvain.be>
-    tcp: Fix integer-overflow in TCP vegas
+Since the asoc->active_key_id is still inherited from the
+endpoint, and the same as encoded into the chunk, it uses
+asoc->asoc_shared_key, which is still NULL, as an asoc_key
+and dereferences it in ...
 
-Christoph Paasch <christoph.paasch@uclouvain.be>
-    tcp: Fix integer-overflows in TCP veno
+  crypto_hash_setkey(desc.tfm, &asoc_key->data[0], asoc_key->len)
 
-Andrey Ryabinin <ryabinin.a.a@gmail.com>
-    net: sendmsg: fix NULL pointer dereference
+... causing an oops. All this happens because sctp_make_cookie_ack()
+called with the *new* association has the peer.auth_capable=1
+and therefore marks the chunk with auth=1 after checking
+sctp_auth_send_cid(), but it is *actually* sent later on over
+the then *updated* association's transport that didn't initialize
+its shared key due to peer.auth_capable=0. Since control chunks
+in that case are not sent by the temporary association which
+are scheduled for deletion, they are issued for xmit via
+SCTP_CMD_REPLY in the interpreter with the context of the
+*updated* association. peer.auth_capable was 0 in the updated
+association (which went from COOKIE_WAIT into ESTABLISHED state),
+since all previous processing that performed sctp_process_init()
+was being done on temporary associations, that we eventually
+throw away each time.
 
-Eric Dumazet <edumazet@google.com>
-    ip: make IP identifiers less predictable
+The correct fix is to update to the new peer.auth_capable
+value as well in the collision case via sctp_assoc_update(),
+so that in case the collision migrated from 0 -> 1,
+sctp_auth_asoc_init_active_key() can properly recalculate
+the secret. This therefore fixes the observed server panic.
 
-Eric Dumazet <edumazet@google.com>
-    inetpeer: get rid of ip_id_count
+Fixes: 730fc3d05cd4 ("[SCTP]: Implete SCTP-AUTH parameter processing")
+Reported-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Tested-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/sctp/associola.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-
--------------
-
-Diffstat:
-
- Makefile                             |   4 +-
- arch/sparc/include/asm/pgtable_64.h  |   6 ++-
- arch/sparc/include/asm/tlbflush_64.h |  12 +----
- arch/sparc/kernel/ldc.c              |   2 +-
- arch/sparc/kernel/smp_64.c           |   6 +--
- arch/sparc/kernel/sys32.S            |   2 +-
- arch/sparc/kernel/unaligned_64.c     |  12 +++--
- arch/sparc/lib/NG2memcpy.S           |   1 +
- arch/sparc/math-emu/math_32.c        |   2 +-
- arch/sparc/mm/fault_64.c             | 102 +++++++++++++++++++----------------
- arch/sparc/mm/init_64.c              |  27 ++++++++++
- arch/sparc/mm/tsb.c                  |  14 ++++-
- drivers/net/macvlan.c                |   1 +
- drivers/net/ppp/pptp.c               |   2 +-
- drivers/sbus/char/bbc_envctrl.c      |   6 +++
- drivers/sbus/char/bbc_i2c.c          |  11 ++--
- drivers/tty/serial/sunsab.c          |   9 ++++
- include/net/inetpeer.h               |  14 +----
- include/net/ip.h                     |  31 +++++------
- include/net/ipip.h                   |   2 +-
- include/net/ipv6.h                   |   9 +++-
- include/net/secure_seq.h             |   2 -
- net/compat.c                         |   9 ++--
- net/core/iovec.c                     |  10 ++--
- net/core/secure_seq.c                |  23 --------
- net/core/skbuff.c                    |   2 +-
- net/ipv4/igmp.c                      |   4 +-
- net/ipv4/inetpeer.c                  |  18 -------
- net/ipv4/ip_output.c                 |   7 ++-
- net/ipv4/ipmr.c                      |   2 +-
- net/ipv4/raw.c                       |   2 +-
- net/ipv4/route.c                     |  78 +++++++++++++++------------
- net/ipv4/tcp_vegas.c                 |   3 +-
- net/ipv4/tcp_veno.c                  |   2 +-
- net/ipv4/xfrm4_mode_tunnel.c         |   2 +-
- net/ipv6/ip6_output.c                |  25 ++++-----
- net/netfilter/ipvs/ip_vs_xmit.c      |   2 +-
- net/sctp/associola.c                 |   1 +
- net/sctp/output.c                    |   2 +-
- 39 files changed, 251 insertions(+), 218 deletions(-)
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -1188,6 +1188,7 @@ void sctp_assoc_update(struct sctp_assoc
+ 	asoc->c = new->c;
+ 	asoc->peer.rwnd = new->peer.rwnd;
+ 	asoc->peer.sack_needed = new->peer.sack_needed;
++	asoc->peer.auth_capable = new->peer.auth_capable;
+ 	asoc->peer.i = new->peer.i;
+ 	sctp_tsnmap_init(&asoc->peer.tsn_map, SCTP_TSN_MAP_INITIAL,
+ 			 asoc->peer.i.initial_tsn, GFP_ATOMIC);
 
 
