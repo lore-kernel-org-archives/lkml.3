@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757601AbaHHVQq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:16:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41036 "EHLO
+	id S1757678AbaHHVQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:16:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41035 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932520AbaHHUvk (ORCPT
+	with ESMTP id S932519AbaHHUvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:51:40 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Vagin <avagin@openvz.org>, Pavel Emelyanov <xemul@parallels.com>,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 242/259] tcp: Fix divide by zero when pushing during tcp-repair
-Date: Fri,  8 Aug 2014 13:41:05 -0700
-Message-Id: <1407530482-4483-243-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 072/259] intel_pstate: don't touch turbo bit if turbo disabled or unavailable.
+Date: Fri,  8 Aug 2014 13:38:15 -0700
+Message-Id: <1407530482-4483-73-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -30,134 +28,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-commit 5924f17a8a30c2ae18d034a86ee7581b34accef6 upstream.
+commit dd5fbf70f96dbfd7ee432096a1f979b2b3267856 upstream.
 
-When in repair-mode and TCP_RECV_QUEUE is set, we end up calling
-tcp_push with mss_now being 0. If data is in the send-queue and
-tcp_set_skb_tso_segs gets called, we crash because it will divide by
-mss_now:
+If turbo is disabled in the BIOS bit 38 should be set in
+MSR_IA32_MISC_ENABLE register per section 14.3.2.1 of the SDM Vol 3
+document 325384-050US Feb 2014.  If this bit is set do *not* attempt
+to disable trubo via the MSR_IA32_PERF_CTL register.  On some systems
+trying to disable turbo via MSR_IA32_PERF_CTL will cause subsequent
+writes to MSR_IA32_PERF_CTL not take affect, in fact reading
+MSR_IA32_PERF_CTL will not show the IDA/Turbo DISENGAGE bit(32) as
+set. A write of bit 32 to zero returns to normal operation.
 
-[  347.151939] divide error: 0000 [#1] SMP
-[  347.152907] Modules linked in:
-[  347.152907] CPU: 1 PID: 1123 Comm: packetdrill Not tainted 3.16.0-rc2 #4
-[  347.152907] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[  347.152907] task: f5b88540 ti: f3c82000 task.ti: f3c82000
-[  347.152907] EIP: 0060:[<c1601359>] EFLAGS: 00210246 CPU: 1
-[  347.152907] EIP is at tcp_set_skb_tso_segs+0x49/0xa0
-[  347.152907] EAX: 00000b67 EBX: f5acd080 ECX: 00000000 EDX: 00000000
-[  347.152907] ESI: f5a28f40 EDI: f3c88f00 EBP: f3c83d10 ESP: f3c83d00
-[  347.152907]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[  347.152907] CR0: 80050033 CR2: 083158b0 CR3: 35146000 CR4: 000006b0
-[  347.152907] Stack:
-[  347.152907]  c167f9d9 f5acd080 000005b4 00000002 f3c83d20 c16013e6 f3c88f00 f5acd080
-[  347.152907]  f3c83da0 c1603b5a f3c83d38 c10a0188 00000000 00000000 f3c83d84 c10acc85
-[  347.152907]  c1ad5ec0 00000000 00000000 c1ad679c 010003e0 00000000 00000000 f3c88fc8
-[  347.152907] Call Trace:
-[  347.152907]  [<c167f9d9>] ? apic_timer_interrupt+0x2d/0x34
-[  347.152907]  [<c16013e6>] tcp_init_tso_segs+0x36/0x50
-[  347.152907]  [<c1603b5a>] tcp_write_xmit+0x7a/0xbf0
-[  347.152907]  [<c10a0188>] ? up+0x28/0x40
-[  347.152907]  [<c10acc85>] ? console_unlock+0x295/0x480
-[  347.152907]  [<c10ad24f>] ? vprintk_emit+0x1ef/0x4b0
-[  347.152907]  [<c1605716>] __tcp_push_pending_frames+0x36/0xd0
-[  347.152907]  [<c15f4860>] tcp_push+0xf0/0x120
-[  347.152907]  [<c15f7641>] tcp_sendmsg+0xf1/0xbf0
-[  347.152907]  [<c116d920>] ? kmem_cache_free+0xf0/0x120
-[  347.152907]  [<c106a682>] ? __sigqueue_free+0x32/0x40
-[  347.152907]  [<c106a682>] ? __sigqueue_free+0x32/0x40
-[  347.152907]  [<c114f0f0>] ? do_wp_page+0x3e0/0x850
-[  347.152907]  [<c161c36a>] inet_sendmsg+0x4a/0xb0
-[  347.152907]  [<c1150269>] ? handle_mm_fault+0x709/0xfb0
-[  347.152907]  [<c15a006b>] sock_aio_write+0xbb/0xd0
-[  347.152907]  [<c1180b79>] do_sync_write+0x69/0xa0
-[  347.152907]  [<c1181023>] vfs_write+0x123/0x160
-[  347.152907]  [<c1181d55>] SyS_write+0x55/0xb0
-[  347.152907]  [<c167f0d8>] sysenter_do_call+0x12/0x28
+Also deal with the case where the processor does not support
+turbo and the BIOS does not report the fact in MSR_IA32_MISC_ENABLE
+but does report the max and turbo P states as the same value.
 
-This can easily be reproduced with the following packetdrill-script (the
-"magic" with netem, sk_pacing and limit_output_bytes is done to prevent
-the kernel from pushing all segments, because hitting the limit without
-doing this is not so easy with packetdrill):
-
-0   socket(..., SOCK_STREAM, IPPROTO_TCP) = 3
-+0  setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
-
-+0  bind(3, ..., ...) = 0
-+0  listen(3, 1) = 0
-
-+0  < S 0:0(0) win 32792 <mss 1460>
-+0  > S. 0:0(0) ack 1 <mss 1460>
-+0.1  < . 1:1(0) ack 1 win 65000
-
-+0  accept(3, ..., ...) = 4
-
-// This forces that not all segments of the snd-queue will be pushed
-+0 `tc qdisc add dev tun0 root netem delay 10ms`
-+0 `sysctl -w net.ipv4.tcp_limit_output_bytes=2`
-+0 setsockopt(4, SOL_SOCKET, 47, [2], 4) = 0
-
-+0 write(4,...,10000) = 10000
-+0 write(4,...,10000) = 10000
-
-// Set tcp-repair stuff, particularly TCP_RECV_QUEUE
-+0 setsockopt(4, SOL_TCP, 19, [1], 4) = 0
-+0 setsockopt(4, SOL_TCP, 20, [1], 4) = 0
-
-// This now will make the write push the remaining segments
-+0 setsockopt(4, SOL_SOCKET, 47, [20000], 4) = 0
-+0 `sysctl -w net.ipv4.tcp_limit_output_bytes=130000`
-
-// Now we will crash
-+0 write(4,...,1000) = 1000
-
-This happens since ec3423257508 (tcp: fix retransmission in repair
-mode). Prior to that, the call to tcp_push was prevented by a check for
-tp->repair.
-
-The patch fixes it, by adding the new goto-label out_nopush. When exiting
-tcp_sendmsg and a push is not required, which is the case for tp->repair,
-we go to this label.
-
-When repairing and calling send() with TCP_RECV_QUEUE, the data is
-actually put in the receive-queue. So, no push is required because no
-data has been added to the send-queue.
-
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Fixes: ec3423257508 (tcp: fix retransmission in repair mode)
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Acked-by: Andrew Vagin <avagin@openvz.org>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=64251
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/tcp.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/cpufreq/intel_pstate.c | 22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 00b9b27..c200b34 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1066,7 +1066,7 @@ int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 	if (unlikely(tp->repair)) {
- 		if (tp->repair_queue == TCP_RECV_QUEUE) {
- 			copied = tcp_send_rcvq(sk, msg, size);
--			goto out;
-+			goto out_nopush;
- 		}
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index 37ef477..fbfdde1 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -132,6 +132,7 @@ static struct pstate_funcs pstate_funcs;
  
- 		err = -EINVAL;
-@@ -1239,6 +1239,7 @@ wait_for_memory:
- out:
- 	if (copied)
- 		tcp_push(sk, flags, mss_now, tp->nonagle);
-+out_nopush:
- 	release_sock(sk);
- 	return copied + copied_syn;
+ struct perf_limits {
+ 	int no_turbo;
++	int turbo_disabled;
+ 	int max_perf_pct;
+ 	int min_perf_pct;
+ 	int32_t max_perf;
+@@ -291,7 +292,10 @@ static ssize_t store_no_turbo(struct kobject *a, struct attribute *b,
+ 	if (ret != 1)
+ 		return -EINVAL;
+ 	limits.no_turbo = clamp_t(int, input, 0 , 1);
+-
++	if (limits.turbo_disabled) {
++		pr_warn("Turbo disabled by BIOS or unavailable on processor\n");
++		limits.no_turbo = limits.turbo_disabled;
++	}
+ 	return count;
+ }
  
+@@ -385,7 +389,7 @@ static void byt_set_pstate(struct cpudata *cpudata, int pstate)
+ 	u32 vid;
+ 
+ 	val = pstate << 8;
+-	if (limits.no_turbo)
++	if (limits.no_turbo && !limits.turbo_disabled)
+ 		val |= (u64)1 << 32;
+ 
+ 	vid_fp = cpudata->vid.min + mul_fp(
+@@ -452,7 +456,7 @@ static void core_set_pstate(struct cpudata *cpudata, int pstate)
+ 	u64 val;
+ 
+ 	val = pstate << 8;
+-	if (limits.no_turbo)
++	if (limits.no_turbo && !limits.turbo_disabled)
+ 		val |= (u64)1 << 32;
+ 
+ 	wrmsrl(MSR_IA32_PERF_CTL, val);
+@@ -732,7 +736,7 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
+ 		limits.min_perf = int_tofp(1);
+ 		limits.max_perf_pct = 100;
+ 		limits.max_perf = int_tofp(1);
+-		limits.no_turbo = 0;
++		limits.no_turbo = limits.turbo_disabled;
+ 		return 0;
+ 	}
+ 	limits.min_perf_pct = (policy->min * 100) / policy->cpuinfo.max_freq;
+@@ -772,6 +776,7 @@ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	struct cpudata *cpu;
+ 	int rc;
++	u64 misc_en;
+ 
+ 	rc = intel_pstate_init_cpu(policy->cpu);
+ 	if (rc)
+@@ -779,8 +784,13 @@ static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
+ 
+ 	cpu = all_cpu_data[policy->cpu];
+ 
+-	if (!limits.no_turbo &&
+-		limits.min_perf_pct == 100 && limits.max_perf_pct == 100)
++	rdmsrl(MSR_IA32_MISC_ENABLE, misc_en);
++	if (misc_en & MSR_IA32_MISC_ENABLE_TURBO_DISABLE ||
++		cpu->pstate.max_pstate == cpu->pstate.turbo_pstate) {
++		limits.turbo_disabled = 1;
++		limits.no_turbo = 1;
++	}
++	if (limits.min_perf_pct == 100 && limits.max_perf_pct == 100)
+ 		policy->policy = CPUFREQ_POLICY_PERFORMANCE;
+ 	else
+ 		policy->policy = CPUFREQ_POLICY_POWERSAVE;
 -- 
 1.9.1
 
