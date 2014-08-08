@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933239AbaHHUyX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:54:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41424 "EHLO
+	id S933345AbaHHU43 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:56:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41504 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753898AbaHHUyD (ORCPT
+	with ESMTP id S933229AbaHHUyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:54:03 -0400
+	Fri, 8 Aug 2014 16:54:22 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Miklos Szeredi <mszeredi@suse.cz>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 118/259] fuse: timeout comparison fix
-Date: Fri,  8 Aug 2014 13:39:01 -0700
-Message-Id: <1407530482-4483-119-git-send-email-kamal@canonical.com>
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 099/259] powerpc/perf: Never program book3s PMCs with values >= 0x80000000
+Date: Fri,  8 Aug 2014 13:38:42 -0700
+Message-Id: <1407530482-4483-100-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -26,50 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Anton Blanchard <anton@samba.org>
 
-commit 126b9d4365b110c157bc4cbc32540dfa66c9c85a upstream.
+commit f56029410a13cae3652d1f34788045c40a13ffc7 upstream.
 
-As suggested by checkpatch.pl, use time_before64() instead of direct
-comparison of jiffies64 values.
+We are seeing a lot of PMU warnings on POWER8:
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+    Can't find PMC that caused IRQ
+
+Looking closer, the active PMC is 0 at this point and we took a PMU
+exception on the transition from negative to 0. Some versions of POWER8
+have an issue where they edge detect and not level detect PMC overflows.
+
+A number of places program the PMC with (0x80000000 - period_left),
+where period_left can be negative. We can either fix all of these or
+just ensure that period_left is always >= 1.
+
+This patch takes the second option.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/fuse/dir.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/powerpc/perf/core-book3s.c | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index c3eb2c4..ba60cfd 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -188,7 +188,7 @@ static int fuse_dentry_revalidate(struct dentry *entry, unsigned int flags)
- 	inode = ACCESS_ONCE(entry->d_inode);
- 	if (inode && is_bad_inode(inode))
- 		goto invalid;
--	else if (fuse_dentry_time(entry) < get_jiffies_64()) {
-+	else if (time_before64(fuse_dentry_time(entry), get_jiffies_64())) {
- 		int err;
- 		struct fuse_entry_out outarg;
- 		struct fuse_req *req;
-@@ -915,7 +915,7 @@ int fuse_update_attributes(struct inode *inode, struct kstat *stat,
- 	int err;
- 	bool r;
+diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+index d23b01c..57a8ff9 100644
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -851,7 +851,22 @@ static void power_pmu_read(struct perf_event *event)
+ 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
  
--	if (fi->i_time < get_jiffies_64()) {
-+	if (time_before64(fi->i_time, get_jiffies_64())) {
- 		r = true;
- 		err = fuse_do_getattr(inode, stat, file);
- 	} else {
-@@ -1101,7 +1101,7 @@ static int fuse_permission(struct inode *inode, int mask)
- 	    ((mask & MAY_EXEC) && S_ISREG(inode->i_mode))) {
- 		struct fuse_inode *fi = get_fuse_inode(inode);
+ 	local64_add(delta, &event->count);
+-	local64_sub(delta, &event->hw.period_left);
++
++	/*
++	 * A number of places program the PMC with (0x80000000 - period_left).
++	 * We never want period_left to be less than 1 because we will program
++	 * the PMC with a value >= 0x800000000 and an edge detected PMC will
++	 * roll around to 0 before taking an exception. We have seen this
++	 * on POWER8.
++	 *
++	 * To fix this, clamp the minimum value of period_left to 1.
++	 */
++	do {
++		prev = local64_read(&event->hw.period_left);
++		val = prev - delta;
++		if (val < 1)
++			val = 1;
++	} while (local64_cmpxchg(&event->hw.period_left, prev, val) != prev);
+ }
  
--		if (fi->i_time < get_jiffies_64()) {
-+		if (time_before64(fi->i_time, get_jiffies_64())) {
- 			refreshed = true;
- 
- 			err = fuse_perm_getattr(inode, mask);
+ /*
 -- 
 1.9.1
 
