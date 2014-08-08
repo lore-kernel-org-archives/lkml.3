@@ -1,113 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420AbaHHKyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 06:54:15 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:31100 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395AbaHHKyK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 06:54:10 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7f776d000003e54-94-53e4ac4f02d7
-Content-transfer-encoding: 8BIT
-Message-id: <1407495251.28710.2.camel@AMDC1943>
-Subject: Re: [PATCH] mfd: max77686: fix support for devices without irq
- specified
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 08 Aug 2014 12:54:11 +0200
-In-reply-to: <53E4A1E9.7090401@collabora.co.uk>
-References: <1457999.lNPdqEWCCR@amdc1032> <1407484788.21474.13.camel@AMDC1943>
- <53E49147.5060307@collabora.co.uk> <53E4A1E9.7090401@collabora.co.uk>
-X-Mailer: Evolution 3.10.4-0ubuntu1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xy7r+a54EGzRPUbHYOGM9q8XZZQfZ
-	LI7+LrA42/SG3eL+16OMFpd3zWGzmHF+H5PF6W5WBw6P2Q0XWTz+Pr/O4nHn2h42j3knAz36
-	tqxi9Pi8SS6ALYrLJiU1J7MstUjfLoErY+L0B2wFpwQqvv3/wdzA2M7bxcjJISFgIvH4fQsT
-	hC0mceHeerYuRi4OIYGljBIvVp1mBknwCghK/Jh8j6WLkYODWUBe4silbJAws4C6xKR5i5gh
-	6j8zSryePBeqXl/i5ru17CC2sECwxJqTa9lAbDYBY4nNy5eA2SICdhI3Vj8Ea2YWmM0ksW/e
-	VhaQBIuAqsTa2c1ggziBBr0+OQlqwzRGiVe3J7JBnKosMW//MaYJjAKzkBw4C+HAWUgOXMDI
-	vIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/dxMjJOi/7mBceszqEKMAB6MSD6/C3rvBQqyJZcWV
-	uYcYJTiYlUR4Ly9/EizEm5JYWZValB9fVJqTWnyIkYmDU6qBMeFNouaj7Yc4ZFiemHye+b1i
-	EdMfxSOtl3e8+a68aMUCbt6/rrzevvcu6e8PYrjoqROU+v/GlgtH9U1yD8dLJix6x5dxInyx
-	3p0jPez/rp245xv/PP3w52tpS6dP3zTT6mb0gy3X0kyEbUPOzFTrCahdOfdtygez+8eXTzlb
-	1aZn5eDzi7GonlmJpTgj0VCLuag4EQDhM+sdWAIAAA==
+	id S1756502AbaHHKz4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 06:55:56 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:32777 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755194AbaHHKzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 06:55:51 -0400
+Date: Fri, 8 Aug 2014 16:25:02 +0530
+From: Gautham R Shenoy <ego@linux.vnet.ibm.com>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: rjw@rjwysocki.net, len.brown@intel.com, pavel@ucw.cz, peterz@infradead.org,
+        toshi.kani@hp.com, mingo@kernel.org, akpm@linux-foundation.org,
+        todd.e.brandt@linux.intel.com, fabf@skynet.be,
+        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
+        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [RFC PATCH] PM/CPU: Parallel enabling nonboot cpus with resume
+ devices
+Message-ID: <20140808105501.GA15048@in.ibm.com>
+Reply-To: ego@linux.vnet.ibm.com
+References: <1406106694-3306-1-git-send-email-tianyu.lan@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406106694-3306-1-git-send-email-tianyu.lan@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080810-7182-0000-0000-0000002827A9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Lan,
 
-On pią, 2014-08-08 at 12:09 +0200, Javier Martinez Canillas wrote:
-> Hello,
+On Wed, Jul 23, 2014 at 05:11:34PM +0800, Lan Tianyu wrote:
+> In the current world, all nonboot cpus are enabled serially during system
+> resume. System resume sequence is that boot cpu enables nonboot cpu one by
+> one and then resume devices. Before resuming devices, there are few tasks
+> assigned to nonboot cpus after they are brought up. This waste cpu usage.
 > 
-> On 08/08/2014 10:58 AM, Javier Martinez Canillas wrote:
-> > 
-> >> 
-> >> Not sufficient. You have to also fix RTC driver (OOPS from Trats2
-> >> attached). Also consider adding checks for (max77686->irq) to the
-> >> suspend and resume.
-> >> 
-> > 
-> > Right, the max77686 RTC driver assumes that an IRQ domain will be created on the
-> > mfd driver so a virtual IRQ can be mapped for the RTC alarm1 IRQ. This
-> > assumptions comes from the fact that the "interrupt" property is required
-> > according to the DT binding doc.
-> > 
+> To accelerate S3, this patches adds a new kernel configure
+> PM_PARALLEL_CPU_UP_FOR_SUSPEND to allow boot cpu to go forward to resume
+> devices after bringing up one nonboot cpu. The nonboot cpu will be in charge
+> of bringing up other cpus. This makes enabling cpu2~x parallel with resuming
+> devices. From the test result on 4 logical core laptop, the time of resume
+> device almost wasn't affected by enabling nonboot cpus lately while the start
+> point is almost 30ms earlier than before.
 > 
-> Although for Trats2 I see that arch/arm/boot/dts/exynos4412-trats2.dts defines
-> an interrupt, so I wonder why regmap_irq_get_virq() is giving an oops there:
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
+>  kernel/cpu.c         | 82 ++++++++++++++++++++++++++++++++++++++++++++++------
+>  kernel/power/Kconfig | 13 +++++++++
+>  2 files changed, 86 insertions(+), 9 deletions(-)
 > 
-> max77686_pmic@09 {
-> 	compatible = "maxim,max77686";
-> 	interrupt-parent = <&gpx0>;
-> 	interrupts = <7 0>;
-> 	reg = <0x09>;
-> 	#clock-cells = <1>;
-> ...
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> index a343bde..d4c1353 100644
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -551,9 +551,27 @@ void __weak arch_enable_nonboot_cpus_end(void)
+>  {
+>  }
+> 
+> +static int _cpu_up_with_trace(int cpu)
+> +{
+> +	int error;
+> +
+> +	trace_suspend_resume(TPS("CPU_ON"), cpu, true);
+> +	error = _cpu_up(cpu, 1);
+> +	trace_suspend_resume(TPS("CPU_ON"), cpu, false);
+> +	if (error) {
+> +		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
+> +		return error;
+> +	}
+> +
+> +	pr_info("CPU%d is up\n", cpu);
+> +	return 0;
+> +}
+> +
 
-Because I am a nasty user :) and I removed the interrupts properties
-manually (to test how the RTC will behave). Still the driver shouldn't
-oops.
+[..snip..]
+> 
+> +
+> +void __ref enable_nonboot_cpus(void)
+> +{
+> +	struct task_struct *tsk;
+> +	int cpu;
+> +
+> +	/* Allow everyone to use the CPU hotplug again */
+> +	cpu_maps_update_begin();
+> +	cpu_hotplug_disabled = 0;
+> +	if (cpumask_empty(frozen_cpus))
+> +		goto out;
+> +
+> +	arch_enable_nonboot_cpus_begin();
+> +
+> +	cpu = cpumask_first(frozen_cpus);
+> +	cpumask_clear_cpu(cpu, frozen_cpus);
+> +
+> +	_cpu_up_with_trace(cpu);
 
-> 
-> 
-> > So the max77686 RTC wakealarm was not working for these boards before?
+We should be handling the error returned by _cpu_up_with_trace() 
+in case 'cpu' fails to come online. Unless it is something that I am
+not aware of it doesn't make much sense to create a kthread on a cpu
+that we know has failed to come online.
 
-I don't know for Odroid but on Trats2 it works fine.
 
-> > 
-> > Just to be sure that I understand the issue: these boards don't really have an
-> > IRQ connected to the PMIC, is not that this information is just missing in the
-> > Device Tree, right?
-> > 
-> 
-> By looking at Odroid's 3.8 based vendor tree I see that an IRQ for the max77686
-> PMIC is defined [0] using platform data:
-> 
-> static struct max77686_platform_data exynos4_max77686_info = {
-> 	.irq_gpio	= 	EXYNOS4_GPX3(2),
-> 	.ono		=	EXYNOS4_GPX1(2),
-> 	.num_regulators = ARRAY_SIZE(max77686_regulators),
-> 	.regulators = max77686_regulators,
-> ...
-> 
-> So maybe this information is missing in
-> arch/arm/boot/dts/exynos4412-odroid-common.dtsi?
+> +
+> +	if (cpumask_empty(frozen_cpus)) {
+> +		arch_enable_nonboot_cpus_end();
+> +	} else {
+> +		tsk = kthread_create_on_cpu(async_enable_nonboot_cpus,
+> +				NULL, cpu, "async-enable-nonboot-cpus");
+> +		if (IS_ERR(tsk)) {
+> +			pr_err("Failed to create async enable nonboot cpus thread.\n");
+> +			goto out;
+> +		}
+> +
+> +		kthread_unpark(tsk);
+> +	}
+> +out:
+> +	cpu_maps_update_done();
+> +}
+> +#endif
+> +
 
-Yes, it seems it is missing.
-
-Best regards,
-Krzysztof
-
-> 
-> Best regards,
-> Javier
-> 
-> [0]:
-> https://github.com/hardkernel/linux/blob/odroid-3.8.y/arch/arm/mach-exynos/pmic-77686.h#L927
+--
+Thanks and Regards
+gautham.
 
