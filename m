@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613AbaHHUak (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:30:40 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:38839 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaHHUaj (ORCPT
+	id S1752193AbaHHUa5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:30:57 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:56437 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466AbaHHUay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:30:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFxb1q9bwdM6_H=ctFHc+4rP4rBuzWMDNXVZwpwf0cN-Bw@mail.gmail.com>
-References: <20140808143418.GA25720@phenom.ffwll.local>
-	<CA+55aFxVsV58oi0E5H0dTRGH2r+WogkuzhncTJHy9F4d2sTTrA@mail.gmail.com>
-	<CA+55aFxb1q9bwdM6_H=ctFHc+4rP4rBuzWMDNXVZwpwf0cN-Bw@mail.gmail.com>
-Date: Fri, 8 Aug 2014 13:30:38 -0700
-X-Google-Sender-Auth: kmG-0mGZKYFx6Q5RqqqvOnztVTo
-Message-ID: <CA+55aFyXXyJ1subAWjwv3-yFndRNpUSWLFVb8Aq=NWAS+PXsJQ@mail.gmail.com>
-Subject: Re: [PULL] drm-intel-fixes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Airlie <airlied@gmail.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 8 Aug 2014 16:30:54 -0400
+From: Laura Abbott <lauraa@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Laura Abbott <lauraa@codeaurora.org>,
+        David Riley <davidriley@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Ritesh Harjain <ritesh.harjani@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCHv6 0/5] DMA Atomic pool for arm64
+Date: Fri,  8 Aug 2014 13:30:48 -0700
+Message-Id: <1407529848-6806-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 8, 2014 at 12:37 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> The problem seems to exist already with just the plain drm pull from
-> Dave. I thought I had tested that, but apparently not.
+Hi,
 
-Still busy bisecting (and it's going into the i915 part of Dave's drm
-pull, so the bisect looks sane so far), but in case some i915 person
-is trying to think about what it might be, it doesn't seem to be the
-backlight per se.
+This is v6 of the series to add an atomic pool for arm64 and refactor some of
+the arm dma_atomic code as well.
 
-Sometimes it resumes with the backlight on and something showing on
-the screen, but no reaction to mouse or keyboard. And in fact, I have
-now gotten an X lockup twice *without* doing resume/suspend, so it
-seems like the whole resume/suspend thing is just a way to trigger it,
-not the fundamental problem.
+Russell, assuming you have no issues I'd like to get your Acked-by before
+Catalin picks this up. As always, testing and reviews are appreiciated.
 
-The machine is alive (the printscreen button takes a screenshot, for
-example - I can tell by the sound), but the graphics side is hung.
+Thanks,
+Laura
 
-This is a Sony Vaio Pro 11, so it's bog-standard intel graphics (Haswell ULT).
 
-                 Linus
+v6: Tweaked the commit text to clarify that arm is moving from
+ioremap_page_range to map_vm_area and friends
+
+v5: v4: Addressed comments from Thierry and Catalin. Updated map_vm_area call in
+dma_common_pages_remap since the API changed.
+
+v4: Simplified the logic in gen_pool_first_fit_order_align which makes the
+data argument actually unused.
+
+v3: Now a patch series due to refactoring of arm code. arm and arm64 now both
+use genalloc for atomic pool management. genalloc extensions added.
+DMA remapping code factored out as well.
+
+v2: Various bug fixes pointed out by David and Ritesh (CMA dependency, swapping
+coherent, noncoherent). I'm still not sure how to address the devicetree
+suggestion by Will [1][2]. I added the devicetree mailing list this time around
+to get more input on this.
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/249180.html
+[2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/249528.html
+
+Laura Abbott (5):
+  lib/genalloc.c: Add power aligned algorithm
+  lib/genalloc.c: Add genpool range check function
+  common: dma-mapping: Introduce common remapping functions
+  arm: use genalloc for the atomic pool
+  arm64: Add atomic pool for non-coherent and CMA allocations.
+
+ arch/arm/Kconfig                         |   1 +
+ arch/arm/mm/dma-mapping.c                | 210 +++++++++----------------------
+ arch/arm64/Kconfig                       |   1 +
+ arch/arm64/mm/dma-mapping.c              | 164 +++++++++++++++++++++---
+ drivers/base/dma-mapping.c               |  67 ++++++++++
+ include/asm-generic/dma-mapping-common.h |   9 ++
+ include/linux/genalloc.h                 |   7 ++
+ lib/genalloc.c                           |  50 ++++++++
+ 8 files changed, 338 insertions(+), 171 deletions(-)
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
