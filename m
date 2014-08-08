@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609AbaHHVOC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:14:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41089 "EHLO
+	id S932716AbaHHVO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:14:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41079 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932647AbaHHUv6 (ORCPT
+	with ESMTP id S932624AbaHHUvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:58 -0400
+	Fri, 8 Aug 2014 16:51:54 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Popov <ixaphire@qrator.net>,
+Cc: Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 221/259] ipip, sit: fix ipv4_{update_pmtu,redirect} calls
-Date: Fri,  8 Aug 2014 13:40:44 -0700
-Message-Id: <1407530482-4483-222-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 237/259] ipv4: fix dst race in sk_dst_get()
+Date: Fri,  8 Aug 2014 13:41:00 -0700
+Message-Id: <1407530482-4483-238-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,62 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Popov <ixaphire@qrator.net>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 2346829e641b804ece9ac9298136b56d9567c278 ]
+commit f88649721268999bdff09777847080a52004f691 upstream.
 
-ipv4_{update_pmtu,redirect} were called with tunnel's ifindex (t->dev is a
-tunnel netdevice). It caused wrong route lookup and failure of pmtu update or
-redirect. We should use the same ifindex that we use in ip_route_output_* in
-*tunnel_xmit code. It is t->parms.link .
+When IP route cache had been removed in linux-3.6, we broke assumption
+that dst entries were all freed after rcu grace period. DST_NOCACHE
+dst were supposed to be freed from dst_release(). But it appears
+we want to keep such dst around, either in UDP sockets or tunnels.
 
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+In sk_dst_get() we need to make sure dst refcount is not 0
+before incrementing it, or else we might end up freeing a dst
+twice.
+
+DST_NOCACHE set on a dst does not mean this dst can not be attached
+to a socket or a tunnel.
+
+Then, before actual freeing, we need to observe a rcu grace period
+to make sure all other cpus can catch the fact the dst is no longer
+usable.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Dormando <dormando@rydia.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.11: used davem's backport to 3.10 ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/ipip.c | 4 ++--
- net/ipv6/sit.c  | 4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ include/net/sock.h |  4 ++--
+ net/core/dst.c     | 16 +++++++++++-----
+ 2 files changed, 13 insertions(+), 7 deletions(-)
 
-diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
-index af34bdb..1e625b0 100644
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -149,13 +149,13 @@ static int ipip_err(struct sk_buff *skb, u32 info)
+diff --git a/include/net/sock.h b/include/net/sock.h
+index ca1aeeb..e7ad8ac 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1743,8 +1743,8 @@ sk_dst_get(struct sock *sk)
  
- 	if (type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED) {
- 		ipv4_update_pmtu(skb, dev_net(skb->dev), info,
--				 t->dev->ifindex, 0, IPPROTO_IPIP, 0);
-+				 t->parms.link, 0, IPPROTO_IPIP, 0);
- 		err = 0;
- 		goto out;
+ 	rcu_read_lock();
+ 	dst = rcu_dereference(sk->sk_dst_cache);
+-	if (dst)
+-		dst_hold(dst);
++	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
++		dst = NULL;
+ 	rcu_read_unlock();
+ 	return dst;
+ }
+diff --git a/net/core/dst.c b/net/core/dst.c
+index ca4231e..15b6792 100644
+--- a/net/core/dst.c
++++ b/net/core/dst.c
+@@ -267,6 +267,15 @@ again:
+ }
+ EXPORT_SYMBOL(dst_destroy);
+ 
++static void dst_destroy_rcu(struct rcu_head *head)
++{
++	struct dst_entry *dst = container_of(head, struct dst_entry, rcu_head);
++
++	dst = dst_destroy(dst);
++	if (dst)
++		__dst_free(dst);
++}
++
+ void dst_release(struct dst_entry *dst)
+ {
+ 	if (dst) {
+@@ -274,11 +283,8 @@ void dst_release(struct dst_entry *dst)
+ 
+ 		newrefcnt = atomic_dec_return(&dst->__refcnt);
+ 		WARN_ON(newrefcnt < 0);
+-		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt) {
+-			dst = dst_destroy(dst);
+-			if (dst)
+-				__dst_free(dst);
+-		}
++		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt)
++			call_rcu(&dst->rcu_head, dst_destroy_rcu);
  	}
- 
- 	if (type == ICMP_REDIRECT) {
--		ipv4_redirect(skb, dev_net(skb->dev), t->dev->ifindex, 0,
-+		ipv4_redirect(skb, dev_net(skb->dev), t->parms.link, 0,
- 			      IPPROTO_IPIP, 0);
- 		err = 0;
- 		goto out;
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index cd4777e..8f59675 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -559,12 +559,12 @@ static int ipip6_err(struct sk_buff *skb, u32 info)
- 
- 	if (type == ICMP_DEST_UNREACH && code == ICMP_FRAG_NEEDED) {
- 		ipv4_update_pmtu(skb, dev_net(skb->dev), info,
--				 t->dev->ifindex, 0, IPPROTO_IPV6, 0);
-+				 t->parms.link, 0, IPPROTO_IPV6, 0);
- 		err = 0;
- 		goto out;
- 	}
- 	if (type == ICMP_REDIRECT) {
--		ipv4_redirect(skb, dev_net(skb->dev), t->dev->ifindex, 0,
-+		ipv4_redirect(skb, dev_net(skb->dev), t->parms.link, 0,
- 			      IPPROTO_IPV6, 0);
- 		err = 0;
- 		goto out;
+ }
+ EXPORT_SYMBOL(dst_release);
 -- 
 1.9.1
 
