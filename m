@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767AbaHHMos (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 08:44:48 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:46481 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755485AbaHHMoo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 08:44:44 -0400
-From: Juri Lelli <juri.lelli@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: lorenzo.pieralisi@arm.com, Juri Lelli <juri.lelli@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Juri Lelli <juri.lelli@gmail.com>
-Subject: [PATCH] cpuidle/cpuidle-big_little: fix reading cpu id part number
-Date: Fri,  8 Aug 2014 13:42:37 +0100
-Message-Id: <1407501757-15231-1-git-send-email-juri.lelli@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-OriginalArrivalTime: 08 Aug 2014 12:44:40.0612 (UTC) FILETIME=[8563CE40:01CFB306]
-X-MC-Unique: 114080813444204601
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S1756359AbaHHMr5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 08:47:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52917 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752863AbaHHMry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 08:47:54 -0400
+Date: Fri, 8 Aug 2014 14:47:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Greg Thelen <gthelen@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4] mm: memcontrol: reduce reclaim invocations for
+ higher order requests
+Message-ID: <20140808124750.GL4004@dhcp22.suse.cz>
+References: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
+ <1407186897-21048-2-git-send-email-hannes@cmpxchg.org>
+ <20140807130822.GB12730@dhcp22.suse.cz>
+ <20140807153141.GD14734@cmpxchg.org>
+ <xr93lhr0z1ur.fsf@gthelen.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <xr93lhr0z1ur.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s78Cip2M024137
 
-Commit af040ffc9ba1 ("ARM: make it easier to check the CPU part number
-correctly") changed ARM_CPU_PART_X masks, and the way they are returned and
-checked against. Usage of read_cpuid_part_number() is now deprecated, and
-calling places updated accordingly. This actually broke cpuidle-big_little
-initialization, as bl_idle_driver_init() performs a check using and hardcoded
-mask on cpu_id.
+On Thu 07-08-14 09:10:43, Greg Thelen wrote:
+> On Thu, Aug 07 2014, Johannes Weiner wrote:
+[...]
+> > So what I'm proposing works and is of equal quality from a THP POV.
+> > This change is complicated enough when we stick to the facts, let's
+> > not make up things based on gut feeling.
+> 
+> I think that high order non THP page allocations also benefit from this.
+> Such allocations don't have a small page fallback.
+> 
+> This may be in flux, but linux-next shows me that:
+> * mem_cgroup_reclaim()
+>   frees at least SWAP_CLUSTER_MAX (32) pages.
+> * try_charge() calls mem_cgroup_reclaim() indefinitely for
+>   costly (3) or smaller orders assuming that something is reclaimed on
+>   each iteration.
+> * try_charge() uses a loop of MEM_CGROUP_RECLAIM_RETRIES (5) for
+>   larger-than-costly orders.
 
-Update the check to reflect changes on ARM_CPU_PART_X masks. Also,
-make the check easier to understand.
+Unless there is __GFP_NORETRY which fails the charge after the first
+round of unsuccessful reclaim. This is the case regardless of nr_pages
+but only THP are charged with __GFP_NORETRY currently.
 
-Signed-off-by: Juri Lelli <juri.lelli@arm.com>
-Acked-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: linux-pm@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Juri Lelli <juri.lelli@gmail.com>
----
- drivers/cpuidle/cpuidle-big_little.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> So for larger-than-costly allocations, try_charge() should be able to
+> reclaim 160 (5*32) pages which satisfies an order:7 allocation.  But for
+> order:8+ allocations try_charge() and mem_cgroup_reclaim() are too eager
+> to give up without something like this.  So I think this patch is a step
+> in the right direction.
 
-diff --git a/drivers/cpuidle/cpuidle-big_little.c b/drivers/cpuidle/cpuidle-big_little.c
-index b45fc62..a712896 100644
---- a/drivers/cpuidle/cpuidle-big_little.c
-+++ b/drivers/cpuidle/cpuidle-big_little.c
-@@ -138,7 +138,7 @@ static int bl_enter_powerdown(struct cpuidle_device *dev,
- 	return idx;
- }
- 
--static int __init bl_idle_driver_init(struct cpuidle_driver *drv, int cpu_id)
-+static int __init bl_idle_driver_init(struct cpuidle_driver *drv, int match_id)
- {
- 	struct cpuinfo_arm *cpu_info;
- 	struct cpumask *cpumask;
-@@ -154,7 +154,7 @@ static int __init bl_idle_driver_init(struct cpuidle_driver *drv, int cpu_id)
- 		cpuid = is_smp() ? cpu_info->cpuid : read_cpuid_id();
- 
- 		/* read cpu id part number */
--		if ((cpuid & 0xFFF0) == cpu_id)
-+		if (((cpuid ^ match_id) & 0xFF00FFF0) == 0)
- 			cpumask_set_cpu(cpu, cpumask);
- 	}
- 
+I think we should be careful for charges which are OK to fail because
+there is a fallback for them (THP). The only other high-order charges are
+coming from kmem and I am yet not sure what to do about those without
+memcg specific slab reclaim. I wouldn't make this discussion more
+complicated for this case now.
+
+> Coincidentally, we've been recently been experimenting with something
+> like this.  Though we didn't modify the interface between
+> mem_cgroup_reclaim() and try_to_free_mem_cgroup_pages() - instead we
+> looped within mem_cgroup_reclaim() until nr_pages of margin were found.
+> But I have no objection the proposed plumbing of nr_pages all the way
+> into try_to_free_mem_cgroup_pages().
+
 -- 
-1.7.9.5
-
-
+Michal Hocko
+SUSE Labs
