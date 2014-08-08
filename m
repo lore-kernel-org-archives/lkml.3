@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758684AbaHHVgh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:36:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60509 "EHLO
+	id S933492AbaHHVgt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:36:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60558 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933088AbaHHVgW (ORCPT
+	with ESMTP id S1758643AbaHHVga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:22 -0400
+	Fri, 8 Aug 2014 17:36:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 14/39] iovec: make sure the caller actually wants anything in memcpy_fromiovecend
-Date: Fri,  8 Aug 2014 14:35:00 -0700
-Message-Id: <20140808213355.597514969@linuxfoundation.org>
+Subject: [PATCH 3.14 27/39] sparc64: Use ILOG2_4MB instead of constant 22.
+Date: Fri,  8 Aug 2014 14:35:13 -0700
+Message-Id: <20140808213356.132134486@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -29,32 +28,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 06ebb06d49486676272a3c030bfeef4bd969a8e6 ]
+[ Upstream commit 0eef331a3d0ee970dcbebd1bd5fcb57ca33ece01 ]
 
-Check for cases when the caller requests 0 bytes instead of running off
-and dereferencing potentially invalid iovecs.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/iovec.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/sparc/include/asm/pgtable_64.h |    2 +-
+ arch/sparc/kernel/head_64.S         |    4 ++--
+ arch/sparc/kernel/ktlb.S            |    2 +-
+ arch/sparc/mm/init_64.c             |   12 ++++++------
+ 4 files changed, 10 insertions(+), 10 deletions(-)
 
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -107,6 +107,10 @@ EXPORT_SYMBOL(memcpy_toiovecend);
- int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
- 			int offset, int len)
- {
-+	/* No data? Done! */
-+	if (len == 0)
-+		return 0;
-+
- 	/* Skip over the finished iovecs */
- 	while (offset >= iov->iov_len) {
- 		offset -= iov->iov_len;
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -918,7 +918,7 @@ static inline bool kern_addr_valid(unsig
+ 
+ 	if ((paddr >> MAX_PHYS_ADDRESS_BITS) != 0UL)
+ 		return false;
+-	return test_bit(paddr >> 22, sparc64_valid_addr_bitmap);
++	return test_bit(paddr >> ILOG2_4MB, sparc64_valid_addr_bitmap);
+ }
+ 
+ extern int page_in_phys_avail(unsigned long paddr);
+--- a/arch/sparc/kernel/head_64.S
++++ b/arch/sparc/kernel/head_64.S
+@@ -282,8 +282,8 @@ sun4v_chip_type:
+ 	stx	%l2, [%l4 + 0x0]
+ 	ldx	[%sp + 2047 + 128 + 0x50], %l3	! physaddr low
+ 	/* 4MB align */
+-	srlx	%l3, 22, %l3
+-	sllx	%l3, 22, %l3
++	srlx	%l3, ILOG2_4MB, %l3
++	sllx	%l3, ILOG2_4MB, %l3
+ 	stx	%l3, [%l4 + 0x8]
+ 
+ 	/* Leave service as-is, "call-method" */
+--- a/arch/sparc/kernel/ktlb.S
++++ b/arch/sparc/kernel/ktlb.S
+@@ -277,7 +277,7 @@ kvmap_dtlb_load:
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+ kvmap_vmemmap:
+ 	sub		%g4, %g5, %g5
+-	srlx		%g5, 22, %g5
++	srlx		%g5, ILOG2_4MB, %g5
+ 	sethi		%hi(vmemmap_table), %g1
+ 	sllx		%g5, 3, %g5
+ 	or		%g1, %lo(vmemmap_table), %g1
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -588,7 +588,7 @@ static void __init remap_kernel(void)
+ 	int i, tlb_ent = sparc64_highest_locked_tlbent();
+ 
+ 	tte_vaddr = (unsigned long) KERNBASE;
+-	phys_page = (prom_boot_mapping_phys_low >> 22UL) << 22UL;
++	phys_page = (prom_boot_mapping_phys_low >> ILOG2_4MB) << ILOG2_4MB;
+ 	tte_data = kern_large_tte(phys_page);
+ 
+ 	kern_locked_tte_data = tte_data;
+@@ -1881,7 +1881,7 @@ void __init paging_init(void)
+ 
+ 	BUILD_BUG_ON(NR_CPUS > 4096);
+ 
+-	kern_base = (prom_boot_mapping_phys_low >> 22UL) << 22UL;
++	kern_base = (prom_boot_mapping_phys_low >> ILOG2_4MB) << ILOG2_4MB;
+ 	kern_size = (unsigned long)&_end - (unsigned long)KERNBASE;
+ 
+ 	/* Invalidate both kernel TSBs.  */
+@@ -1937,7 +1937,7 @@ void __init paging_init(void)
+ 	shift = kern_base + PAGE_OFFSET - ((unsigned long)KERNBASE);
+ 
+ 	real_end = (unsigned long)_end;
+-	num_kernel_image_mappings = DIV_ROUND_UP(real_end - KERNBASE, 1 << 22);
++	num_kernel_image_mappings = DIV_ROUND_UP(real_end - KERNBASE, 1 << ILOG2_4MB);
+ 	printk("Kernel: Using %d locked TLB entries for main kernel image.\n",
+ 	       num_kernel_image_mappings);
+ 
+@@ -2094,7 +2094,7 @@ static void __init setup_valid_addr_bitm
+ 
+ 				if (new_start <= old_start &&
+ 				    new_end >= (old_start + PAGE_SIZE)) {
+-					set_bit(old_start >> 22, bitmap);
++					set_bit(old_start >> ILOG2_4MB, bitmap);
+ 					goto do_next_page;
+ 				}
+ 			}
+@@ -2143,7 +2143,7 @@ void __init mem_init(void)
+ 	addr = PAGE_OFFSET + kern_base;
+ 	last = PAGE_ALIGN(kern_size) + addr;
+ 	while (addr < last) {
+-		set_bit(__pa(addr) >> 22, sparc64_valid_addr_bitmap);
++		set_bit(__pa(addr) >> ILOG2_4MB, sparc64_valid_addr_bitmap);
+ 		addr += PAGE_SIZE;
+ 	}
+ 
+@@ -2267,7 +2267,7 @@ int __meminit vmemmap_populate(unsigned
+ 		void *block;
+ 
+ 		if (!(*vmem_pp & _PAGE_VALID)) {
+-			block = vmemmap_alloc_block(1UL << 22, node);
++			block = vmemmap_alloc_block(1UL << ILOG2_4MB, node);
+ 			if (!block)
+ 				return -ENOMEM;
+ 
 
 
