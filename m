@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933195AbaHHVST (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:18:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41007 "EHLO
+	id S933094AbaHHVSQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:18:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41008 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757030AbaHHUvb (ORCPT
+	with ESMTP id S1757137AbaHHUvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:51:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 064/259] hwmon: (adm1029) Ensure the fan_div cache is updated in set_fan_div
-Date: Fri,  8 Aug 2014 13:38:07 -0700
-Message-Id: <1407530482-4483-65-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 239/259] net: fix sparse warning in sk_dst_set()
+Date: Fri,  8 Aug 2014 13:41:02 -0700
+Message-Id: <1407530482-4483-240-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,38 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 1035a9e3e9c76b64a860a774f5b867d28d34acc2 upstream.
+[ Upstream commit 5925a0555bdaf0b396a84318cbc21ba085f6c0d3 ]
 
-Writing to fanX_div does not clear the cache. As a result, reading
-from fanX_div may return the old value for up to two seconds
-after writing a new value.
+sk_dst_cache has __rcu annotation, so we need a cast to avoid
+following sparse error :
 
-This patch ensures the fan_div cache is updated in set_fan_div().
+include/net/sock.h:1774:19: warning: incorrect type in initializer (different address spaces)
+include/net/sock.h:1774:19:    expected struct dst_entry [noderef] <asn:4>*__ret
+include/net/sock.h:1774:19:    got struct dst_entry *dst
 
-Reported-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Fixes: 7f502361531e ("ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix")
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hwmon/adm1029.c | 3 +++
- 1 file changed, 3 insertions(+)
+ include/net/sock.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/adm1029.c b/drivers/hwmon/adm1029.c
-index 9ee5e06..39441e5 100644
---- a/drivers/hwmon/adm1029.c
-+++ b/drivers/hwmon/adm1029.c
-@@ -232,6 +232,9 @@ static ssize_t set_fan_div(struct device *dev,
- 	/* Update the value */
- 	reg = (reg & 0x3F) | (val << 6);
+diff --git a/include/net/sock.h b/include/net/sock.h
+index f901631..4d64744 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1784,7 +1784,7 @@ sk_dst_set(struct sock *sk, struct dst_entry *dst)
+ 	struct dst_entry *old_dst;
  
-+	/* Update the cache */
-+	data->fan_div[attr->index] = reg;
-+
- 	/* Write value */
- 	i2c_smbus_write_byte_data(client,
- 				  ADM1029_REG_FAN_DIV[attr->index], reg);
+ 	sk_tx_queue_clear(sk);
+-	old_dst = xchg(&sk->sk_dst_cache, dst);
++	old_dst = xchg((__force struct dst_entry **)&sk->sk_dst_cache, dst);
+ 	dst_release(old_dst);
+ }
+ 
 -- 
 1.9.1
 
