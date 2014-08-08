@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751310AbaHHRya (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 13:54:30 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:51320 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044AbaHHRy3 (ORCPT
+	id S1751226AbaHHSJN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 14:09:13 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:44508 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751034AbaHHSJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 13:54:29 -0400
-From: microcai <microcaicai@gmail.com>
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: linux-kernel@vger.kernel.org, Wanzhao Cai <microcaicai@gmail.com>
-Subject: [PATCH] mfd: lpc_ich: add support for Intel Z97 chipset
-Date: Sat,  9 Aug 2014 01:55:19 +0800
-Message-Id: <1407520519-1755-1-git-send-email-microcaicai@gmail.com>
-X-Mailer: git-send-email 2.0.4
+	Fri, 8 Aug 2014 14:09:11 -0400
+Date: Fri, 8 Aug 2014 19:09:00 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>
+Cc: Fredrik Noring <fredrik.noring@autoliv.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
+Message-ID: <20140808180900.GG30282@n2100.arm.linux.org.uk>
+References: <20140626151424.GT32514@n2100.arm.linux.org.uk> <20140627112151.GF32514@n2100.arm.linux.org.uk> <3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int> <20140627163108.GP32514@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int> <20140806095012.GN30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int> <20140806125550.GO30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int> <20140807121248.GY30282@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140807121248.GY30282@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanzhao Cai <microcaicai@gmail.com>
+On Thu, Aug 07, 2014 at 01:12:48PM +0100, Russell King - ARM Linux wrote:
+> On Thu, Aug 07, 2014 at 11:11:06AM +0000, Mattis Lorentzon wrote:
+> > Russell,
+> > 
+> > > Can you ascertain whether these stalls are a result of some failure of the
+> > > receive side or the transmit side - you should be able to tell that if you watch
+> > > the packet counts via ifconfig on the stalled card.  Also, it would be useful to
+> > > know whether the FEC interrupt was firing.
+> > 
+> > grep eth /proc/interrupts
+> > 151:          0          0          0          0       GIC 151  2188000.ethernet
+> > 166:    1205661          0          0          0  gpio-mxc   6  2188000.ethernet
+> > 
+> > The interrupt counter 166 increases regularly during the stalls.
+> > Ifconfig indicates that the RX and TX  counters do not increase.
+> 
+> Hmm, I'm slightly confused.  On my iMX6Q, I have:
+> 
+> 150:     581754          0          0          0       GIC 150  2188000.ethernet
+> 151:          0          0          0          0       GIC 151  2188000.ethernet
+> 
+> In the DT file, we have:
+> 
+>                         fec: ethernet@02188000 {
+>                                 compatible = "fsl,imx6q-fec";
+>                                 reg = <0x02188000 0x4000>;
+>                                 interrupts-extended =
+>                                         <&intc 0 118 IRQ_TYPE_LEVEL_HIGH>,
+>                                         <&intc 0 119 IRQ_TYPE_LEVEL_HIGH>;
+>                                 clocks = <&clks 117>, <&clks 117>, <&clks 190>;
+>                                 clock-names = "ipg", "ahb", "ptp";
+>                                 status = "disabled";
+>                         };
+> 
+> which, for the gic, would be 118 + 32 (first SPI) = 150, 119 + 32 = 151.
+> Yet you seem to have nothing registered against GIC 150, instead having
+> an interrupt against GPIO 6.
+> 
+> This seems very odd, and as this is an on-SoC device, I don't see why
+> you would want to bind the interrupts for the FEC device any differently
+> to standard platforms.
+> 
+> This could well be the cause of your stalls.
+> 
+> What's GPIO 6 used for on your board?
 
-This patch adds the LPC Controller Device IDs found on ASUS Z97-A mother broad.
+We have a second report of instability with the FEC today, and the
+problem board (wanboard) is also using GPIO1 6 for the ethernet IRQ.
+We have confirmation from the reporter that reverting the change
+(thus making the FEC use the standard interrupt) fixes their problem.
 
-lspci output for this mother broad:
+Therefore, it seems that the workaround for ERR006687 is itself buggy.
 
-00:1f.0 ISA bridge [0601]: Intel Corporation 9 Series Chipset Family Z97 LPC Controller [8086:8cc4]
-	Subsystem: ASUSTeK Computer Inc. Device [1043:8534]
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr-
-	DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR-
-	<PERR- INTx-
-	Latency: 0
-	Capabilities: [e0] Vendor
-	Specific Information: Len=0c <?>
-	Kernel driver in use: lpc_ich
-	Kernel modules: lpc_ich
+I'd be interested to hear whether removing the 
 
-Signed-off-by: microcai <microcaicai@gmail.com>
----
- drivers/mfd/lpc_ich.c | 1 +
- 1 file changed, 1 insertion(+)
+	interrupts-extended = ...
 
-diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-index 7d8482f..e4b37c0 100644
---- a/drivers/mfd/lpc_ich.c
-+++ b/drivers/mfd/lpc_ich.c
-@@ -738,6 +738,7 @@ static const struct pci_device_id lpc_ich_ids[] = {
- 	{ PCI_VDEVICE(INTEL, 0x1f3b), LPC_AVN},
- 	{ PCI_VDEVICE(INTEL, 0x0f1c), LPC_BAYTRAIL},
- 	{ PCI_VDEVICE(INTEL, 0x2390), LPC_COLETO},
-+	{ PCI_VDEVICE(INTEL, 0x8cc4), LPC_WPT_LP},
- 	{ PCI_VDEVICE(INTEL, 0x9cc1), LPC_WPT_LP},
- 	{ PCI_VDEVICE(INTEL, 0x9cc2), LPC_WPT_LP},
- 	{ PCI_VDEVICE(INTEL, 0x9cc3), LPC_WPT_LP},
+property from your board's DT file, thereby causing you to revert back
+to the default I list above, also fixes the instability you are seeing.
+
+Thanks.
+
 -- 
-2.0.4
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
