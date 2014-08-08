@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303AbaHHUtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:49:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40750 "EHLO
+	id S1758346AbaHHUuE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:50:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40741 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756804AbaHHUtr (ORCPT
+	with ESMTP id S1758270AbaHHUto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:49:47 -0400
+	Fri, 8 Aug 2014 16:49:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 048/259] drm/radeon/cik: fix typo in EOP packet
-Date: Fri,  8 Aug 2014 13:37:51 -0700
-Message-Id: <1407530482-4483-49-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 044/259] drm/radeon/dpm: fix typo in vddci setup for eg/btc
+Date: Fri,  8 Aug 2014 13:37:47 -0700
+Message-Id: <1407530482-4483-45-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -29,35 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit b397207b7475afa9df2f94541f978100ff1ea47e upstream.
+commit e07929810f0a19ddd756558290c7d72827cbfcd9 upstream.
 
-Volatile bit was in the wrong location.  This bit is
-not used at the moment.
+We were using the vddc mask rather than the vddci mask.
 
+Bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=79071
+
+Possibly also fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=68571
+
+Noticed-by:  Jonathan Howard <jonathan@unbiased.name>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/cikd.h | 2 +-
+ drivers/gpu/drm/radeon/cypress_dpm.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/cikd.h b/drivers/gpu/drm/radeon/cikd.h
-index e33f8d1..a62f51f 100644
---- a/drivers/gpu/drm/radeon/cikd.h
-+++ b/drivers/gpu/drm/radeon/cikd.h
-@@ -1734,12 +1734,12 @@
- #define		EOP_TC_WB_ACTION_EN                     (1 << 15) /* L2 */
- #define		EOP_TCL1_ACTION_EN                      (1 << 16)
- #define		EOP_TC_ACTION_EN                        (1 << 17) /* L2 */
-+#define		EOP_TCL2_VOLATILE                       (1 << 24)
- #define		EOP_CACHE_POLICY(x)                     ((x) << 25)
-                 /* 0 - LRU
- 		 * 1 - Stream
- 		 * 2 - Bypass
- 		 */
--#define		EOP_TCL2_VOLATILE                       (1 << 27)
- #define		DATA_SEL(x)                             ((x) << 29)
-                 /* 0 - discard
- 		 * 1 - send low 32bit data
+diff --git a/drivers/gpu/drm/radeon/cypress_dpm.c b/drivers/gpu/drm/radeon/cypress_dpm.c
+index 920e1e4..b5a0077 100644
+--- a/drivers/gpu/drm/radeon/cypress_dpm.c
++++ b/drivers/gpu/drm/radeon/cypress_dpm.c
+@@ -1551,7 +1551,7 @@ int cypress_populate_smc_voltage_tables(struct radeon_device *rdev,
+ 
+ 		table->voltageMaskTable.highMask[RV770_SMC_VOLTAGEMASK_VDDCI] = 0;
+ 		table->voltageMaskTable.lowMask[RV770_SMC_VOLTAGEMASK_VDDCI] =
+-			cpu_to_be32(eg_pi->vddc_voltage_table.mask_low);
++			cpu_to_be32(eg_pi->vddci_voltage_table.mask_low);
+ 	}
+ 
+ 	return 0;
 -- 
 1.9.1
 
