@@ -1,30 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933178AbaHHUyK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:54:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41372 "EHLO
+	id S933221AbaHHUyT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:54:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41420 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758074AbaHHUxy (ORCPT
+	with ESMTP id S933132AbaHHUyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:53:54 -0400
+	Fri, 8 Aug 2014 16:54:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Brown <mbrown@fensystems.co.uk>,
-        =?UTF-8?q?Thomas=20B=C3=A4chler?= <thomas@archlinux.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 126/259] x86/efi: Include a .bss section within the PE/COFF headers
-Date: Fri,  8 Aug 2014 13:39:09 -0700
-Message-Id: <1407530482-4483-127-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 115/259] iwlwifi: mvm: disable CTS to Self
+Date: Fri,  8 Aug 2014 13:38:58 -0700
+Message-Id: <1407530482-4483-116-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,174 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Brown <mbrown@fensystems.co.uk>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit c7fb93ec51d462ec3540a729ba446663c26a0505 upstream.
+commit dc271ee0d04d12d6bfabacbec803289a7072fbd9 upstream.
 
-The PE/COFF headers currently describe only the initialised-data
-portions of the image, and result in no space being allocated for the
-uninitialised-data portions.  Consequently, the EFI boot stub will end
-up overwriting unexpected areas of memory, with unpredictable results.
+Firmware folks seem say that this flag can make trouble.
+Drop it. The advantage of CTS to self is that it slightly
+reduces the cost of the protection, but make the protection
+less reliable.
 
-Fix by including a .bss section in the PE/COFF headers (functionally
-equivalent to the init_size field in the bzImage header).
-
-Signed-off-by: Michael Brown <mbrown@fensystems.co.uk>
-Cc: Thomas Bächler <thomas@archlinux.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-[ luis: backported to 3.11: used Michael's backport ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+[ kamal: backport to 3.13-stable (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/boot/header.S      | 26 ++++++++++++++++++++++----
- arch/x86/boot/tools/build.c | 37 ++++++++++++++++++++++++++++++-------
- 2 files changed, 52 insertions(+), 11 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
-index 9ec06a1..4257124 100644
---- a/arch/x86/boot/header.S
-+++ b/arch/x86/boot/header.S
-@@ -91,10 +91,9 @@ bs_die:
+diff --git a/drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c b/drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c
+index f41f9b0..1fc0332 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c
++++ b/drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c
+@@ -566,13 +566,8 @@ static void iwl_mvm_mac_ctxt_cmd_common(struct iwl_mvm *mvm,
+ 	if (vif->bss_conf.qos)
+ 		cmd->qos_flags |= cpu_to_le32(MAC_QOS_FLG_UPDATE_EDCA);
  
- 	.section ".bsdata", "a"
- bugger_off_msg:
--	.ascii	"Direct floppy boot is not supported. "
--	.ascii	"Use a boot loader program instead.\r\n"
-+	.ascii	"Use a boot loader.\r\n"
- 	.ascii	"\n"
--	.ascii	"Remove disk and press any key to reboot ...\r\n"
-+	.ascii	"Remove disk and press any key to reboot...\r\n"
- 	.byte	0
+-	/* Don't use cts to self as the fw doesn't support it currently. */
+-	if (vif->bss_conf.use_cts_prot) {
++	if (vif->bss_conf.use_cts_prot)
+ 		cmd->protection_flags |= cpu_to_le32(MAC_PROT_FLG_TGG_PROTECT);
+-		if (IWL_UCODE_API(mvm->fw->ucode_ver) >= 8)
+-			cmd->protection_flags |=
+-				cpu_to_le32(MAC_PROT_FLG_SELF_CTS_EN);
+-	}
  
- #ifdef CONFIG_EFI_STUB
-@@ -108,7 +107,7 @@ coff_header:
- #else
- 	.word	0x8664				# x86-64
- #endif
--	.word	3				# nr_sections
-+	.word	4				# nr_sections
- 	.long	0 				# TimeDateStamp
- 	.long	0				# PointerToSymbolTable
- 	.long	1				# NumberOfSymbols
-@@ -250,6 +249,25 @@ section_table:
- 	.word	0				# NumberOfLineNumbers
- 	.long	0x60500020			# Characteristics (section flags)
- 
-+	#
-+	# The offset & size fields are filled in by build.c.
-+	#
-+	.ascii	".bss"
-+	.byte	0
-+	.byte	0
-+	.byte	0
-+	.byte	0
-+	.long	0
-+	.long	0x0
-+	.long	0				# Size of initialized data
-+						# on disk
-+	.long	0x0
-+	.long	0				# PointerToRelocations
-+	.long	0				# PointerToLineNumbers
-+	.word	0				# NumberOfRelocations
-+	.word	0				# NumberOfLineNumbers
-+	.long	0xc8000080			# Characteristics (section flags)
-+
- #endif /* CONFIG_EFI_STUB */
- 
- 	# Kernel attributes; used by setup.  This is part 1 of the
-diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
-index 8e15b22..3dafaeb 100644
---- a/arch/x86/boot/tools/build.c
-+++ b/arch/x86/boot/tools/build.c
-@@ -142,7 +142,7 @@ static void usage(void)
- 
- #ifdef CONFIG_EFI_STUB
- 
--static void update_pecoff_section_header(char *section_name, u32 offset, u32 size)
-+static void update_pecoff_section_header_fields(char *section_name, u32 vma, u32 size, u32 datasz, u32 offset)
- {
- 	unsigned int pe_header;
- 	unsigned short num_sections;
-@@ -163,10 +163,10 @@ static void update_pecoff_section_header(char *section_name, u32 offset, u32 siz
- 			put_unaligned_le32(size, section + 0x8);
- 
- 			/* section header vma field */
--			put_unaligned_le32(offset, section + 0xc);
-+			put_unaligned_le32(vma, section + 0xc);
- 
- 			/* section header 'size of initialised data' field */
--			put_unaligned_le32(size, section + 0x10);
-+			put_unaligned_le32(datasz, section + 0x10);
- 
- 			/* section header 'file offset' field */
- 			put_unaligned_le32(offset, section + 0x14);
-@@ -178,6 +178,11 @@ static void update_pecoff_section_header(char *section_name, u32 offset, u32 siz
- 	}
- }
- 
-+static void update_pecoff_section_header(char *section_name, u32 offset, u32 size)
-+{
-+	update_pecoff_section_header_fields(section_name, offset, size, size, offset);
-+}
-+
- static void update_pecoff_setup_and_reloc(unsigned int size)
- {
- 	u32 setup_offset = 0x200;
-@@ -202,9 +207,6 @@ static void update_pecoff_text(unsigned int text_start, unsigned int file_sz)
- 
- 	pe_header = get_unaligned_le32(&buf[0x3c]);
- 
--	/* Size of image */
--	put_unaligned_le32(file_sz, &buf[pe_header + 0x50]);
--
  	/*
- 	 * Size of code: Subtract the size of the first sector (512 bytes)
- 	 * which includes the header.
-@@ -219,6 +221,22 @@ static void update_pecoff_text(unsigned int text_start, unsigned int file_sz)
- 	update_pecoff_section_header(".text", text_start, text_sz);
- }
- 
-+static void update_pecoff_bss(unsigned int file_sz, unsigned int init_sz)
-+{
-+	unsigned int pe_header;
-+	unsigned int bss_sz = init_sz - file_sz;
-+
-+	pe_header = get_unaligned_le32(&buf[0x3c]);
-+
-+	/* Size of uninitialized data */
-+	put_unaligned_le32(bss_sz, &buf[pe_header + 0x24]);
-+
-+	/* Size of image */
-+	put_unaligned_le32(init_sz, &buf[pe_header + 0x50]);
-+
-+	update_pecoff_section_header_fields(".bss", file_sz, bss_sz, 0, 0);
-+}
-+
- #endif /* CONFIG_EFI_STUB */
- 
- 
-@@ -270,6 +288,9 @@ int main(int argc, char ** argv)
- 	int fd;
- 	void *kernel;
- 	u32 crc = 0xffffffffUL;
-+#ifdef CONFIG_EFI_STUB
-+	unsigned int init_sz;
-+#endif
- 
- 	/* Defaults for old kernel */
- #ifdef CONFIG_X86_32
-@@ -343,7 +364,9 @@ int main(int argc, char ** argv)
- 	put_unaligned_le32(sys_size, &buf[0x1f4]);
- 
- #ifdef CONFIG_EFI_STUB
--	update_pecoff_text(setup_sectors * 512, sz + i + ((sys_size * 16) - sz));
-+	update_pecoff_text(setup_sectors * 512, i + (sys_size * 16));
-+	init_sz = get_unaligned_le32(&buf[0x260]);
-+	update_pecoff_bss(i + (sys_size * 16), init_sz);
- 
- #ifdef CONFIG_X86_64 /* Yes, this is really how we defined it :( */
- 	efi_stub_entry -= 0x200;
+ 	 * I think that we should enable these 2 flags regardless the HT PROT
 -- 
 1.9.1
 
