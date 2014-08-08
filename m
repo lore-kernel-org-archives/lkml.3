@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383AbaHHSQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 14:16:26 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:45710 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041AbaHHSQY (ORCPT
+	id S1751444AbaHHSR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 14:17:58 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40826 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751002AbaHHSR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 14:16:24 -0400
-Message-ID: <53E513EA.7010003@hp.com>
-Date: Fri, 08 Aug 2014 14:16:10 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Fri, 8 Aug 2014 14:17:57 -0400
+Date: Fri, 8 Aug 2014 15:16:54 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Jyri Sarha <jsarha@ti.com>
+Cc: linux-kernel@vger.kernel.org, mturquette@linaro.org,
+        dri-devel@lists.freedesktop.org, airlied@linux.ie,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        bcousson@baylibre.com, tony@atomide.com, broonie@kernel.org,
+        liam.r.girdwood@linux.intel.com, peter.ujfalusi@ti.com,
+        detheridge@ti.com, zonque@gmail.com, t-kristo@ti.com
+Subject: Re: [PATCH 0/9] Beaglebone-Black HDMI audio
+Message-ID: <20140808181654.GB16575@arch.cereza>
+References: <cover.1407332062.git.jsarha@ti.com>
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>
-CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v2 0/7] locking/rwsem: enable reader opt-spinning & writer
- respin
-References: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com> <1407455524.2513.10.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1407455524.2513.10.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <cover.1407332062.git.jsarha@ti.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2014 07:52 PM, Davidlohr Bueso wrote:
-> On Thu, 2014-08-07 at 18:26 -0400, Waiman Long wrote:
->> v1->v2:
->>   - Remove patch 1 which changes preempt_enable() to
->>     preempt_enable_no_resched().
->>   - Remove the RWSEM_READ_OWNED macro and assume readers own the lock
->>     when owner is NULL.
->>   - Reduce the spin threshold to 64.
-> So I still don't like this, and the fact that it is used in some
-> virtualization locking bits doesn't really address the concerns about
-> arbitrary logic in our general locking code.
+Hello Jyri,
 
-As I said in the comments, there is no easy way to figure if all the 
-readers are running. I set the spin count to a relatively small number 
-to catch those readers with a short critical sections. For those that 
-hold the lock for a relatively long time, the spin will end and the task 
-will be put to sleep. I know the solution is not elegant, but it is 
-simple. I thought about using more elaborate scheme, but there is no 
-guarantee that that it will be better than a simple spin count while 
-greatly complicating the code.
+On 06 Aug 04:47 PM, Jyri Sarha wrote:
+> The code has a functional dependency to:
+> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg108199.html
+> 
+> Without the above patch the audio card does not probe.
+> 
+> The code has been rebased on top of Linux 3.16 merged with 
+> git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git for-next
+> with http://www.mail-archive.com/linux-omap@vger.kernel.org/msg108199.html
+> cherry-picked on top.
+> 
+> All patches have gone trough some cleaning up since the RFC version of
+> these patches over half a year ago.
+> 
 
-> Also, why did you reduce it from 100 to 64? This very much wants to be
-> commented.
+To my surprise, this worked out of the box. Did some simple tests with mpg123
+and mplayer.
 
-In the v1 patch, the 100 spin threshold was for the whole spinning 
-period. In the v2 patch, I reset the count when a writer is there. There 
-is why I reduce the spin count a bit.
+Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
--Longman
+Thanks a lot!
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
