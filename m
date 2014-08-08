@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933487AbaHHVJV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:09:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41223 "EHLO
+	id S933654AbaHHVJt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:09:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41211 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932936AbaHHUxE (ORCPT
+	with ESMTP id S932905AbaHHUw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:53:04 -0400
+	Fri, 8 Aug 2014 16:52:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexei Starovoitov <ast@plumgrid.com>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 217/259] net: filter: fix typo in sparc BPF JIT
-Date: Fri,  8 Aug 2014 13:40:40 -0700
-Message-Id: <1407530482-4483-218-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 202/259] netlink: Rename netlink_capable netlink_allowed
+Date: Fri,  8 Aug 2014 13:40:25 -0700
+Message-Id: <1407530482-4483-203-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,55 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-[ Upstream commit 569810d1e3278907264f5b115281fca3f0038d53 ]
+[ Upstream commit 5187cd055b6e81fc6526109456f8b20623148d5f ]
 
-fix typo in sparc codegen for SKF_AD_IFINDEX and SKF_AD_HATYPE
-classic BPF extensions
+netlink_capable is a static internal function in af_netlink.c and we
+have better uses for the name netlink_capable.
 
-Fixes: 2809a2087cc4 ("net: filter: Just In Time compiler for sparc")
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/net/bpf_jit_comp.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/netlink/af_netlink.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/sparc/net/bpf_jit_comp.c b/arch/sparc/net/bpf_jit_comp.c
-index 01fe994..649828f 100644
---- a/arch/sparc/net/bpf_jit_comp.c
-+++ b/arch/sparc/net/bpf_jit_comp.c
-@@ -83,9 +83,9 @@ static void bpf_flush_icache(void *start_, void *end_)
- #define BNE		(F2(0, 2) | CONDNE)
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index bca50b9..5f0e9bd 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1352,7 +1352,7 @@ retry:
+ 	return err;
+ }
  
- #ifdef CONFIG_SPARC64
--#define BNE_PTR		(F2(0, 1) | CONDNE | (2 << 20))
-+#define BE_PTR		(F2(0, 1) | CONDE | (2 << 20))
- #else
--#define BNE_PTR		BNE
-+#define BE_PTR		BNE
- #endif
+-static inline int netlink_capable(const struct socket *sock, unsigned int flag)
++static inline int netlink_allowed(const struct socket *sock, unsigned int flag)
+ {
+ 	return (nl_table[sock->sk->sk_protocol].flags & flag) ||
+ 		ns_capable(sock_net(sock->sk)->user_ns, CAP_NET_ADMIN);
+@@ -1420,7 +1420,7 @@ static int netlink_bind(struct socket *sock, struct sockaddr *addr,
  
- #define SETHI(K, REG)	\
-@@ -600,7 +600,7 @@ void bpf_jit_compile(struct sk_filter *fp)
- 			case BPF_S_ANC_IFINDEX:
- 				emit_skb_loadptr(dev, r_A);
- 				emit_cmpi(r_A, 0);
--				emit_branch(BNE_PTR, cleanup_addr + 4);
-+				emit_branch(BE_PTR, cleanup_addr + 4);
- 				emit_nop();
- 				emit_load32(r_A, struct net_device, ifindex, r_A);
- 				break;
-@@ -613,7 +613,7 @@ void bpf_jit_compile(struct sk_filter *fp)
- 			case BPF_S_ANC_HATYPE:
- 				emit_skb_loadptr(dev, r_A);
- 				emit_cmpi(r_A, 0);
--				emit_branch(BNE_PTR, cleanup_addr + 4);
-+				emit_branch(BE_PTR, cleanup_addr + 4);
- 				emit_nop();
- 				emit_load16(r_A, struct net_device, type, r_A);
- 				break;
+ 	/* Only superuser is allowed to listen multicasts */
+ 	if (nladdr->nl_groups) {
+-		if (!netlink_capable(sock, NL_CFG_F_NONROOT_RECV))
++		if (!netlink_allowed(sock, NL_CFG_F_NONROOT_RECV))
+ 			return -EPERM;
+ 		err = netlink_realloc_groups(sk);
+ 		if (err)
+@@ -1482,7 +1482,7 @@ static int netlink_connect(struct socket *sock, struct sockaddr *addr,
+ 		return -EINVAL;
+ 
+ 	/* Only superuser is allowed to send multicasts */
+-	if (nladdr->nl_groups && !netlink_capable(sock, NL_CFG_F_NONROOT_SEND))
++	if (nladdr->nl_groups && !netlink_allowed(sock, NL_CFG_F_NONROOT_SEND))
+ 		return -EPERM;
+ 
+ 	if (!nlk->portid)
+@@ -2088,7 +2088,7 @@ static int netlink_setsockopt(struct socket *sock, int level, int optname,
+ 		break;
+ 	case NETLINK_ADD_MEMBERSHIP:
+ 	case NETLINK_DROP_MEMBERSHIP: {
+-		if (!netlink_capable(sock, NL_CFG_F_NONROOT_RECV))
++		if (!netlink_allowed(sock, NL_CFG_F_NONROOT_RECV))
+ 			return -EPERM;
+ 		err = netlink_realloc_groups(sk);
+ 		if (err)
+@@ -2239,7 +2239,7 @@ static int netlink_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 		dst_group = ffs(addr->nl_groups);
+ 		err =  -EPERM;
+ 		if ((dst_group || dst_portid) &&
+-		    !netlink_capable(sock, NL_CFG_F_NONROOT_SEND))
++		    !netlink_allowed(sock, NL_CFG_F_NONROOT_SEND))
+ 			goto out;
+ 	} else {
+ 		dst_portid = nlk->dst_portid;
 -- 
 1.9.1
 
