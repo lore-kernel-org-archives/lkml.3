@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745AbaHHGwf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 02:52:35 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:47460 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925AbaHHGwc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 02:52:32 -0400
+	id S1755950AbaHHGxB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 02:53:01 -0400
+Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:3795
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752258AbaHHGw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 02:52:59 -0400
+Date: Fri, 8 Aug 2014 14:42:43 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: Shengjiu Wang <shengjiu.wang@freescale.com>
+CC: <broonie@kernel.org>, <lgirdwood@gmail.com>, <timur@tabi.org>,
+        <perex@perex.cz>, <tiwai@suse.de>, <nicoleotsuka@gmail.com>,
+        <Li.Xiubo@freescale.com>, <shc_work@mail.ru>,
+        <fabio.estevam@freescale.com>, <arnd@arndb.de>,
+        <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH V4 0/2]  refine esai for tdm support
+Message-ID: <20140808064243.GA6333@MrMyself>
+References: <cover.1407480333.git.shengjiu.wang@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <20140807192032.70e71fa7@alan.etchedpixels.co.uk>
-References: <53E21125.9080308@plexistor.com>
-	<53E211D9.7030102@plexistor.com>
-	<53E3871C.4020008@plexistor.com>
-	<20140807192032.70e71fa7@alan.etchedpixels.co.uk>
-Date: Fri, 8 Aug 2014 09:52:29 +0300
-Message-ID: <CA+uBny4uWrGpb_fNUW5Z6JDw5ZWTG9L5_mh18iMVmDBmmRguaQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4 v2] brd: Add getgeo to block ops
-From: Boaz Harrosh <boaz@plexistor.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Jens Axboe <axboe@kernel.dk>, Ross Zwisler <ross.zwisler@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <cover.1407480333.git.shengjiu.wang@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(51704005)(199002)(189002)(24454002)(47776003)(97736001)(81342001)(87936001)(50466002)(99396002)(44976005)(92566001)(85852003)(33656002)(79102001)(77982001)(20776003)(15975445006)(33716001)(97756001)(46102001)(76176999)(68736004)(50986999)(15202345003)(19580395003)(19580405001)(81542001)(83506001)(83322001)(54356999)(76482001)(95666004)(80022001)(21056001)(26826002)(23726002)(105606002)(104016003)(102836001)(64706001)(92726001)(83072002)(110136001)(6806004)(74662001)(74502001)(85306004)(107046002)(46406003)(84676001)(86362001)(106466001)(31966008)(4396001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB329;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 02973C87BC
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=guangyu.chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 7, 2014 at 9:20 PM, One Thousand Gnomes
-<gnomes@lxorguk.ukuu.org.uk> wrote:
-> On Thu, 07 Aug 2014 17:03:08 +0300
-> Boaz Harrosh <boaz@plexistor.com> wrote:
->
->> From: Boaz Harrosh <boaz@plexistor.com>
->>
->> Some programs like fdisk, require HDIO_GETGEO to work, which requires we
->> implement getgeo.
->>
->> We set all hd_geometry members to 1, because this way fdisk
->> math will not try its crazy geometry math and get stuff totally wrong.
->
-> If you are running a new storage system for god sake don't use DOS
-> partitioning, use GPT or something sane.
->
+On Fri, Aug 08, 2014 at 02:47:20PM +0800, Shengjiu Wang wrote:
+> These patchs is to refine esai for tdm support.
+> 
+> Changes for V4
+> - update the comments for patch 2
+> 
+> Changes for V3
+> - update the comments for patch 2
+> 
+> Changes for V2
+> - update the comments according the reviewer's suggestion
+> - add init value for slots and change pin to pins.
+> 
+> 
+> Shengjiu Wang (2):
+>   ASoC: fsl_esai: refine esai for TDM support
+>   Revert "ASoC: fsl-esai: Add .xlate_tdm_slot_mask() support."
+> 
+>  sound/soc/fsl/Kconfig    |    1 -
+>  sound/soc/fsl/fsl_esai.c |   16 +++++++++++-----
+>  sound/soc/fsl/fsl_esai.h |    8 ++++----
+>  3 files changed, 15 insertions(+), 10 deletions(-)
 
-I am always using GPT, on all my systems for few years now.
-Fdisk  works exactly the same, regardless of format, regarding alignment
-and start sectors.
+Acked-by: Nicolin Chen <nicoleotsuka@gmail.com>
 
-Please try before you comment
+Thank you
 
->> +static int brd_getgeo(struct block_device *bd, struct hd_geometry *geo)
->> +{
->> +     /* Just tell fdisk to get out of the way. The math here is so
->> +      * convoluted and does not make any sense at all. With all 1s
->> +      * The math just gets out of the way.
->> +      * NOTE: I was trying to get some values that will make fdisk
->> +      * Want to align first sector on 4K (like 8, 16, 20, ... sectors) but
->> +      * nothing worked, I searched the net the math is not your regular
->> +      * simple multiplication at all. If you managed to get these please
->> +      * fix here. For now we use 4k physical sectors for this
->> +      */
->> +     geo->heads = 1;
->> +     geo->sectors = 1;
->> +     geo->cylinders = 1;
->> +     return 0;
->
-> This is then going to blow up on your with some other tool. Fix fdisk
-> instead. Lying to apps generally ends up like children lying to parents -
-> the lie gets more complicated to keep up each case you find until it
-> breaks.
->
-
-Exactly my point sir. What is heads sectors and cylinders for a RAM
-disk. Nothing. We have been lying for  years fearing the world of storage
-will explode if we tell the truth. Finally, as you say, our lies came byte us in
-the arss. Best is to tell the truth and the math at fdisk will do what it is
-suppose to.
-
-And the psychology talk aside, please talk code. Do you know of any
-code that will break because of these values above?
-
-I have by now looked at fdisk's code. It will calculate several alignment
-constrains and finally pick the biggest one. Also it has code for very
-fist sector and different one for other partition-start sectors. This HSC
-math above being one of them. With these values HSC becomes very
-small and gets out of the way, for the other considerations.
-That's fdisk gparted (and parted) will just use 1Mib for alignment which
-is very big, and be done with it. I would imagine all other tools use one
-library or the other. Do you know otherwise?
-
-Boaz
-
-> Alan
+> 
+> -- 
+> 1.7.9.5
+> 
+> _______________________________________________
+> Alsa-devel mailing list
+> Alsa-devel@alsa-project.org
+> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
