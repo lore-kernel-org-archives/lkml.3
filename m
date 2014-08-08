@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117AbaHHUr7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:47:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40620 "EHLO
+	id S1758132AbaHHUsE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:48:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40635 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758097AbaHHUrv (ORCPT
+	with ESMTP id S1758113AbaHHUr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:47:51 -0400
+	Fri, 8 Aug 2014 16:47:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
-        Jonathan Cameron <jic23@kernel.org>,
+Cc: Lu Baolu <baolu.lu@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 023/259] iio: of_iio_channel_get_by_name() returns non-null pointers for error legs
-Date: Fri,  8 Aug 2014 13:37:26 -0700
-Message-Id: <1407530482-4483-24-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 031/259] xhci: clear root port wake on bits if controller isn't wake-up capable
+Date: Fri,  8 Aug 2014 13:37:34 -0700
+Message-Id: <1407530482-4483-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,56 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+From: Lu Baolu <baolu.lu@linux.intel.com>
 
-commit a2c12493ed7e63a18cef33a71686d12ffcd6600e upstream.
+commit ff8cbf250b448aac35589f6075082c3fcad8a8fe upstream.
 
-Currently in the inkern.c code for IIO framework, the function
-of_iio_channel_get_by_name() will return a non-NULL pointer when
-it cannot find a channel using of_iio_channel_get() and when it
-tries to search for 'io-channel-ranges' property and fails. This
-is incorrect behaviour as the function which calls this expects
-a NULL pointer for failure. This patch rectifies the issue.
+When xHCI PCI host is suspended, if do_wakeup is false in xhci_pci_suspend,
+xhci_bus_suspend needs to clear all root port wake on bits. Otherwise some Intel
+platforms may get a spurious wakeup, even if PCI PME# is disabled.
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+This patch should be back-ported to kernels as old as 2.6.37, that
+contains the commit 9777e3ce907d4cb5a513902a87ecd03b52499569
+"USB: xHCI: bus power management implementation".
+
+Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/iio/inkern.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-hub.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
-index 0cf5f8e..1e8e94d 100644
---- a/drivers/iio/inkern.c
-+++ b/drivers/iio/inkern.c
-@@ -183,7 +183,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
- 		else if (name && index >= 0) {
- 			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
- 				np->full_name, name ? name : "", index);
--			return chan;
-+			return NULL;
- 		}
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 805f234..d0997e3 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -21,6 +21,7 @@
+  */
  
- 		/*
-@@ -193,8 +193,9 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+ #include <linux/gfp.h>
++#include <linux/device.h>
+ #include <asm/unaligned.h>
+ 
+ #include "xhci.h"
+@@ -1144,7 +1145,9 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
+ 		 * including the USB 3.0 roothub, but only if CONFIG_PM_RUNTIME
+ 		 * is enabled, so also enable remote wake here.
  		 */
- 		np = np->parent;
- 		if (np && !of_get_property(np, "io-channel-ranges", NULL))
--			break;
-+			return NULL;
- 	}
+-		if (hcd->self.root_hub->do_remote_wakeup) {
++		if (hcd->self.root_hub->do_remote_wakeup
++				&& device_may_wakeup(hcd->self.controller)) {
 +
- 	return chan;
- }
- 
-@@ -317,6 +318,7 @@ struct iio_channel *iio_channel_get(struct device *dev,
- 		if (channel != NULL)
- 			return channel;
- 	}
-+
- 	return iio_channel_get_sys(name, channel_name);
- }
- EXPORT_SYMBOL_GPL(iio_channel_get);
+ 			if (t1 & PORT_CONNECT) {
+ 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
+ 				t2 &= ~PORT_WKCONN_E;
 -- 
 1.9.1
 
