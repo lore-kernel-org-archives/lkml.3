@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaHHUn6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:43:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40252 "EHLO
+	id S1757175AbaHHUoN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:44:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40256 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757106AbaHHUnw (ORCPT
+	with ESMTP id S1757142AbaHHUoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:43:52 -0400
+	Fri, 8 Aug 2014 16:44:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Randy Dunlap <rdunlap@infradead.org>, Mark Salter <msalter@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 176/259] parport: fix menu breakage
-Date: Fri,  8 Aug 2014 13:39:59 -0700
-Message-Id: <1407530482-4483-177-git-send-email-kamal@canonical.com>
+Cc: Max Filippov <jcmvbkbc@gmail.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 155/259] xtensa: add fixup for double exception raised in window overflow
+Date: Fri,  8 Aug 2014 13:39:38 -0700
+Message-Id: <1407530482-4483-156-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -29,56 +26,266 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Randy Dunlap <rdunlap@infradead.org>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit edffe1b626b39bd7121691dfdecb548431003bbb upstream.
+commit 17290231df16eeee5dfc198dbf5ee4b419996dcd upstream.
 
-Do not split the PARPORT-related symbols with the new kconfig
-symbol ARCH_MIGHT_HAVE_PC_PARPORT. The split was causing incorrect
-display of these symbols -- they were not being displayed together
-as they should be.
+There are two FIXMEs in the double exception handler 'for the extremely
+unlikely case'. This case gets hit by gcc during kernel build once in
+a few hours, resulting in an unrecoverable exception condition.
 
-Fixes: d90c3eb31535 "Kconfig cleanup (PARPORT_PC dependencies)"
+Provide missing fixup routine to handle this case. Double exception
+literals now need 8 more bytes, add them to the linker script.
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Cc: Mark Salter <msalter@redhat.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Also replace bbsi instructions with bbsi.l as we're branching depending
+on 8th and 7th LSB-based bits of exception address.
+
+This may be tested by adding the explicit DTLB invalidation to window
+overflow handlers, like the following:
+
+    --- a/arch/xtensa/kernel/vectors.S
+    +++ b/arch/xtensa/kernel/vectors.S
+    @@ -592,6 +592,14 @@ ENDPROC(_WindowUnderflow4)
+     ENTRY_ALIGN64(_WindowOverflow8)
+
+    	s32e	a0, a9, -16
+    +	bbsi.l	a9, 31, 1f
+    +	rsr	a0, ccount
+    +	bbsi.l	a0, 4, 1f
+    +	pdtlb	a0, a9
+    +	idtlb	a0
+    +	movi	a0, 9
+    +	idtlb	a0
+    +1:
+    	l32e    a0, a1, -12
+    	s32e    a2, a9,  -8
+    	s32e    a1, a9, -12
+
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/parport/Kconfig | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/xtensa/kernel/vectors.S     | 158 +++++++++++++++++++++++++++++++++------
+ arch/xtensa/kernel/vmlinux.lds.S |   4 +-
+ 2 files changed, 138 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/parport/Kconfig b/drivers/parport/Kconfig
-index 2872ece..44333bd 100644
---- a/drivers/parport/Kconfig
-+++ b/drivers/parport/Kconfig
-@@ -5,6 +5,12 @@
- # Parport configuration.
- #
+diff --git a/arch/xtensa/kernel/vectors.S b/arch/xtensa/kernel/vectors.S
+index cb8fd44..da0224d 100644
+--- a/arch/xtensa/kernel/vectors.S
++++ b/arch/xtensa/kernel/vectors.S
+@@ -376,38 +376,42 @@ _DoubleExceptionVector_WindowOverflow:
+ 	beqz	a2, 1f		# if at start of vector, don't restore
  
-+config ARCH_MIGHT_HAVE_PC_PARPORT
-+	bool
-+	help
-+	  Select this config option from the architecture Kconfig if
-+	  the architecture might have PC parallel port hardware.
+ 	addi	a0, a0, -128
+-	bbsi	a0, 8, 1f	# don't restore except for overflow 8 and 12
+-	bbsi	a0, 7, 2f
++	bbsi.l	a0, 8, 1f	# don't restore except for overflow 8 and 12
 +
- menuconfig PARPORT
- 	tristate "Parallel port support"
- 	depends on HAS_IOMEM
-@@ -31,12 +37,6 @@ menuconfig PARPORT
++	/*
++	 * This fixup handler is for the extremely unlikely case where the
++	 * overflow handler's reference thru a0 gets a hardware TLB refill
++	 * that bumps out the (distinct, aliasing) TLB entry that mapped its
++	 * prior references thru a9/a13, and where our reference now thru
++	 * a9/a13 gets a 2nd-level miss exception (not hardware TLB refill).
++	 */
++	movi	a2, window_overflow_restore_a0_fixup
++	s32i	a2, a3, EXC_TABLE_FIXUP
++	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
++	xsr	a3, excsave1
++
++	bbsi.l	a0, 7, 2f
  
- 	  If unsure, say Y.
+ 	/*
+ 	 * Restore a0 as saved by _WindowOverflow8().
+-	 *
+-	 * FIXME:  we really need a fixup handler for this L32E,
+-	 * for the extremely unlikely case where the overflow handler's
+-	 * reference thru a0 gets a hardware TLB refill that bumps out
+-	 * the (distinct, aliasing) TLB entry that mapped its prior
+-	 * references thru a9, and where our reference now thru a9
+-	 * gets a 2nd-level miss exception (not hardware TLB refill).
+ 	 */
  
--config ARCH_MIGHT_HAVE_PC_PARPORT
--	bool
--	help
--	  Select this config option from the architecture Kconfig if
--	  the architecture might have PC parallel port hardware.
--
- if PARPORT
+-	l32e	a2, a9, -16
+-	wsr	a2, depc	# replace the saved a0
+-	j	1f
++	l32e	a0, a9, -16
++	wsr	a0, depc	# replace the saved a0
++	j	3f
  
- config PARPORT_PC
+ 2:
+ 	/*
+ 	 * Restore a0 as saved by _WindowOverflow12().
+-	 *
+-	 * FIXME:  we really need a fixup handler for this L32E,
+-	 * for the extremely unlikely case where the overflow handler's
+-	 * reference thru a0 gets a hardware TLB refill that bumps out
+-	 * the (distinct, aliasing) TLB entry that mapped its prior
+-	 * references thru a13, and where our reference now thru a13
+-	 * gets a 2nd-level miss exception (not hardware TLB refill).
+ 	 */
+ 
+-	l32e	a2, a13, -16
+-	wsr	a2, depc	# replace the saved a0
++	l32e	a0, a13, -16
++	wsr	a0, depc	# replace the saved a0
++3:
++	xsr	a3, excsave1
++	movi	a0, 0
++	s32i	a0, a3, EXC_TABLE_FIXUP
++	s32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
+ 1:
+ 	/*
+ 	 * Restore WindowBase while leaving all address registers restored.
+@@ -449,6 +453,7 @@ _DoubleExceptionVector_WindowOverflow:
+ 
+ 	s32i	a0, a2, PT_DEPC
+ 
++_DoubleExceptionVector_handle_exception:
+ 	addx4	a0, a0, a3
+ 	l32i	a0, a0, EXC_TABLE_FAST_USER
+ 	xsr	a3, excsave1
+@@ -464,11 +469,120 @@ _DoubleExceptionVector_WindowOverflow:
+ 	rotw	-3
+ 	j	1b
+ 
+-	.end literal_prefix
+ 
+ ENDPROC(_DoubleExceptionVector)
+ 
+ /*
++ * Fixup handler for TLB miss in double exception handler for window owerflow.
++ * We get here with windowbase set to the window that was being spilled and
++ * a0 trashed. a0 bit 7 determines if this is a call8 (bit clear) or call12
++ * (bit set) window.
++ *
++ * We do the following here:
++ * - go to the original window retaining a0 value;
++ * - set up exception stack to return back to appropriate a0 restore code
++ *   (we'll need to rotate window back and there's no place to save this
++ *    information, use different return address for that);
++ * - handle the exception;
++ * - go to the window that was being spilled;
++ * - set up window_overflow_restore_a0_fixup as a fixup routine;
++ * - reload a0;
++ * - restore the original window;
++ * - reset the default fixup routine;
++ * - return to user. By the time we get to this fixup handler all information
++ *   about the conditions of the original double exception that happened in
++ *   the window overflow handler is lost, so we just return to userspace to
++ *   retry overflow from start.
++ *
++ * a0: value of depc, original value in depc
++ * a2: trashed, original value in EXC_TABLE_DOUBLE_SAVE
++ * a3: exctable, original value in excsave1
++ */
++
++ENTRY(window_overflow_restore_a0_fixup)
++
++	rsr	a0, ps
++	extui	a0, a0, PS_OWB_SHIFT, PS_OWB_WIDTH
++	rsr	a2, windowbase
++	sub	a0, a2, a0
++	extui	a0, a0, 0, 3
++	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
++	xsr	a3, excsave1
++
++	_beqi	a0, 1, .Lhandle_1
++	_beqi	a0, 3, .Lhandle_3
++
++	.macro	overflow_fixup_handle_exception_pane n
++
++	rsr	a0, depc
++	rotw	-\n
++
++	xsr	a3, excsave1
++	wsr	a2, depc
++	l32i	a2, a3, EXC_TABLE_KSTK
++	s32i	a0, a2, PT_AREG0
++
++	movi	a0, .Lrestore_\n
++	s32i	a0, a2, PT_DEPC
++	rsr	a0, exccause
++	j	_DoubleExceptionVector_handle_exception
++
++	.endm
++
++	overflow_fixup_handle_exception_pane 2
++.Lhandle_1:
++	overflow_fixup_handle_exception_pane 1
++.Lhandle_3:
++	overflow_fixup_handle_exception_pane 3
++
++	.macro	overflow_fixup_restore_a0_pane n
++
++	rotw	\n
++	/* Need to preserve a0 value here to be able to handle exception
++	 * that may occur on a0 reload from stack. It may occur because
++	 * TLB miss handler may not be atomic and pointer to page table
++	 * may be lost before we get here. There are no free registers,
++	 * so we need to use EXC_TABLE_DOUBLE_SAVE area.
++	 */
++	xsr	a3, excsave1
++	s32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
++	movi	a2, window_overflow_restore_a0_fixup
++	s32i	a2, a3, EXC_TABLE_FIXUP
++	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
++	xsr	a3, excsave1
++	bbsi.l	a0, 7, 1f
++	l32e	a0, a9, -16
++	j	2f
++1:
++	l32e	a0, a13, -16
++2:
++	rotw	-\n
++
++	.endm
++
++.Lrestore_2:
++	overflow_fixup_restore_a0_pane 2
++
++.Lset_default_fixup:
++	xsr	a3, excsave1
++	s32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
++	movi	a2, 0
++	s32i	a2, a3, EXC_TABLE_FIXUP
++	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
++	xsr	a3, excsave1
++	rfe
++
++.Lrestore_1:
++	overflow_fixup_restore_a0_pane 1
++	j	.Lset_default_fixup
++.Lrestore_3:
++	overflow_fixup_restore_a0_pane 3
++	j	.Lset_default_fixup
++
++ENDPROC(window_overflow_restore_a0_fixup)
++
++	.end literal_prefix
++/*
+  * Debug interrupt vector
+  *
+  * There is not much space here, so simply jump to another handler.
+diff --git a/arch/xtensa/kernel/vmlinux.lds.S b/arch/xtensa/kernel/vmlinux.lds.S
+index 21acd11..af84f8f 100644
+--- a/arch/xtensa/kernel/vmlinux.lds.S
++++ b/arch/xtensa/kernel/vmlinux.lds.S
+@@ -262,13 +262,13 @@ SECTIONS
+ 		  .UserExceptionVector.literal)
+   SECTION_VECTOR (_DoubleExceptionVector_literal,
+ 		  .DoubleExceptionVector.literal,
+-		  DOUBLEEXC_VECTOR_VADDR - 16,
++		  DOUBLEEXC_VECTOR_VADDR - 40,
+ 		  SIZEOF(.UserExceptionVector.text),
+ 		  .UserExceptionVector.text)
+   SECTION_VECTOR (_DoubleExceptionVector_text,
+ 		  .DoubleExceptionVector.text,
+ 		  DOUBLEEXC_VECTOR_VADDR,
+-		  32,
++		  40,
+ 		  .DoubleExceptionVector.literal)
+ 
+   . = (LOADADDR( .DoubleExceptionVector.text ) + SIZEOF( .DoubleExceptionVector.text ) + 3) & ~ 3;
 -- 
 1.9.1
 
