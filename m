@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933257AbaHHVUW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:20:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40960 "EHLO
+	id S933259AbaHHVVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:21:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40948 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932495AbaHHUvR (ORCPT
+	with ESMTP id S932343AbaHHUvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:17 -0400
+	Fri, 8 Aug 2014 16:51:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Amir Vadai <amirv@mellanox.com>,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Wei Yang <weiyang@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 225/259] vxlan: use dev->needed_headroom instead of dev->hard_header_len
-Date: Fri,  8 Aug 2014 13:40:48 -0700
-Message-Id: <1407530482-4483-226-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 228/259] net/mlx4_core: Preserve pci_dev_data after __mlx4_remove_one()
+Date: Fri,  8 Aug 2014 13:40:51 -0700
+Message-Id: <1407530482-4483-229-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -31,57 +31,280 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <cwang@twopensource.com>
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
 
-[ Upstream commit 2853af6a2ea1a8ed09b09dd4fb578e7f435e8d34 ]
+[ Upstream commit befdf8978accecac2e0739e6b5075afc62db37fe ]
 
-When we mirror packets from a vxlan tunnel to other device,
-the mirror device should see the same packets (that is, without
-outer header). Because vxlan tunnel sets dev->hard_header_len,
-tcf_mirred() resets mac header back to outer mac, the mirror device
-actually sees packets with outer headers
+pci_match_id() just match the static pci_device_id, which may return NULL if
+someone binds the driver to a device manually using
+/sys/bus/pci/drivers/.../new_id.
 
-Vxlan tunnel should set dev->needed_headroom instead of
-dev->hard_header_len, like what other ip tunnels do. This fixes
-the above problem.
+This patch wrap up a helper function __mlx4_remove_one() which does the tear
+down function but preserve the drv_data. Functions like
+mlx4_pci_err_detected() and mlx4_restart_one() will call this one with out
+releasing drvdata.
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: stephen hemminger <stephen@networkplumber.org>
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Fixes: 97a5221 "net/mlx4_core: pass pci_device_id.driver_data to __mlx4_init_one during reset".
+
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Amir Vadai <amirv@mellanox.com>
+CC: Jack Morgenstein <jackm@dev.mellanox.co.il>
+CC: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
+Acked-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/vxlan.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/main.c | 170 +++++++++++++++++-------------
+ drivers/net/ethernet/mellanox/mlx4/mlx4.h |   1 +
+ 2 files changed, 95 insertions(+), 76 deletions(-)
 
-diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
-index fc5d2b7..7e748a1 100644
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -2161,9 +2161,9 @@ static void vxlan_setup(struct net_device *dev)
- 	eth_hw_addr_random(dev);
- 	ether_setup(dev);
- 	if (vxlan->default_dst.remote_ip.sa.sa_family == AF_INET6)
--		dev->hard_header_len = ETH_HLEN + VXLAN6_HEADROOM;
-+		dev->needed_headroom = ETH_HLEN + VXLAN6_HEADROOM;
- 	else
--		dev->hard_header_len = ETH_HLEN + VXLAN_HEADROOM;
-+		dev->needed_headroom = ETH_HLEN + VXLAN_HEADROOM;
+diff --git a/drivers/net/ethernet/mellanox/mlx4/main.c b/drivers/net/ethernet/mellanox/mlx4/main.c
+index c239a9a..1f4b447 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/main.c
++++ b/drivers/net/ethernet/mellanox/mlx4/main.c
+@@ -2171,13 +2171,8 @@ static int __mlx4_init_one(struct pci_dev *pdev, int pci_dev_data)
+ 	/* Allow large DMA segments, up to the firmware limit of 1 GB */
+ 	dma_set_max_seg_size(&pdev->dev, 1024 * 1024 * 1024);
  
- 	dev->netdev_ops = &vxlan_netdev_ops;
- 	dev->destructor = free_netdev;
-@@ -2541,8 +2541,7 @@ static int vxlan_newlink(struct net *net, struct net_device *dev,
- 		if (!tb[IFLA_MTU])
- 			dev->mtu = lowerdev->mtu - (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
+-	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+-	if (!priv) {
+-		err = -ENOMEM;
+-		goto err_release_regions;
+-	}
+-
+-	dev       = &priv->dev;
++	dev       = pci_get_drvdata(pdev);
++	priv      = mlx4_priv(dev);
+ 	dev->pdev = pdev;
+ 	INIT_LIST_HEAD(&priv->ctx_list);
+ 	spin_lock_init(&priv->ctx_lock);
+@@ -2350,8 +2345,7 @@ slave_start:
+ 	mlx4_sense_init(dev);
+ 	mlx4_start_sense(dev);
  
--		/* update header length based on lower device */
--		dev->hard_header_len = lowerdev->hard_header_len +
-+		dev->needed_headroom = lowerdev->hard_header_len +
- 				       (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
- 	} else if (use_ipv6)
- 		vxlan->flags |= VXLAN_F_IPV6;
+-	priv->pci_dev_data = pci_dev_data;
+-	pci_set_drvdata(pdev, dev);
++	priv->removed = 0;
+ 
+ 	return 0;
+ 
+@@ -2417,84 +2411,108 @@ err_disable_pdev:
+ 
+ static int mlx4_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
++	struct mlx4_priv *priv;
++	struct mlx4_dev *dev;
++
+ 	printk_once(KERN_INFO "%s", mlx4_version);
+ 
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	dev       = &priv->dev;
++	pci_set_drvdata(pdev, dev);
++	priv->pci_dev_data = id->driver_data;
++
+ 	return __mlx4_init_one(pdev, id->driver_data);
+ }
+ 
+-static void mlx4_remove_one(struct pci_dev *pdev)
++static void __mlx4_remove_one(struct pci_dev *pdev)
+ {
+ 	struct mlx4_dev  *dev  = pci_get_drvdata(pdev);
+ 	struct mlx4_priv *priv = mlx4_priv(dev);
++	int               pci_dev_data;
+ 	int p;
+ 
+-	if (dev) {
+-		/* in SRIOV it is not allowed to unload the pf's
+-		 * driver while there are alive vf's */
+-		if (mlx4_is_master(dev)) {
+-			if (mlx4_how_many_lives_vf(dev))
+-				printk(KERN_ERR "Removing PF when there are assigned VF's !!!\n");
+-		}
+-		mlx4_stop_sense(dev);
+-		mlx4_unregister_device(dev);
++	if (priv->removed)
++		return;
+ 
+-		for (p = 1; p <= dev->caps.num_ports; p++) {
+-			mlx4_cleanup_port_info(&priv->port[p]);
+-			mlx4_CLOSE_PORT(dev, p);
+-		}
++	pci_dev_data = priv->pci_dev_data;
+ 
+-		if (mlx4_is_master(dev))
+-			mlx4_free_resource_tracker(dev,
+-						   RES_TR_FREE_SLAVES_ONLY);
+-
+-		mlx4_cleanup_counters_table(dev);
+-		mlx4_cleanup_qp_table(dev);
+-		mlx4_cleanup_srq_table(dev);
+-		mlx4_cleanup_cq_table(dev);
+-		mlx4_cmd_use_polling(dev);
+-		mlx4_cleanup_eq_table(dev);
+-		mlx4_cleanup_mcg_table(dev);
+-		mlx4_cleanup_mr_table(dev);
+-		mlx4_cleanup_xrcd_table(dev);
+-		mlx4_cleanup_pd_table(dev);
++	/* in SRIOV it is not allowed to unload the pf's
++	 * driver while there are alive vf's */
++	if (mlx4_is_master(dev) && mlx4_how_many_lives_vf(dev))
++		printk(KERN_ERR "Removing PF when there are assigned VF's !!!\n");
++	mlx4_stop_sense(dev);
++	mlx4_unregister_device(dev);
+ 
+-		if (mlx4_is_master(dev))
+-			mlx4_free_resource_tracker(dev,
+-						   RES_TR_FREE_STRUCTS_ONLY);
+-
+-		iounmap(priv->kar);
+-		mlx4_uar_free(dev, &priv->driver_uar);
+-		mlx4_cleanup_uar_table(dev);
+-		if (!mlx4_is_slave(dev))
+-			mlx4_clear_steering(dev);
+-		mlx4_free_eq_table(dev);
+-		if (mlx4_is_master(dev))
+-			mlx4_multi_func_cleanup(dev);
+-		mlx4_close_hca(dev);
+-		if (mlx4_is_slave(dev))
+-			mlx4_multi_func_cleanup(dev);
+-		mlx4_cmd_cleanup(dev);
+-
+-		if (dev->flags & MLX4_FLAG_MSI_X)
+-			pci_disable_msix(pdev);
+-		if (dev->flags & MLX4_FLAG_SRIOV) {
+-			mlx4_warn(dev, "Disabling SR-IOV\n");
+-			pci_disable_sriov(pdev);
+-		}
++	for (p = 1; p <= dev->caps.num_ports; p++) {
++		mlx4_cleanup_port_info(&priv->port[p]);
++		mlx4_CLOSE_PORT(dev, p);
++	}
+ 
+-		if (!mlx4_is_slave(dev))
+-			mlx4_free_ownership(dev);
++	if (mlx4_is_master(dev))
++		mlx4_free_resource_tracker(dev,
++					   RES_TR_FREE_SLAVES_ONLY);
++
++	mlx4_cleanup_counters_table(dev);
++	mlx4_cleanup_qp_table(dev);
++	mlx4_cleanup_srq_table(dev);
++	mlx4_cleanup_cq_table(dev);
++	mlx4_cmd_use_polling(dev);
++	mlx4_cleanup_eq_table(dev);
++	mlx4_cleanup_mcg_table(dev);
++	mlx4_cleanup_mr_table(dev);
++	mlx4_cleanup_xrcd_table(dev);
++	mlx4_cleanup_pd_table(dev);
+ 
+-		kfree(dev->caps.qp0_tunnel);
+-		kfree(dev->caps.qp0_proxy);
+-		kfree(dev->caps.qp1_tunnel);
+-		kfree(dev->caps.qp1_proxy);
++	if (mlx4_is_master(dev))
++		mlx4_free_resource_tracker(dev,
++					   RES_TR_FREE_STRUCTS_ONLY);
+ 
+-		kfree(priv);
+-		pci_release_regions(pdev);
+-		pci_disable_device(pdev);
+-		pci_set_drvdata(pdev, NULL);
++	iounmap(priv->kar);
++	mlx4_uar_free(dev, &priv->driver_uar);
++	mlx4_cleanup_uar_table(dev);
++	if (!mlx4_is_slave(dev))
++		mlx4_clear_steering(dev);
++	mlx4_free_eq_table(dev);
++	if (mlx4_is_master(dev))
++		mlx4_multi_func_cleanup(dev);
++	mlx4_close_hca(dev);
++	if (mlx4_is_slave(dev))
++		mlx4_multi_func_cleanup(dev);
++	mlx4_cmd_cleanup(dev);
++
++	if (dev->flags & MLX4_FLAG_MSI_X)
++		pci_disable_msix(pdev);
++	if (dev->flags & MLX4_FLAG_SRIOV) {
++		mlx4_warn(dev, "Disabling SR-IOV\n");
++		pci_disable_sriov(pdev);
+ 	}
++
++	if (!mlx4_is_slave(dev))
++		mlx4_free_ownership(dev);
++
++	kfree(dev->caps.qp0_tunnel);
++	kfree(dev->caps.qp0_proxy);
++	kfree(dev->caps.qp1_tunnel);
++	kfree(dev->caps.qp1_proxy);
++
++	pci_release_regions(pdev);
++	pci_disable_device(pdev);
++	memset(priv, 0, sizeof(*priv));
++	priv->pci_dev_data = pci_dev_data;
++	priv->removed = 1;
++}
++
++static void mlx4_remove_one(struct pci_dev *pdev)
++{
++	struct mlx4_dev  *dev  = pci_get_drvdata(pdev);
++	struct mlx4_priv *priv = mlx4_priv(dev);
++
++	__mlx4_remove_one(pdev);
++	kfree(priv);
++	pci_set_drvdata(pdev, NULL);
+ }
+ 
+ int mlx4_restart_one(struct pci_dev *pdev)
+@@ -2504,7 +2522,7 @@ int mlx4_restart_one(struct pci_dev *pdev)
+ 	int		  pci_dev_data;
+ 
+ 	pci_dev_data = priv->pci_dev_data;
+-	mlx4_remove_one(pdev);
++	__mlx4_remove_one(pdev);
+ 	return __mlx4_init_one(pdev, pci_dev_data);
+ }
+ 
+@@ -2559,7 +2577,7 @@ MODULE_DEVICE_TABLE(pci, mlx4_pci_table);
+ static pci_ers_result_t mlx4_pci_err_detected(struct pci_dev *pdev,
+ 					      pci_channel_state_t state)
+ {
+-	mlx4_remove_one(pdev);
++	__mlx4_remove_one(pdev);
+ 
+ 	return state == pci_channel_io_perm_failure ?
+ 		PCI_ERS_RESULT_DISCONNECT : PCI_ERS_RESULT_NEED_RESET;
+@@ -2567,11 +2585,11 @@ static pci_ers_result_t mlx4_pci_err_detected(struct pci_dev *pdev,
+ 
+ static pci_ers_result_t mlx4_pci_slot_reset(struct pci_dev *pdev)
+ {
+-	const struct pci_device_id *id;
+-	int ret;
++	struct mlx4_dev	 *dev  = pci_get_drvdata(pdev);
++	struct mlx4_priv *priv = mlx4_priv(dev);
++	int               ret;
+ 
+-	id = pci_match_id(mlx4_pci_table, pdev);
+-	ret = __mlx4_init_one(pdev, id->driver_data);
++	ret = __mlx4_init_one(pdev, priv->pci_dev_data);
+ 
+ 	return ret ? PCI_ERS_RESULT_DISCONNECT : PCI_ERS_RESULT_RECOVERED;
+ }
+diff --git a/drivers/net/ethernet/mellanox/mlx4/mlx4.h b/drivers/net/ethernet/mellanox/mlx4/mlx4.h
+index e582a41..640dcce 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/mlx4.h
++++ b/drivers/net/ethernet/mellanox/mlx4/mlx4.h
+@@ -791,6 +791,7 @@ struct mlx4_priv {
+ 	spinlock_t		ctx_lock;
+ 
+ 	int			pci_dev_data;
++	int                     removed;
+ 
+ 	struct list_head        pgdir_list;
+ 	struct mutex            pgdir_mutex;
 -- 
 1.9.1
 
