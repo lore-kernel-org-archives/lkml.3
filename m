@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933340AbaHHWA6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:00:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60514 "EHLO
+	id S1758127AbaHHWBe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:01:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60470 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933089AbaHHVgW (ORCPT
+	with ESMTP id S933060AbaHHVgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:22 -0400
+	Fri, 8 Aug 2014 17:36:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sven Eckelmann <sven@narfation.org>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
-        Antonio Quartulli <antonio@meshcoding.com>
-Subject: [PATCH 3.14 15/39] batman-adv: Fix out-of-order fragmentation support
-Date: Fri,  8 Aug 2014 14:35:01 -0700
-Message-Id: <20140808213355.637464441@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 13/39] net: Correctly set segment mac_len in skb_segment().
+Date: Fri,  8 Aug 2014 14:34:59 -0700
+Message-Id: <20140808213355.548864117@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -30,70 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Eckelmann <sven@narfation.org>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit d9124268d84a836f14a6ead54ff9d8eee4c43be5 ]
+[ Upstream commit fcdfe3a7fa4cb74391d42b6a26dc07c20dab1d82 ]
 
-batadv_frag_insert_packet was unable to handle out-of-order packets because it
-dropped them directly. This is caused by the way the fragmentation lists is
-checked for the correct place to insert a fragmentation entry.
+When performing segmentation, the mac_len value is copied right
+out of the original skb.  However, this value is not always set correctly
+(like when the packet is VLAN-tagged) and we'll end up copying a bad
+value.
 
-The fragmentation code keeps the fragments in lists. The fragmentation entries
-are kept in descending order of sequence number. The list is traversed and each
-entry is compared with the new fragment. If the current entry has a smaller
-sequence number than the new fragment then the new one has to be inserted
-before the current entry. This ensures that the list is still in descending
-order.
+One way to demonstrate this is to configure a VM which tags
+packets internally and turn off VLAN acceleration on the forwarding
+bridge port.  The packets show up corrupt like this:
+16:18:24.985548 52:54:00:ab:be:25 > 52:54:00:26:ce:a3, ethertype 802.1Q
+(0x8100), length 1518: vlan 100, p 0, ethertype 0x05e0,
+        0x0000:  8cdb 1c7c 8cdb 0064 4006 b59d 0a00 6402 ...|...d@.....d.
+        0x0010:  0a00 6401 9e0d b441 0a5e 64ec 0330 14fa ..d....A.^d..0..
+        0x0020:  29e3 01c9 f871 0000 0101 080a 000a e833)....q.........3
+        0x0030:  000f 8c75 6e65 7470 6572 6600 6e65 7470 ...unetperf.netp
+        0x0040:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
+        0x0050:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
+        0x0060:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
+        ...
 
-An out-of-order packet with a smaller sequence number than all entries in the
-list still has to be added to the end of the list. The used hlist has no
-information about the last entry in the list inside hlist_head and thus the
-last entry has to be calculated differently. Currently the code assumes that
-the iterator variable of hlist_for_each_entry can be used for this purpose
-after the hlist_for_each_entry finished. This is obviously wrong because the
-iterator variable is always NULL when the list was completely traversed.
+This also leads to awful throughput as GSO packets are dropped and
+cause retransmissions.
 
-Instead the information about the last entry has to be stored in a different
-variable.
+The solution is to set the mac_len using the values already available
+in then new skb.  We've already adjusted all of the header offset, so we
+might as well correctly figure out the mac_len using skb_reset_mac_len().
+After this change, packets are segmented correctly and performance
+is restored.
 
-This problem was introduced in 610bfc6bc99bc83680d190ebc69359a05fc7f605
-("batman-adv: Receive fragmented packets and merge").
-
-Signed-off-by: Sven Eckelmann <sven@narfation.org>
-Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
-Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
+CC: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/batman-adv/fragmentation.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ net/core/skbuff.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/batman-adv/fragmentation.c
-+++ b/net/batman-adv/fragmentation.c
-@@ -128,6 +128,7 @@ static bool batadv_frag_insert_packet(st
- {
- 	struct batadv_frag_table_entry *chain;
- 	struct batadv_frag_list_entry *frag_entry_new = NULL, *frag_entry_curr;
-+	struct batadv_frag_list_entry *frag_entry_last = NULL;
- 	struct batadv_frag_packet *frag_packet;
- 	uint8_t bucket;
- 	uint16_t seqno, hdr_size = sizeof(struct batadv_frag_packet);
-@@ -180,11 +181,14 @@ static bool batadv_frag_insert_packet(st
- 			ret = true;
- 			goto out;
- 		}
-+
-+		/* store current entry because it could be the last in list */
-+		frag_entry_last = frag_entry_curr;
- 	}
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2968,9 +2968,9 @@ struct sk_buff *skb_segment(struct sk_bu
+ 		tail = nskb;
  
--	/* Reached the end of the list, so insert after 'frag_entry_curr'. */
--	if (likely(frag_entry_curr)) {
--		hlist_add_after(&frag_entry_curr->list, &frag_entry_new->list);
-+	/* Reached the end of the list, so insert after 'frag_entry_last'. */
-+	if (likely(frag_entry_last)) {
-+		hlist_add_after(&frag_entry_last->list, &frag_entry_new->list);
- 		chain->size += skb->len - hdr_size;
- 		chain->timestamp = jiffies;
- 		ret = true;
+ 		__copy_skb_header(nskb, head_skb);
+-		nskb->mac_len = head_skb->mac_len;
+ 
+ 		skb_headers_offset_update(nskb, skb_headroom(nskb) - headroom);
++		skb_reset_mac_len(nskb);
+ 
+ 		skb_copy_from_linear_data_offset(head_skb, -tnl_hlen,
+ 						 nskb->data - tnl_hlen,
 
 
