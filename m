@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187AbaHHVtP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:49:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60832 "EHLO
+	id S932427AbaHHVtS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:49:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60829 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758474AbaHHVqI (ORCPT
+	with ESMTP id S1758929AbaHHVqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 17:46:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 07/17] iovec: make sure the caller actually wants anything in memcpy_fromiovecend
-Date: Fri,  8 Aug 2014 14:35:29 -0700
-Message-Id: <20140808213457.813218974@linuxfoundation.org>
+Subject: [PATCH 3.16 06/17] net: Correctly set segment mac_len in skb_segment().
+Date: Fri,  8 Aug 2014 14:35:28 -0700
+Message-Id: <20140808213457.774751704@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213457.511493898@linuxfoundation.org>
 References: <20140808213457.511493898@linuxfoundation.org>
@@ -29,32 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit 06ebb06d49486676272a3c030bfeef4bd969a8e6 ]
+[ Upstream commit fcdfe3a7fa4cb74391d42b6a26dc07c20dab1d82 ]
 
-Check for cases when the caller requests 0 bytes instead of running off
-and dereferencing potentially invalid iovecs.
+When performing segmentation, the mac_len value is copied right
+out of the original skb.  However, this value is not always set correctly
+(like when the packet is VLAN-tagged) and we'll end up copying a bad
+value.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+One way to demonstrate this is to configure a VM which tags
+packets internally and turn off VLAN acceleration on the forwarding
+bridge port.  The packets show up corrupt like this:
+16:18:24.985548 52:54:00:ab:be:25 > 52:54:00:26:ce:a3, ethertype 802.1Q
+(0x8100), length 1518: vlan 100, p 0, ethertype 0x05e0,
+        0x0000:  8cdb 1c7c 8cdb 0064 4006 b59d 0a00 6402 ...|...d@.....d.
+        0x0010:  0a00 6401 9e0d b441 0a5e 64ec 0330 14fa ..d....A.^d..0..
+        0x0020:  29e3 01c9 f871 0000 0101 080a 000a e833)....q.........3
+        0x0030:  000f 8c75 6e65 7470 6572 6600 6e65 7470 ...unetperf.netp
+        0x0040:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
+        0x0050:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
+        0x0060:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
+        ...
+
+This also leads to awful throughput as GSO packets are dropped and
+cause retransmissions.
+
+The solution is to set the mac_len using the values already available
+in then new skb.  We've already adjusted all of the header offset, so we
+might as well correctly figure out the mac_len using skb_reset_mac_len().
+After this change, packets are segmented correctly and performance
+is restored.
+
+CC: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- lib/iovec.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/core/skbuff.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/lib/iovec.c
-+++ b/lib/iovec.c
-@@ -85,6 +85,10 @@ EXPORT_SYMBOL(memcpy_toiovecend);
- int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
- 			int offset, int len)
- {
-+	/* No data? Done! */
-+	if (len == 0)
-+		return 0;
-+
- 	/* Skip over the finished iovecs */
- 	while (offset >= iov->iov_len) {
- 		offset -= iov->iov_len;
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2976,9 +2976,9 @@ struct sk_buff *skb_segment(struct sk_bu
+ 		tail = nskb;
+ 
+ 		__copy_skb_header(nskb, head_skb);
+-		nskb->mac_len = head_skb->mac_len;
+ 
+ 		skb_headers_offset_update(nskb, skb_headroom(nskb) - headroom);
++		skb_reset_mac_len(nskb);
+ 
+ 		skb_copy_from_linear_data_offset(head_skb, -tnl_hlen,
+ 						 nskb->data - tnl_hlen,
 
 
