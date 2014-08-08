@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758278AbaHHVbz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:31:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40653 "EHLO
+	id S1758375AbaHHVci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:32:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40641 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758135AbaHHUsL (ORCPT
+	with ESMTP id S1758119AbaHHUsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:48:11 -0400
+	Fri, 8 Aug 2014 16:48:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 027/259] usb: option: add/modify Olivetti Olicard modems
-Date: Fri,  8 Aug 2014 13:37:30 -0700
-Message-Id: <1407530482-4483-28-git-send-email-kamal@canonical.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 022/259] staging: iio/ad7291: fix error code in ad7291_probe()
+Date: Fri,  8 Aug 2014 13:37:25 -0700
+Message-Id: <1407530482-4483-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,66 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit b0ebef36e93703e59003ad6a1a20227e47714417 upstream.
+commit b70e19c222a64018d308ebc80333575aff9f4e51 upstream.
 
-Adding a couple of Olivetti modems and blacklisting the net
-function on a couple which are already supported.
+We should be returning a negative error code instead of success here.
 
-Reported-by: Lars Melin <larsm17@gmail.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+This would have been detected by GCC, except that the "ret" variable was
+initialized with a bogus value to disable GCC's uninitialized variable
+warnings.  I've cleaned that up, as well.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/option.c | 22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ drivers/staging/iio/adc/ad7291.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 407396d..7438f67 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -375,8 +375,12 @@ static void option_instat_callback(struct urb *urb);
- /* Olivetti products */
- #define OLIVETTI_VENDOR_ID			0x0b3c
- #define OLIVETTI_PRODUCT_OLICARD100		0xc000
-+#define OLIVETTI_PRODUCT_OLICARD120		0xc001
-+#define OLIVETTI_PRODUCT_OLICARD140		0xc002
- #define OLIVETTI_PRODUCT_OLICARD145		0xc003
-+#define OLIVETTI_PRODUCT_OLICARD155		0xc004
- #define OLIVETTI_PRODUCT_OLICARD200		0xc005
-+#define OLIVETTI_PRODUCT_OLICARD160		0xc00a
- #define OLIVETTI_PRODUCT_OLICARD500		0xc00b
+diff --git a/drivers/staging/iio/adc/ad7291.c b/drivers/staging/iio/adc/ad7291.c
+index d13f8ae..6c88359 100644
+--- a/drivers/staging/iio/adc/ad7291.c
++++ b/drivers/staging/iio/adc/ad7291.c
+@@ -465,7 +465,7 @@ static int ad7291_probe(struct i2c_client *client,
+ 	struct ad7291_platform_data *pdata = client->dev.platform_data;
+ 	struct ad7291_chip_info *chip;
+ 	struct iio_dev *indio_dev;
+-	int ret = 0;
++	int ret;
  
- /* Celot products */
-@@ -1615,15 +1619,21 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDMNET) },
- 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, /* HC28 enumerates with Siemens or Cinterion VID depending on FW revision */
- 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
--
--	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
-+	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD120),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD140),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD145) },
-+	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD155),
-+		.driver_info = (kernel_ulong_t)&net_intf6_blacklist },
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200),
--		.driver_info = (kernel_ulong_t)&net_intf6_blacklist
--	},
-+		.driver_info = (kernel_ulong_t)&net_intf6_blacklist },
-+	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD160),
-+		.driver_info = (kernel_ulong_t)&net_intf6_blacklist },
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD500),
--		.driver_info = (kernel_ulong_t)&net_intf4_blacklist
--	},
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
- 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
+ 	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*chip));
+ 	if (!indio_dev)
+@@ -475,7 +475,7 @@ static int ad7291_probe(struct i2c_client *client,
+ 	if (pdata && pdata->use_external_ref) {
+ 		chip->reg = devm_regulator_get(&client->dev, "vref");
+ 		if (IS_ERR(chip->reg))
+-			return ret;
++			return PTR_ERR(chip->reg);
+ 
+ 		ret = regulator_enable(chip->reg);
+ 		if (ret)
 -- 
 1.9.1
 
