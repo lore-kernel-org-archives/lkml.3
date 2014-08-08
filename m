@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704AbaHHKNa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 06:13:30 -0400
+	id S1756311AbaHHKLN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 06:11:13 -0400
 Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:48276 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756325AbaHHKLP (ORCPT
+	by vger.kernel.org with ESMTP id S1755594AbaHHKLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 06:11:15 -0400
+	Fri, 8 Aug 2014 06:11:10 -0400
 X-IronPort-AV: E=Sophos;i="5.01,824,1400018400"; 
-   d="scan'208";a="88704758"
+   d="scan'208";a="88704749"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: kernel-janitors@vger.kernel.org, Alexandre Courbot <gnurou@gmail.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
         =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
-Subject: =?UTF-8?q?=5BPATCH=2010/14=5D=20gpio=3A=20delete=20unneeded=20test=20before=20of=5Fnode=5Fput?=
-Date: Fri,  8 Aug 2014 12:07:51 +0200
-Message-Id: <1407492475-26283-10-git-send-email-Julia.Lawall@lip6.fr>
+Subject: =?UTF-8?q?=5BPATCH=201/14=5D=20i2c=3A=20mpc=3A=20delete=20unneeded=20test=20before=20of=5Fnode=5Fput?=
+Date: Fri,  8 Aug 2014 12:07:42 +0200
+Message-Id: <1407492475-26283-1-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -48,20 +48,21 @@ expression e;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/gpio/gpiolib-of.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/i2c/busses/i2c-mpc.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-index 7cfdc22..604dbe6 100644
---- a/drivers/gpio/gpiolib-of.c
-+++ b/drivers/gpio/gpiolib-of.c
-@@ -307,7 +307,5 @@ void of_gpiochip_add(struct gpio_chip *chip)
- void of_gpiochip_remove(struct gpio_chip *chip)
- {
- 	gpiochip_remove_pin_ranges(chip);
--
--	if (chip->of_node)
--		of_node_put(chip->of_node);
-+	of_node_put(chip->of_node);
+diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
+index 6a32aa0..0edf630 100644
+--- a/drivers/i2c/busses/i2c-mpc.c
++++ b/drivers/i2c/busses/i2c-mpc.c
+@@ -341,8 +341,7 @@ static u32 mpc_i2c_get_sec_cfg_8xxx(void)
+ 			iounmap(reg);
+ 		}
+ 	}
+-	if (node)
+-		of_node_put(node);
++	of_node_put(node);
+ 
+ 	return val;
  }
 
