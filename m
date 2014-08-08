@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757019AbaHHOhS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 10:37:18 -0400
+	id S1757038AbaHHOhU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 10:37:20 -0400
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:54149 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756977AbaHHOhN (ORCPT
+	by vger.kernel.org with ESMTP id S1751321AbaHHOhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 10:37:13 -0400
-Message-Id: <20140808143709.860194043@goodmis.org>
+	Fri, 8 Aug 2014 10:37:12 -0400
+Message-Id: <20140808143710.208630679@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 08 Aug 2014 10:32:55 -0400
+Date: Fri, 08 Aug 2014 10:32:57 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -17,138 +17,158 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
         Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH 1/4] tracing: Do not do anything special with tracepoint_string when
- tracing is disabled
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: [PATCH 3/4] ARM: add IPI tracepoints
 References: <20140808143254.145903999@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0001-tracing-Do-not-do-anything-special-with-tracepoint_s.patch
+Content-Disposition: inline; filename=0003-ARM-add-IPI-tracepoints.patch
 X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
 
-When CONFIG_TRACING is not enabled, there's no reason to save the trace
-strings either by the linker or as a static variable that can be
-referenced later. Simply pass back the string that is given to
-tracepoint_string().
+The strings used to list IPIs in /proc/interrupts are reused for tracing
+purposes.
 
-Had to move the define to include/linux/tracepoint.h so that it is still
-visible when CONFIG_TRACING is not set.
+While at it, prevent a negative ipinr from escaping the range check
+in handle_IPI().
 
-Link: http://lkml.kernel.org/p/1406318733-26754-2-git-send-email-nicolas.pitre@linaro.org
+Link: http://lkml.kernel.org/p/1406318733-26754-4-git-send-email-nicolas.pitre@linaro.org
 
-Suggested-by: Nicolas Pitre <nico@linaro.org>
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Nicolas Pitre <nico@linaro.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace_event.h | 34 ----------------------------------
- include/linux/tracepoint.h   | 44 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 44 insertions(+), 34 deletions(-)
+ arch/arm/kernel/smp.c | 70 ++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 42 insertions(+), 28 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index cff3106ffe2c..c9f619a2070f 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -574,40 +574,6 @@ do {									\
- 		__trace_printk(ip, fmt, ##args);			\
- } while (0)
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 7c4fada440f0..9388a3d479e1 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -47,6 +47,9 @@
+ #include <asm/mach/arch.h>
+ #include <asm/mpu.h>
  
--/**
-- * tracepoint_string - register constant persistent string to trace system
-- * @str - a constant persistent string that will be referenced in tracepoints
-- *
-- * If constant strings are being used in tracepoints, it is faster and
-- * more efficient to just save the pointer to the string and reference
-- * that with a printf "%s" instead of saving the string in the ring buffer
-- * and wasting space and time.
-- *
-- * The problem with the above approach is that userspace tools that read
-- * the binary output of the trace buffers do not have access to the string.
-- * Instead they just show the address of the string which is not very
-- * useful to users.
-- *
-- * With tracepoint_string(), the string will be registered to the tracing
-- * system and exported to userspace via the debugfs/tracing/printk_formats
-- * file that maps the string address to the string text. This way userspace
-- * tools that read the binary buffers have a way to map the pointers to
-- * the ASCII strings they represent.
-- *
-- * The @str used must be a constant string and persistent as it would not
-- * make sense to show a string that no longer exists. But it is still fine
-- * to be used with modules, because when modules are unloaded, if they
-- * had tracepoints, the ring buffers are cleared too. As long as the string
-- * does not change during the life of the module, it is fine to use
-- * tracepoint_string() within a module.
-- */
--#define tracepoint_string(str)						\
--	({								\
--		static const char *___tp_str __tracepoint_string = str; \
--		___tp_str;						\
--	})
--#define __tracepoint_string	__attribute__((section("__tracepoint_str")))
--
- #ifdef CONFIG_PERF_EVENTS
- struct perf_event;
- 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 2e2a5f7717e5..b1293f15f592 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -249,6 +249,50 @@ extern void syscall_unregfunc(void);
- 
- #endif /* CONFIG_TRACEPOINTS */
- 
-+#ifdef CONFIG_TRACING
-+/**
-+ * tracepoint_string - register constant persistent string to trace system
-+ * @str - a constant persistent string that will be referenced in tracepoints
-+ *
-+ * If constant strings are being used in tracepoints, it is faster and
-+ * more efficient to just save the pointer to the string and reference
-+ * that with a printf "%s" instead of saving the string in the ring buffer
-+ * and wasting space and time.
-+ *
-+ * The problem with the above approach is that userspace tools that read
-+ * the binary output of the trace buffers do not have access to the string.
-+ * Instead they just show the address of the string which is not very
-+ * useful to users.
-+ *
-+ * With tracepoint_string(), the string will be registered to the tracing
-+ * system and exported to userspace via the debugfs/tracing/printk_formats
-+ * file that maps the string address to the string text. This way userspace
-+ * tools that read the binary buffers have a way to map the pointers to
-+ * the ASCII strings they represent.
-+ *
-+ * The @str used must be a constant string and persistent as it would not
-+ * make sense to show a string that no longer exists. But it is still fine
-+ * to be used with modules, because when modules are unloaded, if they
-+ * had tracepoints, the ring buffers are cleared too. As long as the string
-+ * does not change during the life of the module, it is fine to use
-+ * tracepoint_string() within a module.
-+ */
-+#define tracepoint_string(str)						\
-+	({								\
-+		static const char *___tp_str __tracepoint_string = str; \
-+		___tp_str;						\
-+	})
-+#define __tracepoint_string	__attribute__((section("__tracepoint_str")))
-+#else
-+/*
-+ * tracepoint_string() is used to save the string address for userspace
-+ * tracing tools. When tracing isn't configured, there's no need to save
-+ * anything.
-+ */
-+# define tracepoint_string(str) str
-+# define __tracepoint_string
-+#endif
++#define CREATE_TRACE_POINTS
++#include <trace/events/ipi.h>
 +
  /*
-  * The need for the DECLARE_TRACE_NOARGS() is to handle the prototype
-  * (void). "void" is a special value in a function prototype and can
+  * as from 2.5, kernels no longer have an init_tasks structure
+  * so we need some other way of telling a new secondary core
+@@ -430,38 +433,15 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+ 	}
+ }
+ 
+-static void (*smp_cross_call)(const struct cpumask *, unsigned int);
++static void (*__smp_cross_call)(const struct cpumask *, unsigned int);
+ 
+ void __init set_smp_cross_call(void (*fn)(const struct cpumask *, unsigned int))
+ {
+-	if (!smp_cross_call)
+-		smp_cross_call = fn;
+-}
+-
+-void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+-{
+-	smp_cross_call(mask, IPI_CALL_FUNC);
+-}
+-
+-void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
+-{
+-	smp_cross_call(mask, IPI_WAKEUP);
+-}
+-
+-void arch_send_call_function_single_ipi(int cpu)
+-{
+-	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
++	if (!__smp_cross_call)
++		__smp_cross_call = fn;
+ }
+ 
+-#ifdef CONFIG_IRQ_WORK
+-void arch_irq_work_raise(void)
+-{
+-	if (is_smp())
+-		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
+-}
+-#endif
+-
+-static const char *ipi_types[NR_IPI] = {
++static const char *ipi_types[NR_IPI] __tracepoint_string = {
+ #define S(x,s)	[x] = s
+ 	S(IPI_WAKEUP, "CPU wakeup interrupts"),
+ 	S(IPI_TIMER, "Timer broadcast interrupts"),
+@@ -473,6 +453,12 @@ static const char *ipi_types[NR_IPI] = {
+ 	S(IPI_COMPLETION, "completion interrupts"),
+ };
+ 
++static void smp_cross_call(const struct cpumask *target, unsigned int ipinr)
++{
++	trace_ipi_raise(target, ipi_types[ipinr]);
++	__smp_cross_call(target, ipinr);
++}
++
+ void show_ipi_list(struct seq_file *p, int prec)
+ {
+ 	unsigned int cpu, i;
+@@ -499,6 +485,29 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
+ 	return sum;
+ }
+ 
++void arch_send_call_function_ipi_mask(const struct cpumask *mask)
++{
++	smp_cross_call(mask, IPI_CALL_FUNC);
++}
++
++void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
++{
++	smp_cross_call(mask, IPI_WAKEUP);
++}
++
++void arch_send_call_function_single_ipi(int cpu)
++{
++	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
++}
++
++#ifdef CONFIG_IRQ_WORK
++void arch_irq_work_raise(void)
++{
++	if (is_smp())
++		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
++}
++#endif
++
+ #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+ void tick_broadcast(const struct cpumask *mask)
+ {
+@@ -556,8 +565,10 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+ 	unsigned int cpu = smp_processor_id();
+ 	struct pt_regs *old_regs = set_irq_regs(regs);
+ 
+-	if (ipinr < NR_IPI)
++	if ((unsigned)ipinr < NR_IPI) {
++		trace_ipi_entry(ipi_types[ipinr]);
+ 		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
++	}
+ 
+ 	switch (ipinr) {
+ 	case IPI_WAKEUP:
+@@ -612,6 +623,9 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+ 		       cpu, ipinr);
+ 		break;
+ 	}
++
++	if ((unsigned)ipinr < NR_IPI)
++		trace_ipi_exit(ipi_types[ipinr]);
+ 	set_irq_regs(old_regs);
+ }
+ 
 -- 
 2.0.1
 
