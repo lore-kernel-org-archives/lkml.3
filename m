@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640AbaHHVc6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:32:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40630 "EHLO
+	id S932652AbaHHVdW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:33:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40628 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758063AbaHHUr5 (ORCPT
+	with ESMTP id S1752821AbaHHUrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:47:57 -0400
+	Fri, 8 Aug 2014 16:47:55 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Oliver Neukum <oneukum@suse.de>, Johan Hovold <johan@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 184/259] powerpc/perf: Fix MMCR2 handling for EBB
-Date: Fri,  8 Aug 2014 13:40:07 -0700
-Message-Id: <1407530482-4483-185-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 025/259] USB: option: add device ID for SpeedUp SU9800 usb 3g modem
+Date: Fri,  8 Aug 2014 13:37:28 -0700
+Message-Id: <1407530482-4483-26-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,48 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <mpe@ellerman.id.au>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 8903461c9bc56fcb041fb92d054e2529951770b6 upstream.
+commit 1cab4c68e339086cdaff7535848e878e8f261fca upstream.
 
-In the recent commit b50a6c584bb4 "Clear MMCR2 when enabling PMU", I
-screwed up the handling of MMCR2 for tasks using EBB.
+Reported by Alif Mubarak Ahmad:
 
-We must make sure we set MMCR2 *before* ebb_switch_in(), otherwise we
-overwrite the value of MMCR2 that userspace may have written. That
-potentially breaks a task that uses EBB and manually uses MMCR2 for
-event freezing.
+This device vendor and product id is 1c9e:9800
+It is working as serial interface with generic usbserial driver.
+I thought it is more suitable to use usbserial option driver, which has
+better capability distinguishing between modem serial interface and
+micro sd storage interface.
 
-Fixes: b50a6c584bb4 ("powerpc/perf: Clear MMCR2 when enabling PMU")
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[ johan: style changes ]
+
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Tested-by: Alif Mubarak Ahmad <alive4ever@live.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/perf/core-book3s.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/serial/option.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index 57a8ff9..36a8bdd 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1159,14 +1159,14 @@ static void power_pmu_enable(struct pmu *pmu)
- 	cpuhw->mmcr[0] |= MMCR0_PMXE | MMCR0_FCECE;
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 948a19f..407396d 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -352,6 +352,9 @@ static void option_instat_callback(struct urb *urb);
+ /* Zoom */
+ #define ZOOM_PRODUCT_4597			0x9607
  
-  out_enable:
-+	if (ppmu->flags & PPMU_ARCH_207S)
-+		mtspr(SPRN_MMCR2, 0);
++/* SpeedUp SU9800 usb 3g modem */
++#define SPEEDUP_PRODUCT_SU9800			0x9800
 +
- 	mmcr0 = ebb_switch_in(ebb, cpuhw->mmcr[0]);
- 
- 	mb();
- 	write_mmcr0(cpuhw, mmcr0);
- 
--	if (ppmu->flags & PPMU_ARCH_207S)
--		mtspr(SPRN_MMCR2, 0);
--
- 	/*
- 	 * Enable instruction sampling if necessary
- 	 */
+ /* Haier products */
+ #define HAIER_VENDOR_ID				0x201e
+ #define HAIER_PRODUCT_CE100			0x2009
+@@ -1577,6 +1580,7 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+   	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
+   	},
++	{ USB_DEVICE_INTERFACE_CLASS(LONGCHEER_VENDOR_ID, SPEEDUP_PRODUCT_SU9800, 0xff) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
+ 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
 -- 
 1.9.1
 
