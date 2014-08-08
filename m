@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127AbaHHWBe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:01:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60470 "EHLO
+	id S933354AbaHHWBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:01:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60502 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933060AbaHHVgV (ORCPT
+	with ESMTP id S933058AbaHHVgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 17:36:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
         Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 13/39] net: Correctly set segment mac_len in skb_segment().
-Date: Fri,  8 Aug 2014 14:34:59 -0700
-Message-Id: <20140808213355.548864117@linuxfoundation.org>
+Subject: [PATCH 3.14 12/39] macvlan: Initialize vlan_features to turn on offload support.
+Date: Fri,  8 Aug 2014 14:34:58 -0700
+Message-Id: <20140808213355.508418477@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -32,56 +31,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit fcdfe3a7fa4cb74391d42b6a26dc07c20dab1d82 ]
+[ Upstream commit 081e83a78db9b0ae1f5eabc2dedecc865f509b98 ]
 
-When performing segmentation, the mac_len value is copied right
-out of the original skb.  However, this value is not always set correctly
-(like when the packet is VLAN-tagged) and we'll end up copying a bad
-value.
+Macvlan devices do not initialize vlan_features.  As a result,
+any vlan devices configured on top of macvlans perform very poorly.
+Initialize vlan_features based on the vlan features of the lower-level
+device.
 
-One way to demonstrate this is to configure a VM which tags
-packets internally and turn off VLAN acceleration on the forwarding
-bridge port.  The packets show up corrupt like this:
-16:18:24.985548 52:54:00:ab:be:25 > 52:54:00:26:ce:a3, ethertype 802.1Q
-(0x8100), length 1518: vlan 100, p 0, ethertype 0x05e0,
-        0x0000:  8cdb 1c7c 8cdb 0064 4006 b59d 0a00 6402 ...|...d@.....d.
-        0x0010:  0a00 6401 9e0d b441 0a5e 64ec 0330 14fa ..d....A.^d..0..
-        0x0020:  29e3 01c9 f871 0000 0101 080a 000a e833)....q.........3
-        0x0030:  000f 8c75 6e65 7470 6572 6600 6e65 7470 ...unetperf.netp
-        0x0040:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        0x0050:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        0x0060:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        ...
-
-This also leads to awful throughput as GSO packets are dropped and
-cause retransmissions.
-
-The solution is to set the mac_len using the values already available
-in then new skb.  We've already adjusted all of the header offset, so we
-might as well correctly figure out the mac_len using skb_reset_mac_len().
-After this change, packets are segmented correctly and performance
-is restored.
-
-CC: Eric Dumazet <edumazet@google.com>
 Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/skbuff.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/macvlan.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2968,9 +2968,9 @@ struct sk_buff *skb_segment(struct sk_bu
- 		tail = nskb;
- 
- 		__copy_skb_header(nskb, head_skb);
--		nskb->mac_len = head_skb->mac_len;
- 
- 		skb_headers_offset_update(nskb, skb_headroom(nskb) - headroom);
-+		skb_reset_mac_len(nskb);
- 
- 		skb_copy_from_linear_data_offset(head_skb, -tnl_hlen,
- 						 nskb->data - tnl_hlen,
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -548,6 +548,7 @@ static int macvlan_init(struct net_devic
+ 				  (lowerdev->state & MACVLAN_STATE_MASK);
+ 	dev->features 		= lowerdev->features & MACVLAN_FEATURES;
+ 	dev->features		|= ALWAYS_ON_FEATURES;
++	dev->vlan_features	= lowerdev->vlan_features & MACVLAN_FEATURES;
+ 	dev->gso_max_size	= lowerdev->gso_max_size;
+ 	dev->iflink		= lowerdev->ifindex;
+ 	dev->hard_header_len	= lowerdev->hard_header_len;
 
 
