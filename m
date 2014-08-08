@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933304AbaHHVCE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:02:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41403 "EHLO
+	id S933530AbaHHVCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:02:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41399 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933119AbaHHUx7 (ORCPT
+	with ESMTP id S933111AbaHHUx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:53:59 -0400
+	Fri, 8 Aug 2014 16:53:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
+Cc: Oren Givon <oren.givon@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 129/259] of/irq: do irq resolution in platform_get_irq_byname()
-Date: Fri,  8 Aug 2014 13:39:12 -0700
-Message-Id: <1407530482-4483-130-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 108/259] iwlwifi: update the 7265 series HW IDs
+Date: Fri,  8 Aug 2014 13:38:51 -0700
+Message-Id: <1407530482-4483-109-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -31,109 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grygorii Strashko <grygorii.strashko@ti.com>
+From: Oren Givon <oren.givon@intel.com>
 
-commit ad69674e73a18dc3a8da557f4059ccf9389531a5 upstream.
+commit b3c063ae7279981f7161e63b44f214c62f122b32 upstream.
 
-The commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef
-"of/irq: do irq resolution in platform_get_irq" from Rob Herring -
-moves resolving of the interrupt resources in platform_get_irq().
-But this solution isn't complete because platform_get_irq_byname()
-need to be modified the same way.
+Add one more 7265 series HW ID.
+Edit one existing 7265 series HW ID.
 
-Hence, fix it by adding interrupt resolution code at the
-platform_get_irq_byname() function too.
-
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Rob Herring <robh@kernel.org>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>
-
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Oren Givon <oren.givon@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/base/platform.c |  7 +++++--
- drivers/of/irq.c        | 22 ++++++++++++++++++++++
- include/linux/of_irq.h  |  5 +++++
- 3 files changed, 32 insertions(+), 2 deletions(-)
+ drivers/net/wireless/iwlwifi/pcie/drv.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 39d2f6b..0d13679 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -131,9 +131,12 @@ EXPORT_SYMBOL_GPL(platform_get_resource_byname);
-  */
- int platform_get_irq_byname(struct platform_device *dev, const char *name)
- {
--	struct resource *r = platform_get_resource_byname(dev, IORESOURCE_IRQ,
--							  name);
-+	struct resource *r;
-+
-+	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
-+		return of_irq_get_byname(dev->dev.of_node, name);
- 
-+	r = platform_get_resource_byname(dev, IORESOURCE_IRQ, name);
- 	return r ? r->start : -ENXIO;
- }
- EXPORT_SYMBOL_GPL(platform_get_irq_byname);
-diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 11c7f73..5d8c346 100644
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -403,6 +403,28 @@ int of_irq_get(struct device_node *dev, int index)
- }
- 
- /**
-+ * of_irq_get_byname - Decode a node's IRQ and return it as a Linux irq number
-+ * @dev: pointer to device tree node
-+ * @name: irq name
-+ *
-+ * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
-+ * is not yet created, or error code in case of any other failure.
-+ */
-+int of_irq_get_byname(struct device_node *dev, const char *name)
-+{
-+	int index;
-+
-+	if (unlikely(!name))
-+		return -EINVAL;
-+
-+	index = of_property_match_string(dev, "interrupt-names", name);
-+	if (index < 0)
-+		return index;
-+
-+	return of_irq_get(dev, index);
-+}
-+
-+/**
-  * of_irq_count - Count the number of IRQs a node uses
-  * @dev: pointer to device tree node
-  */
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index 6404253..bfec136 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -45,6 +45,7 @@ extern void of_irq_init(const struct of_device_id *matches);
- #ifdef CONFIG_OF_IRQ
- extern int of_irq_count(struct device_node *dev);
- extern int of_irq_get(struct device_node *dev, int index);
-+extern int of_irq_get_byname(struct device_node *dev, const char *name);
- #else
- static inline int of_irq_count(struct device_node *dev)
- {
-@@ -54,6 +55,10 @@ static inline int of_irq_get(struct device_node *dev, int index)
- {
- 	return 0;
- }
-+static inline int of_irq_get_byname(struct device_node *dev, const char *name)
-+{
-+	return 0;
-+}
- #endif
- 
- #if defined(CONFIG_OF)
+diff --git a/drivers/net/wireless/iwlwifi/pcie/drv.c b/drivers/net/wireless/iwlwifi/pcie/drv.c
+index a9e3655..d408df2 100644
+--- a/drivers/net/wireless/iwlwifi/pcie/drv.c
++++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
+@@ -362,6 +362,7 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_card_ids) = {
+ 	{IWL_PCI_DEVICE(0x095B, 0x5210, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5012, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5410, iwl7265_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x095A, 0x5510, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5400, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x1010, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x5000, iwl7265_2n_cfg)},
+@@ -375,7 +376,7 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_card_ids) = {
+ 	{IWL_PCI_DEVICE(0x095A, 0x9110, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9112, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9210, iwl7265_2ac_cfg)},
+-	{IWL_PCI_DEVICE(0x095A, 0x9200, iwl7265_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x095B, 0x9200, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9510, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9310, iwl7265_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x095A, 0x9410, iwl7265_2ac_cfg)},
 -- 
 1.9.1
 
