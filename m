@@ -1,127 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572AbaHHMSM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 08:18:12 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:53867 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969AbaHHMSJ (ORCPT
+	id S1756553AbaHHMYN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 08:24:13 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:57732 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755942AbaHHMYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 08:18:09 -0400
-Subject: [PATCH v2 4/17] arcmsr: limit max. number of SCSI command request
-From: Ching Huang <ching2048@areca.com.tw>
-To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Aug 2014 20:17:59 +0800
-Message-ID: <1407500279.5099.21.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Aug 2014 08:24:10 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-01-53e4c1672605
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] mfd: max77686: fix support for devices without irq
+ specified
+Date: Fri, 08 Aug 2014 14:24:05 +0200
+Message-id: <6204488.MKXsGQj0V8@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <53E4AD6A.4000705@collabora.co.uk>
+References: <1457999.lNPdqEWCCR@amdc1032> <1407495251.28710.2.camel@AMDC1943>
+ <53E4AD6A.4000705@collabora.co.uk>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=UTF-8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t9jQd2Mg0+CDbaeZrQ4u+wgm8XR3wUW
+	r18YWvQuuMpmcbbpDbvF/a9HGS0u75rDZjHj/D4mi9PdrA6cHrMbLrJ4/H1+ncXjzrU9bB7z
+	TgZ69G1ZxejxeZNcAFsUl01Kak5mWWqRvl0CV8b3q2+YCnoUKhYt/cnawLhAsouRk0NCwETi
+	2uo/bBC2mMSFe+uBbC4OIYHpjBL/fp6AclqYJG7uWc8IUsUmYCUxsX0VmC0iYCdxY/VDZpAi
+	ZoEdTBI/104EGyUsECyx5uRaMJtFQFVizbZWFhCbV0BT4vbNT2C2qICnxI7tK4FqODg4BfQl
+	Zv7MBgkLCRRJ7H+1mB2iXFDix+R7YOXMAvIS+/ZPZYWw1SUmzVvEPIFRYBaSsllIymYhKVvA
+	yLyKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzj4n0ntYFzZYHGIUYCDUYmHV6D7cbAQa2JZ
+	cWXuIUYJDmYlEd7Ly58EC/GmJFZWpRblxxeV5qQWH2KU5mBREuc90GodKCSQnliSmp2aWpBa
+	BJNl4uCUamBk/8MZNIvpzWuGooD/7kqWr/kmPG/K39v2SJx9ar3fzilWbBL5rs/ULouV8Sy3
+	zzshpjZrRc1Lg2K3/xtrltW72vqsmXS0fNK5/RPynJVTj4Y+YJv5Tfb701+Sssu0lwSuf5tm
+	qJQgNOu5JtfkaUor7tc+75RzOSp379hxc3mB95vPFWbKaQkosRRnJBpqMRcVJwIAroBI03oC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching Huang <ching2048@areca.com.tw>
 
-This patch limits the max. number of SCSI command request to avoid command overflow.
+Hi Javier,
 
-Changes in v2 4/17:
-* set the correct host->can_queue value after read adapter's limitation.
+On Friday, August 08, 2014 12:58:50 PM Javier Martinez Canillas wrote:
+> Hello Krzysztof,
+> 
+> On 08/08/2014 12:54 PM, Krzysztof Kozlowski wrote:
+> >> >> 
+> >> >> Not sufficient. You have to also fix RTC driver (OOPS from Trats2
+> >> >> attached). Also consider adding checks for (max77686->irq) to the
+> >> >> suspend and resume.
+> >> >> 
+> >> > 
+> >> > Right, the max77686 RTC driver assumes that an IRQ domain will be created on the
+> >> > mfd driver so a virtual IRQ can be mapped for the RTC alarm1 IRQ. This
+> >> > assumptions comes from the fact that the "interrupt" property is required
+> >> > according to the DT binding doc.
+> >> > 
+> >> 
+> >> Although for Trats2 I see that arch/arm/boot/dts/exynos4412-trats2.dts defines
+> >> an interrupt, so I wonder why regmap_irq_get_virq() is giving an oops there:
+> >> 
+> >> max77686_pmic@09 {
+> >> 	compatible = "maxim,max77686";
+> >> 	interrupt-parent = <&gpx0>;
+> >> 	interrupts = <7 0>;
+> >> 	reg = <0x09>;
+> >> 	#clock-cells = <1>;
+> >> ...
+> > 
+> > Because I am a nasty user :) and I removed the interrupts properties
+> > manually (to test how the RTC will behave). Still the driver shouldn't
+> > oops.
+> > 
+> 
+> Oh, now it makes sense :)
+> 
+> Yes, I agree with you that the driver should not oops. The probe should fail
+> though if no IRQ domain was created on the MFD driver since that DT property is
+> required.
+> 
+> I'll send a fix for this today, thanks a lot for reporting it.
+> 
+> >> 
+> >> 
+> >> > So the max77686 RTC wakealarm was not working for these boards before?
+> > 
+> > I don't know for Odroid but on Trats2 it works fine.
 
-Signed-off-by: Ching Huang <ching2048@areca.com.tw>
----
+On ODROID U3 with my max77686 fix applied RTC driver fails with:
 
-Thanks to Tomas's advice.
+[    1.743607] max77686-rtc max77686-rtc: max77686_rtc_probe
+[    1.748312] max77686-rtc max77686-rtc: max77686_rtc_init_reg: fail to write controlm reg(-6)
+[    1.756509] max77686-rtc max77686-rtc: Failed to initialize RTC reg:-6
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
---- a/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:24:06.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:22:36.000000000 +0800
-@@ -45,11 +45,12 @@
- #include <linux/interrupt.h>
- struct device_attribute;
- /*The limit of outstanding scsi command that firmware can handle*/
--#define ARCMSR_MAX_OUTSTANDING_CMD						256
- #ifdef CONFIG_XEN
- 	#define ARCMSR_MAX_FREECCB_NUM	160
-+#define ARCMSR_MAX_OUTSTANDING_CMD	155
- #else
- 	#define ARCMSR_MAX_FREECCB_NUM	320
-+#define ARCMSR_MAX_OUTSTANDING_CMD	255
- #endif
- #define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140428"
- #define ARCMSR_SCSI_INITIATOR_ID						255
-@@ -598,6 +599,7 @@ struct AdapterControlBlock
- 				#define	FW_DEADLOCK	0x0010
- 	atomic_t 			rq_map_token;
- 	atomic_t			ante_token_value;
-+	uint32_t	maxOutstanding;
- 	int		msix_vector_count;
- };/* HW_DEVICE_EXTENSION */
- /*
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-08 19:03:48.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-08 19:35:46.000000000 +0800
-@@ -134,7 +134,7 @@ static struct scsi_host_template arcmsr_
- 	.eh_bus_reset_handler	= arcmsr_bus_reset,
- 	.bios_param		= arcmsr_bios_param,
- 	.change_queue_depth	= arcmsr_adjust_disk_queue_depth,
--	.can_queue		= ARCMSR_MAX_FREECCB_NUM,
-+	.can_queue		= ARCMSR_MAX_OUTSTANDING_CMD,
- 	.this_id			= ARCMSR_SCSI_INITIATOR_ID,
- 	.sg_tablesize	        	= ARCMSR_DEFAULT_SG_ENTRIES, 
- 	.max_sectors    	    	= ARCMSR_MAX_XFER_SECTORS_C, 
-@@ -693,7 +693,7 @@ static int arcmsr_probe(struct pci_dev *
- 	host->max_lun = ARCMSR_MAX_TARGETLUN;
- 	host->max_id = ARCMSR_MAX_TARGETID;		/*16:8*/
- 	host->max_cmd_len = 16;	 			/*this is issue of 64bit LBA ,over 2T byte*/
--	host->can_queue = ARCMSR_MAX_FREECCB_NUM;	/* max simultaneous cmds */		
-+	host->can_queue = ARCMSR_MAX_OUTSTANDING_CMD;	/* max simultaneous cmds */		
- 	host->cmd_per_lun = ARCMSR_MAX_CMD_PERLUN;	    
- 	host->this_id = ARCMSR_SCSI_INITIATOR_ID;
- 	host->unique_id = (bus << 8) | dev_fun;
-@@ -2215,9 +2215,6 @@ static int arcmsr_queue_command_lck(stru
- 		arcmsr_handle_virtual_command(acb, cmd);
- 		return 0;
- 	}
--	if (atomic_read(&acb->ccboutstandingcount) >=
--			ARCMSR_MAX_OUTSTANDING_CMD)
--		return SCSI_MLQUEUE_HOST_BUSY;
- 	ccb = arcmsr_get_freeccb(acb);
- 	if (!ccb)
- 		return SCSI_MLQUEUE_HOST_BUSY;
-@@ -2427,12 +2424,27 @@ static bool arcmsr_get_hbc_config(struct
- }
- static bool arcmsr_get_firmware_spec(struct AdapterControlBlock *acb)
- {
--	if (acb->adapter_type == ACB_ADAPTER_TYPE_A)
--		return arcmsr_get_hba_config(acb);
--	else if (acb->adapter_type == ACB_ADAPTER_TYPE_B)
--		return arcmsr_get_hbb_config(acb);
-+	bool rtn = false;
-+
-+	switch (acb->adapter_type) {
-+	case ACB_ADAPTER_TYPE_A:
-+		rtn = arcmsr_get_hba_config(acb);
-+		break;
-+	case ACB_ADAPTER_TYPE_B:
-+		rtn = arcmsr_get_hbb_config(acb);
-+		break;
-+	case ACB_ADAPTER_TYPE_C:
-+		rtn = arcmsr_get_hbc_config(acb);
-+		break;
-+	default:
-+		break;
-+	}
-+	if(acb->firm_numbers_queue > ARCMSR_MAX_OUTSTANDING_CMD)
-+		acb->maxOutstanding = ARCMSR_MAX_OUTSTANDING_CMD;
- 	else
--		return arcmsr_get_hbc_config(acb);
-+		acb->maxOutstanding = acb->firm_numbers_queue - 1;
-+	acb->host->can_queue = acb->maxOutstanding;
-+	return rtn;
- }
- 
- static int arcmsr_polling_hba_ccbdone(struct AdapterControlBlock *acb,
+However it turns out that RTC can be fixed with patches from Daniel Drake
+(please see below).
 
+> >> > 
+> >> > Just to be sure that I understand the issue: these boards don't really have an
+> >> > IRQ connected to the PMIC, is not that this information is just missing in the
+> >> > Device Tree, right?
+> >> > 
+> >> 
+> >> By looking at Odroid's 3.8 based vendor tree I see that an IRQ for the max77686
+> >> PMIC is defined [0] using platform data:
+> >> 
+> >> static struct max77686_platform_data exynos4_max77686_info = {
+> >> 	.irq_gpio	= 	EXYNOS4_GPX3(2),
+> >> 	.ono		=	EXYNOS4_GPX1(2),
+> >> 	.num_regulators = ARRAY_SIZE(max77686_regulators),
+> >> 	.regulators = max77686_regulators,
+> >> ...
+> >> 
+> >> So maybe this information is missing in
+> >> arch/arm/boot/dts/exynos4412-odroid-common.dtsi?
+> > 
+> > Yes, it seems it is missing.
+> > 
+> 
+> Indeed.
+
+It seems that Daniel Drake has already fixed ODROID dtsi with:
+
+  [PATCH 1/2] ARM: dts: Enable PMIC interrupts on ODROID
+  http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34191.html
+
+and
+
+  [PATCH 2/2] ARM: dts: ODROID i2c improvements
+  http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34190.html
+
+Both patches are needed to fix boot on ODROID.  They also fix RTC driver
+registration:
+
+MFD driver error message with only patch #1 applied:
+[    0.164488] max77686 0-0009: failed to add RTC irq chip: -6
+
+RTC driver messages with both patches #1 and #2 applied:
+[    1.731461] max77686-rtc max77686-rtc: max77686_rtc_probe
+[    1.833303] max77686-rtc max77686-rtc: rtc core: registered max77686-rtc as rtc0
+
+Kukjin, could you please apply Daniel's fixes?  They are critical for ODROID
+boards.
+
+Javier, I think that it still would be useful to apply my patch for max77686
+as it makes new kernels work with older dtbs and leaves the possibility to
+use PMIC on boards without IRQ connected.  If you agree I will post v2 of
+the patch (with suspend/resume handlers fixed and bindings documentation
+updated).
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
