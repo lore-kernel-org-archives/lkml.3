@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759401AbaHHW3S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:29:18 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:53896 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758343AbaHHW3O (ORCPT
+	id S1759602AbaHHW3n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:29:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40196 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756570AbaHHUlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 18:29:14 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Linus Walleij <linus.walleij@linaro.org>, Heiko Stuebner <heiko@sntech.de>
-Cc: linux-arm-kernel@lists.infradead.org, Sonny Rao <sonnyrao@chromium.org>,
-        eddie.cai@rock-chips.com, Doug Anderson <dianders@chromium.org>,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] pinctrl: Add mux options 3 and 4 for rockchip pinctrl
-Date: Fri,  8 Aug 2014 15:29:09 -0700
-Message-Id: <1407536949-31323-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	Fri, 8 Aug 2014 16:41:52 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Phil Turnbull <phil.turnbull@oracle.com>,
+        Vegard Nossum <vegard.nossum@oracle.com>, Willy Tarreau <w@1wt.eu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 134/259] net/l2tp: don't fall back on UDP [get|set]sockopt
+Date: Fri,  8 Aug 2014 13:39:17 -0700
+Message-Id: <1407530482-4483-135-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
+References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Newer Rockchip SoCs have more muxing slots.  Add slots 3 and 4 since
-the rk3288 table goes all the way up to 4.
+3.13.11.6 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+------------------
+
+From: Sasha Levin <sasha.levin@oracle.com>
+
+commit 3cf521f7dc87c031617fd47e4b7aa2593c2f3daf upstream.
+
+The l2tp [get|set]sockopt() code has fallen back to the UDP functions
+for socket option levels != SOL_PPPOL2TP since day one, but that has
+never actually worked, since the l2tp socket isn't an inet socket.
+
+As David Miller points out:
+
+  "If we wanted this to work, it'd have to look up the tunnel and then
+   use tunnel->sk, but I wonder how useful that would be"
+
+Since this can never have worked so nobody could possibly have depended
+on that functionality, just remove the broken code and return -EINVAL.
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Acked-by: James Chapman <jchapman@katalix.com>
+Acked-by: David Miller <davem@davemloft.net>
+Cc: Phil Turnbull <phil.turnbull@oracle.com>
+Cc: Vegard Nossum <vegard.nossum@oracle.com>
+Cc: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- Documentation/devicetree/bindings/pinctrl/rockchip,pinctrl.txt | 6 +++---
- include/dt-bindings/pinctrl/rockchip.h                         | 2 ++
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ net/l2tp/l2tp_ppp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/rockchip,pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/rockchip,pinctrl.txt
-index 4658b69..388b213 100644
---- a/Documentation/devicetree/bindings/pinctrl/rockchip,pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/rockchip,pinctrl.txt
-@@ -2,8 +2,8 @@
+diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
+index 8580b78..cfa1406 100644
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -1365,7 +1365,7 @@ static int pppol2tp_setsockopt(struct socket *sock, int level, int optname,
+ 	int err;
  
- The Rockchip Pinmux Controller, enables the IC
- to share one PAD to several functional blocks. The sharing is done by
--multiplexing the PAD input/output signals. For each PAD there are up to
--4 muxing options with option 0 being the use as a GPIO.
-+multiplexing the PAD input/output signals. For each PAD there are several
-+muxing options with option 0 being the use as a GPIO.
+ 	if (level != SOL_PPPOL2TP)
+-		return udp_prot.setsockopt(sk, level, optname, optval, optlen);
++		return -EINVAL;
  
- Please refer to pinctrl-bindings.txt in this directory for details of the
- common pinctrl bindings used by client devices, including the meaning of the
-@@ -58,7 +58,7 @@ Deprecated properties for gpio sub nodes:
- Required properties for pin configuration node:
-   - rockchip,pins: 3 integers array, represents a group of pins mux and config
-     setting. The format is rockchip,pins = <PIN_BANK PIN_BANK_IDX MUX &phandle>.
--    The MUX 0 means gpio and MUX 1 to 3 mean the specific device function.
-+    The MUX 0 means gpio and MUX 1 to N mean the specific device function.
-     The phandle of a node containing the generic pinconfig options
-     to use, as described in pinctrl-bindings.txt in this directory.
+ 	if (optlen < sizeof(int))
+ 		return -EINVAL;
+@@ -1491,7 +1491,7 @@ static int pppol2tp_getsockopt(struct socket *sock, int level, int optname,
+ 	struct pppol2tp_session *ps;
  
-diff --git a/include/dt-bindings/pinctrl/rockchip.h b/include/dt-bindings/pinctrl/rockchip.h
-index cd5788b..743e66a 100644
---- a/include/dt-bindings/pinctrl/rockchip.h
-+++ b/include/dt-bindings/pinctrl/rockchip.h
-@@ -28,5 +28,7 @@
- #define RK_FUNC_GPIO	0
- #define RK_FUNC_1	1
- #define RK_FUNC_2	2
-+#define RK_FUNC_3	3
-+#define RK_FUNC_4	4
+ 	if (level != SOL_PPPOL2TP)
+-		return udp_prot.getsockopt(sk, level, optname, optval, optlen);
++		return -EINVAL;
  
- #endif
+ 	if (get_user(len, optlen))
+ 		return -EFAULT;
 -- 
-2.0.0.526.g5318336
+1.9.1
 
