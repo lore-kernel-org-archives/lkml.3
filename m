@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759184AbaHHWSk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:18:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40548 "EHLO
+	id S1759572AbaHHWSz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:18:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40531 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757007AbaHHUr2 (ORCPT
+	with ESMTP id S1758010AbaHHUrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:47:28 -0400
+	Fri, 8 Aug 2014 16:47:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 030/259] xhci: correct burst count field for isoc transfers on 1.0 xhci hosts
-Date: Fri,  8 Aug 2014 13:37:33 -0700
-Message-Id: <1407530482-4483-31-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 029/259] xhci: Use correct SLOT ID when handling a reset device command
+Date: Fri,  8 Aug 2014 13:37:32 -0700
+Message-Id: <1407530482-4483-30-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -30,40 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 3213b151387df0b95f4eada104f68eb1c1409cb3 upstream.
+commit 6fcfb0d682a8212d321a6131adc94daf0905992a upstream.
 
-The transfer burst count (TBC) field in xhci 1.0 hosts should be set
-to the number of bursts needed to transfer all packets in a isoc TD.
-Supported values are 0-2 (1 to 3 bursts per service interval).
+Command completion events normally include command completion status,
+SLOT_ID, and a pointer to the original command. Reset device command
+completion SLOT_ID may be zero according to xhci specs 4.6.11.
 
-Formula for TBC calculation is given in xhci spec section 4.11.2.3:
-TBC = roundup( Transfer Descriptor Packet Count / Max Burst Size +1 ) - 1
+VIA controllers set the SLOT_ID to zero, triggering a WARN_ON in the
+command completion handler.
 
-This patch should be applied to stable kernels since 3.0 that contain
-the commit 5cd43e33b9519143f06f507dd7cbee6b7a621885
-"xhci 1.0: Set transfer burst count field."
+Use the SLOT ID found from the original command instead.
 
-Suggested-by: ShiChun Ma <masc2008@qq.com>
+This patch should be applied to stable kernels since 3.13 that contain
+the commit 20e7acb13ff48fbc884d5918c3697c27de63922a
+"xhci: use completion event's slot id rather than dig it out of command"
+
+Reported-by: Saran Neti <sarannmr@gmail.com>
+Tested-by: Saran Neti <sarannmr@gmail.com>
 Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/xhci-ring.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-ring.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index da3a91b..d0d906f 100644
+index 82b5967..da3a91b 100644
 --- a/drivers/usb/host/xhci-ring.c
 +++ b/drivers/usb/host/xhci-ring.c
-@@ -3680,7 +3680,7 @@ static unsigned int xhci_get_burst_count(struct xhci_hcd *xhci,
- 		return 0;
- 
- 	max_burst = urb->ep->ss_ep_comp.bMaxBurst;
--	return roundup(total_packet_count, max_burst + 1) - 1;
-+	return DIV_ROUND_UP(total_packet_count, max_burst + 1) - 1;
- }
- 
- /*
+@@ -1592,8 +1592,11 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		xhci_handle_cmd_reset_ep(xhci, slot_id, cmd_trb, cmd_comp_code);
+ 		break;
+ 	case TRB_RESET_DEV:
+-		WARN_ON(slot_id != TRB_TO_SLOT_ID(
+-				le32_to_cpu(cmd_trb->generic.field[3])));
++		/* SLOT_ID field in reset device cmd completion event TRB is 0.
++		 * Use the SLOT_ID from the command TRB instead (xhci 4.6.11)
++		 */
++		slot_id = TRB_TO_SLOT_ID(
++				le32_to_cpu(cmd_trb->generic.field[3]));
+ 		xhci_handle_cmd_reset_dev(xhci, slot_id, event);
+ 		break;
+ 	case TRB_NEC_GET_FW:
 -- 
 1.9.1
 
