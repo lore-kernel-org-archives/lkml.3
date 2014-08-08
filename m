@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759419AbaHHVxt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:53:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60638 "EHLO
+	id S1758704AbaHHVgk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:36:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60530 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933117AbaHHVgn (ORCPT
+	with ESMTP id S933117AbaHHVgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:43 -0400
+	Fri, 8 Aug 2014 17:36:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Brian Foster <bfoster@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Bill <billstuff2001@sbcglobal.net>
-Subject: [PATCH 3.14 39/39] xfs: log vector rounding leaks log space
-Date: Fri,  8 Aug 2014 14:35:25 -0700
-Message-Id: <20140808213356.657568631@linuxfoundation.org>
+        Kirill Tkhai <tkhai@yandex.ru>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 18/39] sparc64: Make itc_sync_lock raw
+Date: Fri,  8 Aug 2014 14:35:04 -0700
+Message-Id: <20140808213355.759683057@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -30,144 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-commit 110dc24ad2ae4e9b94b08632fe1eb2fcdff83045 upstream.
+[ Upstream commit 49b6c01f4c1de3b5e5427ac5aba80f9f6d27837a ]
 
-The addition of direct formatting of log items into the CIL
-linear buffer added alignment restrictions that the start of each
-vector needed to be 64 bit aligned. Hence padding was added in
-xlog_finish_iovec() to round up the vector length to ensure the next
-vector started with the correct alignment.
+One more place where we must not be able
+to be preempted or to be interrupted in RT.
 
-This adds a small number of bytes to the size of
-the linear buffer that is otherwise unused. The issue is that we
-then use the linear buffer size to determine the log space used by
-the log item, and this includes the unused space. Hence when we
-account for space used by the log item, it's more than is actually
-written into the iclogs, and hence we slowly leak this space.
+Always actually disable interrupts during
+synchronization cycle.
 
-This results on log hangs when reserving space, with threads getting
-stuck with these stack traces:
-
-Call Trace:
-[<ffffffff81d15989>] schedule+0x29/0x70
-[<ffffffff8150d3a2>] xlog_grant_head_wait+0xa2/0x1a0
-[<ffffffff8150d55d>] xlog_grant_head_check+0xbd/0x140
-[<ffffffff8150ee33>] xfs_log_reserve+0x103/0x220
-[<ffffffff814b7f05>] xfs_trans_reserve+0x2f5/0x310
-.....
-
-The 4 bytes is significant. Brain Foster did all the hard work in
-tracking down a reproducable leak to inode chunk allocation (it went
-away with the ikeep mount option). His rough numbers were that
-creating 50,000 inodes leaked 11 log blocks. This turns out to be
-roughly 800 inode chunks or 1600 inode cluster buffers. That
-works out at roughly 4 bytes per cluster buffer logged, and at that
-I started looking for a 4 byte leak in the buffer logging code.
-
-What I found was that a struct xfs_buf_log_format structure for an
-inode cluster buffer is 28 bytes in length. This gets rounded up to
-32 bytes, but the vector length remains 28 bytes. Hence the CIL
-ticket reservation is decremented by 32 bytes (via lv->lv_buf_len)
-for that vector rather than 28 bytes which are written into the log.
-
-The fix for this problem is to separately track the bytes used by
-the log vectors in the item and use that instead of the buffer
-length when accounting for the log space that will be used by the
-formatted log item.
-
-Again, thanks to Brian Foster for doing all the hard work and long
-hours to isolate this leak and make finding the bug relatively
-simple.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
-Cc: Bill <billstuff2001@sbcglobal.net>
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/xfs/xfs_log.h     |   19 +++++++++++++------
- fs/xfs/xfs_log_cil.c |    7 ++++---
- 2 files changed, 17 insertions(+), 9 deletions(-)
+ arch/sparc/kernel/smp_64.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/xfs/xfs_log.h
-+++ b/fs/xfs/xfs_log.h
-@@ -24,7 +24,8 @@ struct xfs_log_vec {
- 	struct xfs_log_iovec	*lv_iovecp;	/* iovec array */
- 	struct xfs_log_item	*lv_item;	/* owner */
- 	char			*lv_buf;	/* formatted buffer */
--	int			lv_buf_len;	/* size of formatted buffer */
-+	int			lv_bytes;	/* accounted space in buffer */
-+	int			lv_buf_len;	/* aligned size of buffer */
- 	int			lv_size;	/* size of allocated lv */
- };
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -151,7 +151,7 @@ void cpu_panic(void)
+ #define NUM_ROUNDS	64	/* magic value */
+ #define NUM_ITERS	5	/* likewise */
  
-@@ -52,15 +53,21 @@ xlog_prepare_iovec(struct xfs_log_vec *l
- 	return vec->i_addr;
+-static DEFINE_SPINLOCK(itc_sync_lock);
++static DEFINE_RAW_SPINLOCK(itc_sync_lock);
+ static unsigned long go[SLAVE + 1];
+ 
+ #define DEBUG_TICK_SYNC	0
+@@ -259,7 +259,7 @@ static void smp_synchronize_one_tick(int
+ 	go[MASTER] = 0;
+ 	membar_safe("#StoreLoad");
+ 
+-	spin_lock_irqsave(&itc_sync_lock, flags);
++	raw_spin_lock_irqsave(&itc_sync_lock, flags);
+ 	{
+ 		for (i = 0; i < NUM_ROUNDS*NUM_ITERS; i++) {
+ 			while (!go[MASTER])
+@@ -270,7 +270,7 @@ static void smp_synchronize_one_tick(int
+ 			membar_safe("#StoreLoad");
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&itc_sync_lock, flags);
++	raw_spin_unlock_irqrestore(&itc_sync_lock, flags);
  }
  
-+/*
-+ * We need to make sure the next buffer is naturally aligned for the biggest
-+ * basic data type we put into it.  We already accounted for this padding when
-+ * sizing the buffer.
-+ *
-+ * However, this padding does not get written into the log, and hence we have to
-+ * track the space used by the log vectors separately to prevent log space hangs
-+ * due to inaccurate accounting (i.e. a leak) of the used log space through the
-+ * CIL context ticket.
-+ */
- static inline void
- xlog_finish_iovec(struct xfs_log_vec *lv, struct xfs_log_iovec *vec, int len)
- {
--	/*
--	 * We need to make sure the next buffer is naturally aligned for the
--	 * biggest basic data type we put into it.  We already accounted for
--	 * this when sizing the buffer.
--	 */
- 	lv->lv_buf_len += round_up(len, sizeof(uint64_t));
-+	lv->lv_bytes += len;
- 	vec->i_len = len;
- }
- 
---- a/fs/xfs/xfs_log_cil.c
-+++ b/fs/xfs/xfs_log_cil.c
-@@ -97,7 +97,7 @@ xfs_cil_prepare_item(
- {
- 	/* Account for the new LV being passed in */
- 	if (lv->lv_buf_len != XFS_LOG_VEC_ORDERED) {
--		*diff_len += lv->lv_buf_len;
-+		*diff_len += lv->lv_bytes;
- 		*diff_iovecs += lv->lv_niovecs;
- 	}
- 
-@@ -111,7 +111,7 @@ xfs_cil_prepare_item(
- 	else if (old_lv != lv) {
- 		ASSERT(lv->lv_buf_len != XFS_LOG_VEC_ORDERED);
- 
--		*diff_len -= old_lv->lv_buf_len;
-+		*diff_len -= old_lv->lv_bytes;
- 		*diff_iovecs -= old_lv->lv_niovecs;
- 		kmem_free(old_lv);
- 	}
-@@ -239,7 +239,7 @@ xlog_cil_insert_format_items(
- 			 * that the space reservation accounting is correct.
- 			 */
- 			*diff_iovecs -= lv->lv_niovecs;
--			*diff_len -= lv->lv_buf_len;
-+			*diff_len -= lv->lv_bytes;
- 		} else {
- 			/* allocate new data chunk */
- 			lv = kmem_zalloc(buf_size, KM_SLEEP|KM_NOFS);
-@@ -259,6 +259,7 @@ xlog_cil_insert_format_items(
- 
- 		/* The allocated data region lies beyond the iovec region */
- 		lv->lv_buf_len = 0;
-+		lv->lv_bytes = 0;
- 		lv->lv_buf = (char *)lv + buf_size - nbytes;
- 		ASSERT(IS_ALIGNED((unsigned long)lv->lv_buf, sizeof(uint64_t)));
- 
+ #if defined(CONFIG_SUN_LDOMS) && defined(CONFIG_HOTPLUG_CPU)
 
 
