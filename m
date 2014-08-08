@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385AbaHHR1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 13:27:51 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40591 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750761AbaHHR1t (ORCPT
+	id S1751466AbaHHR2x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 13:28:53 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60345 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761AbaHHR2v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 13:27:49 -0400
-Date: Fri, 8 Aug 2014 14:26:47 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Jyri Sarha <jsarha@ti.com>
-Cc: linux-kernel@vger.kernel.org, mturquette@linaro.org,
-        dri-devel@lists.freedesktop.org, airlied@linux.ie,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        bcousson@baylibre.com, tony@atomide.com, broonie@kernel.org,
-        liam.r.girdwood@linux.intel.com, peter.ujfalusi@ti.com,
-        detheridge@ti.com, zonque@gmail.com, t-kristo@ti.com
-Subject: Re: [PATCH 6/9] ARM: dts: am33xx: Add external clock provider
-Message-ID: <20140808172646.GA28938@arch.cereza>
-References: <cover.1407332062.git.jsarha@ti.com>
- <a6888259f9508e0cc4be720a5f17a487d1d6cd0c.1407332062.git.jsarha@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <a6888259f9508e0cc4be720a5f17a487d1d6cd0c.1407332062.git.jsarha@ti.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Fri, 8 Aug 2014 13:28:51 -0400
+Date: Fri, 08 Aug 2014 10:28:49 -0700 (PDT)
+Message-Id: <20140808.102849.869385054592371813.davem@davemloft.net>
+To: Julia.Lawall@lip6.fr
+Cc: netdev@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, u.kleine-koenig@pengutronix.de
+Subject: Re: [PATCH 13/14] fec_mpc52xx: delete unneeded test before
+ of_node_put
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1407492475-26283-13-git-send-email-Julia.Lawall@lip6.fr>
+References: <1407492475-26283-13-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 08 Aug 2014 10:28:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06 Aug 04:47 PM, Jyri Sarha wrote:
-> Add external clock provaider for am33xx devices.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+Date: Fri,  8 Aug 2014 12:07:54 +0200
 
-Typo: s/provaider/provider
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Of_node_put supports NULL as its argument, so the initial test is not
+> necessary.
+> 
+> Suggested by Uwe Kleine-König.
+> 
+> The semantic patch that fixes this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+ ...
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+Applied.
