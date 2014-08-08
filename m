@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633AbaHHWAy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:00:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60522 "EHLO
+	id S933340AbaHHWA6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:00:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60514 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933099AbaHHVgX (ORCPT
+	with ESMTP id S933089AbaHHVgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:23 -0400
+	Fri, 8 Aug 2014 17:36:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Dave Jones <davej@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 16/39] sctp: fix possible seqlock seadlock in sctp_packet_transmit()
-Date: Fri,  8 Aug 2014 14:35:02 -0700
-Message-Id: <20140808213355.679491377@linuxfoundation.org>
+        Sven Eckelmann <sven@narfation.org>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
+        Antonio Quartulli <antonio@meshcoding.com>
+Subject: [PATCH 3.14 15/39] batman-adv: Fix out-of-order fragmentation support
+Date: Fri,  8 Aug 2014 14:35:01 -0700
+Message-Id: <20140808213355.637464441@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -31,71 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Sven Eckelmann <sven@narfation.org>
 
-[ Upstream commit 757efd32d5ce31f67193cc0e6a56e4dffcc42fb1 ]
+[ Upstream commit d9124268d84a836f14a6ead54ff9d8eee4c43be5 ]
 
-Dave reported following splat, caused by improper use of
-IP_INC_STATS_BH() in process context.
+batadv_frag_insert_packet was unable to handle out-of-order packets because it
+dropped them directly. This is caused by the way the fragmentation lists is
+checked for the correct place to insert a fragmentation entry.
 
-BUG: using __this_cpu_add() in preemptible [00000000] code: trinity-c117/14551
-caller is __this_cpu_preempt_check+0x13/0x20
-CPU: 3 PID: 14551 Comm: trinity-c117 Not tainted 3.16.0+ #33
- ffffffff9ec898f0 0000000047ea7e23 ffff88022d32f7f0 ffffffff9e7ee207
- 0000000000000003 ffff88022d32f818 ffffffff9e397eaa ffff88023ee70b40
- ffff88022d32f970 ffff8801c026d580 ffff88022d32f828 ffffffff9e397ee3
-Call Trace:
- [<ffffffff9e7ee207>] dump_stack+0x4e/0x7a
- [<ffffffff9e397eaa>] check_preemption_disabled+0xfa/0x100
- [<ffffffff9e397ee3>] __this_cpu_preempt_check+0x13/0x20
- [<ffffffffc0839872>] sctp_packet_transmit+0x692/0x710 [sctp]
- [<ffffffffc082a7f2>] sctp_outq_flush+0x2a2/0xc30 [sctp]
- [<ffffffff9e0d985c>] ? mark_held_locks+0x7c/0xb0
- [<ffffffff9e7f8c6d>] ? _raw_spin_unlock_irqrestore+0x5d/0x80
- [<ffffffffc082b99a>] sctp_outq_uncork+0x1a/0x20 [sctp]
- [<ffffffffc081e112>] sctp_cmd_interpreter.isra.23+0x1142/0x13f0 [sctp]
- [<ffffffffc081c86b>] sctp_do_sm+0xdb/0x330 [sctp]
- [<ffffffff9e0b8f1b>] ? preempt_count_sub+0xab/0x100
- [<ffffffffc083b350>] ? sctp_cname+0x70/0x70 [sctp]
- [<ffffffffc08389ca>] sctp_primitive_ASSOCIATE+0x3a/0x50 [sctp]
- [<ffffffffc083358f>] sctp_sendmsg+0x88f/0xe30 [sctp]
- [<ffffffff9e0d673a>] ? lock_release_holdtime.part.28+0x9a/0x160
- [<ffffffff9e0d62ce>] ? put_lock_stats.isra.27+0xe/0x30
- [<ffffffff9e73b624>] inet_sendmsg+0x104/0x220
- [<ffffffff9e73b525>] ? inet_sendmsg+0x5/0x220
- [<ffffffff9e68ac4e>] sock_sendmsg+0x9e/0xe0
- [<ffffffff9e1c0c09>] ? might_fault+0xb9/0xc0
- [<ffffffff9e1c0bae>] ? might_fault+0x5e/0xc0
- [<ffffffff9e68b234>] SYSC_sendto+0x124/0x1c0
- [<ffffffff9e0136b0>] ? syscall_trace_enter+0x250/0x330
- [<ffffffff9e68c3ce>] SyS_sendto+0xe/0x10
- [<ffffffff9e7f9be4>] tracesys+0xdd/0xe2
+The fragmentation code keeps the fragments in lists. The fragmentation entries
+are kept in descending order of sequence number. The list is traversed and each
+entry is compared with the new fragment. If the current entry has a smaller
+sequence number than the new fragment then the new one has to be inserted
+before the current entry. This ensures that the list is still in descending
+order.
 
-This is a followup of commits f1d8cba61c3c4b ("inet: fix possible
-seqlock deadlocks") and 7f88c6b23afbd315 ("ipv6: fix possible seqlock
-deadlock in ip6_finish_output2")
+An out-of-order packet with a smaller sequence number than all entries in the
+list still has to be added to the end of the list. The used hlist has no
+information about the last entry in the list inside hlist_head and thus the
+last entry has to be calculated differently. Currently the code assumes that
+the iterator variable of hlist_for_each_entry can be used for this purpose
+after the hlist_for_each_entry finished. This is obviously wrong because the
+iterator variable is always NULL when the list was completely traversed.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Instead the information about the last entry has to be stored in a different
+variable.
+
+This problem was introduced in 610bfc6bc99bc83680d190ebc69359a05fc7f605
+("batman-adv: Receive fragmented packets and merge").
+
+Signed-off-by: Sven Eckelmann <sven@narfation.org>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/output.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/batman-adv/fragmentation.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -599,7 +599,7 @@ out:
- 	return err;
- no_route:
- 	kfree_skb(nskb);
--	IP_INC_STATS_BH(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
-+	IP_INC_STATS(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
+--- a/net/batman-adv/fragmentation.c
++++ b/net/batman-adv/fragmentation.c
+@@ -128,6 +128,7 @@ static bool batadv_frag_insert_packet(st
+ {
+ 	struct batadv_frag_table_entry *chain;
+ 	struct batadv_frag_list_entry *frag_entry_new = NULL, *frag_entry_curr;
++	struct batadv_frag_list_entry *frag_entry_last = NULL;
+ 	struct batadv_frag_packet *frag_packet;
+ 	uint8_t bucket;
+ 	uint16_t seqno, hdr_size = sizeof(struct batadv_frag_packet);
+@@ -180,11 +181,14 @@ static bool batadv_frag_insert_packet(st
+ 			ret = true;
+ 			goto out;
+ 		}
++
++		/* store current entry because it could be the last in list */
++		frag_entry_last = frag_entry_curr;
+ 	}
  
- 	/* FIXME: Returning the 'err' will effect all the associations
- 	 * associated with a socket, although only one of the paths of the
+-	/* Reached the end of the list, so insert after 'frag_entry_curr'. */
+-	if (likely(frag_entry_curr)) {
+-		hlist_add_after(&frag_entry_curr->list, &frag_entry_new->list);
++	/* Reached the end of the list, so insert after 'frag_entry_last'. */
++	if (likely(frag_entry_last)) {
++		hlist_add_after(&frag_entry_last->list, &frag_entry_new->list);
+ 		chain->size += skb->len - hdr_size;
+ 		chain->timestamp = jiffies;
+ 		ret = true;
 
 
