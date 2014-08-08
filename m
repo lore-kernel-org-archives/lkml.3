@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666AbaHHL3A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 07:29:00 -0400
-Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:58356
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756158AbaHHL2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 07:28:55 -0400
-From: Cristian Stoica <cristian.stoica@freescale.com>
-To: <linux-crypto@vger.kernel.org>, <herbert@gondor.apana.org.au>
-CC: <linux-kernel@vger.kernel.org>, <davem@davemloft.net>,
-        Cristian Stoica <cristian.stoica@freescale.com>
-Subject: [PATCH 3/3] crypto: testmgr.c: delay execution of set-up code
-Date: Fri, 8 Aug 2014 14:27:52 +0300
-Message-ID: <1407497272-9161-3-git-send-email-cristian.stoica@freescale.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1407497272-9161-1-git-send-email-cristian.stoica@freescale.com>
-References: <53E496E4.9070207@freescale.com>
- <1407497272-9161-1-git-send-email-cristian.stoica@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(102836001)(229853001)(48376002)(104166001)(19580395003)(97736001)(33646002)(104016003)(50466002)(68736004)(81542001)(84676001)(6806004)(83322001)(19580405001)(106466001)(4396001)(44976005)(62966002)(50226001)(85852003)(83072002)(105606002)(93916002)(92726001)(95666004)(47776003)(86362001)(89996001)(64706001)(81342001)(88136002)(20776003)(92566001)(87936001)(21056001)(36756003)(99396002)(50986999)(76176999)(74662001)(77156001)(31966008)(74502001)(26826002)(87286001)(79102001)(107046002)(77982001)(85306004)(80022001)(46102001)(76482001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR0301MB0609;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 02973C87BC
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=cristian.stoica@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1756521AbaHHLcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 07:32:22 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:45986 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755969AbaHHLcR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 07:32:17 -0400
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        grant.likely@linaro.org, matthias.bgg@gmail.com, alan@linux.intel.com,
+        varkabhadram@gmail.com, heiko@sntech.de, yingjoe.chen@gmail.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [PATCH v3 0/2] tty: serial: Add mediatek UART driver
+Date: Fri,  8 Aug 2014 13:32:02 +0200
+Message-Id: <1407497524-26535-1-git-send-email-matthias.bgg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare IV array only if the dependent code is executed.
+This patch set adds support for the UART found in Mediatek SoCs.
+The chip is a changed version of a 8250 controller.
+Especially it introduces a new register called highspeed. The value
+in this register has to be set depending on the baudrate. The value
+in the register influences the way the divisor has to be calculated.
 
-Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
+The patch series is build against v3.16-rc1 and tested on mt6589. Should
+work as well on mt6577 and mt6582.
+
+Thanks,
+Matthias
+
+Changes for v3:
+- use dev_warn instead of pr_warn
+- use 8250_core function to update termios
+
+Changes for v2:
+- drop 8250_core capability extension for the chip
+- encapsulate set_termios in the driver method
+
 ---
- crypto/testmgr.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index 36f45ff..365f8a3 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -969,16 +969,15 @@ static int __test_skcipher(struct crypto_ablkcipher *tfm, int enc,
- 
- 	j = 0;
- 	for (i = 0; i < tcount; i++) {
-+		if (template[i].np && !template[i].also_non_np)
-+			continue;
-+
- 		if (template[i].iv)
- 			memcpy(iv, template[i].iv, MAX_IVLEN);
- 		else
- 			memset(iv, 0, MAX_IVLEN);
- 
--		if (template[i].np && !template[i].also_non_np)
--			continue;
--
- 		j++;
--
- 		ret = -EINVAL;
- 		if (WARN_ON(align_offset + template[i].ilen > PAGE_SIZE))
- 			goto out;
-@@ -1046,16 +1045,15 @@ static int __test_skcipher(struct crypto_ablkcipher *tfm, int enc,
- 		if (align_offset != 0)
- 			break;
- 
-+		if (!template[i].np)
-+			continue;
-+
- 		if (template[i].iv)
- 			memcpy(iv, template[i].iv, MAX_IVLEN);
- 		else
- 			memset(iv, 0, MAX_IVLEN);
- 
--		if (!template[i].np)
--			continue;
--
- 		j++;
--
- 		crypto_ablkcipher_clear_flags(tfm, ~0);
- 		if (template[i].wk)
- 			crypto_ablkcipher_set_flags(tfm, CRYPTO_TFM_REQ_WEAK_KEY);
+Matthias Brugger (2):
+  tty: serial: 8250: Add Mediatek UART driver
+  DTS: serial: Add bindings documention for the Mediatek UARTs
+
+ .../devicetree/bindings/serial/mtk-uart.txt        |   19 ++
+ drivers/tty/serial/8250/8250_mtk.c                 |  296 ++++++++++++++++++++
+ drivers/tty/serial/8250/Kconfig                    |    7 +
+ drivers/tty/serial/8250/Makefile                   |    1 +
+ 4 files changed, 323 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/serial/mtk-uart.txt
+ create mode 100644 drivers/tty/serial/8250/8250_mtk.c
+
 -- 
-1.8.3.1
+1.7.9.5
 
