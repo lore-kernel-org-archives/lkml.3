@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759769AbaHHWfF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:35:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40088 "EHLO
+	id S1758219AbaHHWfD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:35:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40089 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755938AbaHHUlh (ORCPT
+	with ESMTP id S1755976AbaHHUlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:41:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mengdong Lin <mengdong.lin@intel.com>, Takashi Iwai <tiwai@suse.de>,
-        David Henningsson <david.henningsson@canonical.com>,
+Cc: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 013/259] ALSA: hda - verify pin:converter connection on unsol event for HSW and VLV
-Date: Fri,  8 Aug 2014 13:37:16 -0700
-Message-Id: <1407530482-4483-14-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 007/259] shmem: fix faulting into a hole while it's punched
+Date: Fri,  8 Aug 2014 13:37:10 -0700
+Message-Id: <1407530482-4483-8-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,53 +29,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mengdong Lin <mengdong.lin@intel.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit b4f75aea553a2146bbdd159c397a2ac42cbb9902 upstream.
+commit f00cdc6df7d7cfcabb5b740911e6788cb0802bdb upstream.
 
-This patch will verify the pin's coverter selection for an active stream
-when an unsol event reports this pin becomes available again after a display
-mode change or hot-plug event.
+Trinity finds that mmap access to a hole while it's punched from shmem
+can prevent the madvise(MADV_REMOVE) or fallocate(FALLOC_FL_PUNCH_HOLE)
+from completing, until the reader chooses to stop; with the puncher's
+hold on i_mutex locking out all other writers until it can complete.
 
-For Haswell+ and Valleyview: display mode change or hot-plug can change the
-transcoder:port connection and make all the involved audio pins share the 1st
-converter. So the stream using 1st convertor will flow to multiple pins
-but active streams using other converters will fail. This workaround
-is to assure the pin selects the right conveter and an assigned converter is
-not shared by other unused pins.
+It appears that the tmpfs fault path is too light in comparison with its
+hole-punching path, lacking an i_data_sem to obstruct it; but we don't
+want to slow down the common case.
 
-Signed-off-by: Mengdong Lin <mengdong.lin@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Cc: David Henningsson <david.henningsson@canonical.com>
+Extend shmem_fallocate()'s existing range notification mechanism, so
+shmem_fault() can refrain from faulting pages into the hole while it's
+punched, waiting instead on i_mutex (when safe to sleep; or repeatedly
+faulting when not).
+
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Dave Jones <davej@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/patch_hdmi.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ mm/shmem.c | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 52 insertions(+), 4 deletions(-)
 
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index 65d6dc0..5cef6e1 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1576,10 +1576,18 @@ static bool hdmi_present_sense(struct hdmi_spec_per_pin *per_pin, int repoll)
- 		 * Re-setup pin and infoframe. This is needed e.g. when
- 		 * - sink is first plugged-in (infoframe is not set up if !monitor_present)
- 		 * - transcoder can change during stream playback on Haswell
-+		 *   and this can make HW reset converter selection on a pin.
- 		 */
--		if (eld->eld_valid && !old_eld_valid && per_pin->setup)
-+		if (eld->eld_valid && !old_eld_valid && per_pin->setup) {
-+			if (is_haswell_plus(codec) || is_valleyview(codec)) {
-+				intel_verify_pin_cvt_connect(codec, per_pin);
-+				intel_not_share_assigned_cvt(codec, pin_nid,
-+							per_pin->mux_idx);
-+			}
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 902a148..3f151d1 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -80,11 +80,12 @@ static struct vfsmount *shm_mnt;
+ #define SHORT_SYMLINK_LEN 128
+ 
+ /*
+- * shmem_fallocate and shmem_writepage communicate via inode->i_private
+- * (with i_mutex making sure that it has only one user at a time):
+- * we would prefer not to enlarge the shmem inode just for that.
++ * shmem_fallocate communicates with shmem_fault or shmem_writepage via
++ * inode->i_private (with i_mutex making sure that it has only one user at
++ * a time): we would prefer not to enlarge the shmem inode just for that.
+  */
+ struct shmem_falloc {
++	int	mode;		/* FALLOC_FL mode currently operating */
+ 	pgoff_t start;		/* start of range currently being fallocated */
+ 	pgoff_t next;		/* the next page offset to be fallocated */
+ 	pgoff_t nr_falloced;	/* how many new pages have been fallocated */
+@@ -826,6 +827,7 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
+ 			spin_lock(&inode->i_lock);
+ 			shmem_falloc = inode->i_private;
+ 			if (shmem_falloc &&
++			    !shmem_falloc->mode &&
+ 			    index >= shmem_falloc->start &&
+ 			    index < shmem_falloc->next)
+ 				shmem_falloc->nr_unswapped++;
+@@ -1300,6 +1302,44 @@ static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	int error;
+ 	int ret = VM_FAULT_LOCKED;
+ 
++	/*
++	 * Trinity finds that probing a hole which tmpfs is punching can
++	 * prevent the hole-punch from ever completing: which in turn
++	 * locks writers out with its hold on i_mutex.  So refrain from
++	 * faulting pages into the hole while it's being punched, and
++	 * wait on i_mutex to be released if vmf->flags permits.
++	 */
++	if (unlikely(inode->i_private)) {
++		struct shmem_falloc *shmem_falloc;
 +
- 			hdmi_setup_audio_infoframe(codec, per_pin,
- 						   per_pin->non_pcm);
++		spin_lock(&inode->i_lock);
++		shmem_falloc = inode->i_private;
++		if (!shmem_falloc ||
++		    shmem_falloc->mode != FALLOC_FL_PUNCH_HOLE ||
++		    vmf->pgoff < shmem_falloc->start ||
++		    vmf->pgoff >= shmem_falloc->next)
++			shmem_falloc = NULL;
++		spin_unlock(&inode->i_lock);
++		/*
++		 * i_lock has protected us from taking shmem_falloc seriously
++		 * once return from shmem_fallocate() went back up that stack.
++		 * i_lock does not serialize with i_mutex at all, but it does
++		 * not matter if sometimes we wait unnecessarily, or sometimes
++		 * miss out on waiting: we just need to make those cases rare.
++		 */
++		if (shmem_falloc) {
++			if ((vmf->flags & FAULT_FLAG_ALLOW_RETRY) &&
++			   !(vmf->flags & FAULT_FLAG_RETRY_NOWAIT)) {
++				up_read(&vma->vm_mm->mmap_sem);
++				mutex_lock(&inode->i_mutex);
++				mutex_unlock(&inode->i_mutex);
++				return VM_FAULT_RETRY;
++			}
++			/* cond_resched? Leave that to GUP or return to user */
++			return VM_FAULT_NOPAGE;
 +		}
++	}
++
+ 	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, &ret);
+ 	if (error)
+ 		return ((error == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS);
+@@ -1815,18 +1855,26 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
+ 
+ 	mutex_lock(&inode->i_mutex);
+ 
++	shmem_falloc.mode = mode & ~FALLOC_FL_KEEP_SIZE;
++
+ 	if (mode & FALLOC_FL_PUNCH_HOLE) {
+ 		struct address_space *mapping = file->f_mapping;
+ 		loff_t unmap_start = round_up(offset, PAGE_SIZE);
+ 		loff_t unmap_end = round_down(offset + len, PAGE_SIZE) - 1;
+ 
++		shmem_falloc.start = unmap_start >> PAGE_SHIFT;
++		shmem_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
++		spin_lock(&inode->i_lock);
++		inode->i_private = &shmem_falloc;
++		spin_unlock(&inode->i_lock);
++
+ 		if ((u64)unmap_end > (u64)unmap_start)
+ 			unmap_mapping_range(mapping, unmap_start,
+ 					    1 + unmap_end - unmap_start, 0);
+ 		shmem_truncate_range(inode, offset, offset + len - 1);
+ 		/* No need to unmap again: hole-punching leaves COWed pages */
+ 		error = 0;
+-		goto out;
++		goto undone;
  	}
  
- 	if (eld_changed)
+ 	/* We need to check rlimit even when FALLOC_FL_KEEP_SIZE */
 -- 
 1.9.1
 
