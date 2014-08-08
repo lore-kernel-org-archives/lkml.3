@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaHHUXj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:23:39 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55612 "EHLO
+	id S1752212AbaHHUYQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:24:16 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55633 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285AbaHHUXZ (ORCPT
+	with ESMTP id S1751387AbaHHUX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:23:25 -0400
+	Fri, 8 Aug 2014 16:23:26 -0400
 From: Laura Abbott <lauraa@codeaurora.org>
 To: Will Deacon <will.deacon@arm.com>,
         Catalin Marinas <catalin.marinas@arm.com>,
@@ -18,9 +18,9 @@ Cc: Laura Abbott <lauraa@codeaurora.org>,
         linux-kernel@vger.kernel.org,
         Thierry Reding <thierry.reding@gmail.com>,
         Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCHv6 3/5] common: dma-mapping: Introduce common remapping functions
-Date: Fri,  8 Aug 2014 13:23:15 -0700
-Message-Id: <1407529397-6642-3-git-send-email-lauraa@codeaurora.org>
+Subject: [PATCHv6 5/5] arm64: Add atomic pool for non-coherent and CMA allocations.
+Date: Fri,  8 Aug 2014 13:23:17 -0700
+Message-Id: <1407529397-6642-5-git-send-email-lauraa@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1407529397-6642-1-git-send-email-lauraa@codeaurora.org>
 References: <1407529397-6642-1-git-send-email-lauraa@codeaurora.org>
@@ -29,217 +29,272 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-For architectures without coherent DMA, memory for DMA may
-need to be remapped with coherent attributes. Factor out
-the the remapping code from arm and put it in a
-common location to reduce code duplication.
-
-As part of this, the arm APIs are now migrated away from
-ioremap_page_range to the common APIs which use map_vm_area for remapping.
-This should be an equivalent change and using map_vm_area is more
-correct as ioremap_page_range is intended to bring in io addresses
-into the cpu space and not regular kernel managed memory.
+Neither CMA nor noncoherent allocations support atomic allocations.
+Add a dedicated atomic pool to support this.
 
 Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 ---
- arch/arm/mm/dma-mapping.c                | 57 +++++----------------------
- drivers/base/dma-mapping.c               | 67 ++++++++++++++++++++++++++++++++
- include/asm-generic/dma-mapping-common.h |  9 +++++
- 3 files changed, 85 insertions(+), 48 deletions(-)
+ arch/arm64/Kconfig          |   1 +
+ arch/arm64/mm/dma-mapping.c | 164 +++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 146 insertions(+), 19 deletions(-)
 
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 4c88935..f5190ac 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -297,37 +297,19 @@ static void *
- __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot,
- 	const void *caller)
- {
--	struct vm_struct *area;
--	unsigned long addr;
--
- 	/*
- 	 * DMA allocation can be mapped to user space, so lets
- 	 * set VM_USERMAP flags too.
- 	 */
--	area = get_vm_area_caller(size, VM_ARM_DMA_CONSISTENT | VM_USERMAP,
--				  caller);
--	if (!area)
--		return NULL;
--	addr = (unsigned long)area->addr;
--	area->phys_addr = __pfn_to_phys(page_to_pfn(page));
--
--	if (ioremap_page_range(addr, addr + size, area->phys_addr, prot)) {
--		vunmap((void *)addr);
--		return NULL;
--	}
--	return (void *)addr;
-+	return dma_common_contiguous_remap(page, size,
-+			VM_ARM_DMA_CONSISTENT | VM_USERMAP,
-+			prot, caller);
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 839f48c..335374b 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -16,6 +16,7 @@ config ARM64
+ 	select COMMON_CLK
+ 	select CPU_PM if (SUSPEND || CPU_IDLE)
+ 	select DCACHE_WORD_ACCESS
++	select GENERIC_ALLOCATOR
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
+ 	select GENERIC_CPU_AUTOPROBE
+diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
+index 4164c5a..90bb7b3 100644
+--- a/arch/arm64/mm/dma-mapping.c
++++ b/arch/arm64/mm/dma-mapping.c
+@@ -27,6 +27,7 @@
+ #include <linux/vmalloc.h>
+ #include <linux/swiotlb.h>
+ #include <linux/amba/bus.h>
++#include <linux/genalloc.h>
+ 
+ #include <asm/cacheflush.h>
+ 
+@@ -41,6 +42,54 @@ static pgprot_t __get_dma_pgprot(struct dma_attrs *attrs, pgprot_t prot,
+ 	return prot;
  }
  
- static void __dma_free_remap(void *cpu_addr, size_t size)
- {
--	unsigned int flags = VM_ARM_DMA_CONSISTENT | VM_USERMAP;
--	struct vm_struct *area = find_vm_area(cpu_addr);
--	if (!area || (area->flags & flags) != flags) {
--		WARN(1, "trying to free invalid coherent area: %p\n", cpu_addr);
--		return;
--	}
--	unmap_kernel_range((unsigned long)cpu_addr, size);
--	vunmap(cpu_addr);
-+	dma_common_free_remap(cpu_addr, size,
-+			VM_ARM_DMA_CONSISTENT | VM_USERMAP);
- }
- 
- #define DEFAULT_DMA_COHERENT_POOL_SIZE	SZ_256K
-@@ -1261,29 +1243,8 @@ static void *
- __iommu_alloc_remap(struct page **pages, size_t size, gfp_t gfp, pgprot_t prot,
- 		    const void *caller)
- {
--	unsigned int i, nr_pages = PAGE_ALIGN(size) >> PAGE_SHIFT;
--	struct vm_struct *area;
--	unsigned long p;
--
--	area = get_vm_area_caller(size, VM_ARM_DMA_CONSISTENT | VM_USERMAP,
--				  caller);
--	if (!area)
--		return NULL;
--
--	area->pages = pages;
--	area->nr_pages = nr_pages;
--	p = (unsigned long)area->addr;
--
--	for (i = 0; i < nr_pages; i++) {
--		phys_addr_t phys = __pfn_to_phys(page_to_pfn(pages[i]));
--		if (ioremap_page_range(p, p + PAGE_SIZE, phys, prot))
--			goto err;
--		p += PAGE_SIZE;
--	}
--	return area->addr;
--err:
--	unmap_kernel_range((unsigned long)area->addr, size);
--	vunmap(area->addr);
-+	return dma_common_pages_remap(pages, size,
-+			VM_ARM_DMA_CONSISTENT | VM_USERMAP, prot, caller);
- 	return NULL;
- }
- 
-@@ -1491,8 +1452,8 @@ void arm_iommu_free_attrs(struct device *dev, size_t size, void *cpu_addr,
- 	}
- 
- 	if (!dma_get_attr(DMA_ATTR_NO_KERNEL_MAPPING, attrs)) {
--		unmap_kernel_range((unsigned long)cpu_addr, size);
--		vunmap(cpu_addr);
-+		dma_common_free_remap(cpu_addr, size,
-+			VM_ARM_DMA_CONSISTENT | VM_USERMAP);
- 	}
- 
- 	__iommu_remove_mapping(dev, handle, size);
-diff --git a/drivers/base/dma-mapping.c b/drivers/base/dma-mapping.c
-index 6cd08e1..ddaad8d 100644
---- a/drivers/base/dma-mapping.c
-+++ b/drivers/base/dma-mapping.c
-@@ -10,6 +10,8 @@
- #include <linux/dma-mapping.h>
- #include <linux/export.h>
- #include <linux/gfp.h>
-+#include <linux/slab.h>
-+#include <linux/vmalloc.h>
- #include <asm-generic/dma-coherent.h>
- 
- /*
-@@ -267,3 +269,68 @@ int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
- 	return ret;
- }
- EXPORT_SYMBOL(dma_common_mmap);
++static struct gen_pool *atomic_pool;
 +
-+/*
-+ * remaps an allocated contiguous region into another vm_area.
-+ * Cannot be used in non-sleeping contexts
-+ */
++#define DEFAULT_DMA_COHERENT_POOL_SIZE  SZ_256K
++static size_t atomic_pool_size = DEFAULT_DMA_COHERENT_POOL_SIZE;
 +
-+void *dma_common_contiguous_remap(struct page *page, size_t size,
-+			unsigned long vm_flags,
-+			pgprot_t prot, const void *caller)
++static int __init early_coherent_pool(char *p)
 +{
-+	int i;
-+	struct page **pages;
-+	void *ptr;
++	atomic_pool_size = memparse(p, &p);
++	return 0;
++}
++early_param("coherent_pool", early_coherent_pool);
 +
-+	pages = kmalloc(sizeof(struct page *) << get_order(size), GFP_KERNEL);
-+	if (!pages)
++static void *__alloc_from_pool(size_t size, struct page **ret_page)
++{
++	unsigned long val;
++	void *ptr = NULL;
++
++	if (!atomic_pool) {
++		WARN(1, "coherent pool not initialised!\n");
 +		return NULL;
++	}
 +
-+	for (i = 0; i < (size >> PAGE_SHIFT); i++)
-+		pages[i] = page + i;
++	val = gen_pool_alloc(atomic_pool, size);
++	if (val) {
++		phys_addr_t phys = gen_pool_virt_to_phys(atomic_pool, val);
 +
-+	ptr = dma_common_pages_remap(pages, size, vm_flags, prot, caller);
-+
-+	kfree(pages);
++		*ret_page = phys_to_page(phys);
++		ptr = (void *)val;
++	}
 +
 +	return ptr;
 +}
 +
-+/*
-+ * remaps an array of PAGE_SIZE pages into another vm_area
-+ * Cannot be used in non-sleeping contexts
-+ */
-+void *dma_common_pages_remap(struct page **pages, size_t size,
-+			unsigned long vm_flags, pgprot_t prot,
-+			const void *caller)
++static bool __in_atomic_pool(void *start, size_t size)
 +{
-+	struct vm_struct *area;
-+
-+	area = get_vm_area_caller(size, vm_flags, caller);
-+	if (!area)
-+		return NULL;
-+
-+	if (map_vm_area(area, prot, pages)) {
-+		vunmap(area->addr);
-+		return NULL;
-+	}
-+
-+	return area->addr;
++	return addr_in_gen_pool(atomic_pool, (unsigned long)start, size);
 +}
 +
-+/*
-+ * unmaps a range previously mapped by dma_common_*_remap
-+ */
-+void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags)
++static int __free_from_pool(void *start, size_t size)
 +{
-+	struct vm_struct *area = find_vm_area(cpu_addr);
++	if (!__in_atomic_pool(start, size))
++		return 0;
 +
-+	if (!area || (area->flags & vm_flags) != vm_flags) {
-+		WARN(1, "trying to free invalid coherent area: %p\n", cpu_addr);
-+		return;
-+	}
++	gen_pool_free(atomic_pool, (unsigned long)start, size);
 +
-+	unmap_kernel_range((unsigned long)cpu_addr, size);
-+	vunmap(cpu_addr);
++	return 1;
 +}
-diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
-index de8bf89..a9fd248 100644
---- a/include/asm-generic/dma-mapping-common.h
-+++ b/include/asm-generic/dma-mapping-common.h
-@@ -179,6 +179,15 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
- extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
- 			   void *cpu_addr, dma_addr_t dma_addr, size_t size);
++
+ static void *__dma_alloc_coherent(struct device *dev, size_t size,
+ 				  dma_addr_t *dma_handle, gfp_t flags,
+ 				  struct dma_attrs *attrs)
+@@ -53,7 +102,7 @@ static void *__dma_alloc_coherent(struct device *dev, size_t size,
+ 	if (IS_ENABLED(CONFIG_ZONE_DMA) &&
+ 	    dev->coherent_dma_mask <= DMA_BIT_MASK(32))
+ 		flags |= GFP_DMA;
+-	if (IS_ENABLED(CONFIG_DMA_CMA)) {
++	if (IS_ENABLED(CONFIG_DMA_CMA) && (flags & __GFP_WAIT)) {
+ 		struct page *page;
  
-+void *dma_common_contiguous_remap(struct page *page, size_t size,
-+			unsigned long vm_flags,
-+			pgprot_t prot, const void *caller);
+ 		size = PAGE_ALIGN(size);
+@@ -73,50 +122,54 @@ static void __dma_free_coherent(struct device *dev, size_t size,
+ 				void *vaddr, dma_addr_t dma_handle,
+ 				struct dma_attrs *attrs)
+ {
++	bool freed;
++	phys_addr_t paddr = dma_to_phys(dev, dma_handle);
 +
-+void *dma_common_pages_remap(struct page **pages, size_t size,
-+			unsigned long vm_flags, pgprot_t prot,
-+			const void *caller);
-+void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags);
+ 	if (dev == NULL) {
+ 		WARN_ONCE(1, "Use an actual device structure for DMA allocation\n");
+ 		return;
+ 	}
+ 
+-	if (IS_ENABLED(CONFIG_DMA_CMA)) {
+-		phys_addr_t paddr = dma_to_phys(dev, dma_handle);
+-
+-		dma_release_from_contiguous(dev,
++	freed = dma_release_from_contiguous(dev,
+ 					phys_to_page(paddr),
+ 					size >> PAGE_SHIFT);
+-	} else {
++	if (!freed)
+ 		swiotlb_free_coherent(dev, size, vaddr, dma_handle);
+-	}
+ }
+ 
+ static void *__dma_alloc_noncoherent(struct device *dev, size_t size,
+ 				     dma_addr_t *dma_handle, gfp_t flags,
+ 				     struct dma_attrs *attrs)
+ {
+-	struct page *page, **map;
++	struct page *page;
+ 	void *ptr, *coherent_ptr;
+-	int order, i;
+ 
+ 	size = PAGE_ALIGN(size);
+-	order = get_order(size);
 +
- /**
-  * dma_mmap_attrs - map a coherent DMA allocation into user space
-  * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
++	if (!(flags & __GFP_WAIT)) {
++		struct page *page = NULL;
++		void *addr = __alloc_from_pool(size, &page);
++
++		if (addr)
++			*dma_handle = phys_to_dma(dev, page_to_phys(page));
++
++		return addr;
++
++	}
+ 
+ 	ptr = __dma_alloc_coherent(dev, size, dma_handle, flags, attrs);
+ 	if (!ptr)
+ 		goto no_mem;
+-	map = kmalloc(sizeof(struct page *) << order, flags & ~GFP_DMA);
+-	if (!map)
+-		goto no_map;
+ 
+ 	/* remove any dirty cache lines on the kernel alias */
+ 	__dma_flush_range(ptr, ptr + size);
+ 
+ 	/* create a coherent mapping */
+ 	page = virt_to_page(ptr);
+-	for (i = 0; i < (size >> PAGE_SHIFT); i++)
+-		map[i] = page + i;
+-	coherent_ptr = vmap(map, size >> PAGE_SHIFT, VM_MAP,
+-			    __get_dma_pgprot(attrs, __pgprot(PROT_NORMAL_NC), false));
+-	kfree(map);
++	coherent_ptr = dma_common_contiguous_remap(page, size, VM_USERMAP,
++				__get_dma_pgprot(attrs,
++					__pgprot(PROT_NORMAL_NC), false),
++					NULL);
+ 	if (!coherent_ptr)
+ 		goto no_map;
+ 
+@@ -135,6 +188,8 @@ static void __dma_free_noncoherent(struct device *dev, size_t size,
+ {
+ 	void *swiotlb_addr = phys_to_virt(dma_to_phys(dev, dma_handle));
+ 
++	if (__free_from_pool(vaddr, size))
++		return;
+ 	vunmap(vaddr);
+ 	__dma_free_coherent(dev, size, swiotlb_addr, dma_handle, attrs);
+ }
+@@ -332,6 +387,67 @@ static struct notifier_block amba_bus_nb = {
+ 
+ extern int swiotlb_late_init_with_default_size(size_t default_size);
+ 
++static int __init atomic_pool_init(void)
++{
++	pgprot_t prot = __pgprot(PROT_NORMAL_NC);
++	unsigned long nr_pages = atomic_pool_size >> PAGE_SHIFT;
++	struct page *page;
++	void *addr;
++	unsigned int pool_size_order = get_order(atomic_pool_size);
++
++	if (dev_get_cma_area(NULL))
++		page = dma_alloc_from_contiguous(NULL, nr_pages,
++							pool_size_order);
++	else
++		page = alloc_pages(GFP_DMA, pool_size_order);
++
++	if (page) {
++		int ret;
++		void *page_addr = page_address(page);
++
++		memset(page_addr, 0, atomic_pool_size);
++		__dma_flush_range(page_addr, page_addr + atomic_pool_size);
++
++		atomic_pool = gen_pool_create(PAGE_SHIFT, -1);
++		if (!atomic_pool)
++			goto free_page;
++
++		addr = dma_common_contiguous_remap(page, atomic_pool_size,
++					VM_USERMAP, prot, atomic_pool_init);
++
++		if (!addr)
++			goto destroy_genpool;
++
++		ret = gen_pool_add_virt(atomic_pool, (unsigned long)addr,
++					page_to_phys(page),
++					atomic_pool_size, -1);
++		if (ret)
++			goto remove_mapping;
++
++		gen_pool_set_algo(atomic_pool,
++				  gen_pool_first_fit_order_align,
++				  (void *)PAGE_SHIFT);
++
++		pr_info("DMA: preallocated %zu KiB pool for atomic allocations\n",
++			atomic_pool_size / 1024);
++		return 0;
++	}
++	goto out;
++
++remove_mapping:
++	dma_common_free_remap(addr, atomic_pool_size, VM_USERMAP);
++destroy_genpool:
++	gen_pool_destroy(atomic_pool);
++	atomic_pool = NULL;
++free_page:
++	if (!dma_release_from_contiguous(NULL, page, nr_pages))
++		__free_pages(page, pool_size_order);
++out:
++	pr_err("DMA: failed to allocate %zu KiB pool for atomic coherent allocation\n",
++		atomic_pool_size / 1024);
++	return -ENOMEM;
++}
++
+ static int __init swiotlb_late_init(void)
+ {
+ 	size_t swiotlb_size = min(SZ_64M, MAX_ORDER_NR_PAGES << PAGE_SHIFT);
+@@ -346,7 +462,17 @@ static int __init swiotlb_late_init(void)
+ 
+ 	return swiotlb_late_init_with_default_size(swiotlb_size);
+ }
+-arch_initcall(swiotlb_late_init);
++
++static int __init arm64_dma_init(void)
++{
++	int ret = 0;
++
++	ret |= swiotlb_late_init();
++	ret |= atomic_pool_init();
++
++	return ret;
++}
++arch_initcall(arm64_dma_init);
+ 
+ #define PREALLOC_DMA_DEBUG_ENTRIES	4096
+ 
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
