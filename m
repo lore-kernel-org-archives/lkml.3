@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756363AbaHHJOZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 05:14:25 -0400
-Received: from plane.gmane.org ([80.91.229.3]:48748 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755518AbaHHJOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 05:14:03 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Alex Elsayed <eternaleye@gmail.com>
-Subject: Re: [PATCH v3 RESEND] zram: auto add new devices on demand
-Date: Fri, 08 Aug 2014 02:13:44 -0700
-Message-ID: <ls24ca$u8q$1@ger.gmane.org>
-References: <53CCEF76.4040002@gmail.com> <20140729030021.GA22707@bbox> <20140730135831.GA1098@swordfish> <20140805014917.GA27993@bbox>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7Bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 66-87-138-174.pools.spcsdns.net
-User-Agent: KNode/4.13.1
+	id S1756113AbaHHJUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 05:20:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45084 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193AbaHHJT5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 05:19:57 -0400
+Date: Fri, 8 Aug 2014 02:19:37 -0700
+From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
+Message-ID: <tip-f96f56780ca584930bb3a2769d73fd9a101bcbbe@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, ananth@in.ibm.com, hpa@zytor.com,
+        mingo@kernel.org, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
+        davem@davemloft.net
+Reply-To: mingo@kernel.org, hpa@zytor.com, ananth@in.ibm.com,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        tglx@linutronix.de, davem@davemloft.net
+In-Reply-To: <20140804031016.11433.65539.stgit@kbuild-fedora.novalocal>
+References: <20140804031016.11433.65539.stgit@kbuild-fedora.novalocal>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] kprobes:
+  Skip kretprobe hit in NMI context to avoid deadlock
+Git-Commit-ID: f96f56780ca584930bb3a2769d73fd9a101bcbbe
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minchan Kim wrote:
+Commit-ID:  f96f56780ca584930bb3a2769d73fd9a101bcbbe
+Gitweb:     http://git.kernel.org/tip/f96f56780ca584930bb3a2769d73fd9a101bcbbe
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Mon, 4 Aug 2014 03:10:16 +0000
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 8 Aug 2014 10:38:04 +0200
 
-> On Wed, Jul 30, 2014 at 10:58:31PM +0900, Sergey Senozhatsky wrote:
->> Hello,
->> 
->> On (07/29/14 12:00), Minchan Kim wrote:
->> > Hello Timofey,
->> > 
+kprobes: Skip kretprobe hit in NMI context to avoid deadlock
 
-<snip>
+Skip kretprobe hit in NMI context, because if an NMI happens
+inside the critical section protected by kretprobe_table.lock
+and another(or same) kretprobe hit, pre_kretprobe_handler
+tries to lock kretprobe_table.lock again.
+Normal interrupts have no problem because they are disabled
+with the lock.
 
->> > Why do you add new device unconditionally?
->> > Maybe we need new konb on sysfs or ioctl for adding new device?
->> > Any thought, guys?
->> 
->> 
->> speaking of the patch, frankly, I (almost) see no gain comparing to the
->> existing functionality.
->> 
->> speaking of the idea. well, I'm not 100% convinced yet. the use cases I
->> see around do not imply dynamic creation/resizing/etc. that said, I need
->> to think about it.
-> 
-> It didn't persuade me, either.
-> 
-> Normally, distro have some config file for adding param at module loading
-> like /etc/modules. So, I think it should be done in there if someone want
-> to increase the number of zram devices.
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: David S. Miller <davem@davemloft.net>
+Link: http://lkml.kernel.org/r/20140804031016.11433.65539.stgit@kbuild-fedora.novalocal
+[ Minor edits for clarity. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/kprobes.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-The problem here is that this requires (at least) unloading the module, and 
-if it was built in requires a reboot (and futzing with the kernel command 
-line, rather than /etc/modules.d)
-
-If someone's distro already loaded the module with nr_devices=1 (the 
-default, I remind you), and is using it as swap, then it may well not be a 
-feasible option for them to swapoff the (potentially large) swap device and 
-do the modprobe dance.
-
-If they're running off a livecd that's using it in combination with, say, 
-LVM thin provisioning in order to have a writeable system, then they are 
-_completely_ screwed because you can't swapoff your rootfs.
-
-If they're using it as a backing store for ephemeral containers or VMs, then 
-they may hit _any_ static limit, when they just want to start one more 
-without having to stop the existing bunch.
-
-The swap case might be argued as "deal with it" (despite that swapoff is not 
-something fun to do on a system under any real-world load, _especially_ if 
-what you're trying to force off of the swap device won't fit in ram and has 
-to get pushed down to a different swap device).
-
-But any case where people put filesystems on the device should make the 
-issues of only supporting the module parameter pretty apparent.
-
-Finally, there's the issue of clutter - I may need 4 zram devices when I'm 
-experimenting with something, but only the one swap device for daily use. 
-Having the other three just sitting around permanently is at most an 
-annoyance, a 'papercut' - but papercuts add up.
-
->> 
->> if we end up adding this functionality I tend to vote for sysfs knob,
->> just because it seems to be more user friendly than writing some magic
->> INTs to ioctl-d fd.
-
-This I agree with wholeheartedly.
-
-<snip>
-
-
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 734e9a7..3995f54 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1778,7 +1778,18 @@ static int pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
+ 	unsigned long hash, flags = 0;
+ 	struct kretprobe_instance *ri;
+ 
+-	/*TODO: consider to only swap the RA after the last pre_handler fired */
++	/*
++	 * To avoid deadlocks, prohibit return probing in NMI contexts,
++	 * just skip the probe and increase the (inexact) 'nmissed'
++	 * statistical counter, so that the user is informed that
++	 * something happened:
++	 */
++	if (unlikely(in_nmi())) {
++		rp->nmissed++;
++		return 0;
++	}
++
++	/* TODO: consider to only swap the RA after the last pre_handler fired */
+ 	hash = hash_ptr(current, KPROBE_HASH_BITS);
+ 	raw_spin_lock_irqsave(&rp->lock, flags);
+ 	if (!hlist_empty(&rp->free_instances)) {
