@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933849AbaHHWL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:11:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60374 "EHLO
+	id S933832AbaHHWLY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:11:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60327 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758600AbaHHVgA (ORCPT
+	with ESMTP id S1758604AbaHHVgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:00 -0400
+	Fri, 8 Aug 2014 17:36:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 17/23] sparc64: Add membar to Niagara2 memcpy code.
-Date: Fri,  8 Aug 2014 14:35:02 -0700
-Message-Id: <20140808213316.503071021@linuxfoundation.org>
+Subject: [PATCH 3.4 18/23] sparc64: Do not insert non-valid PTEs into the TSB hash table.
+Date: Fri,  8 Aug 2014 14:35:03 -0700
+Message-Id: <20140808213316.548419204@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213315.769217722@linuxfoundation.org>
 References: <20140808213315.769217722@linuxfoundation.org>
@@ -30,28 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 5aa4ecfd0ddb1e6dcd1c886e6c49677550f581aa ]
+[ Upstream commit 18f38132528c3e603c66ea464727b29e9bbcb91b ]
 
-This is the prevent previous stores from overlapping the block stores
-done by the memcpy loop.
+The assumption was that update_mmu_cache() (and the equivalent for PMDs) would
+only be called when the PTE being installed will be accessible by the user.
 
-Based upon a glibc patch by Jose E. Marchesi
+This is not true for code paths originating from remove_migration_pte().
+
+There are dire consequences for placing a non-valid PTE into the TSB.  The TLB
+miss frramework assumes thatwhen a TSB entry matches we can just load it into
+the TLB and return from the TLB miss trap.
+
+So if a non-valid PTE is in there, we will deadlock taking the TLB miss over
+and over, never satisfying the miss.
+
+Just exit early from update_mmu_cache() and friends in this situation.
+
+Based upon a report and patch from Christopher Alexander Tobias Schulze.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/lib/NG2memcpy.S |    1 +
- 1 file changed, 1 insertion(+)
+ arch/sparc/mm/init_64.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/sparc/lib/NG2memcpy.S
-+++ b/arch/sparc/lib/NG2memcpy.S
-@@ -236,6 +236,7 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len
- 	 */
- 	VISEntryHalf
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -308,6 +308,10 @@ void update_mmu_cache(struct vm_area_str
+ 	tsb_index = MM_TSB_BASE;
+ 	tsb_hash_shift = PAGE_SHIFT;
  
-+	membar		#Sync
- 	alignaddr	%o1, %g0, %g0
++	/* Don't insert a non-valid PTE into the TSB, we'll deadlock.  */
++	if (!(pte_val(pte) & _PAGE_VALID))
++		return;
++
+ 	spin_lock_irqsave(&mm->context.lock, flags);
  
- 	add		%o1, (64 - 1), %o4
+ #ifdef CONFIG_HUGETLB_PAGE
 
 
