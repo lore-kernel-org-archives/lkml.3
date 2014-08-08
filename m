@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932606AbaHHUvu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:51:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41045 "EHLO
+	id S933131AbaHHVPY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:15:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41068 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757130AbaHHUvn (ORCPT
+	with ESMTP id S932610AbaHHUvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:43 -0400
+	Fri, 8 Aug 2014 16:51:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomasz Figa <t.figa@samsung.com>, Jason Cooper <jason@lakedaemon.net>,
+Cc: Li RongQing <roy.qing.li@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 153/259] irqchip: gic: Fix core ID calculation when topology is read from DT
-Date: Fri,  8 Aug 2014 13:39:36 -0700
-Message-Id: <1407530482-4483-154-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 235/259] 8021q: fix a potential memory leak
+Date: Fri,  8 Aug 2014 13:40:58 -0700
+Message-Id: <1407530482-4483-236-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,60 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomasz Figa <t.figa@samsung.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-commit 29e697b11853d3f83b1864ae385abdad4aa2c361 upstream.
+[ Upstream commit 916c1689a09bc1ca81f2d7a34876f8d35aadd11b ]
 
-Certain GIC implementation, namely those found on earlier, single
-cluster, Exynos SoCs, have registers mapped without per-CPU banking,
-which means that the driver needs to use different offset for each CPU.
+skb_cow called in vlan_reorder_header does not free the skb when it failed,
+and vlan_reorder_header returns NULL to reset original skb when it is called
+in vlan_untag, lead to a memory leak.
 
-Currently the driver calculates the offset by multiplying value returned
-by cpu_logical_map() by CPU offset parsed from DT. This is correct when
-CPU topology is not specified in DT and aforementioned function returns
-core ID alone. However when DT contains CPU topology, the function
-changes to return cluster ID as well, which is non-zero on mentioned
-SoCs and so breaks the calculation in GIC driver.
-
-This patch fixes this by masking out cluster ID in CPU offset
-calculation so that only core ID is considered. Multi-cluster Exynos
-SoCs already have banked GIC implementations, so this simple fix should
-be enough.
-
-Reported-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Fixes: db0d4db22a78d ("ARM: gic: allow GIC to support non-banked setups")
-Link: https://lkml.kernel.org/r/1405610624-18722-1-git-send-email-t.figa@samsung.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/irqchip/irq-gic.c | 5 ++++-
+ net/8021q/vlan_core.c | 5 ++++-
  1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index ecf2565..2e00501 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -42,6 +42,7 @@
- #include <linux/irqchip/chained_irq.h>
- #include <linux/irqchip/arm-gic.h>
+diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
+index 6ee48aa..7e57135 100644
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -108,8 +108,11 @@ EXPORT_SYMBOL(vlan_dev_vlan_id);
  
-+#include <asm/cputype.h>
- #include <asm/irq.h>
- #include <asm/exception.h>
- #include <asm/smp_plat.h>
-@@ -903,7 +904,9 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
- 		}
- 
- 		for_each_possible_cpu(cpu) {
--			unsigned long offset = percpu_offset * cpu_logical_map(cpu);
-+			u32 mpidr = cpu_logical_map(cpu);
-+			u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-+			unsigned long offset = percpu_offset * core_id;
- 			*per_cpu_ptr(gic->dist_base.percpu_base, cpu) = dist_base + offset;
- 			*per_cpu_ptr(gic->cpu_base.percpu_base, cpu) = cpu_base + offset;
- 		}
+ static struct sk_buff *vlan_reorder_header(struct sk_buff *skb)
+ {
+-	if (skb_cow(skb, skb_headroom(skb)) < 0)
++	if (skb_cow(skb, skb_headroom(skb)) < 0) {
++		kfree_skb(skb);
+ 		return NULL;
++	}
++
+ 	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
+ 	skb->mac_header += VLAN_HLEN;
+ 	return skb;
 -- 
 1.9.1
 
