@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184AbaHHHVa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 03:21:30 -0400
-Received: from smtp73.ord1c.emailsrvr.com ([108.166.43.73]:51983 "EHLO
-	smtp73.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752575AbaHHHV3 (ORCPT
+	id S1756226AbaHHHVm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 03:21:42 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:61689 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756018AbaHHHVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 03:21:29 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-From: Kiran Padwal <kiran.padwal@smartplayin.com>
-To: support.opensource@diasemi.com, dmitry.torokhov@gmail.com
-Cc: anthony.olech.opensource@diasemi.com, david.chen@diasemi.com,
-        kiran.padwal21@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kiran Padwal <kiran.padwal@smartplayin.com>
-Subject: [PATCH] Input: da9052_onkey: convert to use devm_*
-Date: Fri,  8 Aug 2014 12:48:44 +0530
-Message-Id: <1407482324-17713-1-git-send-email-kiran.padwal@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 8 Aug 2014 03:21:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAFLxGvxi80hNNFwquvF6veX23m_ph1UC9m1onLK5eNjrzu5DKA@mail.gmail.com>
+References: <1405413956-2772-1-git-send-email-lftan@altera.com>
+	<1405413956-2772-17-git-send-email-lftan@altera.com>
+	<CAFLxGvxi80hNNFwquvF6veX23m_ph1UC9m1onLK5eNjrzu5DKA@mail.gmail.com>
+Date: Fri, 8 Aug 2014 15:21:36 +0800
+X-Google-Sender-Auth: g_TZ3s9ZJ2Qv2Be8N2AMd8quFkg
+Message-ID: <CAFiDJ599JbMv97GdEV6vyXQ4ThXb6n5VXn==+Zr-gEBm9gp7iQ@mail.gmail.com>
+Subject: Re: [PATCH v2 16/29] nios2: Signal handling support
+From: Ley Foon Tan <lftan@altera.com>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Converting to devm functions can make the code smaller and cleaner.
+On Fri, Jul 18, 2014 at 4:04 PM, Richard Weinberger
+<richard.weinberger@gmail.com> wrote:
 
-Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
----
- drivers/input/misc/da9052_onkey.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+>> +
+>> +#include <asm/ucontext.h>
+>> +#include <asm/cacheflush.h>
+>> +
+>> +#define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
+>> +
+>> +static int do_signal(struct pt_regs *regs, int in_syscall);
+>
+> Do you really need this prototype?
+Yes, we don't need this. Will remove this.
 
-diff --git a/drivers/input/misc/da9052_onkey.c b/drivers/input/misc/da9052_onkey.c
-index 184c8f2..909441e 100644
---- a/drivers/input/misc/da9052_onkey.c
-+++ b/drivers/input/misc/da9052_onkey.c
-@@ -84,12 +84,14 @@ static int da9052_onkey_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	onkey = kzalloc(sizeof(*onkey), GFP_KERNEL);
--	input_dev = input_allocate_device();
--	if (!onkey || !input_dev) {
--		dev_err(&pdev->dev, "Failed to allocate memory\n");
--		error = -ENOMEM;
--		goto err_free_mem;
-+	onkey = devm_kzalloc(&pdev->dev, sizeof(*onkey), GFP_KERNEL);
-+	if (!onkey)
-+		return -ENOMEM;
-+
-+	input_dev = devm_input_allocate_device(&pdev->dev);
-+	if (!input_dev) {
-+		dev_err(&pdev->dev, "Failed to allocate input device\n");
-+		return -ENOMEM;
- 	}
- 
- 	onkey->input = input_dev;
-@@ -108,7 +110,7 @@ static int da9052_onkey_probe(struct platform_device *pdev)
- 	if (error < 0) {
- 		dev_err(onkey->da9052->dev,
- 			"Failed to register ONKEY IRQ: %d\n", error);
--		goto err_free_mem;
-+		return error;
- 	}
- 
- 	error = input_register_device(onkey->input);
-@@ -124,9 +126,6 @@ static int da9052_onkey_probe(struct platform_device *pdev)
- err_free_irq:
- 	da9052_free_irq(onkey->da9052, DA9052_IRQ_NONKEY, onkey);
- 	cancel_delayed_work_sync(&onkey->work);
--err_free_mem:
--	input_free_device(input_dev);
--	kfree(onkey);
- 
- 	return error;
- }
-@@ -139,7 +138,6 @@ static int da9052_onkey_remove(struct platform_device *pdev)
- 	cancel_delayed_work_sync(&onkey->work);
- 
- 	input_unregister_device(onkey->input);
--	kfree(onkey);
- 
- 	return 0;
- }
--- 
-1.7.9.5
 
+
+>> +
+>> +asmlinkage int do_rt_sigreturn(struct switch_stack *sw)
+>> +{
+>> +       struct pt_regs *regs = (struct pt_regs *)(sw + 1);
+>> +       /* Verify, can we follow the stack back */
+>> +       struct rt_sigframe *frame = (struct rt_sigframe *) regs->sp;
+>> +       sigset_t set;
+>> +       int rval;
+>> +
+>> +       if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
+>> +               goto badframe;
+>> +
+>> +       if (__copy_from_user(&set, &frame->uc.uc_sigmask, sizeof(set)))
+>> +               goto badframe;
+>> +
+>> +       sigdelsetmask(&set, ~_BLOCKABLE);
+>> +       spin_lock_irq(&current->sighand->siglock);
+>> +       current->blocked = set;
+>> +       recalc_sigpending();
+>> +       spin_unlock_irq(&current->sighand->siglock);
+>
+> Why aren't you using set_current_blocked() here?
+Okay, will change to use set_current_blocked().
+
+>> +static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
+>> +                         struct pt_regs *regs)
+>> +{
+>> +       struct rt_sigframe *frame;
+>> +       int err = 0;
+>> +
+>> +       frame = get_sigframe(ksig, regs, sizeof(*frame));
+>> +
+>> +       if (ksig->ka.sa.sa_flags & SA_SIGINFO)
+>> +               err |= copy_siginfo_to_user(&frame->info, &ksig->info);
+>> +
+>> +       /* Create the ucontext.  */
+>> +       err |= __put_user(0, &frame->uc.uc_flags);
+>> +       err |= __put_user(0, &frame->uc.uc_link);
+>> +       err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
+>> +       err |= rt_setup_ucontext(&frame->uc, regs);
+>> +       err |= copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
+>
+> You neither check nor propagate this error code.
+Okay, will add error handling here.
+
+Thanks.
+
+Regards
+Ley Foon
