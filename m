@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933036AbaHHVUD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:20:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40975 "EHLO
+	id S933257AbaHHVUW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:20:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40960 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756733AbaHHUvW (ORCPT
+	with ESMTP id S932495AbaHHUvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:22 -0400
+	Fri, 8 Aug 2014 16:51:17 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: "David S. Miller" <davem@davemloft.net>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Cong Wang <cwang@twopensource.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 086/259] cpufreq: Makefile: fix compilation for davinci platform
-Date: Fri,  8 Aug 2014 13:38:29 -0700
-Message-Id: <1407530482-4483-87-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 225/259] vxlan: use dev->needed_headroom instead of dev->hard_header_len
+Date: Fri,  8 Aug 2014 13:40:48 -0700
+Message-Id: <1407530482-4483-226-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,42 +31,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+From: Cong Wang <cwang@twopensource.com>
 
-commit 5a90af67c2126fe1d04ebccc1f8177e6ca70d3a9 upstream.
+[ Upstream commit 2853af6a2ea1a8ed09b09dd4fb578e7f435e8d34 ]
 
-Since commtit 8a7b1227e303 (cpufreq: davinci: move cpufreq driver to
-drivers/cpufreq) this added dependancy only for CONFIG_ARCH_DAVINCI_DA850
-where as davinci_cpufreq_init() call is used by all davinci platform.
+When we mirror packets from a vxlan tunnel to other device,
+the mirror device should see the same packets (that is, without
+outer header). Because vxlan tunnel sets dev->hard_header_len,
+tcf_mirred() resets mac header back to outer mac, the mirror device
+actually sees packets with outer headers
 
-This patch fixes following build error:
+Vxlan tunnel should set dev->needed_headroom instead of
+dev->hard_header_len, like what other ip tunnels do. This fixes
+the above problem.
 
-arch/arm/mach-davinci/built-in.o: In function `davinci_init_late':
-:(.init.text+0x928): undefined reference to `davinci_cpufreq_init'
-make: *** [vmlinux] Error 1
-
-Fixes: 8a7b1227e303 (cpufreq: davinci: move cpufreq driver to drivers/cpufreq)
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: stephen hemminger <stephen@networkplumber.org>
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/cpufreq/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/vxlan.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index 7494565..dac58f6 100644
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@ -47,7 +47,7 @@ obj-$(CONFIG_ARM_BIG_LITTLE_CPUFREQ)	+= arm_big_little.o
- # LITTLE drivers, so that it is probed last.
- obj-$(CONFIG_ARM_DT_BL_CPUFREQ)		+= arm_big_little_dt.o
+diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+index fc5d2b7..7e748a1 100644
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -2161,9 +2161,9 @@ static void vxlan_setup(struct net_device *dev)
+ 	eth_hw_addr_random(dev);
+ 	ether_setup(dev);
+ 	if (vxlan->default_dst.remote_ip.sa.sa_family == AF_INET6)
+-		dev->hard_header_len = ETH_HLEN + VXLAN6_HEADROOM;
++		dev->needed_headroom = ETH_HLEN + VXLAN6_HEADROOM;
+ 	else
+-		dev->hard_header_len = ETH_HLEN + VXLAN_HEADROOM;
++		dev->needed_headroom = ETH_HLEN + VXLAN_HEADROOM;
  
--obj-$(CONFIG_ARCH_DAVINCI_DA850)	+= davinci-cpufreq.o
-+obj-$(CONFIG_ARCH_DAVINCI)		+= davinci-cpufreq.o
- obj-$(CONFIG_UX500_SOC_DB8500)		+= dbx500-cpufreq.o
- obj-$(CONFIG_ARM_EXYNOS_CPUFREQ)	+= exynos-cpufreq.o
- obj-$(CONFIG_ARM_EXYNOS4210_CPUFREQ)	+= exynos4210-cpufreq.o
+ 	dev->netdev_ops = &vxlan_netdev_ops;
+ 	dev->destructor = free_netdev;
+@@ -2541,8 +2541,7 @@ static int vxlan_newlink(struct net *net, struct net_device *dev,
+ 		if (!tb[IFLA_MTU])
+ 			dev->mtu = lowerdev->mtu - (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
+ 
+-		/* update header length based on lower device */
+-		dev->hard_header_len = lowerdev->hard_header_len +
++		dev->needed_headroom = lowerdev->hard_header_len +
+ 				       (use_ipv6 ? VXLAN6_HEADROOM : VXLAN_HEADROOM);
+ 	} else if (use_ipv6)
+ 		vxlan->flags |= VXLAN_F_IPV6;
 -- 
 1.9.1
 
