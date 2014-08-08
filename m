@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554AbaHHKL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 06:11:28 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:48276 "EHLO
+	id S1756535AbaHHKLY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 06:11:24 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:7447 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756369AbaHHKLQ (ORCPT
+	by vger.kernel.org with ESMTP id S1755618AbaHHKLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 06:11:16 -0400
+	Fri, 8 Aug 2014 06:11:14 -0400
 X-IronPort-AV: E=Sophos;i="5.01,824,1400018400"; 
-   d="scan'208";a="88704761"
+   d="scan'208";a="88704756"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: netdev@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
-Subject: =?UTF-8?q?=5BPATCH=2013/14=5D=20fec=5Fmpc52xx=3A=20delete=20unneeded=20test=20before=20of=5Fnode=5Fput?=
-Date: Fri,  8 Aug 2014 12:07:54 +0200
-Message-Id: <1407492475-26283-13-git-send-email-Julia.Lawall@lip6.fr>
+Subject: =?UTF-8?q?=5BPATCH=208/14=5D=20ASoC=3A=20rsnd=3A=20delete=20unneeded=20test=20before=20of=5Fnode=5Fput?=
+Date: Fri,  8 Aug 2014 12:07:49 +0200
+Message-Id: <1407492475-26283-8-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -47,21 +49,24 @@ expression e;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/ethernet/freescale/fec_mpc52xx.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ sound/soc/sh/rcar/core.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/freescale/fec_mpc52xx.c b/drivers/net/ethernet/freescale/fec_mpc52xx.c
-index 9947765..ff55fbb 100644
---- a/drivers/net/ethernet/freescale/fec_mpc52xx.c
-+++ b/drivers/net/ethernet/freescale/fec_mpc52xx.c
-@@ -1015,8 +1015,7 @@ mpc52xx_fec_remove(struct platform_device *op)
+diff --git a/sound/soc/sh/rcar/core.c b/sound/soc/sh/rcar/core.c
+index 19f7896..1922ec5 100644
+--- a/sound/soc/sh/rcar/core.c
++++ b/sound/soc/sh/rcar/core.c
+@@ -798,10 +798,8 @@ if (name##_node) {							\
+ 			mod_parse(src);
+ 			mod_parse(dvc);
  
- 	unregister_netdev(ndev);
+-			if (playback)
+-				of_node_put(playback);
+-			if (capture)
+-				of_node_put(capture);
++			of_node_put(playback);
++			of_node_put(capture);
+ 		}
  
--	if (priv->phy_node)
--		of_node_put(priv->phy_node);
-+	of_node_put(priv->phy_node);
- 	priv->phy_node = NULL;
- 
- 	irq_dispose_mapping(ndev->irq);
+ 		dai_i++;
 
