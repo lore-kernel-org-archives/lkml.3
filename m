@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399AbaHHU6L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:58:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41477 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933185AbaHHUyM (ORCPT
+	id S933430AbaHHU6l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:58:41 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:57398 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933181AbaHHUyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:54:12 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Amitkumar Karwar <akarwar@marvell.com>,
-        Maithili Hinge <maithili@marvell.com>,
-        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 109/259] mwifiex: fix Tx timeout issue
-Date: Fri,  8 Aug 2014 13:38:52 -0700
-Message-Id: <1407530482-4483-110-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Fri, 8 Aug 2014 16:54:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <53E5170C.10302@collabora.co.uk>
+References: <1407397492-17475-1-git-send-email-javier.martinez@collabora.co.uk>
+	<53E4D9A5.908@itdev.co.uk>
+	<20140808162146.GC26820@core.coreip.homeip.net>
+	<53E4FD1B.6060600@collabora.co.uk>
+	<53E5170C.10302@collabora.co.uk>
+Date: Fri, 8 Aug 2014 13:54:10 -0700
+X-Google-Sender-Auth: 16b_R5q2iHf94517O3kCgxHSQhw
+Message-ID: <CAD=FV=WSNqjHLLbTh1LBF3RFrCnWnj498hivivcmx1SbuYp=Hw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] Input: atmel_mxt_ts - Get IRQ edge/level flags on
+ DT booting
+From: Doug Anderson <dianders@chromium.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, Stephen Warren <swarren@nvidia.com>,
+        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Abraham <thomas.ab@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.6 -stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+On Fri, Aug 8, 2014 at 11:29 AM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> Hello,
+>
+> On 08/08/2014 06:38 PM, Javier Martinez Canillas wrote:
+>>
+>>
+>> It seems as if the first call to exynos_irq_set_type() that is made by OF is a
+>> no-op while the second call is the one that actually setups the hw correctly.
+>> Does this make any sense? Maybe is related to the pin not being muxed in the
+>> correct function when the "interrupts" property is parsed by OF?
+>>
+>
+> So after a conversation with Tomasz Figa over IRC the problem was after all that
+> the pin was reconfigured. The IRQ trigger type resulted to be just a red herring
+> and not a direct cause.
+>
+> The pinctrl-eyxnos driver does the IRQ pinmux setup in the .irq_set_type
+> function handler. So what happened was that OF parsed the "interrupts" property
+> and called exynos_irq_set_type() which did the pinmux setup.
+>
+> But after that, due a DTS pinctrl configuration the pin function was changed as
+> a GPIO input and that happened before the atmel driver was probed. So when the
+> driver called request_threaded_irq(), the correct flags were used but the pin
+> was not configured as an IRQ anymore so IRQ were not fired.
+>
+> Setting a trigger type just had the side effect of calling exynos_irq_set_type()
+> which again setup the pin as an IRQ.
+>
+> To fix the issue a variation of patch [0] will be posted that moves the IRQ
+> pinmux setup from .irq_set_type to the .irq_request_resources function handler.
+> That way the pin will be setup as IRQ regardless of the the trigger type [1]
+> when someone calls request_[threaded]_irq().
+>
+> Only the mentioned patch fixes the issue but Tomasz said that even a call to
+> gpio_direction_{input,output} can change the pin configuration so he will post
+> another patch that will add a bit mask to samsung_pin_bank to prevent any pinmux
+> reconfiguration.
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+Would just making a device tree change fix this?  AKA for the pin, do:
 
-commit d76744a93246eccdca1106037e8ee29debf48277 upstream.
+  samsung,pin-function = <0xf>;
 
-https://bugzilla.kernel.org/show_bug.cgi?id=70191
-https://bugzilla.kernel.org/show_bug.cgi?id=77581
+I have some vague recollection that I set interrupts to pin-function
+"0" by default for some reason (assuming they would go to 0xf when
+interrupts were enabled).  ...but I can't for the life of me remember
+if it was a good reason or just seemed like the right thing to do.
 
-It is observed that sometimes Tx packet is downloaded without
-adding driver's txpd header. This results in firmware parsing
-garbage data as packet length. Sometimes firmware is unable
-to read the packet if length comes out as invalid. This stops
-further traffic and timeout occurs.
-
-The root cause is uninitialized fields in tx_info(skb->cb) of
-packet used to get garbage values. In this case if
-MWIFIEX_BUF_FLAG_REQUEUED_PKT flag is mistakenly set, txpd
-header was skipped. This patch makes sure that tx_info is
-correctly initialized to fix the problem.
-
-Reported-by: Andrew Wiley <wiley.andrew.j@gmail.com>
-Reported-by: Linus Gasser <list@markas-al-nour.org>
-Reported-by: Michael Hirsch <hirsch@teufel.de>
-Tested-by: Xinming Hu <huxm@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Maithili Hinge <maithili@marvell.com>
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/net/wireless/mwifiex/main.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/wireless/mwifiex/main.c b/drivers/net/wireless/mwifiex/main.c
-index 8bb8988..a5c00cc 100644
---- a/drivers/net/wireless/mwifiex/main.c
-+++ b/drivers/net/wireless/mwifiex/main.c
-@@ -646,6 +646,7 @@ mwifiex_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	}
- 
- 	tx_info = MWIFIEX_SKB_TXCB(skb);
-+	memset(tx_info, 0, sizeof(*tx_info));
- 	tx_info->bss_num = priv->bss_num;
- 	tx_info->bss_type = priv->bss_type;
- 
--- 
-1.9.1
-
+-Doug
