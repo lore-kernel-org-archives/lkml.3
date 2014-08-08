@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759210AbaHHVsE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:48:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60853 "EHLO
+	id S1759178AbaHHVr6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:47:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60855 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758948AbaHHVqM (ORCPT
+	with ESMTP id S1758950AbaHHVqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:46:12 -0400
+	Fri, 8 Aug 2014 17:46:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sowmini Varadhan <sowmini.varadhan@oracle.com>,
+        Karl Volz <karl.volz@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 13/17] sparc64: Guard against flushing openfirmware mappings.
-Date: Fri,  8 Aug 2014 14:35:35 -0700
-Message-Id: <20140808213458.058402348@linuxfoundation.org>
+Subject: [PATCH 3.16 16/17] sparc64: ldc_connect() should not return EINVAL when handshake is in progress.
+Date: Fri,  8 Aug 2014 14:35:38 -0700
+Message-Id: <20140808213458.180165806@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213457.511493898@linuxfoundation.org>
 References: <20140808213457.511493898@linuxfoundation.org>
@@ -28,117 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
 
-[ Upstream commit 4ca9a23765da3260058db3431faf5b4efd8cf926 ]
+[ Upstream commit 4ec1b01029b4facb651b8ef70bc20a4be4cebc63 ]
 
-Based almost entirely upon a patch by Christopher Alexander Tobias
-Schulze.
+The LDC handshake could have been asynchronously triggered
+after ldc_bind() enables the ldc_rx() receive interrupt-handler
+(and thus intercepts incoming control packets)
+and before vio_port_up() calls ldc_connect(). If that is the case,
+ldc_connect() should return 0 and let the state-machine
+progress.
 
-In commit db64fe02258f1507e13fe5212a989922323685ce ("mm: rewrite vmap
-layer") lazy VMAP tlb flushing was added to the vmalloc layer.  This
-causes problems on sparc64.
-
-Sparc64 has two VMAP mapped regions and they are not contiguous with
-eachother.  First we have the malloc mapping area, then another
-unrelated region, then the vmalloc region.
-
-This "another unrelated region" is where the firmware is mapped.
-
-If the lazy TLB flushing logic in the vmalloc code triggers after
-we've had both a module unload and a vfree or similar, it will pass an
-address range that goes from somewhere inside the malloc region to
-somewhere inside the vmalloc region, and thus covering the
-openfirmware area entirely.
-
-The sparc64 kernel learns about openfirmware's dynamic mappings in
-this region early in the boot, and then services TLB misses in this
-area.  But openfirmware has some locked TLB entries which are not
-mentioned in those dynamic mappings and we should thus not disturb
-them.
-
-These huge lazy TLB flush ranges causes those openfirmware locked TLB
-entries to be removed, resulting in all kinds of problems including
-hard hangs and crashes during reboot/reset.
-
-Besides causing problems like this, such huge TLB flush ranges are
-also incredibly inefficient.  A plea has been made with the author of
-the VMAP lazy TLB flushing code, but for now we'll put a safety guard
-into our flush_tlb_kernel_range() implementation.
-
-Since the implementation has become non-trivial, stop defining it as a
-macro and instead make it a function in a C source file.
-
+Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+Acked-by: Karl Volz <karl.volz@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/tlbflush_64.h |   12 ++----------
- arch/sparc/mm/init_64.c              |   23 +++++++++++++++++++++++
- 2 files changed, 25 insertions(+), 10 deletions(-)
+ arch/sparc/kernel/ldc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/include/asm/tlbflush_64.h
-+++ b/arch/sparc/include/asm/tlbflush_64.h
-@@ -34,6 +34,8 @@ static inline void flush_tlb_range(struc
- {
- }
+--- a/arch/sparc/kernel/ldc.c
++++ b/arch/sparc/kernel/ldc.c
+@@ -1336,7 +1336,7 @@ int ldc_connect(struct ldc_channel *lp)
+ 	if (!(lp->flags & LDC_FLAG_ALLOCED_QUEUES) ||
+ 	    !(lp->flags & LDC_FLAG_REGISTERED_QUEUES) ||
+ 	    lp->hs_state != LDC_HS_OPEN)
+-		err = -EINVAL;
++		err = ((lp->hs_state > LDC_HS_OPEN) ? 0 : -EINVAL);
+ 	else
+ 		err = start_handshake(lp);
  
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end);
-+
- #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
- 
- void flush_tlb_pending(void);
-@@ -48,11 +50,6 @@ void __flush_tlb_kernel_range(unsigned l
- 
- #ifndef CONFIG_SMP
- 
--#define flush_tlb_kernel_range(start,end) \
--do {	flush_tsb_kernel_range(start,end); \
--	__flush_tlb_kernel_range(start,end); \
--} while (0)
--
- static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
- {
- 	__flush_tlb_page(CTX_HWBITS(mm->context), vaddr);
-@@ -63,11 +60,6 @@ static inline void global_flush_tlb_page
- void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end);
- void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr);
- 
--#define flush_tlb_kernel_range(start, end) \
--do {	flush_tsb_kernel_range(start,end); \
--	smp_flush_tlb_kernel_range(start, end); \
--} while (0)
--
- #define global_flush_tlb_page(mm, vaddr) \
- 	smp_flush_tlb_page(mm, vaddr)
- 
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2707,3 +2707,26 @@ void hugetlb_setup(struct pt_regs *regs)
- 	}
- }
- #endif
-+
-+#ifdef CONFIG_SMP
-+#define do_flush_tlb_kernel_range	smp_flush_tlb_kernel_range
-+#else
-+#define do_flush_tlb_kernel_range	__flush_tlb_kernel_range
-+#endif
-+
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end)
-+{
-+	if (start < HI_OBP_ADDRESS && end > LOW_OBP_ADDRESS) {
-+		if (start < LOW_OBP_ADDRESS) {
-+			flush_tsb_kernel_range(start, LOW_OBP_ADDRESS);
-+			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
-+		}
-+		if (end > HI_OBP_ADDRESS) {
-+			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
-+			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
-+		}
-+	} else {
-+		flush_tsb_kernel_range(start, end);
-+		do_flush_tlb_kernel_range(start, end);
-+	}
-+}
 
 
