@@ -1,180 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027AbaHHI4S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 04:56:18 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:33621 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942AbaHHI4O (ORCPT
+	id S1756155AbaHHI7C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 04:59:02 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:35931 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755391AbaHHI67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 04:56:14 -0400
+	Fri, 8 Aug 2014 04:58:59 -0400
+Message-ID: <53E49147.5060307@collabora.co.uk>
+Date: Fri, 08 Aug 2014 10:58:47 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140808071903.GD6150@js1304-P5Q-DELUXE>
-References: <CAMuHMdW2kb=EF-Nmem_gyUu=p7hFOTe+Q2ekHh41SaHHiWDGeg@mail.gmail.com>
-	<CAAmzW4MX2birtCOUxjDdQ7c3Y+RyVkBt383HEQ=XFgnhhOsQPw@mail.gmail.com>
-	<CAMuHMdVC8aYwDEHnntshdVA24Nx3qAUXZfeRQNGqj=J6eExU-Q@mail.gmail.com>
-	<CAAmzW4NWnMeO+Z3CQ=9Z7rUFLaPmR-w0iMhxzjO+PVgVu7OMuQ@mail.gmail.com>
-	<20140808071903.GD6150@js1304-P5Q-DELUXE>
-Date: Fri, 8 Aug 2014 10:56:12 +0200
-X-Google-Sender-Auth: 8iocZnqGWxYWAHSZIWgGpsVOrdc
-Message-ID: <CAMuHMdVHmmct=BC=WXFJWeizYp+S706WjvNi=powYsJkarKUhw@mail.gmail.com>
-Subject: Re: BUG: enable_cpucache failed for radix_tree_node, error 12 (was:
- Re: [PATCH v3 9/9] slab: remove BAD_ALIEN_MAGIC)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Content-Type: multipart/mixed; boundary=001a11c3472a8b756d05001a603c
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: max77686: fix support for devices without irq specified
+References: <1457999.lNPdqEWCCR@amdc1032> <1407484788.21474.13.camel@AMDC1943>
+In-Reply-To: <1407484788.21474.13.camel@AMDC1943>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c3472a8b756d05001a603c
-Content-Type: text/plain; charset=UTF-8
+Hello Krzysztof and Bartlomiej,
 
-Hi Joonsoo,
+On 08/08/2014 09:59 AM, Krzysztof Kozlowski wrote:
+> On czw, 2014-08-07 at 18:09 +0200, Bartlomiej Zolnierkiewicz wrote:
+>> Before commit 6f1c1e71d933 ("mfd: max77686: Convert to use regmap_irq")
+>> max77686_irq_init() return value was never checked so devices without
+>> irq specified (like Hardkernel's Exynos4412 based ODROID-U3 board)
+>> worked fine even though -ENODEV was returned by the function.  Add
+>> handling for no irq specified case in max77686_i2c_probe() restoring
+>> the previous driver's behavior.
+>> 
+>> The patch fixes boot for Hardkernel's Exynos4412 based ODROID-U3 board.
+>> 
+>> Error messages before the patch:
+>> ...
+>> [    0.163995] max77686 0-0009: Failed to request IRQ 0 for max77686-pmic: -22
+>> [    0.164020] max77686 0-0009: failed to add PMIC irq chip: -22
+>> [    0.164478] max77686: probe of 0-0009 failed with error -22
+>> ...
+>> 
 
-On Fri, Aug 8, 2014 at 9:19 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> Could you show me your full dmesg on boot-up?
-> What I want to know is nodes-cpus mapping.
+I thought that not specifying an IRQ was not possible since the property says to
+be required in Documentation/devicetree/bindings/mfd/max77686.txt:
 
-Attached.
+Required properties:
+- compatible : Must be "maxim,max77686";
+- reg : Specifies the i2c slave address of PMIC block.
+- interrupts : This i2c device has an IRQ line connected to the main SoC.
+- interrupt-parent : The parent interrupt controller.
 
-If you want more debug output, please ask.
+So if this change is necessary then we should also move "interrupt" to the
+optional properties section.
 
-> I looked at SLAB code and found that SLAB works fine only if
-> numa_mem_id() always returns 0. I guess that this is the case for
-> !CONFIG_NUMA, so your system would work fine.
->
-> And, I looked at SLUB code and found that SLUB works fine only if
-> page_to_nid(page) always return 0 for this !CONFIG_NUMA and many nodes
-> case. If not, some memory could be leak, I guess.
+> 
+> Not sufficient. You have to also fix RTC driver (OOPS from Trats2
+> attached). Also consider adding checks for (max77686->irq) to the
+> suspend and resume.
+> 
 
-I've just tried SLUB, it boots fine. That doesn't say there are no leaks,
-though.
+Right, the max77686 RTC driver assumes that an IRQ domain will be created on the
+mfd driver so a virtual IRQ can be mapped for the RTC alarm1 IRQ. This
+assumptions comes from the fact that the "interrupt" property is required
+according to the DT binding doc.
 
-> Of possible, could you check whether page_to_nid(page) returns
-> only 0 or not?
+So the max77686 RTC wakealarm was not working for these boards before?
 
-It returns 0 or 1.
+Just to be sure that I understand the issue: these boards don't really have an
+IRQ connected to the PMIC, is not that this information is just missing in the
+Device Tree, right?
 
-Thanks!
+> Best regards,
+> Krzysztof
+> 
+> 
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
-
---001a11c3472a8b756d05001a603c
-Content-Type: application/octet-stream; name=dmesg
-Content-Disposition: attachment; filename=dmesg
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hyla020e0
-
-TGludXggdmVyc2lvbiAzLjE2LjAtYXRhcmktMDk2OTQtZ2VhZjQ4NDMzODVlMyAoZ2VlcnRAcmFt
-c2FuKSAoZ2NjIHZlcnNpb24gNC4xLjIgMjAwNjExMTUgKHByZXJlbGVhc2UpIChVYnVudHUgNC4x
-LjEtMjEpKSAjNTMgRnJpIEF1ZyA4IDA5OjQ0OjE0IENFU1QgMjAxNApTYXZpbmcgMTU0IGJ5dGVz
-IG9mIGJvb3RpbmZvCmNvbnNvbGUgW2RlYnVnMF0gZW5hYmxlZApBdGFyaSBoYXJkd2FyZSBmb3Vu
-ZDogVklERUwgU1RETUEtU0NTSSBTVF9NRlAgWU0yMTQ5IFBDTSBDT0RFQyBEU1A1NksgU0NDIEFO
-QUxPR19KT1kgQkxJVFRFUiBJREUgVFRfQ0xLIEZEQ19TUEVFRCAKKioqIG02OGtfbWVtb2Zmc2V0
-ID0gMHgwMDAwMDAwMAoqKiogbTY4a192aXJ0X3RvX25vZGVfc2hpZnQgPSAyMwptNjhrX3NldHVw
-X25vZGU6IG5vZGUgPSAwIChzdGFydCAweDAwMDAwMDAwIHNpemUgMHgwMGUwMDAwMCkKICAgIGkg
-PSAwLCBlbmQgPSAxCm02OGtfc2V0dXBfbm9kZTogbm9kZSA9IDEgKHN0YXJ0IDB4MDEwMDAwMDAg
-c2l6ZSAweDEwMDAwMDAwKQogICAgaSA9IDIsIGVuZCA9IDMzCk9uIG5vZGUgMCB0b3RhbHBhZ2Vz
-OiAzNTg0CmZyZWVfYXJlYV9pbml0X25vZGU6IG5vZGUgMCwgcGdkYXQgMDAzNmRhYzQsIG5vZGVf
-bWVtX21hcCAwMDQwYjAwMAogIERNQSB6b25lOiAzMiBwYWdlcyB1c2VkIGZvciBtZW1tYXAKICBE
-TUEgem9uZTogMCBwYWdlcyByZXNlcnZlZAogIERNQSB6b25lOiAzNTg0IHBhZ2VzLCBMSUZPIGJh
-dGNoOjAKT24gbm9kZSAxIHRvdGFscGFnZXM6IDY1NTM2CmZyZWVfYXJlYV9pbml0X25vZGU6IG5v
-ZGUgMSwgcGdkYXQgMDAzNmUzYjQsIG5vZGVfbWVtX21hcCAwMDQyZjA5MAogIERNQSB6b25lOiA1
-NzYgcGFnZXMgdXNlZCBmb3IgbWVtbWFwCiAgRE1BIHpvbmU6IDAgcGFnZXMgcmVzZXJ2ZWQKICBE
-TUEgem9uZTogNjU1MzYgcGFnZXMsIExJRk8gYmF0Y2g6MTUKTmF0RmVhdHMgZm91bmQgKEFSQW55
-TSwgMS4wKQpwY3B1LWFsbG9jOiBzMCByMCBkMzI3NjggdTMyNzY4IGFsbG9jPTEqMzI3NjgKcGNw
-dS1hbGxvYzogWzBdIDAgCkJ1aWx0IDIgem9uZWxpc3RzIGluIFpvbmUgb3JkZXIsIG1vYmlsaXR5
-IGdyb3VwaW5nIG9uLiAgVG90YWwgcGFnZXM6IDY4NTEyCktlcm5lbCBjb21tYW5kIGxpbmU6IHJv
-b3Q9L2Rldi9oZGExIHZpZGVvPWF0YWZiOnR0aGlnaCBkZWJ1Zz1wYXIgY29uc29sZT10dHkwIEJP
-T1RfSU1BR0U9dm1saW51eApQSUQgaGFzaCB0YWJsZSBlbnRyaWVzOiAyMDQ4IChvcmRlcjogMSwg
-ODE5MiBieXRlcykKRGVudHJ5IGNhY2hlIGhhc2ggdGFibGUgZW50cmllczogNjU1MzYgKG9yZGVy
-OiA2LCAyNjIxNDQgYnl0ZXMpCklub2RlLWNhY2hlIGhhc2ggdGFibGUgZW50cmllczogMzI3Njgg
-KG9yZGVyOiA1LCAxMzEwNzIgYnl0ZXMpClNvcnRpbmcgX19leF90YWJsZS4uLgpNZW1vcnk6IDI2
-ODQ0MEsvMjc2NDgwSyBhdmFpbGFibGUgKDI3MTBLIGtlcm5lbCBjb2RlLCAzMDdLIHJ3ZGF0YSwg
-NjQ0SyByb2RhdGEsIDE0OEsgaW5pdCwgMTY4SyBic3MsIDgwNDBLIHJlc2VydmVkKQpWaXJ0dWFs
-IGtlcm5lbCBtZW1vcnkgbGF5b3V0OgogICAgdmVjdG9yICA6IDB4MDAzNmQ1YjQgLSAweDAwMzZk
-OWI0ICAgKCAgIDEgS2lCKQogICAga21hcCAgICA6IDB4ZDAwMDAwMDAgLSAweGYwMDAwMDAwICAg
-KCA1MTIgTWlCKQogICAgdm1hbGxvYyA6IDB4MTE4MDAwMDAgLSAweGQwMDAwMDAwICAgKDMwNDgg
-TWlCKQogICAgbG93bWVtICA6IDB4MDAwMDAwMDAgLSAweDExMDAwMDAwICAgKCAyNzIgTWlCKQog
-ICAgICAuaW5pdCA6IDB4MDAzOTgwMDAgLSAweDAwM2JkMDAwICAgKCAxNDggS2lCKQogICAgICAu
-dGV4dCA6IDB4MDAwMDEwMDAgLSAweDAwMmE2OTFjICAgKDI3MTEgS2lCKQogICAgICAuZGF0YSA6
-IDB4MDAyYTk2MDAgLSAweDAwMzk3NTBjICAgKCA5NTIgS2lCKQogICAgICAuYnNzICA6IDB4MDAz
-NmQ0YzAgLSAweDAwMzk3NTBjICAgKCAxNjkgS2lCKQpOUl9JUlFTOjE0MQpDb25zb2xlOiBjb2xv
-dXIgZHVtbXkgZGV2aWNlIDgweDI1CmNvbnNvbGUgW3R0eTBdIGVuYWJsZWQKQ2FsaWJyYXRpbmcg
-ZGVsYXkgbG9vcC4uLiAxODguODIgQm9nb01JUFMgKGxwaj05NDQxMjgpCnBpZF9tYXg6IGRlZmF1
-bHQ6IDMyNzY4IG1pbmltdW06IDMwMQpNb3VudC1jYWNoZSBoYXNoIHRhYmxlIGVudHJpZXM6IDEw
-MjQgKG9yZGVyOiAwLCA0MDk2IGJ5dGVzKQpNb3VudHBvaW50LWNhY2hlIGhhc2ggdGFibGUgZW50
-cmllczogMTAyNCAob3JkZXI6IDAsIDQwOTYgYnl0ZXMpCmRldnRtcGZzOiBpbml0aWFsaXplZApO
-RVQ6IFJlZ2lzdGVyZWQgcHJvdG9jb2wgZmFtaWx5IDE2ClNDU0kgc3Vic3lzdGVtIGluaXRpYWxp
-emVkCk5FVDogUmVnaXN0ZXJlZCBwcm90b2NvbCBmYW1pbHkgMgpUQ1AgZXN0YWJsaXNoZWQgaGFz
-aCB0YWJsZSBlbnRyaWVzOiA0MDk2IChvcmRlcjogMiwgMTYzODQgYnl0ZXMpClRDUCBiaW5kIGhh
-c2ggdGFibGUgZW50cmllczogNDA5NiAob3JkZXI6IDIsIDE2Mzg0IGJ5dGVzKQpUQ1A6IEhhc2gg
-dGFibGVzIGNvbmZpZ3VyZWQgKGVzdGFibGlzaGVkIDQwOTYgYmluZCA0MDk2KQpUQ1A6IHJlbm8g
-cmVnaXN0ZXJlZApVRFAgaGFzaCB0YWJsZSBlbnRyaWVzOiAyNTYgKG9yZGVyOiAwLCA0MDk2IGJ5
-dGVzKQpVRFAtTGl0ZSBoYXNoIHRhYmxlIGVudHJpZXM6IDI1NiAob3JkZXI6IDAsIDQwOTYgYnl0
-ZXMpCk5FVDogUmVnaXN0ZXJlZCBwcm90b2NvbCBmYW1pbHkgMQpSUEM6IFJlZ2lzdGVyZWQgbmFt
-ZWQgVU5JWCBzb2NrZXQgdHJhbnNwb3J0IG1vZHVsZS4KUlBDOiBSZWdpc3RlcmVkIHVkcCB0cmFu
-c3BvcnQgbW9kdWxlLgpSUEM6IFJlZ2lzdGVyZWQgdGNwIHRyYW5zcG9ydCBtb2R1bGUuClJQQzog
-UmVnaXN0ZXJlZCB0Y3AgTkZTdjQuMSBiYWNrY2hhbm5lbCB0cmFuc3BvcnQgbW9kdWxlLgpuZmhk
-ODogZm91bmQgZGV2aWNlIHdpdGggMjExODgxNiBibG9ja3MgKDUxMiBieXRlcykKIG5maGQ4OiBB
-SERJIHAxIHAyCm5mZXRoOiBBUEkgNQpldGgwOiBuZmV0aCBhZGRyOjE5Mi4xNjguMC4xICgxOTIu
-MTY4LjAuMikgSFdhZGRyOjAwOjQxOjQ1OjU0OjQ4OjMwCmZ1dGV4IGhhc2ggdGFibGUgZW50cmll
-czogMjU2IChvcmRlcjogLTEsIDMwNzIgYnl0ZXMpClZGUzogRGlzayBxdW90YXMgZHF1b3RfNi41
-LjIKRHF1b3QtY2FjaGUgaGFzaCB0YWJsZSBlbnRyaWVzOiAxMDI0IChvcmRlciAwLCA0MDk2IGJ5
-dGVzKQptc2dtbmkgaGFzIGJlZW4gc2V0IHRvIDUyNApCbG9jayBsYXllciBTQ1NJIGdlbmVyaWMg
-KGJzZykgZHJpdmVyIHZlcnNpb24gMC40IGxvYWRlZCAobWFqb3IgMjUyKQppbyBzY2hlZHVsZXIg
-bm9vcCByZWdpc3RlcmVkCmlvIHNjaGVkdWxlciBjZnEgcmVnaXN0ZXJlZCAoZGVmYXVsdCkKYXRh
-ZmJfaW5pdDogc3RhcnQKYXRhZmJfaW5pdDogaW5pdGlhbGl6aW5nIEZhbGNvbiBodwphdGFmYjog
-c2NyZWVuX2Jhc2UgMDA2NzAwMDAgcGh5c19zY3JlZW5fYmFzZSA2NzAwMDAgc2NyZWVuX2xlbiAz
-MTEyOTYKRGV0ZXJtaW5lZCA2NDB4NDgwLCBkZXB0aCA0CiAgIHZpcnR1YWwgNjQweDk3MgpDb25z
-b2xlOiBzd2l0Y2hpbmcgdG8gY29sb3VyIGZyYW1lIGJ1ZmZlciBkZXZpY2UgODB4MzAKZmIwOiBm
-cmFtZSBidWZmZXIgZGV2aWNlLCB1c2luZyAzMDRLIG9mIHZpZGVvIG1lbW9yeQpOb24tdm9sYXRp
-bGUgbWVtb3J5IGRyaXZlciB2MS4zCkF0YXJpIGZsb3BweSBkcml2ZXI6IG1heC4gSEQsIHRyYWNr
-IGJ1ZmZlcmluZwpQcm9iaW5nIGZsb3BweSBkcml2ZShzKToKZmQwCmJyZDogbW9kdWxlIGxvYWRl
-ZApsb29wOiBtb2R1bGUgbG9hZGVkClVuaWZvcm0gTXVsdGktUGxhdGZvcm0gRS1JREUgZHJpdmVy
-CmlkZTogRmFsY29uIElERSBjb250cm9sbGVyClByb2JpbmcgSURFIGludGVyZmFjZSBpZGUwLi4u
-CmhkYTogU2FyZ2UgbTY4aywgQVRBIERJU0sgZHJpdmUKaWRlMCBhdCAweGZmZjAwMDAwIG9uIGly
-cSAxNSAoc2VyaWFsaXplZCkKaWRlLWdkIGRyaXZlciAxLjE4CmhkYTogbWF4IHJlcXVlc3Qgc2l6
-ZTogMTI4S2lCCmhkYTogMjExODgxNiBzZWN0b3JzICgxMDg0IE1CKSB3LzI1NktpQiBDYWNoZSwg
-Q0hTPTIxMDIvMTYvNjMKIGhkYTogQUhESSBoZGExIGhkYTIKaWRlLWNkIGRyaXZlciA1LjAwCnNj
-c2kwOiBvcHRpb25zIENBTl9RVUVVRT04IENNRF9QRVJfTFVOPTEgU0NBVC1HQVQ9MCBUQUdHRUQt
-UVVFVUlORz1ubyBIT1NUSUQ9NyBnZW5lcmljIG9wdGlvbnMgQVVUT1NFTlNFIFJFQUwgRE1BIFND
-U0ktMiBUQUdHRUQgUVVFVUlORyBnZW5lcmljIHJlbGVhc2U9NwpzY3NpIGhvc3QwOiBBdGFyaSBu
-YXRpdmUgU0NTSQpibGtfcXVldWVfbWF4X3NlZ21lbnRzOiBzZXQgdG8gbWluaW11bSAxCmJsa19x
-dWV1ZV9tYXhfc2VnbWVudHM6IHNldCB0byBtaW5pbXVtIDEKYmxrX3F1ZXVlX21heF9zZWdtZW50
-czogc2V0IHRvIG1pbmltdW0gMQpibGtfcXVldWVfbWF4X3NlZ21lbnRzOiBzZXQgdG8gbWluaW11
-bSAxCmJsa19xdWV1ZV9tYXhfc2VnbWVudHM6IHNldCB0byBtaW5pbXVtIDEKYmxrX3F1ZXVlX21h
-eF9zZWdtZW50czogc2V0IHRvIG1pbmltdW0gMQpibGtfcXVldWVfbWF4X3NlZ21lbnRzOiBzZXQg
-dG8gbWluaW11bSAxCm5lIG5lICh1bm5hbWVkIG5ldF9kZXZpY2UpICh1bmluaXRpYWxpemVkKTog
-TkUqMDAwIGV0aGVyY2FyZCBwcm9iZSBhdCAweDMwMDoKIG5vdCBmb3VuZCAobm8gcmVzZXQgYWNr
-KS4KbmUgbmUgKHVubmFtZWQgbmV0X2RldmljZSkgKHVuaW5pdGlhbGl6ZWQpOiBuZS5jOiBObyBO
-RSowMDAgY2FyZCBmb3VuZCBhdCBpL28gPSAweDMwMAptb3VzZWRldjogUFMvMiBtb3VzZSBkZXZp
-Y2UgY29tbW9uIGZvciBhbGwgbWljZQppbnB1dDogQXRhcmkgS2V5Ym9hcmQgYXMgL2RldmljZXMv
-dmlydHVhbC9pbnB1dC9pbnB1dDAKVENQOiBjdWJpYyByZWdpc3RlcmVkCk5FVDogUmVnaXN0ZXJl
-ZCBwcm90b2NvbCBmYW1pbHkgMTcKTkVUOiBSZWdpc3RlcmVkIHByb3RvY29sIGZhbWlseSAxNQpL
-ZXkgdHlwZSBkbnNfcmVzb2x2ZXIgcmVnaXN0ZXJlZAovc2NyYXRjaC9nZWVydC9saW51eC9saW51
-eC1tNjhrL2RyaXZlcnMvcnRjL2hjdG9zeXMuYzogdW5hYmxlIHRvIG9wZW4gcnRjIGRldmljZSAo
-cnRjMCkKRVhUNC1mcyAoaGRhMSk6IG1vdW50aW5nIGV4dDMgZmlsZSBzeXN0ZW0gdXNpbmcgdGhl
-IGV4dDQgc3Vic3lzdGVtCkVYVDQtZnMgKGhkYTEpOiBtb3VudGVkIGZpbGVzeXN0ZW0gd2l0aCBv
-cmRlcmVkIGRhdGEgbW9kZS4gT3B0czogKG51bGwpClZGUzogTW91bnRlZCByb290IChleHQzIGZp
-bGVzeXN0ZW0pIHJlYWRvbmx5IG9uIGRldmljZSAzOjEuCkZyZWVpbmcgdW51c2VkIGtlcm5lbCBt
-ZW1vcnk6IDE0OEsgKDAwMzk4MDAwIC0gMDAzYmQwMDApCnJhbmRvbTogbm9uYmxvY2tpbmcgcG9v
-bCBpcyBpbml0aWFsaXplZApBZGRpbmcgMTM3ODAwayBzd2FwIG9uIC9kZXYvaGRhMi4gIFByaW9y
-aXR5Oi0xIGV4dGVudHM6MSBhY3Jvc3M6MTM3ODAwayAKRVhUNC1mcyAoaGRhMSk6IHJlLW1vdW50
-ZWQuIE9wdHM6IApFWFQ0LWZzIChoZGExKTogcmUtbW91bnRlZC4gT3B0czogZXJyb3JzPXJlbW91
-bnQtcm8K
---001a11c3472a8b756d05001a603c--
+Best regards,
+Javier
