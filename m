@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933719AbaHHWIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:08:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60414 "EHLO
+	id S933737AbaHHWI5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:08:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60374 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758634AbaHHVgJ (ORCPT
+	with ESMTP id S1758633AbaHHVgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:09 -0400
+	Fri, 8 Aug 2014 17:36:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Doug Leith <doug.leith@nuim.ie>,
         Christoph Paasch <christoph.paasch@uclouvain.be>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 06/24] tcp: Fix integer-overflow in TCP vegas
-Date: Fri,  8 Aug 2014 14:34:59 -0700
-Message-Id: <20140808213335.686661914@linuxfoundation.org>
+Subject: [PATCH 3.10 05/24] tcp: Fix integer-overflows in TCP veno
+Date: Fri,  8 Aug 2014 14:34:58 -0700
+Message-Id: <20140808213335.646574118@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213335.421758947@linuxfoundation.org>
 References: <20140808213335.421758947@linuxfoundation.org>
@@ -36,38 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-[ Upstream commit 1f74e613ded11517db90b2bd57e9464d9e0fb161 ]
+[ Upstream commit 45a07695bc64b3ab5d6d2215f9677e5b8c05a7d0 ]
 
-In vegas we do a multiplication of the cwnd and the rtt. This
+In veno we do a multiplication of the cwnd and the rtt. This
 may overflow and thus their result is stored in a u64. However, we first
 need to cast the cwnd so that actually 64-bit arithmetic is done.
 
-Then, we need to do do_div to allow this to be used on 32-bit arches.
+A first attempt at fixing 76f1017757aa0 ([TCP]: TCP Veno congestion
+control) was made by 159131149c2 (tcp: Overflow bug in Vegas), but it
+failed to add the required cast in tcp_veno_cong_avoid().
 
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Laight <David.Laight@ACULAB.COM>
-Cc: Doug Leith <doug.leith@nuim.ie>
-Fixes: 8d3a564da34e (tcp: tcp_vegas cong avoid fix)
+Fixes: 76f1017757aa0 ([TCP]: TCP Veno congestion control)
 Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_vegas.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv4/tcp_veno.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/tcp_vegas.c
-+++ b/net/ipv4/tcp_vegas.c
-@@ -218,7 +218,8 @@ static void tcp_vegas_cong_avoid(struct
- 			 * This is:
- 			 *     (actual rate in segments) * baseRTT
- 			 */
--			target_cwnd = tp->snd_cwnd * vegas->baseRTT / rtt;
-+			target_cwnd = (u64)tp->snd_cwnd * vegas->baseRTT;
-+			do_div(target_cwnd, rtt);
+--- a/net/ipv4/tcp_veno.c
++++ b/net/ipv4/tcp_veno.c
+@@ -144,7 +144,7 @@ static void tcp_veno_cong_avoid(struct s
  
- 			/* Calculate the difference between the window we had,
- 			 * and the window we would like to have. This quantity
+ 		rtt = veno->minrtt;
+ 
+-		target_cwnd = (tp->snd_cwnd * veno->basertt);
++		target_cwnd = (u64)tp->snd_cwnd * veno->basertt;
+ 		target_cwnd <<= V_PARAM_SHIFT;
+ 		do_div(target_cwnd, rtt);
+ 
 
 
