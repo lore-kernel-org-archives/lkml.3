@@ -1,193 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855AbaHHOMe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 10:12:34 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:52645 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752821AbaHHOMc (ORCPT
+	id S1756620AbaHHORK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 10:17:10 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:57410 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754080AbaHHORF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 10:12:32 -0400
-Date: Fri, 8 Aug 2014 10:12:21 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        bobby.prani@gmail.com, masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
- waiting for RCU-tasks
-Message-ID: <20140808101221.21056900@gandalf.local.home>
-In-Reply-To: <20140808064020.GZ9918@twins.programming.kicks-ass.net>
-References: <20140806224518.GA8101@linux.vnet.ibm.com>
-	<20140807084544.GJ19379@twins.programming.kicks-ass.net>
-	<20140807150031.GB5821@linux.vnet.ibm.com>
-	<20140807152600.GW9918@twins.programming.kicks-ass.net>
-	<20140807172753.GG3588@twins.programming.kicks-ass.net>
-	<20140807184635.GI3588@twins.programming.kicks-ass.net>
-	<20140807154907.6f59cf6e@gandalf.local.home>
-	<20140807155326.18481e66@gandalf.local.home>
-	<20140807200813.GB3935@laptop>
-	<20140807171823.1a481290@gandalf.local.home>
-	<20140808064020.GZ9918@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Fri, 8 Aug 2014 10:17:05 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53E4DBDD.1060805@roeck-us.net>
+Date: Fri, 08 Aug 2014 07:17:01 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Andreas Werner <andreas.werner@men.de>
+CC: Wim Van Sebroeck <wim@iguana.be>, Bryan Wu <cooloney@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] drivers/leds/leds-menf21bmc: introduce MEN 14F021P00
+ BMC LED driver
+References: <cover.1405602280.git.andreas.werner@men.de> <fec81db0dd6e08e1e07d3b7c00cb933b2ab63ab3.1405602280.git.andreas.werner@men.de> <CAK5ve-KG=dBgrBLQ2ejZ3XZip-gk2_5PfmpdKi6d6=B9hMDH1g@mail.gmail.com> <20140725093728.GA1371@awelinux> <20140729211256.GB30849@spo001.leaseweb.com> <53D8165C.6000302@roeck-us.net> <20140730080839.GA455@awelinux> <53D8F9DA.2090607@roeck-us.net> <20140808074939.GA451@awelinux>
+In-Reply-To: <20140808074939.GA451@awelinux>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Aug 2014 08:40:20 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+On 08/08/2014 12:49 AM, Andreas Werner wrote:
+> On Wed, Jul 30, 2014 at 06:57:46AM -0700, Guenter Roeck wrote:
+>> On 07/30/2014 01:08 AM, Andreas Werner wrote:
+>>> On Tue, Jul 29, 2014 at 02:47:08PM -0700, Guenter Roeck wrote:
+>>>> On 07/29/2014 02:12 PM, Wim Van Sebroeck wrote:
+>>>>> Hi Andreas,
+>>>>>
+>>>>>> aOn Thu, Jul 24, 2014 at 03:00:09PM -0700, Bryan Wu wrote:
+>>>>>>> On Thu, Jul 17, 2014 at 6:18 AM, Andreas Werner <andreas.werner@men.de> wrote:
+>>>>>>>> Added driver to support the 14F021P00 BMC LEDs.
+>>>>>>>> The BMC is a Board Management Controll include four LEDs which
+>>>>>>>> can be switched on and off.
+>>>>>>>>
+>>>>>>>> This driver use the I2C interface to the BMC using the menf21bmc MFD Core driver.
+>>>>>>>>
+>>>>>>>> Signed-off-by: Andreas Werner <andreas.werner@men.de>
+>>>>>>>> ---
+>>>>>>>>   drivers/leds/Kconfig          |   6 ++
+>>>>>>>>   drivers/leds/Makefile         |   1 +
+>>>>>>>>   drivers/leds/leds-menf21bmc.c | 134 ++++++++++++++++++++++++++++++++++++++++++
+>>>>>>>>   3 files changed, 141 insertions(+)
+>>>>>>>>   create mode 100644 drivers/leds/leds-menf21bmc.c
+>>>>>>>>
+>>>>>>>> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+>>>>>>>> index 27cf0cd..d38ff3f 100644
+>>>>>>>> --- a/drivers/leds/Kconfig
+>>>>>>>> +++ b/drivers/leds/Kconfig
+>>>>>>>> @@ -458,6 +458,12 @@ config LEDS_OT200
+>>>>>>>>            This option enables support for the LEDs on the Bachmann OT200.
+>>>>>>>>            Say Y to enable LEDs on the Bachmann OT200.
+>>>>>>>>
+>>>>>>>> +config LEDS_MENF21BMC
+>>>>>>>> +       tristate "LED support for the MEN 14F021P00 BMC"
+>>>>>>>> +       depends on LEDS_CLASS && MFD_MENF21BMC
+>>>>>>>
+>>>>>>> I think it also depends on I2C.
+>>>>>>
+>>>>>> Yes you are right.
+>>>>>>
+>>>>>>>
+>>>>>>>> +       help
+>>>>>>>> +         Say Y here to include support for the MEN 14F021P00 BMC LEDs.
+>>>>>>>> +
+>>>>>>>>   comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
+>>>>>>>>
+>>>>>>>>   config LEDS_BLINKM
+>>>>>>>> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+>>>>>>>> index 3c03666..cadc433 100644
+>>>>>>>> --- a/drivers/leds/Makefile
+>>>>>>>> +++ b/drivers/leds/Makefile
+>>>>>>>> @@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)            += leds-max8997.o
+>>>>>>>>   obj-$(CONFIG_LEDS_LM355x)              += leds-lm355x.o
+>>>>>>>>   obj-$(CONFIG_LEDS_BLINKM)              += leds-blinkm.o
+>>>>>>>>   obj-$(CONFIG_LEDS_VERSATILE)           += leds-versatile.o
+>>>>>>>> +obj-$(CONFIG_LEDS_MENF21BMC)           += leds-menf21bmc.o
+>>>>>>>>
+>>>>>>>>   # LED SPI Drivers
+>>>>>>>>   obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
+>>>>>>>> diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
+>>>>>>>> new file mode 100644
+>>>>>>>> index 0000000..5eaa119
+>>>>>>>> --- /dev/null
+>>>>>>>> +++ b/drivers/leds/leds-menf21bmc.c
+>>>>>>>> @@ -0,0 +1,134 @@
+>>>>>>>> +/*
+>>>>>>>> + *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
+>>>>>>>> + *
+>>>>>>>> + *  This is the core LED driver of the MEN 14F021P00 BMC.
+>>>>>>>> + *  There are four LEDs available which can be switched on and off.
+>>>>>>>> + *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
+>>>>>>>> + *
+>>>>>>>> + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
+>>>>>>>> + *  Author: Andreas Werner <andreas.werner@men.de>
+>>>>>>>> + *  All rights reserved.
+>>>>>>>> + *
+>>>>>>>> + *  This program is free software; you can redistribute  it and/or modify it
+>>>>>>>> + *  under  the terms of  the GNU General  Public License as published by the
+>>>>>>>> + *  Free Software Foundation;  either version 2 of the  License, or (at your
+>>>>>>>> + *  option) any later version.
+>>>>>>>> + *
+>>>>>>>> + */
+>>>>>>>> +
+>>>>>>>> +#include <linux/module.h>
+>>>>>>>> +#include <linux/kernel.h>
+>>>>>>>> +#include <linux/platform_device.h>
+>>>>>>>> +#include <linux/leds.h>
+>>>>>>>> +#include <linux/i2c.h>
+>>>>>>>> +
+>>>>>>>> +#define BMC_CMD_LED_GET_SET    0xA0
+>>>>>>>> +#define BMC_BIT_LED_STATUS     BIT(0)
+>>>>>>>> +#define BMC_BIT_LED_HOTSWAP    BIT(1)
+>>>>>>>> +#define BMC_BIT_LED_USER1      BIT(2)
+>>>>>>>> +#define BMC_BIT_LED_USER2      BIT(3)
+>>>>>>>> +
+>>>>>>>> +struct menf21bmc_led {
+>>>>>>>> +       struct led_classdev cdev;
+>>>>>>>> +       u8 led_bit;
+>>>>>>>> +       const char *name;
+>>>>>>>> +       struct i2c_client *i2c_client;
+>>>>>>>> +};
+>>>>>>>> +
+>>>>>>>> +static struct menf21bmc_led leds[] = {
+>>>>>>>> +       {
+>>>>>>>> +               .name = "menf21bmc:led_status",
+>>>>>>>> +               .led_bit = BMC_BIT_LED_STATUS,
+>>>>>>>> +       },
+>>>>>>>> +       {
+>>>>>>>> +               .name = "menf21bmc:led_hotswap",
+>>>>>>>> +               .led_bit = BMC_BIT_LED_HOTSWAP,
+>>>>>>>> +       },
+>>>>>>>> +       {
+>>>>>>>> +               .name = "menf21bmc:led_user1",
+>>>>>>>> +               .led_bit = BMC_BIT_LED_USER1,
+>>>>>>>> +       },
+>>>>>>>> +       {
+>>>>>>>> +               .name = "menf21bmc:led_user2",
+>>>>>>>> +               .led_bit = BMC_BIT_LED_USER2,
+>>>>>>>> +       }
+>>>>>>>> +};
+>>>>>>>> +
+>>>>>>>> +static DEFINE_MUTEX(led_lock);
+>>>>>>>> +
+>>>>>>>> +static void
+>>>>>>>> +menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
+>>>>>>>> +{
+>>>>>>>> +       int led_val;
+>>>>>>>> +       struct menf21bmc_led *led = container_of(led_cdev,
+>>>>>>>> +                                       struct menf21bmc_led, cdev);
+>>>>>>>> +
+>>>>>>>> +       mutex_lock(&led_lock);
+>>>>>>>> +       led_val = i2c_smbus_read_byte_data(led->i2c_client,
+>>>>>>>> +                                               BMC_CMD_LED_GET_SET);
+>>>>>>>> +       if (led_val < 0)
+>>>>>>>> +               goto err_out;
+>>>>>>>> +
+>>>>>>>> +       if (value == LED_OFF)
+>>>>>>>> +               led_val &= ~led->led_bit;
+>>>>>>>> +       else
+>>>>>>>> +               led_val |= led->led_bit;
+>>>>>>>> +
+>>>>>>>> +       i2c_smbus_write_byte_data(led->i2c_client,
+>>>>>>>> +                                       BMC_CMD_LED_GET_SET, led_val);
+>>>>>>>> +err_out:
+>>>>>>>> +       mutex_unlock(&led_lock);
+>>>>>>>> +}
+>>>>>>>> +
+>>>>>>>> +static int menf21bmc_led_probe(struct platform_device *pdev)
+>>>>>>>> +{
+>>>>>>>> +       int i;
+>>>>>>>> +       int ret;
+>>>>>>>> +       struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
+>>>>>>>> +
+>>>>>>>> +       for (i = 0; i < ARRAY_SIZE(leds); i++) {
+>>>>>>>> +               leds[i].cdev.name = leds[i].name;
+>>>>>>>> +               leds[i].cdev.brightness_set = menf21bmc_led_set;
+>>>>>>>> +               leds[i].i2c_client = i2c_client;
+>>>>>>>> +               ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
+>>>>>>>> +               if (ret < 0)
+>>>>>>>> +                       goto err_free_leds;
+>>>>>>>> +       }
+>>>>>>>> +       dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
+>>>>>>>> +
+>>>>>>>> +       return 0;
+>>>>>>>> +
+>>>>>>>> +err_free_leds:
+>>>>>>>> +       dev_err(&pdev->dev, "failed to register LED device\n");
+>>>>>>>> +
+>>>>>>>> +       for (i = i - 1; i >= 0; i--)
+>>>>>>>> +               led_classdev_unregister(&leds[i].cdev);
+>>>>>>>> +
+>>>>>>>> +       return ret;
+>>>>>>>> +}
+>>>>>>>> +
+>>>>>>>> +static int menf21bmc_led_remove(struct platform_device *pdev)
+>>>>>>>> +{
+>>>>>>>> +       int i;
+>>>>>>>> +
+>>>>>>>> +       for (i = 0; i < ARRAY_SIZE(leds); i++)
+>>>>>>>> +               led_classdev_unregister(&leds[i].cdev);
+>>>>>>>> +
+>>>>>>>> +       return 0;
+>>>>>>>> +}
+>>>>>>>> +
+>>>>>>>> +static struct platform_driver menf21bmc_led = {
+>>>>>>>> +       .probe          = menf21bmc_led_probe,
+>>>>>>>> +       .remove         = menf21bmc_led_remove,
+>>>>>>>> +       .driver         = {
+>>>>>>>> +               .name           = "menf21bmc_led",
+>>>>>>>> +               .owner          = THIS_MODULE,
+>>>>>>>> +       },
+>>>>>>>> +};
+>>>>>>>> +
+>>>>>>>
+>>>>>>> This is not a normal platform driver, it should be a I2C driver.
+>>>>>>>
+>>>>>>>> +module_platform_driver(menf21bmc_led);
+>>>>>>>
+>>>>>>> So please move to use module_i2c_driver.
+>>>>>>
+>>>>>> Ok, but then I have to change that in the watchdog driver too, which
+>>>>>> is quite the same as here.
+>>>>>>
+>>>>>> Lee, Guenther what do you think regarding the watchdog driver?
+>>>>>
+>>>>> If the watchdog part is indeed also i2c alike device then the watchdog part should also be an i2c driver...
+>>>>>
+>>>>
+>>>> Isn't this all the same chip ? If so, there should be only one i2c driver.
+>>>> Unless the i2c access is too complicated, it might make sense to use regmap
+>>>> to access the chip, and pass the regmap pointer to the mfd slave drivers
+>>>> to handle the actual communication with the chip.
+>>>>
+>>>> Guenter
+>>>>
+>>>
+>>> Yes this is all the same chip which has different features like LEDs and Watchdog.
+>>> This is why the mfd is the i2c_driver which instantiates the slave devices which
+>>> are platform drivers.
+>>>
+>>> Is that not the normal way to handle those device?
+>>> Is it really necessary to handle this to regmap?
+>>>
+>>
+>> Not really sure if 'necessary' is the right term, it is just convenient.
+>> Regmap takes care of register caching, for example, so you would not have to
+>> re-read register values again and again from the chip just to modify a bit
+>> of a register.
+>> You can pass the regmap pointer in the platform data, or you can pass the
+>> pointer to the i2c client. Using regmap makes the client driver independent
+>> of the i2c subsystem. The one thing you can _not_ do is to declare the client
+>> drivers to be i2c drivers.
+>>
+>> Guenter
+>>
+> I've checked out the regmap and it really sounds good.
+> Before I will made those changes which is almost a complete replacement
+> of the interface, i would like to know exactly why the slaves are no platform
+> devices.
+>
+Did I say that ?
 
-> On Thu, Aug 07, 2014 at 05:18:23PM -0400, Steven Rostedt wrote:
-> > On Thu, 7 Aug 2014 22:08:13 +0200
-> > Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > OK, you've got to start over and start at the beginning, because I'm
-> > > really not understanding this..
-> > > 
-> > > What is a 'trampoline' and what are you going to use them for.
-> > 
-> > Great question! :-)
-> > 
-> > The trampoline is some code that is used to jump to and then jump
-> > someplace else. Currently, we use this for kprobes and ftrace. For
-> > ftrace we have the ftrace_caller trampoline, which is static. When
-> > booting, most functions in the kernel call the mcount code which
-> > simply returns without doing anything. This too is a "trampoline". At
-> > boot, we convert these calls to nops (as you already know). When we
-> > enable callbacks from functions, we convert those calls to call
-> > "ftrace_caller" which is a small assembly trampoline that will call
-> > some function that registered with ftrace.
-> > 
-> > Now why do we need the call_rcu_task() routine?
-> > 
-> > Right now, if you register multiple callbacks to ftrace, even if they
-> > are not tracing the same routine, ftrace has to change ftrace_caller to
-> > call another trampoline (in C), that does a loop of all ops registered
-> > with ftrace, and compares the function to the ops hash tables to see if
-> > the ops function should be called for that function.
-> > 
-> > What we want to do is to create a dynamic trampoline that is a copy of
-> > the ftrace_caller code, but instead of calling this list trampoline, it
-> > calls the ops function directly. This way, each ops registered with
-> > ftrace can have its own custom trampoline that when called will only
-> > call the ops function and not have to iterate over a list. This only
-> > happens if the function being traced only has this one ops registered.
-> > For functions with multiple ops attached to it, we need to call the
-> > list anyway. But for the majority of the cases, this is not the case.
-> > 
-> > The one caveat for this is, how do we free this custom trampoline when
-> > the ops is done with it? Especially for users of ftrace that
-> > dynamically create their own ops (like perf, and ftrace instances).
-> > 
-> > We need to find a way to free it, but unfortunately, there's no way to
-> > know when it is safe to free it. There's no way to disable preemption
-> > or have some other notifier to let us know if a task has jumped to this
-> > trampoline and has been preempted (sleeping). The only safe way to know
-> > that no task is on the trampoline is to remove the calls to it,
-> > synchronize the CPUS (so the trampolines are not even in the caches),
-> > and then wait for all tasks to go through some quiescent state. This
-> > state happens to be either not running, in userspace, or when it
-> > voluntarily calls schedule. Because nothing that uses this trampoline
-> > should do that, and if the task voluntarily calls schedule, we know
-> > it's not on the trampoline.
-> > 
-> > Make sense?
-> 
-> Ok, so they're purely used in the function prologue/epilogue callchain.
+Guenter
 
-No, they are also used by optimized kprobes. This is why optimized
-kprobes depend on !CONFIG_PREEMPT. [ added Masami to the discussion ].
-
-Which reminds me. On !CONFIG_PREEMPT, call_rcu_task() should be
-equivalent to call_rcu_sched().
-
-> And you don't want to use synchronize_tasks() because registering a trace
-> functions is atomic ?
-
-No. Has nothing to do with registering the trace function. The issue is
-that we have no idea when a task happens to be on a trampoline after it
-is registered. For example:
-
-ops adds a callback to sys_read:
-
-sys_read() {
- call trampoline ->
-    set up regs for function call.
-    <interrupt>
-      preempt_schedule();
-
-      [ new task runs for long time ]
-
-
-While this new task is running, we remove the trampoline and want to
-free it. Say this new task keeps the other task from running for
-minutes! We call synchronize_sched() or any other rcu call, and all
-grace periods finish and we free the trampoline. The sys_read() no
-longer calls our trampoline. Doesn't matter, because that task is still
-on it. Now we schedule that task back. It's on a trampoline that has
-just been freed! BOOM. It's executing code that no longer exits.
-
-> 
-> But why would you use dynamic memory allocation for these trampolines at
-> all? Why not use the one default trampoline for this?
-
-That's what ftrace does today.
-
-> 
-> Suppose that thing looks like:
-> 
-> ftrace_mcount_handler()
-> {
-> 	for_each_hlist_rcu(entry,..)
-> 		entry->func();
-> }
-> 
-> so why not make it look like:
-> 
-> ftrace_mcount_handler()
-> {
-> 	asm_volatile_goto("jmp %l[label]" ::: &do_list);
-> 	return;
-> 
-> do_list:
-> 	for_each_hlist_rcu(entry,...)
-> 		entry->func();
-> }
-> 
-> Then, for:
-> 	no entries -> NOP, 
-> 	one entry -> "CALL $func", 
-> 	more entries -> "JMP &do_list.
-
-Except that we don't use jump labels for this, but just update the
-trampoline directly (we've been doing this before jump labels ever
-existed, and the trampoline is all in assembly anyway).
-
-> 
-> No need for extra allocations and fancy means of getting rid of them,
-> and only a few bytes extra wrt the existing function.
-
-This doesn't address the issue we want to solve.
-
-Say we have 1000 functions we want to trace with 1000 different
-callbacks. Each of theses functions has one call back. How do you solve
-that with your solution? Today, we do the list for every function. That
-is, for each of these 1000 functions, we run through 1000 ops looking
-for the ops that registered for this function. Not very efficient is it?
-
-
-What we want to do today, is to create a dynamic trampoline for each of
-theses 1000 functions. Each function will call a separate trampoline
-that will only call the function that was registered to it. That way,
-we can have 1000 different ops registered to 1000 different functions
-and still have the same performance.
-
--- Steve
