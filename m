@@ -1,331 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594AbaHHFmd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 01:42:33 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.115]:37930 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752554AbaHHFmb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 01:42:31 -0400
-X-Env-Sender: James.Ban.opensource@diasemi.com
-X-Msg-Ref: server-8.tower-193.messagelabs.com!1407476548!23619863!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201408080542.s785g2B4033464@krsrvapps-01.diasemi.com>
-From: James Ban <james.ban.opensource@diasemi.com>
-Date: Fri, 8 Aug 2014 14:27:04 +0900
-Subject: [PATCH V2] regulator: DA9211 : support DA9213
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: David Dajun Chen <david.chen@diasemi.com>
+	id S1755745AbaHHFqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 01:46:46 -0400
+Received: from ozlabs.org ([103.22.144.67]:40702 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752423AbaHHFqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 01:46:45 -0400
+Date: Fri, 8 Aug 2014 15:46:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: linux-next: manual merge of the akpm-current tree with Linus' tree
+Message-ID: <20140808154638.79a06c16@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/X+o1xbfDld6o_K4FnibHE0W"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch for supporting DA9213.
+--Sig_/X+o1xbfDld6o_K4FnibHE0W
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
----
+Hi Andrew,
 
-This patch is relative to linux-next repository tag next-20140807.
+Today's linux-next merge of the akpm-current tree got a conflict in
+mm/memcontrol.c between commit 61e02c745721 ("mm: memcontrol: clean up
+reclaim size variable use in try_charge()") from Linus' tree and
+various commits from the akpm-current tree.
 
-Changes in V2:
-- Changed a method for selecting driver table.
+I fixed it up (I think) and can carry the fix as necessary (no action
+is required).
 
- drivers/regulator/Kconfig            |    9 ++--
- drivers/regulator/da9211-regulator.c |   95 +++++++++++++++++++++++++++-------
- drivers/regulator/da9211-regulator.h |    7 ++-
- include/linux/regulator/da9211.h     |    7 ++-
- 4 files changed, 91 insertions(+), 27 deletions(-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 2dc8289..1344aa8 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -199,13 +199,14 @@ config REGULATOR_DA9210
- 	  interface.
- 
- config REGULATOR_DA9211
--	tristate "Dialog Semiconductor DA9211/DA9212 regulator"
-+	tristate "Dialog Semiconductor DA9211/DA9212/DA9213/DA9214 regulator"
- 	depends on I2C
- 	select REGMAP_I2C
- 	help
--	  Say y here to support for the Dialog Semiconductor DA9211/DA9212.
--	  The DA9211/DA9212 is a multi-phase synchronous step down
--	  converter 12A DC-DC Buck controlled through an I2C
-+	  Say y here to support for the Dialog Semiconductor DA9211/DA9212
-+	  /DA9213/DA9214.
-+	  The DA9211/DA9212/DA9213/DA9214 is a multi-phase synchronous
-+	  step down converter 12A or 16A DC-DC Buck controlled through an I2C
- 	  interface.
- 
- config REGULATOR_DBX500_PRCMU
-diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
-index 1482ada..ccc2e36 100644
---- a/drivers/regulator/da9211-regulator.c
-+++ b/drivers/regulator/da9211-regulator.c
-@@ -1,5 +1,5 @@
- /*
-- * da9211-regulator.c - Regulator device driver for DA9211
-+ * da9211-regulator.c - Regulator device driver for DA9211/DA9213
-  * Copyright (C) 2014  Dialog Semiconductor Ltd.
-  *
-  * This library is free software; you can redistribute it and/or
-@@ -27,6 +27,10 @@
- #include <linux/regulator/da9211.h>
- #include "da9211-regulator.h"
- 
-+/* DEVICE IDs */
-+#define DA9211_DEVICE_ID	0x22
-+#define DA9213_DEVICE_ID	0x23
-+
- #define DA9211_BUCK_MODE_SLEEP	1
- #define DA9211_BUCK_MODE_SYNC	2
- #define DA9211_BUCK_MODE_AUTO	3
-@@ -42,6 +46,7 @@ struct da9211 {
- 	struct regulator_dev *rdev[DA9211_MAX_REGULATORS];
- 	int num_regulator;
- 	int chip_irq;
-+	int chip_id;
- };
- 
- static const struct regmap_range_cfg da9211_regmap_range[] = {
-@@ -52,14 +57,14 @@ static const struct regmap_range_cfg da9211_regmap_range[] = {
- 		.window_start = 0,
- 		.window_len = 256,
- 		.range_min = 0,
--		.range_max = 2*256,
-+		.range_max = 5*128,
- 	},
- };
- 
- static const struct regmap_config da9211_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
--	.max_register = 2 * 256,
-+	.max_register = 5 * 128,
- 	.ranges = da9211_regmap_range,
- 	.num_ranges = ARRAY_SIZE(da9211_regmap_range),
- };
-@@ -69,11 +74,20 @@ static const struct regmap_config da9211_regmap_config = {
- #define DA9211_MAX_MV		1570
- #define DA9211_STEP_MV		10
- 
--/* Current limits for buck (uA) indices corresponds with register values */
-+/* Current limits for DA9211 buck (uA) indices
-+ * corresponds with register values
-+ */
- static const int da9211_current_limits[] = {
- 	2000000, 2200000, 2400000, 2600000, 2800000, 3000000, 3200000, 3400000,
- 	3600000, 3800000, 4000000, 4200000, 4400000, 4600000, 4800000, 5000000
- };
-+/* Current limits for DA9213 buck (uA) indices
-+ * corresponds with register values
-+ */
-+static const int da9213_current_limits[] = {
-+	3000000, 3200000, 3400000, 3600000, 3800000, 4000000, 4200000, 4400000,
-+	4600000, 4800000, 5000000, 5200000, 5400000, 5600000, 5800000, 6000000
-+};
- 
- static unsigned int da9211_buck_get_mode(struct regulator_dev *rdev)
- {
-@@ -129,12 +143,26 @@ static int da9211_set_current_limit(struct regulator_dev *rdev, int min,
- {
- 	int id = rdev_get_id(rdev);
- 	struct da9211 *chip = rdev_get_drvdata(rdev);
--	int i;
-+	int i, max_size;
-+	const int *current_limits;
-+
-+	switch (chip->chip_id) {
-+	case DA9211:
-+		current_limits = da9211_current_limits;
-+		max_size = ARRAY_SIZE(da9211_current_limits)-1;
-+		break;
-+	case DA9213:
-+		current_limits = da9213_current_limits;
-+		max_size = ARRAY_SIZE(da9213_current_limits)-1;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
- 
- 	/* search for closest to maximum */
--	for (i = ARRAY_SIZE(da9211_current_limits)-1; i >= 0; i--) {
--		if (min <= da9211_current_limits[i] &&
--		    max >= da9211_current_limits[i]) {
-+	for (i = max_size; i >= 0; i--) {
-+		if (min <= current_limits[i] &&
-+		    max >= current_limits[i]) {
- 				return regmap_update_bits(chip->regmap,
- 					DA9211_REG_BUCK_ILIM,
- 					(0x0F << id*4), (i << id*4));
-@@ -150,14 +178,28 @@ static int da9211_get_current_limit(struct regulator_dev *rdev)
- 	struct da9211 *chip = rdev_get_drvdata(rdev);
- 	unsigned int data;
- 	int ret;
-+	const int *current_limits;
-+
-+	switch (chip->chip_id) {
-+	case DA9211:
-+		current_limits = da9211_current_limits;
-+		break;
-+	case DA9213:
-+		current_limits = da9213_current_limits;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
- 
- 	ret = regmap_read(chip->regmap, DA9211_REG_BUCK_ILIM, &data);
- 	if (ret < 0)
- 		return ret;
- 
--	/* select one of 16 values: 0000 (2000mA) to 1111 (5000mA) */
-+	/* select one of 16 values: 0000 (2000mA or 3000mA)
-+	 * to 1111 (5000mA or 6000mA).
-+	 */
- 	data = (data >> id*4) & 0x0F;
--	return da9211_current_limits[data];
-+	return current_limits[data];
- }
- 
- static struct regulator_ops da9211_buck_ops = {
-@@ -264,10 +306,7 @@ static int da9211_regulator_init(struct da9211 *chip)
- 	}
- 
- 	for (i = 0; i < chip->num_regulator; i++) {
--		if (chip->pdata)
--			config.init_data =
--				&(chip->pdata->init_data[i]);
--
-+		config.init_data = &(chip->pdata->init_data[i]);
- 		config.dev = chip->dev;
- 		config.driver_data = chip;
- 		config.regmap = chip->regmap;
-@@ -301,6 +340,7 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
- {
- 	struct da9211 *chip;
- 	int error, ret;
-+	unsigned int data;
- 
- 	chip = devm_kzalloc(&i2c->dev, sizeof(struct da9211), GFP_KERNEL);
- 
-@@ -308,7 +348,7 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
- 	chip->regmap = devm_regmap_init_i2c(i2c, &da9211_regmap_config);
- 	if (IS_ERR(chip->regmap)) {
- 		error = PTR_ERR(chip->regmap);
--		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
-+		dev_err(chip->dev, "Failed to allocate register map: %d\n",
- 			error);
- 		return error;
- 	}
-@@ -316,8 +356,22 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
- 	i2c_set_clientdata(i2c, chip);
- 
- 	chip->pdata = i2c->dev.platform_data;
--	if (!chip->pdata) {
--		dev_err(&i2c->dev, "No platform init data supplied\n");
-+
-+	ret = regmap_read(chip->regmap, DA9211_REG_DEVICE_ID, &data);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "Failed to read DEVICE_ID reg: %d\n", ret);
-+		return ret;
-+	}
-+
-+	switch (data) {
-+	case DA9211_DEVICE_ID:
-+		chip->chip_id = DA9211;
-+		break;
-+	case DA9213_DEVICE_ID:
-+		chip->chip_id = DA9213;
-+		break;
-+	default:
-+		dev_err(chip->dev, "Unsupported device id = 0x%x.\n", data);
- 		return -ENODEV;
- 	}
- 
-@@ -340,13 +394,14 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
- 	ret = da9211_regulator_init(chip);
- 
- 	if (ret < 0)
--		dev_err(&i2c->dev, "Failed to initialize regulator: %d\n", ret);
-+		dev_err(chip->dev, "Failed to initialize regulator: %d\n", ret);
- 
- 	return ret;
- }
- 
- static const struct i2c_device_id da9211_i2c_id[] = {
--	{"da9211", 0},
-+	{"da9211", DA9211},
-+	{"da9213", DA9213},
- 	{},
- };
- 
-@@ -364,5 +419,5 @@ static struct i2c_driver da9211_regulator_driver = {
- module_i2c_driver(da9211_regulator_driver);
- 
- MODULE_AUTHOR("James Ban <James.Ban.opensource@diasemi.com>");
--MODULE_DESCRIPTION("Regulator device driver for Dialog DA9211");
-+MODULE_DESCRIPTION("Regulator device driver for Dialog DA9211/DA9213");
- MODULE_LICENSE("GPL v2");
-diff --git a/drivers/regulator/da9211-regulator.h b/drivers/regulator/da9211-regulator.h
-index 88b1769..93fa9df 100644
---- a/drivers/regulator/da9211-regulator.h
-+++ b/drivers/regulator/da9211-regulator.h
-@@ -1,5 +1,5 @@
- /*
-- * da9211-regulator.h - Regulator definitions for DA9211
-+ * da9211-regulator.h - Regulator definitions for DA9211/DA9213
-  * Copyright (C) 2014  Dialog Semiconductor Ltd.
-  *
-  * This library is free software; you can redistribute it and/or
-@@ -53,12 +53,15 @@
- /* BUCK Phase Selection*/
- #define DA9211_REG_CONFIG_E			0x147
- 
-+/* Device ID */
-+#define	DA9211_REG_DEVICE_ID			0x201
-+
- /*
-  * Registers bits
-  */
- /* DA9211_REG_PAGE_CON (addr=0x00) */
- #define	DA9211_REG_PAGE_SHIFT			1
--#define	DA9211_REG_PAGE_MASK			0x02
-+#define	DA9211_REG_PAGE_MASK			0x06
- /* On I2C registers 0x00 - 0xFF */
- #define	DA9211_REG_PAGE0			0
- /* On I2C registers 0x100 - 0x1FF */
-diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
-index 0981ce0..658c3c3 100644
---- a/include/linux/regulator/da9211.h
-+++ b/include/linux/regulator/da9211.h
-@@ -1,5 +1,5 @@
- /*
-- * da9211.h - Regulator device driver for DA9211
-+ * da9211.h - Regulator device driver for DA9211/DA9213
-  * Copyright (C) 2014  Dialog Semiconductor Ltd.
-  *
-  * This library is free software; you can redistribute it and/or
-@@ -20,6 +20,11 @@
- 
- #define DA9211_MAX_REGULATORS	2
- 
-+enum da9211_chip_id {
-+	DA9211,
-+	DA9213,
-+};
-+
- struct da9211_pdata {
- 	/*
- 	 * Number of buck
--- 
-end-of-patch for regulator: DA9211 : support DA9213 V2
+--Sig_/X+o1xbfDld6o_K4FnibHE0W
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT5GRCAAoJEMDTa8Ir7ZwVS4QP/0w0Rwe0oRwanYoNTc0E2BzW
+uK4K1HUyCvwD3m6SJBEN5dlZeCN+wPeT2Eo5Uwv0KciN5cGJNy4s6lo44ZAfILCM
+72Zuun1Hg5ETz8xbq2zoriMpTTOchDFce9FJaBRJPFedGjdmSu7Wq8XtEmaBdsW1
+VRGVakvu3Y40XH75+Z6BQAFavvEIPy2vgmDPvQGHr5StTAshurc48lVQrF7ga7Vc
+sRW+BzDwZeR1Y0g+bbLPJxF82jpWGlXxycWDaWEDraJZyY2CBg+OnraQ7fwMahSk
+m/gUppK3E11GqcAaF67+O7+0CPs0I7yOjsu5d96sj7r/TGFwZLuplR0MMzQiLvfx
+nb5hbeyiasQhRIC61plV5MF+LuEktoouAyiXbedo0Olw5NHmiETy3m/ipEX6Fy5E
+8Tz1YJij6efY+oNtPdt52N8Wev6ynEhTb8aOaqmSqEsqpc3ZGuRd1PuSln9BLL9r
+ZW7pZhCnoaHbtxZLKbS6O2Xgnt54ChmnwLO+iKTf+hV42oVnd0T3k7tU+fXSyISd
+Gz9JVaZ7p+Wm4lqVfnvUrj6cpizoxpQN17QQAGnqAG/oe2EJgkT5yi8HMIdvPo77
+B9q5M5fub9xQ45AcsP8mCj8Kuyb7TsEgK9uVwG2m2qPkEtVVSKl+KzGoEgz3x792
+9PI3Fr7AGc/7vNlwxY9n
+=GaLE
+-----END PGP SIGNATURE-----
+
+--Sig_/X+o1xbfDld6o_K4FnibHE0W--
