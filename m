@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759438AbaHHV47 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:56:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60569 "EHLO
+	id S932837AbaHHV5c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:57:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60563 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757795AbaHHVgc (ORCPT
+	with ESMTP id S1758649AbaHHVgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:32 -0400
+	Fri, 8 Aug 2014 17:36:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 30/39] sparc64: Dont bark so loudly about 32-bit tasks generating 64-bit fault addresses.
-Date: Fri,  8 Aug 2014 14:35:16 -0700
-Message-Id: <20140808213356.262539776@linuxfoundation.org>
+Subject: [PATCH 3.14 29/39] sparc64: Give more detailed information in {pgd,pmd}_ERROR() and kill pte_ERROR().
+Date: Fri,  8 Aug 2014 14:35:15 -0700
+Message-Id: <20140808213356.215934140@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -30,72 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit e5c460f46ae7ee94831cb55cb980f942aa9e5a85 ]
+[ Upstream commit fe866433f843b080246ce729b5e6b27b5f5d9a58 ]
 
-This was found using Dave Jone's trinity tool.
+pte_ERROR() is not used anywhere, delete it.
 
-When a user process which is 32-bit performs a load or a store, the
-cpu chops off the top 32-bits of the effective address before
-translating it.
+For pgd_ERROR() and pmd_ERROR(), output something similar to x86, giving the address
+of the pgd/pmd as well as it's value.
 
-This is because we run 32-bit tasks with the PSTATE_AM (address
-masking) bit set.
-
-We can't run the kernel with that bit set, so when the kernel accesses
-userspace no address masking occurs.
-
-Since a 32-bit process will have no mappings in that region we will
-properly fault, so we don't try to handle this using access_ok(),
-which can safely just be a NOP on sparc64.
-
-Real faults from 32-bit processes should never generate such addresses
-so a bug check was added long ago, and it barks in the logs if this
-happens.
-
-But it also barks when a kernel user access causes this condition, and
-that _can_ happen.  For example, if a pointer passed into a system call
-is "0xfffffffc" and the kernel access 4 bytes offset from that pointer.
-
-Just handle such faults normally via the exception entries.
+Also provide the caller, since these macros are invoked from pgd_clear_bad() and
+pmd_clear_bad() which provides little context as to what high level operation was
+occuring when the BAD state was detected.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/mm/fault_64.c |   16 +---------------
- 1 file changed, 1 insertion(+), 15 deletions(-)
+ arch/sparc/include/asm/pgtable_64.h |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/arch/sparc/mm/fault_64.c
-+++ b/arch/sparc/mm/fault_64.c
-@@ -281,18 +281,6 @@ static void noinline __kprobes bogus_32b
- 	show_regs(regs);
- }
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -96,9 +96,12 @@ static inline bool kern_addr_valid(unsig
+ /* Kernel has a separate 44bit address space. */
+ #define FIRST_USER_ADDRESS	0
  
--static void noinline __kprobes bogus_32bit_fault_address(struct pt_regs *regs,
--							 unsigned long addr)
--{
--	static int times;
--
--	if (times++ < 10)
--		printk(KERN_ERR "FAULT[%s:%d]: 32-bit process "
--		       "reports 64-bit fault address [%lx]\n",
--		       current->comm, current->pid, addr);
--	show_regs(regs);
--}
--
- asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
- {
- 	enum ctx_state prev_state = exception_enter();
-@@ -322,10 +310,8 @@ asmlinkage void __kprobes do_sparc64_fau
- 				goto intr_or_no_mm;
- 			}
- 		}
--		if (unlikely((address >> 32) != 0)) {
--			bogus_32bit_fault_address(regs, address);
-+		if (unlikely((address >> 32) != 0))
- 			goto intr_or_no_mm;
--		}
- 	}
+-#define pte_ERROR(e)	__builtin_trap()
+-#define pmd_ERROR(e)	__builtin_trap()
+-#define pgd_ERROR(e)	__builtin_trap()
++#define pmd_ERROR(e)							\
++	pr_err("%s:%d: bad pmd %p(%016lx) seen at (%pS)\n",		\
++	       __FILE__, __LINE__, &(e), pmd_val(e), __builtin_return_address(0))
++#define pgd_ERROR(e)							\
++	pr_err("%s:%d: bad pgd %p(%016lx) seen at (%pS)\n",		\
++	       __FILE__, __LINE__, &(e), pgd_val(e), __builtin_return_address(0))
  
- 	if (regs->tstate & TSTATE_PRIV) {
+ #endif /* !(__ASSEMBLY__) */
+ 
 
 
