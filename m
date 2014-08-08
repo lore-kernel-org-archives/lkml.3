@@ -1,203 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760AbaHHTfK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 15:35:10 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:11490 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751002AbaHHTfH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 15:35:07 -0400
-From: Josef Bacik <jbacik@fb.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] trace-cmd: make sure we have a pending pid in trace-hist
-Thread-Topic: [PATCH] trace-cmd: make sure we have a pending pid in
- trace-hist
-Thread-Index: AQHPsz+TtelhOFltPUKX/CpbJjM4PJvHGS/A
-Date: Fri, 8 Aug 2014 19:34:59 +0000
-Message-ID: <q62ing3y5nhvy3fdpju2yt3v.1407526497857@email.android.com>
-References: <1406753685-10590-1-git-send-email-jbacik@fb.com>,<20140808153301.2ca99357@gandalf.local.home>
-In-Reply-To: <20140808153301.2ca99357@gandalf.local.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752267AbaHHThe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 15:37:34 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:33487 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaHHThc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 15:37:32 -0400
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-08_05:2014-08-08,2014-08-08,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=4.44089209850063e-15 kscore.compositescore=0
- circleOfTrustscore=22.6900859407804 compositescore=0.997695897463551
- urlsuspect_oldscore=0.997695897463551 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.997695897463551 spamscore=0
- recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1408080233
-X-FB-Internal: deliver
+In-Reply-To: <CA+55aFxVsV58oi0E5H0dTRGH2r+WogkuzhncTJHy9F4d2sTTrA@mail.gmail.com>
+References: <20140808143418.GA25720@phenom.ffwll.local>
+	<CA+55aFxVsV58oi0E5H0dTRGH2r+WogkuzhncTJHy9F4d2sTTrA@mail.gmail.com>
+Date: Fri, 8 Aug 2014 12:37:31 -0700
+X-Google-Sender-Auth: CxoItzOLj_MEkFVCp8uhwvrwHdY
+Message-ID: <CA+55aFxb1q9bwdM6_H=ctFHc+4rP4rBuzWMDNXVZwpwf0cN-Bw@mail.gmail.com>
+Subject: Re: [PULL] drm-intel-fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Airlie <airlied@gmail.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops crap that's the second time I've done that this week.  When I get to my computer I'll send the actual fix by itself, sorry about that,
+On Fri, Aug 8, 2014 at 12:19 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Aug 8, 2014 at 7:34 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+>>
+>>   git://anongit.freedesktop.org/drm-intel tags/drm-intel-fixes-2014-08-08
+>
+> Hmm. My laptop no longer resumes properly.
 
-Josef
+The problem seems to exist already with just the plain drm pull from
+Dave. I thought I had tested that, but apparently not.
 
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
-
-On Wed, 30 Jul 2014 16:54:45 -0400
-Josef Bacik <jbacik@fb.com> wrote:
-
-> I have a trace.dat file where we lost some events and so we didn't have the
-> corresponding event to go with the stack trace.  This made trace-cmd hist
-> segfault because it unconditionally pushes the pending_pid's function onto the
-> stack trace.  In this case pending_pid < 0, which means we didn't have a pending
-> stack trace, so we got garbage in the call chain and hilarity ensued.  Fix this
-> by only pushing the pending call chain if there actually is one, and also don't
-> reset the current call chain if there isn't actually one there either.  This
-> fixed my segfault.  Thanks,
->
-> Signed-off-by: Josef Bacik <jbacik@fb.com>
-> ---
->  Makefile      |  9 +++++----
->  trace-cmd.c   |  3 +++
->  trace-hist.c  | 14 +++++++++-----
->  trace-local.h |  2 ++
->  trace-usage.c |  5 +++++
->  5 files changed, 24 insertions(+), 9 deletions(-)
->
-> diff --git a/Makefile b/Makefile
-> index cbe0eb9..0a46125 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -81,7 +81,7 @@ ifndef NO_PYTHON
->  PYTHON               := ctracecmd.so
->  PYTHON_GUI   := ctracecmd.so ctracecmdgui.so
->
-> -PYTHON_VERS ?= python
-> +PYTHON_VERS ?= python-2.7
->
->  # Can build python?
->  ifeq ($(shell sh -c "pkg-config --cflags $(PYTHON_VERS) > /dev/null 2>&1 && echo y"), y)
-> @@ -164,6 +164,7 @@ LIBS = -L. -ltracecmd -ldl
->  LIB_FILE = libtracecmd.a
->
->  PACKAGES= gtk+-2.0 libxml-2.0 gthread-2.0
-> +NOGUI_PACKAGES= glib-2.0
->
->  ifndef BUILDGUI
->   BUILDGUI = 0
-> @@ -194,8 +195,8 @@ N                 = @/bin/true ||
->  CONFIG_FLAGS += $(HELP_DIR_SQ)
->  else
->
-> -CONFIG_INCLUDES =
-> -CONFIG_LIBS  =
-> +CONFIG_INCLUDES = $(shell pkg-config --cflags $(NOGUI_PACKAGES))
-> +CONFIG_LIBS  = $(shell pkg-config --libs $(NOGUI_PACKAGES))
->  CONFIG_FLAGS =
->
->  VERSION              = $(TC_VERSION)
-> @@ -307,7 +308,7 @@ $(obj)/%.o: $(src)/%.c
->  TRACE_GUI_OBJS = trace-filter.o trace-compat.o trace-hash.o trace-dialog.o \
->               trace-xml.o
->  TRACE_CMD_OBJS = trace-cmd.o trace-record.o trace-read.o trace-split.o trace-listen.o \
-> -      trace-stack.o trace-hist.o trace-mem.o trace-snapshot.o
-> +      trace-stack.o trace-hist.o trace-mem.o trace-snapshot.o trace-latency.o
->  TRACE_VIEW_OBJS = trace-view.o trace-view-store.o
->  TRACE_GRAPH_OBJS = trace-graph.o trace-plot.o trace-plot-cpu.o trace-plot-task.o
->  TRACE_VIEW_MAIN_OBJS = trace-view-main.o $(TRACE_VIEW_OBJS) $(TRACE_GUI_OBJS)
-> diff --git a/trace-cmd.c b/trace-cmd.c
-> index ebf9c7a..a8ecad6 100644
-> --- a/trace-cmd.c
-> +++ b/trace-cmd.c
-> @@ -432,6 +432,9 @@ int main (int argc, char **argv)
->       } else if (strcmp(argv[1], "stack") == 0) {
->               trace_stack(argc, argv);
->               exit(0);
-> +     } else if (strcmp(argv[1], "latency") == 0) {
-> +             trace_latency(argc, argv);
-> +             exit(0);
->       } else if (strcmp(argv[1], "check-events") == 0) {
->               char *tracing;
->               int ret;
-> diff --git a/trace-hist.c b/trace-hist.c
-> index 73820de..574549e 100644
-> --- a/trace-hist.c
-> +++ b/trace-hist.c
-> @@ -453,9 +453,11 @@ process_kernel_stack(struct pevent *pevent, struct pevent_record *record)
->               }
->       } else {
->               /* function stack trace? */
-> -             copy_stack_to_pending(current_pid);
-> -             free(ips);
-> -             reset_stack();
-> +             if (current_pid >= 0) {
-> +                     copy_stack_to_pending(current_pid);
-> +                     free(ips);
-> +                     reset_stack();
-> +             }
->       }
->
->       current_pid = pid;
-> @@ -482,8 +484,10 @@ process_kernel_stack(struct pevent *pevent, struct pevent_record *record)
->                       push_stack_func(func);
->       }
->
-> -     push_stack_func(pending_ips[pending_ips_idx - 1]);
-> -     reset_pending_stack();
-> +     if (pending_pid >= 0) {
-> +             push_stack_func(pending_ips[pending_ips_idx - 1]);
-> +             reset_pending_stack();
-> +     }
->       save_call_chain(current_pid, ips, ips_idx, 1);
->       if (do_restore)
->               restore_stack(current_pid);
-
-This blob looks to be what the change log suggest. I think you added a
-bunch more than the fix.
-
-Can you resend please with just the change from the change log. If you
-want to add more, please send separate patches. This shouldn't be like
-congress adding earmarks now, is it ;-)
-
-Thanks!
-
--- Steve
-
-
-> diff --git a/trace-local.h b/trace-local.h
-> index 3c82c2f..1d6d69b 100644
-> --- a/trace-local.h
-> +++ b/trace-local.h
-> @@ -57,6 +57,8 @@ void trace_snapshot(int argc, char **argv);
->
->  void trace_mem(int argc, char **argv);
->
-> +void trace_latency(int argc, char **argv);
-> +
->  /* --- instance manipulation --- */
->
->  struct func_list {
-> diff --git a/trace-usage.c b/trace-usage.c
-> index 0dec87e..ef73551 100644
-> --- a/trace-usage.c
-> +++ b/trace-usage.c
-> @@ -231,6 +231,11 @@ static struct usage_help usage_help[] = {
->               "          -N do not load any plugins\n"
->       },
->       {
-> +             "latency",
-> +             "parse latency events",
-> +             ""
-> +     },
-> +     {
->               NULL, NULL, NULL
->       }
->  };
-
+              Linus
