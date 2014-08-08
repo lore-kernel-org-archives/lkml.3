@@ -1,85 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307AbaHHBdR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 21:33:17 -0400
-Received: from ozlabs.org ([103.22.144.67]:52706 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755313AbaHHBdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 21:33:14 -0400
-Date: Fri, 8 Aug 2014 11:33:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stewart Smith <stewart@linux.vnet.ibm.com>
-Subject: Re: linux-next: build failure after merge of the modules tree
-Message-ID: <20140808113307.4f505bba@canb.auug.org.au>
-In-Reply-To: <87a97gcus9.fsf@rustcorp.com.au>
-References: <20140807132017.2ec9e2ad@canb.auug.org.au>
-	<87tx5ocyz3.fsf@rustcorp.com.au>
-	<20140807230342.52e3a52c@canb.auug.org.au>
-	<87a97gcus9.fsf@rustcorp.com.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1756047AbaHHBjW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 21:39:22 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59807 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755202AbaHHBjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 21:39:20 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Dmitry Torokhov <dtor@google.com>
+Subject: [Update][PATCH 3/5] irq / PM: Make wakeup interrupts wake up from suspend-to-idle
+Date: Fri, 08 Aug 2014 03:58:02 +0200
+Message-ID: <1925225.kgb6kA80iC@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1811897.nanFq2OCTN@vostro.rjw.lan>
+References: <20140724212620.GO3935@laptop> <3321219.itH23ZEDt4@vostro.rjw.lan> <1811897.nanFq2OCTN@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/WAf/iwj1xNJ1u6/qC3WMTLa"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/WAf/iwj1xNJ1u6/qC3WMTLa
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Hi Rusty,
+Make IRQs enabled for system wakeup via enable_irq_wake() wake up
+the system from suspend-to-idle.
 
-On Thu, 07 Aug 2014 22:37:50 +0930 Rusty Russell <rusty@rustcorp.com.au> wr=
-ote:
->
-> Stephen Rothwell <sfr@canb.auug.org.au> writes:
-> > Hi Rusty,
-> >
-> > On Thu, 07 Aug 2014 21:07:20 +0930 Rusty Russell <rusty@rustcorp.com.au=
-> wrote:
-> >>
-> >> Ah, crap.  I really hate that macro magic :(
-> >>=20
-> >> I amended to the minimal fix, so we can pretend that never happened.
-> >
-> > How about arch/powerpc/platforms/powernv/opal-dump.c as well?
->=20
-> Hmm, I didn't see that one.
+For this purpose, introduce a new routine for enabling and disabling
+wakeup interrupts, set_wakeup_irqs(), and make freeze_enter() call it
+to enable them before starting the suspend-to-idle loop and to
+disable them after that loop has been terminated.
 
-It was in the original report, but I guess a bit hidden by all the guff
-the gcc spews out these days.
+When enabling an IRQ which is not a shared one, that routine
+replaces its original handler with a stub one always returning
+IRQ_NONE.  When disabling it, set_wakeup_irqs() restores the
+original handler for it.  This way, IRQ_NONE is returned for all
+of the wakeup interrupts during suspend-to-idle and that triggers
+the abort-suspend-or-wakeup condition in note_interrupt() causing
+the system to wake up.
 
-> I've done that as a separate patch.
+To avoid losing wakeup events, make note_interrupt() mark wakeup
+interrupts as pending before triggering wakeup for irqs_suspended
+set.
 
-Thanks.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+When I was working on the doc (that I'm going to send shortly), it
+occured to me that it actually would be better to always return
+IRQ_NONE from interrupt handlers for wakeup interrupts when
+irqs_suspended is set - and mark them as pending to avoid losing
+wakeup events.  That way they'll work uniformly, even if someone is
+insane enough to use enable_irq_wake() on an IRQF_NO_SUSPEND IRQ.
 
---Sig_/WAf/iwj1xNJ1u6/qC3WMTLa
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Rafael
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+---
+ include/linux/interrupt.h |    1 +
+ kernel/irq/pm.c           |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ kernel/irq/spurious.c     |    6 +++++-
+ kernel/power/suspend.c    |    3 +++
+ 4 files changed, 54 insertions(+), 1 deletion(-)
 
-iQIcBAEBCAAGBQJT5CjYAAoJEMDTa8Ir7ZwV0uEQAJb9if9ScMmA6AbU8P13Vdsi
-VLTedbLJluRO0XnlbQIBh87kWlAXl5BNyqg46rMNx4odHqUJz51L0jcM9TITjxup
-DoZL/t03kRjJdpfFmhKdq/UJSjyeWmlQNBV7lquEYRLgwLkmgdGAE1omd6m8SVs1
-6N3xAbW2KGH2fZM8POaQo22s9QTkFwOAkao7rYnQrWqBV+Ub4WPlEhPwxBaot7AA
-a+Q2qdHE+UG8iDMQb7lXorzvHDhjMIlBs7/EoCzvOkHqowNrx+VtnFSKY2+88wFy
-bGua2UXnTdnVkbPxqVBI5My+I6QhABQ5Ot+tbUu8Jo0vI+DQvewTMgEDAB/yQcKt
-YnP5uwDaWsub9vOx+VSiEmlMs1iUtPs3JTeNBIeAVlYKuO9ymwcVtc8OzM6ZQX8p
-5zl31/6Av8NMUBLUrtKViPc/9Lzh7vy8ljrHOL+JmjBE24fiu/at0ZTwTtQcMltI
-JxSIEYTw/72f88CKpcQggD6R9/PiQyGoH0RFMHl7qNeV8xxkEles0NiB9iTLg7vX
-7m5qikm53MbYkJ7WssZsapWC/Knl5DCHJEPP0UNWj8zhy0hbUk2jO8FAOW4QcUJm
-6uSTSL3gAW6CYAC8gwLiW5KxtSl4rZpP+n3/DX1coKvSEnWFVbsj6nZ6aqo/Yf5t
-QbJe2QS1NzxSMYl8fScP
-=bQ5W
------END PGP SIGNATURE-----
+Index: linux-pm/include/linux/interrupt.h
+===================================================================
+--- linux-pm.orig/include/linux/interrupt.h
++++ linux-pm/include/linux/interrupt.h
+@@ -197,6 +197,7 @@ extern void irq_wake_thread(unsigned int
+ /* The following three functions are for the core kernel use only. */
+ extern void suspend_device_irqs(void);
+ extern void resume_device_irqs(void);
++extern void set_wakeup_irqs(bool enable);
+ #ifdef CONFIG_PM_SLEEP
+ extern int check_wakeup_irqs(void);
+ #else
+Index: linux-pm/kernel/irq/pm.c
+===================================================================
+--- linux-pm.orig/kernel/irq/pm.c
++++ linux-pm/kernel/irq/pm.c
+@@ -130,3 +130,48 @@ int check_wakeup_irqs(void)
+ 
+ 	return 0;
+ }
++
++static irqreturn_t irq_pm_empty_handler(int irq, void *dev_id)
++{
++	return IRQ_NONE;
++}
++
++void set_wakeup_irqs(bool enable)
++{
++	struct irq_desc *desc;
++	int irq;
++
++	for_each_irq_desc(irq, desc) {
++		struct irqaction *action = desc->action;
++		unsigned long flags;
++
++		raw_spin_lock_irqsave(&desc->lock, flags);
++
++		if (action && irqd_is_wakeup_set(&desc->irq_data) &&
++		    !desc->skip_suspend) {
++			if (enable) {
++				/*
++				 * Replace handlers for not shared interrupts.
++				 * Shared ones have wrapper handlers already.
++				 */
++				if (!action->next) {
++					action->s_handler = action->handler;
++					action->handler = irq_pm_empty_handler;
++				}
++				desc->istate &= ~IRQS_SUSPENDED;
++				__enable_irq(desc, irq, false);
++			} else {
++				if (!(desc->istate & IRQS_SUSPENDED)) {
++					__disable_irq(desc, irq, false);
++					desc->istate |= IRQS_SUSPENDED;
++				}
++				if (action->handler == irq_pm_empty_handler) {
++					action->handler = action->s_handler;
++					action->s_handler = NULL;
++				}
++			}
++		}
++
++		raw_spin_unlock_irqrestore(&desc->lock, flags);
++	}
++}
+Index: linux-pm/kernel/power/suspend.c
+===================================================================
+--- linux-pm.orig/kernel/power/suspend.c
++++ linux-pm/kernel/power/suspend.c
+@@ -12,6 +12,7 @@
+ #include <linux/delay.h>
+ #include <linux/errno.h>
+ #include <linux/init.h>
++#include <linux/interrupt.h>
+ #include <linux/console.h>
+ #include <linux/cpu.h>
+ #include <linux/cpuidle.h>
+@@ -55,7 +56,9 @@ static void freeze_enter(void)
+ {
+ 	cpuidle_use_deepest_state(true);
+ 	cpuidle_resume();
++	set_wakeup_irqs(true);
+ 	wait_event(suspend_freeze_wait_head, suspend_freeze_wake);
++	set_wakeup_irqs(false);
+ 	cpuidle_pause();
+ 	cpuidle_use_deepest_state(false);
+ }
+Index: linux-pm/kernel/irq/spurious.c
+===================================================================
+--- linux-pm.orig/kernel/irq/spurious.c
++++ linux-pm/kernel/irq/spurious.c
+@@ -277,7 +277,11 @@ void note_interrupt(unsigned int irq, st
+ 		    irqreturn_t action_ret)
+ {
+ 	if (unlikely(irqs_suspended && action_ret == IRQ_NONE)) {
+-		pr_err("IRQ %d: Unhandled while suspended\n", irq);
++		if (irqd_is_wakeup_set(&desc->irq_data))
++			desc->istate |= IRQS_PENDING;
++		else
++			pr_err("IRQ %d: Unhandled while suspended\n", irq);
++
+ 		desc->istate |= IRQS_SUSPENDED;
+ 		desc->depth++;
+ 		irq_disable(desc);
 
---Sig_/WAf/iwj1xNJ1u6/qC3WMTLa--
