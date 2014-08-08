@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594AbaHHMxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 08:53:53 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61759 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322AbaHHMxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 08:53:51 -0400
+	id S1756726AbaHHMyl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 08:54:41 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43209 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756142AbaHHMyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 08:54:37 -0400
+Date: Fri, 8 Aug 2014 14:54:30 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 7/8] x86, microcode, intel: forbid some incorrect metadata
+Message-ID: <20140808125430.GC2776@pd.tnic>
+References: <1406146251-8540-1-git-send-email-hmh@hmh.eng.br>
+ <1406146251-8540-8-git-send-email-hmh@hmh.eng.br>
+ <20140728153157.GC5350@pd.tnic>
+ <20140728193734.GC9752@khazad-dum.debian.net>
+ <20140729104520.GF11179@pd.tnic>
+ <20140729202543.GB15382@khazad-dum.debian.net>
+ <20140804110942.GC4808@pd.tnic>
+ <20140804201836.GA24823@khazad-dum.debian.net>
 MIME-Version: 1.0
-In-Reply-To: <1406126699-10053-1-git-send-email-grygorii.strashko@ti.com>
-References: <1406126699-10053-1-git-send-email-grygorii.strashko@ti.com>
-Date: Fri, 8 Aug 2014 14:53:50 +0200
-Message-ID: <CACRpkdZAHj+PMu-xJJow+9ndbp9srnQtmb4E2k5x3nkaQA1jCg@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio: keystone: add dsp gpio controller driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        ivan.khoronzhuk@ti.com, Muralidharan Karicheri <m-karicheri2@ti.com>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Varka Bhadram <varkabhadram@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140804201836.GA24823@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 4:44 PM, Grygorii Strashko
-<grygorii.strashko@ti.com> wrote:
+On Mon, Aug 04, 2014 at 05:18:36PM -0300, Henrique de Moraes Holschuh wrote:
+> > Because I think it would be better if we simply load the microcode blob
+> > we get from Intel unchanged. Like we do on AMD.
+> 
+> And like we currently do on Intel.  We agree on this, I don't want the
+> kernel microcode driver to split anything.
 
-> From: Murali Karicheri <m-karicheri2@ti.com>
->
-> On Keystone SOCs, ARM host can send interrupts to DSP cores using the
-> DSP GPIO controller IP. Each DSP GPIO controller provides 28 IRQ signals for
-> each DSP core. This is one of the component used by the IPC mechanism used
-> on Keystone SOCs.
->
-> Keystone 2 DSP GPIO controller has specific features:
-> - each GPIO can be configured only as output pin;
-> - setting GPIO value to 1 causes IRQ generation on target DSP core;
-> - reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
->   pending.
->
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> ---
-> Changes in v2:
-> - minor comments applied
+Ok.
 
-Hm so there was one major comment, quoting myself:
+So if we don't split, we can savely check ->total_size % 1024.
 
-"And if you proceed with this, please integrate it with
-drivers/gpio/gpio-syscon.c, I don't need more special
-syscons GPIO handlers."
+If someone tries to load a microcode blob which has been split and so
+on, then we should refuse loading. We want to accept microcode from the
+vendor and nothing else glued together.
 
-Maybe you missed this in the midst of the other discussions
-about whether this is GPIO at all, but that comment still
-stands even if you talk me down on the generality of this
-driver.
+> I would hope so as well, but I am a bit more sceptical than you on this.
 
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-keystone.txt
+Well, if you spot a discrepancy where they diverge from the SDM, you
+make sure you scream loudly.
 
-Make this follow the style in:
-Documentation/devicetree/bindings/gpio/cirrus,clps711x-mctrl-gpio.txt
+> "CPUID returns a value in a model specific register in addition to its usual
+> register return values. The semantics of CPUID cause it to deposit an update
+> ID value in the 64-bit model-specific register at address 08BH
+> (IA32_BIOS_SIGN_ID).  If no update is present in the processor, the value in
+> the MSR remains unmodified.  The BIOS must pre-load a zero into the MSR
+> before executing CPUID. If a read of the MSR at 8BH still returns zero after
+> executing CPUID, this indicates that no update is present."
+> 
+> Reading a revision of zero really is supposed to mean "no update is present
+> in the processor", and that's because it must be pre-loaded with a zero
+> before cpuid is called.
+> 
+> IMHO, this mean that one should be really paranoid over any Intel microcode
+> update that claims to have a revision of zero.  Intel wouldn't release such
+> a microcode update except in error, and we can safely assume we want nothing
+> to do with any such update attempts.
 
-Yours,
-Linus Walleij
+Ok, then please change the patch to reflect that - it is not "silicon
+microcode" anymore but revision 0 is special and means no update was
+done. Which is a proper way for the CPU to signal microcode update
+status.
+
+> Yeah, well, if you have CONFIG_X86_MSR enabled, all bets are off.  Thanks
+> for reminding me about that one.
+
+Yes, the only thing you need is the ability to execute *MSR insns in ring0.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
