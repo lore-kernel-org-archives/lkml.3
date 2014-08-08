@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758036AbaHHUra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:47:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40537 "EHLO
+	id S1758051AbaHHUrd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:47:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40543 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757995AbaHHUrZ (ORCPT
+	with ESMTP id S1751645AbaHHUr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:47:25 -0400
+	Fri, 8 Aug 2014 16:47:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ulrich Obergfell <uobergfe@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 028/259] scsi_error: fix invalid setting of host byte
-Date: Fri,  8 Aug 2014 13:37:31 -0700
-Message-Id: <1407530482-4483-29-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 187/259] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
+Date: Fri,  8 Aug 2014 13:40:10 -0700
+Message-Id: <1407530482-4483-188-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,44 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ulrich Obergfell <uobergfe@redhat.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 8922a908908ff947f1f211e07e2e97f1169ad3cb upstream.
+commit 6cff1f6ad4c615319c1a146b2aa0af1043c5e9f5 upstream.
 
-After scsi_try_to_abort_cmd returns, the eh_abort_handler may have
-already found that the command has completed in the device, causing
-the host_byte to be nonzero (e.g. it could be DID_ABORT).  When
-this happens, ORing DID_TIME_OUT into the host byte will corrupt
-the result field and initiate an unwanted command retry.
+WARNING: CPU: 0 PID: 929 at /home/apw/COD/linux/kernel/irq/handle.c:147 handle_irq_event_percpu+0x1d1/0x1e0()
+irq 17 handler device_intr+0x0/0xa80 [vt6655_stage] enabled interrupts
 
-Fix this by using set_host_byte instead, following the model of
-commit 2082ebc45af9c9c648383b8cde0dc1948eadbf31.
+Using spin_lock_irqsave appears to fix this.
 
-Signed-off-by: Ulrich Obergfell <uobergfe@redhat.com>
-[Fix all instances according to review comments. - Paolo]
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Ewan D. Milne <emilne@redhat.com>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-[ kamal: backport to 3.13-stable (only one instance of this) ]
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/scsi_error.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/vt6655/device_main.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-index e8bee9f..09f930d 100644
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -161,7 +161,7 @@ enum blk_eh_timer_return scsi_times_out(struct request *req)
- 	else if (host->hostt->eh_timed_out)
- 		rtn = host->hostt->eh_timed_out(scmd);
+diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
+index e93fdc8..d3e8336a 100644
+--- a/drivers/staging/vt6655/device_main.c
++++ b/drivers/staging/vt6655/device_main.c
+@@ -2431,6 +2431,7 @@ static  irqreturn_t  device_intr(int irq,  void *dev_instance) {
+ 	unsigned char byData = 0;
+ 	int             ii = 0;
+ //    unsigned char byRSSI;
++	unsigned long flags;
  
--	scmd->result |= DID_TIME_OUT << 16;
-+	set_host_byte(scmd, DID_TIME_OUT);
+ 	MACvReadISR(pDevice->PortOffset, &pDevice->dwIsr);
  
- 	if (unlikely(rtn == BLK_EH_NOT_HANDLED &&
- 		     !scsi_eh_scmd_add(scmd, SCSI_EH_CANCEL_CMD)))
+@@ -2455,7 +2456,8 @@ static  irqreturn_t  device_intr(int irq,  void *dev_instance) {
+ 
+ 	handled = 1;
+ 	MACvIntDisable(pDevice->PortOffset);
+-	spin_lock_irq(&pDevice->lock);
++
++	spin_lock_irqsave(&pDevice->lock, flags);
+ 
+ 	//Make sure current page is 0
+ 	VNSvInPortB(pDevice->PortOffset + MAC_REG_PAGE1SEL, &byOrgPageSel);
+@@ -2696,7 +2698,8 @@ static  irqreturn_t  device_intr(int irq,  void *dev_instance) {
+ 		MACvSelectPage1(pDevice->PortOffset);
+ 	}
+ 
+-	spin_unlock_irq(&pDevice->lock);
++	spin_unlock_irqrestore(&pDevice->lock, flags);
++
+ 	MACvIntEnable(pDevice->PortOffset, IMR_MASK_VALUE);
+ 
+ 	return IRQ_RETVAL(handled);
 -- 
 1.9.1
 
