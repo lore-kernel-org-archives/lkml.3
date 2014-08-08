@@ -1,66 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917AbaHHRRX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 13:17:23 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:20968
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752978AbaHHRRW (ORCPT
+	id S1756181AbaHHRUc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 13:20:32 -0400
+Received: from mx1.HRZ.Uni-Dortmund.DE ([129.217.128.51]:61333 "EHLO
+	unimail.uni-dortmund.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622AbaHHRUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 13:17:22 -0400
-X-IronPort-AV: E=Sophos;i="5.01,826,1400018400"; 
-   d="scan'208";a="74337830"
-Date: Fri, 8 Aug 2014 19:16:52 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
-        kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, joe@perches.com
-Subject: Re: [PATCH 1/1] dpt_i2o: delete unnecessary null test on array
-In-Reply-To: <1407518045.1686.0.camel@HansenPartnership.com>
-Message-ID: <alpine.DEB.2.10.1408081916280.2348@hadrien>
-References: <1407321551-27479-1-git-send-email-Julia.Lawall@lip6.fr>   <1407321551-27479-2-git-send-email-Julia.Lawall@lip6.fr>  <1407517179.2044.13.camel@jarvis.lan>  <alpine.DEB.2.10.1408081902400.2348@hadrien>
- <1407518045.1686.0.camel@HansenPartnership.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 8 Aug 2014 13:20:31 -0400
+X-Greylist: delayed 3201 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Aug 2014 13:20:30 EDT
+From: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
+To: linux-kernel@vger.kernel.org
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        andreas.dilger@intel.com, oleg.drokin@intel.com,
+        Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
+Subject: [PATCH] drivers: staging: lustre: fix sparse warnings / delete unused function
+Date: Fri,  8 Aug 2014 18:26:22 +0200
+Message-Id: <1407515182-24287-1-git-send-email-benedict.boerger@cs.tu-dortmund.de>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Aug 2014, James Bottomley wrote:
+drivers: staging: lustre: fix sparse warning: symbol XYZ was
+not declared. Should it be static?
 
-> On Fri, 2014-08-08 at 19:03 +0200, Julia Lawall wrote:
-> > > > diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
-> > > > index 67283ef..62e276b 100644
-> > > > --- a/drivers/scsi/dpt_i2o.c
-> > > > +++ b/drivers/scsi/dpt_i2o.c
-> > > > @@ -1169,11 +1169,6 @@ static struct adpt_device* adpt_find_device(adpt_hba* pHba, u32 chan, u32 id, u6
-> > > >  	if(chan < 0 || chan >= MAX_CHANNEL)
-> > > >  		return NULL;
-> > > >
-> > > > -	if( pHba->channel[chan].device == NULL){
-> > > > -		printk(KERN_DEBUG"Adaptec I2O RAID: Trying to find device before they are allocated\n");
-> > > > -		return NULL;
-> > > > -	}
-> > >
-> > > dpt_i2o is always weirdly fun, but I think, based on the message, this
-> > > check is supposed to be
-> > >
-> > > if( pHba->channel[chan].device[id] == NULL){
-> > >
-> > > Since device is an array of device pointers which are allocated by
-> > > parsing data.
-> >
-> > That seems to be already checked immediately below:
-> >
-> >         d = pHba->channel[chan].device[id];
-> > 	if(!d || d->tid == 0) {
-> >                 return NULL;
->
-> Yes, I know, but no message is emitted.  The message seems to be for a
-> violation of the state machine which device[id] = NULL implies.
+This was done by declaring them static. This could be done because the functions
+were used only in this file.
 
-OK, if the message seems helpful, then I can split up the tests.
+Deleted the function lnet_print_text_bufs because it were unused.
 
-julia
+Compiled without an error.
+Done to complete a eudyptula task.
+
+Signed-off-by: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>
+---
+ drivers/staging/lustre/lnet/lnet/config.c | 57 ++++++++++++-------------------
+ 1 file changed, 21 insertions(+), 36 deletions(-)
+
+diff --git a/drivers/staging/lustre/lnet/lnet/config.c b/drivers/staging/lustre/lnet/lnet/config.c
+index 7c8b947..ede664b 100644
+--- a/drivers/staging/lustre/lnet/lnet/config.c
++++ b/drivers/staging/lustre/lnet/lnet/config.c
+@@ -47,7 +47,7 @@ static int lnet_tbnob;			/* track text buf allocation */
+ #define LNET_MAX_TEXTBUF_NOB     (64<<10)	/* bound allocation */
+ #define LNET_SINGLE_TEXTBUF_NOB  (4<<10)
+ 
+-void
++static void
+ lnet_syntax(char *name, char *str, int offset, int width)
+ {
+ 	static char dots[LNET_SINGLE_TEXTBUF_NOB];
+@@ -64,7 +64,7 @@ lnet_syntax(char *name, char *str, int offset, int width)
+ 			    (width < 1) ? 0 : width - 1, dashes);
+ }
+ 
+-int
++static int
+ lnet_issep(char c)
+ {
+ 	switch (c) {
+@@ -77,7 +77,7 @@ lnet_issep(char c)
+ 	}
+ }
+ 
+-int
++static int
+ lnet_net_unique(__u32 net, struct list_head *nilist)
+ {
+ 	struct list_head       *tmp;
+@@ -108,7 +108,7 @@ lnet_ni_free(struct lnet_ni *ni)
+ 	LIBCFS_FREE(ni, sizeof(*ni));
+ }
+ 
+-lnet_ni_t *
++static lnet_ni_t *
+ lnet_ni_alloc(__u32 net, struct cfs_expr_list *el, struct list_head *nilist)
+ {
+ 	struct lnet_tx_queue	*tq;
+@@ -365,7 +365,7 @@ lnet_parse_networks(struct list_head *nilist, char *networks)
+ 	return -EINVAL;
+ }
+ 
+-lnet_text_buf_t *
++static lnet_text_buf_t *
+ lnet_new_text_buf(int str_len)
+ {
+ 	lnet_text_buf_t *ltb;
+@@ -394,14 +394,14 @@ lnet_new_text_buf(int str_len)
+ 	return ltb;
+ }
+ 
+-void
++static void
+ lnet_free_text_buf(lnet_text_buf_t *ltb)
+ {
+ 	lnet_tbnob -= ltb->ltb_size;
+ 	LIBCFS_FREE(ltb, ltb->ltb_size);
+ }
+ 
+-void
++static void
+ lnet_free_text_bufs(struct list_head *tbs)
+ {
+ 	lnet_text_buf_t  *ltb;
+@@ -414,22 +414,7 @@ lnet_free_text_bufs(struct list_head *tbs)
+ 	}
+ }
+ 
+-void
+-lnet_print_text_bufs(struct list_head *tbs)
+-{
+-	struct list_head	*tmp;
+-	lnet_text_buf_t   *ltb;
+-
+-	list_for_each(tmp, tbs) {
+-		ltb = list_entry(tmp, lnet_text_buf_t, ltb_list);
+-
+-		CDEBUG(D_WARNING, "%s\n", ltb->ltb_text);
+-	}
+-
+-	CDEBUG(D_WARNING, "%d allocated\n", lnet_tbnob);
+-}
+-
+-int
++static int
+ lnet_str2tbs_sep(struct list_head *tbs, char *str)
+ {
+ 	struct list_head	pending;
+@@ -487,7 +472,7 @@ lnet_str2tbs_sep(struct list_head *tbs, char *str)
+ 	return 0;
+ }
+ 
+-int
++static int
+ lnet_expand1tb(struct list_head *list,
+ 	       char *str, char *sep1, char *sep2,
+ 	       char *item, int itemlen)
+@@ -512,7 +497,7 @@ lnet_expand1tb(struct list_head *list,
+ 	return 0;
+ }
+ 
+-int
++static int
+ lnet_str2tbs_expand(struct list_head *tbs, char *str)
+ {
+ 	char	      num[16];
+@@ -592,7 +577,7 @@ lnet_str2tbs_expand(struct list_head *tbs, char *str)
+ 	return -1;
+ }
+ 
+-int
++static int
+ lnet_parse_hops(char *str, unsigned int *hops)
+ {
+ 	int     len = strlen(str);
+@@ -605,7 +590,7 @@ lnet_parse_hops(char *str, unsigned int *hops)
+ 
+ #define LNET_PRIORITY_SEPARATOR (':')
+ 
+-int
++static int
+ lnet_parse_priority(char *str, unsigned int *priority, char **token)
+ {
+ 	int   nob;
+@@ -635,7 +620,7 @@ lnet_parse_priority(char *str, unsigned int *priority, char **token)
+ 	return 0;
+ }
+ 
+-int
++static int
+ lnet_parse_route(char *str, int *im_a_router)
+ {
+ 	/* static scratch buffer OK (single threaded) */
+@@ -778,7 +763,7 @@ lnet_parse_route(char *str, int *im_a_router)
+ 	return myrc;
+ }
+ 
+-int
++static int
+ lnet_parse_route_tbs(struct list_head *tbs, int *im_a_router)
+ {
+ 	lnet_text_buf_t   *ltb;
+@@ -819,7 +804,7 @@ lnet_parse_routes(char *routes, int *im_a_router)
+ 	return rc;
+ }
+ 
+-int
++static int
+ lnet_match_network_token(char *token, int len, __u32 *ipaddrs, int nip)
+ {
+ 	LIST_HEAD(list);
+@@ -838,7 +823,7 @@ lnet_match_network_token(char *token, int len, __u32 *ipaddrs, int nip)
+ 	return rc;
+ }
+ 
+-int
++static int
+ lnet_match_network_tokens(char *net_entry, __u32 *ipaddrs, int nip)
+ {
+ 	static char tokens[LNET_SINGLE_TEXTBUF_NOB];
+@@ -895,7 +880,7 @@ lnet_match_network_tokens(char *net_entry, __u32 *ipaddrs, int nip)
+ 	return 1;
+ }
+ 
+-__u32
++static __u32
+ lnet_netspec2net(char *netspec)
+ {
+ 	char   *bracket = strchr(netspec, '(');
+@@ -912,7 +897,7 @@ lnet_netspec2net(char *netspec)
+ 	return net;
+ }
+ 
+-int
++static int
+ lnet_splitnets(char *source, struct list_head *nets)
+ {
+ 	int	       offset = 0;
+@@ -992,7 +977,7 @@ lnet_splitnets(char *source, struct list_head *nets)
+ 	}
+ }
+ 
+-int
++static int
+ lnet_match_networks(char **networksp, char *ip2nets, __u32 *ipaddrs, int nip)
+ {
+ 	static char	networks[LNET_SINGLE_TEXTBUF_NOB];
+@@ -1112,13 +1097,13 @@ lnet_match_networks(char **networksp, char *ip2nets, __u32 *ipaddrs, int nip)
+ 	return count;
+ }
+ 
+-void
++static void
+ lnet_ipaddr_free_enumeration(__u32 *ipaddrs, int nip)
+ {
+ 	LIBCFS_FREE(ipaddrs, nip * sizeof(*ipaddrs));
+ }
+ 
+-int
++static int
+ lnet_ipaddr_enumerate(__u32 **ipaddrsp)
+ {
+ 	int	up;
+-- 
+1.9.1
+
