@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758539AbaHHWDO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:03:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60481 "EHLO
+	id S1758631AbaHHWDe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:03:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60477 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932998AbaHHVgS (ORCPT
+	with ESMTP id S932977AbaHHVgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 17:36:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 16/24] sparc64: Dont bark so loudly about 32-bit tasks generating 64-bit fault addresses.
-Date: Fri,  8 Aug 2014 14:35:09 -0700
-Message-Id: <20140808213336.086275592@linuxfoundation.org>
+Subject: [PATCH 3.10 15/24] sparc64: Fix top-level fault handling bugs.
+Date: Fri,  8 Aug 2014 14:35:08 -0700
+Message-Id: <20140808213336.047234908@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213335.421758947@linuxfoundation.org>
 References: <20140808213335.421758947@linuxfoundation.org>
@@ -30,72 +30,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit e5c460f46ae7ee94831cb55cb980f942aa9e5a85 ]
+[ Upstream commit 70ffc6ebaead783ac8dafb1e87df0039bb043596 ]
 
-This was found using Dave Jone's trinity tool.
+Make get_user_insn() able to cope with huge PMDs.
 
-When a user process which is 32-bit performs a load or a store, the
-cpu chops off the top 32-bits of the effective address before
-translating it.
-
-This is because we run 32-bit tasks with the PSTATE_AM (address
-masking) bit set.
-
-We can't run the kernel with that bit set, so when the kernel accesses
-userspace no address masking occurs.
-
-Since a 32-bit process will have no mappings in that region we will
-properly fault, so we don't try to handle this using access_ok(),
-which can safely just be a NOP on sparc64.
-
-Real faults from 32-bit processes should never generate such addresses
-so a bug check was added long ago, and it barks in the logs if this
-happens.
-
-But it also barks when a kernel user access causes this condition, and
-that _can_ happen.  For example, if a pointer passed into a system call
-is "0xfffffffc" and the kernel access 4 bytes offset from that pointer.
-
-Just handle such faults normally via the exception entries.
+Next, make do_fault_siginfo() more robust when get_user_insn() can't
+actually fetch the instruction.  In particular, use the MMU announced
+fault address when that happens, instead of calling
+compute_effective_address() and computing garbage.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/mm/fault_64.c |   16 +---------------
- 1 file changed, 1 insertion(+), 15 deletions(-)
+ arch/sparc/mm/fault_64.c |   84 +++++++++++++++++++++++++++++------------------
+ 1 file changed, 53 insertions(+), 31 deletions(-)
 
 --- a/arch/sparc/mm/fault_64.c
 +++ b/arch/sparc/mm/fault_64.c
-@@ -280,18 +280,6 @@ static void noinline __kprobes bogus_32b
- 	show_regs(regs);
+@@ -95,38 +95,51 @@ static unsigned int get_user_insn(unsign
+ 	pte_t *ptep, pte;
+ 	unsigned long pa;
+ 	u32 insn = 0;
+-	unsigned long pstate;
+ 
+-	if (pgd_none(*pgdp))
+-		goto outret;
++	if (pgd_none(*pgdp) || unlikely(pgd_bad(*pgdp)))
++		goto out;
+ 	pudp = pud_offset(pgdp, tpc);
+-	if (pud_none(*pudp))
+-		goto outret;
+-	pmdp = pmd_offset(pudp, tpc);
+-	if (pmd_none(*pmdp))
+-		goto outret;
+-
+-	/* This disables preemption for us as well. */
+-	__asm__ __volatile__("rdpr %%pstate, %0" : "=r" (pstate));
+-	__asm__ __volatile__("wrpr %0, %1, %%pstate"
+-				: : "r" (pstate), "i" (PSTATE_IE));
+-	ptep = pte_offset_map(pmdp, tpc);
+-	pte = *ptep;
+-	if (!pte_present(pte))
++	if (pud_none(*pudp) || unlikely(pud_bad(*pudp)))
+ 		goto out;
+ 
+-	pa  = (pte_pfn(pte) << PAGE_SHIFT);
+-	pa += (tpc & ~PAGE_MASK);
++	/* This disables preemption for us as well. */
++	local_irq_disable();
+ 
+-	/* Use phys bypass so we don't pollute dtlb/dcache. */
+-	__asm__ __volatile__("lduwa [%1] %2, %0"
+-			     : "=r" (insn)
+-			     : "r" (pa), "i" (ASI_PHYS_USE_EC));
++	pmdp = pmd_offset(pudp, tpc);
++	if (pmd_none(*pmdp) || unlikely(pmd_bad(*pmdp)))
++		goto out_irq_enable;
+ 
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	if (pmd_trans_huge(*pmdp)) {
++		if (pmd_trans_splitting(*pmdp))
++			goto out_irq_enable;
++
++		pa  = pmd_pfn(*pmdp) << PAGE_SHIFT;
++		pa += tpc & ~HPAGE_MASK;
++
++		/* Use phys bypass so we don't pollute dtlb/dcache. */
++		__asm__ __volatile__("lduwa [%1] %2, %0"
++				     : "=r" (insn)
++				     : "r" (pa), "i" (ASI_PHYS_USE_EC));
++	} else
++#endif
++	{
++		ptep = pte_offset_map(pmdp, tpc);
++		pte = *ptep;
++		if (pte_present(pte)) {
++			pa  = (pte_pfn(pte) << PAGE_SHIFT);
++			pa += (tpc & ~PAGE_MASK);
++
++			/* Use phys bypass so we don't pollute dtlb/dcache. */
++			__asm__ __volatile__("lduwa [%1] %2, %0"
++					     : "=r" (insn)
++					     : "r" (pa), "i" (ASI_PHYS_USE_EC));
++		}
++		pte_unmap(ptep);
++	}
++out_irq_enable:
++	local_irq_enable();
+ out:
+-	pte_unmap(ptep);
+-	__asm__ __volatile__("wrpr %0, 0x0, %%pstate" : : "r" (pstate));
+-outret:
+ 	return insn;
  }
  
--static void noinline __kprobes bogus_32bit_fault_address(struct pt_regs *regs,
--							 unsigned long addr)
--{
--	static int times;
--
--	if (times++ < 10)
--		printk(KERN_ERR "FAULT[%s:%d]: 32-bit process "
--		       "reports 64-bit fault address [%lx]\n",
--		       current->comm, current->pid, addr);
--	show_regs(regs);
--}
--
- asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
+@@ -152,7 +165,8 @@ show_signal_msg(struct pt_regs *regs, in
+ }
+ 
+ static void do_fault_siginfo(int code, int sig, struct pt_regs *regs,
+-			     unsigned int insn, int fault_code)
++			     unsigned long fault_addr, unsigned int insn,
++			     int fault_code)
  {
- 	struct mm_struct *mm = current->mm;
-@@ -320,10 +308,8 @@ asmlinkage void __kprobes do_sparc64_fau
- 				goto intr_or_no_mm;
- 			}
- 		}
--		if (unlikely((address >> 32) != 0)) {
--			bogus_32bit_fault_address(regs, address);
-+		if (unlikely((address >> 32) != 0))
- 			goto intr_or_no_mm;
--		}
+ 	unsigned long addr;
+ 	siginfo_t info;
+@@ -160,10 +174,18 @@ static void do_fault_siginfo(int code, i
+ 	info.si_code = code;
+ 	info.si_signo = sig;
+ 	info.si_errno = 0;
+-	if (fault_code & FAULT_CODE_ITLB)
++	if (fault_code & FAULT_CODE_ITLB) {
+ 		addr = regs->tpc;
+-	else
+-		addr = compute_effective_address(regs, insn, 0);
++	} else {
++		/* If we were able to probe the faulting instruction, use it
++		 * to compute a precise fault address.  Otherwise use the fault
++		 * time provided address which may only have page granularity.
++		 */
++		if (insn)
++			addr = compute_effective_address(regs, insn, 0);
++		else
++			addr = fault_addr;
++	}
+ 	info.si_addr = (void __user *) addr;
+ 	info.si_trapno = 0;
+ 
+@@ -238,7 +260,7 @@ static void __kprobes do_kernel_fault(st
+ 		/* The si_code was set to make clear whether
+ 		 * this was a SEGV_MAPERR or SEGV_ACCERR fault.
+ 		 */
+-		do_fault_siginfo(si_code, SIGSEGV, regs, insn, fault_code);
++		do_fault_siginfo(si_code, SIGSEGV, regs, address, insn, fault_code);
+ 		return;
  	}
  
- 	if (regs->tstate & TSTATE_PRIV) {
+@@ -519,7 +541,7 @@ do_sigbus:
+ 	 * Send a sigbus, regardless of whether we were in kernel
+ 	 * or user mode.
+ 	 */
+-	do_fault_siginfo(BUS_ADRERR, SIGBUS, regs, insn, fault_code);
++	do_fault_siginfo(BUS_ADRERR, SIGBUS, regs, address, insn, fault_code);
+ 
+ 	/* Kernel mode? Handle exceptions or die */
+ 	if (regs->tstate & TSTATE_PRIV)
 
 
