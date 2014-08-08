@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263AbaHHKau (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 06:30:50 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43806 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755594AbaHHKas (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 06:30:48 -0400
-Date: Fri, 8 Aug 2014 11:30:21 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Tetsuya Takinishi <t.takinishi@jp.fujitsu.com>,
-        Mollie Wu <mollie.wu@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        Andy Green <andy.green@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Request to include Mailbox tree in linux-next
-Message-ID: <20140808103021.GA30282@n2100.arm.linux.org.uk>
-References: <CAJe_ZhdZTSs+Ns4u7bMXwbLHYTnE-5XEE8uev4zXbXrCP52bSg@mail.gmail.com> <20140808142912.7bf68229@canb.auug.org.au>
+	id S1756375AbaHHKcn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 06:32:43 -0400
+Received: from sf1.bxl.stone.is ([87.238.167.36]:32839 "EHLO sf1.bxl.stone.is"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755618AbaHHKcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 06:32:41 -0400
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <53E4A73D.5080801@acm.org>
+Date: Fri, 08 Aug 2014 12:32:29 +0200
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140808142912.7bf68229@canb.auug.org.au>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: David Rientjes <rientjes@google.com>
+CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] spin_lock_nested(): Always evaluate second argument
+References: <53CE1019.10708@acm.org> <20140722133716.cff957eff4eff1cc9c1d9968@linux-foundation.org> <alpine.DEB.2.02.1407221612330.10592@chino.kir.corp.google.com> <53E260D9.6030803@acm.org> <53E2618F.6040208@acm.org> <alpine.DEB.2.02.1408061455290.13545@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1408061455290.13545@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Filter-ID: XtLePq6GTMn8G68F0EmQvdthj6rk7ohlAkaRQG+cDaLZlN3ufQ0ZRHdy43341LQ0JYRGiu4wDuX/
+ sGw1Y7RAsZ3WBw9ZlycipwBG3jGu9D8JBgu10R0foqIRsBJqRnurUO/XCGxJVedBWv8BXp6lSPrf
+ oA0XngOaR5RLFk6kKY8+X6tyUZ34Ozy6TOwmaHPzFR2lHDoBQ4zwtMehH4SfWgLcNhHqvET8hkHK
+ 4DD3CZT4SL0VvzAbTStaxE3e6xctxkHXgTSJC2+q+O2n2sPwh+CpLQk2sgUsKd5RNPNJeN3I5L/U
+ AJH41ve/RciJD7RwcMm6IODZgOZ9Y8BEoKFU+ThPpKKNyD6EWtbIyxh4MHoccBIk1Sag4dKiqCrF
+ 8eZZsQYibGPulATAPqOguWXWenmy4p4jVbvkvQrOImHI+zH4ns3e6vWEaK66hz4t87L5hVQSL57W
+ w8nd1cTP1twpFFTUuHOuOBA828Pfce2frIKvtUus/ypEW5W6Dw4DmSZF9OoIMWCP9bnVs5BJWbbt
+ 5dM+m4WpRRDP6YzwkAPgQJZcv8AnfPB9HqHgcyCJwUz8oOSQKVK4yyKUlGmQMgPOfIQtTQXMrNAv
+ J7CbCYezRVuhdlkpfoNhtgWYwB/e4S2rpoRvMJWweGFGUUnI6wOX8j4FS3UlU37B6qPMab0LB93J
+ IFkIZaBCBQxuHnm838r5oXZZKX6DYbYFmMAf3uEtq0CVt0DUeFU/MBWnkHtFiUWUs1IAPjDts3+I
+ etSNQKiFa27IsDu2NxxouWmZdcGOChVo3Ylh8ywfjYp979CTGJlcA0OL1mkTp3S7nD3AxhtVMS+4
+ ayUpOtEhdxekWDmK9g==
+X-Report-Abuse-To: spam@sf1.bxl.stone.is
+X-Filter-Fingerprint: cPaH8lomer6UwsJ3BnJDyh/24V0ZnPLChpTdx0aQyMi0VFDyP20las9Mq1v6nXmfrqKtWpHLpkE8
+ c09GKJn2t//Iv3SA9yqL/o+tgER5K01MqRJTan78INzQLlEGX/jFRST5X0bRoOLYozD+qqgg13U4
+ H51jyCSmLdA2hPaiVpwYWaeThsiFlmPt/lOSmjPeIry8YqBAImlpW4iUkiWie2qK95LAXg+Ea3Jb
+ F9WwpaZ//Un1C5ivAWoOksRE8XtOTT9J6CK2j8j7/AJ9TNml+IbyXSJXjZjMx+Tok7jY2RMVEkZR
+ xMpnILpnPlb/BDIPR3BzrtNvug17DaoVb9RvKuKFkKyIMhEyqFjdRcrNMObE3nrK/nhevL/uAoHg
+ xNXar0XzbLB8Pru9OEB7tNjak+6bpnvFzMd6SECQNf1u/wGWAJzP31LdUHDVnH0aZDcVCxO6ac9X
+ hDc8gFJxmNF1qg==
+X-Originating-IP: 87.238.167.34
+X-SpamExperts-Domain: stone.is
+X-SpamExperts-Username: 87.238.167.34
+Authentication-Results: bxl.stone.is; auth=pass smtp.auth=87.238.167.34
+X-SpamExperts-Outgoing-Class: ham
+X-SpamExperts-Outgoing-Evidence: Combined (0.02)
+X-Recommended-Action: accept
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 02:29:12PM +1000, Stephen Rothwell wrote:
-> Hi Jassi,
+On 08/06/14 23:56, David Rientjes wrote:
+> On Wed, 6 Aug 2014, Bart Van Assche wrote:
+>> diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
+>> index 3f2867f..485d5dc 100644
+>> --- a/include/linux/spinlock.h
+>> +++ b/include/linux/spinlock.h
+>> @@ -197,7 +197,8 @@ static inline void do_raw_spin_unlock(raw_spinlock_t *lock) __releases(lock)
+>>  		 _raw_spin_lock_nest_lock(lock, &(nest_lock)->dep_map);	\
+>>  	 } while (0)
+>>  #else
+>> -# define raw_spin_lock_nested(lock, subclass)		_raw_spin_lock(lock)
+>> +# define raw_spin_lock_nested(lock, subclass)		\
+>> +	((void)(subclass), _raw_spin_lock(lock))
+>>  # define raw_spin_lock_nest_lock(lock, nest_lock)	_raw_spin_lock(lock)
+>>  #endif
+>>  
 > 
-> On Wed, 6 Aug 2014 12:25:49 +0530 Jassi Brar <jaswinder.singh@linaro.org> wrote:
-> >
-> >  The framework for Mailbox has undergone 10 revisions over the last
-> > one year, which has garnered support in the form of 'Reviewed-by' and
-> > 'looks good enough to be merged in this window' from people in the CC
-> > list.
-> > 
-> >   Could you please add it to linux-next?
-> > Tree:       git://git.linaro.org/landing-teams/working/fujitsu/integration.git
-> > Branch:   mailbox-for-3.17
-> > Contact:  Jassi Brar <jaswinder.singh@linaro.org>
+> I think it would be nice to comment why we're evaluating the subclass when 
+> CONFIG_DEBUG_LOCK_ALLOC=n so that nobody comes along and unknowingly 
+> changes it back.
 > 
-> This is really late for v3.17.  The purpose of linux-next is to
-> discover interactions between trees before they are pulled into Linus'
-> tree and to do some cross architecture build checking.  Adding a tree
-> during the merge window is not very helpful to that.
+> Thanks for posting the updated version and keeping at it!
 
-+1.
+This morning I received an e-mail from Wu Fengguang reporting that this
+patch breaks the build for CONFIG_SMP=n. I will post a third version.
 
-The same goes for any tree which is part of linux-next.
-
-Having a tree in linux-next carries with it the responsibility that the
-tree owner abides by the kernel development cycle, which includes
-respecting the moratorium on merging new development into branch(es)
-which are part of linux-next during an actively open merge window.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Bart.
