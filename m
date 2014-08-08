@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933071AbaHHUxf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:53:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41292 "EHLO
+	id S933091AbaHHUxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:53:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41311 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932981AbaHHUx3 (ORCPT
+	with ESMTP id S933069AbaHHUxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:53:29 -0400
+	Fri, 8 Aug 2014 16:53:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Shradha Shah <sshah@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 222/259] sfc: PIO:Restrict to 64bit arch and use 64-bit writes.
-Date: Fri,  8 Aug 2014 13:40:45 -0700
-Message-Id: <1407530482-4483-223-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 087/259] drm/i915: Don't clobber the GTT when it's within stolen memory
+Date: Fri,  8 Aug 2014 13:38:30 -0700
+Message-Id: <1407530482-4483-88-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,125 +32,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Cooper <jcooper@solarflare.com>
+From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
 
-[ Upstream commit daf37b556e437ec1ea1a597dcfeff338068380e1 ]
+commit f1e1c2129b79cfdaf07bca37c5a10569fe021abe upstream.
 
-Fixes:ee45fd92c739
-("sfc: Use TX PIO for sufficiently small packets")
+On most gen2-4 platforms the GTT can be (or maybe always is?)
+inside the stolen memory region. If that's the case, reduce the
+size of the stolen memory appropriately to make make sure we
+don't clobber the GTT.
 
-The linux net driver uses memcpy_toio() in order to copy into
-the PIO buffers.
-Even on a 64bit machine this causes 32bit accesses to a write-
-combined memory region.
-There are hardware limitations that mean that only 64bit
-naturally aligned accesses are safe in all cases.
-Due to being write-combined memory region two 32bit accesses
-may be coalesced to form a 64bit non 64bit aligned access.
-Solution was to open-code the memory copy routines using pointers
-and to only enable PIO for x86_64 machines.
+v2: Deal with gen4 36 bit physical address
 
-Not tested on platforms other than x86_64 because this patch
-disables the PIO feature on other platforms.
-Compile-tested on x86 to ensure that works.
-
-The WARN_ON_ONCE() code in the previous version of this patch
-has been moved into the internal sfc debug driver as the
-assertion was unnecessary in the upstream kernel code.
-
-This bug fix applies to v3.13 and v3.14 stable branches.
-
-Signed-off-by: Shradha Shah <sshah@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=80151
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/sfc/io.h |  7 +++++++
- drivers/net/ethernet/sfc/tx.c | 22 +++++++++++++++++-----
- 2 files changed, 24 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_stolen.c | 44 ++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/i915/i915_reg.h        |  3 +++
+ 2 files changed, 47 insertions(+)
 
-diff --git a/drivers/net/ethernet/sfc/io.h b/drivers/net/ethernet/sfc/io.h
-index 4d3f119..afb94aa 100644
---- a/drivers/net/ethernet/sfc/io.h
-+++ b/drivers/net/ethernet/sfc/io.h
-@@ -66,10 +66,17 @@
- #define EFX_USE_QWORD_IO 1
- #endif
+diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
+index 4a699d2..6471872 100644
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -74,6 +74,50 @@ static unsigned long i915_stolen_to_physical(struct drm_device *dev)
+ 	if (base == 0)
+ 		return 0;
  
-+/* Hardware issue requires that only 64-bit naturally aligned writes
-+ * are seen by hardware. Its not strictly necessary to restrict to
-+ * x86_64 arch, but done for safety since unusual write combining behaviour
-+ * can break PIO.
-+ */
-+#ifdef CONFIG_X86_64
- /* PIO is a win only if write-combining is possible */
- #ifdef ARCH_HAS_IOREMAP_WC
- #define EFX_USE_PIO 1
- #endif
-+#endif
- 
- #ifdef EFX_USE_QWORD_IO
- static inline void _efx_writeq(struct efx_nic *efx, __le64 value,
-diff --git a/drivers/net/ethernet/sfc/tx.c b/drivers/net/ethernet/sfc/tx.c
-index c49d1fb..105b3ca 100644
---- a/drivers/net/ethernet/sfc/tx.c
-+++ b/drivers/net/ethernet/sfc/tx.c
-@@ -189,6 +189,18 @@ struct efx_short_copy_buffer {
- 	u8 buf[L1_CACHE_BYTES];
- };
- 
-+/* Copy in explicit 64-bit writes. */
-+static void efx_memcpy_64(void __iomem *dest, void *src, size_t len)
-+{
-+	u64 *src64 = src;
-+	u64 __iomem *dest64 = dest;
-+	size_t l64 = len / 8;
-+	size_t i;
++	/* make sure we don't clobber the GTT if it's within stolen memory */
++	if (INTEL_INFO(dev)->gen <= 4 && !IS_G33(dev) && !IS_G4X(dev)) {
++		struct {
++			u32 start, end;
++		} stolen[2] = {
++			{ .start = base, .end = base + dev_priv->gtt.stolen_size, },
++			{ .start = base, .end = base + dev_priv->gtt.stolen_size, },
++		};
++		u64 gtt_start, gtt_end;
 +
-+	for (i = 0; i < l64; i++)
-+		writeq(src64[i], &dest64[i]);
-+}
++		gtt_start = I915_READ(PGTBL_CTL);
++		if (IS_GEN4(dev))
++			gtt_start = (gtt_start & PGTBL_ADDRESS_LO_MASK) |
++				(gtt_start & PGTBL_ADDRESS_HI_MASK) << 28;
++		else
++			gtt_start &= PGTBL_ADDRESS_LO_MASK;
++		gtt_end = gtt_start + gtt_total_entries(dev_priv->gtt) * 4;
 +
- /* Copy to PIO, respecting that writes to PIO buffers must be dword aligned.
-  * Advances piobuf pointer. Leaves additional data in the copy buffer.
++		if (gtt_start >= stolen[0].start && gtt_start < stolen[0].end)
++			stolen[0].end = gtt_start;
++		if (gtt_end > stolen[1].start && gtt_end <= stolen[1].end)
++			stolen[1].start = gtt_end;
++
++		/* pick the larger of the two chunks */
++		if (stolen[0].end - stolen[0].start >
++		    stolen[1].end - stolen[1].start) {
++			base = stolen[0].start;
++			dev_priv->gtt.stolen_size = stolen[0].end - stolen[0].start;
++		} else {
++			base = stolen[1].start;
++			dev_priv->gtt.stolen_size = stolen[1].end - stolen[1].start;
++		}
++
++		if (stolen[0].start != stolen[1].start ||
++		    stolen[0].end != stolen[1].end) {
++			DRM_DEBUG_KMS("GTT within stolen memory at 0x%llx-0x%llx\n",
++				      (unsigned long long) gtt_start,
++				      (unsigned long long) gtt_end - 1);
++			DRM_DEBUG_KMS("Stolen memory adjusted to 0x%x-0x%x\n",
++				      base, base + (u32) dev_priv->gtt.stolen_size - 1);
++		}
++	}
++
++
+ 	/* Verify that nothing else uses this physical address. Stolen
+ 	 * memory should be reserved by the BIOS and hidden from the
+ 	 * kernel. So if the region is already marked as busy, something
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index 9a1a96a..7047e35 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -628,6 +628,9 @@
+ /*
+  * Instruction and interrupt control regs
   */
-@@ -198,7 +210,7 @@ static void efx_memcpy_toio_aligned(struct efx_nic *efx, u8 __iomem **piobuf,
- {
- 	int block_len = len & ~(sizeof(copy_buf->buf) - 1);
- 
--	memcpy_toio(*piobuf, data, block_len);
-+	efx_memcpy_64(*piobuf, data, block_len);
- 	*piobuf += block_len;
- 	len -= block_len;
- 
-@@ -230,7 +242,7 @@ static void efx_memcpy_toio_aligned_cb(struct efx_nic *efx, u8 __iomem **piobuf,
- 		if (copy_buf->used < sizeof(copy_buf->buf))
- 			return;
- 
--		memcpy_toio(*piobuf, copy_buf->buf, sizeof(copy_buf->buf));
-+		efx_memcpy_64(*piobuf, copy_buf->buf, sizeof(copy_buf->buf));
- 		*piobuf += sizeof(copy_buf->buf);
- 		data += copy_to_buf;
- 		len -= copy_to_buf;
-@@ -245,7 +257,7 @@ static void efx_flush_copy_buffer(struct efx_nic *efx, u8 __iomem *piobuf,
- {
- 	/* if there's anything in it, write the whole buffer, including junk */
- 	if (copy_buf->used)
--		memcpy_toio(piobuf, copy_buf->buf, sizeof(copy_buf->buf));
-+		efx_memcpy_64(piobuf, copy_buf->buf, sizeof(copy_buf->buf));
- }
- 
- /* Traverse skb structure and copy fragments in to PIO buffer.
-@@ -304,8 +316,8 @@ efx_enqueue_skb_pio(struct efx_tx_queue *tx_queue, struct sk_buff *skb)
- 		 */
- 		BUILD_BUG_ON(L1_CACHE_BYTES >
- 			     SKB_DATA_ALIGN(sizeof(struct skb_shared_info)));
--		memcpy_toio(tx_queue->piobuf, skb->data,
--			    ALIGN(skb->len, L1_CACHE_BYTES));
-+		efx_memcpy_64(tx_queue->piobuf, skb->data,
-+			      ALIGN(skb->len, L1_CACHE_BYTES));
- 	}
- 
- 	EFX_POPULATE_QWORD_5(buffer->option,
++#define PGTBL_CTL	0x02020
++#define   PGTBL_ADDRESS_LO_MASK	0xfffff000 /* bits [31:12] */
++#define   PGTBL_ADDRESS_HI_MASK	0x000000f0 /* bits [35:32] (gen4) */
+ #define PGTBL_ER	0x02024
+ #define RENDER_RING_BASE	0x02000
+ #define BSD_RING_BASE		0x04000
 -- 
 1.9.1
 
