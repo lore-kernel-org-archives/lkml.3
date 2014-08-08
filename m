@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933467AbaHHVgr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:36:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60550 "EHLO
+	id S1759362AbaHHVwB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:52:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60673 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758526AbaHHVg2 (ORCPT
+	with ESMTP id S933470AbaHHVgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:28 -0400
+	Fri, 8 Aug 2014 17:36:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ivan Vecera <ivecera@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 24/39] sparc64: Handle 32-bit tasks properly in compute_effective_address().
-Date: Fri,  8 Aug 2014 14:35:10 -0700
-Message-Id: <20140808213356.006826247@linuxfoundation.org>
+Subject: [PATCH 3.15 12/26] bna: fix performance regression
+Date: Fri,  8 Aug 2014 14:35:19 -0700
+Message-Id: <20140808213414.182732652@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
-References: <20140808213354.980430919@linuxfoundation.org>
+In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
+References: <20140808213413.648794968@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,51 +25,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Ivan Vecera <ivecera@redhat.com>
 
-[ Upstream commit d037d16372bbe4d580342bebbb8826821ad9edf0 ]
+[ Upstream commit c36c9d50cc6af5c5bfcc195f21b73f55520c15f9 ]
 
-If we have a 32-bit task we must chop off the top 32-bits of the
-64-bit value just as the cpu would.
+The recent commit "e29aa33 bna: Enable Multi Buffer RX" is causing
+a performance regression. It does not properly update 'cmpl' pointer
+at the end of the loop in NAPI handler bnad_cq_process(). The result is
+only one packet / per NAPI-schedule is processed.
 
+Signed-off-by: Ivan Vecera <ivecera@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/unaligned_64.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/brocade/bna/bnad.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/kernel/unaligned_64.c
-+++ b/arch/sparc/kernel/unaligned_64.c
-@@ -166,17 +166,23 @@ static unsigned long *fetch_reg_addr(uns
- unsigned long compute_effective_address(struct pt_regs *regs,
- 					unsigned int insn, unsigned int rd)
- {
-+	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
- 	unsigned int rs1 = (insn >> 14) & 0x1f;
- 	unsigned int rs2 = insn & 0x1f;
--	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
-+	unsigned long addr;
+--- a/drivers/net/ethernet/brocade/bna/bnad.c
++++ b/drivers/net/ethernet/brocade/bna/bnad.c
+@@ -600,9 +600,9 @@ bnad_cq_process(struct bnad *bnad, struc
+ 	prefetch(bnad->netdev);
  
- 	if (insn & 0x2000) {
- 		maybe_flush_windows(rs1, 0, rd, from_kernel);
--		return (fetch_reg(rs1, regs) + sign_extend_imm13(insn));
-+		addr = (fetch_reg(rs1, regs) + sign_extend_imm13(insn));
- 	} else {
- 		maybe_flush_windows(rs1, rs2, rd, from_kernel);
--		return (fetch_reg(rs1, regs) + fetch_reg(rs2, regs));
-+		addr = (fetch_reg(rs1, regs) + fetch_reg(rs2, regs));
- 	}
-+
-+	if (!from_kernel && test_thread_flag(TIF_32BIT))
-+		addr &= 0xffffffff;
-+
-+	return addr;
- }
+ 	cq = ccb->sw_q;
+-	cmpl = &cq[ccb->producer_index];
  
- /* This is just to make gcc think die_if_kernel does return... */
+ 	while (packets < budget) {
++		cmpl = &cq[ccb->producer_index];
+ 		if (!cmpl->valid)
+ 			break;
+ 		/* The 'valid' field is set by the adapter, only after writing
 
 
