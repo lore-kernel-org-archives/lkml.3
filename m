@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935AbaHHGuq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 02:50:46 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:52674 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547AbaHHGum (ORCPT
+	id S1755745AbaHHGwf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 02:52:35 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:47460 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925AbaHHGwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 02:50:42 -0400
-Date: Thu, 7 Aug 2014 23:50:38 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: cap1106 - allow changing key mapping from
- userspace
-Message-ID: <20140808065038.GC8103@core.coreip.homeip.net>
-References: <20140721012045.GA4395@core.coreip.homeip.net>
- <20140807062033.GD651@core.coreip.homeip.net>
- <53E321B0.9040701@gmail.com>
+	Fri, 8 Aug 2014 02:52:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E321B0.9040701@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140807192032.70e71fa7@alan.etchedpixels.co.uk>
+References: <53E21125.9080308@plexistor.com>
+	<53E211D9.7030102@plexistor.com>
+	<53E3871C.4020008@plexistor.com>
+	<20140807192032.70e71fa7@alan.etchedpixels.co.uk>
+Date: Fri, 8 Aug 2014 09:52:29 +0300
+Message-ID: <CA+uBny4uWrGpb_fNUW5Z6JDw5ZWTG9L5_mh18iMVmDBmmRguaQ@mail.gmail.com>
+Subject: Re: [PATCH 2/4 v2] brd: Add getgeo to block ops
+From: Boaz Harrosh <boaz@plexistor.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Jens Axboe <axboe@kernel.dk>, Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 08:50:24AM +0200, Daniel Mack wrote:
-> Hi Dmitry,
-> 
-> On 08/07/2014 08:20 AM, Dmitry Torokhov wrote:
-> > On Sun, Jul 20, 2014 at 06:20:49PM -0700, Dmitry Torokhov wrote:
-> >> Wire up support for EVIOC{G|S}KEYCODE to allow users change key mappings
-> >> from userspace.
-> >>
-> >> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> >> ---
-> >>
-> >> Just compiled, not tested.
-> > 
-> > *ping* Any chance you could give it a try? Thanks!
-> 
-> Oh, sorry, I didn't realize you're waiting for me on this.
-> 
-> Unfortunately, I can't test it myself anymore, as I had to return the
-> board I found this chip on. But as the change looks very straight
-> forward, I'd suggest you just apply that patch and I ask the vendor to
-> give it a quick try. In case of any problems, I'll let you know. Does
-> that sound feasible?
+On Thu, Aug 7, 2014 at 9:20 PM, One Thousand Gnomes
+<gnomes@lxorguk.ukuu.org.uk> wrote:
+> On Thu, 07 Aug 2014 17:03:08 +0300
+> Boaz Harrosh <boaz@plexistor.com> wrote:
+>
+>> From: Boaz Harrosh <boaz@plexistor.com>
+>>
+>> Some programs like fdisk, require HDIO_GETGEO to work, which requires we
+>> implement getgeo.
+>>
+>> We set all hd_geometry members to 1, because this way fdisk
+>> math will not try its crazy geometry math and get stuff totally wrong.
+>
+> If you are running a new storage system for god sake don't use DOS
+> partitioning, use GPT or something sane.
+>
 
-OK, I'll put you down as reviewed-by then so we can share the glory (and the
-blame ;))
+I am always using GPT, on all my systems for few years now.
+Fdisk  works exactly the same, regardless of format, regarding alignment
+and start sectors.
 
-Thanks.
+Please try before you comment
 
--- 
-Dmitry
+>> +static int brd_getgeo(struct block_device *bd, struct hd_geometry *geo)
+>> +{
+>> +     /* Just tell fdisk to get out of the way. The math here is so
+>> +      * convoluted and does not make any sense at all. With all 1s
+>> +      * The math just gets out of the way.
+>> +      * NOTE: I was trying to get some values that will make fdisk
+>> +      * Want to align first sector on 4K (like 8, 16, 20, ... sectors) but
+>> +      * nothing worked, I searched the net the math is not your regular
+>> +      * simple multiplication at all. If you managed to get these please
+>> +      * fix here. For now we use 4k physical sectors for this
+>> +      */
+>> +     geo->heads = 1;
+>> +     geo->sectors = 1;
+>> +     geo->cylinders = 1;
+>> +     return 0;
+>
+> This is then going to blow up on your with some other tool. Fix fdisk
+> instead. Lying to apps generally ends up like children lying to parents -
+> the lie gets more complicated to keep up each case you find until it
+> breaks.
+>
+
+Exactly my point sir. What is heads sectors and cylinders for a RAM
+disk. Nothing. We have been lying for  years fearing the world of storage
+will explode if we tell the truth. Finally, as you say, our lies came byte us in
+the arss. Best is to tell the truth and the math at fdisk will do what it is
+suppose to.
+
+And the psychology talk aside, please talk code. Do you know of any
+code that will break because of these values above?
+
+I have by now looked at fdisk's code. It will calculate several alignment
+constrains and finally pick the biggest one. Also it has code for very
+fist sector and different one for other partition-start sectors. This HSC
+math above being one of them. With these values HSC becomes very
+small and gets out of the way, for the other considerations.
+That's fdisk gparted (and parted) will just use 1Mib for alignment which
+is very big, and be done with it. I would imagine all other tools use one
+library or the other. Do you know otherwise?
+
+Boaz
+
+> Alan
