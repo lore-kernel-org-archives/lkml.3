@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756467AbaHHQSo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 12:18:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53186 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752570AbaHHQSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 12:18:43 -0400
-Message-ID: <53E4F85D.2010001@redhat.com>
-Date: Fri, 08 Aug 2014 18:18:37 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1756612AbaHHQTI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 12:19:08 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:43000 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756315AbaHHQTG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 12:19:06 -0400
+Date: Fri, 8 Aug 2014 09:19:01 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: nick.dyer@itdev.co.uk
+Cc: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 1/2] Input: atmel_mxt_ts - simplify mxt_initialize a bit
+Message-ID: <20140808161901.GA26820@core.coreip.homeip.net>
+References: <20140807165932.GA23198@core.coreip.homeip.net>
+ <1407513483-30050-1-git-send-email-nick.dyer@itdev.co.uk>
+ <1407513483-30050-2-git-send-email-nick.dyer@itdev.co.uk>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 8/8] x86: add comments about various syscall instructions,
- no code changes
-References: <1407250354-29525-1-git-send-email-dvlasenk@redhat.com> <1407250354-29525-9-git-send-email-dvlasenk@redhat.com> <20140805195821.GA30908@redhat.com>
-In-Reply-To: <20140805195821.GA30908@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407513483-30050-2-git-send-email-nick.dyer@itdev.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2014 09:58 PM, Oleg Nesterov wrote:
-> On 08/05, Denys Vlasenko wrote:
->>
->> This patch adds comments which explain in detail
->> what registers are modified by each of these instructions.
->> The comments are placed immediately before corresponding
->> entry and exit points.
+On Fri, Aug 08, 2014 at 04:58:02PM +0100, nick.dyer@itdev.co.uk wrote:
+> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 > 
-> This is great ;)
+> I think having control flow with 2 goto/labels/flags is quite hard to read,
+> this version is a bit more readable IMO.
+> 
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 
-I just discovered that I misunderstood how _exactly_
-SYSCALL decides whether to save rflags to r11 or not.
+Nick, are there any changes from the version I posted? (If not then I do
+not need to drop my patch from the queue and re-import this one).
 
-(Wrote an actual testcase for 32bit -> 64bit SYSCALL
-transition. Practice always trumps theory, doesn't it? ;)
+Thanks.
 
-So I had to fix my comments in this patch. I guess
-I need to send v4 of the patchset now...
-
+-- 
+Dmitry
