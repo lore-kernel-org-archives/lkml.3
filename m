@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879AbaHHQ7t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 12:59:49 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:58410 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570AbaHHQ7r (ORCPT
+	id S1756554AbaHHREE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 13:04:04 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:34170
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752941AbaHHREB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 12:59:47 -0400
+	Fri, 8 Aug 2014 13:04:01 -0400
+X-IronPort-AV: E=Sophos;i="5.01,825,1400018400"; 
+   d="scan'208";a="74337045"
+Date: Fri, 8 Aug 2014 19:03:32 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+        kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, joe@perches.com
+Subject: Re: [PATCH 1/1] dpt_i2o: delete unnecessary null test on array
+In-Reply-To: <1407517179.2044.13.camel@jarvis.lan>
+Message-ID: <alpine.DEB.2.10.1408081902400.2348@hadrien>
+References: <1407321551-27479-1-git-send-email-Julia.Lawall@lip6.fr>  <1407321551-27479-2-git-send-email-Julia.Lawall@lip6.fr> <1407517179.2044.13.camel@jarvis.lan>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <53E47186.5000309@samsung.com>
-References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
- <CAK5ve-L67=q-EpWvxD5-x+cFT7dh8p0HHuoUbAWA-j5BqCO52A@mail.gmail.com>
- <CAK5ve-+xyXyjPqejTPRvz=bJ4M5v19Uq1oaVv94QKqBWf1D4dA@mail.gmail.com> <53E47186.5000309@samsung.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Fri, 8 Aug 2014 09:59:24 -0700
-Message-ID: <CAK5ve-+3WmaU+OEX1T_xMWDRDgNxD6YXrqTB-=UyaQxHknVbow@mail.gmail.com>
-Subject: Re: [PATCH/RFC v4 00/21] LED / flash API integration
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, b.zolnierkie@samsung.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 7, 2014 at 11:43 PM, Jacek Anaszewski
-<j.anaszewski@samsung.com> wrote:
-> Hi Bryan,
+> > diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
+> > index 67283ef..62e276b 100644
+> > --- a/drivers/scsi/dpt_i2o.c
+> > +++ b/drivers/scsi/dpt_i2o.c
+> > @@ -1169,11 +1169,6 @@ static struct adpt_device* adpt_find_device(adpt_hba* pHba, u32 chan, u32 id, u6
+> >  	if(chan < 0 || chan >= MAX_CHANNEL)
+> >  		return NULL;
+> >
+> > -	if( pHba->channel[chan].device == NULL){
+> > -		printk(KERN_DEBUG"Adaptec I2O RAID: Trying to find device before they are allocated\n");
+> > -		return NULL;
+> > -	}
 >
+> dpt_i2o is always weirdly fun, but I think, based on the message, this
+> check is supposed to be
 >
-> On 07/16/2014 07:21 PM, Bryan Wu wrote:
->>
->> On Wed, Jul 16, 2014 at 10:19 AM, Bryan Wu <cooloney@gmail.com> wrote:
->>>
->>> On Fri, Jul 11, 2014 at 7:04 AM, Jacek Anaszewski
->>> <j.anaszewski@samsung.com> wrote:
->>>>
->>>> This is is the fourth version of the patch series being a follow up
->>>> of the discussion on Media summit 2013-10-23, related to the
->>>> LED / flash API integration (the notes from the discussion were
->>>> enclosed in the message [1], paragraph 5).
->>>> The series is based on linux-next-20140707
->>>>
->>>
->>> I really apologize that I missed your discussion email in my Gmail
->>> inbox, it was archived some where. Even in this series some of these
->>> patches are archived in different tab.
->>>
->>> I will start to review and help to push this.
->>>
->>
->> In the mean time, could you please provide an git tree for me to pull?
->> It's much easier for me to review in my git.
+> if( pHba->channel[chan].device[id] == NULL){
 >
->
-> Few days ago I sent to your private email the path to the git
-> repository to pull, but I am resending it through the lists to
-> make sure that it will not get filtered somehow again.
->
->
-> git://linuxtv.org/snawrocki/samsung.git
-> branch: led_flash_integration_v4
->
-> gitweb:
-> http://git.linuxtv.org/cgit.cgi/snawrocki/samsung.git/log/?h=led_flash_integration_v4
->
+> Since device is an array of device pointers which are allocated by
+> parsing data.
 
-Yes, I got it. I merged some leds core fixing patches from you
-recently. So could you please split these big patchset into several
-small parts which should be easier for reviewing and discussion.
- - led core fixing
- - led flash core patches
- - led flash manager patches
- - v4l2 led patches
- - Documentations
+That seems to be already checked immediately below:
 
-My plan is to review these and merge them to my -devel branch. Then
-invite people for testing.
+        d = pHba->channel[chan].device[id];
+	if(!d || d->tid == 0) {
+                return NULL;
+        }
 
-Thanks,
--Bryan
+julia
