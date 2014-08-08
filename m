@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759912AbaHHWhz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:37:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32982 "EHLO
+	id S1756973AbaHHWkN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:40:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32997 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759794AbaHHWgi (ORCPT
+	with ESMTP id S1751666AbaHHWkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 18:36:38 -0400
-Date: Fri, 8 Aug 2014 15:36:35 -0700
+	Fri, 8 Aug 2014 18:40:10 -0400
+Date: Fri, 8 Aug 2014 15:40:08 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
 To: Laura Abbott <lauraa@codeaurora.org>
 Cc: Will Deacon <will.deacon@arm.com>,
@@ -19,10 +19,11 @@ Cc: Will Deacon <will.deacon@arm.com>,
         linux-kernel@vger.kernel.org,
         Thierry Reding <thierry.reding@gmail.com>,
         Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCHv6 1/5] lib/genalloc.c: Add power aligned algorithm
-Message-Id: <20140808153635.36f27a4fbfbd8f715e51d15e@linux-foundation.org>
-In-Reply-To: <1407529397-6642-1-git-send-email-lauraa@codeaurora.org>
+Subject: Re: [PATCHv6 2/5] lib/genalloc.c: Add genpool range check function
+Message-Id: <20140808154008.4e5183b67d29159a83ffcf25@linux-foundation.org>
+In-Reply-To: <1407529397-6642-2-git-send-email-lauraa@codeaurora.org>
 References: <1407529397-6642-1-git-send-email-lauraa@codeaurora.org>
+	<1407529397-6642-2-git-send-email-lauraa@codeaurora.org>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -31,48 +32,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  8 Aug 2014 13:23:13 -0700 Laura Abbott <lauraa@codeaurora.org> wrote:
+On Fri,  8 Aug 2014 13:23:14 -0700 Laura Abbott <lauraa@codeaurora.org> wrote:
 
 > 
-> One of the more common algorithms used for allocation
-> is to align the start address of the allocation to
-> the order of size requested. Add this as an algorithm
-> option for genalloc.
+> After allocating an address from a particular genpool,
+> there is no good way to verify if that address actually
+> belongs to a genpool. Introduce addr_in_gen_pool which
+> will return if an address plus size falls completely
+> within the genpool range.
 > 
-> --- a/lib/genalloc.c
-> +++ b/lib/genalloc.c
-> @@ -481,6 +481,27 @@ unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
->  EXPORT_SYMBOL(gen_pool_first_fit);
->  
+> ...
+>
 >  /**
-> + * gen_pool_first_fit_order_align - find the first available region
-> + * of memory matching the size requirement. The region will be aligned
-> + * to the order of the size specified.
-> + * @map: The address to base the search on
-> + * @size: The bitmap size in bits
-> + * @start: The bitnumber to start searching at
-> + * @nr: The number of zeroed bits we're looking for
-> + * @data: additional data - unused
+> + * addr_in_gen_pool - checks if an address falls within the range of a pool
+> + * @pool:	the generic memory pool
+> + * @start:	start address
+> + * @size:	size of the region
+> + *
+> + * Check if the range of addresses falls within the specified pool.
 
-`data' is used.
+This description should make it clear that the entire range must be
+within the pool - that an overlap is "no".
+
+>     Takes
+> + * the rcu_read_lock for the duration of the check.
+
+I don't think this part is worth including.
 
 > + */
-> +unsigned long gen_pool_first_fit_order_align(unsigned long *map,
-> +		unsigned long size, unsigned long start,
-> +		unsigned int nr, void *data)
+> +bool addr_in_gen_pool(struct gen_pool *pool, unsigned long start,
+> +			size_t size)
 > +{
-> +	unsigned long order = (unsigned long) data;
-
-Why pass a void*?  Why not pass "unsigned order;"?
-
-> +	unsigned long align_mask = (1 << get_order(nr << order)) - 1;
+> +	bool found = false;
+> +	unsigned long end = start + size;
+> +	struct gen_pool_chunk *chunk;
 > +
-> +	return bitmap_find_next_zero_area(map, size, start, nr, align_mask);
+> +	rcu_read_lock();
+> +	list_for_each_entry_rcu(chunk, &(pool)->chunks, next_chunk) {
+> +		if (start >= chunk->start_addr && start <= chunk->end_addr) {
+> +			if (end <= chunk->end_addr) {
+> +				found = true;
+> +				break;
+> +			}
+> +		}
+> +	}
+> +	rcu_read_unlock();
+> +	return found;
 > +}
-> +EXPORT_SYMBOL(gen_pool_first_fit_order_align);
-> +
-> +/**
->   * gen_pool_best_fit - find the best fitting region of memory
->   * macthing the size requirement (no alignment constraint)
->   * @map: The address to base the search on
 
