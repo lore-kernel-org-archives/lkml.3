@@ -1,114 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840AbaHHBMY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 21:12:24 -0400
-Received: from regular1.263xmail.com ([211.150.99.130]:45006 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756256AbaHHBMW (ORCPT
+	id S1756916AbaHHBPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 21:15:16 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:47952 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755425AbaHHBPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 21:12:22 -0400
-X-263anti-spam: BIG:0;KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 1
-X-KSVirus-check: 0
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: linux-kernel@vger.kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <0a47ed347c0baf87e311e957b9035af4>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <53E423EC.6090309@rock-chips.com>
-Date: Fri, 08 Aug 2014 09:12:12 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 7 Aug 2014 21:15:12 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-security-module@vger.kernel.org,
+        selinux@tycho.nsa.gov
+Subject: [GIT PULL] SELinux/NetLabel fixes for 3.17
+Date: Thu, 07 Aug 2014 21:15:09 -0400
+Message-ID: <3757283.5i2HgyZGYY@sifl>
+User-Agent: KMail/4.13.3 (Linux/3.15.7-gentoo; KDE/4.13.3; x86_64; ; )
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-CC: Dinh Nguyen <dinguyen@altera.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>, linux-arm-kernel@lists.infradead.org,
-        paulz@synopsys.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: dwc2: Read GNPTXFSIZ when in forced HOST mode.
-References: <1407440891-29295-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1407440891-29295-1-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug:
+Hello All,
 
-On 08/08/2014 03:48 AM, Doug Anderson wrote:
-> The documentation for GNPTXFSIZ says that "For host mode, this field
-> is always valid."  Since we're already switching to host mode for
-> HPTXFSIZ, let's also read GNPTXFSIZ in host mode.
->
-> On an rk3288 SoC, without this change we see this at bootup:
->    dwc2 ff580000.usb: gnptxfsiz=00100400
->    dwc2 ff580000.usb: 128 invalid for host_nperio_tx_fifo_size. Check HW configuration.
->
-> After this change we see:
->    dwc2 ff580000.usb: gnptxfsiz=04000400
-Yeap, that is the problem cause the log you shown in rk3288-evb and 
-further more
-cause fifo setting fail.
+Two small patches to fix a couple of build warnings in SELinux and NetLabel.  
+The patches are obvious enough that I don't think any additional explanation 
+is necessary, but it basically boils down to the usual: I was stupid, and 
+these patches fix some of the stupid.
 
-I was plan to commit this patch just the same as you did.
-It's great that you also find out the problem and send this patch.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->   drivers/usb/dwc2/core.c | 6 +++---
->   1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/usb/dwc2/core.c b/drivers/usb/dwc2/core.c
-> index 27d2c9b..c184ed43 100644
-> --- a/drivers/usb/dwc2/core.c
-> +++ b/drivers/usb/dwc2/core.c
-> @@ -2674,23 +2674,23 @@ int dwc2_get_hwparams(struct dwc2_hsotg *hsotg)
->   	hwcfg2 = readl(hsotg->regs + GHWCFG2);
->   	hwcfg3 = readl(hsotg->regs + GHWCFG3);
->   	hwcfg4 = readl(hsotg->regs + GHWCFG4);
-> -	gnptxfsiz = readl(hsotg->regs + GNPTXFSIZ);
->   	grxfsiz = readl(hsotg->regs + GRXFSIZ);
->   
->   	dev_dbg(hsotg->dev, "hwcfg1=%08x\n", hwcfg1);
->   	dev_dbg(hsotg->dev, "hwcfg2=%08x\n", hwcfg2);
->   	dev_dbg(hsotg->dev, "hwcfg3=%08x\n", hwcfg3);
->   	dev_dbg(hsotg->dev, "hwcfg4=%08x\n", hwcfg4);
-> -	dev_dbg(hsotg->dev, "gnptxfsiz=%08x\n", gnptxfsiz);
->   	dev_dbg(hsotg->dev, "grxfsiz=%08x\n", grxfsiz);
->   
-> -	/* Force host mode to get HPTXFSIZ exact power on value */
-> +	/* Force host mode to get HPTXFSIZ / GNPTXFSIZ exact power on value */
->   	gusbcfg = readl(hsotg->regs + GUSBCFG);
->   	gusbcfg |= GUSBCFG_FORCEHOSTMODE;
->   	writel(gusbcfg, hsotg->regs + GUSBCFG);
->   	usleep_range(100000, 150000);
->   
-> +	gnptxfsiz = readl(hsotg->regs + GNPTXFSIZ);
->   	hptxfsiz = readl(hsotg->regs + HPTXFSIZ);
-> +	dev_dbg(hsotg->dev, "gnptxfsiz=%08x\n", gnptxfsiz);
->   	dev_dbg(hsotg->dev, "hptxfsiz=%08x\n", hptxfsiz);
->   	gusbcfg = readl(hsotg->regs + GUSBCFG);
->   	gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
-There may be a potential problem still need to fix, the grxfsiz may have 
-being changed,
-the bootrom and uboot will change this value if they use the dwc2 
-controller.
-The way we get the register value here can not make sure this is the 
-power-on
-value which we actually need.
+Both patches were posted earlier this week to the SELinux list, and that is 
+where they sat as I didn't think there were noteworthy enough to go upstream 
+at this point in time, but DaveM would rather see them upstream now so who am 
+I to argue.  As the patches are both very small, I'm including the combines 
+changes with this pull request in case anyone wants to scrutinize them any 
+further.
 
-Let me do more test for that, and maybe we need another patch.
+Enjoy,
+-Paul
 
-Anyway, this patch works and reasonable.
+--
+The following changes since commit 4fbe63d1c773cceef3fe1f6ed0c9c268f4f24760:
 
-Reviewed-by: Kever Yang <kever.yang@rock-chips.com>
+  netlabel: shorter names for the NetLabel catmap funcs/structs
+            (2014-08-01 11:17:37 -0400)
 
+are available in the git repository at:
 
+  git://git.infradead.org/users/pcmoore/selinux stable-3.17
 
+for you to fetch changes up to 942ba3646543aeb3e5729c35d10ac43424bf0b68:
+
+  selinux: remove unused variabled in the netport, netnode, and netif
+           caches (2014-08-07 20:55:30 -0400)
+
+----------------------------------------------------------------
+Paul Moore (2):
+      netlabel: fix the netlbl_catmap_setlong() dummy function
+      selinux: remove unused variabled in the netport, netnode, and netif
+               caches
+
+ include/net/netlabel.h     | 8 ++++----
+ security/selinux/netif.c   | 4 ++--
+ security/selinux/netnode.c | 3 +--
+ security/selinux/netport.c | 3 +--
+ 4 files changed, 8 insertions(+), 10 deletions(-)
+
+diff --git a/include/net/netlabel.h b/include/net/netlabel.h
+index a4fc39b..7b5a300 100644
+--- a/include/net/netlabel.h
++++ b/include/net/netlabel.h
+@@ -524,10 +524,10 @@ static inline int netlbl_catmap_setrng(struct 
+netlbl_lsm_catmap **catmap,
+ {
+ 	return 0;
+ }
+-static int netlbl_catmap_setlong(struct netlbl_lsm_catmap **catmap,
+-				 u32 offset,
+-				 unsigned long bitmap,
+-				 gfp_t flags)
++static inline int netlbl_catmap_setlong(struct netlbl_lsm_catmap **catmap,
++					u32 offset,
++					unsigned long bitmap,
++					gfp_t flags)
+ {
+ 	return 0;
+ }
+diff --git a/security/selinux/netif.c b/security/selinux/netif.c
+index 3c3de4c..50ce177 100644
+--- a/security/selinux/netif.c
++++ b/security/selinux/netif.c
+@@ -272,7 +272,7 @@ static struct notifier_block sel_netif_netdev_notifier = {
+ 
+ static __init int sel_netif_init(void)
+ {
+-	int i, err;
++	int i;
+ 
+ 	if (!selinux_enabled)
+ 		return 0;
+@@ -282,7 +282,7 @@ static __init int sel_netif_init(void)
+ 
+ 	register_netdevice_notifier(&sel_netif_netdev_notifier);
+ 
+-	return err;
++	return 0;
+ }
+ 
+ __initcall(sel_netif_init);
+diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
+index ddf3152..da923f8 100644
+--- a/security/selinux/netnode.c
++++ b/security/selinux/netnode.c
+@@ -303,7 +303,6 @@ void sel_netnode_flush(void)
+ static __init int sel_netnode_init(void)
+ {
+ 	int iter;
+-	int ret;
+ 
+ 	if (!selinux_enabled)
+ 		return 0;
+@@ -313,7 +312,7 @@ static __init int sel_netnode_init(void)
+ 		sel_netnode_hash[iter].size = 0;
+ 	}
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ __initcall(sel_netnode_init);
+diff --git a/security/selinux/netport.c b/security/selinux/netport.c
+index 73ac678..3311cc3 100644
+--- a/security/selinux/netport.c
++++ b/security/selinux/netport.c
+@@ -237,7 +237,6 @@ void sel_netport_flush(void)
+ static __init int sel_netport_init(void)
+ {
+ 	int iter;
+-	int ret;
+ 
+ 	if (!selinux_enabled)
+ 		return 0;
+@@ -247,7 +246,7 @@ static __init int sel_netport_init(void)
+ 		sel_netport_hash[iter].size = 0;
+ 	}
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ __initcall(sel_netport_init);
+
+-- 
+paul moore
+security and virtualization @ redhat
