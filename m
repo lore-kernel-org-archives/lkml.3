@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaHHU2i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:28:38 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:8944 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751268AbaHHU2h (ORCPT
+	id S1751613AbaHHUak (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:30:40 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:38839 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111AbaHHUaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:28:37 -0400
-From: Josef Bacik <jbacik@fb.com>
-To: <rostedt@goodmis.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] trace-cmd: make sure we have a pending pid in trace-hist
-Date: Fri, 8 Aug 2014 16:26:17 -0400
-Message-ID: <1407529577-15548-1-git-send-email-jbacik@fb.com>
-X-Mailer: git-send-email 2.0.0
+	Fri, 8 Aug 2014 16:30:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-08_05:2014-08-08,2014-08-08,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=9.44799793956008e-13 kscore.compositescore=0
- circleOfTrustscore=22.6900859407804 compositescore=0.997695897463551
- urlsuspect_oldscore=0.997695897463551 suspectscore=2
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.997695897463551 spamscore=0
- recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1408080242
-X-FB-Internal: deliver
+In-Reply-To: <CA+55aFxb1q9bwdM6_H=ctFHc+4rP4rBuzWMDNXVZwpwf0cN-Bw@mail.gmail.com>
+References: <20140808143418.GA25720@phenom.ffwll.local>
+	<CA+55aFxVsV58oi0E5H0dTRGH2r+WogkuzhncTJHy9F4d2sTTrA@mail.gmail.com>
+	<CA+55aFxb1q9bwdM6_H=ctFHc+4rP4rBuzWMDNXVZwpwf0cN-Bw@mail.gmail.com>
+Date: Fri, 8 Aug 2014 13:30:38 -0700
+X-Google-Sender-Auth: kmG-0mGZKYFx6Q5RqqqvOnztVTo
+Message-ID: <CA+55aFyXXyJ1subAWjwv3-yFndRNpUSWLFVb8Aq=NWAS+PXsJQ@mail.gmail.com>
+Subject: Re: [PULL] drm-intel-fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Airlie <airlied@gmail.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a trace.dat file where we lost some events and so we didn't have the
-corresponding event to go with the stack trace.  This made trace-cmd hist
-segfault because it unconditionally pushes the pending_pid's function onto the
-stack trace.  In this case pending_pid < 0, which means we didn't have a pending
-stack trace, so we got garbage in the call chain and hilarity ensued.  Fix this
-by only pushing the pending call chain if there actually is one, and also don't
-reset the current call chain if there isn't actually one there either.  This
-fixed my segfault.  Thanks,
+On Fri, Aug 8, 2014 at 12:37 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> The problem seems to exist already with just the plain drm pull from
+> Dave. I thought I had tested that, but apparently not.
 
-Signed-off-by: Josef Bacik <jbacik@fb.com>
----
- trace-hist.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+Still busy bisecting (and it's going into the i915 part of Dave's drm
+pull, so the bisect looks sane so far), but in case some i915 person
+is trying to think about what it might be, it doesn't seem to be the
+backlight per se.
 
-diff --git a/trace-hist.c b/trace-hist.c
-index 73820de..574549e 100644
---- a/trace-hist.c
-+++ b/trace-hist.c
-@@ -453,9 +453,11 @@ process_kernel_stack(struct pevent *pevent, struct pevent_record *record)
- 		}
- 	} else {
- 		/* function stack trace? */
--		copy_stack_to_pending(current_pid);
--		free(ips);
--		reset_stack();
-+		if (current_pid >= 0) {
-+			copy_stack_to_pending(current_pid);
-+			free(ips);
-+			reset_stack();
-+		}
- 	}
- 
- 	current_pid = pid;
-@@ -482,8 +484,10 @@ process_kernel_stack(struct pevent *pevent, struct pevent_record *record)
- 			push_stack_func(func);
- 	}
- 
--	push_stack_func(pending_ips[pending_ips_idx - 1]);
--	reset_pending_stack();
-+	if (pending_pid >= 0) {
-+		push_stack_func(pending_ips[pending_ips_idx - 1]);
-+		reset_pending_stack();
-+	}
- 	save_call_chain(current_pid, ips, ips_idx, 1);
- 	if (do_restore)
- 		restore_stack(current_pid);
--- 
-2.0.0
+Sometimes it resumes with the backlight on and something showing on
+the screen, but no reaction to mouse or keyboard. And in fact, I have
+now gotten an X lockup twice *without* doing resume/suspend, so it
+seems like the whole resume/suspend thing is just a way to trigger it,
+not the fundamental problem.
 
+The machine is alive (the printscreen button takes a screenshot, for
+example - I can tell by the sound), but the graphics side is hung.
+
+This is a Sony Vaio Pro 11, so it's bog-standard intel graphics (Haswell ULT).
+
+                 Linus
