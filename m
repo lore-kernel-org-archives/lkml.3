@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759272AbaHHVuJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:50:09 -0400
+	id S1759297AbaHHVu2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:50:28 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:60699 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933525AbaHHVg4 (ORCPT
+	with ESMTP id S933516AbaHHVgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:56 -0400
+	Fri, 8 Aug 2014 17:36:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 08/26] tcp: Fix integer-overflows in TCP veno
-Date: Fri,  8 Aug 2014 14:35:15 -0700
-Message-Id: <20140808213414.007465630@linuxfoundation.org>
+        Fan Du <fan.du@windriver.com>, Tobias Brunner <tobias@strongswan.org>,
+        Steffen Klassert <steffen.klassert@secunet.com>
+Subject: [PATCH 3.15 03/26] xfrm: Fix installation of AH IPsec SAs
+Date: Fri,  8 Aug 2014 14:35:10 -0700
+Message-Id: <20140808213413.792596353@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
 References: <20140808213413.648794968@linuxfoundation.org>
@@ -29,36 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+From: Tobias Brunner <tobias@strongswan.org>
 
-[ Upstream commit 45a07695bc64b3ab5d6d2215f9677e5b8c05a7d0 ]
+[ Upstream commit a0e5ef53aac8e5049f9344857d8ec5237d31e58b ]
 
-In veno we do a multiplication of the cwnd and the rtt. This
-may overflow and thus their result is stored in a u64. However, we first
-need to cast the cwnd so that actually 64-bit arithmetic is done.
+The SPI check introduced in ea9884b3acf3311c8a11db67bfab21773f6f82ba
+was intended for IPComp SAs but actually prevented AH SAs from getting
+installed (depending on the SPI).
 
-A first attempt at fixing 76f1017757aa0 ([TCP]: TCP Veno congestion
-control) was made by 159131149c2 (tcp: Overflow bug in Vegas), but it
-failed to add the required cast in tcp_veno_cong_avoid().
-
-Fixes: 76f1017757aa0 ([TCP]: TCP Veno congestion control)
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: ea9884b3acf3 ("xfrm: check user specified spi for IPComp")
+Cc: Fan Du <fan.du@windriver.com>
+Signed-off-by: Tobias Brunner <tobias@strongswan.org>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_veno.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/xfrm/xfrm_user.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/tcp_veno.c
-+++ b/net/ipv4/tcp_veno.c
-@@ -145,7 +145,7 @@ static void tcp_veno_cong_avoid(struct s
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -177,9 +177,7 @@ static int verify_newsa_info(struct xfrm
+ 		    attrs[XFRMA_ALG_AEAD]	||
+ 		    attrs[XFRMA_ALG_CRYPT]	||
+ 		    attrs[XFRMA_ALG_COMP]	||
+-		    attrs[XFRMA_TFCPAD]		||
+-		    (ntohl(p->id.spi) >= 0x10000))
+-
++		    attrs[XFRMA_TFCPAD])
+ 			goto out;
+ 		break;
  
- 		rtt = veno->minrtt;
- 
--		target_cwnd = (tp->snd_cwnd * veno->basertt);
-+		target_cwnd = (u64)tp->snd_cwnd * veno->basertt;
- 		target_cwnd <<= V_PARAM_SHIFT;
- 		do_div(target_cwnd, rtt);
+@@ -207,7 +205,8 @@ static int verify_newsa_info(struct xfrm
+ 		    attrs[XFRMA_ALG_AUTH]	||
+ 		    attrs[XFRMA_ALG_AUTH_TRUNC]	||
+ 		    attrs[XFRMA_ALG_CRYPT]	||
+-		    attrs[XFRMA_TFCPAD])
++		    attrs[XFRMA_TFCPAD]		||
++		    (ntohl(p->id.spi) >= 0x10000))
+ 			goto out;
+ 		break;
  
 
 
