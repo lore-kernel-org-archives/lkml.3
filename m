@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236AbaHHJIg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 05:08:36 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:39412 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889AbaHHJIc (ORCPT
+	id S1756259AbaHHJKd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 05:10:33 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:61519 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752258AbaHHJKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 05:08:32 -0400
+	Fri, 8 Aug 2014 05:10:30 -0400
 From: Gyungoh Yoo <gyungoh@gmail.com>
 X-Google-Original-From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        grant.likely@linaro.org
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, jack.yoo@skyworksinc.com,
-        jason@lakedaemon.net, heiko.stuebner@bqreaders.com,
-        florian.vaussard@epfl.ch, thierry.reding@gmail.com, andrew@lunn.ch,
-        silvio.fricke@gmail.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] Adding Skyworks SKY81452 MFD driver
-Date: Fri,  8 Aug 2014 18:08:19 +0900
-Message-Id: <1407488899-31065-1-git-send-email-jack.yoo@skyworksinc.com>
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+Cc: lgirdwood@gmail.com, broonie@kernel.org, jack.yoo@skyworksinc.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] Adding Skyworks SKY81452 regulator driver
+Date: Fri,  8 Aug 2014 18:10:22 +0900
+Message-Id: <1407489022-31130-1-git-send-email-jack.yoo@skyworksinc.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,102 +23,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 ---
- Documentation/devicetree/bindings/mfd/sky81452.txt |  24 +++++
- .../devicetree/bindings/vendor-prefixes.txt        |   1 +
- drivers/mfd/Kconfig                                |  12 +++
- drivers/mfd/Makefile                               |   1 +
- drivers/mfd/sky81452.c                             | 113 +++++++++++++++++++++
- include/linux/mfd/sky81452.h                       |  32 ++++++
- 6 files changed, 183 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
- create mode 100644 drivers/mfd/sky81452.c
- create mode 100644 include/linux/mfd/sky81452.h
+ .../bindings/regulator/sky81452-regulator.txt      |  16 +++
+ drivers/regulator/Kconfig                          |  11 ++
+ drivers/regulator/Makefile                         |   1 +
+ drivers/regulator/sky81452-regulator.c             | 130 +++++++++++++++++++++
+ 4 files changed, 158 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
+ create mode 100644 drivers/regulator/sky81452-regulator.c
 
-diff --git a/Documentation/devicetree/bindings/mfd/sky81452.txt b/Documentation/devicetree/bindings/mfd/sky81452.txt
+diff --git a/Documentation/devicetree/bindings/regulator/sky81452-regulator.txt b/Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
 new file mode 100644
-index 0000000..5fb0b4f
+index 0000000..f98b5ed
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/sky81452.txt
-@@ -0,0 +1,24 @@
-+SKY81452 bindings
++++ b/Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
+@@ -0,0 +1,16 @@
++SKY81452 voltage regulator
 +
 +Required properties:
-+- compatible	: Must be "skyworks,sky81452"
++- any required generic properties defined in regulator.txt
 +
-+Required child nodes:
-+- backlight	: container node for backlight following the binding
-+		in video/backlight/sky81452-backlight.txt
-+- regulator	: container node for regulators following the binding
-+		in regulator/sky81452-regulator.txt
++Optional properties:
++- any available generic properties defined in regulator.txt
 +
 +Example:
 +
-+	sky81452@2C {
-+		compatible = "skyworks,sky81452";
-+
-+		backlight {
-+			...
-+		};
-+
-+		regulator {
-+			...
-+		};
++	regualtor {
++		/* generic regulator properties */
++		regulator-name = "touch_en";
++		regulator-min-microvolt = <4500000>;
++		regulator-max-microvolt = <8000000>;
 +	};
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index d415b38..ce76e10 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -122,6 +122,7 @@ silabs	Silicon Laboratories
- simtek
- sii	Seiko Instruments, Inc.
- sirf	SiRF Technology, Inc.
-+skyworks	Skyworks Solutions, Inc.
- smsc	Standard Microsystems Corporation
- snps 	Synopsys, Inc.
- spansion	Spansion Inc.
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index de5abf2..acfb2e5 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -626,6 +626,18 @@ config MFD_SM501_GPIO
- 	 lines on the SM501. The platform data is used to supply the
- 	 base number for the first GPIO line to register.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 2dc8289..f6bf208 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -483,6 +483,17 @@ config REGULATOR_S5M8767
+ 	 via I2C bus. S5M8767A have 9 Bucks and 28 LDOs output and
+ 	 supports DVS mode with 8bits of output voltage control.
  
-+config SKY81452
-+	tristate "Skyworks Solutions SKY81452"
-+	select MFD_CORE
-+	select REGMAP_I2C
-+	depends on I2C=y
++config REGULATOR_SKY81452
++	tristate "Skyworks Solutions SKY81452 voltage regulator"
++	depends on SKY81452
 +	help
-+	  This is the core driver for the Skyworks SKY81452 backlight and
-+	  voltage regulator device.
++	  This driver supports Skyworks SKY81452 voltage output regulator
++	  via I2C bus. SKY81452 has one voltage linear regulator can be
++	  programmed from 4.5V to 20V.
 +
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called sky81452.
++	  This driver can also be built as a module. If so, the module
++	  will be called sky81452-regulator.
 +
- config MFD_SMSC
-        bool "SMSC ECE1099 series chips"
-        depends on I2C=y
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index f001487..191c656 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -169,6 +169,7 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
- obj-$(CONFIG_MFD_AS3722)	+= as3722.o
- obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
- obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
-+obj-$(CONFIG_SKY81452)		+= sky81452.o
- 
- intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
- obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
-diff --git a/drivers/mfd/sky81452.c b/drivers/mfd/sky81452.c
+ config REGULATOR_ST_PWM
+ 	tristate "STMicroelectronics PWM voltage regulator"
+ 	depends on ARCH_STI
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index aa4a6aa..d8206ec 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -65,6 +65,7 @@ obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
+ obj-$(CONFIG_REGULATOR_S2MPA01) += s2mpa01.o
+ obj-$(CONFIG_REGULATOR_S2MPS11) += s2mps11.o
+ obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
++obj-$(CONFIG_REGULATOR_SKY81452) += sky81452-regulator.o
+ obj-$(CONFIG_REGULATOR_ST_PWM) += st-pwm.o
+ obj-$(CONFIG_REGULATOR_STW481X_VMMC) += stw481x-vmmc.o
+ obj-$(CONFIG_REGULATOR_TI_ABB) += ti-abb-regulator.o
+diff --git a/drivers/regulator/sky81452-regulator.c b/drivers/regulator/sky81452-regulator.c
 new file mode 100644
-index 0000000..566912f
+index 0000000..97aff0c
 --- /dev/null
-+++ b/drivers/mfd/sky81452.c
-@@ -0,0 +1,113 @@
++++ b/drivers/regulator/sky81452-regulator.c
+@@ -0,0 +1,130 @@
 +/*
-+ * sky81452.c	SKY81452 MFD driver
++ * sky81452-regulator.c	SKY81452 regulator driver
 + *
 + * Copyright 2014 Skyworks Solutions Inc.
 + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
@@ -141,137 +113,116 @@ index 0000000..566912f
 + * with this program; if not, see <http://www.gnu.org/licenses/>.
 + */
 +
-+#include <linux/kernel.h>
 +#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
 +#include <linux/init.h>
 +#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/sky81452.h>
++#include <linux/of.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/of_regulator.h>
 +
-+static const struct regmap_config sky81452_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
++/* registers */
++#define SKY81452_REG1	0x01
++#define SKY81452_REG3	0x03
++
++/* bit mask */
++#define SKY81452_LEN	0x40
++#define SKY81452_LOUT	0x1F
++
++static struct regulator_ops sky81452_reg_ops = {
++	.list_voltage = regulator_list_voltage_linear_range,
++	.map_voltage = regulator_map_voltage_linear_range,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
 +};
 +
-+static int sky81452_register_devices(struct device *dev,
-+		const struct sky81452_platform_data *pdata)
++static const struct regulator_linear_range sky81452_reg_ranges[] = {
++	REGULATOR_LINEAR_RANGE(4500000, 0, 14, 250000),
++	REGULATOR_LINEAR_RANGE(9000000, 15, 31, 1000000),
++};
++
++static const struct regulator_desc sky81452_reg = {
++	.name = "LOUT",
++	.ops = &sky81452_reg_ops,
++	.type = REGULATOR_VOLTAGE,
++	.owner = THIS_MODULE,
++	.n_voltages = SKY81452_LOUT + 1,
++	.linear_ranges = sky81452_reg_ranges,
++	.n_linear_ranges = ARRAY_SIZE(sky81452_reg_ranges),
++	.vsel_reg = SKY81452_REG3,
++	.vsel_mask = SKY81452_LOUT,
++	.enable_reg = SKY81452_REG1,
++	.enable_mask = SKY81452_LEN,
++};
++
++#ifdef CONFIG_OF
++static struct regulator_init_data *sky81452_reg_parse_dt(struct device *dev)
 +{
-+	struct mfd_cell cells[] = {
-+		{
-+			.name = "sky81452-bl",
-+			.platform_data = pdata->bl_pdata,
-+			.pdata_size = sizeof(*pdata->bl_pdata),
-+		},
-+		{
-+			.name = "sky81452-regulator",
-+			.platform_data = pdata->regulator_init_data,
-+			.pdata_size = sizeof(*pdata->regulator_init_data),
-+		},
-+	};
++	struct regulator_init_data *init_data;
++	struct device_node *np;
 +
-+	return mfd_add_devices(dev, -1, cells, ARRAY_SIZE(cells),
-+			NULL, 0, NULL);
-+}
-+
-+static int sky81452_probe(struct i2c_client *client,
-+		const struct i2c_device_id *id)
-+{
-+	struct device *dev = &client->dev;
-+	const struct sky81452_platform_data *pdata = dev_get_platdata(dev);
-+	struct regmap *map;
-+
-+	if (!pdata) {
-+		pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+		if (!pdata)
-+			return -ENOMEM;
++	np = of_get_child_by_name(dev->parent->of_node, "regulator");
++	if (unlikely(!np)) {
++		dev_err(dev, "regulator node not found");
++		return NULL;
 +	}
 +
-+	map = devm_regmap_init_i2c(client, &sky81452_config);
-+	if (IS_ERR(map))
-+		return PTR_ERR(map);
++	init_data = of_get_regulator_init_data(dev, np);
 +
-+	i2c_set_clientdata(client, map);
-+
-+	return sky81452_register_devices(dev, pdata);
++	of_node_put(np);
++	return init_data;
 +}
-+
-+static int sky81452_remove(struct i2c_client *client)
++#else
++static struct regulator_init_data *sky81452_reg_parse_dt(struct device *dev)
 +{
-+	mfd_remove_devices(&client->dev);
++	return ERR_PTR(-EINVAL);
++}
++#endif
++
++static int sky81452_reg_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	const struct regulator_init_data *init_data = dev_get_platdata(dev);
++	struct regulator_config config = { };
++	struct regulator_dev *rdev;
++
++	if (!init_data) {
++		init_data = sky81452_reg_parse_dt(dev);
++		if (IS_ERR(init_data))
++			return PTR_ERR(init_data);
++	}
++
++	config.dev = dev;
++	config.init_data = init_data;
++	config.of_node = dev->of_node;
++	config.regmap = dev_get_drvdata(dev->parent);
++
++	rdev = devm_regulator_register(dev, &sky81452_reg, &config);
++	if (IS_ERR(rdev))
++		return PTR_ERR(rdev);
++
++	platform_set_drvdata(pdev, rdev);
++
 +	return 0;
 +}
 +
-+static const struct i2c_device_id sky81452_ids[] = {
-+	{ "sky81452", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, sky81452_ids);
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id sky81452_of_match[] = {
-+	{ .compatible = "skyworks,sky81452", },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, sky81452_of_match);
-+#endif
-+
-+static struct i2c_driver sky81452_driver = {
++static struct platform_driver sky81452_reg_driver = {
 +	.driver = {
-+		.name = "sky81452",
-+		.of_match_table = of_match_ptr(sky81452_of_match),
++		.name = "sky81452-regulator",
 +	},
-+	.probe = sky81452_probe,
-+	.remove = sky81452_remove,
-+	.id_table = sky81452_ids,
++	.probe = sky81452_reg_probe,
 +};
 +
-+module_i2c_driver(sky81452_driver);
++module_platform_driver(sky81452_reg_driver);
 +
-+MODULE_DESCRIPTION("Skyworks SKY81452 MFD driver");
++MODULE_DESCRIPTION("Skyworks SKY81452 Regulator driver");
 +MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@skyworksinc.com>");
 +MODULE_LICENSE("GPL");
 +MODULE_VERSION("1.0");
-diff --git a/include/linux/mfd/sky81452.h b/include/linux/mfd/sky81452.h
-new file mode 100644
-index 0000000..8d8ed35
---- /dev/null
-+++ b/include/linux/mfd/sky81452.h
-@@ -0,0 +1,32 @@
-+/*
-+ * sky81452.h	SKY81452 backlight driver
-+ *
-+ * Copyright 2014 Skyworks Solutions Inc.
-+ * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#ifndef _SKY81452_H
-+#define _SKY81452_H
-+
-+#include "linux/sky81452-backlight.h"
-+#include "linux/regulator/machine.h"
-+
-+struct sky81452_platform_data {
-+	struct sky81452_bl_platform_data *bl_pdata;
-+	struct regulator_init_data *regulator_init_data;
-+};
-+
-+#endif
 -- 
 1.9.1
 
