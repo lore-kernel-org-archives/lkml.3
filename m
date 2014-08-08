@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758969AbaHHVqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:46:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60806 "EHLO
+	id S1759195AbaHHVsA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:48:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60850 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758926AbaHHVqH (ORCPT
+	with ESMTP id S1758946AbaHHVqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:46:07 -0400
+	Fri, 8 Aug 2014 17:46:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 02/17] tcp: Fix integer-overflows in TCP veno
-Date: Fri,  8 Aug 2014 14:35:24 -0700
-Message-Id: <20140808213457.608267331@linuxfoundation.org>
+Subject: [PATCH 3.16 12/17] sparc64: Do not insert non-valid PTEs into the TSB hash table.
+Date: Fri,  8 Aug 2014 14:35:34 -0700
+Message-Id: <20140808213458.017617436@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213457.511493898@linuxfoundation.org>
 References: <20140808213457.511493898@linuxfoundation.org>
@@ -29,36 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 45a07695bc64b3ab5d6d2215f9677e5b8c05a7d0 ]
+[ Upstream commit 18f38132528c3e603c66ea464727b29e9bbcb91b ]
 
-In veno we do a multiplication of the cwnd and the rtt. This
-may overflow and thus their result is stored in a u64. However, we first
-need to cast the cwnd so that actually 64-bit arithmetic is done.
+The assumption was that update_mmu_cache() (and the equivalent for PMDs) would
+only be called when the PTE being installed will be accessible by the user.
 
-A first attempt at fixing 76f1017757aa0 ([TCP]: TCP Veno congestion
-control) was made by 159131149c2 (tcp: Overflow bug in Vegas), but it
-failed to add the required cast in tcp_veno_cong_avoid().
+This is not true for code paths originating from remove_migration_pte().
 
-Fixes: 76f1017757aa0 ([TCP]: TCP Veno congestion control)
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+There are dire consequences for placing a non-valid PTE into the TSB.  The TLB
+miss frramework assumes thatwhen a TSB entry matches we can just load it into
+the TLB and return from the TLB miss trap.
+
+So if a non-valid PTE is in there, we will deadlock taking the TLB miss over
+and over, never satisfying the miss.
+
+Just exit early from update_mmu_cache() and friends in this situation.
+
+Based upon a report and patch from Christopher Alexander Tobias Schulze.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_veno.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sparc/mm/init_64.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/net/ipv4/tcp_veno.c
-+++ b/net/ipv4/tcp_veno.c
-@@ -144,7 +144,7 @@ static void tcp_veno_cong_avoid(struct s
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -351,6 +351,10 @@ void update_mmu_cache(struct vm_area_str
  
- 		rtt = veno->minrtt;
+ 	mm = vma->vm_mm;
  
--		target_cwnd = (tp->snd_cwnd * veno->basertt);
-+		target_cwnd = (u64)tp->snd_cwnd * veno->basertt;
- 		target_cwnd <<= V_PARAM_SHIFT;
- 		do_div(target_cwnd, rtt);
++	/* Don't insert a non-valid PTE into the TSB, we'll deadlock.  */
++	if (!pte_accessible(mm, pte))
++		return;
++
+ 	spin_lock_irqsave(&mm->context.lock, flags);
+ 
+ #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
+@@ -2619,6 +2623,10 @@ void update_mmu_cache_pmd(struct vm_area
+ 
+ 	pte = pmd_val(entry);
+ 
++	/* Don't insert a non-valid PMD into the TSB, we'll deadlock.  */
++	if (!(pte & _PAGE_VALID))
++		return;
++
+ 	/* We are fabricating 8MB pages using 4MB real hw pages.  */
+ 	pte |= (addr & (1UL << REAL_HPAGE_SHIFT));
  
 
 
