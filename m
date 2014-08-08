@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932716AbaHHVO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:14:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41079 "EHLO
+	id S932817AbaHHVOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:14:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41070 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932624AbaHHUvy (ORCPT
+	with ESMTP id S932613AbaHHUvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:54 -0400
+	Fri, 8 Aug 2014 16:51:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Abbas Raza <Abbas_Raza@mentor.com>, Peter Chen <peter.chen@freescale.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 237/259] ipv4: fix dst race in sk_dst_get()
-Date: Fri,  8 Aug 2014 13:41:00 -0700
-Message-Id: <1407530482-4483-238-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 151/259] usb: chipidea: udc: Disable auto ZLP generation on ep0
+Date: Fri,  8 Aug 2014 13:39:34 -0700
+Message-Id: <1407530482-4483-152-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -29,86 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Abbas Raza <Abbas_Raza@mentor.com>
 
-commit f88649721268999bdff09777847080a52004f691 upstream.
+commit 953c66469735aed8d2ada639a72b150f01dae605 upstream.
 
-When IP route cache had been removed in linux-3.6, we broke assumption
-that dst entries were all freed after rcu grace period. DST_NOCACHE
-dst were supposed to be freed from dst_release(). But it appears
-we want to keep such dst around, either in UDP sockets or tunnels.
+There are 2 methods for ZLP (zero-length packet) generation:
+1) In software
+2) Automatic generation by device controller
 
-In sk_dst_get() we need to make sure dst refcount is not 0
-before incrementing it, or else we might end up freeing a dst
-twice.
+1) is implemented in UDC driver and it attaches ZLP to IN packet if
+   descriptor->size < wLength
+2) can be enabled/disabled by setting ZLT bit in the QH
 
-DST_NOCACHE set on a dst does not mean this dst can not be attached
-to a socket or a tunnel.
+When gadget ffs is connected to ubuntu host, the host sends
+get descriptor request and wLength in setup packet is 255 while the
+size of descriptor which will be sent by gadget in IN packet is
+64 byte. So the composite driver sets req->zero = 1.
+In UDC driver following code will be executed then
 
-Then, before actual freeing, we need to observe a rcu grace period
-to make sure all other cpus can catch the fact the dst is no longer
-usable.
+        if (hwreq->req.zero && hwreq->req.length
+            && (hwreq->req.length % hwep->ep.maxpacket == 0))
+                add_td_to_list(hwep, hwreq, 0);
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Dormando <dormando@rydia.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: used davem's backport to 3.10 ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Case-A:
+So in case of ubuntu host, UDC driver will attach a ZLP to the IN packet.
+ubuntu host will request 255 byte in IN request, gadget will send 64 byte
+with ZLP and host will come to know that there is no more data.
+But hold on, by default ZLT=0 for endpoint 0 so hardware also tries to
+automatically generate the ZLP which blocks enumeration for ~6 seconds due
+to endpoint 0 STALL, NAKs are sent to host for any requests (OUT/PING)
+
+Case-B:
+In case when gadget ffs is connected to Apple device, Apple device sends
+setup packet with wLength=64. So descriptor->size = 64 and wLength=64
+therefore req->zero = 0 and UDC driver will not attach any ZLP to the
+IN packet. Apple device requests 64 bytes, gets 64 bytes and doesn't
+further request for IN data. But ZLT=0 by default for endpoint 0 so
+hardware tries to automatically generate the ZLP which blocks enumeration
+for ~6 seconds due to endpoint 0 STALL, NAKs are sent to host for any
+requests (OUT/PING)
+
+According to USB2.0 specs:
+
+    8.5.3.2 Variable-length Data Stage
+    A control pipe may have a variable-length data phase in which the
+    host requests more data than is contained in the specified data
+    structure. When all of the data structure is returned to the host,
+    the function should indicate that the Data stage is ended by
+    returning a packet that is shorter than the MaxPacketSize for the
+    pipe. If the data structure is an exact multiple of wMaxPacketSize
+    for the pipe, the function will return a zero-length packet to indicate
+    the end of the Data stage.
+
+In Case-A mentioned above:
+If we disable software ZLP generation & ZLT=0 for endpoint 0 OR if software
+ZLP generation is not disabled but we set ZLT=1 for endpoint 0 then
+enumeration doesn't block for 6 seconds.
+
+In Case-B mentioned above:
+If we disable software ZLP generation & ZLT=0 for endpoint then enumeration
+still blocks due to ZLP automatically generated by hardware and host not needing
+it. But if we keep software ZLP generation enabled but we set ZLT=1 for
+endpoint 0 then enumeration doesn't block for 6 seconds.
+
+So the proper solution for this issue seems to disable automatic ZLP generation
+by hardware (i.e by setting ZLT=1 for endpoint 0) and let software (UDC driver)
+handle the ZLP generation based on req->zero field.
+
+Signed-off-by: Abbas Raza <Abbas_Raza@mentor.com>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/net/sock.h |  4 ++--
- net/core/dst.c     | 16 +++++++++++-----
- 2 files changed, 13 insertions(+), 7 deletions(-)
+ drivers/usb/chipidea/udc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index ca1aeeb..e7ad8ac 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1743,8 +1743,8 @@ sk_dst_get(struct sock *sk)
+diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
+index 71d0d35..6c8b198 100644
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -1179,8 +1179,8 @@ static int ep_enable(struct usb_ep *ep,
  
- 	rcu_read_lock();
- 	dst = rcu_dereference(sk->sk_dst_cache);
--	if (dst)
--		dst_hold(dst);
-+	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
-+		dst = NULL;
- 	rcu_read_unlock();
- 	return dst;
- }
-diff --git a/net/core/dst.c b/net/core/dst.c
-index ca4231e..15b6792 100644
---- a/net/core/dst.c
-+++ b/net/core/dst.c
-@@ -267,6 +267,15 @@ again:
- }
- EXPORT_SYMBOL(dst_destroy);
- 
-+static void dst_destroy_rcu(struct rcu_head *head)
-+{
-+	struct dst_entry *dst = container_of(head, struct dst_entry, rcu_head);
+ 	if (hwep->type == USB_ENDPOINT_XFER_CONTROL)
+ 		cap |= QH_IOS;
+-	if (hwep->num)
+-		cap |= QH_ZLT;
 +
-+	dst = dst_destroy(dst);
-+	if (dst)
-+		__dst_free(dst);
-+}
-+
- void dst_release(struct dst_entry *dst)
- {
- 	if (dst) {
-@@ -274,11 +283,8 @@ void dst_release(struct dst_entry *dst)
- 
- 		newrefcnt = atomic_dec_return(&dst->__refcnt);
- 		WARN_ON(newrefcnt < 0);
--		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt) {
--			dst = dst_destroy(dst);
--			if (dst)
--				__dst_free(dst);
--		}
-+		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt)
-+			call_rcu(&dst->rcu_head, dst_destroy_rcu);
- 	}
- }
- EXPORT_SYMBOL(dst_release);
++	cap |= QH_ZLT;
+ 	cap |= (hwep->ep.maxpacket << __ffs(QH_MAX_PKT)) & QH_MAX_PKT;
+ 	/*
+ 	 * For ISO-TX, we set mult at QH as the largest value, and use
 -- 
 1.9.1
 
