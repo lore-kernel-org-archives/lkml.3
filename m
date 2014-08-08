@@ -1,164 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507AbaHHL4u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 07:56:50 -0400
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:49902 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752889AbaHHL4t (ORCPT
+	id S1756589AbaHHMAB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 08:00:01 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:57142 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756158AbaHHMAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 07:56:49 -0400
-X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Aug 2014 07:56:48 EDT
-X-Authority-Analysis: v=2.1 cv=ap0hV0pV c=1 sm=1 tr=0
- a=P1/czelPj/zYsqkqtI4LGg==:117 a=P1/czelPj/zYsqkqtI4LGg==:17 a=PuvxfXWCAAAA:8
- a=C_IRinGWAAAA:8 a=GGcpBh7Jt_oA:10 a=NhQj-YerE3IA:10 a=MxVrevpiUP0A:10
- a=WuCusnQs47UA:10 a=wPDyFdB5xvgA:10 a=NufY4J3AAAAA:8 a=nlC_4_pT8q9DhB4Ho9EA:9
- a=cz2ZRIgtxKwA:10 a=wJWlkF7cXJYA:10 a=gFDmwRIAp4mN85pUfD4A:9
- a=CjuIK1q_8ugA:10 a=4zVy0AFTtCYA:10 a=VHCptvkVX3MA:10 a=Qf-3kVjIDY8A:10
- a=t3fQe7YuCIEMy9xQDvgA:9
-Date: Fri, 8 Aug 2014 06:50:39 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: BUG: enable_cpucache failed for radix_tree_node, error 12 (was:
- Re: [PATCH v3 9/9] slab: remove BAD_ALIEN_MAGIC)
-In-Reply-To: <CAMuHMdVHmmct=BC=WXFJWeizYp+S706WjvNi=powYsJkarKUhw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1408080649430.14841@gentwo.org>
-References: <CAMuHMdW2kb=EF-Nmem_gyUu=p7hFOTe+Q2ekHh41SaHHiWDGeg@mail.gmail.com> <CAAmzW4MX2birtCOUxjDdQ7c3Y+RyVkBt383HEQ=XFgnhhOsQPw@mail.gmail.com> <CAMuHMdVC8aYwDEHnntshdVA24Nx3qAUXZfeRQNGqj=J6eExU-Q@mail.gmail.com> <CAAmzW4NWnMeO+Z3CQ=9Z7rUFLaPmR-w0iMhxzjO+PVgVu7OMuQ@mail.gmail.com>
- <20140808071903.GD6150@js1304-P5Q-DELUXE> <CAMuHMdVHmmct=BC=WXFJWeizYp+S706WjvNi=powYsJkarKUhw@mail.gmail.com>
-Content-Type: MULTIPART/Mixed; BOUNDARY=001a11c3472a8b756d05001a603c
-Content-ID: <alpine.DEB.2.11.1408080649431.14841@gentwo.org>
+	Fri, 8 Aug 2014 08:00:00 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-ca-53e4bbbd4da0
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: [PATCH] arm: module: add support for R_ARM_TARGET1 relocations
+Date: Fri, 08 Aug 2014 15:53:56 +0400
+Message-id: <1407498836-2797-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAJMWRmVeSWpSXmKPExsVy+t/xq7p7dz8JNuhayWax7dcjNov3y3oY
+	LTY9vsZqcXnXHDaL25d5HVg91sxbw+jR0tzD5rF5Sb1H35ZVjB6fN8kFsEZx2aSk5mSWpRbp
+	2yVwZTzpOcdW0MBb8WfzN7YGxmtcXYycHBICJhLbXj5lhrDFJC7cW88GYgsJLGWUuNob3sXI
+	BWT3MUm0vV3DDpJgE9CT+DdrO1iRiICmxKnFF5lBipgF5jNKzF7UzNjFyMEhLOAucetoAUgN
+	i4CqxPzf28DCvAKuEh9v60LsUpBYtnwm6wRG7gWMDKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLz
+	czcxQkLhyw7GxcesDjEKcDAq8fAanL4bLMSaWFZcmXuIUYKDWUmE9/LyJ8FCvCmJlVWpRfnx
+	RaU5qcWHGJk4OKUaGMX+yKyQsbaV2br77IF5HZZT/+7m+ymubuUo3rGtwODT/KvvmW0nZ2ke
+	rZ4lfmyF3d6psacuzuE8Me/K7Ilsgg5noj5FPWwy542axLErdc9iU9b/c/Yu2KBiviRCjkVC
+	5NrSmUovr51b3LHR5NfiPwKatRHbIruPNxwM8HgqrlMc/nGW5vTj1g5KLMUZiYZazEXFiQDI
+	IwGE4wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Kernel module build with GCOV profiling fails to load with the
+following error:
 
---001a11c3472a8b756d05001a603c
-Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
-Content-ID: <alpine.DEB.2.11.1408080649432.14841@gentwo.org>
+ $ insmod test_module.ko
+   test_module: unknown relocation: 38
+   insmod: can't insert 'test_module.ko': invalid module format
 
-On Fri, 8 Aug 2014, Geert Uytterhoeven wrote:
+This happens because constructor pointers in the .init_array section
+have not supported R_ARM_TARGET1 relocation type.
 
->
-> > Of possible, could you check whether page_to_nid(page) returns
-> > only 0 or not?
->
-> It returns 0 or 1.
+Documentation (ELF for the ARM Architecture) says:
+    "The relocation must be processed either in the same way as R_ARM_REL32 or
+     as R_ARM_ABS32: a virtual platform must specify which method is used."
 
-Ok this is broken on m68k. CONFIG_NUMA is required for this to work. If
-the arch code does this despite !CONFIG_NUMA then lots of things should
-break.
+Since kernel expects to see absolute addresses in .init_array R_ARM_TARGET1
+relocation type should be treated the same way as R_ARM_ABS32.
 
---001a11c3472a8b756d05001a603c
-Content-Type: APPLICATION/OCTET-STREAM; NAME=dmesg
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.11.1408080649433.14841@gentwo.org>
-Content-Description: 
-Content-Disposition: ATTACHMENT; FILENAME=dmesg
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+---
+ arch/arm/include/asm/elf.h | 1 +
+ arch/arm/kernel/module.c   | 1 +
+ 2 files changed, 2 insertions(+)
 
-TGludXggdmVyc2lvbiAzLjE2LjAtYXRhcmktMDk2OTQtZ2VhZjQ4NDMzODVlMyAoZ2VlcnRAcmFt
-c2FuKSAoZ2NjIHZlcnNpb24gNC4xLjIgMjAwNjExMTUgKHByZXJlbGVhc2UpIChVYnVudHUgNC4x
-LjEtMjEpKSAjNTMgRnJpIEF1ZyA4IDA5OjQ0OjE0IENFU1QgMjAxNApTYXZpbmcgMTU0IGJ5dGVz
-IG9mIGJvb3RpbmZvCmNvbnNvbGUgW2RlYnVnMF0gZW5hYmxlZApBdGFyaSBoYXJkd2FyZSBmb3Vu
-ZDogVklERUwgU1RETUEtU0NTSSBTVF9NRlAgWU0yMTQ5IFBDTSBDT0RFQyBEU1A1NksgU0NDIEFO
-QUxPR19KT1kgQkxJVFRFUiBJREUgVFRfQ0xLIEZEQ19TUEVFRCAKKioqIG02OGtfbWVtb2Zmc2V0
-ID0gMHgwMDAwMDAwMAoqKiogbTY4a192aXJ0X3RvX25vZGVfc2hpZnQgPSAyMwptNjhrX3NldHVw
-X25vZGU6IG5vZGUgPSAwIChzdGFydCAweDAwMDAwMDAwIHNpemUgMHgwMGUwMDAwMCkKICAgIGkg
-PSAwLCBlbmQgPSAxCm02OGtfc2V0dXBfbm9kZTogbm9kZSA9IDEgKHN0YXJ0IDB4MDEwMDAwMDAg
-c2l6ZSAweDEwMDAwMDAwKQogICAgaSA9IDIsIGVuZCA9IDMzCk9uIG5vZGUgMCB0b3RhbHBhZ2Vz
-OiAzNTg0CmZyZWVfYXJlYV9pbml0X25vZGU6IG5vZGUgMCwgcGdkYXQgMDAzNmRhYzQsIG5vZGVf
-bWVtX21hcCAwMDQwYjAwMAogIERNQSB6b25lOiAzMiBwYWdlcyB1c2VkIGZvciBtZW1tYXAKICBE
-TUEgem9uZTogMCBwYWdlcyByZXNlcnZlZAogIERNQSB6b25lOiAzNTg0IHBhZ2VzLCBMSUZPIGJh
-dGNoOjAKT24gbm9kZSAxIHRvdGFscGFnZXM6IDY1NTM2CmZyZWVfYXJlYV9pbml0X25vZGU6IG5v
-ZGUgMSwgcGdkYXQgMDAzNmUzYjQsIG5vZGVfbWVtX21hcCAwMDQyZjA5MAogIERNQSB6b25lOiA1
-NzYgcGFnZXMgdXNlZCBmb3IgbWVtbWFwCiAgRE1BIHpvbmU6IDAgcGFnZXMgcmVzZXJ2ZWQKICBE
-TUEgem9uZTogNjU1MzYgcGFnZXMsIExJRk8gYmF0Y2g6MTUKTmF0RmVhdHMgZm91bmQgKEFSQW55
-TSwgMS4wKQpwY3B1LWFsbG9jOiBzMCByMCBkMzI3NjggdTMyNzY4IGFsbG9jPTEqMzI3NjgKcGNw
-dS1hbGxvYzogWzBdIDAgCkJ1aWx0IDIgem9uZWxpc3RzIGluIFpvbmUgb3JkZXIsIG1vYmlsaXR5
-IGdyb3VwaW5nIG9uLiAgVG90YWwgcGFnZXM6IDY4NTEyCktlcm5lbCBjb21tYW5kIGxpbmU6IHJv
-b3Q9L2Rldi9oZGExIHZpZGVvPWF0YWZiOnR0aGlnaCBkZWJ1Zz1wYXIgY29uc29sZT10dHkwIEJP
-T1RfSU1BR0U9dm1saW51eApQSUQgaGFzaCB0YWJsZSBlbnRyaWVzOiAyMDQ4IChvcmRlcjogMSwg
-ODE5MiBieXRlcykKRGVudHJ5IGNhY2hlIGhhc2ggdGFibGUgZW50cmllczogNjU1MzYgKG9yZGVy
-OiA2LCAyNjIxNDQgYnl0ZXMpCklub2RlLWNhY2hlIGhhc2ggdGFibGUgZW50cmllczogMzI3Njgg
-KG9yZGVyOiA1LCAxMzEwNzIgYnl0ZXMpClNvcnRpbmcgX19leF90YWJsZS4uLgpNZW1vcnk6IDI2
-ODQ0MEsvMjc2NDgwSyBhdmFpbGFibGUgKDI3MTBLIGtlcm5lbCBjb2RlLCAzMDdLIHJ3ZGF0YSwg
-NjQ0SyByb2RhdGEsIDE0OEsgaW5pdCwgMTY4SyBic3MsIDgwNDBLIHJlc2VydmVkKQpWaXJ0dWFs
-IGtlcm5lbCBtZW1vcnkgbGF5b3V0OgogICAgdmVjdG9yICA6IDB4MDAzNmQ1YjQgLSAweDAwMzZk
-OWI0ICAgKCAgIDEgS2lCKQogICAga21hcCAgICA6IDB4ZDAwMDAwMDAgLSAweGYwMDAwMDAwICAg
-KCA1MTIgTWlCKQogICAgdm1hbGxvYyA6IDB4MTE4MDAwMDAgLSAweGQwMDAwMDAwICAgKDMwNDgg
-TWlCKQogICAgbG93bWVtICA6IDB4MDAwMDAwMDAgLSAweDExMDAwMDAwICAgKCAyNzIgTWlCKQog
-ICAgICAuaW5pdCA6IDB4MDAzOTgwMDAgLSAweDAwM2JkMDAwICAgKCAxNDggS2lCKQogICAgICAu
-dGV4dCA6IDB4MDAwMDEwMDAgLSAweDAwMmE2OTFjICAgKDI3MTEgS2lCKQogICAgICAuZGF0YSA6
-IDB4MDAyYTk2MDAgLSAweDAwMzk3NTBjICAgKCA5NTIgS2lCKQogICAgICAuYnNzICA6IDB4MDAz
-NmQ0YzAgLSAweDAwMzk3NTBjICAgKCAxNjkgS2lCKQpOUl9JUlFTOjE0MQpDb25zb2xlOiBjb2xv
-dXIgZHVtbXkgZGV2aWNlIDgweDI1CmNvbnNvbGUgW3R0eTBdIGVuYWJsZWQKQ2FsaWJyYXRpbmcg
-ZGVsYXkgbG9vcC4uLiAxODguODIgQm9nb01JUFMgKGxwaj05NDQxMjgpCnBpZF9tYXg6IGRlZmF1
-bHQ6IDMyNzY4IG1pbmltdW06IDMwMQpNb3VudC1jYWNoZSBoYXNoIHRhYmxlIGVudHJpZXM6IDEw
-MjQgKG9yZGVyOiAwLCA0MDk2IGJ5dGVzKQpNb3VudHBvaW50LWNhY2hlIGhhc2ggdGFibGUgZW50
-cmllczogMTAyNCAob3JkZXI6IDAsIDQwOTYgYnl0ZXMpCmRldnRtcGZzOiBpbml0aWFsaXplZApO
-RVQ6IFJlZ2lzdGVyZWQgcHJvdG9jb2wgZmFtaWx5IDE2ClNDU0kgc3Vic3lzdGVtIGluaXRpYWxp
-emVkCk5FVDogUmVnaXN0ZXJlZCBwcm90b2NvbCBmYW1pbHkgMgpUQ1AgZXN0YWJsaXNoZWQgaGFz
-aCB0YWJsZSBlbnRyaWVzOiA0MDk2IChvcmRlcjogMiwgMTYzODQgYnl0ZXMpClRDUCBiaW5kIGhh
-c2ggdGFibGUgZW50cmllczogNDA5NiAob3JkZXI6IDIsIDE2Mzg0IGJ5dGVzKQpUQ1A6IEhhc2gg
-dGFibGVzIGNvbmZpZ3VyZWQgKGVzdGFibGlzaGVkIDQwOTYgYmluZCA0MDk2KQpUQ1A6IHJlbm8g
-cmVnaXN0ZXJlZApVRFAgaGFzaCB0YWJsZSBlbnRyaWVzOiAyNTYgKG9yZGVyOiAwLCA0MDk2IGJ5
-dGVzKQpVRFAtTGl0ZSBoYXNoIHRhYmxlIGVudHJpZXM6IDI1NiAob3JkZXI6IDAsIDQwOTYgYnl0
-ZXMpCk5FVDogUmVnaXN0ZXJlZCBwcm90b2NvbCBmYW1pbHkgMQpSUEM6IFJlZ2lzdGVyZWQgbmFt
-ZWQgVU5JWCBzb2NrZXQgdHJhbnNwb3J0IG1vZHVsZS4KUlBDOiBSZWdpc3RlcmVkIHVkcCB0cmFu
-c3BvcnQgbW9kdWxlLgpSUEM6IFJlZ2lzdGVyZWQgdGNwIHRyYW5zcG9ydCBtb2R1bGUuClJQQzog
-UmVnaXN0ZXJlZCB0Y3AgTkZTdjQuMSBiYWNrY2hhbm5lbCB0cmFuc3BvcnQgbW9kdWxlLgpuZmhk
-ODogZm91bmQgZGV2aWNlIHdpdGggMjExODgxNiBibG9ja3MgKDUxMiBieXRlcykKIG5maGQ4OiBB
-SERJIHAxIHAyCm5mZXRoOiBBUEkgNQpldGgwOiBuZmV0aCBhZGRyOjE5Mi4xNjguMC4xICgxOTIu
-MTY4LjAuMikgSFdhZGRyOjAwOjQxOjQ1OjU0OjQ4OjMwCmZ1dGV4IGhhc2ggdGFibGUgZW50cmll
-czogMjU2IChvcmRlcjogLTEsIDMwNzIgYnl0ZXMpClZGUzogRGlzayBxdW90YXMgZHF1b3RfNi41
-LjIKRHF1b3QtY2FjaGUgaGFzaCB0YWJsZSBlbnRyaWVzOiAxMDI0IChvcmRlciAwLCA0MDk2IGJ5
-dGVzKQptc2dtbmkgaGFzIGJlZW4gc2V0IHRvIDUyNApCbG9jayBsYXllciBTQ1NJIGdlbmVyaWMg
-KGJzZykgZHJpdmVyIHZlcnNpb24gMC40IGxvYWRlZCAobWFqb3IgMjUyKQppbyBzY2hlZHVsZXIg
-bm9vcCByZWdpc3RlcmVkCmlvIHNjaGVkdWxlciBjZnEgcmVnaXN0ZXJlZCAoZGVmYXVsdCkKYXRh
-ZmJfaW5pdDogc3RhcnQKYXRhZmJfaW5pdDogaW5pdGlhbGl6aW5nIEZhbGNvbiBodwphdGFmYjog
-c2NyZWVuX2Jhc2UgMDA2NzAwMDAgcGh5c19zY3JlZW5fYmFzZSA2NzAwMDAgc2NyZWVuX2xlbiAz
-MTEyOTYKRGV0ZXJtaW5lZCA2NDB4NDgwLCBkZXB0aCA0CiAgIHZpcnR1YWwgNjQweDk3MgpDb25z
-b2xlOiBzd2l0Y2hpbmcgdG8gY29sb3VyIGZyYW1lIGJ1ZmZlciBkZXZpY2UgODB4MzAKZmIwOiBm
-cmFtZSBidWZmZXIgZGV2aWNlLCB1c2luZyAzMDRLIG9mIHZpZGVvIG1lbW9yeQpOb24tdm9sYXRp
-bGUgbWVtb3J5IGRyaXZlciB2MS4zCkF0YXJpIGZsb3BweSBkcml2ZXI6IG1heC4gSEQsIHRyYWNr
-IGJ1ZmZlcmluZwpQcm9iaW5nIGZsb3BweSBkcml2ZShzKToKZmQwCmJyZDogbW9kdWxlIGxvYWRl
-ZApsb29wOiBtb2R1bGUgbG9hZGVkClVuaWZvcm0gTXVsdGktUGxhdGZvcm0gRS1JREUgZHJpdmVy
-CmlkZTogRmFsY29uIElERSBjb250cm9sbGVyClByb2JpbmcgSURFIGludGVyZmFjZSBpZGUwLi4u
-CmhkYTogU2FyZ2UgbTY4aywgQVRBIERJU0sgZHJpdmUKaWRlMCBhdCAweGZmZjAwMDAwIG9uIGly
-cSAxNSAoc2VyaWFsaXplZCkKaWRlLWdkIGRyaXZlciAxLjE4CmhkYTogbWF4IHJlcXVlc3Qgc2l6
-ZTogMTI4S2lCCmhkYTogMjExODgxNiBzZWN0b3JzICgxMDg0IE1CKSB3LzI1NktpQiBDYWNoZSwg
-Q0hTPTIxMDIvMTYvNjMKIGhkYTogQUhESSBoZGExIGhkYTIKaWRlLWNkIGRyaXZlciA1LjAwCnNj
-c2kwOiBvcHRpb25zIENBTl9RVUVVRT04IENNRF9QRVJfTFVOPTEgU0NBVC1HQVQ9MCBUQUdHRUQt
-UVVFVUlORz1ubyBIT1NUSUQ9NyBnZW5lcmljIG9wdGlvbnMgQVVUT1NFTlNFIFJFQUwgRE1BIFND
-U0ktMiBUQUdHRUQgUVVFVUlORyBnZW5lcmljIHJlbGVhc2U9NwpzY3NpIGhvc3QwOiBBdGFyaSBu
-YXRpdmUgU0NTSQpibGtfcXVldWVfbWF4X3NlZ21lbnRzOiBzZXQgdG8gbWluaW11bSAxCmJsa19x
-dWV1ZV9tYXhfc2VnbWVudHM6IHNldCB0byBtaW5pbXVtIDEKYmxrX3F1ZXVlX21heF9zZWdtZW50
-czogc2V0IHRvIG1pbmltdW0gMQpibGtfcXVldWVfbWF4X3NlZ21lbnRzOiBzZXQgdG8gbWluaW11
-bSAxCmJsa19xdWV1ZV9tYXhfc2VnbWVudHM6IHNldCB0byBtaW5pbXVtIDEKYmxrX3F1ZXVlX21h
-eF9zZWdtZW50czogc2V0IHRvIG1pbmltdW0gMQpibGtfcXVldWVfbWF4X3NlZ21lbnRzOiBzZXQg
-dG8gbWluaW11bSAxCm5lIG5lICh1bm5hbWVkIG5ldF9kZXZpY2UpICh1bmluaXRpYWxpemVkKTog
-TkUqMDAwIGV0aGVyY2FyZCBwcm9iZSBhdCAweDMwMDoKIG5vdCBmb3VuZCAobm8gcmVzZXQgYWNr
-KS4KbmUgbmUgKHVubmFtZWQgbmV0X2RldmljZSkgKHVuaW5pdGlhbGl6ZWQpOiBuZS5jOiBObyBO
-RSowMDAgY2FyZCBmb3VuZCBhdCBpL28gPSAweDMwMAptb3VzZWRldjogUFMvMiBtb3VzZSBkZXZp
-Y2UgY29tbW9uIGZvciBhbGwgbWljZQppbnB1dDogQXRhcmkgS2V5Ym9hcmQgYXMgL2RldmljZXMv
-dmlydHVhbC9pbnB1dC9pbnB1dDAKVENQOiBjdWJpYyByZWdpc3RlcmVkCk5FVDogUmVnaXN0ZXJl
-ZCBwcm90b2NvbCBmYW1pbHkgMTcKTkVUOiBSZWdpc3RlcmVkIHByb3RvY29sIGZhbWlseSAxNQpL
-ZXkgdHlwZSBkbnNfcmVzb2x2ZXIgcmVnaXN0ZXJlZAovc2NyYXRjaC9nZWVydC9saW51eC9saW51
-eC1tNjhrL2RyaXZlcnMvcnRjL2hjdG9zeXMuYzogdW5hYmxlIHRvIG9wZW4gcnRjIGRldmljZSAo
-cnRjMCkKRVhUNC1mcyAoaGRhMSk6IG1vdW50aW5nIGV4dDMgZmlsZSBzeXN0ZW0gdXNpbmcgdGhl
-IGV4dDQgc3Vic3lzdGVtCkVYVDQtZnMgKGhkYTEpOiBtb3VudGVkIGZpbGVzeXN0ZW0gd2l0aCBv
-cmRlcmVkIGRhdGEgbW9kZS4gT3B0czogKG51bGwpClZGUzogTW91bnRlZCByb290IChleHQzIGZp
-bGVzeXN0ZW0pIHJlYWRvbmx5IG9uIGRldmljZSAzOjEuCkZyZWVpbmcgdW51c2VkIGtlcm5lbCBt
-ZW1vcnk6IDE0OEsgKDAwMzk4MDAwIC0gMDAzYmQwMDApCnJhbmRvbTogbm9uYmxvY2tpbmcgcG9v
-bCBpcyBpbml0aWFsaXplZApBZGRpbmcgMTM3ODAwayBzd2FwIG9uIC9kZXYvaGRhMi4gIFByaW9y
-aXR5Oi0xIGV4dGVudHM6MSBhY3Jvc3M6MTM3ODAwayAKRVhUNC1mcyAoaGRhMSk6IHJlLW1vdW50
-ZWQuIE9wdHM6IApFWFQ0LWZzIChoZGExKTogcmUtbW91bnRlZC4gT3B0czogZXJyb3JzPXJlbW91
-bnQtcm8K
---001a11c3472a8b756d05001a603c--
+diff --git a/arch/arm/include/asm/elf.h b/arch/arm/include/asm/elf.h
+index f4b46d3..afb9caf 100644
+--- a/arch/arm/include/asm/elf.h
++++ b/arch/arm/include/asm/elf.h
+@@ -50,6 +50,7 @@ typedef struct user_fp elf_fpregset_t;
+ #define R_ARM_ABS32		2
+ #define R_ARM_CALL		28
+ #define R_ARM_JUMP24		29
++#define R_ARM_TARGET1		38
+ #define R_ARM_V4BX		40
+ #define R_ARM_PREL31		42
+ #define R_ARM_MOVW_ABS_NC	43
+diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
+index 45e4781..6a4dffe 100644
+--- a/arch/arm/kernel/module.c
++++ b/arch/arm/kernel/module.c
+@@ -91,6 +91,7 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
+ 			break;
+ 
+ 		case R_ARM_ABS32:
++		case R_ARM_TARGET1:
+ 			*(u32 *)loc += sym->st_value;
+ 			break;
+ 
+-- 
+1.8.5.5
+
