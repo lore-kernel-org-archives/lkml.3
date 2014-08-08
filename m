@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204AbaHHVSx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:18:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40998 "EHLO
+	id S933230AbaHHVTJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:19:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40995 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758499AbaHHUv3 (ORCPT
+	with ESMTP id S1758495AbaHHUv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:29 -0400
+	Fri, 8 Aug 2014 16:51:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tyler Hall <tylerwhall@gmail.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Andre Naujoks <nautsch2@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 231/259] slcan: Port write_wakeup deadlock fix from slip
-Date: Fri,  8 Aug 2014 13:40:54 -0700
-Message-Id: <1407530482-4483-232-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 081/259] hwmon: (adm1031) Fix writes to limit registers
+Date: Fri,  8 Aug 2014 13:38:24 -0700
+Message-Id: <1407530482-4483-82-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -30,123 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hall <tylerwhall@gmail.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-[ Upstream commit a8e83b17536aad603fbeae4c460f2da0ee9fe6ed ]
+commit 145e74a4e5022225adb84f4e5d4fff7938475c35 upstream.
 
-The commit "slip: Fix deadlock in write_wakeup" fixes a deadlock caused
-by a change made in both slcan and slip. This is a direct port of that
-fix.
+Upper limit for write operations to temperature limit registers
+was clamped to a fractional value. However, limit registers do
+not support fractional values. As a result, upper limits of 127.5
+degrees C or higher resulted in a rounded limit of 128 degrees C.
+Since limit registers are signed, this was stored as -128 degrees C.
+Clamp limits to (-55, +127) degrees C to solve the problem.
 
-Signed-off-by: Tyler Hall <tylerwhall@gmail.com>
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>
-Cc: Andre Naujoks <nautsch2@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Value on writes to auto_temp[12]_min and auto_temp[12]_max were not
+clamped at all, but masked. As a result, out-of-range writes resulted
+in a more or less arbitrary limit. Clamp those attributes to (0, 127)
+degrees C for more predictable results.
+
+Cc: Axel Lin <axel.lin@ingics.com>
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/can/slcan.c | 41 +++++++++++++++++++++++++++++------------
- 1 file changed, 29 insertions(+), 12 deletions(-)
+ drivers/hwmon/adm1031.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/can/slcan.c b/drivers/net/can/slcan.c
-index 25377e5..3c28d1f 100644
---- a/drivers/net/can/slcan.c
-+++ b/drivers/net/can/slcan.c
-@@ -54,6 +54,7 @@
- #include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/kernel.h>
-+#include <linux/workqueue.h>
- #include <linux/can.h>
- #include <linux/can/skb.h>
+diff --git a/drivers/hwmon/adm1031.c b/drivers/hwmon/adm1031.c
+index 253ea39..bdceca0 100644
+--- a/drivers/hwmon/adm1031.c
++++ b/drivers/hwmon/adm1031.c
+@@ -365,6 +365,7 @@ set_auto_temp_min(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
  
-@@ -87,6 +88,7 @@ struct slcan {
- 	struct tty_struct	*tty;		/* ptr to TTY structure	     */
- 	struct net_device	*dev;		/* easy for intr handling    */
- 	spinlock_t		lock;
-+	struct work_struct	tx_work;	/* Flushes transmit buffer   */
++	val = clamp_val(val, 0, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->auto_temp[nr] = AUTO_TEMP_MIN_TO_REG(val, data->auto_temp[nr]);
+ 	adm1031_write_value(client, ADM1031_REG_AUTO_TEMP(nr),
+@@ -394,6 +395,7 @@ set_auto_temp_max(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
  
- 	/* These are pointers to the malloc()ed frame buffers. */
- 	unsigned char		rbuff[SLC_MTU];	/* receiver buffer	     */
-@@ -311,34 +313,44 @@ static void slc_encaps(struct slcan *sl, struct can_frame *cf)
- 	sl->dev->stats.tx_bytes += cf->can_dlc;
- }
++	val = clamp_val(val, 0, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = AUTO_TEMP_MAX_TO_REG(val, data->auto_temp[nr],
+ 						  data->pwm[nr]);
+@@ -696,7 +698,7 @@ static ssize_t set_temp_min(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
  
--/*
-- * Called by the driver when there's room for more data.  If we have
-- * more packets to send, we send them here.
-- */
--static void slcan_write_wakeup(struct tty_struct *tty)
-+/* Write out any remaining transmit buffer. Scheduled when tty is writable */
-+static void slcan_transmit(struct work_struct *work)
- {
-+	struct slcan *sl = container_of(work, struct slcan, tx_work);
- 	int actual;
--	struct slcan *sl = (struct slcan *) tty->disc_data;
+-	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_min[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_MIN(nr),
+@@ -717,7 +719,7 @@ static ssize_t set_temp_max(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
  
-+	spin_lock_bh(&sl->lock);
- 	/* First make sure we're connected. */
--	if (!sl || sl->magic != SLCAN_MAGIC || !netif_running(sl->dev))
-+	if (!sl->tty || sl->magic != SLCAN_MAGIC || !netif_running(sl->dev)) {
-+		spin_unlock_bh(&sl->lock);
- 		return;
-+	}
+-	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_max[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_MAX(nr),
+@@ -738,7 +740,7 @@ static ssize_t set_temp_crit(struct device *dev, struct device_attribute *attr,
+ 	if (ret)
+ 		return ret;
  
--	spin_lock(&sl->lock);
- 	if (sl->xleft <= 0)  {
- 		/* Now serial buffer is almost free & we can start
- 		 * transmission of another packet */
- 		sl->dev->stats.tx_packets++;
--		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
--		spin_unlock(&sl->lock);
-+		clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
-+		spin_unlock_bh(&sl->lock);
- 		netif_wake_queue(sl->dev);
- 		return;
- 	}
- 
--	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
-+	actual = sl->tty->ops->write(sl->tty, sl->xhead, sl->xleft);
- 	sl->xleft -= actual;
- 	sl->xhead += actual;
--	spin_unlock(&sl->lock);
-+	spin_unlock_bh(&sl->lock);
-+}
-+
-+/*
-+ * Called by the driver when there's room for more data.
-+ * Schedule the transmit.
-+ */
-+static void slcan_write_wakeup(struct tty_struct *tty)
-+{
-+	struct slcan *sl = tty->disc_data;
-+
-+	schedule_work(&sl->tx_work);
- }
- 
- /* Send a can_frame to a TTY queue. */
-@@ -524,6 +536,7 @@ static struct slcan *slc_alloc(dev_t line)
- 	sl->magic = SLCAN_MAGIC;
- 	sl->dev	= dev;
- 	spin_lock_init(&sl->lock);
-+	INIT_WORK(&sl->tx_work, slcan_transmit);
- 	slcan_devs[i] = dev;
- 
- 	return sl;
-@@ -622,8 +635,12 @@ static void slcan_close(struct tty_struct *tty)
- 	if (!sl || sl->magic != SLCAN_MAGIC || sl->tty != tty)
- 		return;
- 
-+	spin_lock_bh(&sl->lock);
- 	tty->disc_data = NULL;
- 	sl->tty = NULL;
-+	spin_unlock_bh(&sl->lock);
-+
-+	flush_work(&sl->tx_work);
- 
- 	/* Flush network side */
- 	unregister_netdev(sl->dev);
+-	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
++	val = clamp_val(val, -55000, 127000);
+ 	mutex_lock(&data->update_lock);
+ 	data->temp_crit[nr] = TEMP_TO_REG(val);
+ 	adm1031_write_value(client, ADM1031_REG_TEMP_CRIT(nr),
 -- 
 1.9.1
 
