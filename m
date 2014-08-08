@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475AbaHHUvO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:51:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40919 "EHLO
+	id S1757060AbaHHUvd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:51:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40986 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932357AbaHHUu6 (ORCPT
+	with ESMTP id S1758492AbaHHUv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:50:58 -0400
+	Fri, 8 Aug 2014 16:51:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Edward Allcutt <edward.allcutt@openmarket.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 078/259] ACPI / EC: Remove duplicated ec_wait_ibf0() waiter
-Date: Fri,  8 Aug 2014 13:38:21 -0700
-Message-Id: <1407530482-4483-79-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 243/259] ipv4: icmp: Fix pMTU handling for rare case
+Date: Fri,  8 Aug 2014 13:41:06 -0700
+Message-Id: <1407530482-4483-244-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,95 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Edward Allcutt <edward.allcutt@openmarket.com>
 
-commit 9b80f0f73ae1583c22325ede341c74195847618c upstream.
+commit 68b7107b62983f2cff0948292429d5f5999df096 upstream.
 
-After we've added the first command byte write into advance_transaction(),
-the IBF=0 waiter is duplicated with the command completion waiter
-implemented in the ec_poll() because:
-   If IBF=1 blocked the first command byte write invoked in the task
-   context ec_poll(), it would be kicked off upon IBF=0 interrupt or timed
-   out and retried again in the task context.
+Some older router implementations still send Fragmentation Needed
+errors with the Next-Hop MTU field set to zero. This is explicitly
+described as an eventuality that hosts must deal with by the
+standard (RFC 1191) since older standards specified that those
+bits must be zero.
 
-Remove this seperate and duplicate IBF=0 waiter.  By doing so we can
-reduce the overall number of times to access the EC_SC(R) status
-register.
+Linux had a generic (for all of IPv4) implementation of the algorithm
+described in the RFC for searching a list of MTU plateaus for a good
+value. Commit 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
+removed this as part of the changes to remove the routing cache.
+Subsequently any Fragmentation Needed packet with a zero Next-Hop
+MTU has been discarded without being passed to the per-protocol
+handlers or notifying userspace for raw sockets.
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
-Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
-Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
-Reported-by: Barton Xu <tank.xuhan@gmail.com>
-Tested-by: Steffen Weber <steffen.weber@gmail.com>
-Tested-by: Arthur Chen <axchen@nvidia.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+When there is a router which does not implement RFC 1191 on an
+MTU limited path then this results in stalled connections since
+large packets are discarded and the local protocols are not
+notified so they never attempt to lower the pMTU.
+
+One example I have seen is an OpenBSD router terminating IPSec
+tunnels. It's worth pointing out that this case is distinct from
+the BSD 4.2 bug which incorrectly calculated the Next-Hop MTU
+since the commit in question dismissed that as a valid concern.
+
+All of the per-protocols handlers implement the simple approach from
+RFC 1191 of immediately falling back to the minimum value. Although
+this is sub-optimal it is vastly preferable to connections hanging
+indefinitely.
+
+Remove the Next-Hop MTU != 0 check and allow such packets
+to follow the normal path.
+
+Fixes: 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
+Signed-off-by: Edward Allcutt <edward.allcutt@openmarket.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/ec.c | 27 +--------------------------
- 1 file changed, 1 insertion(+), 26 deletions(-)
+ net/ipv4/icmp.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 3455e45..fe88e42 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -286,23 +286,6 @@ static int acpi_ec_transaction_unlocked(struct acpi_ec *ec,
- 	return ret;
- }
- 
--static int ec_check_ibf0(struct acpi_ec *ec)
--{
--	u8 status = acpi_ec_read_status(ec);
--	return (status & ACPI_EC_FLAG_IBF) == 0;
--}
--
--static int ec_wait_ibf0(struct acpi_ec *ec)
--{
--	unsigned long delay = jiffies + msecs_to_jiffies(ec_delay);
--	/* interrupt wait manually if GPE mode is not active */
--	while (time_before(jiffies, delay))
--		if (wait_event_timeout(ec->wait, ec_check_ibf0(ec),
--					msecs_to_jiffies(1)))
--			return 0;
--	return -ETIME;
--}
--
- static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
- {
- 	int status;
-@@ -323,12 +306,6 @@ static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
- 			goto unlock;
- 		}
- 	}
--	if (ec_wait_ibf0(ec)) {
--		pr_err("input buffer is not empty, "
--				"aborting transaction\n");
--		status = -ETIME;
--		goto end;
--	}
- 	pr_debug("transaction start (cmd=0x%02x, addr=0x%02x)\n",
- 			t->command, t->wdata ? t->wdata[0] : 0);
- 	/* disable GPE during transaction if storm is detected */
-@@ -352,7 +329,6 @@ static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
- 		set_bit(EC_FLAGS_GPE_STORM, &ec->flags);
- 	}
- 	pr_debug("transaction end\n");
--end:
- 	if (ec->global_lock)
- 		acpi_release_global_lock(glk);
- unlock:
-@@ -679,8 +655,7 @@ static u32 acpi_ec_gpe_handler(acpi_handle gpe_device,
- 	spin_lock_irqsave(&ec->lock, flags);
- 	advance_transaction(ec);
- 	spin_unlock_irqrestore(&ec->lock, flags);
--	if (ec_transaction_completed(ec) &&
--	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
-+	if (ec_transaction_completed(ec)) {
- 		wake_up(&ec->wait);
- 		ec_check_sci(ec, acpi_ec_read_status(ec));
- 	}
+diff --git a/net/ipv4/icmp.c b/net/ipv4/icmp.c
+index 5c0e8bc..dfe19f2 100644
+--- a/net/ipv4/icmp.c
++++ b/net/ipv4/icmp.c
+@@ -710,8 +710,6 @@ static void icmp_unreach(struct sk_buff *skb)
+ 					       &iph->daddr);
+ 			} else {
+ 				info = ntohs(icmph->un.frag.mtu);
+-				if (!info)
+-					goto out;
+ 			}
+ 			break;
+ 		case ICMP_SR_FAILED:
 -- 
 1.9.1
 
