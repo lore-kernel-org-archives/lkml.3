@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242AbaHHUup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:50:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40852 "EHLO
+	id S932283AbaHHUut (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:50:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40858 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758459AbaHHUue (ORCPT
+	with ESMTP id S1751043AbaHHUug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:50:34 -0400
+	Fri, 8 Aug 2014 16:50:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Loic Prylli <loicp@google.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 246/259] net: Fix NETDEV_CHANGE notifier usage causing spurious arp flush
-Date: Fri,  8 Aug 2014 13:41:09 -0700
-Message-Id: <1407530482-4483-247-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 080/259] ACPI / battery: Retry to get battery information if failed during probing
+Date: Fri,  8 Aug 2014 13:38:23 -0700
+Message-Id: <1407530482-4483-81-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,49 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Loic Prylli <loicp@google.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-[ Upstream commit 54951194656e4853e441266fd095f880bc0398f3 ]
+commit 75646e758a0ecbed5024454507d5be5b9ea9dcbf upstream.
 
-A bug was introduced in NETDEV_CHANGE notifier sequence causing the
-arp table to be sometimes spuriously cleared (including manual arp
-entries marked permanent), upon network link carrier changes.
+Some machines (eg. Lenovo Z480) ECs are not stable during boot up
+and causes battery driver fails to be loaded due to failure of getting
+battery information from EC sometimes. After several retries, the
+operation will work. This patch is to retry to get battery information 5
+times if the first try fails.
 
-The changed argument for the notifier was applied only to a single
-caller of NETDEV_CHANGE, missing among others netdev_state_change().
-So upon net_carrier events induced by the network, which are
-triggering a call to netdev_state_change(), arp_netdev_event() would
-decide whether to clear or not arp cache based on random/junk stack
-values (a kind of read buffer overflow).
-
-Fixes: be9efd365328 ("net: pass changed flags along with NETDEV_CHANGE event")
-Fixes: 6c8b4e3ff81b ("arp: flush arp cache on IFF_NOARP change")
-Signed-off-by: Loic Prylli <loicp@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ kamal: backport to 3.13-stable from David's 3.14 port
- (call_netdevice_notifiers_info is not static) ]
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=75581
+Reported-and-tested-by: naszar <naszar@ya.ru>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[ kamal: backport to 3.13-stable: acpi_battery_update takes 1 arg ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/dev.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/acpi/battery.c | 27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 9e8b117..e61bda3 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1203,7 +1203,11 @@ EXPORT_SYMBOL(netdev_features_change);
- void netdev_state_change(struct net_device *dev)
- {
- 	if (dev->flags & IFF_UP) {
--		call_netdevice_notifiers(NETDEV_CHANGE, dev);
-+		struct netdev_notifier_change_info change_info;
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index 17dc8a9..2928e95 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -34,6 +34,7 @@
+ #include <linux/dmi.h>
+ #include <linux/slab.h>
+ #include <linux/suspend.h>
++#include <linux/delay.h>
+ #include <asm/unaligned.h>
+ 
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+@@ -1071,6 +1072,28 @@ static struct dmi_system_id bat_dmi_table[] = {
+ 	{},
+ };
+ 
++/*
++ * Some machines'(E,G Lenovo Z480) ECs are not stable
++ * during boot up and this causes battery driver fails to be
++ * probed due to failure of getting battery information
++ * from EC sometimes. After several retries, the operation
++ * may work. So add retry code here and 20ms sleep between
++ * every retries.
++ */
++static int acpi_battery_update_retry(struct acpi_battery *battery)
++{
++	int retry, ret;
 +
-+		change_info.flags_changed = 0;
-+		call_netdevice_notifiers_info(NETDEV_CHANGE, dev,
-+					      &change_info.info);
- 		rtmsg_ifinfo(RTM_NEWLINK, dev, 0, GFP_KERNEL);
- 	}
- }
++	for (retry = 5; retry; retry--) {
++		ret = acpi_battery_update(battery);
++		if (!ret)
++			break;
++
++		msleep(20);
++	}
++	return ret;
++}
++
+ static int acpi_battery_add(struct acpi_device *device)
+ {
+ 	int result = 0;
+@@ -1089,9 +1112,11 @@ static int acpi_battery_add(struct acpi_device *device)
+ 	mutex_init(&battery->sysfs_lock);
+ 	if (acpi_has_method(battery->device->handle, "_BIX"))
+ 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+-	result = acpi_battery_update(battery);
++
++	result = acpi_battery_update_retry(battery);
+ 	if (result)
+ 		goto fail;
++
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+ 	result = acpi_battery_add_fs(device);
+ #endif
 -- 
 1.9.1
 
