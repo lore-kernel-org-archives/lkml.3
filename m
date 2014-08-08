@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848AbaHHNz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 09:55:56 -0400
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:55373 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756795AbaHHNzy (ORCPT
+	id S1756874AbaHHN4n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 09:56:43 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:62395 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745AbaHHN4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 09:55:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <53E4600C.4030505@de.bosch.com>
-References: <1407435706-19441-1-git-send-email-mathieu.poirier@linaro.org>
-	<1407435706-19441-8-git-send-email-mathieu.poirier@linaro.org>
-	<53E4600C.4030505@de.bosch.com>
-Date: Fri, 8 Aug 2014 07:55:54 -0600
-Message-ID: <CANLsYkzDbOyBbqMCp41nt6e84MSCJTWnRDZ0JBJ1jYgtL3ZPFA@mail.gmail.com>
-Subject: Re: [PATCH 07/10 v3] coresight-etm: add CoreSight ETM/PTM driver
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
-To: Dirk Behme <dirk.behme@de.bosch.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robherring2@gmail.com>,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        Robert Marklund <robbelibobban@gmail.com>, Al Grant <Al.Grant@arm.com>,
-        Patch Tracking <patches@linaro.org>,
-        Marcin Jabrzyk <marcin.jabrzyk@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Panchaxari Prasannamurthy Tumkur 
-	<panchaxari.prasannamurthy@linaro.org>,
-        "r.sengupta@samsung.com" <r.sengupta@samsung.com>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Tony Armitstead <Tony.Armitstead@arm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        James King <james.king@linaro.org>,
-        Pratik Patel <pratikp@codeaurora.org>,
-        Vikas Varshney <varshney@ti.com>,
-        Jonas Svennebring <jonas.svennebring@avagotech.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 8 Aug 2014 09:56:41 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2] driver core: Remove kerneldoc from local function
+Date: Fri,  8 Aug 2014 15:56:36 +0200
+Message-Id: <1407506196-7470-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1407490591-15754-1-git-send-email-thierry.reding@gmail.com>
+References: <1407490591-15754-1-git-send-email-thierry.reding@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 August 2014 23:28, Dirk Behme <dirk.behme@de.bosch.com> wrote:
-> On 07.08.2014 20:21, mathieu.poirier@linaro.org wrote:
->>
->> From: Pratik Patel <pratikp@codeaurora.org>
->>
->> This driver manages CoreSight ETM (Embedded Trace Macrocell) that
->> supports processor tracing. Currently supported version are ARM
->> ETMv3.x and PTM1.x.
->>
->> Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
->> Signed-off-by: Panchaxari Prasannamurthy
->> <panchaxari.prasannamurthy@linaro.org>
->> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
->> ---
->
-> ...
->>
->> +static struct amba_id etm_ids[] = {
->> +       {       /* ETM 3.3 */
->> +               .id     = 0x0003b921,
->> +               .mask   = 0x0003ffff,
->> +       },
->> +       {       /* ETM 3.5 */
->> +               .id     = 0x0003b956,
->> +               .mask   = 0x0003ffff,
->> +       },
->> +       {       /* PTM */
->> +               .id     = 0x0003b95f,
->> +               .mask   = 0x0003ffff,
->> +       },
->> +       { 0, 0},
->
->
-> Maybe you like to add PTM 1.0 [1] here, too?
+From: Thierry Reding <treding@nvidia.com>
 
-You got it.
+The deferred_probe_work_func() function is locally scoped, therefore an
+associated kerneldoc comment isn't very useful. Replace the kerneldoc
+opening marker (/**) with a regular block comment marker (/*) to avoid
+the comment from being parsed by kerneldoc. This gets rid of a warning
+caused by a missing description for the "work" argument.
+
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+Changes in v2:
+- make comment non-kerneldoc rather than fixing it up
+
+ drivers/base/dd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index e4ffbcf2f519..cdc779cf79a3 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -54,7 +54,7 @@ static LIST_HEAD(deferred_probe_active_list);
+ static struct workqueue_struct *deferred_wq;
+ static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
+ 
+-/**
++/*
+  * deferred_probe_work_func() - Retry probing devices in the active list.
+  */
+ static void deferred_probe_work_func(struct work_struct *work)
+-- 
+2.0.4
+
