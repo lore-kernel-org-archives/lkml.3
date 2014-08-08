@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933230AbaHHVTJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:19:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40995 "EHLO
+	id S1758489AbaHHUvY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:51:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40965 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758495AbaHHUv2 (ORCPT
+	with ESMTP id S932515AbaHHUvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:28 -0400
+	Fri, 8 Aug 2014 16:51:18 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Jan Kardell <jan.kardell@telliq.com>, Jonathan Cameron <jic23@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 081/259] hwmon: (adm1031) Fix writes to limit registers
-Date: Fri,  8 Aug 2014 13:38:24 -0700
-Message-Id: <1407530482-4483-82-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 085/259] iio: ti_am335x_adc: Fix: Use same step id at FIFOs both ends
+Date: Fri,  8 Aug 2014 13:38:28 -0700
+Message-Id: <1407530482-4483-86-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,77 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Jan Kardell <jan.kardell@telliq.com>
 
-commit 145e74a4e5022225adb84f4e5d4fff7938475c35 upstream.
+commit baa3c65298c089a9014b4e523a14ec2885cca1bc upstream.
 
-Upper limit for write operations to temperature limit registers
-was clamped to a fractional value. However, limit registers do
-not support fractional values. As a result, upper limits of 127.5
-degrees C or higher resulted in a rounded limit of 128 degrees C.
-Since limit registers are signed, this was stored as -128 degrees C.
-Clamp limits to (-55, +127) degrees C to solve the problem.
+Since AI lines could be selected at will (linux-3.11) the sending
+and receiving ends of the FIFO does not agree about what step is used
+for a line. It only works if the last lines are used, like 5,6,7,
+and fails if ie 2,4,6 is selected in DT.
 
-Value on writes to auto_temp[12]_min and auto_temp[12]_max were not
-clamped at all, but masked. As a result, out-of-range writes resulted
-in a more or less arbitrary limit. Clamp those attributes to (0, 127)
-degrees C for more predictable results.
-
-Cc: Axel Lin <axel.lin@ingics.com>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Jan Kardell <jan.kardell@telliq.com>
+Tested-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hwmon/adm1031.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/iio/adc/ti_am335x_adc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/adm1031.c b/drivers/hwmon/adm1031.c
-index 253ea39..bdceca0 100644
---- a/drivers/hwmon/adm1031.c
-+++ b/drivers/hwmon/adm1031.c
-@@ -365,6 +365,7 @@ set_auto_temp_min(struct device *dev, struct device_attribute *attr,
- 	if (ret)
- 		return ret;
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index d4d7482..6721a43 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -342,7 +342,7 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
+ 		if (time_after(jiffies, timeout))
+ 			return -EAGAIN;
+ 		}
+-	map_val = chan->channel + TOTAL_CHANNELS;
++	map_val = adc_dev->channel_step[chan->scan_index];
  
-+	val = clamp_val(val, 0, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->auto_temp[nr] = AUTO_TEMP_MIN_TO_REG(val, data->auto_temp[nr]);
- 	adm1031_write_value(client, ADM1031_REG_AUTO_TEMP(nr),
-@@ -394,6 +395,7 @@ set_auto_temp_max(struct device *dev, struct device_attribute *attr,
- 	if (ret)
- 		return ret;
- 
-+	val = clamp_val(val, 0, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->temp_max[nr] = AUTO_TEMP_MAX_TO_REG(val, data->auto_temp[nr],
- 						  data->pwm[nr]);
-@@ -696,7 +698,7 @@ static ssize_t set_temp_min(struct device *dev, struct device_attribute *attr,
- 	if (ret)
- 		return ret;
- 
--	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
-+	val = clamp_val(val, -55000, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->temp_min[nr] = TEMP_TO_REG(val);
- 	adm1031_write_value(client, ADM1031_REG_TEMP_MIN(nr),
-@@ -717,7 +719,7 @@ static ssize_t set_temp_max(struct device *dev, struct device_attribute *attr,
- 	if (ret)
- 		return ret;
- 
--	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
-+	val = clamp_val(val, -55000, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->temp_max[nr] = TEMP_TO_REG(val);
- 	adm1031_write_value(client, ADM1031_REG_TEMP_MAX(nr),
-@@ -738,7 +740,7 @@ static ssize_t set_temp_crit(struct device *dev, struct device_attribute *attr,
- 	if (ret)
- 		return ret;
- 
--	val = clamp_val(val, -55000, nr == 0 ? 127750 : 127875);
-+	val = clamp_val(val, -55000, 127000);
- 	mutex_lock(&data->update_lock);
- 	data->temp_crit[nr] = TEMP_TO_REG(val);
- 	adm1031_write_value(client, ADM1031_REG_TEMP_CRIT(nr),
+ 	/*
+ 	 * When the sub-system is first enabled,
 -- 
 1.9.1
 
