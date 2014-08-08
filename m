@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758559AbaHHVew (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:34:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40576 "EHLO
+	id S1758545AbaHHVet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:34:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40578 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758054AbaHHUri (ORCPT
+	with ESMTP id S1758058AbaHHUrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:47:38 -0400
+	Fri, 8 Aug 2014 16:47:39 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
-        Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 039/259] usb: musb: Fix panic upon musb_am335x module removal
-Date: Fri,  8 Aug 2014 13:37:42 -0700
-Message-Id: <1407530482-4483-40-git-send-email-kamal@canonical.com>
+Cc: Peter Meerwald <pmeerw@pmeerw.net>,
+        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 182/259] iio:bma180: Fix scale factors to report correct acceleration units
+Date: Fri,  8 Aug 2014 13:40:05 -0700
+Message-Id: <1407530482-4483-183-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,156 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+From: Peter Meerwald <pmeerw@pmeerw.net>
 
-commit 7adb5c876e9c0677078a1e1094c6eafd29c30b74 upstream.
+commit 381676d5e86596b11e22a62f196e192df6091373 upstream.
 
-At probe time, the musb_am335x driver register its childs by
-calling of_platform_populate(), which registers all childs in
-the devicetree hierarchy recursively.
+The userspace interface for acceleration sensors is documented as using
+m/s^2 units [Documentation/ABI/testing/sysfs-bus-iio]
 
-On the other side, the driver's remove() function uses of_device_unregister()
-to remove each child of musb_am335x's.
+The fullscale raw values for the BMA80 corresponds to -/+ 1, 1.5, 2, etc G
+depending on the selected mode.
 
-However, when musb_dsps is loaded, its devices are attached to the musb_am335x
-device as musb_am335x childs. Hence, musb_am335x remove() will attempt to
-unregister the devices registered by musb_dsps, which produces a kernel panic.
+The scale table was converting to G rather than m/s^2.
+Change the scaling table to match the documented interface.
 
-In other words, the childs in the "struct device" hierarchy are not the same
-as the childs in the "devicetree" hierarchy.
+See commit 71702e6e, iio: mma8452: Use correct acceleration units,
+for a related fix.
 
-Ideally, we should enforce the removal of the devices registered by
-musb_am335x *only*, instead of all its child devices. However, because of the
-recursive nature of of_platform_populate, this doesn't seem possible.
-
-Therefore, as the only solution at hand, this commit disables musb_am335x
-driver removal capability, preventing it from being ever removed. This was
-originally suggested by Sebastian Siewior:
-
-https://www.mail-archive.com/linux-omap@vger.kernel.org/msg104946.html
-
-And for reference, here's the panic upon module removal:
-
-musb-hdrc musb-hdrc.0.auto: remove, state 4
-usb usb1: USB disconnect, device number 1
-musb-hdrc musb-hdrc.0.auto: USB bus 1 deregistered
-Unable to handle kernel NULL pointer dereference at virtual address 0000008c
-pgd = de11c000
-[0000008c] *pgd=9e174831, *pte=00000000, *ppte=00000000
-Internal error: Oops: 17 [#1] ARM
-Modules linked in: musb_am335x(-) musb_dsps musb_hdrc usbcore usb_common
-CPU: 0 PID: 623 Comm: modprobe Not tainted 3.15.0-rc4-00001-g24efd13 #69
-task: de1b7500 ti: de122000 task.ti: de122000
-PC is at am335x_shutdown+0x10/0x28
-LR is at am335x_shutdown+0xc/0x28
-pc : [<c0327798>]    lr : [<c0327794>]    psr: a0000013
-sp : de123df8  ip : 00000004  fp : 00028f00
-r10: 00000000  r9 : de122000  r8 : c000e6c4
-r7 : de0e3c10  r6 : de0e3800  r5 : de624010  r4 : de1ec750
-r3 : de0e3810  r2 : 00000000  r1 : 00000001  r0 : 00000000
-Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c5387d  Table: 9e11c019  DAC: 00000015
-Process modprobe (pid: 623, stack limit = 0xde122240)
-Stack: (0xde123df8 to 0xde124000)
-3de0:                                                       de0e3810 bf054488
-3e00: bf05444c de624010 60000013 bf043650 000012fc de624010 de0e3810 bf043a20
-3e20: de0e3810 bf04b240 c0635b88 c02ca37c c02ca364 c02c8db0 de1b7500 de0e3844
-3e40: de0e3810 c02c8e28 c0635b88 de02824c de0e3810 c02c884c de0e3800 de0e3810
-3e60: de0e3818 c02c5b20 bf05417c de0e3800 de0e3800 c0635b88 de0f2410 c02ca838
-3e80: bf05417c de0e3800 bf055438 c02ca8cc de0e3c10 bf054194 de0e3c10 c02ca37c
-3ea0: c02ca364 c02c8db0 de1b7500 de0e3c44 de0e3c10 c02c8e28 c0635b88 de02824c
-3ec0: de0e3c10 c02c884c de0e3c10 de0e3c10 de0e3c18 c02c5b20 de0e3c10 de0e3c10
-3ee0: 00000000 bf059000 a0000013 c02c5bc0 00000000 bf05900c de0e3c10 c02c5c48
-3f00: de0dd0c0 de1ec970 de0f2410 bf05929c de0f2444 bf05902c de0f2410 c02ca37c
-3f20: c02ca364 c02c8db0 bf05929c de0f2410 bf05929c c02c94c8 bf05929c 00000000
-3f40: 00000800 c02c8ab4 bf0592e0 c007fc40 c00dd820 6273756d 336d615f 00783533
-3f60: c064a0ac de1b7500 de122000 de1b7500 c000e590 00000001 c000e6c4 c0060160
-3f80: 00028e70 00028e70 00028ea4 00000081 60000010 00028e70 00028e70 00028ea4
-3fa0: 00000081 c000e500 00028e70 00028e70 00028ea4 00000800 becb59f8 00027608
-3fc0: 00028e70 00028e70 00028ea4 00000081 00000001 00000001 00000000 00028f00
-3fe0: b6e6b6f0 becb59d4 000160e8 b6e6b6fc 60000010 00028ea4 00000000 00000000
-[<c0327798>] (am335x_shutdown) from [<bf054488>] (dsps_musb_exit+0x3c/0x4c [musb_dsps])
-[<bf054488>] (dsps_musb_exit [musb_dsps]) from [<bf043650>] (musb_shutdown+0x80/0x90 [musb_hdrc])
-[<bf043650>] (musb_shutdown [musb_hdrc]) from [<bf043a20>] (musb_remove+0x24/0x68 [musb_hdrc])
-[<bf043a20>] (musb_remove [musb_hdrc]) from [<c02ca37c>] (platform_drv_remove+0x18/0x1c)
-[<c02ca37c>] (platform_drv_remove) from [<c02c8db0>] (__device_release_driver+0x70/0xc8)
-[<c02c8db0>] (__device_release_driver) from [<c02c8e28>] (device_release_driver+0x20/0x2c)
-[<c02c8e28>] (device_release_driver) from [<c02c884c>] (bus_remove_device+0xdc/0x10c)
-[<c02c884c>] (bus_remove_device) from [<c02c5b20>] (device_del+0x104/0x198)
-[<c02c5b20>] (device_del) from [<c02ca838>] (platform_device_del+0x14/0x9c)
-[<c02ca838>] (platform_device_del) from [<c02ca8cc>] (platform_device_unregister+0xc/0x20)
-[<c02ca8cc>] (platform_device_unregister) from [<bf054194>] (dsps_remove+0x18/0x38 [musb_dsps])
-[<bf054194>] (dsps_remove [musb_dsps]) from [<c02ca37c>] (platform_drv_remove+0x18/0x1c)
-[<c02ca37c>] (platform_drv_remove) from [<c02c8db0>] (__device_release_driver+0x70/0xc8)
-[<c02c8db0>] (__device_release_driver) from [<c02c8e28>] (device_release_driver+0x20/0x2c)
-[<c02c8e28>] (device_release_driver) from [<c02c884c>] (bus_remove_device+0xdc/0x10c)
-[<c02c884c>] (bus_remove_device) from [<c02c5b20>] (device_del+0x104/0x198)
-[<c02c5b20>] (device_del) from [<c02c5bc0>] (device_unregister+0xc/0x20)
-[<c02c5bc0>] (device_unregister) from [<bf05900c>] (of_remove_populated_child+0xc/0x14 [musb_am335x])
-[<bf05900c>] (of_remove_populated_child [musb_am335x]) from [<c02c5c48>] (device_for_each_child+0x44/0x70)
-[<c02c5c48>] (device_for_each_child) from [<bf05902c>] (am335x_child_remove+0x18/0x30 [musb_am335x])
-[<bf05902c>] (am335x_child_remove [musb_am335x]) from [<c02ca37c>] (platform_drv_remove+0x18/0x1c)
-[<c02ca37c>] (platform_drv_remove) from [<c02c8db0>] (__device_release_driver+0x70/0xc8)
-[<c02c8db0>] (__device_release_driver) from [<c02c94c8>] (driver_detach+0xb4/0xb8)
-[<c02c94c8>] (driver_detach) from [<c02c8ab4>] (bus_remove_driver+0x4c/0xa0)
-[<c02c8ab4>] (bus_remove_driver) from [<c007fc40>] (SyS_delete_module+0x128/0x1cc)
-[<c007fc40>] (SyS_delete_module) from [<c000e500>] (ret_fast_syscall+0x0/0x48)
-
-Fixes: 97238b35d5bb ("usb: musb: dsps: use proper child nodes")
-Acked-by: George Cherian <george.cherian@ti.com>
-Signed-off-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+Cc: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/musb/musb_am335x.c | 23 ++++++-----------------
- 1 file changed, 6 insertions(+), 17 deletions(-)
+ drivers/iio/accel/bma180.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_am335x.c b/drivers/usb/musb/musb_am335x.c
-index 8be9b02..aada337 100644
---- a/drivers/usb/musb/musb_am335x.c
-+++ b/drivers/usb/musb/musb_am335x.c
-@@ -20,21 +20,6 @@ err:
- 	return ret;
- }
+diff --git a/drivers/iio/accel/bma180.c b/drivers/iio/accel/bma180.c
+index 28b3928..8d5ea9b 100644
+--- a/drivers/iio/accel/bma180.c
++++ b/drivers/iio/accel/bma180.c
+@@ -68,13 +68,13 @@
+ /* Defaults values */
+ #define BMA180_DEF_PMODE	0
+ #define BMA180_DEF_BW		20
+-#define BMA180_DEF_SCALE	250
++#define BMA180_DEF_SCALE	2452
  
--static int of_remove_populated_child(struct device *dev, void *d)
--{
--	struct platform_device *pdev = to_platform_device(dev);
--
--	of_device_unregister(pdev);
--	return 0;
--}
--
--static int am335x_child_remove(struct platform_device *pdev)
--{
--	device_for_each_child(&pdev->dev, NULL, of_remove_populated_child);
--	pm_runtime_disable(&pdev->dev);
--	return 0;
--}
--
- static const struct of_device_id am335x_child_of_match[] = {
- 	{ .compatible = "ti,am33xx-usb" },
- 	{  },
-@@ -43,13 +28,17 @@ MODULE_DEVICE_TABLE(of, am335x_child_of_match);
+ /* Available values for sysfs */
+ #define BMA180_FLP_FREQ_AVAILABLE \
+ 	"10 20 40 75 150 300"
+ #define BMA180_SCALE_AVAILABLE \
+-	"0.000130 0.000190 0.000250 0.000380 0.000500 0.000990 0.001980"
++	"0.001275 0.001863 0.002452 0.003727 0.004903 0.009709 0.019417"
  
- static struct platform_driver am335x_child_driver = {
- 	.probe		= am335x_child_probe,
--	.remove         = am335x_child_remove,
- 	.driver         = {
- 		.name   = "am335x-usb-childs",
- 		.of_match_table	= am335x_child_of_match,
- 	},
+ struct bma180_data {
+ 	struct i2c_client *client;
+@@ -94,7 +94,7 @@ enum bma180_axis {
  };
  
--module_platform_driver(am335x_child_driver);
-+static int __init am335x_child_init(void)
-+{
-+	return platform_driver_register(&am335x_child_driver);
-+}
-+module_init(am335x_child_init);
-+
- MODULE_DESCRIPTION("AM33xx child devices");
- MODULE_LICENSE("GPL v2");
+ static int bw_table[] = { 10, 20, 40, 75, 150, 300 }; /* Hz */
+-static int scale_table[] = { 130, 190, 250, 380, 500, 990, 1980 };
++static int scale_table[] = { 1275, 1863, 2452, 3727, 4903, 9709, 19417 };
+ 
+ static int bma180_get_acc_reg(struct bma180_data *data, enum bma180_axis axis)
+ {
 -- 
 1.9.1
 
