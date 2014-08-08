@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146AbaHHV3p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:29:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40737 "EHLO
+	id S1758171AbaHHV3s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:29:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40712 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757098AbaHHUtn (ORCPT
+	with ESMTP id S1758243AbaHHUtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:49:43 -0400
+	Fri, 8 Aug 2014 16:49:09 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 046/259] tracing: Remove ftrace_stop/start() from reading the trace file
-Date: Fri,  8 Aug 2014 13:37:49 -0700
-Message-Id: <1407530482-4483-47-git-send-email-kamal@canonical.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 042/259] tools: ffs-test: fix header values endianess
+Date: Fri,  8 Aug 2014 13:37:45 -0700
+Message-Id: <1407530482-4483-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -26,42 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Michal Nazarewicz <mina86@mina86.com>
 
-commit 099ed151675cd1d2dbeae1dac697975f6a68716d upstream.
+commit f35f71244da6e51db4e1f2c7e318581f498ececf upstream.
 
-Disabling reading and writing to the trace file should not be able to
-disable all function tracing callbacks. There's other users today
-(like kprobes and perf). Reading a trace file should not stop those
-from happening.
+It appears that no one ever run ffs-test on a big-endian machine,
+since it used cpu-endianess for fs_count and hs_count fields which
+should be in little-endian format.  Fix by wrapping the numbers in
+cpu_to_le32.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/trace/trace.c | 2 --
- 1 file changed, 2 deletions(-)
+ tools/usb/ffs-test.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 0a360ce..9250479 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1328,7 +1328,6 @@ void tracing_start(void)
- 
- 	arch_spin_unlock(&ftrace_max_lock);
- 
--	ftrace_start();
-  out:
- 	raw_spin_unlock_irqrestore(&global_trace.start_lock, flags);
- }
-@@ -1375,7 +1374,6 @@ void tracing_stop(void)
- 	struct ring_buffer *buffer;
- 	unsigned long flags;
- 
--	ftrace_stop();
- 	raw_spin_lock_irqsave(&global_trace.start_lock, flags);
- 	if (global_trace.stop_count++)
- 		goto out;
+diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
+index fe1e66b..a87e99f 100644
+--- a/tools/usb/ffs-test.c
++++ b/tools/usb/ffs-test.c
+@@ -116,8 +116,8 @@ static const struct {
+ 	.header = {
+ 		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
+ 		.length = cpu_to_le32(sizeof descriptors),
+-		.fs_count = 3,
+-		.hs_count = 3,
++		.fs_count = cpu_to_le32(3),
++		.hs_count = cpu_to_le32(3),
+ 	},
+ 	.fs_descs = {
+ 		.intf = {
 -- 
 1.9.1
 
