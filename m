@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758399AbaHHWC0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:02:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60488 "EHLO
+	id S1758260AbaHHWCY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:02:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60470 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933027AbaHHVgT (ORCPT
+	with ESMTP id S933032AbaHHVgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 17:36:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fan Du <fan.du@windriver.com>, Tobias Brunner <tobias@strongswan.org>,
-        Steffen Klassert <steffen.klassert@secunet.com>
-Subject: [PATCH 3.14 01/39] xfrm: Fix installation of AH IPsec SAs
-Date: Fri,  8 Aug 2014 14:34:47 -0700
-Message-Id: <20140808213355.038291001@linuxfoundation.org>
+        Ivan Vecera <ivecera@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 10/39] bna: fix performance regression
+Date: Fri,  8 Aug 2014 14:34:56 -0700
+Message-Id: <20140808213355.415588935@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -29,45 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tobias Brunner <tobias@strongswan.org>
+From: Ivan Vecera <ivecera@redhat.com>
 
-[ Upstream commit a0e5ef53aac8e5049f9344857d8ec5237d31e58b ]
+[ Upstream commit c36c9d50cc6af5c5bfcc195f21b73f55520c15f9 ]
 
-The SPI check introduced in ea9884b3acf3311c8a11db67bfab21773f6f82ba
-was intended for IPComp SAs but actually prevented AH SAs from getting
-installed (depending on the SPI).
+The recent commit "e29aa33 bna: Enable Multi Buffer RX" is causing
+a performance regression. It does not properly update 'cmpl' pointer
+at the end of the loop in NAPI handler bnad_cq_process(). The result is
+only one packet / per NAPI-schedule is processed.
 
-Fixes: ea9884b3acf3 ("xfrm: check user specified spi for IPComp")
-Cc: Fan Du <fan.du@windriver.com>
-Signed-off-by: Tobias Brunner <tobias@strongswan.org>
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Ivan Vecera <ivecera@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/xfrm/xfrm_user.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/brocade/bna/bnad.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -176,9 +176,7 @@ static int verify_newsa_info(struct xfrm
- 		    attrs[XFRMA_ALG_AEAD]	||
- 		    attrs[XFRMA_ALG_CRYPT]	||
- 		    attrs[XFRMA_ALG_COMP]	||
--		    attrs[XFRMA_TFCPAD]		||
--		    (ntohl(p->id.spi) >= 0x10000))
--
-+		    attrs[XFRMA_TFCPAD])
- 			goto out;
- 		break;
+--- a/drivers/net/ethernet/brocade/bna/bnad.c
++++ b/drivers/net/ethernet/brocade/bna/bnad.c
+@@ -600,9 +600,9 @@ bnad_cq_process(struct bnad *bnad, struc
+ 	prefetch(bnad->netdev);
  
-@@ -206,7 +204,8 @@ static int verify_newsa_info(struct xfrm
- 		    attrs[XFRMA_ALG_AUTH]	||
- 		    attrs[XFRMA_ALG_AUTH_TRUNC]	||
- 		    attrs[XFRMA_ALG_CRYPT]	||
--		    attrs[XFRMA_TFCPAD])
-+		    attrs[XFRMA_TFCPAD]		||
-+		    (ntohl(p->id.spi) >= 0x10000))
- 			goto out;
- 		break;
+ 	cq = ccb->sw_q;
+-	cmpl = &cq[ccb->producer_index];
  
+ 	while (packets < budget) {
++		cmpl = &cq[ccb->producer_index];
+ 		if (!cmpl->valid)
+ 			break;
+ 		/* The 'valid' field is set by the adapter, only after writing
 
 
