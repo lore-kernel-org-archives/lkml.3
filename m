@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933677AbaHHVhU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:37:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60667 "EHLO
+	id S933724AbaHHVhk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:37:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60704 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933469AbaHHVgr (ORCPT
+	with ESMTP id S933521AbaHHVgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:47 -0400
+	Fri, 8 Aug 2014 17:36:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Doug Leith <doug.leith@nuim.ie>,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
+        Yulong Pei <ypei@redhat.com>, Michal Schmidt <mschmidt@redhat.com>,
+        Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 11/26] tcp: Fix integer-overflow in TCP vegas
-Date: Fri,  8 Aug 2014 14:35:18 -0700
-Message-Id: <20140808213414.142747061@linuxfoundation.org>
+Subject: [PATCH 3.15 04/26] bnx2x: fix crash during TSO tunneling
+Date: Fri,  8 Aug 2014 14:35:11 -0700
+Message-Id: <20140808213413.833963397@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
 References: <20140808213413.648794968@linuxfoundation.org>
@@ -34,40 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+From: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
 
-[ Upstream commit 1f74e613ded11517db90b2bd57e9464d9e0fb161 ]
+[ Upstream commit fe26566d8a05151ba1dce75081f6270f73ec4ae1 ]
 
-In vegas we do a multiplication of the cwnd and the rtt. This
-may overflow and thus their result is stored in a u64. However, we first
-need to cast the cwnd so that actually 64-bit arithmetic is done.
+When TSO packet is transmitted additional BD w/o mapping is used
+to describe the packed. The BD needs special handling in tx
+completion.
 
-Then, we need to do do_div to allow this to be used on 32-bit arches.
+kernel: Call Trace:
+kernel: <IRQ>  [<ffffffff815e19ba>] dump_stack+0x19/0x1b
+kernel: [<ffffffff8105dee1>] warn_slowpath_common+0x61/0x80
+kernel: [<ffffffff8105df5c>] warn_slowpath_fmt+0x5c/0x80
+kernel: [<ffffffff814a8c0d>] ? find_iova+0x4d/0x90
+kernel: [<ffffffff814ab0e2>] intel_unmap_page.part.36+0x142/0x160
+kernel: [<ffffffff814ad0e6>] intel_unmap_page+0x26/0x30
+kernel: [<ffffffffa01f55d7>] bnx2x_free_tx_pkt+0x157/0x2b0 [bnx2x]
+kernel: [<ffffffffa01f8dac>] bnx2x_tx_int+0xac/0x220 [bnx2x]
+kernel: [<ffffffff8101a0d9>] ? read_tsc+0x9/0x20
+kernel: [<ffffffffa01f8fdb>] bnx2x_poll+0xbb/0x3c0 [bnx2x]
+kernel: [<ffffffff814d041a>] net_rx_action+0x15a/0x250
+kernel: [<ffffffff81067047>] __do_softirq+0xf7/0x290
+kernel: [<ffffffff815f3a5c>] call_softirq+0x1c/0x30
+kernel: [<ffffffff81014d25>] do_softirq+0x55/0x90
+kernel: [<ffffffff810673e5>] irq_exit+0x115/0x120
+kernel: [<ffffffff815f4358>] do_IRQ+0x58/0xf0
+kernel: [<ffffffff815e94ad>] common_interrupt+0x6d/0x6d
+kernel: <EOI>  [<ffffffff810bbff7>] ? clockevents_notify+0x127/0x140
+kernel: [<ffffffff814834df>] ? cpuidle_enter_state+0x4f/0xc0
+kernel: [<ffffffff81483615>] cpuidle_idle_call+0xc5/0x200
+kernel: [<ffffffff8101bc7e>] arch_cpu_idle+0xe/0x30
+kernel: [<ffffffff810b4725>] cpu_startup_entry+0xf5/0x290
+kernel: [<ffffffff815cfee1>] start_secondary+0x265/0x27b
+kernel: ---[ end trace 11aa7726f18d7e80 ]---
 
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Laight <David.Laight@ACULAB.COM>
-Cc: Doug Leith <doug.leith@nuim.ie>
-Fixes: 8d3a564da34e (tcp: tcp_vegas cong avoid fix)
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Fixes: a848ade408b ("bnx2x: add CSUM and TSO support for encapsulation protocols")
+Reported-by: Yulong Pei <ypei@redhat.com>
+Cc: Michal Schmidt <mschmidt@redhat.com>
+Signed-off-by: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_vegas.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x.h     |    1 +
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    9 +++++++++
+ 2 files changed, 10 insertions(+)
 
---- a/net/ipv4/tcp_vegas.c
-+++ b/net/ipv4/tcp_vegas.c
-@@ -219,7 +219,8 @@ static void tcp_vegas_cong_avoid(struct
- 			 * This is:
- 			 *     (actual rate in segments) * baseRTT
- 			 */
--			target_cwnd = tp->snd_cwnd * vegas->baseRTT / rtt;
-+			target_cwnd = (u64)tp->snd_cwnd * vegas->baseRTT;
-+			do_div(target_cwnd, rtt);
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
+@@ -346,6 +346,7 @@ struct sw_tx_bd {
+ 	u8		flags;
+ /* Set on the first BD descriptor when there is a split BD */
+ #define BNX2X_TSO_SPLIT_BD		(1<<0)
++#define BNX2X_HAS_SECOND_PBD		(1<<1)
+ };
  
- 			/* Calculate the difference between the window we had,
- 			 * and the window we would like to have. This quantity
+ struct sw_rx_page {
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -227,6 +227,12 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
+ 	--nbd;
+ 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ 
++	if (tx_buf->flags & BNX2X_HAS_SECOND_PBD) {
++		/* Skip second parse bd... */
++		--nbd;
++		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
++	}
++
+ 	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
+ 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
+ 		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
+@@ -3877,6 +3883,9 @@ netdev_tx_t bnx2x_start_xmit(struct sk_b
+ 			/* set encapsulation flag in start BD */
+ 			SET_FLAG(tx_start_bd->general_data,
+ 				 ETH_TX_START_BD_TUNNEL_EXIST, 1);
++
++			tx_buf->flags |= BNX2X_HAS_SECOND_PBD;
++
+ 			nbd++;
+ 		} else if (xmit_type & XMIT_CSUM) {
+ 			/* Set PBD in checksum offload case w/o encapsulation */
 
 
