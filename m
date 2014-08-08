@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758030AbaHHTCY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 15:02:24 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:47918 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651AbaHHTCS (ORCPT
+	id S1758042AbaHHTDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 15:03:25 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:17539 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651AbaHHTDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 15:02:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <53E4CF4E.6010500@nvidia.com>
-References: <1407452515-2390-1-git-send-email-ttynkkynen@nvidia.com>
- <1407452515-2390-2-git-send-email-ttynkkynen@nvidia.com> <20140808094123.GC5387@ulmo>
- <53E4CF4E.6010500@nvidia.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Fri, 8 Aug 2014 14:01:57 -0500
-Message-ID: <CAL_JsqLFkTGCn-n6+Z644-2iAZ=6PcFD6ox=63pR-eb1s6tNGw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] of: Add of_match_machine helper
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 8 Aug 2014 15:03:24 -0400
+Message-ID: <1407524600.6583.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2 1/7] locking/rwsem: check for active writer/spinner
+ before wakeup
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, aswin@hp.com
+Date: Fri, 08 Aug 2014 12:03:20 -0700
+In-Reply-To: <53E5172A.7090508@hp.com>
+References: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com>
+	  <1407450408-11679-2-git-send-email-Waiman.Long@hp.com>
+	  <1407458726.2513.12.camel@buesod1.americas.hpqcorp.net>
+	 <1407476387.2513.39.camel@buesod1.americas.hpqcorp.net>
+	 <53E5172A.7090508@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 8, 2014 at 8:23 AM, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
->
->
-> On 08/08/14 12:41, Thierry Reding wrote:
->>
->>> +const struct of_device_id *of_match_machine(const struct of_device_id *matches)
->>> +{
->>> +    const struct of_device_id *match;
->>> +    struct device_node *root;
->>> +
->>> +    root = of_find_node_by_path("/");
->>> +    if (!root)
->>> +            return NULL;
->>> +
->>> +    match = of_match_node(matches, root);
->>> +    of_node_put(root);
->>> +    return match;
->>> +}
->>> +EXPORT_SYMBOL(of_match_machine);
->>
->> I wonder if of_find_node_by_path("/") is somewhat overkill here. Perhaps
->> simply of_node_get(of_allnodes) would be more appropriate here since the
->> function is implemented in the core?
->
-> of_machine_is_compatible() uses of_find_node_by_path("/") as well, of_allnodes
-> seems to be only used when during iterating. So I'd prefer to have them
-> consistent.
+On Fri, 2014-08-08 at 14:30 -0400, Waiman Long wrote:
+> I have 2 issues about this. First of all, the timing windows between 
+> atomic_set() and mutex_has_owner() check is really small, I doubt it 
+> will be that effective. 
 
-Agreed.
+That is true, which is why I didn't bother showing any performance data
+in the changelog. However, more important than any performance, avoiding
+bogus wakeups is the _right_ thing to do when allowing lock stealing.
 
-For the series:
+> Secondly, I think you may need to call 
+> mutex_release() and debug_mutex_unlock() to make the debugging code 
+> work, but they seems to be called only under the wait_lock. So I think 
+> there is more work that need to be done before this patch is ready.
 
-Acked-by: Rob Herring <robh@kernel.org>
+When !DEBUG both mutex_release() and debug_mutex_unlock() should be
+no-ops. So this allows us to do the mutex_has_owner() check *without*
+holding the wait_lock.
 
-Rob
+When DEBUG is set, we don't even bother calling mutex_has_owner(), so
+nothing changes.
+
+I don't understand your concern. 
+
+Thanks,
+Davidlohr
+
