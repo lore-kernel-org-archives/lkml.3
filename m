@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472AbaHHAsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 20:48:16 -0400
-Received: from smtpw.263xmail.com ([63.217.87.9]:38257 "EHLO
-	smtpw.263xmail.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755330AbaHHAsN (ORCPT
+	id S1755314AbaHHAye (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 20:54:34 -0400
+Received: from smtprelay.synopsys.com ([198.182.60.111]:57785 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088AbaHHAyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 20:48:13 -0400
-X-Greylist: delayed 533 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Aug 2014 20:48:12 EDT
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: linux-kernel@vger.kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <ad73e23f143e91e1b408f4089484edb0>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <53E41C29.9070501@rock-chips.com>
-Date: Fri, 08 Aug 2014 08:39:05 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        "heiko@sntech.de" <heiko@sntech.de>
-CC: "dianders@chromium.org" <dianders@chromium.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "sonnyrao@chromium.org" <sonnyrao@chromium.org>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        "cf@rock-chips.com" <cf@rock-chips.com>,
-        "xjq@rock-chips.com" <xjq@rock-chips.com>,
-        "wulf@rock-chips.com" <wulf@rock-chips.com>,
-        "lyz@rock-chips.com" <lyz@rock-chips.com>,
-        "hj@rock-chips.com" <hj@rock-chips.com>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Thu, 7 Aug 2014 20:54:32 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Doug Anderson <dianders@chromium.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/4] usb: dwc2: add compatible data for rockchip soc
-References: <1407404095-3265-1-git-send-email-kever.yang@rock-chips.com> <1407404095-3265-3-git-send-email-kever.yang@rock-chips.com> <A2CA0424C0A6F04399FB9E1CD98E0304844C4DF6@US01WEMBX2.internal.synopsys.com>
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844C4DF6@US01WEMBX2.internal.synopsys.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: RE: [PATCH] usb: dwc2: Read GNPTXFSIZ when in forced HOST mode.
+Thread-Topic: [PATCH] usb: dwc2: Read GNPTXFSIZ when in forced HOST mode.
+Thread-Index: AQHPsniOaDO8kH4VjEyYMuzEPM/xJJvFkmrQgAC4oYD//5S2wA==
+Date: Fri, 8 Aug 2014 00:52:58 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844C5074@US01WEMBX2.internal.synopsys.com>
+References: <1407440891-29295-1-git-send-email-dianders@chromium.org>
+	<A2CA0424C0A6F04399FB9E1CD98E0304844C4EA0@US01WEMBX2.internal.synopsys.com>
+ <CAD=FV=XXP-0G=rxSkf-6=UznHj4ZqrLL3U+qQnNGdx_cLRGBPw@mail.gmail.com>
+In-Reply-To: <CAD=FV=XXP-0G=rxSkf-6=UznHj4ZqrLL3U+qQnNGdx_cLRGBPw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.240]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s780srQj021165
 
-Paul,
+> From: dianders@google.com [mailto:dianders@google.com] On Behalf Of Doug Anderson
+> Sent: Thursday, August 07, 2014 5:12 PM
+> 
+> On Thu, Aug 7, 2014 at 1:18 PM, Paul Zimmerman
+> <Paul.Zimmerman@synopsys.com> wrote:
+> >> From: Doug Anderson [mailto:dianders@chromium.org]
+> >> Sent: Thursday, August 07, 2014 12:48 PM
+> >>
+> >> The documentation for GNPTXFSIZ says that "For host mode, this field
+> >> is always valid."  Since we're already switching to host mode for
+> >> HPTXFSIZ, let's also read GNPTXFSIZ in host mode.
+> >>
+> >> On an rk3288 SoC, without this change we see this at bootup:
+> >>   dwc2 ff580000.usb: gnptxfsiz=00100400
+> >>   dwc2 ff580000.usb: 128 invalid for host_nperio_tx_fifo_size. Check HW configuration.
+> >>
+> >> After this change we see:
+> >>   dwc2 ff580000.usb: gnptxfsiz=04000400
+> >>
+> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> >> ---
+> >>  drivers/usb/dwc2/core.c | 6 +++---
+> >>  1 file changed, 3 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/drivers/usb/dwc2/core.c b/drivers/usb/dwc2/core.c
+> >> index 27d2c9b..c184ed43 100644
+> >> --- a/drivers/usb/dwc2/core.c
+> >> +++ b/drivers/usb/dwc2/core.c
+> >> @@ -2674,23 +2674,23 @@ int dwc2_get_hwparams(struct dwc2_hsotg *hsotg)
+> >>       hwcfg2 = readl(hsotg->regs + GHWCFG2);
+> >>       hwcfg3 = readl(hsotg->regs + GHWCFG3);
+> >>       hwcfg4 = readl(hsotg->regs + GHWCFG4);
+> >> -     gnptxfsiz = readl(hsotg->regs + GNPTXFSIZ);
+> >>       grxfsiz = readl(hsotg->regs + GRXFSIZ);
+> >>
+> >>       dev_dbg(hsotg->dev, "hwcfg1=%08x\n", hwcfg1);
+> >>       dev_dbg(hsotg->dev, "hwcfg2=%08x\n", hwcfg2);
+> >>       dev_dbg(hsotg->dev, "hwcfg3=%08x\n", hwcfg3);
+> >>       dev_dbg(hsotg->dev, "hwcfg4=%08x\n", hwcfg4);
+> >> -     dev_dbg(hsotg->dev, "gnptxfsiz=%08x\n", gnptxfsiz);
+> >>       dev_dbg(hsotg->dev, "grxfsiz=%08x\n", grxfsiz);
+> >>
+> >> -     /* Force host mode to get HPTXFSIZ exact power on value */
+> >> +     /* Force host mode to get HPTXFSIZ / GNPTXFSIZ exact power on value */
+> >>       gusbcfg = readl(hsotg->regs + GUSBCFG);
+> >>       gusbcfg |= GUSBCFG_FORCEHOSTMODE;
+> >>       writel(gusbcfg, hsotg->regs + GUSBCFG);
+> >>       usleep_range(100000, 150000);
+> >>
+> >> +     gnptxfsiz = readl(hsotg->regs + GNPTXFSIZ);
+> >>       hptxfsiz = readl(hsotg->regs + HPTXFSIZ);
+> >> +     dev_dbg(hsotg->dev, "gnptxfsiz=%08x\n", gnptxfsiz);
+> >>       dev_dbg(hsotg->dev, "hptxfsiz=%08x\n", hptxfsiz);
+> >>       gusbcfg = readl(hsotg->regs + GUSBCFG);
+> >>       gusbcfg &= ~GUSBCFG_FORCEHOSTMODE;
+> >
+> > Nice! I wonder if this is a bug in the original driver, and they
+> > actually meant to read this register instead of HPTXFSIZ? Well, it
+> > doesn't really matter I guess.
+> >
+> > Acked-by: Paul Zimmerman <paulz@synopsys.com>
+> >
+> > You may want to resend this to Greg after -rc1 is out and he reopens
+> > his usb-next tree.
+> 
+> Thanks!
+> 
+> ...do you think this is a fix that needs to go in for 3.17?  Is it
+> affecting anyone there?
 
-On 08/08/2014 02:26 AM, Paul Zimmerman wrote:
->> From: Kever Yang [mailto:kever.yang@gmail.com] On Behalf Of Kever Yang
->> Sent: Thursday, August 07, 2014 2:35 AM
->>
->> This patch add compatible data for dwc2 controller found on
->> rk3066, rk3188 and rk3288 processors from rockchip.
->>
->> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
->> Acked-by: Paul Zimmerman <paulz@synopsys.com>
->> ---
->>
->> Changes in v4:
->> - max_transfer_size change to 65536, this should be enough
->>    for most transfer, the hardware auto-detect will set this
->>    to 0x7ffff which may make dma_alloc_coherent fail when
->>    non-dword aligned buf from driver like usbnet happen.
-> Hi Kever,
->
-> Did you test this change thoroughly? I have vague memories of any
-> value above 65535 causing problems, at least on my hardware. And I
-> see it is set to 65535 in both pci.c and platform.c. I could be
-> wrong, but I thought I should mention it.
-I test it on rk3288 evb, it works find with 65536, I'm sorry for didn't 
-mention it in my patch.
-The problem in my platform is if the value use hardware auto-detect, it 
-will be 0x7ffff,
-and that will cause the dma_alloc_coherent fail in hcd driver.
+I don't think so. It only has an effect if the controller starts up in
+peripheral mode and then later switches to host mode, right? I think
+yours is the first dwc2 platform in the kernel with that capability.
 
-The value less than 0x7ffff should be fine for hardware, but for the 
-software, it depends on
-how we use it.
+-- 
+Paul
 
-What kind of problem did you met? Software problem or hardware problem? 
-Maybe I should
-pay more attention for this value. :)
-
->
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
