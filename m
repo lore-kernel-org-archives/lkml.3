@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132AbaHHPU6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 11:20:58 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:39680 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757111AbaHHPU5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 11:20:57 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] printk: Don't bother using LOG_CPU_MAX_BUF_SHIFT on !SMP
-Date: Fri,  8 Aug 2014 17:20:44 +0200
-Message-Id: <1407511244-5332-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	id S932202AbaHHPVn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 11:21:43 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46382 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756628AbaHHPVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 11:21:42 -0400
+Date: Fri, 8 Aug 2014 17:21:35 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 7/8] x86, microcode, intel: forbid some incorrect metadata
+Message-ID: <20140808152135.GD2776@pd.tnic>
+References: <1406146251-8540-1-git-send-email-hmh@hmh.eng.br>
+ <1406146251-8540-8-git-send-email-hmh@hmh.eng.br>
+ <20140728153157.GC5350@pd.tnic>
+ <20140728193734.GC9752@khazad-dum.debian.net>
+ <20140729104520.GF11179@pd.tnic>
+ <20140729202543.GB15382@khazad-dum.debian.net>
+ <20140804110942.GC4808@pd.tnic>
+ <20140804201836.GA24823@khazad-dum.debian.net>
+ <20140808125430.GC2776@pd.tnic>
+ <20140808135057.GC17542@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140808135057.GC17542@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When configuring a uniprocessor kernel, don't bother the user with an
-irrelevant LOG_CPU_MAX_BUF_SHIFT question, and don't build the unused
-code.
+On Fri, Aug 08, 2014 at 10:50:57AM -0300, Henrique de Moraes Holschuh wrote:
+> On Fri, 08 Aug 2014, Borislav Petkov wrote:
+> > If someone tries to load a microcode blob which has been split and so
+> > on, then we should refuse loading. We want to accept microcode from the
+> > vendor and nothing else glued together.
+> 
+> I don't quite get why we should refuse microcode
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- init/Kconfig           | 1 +
- kernel/printk/printk.c | 7 ++++++-
- 2 files changed, 7 insertions(+), 1 deletion(-)
+Because the blob from the official location passes internal validation, I'd
+strongly assume. Everything else doesn't.
 
-diff --git a/init/Kconfig b/init/Kconfig
-index a5f8bc426f7c..aa6f87c04728 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -822,6 +822,7 @@ config LOG_BUF_SHIFT
- 
- config LOG_CPU_MAX_BUF_SHIFT
- 	int "CPU kernel log buffer size contribution (13 => 8 KB, 17 => 128KB)"
-+	depends on SMP
- 	range 0 21
- 	default 12 if !BASE_SMALL
- 	default 0 if BASE_SMALL
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index de1a6bb6861d..d5dc94028166 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -267,7 +267,6 @@ static u32 clear_idx;
- #define LOG_ALIGN __alignof__(struct printk_log)
- #endif
- #define __LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
--#define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
- static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
- static char *log_buf = __log_buf;
- static u32 log_buf_len = __LOG_BUF_LEN;
-@@ -846,6 +845,9 @@ static int __init log_buf_len_setup(char *str)
- }
- early_param("log_buf_len", log_buf_len_setup);
- 
-+#ifdef CONFIG_SMP
-+#define __LOG_CPU_MAX_BUF_LEN (1 << CONFIG_LOG_CPU_MAX_BUF_SHIFT)
-+
- static void __init log_buf_add_cpu(void)
- {
- 	unsigned int cpu_extra;
-@@ -872,6 +874,9 @@ static void __init log_buf_add_cpu(void)
- 
- 	log_buf_len_update(cpu_extra + __LOG_BUF_LEN);
- }
-+#else /* !CONFIG_SMP */
-+static inline void log_buf_add_cpu(void) {}
-+#endif /* CONFIG_SMP */
- 
- void __init setup_log_buf(int early)
- {
+> that has been split by userspace when the Intel SDM explicitly states
+> that tools can do that if there is a need,
+
+Where?
+
+> In these last two weeks I tried to look around for microcode loader
+> implementantions, and now I believe we will *never* see microcode with the
+> current version of the extended signatures specification.  The loaders in
+> the field are just too broken, Intel might as well come up with a new and
+> enhanced design that doesn't have so many sharp edges, since nearly everyone
+> will have to patch their loaders anyway.
+
+You can't just assume that just because implementations are faulty there
+- they should adhere to the SDM and it is authoritative. If the extended
+signatures are really needed at some point, implementations will have to
+be fixed.
+
+> I will respin the patch without the %1024 comment.  Note that I never
+> *removed* any test, we never tested for %1024 in the first place
+
+And I'm saying we should if we're loading the official blob.
+
 -- 
-1.9.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
