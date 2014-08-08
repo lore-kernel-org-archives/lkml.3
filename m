@@ -1,125 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186AbaHHUsh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:48:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40674 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756879AbaHHUs0 (ORCPT
+	id S1758196AbaHHUsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:48:47 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:36945 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756713AbaHHUsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:48:26 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Aaron Lu <aaron.lu@intel.com>, Zhang Rui <rui.zhang@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 061/259] thermal: hwmon: Make the check for critical temp valid consistent
-Date: Fri,  8 Aug 2014 13:38:04 -0700
-Message-Id: <1407530482-4483-62-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Fri, 8 Aug 2014 16:48:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140808202549.GA25352@mail.hallyn.com>
+References: <20140807165233.13463.55258.stgit@buzz>
+	<20140807165243.13463.74200.stgit@buzz>
+	<20140808202549.GA25352@mail.hallyn.com>
+Date: Sat, 9 Aug 2014 00:48:41 +0400
+Message-ID: <CALYGNiMyYmBHnuUWFuwOhg2k-wYJdbEHWqM8DpHZAebDuT9ZVA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] Smack: handle zero-length security labels without panic
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        linux-security-module@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.6 -stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Aaron Lu <aaron.lu@intel.com>
-
-commit e8db5d6736a712a3e2280c0e31f4b301d85172d8 upstream.
-
-On 05/21/2014 04:22 PM, Aaron Lu wrote:
-> On 05/21/2014 01:57 PM, Kui Zhang wrote:
->> Hello,
+On Sat, Aug 9, 2014 at 12:25 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> Quoting Konstantin Khlebnikov (k.khlebnikov@samsung.com):
+>> Zero-length security labels are invalid but kernel should handle them.
 >>
->> I get following error when rmmod thermal.
+>> This patch fixes kernel panic after setting zero-length security labels:
+>> # attr -S -s "SMACK64" -V "" file
 >>
->> rmmod  thermal
->> Killed
+>> And after writing zero-length string into smackfs files syslog and onlycp:
+>> # python -c 'import os; os.write(1, "")' > /smack/syslog
+>>
+>> The problem is caused by brain-damaged logic in function smk_parse_smack()
+>> which takes pointer to buffer and its length but if length below or equal zero
+>> it thinks that the buffer is zero-terminated. Unfortunately callers of this
+>> function are widely used and proper fix requires serious refactoring.
+>>
+>> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+>
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+>
+>>
+>> ---
+>>
+>> Example:
+>>
+>> [   28.063935] BUG: unable to handle kernel NULL pointer dereference at           (null)
+>> [   28.064623] IP: [<ffffffff812ea780>] strlen+0x0/0x30
+>> [   28.064623] PGD 29a77067 PUD 2972d067 PMD 0
+>> [   28.064623] Oops: 0000 [#1] SMP
+>> [   28.064623] Modules linked in:
+>> [   28.064623] CPU: 0 PID: 824 Comm: attr Not tainted 3.16.0+ #6
+>> [   28.064623] task: ffff880029bd88c0 ti: ffff8800297d0000 task.ti: ffff8800297d0000
+>> [   28.064623] RIP: 0010:[<ffffffff812ea780>]  [<ffffffff812ea780>] strlen+0x0/0x30
+>> [   28.064623] RSP: 0018:ffff8800297d3ca8  EFLAGS: 00010246
+>> [   28.064623] RAX: 0000000000000001 RBX: ffff880029c096c0 RCX: 0000000000000001
+>> [   28.064623] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+>> [   28.064623] RBP: ffff8800297d3cd0 R08: ffffffff81e3d940 R09: ffff88002a3e8588
+>> [   28.064623] R10: 8080808080808080 R11: 0000000000000000 R12: 0000000000000000
+>> [   28.064623] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+>> [   28.064623] FS:  00007effe391a700(0000) GS:ffff88002a400000(0000) knlGS:0000000000000000
+>> [   28.064623] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> [   28.064623] CR2: 0000000000000000 CR3: 00000000297a1000 CR4: 00000000001406b0
+>> [   28.064623] Stack:
+>> [   28.064623]  ffffffff812a6fa5 ffff880029c096c0 0000000000000001 0000000000000000
+>> [   28.064623]  0000000000000000 ffff8800297d3cf8 ffffffff812a70ae ffff880029c096c0
+>> [   28.064623]  0000000000000001 0000000000000000 ffff8800297d3d88 ffffffff812a64dc
+>> [   28.064623] Call Trace:
+>> [   28.064623]  [<ffffffff812a6fa5>] ? smk_parse_smack+0xe5/0x110
+>> [   28.064623]  [<ffffffff812a70ae>] smk_import_entry+0xe/0x130
+>> [   28.064623]  [<ffffffff812a64dc>] smack_inode_setxattr+0x11c/0x280
+>> [   28.064623]  [<ffffffff8116a767>] ? lookup_fast+0x177/0x2e0
+>> [   28.064623]  [<ffffffff81177001>] ? dput+0x21/0x1a0
+>> [   28.064623]  [<ffffffff812a0eeb>] security_inode_setxattr+0x1b/0x30
+>> [   28.064623]  [<ffffffff8118488f>] vfs_setxattr+0x6f/0xb0
+>> [   28.064623]  [<ffffffff81184a76>] setxattr+0x1a6/0x1f0
+>> [   28.064623]  [<ffffffff8116af6d>] ? final_putname+0x1d/0x40
+>> [   28.064623]  [<ffffffff8116b1c4>] ? putname+0x24/0x40
+>> [   28.064623]  [<ffffffff8117144a>] ? user_path_at_empty+0x5a/0xa0
+>> [   28.064623]  [<ffffffff81162b84>] ? __sb_start_write+0x44/0xe0
+>> [   28.064623]  [<ffffffff8113cd21>] ? do_brk+0x241/0x320
+>> [   28.064623]  [<ffffffff81184d97>] SyS_lsetxattr+0x87/0xe0
+>> [   28.064623]  [<ffffffff81806f69>] system_call_fastpath+0x16/0x1b
+>> [   28.064623] Code: 89 f8 48 89 e5 f6 82 40 3e a6 81 20 74 15 0f 1f 44 00 00 48 83 c0 01 0f b6 10 f6 82 40 3e a6 81 20 75 f0 5d c3 66 0f 1f 44 00 00 <80> 3f 00 55 48 89 e5 74 15 48 89 f8 0f 1f 40 00 48 83 c0 01 80
+>> [   28.064623] RIP  [<ffffffff812ea780>] strlen+0x0/0x30
+>> [   28.064623]  RSP <ffff8800297d3ca8>
+>> [   28.064623] CR2: 0000000000000000
+>> [   28.093561] ---[ end trace de1055429a98a5be ]---
+>> ---
+>>  security/smack/smack_lsm.c |    2 +-
+>>  security/smack/smackfs.c   |    4 ++--
+>>  2 files changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+>> index b11ab23..afa5ad0 100644
+>> --- a/security/smack/smack_lsm.c
+>> +++ b/security/smack/smack_lsm.c
+>> @@ -923,7 +923,7 @@ static int smack_inode_setxattr(struct dentry *dentry, const char *name,
+>>               rc = -EPERM;
+>>
+>>       if (rc == 0 && check_import) {
+>> -             skp = smk_import_entry(value, size);
+>> +             skp = size ? smk_import_entry(value, size) : NULL;
+>>               if (skp == NULL || (check_star &&
+>>                   (skp == &smack_known_star || skp == &smack_known_web)))
+>>                       rc = -EINVAL;
+>> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+>> index 3c720ff..56a1439 100644
+>> --- a/security/smack/smackfs.c
+>> +++ b/security/smack/smackfs.c
+>> @@ -1677,7 +1677,7 @@ static ssize_t smk_write_onlycap(struct file *file, const char __user *buf,
+>>       if (smack_onlycap != NULL && smack_onlycap != skp)
+>>               return -EPERM;
+>>
+>> -     data = kzalloc(count, GFP_KERNEL);
+>> +     data = kzalloc(count + 1, GFP_KERNEL);
+>>       if (data == NULL)
+>>               return -ENOMEM;
+>>
+>> @@ -2228,7 +2228,7 @@ static ssize_t smk_write_syslog(struct file *file, const char __user *buf,
+>>       if (!smack_privileged(CAP_MAC_ADMIN))
+>>               return -EPERM;
+>>
+>
+> How about putting a comment here explaining that this way if len is 0 you
+> make sure to have '\0' to avoid parsing problems?
 
-While dealing with this problem, I found another problem that also
-results in a kernel crash on thermal module removal:
+There are plenty of these comments. That design is uncommon and
+extremely dangerous,
+it cannot be neutralized just by a comment.
 
-From: Aaron Lu <aaron.lu@intel.com>
-Date: Wed, 21 May 2014 16:05:38 +0800
-Subject: [PATCH] thermal: hwmon: Make the check for critical temp valid consistent
+Probably magic length '0' might be replaced with magic '-1' which is much safer.
 
-We used the tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, temp)
-to decide if we need to create the temp_crit attribute file but we just
-check if tz->ops->get_crit_temp exists to decide if we need to remove
-that attribute file. Some ACPI thermal zone doesn't have a valid critical
-trip point and that would result in removing a non-existent device file
-on thermal module unload.
-
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/thermal/thermal_hwmon.c | 33 ++++++++++++++++++---------------
- 1 file changed, 18 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/thermal/thermal_hwmon.c b/drivers/thermal/thermal_hwmon.c
-index fdb0719..1967bee 100644
---- a/drivers/thermal/thermal_hwmon.c
-+++ b/drivers/thermal/thermal_hwmon.c
-@@ -140,6 +140,12 @@ thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
- 	return NULL;
- }
- 
-+static bool thermal_zone_crit_temp_valid(struct thermal_zone_device *tz)
-+{
-+	unsigned long temp;
-+	return tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, &temp);
-+}
-+
- int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
- {
- 	struct thermal_hwmon_device *hwmon;
-@@ -189,21 +195,18 @@ int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
- 	if (result)
- 		goto free_temp_mem;
- 
--	if (tz->ops->get_crit_temp) {
--		unsigned long temperature;
--		if (!tz->ops->get_crit_temp(tz, &temperature)) {
--			snprintf(temp->temp_crit.name,
--				 sizeof(temp->temp_crit.name),
-+	if (thermal_zone_crit_temp_valid(tz)) {
-+		snprintf(temp->temp_crit.name,
-+				sizeof(temp->temp_crit.name),
- 				"temp%d_crit", hwmon->count);
--			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
--			temp->temp_crit.attr.attr.mode = 0444;
--			temp->temp_crit.attr.show = temp_crit_show;
--			sysfs_attr_init(&temp->temp_crit.attr.attr);
--			result = device_create_file(hwmon->device,
--						    &temp->temp_crit.attr);
--			if (result)
--				goto unregister_input;
--		}
-+		temp->temp_crit.attr.attr.name = temp->temp_crit.name;
-+		temp->temp_crit.attr.attr.mode = 0444;
-+		temp->temp_crit.attr.show = temp_crit_show;
-+		sysfs_attr_init(&temp->temp_crit.attr.attr);
-+		result = device_create_file(hwmon->device,
-+					    &temp->temp_crit.attr);
-+		if (result)
-+			goto unregister_input;
- 	}
- 
- 	mutex_lock(&thermal_hwmon_list_lock);
-@@ -250,7 +253,7 @@ void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
- 	}
- 
- 	device_remove_file(hwmon->device, &temp->temp_input.attr);
--	if (tz->ops->get_crit_temp)
-+	if (thermal_zone_crit_temp_valid(tz))
- 		device_remove_file(hwmon->device, &temp->temp_crit.attr);
- 
- 	mutex_lock(&thermal_hwmon_list_lock);
--- 
-1.9.1
-
+>
+>> -     data = kzalloc(count, GFP_KERNEL);
+>> +     data = kzalloc(count + 1, GFP_KERNEL);
+>>       if (data == NULL)
+>>               return -ENOMEM;
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
