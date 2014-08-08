@@ -1,194 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479AbaHHXsX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 19:48:23 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:36318 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343AbaHHXsV (ORCPT
+	id S1751432AbaHHXzv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 19:55:51 -0400
+Received: from mailrelay.sea-ab.se ([91.223.232.53]:49268 "EHLO
+	mailrelay.sea-ab.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaHHXzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 19:48:21 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, Stephen Warren <swarren@nvidia.com>,
-        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomasz Figa <tomasz.figa@gmail.com>, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 1/1] pinctrl: exynos: Lock GPIOs as interrupts when used as EINTs
-Date: Sat,  9 Aug 2014 01:48:05 +0200
-Message-Id: <1407541685-20021-1-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.0.0.rc2
+	Fri, 8 Aug 2014 19:55:50 -0400
+Date: Sat, 9 Aug 2014 01:55:19 +0200
+From: Martin Berglund <martin@rogsta.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, Forest Bond <forest@alittletooquiet.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: vt6655: wpactl.c: Fix sparse warnings
+Message-ID: <20140808235519.GA22160@licorice>
+References: <20140807220834.GA21645@licorice>
+ <20140808021813.GB22340@kroah.com>
+ <20140808070755.GA12023@astc-ogir.Teknik.UU.SE>
+ <20140808134725.GE4427@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140808134725.GE4427@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Figa <t.figa@samsung.com>
+On Fri, Aug 08, 2014 at 06:47:25AM -0700, Greg Kroah-Hartman wrote:
+> On Fri, Aug 08, 2014 at 09:07:55AM +0200, Martin Berglund wrote:
+> > On Thu, Aug 07, 2014 at 07:18:13PM -0700, Greg Kroah-Hartman wrote:
+> > > On Thu, Aug 07, 2014 at 11:08:34PM +0100, Martin Berglund wrote:
+> > > > Add missing __user macro casting in the function wpa_set_keys.
+> > > > This is okay since the function handles the possibility of
+> > > > param->u.wpa_key.key and param->u.wpa_key.seq pointing to
+> > > > kernelspace using a flag, fcpfkernel.
+> > > > 
+> > > > Signed-off-by: Martin Berglund <martin@rogsta.net>
+> > > > ---
+> > > > This was submitted as part of Eudyptula challenge task 16
+> > > > 
+> > > >  drivers/staging/vt6655/wpactl.c |    8 ++++++--
+> > > >  1 file changed, 6 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
+> > > > index 5f454ca..d75dd79 100644
+> > > > --- a/drivers/staging/vt6655/wpactl.c
+> > > > +++ b/drivers/staging/vt6655/wpactl.c
+> > > > @@ -224,7 +224,9 @@ int wpa_set_keys(PSDevice pDevice, void *ctx,
+> > > >  	} else {
+> > > >  		spin_unlock_irq(&pDevice->lock);
+> > > >  		if (param->u.wpa_key.key &&
+> > > > -		    copy_from_user(&abyKey[0], param->u.wpa_key.key, param->u.wpa_key.key_len)) {
+> > > > +		    copy_from_user(&abyKey[0],
+> > > > +				   (void __user *)param->u.wpa_key.key,
+> > > 
+> > > Would it be better to mark this pointer as __user in the structure
+> > > itself?  Or is it also used as a kernel structure in other places?
+> > > 
+> > > thanks,
+> > > 
+> > > greg k-h
+> > 
+> > Yes, the structure is used as a kernel structure in some other places. 
+> > Even this function is sometimes called with the pointers in the
+> > structure pointing to kernel memory. However, that is correctly
+> > handled with a flag also sent to the function.
+> 
+> Ugh, that's a mess.  And should be cleaned up...
+> 
+> > As a side note: there are some uses of memcpy in this file that
+> > might be good to switch to copy_from/to_user but it's not as clear
+> > to me if these pointers never can point to kernel memory (because of
+> > the mixing of the two). For example all copying of ssid and bssid.
+> 
+> That also is not good, if memcpy is used for userspace memory pointers,
+> bad things can happen on some machines...
+> 
+> Look at how this was fixed up in the other staging vt* driver, odds are
+> you can do the same thing here, right?
+> 
+> thanks,
+> 
+> greg k-h
 
-Currently after configuring a GPIO pin as an interrupt related pinmux
-registers are changed, but there is no protection from calling
-gpio_direction_*() in a badly written driver, which would cause the same
-pinmux register to be reconfigured for regular input/output and this
-disabling interrupt capability of the pin.
+I've looked into this driver some more now. It's definitely messy but not 
+as bad as I said in my previous mail. I could not find any instances where 
+copy_to/from_user was needed (the pointers were actually copied arrays).
 
-This patch addresses this issue by moving pinmux reconfiguration to
-.irq_{request,release}_resources() callback of irq_chip and calling
-gpio_lock_as_irq() helper to prevent reconfiguration of pin direction.
+As to solving it the same way as vt6656 was solved, of some reason vt6656
+has no function for ndo_do_ioctl, and therefore no need for the ioctl-part.
 
-Setting up a GPIO interrupt on Samsung SoCs is a two-step operation -
-in addition to trigger configuration in a dedicated register, the pinmux
-must be also reconfigured to GPIO interrupt, which is a different function
-than normal GPIO input, although I/O-wise they both behave in the same way
-and gpio_get_value() can be used on a pin configured as IRQ as well.
+I just submitted a very similar patch to solve the last two address space
+warnings in the vt6655 driver left after this patch.
+https://lkml.org/lkml/2014/8/8/960
 
-Such design implies subtleties such as gpio_direction_input() not having
-to fail if a pin is already configured as an interrupt nor change the
-configuration to normal input. But the FLAG_USED_AS_IRQ set in gpiolib by
-gpio_lock_as_irq() is only used to check that gpio_direction_output() is
-not called, it's not used to prevent gpio_direction_input() to be called.
-So this is not a complete solution for Samsung SoCs but it's definitely a
-move in the right direction.
-
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-[javier: use request resources instead of startup and expand commit message]
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
-
-This patch solves the issue explained in https://lkml.org/lkml/2014/8/8/461
-
- drivers/pinctrl/samsung/pinctrl-exynos.c  | 69 ++++++++++++++++++++++++++++---
- drivers/pinctrl/samsung/pinctrl-samsung.h |  1 +
- 2 files changed, 64 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/pinctrl/samsung/pinctrl-exynos.c b/drivers/pinctrl/samsung/pinctrl-exynos.c
-index 003bfd8..d7154ed 100644
---- a/drivers/pinctrl/samsung/pinctrl-exynos.c
-+++ b/drivers/pinctrl/samsung/pinctrl-exynos.c
-@@ -127,14 +127,10 @@ static int exynos_irq_set_type(struct irq_data *irqd, unsigned int type)
- 	struct irq_chip *chip = irq_data_get_irq_chip(irqd);
- 	struct exynos_irq_chip *our_chip = to_exynos_irq_chip(chip);
- 	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
--	struct samsung_pin_bank_type *bank_type = bank->type;
- 	struct samsung_pinctrl_drv_data *d = bank->drvdata;
--	unsigned int pin = irqd->hwirq;
--	unsigned int shift = EXYNOS_EINT_CON_LEN * pin;
-+	unsigned int shift = EXYNOS_EINT_CON_LEN * irqd->hwirq;
- 	unsigned int con, trig_type;
- 	unsigned long reg_con = our_chip->eint_con + bank->eint_offset;
--	unsigned long flags;
--	unsigned int mask;
- 
- 	switch (type) {
- 	case IRQ_TYPE_EDGE_RISING:
-@@ -167,8 +163,32 @@ static int exynos_irq_set_type(struct irq_data *irqd, unsigned int type)
- 	con |= trig_type << shift;
- 	writel(con, d->virt_base + reg_con);
- 
-+	return 0;
-+}
-+
-+static int exynos_irq_request_resources(struct irq_data *irqd)
-+{
-+	struct irq_chip *chip = irq_data_get_irq_chip(irqd);
-+	struct exynos_irq_chip *our_chip = to_exynos_irq_chip(chip);
-+	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
-+	struct samsung_pin_bank_type *bank_type = bank->type;
-+	struct samsung_pinctrl_drv_data *d = bank->drvdata;
-+	unsigned int shift = EXYNOS_EINT_CON_LEN * irqd->hwirq;
-+	unsigned long reg_con = our_chip->eint_con + bank->eint_offset;
-+	unsigned long flags;
-+	unsigned int mask;
-+	unsigned int con;
-+	int ret;
-+
-+	ret = gpio_lock_as_irq(&bank->gpio_chip, irqd->hwirq);
-+	if (ret) {
-+		dev_err(bank->gpio_chip.dev, "unable to lock pin %s-%lu IRQ\n",
-+			bank->name, irqd->hwirq);
-+		return ret;
-+	}
-+
- 	reg_con = bank->pctl_offset + bank_type->reg_offset[PINCFG_TYPE_FUNC];
--	shift = pin * bank_type->fld_width[PINCFG_TYPE_FUNC];
-+	shift = irqd->hwirq * bank_type->fld_width[PINCFG_TYPE_FUNC];
- 	mask = (1 << bank_type->fld_width[PINCFG_TYPE_FUNC]) - 1;
- 
- 	spin_lock_irqsave(&bank->slock, flags);
-@@ -180,9 +200,42 @@ static int exynos_irq_set_type(struct irq_data *irqd, unsigned int type)
- 
- 	spin_unlock_irqrestore(&bank->slock, flags);
- 
-+	exynos_irq_unmask(irqd);
-+
- 	return 0;
- }
- 
-+static void exynos_irq_release_resources(struct irq_data *irqd)
-+{
-+	struct irq_chip *chip = irq_data_get_irq_chip(irqd);
-+	struct exynos_irq_chip *our_chip = to_exynos_irq_chip(chip);
-+	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
-+	struct samsung_pin_bank_type *bank_type = bank->type;
-+	struct samsung_pinctrl_drv_data *d = bank->drvdata;
-+	unsigned int shift = EXYNOS_EINT_CON_LEN * irqd->hwirq;
-+	unsigned long reg_con = our_chip->eint_con + bank->eint_offset;
-+	unsigned long flags;
-+	unsigned int mask;
-+	unsigned int con;
-+
-+	reg_con = bank->pctl_offset + bank_type->reg_offset[PINCFG_TYPE_FUNC];
-+	shift = irqd->hwirq * bank_type->fld_width[PINCFG_TYPE_FUNC];
-+	mask = (1 << bank_type->fld_width[PINCFG_TYPE_FUNC]) - 1;
-+
-+	exynos_irq_mask(irqd);
-+
-+	spin_lock_irqsave(&bank->slock, flags);
-+
-+	con = readl(d->virt_base + reg_con);
-+	con &= ~(mask << shift);
-+	con |= FUNC_INPUT << shift;
-+	writel(con, d->virt_base + reg_con);
-+
-+	spin_unlock_irqrestore(&bank->slock, flags);
-+
-+	gpio_unlock_as_irq(&bank->gpio_chip, irqd->hwirq);
-+}
-+
- /*
-  * irq_chip for gpio interrupts.
-  */
-@@ -193,6 +246,8 @@ static struct exynos_irq_chip exynos_gpio_irq_chip = {
- 		.irq_mask = exynos_irq_mask,
- 		.irq_ack = exynos_irq_ack,
- 		.irq_set_type = exynos_irq_set_type,
-+		.irq_request_resources = exynos_irq_request_resources,
-+		.irq_release_resources = exynos_irq_release_resources,
- 	},
- 	.eint_con = EXYNOS_GPIO_ECON_OFFSET,
- 	.eint_mask = EXYNOS_GPIO_EMASK_OFFSET,
-@@ -336,6 +391,8 @@ static struct exynos_irq_chip exynos_wkup_irq_chip = {
- 		.irq_ack = exynos_irq_ack,
- 		.irq_set_type = exynos_irq_set_type,
- 		.irq_set_wake = exynos_wkup_irq_set_wake,
-+		.irq_request_resources = exynos_irq_request_resources,
-+		.irq_release_resources = exynos_irq_release_resources,
- 	},
- 	.eint_con = EXYNOS_WKUP_ECON_OFFSET,
- 	.eint_mask = EXYNOS_WKUP_EMASK_OFFSET,
-diff --git a/drivers/pinctrl/samsung/pinctrl-samsung.h b/drivers/pinctrl/samsung/pinctrl-samsung.h
-index 2b88232..5cedc9d 100644
---- a/drivers/pinctrl/samsung/pinctrl-samsung.h
-+++ b/drivers/pinctrl/samsung/pinctrl-samsung.h
-@@ -26,6 +26,7 @@
- #include <linux/gpio.h>
- 
- /* pinmux function number for pin as gpio output line */
-+#define FUNC_INPUT	0x0
- #define FUNC_OUTPUT	0x1
- 
- /**
--- 
-2.0.0.rc2
-
+Cheers,
+                   Martin
