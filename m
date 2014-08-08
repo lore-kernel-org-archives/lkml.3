@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074AbaHHVQo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:16:44 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:33147
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932544AbaHHUvl (ORCPT
+	id S933195AbaHHVST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:18:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41007 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757030AbaHHUvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:41 -0400
-Date: Fri, 8 Aug 2014 22:51:37 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH 3/3] Smack: remove unneeded NULL-termination from
- securtity label
-Message-ID: <20140808205137.GD25352@mail.hallyn.com>
-References: <20140807165233.13463.55258.stgit@buzz>
- <20140807165249.13463.60191.stgit@buzz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140807165249.13463.60191.stgit@buzz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 8 Aug 2014 16:51:31 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 064/259] hwmon: (adm1029) Ensure the fan_div cache is updated in set_fan_div
+Date: Fri,  8 Aug 2014 13:38:07 -0700
+Message-Id: <1407530482-4483-65-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
+References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Konstantin Khlebnikov (k.khlebnikov@samsung.com):
-> Values of extended attributes are stored as binary blobs. NULL-termination
-> of them isn't required. It just wastes disk space and confuses command-line
-> tools like getfattr because they have to print that zero byte at the end.
-> 
-> This patch removes terminating zero byte from initial security label in
-> smack_inode_init_security and cuts it out in function smack_inode_getsecurity
-> which is used by syscall getxattr. This change seems completely safe, because
-> function smk_parse_smack ignores everything after first zero byte.
-> 
-> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+3.13.11.6 -stable review patch.  If anyone has any objections, please let me know.
 
-selinux doesn't seem to do it this way, and apparmor doesn't use these
-at all, but your reasoning does seem correct.
+------------------
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-> ---
->  security/smack/smack_lsm.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index afa5ad0..16ae853 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -672,7 +672,7 @@ static int smack_inode_init_security(struct inode *inode, struct inode *dir,
->  	}
->  
->  	if (len)
-> -		*len = strlen(isp) + 1;
-> +		*len = strlen(isp);
->  
->  	return 0;
->  }
-> @@ -1076,7 +1076,7 @@ static int smack_inode_getsecurity(const struct inode *inode,
->  
->  	if (strcmp(name, XATTR_SMACK_SUFFIX) == 0) {
->  		isp = smk_of_inode(inode);
-> -		ilen = strlen(isp) + 1;
-> +		ilen = strlen(isp);
->  		*buffer = isp;
->  		return ilen;
->  	}
-> @@ -1101,7 +1101,7 @@ static int smack_inode_getsecurity(const struct inode *inode,
->  	else
->  		return -EOPNOTSUPP;
->  
-> -	ilen = strlen(isp) + 1;
-> +	ilen = strlen(isp);
->  	if (rc == 0) {
->  		*buffer = isp;
->  		rc = ilen;
+commit 1035a9e3e9c76b64a860a774f5b867d28d34acc2 upstream.
+
+Writing to fanX_div does not clear the cache. As a result, reading
+from fanX_div may return the old value for up to two seconds
+after writing a new value.
+
+This patch ensures the fan_div cache is updated in set_fan_div().
+
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/hwmon/adm1029.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/hwmon/adm1029.c b/drivers/hwmon/adm1029.c
+index 9ee5e06..39441e5 100644
+--- a/drivers/hwmon/adm1029.c
++++ b/drivers/hwmon/adm1029.c
+@@ -232,6 +232,9 @@ static ssize_t set_fan_div(struct device *dev,
+ 	/* Update the value */
+ 	reg = (reg & 0x3F) | (val << 6);
+ 
++	/* Update the cache */
++	data->fan_div[attr->index] = reg;
++
+ 	/* Write value */
+ 	i2c_smbus_write_byte_data(client,
+ 				  ADM1029_REG_FAN_DIV[attr->index], reg);
+-- 
+1.9.1
+
