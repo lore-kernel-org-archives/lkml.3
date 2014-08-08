@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758724AbaHHWLO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:11:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60343 "EHLO
+	id S933822AbaHHWLT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:11:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60333 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758607AbaHHVgC (ORCPT
+	with ESMTP id S1758511AbaHHVgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:02 -0400
+	Fri, 8 Aug 2014 17:36:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 11/23] sparc64: Fix argument sign extension for compat_sys_futex().
-Date: Fri,  8 Aug 2014 14:34:56 -0700
-Message-Id: <20140808213316.241017384@linuxfoundation.org>
+Subject: [PATCH 3.4 19/23] sparc64: Guard against flushing openfirmware mappings.
+Date: Fri,  8 Aug 2014 14:35:04 -0700
+Message-Id: <20140808213316.592933629@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213315.769217722@linuxfoundation.org>
 References: <20140808213315.769217722@linuxfoundation.org>
@@ -30,26 +30,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit aa3449ee9c87d9b7660dd1493248abcc57769e31 ]
+[ Upstream commit 4ca9a23765da3260058db3431faf5b4efd8cf926 ]
 
-Only the second argument, 'op', is signed.
+Based almost entirely upon a patch by Christopher Alexander Tobias
+Schulze.
+
+In commit db64fe02258f1507e13fe5212a989922323685ce ("mm: rewrite vmap
+layer") lazy VMAP tlb flushing was added to the vmalloc layer.  This
+causes problems on sparc64.
+
+Sparc64 has two VMAP mapped regions and they are not contiguous with
+eachother.  First we have the malloc mapping area, then another
+unrelated region, then the vmalloc region.
+
+This "another unrelated region" is where the firmware is mapped.
+
+If the lazy TLB flushing logic in the vmalloc code triggers after
+we've had both a module unload and a vfree or similar, it will pass an
+address range that goes from somewhere inside the malloc region to
+somewhere inside the vmalloc region, and thus covering the
+openfirmware area entirely.
+
+The sparc64 kernel learns about openfirmware's dynamic mappings in
+this region early in the boot, and then services TLB misses in this
+area.  But openfirmware has some locked TLB entries which are not
+mentioned in those dynamic mappings and we should thus not disturb
+them.
+
+These huge lazy TLB flush ranges causes those openfirmware locked TLB
+entries to be removed, resulting in all kinds of problems including
+hard hangs and crashes during reboot/reset.
+
+Besides causing problems like this, such huge TLB flush ranges are
+also incredibly inefficient.  A plea has been made with the author of
+the VMAP lazy TLB flushing code, but for now we'll put a safety guard
+into our flush_tlb_kernel_range() implementation.
+
+Since the implementation has become non-trivial, stop defining it as a
+macro and instead make it a function in a C source file.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/sys32.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sparc/include/asm/tlbflush_64.h |   12 ++----------
+ arch/sparc/mm/init_64.c              |   23 +++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 10 deletions(-)
 
---- a/arch/sparc/kernel/sys32.S
-+++ b/arch/sparc/kernel/sys32.S
-@@ -87,7 +87,7 @@ SIGN1(sys32_io_submit, compat_sys_io_sub
- SIGN1(sys32_mq_open, compat_sys_mq_open, %o1)
- SIGN1(sys32_select, compat_sys_select, %o0)
- SIGN1(sys32_mkdir, sys_mkdir, %o1)
--SIGN3(sys32_futex, compat_sys_futex, %o1, %o2, %o5)
-+SIGN1(sys32_futex, compat_sys_futex, %o1)
- SIGN1(sys32_sysfs, compat_sys_sysfs, %o0)
- SIGN2(sys32_sendfile, compat_sys_sendfile, %o0, %o1)
- SIGN2(sys32_sendfile64, compat_sys_sendfile64, %o0, %o1)
+--- a/arch/sparc/include/asm/tlbflush_64.h
++++ b/arch/sparc/include/asm/tlbflush_64.h
+@@ -35,6 +35,8 @@ static inline void flush_tlb_range(struc
+ {
+ }
+ 
++void flush_tlb_kernel_range(unsigned long start, unsigned long end);
++
+ #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
+ 
+ extern void flush_tlb_pending(void);
+@@ -49,11 +51,6 @@ extern void __flush_tlb_kernel_range(uns
+ 
+ #ifndef CONFIG_SMP
+ 
+-#define flush_tlb_kernel_range(start,end) \
+-do {	flush_tsb_kernel_range(start,end); \
+-	__flush_tlb_kernel_range(start,end); \
+-} while (0)
+-
+ static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
+ {
+ 	__flush_tlb_page(CTX_HWBITS(mm->context), vaddr);
+@@ -64,11 +61,6 @@ static inline void global_flush_tlb_page
+ extern void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end);
+ extern void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr);
+ 
+-#define flush_tlb_kernel_range(start, end) \
+-do {	flush_tsb_kernel_range(start,end); \
+-	smp_flush_tlb_kernel_range(start, end); \
+-} while (0)
+-
+ #define global_flush_tlb_page(mm, vaddr) \
+ 	smp_flush_tlb_page(mm, vaddr)
+ 
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2421,3 +2421,26 @@ void __flush_tlb_all(void)
+ 	__asm__ __volatile__("wrpr	%0, 0, %%pstate"
+ 			     : : "r" (pstate));
+ }
++
++#ifdef CONFIG_SMP
++#define do_flush_tlb_kernel_range	smp_flush_tlb_kernel_range
++#else
++#define do_flush_tlb_kernel_range	__flush_tlb_kernel_range
++#endif
++
++void flush_tlb_kernel_range(unsigned long start, unsigned long end)
++{
++	if (start < HI_OBP_ADDRESS && end > LOW_OBP_ADDRESS) {
++		if (start < LOW_OBP_ADDRESS) {
++			flush_tsb_kernel_range(start, LOW_OBP_ADDRESS);
++			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
++		}
++		if (end > HI_OBP_ADDRESS) {
++			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
++			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
++		}
++	} else {
++		flush_tsb_kernel_range(start, end);
++		do_flush_tlb_kernel_range(start, end);
++	}
++}
 
 
