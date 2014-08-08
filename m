@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759317AbaHHWZO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:25:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40378 "EHLO
+	id S1759332AbaHHWZg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:25:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40366 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909AbaHHUpz (ORCPT
+	with ESMTP id S1757571AbaHHUpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:45:55 -0400
+	Fri, 8 Aug 2014 16:45:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 170/259] drm/radeon: fix irq ring buffer overflow handling
-Date: Fri,  8 Aug 2014 13:39:53 -0700
-Message-Id: <1407530482-4483-171-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 166/259] Input: fix defuzzing logic
+Date: Fri,  8 Aug 2014 13:39:49 -0700
+Message-Id: <1407530482-4483-167-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,73 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+From: Dmitry Torokhov <dtor@chromium.org>
 
-commit e8c214d22e76dd0ead38f97f8d2dc09aac70d651 upstream.
+commit 50c5d36dab930b1f1b1e3348b8608aa8b9ee7610 upstream.
 
-We must mask out the overflow bit as well, otherwise
-the wptr will never match the rptr again and the interrupt
-handler will loop forever.
+We attempt to remove noise from coordinates reported by devices in
+input_handle_abs_event(), unfortunately, unless we were dropping the
+event altogether, we were ignoring the adjusted value and were passing
+on the original value instead.
 
-Signed-off-by: Christian König <christian.koenig@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Reviewed-by: Andrew de los Reyes <adlr@chromium.org>
+Reviewed-by: Benson Leung <bleung@chromium.org>
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/cik.c       | 1 +
- drivers/gpu/drm/radeon/evergreen.c | 1 +
- drivers/gpu/drm/radeon/r600.c      | 1 +
- drivers/gpu/drm/radeon/si.c        | 1 +
- 4 files changed, 4 insertions(+)
+ drivers/input/input.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index bc5fad4..950c94a 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -7067,6 +7067,7 @@ static inline u32 cik_get_ih_wptr(struct radeon_device *rdev)
- 		tmp = RREG32(IH_RB_CNTL);
- 		tmp |= IH_WPTR_OVERFLOW_CLEAR;
- 		WREG32(IH_RB_CNTL, tmp);
-+		wptr &= ~RB_OVERFLOW;
- 	}
- 	return (wptr & rdev->ih.ptr_mask);
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index d2965e4..960b389 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -257,9 +257,10 @@ static int input_handle_abs_event(struct input_dev *dev,
  }
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 47463d8..838dcd5 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -4713,6 +4713,7 @@ static u32 evergreen_get_ih_wptr(struct radeon_device *rdev)
- 		tmp = RREG32(IH_RB_CNTL);
- 		tmp |= IH_WPTR_OVERFLOW_CLEAR;
- 		WREG32(IH_RB_CNTL, tmp);
-+		wptr &= ~RB_OVERFLOW;
+ 
+ static int input_get_disposition(struct input_dev *dev,
+-			  unsigned int type, unsigned int code, int value)
++			  unsigned int type, unsigned int code, int *pval)
+ {
+ 	int disposition = INPUT_IGNORE_EVENT;
++	int value = *pval;
+ 
+ 	switch (type) {
+ 
+@@ -357,6 +358,7 @@ static int input_get_disposition(struct input_dev *dev,
+ 		break;
  	}
- 	return (wptr & rdev->ih.ptr_mask);
+ 
++	*pval = value;
+ 	return disposition;
  }
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 3a55ae4..b9038b6 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -3707,6 +3707,7 @@ static u32 r600_get_ih_wptr(struct radeon_device *rdev)
- 		tmp = RREG32(IH_RB_CNTL);
- 		tmp |= IH_WPTR_OVERFLOW_CLEAR;
- 		WREG32(IH_RB_CNTL, tmp);
-+		wptr &= ~RB_OVERFLOW;
- 	}
- 	return (wptr & rdev->ih.ptr_mask);
- }
-diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
-index d9d8e55..d5c8438 100644
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -5982,6 +5982,7 @@ static inline u32 si_get_ih_wptr(struct radeon_device *rdev)
- 		tmp = RREG32(IH_RB_CNTL);
- 		tmp |= IH_WPTR_OVERFLOW_CLEAR;
- 		WREG32(IH_RB_CNTL, tmp);
-+		wptr &= ~RB_OVERFLOW;
- 	}
- 	return (wptr & rdev->ih.ptr_mask);
- }
+ 
+@@ -365,7 +367,7 @@ static void input_handle_event(struct input_dev *dev,
+ {
+ 	int disposition;
+ 
+-	disposition = input_get_disposition(dev, type, code, value);
++	disposition = input_get_disposition(dev, type, code, &value);
+ 
+ 	if ((disposition & INPUT_PASS_TO_DEVICE) && dev->event)
+ 		dev->event(dev, type, code, value);
 -- 
 1.9.1
 
