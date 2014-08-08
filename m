@@ -1,219 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095AbaHHQqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 12:46:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12296 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756767AbaHHQqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 12:46:08 -0400
-Date: Fri, 8 Aug 2014 11:45:52 -0500
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: (ltc-kernel 9786) [PATCH ftrace/core v4 0/4] ftrace, kprobes:
- Introduce IPMODIFY flag for ftrace_ops to detect conflicts
-Message-ID: <20140808164552.GA14429@treble.redhat.com>
-References: <20140728052215.29491.23631.stgit@kbuild-fedora.novalocal>
- <53E4AEE9.2010000@hitachi.com>
+	id S1757007AbaHHQrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 12:47:43 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:36820 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755980AbaHHQrl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 12:47:41 -0400
+Date: Fri, 8 Aug 2014 17:47:37 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Juri Lelli <Juri.Lelli@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [PATCH] cpuidle/cpuidle-big_little: fix reading cpu id part
+ number
+Message-ID: <20140808164737.GB11623@e102568-lin.cambridge.arm.com>
+References: <1407501757-15231-1-git-send-email-juri.lelli@arm.com>
+ <20140808132105.GB30282@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <20140808132105.GB30282@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 08 Aug 2014 16:47:38.0096 (UTC) FILETIME=[763F5700:01CFB328]
+X-MC-Unique: 114080817473900701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <53E4AEE9.2010000@hitachi.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 08:05:13PM +0900, Masami Hiramatsu wrote:
-> Ping?
+On Fri, Aug 08, 2014 at 02:21:05PM +0100, Russell King - ARM Linux wrote:
+> On Fri, Aug 08, 2014 at 01:42:37PM +0100, Juri Lelli wrote:
+> > Commit af040ffc9ba1 ("ARM: make it easier to check the CPU part number
+> > correctly") changed ARM_CPU_PART_X masks, and the way they are returned and
+> > checked against. Usage of read_cpuid_part_number() is now deprecated, and
+> > calling places updated accordingly. This actually broke cpuidle-big_little
+> > initialization, as bl_idle_driver_init() performs a check using and hardcoded
+> > mask on cpu_id.
+> > 
+> > Update the check to reflect changes on ARM_CPU_PART_X masks. Also,
+> > make the check easier to understand.
+> 
+> I don't like this "let's work out our own way to check the CPU type"
+> stuff which people seem to create.  Let's try and do the job better
+> and have some proper interfaces to do this kind of thing.
+> 
+> Maybe we should have smp_cpuid_part(cpu) which returns the CPU vendor/
+> part identifier for the particular CPU in an efficient manner.
 
-For the series:
+Ok, basically an inline function that either read and mask the cpuid
+stashed at boot in cpu_data or read the part number straight away on UP.
 
-Tested-by: Josh Poimboeuf <jpoimboe@redhat.com>
+Should it belong in asm/smp_plat.h ?
 
-> 
-> BTW, I'd like to add this testcase if ftracetest is accepted.
-> 
-> Thank you,
-> 
-> (2014/07/28 14:22), Masami Hiramatsu wrote:
-> > Hi,
-> > 
-> > Here is the 4th version of the series of patches which introduces
-> > IPMODIFY flag for ftrace_ops to detect conflicts of ftrace users
-> > who can modify regs->ip in their handler.
-> > This version is basically an update of previous version, and
-> > I've splitted a patch which adding IPMODIFY to kprobes from ftrace
-> > IPMODIFY introducing patch.
-> > 
-> > Currently, only kprobes can change the regs->ip in the handler,
-> > but recently kpatch is also want to change it. Moreover, since
-> > the ftrace itself exported to modules, it might be considerable
-> > senario.
-> > 
-> > Here we talked on github.
-> >  https://github.com/dynup/kpatch/issues/47
-> > 
-> > To protect modified regs-ip from each other, this series
-> > introduces FTRACE_OPS_FL_IPMODIFY flag and ftrace now ensures
-> > the flag can be set on each function entry location. If there
-> > is someone who already reserve regs->ip on target function
-> > entry, ftrace_set_filter_ip or register_ftrace_function will
-> > return -EBUSY. Users must handle that.
-> > The ftrace_ops with IPMODIFY flag requires at least one
-> > entry for filter hash, and its notrace_hash must be empty,
-> > because the IPMODIFY action is very address sensitve and
-> > user must consider the ip address.
-> > 
-> > The 3rd patch adds a special reservation of IPMODIFY on the
-> > jprobed address, since it is the only user who will change
-> > the regs->ip. Other kprobes do not change it anymore. 
-> > 
-> > Here is the new testcase.
-> > -------
-> > #!/bin/bash
-> > 
-> > echo "IPMODIFY test"
-> > ADDR=0x`grep do_fork /proc/kallsyms | cut -f 1 -d" "`
-> > 
-> > echo "Case1: kprobe->jprobe->ipmodify(fail)"
-> > modprobe kprobe_example
-> > modprobe jprobe_example
-> > insmod ./ipmodify.ko target=$ADDR && echo "Case1: [FAIL]" || echo "Case1: [OK]"
-> > rmmod kprobe_example jprobe_example
-> > 
-> > echo "Case2: jprobe->kprobe->ipmodify(fail)"
-> > modprobe jprobe_example
-> > modprobe kprobe_example
-> > insmod ./ipmodify.ko target=$ADDR && echo "Case2: [FAIL]" || echo "Case2: [OK]"
-> > rmmod kprobe_example jprobe_example
-> > 
-> > echo "Case3: jprobe->ipmodify(fail)"
-> > modprobe jprobe_example
-> > insmod ./ipmodify.ko target=$ADDR && echo "Case3: [FAIL]" || echo "Case3: [OK]"
-> > rmmod jprobe_example
-> > 
-> > echo "Case4: ipmodify->jprobe(fail)"
-> > insmod ./ipmodify.ko target=$ADDR
-> > modprobe jprobe_example && echo "Case4: [FAIL]" || echo "Case4: [OK]"
-> > rmmod ipmodify
-> > 
-> > echo "Case5: ipmodify->kprobe->jprobe(fail)"
-> > insmod ./ipmodify.ko target=$ADDR
-> > modprobe kprobe_example
-> > modprobe jprobe_example && echo "Case5: [FAIL]" || echo "Case5: [OK]"
-> > rmmod ipmodify kprobe_example
-> > 
-> > echo "Case6: ipmodify with targeting all functions(fail)"
-> > insmod ./ipmodify.ko && echo "Case6: [FAIL]" || echo "Case6: [OK]"
-> > rmmod ipmodify
-> > 
-> > echo "Case7: ipmodify with notrace filter (fail)"
-> > insmod ./ipmodify.ko target=$ADDR noexp="do_fork" && echo "Case7: [FAIL]" || echo "Case7: [OK]"
-> > rmmod ipmodify
-> > -------
-> > 
-> > And ipmodify.c
-> > -------
-> > #include <linux/kernel.h>
-> > #include <linux/module.h>
-> > #include <linux/ftrace.h>
-> > 
-> > 
-> > static void ftrace_ipmodify_handler(unsigned long a0, unsigned long a1,
-> >                                 struct ftrace_ops *op, struct pt_regs *regs)
-> > {
-> >         return;
-> > }
-> > 
-> > static struct ftrace_ops test_ops __read_mostly = {
-> >         .func = ftrace_ipmodify_handler,
-> >         .flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
-> > };
-> > 
-> > static unsigned long target;
-> > module_param(target, ulong, 0444);
-> > static char *noexp = "";
-> > module_param(noexp, charp, 0444);
-> > 
-> > static int __init ipmodify_init(void)
-> > {
-> >         int ret;
-> >         unsigned long ip = target;
-> > 
-> >         if (strlen(noexp) != 0) {
-> >                 ret = ftrace_set_notrace(&test_ops, noexp, 0, 0);
-> >                 pr_err("ipmodify_test: set notrace \"%s\", ret = %d\n",
-> >                         noexp, ret);
-> >         }
-> >         if (ret < 0)
-> >                 return ret;
-> > 
-> >         ret = ftrace_set_filter_ip(&test_ops, ip, 0, 0);
-> >         pr_err("ipmodify_test: set filter ip 0x%lx, ret = %d\n", ip, ret);
-> > 
-> >         if (ret >= 0) {
-> >                 ret = register_ftrace_function(&test_ops);
-> >                 pr_err("ipmodify_test: register ftrace on 0x%lx, ret = %d\n",
-> >                         ip, ret);
-> >         }
-> > 
-> >         return ret;
-> > }
-> > 
-> > static void __exit ipmodify_exit(void)
-> > {
-> >         int ret;
-> >         unsigned long ip = target;
-> > 
-> >         ret = unregister_ftrace_function(&test_ops);
-> >         pr_err("ipmodify_test: unregister ftrace on 0x%lx, ret = %d\n", ip, ret);
-> >         if (ret >= 0) {
-> >                 ret = ftrace_set_filter_ip(&test_ops, ip, 1, 0);
-> >                 pr_err("ipmodify_test: clear filter ip 0x%lx, ret = %d\n",
-> >                         ip, ret);
-> >         }
-> > }
-> > 
-> > module_init(ipmodify_init)
-> > module_exit(ipmodify_exit)
-> > MODULE_LICENSE("GPL");
-> > -------
-> > 
-> > Thank you,
-> > 
-> > ---
-> > 
-> > Masami Hiramatsu (4):
-> >       kprobes/ftrace: Recover original IP if pre_handler doesn't change it
-> >       ftrace, kprobes: Support IPMODIFY flag to find IP modify conflict
-> >       kprobes: Add IPMODIFY flag to kprobe_ftrace_ops
-> >       kprobes: Set IPMODIFY flag only if the probe can change regs->ip
-> > 
-> > 
-> >  Documentation/kprobes.txt        |   12 +--
-> >  Documentation/trace/ftrace.txt   |    5 +
-> >  arch/x86/kernel/kprobes/ftrace.c |    9 ++
-> >  include/linux/ftrace.h           |   16 ++++
-> >  kernel/kprobes.c                 |  123 +++++++++++++++++++++++++++++----
-> >  kernel/trace/ftrace.c            |  143 +++++++++++++++++++++++++++++++++++++-
-> >  6 files changed, 279 insertions(+), 29 deletions(-)
-> > 
-> > --
-> > 
-> > 
-> 
-> 
-> -- 
-> Masami HIRAMATSU
-> IT Management Research Dept. Linux Technology Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
-> 
-> 
+Thanks,
+Lorenzo
 
--- 
-Josh
