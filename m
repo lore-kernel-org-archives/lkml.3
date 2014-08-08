@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933348AbaHHVB4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:01:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41414 "EHLO
+	id S933518AbaHHVB6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:01:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41413 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933130AbaHHUyB (ORCPT
+	with ESMTP id S933128AbaHHUyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:54:01 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roger Quadros <rogerq@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Stefan Assmann <sassmann@kpanic.de>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 101/259] phy: core: Fix error path in phy_create()
-Date: Fri,  8 Aug 2014 13:38:44 -0700
-Message-Id: <1407530482-4483-102-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 127/259] igb: do a reset on SR-IOV re-init if device is down
+Date: Fri,  8 Aug 2014 13:39:10 -0700
+Message-Id: <1407530482-4483-128-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,46 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Stefan Assmann <sassmann@kpanic.de>
 
-commit e73b49f1c4e75c44d62585cc3e5b9c7894b61c32 upstream.
+commit 76252723e88681628a3dbb9c09c963e095476f73 upstream.
 
-Prevent resources from being freed twice in case device_add() call
-fails within phy_create(). Also use ida_simple_remove() instead of
-ida_remove() as we had used ida_simple_get() to allocate the ida.
+To properly re-initialize SR-IOV it is necessary to reset the device
+even if it is already down. Not doing this may result in Tx unit hangs.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Stefan Assmann <sassmann@kpanic.de>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/phy/phy-core.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_main.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 58e0e97..c6683f8 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -477,8 +477,9 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
- 	return phy;
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index ddbf995..6e0c7a9 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -7857,6 +7857,8 @@ int igb_reinit_queues(struct igb_adapter *adapter)
  
- put_dev:
--	put_device(&phy->dev);
--	ida_remove(&phy_ida, phy->id);
-+	put_device(&phy->dev);  /* calls phy_release() which frees resources */
-+	return ERR_PTR(ret);
-+
- free_phy:
- 	kfree(phy);
- 	return ERR_PTR(ret);
-@@ -662,7 +663,7 @@ static void phy_release(struct device *dev)
+ 	if (netif_running(netdev))
+ 		igb_close(netdev);
++	else
++		igb_reset(adapter);
  
- 	phy = to_phy(dev);
- 	dev_vdbg(dev, "releasing '%s'\n", dev_name(dev));
--	ida_remove(&phy_ida, phy->id);
-+	ida_simple_remove(&phy_ida, phy->id);
- 	kfree(phy);
- }
+ 	igb_clear_interrupt_scheme(adapter);
  
 -- 
 1.9.1
