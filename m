@@ -1,115 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517AbaHHGFH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 02:05:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62673 "EHLO mga01.intel.com"
+	id S1755461AbaHHGU2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 02:20:28 -0400
+Received: from ozlabs.org ([103.22.144.67]:53228 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752547AbaHHGFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 02:05:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,823,1400050800"; 
-   d="scan'208";a="581815413"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [Bugfix] x86, irq, PCI: Keep IRQ assignment for PCI devices during suspend/hibernation
-Date: Fri,  8 Aug 2014 14:07:51 +0800
-Message-Id: <1407478071-29399-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20140807113346.GA24225@gmail.com>
-References: <20140807113346.GA24225@gmail.com>
+	id S1751193AbaHHGU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 02:20:27 -0400
+Date: Fri, 8 Aug 2014 16:20:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Subject: linux-next: manual merge of the akpm tree with the vfs tree
+Message-ID: <20140808162018.7f009c02@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/T6gu_8HRI.5kn/SuaKclQz3"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now IOAPIC driver dynamically allocates IRQ numbers for IOAPIC pins.
-We need to keep IRQ assignment for PCI devices during suspend/hibernation,
-otherwise it may cause failure of suspend/hibernation due to:
-1) Device driver calls pci_enable_device() to allocate an IRQ number
-   and register interrupt handler on the returned IRQ.
-2) Device driver's suspend callback calls pci_disable_device() and
-   release assigned IRQ in turn.
-3) Device driver's resume callback calls pci_enable_device() to
-   allocate IRQ number again. A different IRQ number may be assigned
-   by IOAPIC driver this time.
-4) Now the hardware delivers interrupt to the new IRQ but interrupt
-   handler is still registered against the old IRQ, so it breaks
-   suspend/hibernation.
+--Sig_/T6gu_8HRI.5kn/SuaKclQz3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-To fix this issue, we keep IRQ assignment during suspend/hibernation.
-Flag pci_dev.dev.power.is_prepared is used to detect that
-pci_disable_device() is called during suspend/hibernation.
+Hi Andrew,
 
-Reported-and-Tested-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
-Hi Ingo,
-	Could you please help to apply this patch onto 
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-apic-for-linus?
-	It fixes the suspend/hibernation failure reported by Borislav.
-Thanks!
-Gerry
----
- arch/x86/pci/intel_mid_pci.c |    2 +-
- arch/x86/pci/irq.c           |    3 ++-
- drivers/acpi/pci_irq.c       |    4 ++++
- 3 files changed, 7 insertions(+), 2 deletions(-)
+Today's linux-next merge of the akpm tree got a conflict in
+include/linux/fs.h between commit ed44724b79d8 ("acct: switch to
+__kernel_write()") from the vfs tree and commit "fs.h: remove
+unnecessary extern prototypes" from the akpm tree.
 
-diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
-index 09fece368592..3865116c51fb 100644
---- a/arch/x86/pci/intel_mid_pci.c
-+++ b/arch/x86/pci/intel_mid_pci.c
-@@ -229,7 +229,7 @@ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
- 
- static void intel_mid_pci_irq_disable(struct pci_dev *dev)
- {
--	if (dev->irq > 0)
-+	if (!dev->dev.power.is_prepared && dev->irq > 0)
- 		mp_unmap_irq(dev->irq);
- }
- 
-diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
-index 748cfe8ab322..bc1a2c341891 100644
---- a/arch/x86/pci/irq.c
-+++ b/arch/x86/pci/irq.c
-@@ -1256,7 +1256,8 @@ static int pirq_enable_irq(struct pci_dev *dev)
- 
- static void pirq_disable_irq(struct pci_dev *dev)
- {
--	if (io_apic_assign_pci_irqs && dev->irq) {
-+	if (io_apic_assign_pci_irqs && !dev->dev.power.is_prepared &&
-+	    dev->irq) {
- 		mp_unmap_irq(dev->irq);
- 		dev->irq = 0;
- 	}
-diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
-index 6ba463ceccc6..c96887d5289e 100644
---- a/drivers/acpi/pci_irq.c
-+++ b/drivers/acpi/pci_irq.c
-@@ -481,6 +481,10 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
- 	if (!pin)
- 		return;
- 
-+	/* Keep IOAPIC pin configuration when suspending */
-+	if (dev->dev.power.is_prepared)
-+		return;
-+
- 	entry = acpi_pci_irq_lookup(dev, pin);
- 	if (!entry)
- 		return;
--- 
-1.7.10.4
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/fs.h
+index 94187721ad41,dccf4bcc21bb..000000000000
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@@ -2357,16 -2356,15 +2357,16 @@@ static inline void i_readcount_inc(stru
+  	return;
+  }
+  #endif
+- extern int do_pipe_flags(int *, int);
++ int do_pipe_flags(int *, int);
+ =20
+- extern int kernel_read(struct file *, loff_t, char *, unsigned long);
+- extern ssize_t kernel_write(struct file *, const char *, size_t, loff_t);
+- extern ssize_t __kernel_write(struct file *, const char *, size_t, loff_t=
+ *);
+- extern struct file * open_exec(const char *);
++ int kernel_read(struct file *, loff_t, char *, unsigned long);
++ ssize_t kernel_write(struct file *, const char *, size_t, loff_t);
+++ssize_t __kernel_write(struct file *, const char *, size_t, loff_t *);
++ struct file * open_exec(const char *);
+  =20
+  /* fs/dcache.c -- generic fs support functions */
+- extern int is_subdir(struct dentry *, struct dentry *);
+- extern int path_is_under(struct path *, struct path *);
++ int is_subdir(struct dentry *, struct dentry *);
++ int path_is_under(struct path *, struct path *);
+ =20
+  #include <linux/err.h>
+ =20
+
+--Sig_/T6gu_8HRI.5kn/SuaKclQz3
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT5GwnAAoJEMDTa8Ir7ZwV8JUP/1DfXMOyKdeRvzZuT9X0xmXj
+GIMMvG44zWxVDaPw4TJgqYhvovSJCUUPLNhg1p1E3GcbbNIpiRfiCLToQiI0sVcK
+iMaoED8Wx4QAIJFyyZvcfKcDLdoaJiZJnubQb7f+tX4vBBpmGAgwTwidYoG6HwC8
+IxyqSv0XCkHSD4YOeX24gd3yXEdHK8eOFrhC4ncDg9N675onWsdAE7+6hU1Y8tDo
+56TIXakCGPqtlEbz5a+N1ROmoRhhtol2i/oaM1bY3AI7vpP/iyBsQwiVRyJCRn/3
+6FYXt77pB/1anEI5Zm9MJER9FzUHen8NIaSYfEprCVuxcYdJlZc9/hPYAtaQybre
+Z8bD5buhzhBIcdKT8Ey3i3lBSyjMvNIZzRTJa7/eL78siooR/fYNeC02qlqczruK
+06Wj7NAY9VQr1t3cqXr3Buc6r+ZVQnc0/7LVu5dWNWmyItMNwjRCRRqyPzbjnUpl
+ofXgzMo6pES+ywJyJHueinuZg7PnPiKgYPjN6yxvKgQaa4wAdIOsv6cSJAemrucb
+cJvMJDRzW/vyt0TWirgJeDFCg27EkVSi51R+85vy1ijD2KSjTxPnbIeuKm1oRcGT
+nVGV6qgYfSsdsWW+zPYzV0B1QGhj/Q9cOQ82s5bt2gHUUmwWEERoUmKTgq8wElil
+HB4Nf3lbmDWPV/6ANU/W
+=PcVF
+-----END PGP SIGNATURE-----
+
+--Sig_/T6gu_8HRI.5kn/SuaKclQz3--
