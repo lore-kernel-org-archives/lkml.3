@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932574AbaHHUvq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:51:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41029 "EHLO
+	id S932637AbaHHUvy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:51:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41062 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758492AbaHHUvi (ORCPT
+	with ESMTP id S932580AbaHHUvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:38 -0400
+	Fri, 8 Aug 2014 16:51:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bernd Wachter <bernd.wachter@jolla.com>, Johan Hovold <johan@kernel.org>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 075/259] usb: option: Add ID for Telewell TW-LTE 4G v2
-Date: Fri,  8 Aug 2014 13:38:18 -0700
-Message-Id: <1407530482-4483-76-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 238/259] ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix
+Date: Fri,  8 Aug 2014 13:41:01 -0700
+Message-Id: <1407530482-4483-239-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,33 +29,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bernd Wachter <bernd.wachter@jolla.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 3d28bd840b2d3981cd28caf5fe1df38f1344dd60 upstream.
+[ Upstream commit 7f502361531e9eecb396cf99bdc9e9a59f7ebd7f ]
 
-Add ID of the Telewell 4G v2 hardware to option driver to get legacy
-serial interface working
+We have two different ways to handle changes to sk->sk_dst
 
-Signed-off-by: Bernd Wachter <bernd.wachter@jolla.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+First way (used by TCP) assumes socket lock is owned by caller, and use
+no extra lock : __sk_dst_set() & __sk_dst_reset()
+
+Another way (used by UDP) uses sk_dst_lock because socket lock is not
+always taken. Note that sk_dst_lock is not softirq safe.
+
+These ways are not inter changeable for a given socket type.
+
+ipv4_sk_update_pmtu(), added in linux-3.8, added a race, as it used
+the socket lock as synchronization, but users might be UDP sockets.
+
+Instead of converting sk_dst_lock to a softirq safe version, use xchg()
+as we did for sk_rx_dst in commit e47eb5dfb296b ("udp: ipv4: do not use
+sk_dst_lock from softirq context")
+
+In a follow up patch, we probably can remove sk_dst_lock, as it is
+only used in IPv6.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Fixes: 9cb3a50c5f63e ("ipv4: Invalidate the socket cached route on pmtu events if possible")
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/option.c | 2 ++
- 1 file changed, 2 insertions(+)
+ include/net/sock.h | 12 ++++++------
+ net/ipv4/route.c   | 15 ++++++++-------
+ 2 files changed, 14 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 7438f67..04d3eef 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1487,6 +1487,8 @@ static const struct usb_device_id option_ids[] = {
- 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1426, 0xff, 0xff, 0xff),  /* ZTE MF91 */
- 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1428, 0xff, 0xff, 0xff),  /* Telewell TW-LTE 4G v2 */
-+		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1533, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1534, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1535, 0xff, 0xff, 0xff) },
+diff --git a/include/net/sock.h b/include/net/sock.h
+index e7ad8ac..f901631 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1781,9 +1781,11 @@ __sk_dst_set(struct sock *sk, struct dst_entry *dst)
+ static inline void
+ sk_dst_set(struct sock *sk, struct dst_entry *dst)
+ {
+-	spin_lock(&sk->sk_dst_lock);
+-	__sk_dst_set(sk, dst);
+-	spin_unlock(&sk->sk_dst_lock);
++	struct dst_entry *old_dst;
++
++	sk_tx_queue_clear(sk);
++	old_dst = xchg(&sk->sk_dst_cache, dst);
++	dst_release(old_dst);
+ }
+ 
+ static inline void
+@@ -1795,9 +1797,7 @@ __sk_dst_reset(struct sock *sk)
+ static inline void
+ sk_dst_reset(struct sock *sk)
+ {
+-	spin_lock(&sk->sk_dst_lock);
+-	__sk_dst_reset(sk);
+-	spin_unlock(&sk->sk_dst_lock);
++	sk_dst_set(sk, NULL);
+ }
+ 
+ struct dst_entry *__sk_dst_check(struct sock *sk, u32 cookie);
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index a25c6e7..566bfa5 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1032,7 +1032,7 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
+ 	const struct iphdr *iph = (const struct iphdr *) skb->data;
+ 	struct flowi4 fl4;
+ 	struct rtable *rt;
+-	struct dst_entry *dst;
++	struct dst_entry *odst = NULL;
+ 	bool new = false;
+ 
+ 	bh_lock_sock(sk);
+@@ -1040,16 +1040,17 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
+ 	if (!ip_sk_accept_pmtu(sk))
+ 		goto out;
+ 
+-	rt = (struct rtable *) __sk_dst_get(sk);
++	odst = sk_dst_get(sk);
+ 
+-	if (sock_owned_by_user(sk) || !rt) {
++	if (sock_owned_by_user(sk) || !odst) {
+ 		__ipv4_sk_update_pmtu(skb, sk, mtu);
+ 		goto out;
+ 	}
+ 
+ 	__build_flow_key(&fl4, sk, iph, 0, 0, 0, 0, 0);
+ 
+-	if (!__sk_dst_check(sk, 0)) {
++	rt = (struct rtable *)odst;
++	if (odst->obsolete && odst->ops->check(odst, 0) == NULL) {
+ 		rt = ip_route_output_flow(sock_net(sk), &fl4, sk);
+ 		if (IS_ERR(rt))
+ 			goto out;
+@@ -1059,8 +1060,7 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
+ 
+ 	__ip_rt_update_pmtu((struct rtable *) rt->dst.path, &fl4, mtu);
+ 
+-	dst = dst_check(&rt->dst, 0);
+-	if (!dst) {
++	if (!dst_check(&rt->dst, 0)) {
+ 		if (new)
+ 			dst_release(&rt->dst);
+ 
+@@ -1072,10 +1072,11 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
+ 	}
+ 
+ 	if (new)
+-		__sk_dst_set(sk, &rt->dst);
++		sk_dst_set(sk, &rt->dst);
+ 
+ out:
+ 	bh_unlock_sock(sk);
++	dst_release(odst);
+ }
+ EXPORT_SYMBOL_GPL(ipv4_sk_update_pmtu);
+ 
 -- 
 1.9.1
 
