@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933284AbaHHVVs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:21:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40935 "EHLO
+	id S933347AbaHHVW0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:22:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40918 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932402AbaHHUvI (ORCPT
+	with ESMTP id S932352AbaHHUu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:08 -0400
+	Fri, 8 Aug 2014 16:50:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Wei Yang <weiyang@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 065/259] hwmon: (adm1021) Fix cache problem when writing temperature limits
-Date: Fri,  8 Aug 2014 13:38:08 -0700
-Message-Id: <1407530482-4483-66-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 227/259] net/mlx4_core: pass pci_device_id.driver_data to __mlx4_init_one during reset
+Date: Fri,  8 Aug 2014 13:40:50 -0700
+Message-Id: <1407530482-4483-228-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,72 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
 
-commit c024044d4da2c9c3b32933b4235df1e409293b84 upstream.
+[ No upstream commit, this is a cherry picked backport enabler. ]
 
-The module test script for the adm1021 driver exposes a cache problem
-when writing temperature limits. temp_min and temp_max are expected
-to be stored in milli-degrees C but are stored in degrees C.
+The second parameter of __mlx4_init_one() is used to identify whether the
+pci_dev is a PF or VF. Currently, when it is invoked in mlx4_pci_slot_reset()
+this information is missed.
 
-Reported-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+This patch match the pci_dev with mlx4_pci_table and passes the
+pci_device_id.driver_data to __mlx4_init_one() in mlx4_pci_slot_reset().
+
+Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hwmon/adm1021.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/main.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/adm1021.c b/drivers/hwmon/adm1021.c
-index 29dd9f7..233b374 100644
---- a/drivers/hwmon/adm1021.c
-+++ b/drivers/hwmon/adm1021.c
-@@ -185,7 +185,7 @@ static ssize_t set_temp_max(struct device *dev,
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct adm1021_data *data = i2c_get_clientdata(client);
- 	long temp;
--	int err;
-+	int reg_val, err;
+diff --git a/drivers/net/ethernet/mellanox/mlx4/main.c b/drivers/net/ethernet/mellanox/mlx4/main.c
+index 01fc651..c239a9a 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/main.c
++++ b/drivers/net/ethernet/mellanox/mlx4/main.c
+@@ -2567,7 +2567,11 @@ static pci_ers_result_t mlx4_pci_err_detected(struct pci_dev *pdev,
  
- 	err = kstrtol(buf, 10, &temp);
- 	if (err)
-@@ -193,10 +193,11 @@ static ssize_t set_temp_max(struct device *dev,
- 	temp /= 1000;
+ static pci_ers_result_t mlx4_pci_slot_reset(struct pci_dev *pdev)
+ {
+-	int ret = __mlx4_init_one(pdev, 0);
++	const struct pci_device_id *id;
++	int ret;
++
++	id = pci_match_id(mlx4_pci_table, pdev);
++	ret = __mlx4_init_one(pdev, id->driver_data);
  
- 	mutex_lock(&data->update_lock);
--	data->temp_max[index] = clamp_val(temp, -128, 127);
-+	reg_val = clamp_val(temp, -128, 127);
-+	data->temp_max[index] = reg_val * 1000;
- 	if (!read_only)
- 		i2c_smbus_write_byte_data(client, ADM1021_REG_TOS_W(index),
--					  data->temp_max[index]);
-+					  reg_val);
- 	mutex_unlock(&data->update_lock);
- 
- 	return count;
-@@ -210,7 +211,7 @@ static ssize_t set_temp_min(struct device *dev,
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct adm1021_data *data = i2c_get_clientdata(client);
- 	long temp;
--	int err;
-+	int reg_val, err;
- 
- 	err = kstrtol(buf, 10, &temp);
- 	if (err)
-@@ -218,10 +219,11 @@ static ssize_t set_temp_min(struct device *dev,
- 	temp /= 1000;
- 
- 	mutex_lock(&data->update_lock);
--	data->temp_min[index] = clamp_val(temp, -128, 127);
-+	reg_val = clamp_val(temp, -128, 127);
-+	data->temp_min[index] = reg_val * 1000;
- 	if (!read_only)
- 		i2c_smbus_write_byte_data(client, ADM1021_REG_THYST_W(index),
--					  data->temp_min[index]);
-+					  reg_val);
- 	mutex_unlock(&data->update_lock);
- 
- 	return count;
+ 	return ret ? PCI_ERS_RESULT_DISCONNECT : PCI_ERS_RESULT_RECOVERED;
+ }
 -- 
 1.9.1
 
