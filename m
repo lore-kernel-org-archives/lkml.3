@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759125AbaHHVrU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:47:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37242 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759105AbaHHVrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:47:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,827,1400050800"; 
-   d="scan'208";a="585489463"
-Message-ID: <53E54533.8030109@linux.intel.com>
-Date: Fri, 08 Aug 2014 14:46:27 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1758969AbaHHVqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:46:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60806 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758926AbaHHVqH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 17:46:07 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Christoph Paasch <christoph.paasch@uclouvain.be>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.16 02/17] tcp: Fix integer-overflows in TCP veno
+Date: Fri,  8 Aug 2014 14:35:24 -0700
+Message-Id: <20140808213457.608267331@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140808213457.511493898@linuxfoundation.org>
+References: <20140808213457.511493898@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Amit Shah <amit.shah@redhat.com>
-CC: jgarzik@bitpay.com,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Amos Kong <akong@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        linux-kernel@vger.kernel.org,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>
-Subject: Re: [PATCH 1/2] rngd: add udev rule to source from hwrng if virtio-rng
- present
-References: <cover.1407416628.git.amit.shah@redhat.com> <dd2ddb8458e5ab5cffceb7fac2e3f71e9e2197f3.1407416628.git.amit.shah@redhat.com> <53E3D3FF.70707@linux.intel.com> <20140808090715.GG14400@grmbl.mre>
-In-Reply-To: <20140808090715.GG14400@grmbl.mre>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2014 02:07 AM, Amit Shah wrote:
->
-> 
->>  To
->> some degree the above is obsolete when we get khwrngd widely deployed,
->> but that is a new-kernel-only kind of thing.
-> 
-> Right - I'm wondering if any such changes as propsed here are now
-> obsolted already by khwrngd?
-> 
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-In this case, yes, khwrngd would be a better solution for current kernels.
+------------------
 
-	-hpa
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
+
+[ Upstream commit 45a07695bc64b3ab5d6d2215f9677e5b8c05a7d0 ]
+
+In veno we do a multiplication of the cwnd and the rtt. This
+may overflow and thus their result is stored in a u64. However, we first
+need to cast the cwnd so that actually 64-bit arithmetic is done.
+
+A first attempt at fixing 76f1017757aa0 ([TCP]: TCP Veno congestion
+control) was made by 159131149c2 (tcp: Overflow bug in Vegas), but it
+failed to add the required cast in tcp_veno_cong_avoid().
+
+Fixes: 76f1017757aa0 ([TCP]: TCP Veno congestion control)
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/tcp_veno.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/net/ipv4/tcp_veno.c
++++ b/net/ipv4/tcp_veno.c
+@@ -144,7 +144,7 @@ static void tcp_veno_cong_avoid(struct s
+ 
+ 		rtt = veno->minrtt;
+ 
+-		target_cwnd = (tp->snd_cwnd * veno->basertt);
++		target_cwnd = (u64)tp->snd_cwnd * veno->basertt;
+ 		target_cwnd <<= V_PARAM_SHIFT;
+ 		do_div(target_cwnd, rtt);
+ 
 
 
