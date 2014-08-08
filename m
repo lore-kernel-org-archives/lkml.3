@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758175AbaHHUsd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:48:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40670 "EHLO
+	id S1758186AbaHHUsh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:48:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40674 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757064AbaHHUsY (ORCPT
+	with ESMTP id S1756879AbaHHUs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:48:24 -0400
+	Fri, 8 Aug 2014 16:48:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Peter Chen <peter.chen@freescale.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Aaron Lu <aaron.lu@intel.com>, Zhang Rui <rui.zhang@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 047/259] usb: chipidea: udc: delete td from req's td list at ep_dequeue
-Date: Fri,  8 Aug 2014 13:37:50 -0700
-Message-Id: <1407530482-4483-48-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 061/259] thermal: hwmon: Make the check for critical temp valid consistent
+Date: Fri,  8 Aug 2014 13:38:04 -0700
+Message-Id: <1407530482-4483-62-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -29,105 +27,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chen <peter.chen@freescale.com>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit e4adcff09ca39ecbcc4851d40d0f0a5458e7b77a upstream.
+commit e8db5d6736a712a3e2280c0e31f4b301d85172d8 upstream.
 
-We need to delete un-finished td from current request's td list
-at ep_dequeue API, otherwise, this non-user td will be remained
-at td list before this request is freed. So if we do ep_queue->
-ep_dequeue->ep_queue sequence, when the complete interrupt for
-the second ep_queue comes, we search td list for this request,
-the first td (added by the first ep_queue) will be handled, and
-its status is still active, so we will consider the this transfer
-still not be completed, but in fact, it has completed. It causes
-the peripheral side considers it never receives current data for
-this transfer.
+On 05/21/2014 04:22 PM, Aaron Lu wrote:
+> On 05/21/2014 01:57 PM, Kui Zhang wrote:
+>> Hello,
+>>
+>> I get following error when rmmod thermal.
+>>
+>> rmmod  thermal
+>> Killed
 
-We met this problem when do "Error Recovery Test - Device Configured"
-test item for USBCV2 MSC test, the host has never received ACK for
-the IN token for CSW due to peripheral considers it does not get this
-CBW, the USBCV test log like belows:
+While dealing with this problem, I found another problem that also
+results in a kernel crash on thermal module removal:
 
---------------------------------------------------------------------------
-INFO
-Issuing BOT MSC Reset, reset should always succeed
-INFO
-Retrieving status on CBW endpoint
-INFO
-CBW endpoint status = 0x0
-INFO
-Retrieving status on CSW endpoint
-INFO
-CSW endpoint status = 0x0
-INFO
-Issuing required command (Test Unit Ready) to verify device has recovered
-INFO
-Issuing CBW (attempt #1):
-INFO
-|----- CBW LUN                  = 0x0
-INFO
-|----- CBW Flags                = 0x0
-INFO
-|----- CBW Data Transfer Length = 0x0
-INFO
-|----- CBW CDB Length           = 0x6
-INFO
-|----- CBW CDB-00 = 0x0
-INFO
-|----- CBW CDB-01 = 0x0
-INFO
-|----- CBW CDB-02 = 0x0
-INFO
-|----- CBW CDB-03 = 0x0
-INFO
-|----- CBW CDB-04 = 0x0
-INFO
-|----- CBW CDB-05 = 0x0
-INFO
-Issuing CSW : try 1
-INFO
-CSW Bulk Request timed out!
-ERROR
-Failed CSW phase : should have been success or stall
-FAIL
-(5.3.4) The CSW status value must be 0x00, 0x01, or 0x02.
-ERROR
-BOTCommonMSCRequest failed:  error=80004000
+From: Aaron Lu <aaron.lu@intel.com>
+Date: Wed, 21 May 2014 16:05:38 +0800
+Subject: [PATCH] thermal: hwmon: Make the check for critical temp valid consistent
 
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+We used the tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, temp)
+to decide if we need to create the temp_crit attribute file but we just
+check if tz->ops->get_crit_temp exists to decide if we need to remove
+that attribute file. Some ACPI thermal zone doesn't have a valid critical
+trip point and that would result in removing a non-existent device file
+on thermal module unload.
+
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/chipidea/udc.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/thermal/thermal_hwmon.c | 33 ++++++++++++++++++---------------
+ 1 file changed, 18 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
-index 27ff872..71d0d35 100644
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -1326,6 +1326,7 @@ static int ep_dequeue(struct usb_ep *ep, struct usb_request *req)
- 	struct ci_hw_ep  *hwep  = container_of(ep,  struct ci_hw_ep, ep);
- 	struct ci_hw_req *hwreq = container_of(req, struct ci_hw_req, req);
- 	unsigned long flags;
-+	struct td_node *node, *tmpnode;
+diff --git a/drivers/thermal/thermal_hwmon.c b/drivers/thermal/thermal_hwmon.c
+index fdb0719..1967bee 100644
+--- a/drivers/thermal/thermal_hwmon.c
++++ b/drivers/thermal/thermal_hwmon.c
+@@ -140,6 +140,12 @@ thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
+ 	return NULL;
+ }
  
- 	if (ep == NULL || req == NULL || hwreq->req.status != -EALREADY ||
- 		hwep->ep.desc == NULL || list_empty(&hwreq->queue) ||
-@@ -1336,6 +1337,12 @@ static int ep_dequeue(struct usb_ep *ep, struct usb_request *req)
- 
- 	hw_ep_flush(hwep->ci, hwep->num, hwep->dir);
- 
-+	list_for_each_entry_safe(node, tmpnode, &hwreq->tds, td) {
-+		dma_pool_free(hwep->td_pool, node->ptr, node->dma);
-+		list_del(&node->td);
-+		kfree(node);
-+	}
++static bool thermal_zone_crit_temp_valid(struct thermal_zone_device *tz)
++{
++	unsigned long temp;
++	return tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, &temp);
++}
 +
- 	/* pop request */
- 	list_del_init(&hwreq->queue);
+ int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+ {
+ 	struct thermal_hwmon_device *hwmon;
+@@ -189,21 +195,18 @@ int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+ 	if (result)
+ 		goto free_temp_mem;
  
+-	if (tz->ops->get_crit_temp) {
+-		unsigned long temperature;
+-		if (!tz->ops->get_crit_temp(tz, &temperature)) {
+-			snprintf(temp->temp_crit.name,
+-				 sizeof(temp->temp_crit.name),
++	if (thermal_zone_crit_temp_valid(tz)) {
++		snprintf(temp->temp_crit.name,
++				sizeof(temp->temp_crit.name),
+ 				"temp%d_crit", hwmon->count);
+-			temp->temp_crit.attr.attr.name = temp->temp_crit.name;
+-			temp->temp_crit.attr.attr.mode = 0444;
+-			temp->temp_crit.attr.show = temp_crit_show;
+-			sysfs_attr_init(&temp->temp_crit.attr.attr);
+-			result = device_create_file(hwmon->device,
+-						    &temp->temp_crit.attr);
+-			if (result)
+-				goto unregister_input;
+-		}
++		temp->temp_crit.attr.attr.name = temp->temp_crit.name;
++		temp->temp_crit.attr.attr.mode = 0444;
++		temp->temp_crit.attr.show = temp_crit_show;
++		sysfs_attr_init(&temp->temp_crit.attr.attr);
++		result = device_create_file(hwmon->device,
++					    &temp->temp_crit.attr);
++		if (result)
++			goto unregister_input;
+ 	}
+ 
+ 	mutex_lock(&thermal_hwmon_list_lock);
+@@ -250,7 +253,7 @@ void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+ 	}
+ 
+ 	device_remove_file(hwmon->device, &temp->temp_input.attr);
+-	if (tz->ops->get_crit_temp)
++	if (thermal_zone_crit_temp_valid(tz))
+ 		device_remove_file(hwmon->device, &temp->temp_crit.attr);
+ 
+ 	mutex_lock(&thermal_hwmon_list_lock);
 -- 
 1.9.1
 
