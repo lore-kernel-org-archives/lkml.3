@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193AbaHHUa5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:30:57 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56437 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaHHUay (ORCPT
+	id S1751789AbaHHUcF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:32:05 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:40519 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002AbaHHUb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:30:54 -0400
-From: Laura Abbott <lauraa@codeaurora.org>
-To: Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: Laura Abbott <lauraa@codeaurora.org>,
-        David Riley <davidriley@chromium.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Ritesh Harjain <ritesh.harjani@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCHv6 0/5] DMA Atomic pool for arm64
-Date: Fri,  8 Aug 2014 13:30:48 -0700
-Message-Id: <1407529848-6806-1-git-send-email-lauraa@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 8 Aug 2014 16:31:59 -0400
+Message-ID: <53E533B1.4020306@ahsoftware.de>
+Date: Fri, 08 Aug 2014 22:31:45 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Brian Norris <computersforpeace@gmail.com>
+CC: Alexander Shiyan <shc_work@mail.ru>, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/27] mtd: nand: pxa3xx: show device structure in sysfs
+References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de> <1401142372-14148-10-git-send-email-holler@ahsoftware.de> <1401160341.192042842@f271.i.mail.ru> <20140808170428.GA6094@arch.cereza> <20140808171650.GS3711@ld-irv-0074> <20140808181157.GA16575@arch.cereza>
+In-Reply-To: <20140808181157.GA16575@arch.cereza>
+Content-Type: text/plain; charset=iso-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Am 08.08.2014 20:11, schrieb Ezequiel Garcia:
+> On 08 Aug 10:16 AM, Brian Norris wrote:
+>> On Fri, Aug 08, 2014 at 02:04:28PM -0300, Ezequiel Garcia wrote:
+>
+>>> If there's anything left to fix for this driver, please let me know.
+>>
+>> pxa3xx_nand is still missing a parent for its MTD's (mtd->dev.parent). I
+>> have a follow-up patch queued up locally that I need to send out
+>> sometime.
+>>
+>
+> Maybe we can trade... you provide the reason for such parent, and I'll cook
+> a patch in exchange :)
 
-This is v6 of the series to add an atomic pool for arm64 and refactor some of
-the arm dma_atomic code as well.
+Just read the subject.and the introductory mail to the simple 20+ 
+pathches I wasted my time with.
 
-Russell, assuming you have no issues I'd like to get your Acked-by before
-Catalin picks this up. As always, testing and reviews are appreiciated.
+Regards,
 
-Thanks,
-Laura
-
-
-v6: Tweaked the commit text to clarify that arm is moving from
-ioremap_page_range to map_vm_area and friends
-
-v5: v4: Addressed comments from Thierry and Catalin. Updated map_vm_area call in
-dma_common_pages_remap since the API changed.
-
-v4: Simplified the logic in gen_pool_first_fit_order_align which makes the
-data argument actually unused.
-
-v3: Now a patch series due to refactoring of arm code. arm and arm64 now both
-use genalloc for atomic pool management. genalloc extensions added.
-DMA remapping code factored out as well.
-
-v2: Various bug fixes pointed out by David and Ritesh (CMA dependency, swapping
-coherent, noncoherent). I'm still not sure how to address the devicetree
-suggestion by Will [1][2]. I added the devicetree mailing list this time around
-to get more input on this.
-
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/249180.html
-[2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/249528.html
-
-Laura Abbott (5):
-  lib/genalloc.c: Add power aligned algorithm
-  lib/genalloc.c: Add genpool range check function
-  common: dma-mapping: Introduce common remapping functions
-  arm: use genalloc for the atomic pool
-  arm64: Add atomic pool for non-coherent and CMA allocations.
-
- arch/arm/Kconfig                         |   1 +
- arch/arm/mm/dma-mapping.c                | 210 +++++++++----------------------
- arch/arm64/Kconfig                       |   1 +
- arch/arm64/mm/dma-mapping.c              | 164 +++++++++++++++++++++---
- drivers/base/dma-mapping.c               |  67 ++++++++++
- include/asm-generic/dma-mapping-common.h |   9 ++
- include/linux/genalloc.h                 |   7 ++
- lib/genalloc.c                           |  50 ++++++++
- 8 files changed, 338 insertions(+), 171 deletions(-)
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Alexander Holler
