@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759362AbaHHVwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:52:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60673 "EHLO
+	id S1759367AbaHHVwX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:52:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60659 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933470AbaHHVgs (ORCPT
+	with ESMTP id S933459AbaHHVgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:48 -0400
+	Fri, 8 Aug 2014 17:36:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ivan Vecera <ivecera@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Jeffrey Knockel <jeffk@cs.unm.edu>,
+        "Jedidiah R. Crandall" <crandall@cs.unm.edu>, Willy Tarreau <w@1wt.eu>,
+        Hannes Frederic Sowa <hannes@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 12/26] bna: fix performance regression
-Date: Fri,  8 Aug 2014 14:35:19 -0700
-Message-Id: <20140808213414.182732652@linuxfoundation.org>
+Subject: [PATCH 3.15 10/26] ip: make IP identifiers less predictable
+Date: Fri,  8 Aug 2014 14:35:17 -0700
+Message-Id: <20140808213414.099804284@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
 References: <20140808213413.648794968@linuxfoundation.org>
@@ -29,34 +31,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ivan Vecera <ivecera@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit c36c9d50cc6af5c5bfcc195f21b73f55520c15f9 ]
+[ Upstream commit 04ca6973f7c1a0d8537f2d9906a0cf8e69886d75 ]
 
-The recent commit "e29aa33 bna: Enable Multi Buffer RX" is causing
-a performance regression. It does not properly update 'cmpl' pointer
-at the end of the loop in NAPI handler bnad_cq_process(). The result is
-only one packet / per NAPI-schedule is processed.
+In "Counting Packets Sent Between Arbitrary Internet Hosts", Jeffrey and
+Jedidiah describe ways exploiting linux IP identifier generation to
+infer whether two machines are exchanging packets.
 
-Signed-off-by: Ivan Vecera <ivecera@redhat.com>
+With commit 73f156a6e8c1 ("inetpeer: get rid of ip_id_count"), we
+changed IP id generation, but this does not really prevent this
+side-channel technique.
+
+This patch adds a random amount of perturbation so that IP identifiers
+for a given destination [1] are no longer monotonically increasing after
+an idle period.
+
+Note that prandom_u32_max(1) returns 0, so if generator is used at most
+once per jiffy, this patch inserts no hole in the ID suite and do not
+increase collision probability.
+
+This is jiffies based, so in the worst case (HZ=1000), the id can
+rollover after ~65 seconds of idle time, which should be fine.
+
+We also change the hash used in __ip_select_ident() to not only hash
+on daddr, but also saddr and protocol, so that ICMP probes can not be
+used to infer information for other protocols.
+
+For IPv6, adds saddr into the hash as well, but not nexthdr.
+
+If I ping the patched target, we can see ID are now hard to predict.
+
+21:57:11.008086 IP (...)
+    A > target: ICMP echo request, seq 1, length 64
+21:57:11.010752 IP (... id 2081 ...)
+    target > A: ICMP echo reply, seq 1, length 64
+
+21:57:12.013133 IP (...)
+    A > target: ICMP echo request, seq 2, length 64
+21:57:12.015737 IP (... id 3039 ...)
+    target > A: ICMP echo reply, seq 2, length 64
+
+21:57:13.016580 IP (...)
+    A > target: ICMP echo request, seq 3, length 64
+21:57:13.019251 IP (... id 3437 ...)
+    target > A: ICMP echo reply, seq 3, length 64
+
+[1] TCP sessions uses a per flow ID generator not changed by this patch.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Jeffrey Knockel <jeffk@cs.unm.edu>
+Reported-by: Jedidiah R. Crandall <crandall@cs.unm.edu>
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: Hannes Frederic Sowa <hannes@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/brocade/bna/bnad.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/ip.h      |   11 +----------
+ net/ipv4/route.c      |   32 +++++++++++++++++++++++++++++---
+ net/ipv6/ip6_output.c |    2 ++
+ 3 files changed, 32 insertions(+), 13 deletions(-)
 
---- a/drivers/net/ethernet/brocade/bna/bnad.c
-+++ b/drivers/net/ethernet/brocade/bna/bnad.c
-@@ -600,9 +600,9 @@ bnad_cq_process(struct bnad *bnad, struc
- 	prefetch(bnad->netdev);
+--- a/include/net/ip.h
++++ b/include/net/ip.h
+@@ -310,16 +310,7 @@ static inline unsigned int ip_skb_dst_mt
+ 	}
+ }
  
- 	cq = ccb->sw_q;
--	cmpl = &cq[ccb->producer_index];
+-#define IP_IDENTS_SZ 2048u
+-extern atomic_t *ip_idents;
+-
+-static inline u32 ip_idents_reserve(u32 hash, int segs)
+-{
+-	atomic_t *id_ptr = ip_idents + hash % IP_IDENTS_SZ;
+-
+-	return atomic_add_return(segs, id_ptr) - segs;
+-}
+-
++u32 ip_idents_reserve(u32 hash, int segs);
+ void __ip_select_ident(struct iphdr *iph, int segs);
  
- 	while (packets < budget) {
-+		cmpl = &cq[ccb->producer_index];
- 		if (!cmpl->valid)
- 			break;
- 		/* The 'valid' field is set by the adapter, only after writing
+ static inline void ip_select_ident_segs(struct sk_buff *skb, struct sock *sk, int segs)
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -457,8 +457,31 @@ static struct neighbour *ipv4_neigh_look
+ 	return neigh_create(&arp_tbl, pkey, dev);
+ }
+ 
+-atomic_t *ip_idents __read_mostly;
+-EXPORT_SYMBOL(ip_idents);
++#define IP_IDENTS_SZ 2048u
++struct ip_ident_bucket {
++	atomic_t	id;
++	u32		stamp32;
++};
++
++static struct ip_ident_bucket *ip_idents __read_mostly;
++
++/* In order to protect privacy, we add a perturbation to identifiers
++ * if one generator is seldom used. This makes hard for an attacker
++ * to infer how many packets were sent between two points in time.
++ */
++u32 ip_idents_reserve(u32 hash, int segs)
++{
++	struct ip_ident_bucket *bucket = ip_idents + hash % IP_IDENTS_SZ;
++	u32 old = ACCESS_ONCE(bucket->stamp32);
++	u32 now = (u32)jiffies;
++	u32 delta = 0;
++
++	if (old != now && cmpxchg(&bucket->stamp32, old, now) == old)
++		delta = prandom_u32_max(now - old);
++
++	return atomic_add_return(segs + delta, &bucket->id) - segs;
++}
++EXPORT_SYMBOL(ip_idents_reserve);
+ 
+ void __ip_select_ident(struct iphdr *iph, int segs)
+ {
+@@ -467,7 +490,10 @@ void __ip_select_ident(struct iphdr *iph
+ 
+ 	net_get_random_once(&ip_idents_hashrnd, sizeof(ip_idents_hashrnd));
+ 
+-	hash = jhash_1word((__force u32)iph->daddr, ip_idents_hashrnd);
++	hash = jhash_3words((__force u32)iph->daddr,
++			    (__force u32)iph->saddr,
++			    iph->protocol,
++			    ip_idents_hashrnd);
+ 	id = ip_idents_reserve(hash, segs);
+ 	iph->id = htons(id);
+ }
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -545,6 +545,8 @@ static void ipv6_select_ident(struct fra
+ 	net_get_random_once(&ip6_idents_hashrnd, sizeof(ip6_idents_hashrnd));
+ 
+ 	hash = __ipv6_addr_jhash(&rt->rt6i_dst.addr, ip6_idents_hashrnd);
++	hash = __ipv6_addr_jhash(&rt->rt6i_src.addr, hash);
++
+ 	id = ip_idents_reserve(hash, 1);
+ 	fhdr->identification = htonl(id);
+ }
 
 
