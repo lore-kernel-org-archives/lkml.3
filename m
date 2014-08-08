@@ -1,143 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491AbaHHMFy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 08:05:54 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:60706 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889AbaHHMFv (ORCPT
+	id S1756673AbaHHMGT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 08:06:19 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:53812 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889AbaHHMGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 08:05:51 -0400
-Subject: [PATCH v2 3/17] arcmsr: Add code to support system hibernation
-From: Ching Huang <ching2048@areca.com.tw>
-To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Aug 2014 20:05:46 +0800
-Message-ID: <1407499546.5099.8.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Aug 2014 08:06:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.11.1408080649430.14841@gentwo.org>
+References: <CAMuHMdW2kb=EF-Nmem_gyUu=p7hFOTe+Q2ekHh41SaHHiWDGeg@mail.gmail.com>
+	<CAAmzW4MX2birtCOUxjDdQ7c3Y+RyVkBt383HEQ=XFgnhhOsQPw@mail.gmail.com>
+	<CAMuHMdVC8aYwDEHnntshdVA24Nx3qAUXZfeRQNGqj=J6eExU-Q@mail.gmail.com>
+	<CAAmzW4NWnMeO+Z3CQ=9Z7rUFLaPmR-w0iMhxzjO+PVgVu7OMuQ@mail.gmail.com>
+	<20140808071903.GD6150@js1304-P5Q-DELUXE>
+	<CAMuHMdVHmmct=BC=WXFJWeizYp+S706WjvNi=powYsJkarKUhw@mail.gmail.com>
+	<alpine.DEB.2.11.1408080649430.14841@gentwo.org>
+Date: Fri, 8 Aug 2014 14:06:16 +0200
+X-Google-Sender-Auth: cOp8alWgybjRZxV5cE33xu7Z2o8
+Message-ID: <CAMuHMdWNNuPgDsjM1eM0uo2090-6OxAX8Kfw8Pcd2zo5G6zPkw@mail.gmail.com>
+Subject: Re: BUG: enable_cpucache failed for radix_tree_node, error 12 (was:
+ Re: [PATCH v3 9/9] slab: remove BAD_ALIEN_MAGIC)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vladimir Davydov <vdavydov@parallels.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching Huang <ching2048@areca.com.tw>
+Hi Christoph,
 
-This patch adds code to support system hibernation.
+On Fri, Aug 8, 2014 at 1:50 PM, Christoph Lameter <cl@linux.com> wrote:
+> On Fri, 8 Aug 2014, Geert Uytterhoeven wrote:
+>> > Of possible, could you check whether page_to_nid(page) returns
+>> > only 0 or not?
+>>
+>> It returns 0 or 1.
+>
+> Ok this is broken on m68k. CONFIG_NUMA is required for this to work. If
+> the arch code does this despite !CONFIG_NUMA then lots of things should
+> break.
 
-Changes in v2 of 3/17:
-* merge patch 18/18 to this patch
+Can you please elaborate? We've been using for years...
 
-Signed-off-by: Ching Huang <ching2048@areca.com.tw>
----
+Gr{oetje,eeting}s,
 
-Thanks to Tomas's advice.
+                        Geert
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-01 17:54:46.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-08 19:03:48.000000000 +0800
-@@ -89,11 +89,15 @@ static int arcmsr_bios_param(struct scsi
- static int arcmsr_queue_command(struct Scsi_Host *h, struct scsi_cmnd *cmd);
- static int arcmsr_probe(struct pci_dev *pdev,
- 				const struct pci_device_id *id);
-+static int arcmsr_suspend(struct pci_dev *pdev, pm_message_t state);
-+static int arcmsr_resume(struct pci_dev *pdev);
- static void arcmsr_remove(struct pci_dev *pdev);
- static void arcmsr_shutdown(struct pci_dev *pdev);
- static void arcmsr_iop_init(struct AdapterControlBlock *acb);
- static void arcmsr_free_ccb_pool(struct AdapterControlBlock *acb);
- static u32 arcmsr_disable_outbound_ints(struct AdapterControlBlock *acb);
-+static void arcmsr_enable_outbound_ints(struct AdapterControlBlock *acb,
-+	u32 intmask_org);
- static void arcmsr_stop_adapter_bgrb(struct AdapterControlBlock *acb);
- static void arcmsr_flush_hba_cache(struct AdapterControlBlock *acb);
- static void arcmsr_flush_hbb_cache(struct AdapterControlBlock *acb);
-@@ -167,6 +171,8 @@ static struct pci_driver arcmsr_pci_driv
- 	.id_table			= arcmsr_device_id_table,
- 	.probe			= arcmsr_probe,
- 	.remove			= arcmsr_remove,
-+	.suspend		= arcmsr_suspend,
-+	.resume			= arcmsr_resume,
- 	.shutdown		= arcmsr_shutdown,
- };
- /*
-@@ -772,6 +778,76 @@ static void arcmsr_free_irq(struct pci_d
- 		free_irq(pdev->irq, acb);
- }
- 
-+static int arcmsr_suspend(struct pci_dev *pdev, pm_message_t state)
-+{
-+	uint32_t intmask_org;
-+	struct Scsi_Host *host = pci_get_drvdata(pdev);
-+	struct AdapterControlBlock *acb =
-+		(struct AdapterControlBlock *)host->hostdata;
-+
-+	intmask_org = arcmsr_disable_outbound_ints(acb);
-+	arcmsr_free_irq(pdev, acb);
-+	del_timer_sync(&acb->eternal_timer);
-+	flush_work(&acb->arcmsr_do_message_isr_bh);
-+	arcmsr_stop_adapter_bgrb(acb);
-+	arcmsr_flush_adapter_cache(acb);
-+	pci_set_drvdata(pdev, host);
-+	pci_save_state(pdev);
-+	pci_disable_device(pdev);
-+	pci_set_power_state(pdev, pci_choose_state(pdev, state));
-+	return 0;
-+}
-+
-+static int arcmsr_resume(struct pci_dev *pdev)
-+{
-+	int error;
-+	struct Scsi_Host *host = pci_get_drvdata(pdev);
-+	struct AdapterControlBlock *acb =
-+		(struct AdapterControlBlock *)host->hostdata;
-+
-+	pci_set_power_state(pdev, PCI_D0);
-+	pci_enable_wake(pdev, PCI_D0, 0);
-+	pci_restore_state(pdev);
-+	if (pci_enable_device(pdev)) {
-+		pr_warn("%s: pci_enable_device error\n", __func__);
-+		return -ENODEV;
-+	}
-+	error = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
-+	if (error) {
-+		error = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
-+		if (error) {
-+			pr_warn("scsi%d: No suitable DMA mask available\n",
-+			       host->host_no);
-+			goto controller_unregister;
-+		}
-+	}
-+	pci_set_master(pdev);
-+	if (arcmsr_request_irq(pdev, acb) == FAILED)
-+		goto controller_stop;
-+	arcmsr_iop_init(acb);
-+	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
-+	atomic_set(&acb->rq_map_token, 16);
-+	atomic_set(&acb->ante_token_value, 16);
-+	acb->fw_flag = FW_NORMAL;
-+	init_timer(&acb->eternal_timer);
-+	acb->eternal_timer.expires = jiffies + msecs_to_jiffies(6 * HZ);
-+	acb->eternal_timer.data = (unsigned long) acb;
-+	acb->eternal_timer.function = &arcmsr_request_device_map;
-+	add_timer(&acb->eternal_timer);
-+	return 0;
-+controller_stop:
-+	arcmsr_stop_adapter_bgrb(acb);
-+	arcmsr_flush_adapter_cache(acb);
-+controller_unregister:
-+	scsi_remove_host(host);
-+	arcmsr_free_ccb_pool(acb);
-+	arcmsr_unmap_pciregion(acb);
-+	pci_release_regions(pdev);
-+	scsi_host_put(host);
-+	pci_disable_device(pdev);
-+	return -ENODEV;
-+}
-+
- static uint8_t arcmsr_abort_hba_allcmd(struct AdapterControlBlock *acb)
- {
- 	struct MessageUnit_A __iomem *reg = acb->pmuA;
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
