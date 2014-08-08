@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167AbaHHPpV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 11:45:21 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:45693 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570AbaHHPpT (ORCPT
+	id S1756476AbaHHPpb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 11:45:31 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:37786 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756187AbaHHPp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 11:45:19 -0400
+	Fri, 8 Aug 2014 11:45:27 -0400
+X-Sasl-enc: 1byNJsOed3fdqSEpYE/ge3AUN3mTIwFilGPT0O5SrE5g 1407512726
+Date: Fri, 8 Aug 2014 12:45:14 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 7/8] x86, microcode, intel: forbid some incorrect metadata
+Message-ID: <20140808154514.GB29666@khazad-dum.debian.net>
+References: <1406146251-8540-8-git-send-email-hmh@hmh.eng.br>
+ <20140728153157.GC5350@pd.tnic>
+ <20140728193734.GC9752@khazad-dum.debian.net>
+ <20140729104520.GF11179@pd.tnic>
+ <20140729202543.GB15382@khazad-dum.debian.net>
+ <20140804110942.GC4808@pd.tnic>
+ <20140804201836.GA24823@khazad-dum.debian.net>
+ <20140808125430.GC2776@pd.tnic>
+ <20140808135057.GC17542@khazad-dum.debian.net>
+ <20140808152135.GD2776@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <1407470159-14722-4-git-send-email-kever.yang@rock-chips.com>
-References: <1407470159-14722-1-git-send-email-kever.yang@rock-chips.com>
-	<1407470159-14722-4-git-send-email-kever.yang@rock-chips.com>
-Date: Fri, 8 Aug 2014 08:45:16 -0700
-X-Google-Sender-Auth: 33r-Tw37BkeIdT7izC_fWPrud1Q
-Message-ID: <CAD=FV=XNSp85H2zVrLPdxDfhokEWFspvwUHjVMWRu8k_wFFm0Q@mail.gmail.com>
-Subject: Re: [PATCH v5 3/4] ARM: dts: add rk3288 dwc2 controller support
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Cc: Paul Zimmerman <paulz@synopsys.com>, Olof Johansson <olof@lixom.net>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        wulf <wulf@rock-chips.com>, lyz <lyz@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140808152135.GD2776@pd.tnic>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+On Fri, 08 Aug 2014, Borislav Petkov wrote:
+> On Fri, Aug 08, 2014 at 10:50:57AM -0300, Henrique de Moraes Holschuh wrote:
+> > On Fri, 08 Aug 2014, Borislav Petkov wrote:
+> > > If someone tries to load a microcode blob which has been split and so
+> > > on, then we should refuse loading. We want to accept microcode from the
+> > > vendor and nothing else glued together.
+> > 
+> > I don't quite get why we should refuse microcode
+> 
+> Because the blob from the official location passes internal validation, I'd
+> strongly assume. Everything else doesn't.
+> 
+> > that has been split by userspace when the Intel SDM explicitly states
+> > that tools can do that if there is a need,
+> 
+> Where?
 
-On Thu, Aug 7, 2014 at 8:55 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> rk3288 has two kind of usb controller, this add the dwc2 controller
-> for otg and host1.
->
-> Controller can works with usb PHY default setting and Vbus on.
->
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-> Tested-by: Doug Anderson <dianders@chromium.org>
-> ---
->
-> Changes in v5:
-> - change the sort order of dwc2 in rk3288.dtsi
->
-> Changes in v4: None
-> Changes in v3:
-> - EHCI and HSIC move new for version 3.
->
-> Changes in v2: None
->
->  arch/arm/boot/dts/rk3288.dtsi | 20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
+Intel SDM vol 3A, last row of table 9-6, page 9-30:
 
-IMHO this series is ready to go in for 3.18.  I'm assuming Heiko will
-pick it up once the bindings have landed.  It already has my tags.  ;)
+    "Used by utility software to decompose a microcode update into
+     multiple microcode updates where each of the new updates is
+     constructed without the optional Extended Processor Signature
+     Table."
+
+Not that there is any such utility in use as far as I know (and as I said,
+iucode-tool doesn't do it either, and I won't add it unless it is absolutely
+required).
+
+But, as I said, I don't care about this one anymore because I don't believe
+it will have any pratical effects...
+
+> You can't just assume that just because implementations are faulty there
+> - they should adhere to the SDM and it is authoritative. If the extended
+> signatures are really needed at some point, implementations will have to
+> be fixed.
+
+... exactly because just about every implementation WILL have to be fixed,
+which means someone @intel will show up around here with a patch.
+
+> > I will respin the patch without the %1024 comment.  Note that I never
+> > *removed* any test, we never tested for %1024 in the first place
+> 
+> And I'm saying we should if we're loading the official blob.
+
+I will add a patch doing that.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
