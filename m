@@ -1,156 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916AbaHHBPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 21:15:16 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:47952 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425AbaHHBPM (ORCPT
+	id S1756169AbaHHBSm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 21:18:42 -0400
+Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:44744 "EHLO
+	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755422AbaHHBSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 21:15:12 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-security-module@vger.kernel.org,
-        selinux@tycho.nsa.gov
-Subject: [GIT PULL] SELinux/NetLabel fixes for 3.17
-Date: Thu, 07 Aug 2014 21:15:09 -0400
-Message-ID: <3757283.5i2HgyZGYY@sifl>
-User-Agent: KMail/4.13.3 (Linux/3.15.7-gentoo; KDE/4.13.3; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 7 Aug 2014 21:18:41 -0400
+Message-ID: <1407460714.2513.19.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2] arch,locking: Ciao arch_mutex_cpu_relax()
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Date: Thu, 07 Aug 2014 18:18:34 -0700
+In-Reply-To: <1407260539.6493.3.camel@buesod1.americas.hpqcorp.net>
+References: <1403288473.10903.2.camel@buesod1.americas.hpqcorp.net>
+	 <20140623065835.GF19860@laptop.programming.kicks-ass.net>
+	 <1403622415.15523.4.camel@buesod1.americas.hpqcorp.net>
+	 <20140625062510.GB4260@osiris>
+	 <CA+55aFx3UQG42cYrUWrTDT9CnpnRwVta6C9N_0FH1wvyDMxPgw@mail.gmail.com>
+	 <1404079773.2619.4.camel@buesod1.americas.hpqcorp.net>
+	 <CAMuHMdX2ZCEd=J_Gpf-W+Zyqg27r4C6ULZgO=pg2houR-FXLvg@mail.gmail.com>
+	 <1407260539.6493.3.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All,
+On Tue, 2014-08-05 at 10:42 -0700, Davidlohr Bueso wrote:
+> On Tue, 2014-08-05 at 15:04 +0200, Geert Uytterhoeven wrote:
+> > It looks like you forgot to update frv?  It's been failing on -next since a
+> > few days:
 
-Two small patches to fix a couple of build warnings in SELinux and NetLabel.  
-The patches are obvious enough that I don't think any additional explanation 
-is necessary, but it basically boils down to the usual: I was stupid, and 
-these patches fix some of the stupid.
+Anyway developers can be alerted sooner about this (ie: while its still
+in -next phase), like automated emails or something? This would be extra
+nice for those archs that are harder to get tested.
 
-Both patches were posted earlier this week to the SELinux list, and that is 
-where they sat as I didn't think there were noteworthy enough to go upstream 
-at this point in time, but DaveM would rather see them upstream now so who am 
-I to argue.  As the patches are both very small, I'm including the combines 
-changes with this pull request in case anyone wants to scrutinize them any 
-further.
+> > kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of
+> > function 'cpu_relax_lowlatency'
+> > [-Werror=implicit-function-declaration]
+> > cc1: some warnings being treated as errors
+> > kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of
+> > function 'cpu_relax_lowlatency'
+> > [-Werror=implicit-function-declaration]
+> > make[3]: *** [kernel/locking/mcs_spinlock.o] Error 1
+> > cc1: some warnings being treated as errors
+> > make[3]: *** [kernel/locking/mutex.o] Error 1
+> > 
+> > http://kisskb.ellerman.id.au/kisskb/buildresult/11616307/
+> 
+> Ah, indeed. Thanks for the report, afaict this was the only missing
+> arch .
 
-Enjoy,
--Paul
+Adding Guenter who also reported this yesterday.
 
---
-The following changes since commit 4fbe63d1c773cceef3fe1f6ed0c9c268f4f24760:
+Linus, since this is build-breaking an entire arch, it might be worth
+avoiding the whole -tip thing and get the fix in as soon as possible.
 
-  netlabel: shorter names for the NetLabel catmap funcs/structs
-            (2014-08-01 11:17:37 -0400)
+Thanks,
+Davidlohr
 
-are available in the git repository at:
-
-  git://git.infradead.org/users/pcmoore/selinux stable-3.17
-
-for you to fetch changes up to 942ba3646543aeb3e5729c35d10ac43424bf0b68:
-
-  selinux: remove unused variabled in the netport, netnode, and netif
-           caches (2014-08-07 20:55:30 -0400)
-
-----------------------------------------------------------------
-Paul Moore (2):
-      netlabel: fix the netlbl_catmap_setlong() dummy function
-      selinux: remove unused variabled in the netport, netnode, and netif
-               caches
-
- include/net/netlabel.h     | 8 ++++----
- security/selinux/netif.c   | 4 ++--
- security/selinux/netnode.c | 3 +--
- security/selinux/netport.c | 3 +--
- 4 files changed, 8 insertions(+), 10 deletions(-)
-
-diff --git a/include/net/netlabel.h b/include/net/netlabel.h
-index a4fc39b..7b5a300 100644
---- a/include/net/netlabel.h
-+++ b/include/net/netlabel.h
-@@ -524,10 +524,10 @@ static inline int netlbl_catmap_setrng(struct 
-netlbl_lsm_catmap **catmap,
- {
- 	return 0;
- }
--static int netlbl_catmap_setlong(struct netlbl_lsm_catmap **catmap,
--				 u32 offset,
--				 unsigned long bitmap,
--				 gfp_t flags)
-+static inline int netlbl_catmap_setlong(struct netlbl_lsm_catmap **catmap,
-+					u32 offset,
-+					unsigned long bitmap,
-+					gfp_t flags)
- {
- 	return 0;
- }
-diff --git a/security/selinux/netif.c b/security/selinux/netif.c
-index 3c3de4c..50ce177 100644
---- a/security/selinux/netif.c
-+++ b/security/selinux/netif.c
-@@ -272,7 +272,7 @@ static struct notifier_block sel_netif_netdev_notifier = {
- 
- static __init int sel_netif_init(void)
- {
--	int i, err;
-+	int i;
- 
- 	if (!selinux_enabled)
- 		return 0;
-@@ -282,7 +282,7 @@ static __init int sel_netif_init(void)
- 
- 	register_netdevice_notifier(&sel_netif_netdev_notifier);
- 
--	return err;
-+	return 0;
- }
- 
- __initcall(sel_netif_init);
-diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
-index ddf3152..da923f8 100644
---- a/security/selinux/netnode.c
-+++ b/security/selinux/netnode.c
-@@ -303,7 +303,6 @@ void sel_netnode_flush(void)
- static __init int sel_netnode_init(void)
- {
- 	int iter;
--	int ret;
- 
- 	if (!selinux_enabled)
- 		return 0;
-@@ -313,7 +312,7 @@ static __init int sel_netnode_init(void)
- 		sel_netnode_hash[iter].size = 0;
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- __initcall(sel_netnode_init);
-diff --git a/security/selinux/netport.c b/security/selinux/netport.c
-index 73ac678..3311cc3 100644
---- a/security/selinux/netport.c
-+++ b/security/selinux/netport.c
-@@ -237,7 +237,6 @@ void sel_netport_flush(void)
- static __init int sel_netport_init(void)
- {
- 	int iter;
--	int ret;
- 
- 	if (!selinux_enabled)
- 		return 0;
-@@ -247,7 +246,7 @@ static __init int sel_netport_init(void)
- 		sel_netport_hash[iter].size = 0;
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- __initcall(sel_netport_init);
-
--- 
-paul moore
-security and virtualization @ redhat
