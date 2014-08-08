@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457AbaHHE3W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 00:29:22 -0400
-Received: from ozlabs.org ([103.22.144.67]:32946 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752761AbaHHE3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 00:29:21 -0400
-Date: Fri, 8 Aug 2014 14:29:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, Mark Brown <broonie@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mollie Wu <mollie.wu@linaro.org>,
-        Tetsuya Takinishi <t.takinishi@jp.fujitsu.com>,
-        Andy Green <andy.green@linaro.org>
-Subject: Re: Request to include Mailbox tree in linux-next
-Message-ID: <20140808142912.7bf68229@canb.auug.org.au>
-In-Reply-To: <CAJe_ZhdZTSs+Ns4u7bMXwbLHYTnE-5XEE8uev4zXbXrCP52bSg@mail.gmail.com>
-References: <CAJe_ZhdZTSs+Ns4u7bMXwbLHYTnE-5XEE8uev4zXbXrCP52bSg@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1752787AbaHHEnT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 00:43:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50970 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187AbaHHEnS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 00:43:18 -0400
+Date: Thu, 7 Aug 2014 21:42:46 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Oleg Drokin <green@linuxhacker.ru>
+Cc: Evgeny Budilovsky <budevg@gmail.com>, devel@driverdev.osuosl.org,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Peng Tao <bergwolf@gmail.com>, linux-kernel@vger.kernel.org,
+        Lai Siyao <lai.siyao@intel.com>
+Subject: Re: [PATCH] staging/lustre: use rcu_dereference to access rcu
+ protected current->real_parent field
+Message-ID: <20140808044246.GA3084@kroah.com>
+References: <87k36ltoob.fsf@gmail.com>
+ <20140806214216.GA16530@kroah.com>
+ <CAGDhxoe4+jU=vCDedMC4VXfuNMmqP3-E1Lu3LLStbFLbd=BRSA@mail.gmail.com>
+ <20140808034951.GA6626@kroah.com>
+ <DFF36154-06AC-4D7E-87F5-259B73CB059B@linuxhacker.ru>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/JESdqHwuc3kKeYJg1GgLtk8"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DFF36154-06AC-4D7E-87F5-259B73CB059B@linuxhacker.ru>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/JESdqHwuc3kKeYJg1GgLtk8
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Aug 08, 2014 at 12:03:20AM -0400, Oleg Drokin wrote:
+> Hello!
+> 
+> On Aug 7, 2014, at 11:49 PM, Greg Kroah-Hartman wrote:
+> >> 
+> >> This is not a critical bug and in the worst case the code here may
+> >> cause miss of statistics counter increase.
+> >> This is why I think it is not worth to backport the patch at all.
+> > You are right, and if this is just for some random "statistics" file,
+> > can we just delete the whole function?
+> 
+> I hope not!
+> This is used all around the client to tally up various operations executed counts.
 
-Hi Jassi,
+Why would you do that?  Why would they care?
 
-On Wed, 6 Aug 2014 12:25:49 +0530 Jassi Brar <jaswinder.singh@linaro.org> w=
-rote:
->
->  The framework for Mailbox has undergone 10 revisions over the last
-> one year, which has garnered support in the form of 'Reviewed-by' and
-> 'looks good enough to be merged in this window' from people in the CC
-> list.
->=20
->   Could you please add it to linux-next?
-> Tree:       git://git.linaro.org/landing-teams/working/fujitsu/integratio=
-n.git
-> Branch:   mailbox-for-3.17
-> Contact:  Jassi Brar <jaswinder.singh@linaro.org>
+> The statistic is then used by various userspace monitoring tools.
 
-This is really late for v3.17.  The purpose of linux-next is to
-discover interactions between trees before they are pulled into Linus'
-tree and to do some cross architecture build checking.  Adding a tree
-during the merge window is not very helpful to that.
+Why not use the in-kernel monitoring tools instead of creating your own?
+What does userspace do with that information?
 
-However if this is really going to be merged by Linus before v3.17-rc1,
-I will add it on Monday, OK?
+thanks,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/JESdqHwuc3kKeYJg1GgLtk8
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT5FIdAAoJEMDTa8Ir7ZwVQroP/A64p9s55hLclpcir7HIihyR
-imqsFhLVBQNqok38P4ZGL8upj/NydMJQUSpZ2mjKNdoEqt+n7HuYydgxoSmkl8+T
-hY1iNWxvaKlAv15YdfW6/BrbsdjFlefRlAbv+5JPURldDTwIVY9ymN04dWOTrb4h
-n/HTskmTQjyogpT5wOC+xt09b4YL2pi1aB2vFRzfzMaiuoAwqTJDZMLUDcqiXGIz
-PPP9ZGAp/37qiAozGkvJ0Lc9F2zQErAUfGB5hXw0jP7gb5BELXVa0XlSQrvkAl8D
-JorihkBtErKJ9EskfpwFgS5tTf1yObnjBTFJ0BtRMJX209Bc0aAMirURd4Yqy0oW
-t72kPChdq9Ja5U17dIzNwY6yVAQC+5PYnsH1h5pAihMX5/FZEjGgXFR/NST/hgl6
-quBiew0tcX4ZvOOHYWhYTtjMJySOK9xJ4kcb6a1ZV/A3vPLNpKpz+TO6rYtpQU81
-EXbJ6hQ9dwRnZ7hfagUl9/1T2ibvKTc2wZ0SQCDgApuOfrQqKIw6zeV6J7kEcvJA
-79js0j3HsxY8+NzXZIHVxHVf7+dTRPVPltz734qz/tyNFSW0woiHGnQsNA/DTC05
-PWhOrF57W3eT7Ke4QUp1l729ihHsJQdyVdCJU0Tg1Z99xI++IF88qFN8d/4nZ/Iy
-yJQtMVFqEpuMONtms28P
-=nWpD
------END PGP SIGNATURE-----
-
---Sig_/JESdqHwuc3kKeYJg1GgLtk8--
+greg k-h
