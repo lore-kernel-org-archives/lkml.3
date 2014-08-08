@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758463AbaHHUuf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:50:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40820 "EHLO
+	id S932142AbaHHUuk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:50:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40854 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758379AbaHHUuY (ORCPT
+	with ESMTP id S1758461AbaHHUue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:50:24 -0400
+	Fri, 8 Aug 2014 16:50:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 068/259] ext4: clarify ext4_error message in ext4_mb_generate_buddy_error()
-Date: Fri,  8 Aug 2014 13:38:11 -0700
-Message-Id: <1407530482-4483-69-git-send-email-kamal@canonical.com>
+Cc: Andras Kovacs <andras@sth.sze.hu>, Johan Hovold <johan@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 074/259] USB: cp210x: add support for Corsair usb dongle
+Date: Fri,  8 Aug 2014 13:38:17 -0700
+Message-Id: <1407530482-4483-75-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -26,34 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Andras Kovacs <andras@sth.sze.hu>
 
-commit 94d4c066a4ff170a2671b1a9b153febbf36796f6 upstream.
+commit b9326057a3d8447f5d2e74a7b521ccf21add2ec0 upstream.
 
-We are spending a lot of time explaining to users what this error
-means.  Let's try to improve the message to avoid this problem.
+Corsair USB Dongles are shipped with Corsair AXi series PSUs.
+These are cp210x serial usb devices, so make driver detect these.
+I have a program, that can get information from these PSUs.
 
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Tested with 2 different dongles shipped with Corsair AX860i and
+AX1200i units.
+
+Signed-off-by: Andras Kovacs <andras@sth.sze.hu>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/mballoc.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/cp210x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 08ddfda..502f0fd 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -751,8 +751,8 @@ void ext4_mb_generate_buddy(struct super_block *sb,
- 
- 	if (free != grp->bb_free) {
- 		ext4_grp_locked_error(sb, group, 0, 0,
--				      "%u clusters in bitmap, %u in gd; "
--				      "block bitmap corrupt.",
-+				      "block bitmap and bg descriptor "
-+				      "inconsistent: %u vs %u free clusters",
- 				      free, grp->bb_free);
- 		/*
- 		 * If we intend to continue, we consider group descriptor
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 71873ca..1db213a 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -153,6 +153,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
++	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
 -- 
 1.9.1
 
