@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758704AbaHHVgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:36:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60530 "EHLO
+	id S1759425AbaHHVyK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:54:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60628 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933117AbaHHVgY (ORCPT
+	with ESMTP id S1758692AbaHHVgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:24 -0400
+	Fri, 8 Aug 2014 17:36:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kirill Tkhai <tkhai@yandex.ru>,
+        Sowmini Varadhan <sowmini.varadhan@oracle.com>,
+        Karl Volz <karl.volz@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 18/39] sparc64: Make itc_sync_lock raw
-Date: Fri,  8 Aug 2014 14:35:04 -0700
-Message-Id: <20140808213355.759683057@linuxfoundation.org>
+Subject: [PATCH 3.14 37/39] sparc64: ldc_connect() should not return EINVAL when handshake is in progress.
+Date: Fri,  8 Aug 2014 14:35:23 -0700
+Message-Id: <20140808213356.568888238@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -29,51 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
 
-[ Upstream commit 49b6c01f4c1de3b5e5427ac5aba80f9f6d27837a ]
+[ Upstream commit 4ec1b01029b4facb651b8ef70bc20a4be4cebc63 ]
 
-One more place where we must not be able
-to be preempted or to be interrupted in RT.
+The LDC handshake could have been asynchronously triggered
+after ldc_bind() enables the ldc_rx() receive interrupt-handler
+(and thus intercepts incoming control packets)
+and before vio_port_up() calls ldc_connect(). If that is the case,
+ldc_connect() should return 0 and let the state-machine
+progress.
 
-Always actually disable interrupts during
-synchronization cycle.
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+Acked-by: Karl Volz <karl.volz@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/smp_64.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/sparc/kernel/ldc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/kernel/smp_64.c
-+++ b/arch/sparc/kernel/smp_64.c
-@@ -151,7 +151,7 @@ void cpu_panic(void)
- #define NUM_ROUNDS	64	/* magic value */
- #define NUM_ITERS	5	/* likewise */
+--- a/arch/sparc/kernel/ldc.c
++++ b/arch/sparc/kernel/ldc.c
+@@ -1336,7 +1336,7 @@ int ldc_connect(struct ldc_channel *lp)
+ 	if (!(lp->flags & LDC_FLAG_ALLOCED_QUEUES) ||
+ 	    !(lp->flags & LDC_FLAG_REGISTERED_QUEUES) ||
+ 	    lp->hs_state != LDC_HS_OPEN)
+-		err = -EINVAL;
++		err = ((lp->hs_state > LDC_HS_OPEN) ? 0 : -EINVAL);
+ 	else
+ 		err = start_handshake(lp);
  
--static DEFINE_SPINLOCK(itc_sync_lock);
-+static DEFINE_RAW_SPINLOCK(itc_sync_lock);
- static unsigned long go[SLAVE + 1];
- 
- #define DEBUG_TICK_SYNC	0
-@@ -259,7 +259,7 @@ static void smp_synchronize_one_tick(int
- 	go[MASTER] = 0;
- 	membar_safe("#StoreLoad");
- 
--	spin_lock_irqsave(&itc_sync_lock, flags);
-+	raw_spin_lock_irqsave(&itc_sync_lock, flags);
- 	{
- 		for (i = 0; i < NUM_ROUNDS*NUM_ITERS; i++) {
- 			while (!go[MASTER])
-@@ -270,7 +270,7 @@ static void smp_synchronize_one_tick(int
- 			membar_safe("#StoreLoad");
- 		}
- 	}
--	spin_unlock_irqrestore(&itc_sync_lock, flags);
-+	raw_spin_unlock_irqrestore(&itc_sync_lock, flags);
- }
- 
- #if defined(CONFIG_SUN_LDOMS) && defined(CONFIG_HOTPLUG_CPU)
 
 
