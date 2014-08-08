@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203AbaHHFJB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 01:09:01 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:58772 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755796AbaHHFGg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 01:06:36 -0400
-Subject: Re: [PATCH] staging/lustre: use rcu_dereference to access rcu protected current->real_parent field
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Oleg Drokin <green@linuxhacker.ru>
-In-Reply-To: <20140808044246.GA3084@kroah.com>
-Date: Fri, 8 Aug 2014 01:06:15 -0400
-Cc: Evgeny Budilovsky <budevg@gmail.com>, devel@driverdev.osuosl.org,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Peng Tao <bergwolf@gmail.com>, linux-kernel@vger.kernel.org,
-        Lai Siyao <lai.siyao@intel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1FE03450-A256-4A18-85AB-6332A28E3EF5@linuxhacker.ru>
-References: <87k36ltoob.fsf@gmail.com> <20140806214216.GA16530@kroah.com> <CAGDhxoe4+jU=vCDedMC4VXfuNMmqP3-E1Lu3LLStbFLbd=BRSA@mail.gmail.com> <20140808034951.GA6626@kroah.com> <DFF36154-06AC-4D7E-87F5-259B73CB059B@linuxhacker.ru> <20140808044246.GA3084@kroah.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1283)
+	id S1752952AbaHHFVl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 01:21:41 -0400
+Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:14078
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751187AbaHHFVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 01:21:40 -0400
+From: Shengjiu Wang <shengjiu.wang@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <timur@tabi.org>,
+        <perex@perex.cz>, <tiwai@suse.de>, <nicoleotsuka@gmail.com>,
+        <Li.Xiubo@freescale.com>, <shc_work@mail.ru>,
+        <fabio.estevam@freescale.com>, <arnd@arndb.de>
+CC: <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH V3 2/2] Revert "ASoC: fsl-esai: Add .xlate_tdm_slot_mask() support."
+Date: Fri, 8 Aug 2014 13:21:24 +0800
+Message-ID: <b829a292842d68e66774dabf5347cc7fb8ab45bf.1407475184.git.shengjiu.wang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1407475184.git.shengjiu.wang@freescale.com>
+References: <cover.1407475184.git.shengjiu.wang@freescale.com>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(79102001)(106466001)(102836001)(229853001)(104016003)(74662001)(64706001)(20776003)(31966008)(36756003)(77982001)(6806004)(80022001)(47776003)(74502001)(4396001)(104166001)(95666004)(33646002)(85306004)(107046002)(26826002)(105606002)(50226001)(92726001)(92566001)(85852003)(83072002)(21056001)(19580395003)(19580405001)(48376002)(68736004)(84676001)(86362001)(93916002)(89996001)(2201001)(46102001)(76482001)(88136002)(87936001)(87286001)(44976005)(81542001)(77156001)(81342001)(99396002)(76176999)(83322001)(50986999)(97736001)(62966002)(50466002)(142923001)(921003)(1121002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB253;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02973C87BC
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=shengjiu.wang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This reverts commit a603c8ee526f5ea9ad9b40710308766299ad8a69.
 
-On Aug 8, 2014, at 12:42 AM, Greg Kroah-Hartman wrote:
+fsl_asoc_xlate_tdm_slot_mask() will invert the mask, for esai the enabled bit
+is changed to be disabled, So the esai will work abnormally.
+when there is no definition of .xlate_tdm_slot_mask, there is default function
+snd_soc_xlate_tdm_slot_mask(), which is workable for esai.
 
-> On Fri, Aug 08, 2014 at 12:03:20AM -0400, Oleg Drokin wrote:
->> Hello!
->> 
->> On Aug 7, 2014, at 11:49 PM, Greg Kroah-Hartman wrote:
->>>> 
->>>> This is not a critical bug and in the worst case the code here may
->>>> cause miss of statistics counter increase.
->>>> This is why I think it is not worth to backport the patch at all.
->>> You are right, and if this is just for some random "statistics" file,
->>> can we just delete the whole function?
->> 
->> I hope not!
->> This is used all around the client to tally up various operations executed counts.
-> Why would you do that?  Why would they care?
+Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
+---
+ sound/soc/fsl/Kconfig    |    1 -
+ sound/soc/fsl/fsl_esai.c |    2 --
+ 2 files changed, 3 deletions(-)
 
-We would do that to provide information on the client operations performed.
-They would care because they are interested in what particular clients might be doing.
-
->> The statistic is then used by various userspace monitoring tools.
-> Why not use the in-kernel monitoring tools instead of creating your own?
-> What does userspace do with that information?
-
-We don't really control the userspace tools. People write tools to suit their needs
-to monitor loads, see odd things the end users are doing or possibly for some
-debugging even.
-Correlating these numbers with what server sees also proves useful at times
-(write combining for example).
-
-Here's a sample of output of a recently mounted client that I poked on a bit (the lines starting with # are my comments):
-# cat /proc/fs/lustre/llite/lustre-ffff88008dde27f0/stats
-snapshot_time             1407473168.466102 secs.usecs
-read_bytes                1 samples [bytes] 0 0 0
-write_bytes               4 samples [bytes] 2 7 19
-osc_write                 4 samples [bytes] 2 7 19
-# The bytes counts show you minimum, maximum of writes seen and total number of bytes read-written.
-# Lustre (and many other network filesystems) is very sensitive to small IO, esp. reads so it's good
-# to know if you have a lot of it.
-open                      6 samples [regs]
-# The "regs" type just shows you how many of given type operations were performed since last statistic reset.
-# Frequently that allows people to guess where does high load come from on a particular client when
-# it's otherwise not obvious because not a lot of cpu is used.
-# Some operations are heavier than others too.
-close                     6 samples [regs]
-readdir                   4 samples [regs]
-setattr                   1 samples [regs]
-truncate                  4 samples [regs]
-getattr                   7 samples [regs]
-create                    1 samples [regs]
-alloc_inode               1 samples [regs]
-getxattr                  8 samples [regs]
-inode_permission          28 samples [regs]
-
-As more operations types are seen the list grows.
-Then there are also specific stats for readahead (data and metadata) so that interested people can make informed
-decisions on the tuning there should they be unsatisfied with default settings.
-
-I am not sure there's a similar mechanism in the kernel already that would allow us to get this sort of data easily
-all in one place?
-
-Bye,
-    Oleg
+diff --git a/sound/soc/fsl/Kconfig b/sound/soc/fsl/Kconfig
+index f54a8fc..f3012b6 100644
+--- a/sound/soc/fsl/Kconfig
++++ b/sound/soc/fsl/Kconfig
+@@ -49,7 +49,6 @@ config SND_SOC_FSL_ESAI
+ 	tristate "Enhanced Serial Audio Interface (ESAI) module support"
+ 	select REGMAP_MMIO
+ 	select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
+-	select SND_SOC_FSL_UTILS
+ 	help
+ 	  Say Y if you want to add Enhanced Synchronous Audio Interface
+ 	  (ESAI) support for the Freescale CPUs.
+diff --git a/sound/soc/fsl/fsl_esai.c b/sound/soc/fsl/fsl_esai.c
+index f252370..b2f6b3e 100644
+--- a/sound/soc/fsl/fsl_esai.c
++++ b/sound/soc/fsl/fsl_esai.c
+@@ -18,7 +18,6 @@
+ 
+ #include "fsl_esai.h"
+ #include "imx-pcm.h"
+-#include "fsl_utils.h"
+ 
+ #define FSL_ESAI_RATES		SNDRV_PCM_RATE_8000_192000
+ #define FSL_ESAI_FORMATS	(SNDRV_PCM_FMTBIT_S8 | \
+@@ -612,7 +611,6 @@ static struct snd_soc_dai_ops fsl_esai_dai_ops = {
+ 	.hw_params = fsl_esai_hw_params,
+ 	.set_sysclk = fsl_esai_set_dai_sysclk,
+ 	.set_fmt = fsl_esai_set_dai_fmt,
+-	.xlate_tdm_slot_mask = fsl_asoc_xlate_tdm_slot_mask,
+ 	.set_tdm_slot = fsl_esai_set_dai_tdm_slot,
+ };
+ 
+-- 
+1.7.9.5
 
