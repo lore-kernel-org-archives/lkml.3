@@ -1,102 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933457AbaHHU6r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:58:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41472 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933174AbaHHUyK (ORCPT
+	id S933414AbaHHU6i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:58:38 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:56454 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932694AbaHHU6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:54:10 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Joel Stanley <joel@jms.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 097/259] powerpc/perf: Add PPMU_ARCH_207S define
-Date: Fri,  8 Aug 2014 13:38:40 -0700
-Message-Id: <1407530482-4483-98-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Fri, 8 Aug 2014 16:58:33 -0400
+Date: Fri, 8 Aug 2014 13:58:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140808205826.GG5821@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140731215445.GA21933@linux.vnet.ibm.com>
+ <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140808191326.GE3935@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140808191326.GE3935@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080820-1542-0000-0000-000003DD0693
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.6 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, Aug 08, 2014 at 09:13:26PM +0200, Peter Zijlstra wrote:
+> 
+> 
+> So I think you can make the entire thing work with
+> rcu_note_context_switch().
+> 
+> If we have the sync thing do something like:
+> 
+> 
+> 	for_each_task(t) {
+> 		atomic_inc(&rcu_tasks);
+> 		atomic_or(&t->rcu_attention, RCU_TASK);
+> 		smp_mb__after_atomic();
+> 		if (!t->on_rq) {
+> 			if (atomic_test_and_clear(&t->rcu_attention, RCU_TASK))
+> 				atomic_dec(&rcu_tasks);
+> 		}
+> 	}
+> 
+> 	wait_event(&rcu_tasks_wq, !atomic_read(&rcu_tasks));
+> 
+> 
+> And then we have rcu_task_note_context_switch() (as called from
+> rcu_note_context_switch) do:
+> 
+> 
+> 	/* we want actual context switches, ignore preemption */
+> 	if (preempt_count() & PREEMPT_ACTIVE)
+> 		return;
+> 
+> 	/* if not marked for RCU attention, bail */
+> 	if (!(atomic_read(&t->rcu_attention) & RCU_TASK))
+> 		return;
+> 
+> 	/* raced with sync_rcu_task(), all done */
+> 	if (!atomic_test_and_clear(&t->rcu_attention, RCU_TASK))
+> 		return;
+> 
+> 	/* not the last.. */
+> 	if (!atomic_dec_and_test(&rcu_tasks))
+> 		return;
+> 
+> 	wake_up(&rcu_task_rq);
+> 
+> 
+> The idea is to share rcu_attention with rcu_preempt, such that we only
+> touch a single 'extra' cacheline in case RCU doesn't need to pay
+> attention to this task.
+> 
+> Also, it would be good if we can manage to squeeze this variable in a
+> cacheline that's already touched by the schedule() so as not to incur
+> undue overhead.
 
-------------------
+This approach does not get me the idle tasks and the NO_HZ_FULL usermode
+tasks.  I am pretty sure that I am stuck polling in those cases, so I
+might as well poll.
 
-From: Joel Stanley <joel@jms.id.au>
+> And on that, you probably should change rcu_sched_rq() to read:
+> 
+> 	this_cpu_inc(rcu_sched_data.passed_quiesce);
+> 
+> That avoids touching the per-cpu data offset.
 
-commit 4d9690dd56b0d18f2af8a9d4a279cb205aae3345 upstream.
+Hmmm...  Interrupts are disabled, so no need to further disable
+interrupts.  Storing 1 works fine, no need to increment.  If I followed
+the twisty per_cpu passages correctly, my guess is that you would like
+me to do something like this:
 
-Instead of separate bits for every POWER8 PMU feature, have a single one
-for v2.07 of the architecture.
+	__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
 
-This saves us adding a MMCR2 define for a future patch.
+Does that work?
 
-Signed-off-by: Joel Stanley <joel@jms.id.au>
-Acked-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-[ kamal: backport to 3.13-stable (drop perf_event_print_debug change) ]
----
- arch/powerpc/include/asm/perf_event_server.h | 3 +--
- arch/powerpc/perf/core-book3s.c              | 4 ++--
- arch/powerpc/perf/power8-pmu.c               | 2 +-
- 3 files changed, 4 insertions(+), 5 deletions(-)
+> And it would be very good if we could avoid the unconditional IRQ flag
+> fiddling in rcu_preempt_note_context_switch(), them expensive, this
+> looks entirely feasibly in the 'normal' case where
+> t->rcu_read_unlock_special doesn't have RCU_READ_UNLOCK_NEED_QS set.
 
-diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
-index 3fd2f1b..cefc7b4 100644
---- a/arch/powerpc/include/asm/perf_event_server.h
-+++ b/arch/powerpc/include/asm/perf_event_server.h
-@@ -60,8 +60,7 @@ struct power_pmu {
- #define PPMU_SIAR_VALID		0x00000010 /* Processor has SIAR Valid bit */
- #define PPMU_HAS_SSLOT		0x00000020 /* Has sampled slot in MMCRA */
- #define PPMU_HAS_SIER		0x00000040 /* Has SIER */
--#define PPMU_BHRB		0x00000080 /* has BHRB feature enabled */
--#define PPMU_EBB		0x00000100 /* supports event based branch */
-+#define PPMU_ARCH_207S		0x00000080 /* PMC is architecture v2.07S */
- 
- /*
-  * Values for flags to get_alternatives()
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index 29b89e8..8855aec 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -483,7 +483,7 @@ static bool is_ebb_event(struct perf_event *event)
- 	 * check that the PMU supports EBB, meaning those that don't can still
- 	 * use bit 63 of the event code for something else if they wish.
- 	 */
--	return (ppmu->flags & PPMU_EBB) &&
-+	return (ppmu->flags & PPMU_ARCH_207S) &&
- 	       ((event->attr.config >> PERF_EVENT_CONFIG_EBB_SHIFT) & 1);
- }
- 
-@@ -1547,7 +1547,7 @@ static int power_pmu_event_init(struct perf_event *event)
- 
- 	if (has_branch_stack(event)) {
- 	        /* PMU has BHRB enabled */
--		if (!(ppmu->flags & PPMU_BHRB))
-+		if (!(ppmu->flags & PPMU_ARCH_207S))
- 			return -EOPNOTSUPP;
- 	}
- 
-diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
-index a3f7abd..79b7e20 100644
---- a/arch/powerpc/perf/power8-pmu.c
-+++ b/arch/powerpc/perf/power8-pmu.c
-@@ -608,7 +608,7 @@ static struct power_pmu power8_pmu = {
- 	.get_constraint		= power8_get_constraint,
- 	.get_alternatives	= power8_get_alternatives,
- 	.disable_pmc		= power8_disable_pmc,
--	.flags			= PPMU_HAS_SSLOT | PPMU_HAS_SIER | PPMU_BHRB | PPMU_EBB,
-+	.flags			= PPMU_HAS_SSLOT | PPMU_HAS_SIER | PPMU_ARCH_207S,
- 	.n_generic		= ARRAY_SIZE(power8_generic_events),
- 	.generic_events		= power8_generic_events,
- 	.attr_groups		= power8_pmu_attr_groups,
--- 
-1.9.1
+Agreed, but sometimes RCU_READ_UNLOCK_NEED_QS is set.
+
+That said, I should probably revisit RCU_READ_UNLOCK_NEED_QS.  A lot has
+changed since I wrote that code.
+
+							Thanx, Paul
 
