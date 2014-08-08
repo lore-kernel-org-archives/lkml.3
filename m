@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933523AbaHHVgy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:36:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60582 "EHLO
+	id S933580AbaHHVhB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:37:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60563 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758661AbaHHVge (ORCPT
+	with ESMTP id S1758683AbaHHVgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:34 -0400
+	Fri, 8 Aug 2014 17:36:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 05/39] net: sendmsg: fix NULL pointer dereference
-Date: Fri,  8 Aug 2014 14:34:51 -0700
-Message-Id: <20140808213355.216095397@linuxfoundation.org>
+Subject: [PATCH 3.14 34/39] sparc64: Guard against flushing openfirmware mappings.
+Date: Fri,  8 Aug 2014 14:35:20 -0700
+Message-Id: <20140808213356.435112344@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -32,127 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 40eea803c6b2cfaab092f053248cbeab3f368412 ]
+[ Upstream commit 4ca9a23765da3260058db3431faf5b4efd8cf926 ]
 
-Sasha's report:
-	> While fuzzing with trinity inside a KVM tools guest running the latest -next
-	> kernel with the KASAN patchset, I've stumbled on the following spew:
-	>
-	> [ 4448.949424] ==================================================================
-	> [ 4448.951737] AddressSanitizer: user-memory-access on address 0
-	> [ 4448.952988] Read of size 2 by thread T19638:
-	> [ 4448.954510] CPU: 28 PID: 19638 Comm: trinity-c76 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
-	> [ 4448.956823]  ffff88046d86ca40 0000000000000000 ffff880082f37e78 ffff880082f37a40
-	> [ 4448.958233]  ffffffffb6e47068 ffff880082f37a68 ffff880082f37a58 ffffffffb242708d
-	> [ 4448.959552]  0000000000000000 ffff880082f37a88 ffffffffb24255b1 0000000000000000
-	> [ 4448.961266] Call Trace:
-	> [ 4448.963158] dump_stack (lib/dump_stack.c:52)
-	> [ 4448.964244] kasan_report_user_access (mm/kasan/report.c:184)
-	> [ 4448.965507] __asan_load2 (mm/kasan/kasan.c:352)
-	> [ 4448.966482] ? netlink_sendmsg (net/netlink/af_netlink.c:2339)
-	> [ 4448.967541] netlink_sendmsg (net/netlink/af_netlink.c:2339)
-	> [ 4448.968537] ? get_parent_ip (kernel/sched/core.c:2555)
-	> [ 4448.970103] sock_sendmsg (net/socket.c:654)
-	> [ 4448.971584] ? might_fault (mm/memory.c:3741)
-	> [ 4448.972526] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3740)
-	> [ 4448.973596] ? verify_iovec (net/core/iovec.c:64)
-	> [ 4448.974522] ___sys_sendmsg (net/socket.c:2096)
-	> [ 4448.975797] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-	> [ 4448.977030] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
-	> [ 4448.978197] ? lock_release_non_nested (kernel/locking/lockdep.c:3434 (discriminator 1))
-	> [ 4448.979346] ? check_chain_key (kernel/locking/lockdep.c:2188)
-	> [ 4448.980535] __sys_sendmmsg (net/socket.c:2181)
-	> [ 4448.981592] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
-	> [ 4448.982773] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
-	> [ 4448.984458] ? syscall_trace_enter (arch/x86/kernel/ptrace.c:1500 (discriminator 2))
-	> [ 4448.985621] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
-	> [ 4448.986754] SyS_sendmmsg (net/socket.c:2201)
-	> [ 4448.987708] tracesys (arch/x86/kernel/entry_64.S:542)
-	> [ 4448.988929] ==================================================================
+Based almost entirely upon a patch by Christopher Alexander Tobias
+Schulze.
 
-This reports means that we've come to netlink_sendmsg() with msg->msg_name == NULL and msg->msg_namelen > 0.
+In commit db64fe02258f1507e13fe5212a989922323685ce ("mm: rewrite vmap
+layer") lazy VMAP tlb flushing was added to the vmalloc layer.  This
+causes problems on sparc64.
 
-After this report there was no usual "Unable to handle kernel NULL pointer dereference"
-and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
+Sparc64 has two VMAP mapped regions and they are not contiguous with
+eachother.  First we have the malloc mapping area, then another
+unrelated region, then the vmalloc region.
 
-This bug was introduced in f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
-(net: rework recvmsg handler msg_name and msg_namelen logic).
-Commit message states that:
-	"Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
-	 non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
-	 affect sendto as it would bail out earlier while trying to copy-in the
-	 address."
-But in fact this affects sendto when address 0 is mapped and contains
-socket address structure in it. In such case copy-in address will succeed,
-verify_iovec() function will successfully exit with msg->msg_namelen > 0
-and msg->msg_name == NULL.
+This "another unrelated region" is where the firmware is mapped.
 
-This patch fixes it by setting msg_namelen to 0 if msg_name == NULL.
+If the lazy TLB flushing logic in the vmalloc code triggers after
+we've had both a module unload and a vfree or similar, it will pass an
+address range that goes from somewhere inside the malloc region to
+somewhere inside the vmalloc region, and thus covering the
+openfirmware area entirely.
 
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: <stable@vger.kernel.org>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+The sparc64 kernel learns about openfirmware's dynamic mappings in
+this region early in the boot, and then services TLB misses in this
+area.  But openfirmware has some locked TLB entries which are not
+mentioned in those dynamic mappings and we should thus not disturb
+them.
+
+These huge lazy TLB flush ranges causes those openfirmware locked TLB
+entries to be removed, resulting in all kinds of problems including
+hard hangs and crashes during reboot/reset.
+
+Besides causing problems like this, such huge TLB flush ranges are
+also incredibly inefficient.  A plea has been made with the author of
+the VMAP lazy TLB flushing code, but for now we'll put a safety guard
+into our flush_tlb_kernel_range() implementation.
+
+Since the implementation has become non-trivial, stop defining it as a
+macro and instead make it a function in a C source file.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/compat.c     |    9 +++++----
- net/core/iovec.c |    6 +++---
- 2 files changed, 8 insertions(+), 7 deletions(-)
+ arch/sparc/include/asm/tlbflush_64.h |   12 ++----------
+ arch/sparc/mm/init_64.c              |   23 +++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 10 deletions(-)
 
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -85,7 +85,7 @@ int verify_compat_iovec(struct msghdr *k
+--- a/arch/sparc/include/asm/tlbflush_64.h
++++ b/arch/sparc/include/asm/tlbflush_64.h
+@@ -34,6 +34,8 @@ static inline void flush_tlb_range(struc
  {
- 	int tot_len;
+ }
  
--	if (kern_msg->msg_namelen) {
-+	if (kern_msg->msg_name && kern_msg->msg_namelen) {
- 		if (mode == VERIFY_READ) {
- 			int err = move_addr_to_kernel(kern_msg->msg_name,
- 						      kern_msg->msg_namelen,
-@@ -93,10 +93,11 @@ int verify_compat_iovec(struct msghdr *k
- 			if (err < 0)
- 				return err;
- 		}
--		if (kern_msg->msg_name)
--			kern_msg->msg_name = kern_address;
--	} else
-+		kern_msg->msg_name = kern_address;
-+	} else {
- 		kern_msg->msg_name = NULL;
-+		kern_msg->msg_namelen = 0;
-+	}
++void flush_tlb_kernel_range(unsigned long start, unsigned long end);
++
+ #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
  
- 	tot_len = iov_from_user_compat_to_kern(kern_iov,
- 					  (struct compat_iovec __user *)kern_msg->msg_iov,
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -39,7 +39,7 @@ int verify_iovec(struct msghdr *m, struc
+ extern void flush_tlb_pending(void);
+@@ -48,11 +50,6 @@ extern void __flush_tlb_kernel_range(uns
+ 
+ #ifndef CONFIG_SMP
+ 
+-#define flush_tlb_kernel_range(start,end) \
+-do {	flush_tsb_kernel_range(start,end); \
+-	__flush_tlb_kernel_range(start,end); \
+-} while (0)
+-
+ static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
  {
- 	int size, ct, err;
+ 	__flush_tlb_page(CTX_HWBITS(mm->context), vaddr);
+@@ -63,11 +60,6 @@ static inline void global_flush_tlb_page
+ extern void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end);
+ extern void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr);
  
--	if (m->msg_namelen) {
-+	if (m->msg_name && m->msg_namelen) {
- 		if (mode == VERIFY_READ) {
- 			void __user *namep;
- 			namep = (void __user __force *) m->msg_name;
-@@ -48,10 +48,10 @@ int verify_iovec(struct msghdr *m, struc
- 			if (err < 0)
- 				return err;
- 		}
--		if (m->msg_name)
--			m->msg_name = address;
-+		m->msg_name = address;
- 	} else {
- 		m->msg_name = NULL;
-+		m->msg_namelen = 0;
+-#define flush_tlb_kernel_range(start, end) \
+-do {	flush_tsb_kernel_range(start,end); \
+-	smp_flush_tlb_kernel_range(start, end); \
+-} while (0)
+-
+ #define global_flush_tlb_page(mm, vaddr) \
+ 	smp_flush_tlb_page(mm, vaddr)
+ 
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2702,3 +2702,26 @@ void hugetlb_setup(struct pt_regs *regs)
  	}
- 
- 	size = m->msg_iovlen * sizeof(struct iovec);
+ }
+ #endif
++
++#ifdef CONFIG_SMP
++#define do_flush_tlb_kernel_range	smp_flush_tlb_kernel_range
++#else
++#define do_flush_tlb_kernel_range	__flush_tlb_kernel_range
++#endif
++
++void flush_tlb_kernel_range(unsigned long start, unsigned long end)
++{
++	if (start < HI_OBP_ADDRESS && end > LOW_OBP_ADDRESS) {
++		if (start < LOW_OBP_ADDRESS) {
++			flush_tsb_kernel_range(start, LOW_OBP_ADDRESS);
++			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
++		}
++		if (end > HI_OBP_ADDRESS) {
++			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
++			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
++		}
++	} else {
++		flush_tsb_kernel_range(start, end);
++		do_flush_tlb_kernel_range(start, end);
++	}
++}
 
 
