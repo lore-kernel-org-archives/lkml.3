@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593AbaHHCjg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 22:39:36 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:50318 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752825AbaHHCjf (ORCPT
+	id S1755574AbaHHCro (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 22:47:44 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:37253 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827AbaHHCrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 22:39:35 -0400
-Date: Fri, 8 Aug 2014 10:37:34 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Dmitry Popov <ixaphire@qrator.net>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Weird NET_RX softirq behavior
-Message-ID: <20140808103734.677bff7e@xhacker>
-In-Reply-To: <20140807181813.37b73927513266381d55ad0d@qrator.net>
-References: <20140807171050.77819b10@xhacker>
-	<20140807181813.37b73927513266381d55ad0d@qrator.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Thu, 7 Aug 2014 22:47:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-07_08:2014-08-06,2014-08-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1408080026
+Date: Thu, 7 Aug 2014 22:47:42 -0400
+Message-ID: <CAFdhcLRbffwYhwtP9J9VzB7LPE1kbmb9GTB2rpAb3k4gC5vOgg@mail.gmail.com>
+Subject: Re: [RFC 2/3] zsmalloc/zram: add zs_get_max_size_bytes and use it in zram
+From: David Horner <ds2horner@gmail.com>
+To: minchan@kernel.org
+Cc: linux-kernel-mm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+ [2/3]
 
-On Thu, 7 Aug 2014 07:18:13 -0700
-Dmitry Popov <ixaphire@qrator.net> wrote:
 
-> On Thu, 7 Aug 2014 17:10:50 +0800
-> Jisheng Zhang <jszhang@marvell.com> wrote:
-> 
-> > 2. only one netdev in the system: eth0.
-> 
-> There should also be lo (loopback) at least.
+ But why isn't mem_used_max writable? (save tearing down and rebuilding
+ device to reset max)
 
-Yep, I forget that ;)
+ static DEVICE_ATTR(mem_used_max, S_IRUGO, mem_used_max_show, NULL);
 
-> 
-> > 4. But NET_RX seems abnormal
-> > ~ # cat /proc/softirqs 
-> >                     CPU0       CPU1       CPU2       CPU3       
-> >       NET_RX:     445587        322        983          0
-> > 
-> > I'm expecting NET_RX under CPU1, 2, 3 should be zero. Any suggestions
-> > about this abnormal behavior?
-> 
-> Do you have any loopback traffic? It could be handled by CPU1/2 explaining
-> non-zero NET_RX counters.
+ static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show, NULL);
 
-Yes. lo only send and recive 7 packets so far, about 1400bytes. Seems small
-comparing with the CPU1 and CPU2 NET_RX softirq numbers, right?
+   with a check in the store() that the new value is positive and less
+than current max?
 
-Any other possible case?
 
-Thanks for your reply,
-Jisheng
+ I'm also a little puzzled why there is a new API zs_get_max_size_bytes if
+ the data is accessible through sysfs?
+ Especially if max limit will be (as you propose for [3/3]) through accessed
+ through zsmalloc and hence zram needn't access.
+
+
+
+  [3/3]
+ I concur that the zram limit is best implemented in zsmalloc.
+ I am looking forward to that revised code.
+
+
+> From: Minchan Kim <minchan <at> kernel.org>
+> Subject: [RFC 2/3] zsmalloc/zram: add zs_get_max_size_bytes and use it in
+> zram
+> <http://news.gmane.org/find-root.php?message_id=1407225723%2d23754%2d3%2dgit%2dsend%2demail%2dminchan%40kernel.org>
+> Newsgroups: gmane.linux.kernel.mm
+> <http://news.gmane.org/gmane.linux.kernel.mm>, gmane.linux.kernel
+> <http://news.gmane.org/gmane.linux.kernel>
+> Date: 2014-08-05 08:02:02 GMT (5 hours and 4 minutes ago)
+>
+> Normally, zram user can get maximum memory zsmalloc consumed via
+> polling mem_used_total with sysfs in userspace.
+>
+> But it has a critical problem because user can miss peak memory
+> usage during update interval so that gap between them could be
+> huge when memory pressure is really heavy.
+>
+> This patch adds new API zs_get_max_size_bytes in zsmalloc so
+> user(ex, zram) doesn't need to poll in short interval to get
+> exact value.
+>
+> User can just see max memory usage once his test workload is
+> done. It's pretty handy and accurate.
