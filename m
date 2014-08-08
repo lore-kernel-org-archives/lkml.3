@@ -1,275 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620AbaHHORK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 10:17:10 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57410 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080AbaHHORF (ORCPT
+	id S1756778AbaHHOTI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 10:19:08 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:48708 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754080AbaHHOTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 10:17:05 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53E4DBDD.1060805@roeck-us.net>
-Date: Fri, 08 Aug 2014 07:17:01 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 8 Aug 2014 10:19:02 -0400
 MIME-Version: 1.0
-To: Andreas Werner <andreas.werner@men.de>
-CC: Wim Van Sebroeck <wim@iguana.be>, Bryan Wu <cooloney@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v3 3/3] drivers/leds/leds-menf21bmc: introduce MEN 14F021P00
- BMC LED driver
-References: <cover.1405602280.git.andreas.werner@men.de> <fec81db0dd6e08e1e07d3b7c00cb933b2ab63ab3.1405602280.git.andreas.werner@men.de> <CAK5ve-KG=dBgrBLQ2ejZ3XZip-gk2_5PfmpdKi6d6=B9hMDH1g@mail.gmail.com> <20140725093728.GA1371@awelinux> <20140729211256.GB30849@spo001.leaseweb.com> <53D8165C.6000302@roeck-us.net> <20140730080839.GA455@awelinux> <53D8F9DA.2090607@roeck-us.net> <20140808074939.GA451@awelinux>
-In-Reply-To: <20140808074939.GA451@awelinux>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1407505411-2207-3-git-send-email-srv_yingjoe.chen@mediatek.com>
+References: <1407505411-2207-1-git-send-email-srv_yingjoe.chen@mediatek.com>
+	<1407505411-2207-3-git-send-email-srv_yingjoe.chen@mediatek.com>
+Date: Fri, 8 Aug 2014 16:19:01 +0200
+Message-ID: <CABuKBeL-dcs+pDW3jUeRWNijyYwx4VUdUB=CjGXoGmQUCifQ5Q@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] arm: mediatek: Add support for GIC interrupt
+ polarity extension.
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: "Joe.C" <srv_yingjoe.chen@mediatek.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Jonas Jensen <jonas.jensen@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        open list <linux-kernel@vger.kernel.org>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Hsien-Chun Yen <hc.yen@mediatek.com>,
+        =?UTF-8?B?RWRkaWUgSHVhbmcgKOm7g+aZuuWCkSk=?= 
+	<eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        Yuhau Chen <yh.chen@mediatek.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2014 12:49 AM, Andreas Werner wrote:
-> On Wed, Jul 30, 2014 at 06:57:46AM -0700, Guenter Roeck wrote:
->> On 07/30/2014 01:08 AM, Andreas Werner wrote:
->>> On Tue, Jul 29, 2014 at 02:47:08PM -0700, Guenter Roeck wrote:
->>>> On 07/29/2014 02:12 PM, Wim Van Sebroeck wrote:
->>>>> Hi Andreas,
->>>>>
->>>>>> aOn Thu, Jul 24, 2014 at 03:00:09PM -0700, Bryan Wu wrote:
->>>>>>> On Thu, Jul 17, 2014 at 6:18 AM, Andreas Werner <andreas.werner@men.de> wrote:
->>>>>>>> Added driver to support the 14F021P00 BMC LEDs.
->>>>>>>> The BMC is a Board Management Controll include four LEDs which
->>>>>>>> can be switched on and off.
->>>>>>>>
->>>>>>>> This driver use the I2C interface to the BMC using the menf21bmc MFD Core driver.
->>>>>>>>
->>>>>>>> Signed-off-by: Andreas Werner <andreas.werner@men.de>
->>>>>>>> ---
->>>>>>>>   drivers/leds/Kconfig          |   6 ++
->>>>>>>>   drivers/leds/Makefile         |   1 +
->>>>>>>>   drivers/leds/leds-menf21bmc.c | 134 ++++++++++++++++++++++++++++++++++++++++++
->>>>>>>>   3 files changed, 141 insertions(+)
->>>>>>>>   create mode 100644 drivers/leds/leds-menf21bmc.c
->>>>>>>>
->>>>>>>> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
->>>>>>>> index 27cf0cd..d38ff3f 100644
->>>>>>>> --- a/drivers/leds/Kconfig
->>>>>>>> +++ b/drivers/leds/Kconfig
->>>>>>>> @@ -458,6 +458,12 @@ config LEDS_OT200
->>>>>>>>            This option enables support for the LEDs on the Bachmann OT200.
->>>>>>>>            Say Y to enable LEDs on the Bachmann OT200.
->>>>>>>>
->>>>>>>> +config LEDS_MENF21BMC
->>>>>>>> +       tristate "LED support for the MEN 14F021P00 BMC"
->>>>>>>> +       depends on LEDS_CLASS && MFD_MENF21BMC
->>>>>>>
->>>>>>> I think it also depends on I2C.
->>>>>>
->>>>>> Yes you are right.
->>>>>>
->>>>>>>
->>>>>>>> +       help
->>>>>>>> +         Say Y here to include support for the MEN 14F021P00 BMC LEDs.
->>>>>>>> +
->>>>>>>>   comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
->>>>>>>>
->>>>>>>>   config LEDS_BLINKM
->>>>>>>> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
->>>>>>>> index 3c03666..cadc433 100644
->>>>>>>> --- a/drivers/leds/Makefile
->>>>>>>> +++ b/drivers/leds/Makefile
->>>>>>>> @@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)            += leds-max8997.o
->>>>>>>>   obj-$(CONFIG_LEDS_LM355x)              += leds-lm355x.o
->>>>>>>>   obj-$(CONFIG_LEDS_BLINKM)              += leds-blinkm.o
->>>>>>>>   obj-$(CONFIG_LEDS_VERSATILE)           += leds-versatile.o
->>>>>>>> +obj-$(CONFIG_LEDS_MENF21BMC)           += leds-menf21bmc.o
->>>>>>>>
->>>>>>>>   # LED SPI Drivers
->>>>>>>>   obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
->>>>>>>> diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
->>>>>>>> new file mode 100644
->>>>>>>> index 0000000..5eaa119
->>>>>>>> --- /dev/null
->>>>>>>> +++ b/drivers/leds/leds-menf21bmc.c
->>>>>>>> @@ -0,0 +1,134 @@
->>>>>>>> +/*
->>>>>>>> + *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
->>>>>>>> + *
->>>>>>>> + *  This is the core LED driver of the MEN 14F021P00 BMC.
->>>>>>>> + *  There are four LEDs available which can be switched on and off.
->>>>>>>> + *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
->>>>>>>> + *
->>>>>>>> + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
->>>>>>>> + *  Author: Andreas Werner <andreas.werner@men.de>
->>>>>>>> + *  All rights reserved.
->>>>>>>> + *
->>>>>>>> + *  This program is free software; you can redistribute  it and/or modify it
->>>>>>>> + *  under  the terms of  the GNU General  Public License as published by the
->>>>>>>> + *  Free Software Foundation;  either version 2 of the  License, or (at your
->>>>>>>> + *  option) any later version.
->>>>>>>> + *
->>>>>>>> + */
->>>>>>>> +
->>>>>>>> +#include <linux/module.h>
->>>>>>>> +#include <linux/kernel.h>
->>>>>>>> +#include <linux/platform_device.h>
->>>>>>>> +#include <linux/leds.h>
->>>>>>>> +#include <linux/i2c.h>
->>>>>>>> +
->>>>>>>> +#define BMC_CMD_LED_GET_SET    0xA0
->>>>>>>> +#define BMC_BIT_LED_STATUS     BIT(0)
->>>>>>>> +#define BMC_BIT_LED_HOTSWAP    BIT(1)
->>>>>>>> +#define BMC_BIT_LED_USER1      BIT(2)
->>>>>>>> +#define BMC_BIT_LED_USER2      BIT(3)
->>>>>>>> +
->>>>>>>> +struct menf21bmc_led {
->>>>>>>> +       struct led_classdev cdev;
->>>>>>>> +       u8 led_bit;
->>>>>>>> +       const char *name;
->>>>>>>> +       struct i2c_client *i2c_client;
->>>>>>>> +};
->>>>>>>> +
->>>>>>>> +static struct menf21bmc_led leds[] = {
->>>>>>>> +       {
->>>>>>>> +               .name = "menf21bmc:led_status",
->>>>>>>> +               .led_bit = BMC_BIT_LED_STATUS,
->>>>>>>> +       },
->>>>>>>> +       {
->>>>>>>> +               .name = "menf21bmc:led_hotswap",
->>>>>>>> +               .led_bit = BMC_BIT_LED_HOTSWAP,
->>>>>>>> +       },
->>>>>>>> +       {
->>>>>>>> +               .name = "menf21bmc:led_user1",
->>>>>>>> +               .led_bit = BMC_BIT_LED_USER1,
->>>>>>>> +       },
->>>>>>>> +       {
->>>>>>>> +               .name = "menf21bmc:led_user2",
->>>>>>>> +               .led_bit = BMC_BIT_LED_USER2,
->>>>>>>> +       }
->>>>>>>> +};
->>>>>>>> +
->>>>>>>> +static DEFINE_MUTEX(led_lock);
->>>>>>>> +
->>>>>>>> +static void
->>>>>>>> +menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
->>>>>>>> +{
->>>>>>>> +       int led_val;
->>>>>>>> +       struct menf21bmc_led *led = container_of(led_cdev,
->>>>>>>> +                                       struct menf21bmc_led, cdev);
->>>>>>>> +
->>>>>>>> +       mutex_lock(&led_lock);
->>>>>>>> +       led_val = i2c_smbus_read_byte_data(led->i2c_client,
->>>>>>>> +                                               BMC_CMD_LED_GET_SET);
->>>>>>>> +       if (led_val < 0)
->>>>>>>> +               goto err_out;
->>>>>>>> +
->>>>>>>> +       if (value == LED_OFF)
->>>>>>>> +               led_val &= ~led->led_bit;
->>>>>>>> +       else
->>>>>>>> +               led_val |= led->led_bit;
->>>>>>>> +
->>>>>>>> +       i2c_smbus_write_byte_data(led->i2c_client,
->>>>>>>> +                                       BMC_CMD_LED_GET_SET, led_val);
->>>>>>>> +err_out:
->>>>>>>> +       mutex_unlock(&led_lock);
->>>>>>>> +}
->>>>>>>> +
->>>>>>>> +static int menf21bmc_led_probe(struct platform_device *pdev)
->>>>>>>> +{
->>>>>>>> +       int i;
->>>>>>>> +       int ret;
->>>>>>>> +       struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
->>>>>>>> +
->>>>>>>> +       for (i = 0; i < ARRAY_SIZE(leds); i++) {
->>>>>>>> +               leds[i].cdev.name = leds[i].name;
->>>>>>>> +               leds[i].cdev.brightness_set = menf21bmc_led_set;
->>>>>>>> +               leds[i].i2c_client = i2c_client;
->>>>>>>> +               ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
->>>>>>>> +               if (ret < 0)
->>>>>>>> +                       goto err_free_leds;
->>>>>>>> +       }
->>>>>>>> +       dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
->>>>>>>> +
->>>>>>>> +       return 0;
->>>>>>>> +
->>>>>>>> +err_free_leds:
->>>>>>>> +       dev_err(&pdev->dev, "failed to register LED device\n");
->>>>>>>> +
->>>>>>>> +       for (i = i - 1; i >= 0; i--)
->>>>>>>> +               led_classdev_unregister(&leds[i].cdev);
->>>>>>>> +
->>>>>>>> +       return ret;
->>>>>>>> +}
->>>>>>>> +
->>>>>>>> +static int menf21bmc_led_remove(struct platform_device *pdev)
->>>>>>>> +{
->>>>>>>> +       int i;
->>>>>>>> +
->>>>>>>> +       for (i = 0; i < ARRAY_SIZE(leds); i++)
->>>>>>>> +               led_classdev_unregister(&leds[i].cdev);
->>>>>>>> +
->>>>>>>> +       return 0;
->>>>>>>> +}
->>>>>>>> +
->>>>>>>> +static struct platform_driver menf21bmc_led = {
->>>>>>>> +       .probe          = menf21bmc_led_probe,
->>>>>>>> +       .remove         = menf21bmc_led_remove,
->>>>>>>> +       .driver         = {
->>>>>>>> +               .name           = "menf21bmc_led",
->>>>>>>> +               .owner          = THIS_MODULE,
->>>>>>>> +       },
->>>>>>>> +};
->>>>>>>> +
->>>>>>>
->>>>>>> This is not a normal platform driver, it should be a I2C driver.
->>>>>>>
->>>>>>>> +module_platform_driver(menf21bmc_led);
->>>>>>>
->>>>>>> So please move to use module_i2c_driver.
->>>>>>
->>>>>> Ok, but then I have to change that in the watchdog driver too, which
->>>>>> is quite the same as here.
->>>>>>
->>>>>> Lee, Guenther what do you think regarding the watchdog driver?
->>>>>
->>>>> If the watchdog part is indeed also i2c alike device then the watchdog part should also be an i2c driver...
->>>>>
->>>>
->>>> Isn't this all the same chip ? If so, there should be only one i2c driver.
->>>> Unless the i2c access is too complicated, it might make sense to use regmap
->>>> to access the chip, and pass the regmap pointer to the mfd slave drivers
->>>> to handle the actual communication with the chip.
->>>>
->>>> Guenter
->>>>
->>>
->>> Yes this is all the same chip which has different features like LEDs and Watchdog.
->>> This is why the mfd is the i2c_driver which instantiates the slave devices which
->>> are platform drivers.
->>>
->>> Is that not the normal way to handle those device?
->>> Is it really necessary to handle this to regmap?
->>>
->>
->> Not really sure if 'necessary' is the right term, it is just convenient.
->> Regmap takes care of register caching, for example, so you would not have to
->> re-read register values again and again from the chip just to modify a bit
->> of a register.
->> You can pass the regmap pointer in the platform data, or you can pass the
->> pointer to the i2c client. Using regmap makes the client driver independent
->> of the i2c subsystem. The one thing you can _not_ do is to declare the client
->> drivers to be i2c drivers.
->>
->> Guenter
->>
-> I've checked out the regmap and it really sounds good.
-> Before I will made those changes which is almost a complete replacement
-> of the interface, i would like to know exactly why the slaves are no platform
-> devices.
+2014-08-08 15:43 GMT+02:00 Joe.C <srv_yingjoe.chen@mediatek.com>:
+> From: "Joe.C" <yingjoe.chen@mediatek.com>
 >
-Did I say that ?
+> Mediatek SoCs have an interrupt polarity extension which allows
+> to swap the polarity for given interrupts.
 
-Guenter
+Please use ./script/checkpatch.pl, all 4 patches have errors.
+Apart please use the get_maintainer.pl on all patches of a set and
+send the whole set to all email addresses returned by the script.
+Otherwise it will be really difficult to understand the context of the
+patch set.
 
+Cheers,
+Matthias
+
+>
+> Signed-off-by: Joe.C <yingjoe.chen@mediatek.com>
+> ---
+>  arch/arm/mach-mediatek/Makefile   |  2 +-
+>  arch/arm/mach-mediatek/common.h   | 19 ++++++++++++
+>  arch/arm/mach-mediatek/intpol.c   | 61 +++++++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-mediatek/mediatek.c | 10 +++++++
+>  4 files changed, 91 insertions(+), 1 deletion(-)
+>  create mode 100644 arch/arm/mach-mediatek/common.h
+>  create mode 100644 arch/arm/mach-mediatek/intpol.c
+>
+> diff --git a/arch/arm/mach-mediatek/Makefile b/arch/arm/mach-mediatek/Makefile
+> index 43e619f..82c39d8 100644
+> --- a/arch/arm/mach-mediatek/Makefile
+> +++ b/arch/arm/mach-mediatek/Makefile
+> @@ -1 +1 @@
+> -obj-$(CONFIG_ARCH_MEDIATEK) += mediatek.o
+> +obj-$(CONFIG_ARCH_MEDIATEK) += mediatek.o intpol.o
+> diff --git a/arch/arm/mach-mediatek/common.h b/arch/arm/mach-mediatek/common.h
+> new file mode 100644
+> index 0000000..8f2bbeb
+> --- /dev/null
+> +++ b/arch/arm/mach-mediatek/common.h
+> @@ -0,0 +1,19 @@
+> +/*
+> + * Copyright (c) 2014 Mediatek Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +#ifndef __MEDIATEK_COMMON_H__
+> +#define __MEDIATEK_COMMON_H__
+> +
+> +extern char init_intpol(void);
+> +
+> +#endif /* __MEDIATEK_COMMON_H__ */
+> diff --git a/arch/arm/mach-mediatek/intpol.c b/arch/arm/mach-mediatek/intpol.c
+> new file mode 100644
+> index 0000000..65ccc7c
+> --- /dev/null
+> +++ b/arch/arm/mach-mediatek/intpol.c
+> @@ -0,0 +1,61 @@
+> +/*
+> + * This file contains common code that is intended to be used across
+> + * boards so that it's not replicated.
+> + *
+> + * Copyright (C) 2014 Mediatek Inc.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +#include <linux/of_address.h>
+> +#include <linux/io.h>
+> +#include <linux/irq.h>
+> +#include <linux/irqchip/arm-gic.h>
+> +
+> +#define GIC_HW_IRQ_BASE  32
+> +#define INT_POL_INDEX(a)   ((a) - GIC_HW_IRQ_BASE)
+> +
+> +static void __iomem *int_pol_base;
+> +
+> +static int mtk_int_pol_set_type(struct irq_data *d, unsigned int type)
+> +{
+> +       unsigned int irq = d->hwirq;
+> +       u32 offset, reg_index, value;
+> +
+> +       offset = INT_POL_INDEX(irq) & 0x1F;
+> +       reg_index = INT_POL_INDEX(irq) >> 5;
+> +
+> +       /* This arch extension was called with irq_controller_lock held,
+> +          so the read-modify-write will be atomic */
+> +       value = readl(int_pol_base + reg_index * 4);
+> +       if (type == IRQ_TYPE_LEVEL_LOW || type == IRQ_TYPE_EDGE_FALLING)
+> +               value |= (1 << offset);
+> +       else
+> +               value &= ~(1 << offset);
+> +       writel(value, int_pol_base + reg_index * 4);
+> +
+> +       return 0;
+> +}
+> +
+> +void init_intpol(void)
+> +{
+> +       struct device_node *node;
+> +
+> +       node = of_find_compatible_node(NULL, NULL, "mediatek,mt6577-intpol");
+> +       if (!node)
+> +               return;
+> +
+> +       int_pol_base = of_io_request_and_map(node, 0, "intpol");
+> +       if (IS_ERR(int_pol_base)) {
+> +               pr_warn("Can't get resource\n");
+> +               return;
+> +       }
+> +
+> +       gic_arch_extn.irq_set_type = mtk_int_pol_set_type;
+> +}
+> diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
+> index 48051a2..aa10c70 100644
+> --- a/arch/arm/mach-mediatek/mediatek.c
+> +++ b/arch/arm/mach-mediatek/mediatek.c
+> @@ -16,6 +16,15 @@
+>   */
+>  #include <linux/init.h>
+>  #include <asm/mach/arch.h>
+> +#include <linux/irqchip.h>
+> +
+> +#include "common.h"
+> +
+> +static void __init mediatek_init_irq(void)
+> +{
+> +       init_intpol();
+> +       irqchip_init();
+> +}
+>
+>  static const char * const mediatek_board_dt_compat[] = {
+>         "mediatek,mt6589",
+> @@ -26,4 +35,5 @@ static const char * const mediatek_board_dt_compat[] = {
+>
+>  DT_MACHINE_START(MEDIATEK_DT, "Mediatek Cortex-A7 (Device Tree)")
+>         .dt_compat      = mediatek_board_dt_compat,
+> +       .init_irq       = mediatek_init_irq,
+>  MACHINE_END
+> --
+> 1.8.1.1.dirty
+>
+
+
+
+-- 
+motzblog.wordpress.com
