@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933593AbaHHVFM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:05:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41342 "EHLO
+	id S933608AbaHHVFO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:05:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41338 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933097AbaHHUxp (ORCPT
+	with ESMTP id S933094AbaHHUxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:53:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Vrabel <david.vrabel@citrix.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 113/259] xen/manage: fix potential deadlock when resuming the console
-Date: Fri,  8 Aug 2014 13:38:56 -0700
-Message-Id: <1407530482-4483-114-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 093/259] drm/radeon/dp: return -EIO for flags not zero case
+Date: Fri,  8 Aug 2014 13:38:36 -0700
+Message-Id: <1407530482-4483-94-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,49 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 1b6478231c6f5f844185acb32045cf195028cfce upstream.
+commit f6be5e64500abbba44e191e1ca0f3366c7d0291b upstream.
 
-Calling xen_console_resume() in xen_suspend() causes a warning because
-it locks irq_mapping_update_lock (a mutex) and this may sleep.  If a
-userspace process is using the evtchn device then this mutex may be
-locked at the point of the stop_machine() call and
-xen_console_resume() would then deadlock.
+If there are error flags in the aux transaction return
+-EIO rather than -EBUSY.  -EIO restarts the whole transaction
+while -EBUSY jus retries.  Fixes problematic aux transfers.
 
-Resuming the console after stop_machine() returns avoids this
-deadlock.
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=80684
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ kamal: backport to 3.13-stable (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/xen/manage.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_dp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-index 624e8dc..0bc8086 100644
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -95,7 +95,6 @@ static int xen_suspend(void *data)
- 
- 	if (!si->cancelled) {
- 		xen_irq_resume();
--		xen_console_resume();
- 		xen_timer_resume();
+diff --git a/drivers/gpu/drm/radeon/atombios_dp.c b/drivers/gpu/drm/radeon/atombios_dp.c
+index a1a0350..514a623 100644
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -123,7 +123,7 @@ static int radeon_process_aux_ch(struct radeon_i2c_chan *chan,
+ 	/* flags not zero */
+ 	if (args.v1.ucReplyStatus == 2) {
+ 		DRM_DEBUG_KMS("dp_aux_ch flags not zero\n");
+-		return -EBUSY;
++		return -EIO;
  	}
  
-@@ -152,6 +151,10 @@ static void do_suspend(void)
- 
- 	err = stop_machine(xen_suspend, &si, cpumask_of(0));
- 
-+	/* Resume console as early as possible. */
-+	if (!si.cancelled)
-+		xen_console_resume();
-+
- 	dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
- 
- 	if (err) {
+ 	/* error */
 -- 
 1.9.1
 
