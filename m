@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933325AbaHHVWY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:22:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40926 "EHLO
+	id S933297AbaHHVWV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:22:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40929 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932369AbaHHUvB (ORCPT
+	with ESMTP id S1751977AbaHHUvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:01 -0400
+	Fri, 8 Aug 2014 16:51:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Eric Dumazet <edumazet@google.com>, Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 077/259] ACPI / EC: Add asynchronous command byte write support
-Date: Fri,  8 Aug 2014 13:38:20 -0700
-Message-Id: <1407530482-4483-78-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 226/259] udp: ipv4: do not waste time in __udp4_lib_mcast_demux_lookup
+Date: Fri,  8 Aug 2014 13:40:49 -0700
+Message-Id: <1407530482-4483-227-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,219 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit f92fca0060fc4dc9227342d0072d75df98c1e5a5 upstream.
+[ Upstream commit 63c6f81cdde58c41da62a8d8a209592e42a0203e ]
 
-Move the first command byte write into advance_transaction() so that all
-EC register accesses that can affect the command processing state machine
-can happen in this asynchronous state machine advancement function.
+Its too easy to add thousand of UDP sockets on a particular bucket,
+and slow down an innocent multicast receiver.
 
-The advance_transaction() function then can be a complete implementation
-of an asyncrhonous transaction for a single command so that:
- 1. The first command byte can be written in the interrupt context;
- 2. The command completion waiter can also be used to wait the first command
-    byte's timeout;
- 3. In BURST mode, the follow-up command bytes can be written in the
-    interrupt context directly, so that it doesn't need to return to the
-    task context. Returning to the task context reduces the throughput of
-    the BURST mode and in the worst cases where the system workload is very
-    high, this leads to the hardware driven automatic BURST mode exit.
+Early demux is supposed to be an optimization, we should avoid spending
+too much time in it.
 
-In order not to increase memory consumption, convert 'done' into 'flags'
-to contain multiple indications:
- 1. ACPI_EC_COMMAND_COMPLETE: converting from original 'done' condition,
-    indicating the completion of the command transaction.
- 2. ACPI_EC_COMMAND_POLL: indicating the availability of writing the first
-    command byte. A new command can utilize this flag to compete for the
-    right of accessing the underlying hardware. There is a follow-up bug
-    fix that has utilized this new flag.
+It is interesting to note __udp4_lib_demux_lookup() only tries to
+match first socket in the chain.
 
-The 2 flags are important because it also reflects a key concept of IO
-programs' design used in the system softwares. Normally an IO program
-running in the kernel should first be implemented in the asynchronous way.
-And the 2 flags are the most common way to implement its synchronous
-operations on top of the asynchronous operations:
-1. POLL: This flag can be used to block until the asynchronous operations
-         can happen.
-2. COMPLETE: This flag can be used to block until the asynchronous
-             operations have completed.
-By constructing code cleanly in this way, many difficult problems can be
-solved smoothly.
+10 is the threshold we already have in __udp4_lib_lookup() to switch
+to secondary hash.
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=70891
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=63931
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=59911
-Reported-and-tested-by: Gareth Williams <gareth@garethwilliams.me.uk>
-Reported-and-tested-by: Hans de Goede <jwrdegoede@fedoraproject.org>
-Reported-by: Barton Xu <tank.xuhan@gmail.com>
-Tested-by: Steffen Weber <steffen.weber@gmail.com>
-Tested-by: Arthur Chen <axchen@nvidia.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Fixes: 421b3885bf6d5 ("udp: ipv4: Add udp early demux")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: David Held <drheld@google.com>
+Cc: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/ec.c | 83 ++++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 48 insertions(+), 35 deletions(-)
+ net/ipv4/udp.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index a2de920..3455e45 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -79,6 +79,9 @@ enum {
- 	EC_FLAGS_BLOCKED,		/* Transactions are blocked */
- };
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index a7e4729..98ea36d 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1833,6 +1833,10 @@ static struct sock *__udp4_lib_mcast_demux_lookup(struct net *net,
+ 	unsigned int count, slot = udp_hashfn(net, hnum, udp_table.mask);
+ 	struct udp_hslot *hslot = &udp_table.hash[slot];
  
-+#define ACPI_EC_COMMAND_POLL		0x01 /* Available for command byte */
-+#define ACPI_EC_COMMAND_COMPLETE	0x02 /* Completed last byte */
++	/* Do not bother scanning a too big list */
++	if (hslot->count > 10)
++		return NULL;
 +
- /* ec.c is compiled in acpi namespace so this shows up as acpi.ec_delay param */
- static unsigned int ec_delay __read_mostly = ACPI_EC_DELAY;
- module_param(ec_delay, uint, 0644);
-@@ -114,7 +117,7 @@ struct transaction {
- 	u8 ri;
- 	u8 wlen;
- 	u8 rlen;
--	bool done;
-+	u8 flags;
- };
- 
- struct acpi_ec *boot_ec, *first_ec;
-@@ -155,63 +158,68 @@ static inline void acpi_ec_write_data(struct acpi_ec *ec, u8 data)
- 	outb(data, ec->data_addr);
- }
- 
--static int ec_transaction_done(struct acpi_ec *ec)
-+static int ec_transaction_completed(struct acpi_ec *ec)
- {
- 	unsigned long flags;
- 	int ret = 0;
- 	spin_lock_irqsave(&ec->lock, flags);
--	if (!ec->curr || ec->curr->done)
-+	if (!ec->curr || (ec->curr->flags & ACPI_EC_COMMAND_COMPLETE))
- 		ret = 1;
- 	spin_unlock_irqrestore(&ec->lock, flags);
- 	return ret;
- }
- 
--static void start_transaction(struct acpi_ec *ec)
--{
--	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
--	ec->curr->done = false;
--	acpi_ec_write_cmd(ec, ec->curr->command);
--}
--
- static void advance_transaction(struct acpi_ec *ec)
- {
--	unsigned long flags;
- 	struct transaction *t;
- 	u8 status;
- 
--	spin_lock_irqsave(&ec->lock, flags);
- 	pr_debug("===== %s =====\n", in_interrupt() ? "IRQ" : "TASK");
- 	status = acpi_ec_read_status(ec);
- 	t = ec->curr;
- 	if (!t)
--		goto unlock;
--	if (t->wlen > t->wi) {
--		if ((status & ACPI_EC_FLAG_IBF) == 0)
--			acpi_ec_write_data(ec,
--				t->wdata[t->wi++]);
--		else
--			goto err;
--	} else if (t->rlen > t->ri) {
--		if ((status & ACPI_EC_FLAG_OBF) == 1) {
--			t->rdata[t->ri++] = acpi_ec_read_data(ec);
--			if (t->rlen == t->ri)
--				t->done = true;
-+		goto err;
-+	if (t->flags & ACPI_EC_COMMAND_POLL) {
-+		if (t->wlen > t->wi) {
-+			if ((status & ACPI_EC_FLAG_IBF) == 0)
-+				acpi_ec_write_data(ec, t->wdata[t->wi++]);
-+			else
-+				goto err;
-+		} else if (t->rlen > t->ri) {
-+			if ((status & ACPI_EC_FLAG_OBF) == 1) {
-+				t->rdata[t->ri++] = acpi_ec_read_data(ec);
-+				if (t->rlen == t->ri)
-+					t->flags |= ACPI_EC_COMMAND_COMPLETE;
-+			} else
-+				goto err;
-+		} else if (t->wlen == t->wi &&
-+			   (status & ACPI_EC_FLAG_IBF) == 0)
-+			t->flags |= ACPI_EC_COMMAND_COMPLETE;
-+		return;
-+	} else {
-+		if ((status & ACPI_EC_FLAG_IBF) == 0) {
-+			acpi_ec_write_cmd(ec, t->command);
-+			t->flags |= ACPI_EC_COMMAND_POLL;
- 		} else
- 			goto err;
--	} else if (t->wlen == t->wi &&
--		   (status & ACPI_EC_FLAG_IBF) == 0)
--		t->done = true;
--	goto unlock;
-+		return;
-+	}
- err:
- 	/*
- 	 * If SCI bit is set, then don't think it's a false IRQ
- 	 * otherwise will take a not handled IRQ as a false one.
- 	 */
--	if (in_interrupt() && !(status & ACPI_EC_FLAG_SCI))
--		++t->irq_count;
-+	if (!(status & ACPI_EC_FLAG_SCI)) {
-+		if (in_interrupt() && t)
-+			++t->irq_count;
-+	}
-+}
- 
--unlock:
--	spin_unlock_irqrestore(&ec->lock, flags);
-+static void start_transaction(struct acpi_ec *ec)
-+{
-+	ec->curr->irq_count = ec->curr->wi = ec->curr->ri = 0;
-+	ec->curr->flags = 0;
-+	advance_transaction(ec);
- }
- 
- static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
-@@ -236,15 +244,17 @@ static int ec_poll(struct acpi_ec *ec)
- 			/* don't sleep with disabled interrupts */
- 			if (EC_FLAGS_MSI || irqs_disabled()) {
- 				udelay(ACPI_EC_MSI_UDELAY);
--				if (ec_transaction_done(ec))
-+				if (ec_transaction_completed(ec))
- 					return 0;
- 			} else {
- 				if (wait_event_timeout(ec->wait,
--						ec_transaction_done(ec),
-+						ec_transaction_completed(ec),
- 						msecs_to_jiffies(1)))
- 					return 0;
- 			}
-+			spin_lock_irqsave(&ec->lock, flags);
- 			advance_transaction(ec);
-+			spin_unlock_irqrestore(&ec->lock, flags);
- 		} while (time_before(jiffies, delay));
- 		pr_debug("controller reset, restart transaction\n");
- 		spin_lock_irqsave(&ec->lock, flags);
-@@ -663,10 +673,13 @@ static int ec_check_sci(struct acpi_ec *ec, u8 state)
- static u32 acpi_ec_gpe_handler(acpi_handle gpe_device,
- 	u32 gpe_number, void *data)
- {
-+	unsigned long flags;
- 	struct acpi_ec *ec = data;
- 
-+	spin_lock_irqsave(&ec->lock, flags);
- 	advance_transaction(ec);
--	if (ec_transaction_done(ec) &&
-+	spin_unlock_irqrestore(&ec->lock, flags);
-+	if (ec_transaction_completed(ec) &&
- 	    (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF) == 0) {
- 		wake_up(&ec->wait);
- 		ec_check_sci(ec, acpi_ec_read_status(ec));
+ 	rcu_read_lock();
+ begin:
+ 	count = 0;
 -- 
 1.9.1
 
