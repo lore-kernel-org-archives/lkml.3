@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621AbaHHUzN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:55:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41532 "EHLO
+	id S1758111AbaHHUzh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:55:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41521 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933265AbaHHUy3 (ORCPT
+	with ESMTP id S933246AbaHHUyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:54:29 -0400
+	Fri, 8 Aug 2014 16:54:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 111/259] perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
-Date: Fri,  8 Aug 2014 13:38:54 -0700
-Message-Id: <1407530482-4483-112-git-send-email-kamal@canonical.com>
+Cc: Loic Poulain <loic.poulain@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 107/259] Bluetooth: Ignore H5 non-link packets in non-active state
+Date: Fri,  8 Aug 2014 13:38:50 -0700
+Message-Id: <1407530482-4483-108-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,103 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+From: Loic Poulain <loic.poulain@intel.com>
 
-commit b292d7a10487aee6e74b1c18b8d95b92f40d4a4f upstream.
+commit 48439d501e3d9e8634bdc0c418e066870039599d upstream.
 
-Currently, any NMI is falsely handled by a NMI handler of NMI watchdog
-if CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR is set.
+When detecting a non-link packet, h5_reset_rx() frees the Rx skb.
+Not returning after that will cause the upcoming h5_rx_payload()
+call to dereference a now NULL Rx skb and trigger a kernel oops.
 
-For example, we use external NMI to make system panic to get crash
-dump, but in this case, the external NMI is falsely handled do to the
-issue.
-
-This commit deals with the issue simply by ignoring CondChgd bit.
-
-Here is explanation in detail.
-
-On x86 NMI watchdog uses performance monitoring feature to
-periodically signal NMI each time performance counter gets overflowed.
-
-intel_pmu_handle_irq() is called as a NMI_LOCAL handler from a NMI
-handler of NMI watchdog, perf_event_nmi_handler(). It identifies an
-owner of a given NMI by looking at overflow status bits in
-MSR_CORE_PERF_GLOBAL_STATUS MSR. If some of the bits are set, then it
-handles the given NMI as its own NMI.
-
-The problem is that the intel_pmu_handle_irq() doesn't distinguish
-CondChgd bit from other bits. Unlike the other status bits, CondChgd
-bit doesn't represent overflow status for performance counters. Thus,
-CondChgd bit cannot be thought of as a mark indicating a given NMI is
-NMI watchdog's.
-
-As a result, if CondChgd bit is set, any NMI is falsely handled by the
-NMI handler of NMI watchdog. Also, if type of the falsely handled NMI
-is either NMI_UNKNOWN, NMI_SERR or NMI_IO_CHECK, the corresponding
-action is never performed until CondChgd bit is cleared.
-
-I noticed this behavior on systems with Ivy Bridge processors: Intel
-Xeon CPU E5-2630 v2 and Intel Xeon CPU E7-8890 v2. On both systems,
-CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR has already been set
-in the beginning at boot. Then the CondChgd bit is immediately cleared
-by next wrmsr to MSR_CORE_PERF_GLOBAL_CTRL MSR and appears to remain
-0.
-
-On the other hand, on older processors such as Nehalem, Xeon E7540,
-CondChgd bit is not set in the beginning at boot.
-
-I'm not sure about exact behavior of CondChgd bit, in particular when
-this bit is set. Although I read Intel System Programmer's Manual to
-figure out that, the descriptions I found are:
-
-  In 18.9.1:
-
-  "The MSR_PERF_GLOBAL_STATUS MSR also provides a ¡sticky bit¢ to
-   indicate changes to the state of performancmonitoring hardware"
-
-  In Table 35-2 IA-32 Architectural MSRs
-
-  63 CondChg: status bits of this register has changed.
-
-These are different from the bahviour I see on the actual system as I
-explained above.
-
-At least, I think ignoring CondChgd bit should be enough for NMI
-watchdog perspective.
-
-Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Link: http://lkml.kernel.org/r/20140625.103503.409316067.d.hatayama@jp.fujitsu.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Loic Poulain <loic.poulain@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/bluetooth/hci_h5.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 0fa4f24..0b1825a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1385,6 +1385,15 @@ again:
- 	intel_pmu_lbr_read();
+diff --git a/drivers/bluetooth/hci_h5.c b/drivers/bluetooth/hci_h5.c
+index f6f4974..e36a024 100644
+--- a/drivers/bluetooth/hci_h5.c
++++ b/drivers/bluetooth/hci_h5.c
+@@ -406,6 +406,7 @@ static int h5_rx_3wire_hdr(struct hci_uart *hu, unsigned char c)
+ 	    H5_HDR_PKT_TYPE(hdr) != HCI_3WIRE_LINK_PKT) {
+ 		BT_ERR("Non-link packet received in non-active state");
+ 		h5_reset_rx(h5);
++		return 0;
+ 	}
  
- 	/*
-+	 * CondChgd bit 63 doesn't mean any overflow status. Ignore
-+	 * and clear the bit.
-+	 */
-+	if (__test_and_clear_bit(63, (unsigned long *)&status)) {
-+		if (!status)
-+			goto done;
-+	}
-+
-+	/*
- 	 * PEBS overflow sets bit 62 in the global status register
- 	 */
- 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
+ 	h5->rx_func = h5_rx_payload;
 -- 
 1.9.1
 
