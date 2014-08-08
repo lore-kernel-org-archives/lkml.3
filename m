@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759195AbaHHVsA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:48:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60850 "EHLO
+	id S1759210AbaHHVsE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:48:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60853 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758946AbaHHVqM (ORCPT
+	with ESMTP id S1758948AbaHHVqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 17:46:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 12/17] sparc64: Do not insert non-valid PTEs into the TSB hash table.
-Date: Fri,  8 Aug 2014 14:35:34 -0700
-Message-Id: <20140808213458.017617436@linuxfoundation.org>
+Subject: [PATCH 3.16 13/17] sparc64: Guard against flushing openfirmware mappings.
+Date: Fri,  8 Aug 2014 14:35:35 -0700
+Message-Id: <20140808213458.058402348@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213457.511493898@linuxfoundation.org>
 References: <20140808213457.511493898@linuxfoundation.org>
@@ -30,53 +30,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 18f38132528c3e603c66ea464727b29e9bbcb91b ]
+[ Upstream commit 4ca9a23765da3260058db3431faf5b4efd8cf926 ]
 
-The assumption was that update_mmu_cache() (and the equivalent for PMDs) would
-only be called when the PTE being installed will be accessible by the user.
+Based almost entirely upon a patch by Christopher Alexander Tobias
+Schulze.
 
-This is not true for code paths originating from remove_migration_pte().
+In commit db64fe02258f1507e13fe5212a989922323685ce ("mm: rewrite vmap
+layer") lazy VMAP tlb flushing was added to the vmalloc layer.  This
+causes problems on sparc64.
 
-There are dire consequences for placing a non-valid PTE into the TSB.  The TLB
-miss frramework assumes thatwhen a TSB entry matches we can just load it into
-the TLB and return from the TLB miss trap.
+Sparc64 has two VMAP mapped regions and they are not contiguous with
+eachother.  First we have the malloc mapping area, then another
+unrelated region, then the vmalloc region.
 
-So if a non-valid PTE is in there, we will deadlock taking the TLB miss over
-and over, never satisfying the miss.
+This "another unrelated region" is where the firmware is mapped.
 
-Just exit early from update_mmu_cache() and friends in this situation.
+If the lazy TLB flushing logic in the vmalloc code triggers after
+we've had both a module unload and a vfree or similar, it will pass an
+address range that goes from somewhere inside the malloc region to
+somewhere inside the vmalloc region, and thus covering the
+openfirmware area entirely.
 
-Based upon a report and patch from Christopher Alexander Tobias Schulze.
+The sparc64 kernel learns about openfirmware's dynamic mappings in
+this region early in the boot, and then services TLB misses in this
+area.  But openfirmware has some locked TLB entries which are not
+mentioned in those dynamic mappings and we should thus not disturb
+them.
+
+These huge lazy TLB flush ranges causes those openfirmware locked TLB
+entries to be removed, resulting in all kinds of problems including
+hard hangs and crashes during reboot/reset.
+
+Besides causing problems like this, such huge TLB flush ranges are
+also incredibly inefficient.  A plea has been made with the author of
+the VMAP lazy TLB flushing code, but for now we'll put a safety guard
+into our flush_tlb_kernel_range() implementation.
+
+Since the implementation has become non-trivial, stop defining it as a
+macro and instead make it a function in a C source file.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/mm/init_64.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/sparc/include/asm/tlbflush_64.h |   12 ++----------
+ arch/sparc/mm/init_64.c              |   23 +++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 10 deletions(-)
 
+--- a/arch/sparc/include/asm/tlbflush_64.h
++++ b/arch/sparc/include/asm/tlbflush_64.h
+@@ -34,6 +34,8 @@ static inline void flush_tlb_range(struc
+ {
+ }
+ 
++void flush_tlb_kernel_range(unsigned long start, unsigned long end);
++
+ #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
+ 
+ void flush_tlb_pending(void);
+@@ -48,11 +50,6 @@ void __flush_tlb_kernel_range(unsigned l
+ 
+ #ifndef CONFIG_SMP
+ 
+-#define flush_tlb_kernel_range(start,end) \
+-do {	flush_tsb_kernel_range(start,end); \
+-	__flush_tlb_kernel_range(start,end); \
+-} while (0)
+-
+ static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
+ {
+ 	__flush_tlb_page(CTX_HWBITS(mm->context), vaddr);
+@@ -63,11 +60,6 @@ static inline void global_flush_tlb_page
+ void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end);
+ void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr);
+ 
+-#define flush_tlb_kernel_range(start, end) \
+-do {	flush_tsb_kernel_range(start,end); \
+-	smp_flush_tlb_kernel_range(start, end); \
+-} while (0)
+-
+ #define global_flush_tlb_page(mm, vaddr) \
+ 	smp_flush_tlb_page(mm, vaddr)
+ 
 --- a/arch/sparc/mm/init_64.c
 +++ b/arch/sparc/mm/init_64.c
-@@ -351,6 +351,10 @@ void update_mmu_cache(struct vm_area_str
- 
- 	mm = vma->vm_mm;
- 
-+	/* Don't insert a non-valid PTE into the TSB, we'll deadlock.  */
-+	if (!pte_accessible(mm, pte))
-+		return;
+@@ -2707,3 +2707,26 @@ void hugetlb_setup(struct pt_regs *regs)
+ 	}
+ }
+ #endif
 +
- 	spin_lock_irqsave(&mm->context.lock, flags);
- 
- #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
-@@ -2619,6 +2623,10 @@ void update_mmu_cache_pmd(struct vm_area
- 
- 	pte = pmd_val(entry);
- 
-+	/* Don't insert a non-valid PMD into the TSB, we'll deadlock.  */
-+	if (!(pte & _PAGE_VALID))
-+		return;
++#ifdef CONFIG_SMP
++#define do_flush_tlb_kernel_range	smp_flush_tlb_kernel_range
++#else
++#define do_flush_tlb_kernel_range	__flush_tlb_kernel_range
++#endif
 +
- 	/* We are fabricating 8MB pages using 4MB real hw pages.  */
- 	pte |= (addr & (1UL << REAL_HPAGE_SHIFT));
- 
++void flush_tlb_kernel_range(unsigned long start, unsigned long end)
++{
++	if (start < HI_OBP_ADDRESS && end > LOW_OBP_ADDRESS) {
++		if (start < LOW_OBP_ADDRESS) {
++			flush_tsb_kernel_range(start, LOW_OBP_ADDRESS);
++			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
++		}
++		if (end > HI_OBP_ADDRESS) {
++			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
++			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
++		}
++	} else {
++		flush_tsb_kernel_range(start, end);
++		do_flush_tlb_kernel_range(start, end);
++	}
++}
 
 
