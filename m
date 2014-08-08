@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900AbaHHHRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 03:17:32 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55692 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193AbaHHHRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 03:17:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,823,1400050800"; 
-   d="scan'208";a="585162292"
-Date: Fri, 8 Aug 2014 07:15:35 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Segall <bsegall@google.com>,
-        Waiman Long <Waiman.Long@hp.com>, Mel Gorman <mgorman@suse.de>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Rik van Riel <riel@redhat.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>
-Subject: Re: [PATCH] sched: Reduce contention in update_cfs_rq_blocked_load
-Message-ID: <20140807231535.GE2480@intel.com>
-References: <1407184118.11407.11.camel@j-VirtualBox>
- <20140804191526.GA2480@intel.com>
- <1407349295.2384.14.camel@j-VirtualBox>
- <20140807180239.GC2480@intel.com>
- <1407471532.8365.18.camel@j-VirtualBox>
- <20140807223007.GD2480@intel.com>
- <20140808071103.GD3935@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140808071103.GD3935@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756068AbaHHHR7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 03:17:59 -0400
+Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:59740 "EHLO
+	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755976AbaHHHRz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 03:17:55 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+To: support.opensource@diasemi.com, dmitry.torokhov@gmail.com
+Cc: anthony.olech.opensource@diasemi.com, david.chen@diasemi.com,
+        kiran.padwal21@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kiran Padwal <kiran.padwal@smartplayin.com>
+Subject: [PATCH 1/2] Input: da9055_onkey: Remove unnecessary OOM meassage
+Date: Fri,  8 Aug 2014 12:44:57 +0530
+Message-Id: <1407482097-17624-1-git-send-email-kiran.padwal@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 09:11:03AM +0200, Peter Zijlstra wrote:
-> On Fri, Aug 08, 2014 at 06:30:08AM +0800, Yuyang Du wrote:
-> > > > > -----------------------------------------------------
-> > > > >               |   10-90   |  100-1000   |  1100-2000
-> > > > >               |   users   |   users     |   users
-> > > > > -----------------------------------------------------
-> > > > > alltests      |   -3.37%  |  -10.64%    |   -2.25%
-> > > > > -----------------------------------------------------
-> > > > > all_utime     |   +0.33%  |   +3.73%    |   +3.33%
-> > > > > -----------------------------------------------------
-> > > > > compute       |   -5.97%  |   +2.34%    |   +3.22%
-> > > > > -----------------------------------------------------
-> > > > > custom        |  -31.61%  |  -10.29%    |  +15.23%
-> > > > > -----------------------------------------------------
-> > > > > disk          |  +24.64%  |  +28.96%    |  +21.28%
-> > > > > -----------------------------------------------------
-> > > > > fserver       |   -1.35%  |   +4.82%    |   +9.35%
-> > > > > -----------------------------------------------------
-> > > > > high_systime  |   -6.73%  |   -6.28%    |  +12.36%
-> > > > > -----------------------------------------------------
-> > > > > shared        |  -28.31%  |  -19.99%    |   -7.10%
-> > > > > -----------------------------------------------------
-> > > > > short         |  -44.63%  |  -37.48%    |  -33.62%
-> > > > > -----------------------------------------------------
-> 
-> > Thanks a lot, Jason.
-> > 
-> > So for this particular set of workloads on a big machine, I think the
-> > result is mixed and overall "neutral", but I expected the variation probably
-> > could be bigger especially for light workloads.
-> > 
-> > Any comment from the maintainers and others? Ping Peter and Ben, I haven't
-> > heard from you for the 5th version.
-> 
-> Been a bit busy.. but in general I worry about the performance decrease
-> on the lighter loads. I should probably run some workloads on my 2
-> socket and 4 socket machines, but the coming few weeks will be very busy
-> and I'm afraid I'll not get around to it in a timely manner.
+There is no need to print out-of-memory errors since this is already
+done by the memory management subsystem which even calls dump_stack().
 
-Ok. I understand. From our part, Fengguang's LKP does not include light loads,
-we also need some such tests to confirm this and see what is next.
+Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+---
+ drivers/input/misc/da9055_onkey.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-Since typical benchmarks would be heavy ones, what do you suggest for light loads?
+diff --git a/drivers/input/misc/da9055_onkey.c b/drivers/input/misc/da9055_onkey.c
+index 4765799..ed6eaa9 100644
+--- a/drivers/input/misc/da9055_onkey.c
++++ b/drivers/input/misc/da9055_onkey.c
+@@ -87,10 +87,8 @@ static int da9055_onkey_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	onkey = devm_kzalloc(&pdev->dev, sizeof(*onkey), GFP_KERNEL);
+-	if (!onkey) {
+-		dev_err(&pdev->dev, "Failed to allocate memory\n");
++	if (!onkey)
+ 		return -ENOMEM;
+-	}
+ 
+ 	input_dev = input_allocate_device();
+ 	if (!input_dev) {
+-- 
+1.7.9.5
 
-Jason, possible you can share some of your workloads?
-
-Thanks,
-Yuyang
