@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933368AbaHHVYT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:24:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40878 "EHLO
+	id S932918AbaHHVY5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:24:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40864 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932170AbaHHUun (ORCPT
+	with ESMTP id S1758449AbaHHUuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:50:43 -0400
+	Fri, 8 Aug 2014 16:50:39 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Popov <ixaphire@qrator.net>,
+Cc: Eric Dumazet <edumazet@google.com>, Ariel Elior <ariel.elior@qlogic.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 229/259] ip_tunnel: fix ip_tunnel_lookup
-Date: Fri,  8 Aug 2014 13:40:52 -0700
-Message-Id: <1407530482-4483-230-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 241/259] bnx2x: fix possible panic under memory stress
+Date: Fri,  8 Aug 2014 13:41:04 -0700
+Message-Id: <1407530482-4483-242-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,98 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Popov <ixaphire@qrator.net>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit e0056593b61253f1a8a9941dacda22e73b963cdc ]
+[ Upstream commit 07b0f00964def8af9321cfd6c4a7e84f6362f728 ]
 
-This patch fixes 3 similar bugs where incoming packets might be routed into
-wrong non-wildcard tunnels:
+While it is legal to kfree(NULL), it is not wise to use :
+put_page(virt_to_head_page(NULL))
 
-1) Consider the following setup:
-    ip address add 1.1.1.1/24 dev eth0
-    ip address add 1.1.1.2/24 dev eth0
-    ip tunnel add ipip1 remote 2.2.2.2 local 1.1.1.1 mode ipip dev eth0
-    ip link set ipip1 up
+ BUG: unable to handle kernel paging request at ffffeba400000000
+ IP: [<ffffffffc01f5928>] virt_to_head_page+0x36/0x44 [bnx2x]
 
-Incoming ipip packets from 2.2.2.2 were routed into ipip1 even if it has dst =
-1.1.1.2. Moreover even if there was wildcard tunnel like
-   ip tunnel add ipip0 remote 2.2.2.2 local any mode ipip dev eth0
-but it was created before explicit one (with local 1.1.1.1), incoming ipip
-packets with src = 2.2.2.2 and dst = 1.1.1.2 were still routed into ipip1.
-
-Same issue existed with all tunnels that use ip_tunnel_lookup (gre, vti)
-
-2)  ip address add 1.1.1.1/24 dev eth0
-    ip tunnel add ipip1 remote 2.2.146.85 local 1.1.1.1 mode ipip dev eth0
-    ip link set ipip1 up
-
-Incoming ipip packets with dst = 1.1.1.1 were routed into ipip1, no matter what
-src address is. Any remote ip address which has ip_tunnel_hash = 0 raised this
-issue, 2.2.146.85 is just an example, there are more than 4 million of them.
-And again, wildcard tunnel like
-   ip tunnel add ipip0 remote any local 1.1.1.1 mode ipip dev eth0
-wouldn't be ever matched if it was created before explicit tunnel like above.
-
-Gre & vti tunnels had the same issue.
-
-3)  ip address add 1.1.1.1/24 dev eth0
-    ip tunnel add gre1 remote 2.2.146.84 local 1.1.1.1 key 1 mode gre dev eth0
-    ip link set gre1 up
-
-Any incoming gre packet with key = 1 were routed into gre1, no matter what
-src/dst addresses are. Any remote ip address which has ip_tunnel_hash = 0 raised
-the issue, 2.2.146.84 is just an example, there are more than 4 million of them.
-Wildcard tunnel like
-   ip tunnel add gre2 remote any local any key 1 mode gre dev eth0
-wouldn't be ever matched if it was created before explicit tunnel like above.
-
-All this stuff happened because while looking for a wildcard tunnel we didn't
-check that matched tunnel is a wildcard one. Fixed.
-
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+Reported-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Ariel Elior <ariel.elior@qlogic.com>
+Fixes: d46d132cc021 ("bnx2x: use netdev_alloc_frag()")
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/ip_tunnel.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
-index a39c5cf..d4e7bd7 100644
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -166,6 +166,7 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+index bf81156..db7654a 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -755,7 +755,8 @@ static void bnx2x_tpa_stop(struct bnx2x *bp, struct bnx2x_fastpath *fp,
  
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
- 		if (remote != t->parms.iph.daddr ||
-+		    t->parms.iph.saddr != 0 ||
- 		    !(t->dev->flags & IFF_UP))
- 			continue;
- 
-@@ -182,10 +183,11 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
- 	head = &itn->tunnels[hash];
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
--		if ((local != t->parms.iph.saddr &&
--		     (local != t->parms.iph.daddr ||
--		      !ipv4_is_multicast(local))) ||
--		    !(t->dev->flags & IFF_UP))
-+		if ((local != t->parms.iph.saddr || t->parms.iph.daddr != 0) &&
-+		    (local != t->parms.iph.daddr || !ipv4_is_multicast(local)))
-+			continue;
-+
-+		if (!(t->dev->flags & IFF_UP))
- 			continue;
- 
- 		if (!ip_tunnel_key_match(&t->parms, flags, key))
-@@ -202,6 +204,8 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
- 		if (t->parms.i_key != key ||
-+		    t->parms.iph.saddr != 0 ||
-+		    t->parms.iph.daddr != 0 ||
- 		    !(t->dev->flags & IFF_UP))
- 			continue;
- 
+ 		return;
+ 	}
+-	bnx2x_frag_free(fp, new_data);
++	if (new_data)
++		bnx2x_frag_free(fp, new_data);
+ drop:
+ 	/* drop the packet and keep the buffer in the bin */
+ 	DP(NETIF_MSG_RX_STATUS,
 -- 
 1.9.1
 
