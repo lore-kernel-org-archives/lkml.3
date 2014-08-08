@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932979AbaHHUxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:53:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41230 "EHLO
+	id S933004AbaHHUxW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:53:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41251 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932954AbaHHUxH (ORCPT
+	with ESMTP id S932954AbaHHUxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:53:07 -0400
+	Fri, 8 Aug 2014 16:53:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>, Bin Gao <bin.gao@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Stefani Seibold <stefani@seibold.net>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 208/259] qlcnic: info leak in qlcnic_dcb_peer_app_info()
-Date: Fri,  8 Aug 2014 13:40:31 -0700
-Message-Id: <1407530482-4483-209-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 110/259] x86, tsc: Fix cpufreq lockup
+Date: Fri,  8 Aug 2014 13:38:53 -0700
+Message-Id: <1407530482-4483-111-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,34 +33,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-[ Upstream commit 7df566bbdd0af0785542b89466a937e94257fcfb ]
+commit 3896c329df8092661dac80f55a8c3f60136fd61a upstream.
 
-This function is called from dcbnl_build_peer_app().  The "info"
-struct isn't initialized at all so we disclose 2 bytes of uninitialized
-stack data.  We should clear it before passing it to the user.
+Mauro reported that his AMD X2 using the powernow-k8 cpufreq driver
+locked up when doing cpu hotplug.
 
-Fixes: 48365e485275 ('qlcnic: dcb: Add support for CEE Netlink interface.')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Because we called set_cyc2ns_scale() from the time_cpufreq_notifier()
+unconditionally, it gets called multiple times for each freq change,
+instead of only the once, when the tsc_khz value actually changes.
+
+Because it gets called more than once, we run out of cyc2ns data slots
+and stall, waiting for a free one, but because we're half way offline,
+there's no consumers to free slots.
+
+By placing the call inside the condition that actually changes tsc_khz
+we avoid superfluous calls and avoid the problem.
+
+Reported-by: Mauro <registosites@hotmail.com>
+Tested-by: Mauro <registosites@hotmail.com>
+Fixes: 20d1c86a5776 ("sched/clock, x86: Rewrite cyc2ns() to avoid the need to disable IRQs")
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Bin Gao <bin.gao@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Stefani Seibold <stefani@seibold.net>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_dcb.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/tsc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_dcb.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_dcb.c
-index 86bca7c..ca38cb3 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_dcb.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_dcb.c
-@@ -1047,6 +1047,7 @@ static int qlcnic_dcb_peer_app_info(struct net_device *netdev,
- 	struct qlcnic_dcb_cee *peer;
- 	int i;
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 930e5d4..66af9af 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -722,9 +722,9 @@ static int time_cpufreq_notifier(struct notifier_block *nb, unsigned long val,
+ 		tsc_khz = cpufreq_scale(tsc_khz_ref, ref_freq, freq->new);
+ 		if (!(freq->flags & CPUFREQ_CONST_LOOPS))
+ 			mark_tsc_unstable("cpufreq changes");
+-	}
  
-+	memset(info, 0, sizeof(*info));
- 	*app_count = 0;
+-	set_cyc2ns_scale(tsc_khz, freq->cpu);
++		set_cyc2ns_scale(tsc_khz, freq->cpu);
++	}
  
- 	if (!test_bit(QLCNIC_DCB_STATE, &adapter->dcb->state))
+ 	return 0;
+ }
 -- 
 1.9.1
 
