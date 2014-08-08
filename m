@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933361AbaHHU4u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:56:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41496 "EHLO
+	id S933371AbaHHU5L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:57:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41492 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933132AbaHHUyV (ORCPT
+	with ESMTP id S933214AbaHHUyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:54:21 -0400
+	Fri, 8 Aug 2014 16:54:18 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joel Stanley <joel@jms.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 098/259] powerpc/perf: Clear MMCR2 when enabling PMU
-Date: Fri,  8 Aug 2014 13:38:41 -0700
-Message-Id: <1407530482-4483-99-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 088/259] Drivers: hv: vmbus: Fix a bug in the channel callback dispatch code
+Date: Fri,  8 Aug 2014 13:38:31 -0700
+Message-Id: <1407530482-4483-89-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,76 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joel Stanley <joel@jms.id.au>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit b50a6c584bb47b370f84bfd746770c0bbe7129b7 upstream.
+commit affb1aff300ddee54df307812b38f166e8a865ef upstream.
 
-On POWER8 when switching to a KVM guest we set bits in MMCR2 to freeze
-the PMU counters. Aside from on boot they are then never reset,
-resulting in stuck perf counters for any user in the guest or host.
+Starting with Win8, we have implemented several optimizations to improve the
+scalability and performance of the VMBUS transport between the Host and the
+Guest. Some of the non-performance critical services cannot leverage these
+optimization since they only read and process one message at a time.
+Make adjustments to the callback dispatch code to account for the way
+non-performance critical drivers handle reading of the channel.
 
-We now set MMCR2 to 0 whenever enabling the PMU, which provides a sane
-state for perf to use the PMU counters under either the guest or the
-host.
-
-This was manifesting as a bug with ppc64_cpu --frequency:
-
-    $ sudo ppc64_cpu --frequency
-    WARNING: couldn't run on cpu 0
-    WARNING: couldn't run on cpu 8
-      ...
-    WARNING: couldn't run on cpu 144
-    WARNING: couldn't run on cpu 152
-    min:    18446744073.710 GHz (cpu -1)
-    max:    0.000 GHz (cpu -1)
-    avg:    0.000 GHz
-
-The command uses a perf counter to measure CPU cycles over a fixed
-amount of time, in order to approximate the frequency of the machine.
-The counters were returning zero once a guest was started, regardless of
-weather it was still running or had been shut down.
-
-By dumping the value of MMCR2, it was observed that once a guest is
-running MMCR2 is set to 1s - which stops counters from running:
-
-    $ sudo sh -c 'echo p > /proc/sysrq-trigger'
-    CPU: 0 PMU registers, ppmu = POWER8 n_counters = 6
-    PMC1:  5b635e38 PMC2: 00000000 PMC3: 00000000 PMC4: 00000000
-    PMC5:  1bf5a646 PMC6: 5793d378 PMC7: deadbeef PMC8: deadbeef
-    MMCR0: 0000000080000000 MMCR1: 000000001e000000 MMCRA: 0000040000000000
-    MMCR2: fffffffffffffc00 EBBHR: 0000000000000000
-    EBBRR: 0000000000000000 BESCR: 0000000000000000
-    SIAR:  00000000000a51cc SDAR:  c00000000fc40000 SIER:  0000000001000000
-
-This is done unconditionally in book3s_hv_interrupts.S upon entering the
-guest, and the original value is only save/restored if the host has
-indicated it was using the PMU. This is okay, however the user of the
-PMU needs to ensure that it is in a defined state when it starts using
-it.
-
-Fixes: e05b9b9e5c10 ("powerpc/perf: Power8 PMU support")
-Signed-off-by: Joel Stanley <joel@jms.id.au>
-Acked-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/perf/core-book3s.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/hv/connection.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index 8855aec..d23b01c 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1149,6 +1149,9 @@ static void power_pmu_enable(struct pmu *pmu)
- 	mb();
- 	write_mmcr0(cpuhw, mmcr0);
+diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
+index 05827ec..ce5a9f2 100644
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -319,9 +319,13 @@ static void process_chn_event(u32 relid)
+ 		 */
  
-+	if (ppmu->flags & PPMU_ARCH_207S)
-+		mtspr(SPRN_MMCR2, 0);
-+
- 	/*
- 	 * Enable instruction sampling if necessary
- 	 */
+ 		do {
+-			hv_begin_read(&channel->inbound);
++			if (read_state)
++				hv_begin_read(&channel->inbound);
+ 			channel->onchannel_callback(arg);
+-			bytes_to_read = hv_end_read(&channel->inbound);
++			if (read_state)
++				bytes_to_read = hv_end_read(&channel->inbound);
++			else
++				bytes_to_read = 0;
+ 		} while (read_state && (bytes_to_read != 0));
+ 	} else {
+ 		pr_err("no channel callback for relid - %u\n", relid);
 -- 
 1.9.1
 
