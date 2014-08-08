@@ -1,141 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873AbaHHOep (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 10:34:45 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45451 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755485AbaHHOen (ORCPT
+	id S1756921AbaHHOey (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 10:34:54 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:36272 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485AbaHHOer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 10:34:43 -0400
-Date: Fri, 8 Aug 2014 16:34:13 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        bobby.prani@gmail.com, masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
- waiting for RCU-tasks
-Message-ID: <20140808143413.GB9918@twins.programming.kicks-ass.net>
-References: <20140807150031.GB5821@linux.vnet.ibm.com>
- <20140807152600.GW9918@twins.programming.kicks-ass.net>
- <20140807172753.GG3588@twins.programming.kicks-ass.net>
- <20140807184635.GI3588@twins.programming.kicks-ass.net>
- <20140807154907.6f59cf6e@gandalf.local.home>
- <20140807155326.18481e66@gandalf.local.home>
- <20140807200813.GB3935@laptop>
- <20140807171823.1a481290@gandalf.local.home>
- <20140808064020.GZ9918@twins.programming.kicks-ass.net>
- <20140808101221.21056900@gandalf.local.home>
+	Fri, 8 Aug 2014 10:34:47 -0400
+Date: Fri, 8 Aug 2014 16:34:51 +0200
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PULL] drm-intel-fixes
+Message-ID: <20140808143418.GA25720@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rIsG1lUQFG2vxuoz"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140808101221.21056900@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dave,
 
---rIsG1lUQFG2vxuoz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+So I heard that proper pull requests have a revert on top ;-) So here we
+go with my usual mid-merge-window pile of fixes.
 
-On Fri, Aug 08, 2014 at 10:12:21AM -0400, Steven Rostedt wrote:
-> > Ok, so they're purely used in the function prologue/epilogue callchain.
->=20
-> No, they are also used by optimized kprobes. This is why optimized
-> kprobes depend on !CONFIG_PREEMPT. [ added Masami to the discussion ].
+Big fix is the duct-tape for ring init on g4x platforms, we seem to have
+found the magic again to make those machines as happy as before (not
+perfect though unfortunately, but that was never the case).
 
-How do those work? Is that one where the INT3 relocates the instruction
-stream into an alternative 'text' and that JMPs back into the original
-stream at the end?
+Otherwise fixes all over:
+- tune down some overzealous debug output
+- VDD power sequencing fix after resume
+- bunch of dsi fixes for baytrail among them hw state checker de-noising
+- bunch of error state capture fixes for bdw
+- misc tiny fixes/workarounds for various platforms
 
-And what is there to make sure the kprobe itself doesn't do 'funny'?
+Last minute rebase was to kick out two patches that shouldn't have been in
+here - they're for the state checker, so 0 functional code affected.
 
-> Which reminds me. On !CONFIG_PREEMPT, call_rcu_task() should be
-> equivalent to call_rcu_sched().
+Jani's back from vacation, so he'll take over -fixes from here.
 
-Sure, as long as you make absolutely sure none of that code ends up
-calling cond_resched()/might_sleep() etc. Which I think you already said
-was true, so no worries there.
+Cc'ing Linus since you're travelling in case you want him to pick this up
+directly.
 
-> > And you don't want to use synchronize_tasks() because registering a tra=
-ce
-> > functions is atomic ?
->=20
-> No. Has nothing to do with registering the trace function. The issue is
-> that we have no idea when a task happens to be on a trampoline after it
-> is registered. For example:
->=20
-> ops adds a callback to sys_read:
->=20
-> sys_read() {
->  call trampoline ->
->     set up regs for function call.
->     <interrupt>
->       preempt_schedule();
->=20
->       [ new task runs for long time ]
->=20
->=20
-> While this new task is running, we remove the trampoline and want to
-> free it. Say this new task keeps the other task from running for
-> minutes! We call synchronize_sched() or any other rcu call, and all
-> grace periods finish and we free the trampoline. The sys_read() no
-> longer calls our trampoline. Doesn't matter, because that task is still
-> on it. Now we schedule that task back. It's on a trampoline that has
-> just been freed! BOOM. It's executing code that no longer exits.
+Cheers, Daniel
 
-Sure, I get that part. What I was getting as is _WHY_ you need
-call_rcu_task(), why isn't synchronize_tasks() good enough?
 
-> > No need for extra allocations and fancy means of getting rid of them,
-> > and only a few bytes extra wrt the existing function.
->=20
-> This doesn't address the issue we want to solve.
->=20
-> Say we have 1000 functions we want to trace with 1000 different
-> callbacks. Each of theses functions has one call back. How do you solve
-> that with your solution? Today, we do the list for every function. That
-> is, for each of these 1000 functions, we run through 1000 ops looking
-> for the ops that registered for this function. Not very efficient is it?
+The following changes since commit a91576d7916f6cce76d30303e60e1ac47cf4a76d:
 
-Ah, but you didn't say that, didn't you :-)
+  drm/ttm: Pass GFP flags in order to avoid deadlock. (2014-08-05 10:54:19 +1000)
 
-> What we want to do today, is to create a dynamic trampoline for each of
-> theses 1000 functions. Each function will call a separate trampoline
-> that will only call the function that was registered to it. That way,
-> we can have 1000 different ops registered to 1000 different functions
-> and still have the same performance.
+are available in the git repository at:
 
-And how will you limit the amount of memory tied up in this? This looks
-like a good way to tie up an immense amount of memory fast.
+  git://anongit.freedesktop.org/drm-intel tags/drm-intel-fixes-2014-08-08
 
---rIsG1lUQFG2vxuoz
-Content-Type: application/pgp-signature
+for you to fetch changes up to be71eabebaf9f142612d34d42292b454e984dcb5:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+  Revert "drm/i915: Enable semaphores on BDW" (2014-08-08 16:22:19 +0200)
 
-iQIcBAEBAgAGBQJT5N/lAAoJEHZH4aRLwOS6wcMP/1PvK2IY+V81NHhZydTgGpoN
-0QGdApQjd5Z6S3d8UYMru/8kV5297gVsklLtGqnNyTx7fRy8o2PQstT27EN9JB12
-JQOqpO2FiLlm90V7buvEIy7XPOr9yLvp8C5dK8MexppGvNtXAHSp1OvOd2HVz6KV
-s0z0+5yndJKDvfqIwe6fv6fAqsq1Ff7wTIuWIMnVNHe1J4AqP6vNIT0nZ9gQo8fK
-NS4+C2ktqUr4x/69DmsL5nzVfZTL9gJmdY8pPt3iCmXTDD5r1j0nDoocOsFaBR2X
-Sf0SX2xkqJw2nNbdJ8IiA5/MEi8mmbFC4DKa4dY81hHS9o5ofKDJeQxzyE5Vf7ni
-/Zx0Ddr+qc2WXF0JLEk8ZTaNni3Bev76claFJyB8zQ1lDyZBnV642ZyvUTtlM1Yq
-/nrAV+1jTbx6xWzDhG3PXkarU1HXgSv7sWoFaVdESENmR8uWwAf/80++gaIFxfBS
-vOe1RfBe8DGYdrcl2Guc04NVialhPGoUCI2Cp7+dqyF9n10B/bOo19sNlBIa18kn
-gWuwFF+qQDXg0f0bOCeBsEFosb/vIzrDsbVIxsfMYwjINntgfoezfeT1H1Aov9Be
-stnr2SwV0VtFCZtWX32ePaiaioKbz3gd1uQPL38rySDx2o2euY8Z1GsKtbriX5nn
-oaP4RtUPo1ac3mbFp/Bt
-=B22H
------END PGP SIGNATURE-----
+----------------------------------------------------------------
+Daniel Vetter (4):
+      drm/i915: Update DRIVER_DATE to 20140725
+      drm/i915: Don't require dev->struct_mutex in psr_match_conditions
+      drm/i915: Tune done rc6 enabling output
+      drm/i915: Tune down MCH_SSKPD values warning
 
---rIsG1lUQFG2vxuoz--
+Deepak S (1):
+      drm/i915: Bring GPU Freq to min while suspending.
+
+Imre Deak (2):
+      drm/i915: factor out intel_edp_panel_vdd_sanitize
+      drm/i915: fix VDD state tracking after system resume
+
+Jiri Kosina (1):
+      drm/i915: read HEAD register back in init_ring_common() to enforce ordering
+
+Kenneth Graunke (2):
+      drm/i915: Refactor Broadwell PIPE_CONTROL emission into a helper.
+      drm/i915: Add the WaCsStallBeforeStateCacheInvalidate:bdw workaround.
+
+Mika Kuoppala (1):
+      drm/i915: Don't accumulate hangcheck score on forward progress
+
+Pavel Machek (1):
+      drm/i915: work around warning in i915_gem_gtt
+
+Rafael Barbalho (1):
+      drm/i915: Fix crash when failing to parse MIPI VBT
+
+Rodrigo Vivi (4):
+      drm/i915: Fix error state collecting
+      drm/i915: Collect gtier properly on HSW.
+      drm/i915: Fix DEIER and GTIER collecting for BDW.
+      Revert "drm/i915: Enable semaphores on BDW"
+
+Shobhit Kumar (2):
+      drm/i915: wait for all DSI FIFOs to be empty
+      drm/i915: Add correct hw/sw config check for DSI encoder
+
+Ville Syrjälä (1):
+      drm/i915: Fix threshold for choosing 32 vs. 64 precisions for VLV DDL values
+
+Zhenyu Wang (1):
+      drm/i915: Fix drain latency precision multipler for VLV
+
+ drivers/gpu/drm/i915/i915_drv.c         |  4 ++
+ drivers/gpu/drm/i915/i915_drv.h         |  3 +-
+ drivers/gpu/drm/i915/i915_gem.c         |  2 +-
+ drivers/gpu/drm/i915/i915_gem_gtt.c     | 11 +++--
+ drivers/gpu/drm/i915/i915_gpu_error.c   | 35 +++++++++-----
+ drivers/gpu/drm/i915/i915_irq.c         | 15 ++++--
+ drivers/gpu/drm/i915/i915_reg.h         | 50 ++++++++++----------
+ drivers/gpu/drm/i915/intel_bios.c       |  2 +-
+ drivers/gpu/drm/i915/intel_display.c    |  4 ++
+ drivers/gpu/drm/i915/intel_dp.c         | 67 +++++++++++++++++++--------
+ drivers/gpu/drm/i915/intel_drv.h        |  1 +
+ drivers/gpu/drm/i915/intel_dsi.c        | 29 +++++++++++-
+ drivers/gpu/drm/i915/intel_dsi.h        |  1 +
+ drivers/gpu/drm/i915/intel_dsi_cmd.c    | 16 +++++++
+ drivers/gpu/drm/i915/intel_dsi_cmd.h    |  1 +
+ drivers/gpu/drm/i915/intel_dsi_pll.c    | 81 +++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/i915/intel_pm.c         | 41 ++++++++---------
+ drivers/gpu/drm/i915/intel_ringbuffer.c | 47 +++++++++++++------
+ drivers/gpu/drm/i915/intel_ringbuffer.h |  2 +
+ 19 files changed, 310 insertions(+), 102 deletions(-)
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
