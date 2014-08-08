@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509AbaHHUvS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:51:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40952 "EHLO
+	id S932541AbaHHUvk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:51:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41020 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932474AbaHHUvO (ORCPT
+	with ESMTP id S1757057AbaHHUvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:51:14 -0400
+	Fri, 8 Aug 2014 16:51:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 071/259] intel_pstate: Fix setting VID
-Date: Fri,  8 Aug 2014 13:38:14 -0700
-Message-Id: <1407530482-4483-72-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 234/259] net: sctp: check proc_dointvec result in proc_sctp_do_auth
+Date: Fri,  8 Aug 2014 13:40:57 -0700
+Message-Id: <1407530482-4483-235-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,74 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit c16ed06024a6e699c332831dd50d8276744e3de8 upstream.
+[ Upstream commit 24599e61b7552673dd85971cf5a35369cd8c119e ]
 
-Commit 21855ff5 (intel_pstate: Set turbo VID for BayTrail) introduced
-setting the turbo VID which is required to prevent a machine check on
-some Baytrail SKUs under heavy graphics based workloads.  The
-docmumentation update that brought the requirement to light also
-changed the bit mask used for enumerating P state and VID values from
-0x7f to 0x3f.
+When writing to the sysctl field net.sctp.auth_enable, it can well
+be that the user buffer we handed over to proc_dointvec() via
+proc_sctp_do_auth() handler contains something other than integers.
 
-This change returns the mask value to 0x7f.
+In that case, we would set an uninitialized 4-byte value from the
+stack to net->sctp.auth_enable that can be leaked back when reading
+the sysctl variable, and it can unintentionally turn auth_enable
+on/off based on the stack content since auth_enable is interpreted
+as a boolean.
 
-Tested with the Intel NUC DN2820FYK,
-BIOS version FYBYT10H.86A.0034.2014.0513.1413 with v3.16-rc1 and
-v3.14.8 kernel versions.
+Fix it up by making sure proc_dointvec() returned sucessfully.
 
-Fixes: 21855ff5 (intel_pstate: Set turbo VID for BayTrail)
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=77951
-Reported-and-tested-by: Rune Reterson <rune@megahurts.dk>
-Reported-and-tested-by: Eric Eickmeyer <erich@ericheickmeyer.com>
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Fixes: b14878ccb7fa ("net: sctp: cache auth_enable per endpoint")
+Reported-by: Florian Westphal <fwestpha@redhat.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/cpufreq/intel_pstate.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ net/sctp/sysctl.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index bbfb81f..37ef477 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -361,21 +361,21 @@ static int byt_get_min_pstate(void)
- {
- 	u64 value;
- 	rdmsrl(BYT_RATIOS, value);
--	return (value >> 8) & 0x3F;
-+	return (value >> 8) & 0x7F;
- }
+diff --git a/net/sctp/sysctl.c b/net/sctp/sysctl.c
+index 7c4eac4..99abe1a 100644
+--- a/net/sctp/sysctl.c
++++ b/net/sctp/sysctl.c
+@@ -423,8 +423,7 @@ static int proc_sctp_do_auth(struct ctl_table *ctl, int write,
+ 		tbl.data = &net->sctp.auth_enable;
  
- static int byt_get_max_pstate(void)
- {
- 	u64 value;
- 	rdmsrl(BYT_RATIOS, value);
--	return (value >> 16) & 0x3F;
-+	return (value >> 16) & 0x7F;
- }
+ 	ret = proc_dointvec(&tbl, write, buffer, lenp, ppos);
+-
+-	if (write) {
++	if (write && ret == 0) {
+ 		struct sock *sk = net->sctp.ctl_sock;
  
- static int byt_get_turbo_pstate(void)
- {
- 	u64 value;
- 	rdmsrl(BYT_TURBO_RATIOS, value);
--	return value & 0x3F;
-+	return value & 0x7F;
- }
- 
- static void byt_set_pstate(struct cpudata *cpudata, int pstate)
-@@ -409,8 +409,8 @@ static void byt_get_vid(struct cpudata *cpudata)
- 
- 
- 	rdmsrl(BYT_VIDS, value);
--	cpudata->vid.min = int_tofp((value >> 8) & 0x3f);
--	cpudata->vid.max = int_tofp((value >> 16) & 0x3f);
-+	cpudata->vid.min = int_tofp((value >> 8) & 0x7f);
-+	cpudata->vid.max = int_tofp((value >> 16) & 0x7f);
- 	cpudata->vid.ratio = div_fp(
- 		cpudata->vid.max - cpudata->vid.min,
- 		int_tofp(cpudata->pstate.max_pstate -
+ 		net->sctp.auth_enable = new_value;
 -- 
 1.9.1
 
