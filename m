@@ -1,210 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756495AbaHHLFW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 07:05:22 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:36003 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756205AbaHHLFU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 07:05:20 -0400
-Message-ID: <53E4AEE9.2010000@hitachi.com>
-Date: Fri, 08 Aug 2014 20:05:13 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1756663AbaHHLFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 07:05:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41968 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756635AbaHHLFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 07:05:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,824,1400050800"; 
+   d="scan'208";a="581915924"
+Date: Fri, 8 Aug 2014 14:05:37 +0300
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 6/6] tty: serial: Add 8250-core based omap driver
+Message-ID: <20140808110537.GA29184@xps8300>
+References: <1404928177-26554-1-git-send-email-bigeasy@linutronix.de>
+ <1404928177-26554-7-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: (ltc-kernel 9786) [PATCH ftrace/core v4 0/4] ftrace, kprobes:
- Introduce IPMODIFY flag for ftrace_ops to detect conflicts
-References: <20140728052215.29491.23631.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20140728052215.29491.23631.stgit@kbuild-fedora.novalocal>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404928177-26554-7-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
+On Wed, Jul 09, 2014 at 07:49:37PM +0200, Sebastian Andrzej Siewior wrote:
+> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+> index bf06a4c..1cbfc8c 100644
+> --- a/drivers/tty/serial/8250/8250_core.c
+> +++ b/drivers/tty/serial/8250/8250_core.c
+> @@ -263,6 +263,12 @@ static const struct serial8250_config uart_config[] = {
+>  		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
+>  		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
+>  	},
+> +	[PORT_OMAP_16750] = {
+> +		.name		= "OMAP",
+> +		.fifo_size	= 64,
+> +		.tx_loadsz	= 64,
+> +		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
+> +	},
+>  	[PORT_TEGRA] = {
+>  		.name		= "Tegra",
+>  		.fifo_size	= 32,
+> @@ -1340,6 +1346,8 @@ static void serial8250_stop_rx(struct uart_port *port)
+>  	pm_runtime_get_sync(port->dev);
+>  
+>  	up->ier &= ~UART_IER_RLSI;
+> +	if (port->type == PORT_OMAP_16750)
+> +		up->ier &= ~UART_IER_RDI;
+>  	up->port.read_status_mask &= ~UART_LSR_DR;
+>  	serial_port_out(port, UART_IER, up->ier);
 
-BTW, I'd like to add this testcase if ftracetest is accepted.
+Alan couldn't UART_IER_RDI be always cleared here with all port types?
+Actually, shouldn't it be?
 
-Thank you,
-
-(2014/07/28 14:22), Masami Hiramatsu wrote:
-> Hi,
-> 
-> Here is the 4th version of the series of patches which introduces
-> IPMODIFY flag for ftrace_ops to detect conflicts of ftrace users
-> who can modify regs->ip in their handler.
-> This version is basically an update of previous version, and
-> I've splitted a patch which adding IPMODIFY to kprobes from ftrace
-> IPMODIFY introducing patch.
-> 
-> Currently, only kprobes can change the regs->ip in the handler,
-> but recently kpatch is also want to change it. Moreover, since
-> the ftrace itself exported to modules, it might be considerable
-> senario.
-> 
-> Here we talked on github.
->  https://github.com/dynup/kpatch/issues/47
-> 
-> To protect modified regs-ip from each other, this series
-> introduces FTRACE_OPS_FL_IPMODIFY flag and ftrace now ensures
-> the flag can be set on each function entry location. If there
-> is someone who already reserve regs->ip on target function
-> entry, ftrace_set_filter_ip or register_ftrace_function will
-> return -EBUSY. Users must handle that.
-> The ftrace_ops with IPMODIFY flag requires at least one
-> entry for filter hash, and its notrace_hash must be empty,
-> because the IPMODIFY action is very address sensitve and
-> user must consider the ip address.
-> 
-> The 3rd patch adds a special reservation of IPMODIFY on the
-> jprobed address, since it is the only user who will change
-> the regs->ip. Other kprobes do not change it anymore. 
-> 
-> Here is the new testcase.
-> -------
-> #!/bin/bash
-> 
-> echo "IPMODIFY test"
-> ADDR=0x`grep do_fork /proc/kallsyms | cut -f 1 -d" "`
-> 
-> echo "Case1: kprobe->jprobe->ipmodify(fail)"
-> modprobe kprobe_example
-> modprobe jprobe_example
-> insmod ./ipmodify.ko target=$ADDR && echo "Case1: [FAIL]" || echo "Case1: [OK]"
-> rmmod kprobe_example jprobe_example
-> 
-> echo "Case2: jprobe->kprobe->ipmodify(fail)"
-> modprobe jprobe_example
-> modprobe kprobe_example
-> insmod ./ipmodify.ko target=$ADDR && echo "Case2: [FAIL]" || echo "Case2: [OK]"
-> rmmod kprobe_example jprobe_example
-> 
-> echo "Case3: jprobe->ipmodify(fail)"
-> modprobe jprobe_example
-> insmod ./ipmodify.ko target=$ADDR && echo "Case3: [FAIL]" || echo "Case3: [OK]"
-> rmmod jprobe_example
-> 
-> echo "Case4: ipmodify->jprobe(fail)"
-> insmod ./ipmodify.ko target=$ADDR
-> modprobe jprobe_example && echo "Case4: [FAIL]" || echo "Case4: [OK]"
-> rmmod ipmodify
-> 
-> echo "Case5: ipmodify->kprobe->jprobe(fail)"
-> insmod ./ipmodify.ko target=$ADDR
-> modprobe kprobe_example
-> modprobe jprobe_example && echo "Case5: [FAIL]" || echo "Case5: [OK]"
-> rmmod ipmodify kprobe_example
-> 
-> echo "Case6: ipmodify with targeting all functions(fail)"
-> insmod ./ipmodify.ko && echo "Case6: [FAIL]" || echo "Case6: [OK]"
-> rmmod ipmodify
-> 
-> echo "Case7: ipmodify with notrace filter (fail)"
-> insmod ./ipmodify.ko target=$ADDR noexp="do_fork" && echo "Case7: [FAIL]" || echo "Case7: [OK]"
-> rmmod ipmodify
-> -------
-> 
-> And ipmodify.c
-> -------
-> #include <linux/kernel.h>
-> #include <linux/module.h>
-> #include <linux/ftrace.h>
-> 
-> 
-> static void ftrace_ipmodify_handler(unsigned long a0, unsigned long a1,
->                                 struct ftrace_ops *op, struct pt_regs *regs)
-> {
->         return;
-> }
-> 
-> static struct ftrace_ops test_ops __read_mostly = {
->         .func = ftrace_ipmodify_handler,
->         .flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
-> };
-> 
-> static unsigned long target;
-> module_param(target, ulong, 0444);
-> static char *noexp = "";
-> module_param(noexp, charp, 0444);
-> 
-> static int __init ipmodify_init(void)
-> {
->         int ret;
->         unsigned long ip = target;
-> 
->         if (strlen(noexp) != 0) {
->                 ret = ftrace_set_notrace(&test_ops, noexp, 0, 0);
->                 pr_err("ipmodify_test: set notrace \"%s\", ret = %d\n",
->                         noexp, ret);
->         }
->         if (ret < 0)
->                 return ret;
-> 
->         ret = ftrace_set_filter_ip(&test_ops, ip, 0, 0);
->         pr_err("ipmodify_test: set filter ip 0x%lx, ret = %d\n", ip, ret);
-> 
->         if (ret >= 0) {
->                 ret = register_ftrace_function(&test_ops);
->                 pr_err("ipmodify_test: register ftrace on 0x%lx, ret = %d\n",
->                         ip, ret);
->         }
-> 
->         return ret;
-> }
-> 
-> static void __exit ipmodify_exit(void)
-> {
->         int ret;
->         unsigned long ip = target;
-> 
->         ret = unregister_ftrace_function(&test_ops);
->         pr_err("ipmodify_test: unregister ftrace on 0x%lx, ret = %d\n", ip, ret);
->         if (ret >= 0) {
->                 ret = ftrace_set_filter_ip(&test_ops, ip, 1, 0);
->                 pr_err("ipmodify_test: clear filter ip 0x%lx, ret = %d\n",
->                         ip, ret);
->         }
-> }
-> 
-> module_init(ipmodify_init)
-> module_exit(ipmodify_exit)
-> MODULE_LICENSE("GPL");
-> -------
-> 
-> Thank you,
-> 
-> ---
-> 
-> Masami Hiramatsu (4):
->       kprobes/ftrace: Recover original IP if pre_handler doesn't change it
->       ftrace, kprobes: Support IPMODIFY flag to find IP modify conflict
->       kprobes: Add IPMODIFY flag to kprobe_ftrace_ops
->       kprobes: Set IPMODIFY flag only if the probe can change regs->ip
-> 
-> 
->  Documentation/kprobes.txt        |   12 +--
->  Documentation/trace/ftrace.txt   |    5 +
->  arch/x86/kernel/kprobes/ftrace.c |    9 ++
->  include/linux/ftrace.h           |   16 ++++
->  kernel/kprobes.c                 |  123 +++++++++++++++++++++++++++++----
->  kernel/trace/ftrace.c            |  143 +++++++++++++++++++++++++++++++++++++-
->  6 files changed, 279 insertions(+), 29 deletions(-)
-> 
-> --
-> 
-> 
-
+Then the custom port type PORT_OMAP_16750 would not be needed.
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+heikki
