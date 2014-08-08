@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933580AbaHHVhB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:37:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60563 "EHLO
+	id S933640AbaHHVhK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:37:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60633 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758683AbaHHVgh (ORCPT
+	with ESMTP id S1758706AbaHHVgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:37 -0400
+	Fri, 8 Aug 2014 17:36:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Binderman <dcb314@hotmail.com>,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 34/39] sparc64: Guard against flushing openfirmware mappings.
-Date: Fri,  8 Aug 2014 14:35:20 -0700
-Message-Id: <20140808213356.435112344@linuxfoundation.org>
+Subject: [PATCH 3.14 38/39] arch/sparc/math-emu/math_32.c: drop stray break operator
+Date: Fri,  8 Aug 2014 14:35:24 -0700
+Message-Id: <20140808213356.609914994@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -28,117 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-[ Upstream commit 4ca9a23765da3260058db3431faf5b4efd8cf926 ]
+[ Upstream commit 093758e3daede29cb4ce6aedb111becf9d4bfc57 ]
 
-Based almost entirely upon a patch by Christopher Alexander Tobias
-Schulze.
+This commit is a guesswork, but it seems to make sense to drop this
+break, as otherwise the following line is never executed and becomes
+dead code. And that following line actually saves the result of
+local calculation by the pointer given in function argument. So the
+proposed change makes sense if this code in the whole makes sense (but I
+am unable to analyze it in the whole).
 
-In commit db64fe02258f1507e13fe5212a989922323685ce ("mm: rewrite vmap
-layer") lazy VMAP tlb flushing was added to the vmalloc layer.  This
-causes problems on sparc64.
-
-Sparc64 has two VMAP mapped regions and they are not contiguous with
-eachother.  First we have the malloc mapping area, then another
-unrelated region, then the vmalloc region.
-
-This "another unrelated region" is where the firmware is mapped.
-
-If the lazy TLB flushing logic in the vmalloc code triggers after
-we've had both a module unload and a vfree or similar, it will pass an
-address range that goes from somewhere inside the malloc region to
-somewhere inside the vmalloc region, and thus covering the
-openfirmware area entirely.
-
-The sparc64 kernel learns about openfirmware's dynamic mappings in
-this region early in the boot, and then services TLB misses in this
-area.  But openfirmware has some locked TLB entries which are not
-mentioned in those dynamic mappings and we should thus not disturb
-them.
-
-These huge lazy TLB flush ranges causes those openfirmware locked TLB
-entries to be removed, resulting in all kinds of problems including
-hard hangs and crashes during reboot/reset.
-
-Besides causing problems like this, such huge TLB flush ranges are
-also incredibly inefficient.  A plea has been made with the author of
-the VMAP lazy TLB flushing code, but for now we'll put a safety guard
-into our flush_tlb_kernel_range() implementation.
-
-Since the implementation has become non-trivial, stop defining it as a
-macro and instead make it a function in a C source file.
-
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81641
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/tlbflush_64.h |   12 ++----------
- arch/sparc/mm/init_64.c              |   23 +++++++++++++++++++++++
- 2 files changed, 25 insertions(+), 10 deletions(-)
+ arch/sparc/math-emu/math_32.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/include/asm/tlbflush_64.h
-+++ b/arch/sparc/include/asm/tlbflush_64.h
-@@ -34,6 +34,8 @@ static inline void flush_tlb_range(struc
- {
- }
- 
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end);
-+
- #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
- 
- extern void flush_tlb_pending(void);
-@@ -48,11 +50,6 @@ extern void __flush_tlb_kernel_range(uns
- 
- #ifndef CONFIG_SMP
- 
--#define flush_tlb_kernel_range(start,end) \
--do {	flush_tsb_kernel_range(start,end); \
--	__flush_tlb_kernel_range(start,end); \
--} while (0)
--
- static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
- {
- 	__flush_tlb_page(CTX_HWBITS(mm->context), vaddr);
-@@ -63,11 +60,6 @@ static inline void global_flush_tlb_page
- extern void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end);
- extern void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr);
- 
--#define flush_tlb_kernel_range(start, end) \
--do {	flush_tsb_kernel_range(start,end); \
--	smp_flush_tlb_kernel_range(start, end); \
--} while (0)
--
- #define global_flush_tlb_page(mm, vaddr) \
- 	smp_flush_tlb_page(mm, vaddr)
- 
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2702,3 +2702,26 @@ void hugetlb_setup(struct pt_regs *regs)
- 	}
- }
- #endif
-+
-+#ifdef CONFIG_SMP
-+#define do_flush_tlb_kernel_range	smp_flush_tlb_kernel_range
-+#else
-+#define do_flush_tlb_kernel_range	__flush_tlb_kernel_range
-+#endif
-+
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end)
-+{
-+	if (start < HI_OBP_ADDRESS && end > LOW_OBP_ADDRESS) {
-+		if (start < LOW_OBP_ADDRESS) {
-+			flush_tsb_kernel_range(start, LOW_OBP_ADDRESS);
-+			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
-+		}
-+		if (end > HI_OBP_ADDRESS) {
-+			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
-+			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
-+		}
-+	} else {
-+		flush_tsb_kernel_range(start, end);
-+		do_flush_tlb_kernel_range(start, end);
-+	}
-+}
+--- a/arch/sparc/math-emu/math_32.c
++++ b/arch/sparc/math-emu/math_32.c
+@@ -499,7 +499,7 @@ static int do_one_mathemu(u32 insn, unsi
+ 		case 0: fsr = *pfsr;
+ 			if (IR == -1) IR = 2;
+ 			/* fcc is always fcc0 */
+-			fsr &= ~0xc00; fsr |= (IR << 10); break;
++			fsr &= ~0xc00; fsr |= (IR << 10);
+ 			*pfsr = fsr;
+ 			break;
+ 		case 1: rd->s = IR; break;
 
 
