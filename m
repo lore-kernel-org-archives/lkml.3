@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181AbaHHQK7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 12:10:59 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:33912 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755624AbaHHQK6 (ORCPT
+	id S1756332AbaHHQR2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 12:17:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52452 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755975AbaHHQR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 12:10:58 -0400
-Date: Fri, 8 Aug 2014 12:10:55 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
+	Fri, 8 Aug 2014 12:17:26 -0400
+Date: Fri, 8 Aug 2014 18:17:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
         mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -19,67 +19,68 @@ Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         bobby.prani@gmail.com, masami.hiramatsu.pt@hitachi.com
 Subject: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
  waiting for RCU-tasks
-Message-ID: <20140808121055.52112b54@gandalf.local.home>
-In-Reply-To: <20140808160128.GE9918@twins.programming.kicks-ass.net>
+Message-ID: <20140808161709.GF9918@twins.programming.kicks-ass.net>
 References: <20140807154907.6f59cf6e@gandalf.local.home>
-	<20140807155326.18481e66@gandalf.local.home>
-	<20140807200813.GB3935@laptop>
-	<20140807171823.1a481290@gandalf.local.home>
-	<20140808064020.GZ9918@twins.programming.kicks-ass.net>
-	<20140808101221.21056900@gandalf.local.home>
-	<20140808143413.GB9918@twins.programming.kicks-ass.net>
-	<20140808105858.171da847@gandalf.local.home>
-	<20140808151643.GD9918@twins.programming.kicks-ass.net>
-	<20140808113949.046522c5@gandalf.local.home>
-	<20140808160128.GE9918@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+ <20140807155326.18481e66@gandalf.local.home>
+ <20140807200813.GB3935@laptop>
+ <20140807171823.1a481290@gandalf.local.home>
+ <20140808064020.GZ9918@twins.programming.kicks-ass.net>
+ <20140808101221.21056900@gandalf.local.home>
+ <20140808143413.GB9918@twins.programming.kicks-ass.net>
+ <20140808105858.171da847@gandalf.local.home>
+ <20140808151643.GD9918@twins.programming.kicks-ass.net>
+ <20140808113949.046522c5@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RSgmI+M79eD5fHET"
+Content-Disposition: inline
+In-Reply-To: <20140808113949.046522c5@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Aug 2014 18:01:28 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
 
- 
-> Well, see the _BIG_ difference is that currently, when I do nop >
-> current_tracer all that memory is instantly freed again.
-> 
-> With the proposed scheme, if I setup state, reconsider, destroy state,
-> try again, and generally muck about I can tie up unspecified amounts of
-> memory.
-> 
-> And being the bumbling idiot that I am, that's actually fairly typical
-> of how I end up tracing. There's no neat and tidy, I trace something,
-> look at the trace, script a little, muck about with the settings and
-> goto 1.
+--RSgmI+M79eD5fHET
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Fri, Aug 08, 2014 at 11:39:49AM -0400, Steven Rostedt wrote:
+> Also, anyone can register a function handler (perf, systemtap, and even
+> LTTng can).
+
+So how common is it to have more than 1 function event handler, and how
+many of those cases is there significant difference in the actual
+functions?
+
+Because that's the case you're optimizing for. Why is that an important
+enough case.
+
+I'm thinking I'll never trigger that, I only ever have the one normal
+ftrace handler. So no trampolines for me, the code you have now works
+just fine.
 
 
-It would actually be trivial to make that case never free the
-trampoline associated to function tracing. As that is a static ops that
-never gets freed, the trampoline it uses doesn't need to be freed
-either.
 
-But, if you were to do:
+--RSgmI+M79eD5fHET
+Content-Type: application/pgp-signature
 
-   # cd /sys/kernel/debug/tracing
-   # mkdir instances/foo
-   # cd instances/foo
-1: # echo function > current_tracer
-   # echo nop > current_tracer
-   goto 1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Then, yeah that could do it.
+iQIcBAEBAgAGBQJT5PgFAAoJEHZH4aRLwOS6eigQAJHmrBnma4IduCE1GUsVitEg
+yikz+Ycc9Km5LzBETL1OBI+uZXxyUYedyI9K970NUIgdnWc0PRlnyX75qOSno9hf
+YUjsNiLQSDIypvDM145HISMrKn9uIhsJhh29FsThOJXZo4ABF6NC8tUymV1SthkB
+FeIHBg8PQqV2+O9CwI/FuVH/l3jKht46SEvM4Izul50wdl6G46q3WKNGHzHXY24R
+Fsa0iJcqfFyZabVD7nVT2Djoy/UPulAUlsiOqAsKFXkfDTg/vR24D72cpbRtiCY9
+PJJMJNBTkCISc0/xFp57MdNc90DhFbhxlCsHrDnBnIDoc4X+eu0TlbYLLDhmGU3S
+oQRVU7O5RyvUd22DCNxd5Z4QtzcewkqfP44K04GomiE9SM00LmOmXOHQgKWQS+Nw
+oJvxxarrh1T95azm6ceIzFn9l7bKf/7bc3ribcX4Zgt6jg+8PBdu8sE+W83mP+tG
+QhHd0k6LPMtwWyZXFa/D8vfdfvpOlQe980aL2JiuXs+oAKS6N7mfMC9kJOo1rXo5
++WtoLafxguvPkIgIhFNx+f2q+1Zh9y88qLYeDnSFJlsk5gYiHJUMYSYDqSLViKVR
+fF1gdXLFALIX5D6SnCsABfR9WFpiiLo09p4fnkKVeJb8V27KRTk3Jk/g69Gs3LsF
+CBNNsdKzsg23Dr1+pB8p
+=IORY
+-----END PGP SIGNATURE-----
 
-> 
-> 
-> In any case, I think I now fully understand what you're trying to do,
-> just not sure its all win.
-
-Fair enough.
-
--- Steve
+--RSgmI+M79eD5fHET--
