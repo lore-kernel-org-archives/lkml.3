@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759714AbaHHWdD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:33:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40108 "EHLO
+	id S1756210AbaHHUlj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:41:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40021 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755887AbaHHUln (ORCPT
+	with ESMTP id S1751733AbaHHUlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:41:43 -0400
+	Fri, 8 Aug 2014 16:41:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sven Wegener <sven.wegener@stealer.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 006/259] x86_32, entry: Store badsys error code in %eax
-Date: Fri,  8 Aug 2014 13:37:09 -0700
-Message-Id: <1407530482-4483-7-git-send-email-kamal@canonical.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 019/259] KVM: x86: preserve the high 32-bits of the PAT register
+Date: Fri,  8 Aug 2014 13:37:22 -0700
+Message-Id: <1407530482-4483-20-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,92 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Wegener <sven.wegener@stealer.net>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 8142b215501f8b291a108a202b3a053a265b03dd upstream.
+commit 7cb060a91c0efc5ff94f83c6df3ed705e143cdb9 upstream.
 
-Commit 554086d ("x86_32, entry: Do syscall exit work on badsys
-(CVE-2014-4508)") introduced a regression in the x86_32 syscall entry
-code, resulting in syscall() not returning proper errors for undefined
-syscalls on CPUs supporting the sysenter feature.
+KVM does not really do much with the PAT, so this went unnoticed for a
+long time.  It is exposed however if you try to do rdmsr on the PAT
+register.
 
-The following code:
-
-> int result = syscall(666);
-> printf("result=%d errno=%d error=%s\n", result, errno, strerror(errno));
-
-results in:
-
-> result=666 errno=0 error=Success
-
-Obviously, the syscall return value is the called syscall number, but it
-should have been an ENOSYS error. When run under ptrace it behaves
-correctly, which makes it hard to debug in the wild:
-
-> result=-1 errno=38 error=Function not implemented
-
-The %eax register is the return value register. For debugging via ptrace
-the syscall entry code stores the complete register context on the
-stack. The badsys handlers only store the ENOSYS error code in the
-ptrace register set and do not set %eax like a regular syscall handler
-would. The old resume_userspace call chain contains code that clobbers
-%eax and it restores %eax from the ptrace registers afterwards. The same
-goes for the ptrace-enabled call chain. When ptrace is not used, the
-syscall return value is the passed-in syscall number from the untouched
-%eax register.
-
-Use %eax as the return value register in syscall_badsys and
-sysenter_badsys, like a real syscall handler does, and have the caller
-push the value onto the stack for ptrace access.
-
-Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
-Link: http://lkml.kernel.org/r/alpine.LNX.2.11.1407221022380.31021@titan.int.lan.stealer.net
-Reviewed-and-tested-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>
+Reported-by: Valentine Sinitsyn <valentine.sinitsyn@gmail.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/entry_32.S | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/kvm_host.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 6491353..c87810b 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -433,8 +433,8 @@ sysenter_do_call:
- 	cmpl $(NR_syscalls), %eax
- 	jae sysenter_badsys
- 	call *sys_call_table(,%eax,4)
--	movl %eax,PT_EAX(%esp)
- sysenter_after_call:
-+	movl %eax,PT_EAX(%esp)
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_OFF
-@@ -514,6 +514,7 @@ ENTRY(system_call)
- 	jae syscall_badsys
- syscall_call:
- 	call *sys_call_table(,%eax,4)
-+syscall_after_call:
- 	movl %eax,PT_EAX(%esp)		# store the return value
- syscall_exit:
- 	LOCKDEP_SYS_EXIT
-@@ -683,12 +684,12 @@ syscall_fault:
- END(syscall_fault)
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 2a01832..c16aef8 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -462,7 +462,7 @@ struct kvm_vcpu_arch {
+ 	bool nmi_injected;    /* Trying to inject an NMI this entry */
  
- syscall_badsys:
--	movl $-ENOSYS,PT_EAX(%esp)
--	jmp syscall_exit
-+	movl $-ENOSYS,%eax
-+	jmp syscall_after_call
- END(syscall_badsys)
+ 	struct mtrr_state_type mtrr_state;
+-	u32 pat;
++	u64 pat;
  
- sysenter_badsys:
--	movl $-ENOSYS,PT_EAX(%esp)
-+	movl $-ENOSYS,%eax
- 	jmp sysenter_after_call
- END(syscall_badsys)
- 	CFI_ENDPROC
+ 	int switch_db_regs;
+ 	unsigned long db[KVM_NR_DB_REGS];
 -- 
 1.9.1
 
