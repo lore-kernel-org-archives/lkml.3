@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759342AbaHHVvh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:51:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60683 "EHLO
+	id S933467AbaHHVgr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:36:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60550 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933498AbaHHVgv (ORCPT
+	with ESMTP id S1758526AbaHHVg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:51 -0400
+	Fri, 8 Aug 2014 17:36:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 14/26] macvlan: Initialize vlan_features to turn on offload support.
-Date: Fri,  8 Aug 2014 14:35:21 -0700
-Message-Id: <20140808213414.262200746@linuxfoundation.org>
+Subject: [PATCH 3.14 24/39] sparc64: Handle 32-bit tasks properly in compute_effective_address().
+Date: Fri,  8 Aug 2014 14:35:10 -0700
+Message-Id: <20140808213356.006826247@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
-References: <20140808213413.648794968@linuxfoundation.org>
+In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
+References: <20140808213354.980430919@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,35 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 081e83a78db9b0ae1f5eabc2dedecc865f509b98 ]
+[ Upstream commit d037d16372bbe4d580342bebbb8826821ad9edf0 ]
 
-Macvlan devices do not initialize vlan_features.  As a result,
-any vlan devices configured on top of macvlans perform very poorly.
-Initialize vlan_features based on the vlan features of the lower-level
-device.
+If we have a 32-bit task we must chop off the top 32-bits of the
+64-bit value just as the cpu would.
 
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/sparc/kernel/unaligned_64.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -547,6 +547,7 @@ static int macvlan_init(struct net_devic
- 				  (lowerdev->state & MACVLAN_STATE_MASK);
- 	dev->features 		= lowerdev->features & MACVLAN_FEATURES;
- 	dev->features		|= ALWAYS_ON_FEATURES;
-+	dev->vlan_features	= lowerdev->vlan_features & MACVLAN_FEATURES;
- 	dev->gso_max_size	= lowerdev->gso_max_size;
- 	dev->iflink		= lowerdev->ifindex;
- 	dev->hard_header_len	= lowerdev->hard_header_len;
+--- a/arch/sparc/kernel/unaligned_64.c
++++ b/arch/sparc/kernel/unaligned_64.c
+@@ -166,17 +166,23 @@ static unsigned long *fetch_reg_addr(uns
+ unsigned long compute_effective_address(struct pt_regs *regs,
+ 					unsigned int insn, unsigned int rd)
+ {
++	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
+ 	unsigned int rs1 = (insn >> 14) & 0x1f;
+ 	unsigned int rs2 = insn & 0x1f;
+-	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
++	unsigned long addr;
+ 
+ 	if (insn & 0x2000) {
+ 		maybe_flush_windows(rs1, 0, rd, from_kernel);
+-		return (fetch_reg(rs1, regs) + sign_extend_imm13(insn));
++		addr = (fetch_reg(rs1, regs) + sign_extend_imm13(insn));
+ 	} else {
+ 		maybe_flush_windows(rs1, rs2, rd, from_kernel);
+-		return (fetch_reg(rs1, regs) + fetch_reg(rs2, regs));
++		addr = (fetch_reg(rs1, regs) + fetch_reg(rs2, regs));
+ 	}
++
++	if (!from_kernel && test_thread_flag(TIF_32BIT))
++		addr &= 0xffffffff;
++
++	return addr;
+ }
+ 
+ /* This is just to make gcc think die_if_kernel does return... */
 
 
