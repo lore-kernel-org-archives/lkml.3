@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932765AbaHHV4C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:56:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60563 "EHLO
+	id S932807AbaHHV4F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:56:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60588 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758497AbaHHVge (ORCPT
+	with ESMTP id S1758666AbaHHVge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 17:36:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergey Popov <pinkbyte@gentoo.org>, Dmitry Popov <ixaphire@qrator.net>,
+        Hauke Merthens <hauke-m@hauke-m.de>, Jonas Gorski <jogo@openwrt.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 07/39] ip_tunnel(ipv4): fix tunnels with "local any remote $remote_ip"
-Date: Fri,  8 Aug 2014 14:34:53 -0700
-Message-Id: <20140808213355.295343578@linuxfoundation.org>
+Subject: [PATCH 3.14 06/39] net: phy: re-apply PHY fixups during phy_register_device
+Date: Fri,  8 Aug 2014 14:34:52 -0700
+Message-Id: <20140808213355.261267036@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
 References: <20140808213354.980430919@linuxfoundation.org>
@@ -29,126 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Popov <ixaphire@qrator.net>
+From: Florian Fainelli <f.fainelli@gmail.com>
 
-[ Upstream commit 95cb5745983c222867cc9ac593aebb2ad67d72c0 ]
+[ Upstream commit d92f5dec6325079c550889883af51db1b77d5623 ]
 
-Ipv4 tunnels created with "local any remote $ip" didn't work properly since
-7d442fab0 (ipv4: Cache dst in tunnels). 99% of packets sent via those tunnels
-had src addr = 0.0.0.0. That was because only dst_entry was cached, although
-fl4.saddr has to be cached too. Every time ip_tunnel_xmit used cached dst_entry
-(tunnel_rtable_get returned non-NULL), fl4.saddr was initialized with
-tnl_params->saddr (= 0 in our case), and wasn't changed until iptunnel_xmit().
+Commit 87aa9f9c61ad ("net: phy: consolidate PHY reset in phy_init_hw()")
+moved the call to phy_scan_fixups() in phy_init_hw() after a software
+reset is performed.
 
-This patch adds saddr to ip_tunnel->dst_cache, fixing this issue.
+By the time phy_init_hw() is called in phy_device_register(), no driver
+has been bound to this PHY yet, so all the checks in phy_init_hw()
+against the PHY driver and the PHY driver's config_init function will
+return 0. We will therefore never call phy_scan_fixups() as we should.
 
-Reported-by: Sergey Popov <pinkbyte@gentoo.org>
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+Fix this by calling phy_scan_fixups() and check for its return value to
+restore the intended functionality.
+
+This broke PHY drivers which do register an early PHY fixup callback to
+intercept the PHY probing and do things like changing the 32-bits unique
+PHY identifier when a pseudo-PHY address has been used, as well as
+board-specific PHY fixups that need to be applied during driver probe
+time.
+
+Reported-by: Hauke Merthens <hauke-m@hauke-m.de>
+Reported-by: Jonas Gorski <jogo@openwrt.org>
+Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/ip_tunnels.h |    1 +
- net/ipv4/ip_tunnel.c     |   29 ++++++++++++++++++-----------
- 2 files changed, 19 insertions(+), 11 deletions(-)
+ drivers/net/phy/phy_device.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/ip_tunnels.h
-+++ b/include/net/ip_tunnels.h
-@@ -40,6 +40,7 @@ struct ip_tunnel_prl_entry {
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -353,7 +353,7 @@ int phy_device_register(struct phy_devic
+ 	phydev->bus->phy_map[phydev->addr] = phydev;
  
- struct ip_tunnel_dst {
- 	struct dst_entry __rcu 		*dst;
-+	__be32				 saddr;
- };
- 
- struct ip_tunnel {
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -69,23 +69,25 @@ static unsigned int ip_tunnel_hash(__be3
- }
- 
- static void __tunnel_dst_set(struct ip_tunnel_dst *idst,
--			     struct dst_entry *dst)
-+			     struct dst_entry *dst, __be32 saddr)
- {
- 	struct dst_entry *old_dst;
- 
- 	dst_clone(dst);
- 	old_dst = xchg((__force struct dst_entry **)&idst->dst, dst);
- 	dst_release(old_dst);
-+	idst->saddr = saddr;
- }
- 
--static void tunnel_dst_set(struct ip_tunnel *t, struct dst_entry *dst)
-+static void tunnel_dst_set(struct ip_tunnel *t,
-+			   struct dst_entry *dst, __be32 saddr)
- {
--	__tunnel_dst_set(this_cpu_ptr(t->dst_cache), dst);
-+	__tunnel_dst_set(this_cpu_ptr(t->dst_cache), dst, saddr);
- }
- 
- static void tunnel_dst_reset(struct ip_tunnel *t)
- {
--	tunnel_dst_set(t, NULL);
-+	tunnel_dst_set(t, NULL, 0);
- }
- 
- void ip_tunnel_dst_reset_all(struct ip_tunnel *t)
-@@ -93,20 +95,25 @@ void ip_tunnel_dst_reset_all(struct ip_t
- 	int i;
- 
- 	for_each_possible_cpu(i)
--		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL);
-+		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL, 0);
- }
- EXPORT_SYMBOL(ip_tunnel_dst_reset_all);
- 
--static struct rtable *tunnel_rtable_get(struct ip_tunnel *t, u32 cookie)
-+static struct rtable *tunnel_rtable_get(struct ip_tunnel *t,
-+					u32 cookie, __be32 *saddr)
- {
-+	struct ip_tunnel_dst *idst;
- 	struct dst_entry *dst;
- 
- 	rcu_read_lock();
--	dst = rcu_dereference(this_cpu_ptr(t->dst_cache)->dst);
-+	idst = this_cpu_ptr(t->dst_cache);
-+	dst = rcu_dereference(idst->dst);
- 	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
- 		dst = NULL;
- 	if (dst) {
--		if (dst->obsolete && dst->ops->check(dst, cookie) == NULL) {
-+		if (!dst->obsolete || dst->ops->check(dst, cookie)) {
-+			*saddr = idst->saddr;
-+		} else {
- 			tunnel_dst_reset(t);
- 			dst_release(dst);
- 			dst = NULL;
-@@ -362,7 +369,7 @@ static int ip_tunnel_bind_dev(struct net
- 
- 		if (!IS_ERR(rt)) {
- 			tdev = rt->dst.dev;
--			tunnel_dst_set(tunnel, &rt->dst);
-+			tunnel_dst_set(tunnel, &rt->dst, fl4.saddr);
- 			ip_rt_put(rt);
- 		}
- 		if (dev->type != ARPHRD_ETHER)
-@@ -606,7 +613,7 @@ void ip_tunnel_xmit(struct sk_buff *skb,
- 	init_tunnel_flow(&fl4, protocol, dst, tnl_params->saddr,
- 			 tunnel->parms.o_key, RT_TOS(tos), tunnel->parms.link);
- 
--	rt = connected ? tunnel_rtable_get(tunnel, 0) : NULL;
-+	rt = connected ? tunnel_rtable_get(tunnel, 0, &fl4.saddr) : NULL;
- 
- 	if (!rt) {
- 		rt = ip_route_output_key(tunnel->net, &fl4);
-@@ -616,7 +623,7 @@ void ip_tunnel_xmit(struct sk_buff *skb,
- 			goto tx_error;
- 		}
- 		if (connected)
--			tunnel_dst_set(tunnel, &rt->dst);
-+			tunnel_dst_set(tunnel, &rt->dst, fl4.saddr);
- 	}
- 
- 	if (rt->dst.dev == dev) {
+ 	/* Run all of the fixups for this PHY */
+-	err = phy_init_hw(phydev);
++	err = phy_scan_fixups(phydev);
+ 	if (err) {
+ 		pr_err("PHY %d failed to initialize\n", phydev->addr);
+ 		goto out;
 
 
