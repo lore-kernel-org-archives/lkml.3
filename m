@@ -1,286 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204AbaHHWUb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:20:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40485 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757932AbaHHUq7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:46:59 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 253/259] net: sctp: fix information leaks in ulpevent layer
-Date: Fri,  8 Aug 2014 13:41:16 -0700
-Message-Id: <1407530482-4483-254-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S933257AbaHHWVI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:21:08 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35088 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757926AbaHHUq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 16:46:58 -0400
+Message-ID: <53E53720.7090706@ti.com>
+Date: Fri, 8 Aug 2014 16:46:24 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Jiri Slaby <jslaby@suse.cz>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v2] serial: uart: add hw flow control support configuration
+References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com> <53E39B44.60406@hurleysoftware.com> <53E3A67B.6070709@ti.com> <20140807171254.GA13097@kroah.com> <53E3B67E.80705@hurleysoftware.com> <53E3B88C.2000209@ti.com> <53E3C685.5010600@hurleysoftware.com> <53E3E597.7070305@ti.com> <53E405B6.7030602@hurleysoftware.com> <53E526CB.6060504@ti.com>
+In-Reply-To: <53E526CB.6060504@ti.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.6 -stable review patch.  If anyone has any objections, please let me know.
+On 08/08/2014 03:36 PM, Murali Karicheri wrote:
+> On 08/07/2014 07:03 PM, Peter Hurley wrote:
+>
+> ----Cut-------------
+>>>>>
+>>>>>>
+>>>>>> 1. The patch enables UPF_HARD_FLOW, but provides no throttle() and
+>>>>>> unthrottle()
+>>>>>> methods for 8250, which is guaranteed to blow-up when either
+>>>>>> uart_throttle() or
+>>>>>> uart_unthrottle() is called.
+>>>>>>
+>>>>>> 2. The patch adds capabilities which already exist, namely
+>>>>>> UART_CAP_AFE.
+>>>>
+>>>>> AFAIK, UART_CAP_AFE is a software assisted hw flow control and it
+>>>>> was described in my commit log as well where as this patch add
+>>>>> support for pure h/w controlled flow control and no software
+>>>>> intervention is needed. Do you think uart_throttle() or
+>>>>> uart_unthrottle() is applicable
+>>>>> in this case?
+>>>>
+>>>> UART_CAP_AFE is used to indicate 16750-compatible hw flow control,
+>>>> which is
+>>>> auto-CTS and auto-RTS flow control as described in the TI datasheet at
+>>>> http://www.ti.com/lit/ds/symlink/tl16c750.pdf
+>>>
+>>> Peter,
+>>>
+>>> This patch was added to support hw flow control on boards based on
+>>> Keystone SoCs that has UART with h/w flow control capability.
+>>> Keystone SoCs UART spec is at
+>>> http://www.ti.com/lit/ug/sprugp1/sprugp1.pdf
+>>> and it uses tl16550c as per the document. The equivalent spec seems
+>>> to be http://www.ti.com/lit/ds/symlink/tl16c550c.pdf. Only difference
+>>> between tl16c750 and tl16c550 seems to be 16 byte FIFO available
+>>> instead of 16 or 64 byte FIFO in 16c750.
+>>
+>> So this is just a way to avoid the fifo size check.
+>> Then I'd rather see a capability that only overrides the fifo size check
+>> and does not enable UPF_HARD_FLOW.
+>>
+>> Or show that the fifo size check is not actually required for AFE.
+>>
+>>
+>>> And about your original question
+>>>>>>>>> Why is a modem status interrupt being generated for DCTS
+>>>>>>>>> if autoflow control is enabled?
+>>>
+>>> Are you asking why this patch didn't disable generating CTS interrupt
+>>> when h/w flow control is enable?
+>>
+>> No. I was asking what chip had AFE on but still generated modem status
+>> interrupts for delta CTS.
+>>
+>> But I realize now that a different question needs asking:
+>> Is the MSR read showing delta CTS set when AFE is on, ever?
+>
+> Unfortunately this was tested on a customer board that I don't have
+> access to and can't check this out right away. I am trying to findout if
+> I can get some hardware to test the patch to address the issue being
+> discussed. Customer board is currently using RTS and CTS lines and the
+> same works fine for them with this patch.
+>
+>>
+>> Because serial8250_modem_status() assumes the answer is no for
+>> _all_ AFE-capable devices, and if yes, would mean that
+>> serial8250_modem_status()
+>> is broken if AFE is on.
+>
+> As per Keystone UART spec
+>
+> bit 0 in MSR: DCTS: Change in CTS indicator bit. DCTS indicates that the
+> CTS input has changed state since the last time it was read by the CPU.
+> When DCTS is set (autoflow control is not enabled and the modem status
+> interrupt is enabled), a modem status interrupt is generated. When
+> autoflow control is enabled, no interrupt is generated
+>
+> So based on this, there shouldn't be any CTS change if AFE is enabled
+> and will indicate change if AFE is disabled. Probably add WARN_ON_ONCE()
+> as you suggested to detect any offending h/w.
+>
+>>
+>>
+>>> If so,
+>>>
+>>> unsigned int serial8250_modem_status(struct uart_8250_port *up)
+>>> {
+>>> ...
+>>> if (status& UART_MSR_DCTS)
+>>> uart_handle_cts_change(port, status& UART_MSR_CTS);
+>>> }
+>>>
+>>> Probably in the above check if UPF_HARD_FLOW is set, we can avoid
+>>> calling
+>  >> uart_handle_cts_change() and undo the current code change in
+> uart_handle_cts_change()
+>  >> and just add a WARN_ON_ONCE() as you have suggested.
+>>
+>> Let's come back to this question after determining the answer for the
+>> above question.
+>>
+>>
+>>>>
+>>>> uart_throttle() and uart_unthrottle() are used indirectly by line
+>>>> disciplines
+>>>> for high-level rx flow control, such as when a read buffer fills up
+>>>> because
+>>>> there is no userspace reader. The 8250 core doesn't define a
+>>>> throttle/unthrottle
+>>>> method because writing MCR to drop RTS is sufficient to disable
+>>>> auto-RTS.
+>>>
+>>> As per spec. hardware has rx threshold levels set to trigger an RTS
+>>> level change to tell
+>  >> the remote from sending more bytes. So if h/w flow control is
+> enabled, then not sure why
+>  >> uart_throttle() is to be doing anything when h/w flow control is
+> supported? A dummy
+>  >> function required to satisfy the line discipline?
+>>
+>> I understand how auto-RTS works.
+>>
+>> Let's pretend for a moment that uart_throttle() does nothing when
+>> auto-RTS is enabled:
+>>
+>> 1. tty buffers start to fill up because no process is reading the data.
+>> 2. The throttle threshold is reached.
+>> 3. uart_throttle() is called but does nothing.
+>> 4. more data arrives and the DR interrupt is triggered
+>> 5. serial8250_rx_chars() reads in the new data.
+>> 6. tty buffers keep filling up even though the driver was told to
+>> throttle
+>> 7. eventually the tty buffers will cap at about 64KB and start counting
+>> buf_overrun errors
+>>
+> Ok.
+>
+> Couple of observation on the AFE implementation in 8250 driver prior to
+> my patch.
+>
+>  From the discussion so far, AFE is actually hardware assisted hardware
+> flow control. Auto CTS is sw assisted hardware flow control
+> where sw uses RTS line for recieve side flow control and I assume it
+> uses MCR RTS bit for this where AFE does this automatically. From
+> the 16550 or Keystone UART spec, I can't find how RTS line can be
+> asserted to do this through sw instead of hardware doing it
+> automatically. Spec says
+>
+> MCR RTS bit: RTS control. When AFE = 1, the RTS bit determines th
+> e autoflow control enabled. Note that all UARTs do not support this
+> feature. See the device-specific data manual for supported features. If
+> this feature is not available, this bit is reserved and should be
+> cleared to 0.
+> 0 = UARTn_RTS is disabled, only UARTn_CTS is enabled.
+> 1 = UARTn_RTS and UARTn_CTS are enabled.
+>
+> Then since AFE was already supported before my patch for FIFO size
+> 32bytes or higher, I am wondering why there was no implementation of
+> throttle()/unthrottle() to begin with and why UPF_HARD_FLOW flag is not
+> set at all if AFE implemented in 8250 driver is hw assisted, hw flow
+> control. Also what do these API supposed to do?
+>
+> in serial_core.c, uart_throttle() function
+>
+> if CRTSCTS is set
+> port->ops->throttle(port);
+> Also call at the end
+> uart_clear_mctrl(port, TIOCM_RTS);
+> and this go an clear the MCR RTS bit.
+>
+> So what does uart_throttle() API expected to do since MCR is updated
+> using uart_clear_mctrl().
+>
+> I searched who sets the UPF_HARD_FLOW in port->flags and only driver
+> that does set this flag is omap-serial.c. The check was introduced by
+> commit from Ruessel King to support h/w assisted h/w flow control.
+>
+> ======================================================================
+> commit dba05832cbe4f305dfd998fb26d7c685d91fbbd8
+> Author: Russell King <rmk+kernel@arm.linux.org.uk>
+> Date: Tue Apr 17 16:41:10 2012 +0100
+>
+> SERIAL: core: add hardware assisted h/w flow control support
+>
+> Ports which are handling h/w flow control in hardware must not have
+> their RTS state altered depending on the tty's hardware-stopped state.
+> Avoid this additional logic when setting the termios state.
+>
+> Acked-by: Alan Cox <alan@linux.intel.com>
+> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> ======================================================================
+>
+> This flag is checked in uart_set_termios() and the reason is in the
+> commit log above.
+>
+> So shouldn't AFE support in 8250 make use of this flag? My patch uses DT
+> attribute to set this flag so above uart_set_termios() function behave
+> as expected. But as you have rightly pointed out throttle()/unthrottle()
+> is missing that needs to be added. Only driver that I can find that has
+> implemented this is omap_serial.c. It does disable RDI and RLSI as part
+> of throttle() interrupt and re-enable it as part of unthrottle().
+> Probably I can add this in this driver as well if this is what is
+> expected. I will post a patch for this anyways, with some basic testing,
+> but testing on customer h/w for this was initialially implemented has to
+> wait until my return from vacation (on vacation from 08/11-08/16).
+>
+>>
+>>> Also 8250.c support other port types that doesn't have AFE. So shoudl
+>>> this
+>  >> be driving RTS line to stop the sender and resume when
+> uart_unthrottle() is called?
+>>
+>> Yes, because that's how sw-assisted CTS flow control works, and the
+>> default behavior of uart_throttle/uart_unthrottle.
+>>
+>> IOW, with no extra code or special-casing, AFE just works.
+>>
+>
+> Based on my above discussion, there are few things required to be done
+> on top of AFE and some of it is done by my patch and the remaining thing
+> to be addressed in another patch.
+>
+>>> I want to work to fix this rather than revert this change as our
+>>> customer is already using this feature.
+>>
+>> 3.16 was released 4 days ago.
+>
+> As I said, I will work to address this with priority.
+Peter, Greg,
 
-------------------
+I have send out an RFC "serial: uart: update to support hw assisted hw 
+flow control" to address this issue based on this thread.
+I did only some basic testing on this and want to get your feedback.
+I will work to test this patch on our customer board once I return from 
+my vacation. Please review and give your comments..
 
-From: Daniel Borkmann <dborkman@redhat.com>
+Thanks and regards,
 
-[ Upstream commit 8f2e5ae40ec193bc0a0ed99e95315c3eebca84ea ]
+Murali Karicheri
 
-While working on some other SCTP code, I noticed that some
-structures shared with user space are leaking uninitialized
-stack or heap buffer. In particular, struct sctp_sndrcvinfo
-has a 2 bytes hole between .sinfo_flags and .sinfo_ppid that
-remains unfilled by us in sctp_ulpevent_read_sndrcvinfo() when
-putting this into cmsg. But also struct sctp_remote_error
-contains a 2 bytes hole that we don't fill but place into a skb
-through skb_copy_expand() via sctp_ulpevent_make_remote_error().
-
-Both structures are defined by the IETF in RFC6458:
-
-* Section 5.3.2. SCTP Header Information Structure:
-
-  The sctp_sndrcvinfo structure is defined below:
-
-  struct sctp_sndrcvinfo {
-    uint16_t sinfo_stream;
-    uint16_t sinfo_ssn;
-    uint16_t sinfo_flags;
-    <-- 2 bytes hole  -->
-    uint32_t sinfo_ppid;
-    uint32_t sinfo_context;
-    uint32_t sinfo_timetolive;
-    uint32_t sinfo_tsn;
-    uint32_t sinfo_cumtsn;
-    sctp_assoc_t sinfo_assoc_id;
-  };
-
-* 6.1.3. SCTP_REMOTE_ERROR:
-
-  A remote peer may send an Operation Error message to its peer.
-  This message indicates a variety of error conditions on an
-  association. The entire ERROR chunk as it appears on the wire
-  is included in an SCTP_REMOTE_ERROR event. Please refer to the
-  SCTP specification [RFC4960] and any extensions for a list of
-  possible error formats. An SCTP error notification has the
-  following format:
-
-  struct sctp_remote_error {
-    uint16_t sre_type;
-    uint16_t sre_flags;
-    uint32_t sre_length;
-    uint16_t sre_error;
-    <-- 2 bytes hole  -->
-    sctp_assoc_t sre_assoc_id;
-    uint8_t  sre_data[];
-  };
-
-Fix this by setting both to 0 before filling them out. We also
-have other structures shared between user and kernel space in
-SCTP that contains holes (e.g. struct sctp_paddrthlds), but we
-copy that buffer over from user space first and thus don't need
-to care about it in that cases.
-
-While at it, we can also remove lengthy comments copied from
-the draft, instead, we update the comment with the correct RFC
-number where one can look it up.
-
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/sctp/ulpevent.c | 122 +++++++---------------------------------------------
- 1 file changed, 15 insertions(+), 107 deletions(-)
-
-diff --git a/net/sctp/ulpevent.c b/net/sctp/ulpevent.c
-index 81089ed..12c37ce 100644
---- a/net/sctp/ulpevent.c
-+++ b/net/sctp/ulpevent.c
-@@ -367,9 +367,10 @@ fail:
-  * specification [SCTP] and any extensions for a list of possible
-  * error formats.
-  */
--struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
--	const struct sctp_association *asoc, struct sctp_chunk *chunk,
--	__u16 flags, gfp_t gfp)
-+struct sctp_ulpevent *
-+sctp_ulpevent_make_remote_error(const struct sctp_association *asoc,
-+				struct sctp_chunk *chunk, __u16 flags,
-+				gfp_t gfp)
- {
- 	struct sctp_ulpevent *event;
- 	struct sctp_remote_error *sre;
-@@ -388,8 +389,7 @@ struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
- 	/* Copy the skb to a new skb with room for us to prepend
- 	 * notification with.
- 	 */
--	skb = skb_copy_expand(chunk->skb, sizeof(struct sctp_remote_error),
--			      0, gfp);
-+	skb = skb_copy_expand(chunk->skb, sizeof(*sre), 0, gfp);
- 
- 	/* Pull off the rest of the cause TLV from the chunk.  */
- 	skb_pull(chunk->skb, elen);
-@@ -400,62 +400,21 @@ struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
- 	event = sctp_skb2event(skb);
- 	sctp_ulpevent_init(event, MSG_NOTIFICATION, skb->truesize);
- 
--	sre = (struct sctp_remote_error *)
--		skb_push(skb, sizeof(struct sctp_remote_error));
-+	sre = (struct sctp_remote_error *) skb_push(skb, sizeof(*sre));
- 
- 	/* Trim the buffer to the right length.  */
--	skb_trim(skb, sizeof(struct sctp_remote_error) + elen);
-+	skb_trim(skb, sizeof(*sre) + elen);
- 
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_type:
--	 *   It should be SCTP_REMOTE_ERROR.
--	 */
-+	/* RFC6458, Section 6.1.3. SCTP_REMOTE_ERROR */
-+	memset(sre, 0, sizeof(*sre));
- 	sre->sre_type = SCTP_REMOTE_ERROR;
--
--	/*
--	 * Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_flags: 16 bits (unsigned integer)
--	 *   Currently unused.
--	 */
- 	sre->sre_flags = 0;
--
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_length: sizeof (__u32)
--	 *
--	 * This field is the total length of the notification data,
--	 * including the notification header.
--	 */
- 	sre->sre_length = skb->len;
--
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_error: 16 bits (unsigned integer)
--	 * This value represents one of the Operational Error causes defined in
--	 * the SCTP specification, in network byte order.
--	 */
- 	sre->sre_error = cause;
--
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_assoc_id: sizeof (sctp_assoc_t)
--	 *
--	 * The association id field, holds the identifier for the association.
--	 * All notifications for a given association have the same association
--	 * identifier.  For TCP style socket, this field is ignored.
--	 */
- 	sctp_ulpevent_set_owner(event, asoc);
- 	sre->sre_assoc_id = sctp_assoc2id(asoc);
- 
- 	return event;
--
- fail:
- 	return NULL;
- }
-@@ -900,7 +859,9 @@ __u16 sctp_ulpevent_get_notification_type(const struct sctp_ulpevent *event)
- 	return notification->sn_header.sn_type;
- }
- 
--/* Copy out the sndrcvinfo into a msghdr.  */
-+/* RFC6458, Section 5.3.2. SCTP Header Information Structure
-+ * (SCTP_SNDRCV, DEPRECATED)
-+ */
- void sctp_ulpevent_read_sndrcvinfo(const struct sctp_ulpevent *event,
- 				   struct msghdr *msghdr)
- {
-@@ -909,74 +870,21 @@ void sctp_ulpevent_read_sndrcvinfo(const struct sctp_ulpevent *event,
- 	if (sctp_ulpevent_is_notification(event))
- 		return;
- 
--	/* Sockets API Extensions for SCTP
--	 * Section 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
--	 *
--	 * sinfo_stream: 16 bits (unsigned integer)
--	 *
--	 * For recvmsg() the SCTP stack places the message's stream number in
--	 * this value.
--	*/
-+	memset(&sinfo, 0, sizeof(sinfo));
- 	sinfo.sinfo_stream = event->stream;
--	/* sinfo_ssn: 16 bits (unsigned integer)
--	 *
--	 * For recvmsg() this value contains the stream sequence number that
--	 * the remote endpoint placed in the DATA chunk.  For fragmented
--	 * messages this is the same number for all deliveries of the message
--	 * (if more than one recvmsg() is needed to read the message).
--	 */
- 	sinfo.sinfo_ssn = event->ssn;
--	/* sinfo_ppid: 32 bits (unsigned integer)
--	 *
--	 * In recvmsg() this value is
--	 * the same information that was passed by the upper layer in the peer
--	 * application.  Please note that byte order issues are NOT accounted
--	 * for and this information is passed opaquely by the SCTP stack from
--	 * one end to the other.
--	 */
- 	sinfo.sinfo_ppid = event->ppid;
--	/* sinfo_flags: 16 bits (unsigned integer)
--	 *
--	 * This field may contain any of the following flags and is composed of
--	 * a bitwise OR of these values.
--	 *
--	 * recvmsg() flags:
--	 *
--	 * SCTP_UNORDERED - This flag is present when the message was sent
--	 *                 non-ordered.
--	 */
- 	sinfo.sinfo_flags = event->flags;
--	/* sinfo_tsn: 32 bit (unsigned integer)
--	 *
--	 * For the receiving side, this field holds a TSN that was
--	 * assigned to one of the SCTP Data Chunks.
--	 */
- 	sinfo.sinfo_tsn = event->tsn;
--	/* sinfo_cumtsn: 32 bit (unsigned integer)
--	 *
--	 * This field will hold the current cumulative TSN as
--	 * known by the underlying SCTP layer.  Note this field is
--	 * ignored when sending and only valid for a receive
--	 * operation when sinfo_flags are set to SCTP_UNORDERED.
--	 */
- 	sinfo.sinfo_cumtsn = event->cumtsn;
--	/* sinfo_assoc_id: sizeof (sctp_assoc_t)
--	 *
--	 * The association handle field, sinfo_assoc_id, holds the identifier
--	 * for the association announced in the COMMUNICATION_UP notification.
--	 * All notifications for a given association have the same identifier.
--	 * Ignored for one-to-one style sockets.
--	 */
- 	sinfo.sinfo_assoc_id = sctp_assoc2id(event->asoc);
--
--	/* context value that is set via SCTP_CONTEXT socket option. */
-+	/* Context value that is set via SCTP_CONTEXT socket option. */
- 	sinfo.sinfo_context = event->asoc->default_rcv_context;
--
- 	/* These fields are not used while receiving. */
- 	sinfo.sinfo_timetolive = 0;
- 
- 	put_cmsg(msghdr, IPPROTO_SCTP, SCTP_SNDRCV,
--		 sizeof(struct sctp_sndrcvinfo), (void *)&sinfo);
-+		 sizeof(sinfo), &sinfo);
- }
- 
- /* Do accounting for bytes received and hold a reference to the association
--- 
-1.9.1
+>
+>>
+>> Regards,
+>> Peter Hurley
+>>
+>
 
