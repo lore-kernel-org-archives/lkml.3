@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933434AbaHHWFk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:05:40 -0400
-Received: from relay.variantweb.net ([104.131.199.242]:53330 "EHLO
-	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932713AbaHHWFe (ORCPT
+	id S933500AbaHHWFz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:05:55 -0400
+Received: from smtp104.biz.mail.bf1.yahoo.com ([98.139.221.63]:24141 "EHLO
+	smtp104.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932713AbaHHWFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 18:05:34 -0400
-Date: Fri, 8 Aug 2014 17:05:28 -0500
-From: Seth Jennings <sjennings@variantweb.net>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Kees Cook <keescook@chromium.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm/zpool: use prefixed module loading
-Message-ID: <20140808220528.GA32510@cerebellum.variantweb.net>
-References: <20140808075316.GA21919@www.outflux.net>
- <CALZtONBNEg7kzUtwKihQuAU48MNh5NjhZcWoOxe-1-vgWqSLiw@mail.gmail.com>
+	Fri, 8 Aug 2014 18:05:52 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: IYqRRDcVM1kOGDqeBjHLvqmdLb5OYQWEpfqffOPxZJU_Wk6
+ YyHjn7vLVbKGWJjslPLu56QFC3h3Ci_gFZpOfwZaFOwc_I_PfNUWtO2E_JKd
+ fkSbCeZDxnwx8FIy9Gnpe9GSjOIfRDOTNgfO9lMDl7.iK1Xvsil0SifrX7Ir
+ pBYvDoWQx6NmDKse1pEDueRNn_1hwJ4ZRCqjQyfMdCyYcuEEqiOCISEZdVen
+ LL6_27mnx85h0vx4pppXWCb8YVIs4wOhtq_v_.R7ml.69cvz4s5zbTTcn.P0
+ qDpjnwr.j8phBaob9YdaJD6EhhLuPr9cOup2MHvxN9_.tbdJrbpUFypqf3Rf
+ sz5yoPz_qYQCjY2cJUe4tvghqmojzGwDirqNSbljPl4S44HlgNYHxphXXTg5
+ 6AjifTKw7TO7ooVLqiLwVf2ATUk2c9xnAV8zpciHQBmehlj.wqrifPPQ0z96
+ ApMiuY9_oFWpg6A_CFukENd.yJ4VE.5T6vMG7Iepe5orRStc9espLcT.cnZo
+ n4ttElNaEog9s8aAKSUMC9IuhSwrvnW9R5y.vaeUSyUjk4MAxxXgFQ9_T1qA
+ CFxMs7QZUg2t0i16FXUeSt_x45sIGy2A4kct3BcRg.tw_zafDfgVBpyKgueK
+ qRd.NQLU0jK_.
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <53E549BF.10401@schaufler-ca.com>
+Date: Fri, 08 Aug 2014 15:05:51 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALZtONBNEg7kzUtwKihQuAU48MNh5NjhZcWoOxe-1-vgWqSLiw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+CC: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Morris <james.l.morris@oracle.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH 3/3] Smack: remove unneeded NULL-termination from securtity
+ label
+References: <20140807165233.13463.55258.stgit@buzz> <20140807165249.13463.60191.stgit@buzz>
+In-Reply-To: <20140807165249.13463.60191.stgit@buzz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 01:11:55PM -0400, Dan Streetman wrote:
-> On Fri, Aug 8, 2014 at 3:53 AM, Kees Cook <keescook@chromium.org> wrote:
-> > To avoid potential format string expansion via module parameters,
-> > do not use the zpool type directly in request_module() without a
-> > format string. Additionally, to avoid arbitrary modules being loaded
-> > via zpool API (e.g. via the zswap_zpool_type module parameter) add a
-> > "zpool-" prefix to the requested module, as well as module aliases for
-> > the existing zpool types (zbud and zsmalloc).
-> >
-> > Signed-off-by: Kees Cook <keescook@chromium.org>
-> > ---
-> >  mm/zbud.c     | 1 +
-> >  mm/zpool.c    | 2 +-
-> >  mm/zsmalloc.c | 1 +
-> >  3 files changed, 3 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/mm/zbud.c b/mm/zbud.c
-> > index a05790b1915e..aa74f7addab1 100644
-> > --- a/mm/zbud.c
-> > +++ b/mm/zbud.c
-> > @@ -619,3 +619,4 @@ module_exit(exit_zbud);
-> >  MODULE_LICENSE("GPL");
-> >  MODULE_AUTHOR("Seth Jennings <sjenning@linux.vnet.ibm.com>");
-> >  MODULE_DESCRIPTION("Buddy Allocator for Compressed Pages");
-> > +MODULE_ALIAS("zpool-zbud");
-> 
-> If we keep this, I'd recommend putting this inside the #ifdef
-> CONFIG_ZPOOL section, to keep all the zpool stuff together in zbud and
-> zsmalloc.
-> 
-> > diff --git a/mm/zpool.c b/mm/zpool.c
-> > index e40612a1df00..739cdf0d183a 100644
-> > --- a/mm/zpool.c
-> > +++ b/mm/zpool.c
-> > @@ -150,7 +150,7 @@ struct zpool *zpool_create_pool(char *type, gfp_t gfp, struct zpool_ops *ops)
-> >         driver = zpool_get_driver(type);
-> >
-> >         if (!driver) {
-> > -               request_module(type);
-> > +               request_module("zpool-%s", type);
-> 
-> I agree with a change of (type) to ("%s", type), but what's the need
-> to prefix "zpool-"?  Anyone who has access to modify the
-> zswap_zpool_type parameter is already root and can just as easily load
-> any module they want.  Additionally, the zswap_compressor parameter
-> also runs through request_module() (in crypto/api.c) and could be used
-> to load any kernel module.
-> 
-> I'd prefer to leave out the "zpool-" prefix unless there is a specific
-> reason to include it.
+On 8/7/2014 9:52 AM, Konstantin Khlebnikov wrote:
+> Values of extended attributes are stored as binary blobs. NULL-termination
+> of them isn't required. It just wastes disk space and confuses command-line
+> tools like getfattr because they have to print that zero byte at the end.
+>
+> This patch removes terminating zero byte from initial security label in
+> smack_inode_init_security and cuts it out in function smack_inode_getsecurity
+> which is used by syscall getxattr. This change seems completely safe, because
+> function smk_parse_smack ignores everything after first zero byte.
+>
+> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 
-I think I agree with this.  Having the zpool- prefix makes it to where
-the would-be exploit couldn't load an arbitrary module; just those with a
-zpool- prefix.  But then again, the exploit would need root privileges
-to do any of this stuff and if it has that, it can just directly
-load module so... yeah.
+Applied to git://git.gitorious.org/smack-next/kernel.git#smack-for-3.18
 
-Seth
 
-> 
-> >                 driver = zpool_get_driver(type);
-> >         }
-> >
-> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> > index 4e2fc83cb394..36af729eb3f6 100644
-> > --- a/mm/zsmalloc.c
-> > +++ b/mm/zsmalloc.c
-> > @@ -1199,3 +1199,4 @@ module_exit(zs_exit);
-> >
-> >  MODULE_LICENSE("Dual BSD/GPL");
-> >  MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
-> > +MODULE_ALIAS("zpool-zsmalloc");
-> > --
-> > 1.9.1
-> >
-> >
-> > --
-> > Kees Cook
-> > Chrome OS Security
-> >
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> ---
+>  security/smack/smack_lsm.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index afa5ad0..16ae853 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -672,7 +672,7 @@ static int smack_inode_init_security(struct inode *inode, struct inode *dir,
+>  	}
+>  
+>  	if (len)
+> -		*len = strlen(isp) + 1;
+> +		*len = strlen(isp);
+>  
+>  	return 0;
+>  }
+> @@ -1076,7 +1076,7 @@ static int smack_inode_getsecurity(const struct inode *inode,
+>  
+>  	if (strcmp(name, XATTR_SMACK_SUFFIX) == 0) {
+>  		isp = smk_of_inode(inode);
+> -		ilen = strlen(isp) + 1;
+> +		ilen = strlen(isp);
+>  		*buffer = isp;
+>  		return ilen;
+>  	}
+> @@ -1101,7 +1101,7 @@ static int smack_inode_getsecurity(const struct inode *inode,
+>  	else
+>  		return -EOPNOTSUPP;
+>  
+> -	ilen = strlen(isp) + 1;
+> +	ilen = strlen(isp);
+>  	if (rc == 0) {
+>  		*buffer = isp;
+>  		rc = ilen;
+>
+>
+
