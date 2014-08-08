@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799AbaHHGWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 02:22:13 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:39507 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193AbaHHGWJ (ORCPT
+	id S1755940AbaHHGXL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 02:23:11 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:35020 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816AbaHHGXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 02:22:09 -0400
-X-Original-SENDERIP: 10.177.223.133
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Fri, 8 Aug 2014 15:22:07 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/8] mm/isolation: remove unstable check for isolated
- page
-Message-ID: <20140808062206.GA6150@js1304-P5Q-DELUXE>
-References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1407309517-3270-4-git-send-email-iamjoonsoo.kim@lge.com>
- <53E383DD.6090500@suse.cz>
+	Fri, 8 Aug 2014 02:23:07 -0400
+Date: Fri, 8 Aug 2014 15:22:57 +0900
+From: Gyungoh Yoo <gyungoh@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: rdunlap@infradead.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, jg1.han@samsung.com, cooloney@gmail.com,
+        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, grant.likely@linaro.org,
+        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
+        jack.yoo@skyworksinc.com, florian.vaussard@epfl.ch,
+        thierry.reding@gmail.com, jason@lakedaemon.net, andrew@lunn.ch,
+        silvio.fricke@gmail.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] Adding a support for Skyworks SKY81452
+Message-ID: <20140808062257.GB14907@jack-ThinkPad-T520>
+References: <1407398738-7582-1-git-send-email-jack.yoo@skyworksinc.com>
+ <20140807100952.GH10136@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53E383DD.6090500@suse.cz>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140807100952.GH10136@lee--X1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 03:49:17PM +0200, Vlastimil Babka wrote:
-> On 08/06/2014 09:18 AM, Joonsoo Kim wrote:
-> >The check '!PageBuddy(page) && page_count(page) == 0 &&
-> >migratetype == MIGRATE_ISOLATE' would mean the page on free processing.
+On Thu, Aug 07, 2014 at 11:09:52AM +0100, Lee Jones wrote:
+> On Thu, 07 Aug 2014, Gyungoh Yoo wrote:
 > 
-> What is "the page on free processing"? I thought this test means the
-> page is on some CPU's pcplist?
-
-Yes, you are right.
-
+> > Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > ---
+> >  Documentation/backlight/sky81452.txt               |  25 ++
+> >  Documentation/devicetree/bindings/mfd/sky81452.txt |  24 ++
+> >  .../bindings/regulator/sky81452-regulator.txt      |  16 +
+> >  .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+> >  .../video/backlight/sky81452-backlight.txt         |  20 ++
+> >  drivers/mfd/Kconfig                                |  12 +
+> >  drivers/mfd/Makefile                               |   1 +
+> >  drivers/mfd/sky81452.c                             | 115 +++++++
+> >  drivers/regulator/Kconfig                          |  11 +
+> >  drivers/regulator/Makefile                         |   1 +
+> >  drivers/regulator/sky81452-regulator.c             | 127 ++++++++
+> >  drivers/video/backlight/Kconfig                    |  10 +
+> >  drivers/video/backlight/Makefile                   |   1 +
+> >  drivers/video/backlight/sky81452-backlight.c       | 333 +++++++++++++++++++++
+> >  include/linux/mfd/sky81452.h                       |  31 ++
+> >  include/linux/sky81452-backlight.h                 |  46 +++
+> >  16 files changed, 774 insertions(+)
+> >  create mode 100644 Documentation/backlight/sky81452.txt
+> >  create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+> >  create mode 100644 Documentation/devicetree/bindings/regulator/sky81452-regulator.txt
+> >  create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+> >  create mode 100644 drivers/mfd/sky81452.c
+> >  create mode 100644 drivers/regulator/sky81452-regulator.c
+> >  create mode 100644 drivers/video/backlight/sky81452-backlight.c
+> >  create mode 100644 include/linux/mfd/sky81452.h
+> >  create mode 100644 include/linux/sky81452-backlight.h
 > 
-> >Although it could go into buddy allocator within a short time,
-> >futher operation such as isolate_freepages_range() in CMA, called after
-> >test_page_isolated_in_pageblock(), could be failed due to this unstability
+> Wow, no way.  Please split this up into separate patches.  Ideally, at
+> least one per subsystem and separate ones again for the DT bindings.
 > 
-> By "unstability" you mean the page can be allocated again from the
-> pcplist instead of being freed to buddy list?
 
-Yes.
+Sorry I didn't know. I will split them and resubmit.
+Thank you.
 
-> >since it requires that the page is on buddy. I think that removing
-> >this unstability is good thing.
-> >
-> >And, following patch makes isolated freepage has new status matched with
-> >this condition and this check is the obstacle to that change. So remove
-> >it.
+> [...]
 > 
-> You could also say that pages from isolated pageblocks can no longer
-> appear on pcplists after the later patches.
-
-Okay. I will do it.
-
-Thanks.
+> -- 
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
