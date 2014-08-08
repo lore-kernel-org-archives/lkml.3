@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759633AbaHHWaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:30:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40189 "EHLO
+	id S1759619AbaHHWaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:30:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40192 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756546AbaHHUlv (ORCPT
+	with ESMTP id S1756554AbaHHUlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:41:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 150/259] drm/radeon: set default bl level to something reasonable
-Date: Fri,  8 Aug 2014 13:39:33 -0700
-Message-Id: <1407530482-4483-151-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 137/259] tracing: Add ftrace_trace_stack into __trace_puts/__trace_bputs
+Date: Fri,  8 Aug 2014 13:39:20 -0700
+Message-Id: <1407530482-4483-138-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,59 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-commit 201bb62402e0227375c655446ea04fcd0acf7287 upstream.
+commit 8abfb8727f4a724d31f9ccfd8013fbd16d539445 upstream.
 
-If the value in the scratch register is 0, set it to the
-max level.  This fixes an issue where the console fb blanking
-code calls back into the backlight driver on unblank and then
-sets the backlight level to 0 after the driver has already
-set the mode and enabled the backlight.
+Currently trace option stacktrace is not applicable for
+trace_printk with constant string argument, the reason is
+in __trace_puts/__trace_bputs ftrace_trace_stack is missing.
 
-bugs:
-https://bugs.freedesktop.org/show_bug.cgi?id=81382
-https://bugs.freedesktop.org/show_bug.cgi?id=70207
+In contrast, when using trace_printk with non constant string
+argument(will call into __trace_printk/__trace_bprintk), then
+trace option stacktrace is workable, this inconstant result
+will confuses users a lot.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Tested-by: David Heidelberger <david.heidelberger@ixit.cz>
+Link: http://lkml.kernel.org/p/51E7A7C9.9040401@huawei.com
+
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ kernel/trace/trace.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
-index 95ac45e..a3ab59a 100644
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -183,7 +183,6 @@ void radeon_atom_backlight_init(struct radeon_encoder *radeon_encoder,
- 	struct backlight_properties props;
- 	struct radeon_backlight_privdata *pdata;
- 	struct radeon_encoder_atom_dig *dig;
--	u8 backlight_level;
- 	char bl_name[16];
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 9250479..d3db296 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -454,6 +454,9 @@ int __trace_puts(unsigned long ip, const char *str, int size)
+ 	struct print_entry *entry;
+ 	unsigned long irq_flags;
+ 	int alloc;
++	int pc;
++
++	pc = preempt_count();
  
- 	/* Mac laptops with multiple GPUs use the gmux driver for backlight
-@@ -222,12 +221,17 @@ void radeon_atom_backlight_init(struct radeon_encoder *radeon_encoder,
+ 	if (unlikely(tracing_selftest_running || tracing_disabled))
+ 		return 0;
+@@ -463,7 +466,7 @@ int __trace_puts(unsigned long ip, const char *str, int size)
+ 	local_save_flags(irq_flags);
+ 	buffer = global_trace.trace_buffer.buffer;
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_PRINT, alloc, 
+-					  irq_flags, preempt_count());
++					  irq_flags, pc);
+ 	if (!event)
+ 		return 0;
  
- 	pdata->encoder = radeon_encoder;
+@@ -480,6 +483,7 @@ int __trace_puts(unsigned long ip, const char *str, int size)
+ 		entry->buf[size] = '\0';
  
--	backlight_level = radeon_atom_get_backlight_level_from_reg(rdev);
--
- 	dig = radeon_encoder->enc_priv;
- 	dig->bl_dev = bd;
+ 	__buffer_unlock_commit(buffer, event);
++	ftrace_trace_stack(buffer, irq_flags, 4, pc);
  
- 	bd->props.brightness = radeon_atom_backlight_get_brightness(bd);
-+	/* Set a reasonable default here if the level is 0 otherwise
-+	 * fbdev will attempt to turn the backlight on after console
-+	 * unblanking and it will try and restore 0 which turns the backlight
-+	 * off again.
-+	 */
-+	if (bd->props.brightness == 0)
-+		bd->props.brightness = RADEON_MAX_BL_LEVEL;
- 	bd->props.power = FB_BLANK_UNBLANK;
- 	backlight_update_status(bd);
+ 	return size;
+ }
+@@ -497,6 +501,9 @@ int __trace_bputs(unsigned long ip, const char *str)
+ 	struct bputs_entry *entry;
+ 	unsigned long irq_flags;
+ 	int size = sizeof(struct bputs_entry);
++	int pc;
++
++	pc = preempt_count();
  
+ 	if (unlikely(tracing_selftest_running || tracing_disabled))
+ 		return 0;
+@@ -504,7 +511,7 @@ int __trace_bputs(unsigned long ip, const char *str)
+ 	local_save_flags(irq_flags);
+ 	buffer = global_trace.trace_buffer.buffer;
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_BPUTS, size,
+-					  irq_flags, preempt_count());
++					  irq_flags, pc);
+ 	if (!event)
+ 		return 0;
+ 
+@@ -513,6 +520,7 @@ int __trace_bputs(unsigned long ip, const char *str)
+ 	entry->str			= str;
+ 
+ 	__buffer_unlock_commit(buffer, event);
++	ftrace_trace_stack(buffer, irq_flags, 4, pc);
+ 
+ 	return 1;
+ }
 -- 
 1.9.1
 
