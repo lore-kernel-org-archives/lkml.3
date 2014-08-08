@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758664AbaHHVgd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:36:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60467 "EHLO
+	id S932765AbaHHV4C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:56:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60563 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932933AbaHHVgR (ORCPT
+	with ESMTP id S1758497AbaHHVge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:17 -0400
+	Fri, 8 Aug 2014 17:36:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sergey Popov <pinkbyte@gentoo.org>, Dmitry Popov <ixaphire@qrator.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 14/24] sparc64: Handle 32-bit tasks properly in compute_effective_address().
-Date: Fri,  8 Aug 2014 14:35:07 -0700
-Message-Id: <20140808213336.007759528@linuxfoundation.org>
+Subject: [PATCH 3.14 07/39] ip_tunnel(ipv4): fix tunnels with "local any remote $remote_ip"
+Date: Fri,  8 Aug 2014 14:34:53 -0700
+Message-Id: <20140808213355.295343578@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140808213335.421758947@linuxfoundation.org>
-References: <20140808213335.421758947@linuxfoundation.org>
+In-Reply-To: <20140808213354.980430919@linuxfoundation.org>
+References: <20140808213354.980430919@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,51 +25,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Dmitry Popov <ixaphire@qrator.net>
 
-[ Upstream commit d037d16372bbe4d580342bebbb8826821ad9edf0 ]
+[ Upstream commit 95cb5745983c222867cc9ac593aebb2ad67d72c0 ]
 
-If we have a 32-bit task we must chop off the top 32-bits of the
-64-bit value just as the cpu would.
+Ipv4 tunnels created with "local any remote $ip" didn't work properly since
+7d442fab0 (ipv4: Cache dst in tunnels). 99% of packets sent via those tunnels
+had src addr = 0.0.0.0. That was because only dst_entry was cached, although
+fl4.saddr has to be cached too. Every time ip_tunnel_xmit used cached dst_entry
+(tunnel_rtable_get returned non-NULL), fl4.saddr was initialized with
+tnl_params->saddr (= 0 in our case), and wasn't changed until iptunnel_xmit().
 
+This patch adds saddr to ip_tunnel->dst_cache, fixing this issue.
+
+Reported-by: Sergey Popov <pinkbyte@gentoo.org>
+Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/unaligned_64.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ include/net/ip_tunnels.h |    1 +
+ net/ipv4/ip_tunnel.c     |   29 ++++++++++++++++++-----------
+ 2 files changed, 19 insertions(+), 11 deletions(-)
 
---- a/arch/sparc/kernel/unaligned_64.c
-+++ b/arch/sparc/kernel/unaligned_64.c
-@@ -163,17 +163,23 @@ static unsigned long *fetch_reg_addr(uns
- unsigned long compute_effective_address(struct pt_regs *regs,
- 					unsigned int insn, unsigned int rd)
- {
-+	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
- 	unsigned int rs1 = (insn >> 14) & 0x1f;
- 	unsigned int rs2 = insn & 0x1f;
--	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
-+	unsigned long addr;
+--- a/include/net/ip_tunnels.h
++++ b/include/net/ip_tunnels.h
+@@ -40,6 +40,7 @@ struct ip_tunnel_prl_entry {
  
- 	if (insn & 0x2000) {
- 		maybe_flush_windows(rs1, 0, rd, from_kernel);
--		return (fetch_reg(rs1, regs) + sign_extend_imm13(insn));
-+		addr = (fetch_reg(rs1, regs) + sign_extend_imm13(insn));
- 	} else {
- 		maybe_flush_windows(rs1, rs2, rd, from_kernel);
--		return (fetch_reg(rs1, regs) + fetch_reg(rs2, regs));
-+		addr = (fetch_reg(rs1, regs) + fetch_reg(rs2, regs));
- 	}
-+
-+	if (!from_kernel && test_thread_flag(TIF_32BIT))
-+		addr &= 0xffffffff;
-+
-+	return addr;
+ struct ip_tunnel_dst {
+ 	struct dst_entry __rcu 		*dst;
++	__be32				 saddr;
+ };
+ 
+ struct ip_tunnel {
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -69,23 +69,25 @@ static unsigned int ip_tunnel_hash(__be3
  }
  
- /* This is just to make gcc think die_if_kernel does return... */
+ static void __tunnel_dst_set(struct ip_tunnel_dst *idst,
+-			     struct dst_entry *dst)
++			     struct dst_entry *dst, __be32 saddr)
+ {
+ 	struct dst_entry *old_dst;
+ 
+ 	dst_clone(dst);
+ 	old_dst = xchg((__force struct dst_entry **)&idst->dst, dst);
+ 	dst_release(old_dst);
++	idst->saddr = saddr;
+ }
+ 
+-static void tunnel_dst_set(struct ip_tunnel *t, struct dst_entry *dst)
++static void tunnel_dst_set(struct ip_tunnel *t,
++			   struct dst_entry *dst, __be32 saddr)
+ {
+-	__tunnel_dst_set(this_cpu_ptr(t->dst_cache), dst);
++	__tunnel_dst_set(this_cpu_ptr(t->dst_cache), dst, saddr);
+ }
+ 
+ static void tunnel_dst_reset(struct ip_tunnel *t)
+ {
+-	tunnel_dst_set(t, NULL);
++	tunnel_dst_set(t, NULL, 0);
+ }
+ 
+ void ip_tunnel_dst_reset_all(struct ip_tunnel *t)
+@@ -93,20 +95,25 @@ void ip_tunnel_dst_reset_all(struct ip_t
+ 	int i;
+ 
+ 	for_each_possible_cpu(i)
+-		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL);
++		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL, 0);
+ }
+ EXPORT_SYMBOL(ip_tunnel_dst_reset_all);
+ 
+-static struct rtable *tunnel_rtable_get(struct ip_tunnel *t, u32 cookie)
++static struct rtable *tunnel_rtable_get(struct ip_tunnel *t,
++					u32 cookie, __be32 *saddr)
+ {
++	struct ip_tunnel_dst *idst;
+ 	struct dst_entry *dst;
+ 
+ 	rcu_read_lock();
+-	dst = rcu_dereference(this_cpu_ptr(t->dst_cache)->dst);
++	idst = this_cpu_ptr(t->dst_cache);
++	dst = rcu_dereference(idst->dst);
+ 	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
+ 		dst = NULL;
+ 	if (dst) {
+-		if (dst->obsolete && dst->ops->check(dst, cookie) == NULL) {
++		if (!dst->obsolete || dst->ops->check(dst, cookie)) {
++			*saddr = idst->saddr;
++		} else {
+ 			tunnel_dst_reset(t);
+ 			dst_release(dst);
+ 			dst = NULL;
+@@ -362,7 +369,7 @@ static int ip_tunnel_bind_dev(struct net
+ 
+ 		if (!IS_ERR(rt)) {
+ 			tdev = rt->dst.dev;
+-			tunnel_dst_set(tunnel, &rt->dst);
++			tunnel_dst_set(tunnel, &rt->dst, fl4.saddr);
+ 			ip_rt_put(rt);
+ 		}
+ 		if (dev->type != ARPHRD_ETHER)
+@@ -606,7 +613,7 @@ void ip_tunnel_xmit(struct sk_buff *skb,
+ 	init_tunnel_flow(&fl4, protocol, dst, tnl_params->saddr,
+ 			 tunnel->parms.o_key, RT_TOS(tos), tunnel->parms.link);
+ 
+-	rt = connected ? tunnel_rtable_get(tunnel, 0) : NULL;
++	rt = connected ? tunnel_rtable_get(tunnel, 0, &fl4.saddr) : NULL;
+ 
+ 	if (!rt) {
+ 		rt = ip_route_output_key(tunnel->net, &fl4);
+@@ -616,7 +623,7 @@ void ip_tunnel_xmit(struct sk_buff *skb,
+ 			goto tx_error;
+ 		}
+ 		if (connected)
+-			tunnel_dst_set(tunnel, &rt->dst);
++			tunnel_dst_set(tunnel, &rt->dst, fl4.saddr);
+ 	}
+ 
+ 	if (rt->dst.dev == dev) {
 
 
