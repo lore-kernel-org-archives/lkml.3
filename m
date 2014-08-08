@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549AbaHHHFP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 03:05:15 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:45321 "EHLO mailhub1.si.c-s.fr"
+	id S1756531AbaHHHFL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 03:05:11 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:45326 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756432AbaHHHEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756433AbaHHHEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 03:04:55 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -12,91 +12,112 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH 17/20] powerpc/8xx: Better readibility of ERRATA CPU6 handling
-Message-Id: <20140808070345.86FCF1ABD4D@localhost.localdomain>
+Subject: [PATCH 18/20] powerpc/8xx: set PTE bit 22 off TLBmiss
+Message-Id: <20140808070345.CEECE1ABD4E@localhost.localdomain>
 Date: Fri,  8 Aug 2014 09:03:45 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch hiddes that SPR address needed for CPU6 ERRATA handling in the macro.
-Then we don't have to worry about this address directly in the code.
+No need to re-set this bit at each TLB miss. Let's set it in the PTE.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
- arch/powerpc/kernel/head_8xx.S |   29 ++++++++++++++++-------------
- 1 files changed, 16 insertions(+), 13 deletions(-)
+ arch/powerpc/include/asm/pgtable-ppc32.h |   21 +++++++++++++++++++++
+ arch/powerpc/include/asm/pte-8xx.h       |    7 +++++--
+ arch/powerpc/kernel/head_8xx.S           |   10 ++--------
+ 3 files changed, 28 insertions(+), 10 deletions(-)
 
+diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
+index 47edde8..c261792 100644
+--- a/arch/powerpc/include/asm/pgtable-ppc32.h
++++ b/arch/powerpc/include/asm/pgtable-ppc32.h
+@@ -172,6 +172,26 @@ static inline unsigned long pte_update(pte_t *p,
+ #ifdef PTE_ATOMIC_UPDATES
+ 	unsigned long old, tmp;
+ 
++#ifdef CONFIG_PPC_8xx
++	unsigned long tmp2;
++
++	__asm__ __volatile__("\
++1:	lwarx	%0,0,%4\n\
++	andc	%1,%0,%5\n\
++	or	%1,%1,%6\n\
++	/* 0x200 == Extended encoding, bit 22 */ \
++	/* Bit 22 has to be 1 if neither _PAGE_USER nor _PAGE_RW are set */ \
++	rlwimi	%1,%1,32-2,0x200\n /* get _PAGE_USER */ \
++	rlwinm	%3,%1,32-1,0x200\n /* get _PAGE_RW */ \
++	or	%1,%3,%1\n\
++	xori	%1,%1,0x200\n"
++	PPC405_ERR77(0,%4)
++"	stwcx.	%1,0,%4\n\
++	bne-	1b"
++	: "=&r" (old), "=&r" (tmp), "=m" (*p), "=&r" (tmp2)
++	: "r" (p), "r" (clr), "r" (set), "m" (*p)
++	: "cc" );
++#else /* CONFIG_PPC_8xx */
+ 	__asm__ __volatile__("\
+ 1:	lwarx	%0,0,%3\n\
+ 	andc	%1,%0,%4\n\
+@@ -182,6 +202,7 @@ static inline unsigned long pte_update(pte_t *p,
+ 	: "=&r" (old), "=&r" (tmp), "=m" (*p)
+ 	: "r" (p), "r" (clr), "r" (set), "m" (*p)
+ 	: "cc" );
++#endif /* CONFIG_PPC_8xx */
+ #else /* PTE_ATOMIC_UPDATES */
+ 	unsigned long old = pte_val(*p);
+ 	*p = __pte((old & ~clr) | set);
+diff --git a/arch/powerpc/include/asm/pte-8xx.h b/arch/powerpc/include/asm/pte-8xx.h
+index d44826e..dede1e7 100644
+--- a/arch/powerpc/include/asm/pte-8xx.h
++++ b/arch/powerpc/include/asm/pte-8xx.h
+@@ -48,19 +48,22 @@
+  */
+ #define _PAGE_RW	0x0400	/* lsb PP bits, inverted in HW */
+ #define _PAGE_USER	0x0800	/* msb PP bits */
++/* set when neither _PAGE_USER nor _PAGE_RW are set */
++#define _PAGE_KNLRO	0x0200
+ 
+ #define _PMD_PRESENT	0x0001
+ #define _PMD_BAD	0x0ff0
+ #define _PMD_PAGE_MASK	0x000c
+ #define _PMD_PAGE_8M	0x000c
+ 
+-#define _PTE_NONE_MASK _PAGE_ACCESSED
++#define _PTE_NONE_MASK (_PAGE_ACCESSED | _PAGE_KNLRO)
+ 
+ /* Until my rework is finished, 8xx still needs atomic PTE updates */
+ #define PTE_ATOMIC_UPDATES	1
+ 
+ /* We need to add _PAGE_SHARED to kernel pages */
+-#define _PAGE_KERNEL_RO	(_PAGE_SHARED)
++#define _PAGE_KERNEL_RO	(_PAGE_SHARED | _PAGE_KNLRO)
++#define _PAGE_KERNEL_ROX	(_PAGE_EXEC | _PAGE_KNLRO)
+ #define _PAGE_KERNEL_RW	(_PAGE_DIRTY | _PAGE_RW | _PAGE_HWWRITE)
+ 
+ #endif /* __KERNEL__ */
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index 82e4139..3e11b87 100644
+index 3e11b87..e47e6c0 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -33,12 +33,19 @@
- 
- /* Macro to make the code more readable. */
- #ifdef CONFIG_8xx_CPU6
--#define DO_8xx_CPU6(val, reg)	\
--	li	reg, val;	\
--	stw	reg, 12(r0);	\
--	lwz	reg, 12(r0);
-+#define SPRN_MI_TWC_ADDR	0x2b80
-+#define SPRN_MI_RPN_ADDR	0x2d80
-+#define SPRN_MD_TWC_ADDR	0x3b80
-+#define SPRN_MD_RPN_ADDR	0x3d80
-+
-+#define MTSPR_CPU6(spr, reg, treg)	\
-+	li	treg, spr##_ADDR;	\
-+	stw	treg, 12(r0);		\
-+	lwz	treg, 12(r0);		\
-+	mtspr	spr, reg
- #else
--#define DO_8xx_CPU6(val, reg)
-+#define MTSPR_CPU6(spr, reg, treg)	\
-+	mtspr	spr, reg
+@@ -444,14 +444,8 @@ DataStoreTLBMiss:
+ 	and	r11, r11, r10
+ 	rlwimi	r10, r11, 0, _PAGE_PRESENT
  #endif
+-	/* Honour kernel RO, User NA */
+-	/* 0x200 == Extended encoding, bit 22 */
+-	rlwimi	r10, r10, 32-2, 0x200 /* Copy USER to bit 22, 0x200 */
+-	/* r11 =  (r10 & _PAGE_RW) >> 1 */
+-	rlwinm	r11, r10, 32-1, 0x200
+-	or	r10, r11, r10
+-	/* invert RW and 0x200 bits */
+-	xori	r10, r10, _PAGE_RW | 0x200
++	/* invert RW */
++	xori	r10, r10, _PAGE_RW
  
- /* 
-@@ -333,8 +340,7 @@ InstructionTLBMiss:
- 	 * for this "segment."
- 	 */
- 	ori	r11,r11,1		/* Set valid bit */
--	DO_8xx_CPU6(0x2b80, r3)
--	mtspr	SPRN_MI_TWC, r11	/* Set segment attributes */
-+	MTSPR_CPU6(SPRN_MI_TWC, r11, r3)	/* Set segment attributes */
- 	mfspr	r11, SPRN_SRR0	/* Get effective address of fault */
- 	/* Extract level 2 index */
- 	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
-@@ -353,8 +359,7 @@ InstructionTLBMiss:
- 	 */
- 	li	r11, RPN_PATTERN
- 	rlwimi	r10, r11, 0, 0x07f8	/* Set 24-27, clear 21-23,28 */
--	DO_8xx_CPU6(0x2d80, r3)
--	mtspr	SPRN_MI_RPN, r10	/* Update TLB entry */
-+	MTSPR_CPU6(SPRN_MI_RPN, r10, r3)	/* Update TLB entry */
- 
- 	/* Restore registers */
- #ifdef CONFIG_8xx_CPU6
-@@ -423,8 +428,7 @@ DataStoreTLBMiss:
- 	 * It is bit 25 in the Linux PTE and bit 30 in the TWC
- 	 */
- 	rlwimi	r11, r10, 32-5, 30, 30
--	DO_8xx_CPU6(0x3b80, r3)
--	mtspr	SPRN_MD_TWC, r11
-+	MTSPR_CPU6(SPRN_MD_TWC, r11, r3)
- 
- 	/* Both _PAGE_ACCESSED and _PAGE_PRESENT has to be set.
- 	 * We also need to know if the insn is a load/store, so:
-@@ -457,8 +461,7 @@ DataStoreTLBMiss:
- 	 */
- 2:	li	r11, RPN_PATTERN
- 	rlwimi	r10, r11, 0, 24, 28	/* Set 24-27, clear 28 */
--	DO_8xx_CPU6(0x3d80, r3)
--	mtspr	SPRN_MD_RPN, r10	/* Update TLB entry */
-+	MTSPR_CPU6(SPRN_MD_RPN, r10, r3)	/* Update TLB entry */
- 
- 	/* Restore registers */
- #ifdef CONFIG_8xx_CPU6
+ 	/* The Linux PTE won't go exactly into the MMU TLB.
+ 	 * Software indicator bits 22 and 28 must be clear.
 -- 
 1.7.1
 
