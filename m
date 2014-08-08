@@ -1,181 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933756AbaHHWJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:09:15 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:36866 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932500AbaHHWJL (ORCPT
+	id S933779AbaHHWJs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:09:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60336 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758623AbaHHVgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 18:09:11 -0400
-Message-ID: <53E54A80.5070900@hurleysoftware.com>
-Date: Fri, 08 Aug 2014 18:09:04 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 8 Aug 2014 17:36:07 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>, Jeffrey Knockel <jeffk@cs.unm.edu>,
+        "Jedidiah R. Crandall" <crandall@cs.unm.edu>, Willy Tarreau <w@1wt.eu>,
+        Hannes Frederic Sowa <hannes@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 03/24] ip: make IP identifiers less predictable
+Date: Fri,  8 Aug 2014 14:34:56 -0700
+Message-Id: <20140808213335.568040400@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140808213335.421758947@linuxfoundation.org>
+References: <20140808213335.421758947@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Jiri Slaby <jslaby@suse.cz>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH v2] serial: uart: add hw flow control support configuration
-References: <1398971093-17164-1-git-send-email-m-karicheri2@ti.com> <53E39B44.60406@hurleysoftware.com> <53E3A67B.6070709@ti.com> <20140807171254.GA13097@kroah.com> <53E3B67E.80705@hurleysoftware.com> <53E3B88C.2000209@ti.com> <53E3C685.5010600@hurleysoftware.com> <53E3E597.7070305@ti.com> <53E405B6.7030602@hurleysoftware.com> <53E526CB.6060504@ti.com> <53E536CB.9080503@hurleysoftware.com> <53E53AD2.3020100@ti.com>
-In-Reply-To: <53E53AD2.3020100@ti.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2014 05:02 PM, Murali Karicheri wrote:
-> On 08/08/2014 04:44 PM, Peter Hurley wrote:
->> On 08/08/2014 03:36 PM, Murali Karicheri wrote:
->>> On 08/07/2014 07:03 PM, Peter Hurley wrote:
->>
->> [...]
->>
->>>> But I realize now that a different question needs asking:
->>>> Is the MSR read showing delta CTS set when AFE is on, ever?
->>>
->>> Unfortunately this was tested on a customer board that I don't have access to and can't check this out right away. I am trying to findout if I can get some hardware to test the patch to address the issue being discussed. Customer board is currently using RTS and CTS lines and the same works fine for them with this patch.
->>
->> Ok.
->>
->>
->>>> Because serial8250_modem_status() assumes the answer is no for
->>>> _all_ AFE-capable devices, and if yes, would mean that serial8250_modem_status()
->>>> is broken if AFE is on.
->>>
->>> As per Keystone UART spec
->>>
->>> bit 0 in MSR: DCTS: Change in CTS indicator bit. DCTS indicates that the CTS input has changed state since the last time it was read by the CPU. When DCTS is set (autoflow control is not enabled and the modem status interrupt is enabled), a modem status interrupt is generated. When autoflow control is enabled, no interrupt is generated
->>>
->>> So based on this, there shouldn't be any CTS change if AFE is enabled and will indicate change if AFE is disabled. Probably add WARN_ON_ONCE() as you suggested to detect any offending h/w.
->>
->> That's identical wording to the 16750 datasheet.
->>
->> But notice that it only says "no interrupt is generated" when AFE is on.
->> It doesn't say if the MSR is read, that DCTS won't be set. And that's
->> an important difference for how serial8250_modem_status() works.
->>
->> [...]
->>
->>
->>>>>> uart_throttle() and uart_unthrottle() are used indirectly by line disciplines
->>>>>> for high-level rx flow control, such as when a read buffer fills up because
->>>>>> there is no userspace reader. The 8250 core doesn't define a throttle/unthrottle
->>>>>> method because writing MCR to drop RTS is sufficient to disable auto-RTS.
->>>>>
->>>>> As per spec. hardware has rx threshold levels set to trigger an RTS level change to tell
->>>>> the remote from sending more bytes. So if h/w flow control is enabled, then not sure why
->>>>> uart_throttle() is to be doing anything when h/w flow control is supported? A dummy
->>>>> function required to satisfy the line discipline?
->>>>
->>>> I understand how auto-RTS works.
->>>>
->>>> Let's pretend for a moment that uart_throttle() does nothing when
->>>> auto-RTS is enabled:
->>>>
->>>> 1. tty buffers start to fill up because no process is reading the data.
->>>> 2. The throttle threshold is reached.
->>>> 3. uart_throttle() is called but does nothing.
->>>> 4. more data arrives and the DR interrupt is triggered
->>>> 5. serial8250_rx_chars() reads in the new data.
->>>> 6. tty buffers keep filling up even though the driver was told to throttle
->>>> 7. eventually the tty buffers will cap at about 64KB and start counting
->>>>      buf_overrun errors
->>>>
->>> Ok.
->>>
->>> Couple of observation on the AFE implementation in 8250 driver prior to my patch.
->>>
->>>  From the discussion so far, AFE is actually hardware assisted hardware flow control. Auto CTS is sw assisted hardware flow control
->>> where sw uses RTS line for recieve side flow control and I assume it uses MCR RTS bit for this where AFE does this automatically. From
->>> the 16550 or Keystone UART spec, I can't find how RTS line can be asserted to do this through sw instead of hardware doing it automatically. Spec says
->>>
->>> MCR RTS bit: RTS control. When AFE = 1, the RTS bit determines th
->>> e autoflow control enabled. Note that all UARTs do not support this feature. See the device-specific data manual for supported features. If this feature is not available, this bit is reserved and should be cleared to 0.
->>> 0 = UARTn_RTS is disabled, only UARTn_CTS is enabled.
->>> 1 = UARTn_RTS and UARTn_CTS are enabled.
->>>
->>> Then since AFE was already supported before my patch for FIFO size 32bytes or higher, I am wondering why there was no implementation of throttle()/unthrottle() to begin with and why UPF_HARD_FLOW flag is not set at all if AFE implemented in 8250 driver is hw assisted, hw flow control. Also what do these API supposed to do?
->>
->> uart_throttle() does _not_ call ops->throttle() unless either
->> UPF_SOFT_FLOW and/or UPF_HARD_FLOW is set in uport->flags.
->>
-> 
-> Not based on port flag. Here is the actual code in serial_core.c as I see it.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-You're misreading the code.
+------------------
 
+From: Eric Dumazet <edumazet@google.com>
 
-> static void uart_throttle(struct tty_struct *tty)
-> {
->     struct uart_state *state = tty->driver_data;
->     struct uart_port *port = state->uart_port;
->     uint32_t mask = 0;
-> 
->     if (I_IXOFF(tty))
->         mask |= UPF_SOFT_FLOW;
->     if (tty->termios.c_cflag & CRTSCTS)
->         mask |= UPF_HARD_FLOW;
+[ Upstream commit 04ca6973f7c1a0d8537f2d9906a0cf8e69886d75 ]
 
-mask = UPF_HARD_FLOW
+In "Counting Packets Sent Between Arbitrary Internet Hosts", Jeffrey and
+Jedidiah describe ways exploiting linux IP identifier generation to
+infer whether two machines are exchanging packets.
 
-port->flags does not have UPF_HARD_FLOW set so
+With commit 73f156a6e8c1 ("inetpeer: get rid of ip_id_count"), we
+changed IP id generation, but this does not really prevent this
+side-channel technique.
 
-         (port->flags & mask) == false
+This patch adds a random amount of perturbation so that IP identifiers
+for a given destination [1] are no longer monotonically increasing after
+an idle period.
 
->     if (port->flags & mask) {
->         port->ops->throttle(port);
->         mask &= ~port->flags;
->     }
-> 
->     if (mask & UPF_SOFT_FLOW)
->         uart_send_xchar(tty, STOP_CHAR(tty));
-> 
->     if (mask & UPF_HARD_FLOW)
->         uart_clear_mctrl(port, TIOCM_RTS);
-> }
+Note that prandom_u32_max(1) returns 0, so if generator is used at most
+once per jiffy, this patch inserts no hole in the ID suite and do not
+increase collision probability.
 
-[...]
+This is jiffies based, so in the worst case (HZ=1000), the id can
+rollover after ~65 seconds of idle time, which should be fine.
 
->>> Based on my above discussion, there are few things required to be done on top of AFE and some of it is done by my patch and the remaining thing to be addressed in another patch.
->>
->> Assuming that AFE, as already implemented in the 8250 driver, works as expected,
->> the fifo level check seems to be the only hurdle, right?
-> 
-> Also how uart_set_termios() expect to work without my patch? that is needed as well.
+We also change the hash used in __ip_select_ident() to not only hash
+on daddr, but also saddr and protocol, so that ICMP probes can not be
+used to infer information for other protocols.
 
-That looks buggy, even if UPF_HARD_FLOW is set.
+For IPv6, adds saddr into the hash as well, but not nexthdr.
 
-But that's my point: the most general cases should be fixed, if necessary.
-Then, a trivial change to override the fifo size check from firmware is all you'll need
+If I ping the patched target, we can see ID are now hard to predict.
 
+21:57:11.008086 IP (...)
+    A > target: ICMP echo request, seq 1, length 64
+21:57:11.010752 IP (... id 2081 ...)
+    target > A: ICMP echo reply, seq 1, length 64
 
->>>>> I want to work to fix this rather than revert this change as our customer is already using this feature.
->>>>
->>>> 3.16 was released 4 days ago.
->>>
->>> As I said, I will work to address this with priority.
->>
->> My point was that I'm not understanding how your customer could be using this
->> feature when it came out 4 days ago, but yet now you can't even test on the
->> hardware?
-> 
-> This fix was back ported to v3.13 that the customer is using.
+21:57:12.013133 IP (...)
+    A > target: ICMP echo request, seq 2, length 64
+21:57:12.015737 IP (... id 3039 ...)
+    target > A: ICMP echo reply, seq 2, length 64
 
-Ok, so your customer is running a custom kernel. Then I don't see the problem with backing
-this change out, rather than building on top of it.
+21:57:13.016580 IP (...)
+    A > target: ICMP echo request, seq 3, length 64
+21:57:13.019251 IP (... id 3437 ...)
+    target > A: ICMP echo reply, seq 3, length 64
 
-Regards,
-Peter Hurley
+[1] TCP sessions uses a per flow ID generator not changed by this patch.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Jeffrey Knockel <jeffk@cs.unm.edu>
+Reported-by: Jedidiah R. Crandall <crandall@cs.unm.edu>
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: Hannes Frederic Sowa <hannes@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ include/net/ip.h      |   11 +----------
+ net/ipv4/route.c      |   36 +++++++++++++++++++++++++++++++++---
+ net/ipv6/ip6_output.c |    2 ++
+ 3 files changed, 36 insertions(+), 13 deletions(-)
+
+--- a/include/net/ip.h
++++ b/include/net/ip.h
+@@ -252,16 +252,7 @@ int ip_dont_fragment(struct sock *sk, st
+ 		 !(dst_metric_locked(dst, RTAX_MTU)));
+ }
  
+-#define IP_IDENTS_SZ 2048u
+-extern atomic_t *ip_idents;
+-
+-static inline u32 ip_idents_reserve(u32 hash, int segs)
+-{
+-	atomic_t *id_ptr = ip_idents + hash % IP_IDENTS_SZ;
+-
+-	return atomic_add_return(segs, id_ptr) - segs;
+-}
+-
++u32 ip_idents_reserve(u32 hash, int segs);
+ void __ip_select_ident(struct iphdr *iph, int segs);
+ 
+ static inline void ip_select_ident_segs(struct sk_buff *skb, struct sock *sk, int segs)
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -465,8 +465,35 @@ static struct neighbour *ipv4_neigh_look
+ 	return neigh_create(&arp_tbl, pkey, dev);
+ }
+ 
+-atomic_t *ip_idents __read_mostly;
+-EXPORT_SYMBOL(ip_idents);
++#define IP_IDENTS_SZ 2048u
++struct ip_ident_bucket {
++	atomic_t	id;
++	u32		stamp32;
++};
++
++static struct ip_ident_bucket *ip_idents __read_mostly;
++
++/* In order to protect privacy, we add a perturbation to identifiers
++ * if one generator is seldom used. This makes hard for an attacker
++ * to infer how many packets were sent between two points in time.
++ */
++u32 ip_idents_reserve(u32 hash, int segs)
++{
++	struct ip_ident_bucket *bucket = ip_idents + hash % IP_IDENTS_SZ;
++	u32 old = ACCESS_ONCE(bucket->stamp32);
++	u32 now = (u32)jiffies;
++	u32 delta = 0;
++
++	if (old != now && cmpxchg(&bucket->stamp32, old, now) == old) {
++		u64 x = prandom_u32();
++
++		x *= (now - old);
++		delta = (u32)(x >> 32);
++	}
++
++	return atomic_add_return(segs + delta, &bucket->id) - segs;
++}
++EXPORT_SYMBOL(ip_idents_reserve);
+ 
+ void __ip_select_ident(struct iphdr *iph, int segs)
+ {
+@@ -479,7 +506,10 @@ void __ip_select_ident(struct iphdr *iph
+ 		get_random_bytes(&ip_idents_hashrnd, sizeof(ip_idents_hashrnd));
+ 	}
+ 
+-	hash = jhash_1word((__force u32)iph->daddr, ip_idents_hashrnd);
++	hash = jhash_3words((__force u32)iph->daddr,
++			    (__force u32)iph->saddr,
++			    iph->protocol,
++			    ip_idents_hashrnd);
+ 	id = ip_idents_reserve(hash, segs);
+ 	iph->id = htons(id);
+ }
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -551,6 +551,8 @@ static void ipv6_select_ident(struct fra
+ 		get_random_bytes(&ip6_idents_hashrnd, sizeof(ip6_idents_hashrnd));
+ 	}
+ 	hash = __ipv6_addr_jhash(&rt->rt6i_dst.addr, ip6_idents_hashrnd);
++	hash = __ipv6_addr_jhash(&rt->rt6i_src.addr, hash);
++
+ 	id = ip_idents_reserve(hash, 1);
+ 	fhdr->identification = htonl(id);
+ }
+
 
