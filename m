@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244AbaHHUtJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:49:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40701 "EHLO
+	id S1758187AbaHHVa4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:30:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40697 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758225AbaHHUtC (ORCPT
+	with ESMTP id S1757169AbaHHUs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:49:02 -0400
+	Fri, 8 Aug 2014 16:48:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: "Don A. Bailey" <donb@securitymouse.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 045/259] drm/radeon/dpm: fix vddci setup typo on cayman
-Date: Fri,  8 Aug 2014 13:37:48 -0700
-Message-Id: <1407530482-4483-46-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 055/259] lz4: add overrun checks to lz4_uncompress_unknownoutputsize()
+Date: Fri,  8 Aug 2014 13:37:58 -0700
+Message-Id: <1407530482-4483-56-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,38 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit b0880e87c1fd038b84498944f52e52c3e86ebe59 upstream.
+commit 4a3a99045177369700c60d074c0e525e8093b0fc upstream.
 
-We were using the vddc mask rather than the vddci mask.
+Jan points out that I forgot to make the needed fixes to the
+lz4_uncompress_unknownoutputsize() function to mirror the changes done
+in lz4_decompress() with regards to potential pointer overflows.
 
-Bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=79071
+The only in-kernel user of this function is the zram code, which only
+takes data from a valid compressed buffer that it made itself, so it's
+not a big issue.  But due to external kernel modules using this
+function, it's better to be safe here.
 
-May also fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=69723
-
-Noticed by: Dieter Nützel <Dieter@nuetzel-hh.de>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: Jan Beulich <JBeulich@suse.com>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/ni_dpm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/lz4/lz4_decompress.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/ni_dpm.c b/drivers/gpu/drm/radeon/ni_dpm.c
-index 1ee58a3..8c7059d 100644
---- a/drivers/gpu/drm/radeon/ni_dpm.c
-+++ b/drivers/gpu/drm/radeon/ni_dpm.c
-@@ -1313,7 +1313,7 @@ static void ni_populate_smc_voltage_tables(struct radeon_device *rdev,
+diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
+index b74da44..7a85967 100644
+--- a/lib/lz4/lz4_decompress.c
++++ b/lib/lz4/lz4_decompress.c
+@@ -192,6 +192,8 @@ static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
+ 			int s = 255;
+ 			while ((ip < iend) && (s == 255)) {
+ 				s = *ip++;
++				if (unlikely(length > (size_t)(length + s)))
++					goto _output_error;
+ 				length += s;
+ 			}
+ 		}
+@@ -232,6 +234,8 @@ static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
+ 		if (length == ML_MASK) {
+ 			while (ip < iend) {
+ 				int s = *ip++;
++				if (unlikely(length > (size_t)(length + s)))
++					goto _output_error;
+ 				length += s;
+ 				if (s == 255)
+ 					continue;
+@@ -284,7 +288,7 @@ static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
  
- 		table->voltageMaskTable.highMask[NISLANDS_SMC_VOLTAGEMASK_VDDCI] = 0;
- 		table->voltageMaskTable.lowMask[NISLANDS_SMC_VOLTAGEMASK_VDDCI] =
--			cpu_to_be32(eg_pi->vddc_voltage_table.mask_low);
-+			cpu_to_be32(eg_pi->vddci_voltage_table.mask_low);
- 	}
+ 	/* write overflow error detected */
+ _output_error:
+-	return (int) (-(((char *) ip) - source));
++	return -1;
  }
  
+ int lz4_decompress(const unsigned char *src, size_t *src_len,
 -- 
 1.9.1
 
