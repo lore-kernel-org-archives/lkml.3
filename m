@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756965AbaHHPhr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 11:37:47 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:36890 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807AbaHHPhq (ORCPT
+	id S1757048AbaHHPiG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 11:38:06 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:59301 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755437AbaHHPiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 11:37:46 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Geert Uytterhoeven <geert+renesas@glider.be>, linux-mmc@vger.kernel.org
-Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: sdhci-pxav3: Remove unused variable in sdhci_pxav3_remove()
-Date: Fri, 08 Aug 2014 17:38:19 +0200
-Message-ID: <6429061.3nhKdDRquU@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.14.14-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1407511931-26712-1-git-send-email-geert+renesas@glider.be>
-References: <1407511931-26712-1-git-send-email-geert+renesas@glider.be>
+	Fri, 8 Aug 2014 11:38:04 -0400
+Message-ID: <53E4EED7.6050302@gmail.com>
+Date: Fri, 08 Aug 2014 23:37:59 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: gleb@kernel.org, pbonzini@redhat.com
+CC: kvm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] virt/kvm/assigned-dev.c: Set 'dev->irq_source_id' to '-1'
+ after free it
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+As a generic function, deassign_guest_irq() assumes it can be called
+even if assign_guest_irq() is not be called successfully (which can be
+triggered by ioctl from user mode, indirectly).
 
-Thank you for the patch, but you're a bit too late :-)
+So for assign_guest_irq() failure process, need set 'dev->irq_source_id'
+to -1 after free 'dev->irq_source_id', or deassign_guest_irq() may free
+it again.
 
-http://article.gmane.org/gmane.linux.kernel.mmc/28097
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ virt/kvm/assigned-dev.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-On Friday 08 August 2014 17:32:11 Geert Uytterhoeven wrote:
-> Commit 8f69e585ca3ad324ea57e113bff06d366dfa010e ("mmc: sdhci-pxav3: Use
-> devm_* managed helpers") removed the later user of pxa:
-> 
-> drivers/mmc/host/sdhci-pxav3.c: In function 'sdhci_pxav3_remove':
-> drivers/mmc/host/sdhci-pxav3.c:400:20: warning: unused variable 'pxa'
-> [-Wunused-variable] struct sdhci_pxa *pxa = pltfm_host->priv;
->                     ^
-> 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> ---
->  drivers/mmc/host/sdhci-pxav3.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-> index 527dfa3faeab..6f842fb8e6b8 100644
-> --- a/drivers/mmc/host/sdhci-pxav3.c
-> +++ b/drivers/mmc/host/sdhci-pxav3.c
-> @@ -397,7 +397,6 @@ static int sdhci_pxav3_remove(struct platform_device
-> *pdev) {
->  	struct sdhci_host *host = platform_get_drvdata(pdev);
->  	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-> -	struct sdhci_pxa *pxa = pltfm_host->priv;
-> 
->  	pm_runtime_get_sync(&pdev->dev);
->  	sdhci_remove_host(host, 1);
-
+diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
+index bf06577..5819a27 100644
+--- a/virt/kvm/assigned-dev.c
++++ b/virt/kvm/assigned-dev.c
+@@ -526,8 +526,10 @@ static int assign_guest_irq(struct kvm *kvm,
+ 		dev->irq_requested_type |= guest_irq_type;
+ 		if (dev->ack_notifier.gsi != -1)
+ 			kvm_register_irq_ack_notifier(kvm, &dev->ack_notifier);
+-	} else
++	} else {
+ 		kvm_free_irq_source_id(kvm, dev->irq_source_id);
++		dev->irq_source_id = -1;
++	}
+ 
+ 	return r;
+ }
 -- 
-Regards,
-
-Laurent Pinchart
-
+1.7.11.7
