@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759464AbaHHWDq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:03:46 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:57897 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758419AbaHHWDm (ORCPT
+	id S1759475AbaHHWEH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:04:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60444 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757591AbaHHVgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 18:03:42 -0400
-Date: Fri, 8 Aug 2014 15:03:40 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Jeremiah Mahler <jmmahler@gmail.com>
-cc: Dave Hansen <dave.hansen@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH linux-next] arch/x86/mm: sparse 'tlb_single_page_flush_ceiling'
- warning
-In-Reply-To: <1407482671-23856-1-git-send-email-jmmahler@gmail.com>
-Message-ID: <alpine.DEB.2.02.1408081503270.15603@chino.kir.corp.google.com>
-References: <1407482671-23856-1-git-send-email-jmmahler@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 8 Aug 2014 17:36:16 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kirill Tkhai <tkhai@yandex.ru>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 13/24] sparc64: Make itc_sync_lock raw
+Date: Fri,  8 Aug 2014 14:35:06 -0700
+Message-Id: <20140808213335.967904461@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140808213335.421758947@linuxfoundation.org>
+References: <20140808213335.421758947@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Aug 2014, Jeremiah Mahler wrote:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> A sparse warning is generated about 'tlb_single_page_flush_ceiling'
-> not being declared.
-> 
->   arch/x86/mm/tlb.c:177:15: warning: symbol
->   'tlb_single_page_flush_ceiling' was not declared. Should it be static?
-> 
-> Since it isn't used anywhere outside this file, fix the warning by
-> making it static.
-> 
-> Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
+------------------
 
-Seems like __read_mostly would also be in order?
+From: Kirill Tkhai <tkhai@yandex.ru>
+
+[ Upstream commit 49b6c01f4c1de3b5e5427ac5aba80f9f6d27837a ]
+
+One more place where we must not be able
+to be preempted or to be interrupted in RT.
+
+Always actually disable interrupts during
+synchronization cycle.
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ arch/sparc/kernel/smp_64.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -150,7 +150,7 @@ void cpu_panic(void)
+ #define NUM_ROUNDS	64	/* magic value */
+ #define NUM_ITERS	5	/* likewise */
+ 
+-static DEFINE_SPINLOCK(itc_sync_lock);
++static DEFINE_RAW_SPINLOCK(itc_sync_lock);
+ static unsigned long go[SLAVE + 1];
+ 
+ #define DEBUG_TICK_SYNC	0
+@@ -258,7 +258,7 @@ static void smp_synchronize_one_tick(int
+ 	go[MASTER] = 0;
+ 	membar_safe("#StoreLoad");
+ 
+-	spin_lock_irqsave(&itc_sync_lock, flags);
++	raw_spin_lock_irqsave(&itc_sync_lock, flags);
+ 	{
+ 		for (i = 0; i < NUM_ROUNDS*NUM_ITERS; i++) {
+ 			while (!go[MASTER])
+@@ -269,7 +269,7 @@ static void smp_synchronize_one_tick(int
+ 			membar_safe("#StoreLoad");
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&itc_sync_lock, flags);
++	raw_spin_unlock_irqrestore(&itc_sync_lock, flags);
+ }
+ 
+ #if defined(CONFIG_SUN_LDOMS) && defined(CONFIG_HOTPLUG_CPU)
+
+
