@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427AbaHHVtS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:49:18 -0400
+	id S1759253AbaHHVtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:49:13 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:60829 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758929AbaHHVqI (ORCPT
+	with ESMTP id S1758931AbaHHVqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:46:08 -0400
+	Fri, 8 Aug 2014 17:46:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Vlad Yasevich <vyasevic@redhat.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 06/17] net: Correctly set segment mac_len in skb_segment().
-Date: Fri,  8 Aug 2014 14:35:28 -0700
-Message-Id: <20140808213457.774751704@linuxfoundation.org>
+Subject: [PATCH 3.16 09/17] Revert "net: phy: Set the driver when registering an MDIO bus device"
+Date: Fri,  8 Aug 2014 14:35:31 -0700
+Message-Id: <20140808213457.895022181@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213457.511493898@linuxfoundation.org>
 References: <20140808213457.511493898@linuxfoundation.org>
@@ -30,58 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-[ Upstream commit fcdfe3a7fa4cb74391d42b6a26dc07c20dab1d82 ]
+[ Upstream commit ce7991e8198b80eb6b4441b6f6114bea4a665d66 ]
 
-When performing segmentation, the mac_len value is copied right
-out of the original skb.  However, this value is not always set correctly
-(like when the packet is VLAN-tagged) and we'll end up copying a bad
-value.
+Commit a71e3c37960ce5f9 ("net: phy: Set the driver when registering an MDIO bus
+device") caused the following regression on the fec driver:
 
-One way to demonstrate this is to configure a VM which tags
-packets internally and turn off VLAN acceleration on the forwarding
-bridge port.  The packets show up corrupt like this:
-16:18:24.985548 52:54:00:ab:be:25 > 52:54:00:26:ce:a3, ethertype 802.1Q
-(0x8100), length 1518: vlan 100, p 0, ethertype 0x05e0,
-        0x0000:  8cdb 1c7c 8cdb 0064 4006 b59d 0a00 6402 ...|...d@.....d.
-        0x0010:  0a00 6401 9e0d b441 0a5e 64ec 0330 14fa ..d....A.^d..0..
-        0x0020:  29e3 01c9 f871 0000 0101 080a 000a e833)....q.........3
-        0x0030:  000f 8c75 6e65 7470 6572 6600 6e65 7470 ...unetperf.netp
-        0x0040:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        0x0050:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        0x0060:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        ...
+root@imx6qsabresd:~# echo mem > /sys/power/state
+PM: Syncing filesystems ... done.
+Freezing user space processes ... (elapsed 0.003 seconds) done.
+Freezing remaining freezable tasks ... (elapsed 0.002 seconds) done.
+Unable to handle kernel NULL pointer dereference at virtual address 0000002c
+pgd = bcd14000
+[0000002c] *pgd=4d9e0831, *pte=00000000, *ppte=00000000
+Internal error: Oops: 17 [#1] SMP ARM
+Modules linked in:
+CPU: 0 PID: 617 Comm: sh Not tainted 3.16.0 #17
+task: bc0c4e00 ti: bceb6000 task.ti: bceb6000
+PC is at fec_suspend+0x10/0x70
+LR is at dpm_run_callback.isra.7+0x34/0x6c
+pc : [<803f8a98>]    lr : [<80361f44>]    psr: 600f0013
+sp : bceb7d70  ip : bceb7d88  fp : bceb7d84
+r10: 8091523c  r9 : 00000000  r8 : bd88f478
+r7 : 803f8a88  r6 : 81165988  r5 : 00000000  r4 : 00000000
+r3 : 00000000  r2 : 00000000  r1 : bd88f478  r0 : bd88f478
+Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c5387d  Table: 4cd1404a  DAC: 00000015
+Process sh (pid: 617, stack limit = 0xbceb6240)
+Stack: (0xbceb7d70 to 0xbceb8000)
+....
 
-This also leads to awful throughput as GSO packets are dropped and
-cause retransmissions.
+The problem with the original commit is explained by Russell King:
 
-The solution is to set the mac_len using the values already available
-in then new skb.  We've already adjusted all of the header offset, so we
-might as well correctly figure out the mac_len using skb_reset_mac_len().
-After this change, packets are segmented correctly and performance
-is restored.
+"It has the effect (as can be seen from the oops) of attaching the MDIO bus
+device (itself is a bus-less device) to the platform driver, which means
+that if the platform driver supports power management, it will be called
+to power manage the MDIO bus device.
 
-CC: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Moreover, drivers do not expect to be called for power management
+operations for devices which they haven't probed, and certainly not for
+devices which aren't part of the same bus that the driver is registered
+against."
+
+This reverts commit a71e3c37960ce5f9c6a519bc1215e3ba9fa83e75.
+
+Cc: <stable@vger.kernel.org> #3.16
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/skbuff.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/phy/mdio_bus.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2976,9 +2976,9 @@ struct sk_buff *skb_segment(struct sk_bu
- 		tail = nskb;
+--- a/drivers/net/phy/mdio_bus.c
++++ b/drivers/net/phy/mdio_bus.c
+@@ -255,7 +255,6 @@ int mdiobus_register(struct mii_bus *bus
  
- 		__copy_skb_header(nskb, head_skb);
--		nskb->mac_len = head_skb->mac_len;
+ 	bus->dev.parent = bus->parent;
+ 	bus->dev.class = &mdio_bus_class;
+-	bus->dev.driver = bus->parent->driver;
+ 	bus->dev.groups = NULL;
+ 	dev_set_name(&bus->dev, "%s", bus->id);
  
- 		skb_headers_offset_update(nskb, skb_headroom(nskb) - headroom);
-+		skb_reset_mac_len(nskb);
- 
- 		skb_copy_from_linear_data_offset(head_skb, -tnl_hlen,
- 						 nskb->data - tnl_hlen,
 
 
