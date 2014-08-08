@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933511AbaHHWfT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:35:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40077 "EHLO
+	id S932796AbaHHWfK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:35:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40083 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517AbaHHUlh (ORCPT
+	with ESMTP id S1755911AbaHHUlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:41:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wei-Chun Chao <weichunc@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dave Chiluk <chiluk@canonical.com>,
+Cc: Mengdong Lin <mengdong.lin@intel.com>, Takashi Iwai <tiwai@suse.de>,
+        David Henningsson <david.henningsson@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 010/259] net: fix UDP tunnel GSO of frag_list GRO packets
-Date: Fri,  8 Aug 2014 13:37:13 -0700
-Message-Id: <1407530482-4483-11-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 014/259] ALSA: hda - verify pin:cvt connection on preparing a stream for Intel HDMI codec
+Date: Fri,  8 Aug 2014 13:37:17 -0700
+Message-Id: <1407530482-4483-15-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -29,76 +28,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei-Chun Chao <weichunc@plumgrid.com>
+From: Mengdong Lin <mengdong.lin@intel.com>
 
-commit 5882a07c72093dc3a18e2d2b129fb200686bb6ee upstream.
+commit 2df6742f613840a0b0a1590fb28f7af5b058a673 upstream.
 
-This patch fixes a kernel BUG_ON in skb_segment. It is hit when
-testing two VMs on openvswitch with one VM acting as VXLAN gateway.
+This is a temporary fix for some Intel HDMI codecs to avoid no sound output for
+a resuming playback after S3.
 
-During VXLAN packet GSO, skb_segment is called with skb->data
-pointing to inner TCP payload. skb_segment calls skb_network_protocol
-to retrieve the inner protocol. skb_network_protocol actually expects
-skb->data to point to MAC and it calls pskb_may_pull with ETH_HLEN.
-This ends up pulling in ETH_HLEN data from header tail. As a result,
-pskb_trim logic is skipped and BUG_ON is hit later.
+After S3, the audio driver restores pin:cvt connection selections by
+snd_hda_codec_resume_cache(). However this can happen before the gfx side is
+ready and such connect selection is overlooked by HW. After gfx is ready, the
+pins make the default selection again. And this will cause multiple pins share
+a same convertor and mute control will affect each other. Thus a resumed audio
+playback become silent after S3.
 
-Move skb_push in front of skb_network_protocol so that skb->data
-lines up properly.
+This patch verifies pin:cvt connection on preparing a stream, to assure the pin
+selects the right convetor and an assigned convertor is not shared by other
+unused pins. Apply this fix-up on Haswell, Broadwell and Valleyview (Baytrail).
 
-kernel BUG at net/core/skbuff.c:2999!
-Call Trace:
-[<ffffffff816ac412>] tcp_gso_segment+0x122/0x410
-[<ffffffff816bc74c>] inet_gso_segment+0x13c/0x390
-[<ffffffff8164b39b>] skb_mac_gso_segment+0x9b/0x170
-[<ffffffff816b3658>] skb_udp_tunnel_segment+0xd8/0x390
-[<ffffffff816b3c00>] udp4_ufo_fragment+0x120/0x140
-[<ffffffff816bc74c>] inet_gso_segment+0x13c/0x390
-[<ffffffff8109d742>] ? default_wake_function+0x12/0x20
-[<ffffffff8164b39b>] skb_mac_gso_segment+0x9b/0x170
-[<ffffffff8164b4d0>] __skb_gso_segment+0x60/0xc0
-[<ffffffff8164b6b3>] dev_hard_start_xmit+0x183/0x550
-[<ffffffff8166c91e>] sch_direct_xmit+0xfe/0x1d0
-[<ffffffff8164bc94>] __dev_queue_xmit+0x214/0x4f0
-[<ffffffff8164bf90>] dev_queue_xmit+0x10/0x20
-[<ffffffff81687edb>] ip_finish_output+0x66b/0x890
-[<ffffffff81688a58>] ip_output+0x58/0x90
-[<ffffffff816c628f>] ? fib_table_lookup+0x29f/0x350
-[<ffffffff816881c9>] ip_local_out_sk+0x39/0x50
-[<ffffffff816cbfad>] iptunnel_xmit+0x10d/0x130
-[<ffffffffa0212200>] vxlan_xmit_skb+0x1d0/0x330 [vxlan]
-[<ffffffffa02a3919>] vxlan_tnl_send+0x129/0x1a0 [openvswitch]
-[<ffffffffa02a2cd6>] ovs_vport_send+0x26/0xa0 [openvswitch]
-[<ffffffffa029931e>] do_output+0x2e/0x50 [openvswitch]
+We need this temporary fix before a reliable software communication channel is
+established between audio and gfx, to sync audio/gfx operations.
 
-Signed-off-by: Wei-Chun Chao <weichunc@plumgrid.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-(backported from commit 5882a07c72093dc3a18e2d2b129fb200686bb6ee)
-Signed-off-by: Dave Chiluk <chiluk@canonical.com>
+Signed-off-by: Mengdong Lin <mengdong.lin@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Cc: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/skbuff.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_hdmi.c | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index f45d60d..f7eca05 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2785,12 +2785,13 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
- 	int i = 0;
- 	int pos;
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index 5cef6e1..9c67b07 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -68,6 +68,7 @@ struct hdmi_spec_per_pin {
+ 	hda_nid_t pin_nid;
+ 	int num_mux_nids;
+ 	hda_nid_t mux_nids[HDA_MAX_CONNECTIONS];
++	int mux_idx;
+ 	hda_nid_t cvt_nid;
  
-+	__skb_push(head_skb, doffset);
- 	proto = skb_network_protocol(head_skb);
- 	if (unlikely(!proto))
- 		return ERR_PTR(-EINVAL);
+ 	struct hda_codec *codec;
+@@ -1343,6 +1344,8 @@ static int hdmi_choose_cvt(struct hda_codec *codec,
+ 	if (cvt_idx == spec->num_cvts)
+ 		return -ENODEV;
  
- 	csum = !!can_checksum_protocol(features, proto);
--	__skb_push(head_skb, doffset);
++	per_pin->mux_idx = mux_idx;
 +
- 	headroom = skb_headroom(head_skb);
- 	pos = skb_headlen(head_skb);
+ 	if (cvt_id)
+ 		*cvt_id = cvt_idx;
+ 	if (mux_id)
+@@ -1351,6 +1354,22 @@ static int hdmi_choose_cvt(struct hda_codec *codec,
+ 	return 0;
+ }
  
++/* Assure the pin select the right convetor */
++static void intel_verify_pin_cvt_connect(struct hda_codec *codec,
++			struct hdmi_spec_per_pin *per_pin)
++{
++	hda_nid_t pin_nid = per_pin->pin_nid;
++	int mux_idx, curr;
++
++	mux_idx = per_pin->mux_idx;
++	curr = snd_hda_codec_read(codec, pin_nid, 0,
++					  AC_VERB_GET_CONNECT_SEL, 0);
++	if (curr != mux_idx)
++		snd_hda_codec_write_cache(codec, pin_nid, 0,
++					    AC_VERB_SET_CONNECT_SEL,
++					    mux_idx);
++}
++
+ /* Intel HDMI workaround to fix audio routing issue:
+  * For some Intel display codecs, pins share the same connection list.
+  * So a conveter can be selected by multiple pins and playback on any of these
+@@ -1775,6 +1794,19 @@ static int generic_hdmi_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
+ 	bool non_pcm;
+ 	int pinctl;
+ 
++	if (is_haswell_plus(codec) || is_valleyview(codec)) {
++		/* Verify pin:cvt selections to avoid silent audio after S3.
++		 * After S3, the audio driver restores pin:cvt selections
++		 * but this can happen before gfx is ready and such selection
++		 * is overlooked by HW. Thus multiple pins can share a same
++		 * default convertor and mute control will affect each other,
++		 * which can cause a resumed audio playback become silent
++		 * after S3.
++		 */
++		intel_verify_pin_cvt_connect(codec, per_pin);
++		intel_not_share_assigned_cvt(codec, pin_nid, per_pin->mux_idx);
++	}
++
+ 	non_pcm = check_non_pcm_per_cvt(codec, cvt_nid);
+ 	mutex_lock(&per_pin->lock);
+ 	per_pin->channels = substream->runtime->channels;
 -- 
 1.9.1
 
