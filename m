@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759778AbaHHWgb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:36:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40075 "EHLO
+	id S1759816AbaHHWgn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:36:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40073 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377AbaHHUlh (ORCPT
+	with ESMTP id S1753842AbaHHUlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:41:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jorge Daniel Sequeira Matias <jdsm@tecnico.ulisboa.pt>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 003/259] target: Explicitly clear ramdisk_mcp backend pages
-Date: Fri,  8 Aug 2014 13:37:06 -0700
-Message-Id: <1407530482-4483-4-git-send-email-kamal@canonical.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 020/259] usb: musb: ux500: don't propagate the OF node
+Date: Fri,  8 Aug 2014 13:37:23 -0700
+Message-Id: <1407530482-4483-21-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,43 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-[Note that a different patch to address the same issue went in during
-v3.15-rc1 (commit 4442dc8a), but includes a bunch of other changes that
-don't strictly apply to fixing the bug.]
+commit 82363cf2eeafeea6ba88849f5e2febdc8a05943f upstream.
 
-This patch changes rd_allocate_sgl_table() to explicitly clear
-ramdisk_mcp backend memory pages by passing __GFP_ZERO into
-alloc_pages().
+There is a regression in the upcoming v3.16-rc1, that is caused
+by a problem that has been around for a while but now finally
+hangs the system. The bootcrawl looks like this:
 
-This addresses a potential security issue where reading from a
-ramdisk_mcp could return sensitive information, and follows what
->= v3.15 does to explicitly clear ramdisk_mcp memory at backend
-device initialization time.
+pinctrl-nomadik soc:pinctrl: pin GPIO256_AF28 already
+requested by a03e0000.usb_per5; cannot claim for musb-hdrc.0.auto
+pinctrl-nomadik soc:pinctrl: pin-256 (musb-hdrc.0.auto) status -22
+pinctrl-nomadik soc:pinctrl: could not request pin 256
+(GPIO256_AF28) from group usb_a_1  on device pinctrl-nomadik
+musb-hdrc musb-hdrc.0.auto: Error applying setting, reverse
+things back
+HS USB OTG: no transceiver configured
+musb-hdrc musb-hdrc.0.auto: musb_init_controller failed
+with status -517
+platform musb-hdrc.0.auto: Driver musb-hdrc requests
+probe deferral
+(...)
 
-Reported-by: Jorge Daniel Sequeira Matias <jdsm@tecnico.ulisboa.pt>
-Cc: Jorge Daniel Sequeira Matias <jdsm@tecnico.ulisboa.pt>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Reference: CVE-2014-4027
+The ux500 MUSB driver propagates the OF node to the dynamically
+created musb-hdrc device, which is incorrect as it makes the OF
+core believe there are two devices spun from the very same
+DT node, which confuses other parts of the device core, notably
+the pin control subsystem, which will try to apply all the pin
+control settings also to the HDRC device as it gets
+instantiated. (The OMAP2430 for example, does not set the
+of_node member.)
+
+Cc: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/target_core_rd.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/musb/ux500.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
-index 4ffe5f2..a97107c 100644
---- a/drivers/target/target_core_rd.c
-+++ b/drivers/target/target_core_rd.c
-@@ -178,7 +178,7 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
- 						- 1;
+diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
+index 122446b..ebef58d 100644
+--- a/drivers/usb/musb/ux500.c
++++ b/drivers/usb/musb/ux500.c
+@@ -275,7 +275,6 @@ static int ux500_probe(struct platform_device *pdev)
+ 	musb->dev.parent		= &pdev->dev;
+ 	musb->dev.dma_mask		= &pdev->dev.coherent_dma_mask;
+ 	musb->dev.coherent_dma_mask	= pdev->dev.coherent_dma_mask;
+-	musb->dev.of_node		= pdev->dev.of_node;
  
- 		for (j = 0; j < sg_per_table; j++) {
--			pg = alloc_pages(GFP_KERNEL, 0);
-+			pg = alloc_pages(GFP_KERNEL | __GFP_ZERO, 0);
- 			if (!pg) {
- 				pr_err("Unable to allocate scatterlist"
- 					" pages for struct rd_dev_sg_table\n");
+ 	glue->dev			= &pdev->dev;
+ 	glue->musb			= musb;
 -- 
 1.9.1
 
