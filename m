@@ -1,50 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941AbaHHPca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 11:32:30 -0400
-Received: from michel.telenet-ops.be ([195.130.137.88]:51786 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782AbaHHPc2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 11:32:28 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH] mmc: sdhci-pxav3: Remove unused variable in sdhci_pxav3_remove()
-Date: Fri,  8 Aug 2014 17:32:11 +0200
-Message-Id: <1407511931-26712-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756926AbaHHPeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 11:34:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56184 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752769AbaHHPeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 11:34:04 -0400
+Date: Fri, 8 Aug 2014 17:34:02 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] printk: Don't bother using LOG_CPU_MAX_BUF_SHIFT on
+	!SMP
+Message-ID: <20140808153402.GE21930@wotan.suse.de>
+References: <1407511244-5332-1-git-send-email-geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407511244-5332-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 8f69e585ca3ad324ea57e113bff06d366dfa010e ("mmc: sdhci-pxav3: Use
-devm_* managed helpers") removed the later user of pxa:
+On Fri, Aug 08, 2014 at 05:20:44PM +0200, Geert Uytterhoeven wrote:
+> When configuring a uniprocessor kernel, don't bother the user with an
+> irrelevant LOG_CPU_MAX_BUF_SHIFT question, and don't build the unused
+> code.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-drivers/mmc/host/sdhci-pxav3.c: In function 'sdhci_pxav3_remove':
-drivers/mmc/host/sdhci-pxav3.c:400:20: warning: unused variable 'pxa' [-Wunused-variable]
-  struct sdhci_pxa *pxa = pltfm_host->priv;
-                    ^
+Acked-by: Luis R. Rodriguez <mcgrof@suse.com>
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
- drivers/mmc/host/sdhci-pxav3.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-index 527dfa3faeab..6f842fb8e6b8 100644
---- a/drivers/mmc/host/sdhci-pxav3.c
-+++ b/drivers/mmc/host/sdhci-pxav3.c
-@@ -397,7 +397,6 @@ static int sdhci_pxav3_remove(struct platform_device *pdev)
- {
- 	struct sdhci_host *host = platform_get_drvdata(pdev);
- 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
--	struct sdhci_pxa *pxa = pltfm_host->priv;
- 
- 	pm_runtime_get_sync(&pdev->dev);
- 	sdhci_remove_host(host, 1);
--- 
-1.9.1
-
+  Luis
