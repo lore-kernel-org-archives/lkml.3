@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751363AbaHHUVx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:21:53 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:34997 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002AbaHHUVs (ORCPT
+	id S1751464AbaHHUX1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:23:27 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55586 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaHHUXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:21:48 -0400
-Message-ID: <1407529306.6583.19.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2 1/7] locking/rwsem: check for active writer/spinner
- before wakeup
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Scott J Norton <scott.norton@hp.com>, aswin@hp.com
-Date: Fri, 08 Aug 2014 13:21:46 -0700
-In-Reply-To: <1407527412.8365.60.camel@j-VirtualBox>
-References: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com>
-	 <1407450408-11679-2-git-send-email-Waiman.Long@hp.com>
-	 <1407458726.2513.12.camel@buesod1.americas.hpqcorp.net>
-	 <1407476387.2513.39.camel@buesod1.americas.hpqcorp.net>
-	 <1407527412.8365.60.camel@j-VirtualBox>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Aug 2014 16:23:24 -0400
+From: Laura Abbott <lauraa@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Laura Abbott <lauraa@codeaurora.org>,
+        David Riley <davidriley@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Ritesh Harjain <ritesh.harjani@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCHv6 1/5] lib/genalloc.c: Add power aligned algorithm
+Date: Fri,  8 Aug 2014 13:23:13 -0700
+Message-Id: <1407529397-6642-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-08-08 at 12:50 -0700, Jason Low wrote:
-> >  __visible __used noinline
-> > @@ -730,6 +744,23 @@ __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
-> >  	if (__mutex_slowpath_needs_to_unlock())
-> >  		atomic_set(&lock->count, 1);
-> >  
-> > +/*
-> > + * Skipping the mutex_has_owner() check when DEBUG, allows us to
-> > + * avoid taking the wait_lock in order to do not call mutex_release()
-> > + * and debug_mutex_unlock() when !DEBUG. This can otherwise result in
-> > + * deadlocks when another task enters the lock's slowpath in mutex_lock().
-> > + */
-> > +#ifndef CONFIG_DEBUG_MUTEXES
-> > +	/*
-> > +	 * Abort the wakeup operation if there is an another mutex owner, as the
-> > +	 * lock was stolen. mutex_unlock() should have cleared the owner field
-> > +	 * before calling this function. If that field is now set, another task
-> > +	 * must have acquired the mutex.
-> > +	 */
-> > +	if (mutex_has_owner(lock))
-> > +		return;
-> 
-> Would we need the mutex lock count to eventually get set to a negative
-> value if there are waiters? An optimistic spinner can get the lock and
-> set lock->count to 0. Then the lock count might remain 0 since a waiter
-> might not get waken up here to try-lock and set lock->count to -1 if it
-> goes back to sleep in the lock path.
 
-This is a good point, but I think we are safe because we do not rely on
-strict dependence between the mutex counter and the wait list. So to see
-if there are waiters to wakeup, we do a !list_empty() check, but to
-determine the lock state, we rely on the counter.
+One of the more common algorithms used for allocation
+is to align the start address of the allocation to
+the order of size requested. Add this as an algorithm
+option for genalloc.
 
-Thanks,
-Davidlohr
+Acked-by: Will Deacon <will.deacon@arm.com>
+Acked-by: Olof Johansson <olof@lixom.net>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ include/linux/genalloc.h |  4 ++++
+ lib/genalloc.c           | 21 +++++++++++++++++++++
+ 2 files changed, 25 insertions(+)
+
+diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
+index 1c2fdaa..3cd0934 100644
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -110,6 +110,10 @@ extern void gen_pool_set_algo(struct gen_pool *pool, genpool_algo_t algo,
+ extern unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
+ 		unsigned long start, unsigned int nr, void *data);
+ 
++extern unsigned long gen_pool_first_fit_order_align(unsigned long *map,
++		unsigned long size, unsigned long start, unsigned int nr,
++		void *data);
++
+ extern unsigned long gen_pool_best_fit(unsigned long *map, unsigned long size,
+ 		unsigned long start, unsigned int nr, void *data);
+ 
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index bdb9a45..9758529 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -481,6 +481,27 @@ unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
+ EXPORT_SYMBOL(gen_pool_first_fit);
+ 
+ /**
++ * gen_pool_first_fit_order_align - find the first available region
++ * of memory matching the size requirement. The region will be aligned
++ * to the order of the size specified.
++ * @map: The address to base the search on
++ * @size: The bitmap size in bits
++ * @start: The bitnumber to start searching at
++ * @nr: The number of zeroed bits we're looking for
++ * @data: additional data - unused
++ */
++unsigned long gen_pool_first_fit_order_align(unsigned long *map,
++		unsigned long size, unsigned long start,
++		unsigned int nr, void *data)
++{
++	unsigned long order = (unsigned long) data;
++	unsigned long align_mask = (1 << get_order(nr << order)) - 1;
++
++	return bitmap_find_next_zero_area(map, size, start, nr, align_mask);
++}
++EXPORT_SYMBOL(gen_pool_first_fit_order_align);
++
++/**
+  * gen_pool_best_fit - find the best fitting region of memory
+  * macthing the size requirement (no alignment constraint)
+  * @map: The address to base the search on
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
