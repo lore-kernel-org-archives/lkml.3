@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900AbaHHO20 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 10:28:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46636 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752570AbaHHO2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 10:28:22 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <computersforpeace@gmail.com>, <tony@atomide.com>,
-        <gregkh@linuxfoundation.org>
-CC: <nsekhar@ti.com>, <ezequiel.garcia@free-electrons.com>,
-        <pekon@pek-sem.com>, <artem.bityutskiy@linux.intel.com>,
-        <dwmw2@infradead.org>, <jg1.han@samsung.com>,
-        <linux-mtd@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] mtd: nand: omap: Fix 1-bit Hamming code scheme, omap_calculate_ecc()
-Date: Fri, 8 Aug 2014 17:27:08 +0300
-Message-ID: <1407508028-12973-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1756927AbaHHO2v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 10:28:51 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63956 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756862AbaHHO2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 10:28:49 -0400
+Message-ID: <53E4DE9F.7090603@kernel.dk>
+Date: Fri, 08 Aug 2014 08:28:47 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>, oren@purestorage.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix race in get_request()
+References: <20140808005443.GA7895@logfs.org> <53E4DD9C.1050306@kernel.dk>
+In-Reply-To: <53E4DD9C.1050306@kernel.dk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 65b97cf6b8de introduced in v3.7 caused a regression
-by using a reversed CS_MASK thus causing omap_calculate_ecc to
-always fail. As the NAND base driver never checks for .calculate()'s
-return value, the zeroed ECC values are used as is without showing
-any error to the user. However, this won't work and the NAND device
-won't be guarded by any error code.
+On 08/08/2014 08:24 AM, Jens Axboe wrote:
+> On 08/07/2014 06:54 PM, Jörn Engel wrote:
+>> Hello Jens!
+>>
+>> I came across the below while investigating some other problem.
+>> Something here doesn't seem right.  This looks like an obvious bug and
+>> something roughly along the lines of my patch would fix it.  But I
+>> must be in the wrong decade to find such a bug in the block layer.
+>>
+>> Is this for real?  Or if not, what am I missing?
+>>
+>> Jörn
+>>
+>> --
+>>
+>> If __get_request() returns NULL, get_request will call
+>> prepare_to_wait_exclusive() followed by io_schedule().  Not rechecking
+>> the sleep condition after prepare_to_wait_exclusive() leaves a race
+>> where the condition changes before prepare_to_wait_exclusive(), but
+>> not after and accordingly this thread never gets woken up.
+>>
+>> The race must be exceedingly hard to hit, otherwise I cannot explain how
+>> such a classic race could outlive the last millenium.
+> 
+> I think that is a genuine bug, it's just extremely hard to hit in real
+> life. It has probably only potentially ever triggered in the cases where
+> we are so out of memory that a blocking ~300b alloc fails, and Linux
+> generally shits itself pretty hard when it gets to that stage anyway...
+> And for the bug to be critical, you'd need this to happen for a device
+> that otherwise has no IO pending, since you'd get woken up by the next
+> completed request anyway.
 
-Fix the issue by using the correct mask.
+Actually, this can't trigger for an empty queue, since the mempool holds
+a few requests. So it should never result in a softlock, we will make
+progress. Given that we also still hold the queue spinlock (that will be
+held for a free as well), we should not be able to get a free of a
+request until the prepare_to_wait() has been done. So not sure there is
+an actual bug there, but I agree the code looks confusing that way.
 
-Code was tested on omap3beagle using the following procedure
-- flash the primary bootloader (MLO) from the kernel to the first
-NAND partition using nandwrite.
-- boot the board from NAND. This utilizes OMAP ROM loader that
-relies on 1-bit Hamming code ECC.
-
-Fixes: 65b97cf6b8de (mtd: nand: omap2: handle nand on gpmc)
-
-Cc: <stable@vger.kernel.org>	[3.7+]
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- drivers/mtd/nand/omap2.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-index f0ed92e..e2b9b34 100644
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -931,7 +931,7 @@ static int omap_calculate_ecc(struct mtd_info *mtd, const u_char *dat,
- 	u32 val;
- 
- 	val = readl(info->reg.gpmc_ecc_config);
--	if (((val >> ECC_CONFIG_CS_SHIFT)  & ~CS_MASK) != info->gpmc_cs)
-+	if (((val >> ECC_CONFIG_CS_SHIFT) & CS_MASK) != info->gpmc_cs)
- 		return -EINVAL;
- 
- 	/* read ecc result */
 -- 
-1.8.3.2
+Jens Axboe
 
