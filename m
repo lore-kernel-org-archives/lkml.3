@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933393AbaHHVZi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:25:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40836 "EHLO
+	id S933331AbaHHV0M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:26:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40831 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758440AbaHHUub (ORCPT
+	with ESMTP id S1751002AbaHHUu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:50:31 -0400
+	Fri, 8 Aug 2014 16:50:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Colin Cross <ccross@android.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Enrico Mioso <mrkiko.rs@gmail.com>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 084/259] arm64: implement TASK_SIZE_OF
-Date: Fri,  8 Aug 2014 13:38:27 -0700
-Message-Id: <1407530482-4483-85-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 236/259] net: huawei_cdc_ncm: increase command buffer size
+Date: Fri,  8 Aug 2014 13:40:59 -0700
+Message-Id: <1407530482-4483-237-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,41 +32,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit fa2ec3ea10bd377f9d55772b1dab65178425a1a2 upstream.
+[ Upstream commit 3acc74619b0175b7a154cf8dc54813f6faf97aa9 ]
 
-include/linux/sched.h implements TASK_SIZE_OF as TASK_SIZE if it
-is not set by the architecture headers.  TASK_SIZE uses the
-current task to determine the size of the virtual address space.
-On a 64-bit kernel this will cause reading /proc/pid/pagemap of a
-64-bit process from a 32-bit process to return EOF when it reads
-past 0xffffffff.
+Messages from the modem exceeding 256 bytes cause communication
+failure.
 
-Implement TASK_SIZE_OF exactly the same as TASK_SIZE with
-test_tsk_thread_flag instead of test_thread_flag.
+The WDM protocol is strictly "read on demand", meaning that we only
+poll for unread data after receiving a notification from the modem.
+Since we have no way to know how much data the modem has to send,
+we must make sure that the buffer we provide is "big enough".
+Message truncation does not work. Truncated messages are left unread
+until the modem has another message to send.  Which often won't
+happen until the userspace application has given up waiting for the
+final part of the last message, and therefore sends another command.
 
-Signed-off-by: Colin Cross <ccross@android.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+With a proper CDC WDM function there is a descriptor telling us
+which buffer size the modem uses. But with this vendor specific
+implementation there is no known way to calculate the exact "big
+enough" number.  It is an unknown property of the modem firmware.
+Experience has shown that 256 is too small.  The discussion of
+this failure ended up concluding that 512 might be too small as
+well. So 1024 seems like a reasonable value for now.
+
+Fixes: 41c47d8cfd68 ("net: huawei_cdc_ncm: Introduce the huawei_cdc_ncm driver")
+Cc: Enrico Mioso <mrkiko.rs@gmail.com>
+Reported-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Acked-By: Enrico Mioso <mrkiko.rs@gmail.com>
+Tested-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm64/include/asm/memory.h | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/usb/huawei_cdc_ncm.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
-index 3776217..acc3efa 100644
---- a/arch/arm64/include/asm/memory.h
-+++ b/arch/arm64/include/asm/memory.h
-@@ -56,6 +56,8 @@
- #define TASK_SIZE_32		UL(0x100000000)
- #define TASK_SIZE		(test_thread_flag(TIF_32BIT) ? \
- 				TASK_SIZE_32 : TASK_SIZE_64)
-+#define TASK_SIZE_OF(tsk)	(test_tsk_thread_flag(tsk, TIF_32BIT) ? \
-+				TASK_SIZE_32 : TASK_SIZE_64)
- #else
- #define TASK_SIZE		TASK_SIZE_64
- #endif /* CONFIG_COMPAT */
+diff --git a/drivers/net/usb/huawei_cdc_ncm.c b/drivers/net/usb/huawei_cdc_ncm.c
+index 312178d..75d9ee4 100644
+--- a/drivers/net/usb/huawei_cdc_ncm.c
++++ b/drivers/net/usb/huawei_cdc_ncm.c
+@@ -84,12 +84,13 @@ static int huawei_cdc_ncm_bind(struct usbnet *usbnet_dev,
+ 	ctx = drvstate->ctx;
+ 
+ 	if (usbnet_dev->status)
+-		/* CDC-WMC r1.1 requires wMaxCommand to be "at least 256
+-		 * decimal (0x100)"
++		/* The wMaxCommand buffer must be big enough to hold
++		 * any message from the modem. Experience has shown
++		 * that some replies are more than 256 bytes long
+ 		 */
+ 		subdriver = usb_cdc_wdm_register(ctx->control,
+ 						 &usbnet_dev->status->desc,
+-						 256, /* wMaxCommand */
++						 1024, /* wMaxCommand */
+ 						 huawei_cdc_ncm_wdm_manage_power);
+ 	if (IS_ERR(subdriver)) {
+ 		ret = PTR_ERR(subdriver);
 -- 
 1.9.1
 
