@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713AbaHHMs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 08:48:29 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:37029 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756228AbaHHMs2 (ORCPT
+	id S1756594AbaHHMxx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 08:53:53 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61759 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322AbaHHMxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 08:48:28 -0400
-From: Panos Vlachos <panosvlchs@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Panos Vlachos <panosvlchs@gmail.com>
-Subject: [PATCH] Staging:bcm:verndorspecificficextn.c: fixed five styling issues
-Date: Fri,  8 Aug 2014 15:48:12 +0300
-Message-Id: <1407502092-18967-1-git-send-email-panosvlchs@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 8 Aug 2014 08:53:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1406126699-10053-1-git-send-email-grygorii.strashko@ti.com>
+References: <1406126699-10053-1-git-send-email-grygorii.strashko@ti.com>
+Date: Fri, 8 Aug 2014 14:53:50 +0200
+Message-ID: <CACRpkdZAHj+PMu-xJJow+9ndbp9srnQtmb4E2k5x3nkaQA1jCg@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: keystone: add dsp gpio controller driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        ivan.khoronzhuk@ti.com, Muralidharan Karicheri <m-karicheri2@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Varka Bhadram <varkabhadram@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed the following styling issues:
-vendorspecificextn.c:14: WARNING: line over 80 characters
-vendorspecificextn.c:64: WARNING: line over 80 characters
-vendorspecificextn.c:91: WARNING: line over 80 characters
-vendorspecificextn.c:115: WARNING: line over 80 characters
-vendorspecificextn.c:138: WARNING: line over 80 characters
+On Wed, Jul 23, 2014 at 4:44 PM, Grygorii Strashko
+<grygorii.strashko@ti.com> wrote:
 
-Signed-off-by: Panagiotis Vlachos <panosvlchs@gmail.com>
----
- drivers/staging/bcm/vendorspecificextn.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+> From: Murali Karicheri <m-karicheri2@ti.com>
+>
+> On Keystone SOCs, ARM host can send interrupts to DSP cores using the
+> DSP GPIO controller IP. Each DSP GPIO controller provides 28 IRQ signals for
+> each DSP core. This is one of the component used by the IPC mechanism used
+> on Keystone SOCs.
+>
+> Keystone 2 DSP GPIO controller has specific features:
+> - each GPIO can be configured only as output pin;
+> - setting GPIO value to 1 causes IRQ generation on target DSP core;
+> - reading pin value returns 0 - if IRQ was handled or 1 - IRQ is still
+>   pending.
+>
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> ---
+> Changes in v2:
+> - minor comments applied
 
-diff --git a/drivers/staging/bcm/vendorspecificextn.c b/drivers/staging/bcm/vendorspecificextn.c
-index 2c57a16..ddb9f30 100644
---- a/drivers/staging/bcm/vendorspecificextn.c
-+++ b/drivers/staging/bcm/vendorspecificextn.c
-@@ -11,7 +11,8 @@
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  *
-  */
--INT vendorextnGetSectionInfo(PVOID  pContext, struct bcm_flash2x_vendor_info *pVendorInfo)
-+INT vendorextnGetSectionInfo(PVOID  pContext,
-+	struct bcm_flash2x_vendor_info *pVendorInfo)
- {
- 	return STATUS_FAILURE;
- }
-@@ -61,7 +62,8 @@ INT vendorextnExit(struct bcm_mini_adapter *Adapter)
-  *		arg	-input parameter sent by vendor
-  *
-  * Returns:
-- *		CONTINUE_COMMON_PATH in case it is not meant to be processed by vendor ioctls
-+ *		CONTINUE_COMMON_PATH in case it is not meant to be processed by
-+ *		vendor ioctls
-  *		STATUS_SUCCESS/STATUS_FAILURE as per the IOCTL return value
-  */
- 
-@@ -88,7 +90,8 @@ INT vendorextnIoctl(struct bcm_mini_adapter *Adapter, UINT cmd, ULONG arg)
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  */
- 
--INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
-+INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer,
-+	enum bcm_flash2x_section_val SectionVal,
- 			UINT offset, UINT numOfBytes)
- {
- 	return STATUS_FAILURE;
-@@ -112,7 +115,8 @@ INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_sect
-  * Returns:
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  */
--INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
-+INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer,
-+			enum bcm_flash2x_section_val SectionVal,
- 			UINT offset, UINT numOfBytes, bool bVerify)
- {
- 	return STATUS_FAILURE;
-@@ -135,7 +139,8 @@ INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_sec
-  * Returns:
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  */
--INT vendorextnWriteSectionWithoutErase(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
-+INT vendorextnWriteSectionWithoutErase(PVOID  pContext,
-+			PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
- 			UINT offset, UINT numOfBytes)
- {
- 	return STATUS_FAILURE;
--- 
-1.7.10.4
+Hm so there was one major comment, quoting myself:
 
+"And if you proceed with this, please integrate it with
+drivers/gpio/gpio-syscon.c, I don't need more special
+syscons GPIO handlers."
+
+Maybe you missed this in the midst of the other discussions
+about whether this is GPIO at all, but that comment still
+stands even if you talk me down on the generality of this
+driver.
+
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-keystone.txt
+
+Make this follow the style in:
+Documentation/devicetree/bindings/gpio/cirrus,clps711x-mctrl-gpio.txt
+
+Yours,
+Linus Walleij
