@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751AbaHHKNm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 06:13:42 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:36503 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756320AbaHHKNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 06:13:37 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: wsa@the-dreams.de, max.schwarz@online.de, olof@lixom.net,
-        dianders@chromium.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cf@rock-chips.com, xjq@rock-chips.com,
-        huangtao@rock-chips.com, zyw@rock-chips.com, yzq@rock-chips.com,
-        hj@rock-chips.com, kever.yang@rock-chips.com, hl@rock-chips.com,
-        caesar.wang@rock-chips.com, zhengsq@rock-chips.com
-Subject: Re: [PATCH] i2c: rk3x: fix interrupt handling issue
-Date: Fri, 08 Aug 2014 12:15:11 +0200
-Message-ID: <1676136.zY2YY7tt5d@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1407490900-4718-1-git-send-email-addy.ke@rock-chips.com>
-References: <1407490900-4718-1-git-send-email-addy.ke@rock-chips.com>
+	id S1756704AbaHHKNa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 06:13:30 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:48276 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756325AbaHHKLP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 06:11:15 -0400
+X-IronPort-AV: E=Sophos;i="5.01,824,1400018400"; 
+   d="scan'208";a="88704758"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: kernel-janitors@vger.kernel.org, Alexandre Courbot <gnurou@gmail.com>,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: =?UTF-8?q?=5BPATCH=2010/14=5D=20gpio=3A=20delete=20unneeded=20test=20before=20of=5Fnode=5Fput?=
+Date: Fri,  8 Aug 2014 12:07:51 +0200
+Message-Id: <1407492475-26283-10-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 8. August 2014, 17:41:40 schrieb Addy Ke:
-> If slave holds scl, I2C_IPD[7] will be set 1 by controller
-> for debugging. Driver must ignore it.
-> 
-> [    5.752391] rk3x-i2c ff160000.i2c: unexpected irq in WRITE: 0x80
-> [    5.939027] rk3x-i2c ff160000.i2c: timeout, ipd: 0x80, state: 4
-> 
-> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-I checked the manuals, bits [31:7] are marked as reserved in all of them, so
+Of_node_put supports NULL as its argument, so the initial test is not
+necessary.
 
-Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+Suggested by Uwe Kleine-König.
 
-> ---
->  drivers/i2c/busses/i2c-rk3x.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-> index 9e3084c..eab49e6 100644
-> --- a/drivers/i2c/busses/i2c-rk3x.c
-> +++ b/drivers/i2c/busses/i2c-rk3x.c
-> @@ -399,7 +399,7 @@ static irqreturn_t rk3x_i2c_irq(int irqno, void *dev_id)
-> }
-> 
->  	/* is there anything left to handle? */
-> -	if (unlikely(ipd == 0))
-> +	if (unlikely((ipd & REG_INT_ALL) == 0))
->  		goto out;
-> 
->  	switch (i2c->state) {
+The semantic patch that fixes this problem is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression e;
+@@
+
+-if (e)
+   of_node_put(e);
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/gpio/gpiolib-of.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+index 7cfdc22..604dbe6 100644
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -307,7 +307,5 @@ void of_gpiochip_add(struct gpio_chip *chip)
+ void of_gpiochip_remove(struct gpio_chip *chip)
+ {
+ 	gpiochip_remove_pin_ranges(chip);
+-
+-	if (chip->of_node)
+-		of_node_put(chip->of_node);
++	of_node_put(chip->of_node);
+ }
 
