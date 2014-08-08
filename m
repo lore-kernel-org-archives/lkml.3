@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574AbaHHCro (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Aug 2014 22:47:44 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:37253 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827AbaHHCrn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Aug 2014 22:47:43 -0400
+	id S1755727AbaHHCxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Aug 2014 22:53:42 -0400
+Received: from ozlabs.org ([103.22.144.67]:36629 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755009AbaHHCxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Aug 2014 22:53:41 -0400
+Date: Fri, 8 Aug 2014 12:53:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Moore <paul@paul-moore.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov
+Subject: Re: [GIT PULL] SELinux/NetLabel fixes for 3.17
+Message-ID: <20140808125334.662670bb@canb.auug.org.au>
+In-Reply-To: <3757283.5i2HgyZGYY@sifl>
+References: <3757283.5i2HgyZGYY@sifl>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Date: Thu, 7 Aug 2014 22:47:42 -0400
-Message-ID: <CAFdhcLRbffwYhwtP9J9VzB7LPE1kbmb9GTB2rpAb3k4gC5vOgg@mail.gmail.com>
-Subject: Re: [RFC 2/3] zsmalloc/zram: add zs_get_max_size_bytes and use it in zram
-From: David Horner <ds2horner@gmail.com>
-To: minchan@kernel.org
-Cc: linux-kernel-mm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/o52sRoP16KsM0rwGNg3m1GH"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- [2/3]
+--Sig_/o52sRoP16KsM0rwGNg3m1GH
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+Hi Paul,
 
- But why isn't mem_used_max writable? (save tearing down and rebuilding
- device to reset max)
+I am not sure who this was directed at, but if you want Linus to pull
+these (and that would be good) you need to send this to him explicitly.
 
- static DEVICE_ATTR(mem_used_max, S_IRUGO, mem_used_max_show, NULL);
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show, NULL);
+--Sig_/o52sRoP16KsM0rwGNg3m1GH
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-   with a check in the store() that the new value is positive and less
-than current max?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBCAAGBQJT5DuyAAoJEMDTa8Ir7ZwVgBsP/1Nn81d87ftD/LiJm6Q9tkhZ
+QtVNEw96b584ZEwWrmORwWVNcqSWOAskxNActVph+GzIpGQc//TYCewKJnfNHxHt
+fQZ1NP/Y/RP18gHGYaKk9kyOUb/vlqeBcIr4sCOZwxkvEJkWF+o1SwBc8wWDINqK
+jmbaCqdyhxVeKEq/C6GXABPbgcrsc4wg/DFBEFBMU8UboX01ypVIycikcsdoGRs0
+MhbUfNUQfIp47T0AncroDvteYHN0ipkBuOBYrpNrQlCMaEtPdqNofDFErGNPKZ68
+qO9FUbz0TEA1C1X694+RMtbkeAIikZSNZSlas44JCMQmDJGDvBRyCYpjOw+Kqo+A
+n84kP5/FxV6bdXfO8XGk6wtxB1lFq+t4bLkdPE1/ZOn3407FmXv8LwAglM5wQJTO
+P42fLHz5w8Y+anLb9zoVf4weZn792LWKNFneDEE4f6nDoshCKoAePDdAnHKPPRtT
+N6cFp0k7TvzQHF1kJcVYBvOqWcM/fvh1lEm2gOwWh5NifjnuGGsN8FkXriFuXOVc
+2SeVC1ncZC+ciCmhz6T5RcMSnaUqb8y3hRPODwK0aHp3OxXoofomyxFAM76F2AvA
+3gFTMve1L/FiQVQmcyFA1hx7yUWeOgmzVeXwkdk4GrojCBfryifXZunhXmXzzglw
+IEo4WF4QHHDsoqyX1pCM
+=Ovkd
+-----END PGP SIGNATURE-----
 
- I'm also a little puzzled why there is a new API zs_get_max_size_bytes if
- the data is accessible through sysfs?
- Especially if max limit will be (as you propose for [3/3]) through accessed
- through zsmalloc and hence zram needn't access.
-
-
-
-  [3/3]
- I concur that the zram limit is best implemented in zsmalloc.
- I am looking forward to that revised code.
-
-
-> From: Minchan Kim <minchan <at> kernel.org>
-> Subject: [RFC 2/3] zsmalloc/zram: add zs_get_max_size_bytes and use it in
-> zram
-> <http://news.gmane.org/find-root.php?message_id=1407225723%2d23754%2d3%2dgit%2dsend%2demail%2dminchan%40kernel.org>
-> Newsgroups: gmane.linux.kernel.mm
-> <http://news.gmane.org/gmane.linux.kernel.mm>, gmane.linux.kernel
-> <http://news.gmane.org/gmane.linux.kernel>
-> Date: 2014-08-05 08:02:02 GMT (5 hours and 4 minutes ago)
->
-> Normally, zram user can get maximum memory zsmalloc consumed via
-> polling mem_used_total with sysfs in userspace.
->
-> But it has a critical problem because user can miss peak memory
-> usage during update interval so that gap between them could be
-> huge when memory pressure is really heavy.
->
-> This patch adds new API zs_get_max_size_bytes in zsmalloc so
-> user(ex, zram) doesn't need to poll in short interval to get
-> exact value.
->
-> User can just see max memory usage once his test workload is
-> done. It's pretty handy and accurate.
+--Sig_/o52sRoP16KsM0rwGNg3m1GH--
