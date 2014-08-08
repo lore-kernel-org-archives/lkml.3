@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759102AbaHHWV0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:21:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40475 "EHLO
+	id S1759148AbaHHWVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:21:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40470 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442AbaHHUqz (ORCPT
+	with ESMTP id S1757918AbaHHUqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:46:55 -0400
+	Fri, 8 Aug 2014 16:46:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Yuchung Cheng <ycheng@google.com>, Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 196/259] memcg: oom_notify use-after-free fix
-Date: Fri,  8 Aug 2014 13:40:19 -0700
-Message-Id: <1407530482-4483-197-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 248/259] tcp: fix false undo corner cases
+Date: Fri,  8 Aug 2014 13:41:11 -0700
+Message-Id: <1407530482-4483-249-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,75 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Yuchung Cheng <ycheng@google.com>
 
-commit 2bcf2e92c3918ce62ab4e934256e47e9a16d19c3 upstream.
+[ Upstream commit 6e08d5e3c8236e7484229e46fdf92006e1dd4c49 ]
 
-Paul Furtado has reported the following GPF:
+The undo code assumes that, upon entering loss recovery, TCP
+1) always retransmit something
+2) the retransmission never fails locally (e.g., qdisc drop)
 
-  general protection fault: 0000 [#1] SMP
-  Modules linked in: ipv6 dm_mod xen_netfront coretemp hwmon x86_pkg_temp_thermal crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 microcode pcspkr ext4 jbd2 mbcache raid0 xen_blkfront
-  CPU: 3 PID: 3062 Comm: java Not tainted 3.16.0-rc5 #1
-  task: ffff8801cfe8f170 ti: ffff8801d2ec4000 task.ti: ffff8801d2ec4000
-  RIP: e030:mem_cgroup_oom_synchronize+0x140/0x240
-  RSP: e02b:ffff8801d2ec7d48  EFLAGS: 00010283
-  RAX: 0000000000000001 RBX: ffff88009d633800 RCX: 000000000000000e
-  RDX: fffffffffffffffe RSI: ffff88009d630200 RDI: ffff88009d630200
-  RBP: ffff8801d2ec7da8 R08: 0000000000000012 R09: 00000000fffffffe
-  R10: 0000000000000000 R11: 0000000000000000 R12: ffff88009d633800
-  R13: ffff8801d2ec7d48 R14: dead000000100100 R15: ffff88009d633a30
-  FS:  00007f1748bb4700(0000) GS:ffff8801def80000(0000) knlGS:0000000000000000
-  CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 00007f4110300308 CR3: 00000000c05f7000 CR4: 0000000000002660
-  Call Trace:
-    pagefault_out_of_memory+0x18/0x90
-    mm_fault_error+0xa9/0x1a0
-    __do_page_fault+0x478/0x4c0
-    do_page_fault+0x2c/0x40
-    page_fault+0x28/0x30
-  Code: 44 00 00 48 89 df e8 40 ca ff ff 48 85 c0 49 89 c4 74 35 4c 8b b0 30 02 00 00 4c 8d b8 30 02 00 00 4d 39 fe 74 1b 0f 1f 44 00 00 <49> 8b 7e 10 be 01 00 00 00 e8 42 d2 04 00 4d 8b 36 4d 39 fe 75
-  RIP  mem_cgroup_oom_synchronize+0x140/0x240
+so undo_marker is set in tcp_enter_recovery() and undo_retrans is
+incremented only when tcp_retransmit_skb() is successful.
 
-Commit fb2a6fc56be6 ("mm: memcg: rework and document OOM waiting and
-wakeup") has moved mem_cgroup_oom_notify outside of memcg_oom_lock
-assuming it is protected by the hierarchical OOM-lock.
+When the assumption is broken because TCP's cwnd is too small to
+retransmit or the retransmit fails locally. The next (DUP)ACK
+would incorrectly revert the cwnd and the congestion state in
+tcp_try_undo_dsack() or tcp_may_undo(). Subsequent (DUP)ACKs
+may enter the recovery state. The sender repeatedly enter and
+(incorrectly) exit recovery states if the retransmits continue to
+fail locally while receiving (DUP)ACKs.
 
-Although this is true for the notification part the protection doesn't
-cover unregistration of event which can happen in parallel now so
-mem_cgroup_oom_notify can see already unlinked and/or freed
-mem_cgroup_eventfd_list.
+The fix is to initialize undo_retrans to -1 and start counting on
+the first retransmission. Always increment undo_retrans even if the
+retransmissions fail locally because they couldn't cause DSACKs to
+undo the cwnd reduction.
 
-Fix this by using memcg_oom_lock also in mem_cgroup_oom_notify.
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=80881
-
-Fixes: fb2a6fc56be6 (mm: memcg: rework and document OOM waiting and wakeup)
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Reported-by: Paul Furtado <paulfurtado91@gmail.com>
-Tested-by: Paul Furtado <paulfurtado91@gmail.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/memcontrol.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ net/ipv4/tcp_input.c  | 8 ++++----
+ net/ipv4/tcp_output.c | 6 ++++--
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 44b0eec..a106a2d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5656,8 +5656,12 @@ static int mem_cgroup_oom_notify_cb(struct mem_cgroup *memcg)
- {
- 	struct mem_cgroup_eventfd_list *ev;
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index a8827e7..53d60b4 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -1111,7 +1111,7 @@ static bool tcp_check_dsack(struct sock *sk, const struct sk_buff *ack_skb,
+ 	}
  
-+	spin_lock(&memcg_oom_lock);
+ 	/* D-SACK for already forgotten data... Do dumb counting. */
+-	if (dup_sack && tp->undo_marker && tp->undo_retrans &&
++	if (dup_sack && tp->undo_marker && tp->undo_retrans > 0 &&
+ 	    !after(end_seq_0, prior_snd_una) &&
+ 	    after(end_seq_0, tp->undo_marker))
+ 		tp->undo_retrans--;
+@@ -1191,7 +1191,7 @@ static u8 tcp_sacktag_one(struct sock *sk,
+ 
+ 	/* Account D-SACK for retransmitted packet. */
+ 	if (dup_sack && (sacked & TCPCB_RETRANS)) {
+-		if (tp->undo_marker && tp->undo_retrans &&
++		if (tp->undo_marker && tp->undo_retrans > 0 &&
+ 		    after(end_seq, tp->undo_marker))
+ 			tp->undo_retrans--;
+ 		if (sacked & TCPCB_SACKED_ACKED)
+@@ -1892,7 +1892,7 @@ static void tcp_clear_retrans_partial(struct tcp_sock *tp)
+ 	tp->lost_out = 0;
+ 
+ 	tp->undo_marker = 0;
+-	tp->undo_retrans = 0;
++	tp->undo_retrans = -1;
+ }
+ 
+ void tcp_clear_retrans(struct tcp_sock *tp)
+@@ -2660,7 +2660,7 @@ static void tcp_enter_recovery(struct sock *sk, bool ece_ack)
+ 
+ 	tp->prior_ssthresh = 0;
+ 	tp->undo_marker = tp->snd_una;
+-	tp->undo_retrans = tp->retrans_out;
++	tp->undo_retrans = tp->retrans_out ? : -1;
+ 
+ 	if (inet_csk(sk)->icsk_ca_state < TCP_CA_CWR) {
+ 		if (!ece_ack)
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 99737ed..e3688a4 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2422,8 +2422,6 @@ int tcp_retransmit_skb(struct sock *sk, struct sk_buff *skb)
+ 		if (!tp->retrans_stamp)
+ 			tp->retrans_stamp = TCP_SKB_CB(skb)->when;
+ 
+-		tp->undo_retrans += tcp_skb_pcount(skb);
+-
+ 		/* snd_nxt is stored to detect loss of retransmitted segment,
+ 		 * see tcp_input.c tcp_sacktag_write_queue().
+ 		 */
+@@ -2431,6 +2429,10 @@ int tcp_retransmit_skb(struct sock *sk, struct sk_buff *skb)
+ 	} else {
+ 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPRETRANSFAIL);
+ 	}
 +
- 	list_for_each_entry(ev, &memcg->oom_notify, list)
- 		eventfd_signal(ev->eventfd, 1);
-+
-+	spin_unlock(&memcg_oom_lock);
- 	return 0;
++	if (tp->undo_retrans < 0)
++		tp->undo_retrans = 0;
++	tp->undo_retrans += tcp_skb_pcount(skb);
+ 	return err;
  }
  
 -- 
