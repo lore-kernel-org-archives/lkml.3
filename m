@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444AbaHHKfp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 06:35:45 -0400
-Received: from sf1.bxl.stone.is ([87.238.167.36]:33272 "EHLO sf1.bxl.stone.is"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756013AbaHHKfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 06:35:44 -0400
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-Message-ID: <53E4A7F8.1040700@acm.org>
-Date: Fri, 08 Aug 2014 12:35:36 +0200
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1756262AbaHHKkf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 06:40:35 -0400
+Received: from [207.46.163.187] ([207.46.163.187]:19799 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754900AbaHHKkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 06:40:31 -0400
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: <broonie@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <alsa-devel@alsa-project.org>, <timur@tabi.org>,
+        <Li.Xiubo@freescale.com>, <devicetree@vger.kernel.org>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>
+Subject: [PATCH] ASoC: fsl_sai: Make Synchronous and Asynchronous modes exclusive
+Date: Fri, 8 Aug 2014 18:41:19 +0800
+Message-ID: <1407494479-9877-1-git-send-email-nicoleotsuka@gmail.com>
+X-Mailer: git-send-email 1.8.4
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130519679196887847;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009004)(6009001)(199002)(189002)(21056001)(93916002)(86362001)(6806004)(19580395003)(19580405001)(31966008)(68736004)(104166001)(79102001)(107046002)(44976005)(2351001)(77982001)(74662001)(74502001)(50226001)(73392001)(229853001)(95666004)(55446002)(4396001)(46102001)(61266001)(36756003)(33646002)(106466001)(105596002)(104016003)(82202001)(62966002)(50466002)(92566001)(20776003)(47776003)(64706001)(48376002)(92726001)(77156001)(102836001)(87936001)(80022001)(84676001)(85852003)(83072002)(50986999)(88136002)(99396002)(97736001)(73972005)(89996001)(26826002)(87572001)(110136001)(87286001)(85306004)(81342001)(81442001)(81542001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB354;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] spin_lock_nested(): Always evaluate second argument
-References: <53CE1019.10708@acm.org> <20140722133716.cff957eff4eff1cc9c1d9968@linux-foundation.org> <alpine.DEB.2.02.1407221612330.10592@chino.kir.corp.google.com> <53E260D9.6030803@acm.org> <53E2618F.6040208@acm.org> <alpine.DEB.2.02.1408061455290.13545@chino.kir.corp.google.com> <53E4A73D.5080801@acm.org>
-In-Reply-To: <53E4A73D.5080801@acm.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Filter-ID: XtLePq6GTMn8G68F0EmQvdthj6rk7ohlAkaRQG+cDaLZlN3ufQ0ZRHdy43341LQ0JYRGiu4wDuX/
- sGw1Y7RAsZ3WBw9ZlycipwBG3jGu9D8JBgu10R0foqIRsBJqRnurUO/XCGxJVedBWv8BXp6lSPrf
- oA0XngOaR5RLFk6kKY8+X6tyUZ34Ozy6TOwmaHPzFR2lHDoBQ4zwtMehH4SfWgLcNhHqvET8hkHK
- 4DD3CZT4SL0VvzAbTStaxE3e6xctxkHXgTSJC2+q+O2n2sPwh+CpLQk2sgUsKd5RNPNJeN3I5L/U
- AJH41ve/RciJD7RwcMm6IODZgOZ9Y8BEoKFU+dplnEc9jfM8rmxx+/zyrq0ccBIk1Sag4dKiqCrF
- 8eZZsQYibGPulATAPqOguWXWenmy4p4jVbvkvQrOImHI+zH4ns3e6vWEaK66hz4t87L5hVQSL57W
- w8nd1cTP1twpFFTUuHOuOBA828Pfce2frIKvtUus/ypEW5W6Dw4DmSZF9OoIMWCP9bnVs5BJWbbt
- 5dM+m4WpRRDP6YzwkAPgQJZcv8AnfPB9HqHgcyCJwUz8oOSQKVK4yyKUlGmQMgPOfIQtTQXMrNAv
- J7CbCYezRVuhdlkpfoNhtgWYwB/e4S2rpoRvMJWweGFGUUnI6wOX8j4FS3UlU37B6qPMab0LB93J
- IFkIZaBCBQxuHnm838r5oXZZKX6DYbYFmMAf3uEtq0CVt0DUeFU/MBWnkHtFiUWUs1IAPjDts3+I
- etSNQKiFa27IsDu2NxxouWmZdcGOChVo3Ylh8ywfjYp979CTGJlcA0OL1mkTp3S7nD3AxhtVMS+4
- ayUpOtEhdxekWDmK9g==
-X-Report-Abuse-To: spam@sf1.bxl.stone.is
-X-Filter-Fingerprint: cPaH8lomer6UwsJ3BnJDyh/24V0ZnPLChpTdx0aQyMi0VFDyP20las9Mq1v6nXmfrqKtWpHLpkE8
- c09GKJn2t66S65eVMsSONLoJrfmhPEJMqRJTan78INzQLlEGX/jFRST5X0bRoOLYozD+qqgg13U4
- H51jyCSmLdA2hPaiVpwYWaeThsiFlmPt/lOSmjPekAuF+602V6QvPKXkSIpowmqK95LAXg+Ea3Jb
- F9WwpaZ//Un1C5ivAWoOksRE8XtOTT9J6CK2j8j7/AJ9TNml+IbyXSJXjZjMx+Tok7jY2RMVEkZR
- xMpnILpnPlb/BDIPR3BzrtNvug17DaoVb9RvKu/asqb5U7p3XPySiJaf+1XE3nrK/nhevL/uAoHg
- xNXar0XzbLB8Pru9OEB7tNjak+6bpnvFzMd6SECQNf1u/wGWAJzP31LdUHDVnH0aZDcVCxO6ac9X
- hDc8gFJxmNF1qg==
-X-Originating-IP: 87.238.167.34
-X-SpamExperts-Domain: stone.is
-X-SpamExperts-Username: 87.238.167.34
-Authentication-Results: bxl.stone.is; auth=pass smtp.auth=87.238.167.34
-X-SpamExperts-Outgoing-Class: ham
-X-SpamExperts-Outgoing-Evidence: Combined (0.03)
-X-Recommended-Action: accept
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02973C87BC
+Authentication-Results: spf=softfail (sender IP is 192.88.168.50)
+ smtp.mailfrom=nicoleotsuka@gmail.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Evaluating a macro argument only if certain configuration options
-have been selected is confusing and error-prone. Hence always
-evaluate the second argument of spin_lock_nested().
+The previous patch (ASoC: fsl_sai: Add asynchronous mode support) added
+new Device Tree bindings for Asynchronous and Synchronous modes support.
+However, these two shall not be present at the same time.
 
-An intentional side effect of this patch is that it avoids that
-the following warning is reported for netif_addr_lock_nested()
-when building with CONFIG_DEBUG_LOCK_ALLOC=n and with W=1:
+So this patch just simply makes them exclusive so as to avoid incorrect
+Device Tree binding usage.
 
-include/linux/netdevice.h: In function 'netif_addr_lock_nested':
-include/linux/netdevice.h:2865:6: warning: variable 'subclass' set but not used [-Wunused-but-set-variable]
-  int subclass = SINGLE_DEPTH_NESTING;
-      ^
-
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
 ---
- include/linux/spinlock.h | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ Documentation/devicetree/bindings/sound/fsl-sai.txt | 3 +--
+ sound/soc/fsl/fsl_sai.c                             | 7 +++++++
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
-index 3f2867f..262ba4e 100644
---- a/include/linux/spinlock.h
-+++ b/include/linux/spinlock.h
-@@ -197,7 +197,13 @@ static inline void do_raw_spin_unlock(raw_spinlock_t *lock) __releases(lock)
- 		 _raw_spin_lock_nest_lock(lock, &(nest_lock)->dep_map);	\
- 	 } while (0)
- #else
--# define raw_spin_lock_nested(lock, subclass)		_raw_spin_lock(lock)
-+/*
-+ * Always evaluate the 'subclass' argument to avoid that the compiler
-+ * warns about set-but-not-used variables when building with
-+ * CONFIG_DEBUG_LOCK_ALLOC=n and with W=1.
-+ */
-+# define raw_spin_lock_nested(lock, subclass)		\
-+	_raw_spin_lock(((void)(subclass), (lock)))
- # define raw_spin_lock_nest_lock(lock, nest_lock)	_raw_spin_lock(lock)
- #endif
+diff --git a/Documentation/devicetree/bindings/sound/fsl-sai.txt b/Documentation/devicetree/bindings/sound/fsl-sai.txt
+index 77864f4..dc9f9c3 100644
+--- a/Documentation/devicetree/bindings/sound/fsl-sai.txt
++++ b/Documentation/devicetree/bindings/sound/fsl-sai.txt
+@@ -38,8 +38,7 @@ Note:
+   default synchronous mode (sync Rx with Tx) will be used, which means both
+   transimitter and receiver will send and receive data by following clocks
+   of transimitter.
+-- fsl,sai-asynchronous will be ignored if fsl,sai-synchronous-rx property is
+-  already present.
++- fsl,sai-asynchronous and fsl,sai-synchronous-rx are exclusive.
  
+ Example:
+ sai2: sai@40031000 {
+diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
+index ef7c758..4c9e71c 100644
+--- a/sound/soc/fsl/fsl_sai.c
++++ b/sound/soc/fsl/fsl_sai.c
+@@ -634,6 +634,13 @@ static int fsl_sai_probe(struct platform_device *pdev)
+ 	fsl_sai_dai.symmetric_channels = 1;
+ 	fsl_sai_dai.symmetric_samplebits = 1;
+ 
++	if (of_find_property(np, "fsl,sai-synchronous-rx", NULL) &&
++	    of_find_property(np, "fsl,sai-asynchronous", NULL)) {
++		/* error out if both synchronous and asynchronous are present */
++		dev_err(&pdev->dev, "invalid binding for synchronous mode\n");
++		return -EINVAL;
++	}
++
+ 	if (of_find_property(np, "fsl,sai-synchronous-rx", NULL)) {
+ 		/* Sync Rx with Tx */
+ 		sai->synchronous[RX] = false;
 -- 
-1.8.4.5
+1.8.4
 
