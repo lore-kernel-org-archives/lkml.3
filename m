@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345AbaHHU43 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:56:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41504 "EHLO
+	id S933361AbaHHU4u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:56:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41496 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933229AbaHHUyW (ORCPT
+	with ESMTP id S933132AbaHHUyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:54:22 -0400
+	Fri, 8 Aug 2014 16:54:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>,
+Cc: Joel Stanley <joel@jms.id.au>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 099/259] powerpc/perf: Never program book3s PMCs with values >= 0x80000000
-Date: Fri,  8 Aug 2014 13:38:42 -0700
-Message-Id: <1407530482-4483-100-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 098/259] powerpc/perf: Clear MMCR2 when enabling PMU
+Date: Fri,  8 Aug 2014 13:38:41 -0700
+Message-Id: <1407530482-4483-99-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,59 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Joel Stanley <joel@jms.id.au>
 
-commit f56029410a13cae3652d1f34788045c40a13ffc7 upstream.
+commit b50a6c584bb47b370f84bfd746770c0bbe7129b7 upstream.
 
-We are seeing a lot of PMU warnings on POWER8:
+On POWER8 when switching to a KVM guest we set bits in MMCR2 to freeze
+the PMU counters. Aside from on boot they are then never reset,
+resulting in stuck perf counters for any user in the guest or host.
 
-    Can't find PMC that caused IRQ
+We now set MMCR2 to 0 whenever enabling the PMU, which provides a sane
+state for perf to use the PMU counters under either the guest or the
+host.
 
-Looking closer, the active PMC is 0 at this point and we took a PMU
-exception on the transition from negative to 0. Some versions of POWER8
-have an issue where they edge detect and not level detect PMC overflows.
+This was manifesting as a bug with ppc64_cpu --frequency:
 
-A number of places program the PMC with (0x80000000 - period_left),
-where period_left can be negative. We can either fix all of these or
-just ensure that period_left is always >= 1.
+    $ sudo ppc64_cpu --frequency
+    WARNING: couldn't run on cpu 0
+    WARNING: couldn't run on cpu 8
+      ...
+    WARNING: couldn't run on cpu 144
+    WARNING: couldn't run on cpu 152
+    min:    18446744073.710 GHz (cpu -1)
+    max:    0.000 GHz (cpu -1)
+    avg:    0.000 GHz
 
-This patch takes the second option.
+The command uses a perf counter to measure CPU cycles over a fixed
+amount of time, in order to approximate the frequency of the machine.
+The counters were returning zero once a guest was started, regardless of
+weather it was still running or had been shut down.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
+By dumping the value of MMCR2, it was observed that once a guest is
+running MMCR2 is set to 1s - which stops counters from running:
+
+    $ sudo sh -c 'echo p > /proc/sysrq-trigger'
+    CPU: 0 PMU registers, ppmu = POWER8 n_counters = 6
+    PMC1:  5b635e38 PMC2: 00000000 PMC3: 00000000 PMC4: 00000000
+    PMC5:  1bf5a646 PMC6: 5793d378 PMC7: deadbeef PMC8: deadbeef
+    MMCR0: 0000000080000000 MMCR1: 000000001e000000 MMCRA: 0000040000000000
+    MMCR2: fffffffffffffc00 EBBHR: 0000000000000000
+    EBBRR: 0000000000000000 BESCR: 0000000000000000
+    SIAR:  00000000000a51cc SDAR:  c00000000fc40000 SIER:  0000000001000000
+
+This is done unconditionally in book3s_hv_interrupts.S upon entering the
+guest, and the original value is only save/restored if the host has
+indicated it was using the PMU. This is okay, however the user of the
+PMU needs to ensure that it is in a defined state when it starts using
+it.
+
+Fixes: e05b9b9e5c10 ("powerpc/perf: Power8 PMU support")
+Signed-off-by: Joel Stanley <joel@jms.id.au>
+Acked-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/perf/core-book3s.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ arch/powerpc/perf/core-book3s.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index d23b01c..57a8ff9 100644
+index 8855aec..d23b01c 100644
 --- a/arch/powerpc/perf/core-book3s.c
 +++ b/arch/powerpc/perf/core-book3s.c
-@@ -851,7 +851,22 @@ static void power_pmu_read(struct perf_event *event)
- 	} while (local64_cmpxchg(&event->hw.prev_count, prev, val) != prev);
+@@ -1149,6 +1149,9 @@ static void power_pmu_enable(struct pmu *pmu)
+ 	mb();
+ 	write_mmcr0(cpuhw, mmcr0);
  
- 	local64_add(delta, &event->count);
--	local64_sub(delta, &event->hw.period_left);
++	if (ppmu->flags & PPMU_ARCH_207S)
++		mtspr(SPRN_MMCR2, 0);
 +
-+	/*
-+	 * A number of places program the PMC with (0x80000000 - period_left).
-+	 * We never want period_left to be less than 1 because we will program
-+	 * the PMC with a value >= 0x800000000 and an edge detected PMC will
-+	 * roll around to 0 before taking an exception. We have seen this
-+	 * on POWER8.
-+	 *
-+	 * To fix this, clamp the minimum value of period_left to 1.
-+	 */
-+	do {
-+		prev = local64_read(&event->hw.period_left);
-+		val = prev - delta;
-+		if (val < 1)
-+			val = 1;
-+	} while (local64_cmpxchg(&event->hw.period_left, prev, val) != prev);
- }
- 
- /*
+ 	/*
+ 	 * Enable instruction sampling if necessary
+ 	 */
 -- 
 1.9.1
 
