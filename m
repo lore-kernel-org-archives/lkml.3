@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113AbaHHJUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 05:20:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45084 "EHLO
+	id S1756202AbaHHJUU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 05:20:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45099 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193AbaHHJT5 (ORCPT
+	with ESMTP id S1756136AbaHHJUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 05:19:57 -0400
-Date: Fri, 8 Aug 2014 02:19:37 -0700
-From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-f96f56780ca584930bb3a2769d73fd9a101bcbbe@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, ananth@in.ibm.com, hpa@zytor.com,
-        mingo@kernel.org, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        davem@davemloft.net
-Reply-To: mingo@kernel.org, hpa@zytor.com, ananth@in.ibm.com,
-        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
-        tglx@linutronix.de, davem@davemloft.net
-In-Reply-To: <20140804031016.11433.65539.stgit@kbuild-fedora.novalocal>
-References: <20140804031016.11433.65539.stgit@kbuild-fedora.novalocal>
+	Fri, 8 Aug 2014 05:20:01 -0400
+Date: Fri, 8 Aug 2014 02:19:21 -0700
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-7c7f1547b627092737493f0781780af85cc9b1a4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, dave@sr71.net,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        dave.hansen@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, dave@sr71.net,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        dave.hansen@linux.intel.com
+In-Reply-To: <20140807175841.5C92D878@viggo.jf.intel.com>
+References: <20140807175841.5C92D878@viggo.jf.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] kprobes:
-  Skip kretprobe hit in NMI context to avoid deadlock
-Git-Commit-ID: f96f56780ca584930bb3a2769d73fd9a101bcbbe
+Subject: [tip:x86/urgent] x86/mm: Fix RCU splat from new TLB tracepoints
+Git-Commit-ID: 7c7f1547b627092737493f0781780af85cc9b1a4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,53 +35,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f96f56780ca584930bb3a2769d73fd9a101bcbbe
-Gitweb:     http://git.kernel.org/tip/f96f56780ca584930bb3a2769d73fd9a101bcbbe
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Mon, 4 Aug 2014 03:10:16 +0000
+Commit-ID:  7c7f1547b627092737493f0781780af85cc9b1a4
+Gitweb:     http://git.kernel.org/tip/7c7f1547b627092737493f0781780af85cc9b1a4
+Author:     Dave Hansen <dave.hansen@linux.intel.com>
+AuthorDate: Thu, 7 Aug 2014 10:58:41 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 8 Aug 2014 10:38:04 +0200
+CommitDate: Fri, 8 Aug 2014 10:35:00 +0200
 
-kprobes: Skip kretprobe hit in NMI context to avoid deadlock
+x86/mm: Fix RCU splat from new TLB tracepoints
 
-Skip kretprobe hit in NMI context, because if an NMI happens
-inside the critical section protected by kretprobe_table.lock
-and another(or same) kretprobe hit, pre_kretprobe_handler
-tries to lock kretprobe_table.lock again.
-Normal interrupts have no problem because they are disabled
-with the lock.
+Dave Jones reported seeing a bug from one of my TLB tracepoints:
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: David S. Miller <davem@davemloft.net>
-Link: http://lkml.kernel.org/r/20140804031016.11433.65539.stgit@kbuild-fedora.novalocal
-[ Minor edits for clarity. ]
+        http://lkml.kernel.org/r/20140806181801.GA4605@redhat.com
+
+According to Paul McKenney, the right way to fix this is adding
+an _rcuidle suffix to the tracepoint.
+
+        http://lkml.kernel.org/r/20140807065055.GA5821@linux.vnet.ibm.com
+
+This patch does just that.
+
+Reported-by: Dave Jones <davej@redhat.com>,
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140807175841.5C92D878@viggo.jf.intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/kprobes.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ arch/x86/mm/tlb.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 734e9a7..3995f54 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1778,7 +1778,18 @@ static int pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
- 	unsigned long hash, flags = 0;
- 	struct kretprobe_instance *ri;
- 
--	/*TODO: consider to only swap the RA after the last pre_handler fired */
-+	/*
-+	 * To avoid deadlocks, prohibit return probing in NMI contexts,
-+	 * just skip the probe and increase the (inexact) 'nmissed'
-+	 * statistical counter, so that the user is informed that
-+	 * something happened:
-+	 */
-+	if (unlikely(in_nmi())) {
-+		rp->nmissed++;
-+		return 0;
-+	}
-+
-+	/* TODO: consider to only swap the RA after the last pre_handler fired */
- 	hash = hash_ptr(current, KPROBE_HASH_BITS);
- 	raw_spin_lock_irqsave(&rp->lock, flags);
- 	if (!hlist_empty(&rp->free_instances)) {
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 1fe3398..98b7976 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -49,7 +49,13 @@ void leave_mm(int cpu)
+ 	if (cpumask_test_cpu(cpu, mm_cpumask(active_mm))) {
+ 		cpumask_clear_cpu(cpu, mm_cpumask(active_mm));
+ 		load_cr3(swapper_pg_dir);
+-		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
++		/*
++		 * This gets called in the idle path where RCU
++		 * functions differently.  Tracing normally
++		 * uses RCU, so we have to call the tracepoint
++		 * specially here.
++		 */
++		trace_tlb_flush_rcuidle(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(leave_mm);
