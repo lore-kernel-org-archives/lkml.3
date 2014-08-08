@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784AbaHHOX1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 10:23:27 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43429 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704AbaHHOXZ (ORCPT
+	id S1756839AbaHHOYd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 10:24:33 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:35262 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502AbaHHOYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 10:23:25 -0400
-Message-ID: <1407507789.3354.20.camel@paszta.hi.pengutronix.de>
-Subject: Re: [RFC PATCH v3] reset: Add a defer reset object to send board
- specific reset
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Houcheng Lin <houcheng@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, sre@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Vikas Sajjan <vikas.sajjan@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 08 Aug 2014 16:23:09 +0200
-In-Reply-To: <CACRpkdbFPAsu1gE-AVyD=-RxyE7mUJPSbFga7HLh0mxjE-mQuQ@mail.gmail.com>
-References: <1403098673-3058-1-git-send-email-houcheng@gmail.com>
-	 <CACRpkdYfu8HmVCkn9JFh+YP5OPdr8o9nTfoCnkJ7SSpGoenQUg@mail.gmail.com>
-	 <20140708080535.GJ13423@lukather>
-	 <CACRpkdbFPAsu1gE-AVyD=-RxyE7mUJPSbFga7HLh0mxjE-mQuQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 8 Aug 2014 10:24:32 -0400
+Message-ID: <53E4DD9C.1050306@kernel.dk>
+Date: Fri, 08 Aug 2014 08:24:28 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>, oren@purestorage.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix race in get_request()
+References: <20140808005443.GA7895@logfs.org>
+In-Reply-To: <20140808005443.GA7895@logfs.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 08.07.2014, 11:38 +0200 schrieb Linus Walleij:
-> On Tue, Jul 8, 2014 at 10:05 AM, Maxime Ripard
-> <maxime.ripard@free-electrons.com> wrote:
-> > On Tue, Jul 08, 2014 at 09:52:03AM +0200, Linus Walleij wrote:
-> >> On Wed, Jun 18, 2014 at 3:37 PM, Houcheng Lin <houcheng@gmail.com> wrote:
-> >>
-> >> > The Problem
-> >> > -----------
-> >> > The reset signal on a hardware board is send either:
-> >> >     - during machine initialization
-> >> >     - during bus master's initialization
-> >>
-> >> I just thought about this a bit, since there isn't already a generic GPIO
-> >> reset driver, just call this drivers/reset/reset-gpio.c and make the
-> >> ability to deferral just a configuration detail of the GPIO reset driver.
-> >
-> > Philipp has been working on one for quite some time. See
-> > http://www.spinics.net/lists/arm-kernel/msg321927.html
-> >
-> > However, it seems to progress slowly, and we don't seem to be able to
-> > reach a consensus here.
-
-Mostly because Maxime and I seem to have a completely different opinion
-and nobody else argued one way or the other.
-
-> > If you ask me, having to set a few extra properties like this just
-> > advocates for a regular reset driver and DT node for the reset GPIO,
-> > but I'm pretty sure Philipp will feel otherwise :)
+On 08/07/2014 06:54 PM, Jörn Engel wrote:
+> Hello Jens!
 > 
-> Hm haha yeah let's fight it out :-)
+> I came across the below while investigating some other problem.
+> Something here doesn't seem right.  This looks like an obvious bug and
+> something roughly along the lines of my patch would fix it.  But I
+> must be in the wrong decade to find such a bug in the block layer.
 > 
-> This is not my subsystem so I'm getting some popcorn.
+> Is this for real?  Or if not, what am I missing?
+> 
+> Jörn
+> 
+> --
+> 
+> If __get_request() returns NULL, get_request will call
+> prepare_to_wait_exclusive() followed by io_schedule().  Not rechecking
+> the sleep condition after prepare_to_wait_exclusive() leaves a race
+> where the condition changes before prepare_to_wait_exclusive(), but
+> not after and accordingly this thread never gets woken up.
+> 
+> The race must be exceedingly hard to hit, otherwise I cannot explain how
+> such a classic race could outlive the last millenium.
 
-Sorry about missing this earlier, I hope the popcorn is not stale.
+I think that is a genuine bug, it's just extremely hard to hit in real
+life. It has probably only potentially ever triggered in the cases where
+we are so out of memory that a blocking ~300b alloc fails, and Linux
+generally shits itself pretty hard when it gets to that stage anyway...
+And for the bug to be critical, you'd need this to happen for a device
+that otherwise has no IO pending, since you'd get woken up by the next
+completed request anyway.
 
-I think a reset that needs to be released before a fixed device appears
-on the bus, should be handled by the bus driver. The reset framework
-could be made to help with that, but I don't think a separate entity
-that scans the whole device tree itself is the right solution.
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 3275353957f0..00aa6c7abe5a 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -1068,6 +1068,11 @@ retry:
+>  
+>  	trace_block_sleeprq(q, bio, rw_flags & 1);
+>  
+> +	rq = __get_request(rl, rw_flags, bio, gfp_mask);
+> +	if (rq) {
+> +		finish_wait(&rl->wait[is_sync], &wait);
+> +		return rq;
+> +	}
 
-regards
-Philipp
+The extra __get_request() call should go before the
+trace_block_sleeprq(), however. I'll rejuggle that when applying.
+
+-- 
+Jens Axboe
 
