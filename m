@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973AbaHHUrM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:47:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40503 "EHLO
+	id S1758976AbaHHWT4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:19:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40514 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757935AbaHHUrH (ORCPT
+	with ESMTP id S1757959AbaHHUrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:47:07 -0400
+	Fri, 8 Aug 2014 16:47:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
+Cc: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 036/259] virtio-scsi: fix various bad behavior on aborted requests
-Date: Fri,  8 Aug 2014 13:37:39 -0700
-Message-Id: <1407530482-4483-37-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 037/259] MIPS: KVM: Fix memory leak on VCPU
+Date: Fri,  8 Aug 2014 13:37:40 -0700
+Message-Id: <1407530482-4483-38-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,64 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>
 
-commit 8faeb529b2dabb9df691d614dda18910a43d05c9 upstream.
+commit 8c9eb041cf76038eb3b62ee259607eec9b89f48d upstream.
 
-Even though the virtio-scsi spec guarantees that all requests related
-to the TMF will have been completed by the time the TMF itself completes,
-the request queue's callback might not have run yet.  This causes requests
-to be completed more than once, and as a result triggers a variety of
-BUGs or oopses.
+kvm_arch_vcpu_free() is called in 2 code paths:
 
+1) kvm_vm_ioctl()
+       kvm_vm_ioctl_create_vcpu()
+           kvm_arch_vcpu_destroy()
+               kvm_arch_vcpu_free()
+2) kvm_put_kvm()
+       kvm_destroy_vm()
+           kvm_arch_destroy_vm()
+               kvm_mips_free_vcpus()
+                   kvm_arch_vcpu_free()
+
+Neither of the paths handles VCPU free. We need to do it in
+kvm_arch_vcpu_free() corresponding to the memory allocation in
+kvm_arch_vcpu_create().
+
+Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Reviewed-by: Venkatesh Srinivas <venkateshs@google.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/virtio_scsi.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ arch/mips/kvm/kvm_mips.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index a91a135..8490aa4 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -273,6 +273,16 @@ static void virtscsi_req_done(struct virtqueue *vq)
- 	virtscsi_vq_done(vscsi, req_vq, virtscsi_complete_cmd);
- };
+diff --git a/arch/mips/kvm/kvm_mips.c b/arch/mips/kvm/kvm_mips.c
+index 3dfbe82..7a8b440 100644
+--- a/arch/mips/kvm/kvm_mips.c
++++ b/arch/mips/kvm/kvm_mips.c
+@@ -395,6 +395,7 @@ void kvm_arch_vcpu_free(struct kvm_vcpu *vcpu)
+ 	if (vcpu->arch.kseg0_commpage)
+ 		kfree(vcpu->arch.kseg0_commpage);
  
-+static void virtscsi_poll_requests(struct virtio_scsi *vscsi)
-+{
-+	int i, num_vqs;
-+
-+	num_vqs = vscsi->num_queues;
-+	for (i = 0; i < num_vqs; i++)
-+		virtscsi_vq_done(vscsi, &vscsi->req_vqs[i],
-+				 virtscsi_complete_cmd);
-+}
-+
- static void virtscsi_complete_free(struct virtio_scsi *vscsi, void *buf)
- {
- 	struct virtio_scsi_cmd *cmd = buf;
-@@ -607,6 +617,18 @@ static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
- 	    cmd->resp.tmf.response == VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
- 		ret = SUCCESS;
++	kfree(vcpu);
+ }
  
-+	/*
-+	 * The spec guarantees that all requests related to the TMF have
-+	 * been completed, but the callback might not have run yet if
-+	 * we're using independent interrupts (e.g. MSI).  Poll the
-+	 * virtqueues once.
-+	 *
-+	 * In the abort case, sc->scsi_done will do nothing, because
-+	 * the block layer must have detected a timeout and as a result
-+	 * REQ_ATOM_COMPLETE has been set.
-+	 */
-+	virtscsi_poll_requests(vscsi);
-+
- out:
- 	mempool_free(cmd, virtscsi_cmd_pool);
- 	return ret;
+ void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
 -- 
 1.9.1
 
