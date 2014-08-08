@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758810AbaHHVj0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:39:26 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58587 "EHLO zene.cmpxchg.org"
+	id S1758781AbaHHVjX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:39:23 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58590 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758712AbaHHVia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:38:30 -0400
+	id S1758713AbaHHVib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 17:38:31 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: linux-mm@kvack.org
 Cc: Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
         Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
         cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 1/4] mm: memcontrol: use generic direct reclaim code to meet the allocation
-Date: Fri,  8 Aug 2014 17:38:11 -0400
-Message-Id: <1407533894-25845-2-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 3/4] mm: memcontrol: add memory.max to default hierarchy
+Date: Fri,  8 Aug 2014 17:38:13 -0400
+Message-Id: <1407533894-25845-4-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <1407533894-25845-1-git-send-email-hannes@cmpxchg.org>
 References: <1407533894-25845-1-git-send-email-hannes@cmpxchg.org>
@@ -21,241 +21,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memcg loops around calling direct reclaim for SWAP_CLUSTER_MAX pages
-and checking the status after every invocation, but the direct reclaim
-code is already required/optimized to meet higher targets efficiently.
+In untrusted environments, a strict upper memory limit on a cgroup can
+be necessary, to protect against bugs or malicious users.
 
-Pass the proper target to direct reclaim and remove a lot of looping
-and reclaim cruft from historic memcg glory.  All the callsites still
-loop in case reclaim efforts get stolen by concurrent allocations, or
-when reclaim has a hard time making progress, but at least it doesn't
-have to loop to meet the basic reclaim goal anymore.
-
-This also prepares the memcg reclaim API for use with the planned high
-limit, to target any limit excess with a single reclaim invocation.
+Provide memory.max, a limit that can not be breached and will trigger
+group-internal OOM killing once page reclaim can no longer enforce it.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- include/linux/swap.h |  6 ++--
- mm/memcontrol.c      | 86 +++++++++++-----------------------------------------
- mm/vmscan.c          |  7 +++--
- 3 files changed, 25 insertions(+), 74 deletions(-)
+ Documentation/cgroups/unified-hierarchy.txt |  5 +++++
+ mm/memcontrol.c                             | 35 +++++++++++++++++++++++++++++
+ 2 files changed, 40 insertions(+)
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 1b72060f093a..f94614a2668a 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -327,8 +327,10 @@ extern void lru_cache_add_active_or_unevictable(struct page *page,
- extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 					gfp_t gfp_mask, nodemask_t *mask);
- extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
--extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
--						  gfp_t gfp_mask, bool noswap);
-+extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
-+						  unsigned long nr_pages,
-+						  gfp_t gfp_mask,
-+						  bool may_swap);
- extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						gfp_t gfp_mask, bool noswap,
- 						struct zone *zone,
+diff --git a/Documentation/cgroups/unified-hierarchy.txt b/Documentation/cgroups/unified-hierarchy.txt
+index 2d91530b8d6c..ef1db728a035 100644
+--- a/Documentation/cgroups/unified-hierarchy.txt
++++ b/Documentation/cgroups/unified-hierarchy.txt
+@@ -372,6 +372,10 @@ estimate of the average working set size and then make upward
+ adjustments based on monitoring high limit excess, workload
+ performance, and the global memory situation.
+ 
++In untrusted environments, users may wish to limit the amount of high
++limit excess in order to contain buggy or malicious workloads.  For
++that purpose, a hard upper limit can be set through 'memory.max'.
++
+ 4.3.3.2 Misc changes
+ 
+ - use_hierarchy is on by default and the cgroup file for the flag is
+@@ -380,6 +384,7 @@ performance, and the global memory situation.
+ - memory.usage_in_bytes is renamed to memory.current to be in line
+   with the new limit naming scheme
+ 
++
+ 5. Planned Changes
+ 
+ 5-1. CAP for resource control
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ec4dcf1b9562..4146c0f47ba2 100644
+index 81627387fbd7..a69ff21c8a9a 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -315,9 +315,6 @@ struct mem_cgroup {
- 	/* OOM-Killer disable */
- 	int		oom_kill_disable;
- 
--	/* set when res.limit == memsw.limit */
--	bool		memsw_is_minimum;
--
- 	/* protect arrays of thresholds */
- 	struct mutex thresholds_lock;
- 
-@@ -481,14 +478,6 @@ enum res_type {
- #define OOM_CONTROL		(0)
- 
- /*
-- * Reclaim flags for mem_cgroup_hierarchical_reclaim
-- */
--#define MEM_CGROUP_RECLAIM_NOSWAP_BIT	0x0
--#define MEM_CGROUP_RECLAIM_NOSWAP	(1 << MEM_CGROUP_RECLAIM_NOSWAP_BIT)
--#define MEM_CGROUP_RECLAIM_SHRINK_BIT	0x1
--#define MEM_CGROUP_RECLAIM_SHRINK	(1 << MEM_CGROUP_RECLAIM_SHRINK_BIT)
--
--/*
-  * The memcg_create_mutex will be held whenever a new cgroup is created.
-  * As a consequence, any change that needs to protect against new child cgroups
-  * appearing has to hold it as well.
-@@ -1792,42 +1781,6 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
- 			 NULL, "Memory cgroup out of memory");
+@@ -6253,6 +6253,36 @@ static ssize_t memory_high_write(struct kernfs_open_file *of,
+ 	return nbytes;
  }
  
--static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
--					gfp_t gfp_mask,
--					unsigned long flags)
--{
--	unsigned long total = 0;
--	bool noswap = false;
--	int loop;
--
--	if (flags & MEM_CGROUP_RECLAIM_NOSWAP)
--		noswap = true;
--	if (!(flags & MEM_CGROUP_RECLAIM_SHRINK) && memcg->memsw_is_minimum)
--		noswap = true;
--
--	for (loop = 0; loop < MEM_CGROUP_MAX_RECLAIM_LOOPS; loop++) {
--		if (loop)
--			drain_all_stock_async(memcg);
--		total += try_to_free_mem_cgroup_pages(memcg, gfp_mask, noswap);
--		/*
--		 * Allow limit shrinkers, which are triggered directly
--		 * by userspace, to catch signals and stop reclaim
--		 * after minimal progress, regardless of the margin.
--		 */
--		if (total && (flags & MEM_CGROUP_RECLAIM_SHRINK))
--			break;
--		if (mem_cgroup_margin(memcg))
--			break;
--		/*
--		 * If nothing was reclaimed after two attempts, there
--		 * may be no reclaimable pages in this hierarchy.
--		 */
--		if (loop && !total)
--			break;
--	}
--	return total;
--}
--
- /**
-  * test_mem_cgroup_node_reclaimable
-  * @memcg: the target memcg
-@@ -2530,8 +2483,9 @@ static int try_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
- 	struct mem_cgroup *mem_over_limit;
- 	struct res_counter *fail_res;
- 	unsigned long nr_reclaimed;
--	unsigned long flags = 0;
- 	unsigned long long size;
-+	bool may_swap = true;
-+	bool drained = false;
- 	int ret = 0;
- 
- retry:
-@@ -2546,7 +2500,7 @@ retry:
- 			goto done_restock;
- 		res_counter_uncharge(&memcg->res, size);
- 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
--		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
-+		may_swap = false;
- 	} else
- 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
- 
-@@ -2572,11 +2526,18 @@ retry:
- 	if (!(gfp_mask & __GFP_WAIT))
- 		goto nomem;
- 
--	nr_reclaimed = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
-+	nr_reclaimed = try_to_free_mem_cgroup_pages(mem_over_limit, nr_pages,
-+						    gfp_mask, may_swap);
- 
- 	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
- 		goto retry;
- 
-+	if (!drained) {
-+		drain_all_stock_async(memcg);
-+		drained = true;
-+		goto retry;
-+	}
++static u64 memory_max_read(struct cgroup_subsys_state *css,
++			   struct cftype *cft)
++{
++	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
 +
- 	if (gfp_mask & __GFP_NORETRY)
- 		goto nomem;
- 	/*
-@@ -3707,19 +3668,13 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
- 			enlarge = 1;
- 
- 		ret = res_counter_set_limit(&memcg->res, val);
--		if (!ret) {
--			if (memswlimit == val)
--				memcg->memsw_is_minimum = true;
--			else
--				memcg->memsw_is_minimum = false;
--		}
- 		mutex_unlock(&set_limit_mutex);
- 
- 		if (!ret)
- 			break;
- 
--		mem_cgroup_reclaim(memcg, GFP_KERNEL,
--				   MEM_CGROUP_RECLAIM_SHRINK);
-+		try_to_free_mem_cgroup_pages(memcg, 1, GFP_KERNEL, true);
++	return res_counter_read_u64(&memcg->res, RES_LIMIT);
++}
 +
- 		curusage = res_counter_read_u64(&memcg->res, RES_USAGE);
- 		/* Usage is reduced ? */
- 		if (curusage >= oldusage)
-@@ -3766,20 +3721,13 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
- 		if (memswlimit < val)
- 			enlarge = 1;
- 		ret = res_counter_set_limit(&memcg->memsw, val);
--		if (!ret) {
--			if (memlimit == val)
--				memcg->memsw_is_minimum = true;
--			else
--				memcg->memsw_is_minimum = false;
--		}
- 		mutex_unlock(&set_limit_mutex);
- 
- 		if (!ret)
- 			break;
- 
--		mem_cgroup_reclaim(memcg, GFP_KERNEL,
--				   MEM_CGROUP_RECLAIM_NOSWAP |
--				   MEM_CGROUP_RECLAIM_SHRINK);
-+		try_to_free_mem_cgroup_pages(memcg, 1, GFP_KERNEL, false);
++static ssize_t memory_max_write(struct kernfs_open_file *of,
++				char *buf, size_t nbytes, loff_t off)
++{
++	struct mem_cgroup *memcg = mem_cgroup_from_css(of_css(of));
++	u64 max;
++	int ret;
 +
- 		curusage = res_counter_read_u64(&memcg->memsw, RES_USAGE);
- 		/* Usage is reduced ? */
- 		if (curusage >= oldusage)
-@@ -4028,8 +3976,8 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
- 		if (signal_pending(current))
- 			return -EINTR;
++	if (mem_cgroup_is_root(memcg))
++		return -EINVAL;
++
++	buf = strim(buf);
++	ret = res_counter_memparse_write_strategy(buf, &max);
++	if (ret)
++		return ret;
++
++	ret = mem_cgroup_resize_limit(memcg, max);
++	if (ret)
++		return ret;
++
++	return nbytes;
++}
++
+ static struct cftype memory_files[] = {
+ 	{
+ 		.name = "current",
+@@ -6263,6 +6293,11 @@ static struct cftype memory_files[] = {
+ 		.read_u64 = memory_high_read,
+ 		.write = memory_high_write,
+ 	},
++	{
++		.name = "max",
++		.read_u64 = memory_max_read,
++		.write = memory_max_write,
++	},
+ };
  
--		progress = try_to_free_mem_cgroup_pages(memcg, GFP_KERNEL,
--						false);
-+		progress = try_to_free_mem_cgroup_pages(memcg, 1,
-+							GFP_KERNEL, true);
- 		if (!progress) {
- 			nr_retries--;
- 			/* maybe some writeback is necessary */
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 2836b5373b2e..f1609423821b 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2753,21 +2753,22 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
- }
- 
- unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
-+					   unsigned long nr_pages,
- 					   gfp_t gfp_mask,
--					   bool noswap)
-+					   bool may_swap)
- {
- 	struct zonelist *zonelist;
- 	unsigned long nr_reclaimed;
- 	int nid;
- 	struct scan_control sc = {
--		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-+		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
- 		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
- 				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
- 		.target_mem_cgroup = memcg,
- 		.priority = DEF_PRIORITY,
- 		.may_writepage = !laptop_mode,
- 		.may_unmap = 1,
--		.may_swap = !noswap,
-+		.may_swap = may_swap,
- 	};
- 
- 	/*
+ struct cgroup_subsys memory_cgrp_subsys = {
 -- 
 2.0.3
 
