@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933423AbaHHWdz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:33:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40101 "EHLO
+	id S933461AbaHHWd7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:33:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40102 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756068AbaHHUli (ORCPT
+	with ESMTP id S1756047AbaHHUli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Aug 2014 16:41:38 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
+Cc: Hugh Dickins <hughd@google.com>, Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 015/259] x86/xen: safely map and unmap grant frames when in atomic context
-Date: Fri,  8 Aug 2014 13:37:18 -0700
-Message-Id: <1407530482-4483-16-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 009/259] shmem: fix splicing from a hole while it's punched
+Date: Fri,  8 Aug 2014 13:37:12 -0700
+Message-Id: <1407530482-4483-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -29,269 +32,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit b7dd0e350e0bd4c0fddcc9b8958342700b00b168 upstream.
+commit b1a366500bd537b50c3aad26dc7df083ec03a448 upstream.
 
-arch_gnttab_map_frames() and arch_gnttab_unmap_frames() are called in
-atomic context but were calling alloc_vm_area() which might sleep.
+shmem_fault() is the actual culprit in trinity's hole-punch starvation,
+and the most significant cause of such problems: since a page faulted is
+one that then appears page_mapped(), needing unmap_mapping_range() and
+i_mmap_mutex to be unmapped again.
 
-Also, if a driver attempts to allocate a grant ref from an interrupt
-and the table needs expanding, then the CPU may already by in lazy MMU
-mode and apply_to_page_range() will BUG when it tries to re-enable
-lazy MMU mode.
+But it is not the only way in which a page can be brought into a hole in
+the radix_tree while that hole is being punched; and Vlastimil's testing
+implies that if enough other processors are busy filling in the hole,
+then shmem_undo_range() can be kept from completing indefinitely.
 
-These two functions are only used in PV guests.
+shmem_file_splice_read() is the main other user of SGP_CACHE, which can
+instantiate shmem pagecache pages in the read-only case (without holding
+i_mutex, so perhaps concurrently with a hole-punch).  Probably it's
+silly not to use SGP_READ already (using the ZERO_PAGE for holes): which
+ought to be safe, but might bring surprises - not a change to be rushed.
 
-Introduce arch_gnttab_init() to allocates the virtual address space in
-advance.
+shmem_read_mapping_page_gfp() is an internal interface used by
+drivers/gpu/drm GEM (and next by uprobes): it should be okay.  And
+shmem_file_read_iter() uses the SGP_DIRTY variant of SGP_CACHE, when
+called internally by the kernel (perhaps for a stacking filesystem,
+which might rely on holes to be reserved): it's unclear whether it could
+be provoked to keep hole-punch busy or not.
 
-Avoid the use of apply_to_page_range() by using saving and using the
-array of PTE addresses from the alloc_vm_area() call (which ensures
-that the required page tables are pre-allocated).
+We could apply the same umbrella as now used in shmem_fault() to
+shmem_file_splice_read() and the others; but it looks ugly, and use over
+a range raises questions - should it actually be per page? can these get
+starved themselves?
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[ David Vrabel: Backported to 3.13.10. ]
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Stefan Bader <stefan.bader@canonical.com>
+The origin of this part of the problem is my v3.1 commit d0823576bf4b
+("mm: pincer in truncate_inode_pages_range"), once it was duplicated
+into shmem.c.  It seemed like a nice idea at the time, to ensure
+(barring RCU lookup fuzziness) that there's an instant when the entire
+hole is empty; but the indefinitely repeated scans to ensure that make
+it vulnerable.
+
+Revert that "enhancement" to hole-punch from shmem_undo_range(), but
+retain the unproblematic rescanning when it's truncating; add a couple
+of comments there.
+
+Remove the "indices[0] >= end" test: that is now handled satisfactorily
+by the inner loop, and mem_cgroup_uncharge_start()/end() are too light
+to be worth avoiding here.
+
+But if we do not always loop indefinitely, we do need to handle the case
+of swap swizzled back to page before shmem_free_swap() gets it: add a
+retry for that case, as suggested by Konstantin Khlebnikov; and for the
+case of page swizzled back to swap, as suggested by Johannes Weiner.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Suggested-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Lukas Czerner <lczerner@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.11: used hughd's backport to 3.10.50 ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/xen/grant-table.c |   5 ++
- arch/x86/xen/grant-table.c | 148 ++++++++++++++++++++++++++++-----------------
- drivers/xen/grant-table.c  |   5 ++
- include/xen/grant_table.h  |   1 +
- 4 files changed, 102 insertions(+), 57 deletions(-)
+ mm/shmem.c | 24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/xen/grant-table.c b/arch/arm/xen/grant-table.c
-index 859a9bb..91cf08b 100644
---- a/arch/arm/xen/grant-table.c
-+++ b/arch/arm/xen/grant-table.c
-@@ -51,3 +51,8 @@ int arch_gnttab_map_status(uint64_t *frames, unsigned long nr_gframes,
- {
- 	return -ENOSYS;
- }
-+
-+int arch_gnttab_init(unsigned long nr_shared, unsigned long nr_status)
-+{
-+	return 0;
-+}
-diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
-index 3a5f55d..4d2c9bf 100644
---- a/arch/x86/xen/grant-table.c
-+++ b/arch/x86/xen/grant-table.c
-@@ -36,92 +36,126 @@
+diff --git a/mm/shmem.c b/mm/shmem.c
+index f83d9db..de64924 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -534,22 +534,19 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+ 		return;
  
- #include <linux/sched.h>
- #include <linux/mm.h>
-+#include <linux/slab.h>
- #include <linux/vmalloc.h>
- 
- #include <xen/interface/xen.h>
- #include <xen/page.h>
- #include <xen/grant_table.h>
-+#include <xen/xen.h>
- 
- #include <asm/pgtable.h>
- 
--static int map_pte_fn(pte_t *pte, struct page *pmd_page,
--		      unsigned long addr, void *data)
--{
--	unsigned long **frames = (unsigned long **)data;
--
--	set_pte_at(&init_mm, addr, pte, mfn_pte((*frames)[0], PAGE_KERNEL));
--	(*frames)++;
--	return 0;
--}
--
--/*
-- * This function is used to map shared frames to store grant status. It is
-- * different from map_pte_fn above, the frames type here is uint64_t.
-- */
--static int map_pte_fn_status(pte_t *pte, struct page *pmd_page,
--			     unsigned long addr, void *data)
--{
--	uint64_t **frames = (uint64_t **)data;
--
--	set_pte_at(&init_mm, addr, pte, mfn_pte((*frames)[0], PAGE_KERNEL));
--	(*frames)++;
--	return 0;
--}
--
--static int unmap_pte_fn(pte_t *pte, struct page *pmd_page,
--			unsigned long addr, void *data)
--{
--
--	set_pte_at(&init_mm, addr, pte, __pte(0));
--	return 0;
--}
-+static struct gnttab_vm_area {
-+	struct vm_struct *area;
-+	pte_t **ptes;
-+} gnttab_shared_vm_area, gnttab_status_vm_area;
- 
- int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
- 			   unsigned long max_nr_gframes,
- 			   void **__shared)
- {
--	int rc;
- 	void *shared = *__shared;
-+	unsigned long addr;
-+	unsigned long i;
-+
-+	if (shared == NULL)
-+		*__shared = shared = gnttab_shared_vm_area.area->addr;
- 
--	if (shared == NULL) {
--		struct vm_struct *area =
--			alloc_vm_area(PAGE_SIZE * max_nr_gframes, NULL);
--		BUG_ON(area == NULL);
--		shared = area->addr;
--		*__shared = shared;
-+	addr = (unsigned long)shared;
-+
-+	for (i = 0; i < nr_gframes; i++) {
-+		set_pte_at(&init_mm, addr, gnttab_shared_vm_area.ptes[i],
-+			   mfn_pte(frames[i], PAGE_KERNEL));
-+		addr += PAGE_SIZE;
- 	}
- 
--	rc = apply_to_page_range(&init_mm, (unsigned long)shared,
--				 PAGE_SIZE * nr_gframes,
--				 map_pte_fn, &frames);
--	return rc;
-+	return 0;
- }
- 
- int arch_gnttab_map_status(uint64_t *frames, unsigned long nr_gframes,
- 			   unsigned long max_nr_gframes,
- 			   grant_status_t **__shared)
- {
--	int rc;
- 	grant_status_t *shared = *__shared;
-+	unsigned long addr;
-+	unsigned long i;
-+
-+	if (shared == NULL)
-+		*__shared = shared = gnttab_status_vm_area.area->addr;
- 
--	if (shared == NULL) {
--		/* No need to pass in PTE as we are going to do it
--		 * in apply_to_page_range anyhow. */
--		struct vm_struct *area =
--			alloc_vm_area(PAGE_SIZE * max_nr_gframes, NULL);
--		BUG_ON(area == NULL);
--		shared = area->addr;
--		*__shared = shared;
-+	addr = (unsigned long)shared;
-+
-+	for (i = 0; i < nr_gframes; i++) {
-+		set_pte_at(&init_mm, addr, gnttab_status_vm_area.ptes[i],
-+			   mfn_pte(frames[i], PAGE_KERNEL));
-+		addr += PAGE_SIZE;
- 	}
- 
--	rc = apply_to_page_range(&init_mm, (unsigned long)shared,
--				 PAGE_SIZE * nr_gframes,
--				 map_pte_fn_status, &frames);
--	return rc;
-+	return 0;
- }
- 
- void arch_gnttab_unmap(void *shared, unsigned long nr_gframes)
- {
--	apply_to_page_range(&init_mm, (unsigned long)shared,
--			    PAGE_SIZE * nr_gframes, unmap_pte_fn, NULL);
-+	pte_t **ptes;
-+	unsigned long addr;
-+	unsigned long i;
-+
-+	if (shared == gnttab_status_vm_area.area->addr)
-+		ptes = gnttab_status_vm_area.ptes;
-+	else
-+		ptes = gnttab_shared_vm_area.ptes;
-+
-+	addr = (unsigned long)shared;
-+
-+	for (i = 0; i < nr_gframes; i++) {
-+		set_pte_at(&init_mm, addr, ptes[i], __pte(0));
-+		addr += PAGE_SIZE;
-+	}
-+}
-+
-+static int arch_gnttab_valloc(struct gnttab_vm_area *area, unsigned nr_frames)
-+{
-+	area->ptes = kmalloc(sizeof(pte_t *) * nr_frames, GFP_KERNEL);
-+	if (area->ptes == NULL)
-+		return -ENOMEM;
-+
-+	area->area = alloc_vm_area(PAGE_SIZE * nr_frames, area->ptes);
-+	if (area->area == NULL) {
-+		kfree(area->ptes);
-+		return -ENOMEM;
-+	}
-+
-+	return 0;
-+}
-+
-+static void arch_gnttab_vfree(struct gnttab_vm_area *area)
-+{
-+	free_vm_area(area->area);
-+	kfree(area->ptes);
-+}
-+
-+int arch_gnttab_init(unsigned long nr_shared, unsigned long nr_status)
-+{
-+	int ret;
-+
-+	if (!xen_pv_domain())
-+		return 0;
-+
-+	ret = arch_gnttab_valloc(&gnttab_shared_vm_area, nr_shared);
-+	if (ret < 0)
-+		return ret;
-+
-+	/*
-+	 * Always allocate the space for the status frames in case
-+	 * we're migrated to a host with V2 support.
-+	 */
-+	ret = arch_gnttab_valloc(&gnttab_status_vm_area, nr_status);
-+	if (ret < 0)
-+		goto err;
-+
-+	return 0;
-+  err:
-+	arch_gnttab_vfree(&gnttab_shared_vm_area);
-+	return -ENOMEM;
- }
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index aa846a4..b983a99 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -1250,6 +1250,11 @@ int gnttab_init(void)
+ 	index = start;
+-	for ( ; ; ) {
++	while (index < end) {
+ 		cond_resched();
+ 		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+ 				min(end - index, (pgoff_t)PAGEVEC_SIZE),
+ 							pvec.pages, indices);
+ 		if (!pvec.nr) {
+-			if (index == start || unfalloc)
++			/* If all gone or hole-punch or unfalloc, we're done */
++			if (index == start || end != -1)
+ 				break;
++			/* But if truncating, restart to make sure all gone */
+ 			index = start;
+ 			continue;
  		}
- 	}
+-		if ((index == start || unfalloc) && indices[0] >= end) {
+-			shmem_deswap_pagevec(&pvec);
+-			pagevec_release(&pvec);
+-			break;
+-		}
+ 		mem_cgroup_uncharge_start();
+ 		for (i = 0; i < pagevec_count(&pvec); i++) {
+ 			struct page *page = pvec.pages[i];
+@@ -561,8 +558,12 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+ 			if (radix_tree_exceptional_entry(page)) {
+ 				if (unfalloc)
+ 					continue;
+-				nr_swaps_freed += !shmem_free_swap(mapping,
+-								index, page);
++				if (shmem_free_swap(mapping, index, page)) {
++					/* Swap was replaced by page: retry */
++					index--;
++					break;
++				}
++				nr_swaps_freed++;
+ 				continue;
+ 			}
  
-+	ret = arch_gnttab_init(boot_max_nr_grant_frames,
-+			       nr_status_frames(boot_max_nr_grant_frames));
-+	if (ret < 0)
-+		goto ini_nomem;
-+
- 	if (gnttab_setup() < 0) {
- 		ret = -ENODEV;
- 		goto ini_nomem;
-diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-index 694dcaf..bbb6c50 100644
---- a/include/xen/grant_table.h
-+++ b/include/xen/grant_table.h
-@@ -170,6 +170,7 @@ gnttab_set_unmap_op(struct gnttab_unmap_grant_ref *unmap, phys_addr_t addr,
- 	unmap->dev_bus_addr = 0;
- }
- 
-+int arch_gnttab_init(unsigned long nr_shared, unsigned long nr_status);
- int arch_gnttab_map_shared(xen_pfn_t *frames, unsigned long nr_gframes,
- 			   unsigned long max_nr_gframes,
- 			   void **__shared);
+@@ -571,6 +572,11 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+ 				if (page->mapping == mapping) {
+ 					VM_BUG_ON(PageWriteback(page));
+ 					truncate_inode_page(mapping, page);
++				} else {
++					/* Page was replaced by swap: retry */
++					unlock_page(page);
++					index--;
++					break;
+ 				}
+ 			}
+ 			unlock_page(page);
 -- 
 1.9.1
 
