@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751266AbaHHSND (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 14:13:03 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40802 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750738AbaHHSNB (ORCPT
+	id S1751383AbaHHSQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 14:16:26 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:45710 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041AbaHHSQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 14:13:01 -0400
-Date: Fri, 8 Aug 2014 15:11:57 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Alexander Shiyan <shc_work@mail.ru>,
-        Alexander Holler <holler@ahsoftware.de>, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/27] mtd: nand: pxa3xx: show device structure in sysfs
-Message-ID: <20140808181157.GA16575@arch.cereza>
-References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de>
- <1401142372-14148-10-git-send-email-holler@ahsoftware.de>
- <1401160341.192042842@f271.i.mail.ru>
- <20140808170428.GA6094@arch.cereza>
- <20140808171650.GS3711@ld-irv-0074>
+	Fri, 8 Aug 2014 14:16:24 -0400
+Message-ID: <53E513EA.7010003@hp.com>
+Date: Fri, 08 Aug 2014 14:16:10 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140808171650.GS3711@ld-irv-0074>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v2 0/7] locking/rwsem: enable reader opt-spinning & writer
+ respin
+References: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com> <1407455524.2513.10.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1407455524.2513.10.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08 Aug 10:16 AM, Brian Norris wrote:
-> On Fri, Aug 08, 2014 at 02:04:28PM -0300, Ezequiel Garcia wrote:
+On 08/07/2014 07:52 PM, Davidlohr Bueso wrote:
+> On Thu, 2014-08-07 at 18:26 -0400, Waiman Long wrote:
+>> v1->v2:
+>>   - Remove patch 1 which changes preempt_enable() to
+>>     preempt_enable_no_resched().
+>>   - Remove the RWSEM_READ_OWNED macro and assume readers own the lock
+>>     when owner is NULL.
+>>   - Reduce the spin threshold to 64.
+> So I still don't like this, and the fact that it is used in some
+> virtualization locking bits doesn't really address the concerns about
+> arbitrary logic in our general locking code.
 
-> > If there's anything left to fix for this driver, please let me know.
-> 
-> pxa3xx_nand is still missing a parent for its MTD's (mtd->dev.parent). I
-> have a follow-up patch queued up locally that I need to send out
-> sometime.
-> 
+As I said in the comments, there is no easy way to figure if all the 
+readers are running. I set the spin count to a relatively small number 
+to catch those readers with a short critical sections. For those that 
+hold the lock for a relatively long time, the spin will end and the task 
+will be put to sleep. I know the solution is not elegant, but it is 
+simple. I thought about using more elaborate scheme, but there is no 
+guarantee that that it will be better than a simple spin count while 
+greatly complicating the code.
 
-Maybe we can trade... you provide the reason for such parent, and I'll cook
-a patch in exchange :)
+> Also, why did you reduce it from 100 to 64? This very much wants to be
+> commented.
 
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+In the v1 patch, the 100 spin threshold was for the whole spinning 
+period. In the v2 patch, I reset the count when a writer is there. There 
+is why I reduce the spin count a bit.
+
+-Longman
