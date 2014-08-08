@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759864AbaHHWgw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 18:36:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40064 "EHLO
+	id S1759799AbaHHWgi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:36:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40074 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557AbaHHUlg (ORCPT
+	with ESMTP id S1755183AbaHHUlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:41:36 -0400
+	Fri, 8 Aug 2014 16:41:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Christensen <pch@ordbogen.com>, Simon Horman <horms@verge.net.au>,
-        Chris J Arges <chris.j.arges@canonical.com>,
+Cc: Mengdong Lin <mengdong.lin@intel.com>, Takashi Iwai <tiwai@suse.de>,
+        David Henningsson <david.henningsson@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 011/259] ipvs: Fix panic due to non-linear skb
-Date: Fri,  8 Aug 2014 13:37:14 -0700
-Message-Id: <1407530482-4483-12-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 012/259] ALSA: hda/hdmi - apply all Haswell fix-ups to Broadwell display codec
+Date: Fri,  8 Aug 2014 13:37:15 -0700
+Message-Id: <1407530482-4483-13-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -28,77 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Christensen <pch@ordbogen.com>
+From: Mengdong Lin <mengdong.lin@intel.com>
 
-commit f44a5f45f544561302e855e7bd104e5f506ec01b upstream.
+commit 75dcbe4dc251ebc28cdf0797b85774cdf53a4d29 upstream.
 
-Receiving a ICMP response to an IPIP packet in a non-linear skb could
-cause a kernel panic in __skb_pull.
+Broadwell and Haswell have the same behavior on display audio. So this patch
+defines is_haswell_plus() to include codecs for both Haswell and its successor
+Broadwell, and apply all Haswell fix-ups to Broadwell.
 
-The problem was introduced in
-commit f2edb9f7706dcb2c0d9a362b2ba849efe3a97f5e ("ipvs: implement
-passive PMTUD for IPIP packets").
-
-Signed-off-by: Peter Christensen <pch@ordbogen.com>
-Acked-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
-Cc: Chris J Arges <chris.j.arges@canonical.com>
+Signed-off-by: Mengdong Lin <mengdong.lin@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Cc: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/netfilter/ipvs/ip_vs_core.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ sound/pci/hda/patch_hdmi.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/net/netfilter/ipvs/ip_vs_core.c b/net/netfilter/ipvs/ip_vs_core.c
-index 4f26ee4..3d2d2c8 100644
---- a/net/netfilter/ipvs/ip_vs_core.c
-+++ b/net/netfilter/ipvs/ip_vs_core.c
-@@ -1392,15 +1392,19 @@ ip_vs_in_icmp(struct sk_buff *skb, int *related, unsigned int hooknum)
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index 2f66de6..65d6dc0 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -46,6 +46,9 @@ module_param(static_hdmi_pcm, bool, 0644);
+ MODULE_PARM_DESC(static_hdmi_pcm, "Don't restrict PCM parameters per ELD info");
  
- 	if (ipip) {
- 		__be32 info = ic->un.gateway;
-+		__u8 type = ic->type;
-+		__u8 code = ic->code;
+ #define is_haswell(codec)  ((codec)->vendor_id == 0x80862807)
++#define is_broadwell(codec)    ((codec)->vendor_id == 0x80862808)
++#define is_haswell_plus(codec) (is_haswell(codec) || is_broadwell(codec))
++
+ #define is_valleyview(codec) ((codec)->vendor_id == 0x80862882)
  
- 		/* Update the MTU */
- 		if (ic->type == ICMP_DEST_UNREACH &&
- 		    ic->code == ICMP_FRAG_NEEDED) {
- 			struct ip_vs_dest *dest = cp->dest;
- 			u32 mtu = ntohs(ic->un.frag.mtu);
-+			__be16 frag_off = cih->frag_off;
+ struct hdmi_spec_per_cvt {
+@@ -1114,7 +1117,7 @@ static void hdmi_setup_audio_infoframe(struct hda_codec *codec,
+ 	if (!channels)
+ 		return;
  
- 			/* Strip outer IP and ICMP, go to IPIP header */
--			__skb_pull(skb, ihl + sizeof(_icmph));
-+			if (pskb_pull(skb, ihl + sizeof(_icmph)) == NULL)
-+				goto ignore_ipip;
- 			offset2 -= ihl + sizeof(_icmph);
- 			skb_reset_network_header(skb);
- 			IP_VS_DBG(12, "ICMP for IPIP %pI4->%pI4: mtu=%u\n",
-@@ -1408,7 +1412,7 @@ ip_vs_in_icmp(struct sk_buff *skb, int *related, unsigned int hooknum)
- 			ipv4_update_pmtu(skb, dev_net(skb->dev),
- 					 mtu, 0, 0, 0, 0);
- 			/* Client uses PMTUD? */
--			if (!(cih->frag_off & htons(IP_DF)))
-+			if (!(frag_off & htons(IP_DF)))
- 				goto ignore_ipip;
- 			/* Prefer the resulting PMTU */
- 			if (dest) {
-@@ -1427,12 +1431,13 @@ ip_vs_in_icmp(struct sk_buff *skb, int *related, unsigned int hooknum)
- 		/* Strip outer IP, ICMP and IPIP, go to IP header of
- 		 * original request.
- 		 */
--		__skb_pull(skb, offset2);
-+		if (pskb_pull(skb, offset2) == NULL)
-+			goto ignore_ipip;
- 		skb_reset_network_header(skb);
- 		IP_VS_DBG(12, "Sending ICMP for %pI4->%pI4: t=%u, c=%u, i=%u\n",
- 			&ip_hdr(skb)->saddr, &ip_hdr(skb)->daddr,
--			ic->type, ic->code, ntohl(info));
--		icmp_send(skb, ic->type, ic->code, info);
-+			type, code, ntohl(info));
-+		icmp_send(skb, type, code, info);
- 		/* ICMP can be shorter but anyways, account it */
- 		ip_vs_out_stats(cp, skb);
+-	if (is_haswell(codec))
++	if (is_haswell_plus(codec))
+ 		snd_hda_codec_write(codec, pin_nid, 0,
+ 					    AC_VERB_SET_AMP_GAIN_MUTE,
+ 					    AMP_OUT_UNMUTE);
+@@ -1295,7 +1298,7 @@ static int hdmi_setup_stream(struct hda_codec *codec, hda_nid_t cvt_nid,
+ 	struct hdmi_spec *spec = codec->spec;
+ 	int err;
  
+-	if (is_haswell(codec))
++	if (is_haswell_plus(codec))
+ 		haswell_verify_D0(codec, cvt_nid, pin_nid);
+ 
+ 	err = spec->ops.pin_hbr_setup(codec, pin_nid, is_hbr_format(format));
+@@ -1436,7 +1439,7 @@ static int hdmi_pcm_open(struct hda_pcm_stream *hinfo,
+ 			    mux_idx);
+ 
+ 	/* configure unused pins to choose other converters */
+-	if (is_haswell(codec) || is_valleyview(codec))
++	if (is_haswell_plus(codec) || is_valleyview(codec))
+ 		intel_not_share_assigned_cvt(codec, per_pin->pin_nid, mux_idx);
+ 
+ 	snd_hda_spdif_ctls_assign(codec, pin_idx, per_cvt->cvt_nid);
+@@ -1626,7 +1629,7 @@ static int hdmi_add_pin(struct hda_codec *codec, hda_nid_t pin_nid)
+ 	if (get_defcfg_connect(config) == AC_JACK_PORT_NONE)
+ 		return 0;
+ 
+-	if (is_haswell(codec))
++	if (is_haswell_plus(codec))
+ 		intel_haswell_fixup_connect_list(codec, pin_nid);
+ 
+ 	pin_idx = spec->num_pins;
+@@ -2297,7 +2300,7 @@ static int patch_generic_hdmi(struct hda_codec *codec)
+ 	codec->spec = spec;
+ 	hdmi_array_init(spec, 4);
+ 
+-	if (is_haswell(codec)) {
++	if (is_haswell_plus(codec)) {
+ 		intel_haswell_enable_all_pins(codec, true);
+ 		intel_haswell_fixup_enable_dp12(codec);
+ 	}
+@@ -2308,7 +2311,7 @@ static int patch_generic_hdmi(struct hda_codec *codec)
+ 		return -EINVAL;
+ 	}
+ 	codec->patch_ops = generic_hdmi_patch_ops;
+-	if (is_haswell(codec)) {
++	if (is_haswell_plus(codec)) {
+ 		codec->patch_ops.set_power_state = haswell_set_power_state;
+ 		codec->dp_mst = true;
+ 	}
 -- 
 1.9.1
 
