@@ -1,22 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933411AbaHHV0c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:26:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40829 "EHLO
+	id S1758402AbaHHUuU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:50:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40792 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289AbaHHUu1 (ORCPT
+	with ESMTP id S1756897AbaHHUuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:50:27 -0400
+	Fri, 8 Aug 2014 16:50:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Guenter Roeck <linux@roeck-us.net>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 083/259] hwmon: (emc2103) Clamp limits instead of bailing out
-Date: Fri,  8 Aug 2014 13:38:26 -0700
-Message-Id: <1407530482-4483-84-git-send-email-kamal@canonical.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 051/259] mm: page_alloc: fix CMA area initialisation when pageblock > MAX_ORDER
+Date: Fri,  8 Aug 2014 13:37:54 -0700
+Message-Id: <1407530482-4483-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +35,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Michal Nazarewicz <mina86@mina86.com>
 
-commit f6c2dd20108c35e30e2c1f3c6142d189451a626b upstream.
+commit dc78327c0ea7da5186d8cbc1647bd6088c5c9fa5 upstream.
 
-It is customary to clamp limits instead of bailing out with an error
-if a configured limit is out of the range supported by the driver.
-This simplifies limit configuration, since the user will not typically
-know chip and/or driver specific limits.
+With a kernel configured with ARM64_64K_PAGES && !TRANSPARENT_HUGEPAGE,
+the following is triggered at early boot:
 
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+  SMP: Total of 8 processors activated.
+  devtmpfs: initialized
+  Unable to handle kernel NULL pointer dereference at virtual address 00000008
+  pgd = fffffe0000050000
+  [00000008] *pgd=00000043fba00003, *pmd=00000043fba00003, *pte=00e0000078010407
+  Internal error: Oops: 96000006 [#1] SMP
+  Modules linked in:
+  CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc864k+ #44
+  task: fffffe03bc040000 ti: fffffe03bc080000 task.ti: fffffe03bc080000
+  PC is at __list_add+0x10/0xd4
+  LR is at free_one_page+0x270/0x638
+  ...
+  Call trace:
+    __list_add+0x10/0xd4
+    free_one_page+0x26c/0x638
+    __free_pages_ok.part.52+0x84/0xbc
+    __free_pages+0x74/0xbc
+    init_cma_reserved_pageblock+0xe8/0x104
+    cma_init_reserved_areas+0x190/0x1e4
+    do_one_initcall+0xc4/0x154
+    kernel_init_freeable+0x204/0x2a8
+    kernel_init+0xc/0xd4
+
+This happens because init_cma_reserved_pageblock() calls
+__free_one_page() with pageblock_order as page order but it is bigger
+than MAX_ORDER.  This in turn causes accesses past zone->free_list[].
+
+Fix the problem by changing init_cma_reserved_pageblock() such that it
+splits pageblock into individual MAX_ORDER pages if pageblock is bigger
+than a MAX_ORDER page.
+
+In cases where !CONFIG_HUGETLB_PAGE_SIZE_VARIABLE, which is all
+architectures expect for ia64, powerpc and tile at the moment, the
+âpageblock_order > MAX_ORDERâ condition will be optimised out since both
+sides of the operator are constants.  In cases where pageblock size is
+variable, the performance degradation should not be significant anyway
+since init_cma_reserved_pageblock() is called only at boot time at most
+MAX_CMA_AREAS times which by default is eight.
+
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Reported-by: Mark Salter <msalter@redhat.com>
+Tested-by: Mark Salter <msalter@redhat.com>
+Tested-by: Christopher Covington <cov@codeaurora.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hwmon/emc2103.c | 15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ mm/page_alloc.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hwmon/emc2103.c b/drivers/hwmon/emc2103.c
-index 2c137b2..5790246 100644
---- a/drivers/hwmon/emc2103.c
-+++ b/drivers/hwmon/emc2103.c
-@@ -250,9 +250,7 @@ static ssize_t set_temp_min(struct device *dev, struct device_attribute *da,
- 	if (result < 0)
- 		return result;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 856d95c..c4133b4 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -785,9 +785,21 @@ void __init init_cma_reserved_pageblock(struct page *page)
+ 		set_page_count(p, 0);
+ 	} while (++p, --i);
  
--	val = DIV_ROUND_CLOSEST(val, 1000);
--	if ((val < -63) || (val > 127))
--		return -EINVAL;
-+	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
- 
- 	mutex_lock(&data->update_lock);
- 	data->temp_min[nr] = val;
-@@ -274,9 +272,7 @@ static ssize_t set_temp_max(struct device *dev, struct device_attribute *da,
- 	if (result < 0)
- 		return result;
- 
--	val = DIV_ROUND_CLOSEST(val, 1000);
--	if ((val < -63) || (val > 127))
--		return -EINVAL;
-+	val = clamp_val(DIV_ROUND_CLOSEST(val, 1000), -63, 127);
- 
- 	mutex_lock(&data->update_lock);
- 	data->temp_max[nr] = val;
-@@ -390,15 +386,14 @@ static ssize_t set_fan_target(struct device *dev, struct device_attribute *da,
- {
- 	struct emc2103_data *data = emc2103_update_device(dev);
- 	struct i2c_client *client = to_i2c_client(dev);
--	long rpm_target;
-+	unsigned long rpm_target;
- 
--	int result = kstrtol(buf, 10, &rpm_target);
-+	int result = kstrtoul(buf, 10, &rpm_target);
- 	if (result < 0)
- 		return result;
- 
- 	/* Datasheet states 16384 as maximum RPM target (table 3.2) */
--	if ((rpm_target < 0) || (rpm_target > 16384))
--		return -EINVAL;
-+	rpm_target = clamp_val(rpm_target, 0, 16384);
- 
- 	mutex_lock(&data->update_lock);
- 
+-	set_page_refcounted(page);
+ 	set_pageblock_migratetype(page, MIGRATE_CMA);
+-	__free_pages(page, pageblock_order);
++
++	if (pageblock_order >= MAX_ORDER) {
++		i = pageblock_nr_pages;
++		p = page;
++		do {
++			set_page_refcounted(p);
++			__free_pages(p, MAX_ORDER - 1);
++			p += MAX_ORDER_NR_PAGES;
++		} while (i -= MAX_ORDER_NR_PAGES);
++	} else {
++		set_page_refcounted(page);
++		__free_pages(page, pageblock_order);
++	}
++
+ 	adjust_managed_page_count(page, pageblock_nr_pages);
+ }
+ #endif
 -- 
 1.9.1
 
