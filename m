@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609AbaHHU14 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:27:56 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:60472
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaHHU1x (ORCPT
+	id S1751762AbaHHU2i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:28:38 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:8944 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751268AbaHHU2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:27:53 -0400
-Date: Fri, 8 Aug 2014 22:27:52 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH 1/3] Smack: fix behavior of smack_inode_listsecurity
-Message-ID: <20140808202752.GB25352@mail.hallyn.com>
-References: <20140807165233.13463.55258.stgit@buzz>
+	Fri, 8 Aug 2014 16:28:37 -0400
+From: Josef Bacik <jbacik@fb.com>
+To: <rostedt@goodmis.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] trace-cmd: make sure we have a pending pid in trace-hist
+Date: Fri, 8 Aug 2014 16:26:17 -0400
+Message-ID: <1407529577-15548-1-git-send-email-jbacik@fb.com>
+X-Mailer: git-send-email 2.0.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140807165233.13463.55258.stgit@buzz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-08_05:2014-08-08,2014-08-08,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=9.44799793956008e-13 kscore.compositescore=0
+ circleOfTrustscore=22.6900859407804 compositescore=0.997695897463551
+ urlsuspect_oldscore=0.997695897463551 suspectscore=2
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.997695897463551 spamscore=0
+ recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1408080242
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Konstantin Khlebnikov (k.khlebnikov@samsung.com):
-> Security operation ->inode_listsecurity is used for generating list of
-> available extended attributes for syscall listxattr. Currently it's used
-> only in nfs4 or if filesystem doesn't provide i_op->listxattr.
-> 
-> The list is the set of NULL-terminated names, one after the other.
-> This method must include zero byte at the and into result.
-> 
-> Also this function must return length even if string does not fit into
-> output buffer or it is NULL, see similar method in selinux and man listxattr.
-> 
-> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+I have a trace.dat file where we lost some events and so we didn't have the
+corresponding event to go with the stack trace.  This made trace-cmd hist
+segfault because it unconditionally pushes the pending_pid's function onto the
+stack trace.  In this case pending_pid < 0, which means we didn't have a pending
+stack trace, so we got garbage in the call chain and hilarity ensued.  Fix this
+by only pushing the pending call chain if there actually is one, and also don't
+reset the current call chain if there isn't actually one there either.  This
+fixed my segfault.  Thanks,
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+---
+ trace-hist.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-> ---
->  security/smack/smack_lsm.c |    9 ++++-----
->  1 file changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index e6ab307..b11ab23 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -1122,13 +1122,12 @@ static int smack_inode_getsecurity(const struct inode *inode,
->  static int smack_inode_listsecurity(struct inode *inode, char *buffer,
->  				    size_t buffer_size)
->  {
-> -	int len = strlen(XATTR_NAME_SMACK);
-> +	int len = sizeof(XATTR_NAME_SMACK);
->  
-> -	if (buffer != NULL && len <= buffer_size) {
-> +	if (buffer != NULL && len <= buffer_size)
->  		memcpy(buffer, XATTR_NAME_SMACK, len);
-> -		return len;
-> -	}
-> -	return -EINVAL;
-> +
-> +	return len;
->  }
->  
->  /**
+diff --git a/trace-hist.c b/trace-hist.c
+index 73820de..574549e 100644
+--- a/trace-hist.c
++++ b/trace-hist.c
+@@ -453,9 +453,11 @@ process_kernel_stack(struct pevent *pevent, struct pevent_record *record)
+ 		}
+ 	} else {
+ 		/* function stack trace? */
+-		copy_stack_to_pending(current_pid);
+-		free(ips);
+-		reset_stack();
++		if (current_pid >= 0) {
++			copy_stack_to_pending(current_pid);
++			free(ips);
++			reset_stack();
++		}
+ 	}
+ 
+ 	current_pid = pid;
+@@ -482,8 +484,10 @@ process_kernel_stack(struct pevent *pevent, struct pevent_record *record)
+ 			push_stack_func(func);
+ 	}
+ 
+-	push_stack_func(pending_ips[pending_ips_idx - 1]);
+-	reset_pending_stack();
++	if (pending_pid >= 0) {
++		push_stack_func(pending_ips[pending_ips_idx - 1]);
++		reset_pending_stack();
++	}
+ 	save_call_chain(current_pid, ips, ips_idx, 1);
+ 	if (do_restore)
+ 		restore_stack(current_pid);
+-- 
+2.0.0
+
