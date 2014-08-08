@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732AbaHHVgN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:36:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60343 "EHLO
+	id S933146AbaHHWFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 18:05:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758518AbaHHVfz (ORCPT
+	with ESMTP id S932740AbaHHVgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:35:55 -0400
+	Fri, 8 Aug 2014 17:36:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Vlad Yasevich <vyasevic@redhat.com>,
+        David Binderman <dcb314@hotmail.com>,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 08/23] net: Correctly set segment mac_len in skb_segment().
-Date: Fri,  8 Aug 2014 14:34:53 -0700
-Message-Id: <20140808213316.117652190@linuxfoundation.org>
+Subject: [PATCH 3.10 24/24] arch/sparc/math-emu/math_32.c: drop stray break operator
+Date: Fri,  8 Aug 2014 14:35:17 -0700
+Message-Id: <20140808213336.414153787@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140808213315.769217722@linuxfoundation.org>
-References: <20140808213315.769217722@linuxfoundation.org>
+In-Reply-To: <20140808213335.421758947@linuxfoundation.org>
+References: <20140808213335.421758947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,67 +26,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-[ Upstream commit fcdfe3a7fa4cb74391d42b6a26dc07c20dab1d82 ]
+[ Upstream commit 093758e3daede29cb4ce6aedb111becf9d4bfc57 ]
 
-When performing segmentation, the mac_len value is copied right
-out of the original skb.  However, this value is not always set correctly
-(like when the packet is VLAN-tagged) and we'll end up copying a bad
-value.
+This commit is a guesswork, but it seems to make sense to drop this
+break, as otherwise the following line is never executed and becomes
+dead code. And that following line actually saves the result of
+local calculation by the pointer given in function argument. So the
+proposed change makes sense if this code in the whole makes sense (but I
+am unable to analyze it in the whole).
 
-One way to demonstrate this is to configure a VM which tags
-packets internally and turn off VLAN acceleration on the forwarding
-bridge port.  The packets show up corrupt like this:
-16:18:24.985548 52:54:00:ab:be:25 > 52:54:00:26:ce:a3, ethertype 802.1Q
-(0x8100), length 1518: vlan 100, p 0, ethertype 0x05e0,
-        0x0000:  8cdb 1c7c 8cdb 0064 4006 b59d 0a00 6402 ...|...d@.....d.
-        0x0010:  0a00 6401 9e0d b441 0a5e 64ec 0330 14fa ..d....A.^d..0..
-        0x0020:  29e3 01c9 f871 0000 0101 080a 000a e833)....q.........3
-        0x0030:  000f 8c75 6e65 7470 6572 6600 6e65 7470 ...unetperf.netp
-        0x0040:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        0x0050:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        0x0060:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        ...
-
-This also leads to awful throughput as GSO packets are dropped and
-cause retransmissions.
-
-The solution is to set the mac_len using the values already available
-in then new skb.  We've already adjusted all of the header offset, so we
-might as well correctly figure out the mac_len using skb_reset_mac_len().
-After this change, packets are segmented correctly and performance
-is restored.
-
-CC: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81641
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/skbuff.c |    2 +-
+ arch/sparc/math-emu/math_32.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2748,7 +2748,6 @@ struct sk_buff *skb_segment(struct sk_bu
- 		tail = nskb;
- 
- 		__copy_skb_header(nskb, skb);
--		nskb->mac_len = skb->mac_len;
- 
- 		/* nskb and skb might have different headroom */
- 		if (nskb->ip_summed == CHECKSUM_PARTIAL)
-@@ -2758,6 +2757,7 @@ struct sk_buff *skb_segment(struct sk_bu
- 		skb_set_network_header(nskb, skb->mac_len);
- 		nskb->transport_header = (nskb->network_header +
- 					  skb_network_header_len(skb));
-+		skb_reset_mac_len(nskb);
- 		skb_copy_from_linear_data(skb, nskb->data, doffset);
- 
- 		if (fskb != skb_shinfo(skb)->frag_list)
+--- a/arch/sparc/math-emu/math_32.c
++++ b/arch/sparc/math-emu/math_32.c
+@@ -499,7 +499,7 @@ static int do_one_mathemu(u32 insn, unsi
+ 		case 0: fsr = *pfsr;
+ 			if (IR == -1) IR = 2;
+ 			/* fcc is always fcc0 */
+-			fsr &= ~0xc00; fsr |= (IR << 10); break;
++			fsr &= ~0xc00; fsr |= (IR << 10);
+ 			*pfsr = fsr;
+ 			break;
+ 		case 1: rd->s = IR; break;
 
 
