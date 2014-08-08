@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385AbaHHULr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:11:47 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:62782 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaHHULn (ORCPT
+	id S1751363AbaHHUVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:21:53 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:34997 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002AbaHHUVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:11:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407402199.5141.283.camel@marge.simpson.net>
-References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
-	<8738dm9t4z.fsf@tassilo.jf.intel.com>
-	<1406532289.5133.223.camel@marge.simpson.net>
-	<CA+80gGaohO-RaG0_tWZJEFzisrrBpgfiw-mxMrTfSK0N=k7gQA@mail.gmail.com>
-	<1407059776.5156.108.camel@marge.simpson.net>
-	<CA+80gGZJGX6PjzwptNJ5gU3SvCxaYT8v4id+4NqMAPwgAAS26Q@mail.gmail.com>
-	<1407303693.5090.171.camel@marge.simpson.net>
-	<CA+80gGYUohD617FcmtD5XyrFh2ENc2nXFA=91CmZ+8zFNOrzFQ@mail.gmail.com>
-	<1407402199.5141.283.camel@marge.simpson.net>
-Date: Fri, 8 Aug 2014 13:11:42 -0700
-Message-ID: <CA+80gGZWSeoHFM-_uoGFCw4nJAkQGfTjEKfSyAaqTw6xmUVMvA@mail.gmail.com>
-Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
-From: Sergey Oboguev <oboguev.public@gmail.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        khalid.aziz@oracle.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 8 Aug 2014 16:21:48 -0400
+Message-ID: <1407529306.6583.19.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2 1/7] locking/rwsem: check for active writer/spinner
+ before wakeup
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Scott J Norton <scott.norton@hp.com>, aswin@hp.com
+Date: Fri, 08 Aug 2014 13:21:46 -0700
+In-Reply-To: <1407527412.8365.60.camel@j-VirtualBox>
+References: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com>
+	 <1407450408-11679-2-git-send-email-Waiman.Long@hp.com>
+	 <1407458726.2513.12.camel@buesod1.americas.hpqcorp.net>
+	 <1407476387.2513.39.camel@buesod1.americas.hpqcorp.net>
+	 <1407527412.8365.60.camel@j-VirtualBox>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 7, 2014 at 2:03 AM, Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+On Fri, 2014-08-08 at 12:50 -0700, Jason Low wrote:
+> >  __visible __used noinline
+> > @@ -730,6 +744,23 @@ __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
+> >  	if (__mutex_slowpath_needs_to_unlock())
+> >  		atomic_set(&lock->count, 1);
+> >  
+> > +/*
+> > + * Skipping the mutex_has_owner() check when DEBUG, allows us to
+> > + * avoid taking the wait_lock in order to do not call mutex_release()
+> > + * and debug_mutex_unlock() when !DEBUG. This can otherwise result in
+> > + * deadlocks when another task enters the lock's slowpath in mutex_lock().
+> > + */
+> > +#ifndef CONFIG_DEBUG_MUTEXES
+> > +	/*
+> > +	 * Abort the wakeup operation if there is an another mutex owner, as the
+> > +	 * lock was stolen. mutex_unlock() should have cleared the owner field
+> > +	 * before calling this function. If that field is now set, another task
+> > +	 * must have acquired the mutex.
+> > +	 */
+> > +	if (mutex_has_owner(lock))
+> > +		return;
+> 
+> Would we need the mutex lock count to eventually get set to a negative
+> value if there are waiters? An optimistic spinner can get the lock and
+> set lock->count to 0. Then the lock count might remain 0 since a waiter
+> might not get waken up here to try-lock and set lock->count to -1 if it
+> goes back to sleep in the lock path.
 
-> task priority cannot be used by any task to describe a critical section.
-> I assert that is that there is _zero_ critical section information present.
+This is a good point, but I think we are safe because we do not rely on
+strict dependence between the mutex counter and the wait list. So to see
+if there are waiters to wakeup, we do a !list_empty() check, but to
+determine the lock state, we rely on the counter.
 
-This appears to be the crux of our disagreement.
+Thanks,
+Davidlohr
 
-This assertion is incorrect. The use of RT to bracket a critical section
-obviously _does_ provide the following information:
-
-1) designation of entry point for the start of critical activity
-
-2) designation of exit point, albeit with timing not known in advance at entry
-time
-
-3) priority value which embodies a developer's assessment of the importance of
-this critical activity relative to other critical activities within the
-application or coherent application set, and thus a statement about the cost of
-the activity's preemption for this application or application set
-
-What priority protection _does not_ provide is:
-
-1) advance (at entry time) estimate of the duration of the activity
-
-2) the measure of preemption cost in "objective" (uniform) units that would
-span across unrelated applications
-
-3) and in units that can be easily stacked against the policy-specified cost of
-deferring and penalizing normal tasks for too long (although to an extent in RT
-use case this is done by rt_bandwidth)
-
-The implication of (2) and (3) is that one cannot easily have a system
-management slider saying "penalize application A for the benefit of application
-B (or default undesignated applications) by giving weights so-and-so to their
-cost factors"... Well, in a way and to an extent one can do it by remapping
-priority ranges for tasks A and B, however since priority interface was not
-designed for it grounds up that would be cumbersome.
-
-The provisioning of this missing information however is not realistically
-possible outside of the simplest use cases ran in a fixed configuration under a
-fixed workload, as I elaborated in the previous message.  Outside of such
-irrealistic "lab" samples, even in the case of the simplest cost function the
-estimates of T and X are not pragmatically obtainable. The estimates of Y and
-T2 (cut-off point for Y accrual) are likewise hard or even harder to obtain.
-Thus even the simplest cost function cannot be pragmatically provided, let
-alone any more complex cost function.
-
-The issue is not with inventing some sophisticated cost function and system
-interface to plug it in. The issue is that valid input data that the cost
-function would need to rely on is not pragmatically/economically obtainable.
-(And this issue is not pragmatically solvable through dynamically collecting
-such data at run time as well.)
-
-Therefore there is no any pragmatically usable "better" solution in the domain
-of preemption-deferral solutions (rather than post-preemption solutions) that
-may be discovered yet.
-
-It stands to reason that the choice in this domain is really, and will ever
-pragmatically stay, between using the long-existing techniques (i.e. priority
-protection or schedctl-style preempt delay, with the latter having the
-limitations I outlined earlier) or not using anything at all.
-
-- Sergey
