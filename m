@@ -1,28 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209AbaHHUtA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:49:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40688 "EHLO
+	id S1758226AbaHHUtC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:49:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40692 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756713AbaHHUsz (ORCPT
+	with ESMTP id S1756761AbaHHUs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:48:55 -0400
+	Fri, 8 Aug 2014 16:48:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, Ian Kent <raven@themaw.net>,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Thorsten Diehl <thorsten.diehl@de.ibm.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 052/259] /proc/stat: convert to single_open_size()
-Date: Fri,  8 Aug 2014 13:37:55 -0700
-Message-Id: <1407530482-4483-53-git-send-email-kamal@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 049/259] md: flush writes before starting a recovery.
+Date: Fri,  8 Aug 2014 13:37:52 -0700
+Message-Id: <1407530482-4483-50-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -35,82 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: NeilBrown <neilb@suse.de>
 
-commit f74373a5cc7a0155d232c4e999648c7a95435bb2 upstream.
+commit 133d4527eab8d199a62eee6bd433f0776842df2e upstream.
 
-These two patches are supposed to "fix" failed order-4 memory
-allocations which have been observed when reading /proc/stat.  The
-problem has been observed on s390 as well as on x86.
+When we write to a degraded array which has a bitmap, we
+make sure the relevant bit in the bitmap remains set when
+the write completes (so a 're-add' can quickly rebuilt a
+temporarily-missing device).
 
-To address the problem change the seq_file memory allocations to
-fallback to use vmalloc, so that allocations also work if memory is
-fragmented.
+If, immediately after such a write starts, we incorporate a spare,
+commence recovery, and skip over the region where the write is
+happening (because the 'needs recovery' flag isn't set yet),
+then that write will not get to the new device.
 
-This approach seems to be simpler and less intrusive than changing
-/proc/stat to use an interator.  Also it "fixes" other users as well,
-which use seq_file's single_open() interface.
+Once the recovery finishes the new device will be trusted, but will
+have incorrect data, leading to possible corruption.
 
-This patch (of 2):
+We cannot set the 'needs recovery' flag when we start the write as we
+do not know easily if the write will be "degraded" or not.  That
+depends on details of the particular raid level and particular write
+request.
 
-Use seq_file's single_open_size() to preallocate a buffer that is large
-enough to hold the whole output, instead of open coding it.  Also
-calculate the requested size using the number of online cpus instead of
-possible cpus, since the size of the output only depends on the number
-of online cpus.
+This patch fixes a corruption issue of long standing and so it
+suitable for any -stable kernel.  It applied correctly to 3.0 at
+least and will minor editing to earlier kernels.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Ian Kent <raven@themaw.net>
-Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Cc: Thorsten Diehl <thorsten.diehl@de.ibm.com>
-Cc: Andrea Righi <andrea@betterlinux.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Bill <billstuff2001@sbcglobal.net>
+Tested-by: Bill <billstuff2001@sbcglobal.net>
+Link: http://lkml.kernel.org/r/53A518BB.60709@sbcglobal.net
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/proc/stat.c | 22 ++--------------------
- 1 file changed, 2 insertions(+), 20 deletions(-)
+ drivers/md/md.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-index 1cf86c0..ccc657e 100644
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -184,29 +184,11 @@ static int show_stat(struct seq_file *p, void *v)
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index aa0eba3..09377ba 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7468,6 +7468,19 @@ void md_do_sync(struct md_thread *thread)
+ 			    rdev->recovery_offset < j)
+ 				j = rdev->recovery_offset;
+ 		rcu_read_unlock();
++
++		/* If there is a bitmap, we need to make sure all
++		 * writes that started before we added a spare
++		 * complete before we start doing a recovery.
++		 * Otherwise the write might complete and (via
++		 * bitmap_endwrite) set a bit in the bitmap after the
++		 * recovery has checked that bit and skipped that
++		 * region.
++		 */
++		if (mddev->bitmap) {
++			mddev->pers->quiesce(mddev, 1);
++			mddev->pers->quiesce(mddev, 0);
++		}
+ 	}
  
- static int stat_open(struct inode *inode, struct file *file)
- {
--	size_t size = 1024 + 128 * num_possible_cpus();
--	char *buf;
--	struct seq_file *m;
--	int res;
-+	size_t size = 1024 + 128 * num_online_cpus();
- 
- 	/* minimum size to display an interrupt count : 2 bytes */
- 	size += 2 * nr_irqs;
--
--	/* don't ask for more than the kmalloc() max size */
--	if (size > KMALLOC_MAX_SIZE)
--		size = KMALLOC_MAX_SIZE;
--	buf = kmalloc(size, GFP_KERNEL);
--	if (!buf)
--		return -ENOMEM;
--
--	res = single_open(file, show_stat, NULL);
--	if (!res) {
--		m = file->private_data;
--		m->buf = buf;
--		m->size = ksize(buf);
--	} else
--		kfree(buf);
--	return res;
-+	return single_open_size(file, show_stat, NULL, size);
- }
- 
- static const struct file_operations proc_stat_operations = {
+ 	printk(KERN_INFO "md: %s of RAID array %s\n", desc, mdname(mddev));
 -- 
 1.9.1
 
