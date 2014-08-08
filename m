@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964782AbaHHVhh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 17:37:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60695 "EHLO
+	id S1758661AbaHHVhd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 17:37:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60688 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933206AbaHHVgz (ORCPT
+	with ESMTP id S933522AbaHHVgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 17:36:55 -0400
+	Fri, 8 Aug 2014 17:36:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergey Popov <pinkbyte@gentoo.org>, Dmitry Popov <ixaphire@qrator.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 07/26] ip_tunnel(ipv4): fix tunnels with "local any remote $remote_ip"
-Date: Fri,  8 Aug 2014 14:35:14 -0700
-Message-Id: <20140808213413.965887227@linuxfoundation.org>
+Subject: [PATCH 3.15 05/26] net: sendmsg: fix NULL pointer dereference
+Date: Fri,  8 Aug 2014 14:35:12 -0700
+Message-Id: <20140808213413.874012330@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
 References: <20140808213413.648794968@linuxfoundation.org>
@@ -29,126 +32,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Popov <ixaphire@qrator.net>
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
 
-[ Upstream commit 95cb5745983c222867cc9ac593aebb2ad67d72c0 ]
+[ Upstream commit 40eea803c6b2cfaab092f053248cbeab3f368412 ]
 
-Ipv4 tunnels created with "local any remote $ip" didn't work properly since
-7d442fab0 (ipv4: Cache dst in tunnels). 99% of packets sent via those tunnels
-had src addr = 0.0.0.0. That was because only dst_entry was cached, although
-fl4.saddr has to be cached too. Every time ip_tunnel_xmit used cached dst_entry
-(tunnel_rtable_get returned non-NULL), fl4.saddr was initialized with
-tnl_params->saddr (= 0 in our case), and wasn't changed until iptunnel_xmit().
+Sasha's report:
+	> While fuzzing with trinity inside a KVM tools guest running the latest -next
+	> kernel with the KASAN patchset, I've stumbled on the following spew:
+	>
+	> [ 4448.949424] ==================================================================
+	> [ 4448.951737] AddressSanitizer: user-memory-access on address 0
+	> [ 4448.952988] Read of size 2 by thread T19638:
+	> [ 4448.954510] CPU: 28 PID: 19638 Comm: trinity-c76 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
+	> [ 4448.956823]  ffff88046d86ca40 0000000000000000 ffff880082f37e78 ffff880082f37a40
+	> [ 4448.958233]  ffffffffb6e47068 ffff880082f37a68 ffff880082f37a58 ffffffffb242708d
+	> [ 4448.959552]  0000000000000000 ffff880082f37a88 ffffffffb24255b1 0000000000000000
+	> [ 4448.961266] Call Trace:
+	> [ 4448.963158] dump_stack (lib/dump_stack.c:52)
+	> [ 4448.964244] kasan_report_user_access (mm/kasan/report.c:184)
+	> [ 4448.965507] __asan_load2 (mm/kasan/kasan.c:352)
+	> [ 4448.966482] ? netlink_sendmsg (net/netlink/af_netlink.c:2339)
+	> [ 4448.967541] netlink_sendmsg (net/netlink/af_netlink.c:2339)
+	> [ 4448.968537] ? get_parent_ip (kernel/sched/core.c:2555)
+	> [ 4448.970103] sock_sendmsg (net/socket.c:654)
+	> [ 4448.971584] ? might_fault (mm/memory.c:3741)
+	> [ 4448.972526] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3740)
+	> [ 4448.973596] ? verify_iovec (net/core/iovec.c:64)
+	> [ 4448.974522] ___sys_sendmsg (net/socket.c:2096)
+	> [ 4448.975797] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+	> [ 4448.977030] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
+	> [ 4448.978197] ? lock_release_non_nested (kernel/locking/lockdep.c:3434 (discriminator 1))
+	> [ 4448.979346] ? check_chain_key (kernel/locking/lockdep.c:2188)
+	> [ 4448.980535] __sys_sendmmsg (net/socket.c:2181)
+	> [ 4448.981592] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
+	> [ 4448.982773] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
+	> [ 4448.984458] ? syscall_trace_enter (arch/x86/kernel/ptrace.c:1500 (discriminator 2))
+	> [ 4448.985621] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
+	> [ 4448.986754] SyS_sendmmsg (net/socket.c:2201)
+	> [ 4448.987708] tracesys (arch/x86/kernel/entry_64.S:542)
+	> [ 4448.988929] ==================================================================
 
-This patch adds saddr to ip_tunnel->dst_cache, fixing this issue.
+This reports means that we've come to netlink_sendmsg() with msg->msg_name == NULL and msg->msg_namelen > 0.
 
-Reported-by: Sergey Popov <pinkbyte@gentoo.org>
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+After this report there was no usual "Unable to handle kernel NULL pointer dereference"
+and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
+
+This bug was introduced in f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
+(net: rework recvmsg handler msg_name and msg_namelen logic).
+Commit message states that:
+	"Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
+	 non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
+	 affect sendto as it would bail out earlier while trying to copy-in the
+	 address."
+But in fact this affects sendto when address 0 is mapped and contains
+socket address structure in it. In such case copy-in address will succeed,
+verify_iovec() function will successfully exit with msg->msg_namelen > 0
+and msg->msg_name == NULL.
+
+This patch fixes it by setting msg_namelen to 0 if msg_name == NULL.
+
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: <stable@vger.kernel.org>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/ip_tunnels.h |    1 +
- net/ipv4/ip_tunnel.c     |   29 ++++++++++++++++++-----------
- 2 files changed, 19 insertions(+), 11 deletions(-)
+ net/compat.c     |    9 +++++----
+ net/core/iovec.c |    6 +++---
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
---- a/include/net/ip_tunnels.h
-+++ b/include/net/ip_tunnels.h
-@@ -40,6 +40,7 @@ struct ip_tunnel_prl_entry {
- 
- struct ip_tunnel_dst {
- 	struct dst_entry __rcu 		*dst;
-+	__be32				 saddr;
- };
- 
- struct ip_tunnel {
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -69,23 +69,25 @@ static unsigned int ip_tunnel_hash(__be3
- }
- 
- static void __tunnel_dst_set(struct ip_tunnel_dst *idst,
--			     struct dst_entry *dst)
-+			     struct dst_entry *dst, __be32 saddr)
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -85,7 +85,7 @@ int verify_compat_iovec(struct msghdr *k
  {
- 	struct dst_entry *old_dst;
+ 	int tot_len;
  
- 	dst_clone(dst);
- 	old_dst = xchg((__force struct dst_entry **)&idst->dst, dst);
- 	dst_release(old_dst);
-+	idst->saddr = saddr;
- }
- 
--static void tunnel_dst_set(struct ip_tunnel *t, struct dst_entry *dst)
-+static void tunnel_dst_set(struct ip_tunnel *t,
-+			   struct dst_entry *dst, __be32 saddr)
- {
--	__tunnel_dst_set(this_cpu_ptr(t->dst_cache), dst);
-+	__tunnel_dst_set(this_cpu_ptr(t->dst_cache), dst, saddr);
- }
- 
- static void tunnel_dst_reset(struct ip_tunnel *t)
- {
--	tunnel_dst_set(t, NULL);
-+	tunnel_dst_set(t, NULL, 0);
- }
- 
- void ip_tunnel_dst_reset_all(struct ip_tunnel *t)
-@@ -93,20 +95,25 @@ void ip_tunnel_dst_reset_all(struct ip_t
- 	int i;
- 
- 	for_each_possible_cpu(i)
--		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL);
-+		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL, 0);
- }
- EXPORT_SYMBOL(ip_tunnel_dst_reset_all);
- 
--static struct rtable *tunnel_rtable_get(struct ip_tunnel *t, u32 cookie)
-+static struct rtable *tunnel_rtable_get(struct ip_tunnel *t,
-+					u32 cookie, __be32 *saddr)
- {
-+	struct ip_tunnel_dst *idst;
- 	struct dst_entry *dst;
- 
- 	rcu_read_lock();
--	dst = rcu_dereference(this_cpu_ptr(t->dst_cache)->dst);
-+	idst = this_cpu_ptr(t->dst_cache);
-+	dst = rcu_dereference(idst->dst);
- 	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
- 		dst = NULL;
- 	if (dst) {
--		if (dst->obsolete && dst->ops->check(dst, cookie) == NULL) {
-+		if (!dst->obsolete || dst->ops->check(dst, cookie)) {
-+			*saddr = idst->saddr;
-+		} else {
- 			tunnel_dst_reset(t);
- 			dst_release(dst);
- 			dst = NULL;
-@@ -366,7 +373,7 @@ static int ip_tunnel_bind_dev(struct net
- 
- 		if (!IS_ERR(rt)) {
- 			tdev = rt->dst.dev;
--			tunnel_dst_set(tunnel, &rt->dst);
-+			tunnel_dst_set(tunnel, &rt->dst, fl4.saddr);
- 			ip_rt_put(rt);
+-	if (kern_msg->msg_namelen) {
++	if (kern_msg->msg_name && kern_msg->msg_namelen) {
+ 		if (mode == VERIFY_READ) {
+ 			int err = move_addr_to_kernel(kern_msg->msg_name,
+ 						      kern_msg->msg_namelen,
+@@ -93,10 +93,11 @@ int verify_compat_iovec(struct msghdr *k
+ 			if (err < 0)
+ 				return err;
  		}
- 		if (dev->type != ARPHRD_ETHER)
-@@ -610,7 +617,7 @@ void ip_tunnel_xmit(struct sk_buff *skb,
- 	init_tunnel_flow(&fl4, protocol, dst, tnl_params->saddr,
- 			 tunnel->parms.o_key, RT_TOS(tos), tunnel->parms.link);
+-		if (kern_msg->msg_name)
+-			kern_msg->msg_name = kern_address;
+-	} else
++		kern_msg->msg_name = kern_address;
++	} else {
+ 		kern_msg->msg_name = NULL;
++		kern_msg->msg_namelen = 0;
++	}
  
--	rt = connected ? tunnel_rtable_get(tunnel, 0) : NULL;
-+	rt = connected ? tunnel_rtable_get(tunnel, 0, &fl4.saddr) : NULL;
+ 	tot_len = iov_from_user_compat_to_kern(kern_iov,
+ 					  (struct compat_iovec __user *)kern_msg->msg_iov,
+--- a/net/core/iovec.c
++++ b/net/core/iovec.c
+@@ -39,7 +39,7 @@ int verify_iovec(struct msghdr *m, struc
+ {
+ 	int size, ct, err;
  
- 	if (!rt) {
- 		rt = ip_route_output_key(tunnel->net, &fl4);
-@@ -620,7 +627,7 @@ void ip_tunnel_xmit(struct sk_buff *skb,
- 			goto tx_error;
+-	if (m->msg_namelen) {
++	if (m->msg_name && m->msg_namelen) {
+ 		if (mode == VERIFY_READ) {
+ 			void __user *namep;
+ 			namep = (void __user __force *) m->msg_name;
+@@ -48,10 +48,10 @@ int verify_iovec(struct msghdr *m, struc
+ 			if (err < 0)
+ 				return err;
  		}
- 		if (connected)
--			tunnel_dst_set(tunnel, &rt->dst);
-+			tunnel_dst_set(tunnel, &rt->dst, fl4.saddr);
+-		if (m->msg_name)
+-			m->msg_name = address;
++		m->msg_name = address;
+ 	} else {
+ 		m->msg_name = NULL;
++		m->msg_namelen = 0;
  	}
  
- 	if (rt->dst.dev == dev) {
+ 	size = m->msg_iovlen * sizeof(struct iovec);
 
 
