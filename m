@@ -1,28 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202AbaHHJUU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 05:20:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45099 "EHLO
+	id S1756274AbaHHJV5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 05:21:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45141 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756136AbaHHJUB (ORCPT
+	with ESMTP id S1752939AbaHHJVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 05:20:01 -0400
-Date: Fri, 8 Aug 2014 02:19:21 -0700
-From: tip-bot for Dave Hansen <tipbot@zytor.com>
-Message-ID: <tip-7c7f1547b627092737493f0781780af85cc9b1a4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, dave@sr71.net,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        dave.hansen@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, dave@sr71.net,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        dave.hansen@linux.intel.com
-In-Reply-To: <20140807175841.5C92D878@viggo.jf.intel.com>
-References: <20140807175841.5C92D878@viggo.jf.intel.com>
+	Fri, 8 Aug 2014 05:21:53 -0400
+Date: Fri, 8 Aug 2014 02:19:53 -0700
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-3eec595235c17a74094daa1e02d1b0af2e9a7125@git.kernel.org>
+Cc: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, lenb@kernel.org,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        jiang.liu@linux.intel.com, grant.likely@linaro.org, yinghai@kernel.org,
+        joro@8bytes.org, benh@kernel.crashing.org, bhelgaas@google.com,
+        rjw@rjwysocki.net, bp@suse.de
+Reply-To: mingo@kernel.org, konrad.wilk@oracle.com, rdunlap@infradead.org,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, lenb@kernel.org,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        jiang.liu@linux.intel.com, grant.likely@linaro.org, yinghai@kernel.org,
+        joro@8bytes.org, benh@kernel.crashing.org, bhelgaas@google.com,
+        rjw@rjwysocki.net, bp@suse.de
+In-Reply-To: <1407478071-29399-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1407478071-29399-1-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/mm: Fix RCU splat from new TLB tracepoints
-Git-Commit-ID: 7c7f1547b627092737493f0781780af85cc9b1a4
+Subject: [tip:x86/apic] x86, irq, PCI:
+  Keep IRQ assignment for PCI devices during suspend/hibernation
+Git-Commit-ID: 3eec595235c17a74094daa1e02d1b0af2e9a7125
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,53 +40,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7c7f1547b627092737493f0781780af85cc9b1a4
-Gitweb:     http://git.kernel.org/tip/7c7f1547b627092737493f0781780af85cc9b1a4
-Author:     Dave Hansen <dave.hansen@linux.intel.com>
-AuthorDate: Thu, 7 Aug 2014 10:58:41 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 8 Aug 2014 10:35:00 +0200
+Commit-ID:  3eec595235c17a74094daa1e02d1b0af2e9a7125
+Gitweb:     http://git.kernel.org/tip/3eec595235c17a74094daa1e02d1b0af2e9a7125
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Fri, 8 Aug 2014 14:07:51 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 8 Aug 2014 11:14:45 +0200
 
-x86/mm: Fix RCU splat from new TLB tracepoints
+x86, irq, PCI: Keep IRQ assignment for PCI devices during suspend/hibernation
 
-Dave Jones reported seeing a bug from one of my TLB tracepoints:
+Now IOAPIC driver dynamically allocates IRQ numbers for IOAPIC pins.
+We need to keep IRQ assignment for PCI devices during suspend/hibernation,
+otherwise it may cause failure of suspend/hibernation due to:
+1) Device driver calls pci_enable_device() to allocate an IRQ number
+   and register interrupt handler on the returned IRQ.
+2) Device driver's suspend callback calls pci_disable_device() and
+   release assigned IRQ in turn.
+3) Device driver's resume callback calls pci_enable_device() to
+   allocate IRQ number again. A different IRQ number may be assigned
+   by IOAPIC driver this time.
+4) Now the hardware delivers interrupt to the new IRQ but interrupt
+   handler is still registered against the old IRQ, so it breaks
+   suspend/hibernation.
 
-        http://lkml.kernel.org/r/20140806181801.GA4605@redhat.com
+To fix this issue, we keep IRQ assignment during suspend/hibernation.
+Flag pci_dev.dev.power.is_prepared is used to detect that
+pci_disable_device() is called during suspend/hibernation.
 
-According to Paul McKenney, the right way to fix this is adding
-an _rcuidle suffix to the tracepoint.
-
-        http://lkml.kernel.org/r/20140807065055.GA5821@linux.vnet.ibm.com
-
-This patch does just that.
-
-Reported-by: Dave Jones <davej@redhat.com>,
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Dave Hansen <dave@sr71.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140807175841.5C92D878@viggo.jf.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-and-Tested-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Len Brown <lenb@kernel.org>
+Link: http://lkml.kernel.org/r/1407478071-29399-1-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/mm/tlb.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/x86/pci/intel_mid_pci.c | 2 +-
+ arch/x86/pci/irq.c           | 3 ++-
+ drivers/acpi/pci_irq.c       | 4 ++++
+ 3 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 1fe3398..98b7976 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -49,7 +49,13 @@ void leave_mm(int cpu)
- 	if (cpumask_test_cpu(cpu, mm_cpumask(active_mm))) {
- 		cpumask_clear_cpu(cpu, mm_cpumask(active_mm));
- 		load_cr3(swapper_pg_dir);
--		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
-+		/*
-+		 * This gets called in the idle path where RCU
-+		 * functions differently.  Tracing normally
-+		 * uses RCU, so we have to call the tracepoint
-+		 * specially here.
-+		 */
-+		trace_tlb_flush_rcuidle(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
- 	}
+diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
+index 09fece3..3865116 100644
+--- a/arch/x86/pci/intel_mid_pci.c
++++ b/arch/x86/pci/intel_mid_pci.c
+@@ -229,7 +229,7 @@ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
+ 
+ static void intel_mid_pci_irq_disable(struct pci_dev *dev)
+ {
+-	if (dev->irq > 0)
++	if (!dev->dev.power.is_prepared && dev->irq > 0)
+ 		mp_unmap_irq(dev->irq);
  }
- EXPORT_SYMBOL_GPL(leave_mm);
+ 
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index 748cfe8..bc1a2c3 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -1256,7 +1256,8 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 
+ static void pirq_disable_irq(struct pci_dev *dev)
+ {
+-	if (io_apic_assign_pci_irqs && dev->irq) {
++	if (io_apic_assign_pci_irqs && !dev->dev.power.is_prepared &&
++	    dev->irq) {
+ 		mp_unmap_irq(dev->irq);
+ 		dev->irq = 0;
+ 	}
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index 6ba463c..c96887d 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -481,6 +481,10 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
+ 	if (!pin)
+ 		return;
+ 
++	/* Keep IOAPIC pin configuration when suspending */
++	if (dev->dev.power.is_prepared)
++		return;
++
+ 	entry = acpi_pci_irq_lookup(dev, pin);
+ 	if (!entry)
+ 		return;
