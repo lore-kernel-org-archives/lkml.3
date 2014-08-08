@@ -1,178 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114AbaHHFjw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 01:39:52 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:44361 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517AbaHHFju (ORCPT
+	id S1755594AbaHHFmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 01:42:33 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.115]:37930 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752554AbaHHFmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 01:39:50 -0400
-Message-ID: <1407476387.2513.39.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2 1/7] locking/rwsem: check for active writer/spinner
- before wakeup
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, aswin@hp.com
-Date: Thu, 07 Aug 2014 22:39:47 -0700
-In-Reply-To: <1407458726.2513.12.camel@buesod1.americas.hpqcorp.net>
-References: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com>
-	 <1407450408-11679-2-git-send-email-Waiman.Long@hp.com>
-	 <1407458726.2513.12.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Aug 2014 01:42:31 -0400
+X-Env-Sender: James.Ban.opensource@diasemi.com
+X-Msg-Ref: server-8.tower-193.messagelabs.com!1407476548!23619863!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201408080542.s785g2B4033464@krsrvapps-01.diasemi.com>
+From: James Ban <james.ban.opensource@diasemi.com>
+Date: Fri, 8 Aug 2014 14:27:04 +0900
+Subject: [PATCH V2] regulator: DA9211 : support DA9213
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Support Opensource <support.opensource@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+CC: David Dajun Chen <david.chen@diasemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-07 at 17:45 -0700, Davidlohr Bueso wrote:
-> On Thu, 2014-08-07 at 18:26 -0400, Waiman Long wrote:
-> > On a highly contended rwsem, spinlock contention due to the slow
-> > rwsem_wake() call can be a significant portion of the total CPU cycles
-> > used. With writer lock stealing and writer optimistic spinning, there
-> > is also a pretty good chance that the lock may have been stolen
-> > before the waker wakes up the waiters. The woken tasks, if any,
-> > will have to go back to sleep again.
-> 
-> Good catch! And this applies to mutexes as well. How about something
-> like this:
-> 
-> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> index dadbf88..e037588 100644
-> --- a/kernel/locking/mutex.c
-> +++ b/kernel/locking/mutex.c
-> @@ -707,6 +707,20 @@ EXPORT_SYMBOL_GPL(__ww_mutex_lock_interruptible);
->  
->  #endif
->  
-> +#if defined(CONFIG_DEBUG_MUTEXES) || defined(CONFIG_MUTEX_SPIN_ON_OWNER)
+This is a patch for supporting DA9213.
 
-If DEBUG, we don't clear the owner when unlocking. This can just be 
-
-+#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
-
-> +static inline bool mutex_has_owner(struct mutex *lock)
-> +{
-> +	struct task_struct *owner = ACCESS_ONCE(lock->owner);
-> +
-> +	return owner != NULL;
-> +}
-> +#else
-> +static inline bool mutex_has_owner(struct mutex *lock)
-> +{
-> +	return false;
-> +}
-> +#endif
-> +
->  /*
->   * Release the lock, slowpath:
->   */
-> @@ -734,6 +748,15 @@ __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
->  	mutex_release(&lock->dep_map, nested, _RET_IP_);
->  	debug_mutex_unlock(lock);
->  
-> +	/*
-> +	 * Abort the wakeup operation if there is an active writer as the
-> +	 * lock was stolen. mutex_unlock() should have cleared the owner field
-> +	 * before calling this function. If that field is now set, there must
-> +	 * be an active writer present.
-> +	 */
-> +	if (mutex_has_owner(lock))
-> +		goto done;
-
-Err so we actually deadlock here because we do the check with the
-lock->wait_lock held and at the same time another task comes into the
-slowpath of a mutex_lock() call which also tries to take the wait_lock.
-Ending up with hung tasks. Here's a more tested patch against
-peterz-queue, survives aim7 and kernel builds on a 80core box. Thanks.
-
-
-8<---------------------------------------------------------------
-From: Davidlohr Bueso <davidlohr@hp.com>
-Subject: [PATCH] locking/mutex: Do not falsely wake-up tasks
-
-Mutexes lock-stealing functionality allows another task to
-skip its turn in the wait-queue and atomically acquire the lock.
-This is fine and a nice optimization, however, when releasing
-the mutex, we always wakeup the next task in FIFO order. When
-the lock has been stolen this leads to wasting waking up a
-task just to immediately realize it cannot acquire the lock
-and just go back to sleep. This is specially true on highly
-contended mutexes that stress the wait_lock.
-
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
 ---
- kernel/locking/mutex.c | 32 +++++++++++++++++++++++++++++++-
- 1 file changed, 31 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index dadbf88..52e1136 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -383,12 +383,26 @@ done:
+This patch is relative to linux-next repository tag next-20140807.
+
+Changes in V2:
+- Changed a method for selecting driver table.
+
+ drivers/regulator/Kconfig            |    9 ++--
+ drivers/regulator/da9211-regulator.c |   95 +++++++++++++++++++++++++++-------
+ drivers/regulator/da9211-regulator.h |    7 ++-
+ include/linux/regulator/da9211.h     |    7 ++-
+ 4 files changed, 91 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 2dc8289..1344aa8 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -199,13 +199,14 @@ config REGULATOR_DA9210
+ 	  interface.
  
- 	return false;
- }
-+
-+static inline bool mutex_has_owner(struct mutex *lock)
-+{
-+	struct task_struct *owner = ACCESS_ONCE(lock->owner);
-+
-+	return owner != NULL;
-+}
-+
- #else
-+
- static bool mutex_optimistic_spin(struct mutex *lock,
- 				  struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
- {
- 	return false;
- }
-+
-+static inline bool mutex_has_owner(struct mutex *lock)
-+{
-+	return false;
-+}
- #endif
+ config REGULATOR_DA9211
+-	tristate "Dialog Semiconductor DA9211/DA9212 regulator"
++	tristate "Dialog Semiconductor DA9211/DA9212/DA9213/DA9214 regulator"
+ 	depends on I2C
+ 	select REGMAP_I2C
+ 	help
+-	  Say y here to support for the Dialog Semiconductor DA9211/DA9212.
+-	  The DA9211/DA9212 is a multi-phase synchronous step down
+-	  converter 12A DC-DC Buck controlled through an I2C
++	  Say y here to support for the Dialog Semiconductor DA9211/DA9212
++	  /DA9213/DA9214.
++	  The DA9211/DA9212/DA9213/DA9214 is a multi-phase synchronous
++	  step down converter 12A or 16A DC-DC Buck controlled through an I2C
+ 	  interface.
  
- __visible __used noinline
-@@ -730,6 +744,23 @@ __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
- 	if (__mutex_slowpath_needs_to_unlock())
- 		atomic_set(&lock->count, 1);
+ config REGULATOR_DBX500_PRCMU
+diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
+index 1482ada..ccc2e36 100644
+--- a/drivers/regulator/da9211-regulator.c
++++ b/drivers/regulator/da9211-regulator.c
+@@ -1,5 +1,5 @@
+ /*
+- * da9211-regulator.c - Regulator device driver for DA9211
++ * da9211-regulator.c - Regulator device driver for DA9211/DA9213
+  * Copyright (C) 2014  Dialog Semiconductor Ltd.
+  *
+  * This library is free software; you can redistribute it and/or
+@@ -27,6 +27,10 @@
+ #include <linux/regulator/da9211.h>
+ #include "da9211-regulator.h"
  
-+/*
-+ * Skipping the mutex_has_owner() check when DEBUG, allows us to
-+ * avoid taking the wait_lock in order to do not call mutex_release()
-+ * and debug_mutex_unlock() when !DEBUG. This can otherwise result in
-+ * deadlocks when another task enters the lock's slowpath in mutex_lock().
++/* DEVICE IDs */
++#define DA9211_DEVICE_ID	0x22
++#define DA9213_DEVICE_ID	0x23
++
+ #define DA9211_BUCK_MODE_SLEEP	1
+ #define DA9211_BUCK_MODE_SYNC	2
+ #define DA9211_BUCK_MODE_AUTO	3
+@@ -42,6 +46,7 @@ struct da9211 {
+ 	struct regulator_dev *rdev[DA9211_MAX_REGULATORS];
+ 	int num_regulator;
+ 	int chip_irq;
++	int chip_id;
+ };
+ 
+ static const struct regmap_range_cfg da9211_regmap_range[] = {
+@@ -52,14 +57,14 @@ static const struct regmap_range_cfg da9211_regmap_range[] = {
+ 		.window_start = 0,
+ 		.window_len = 256,
+ 		.range_min = 0,
+-		.range_max = 2*256,
++		.range_max = 5*128,
+ 	},
+ };
+ 
+ static const struct regmap_config da9211_regmap_config = {
+ 	.reg_bits = 8,
+ 	.val_bits = 8,
+-	.max_register = 2 * 256,
++	.max_register = 5 * 128,
+ 	.ranges = da9211_regmap_range,
+ 	.num_ranges = ARRAY_SIZE(da9211_regmap_range),
+ };
+@@ -69,11 +74,20 @@ static const struct regmap_config da9211_regmap_config = {
+ #define DA9211_MAX_MV		1570
+ #define DA9211_STEP_MV		10
+ 
+-/* Current limits for buck (uA) indices corresponds with register values */
++/* Current limits for DA9211 buck (uA) indices
++ * corresponds with register values
 + */
-+#ifndef CONFIG_DEBUG_MUTEXES
-+	/*
-+	 * Abort the wakeup operation if there is an another mutex owner, as the
-+	 * lock was stolen. mutex_unlock() should have cleared the owner field
-+	 * before calling this function. If that field is now set, another task
-+	 * must have acquired the mutex.
-+	 */
-+	if (mutex_has_owner(lock))
-+		return;
-+#endif
-+
- 	spin_lock_mutex(&lock->wait_lock, flags);
- 	mutex_release(&lock->dep_map, nested, _RET_IP_);
- 	debug_mutex_unlock(lock);
-@@ -744,7 +775,6 @@ __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
+ static const int da9211_current_limits[] = {
+ 	2000000, 2200000, 2400000, 2600000, 2800000, 3000000, 3200000, 3400000,
+ 	3600000, 3800000, 4000000, 4200000, 4400000, 4600000, 4800000, 5000000
+ };
++/* Current limits for DA9213 buck (uA) indices
++ * corresponds with register values
++ */
++static const int da9213_current_limits[] = {
++	3000000, 3200000, 3400000, 3600000, 3800000, 4000000, 4200000, 4400000,
++	4600000, 4800000, 5000000, 5200000, 5400000, 5600000, 5800000, 6000000
++};
  
- 		wake_up_process(waiter->task);
- 	}
--
- 	spin_unlock_mutex(&lock->wait_lock, flags);
+ static unsigned int da9211_buck_get_mode(struct regulator_dev *rdev)
+ {
+@@ -129,12 +143,26 @@ static int da9211_set_current_limit(struct regulator_dev *rdev, int min,
+ {
+ 	int id = rdev_get_id(rdev);
+ 	struct da9211 *chip = rdev_get_drvdata(rdev);
+-	int i;
++	int i, max_size;
++	const int *current_limits;
++
++	switch (chip->chip_id) {
++	case DA9211:
++		current_limits = da9211_current_limits;
++		max_size = ARRAY_SIZE(da9211_current_limits)-1;
++		break;
++	case DA9213:
++		current_limits = da9213_current_limits;
++		max_size = ARRAY_SIZE(da9213_current_limits)-1;
++		break;
++	default:
++		return -EINVAL;
++	}
+ 
+ 	/* search for closest to maximum */
+-	for (i = ARRAY_SIZE(da9211_current_limits)-1; i >= 0; i--) {
+-		if (min <= da9211_current_limits[i] &&
+-		    max >= da9211_current_limits[i]) {
++	for (i = max_size; i >= 0; i--) {
++		if (min <= current_limits[i] &&
++		    max >= current_limits[i]) {
+ 				return regmap_update_bits(chip->regmap,
+ 					DA9211_REG_BUCK_ILIM,
+ 					(0x0F << id*4), (i << id*4));
+@@ -150,14 +178,28 @@ static int da9211_get_current_limit(struct regulator_dev *rdev)
+ 	struct da9211 *chip = rdev_get_drvdata(rdev);
+ 	unsigned int data;
+ 	int ret;
++	const int *current_limits;
++
++	switch (chip->chip_id) {
++	case DA9211:
++		current_limits = da9211_current_limits;
++		break;
++	case DA9213:
++		current_limits = da9213_current_limits;
++		break;
++	default:
++		return -EINVAL;
++	}
+ 
+ 	ret = regmap_read(chip->regmap, DA9211_REG_BUCK_ILIM, &data);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	/* select one of 16 values: 0000 (2000mA) to 1111 (5000mA) */
++	/* select one of 16 values: 0000 (2000mA or 3000mA)
++	 * to 1111 (5000mA or 6000mA).
++	 */
+ 	data = (data >> id*4) & 0x0F;
+-	return da9211_current_limits[data];
++	return current_limits[data];
  }
  
+ static struct regulator_ops da9211_buck_ops = {
+@@ -264,10 +306,7 @@ static int da9211_regulator_init(struct da9211 *chip)
+ 	}
+ 
+ 	for (i = 0; i < chip->num_regulator; i++) {
+-		if (chip->pdata)
+-			config.init_data =
+-				&(chip->pdata->init_data[i]);
+-
++		config.init_data = &(chip->pdata->init_data[i]);
+ 		config.dev = chip->dev;
+ 		config.driver_data = chip;
+ 		config.regmap = chip->regmap;
+@@ -301,6 +340,7 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
+ {
+ 	struct da9211 *chip;
+ 	int error, ret;
++	unsigned int data;
+ 
+ 	chip = devm_kzalloc(&i2c->dev, sizeof(struct da9211), GFP_KERNEL);
+ 
+@@ -308,7 +348,7 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
+ 	chip->regmap = devm_regmap_init_i2c(i2c, &da9211_regmap_config);
+ 	if (IS_ERR(chip->regmap)) {
+ 		error = PTR_ERR(chip->regmap);
+-		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
++		dev_err(chip->dev, "Failed to allocate register map: %d\n",
+ 			error);
+ 		return error;
+ 	}
+@@ -316,8 +356,22 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
+ 	i2c_set_clientdata(i2c, chip);
+ 
+ 	chip->pdata = i2c->dev.platform_data;
+-	if (!chip->pdata) {
+-		dev_err(&i2c->dev, "No platform init data supplied\n");
++
++	ret = regmap_read(chip->regmap, DA9211_REG_DEVICE_ID, &data);
++	if (ret < 0) {
++		dev_err(chip->dev, "Failed to read DEVICE_ID reg: %d\n", ret);
++		return ret;
++	}
++
++	switch (data) {
++	case DA9211_DEVICE_ID:
++		chip->chip_id = DA9211;
++		break;
++	case DA9213_DEVICE_ID:
++		chip->chip_id = DA9213;
++		break;
++	default:
++		dev_err(chip->dev, "Unsupported device id = 0x%x.\n", data);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -340,13 +394,14 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
+ 	ret = da9211_regulator_init(chip);
+ 
+ 	if (ret < 0)
+-		dev_err(&i2c->dev, "Failed to initialize regulator: %d\n", ret);
++		dev_err(chip->dev, "Failed to initialize regulator: %d\n", ret);
+ 
+ 	return ret;
+ }
+ 
+ static const struct i2c_device_id da9211_i2c_id[] = {
+-	{"da9211", 0},
++	{"da9211", DA9211},
++	{"da9213", DA9213},
+ 	{},
+ };
+ 
+@@ -364,5 +419,5 @@ static struct i2c_driver da9211_regulator_driver = {
+ module_i2c_driver(da9211_regulator_driver);
+ 
+ MODULE_AUTHOR("James Ban <James.Ban.opensource@diasemi.com>");
+-MODULE_DESCRIPTION("Regulator device driver for Dialog DA9211");
++MODULE_DESCRIPTION("Regulator device driver for Dialog DA9211/DA9213");
+ MODULE_LICENSE("GPL v2");
+diff --git a/drivers/regulator/da9211-regulator.h b/drivers/regulator/da9211-regulator.h
+index 88b1769..93fa9df 100644
+--- a/drivers/regulator/da9211-regulator.h
++++ b/drivers/regulator/da9211-regulator.h
+@@ -1,5 +1,5 @@
+ /*
+- * da9211-regulator.h - Regulator definitions for DA9211
++ * da9211-regulator.h - Regulator definitions for DA9211/DA9213
+  * Copyright (C) 2014  Dialog Semiconductor Ltd.
+  *
+  * This library is free software; you can redistribute it and/or
+@@ -53,12 +53,15 @@
+ /* BUCK Phase Selection*/
+ #define DA9211_REG_CONFIG_E			0x147
+ 
++/* Device ID */
++#define	DA9211_REG_DEVICE_ID			0x201
++
+ /*
+  * Registers bits
+  */
+ /* DA9211_REG_PAGE_CON (addr=0x00) */
+ #define	DA9211_REG_PAGE_SHIFT			1
+-#define	DA9211_REG_PAGE_MASK			0x02
++#define	DA9211_REG_PAGE_MASK			0x06
+ /* On I2C registers 0x00 - 0xFF */
+ #define	DA9211_REG_PAGE0			0
+ /* On I2C registers 0x100 - 0x1FF */
+diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
+index 0981ce0..658c3c3 100644
+--- a/include/linux/regulator/da9211.h
++++ b/include/linux/regulator/da9211.h
+@@ -1,5 +1,5 @@
+ /*
+- * da9211.h - Regulator device driver for DA9211
++ * da9211.h - Regulator device driver for DA9211/DA9213
+  * Copyright (C) 2014  Dialog Semiconductor Ltd.
+  *
+  * This library is free software; you can redistribute it and/or
+@@ -20,6 +20,11 @@
+ 
+ #define DA9211_MAX_REGULATORS	2
+ 
++enum da9211_chip_id {
++	DA9211,
++	DA9213,
++};
++
+ struct da9211_pdata {
+ 	/*
+ 	 * Number of buck
 -- 
-1.8.1.4
-
-
+end-of-patch for regulator: DA9211 : support DA9213 V2
 
