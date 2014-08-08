@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456AbaHHUlo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 16:41:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40057 "EHLO
+	id S1756939AbaHHUmG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 16:42:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40139 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442AbaHHUlg (ORCPT
+	with ESMTP id S1756484AbaHHUls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 16:41:36 -0400
+	Fri, 8 Aug 2014 16:41:48 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David R. Piegdon" <lkml@p23q.org>, Tony Lindgren <tony@atomide.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 017/259] ARM: OMAP2+: Fix parser-bug in platform muxing code
-Date: Fri,  8 Aug 2014 13:37:20 -0700
-Message-Id: <1407530482-4483-18-git-send-email-kamal@canonical.com>
+Cc: Mike Snitzer <snitzer@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 141/259] dm cache metadata: do not allow the data block size to change
+Date: Fri,  8 Aug 2014 13:39:24 -0700
+Message-Id: <1407530482-4483-142-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407530482-4483-1-git-send-email-kamal@canonical.com>
 References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
@@ -27,61 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David R. Piegdon" <lkml@p23q.org>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit c021f241f4fab2bb4fc4120a38a828a03dd3f970 upstream.
+commit 048e5a07f282c57815b3901d4a68a77fa131ce0a upstream.
 
-Fix a parser-bug in the omap2 muxing code where muxtable-entries will be
-wrongly selected if the requested muxname is a *prefix* of their
-m0-entry and they have a matching mN-entry. Fix by additionally checking
-that the length of the m0_entry is equal.
+The block size for the dm-cache's data device must remained fixed for
+the life of the cache.  Disallow any attempt to change the cache's data
+block size.
 
-For example muxing of "dss_data2.dss_data2" on omap32xx will fail
-because the prefix "dss_data2" will match the mux-entries "dss_data2" as
-well as "dss_data20", with the suffix "dss_data2" matching m0 (for
-dss_data2) and m4 (for dss_data20). Thus both are recognized as signal
-path candidates:
-
-Relevant muxentries from mux34xx.c:
-        _OMAP3_MUXENTRY(DSS_DATA20, 90,
-                "dss_data20", NULL, "mcspi3_somi", "dss_data2",
-                "gpio_90", NULL, NULL, "safe_mode"),
-        _OMAP3_MUXENTRY(DSS_DATA2, 72,
-                "dss_data2", NULL, NULL, NULL,
-                "gpio_72", NULL, NULL, "safe_mode"),
-
-This will result in a failure to mux the pin at all:
-
- _omap_mux_get_by_name: Multiple signal paths (2) for dss_data2.dss_data2
-
-Patch should apply to linus' latest master down to rather old linux-2.6
-trees.
-
-Signed-off-by: David R. Piegdon <lkml@p23q.org>
-[tony@atomide.com: updated description to include full description]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/mach-omap2/mux.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/md/dm-cache-metadata.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
-index 48094b5..b12a4f9 100644
---- a/arch/arm/mach-omap2/mux.c
-+++ b/arch/arm/mach-omap2/mux.c
-@@ -183,8 +183,10 @@ static int __init _omap_mux_get_by_name(struct omap_mux_partition *partition,
- 		m0_entry = mux->muxnames[0];
+diff --git a/drivers/md/dm-cache-metadata.c b/drivers/md/dm-cache-metadata.c
+index 5320332..a87d3fa 100644
+--- a/drivers/md/dm-cache-metadata.c
++++ b/drivers/md/dm-cache-metadata.c
+@@ -425,6 +425,15 @@ static int __open_metadata(struct dm_cache_metadata *cmd)
  
- 		/* First check for full name in mode0.muxmode format */
--		if (mode0_len && strncmp(muxname, m0_entry, mode0_len))
--			continue;
-+		if (mode0_len)
-+			if (strncmp(muxname, m0_entry, mode0_len) ||
-+			    (strlen(m0_entry) != mode0_len))
-+				continue;
+ 	disk_super = dm_block_data(sblock);
  
- 		/* Then check for muxmode only */
- 		for (i = 0; i < OMAP_MUX_NR_MODES; i++) {
++	/* Verify the data block size hasn't changed */
++	if (le32_to_cpu(disk_super->data_block_size) != cmd->data_block_size) {
++		DMERR("changing the data block size (from %u to %llu) is not supported",
++		      le32_to_cpu(disk_super->data_block_size),
++		      (unsigned long long)cmd->data_block_size);
++		r = -EINVAL;
++		goto bad;
++	}
++
+ 	r = __check_incompat_features(disk_super, cmd);
+ 	if (r < 0)
+ 		goto bad;
 -- 
 1.9.1
 
