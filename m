@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751457AbaHIIfu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 04:35:50 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:56586 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212AbaHIIfr (ORCPT
+	id S1751500AbaHIIh7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 04:37:59 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:39458 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751212AbaHIIhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 04:35:47 -0400
-X-AuditID: cbfee68d-b7f2f6d0000062f0-6e-53e5dd627f6a
-Date: Sat, 09 Aug 2014 17:35:45 +0900
-From: Inha Song <ideal.song@samsung.com>
-To: broonie@kernel.org
-Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org, lee.jones@linaro.org,
-        ckeepax@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
-        sameo@linux.intel.com, devicetree@vger.kernel.org,
-        galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
-        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
-        cw00.choi@samsung.com
-Subject: [alsa-devel] [PATCH 2/2] mfd: arizona: Update DT binding to support
- INn_MODE
-Message-id: <20140809173545.2fc1f72e@songinha-Samsung-DeskTop-System>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsWyRsSkWDfp7tNgg7Pd/BZXLh5ispj68Amb
-	xb8pN9gtrn95zmox/8g5Vov+NwtZLc69Wslocf/rUUaLb1c6mCwu75rDZrH0+kUmi+Vv/7NZ
-	TJi+lsWide8RdovT3awO/B4bPjexeayZt4bR43JfL5PHzll32T1WLv/C5rFpVSebx51re9g8
-	5p0M9Hg58TebR9+WVYwenzfJBXBHcdmkpOZklqUW6dslcGWcfHibpaCVs2Ll0RlMDYwn2bsY
-	OTkkBEwklny8D2WLSVy4t56ti5GLQ0hgKaPEzMeH2GCKOlrawWwhgemMEtN7WCDsfiaJ9z3i
-	IDaLgKrEmtdbmEBsNgENie+fNzOD2CJAQ2/P6WQGGcos8JNJonnFE7CEsEC4RPv8eawgNq+A
-	q8SU7+2MEMtsJFbvXMcMEReU+DH5HtgyZgEtic3bmlghbHmJzWveMkPU93JIbLsQA3GEgMS3
-	yYeA6jmA4rISmw5AlUhKHFxxg2UCo8gsJFNnIZk6C8nUBYzMqxhFUwuSC4qT0osM9YoTc4tL
-	89L1kvNzNzECo/n0v2e9OxhvH7A+xJgMtHIis5Rocj4wGeSVxBsamxlZmJqYGhuZW5qRJqwk
-	zpv0MClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA2ONvfZe3g/hYtwT/xXt4Tfbs8OkyiJt
-	5p5LCzWeSv3dOePCjv5znz+sVFgvb+yyIfQEy4eADK//h1/1d9f5cxSxZHhFv8ns3aL8nU1v
-	/dndu1yk2ot7bT4py8cxH42x7qy1MjifuOeFUBGL5SrJfV0T/pmkvijhqgnw5Y+KljrUJMm3
-	U3OTtxJLcUaioRZzUXEiAB8SGc/8AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jQd3Eu0+DDX6t1LS4cvEQk8XUh0/Y
-	LP5NucFucf3Lc1aL+UfOsVr0v1nIanHu1UpGi/tfjzJafLvSwWRxedccNoul1y8yWSx/+5/N
-	YsL0tSwWrXuPsFuc7mZ14PfY8LmJzWPNvDWMHpf7epk8ds66y+6xcvkXNo9NqzrZPO5c28Pm
-	Me9koMfLib/ZPPq2rGL0+LxJLoA7qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DS
-	wlxJIS8xN9VWycUnQNctMwfoFyWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmgg
-	YQ1jxsmHt1kKWjkrVh6dwdTAeJK9i5GTQ0LARKKjpZ0NwhaTuHBvPZgtJDCdUWJ6DwuE3c8k
-	8b5HHMRmEVCVWPN6CxOIzSagIfH982ZmEFsEqPf2nE4gm4uDWeAnk0TziidgCWGBcIn2+fNY
-	QWxeAVeJKd/bGSGW2Uis3rmOGSIuKPFj8j2wZcwCWhKbtzWxQtjyEpvXvGWewMg3C0nZLCRl
-	s5CULWBkXsUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRnCyeSe9gXNVgcYhRgINRiYd3hc3T
-	YCHWxLLiytxDjBIczEoivMHngEK8KYmVValF+fFFpTmpxYcYTYHensgsJZqcD0xkeSXxhsYm
-	ZkaWRuaGFkbG5krivAdbrQOFBNITS1KzU1MLUotg+pg4OKUaGBl5TacF/dgVckzQxj9YvnRO
-	ieUa2QvHZKLeOtpKL3h6T5nvmLBCvPx5ZengM4vNtjtfX29TE7J3wvQn337sO7Xsu7oJa6Lw
-	4eq3yhcFz6or7GOdveX0Kv+FT6aGRe51Fc/yYhOu/C8bGJKx/5DkDzvbzpVHJ782eGNekuK/
-	StU9ZX/EuY4PKkosxRmJhlrMRcWJAA7UhrksAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sat, 9 Aug 2014 04:37:54 -0400
+X-IronPort-AV: E=Sophos;i="5.01,831,1400018400"; 
+   d="scan'208";a="88796799"
+Date: Sat, 9 Aug 2014 10:37:51 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Coccinelle <cocci@systeme.lip6.fr>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Fabian Frederick <fabf@skynet.be>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [patch 119/197] scripts/coccinelle/free: Delete NULL test before
+ freeing functions
+In-Reply-To: <53E5DA60.90902@users.sourceforge.net>
+Message-ID: <alpine.DEB.2.02.1408091028520.2016@localhost6.localdomain6>
+References: <53e53fd1.zO3IbUqJ421c7VXf%akpm@linux-foundation.org> <53E5DA60.90902@users.sourceforge.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch update DT binding to support INn_MODE init_data
+On Sat, 9 Aug 2014, SF Markus Elfring wrote:
 
-Signed-off-by: Inha Song <ideal.song@samsung.com>
----
- Documentation/devicetree/bindings/mfd/arizona.txt | 5 +++++
- 1 file changed, 5 insertions(+)
+> > +@r depends on context || report || org @
+> > +expression E;
+> > +position p;
+> > +@@
+> > +
+> > +* if (E)
+> > +*	\(kfree@p\|debugfs_remove@p\|debugfs_remove_recursive@p\|usb_free_urb\)(E);
+> 
+> How do you think about to add the construct "@p" also behind the function name
+> "usb_free_urb"?
 
-diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
-index 5c7e723..c21a30e 100644
---- a/Documentation/devicetree/bindings/mfd/arizona.txt
-+++ b/Documentation/devicetree/bindings/mfd/arizona.txt
-@@ -42,6 +42,11 @@ Optional properties:
-     the chip default will be used.  If present exactly five values must
-     be specified.
- 
-+  - wlf,inmode : A list of INn_MODE register values. If absent, INn_MODE register
-+    set to 0 by default. The size of this list depends on ARIZONA_MAX_INPUT values.
-+    ARIZONA_MAX_INPUT is defined in include/linux/mfd/arizona/pdata.h. If present,
-+    exactly ARIZONA_MAX_INPUT values must be specified.
-+
-   - DCVDD-supply, MICVDD-supply : Power supplies, only need to be specified if
-     they are being externally supplied. As covered in
-     Documentation/devicetree/bindings/regulator/regulator.txt
--- 
-2.0.0.390.gcb682f8
+Yes, that would be needed, thanks.  Also, it was recently suggested to add 
+of_node_put to the list of things that are checked for.
+
+> Is my previous update suggestion for such an issue worth for another look, too?
+
+I still don't think this should be done for any random function that 
+performs a null test on its argument.  The corrections involved here are 
+not as trivial as they would seem.  Often it is not the case that the null 
+test at the call site should be just deleted, instead the code should be 
+reorganized.  Making a rule that treats 5000 functions that are 
+automatically selected will just encourage people to do sloppy things.
+
+(Personally, I don't like the whole null test removal idea.  It mixes the 
+notion of something that is necessary and has failed and something that is 
+optional.  In the case of something that is necessary and has failed, the 
+null value is usually statically apparent, and the code can be reorganized 
+so that a null value doesn't go where it is not wanted.  In the case of 
+something that is simply optional, the presence of the null test gives 
+the reader of the code some information.  Removing this information in 
+rarely executed code seems unfortunate.)
+
+julia
+
+> 
+> Regards,
+> Markus
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
