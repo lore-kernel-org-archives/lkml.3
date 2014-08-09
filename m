@@ -1,118 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666AbaHINdf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 09:33:35 -0400
-Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:55279
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750900AbaHINde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 09:33:34 -0400
-Date: Sat, 9 Aug 2014 21:33:17 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Shengjiu Wang <shengjiu.wang@freescale.com>
-CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <Guangyu.Chen@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 2/3] ARM: clk-gate2: Add API imx_clk_gate2_exclusive
- for clk_gate2
-Message-ID: <20140809133314.GA8849@dragon>
-References: <cover.1407481023.git.shengjiu.wang@freescale.com>
- <e1a314548b2e00fccccb4ece8200da97cf89c6bb.1407481023.git.shengjiu.wang@freescale.com>
+	id S1751722AbaHINe2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 09:34:28 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:45706 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaHINe1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Aug 2014 09:34:27 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <53E5B41B.3030009@vmware.com>
+References: <53E50C1B.9080507@gmail.com> <53E5B41B.3030009@vmware.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <e1a314548b2e00fccccb4ece8200da97cf89c6bb.1407481023.git.shengjiu.wang@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(51704005)(24454002)(84676001)(97736001)(97756001)(85306004)(104016003)(92566001)(92726001)(23726002)(81342001)(31966008)(87936001)(46102001)(68736004)(6806004)(107046002)(21056001)(99396002)(85852003)(110136001)(50466002)(86362001)(83072002)(44976005)(81542001)(50986999)(76176999)(83506001)(20776003)(80022001)(47776003)(19580395003)(106466001)(19580405001)(83322001)(33656002)(79102001)(105606002)(76482001)(95666004)(33716001)(74502001)(54356999)(77982001)(102836001)(26826002)(74662001)(64706001)(57986006)(4396001)(46406003);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB445;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02981BE340
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Subject: Re: CONFIG_DMA_CMA causes ttm performance problems/hangs.
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Sat, 09 Aug 2014 09:33:53 -0400
+To: Thomas Hellstrom <thellstrom@vmware.com>,
+        Mario Kleiner <mario.kleiner.de@gmail.com>
+CC: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        kamal@canonical.com, LKML <linux-kernel@vger.kernel.org>,
+        ben@decadent.org.uk, m.szyprowski@samsung.com
+Message-ID: <60bd3db2-4919-40c4-a4ff-1b7b043cadfc@email.android.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 03:02:48PM +0800, Shengjiu Wang wrote:
-> As some clocks are mutually exlcusive, they can't be enabled simultaneously,
-> So add this new API for registering exclusive clock, the enable function will
-> check if there is exclusive clock and it is not enabled, then this clock can
-> be enabled, otherwise, it will return error.
-> 
-> Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
-> ---
->  arch/arm/mach-imx/clk-gate2.c |   18 +++++++++++++++++-
->  arch/arm/mach-imx/clk.h       |    2 ++
->  2 files changed, 19 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-imx/clk-gate2.c b/arch/arm/mach-imx/clk-gate2.c
-> index 84acdfd..df64c4d 100644
-> --- a/arch/arm/mach-imx/clk-gate2.c
-> +++ b/arch/arm/mach-imx/clk-gate2.c
-> @@ -8,7 +8,7 @@
->   *
->   * Gated clock implementation
->   */
-> -
-> +#include <linux/clk-private.h>
+On August 9, 2014 1:39:39 AM EDT, Thomas Hellstrom <thellstrom@vmware.com> wrote:
+>Hi.
+>
+Hey Thomas!
 
-I do not see why this header is needed.
+>IIRC I don't think the TTM DMA pool allocates coherent pages more than
+>one page at a time, and _if that's true_ it's pretty unnecessary for
+>the
+>dma subsystem to route those allocations to CMA. Maybe Konrad could
+>shed
+>some light over this?
 
-Shawn
+It should allocate in batches and keep them in the TTM DMA pool for some time to be reused.
 
->  #include <linux/clk-provider.h>
->  #include <linux/module.h>
->  #include <linux/slab.h>
-> @@ -34,6 +34,7 @@ struct clk_gate2 {
->  	u8		flags;
->  	spinlock_t	*lock;
->  	unsigned int	*share_count;
-> +	struct clk	*clk_exclusive;
->  };
->  
->  #define to_clk_gate2(_hw) container_of(_hw, struct clk_gate2, hw)
-> @@ -46,6 +47,11 @@ static int clk_gate2_enable(struct clk_hw *hw)
->  
->  	spin_lock_irqsave(gate->lock, flags);
->  
-> +	if (gate->clk_exclusive && __clk_is_enabled(gate->clk_exclusive)) {
-> +		spin_unlock_irqrestore(gate->lock, flags);
-> +		return -EBUSY;
-> +	}
-> +
->  	if (gate->share_count && (*gate->share_count)++ > 0)
->  		goto out;
->  
-> @@ -147,3 +153,13 @@ struct clk *clk_register_gate2(struct device *dev, const char *name,
->  
->  	return clk;
->  }
-> +
-> +int imx_clk_gate2_exclusive(struct clk *clk1, struct clk *clk2)
-> +{
-> +	struct clk_gate2 *gate1 = to_clk_gate2(clk1->hw);
-> +	struct clk_gate2 *gate2 = to_clk_gate2(clk2->hw);
-> +
-> +	gate1->clk_exclusive = clk2;
-> +	gate2->clk_exclusive = clk1;
-> +	return 0;
-> +}
-> diff --git a/arch/arm/mach-imx/clk.h b/arch/arm/mach-imx/clk.h
-> index d5ba76f..2b07376 100644
-> --- a/arch/arm/mach-imx/clk.h
-> +++ b/arch/arm/mach-imx/clk.h
-> @@ -36,6 +36,8 @@ struct clk *clk_register_gate2(struct device *dev, const char *name,
->  struct clk * imx_obtain_fixed_clock(
->  			const char *name, unsigned long rate);
->  
-> +int imx_clk_gate2_exclusive(struct clk *clk1, struct clk *clk2);
-> +
->  static inline struct clk *imx_clk_gate2(const char *name, const char *parent,
->  		void __iomem *reg, u8 shift)
->  {
-> -- 
-> 1.7.9.5
-> 
+The pages that it gets are in 4kb granularity though.
+>
+>/Thomas
+>
+>
+>On 08/08/2014 07:42 PM, Mario Kleiner wrote:
+>> Hi all,
+>>
+>> there is a rather severe performance problem i accidentally found
+>when
+>> trying to give Linux 3.16.0 a final test on a x86_64 MacBookPro under
+>> Ubuntu 14.04 LTS with nouveau as graphics driver.
+>>
+>> I was lazy and just installed the Ubuntu precompiled mainline kernel.
+>> That kernel happens to have CONFIG_DMA_CMA=y set, with a default CMA
+>> (contiguous memory allocator) size of 64 MB. Older Ubuntu kernels
+>> weren't compiled with CMA, so i only observed this on 3.16, but
+>> previous kernels would likely be affected too.
+>>
+>> After a few minutes of regular desktop use like switching workspaces,
+>> scrolling text in a terminal window, Firefox with multiple tabs open,
+>> Thunderbird etc. (tested with KDE/Kwin, with/without desktop
+>> composition), i get chunky desktop updates, then multi-second
+>freezes,
+>> after a few minutes the desktop hangs for over a minute on almost any
+>> GUI action like switching windows etc. --> Unuseable.
+>>
+>> ftrace'ing shows the culprit being this callchain (typical good/bad
+>> example ftrace snippets at the end of this mail):
+>>
+>> ...ttm dma coherent memory allocations, e.g., from
+>> __ttm_dma_alloc_page() ... --> dma_alloc_coherent() --> platform
+>> specific hooks ... -> dma_generic_alloc_coherent() [on x86_64] -->
+>> dma_alloc_from_contiguous()
+>>
+>> dma_alloc_from_contiguous() is a no-op without CONFIG_DMA_CMA, or
+>when
+>> the machine is booted with kernel boot cmdline parameter "cma=0", so
+>> it triggers the fast alloc_pages_node() fallback at least on x86_64.
+>>
+>> With CMA, this function becomes progressively more slow with every
+>> minute of desktop use, e.g., runtimes going up from < 0.3 usecs to
+>> hundreds or thousands of microseconds (before it gives up and
+>> alloc_pages_node() fallback is used), so this causes the
+>> multi-second/minute hangs of the desktop.
+>>
+>> So it seems ttm memory allocations quickly fragment and/or exhaust
+>the
+>> CMA memory area, and dma_alloc_from_contiguous() tries very hard to
+>> find a fitting hole big enough to satisfy allocations with a retry
+>> loop (see
+>>
+>http://lxr.free-electrons.com/source/drivers/base/dma-contiguous.c#L339)
+>> that takes forever.
+
+I am curious why it does not end up using the pool. As in use the TTM DMA pool to pick pages instead of allocating (and freeing) new ones?
+
+>>
+>> This is not good, also not for other devices which actually need a
+>> non-fragmented CMA for DMA, so what to do? I doubt most current gpus
+>> still need physically contiguous dma memory, maybe with exception of
+>> some embedded gpus?
+
+Oh. If I understood you correctly - the CMA ends up giving huge chunks of contiguous area. But if the sizes are 4kb I wonder why it would do that?
+
+The modern GPUs on x86 can deal with scatter gather and as you surmise don't need contiguous physical contiguous areas.
+>>
+>> My naive approach would be to add a new gfp_t flag a la
+>> ___GFP_AVOIDCMA, and make callers of dma_alloc_from_contiguous()
+>> refrain from doing so if they have some fallback for getting memory.
+>> And then add that flag to ttm's ttm_dma_populate() gfp_flags, e.g.,
+>> around here:
+>>
+>http://lxr.free-electrons.com/source/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c#L884
+>>
+>> However i'm not familiar enough with memory management, so likely
+>> greater minds here have much better ideas on how to deal with this?
+>>
+
+That is a bit of hack to deal with CMA being slow.
+
+Hmm. Let's first figure out why TTM DMA pool is not reusing pages.
+>> thanks,
+>> -mario
+>>
+>> Typical snippet from an example trace of a badly stalling desktop
+>with
+>> CMA (alloc_pages_node() fallback may have been missing in this traces
+>> ftrace_filter settings):
+>>
+>> 1)               |                          ttm_dma_pool_get_pages
+>> [ttm]() {
+>>  1)               | ttm_dma_page_pool_fill_locked [ttm]() {
+>>  1)               | ttm_dma_pool_alloc_new_pages [ttm]() {
+>>  1)               | __ttm_dma_alloc_page [ttm]() {
+>>  1)               | dma_generic_alloc_coherent() {
+>>  1) ! 1873.071 us | dma_alloc_from_contiguous();
+>>  1) ! 1874.292 us |                                  }
+>>  1) ! 1875.400 us |                                }
+>>  1)               | __ttm_dma_alloc_page [ttm]() {
+>>  1)               | dma_generic_alloc_coherent() {
+>>  1) ! 1868.372 us | dma_alloc_from_contiguous();
+>>  1) ! 1869.586 us |                                  }
+>>  1) ! 1870.053 us |                                }
+>>  1)               | __ttm_dma_alloc_page [ttm]() {
+>>  1)               | dma_generic_alloc_coherent() {
+>>  1) ! 1871.085 us | dma_alloc_from_contiguous();
+>>  1) ! 1872.240 us |                                  }
+>>  1) ! 1872.669 us |                                }
+>>  1)               | __ttm_dma_alloc_page [ttm]() {
+>>  1)               | dma_generic_alloc_coherent() {
+>>  1) ! 1888.934 us | dma_alloc_from_contiguous();
+>>  1) ! 1890.179 us |                                  }
+>>  1) ! 1890.608 us |                                }
+>>  1)   0.048 us    | ttm_set_pages_caching [ttm]();
+>>  1) ! 7511.000 us |                              }
+>>  1) ! 7511.306 us |                            }
+>>  1) ! 7511.623 us |                          }
+>>
+>> The good case (with cma=0 kernel cmdline, so
+>> dma_alloc_from_contiguous() no-ops,)
+>>
+>> 0)               |                          ttm_dma_pool_get_pages
+>> [ttm]() {
+>>  0)               | ttm_dma_page_pool_fill_locked [ttm]() {
+>>  0)               | ttm_dma_pool_alloc_new_pages [ttm]() {
+>>  0)               | __ttm_dma_alloc_page [ttm]() {
+>>  0)               | dma_generic_alloc_coherent() {
+>>  0)   0.171 us    | dma_alloc_from_contiguous();
+>>  0)   0.849 us    | __alloc_pages_nodemask();
+>>  0)   3.029 us    |                                  }
+>>  0)   3.882 us    |                                }
+>>  0)               | __ttm_dma_alloc_page [ttm]() {
+>>  0)               | dma_generic_alloc_coherent() {
+>>  0)   0.037 us    | dma_alloc_from_contiguous();
+>>  0)   0.163 us    | __alloc_pages_nodemask();
+>>  0)   1.408 us    |                                  }
+>>  0)   1.719 us    |                                }
+>>  0)               | __ttm_dma_alloc_page [ttm]() {
+>>  0)               | dma_generic_alloc_coherent() {
+>>  0)   0.035 us    | dma_alloc_from_contiguous();
+>>  0)   0.153 us    | __alloc_pages_nodemask();
+>>  0)   1.454 us    |                                  }
+>>  0)   1.720 us    |                                }
+>>  0)               | __ttm_dma_alloc_page [ttm]() {
+>>  0)               | dma_generic_alloc_coherent() {
+>>  0)   0.036 us    | dma_alloc_from_contiguous();
+>>  0)   0.112 us    | __alloc_pages_nodemask();
+>>  0)   1.211 us    |                                  }
+>>  0)   1.541 us    |                                }
+>>  0)   0.035 us    | ttm_set_pages_caching [ttm]();
+>>  0) + 10.902 us   |                              }
+>>  0) + 11.577 us   |                            }
+>>  0) + 11.988 us   |                          }
+>>
+>> _______________________________________________
+>> dri-devel mailing list
+>> dri-devel@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+
+
