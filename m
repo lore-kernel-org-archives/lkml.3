@@ -1,136 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843AbaHIP1y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 11:27:54 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:36977 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670AbaHIP1w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 11:27:52 -0400
+	id S1751787AbaHIPde (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 11:33:34 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:51199 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751658AbaHIPdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Aug 2014 11:33:32 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, Sonny Rao <sonnyrao@chromium.org>,
+        eddie.cai@rock-chips.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pinctrl: Add mux options 3 and 4 for rockchip pinctrl
+Date: Sat, 09 Aug 2014 17:34:45 +0200
+Message-ID: <10830677.MYpxgOr8EG@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1407536949-31323-1-git-send-email-dianders@chromium.org>
+References: <1407536949-31323-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <CAOesGMjjLHOaBJZwFENaWW41KFsNZ3pUqiYk0jtet=8NFvce3g@mail.gmail.com>
-References: <20140805130926.4e8c8fe5@canb.auug.org.au>
-	<53E0736E.7030901@samsung.com>
-	<CAOesGMjjLHOaBJZwFENaWW41KFsNZ3pUqiYk0jtet=8NFvce3g@mail.gmail.com>
-Date: Sat, 9 Aug 2014 08:27:51 -0700
-Message-ID: <CAOesGMg=kFM_9ksgoOXgqLFjzoE38tCuPy7pxbG5F_j5KovkVA@mail.gmail.com>
-Subject: Re: linux-next: build failures after merge of the drm tree
-From: Olof Johansson <olof@lixom.net>
-To: YoungJun Cho <yj44.cho@samsung.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Airlie <airlied@linux.ie>,
-        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Wood <thomas.wood@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Inki Dae <daeinki@gmail.com>, Rahul Sharma <rahul.sharma@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 8, 2014 at 2:40 PM, Olof Johansson <olof@lixom.net> wrote:
-> On Mon, Aug 4, 2014 at 11:02 PM, YoungJun Cho <yj44.cho@samsung.com> wrote:
->> Hi Stephen and Dave,
->>
->>
->> On 08/05/2014 12:09 PM, Stephen Rothwell wrote:
->>>
->>> Hi Dave,
->>>
->>> After merging the drm tree, today's linux-next build (x86_64
->>> allmodconfig) failed like this:
->>>
->>> ERROR: "drm_sysfs_connector_remove" [drivers/gpu/drm/i2c/tda998x.ko]
->>> undefined!
->>> ERROR: "drm_sysfs_connector_add" [drivers/gpu/drm/i2c/tda998x.ko]
->>> undefined!
->>>
->>> Caused by commit c707c3619ca8 ("drm/i2c: tda998x: add component
->>> support") interacting with commit 34ea3d386347 ("drm: add register and
->>> unregister functions for connectors").  Maybe it should have been fixed
->>> up in the merge commit 920f946428b7 ("Merge branch 'tda998x-devel' of
->>> git://ftp.arm.linux.org.uk/~rmk/linux-cubox into drm-next")?
->>>
->>> I reverted commit c707c3619ca8 for today.
->>>
->>> But then the arm multi_v7_defconfig build produced these errors:
->>>
->>> ERROR (phandle_references): Reference to non-existent node or label
->>> "disp_pd"
->>>
->>> ERROR: Input tree has errors, aborting (use -f to force output)
->>> make[2]: *** [arch/arm/boot/dts/exynos5420-arndale-octa.dtb] Error 2
->>> make[2]: *** Waiting for unfinished jobs....
->>> ERROR (phandle_references): Reference to non-existent node or label
->>> "disp_pd"
->>>
->>> ERROR: Input tree has errors, aborting (use -f to force output)
->>> make[2]: *** [arch/arm/boot/dts/exynos5420-smdk5420.dtb] Error 2
->>> ERROR (phandle_references): Reference to non-existent node or label
->>> "disp_pd"
->>>
->>> ERROR: Input tree has errors, aborting (use -f to force output)
->>> ERROR (phandle_references): Reference to non-existent node or label
->>> "disp_pd"
->>>
->>> make[2]: *** [arch/arm/boot/dts/exynos5800-peach-pi.dtb] Error 2
->>> ERROR: Input tree has errors, aborting (use -f to force output)
->>>
->>> Caused by commit 5a8da524049c ("ARM: dts: exynos5420: add dsi node")
->>> interacting with commit d51cad7df871 ("ARM: dts: remove display power
->>> domain for exynos5420") from the arm-soc tree.
->>>
->>
->> I missed the patch "ARM: dts: remove display power domain for exynos5420" in
->> linux-samsung-soc mail thread.
->>
->> In my test without power domain property, the exynos5420 dsi master driver
->> works well.
->>
->>
->>> I applied this merge fix patch:
->>>
->>> From: Stephen Rothwell <sfr@canb.auug.org.au>
->>> Date: Tue, 5 Aug 2014 13:03:01 +1000
->>> Subject: [PATCH] ARM: dts: exynos5420: remove disp_pd
->>>
->>> per comit d51cad7df871 ("ARM: dts: remove display power
->>> domain for exynos5420").
->>>
->>> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
->>> ---
->>>   arch/arm/boot/dts/exynos5420.dtsi | 1 -
->>>   1 file changed, 1 deletion(-)
->>>
->>> diff --git a/arch/arm/boot/dts/exynos5420.dtsi
->>> b/arch/arm/boot/dts/exynos5420.dtsi
->>> index 95ec37dff3e8..bfe056d9148c 100644
->>> --- a/arch/arm/boot/dts/exynos5420.dtsi
->>> +++ b/arch/arm/boot/dts/exynos5420.dtsi
->>> @@ -525,7 +525,6 @@
->>>                 compatible = "samsung,exynos5410-mipi-dsi";
->>>                 reg = <0x14500000 0x10000>;
->>>                 interrupts = <0 82 0>;
->>> -               samsung,power-domain = <&disp_pd>;
->>>                 phys = <&mipi_phy 1>;
->>>                 phy-names = "dsim";
->>>                 clocks = <&clock CLK_DSIM1>, <&clock CLK_SCLK_MIPI1>;
->>>
->>
->> Tested-by: YoungJun Cho <yj44.cho@samsung.com>
->
-> Sigh, now Linus' tree is broken because of this because nobody picked it up.
->
-> Dave, can you revert the original change, please? (5a8da524049c).
->
-> DTS changes like these shouldn't go through driver trees in the first place. :(
+Am Freitag, 8. August 2014, 15:29:09 schrieb Doug Anderson:
+> Newer Rockchip SoCs have more muxing slots.  Add slots 3 and 4 since
+> the rk3288 table goes all the way up to 4.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Still no reply? I'm including the above patch in my current set of fixes.
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
 
 
--Olof
+> ---
+>  Documentation/devicetree/bindings/pinctrl/rockchip,pinctrl.txt | 6 +++---
+>  include/dt-bindings/pinctrl/rockchip.h                         | 2 ++
+>  2 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/pinctrl/rockchip,pinctrl.txt
+> b/Documentation/devicetree/bindings/pinctrl/rockchip,pinctrl.txt index
+> 4658b69..388b213 100644
+> --- a/Documentation/devicetree/bindings/pinctrl/rockchip,pinctrl.txt
+> +++ b/Documentation/devicetree/bindings/pinctrl/rockchip,pinctrl.txt
+> @@ -2,8 +2,8 @@
+> 
+>  The Rockchip Pinmux Controller, enables the IC
+>  to share one PAD to several functional blocks. The sharing is done by
+> -multiplexing the PAD input/output signals. For each PAD there are up to
+> -4 muxing options with option 0 being the use as a GPIO.
+> +multiplexing the PAD input/output signals. For each PAD there are several
+> +muxing options with option 0 being the use as a GPIO.
+> 
+>  Please refer to pinctrl-bindings.txt in this directory for details of the
+>  common pinctrl bindings used by client devices, including the meaning of
+> the @@ -58,7 +58,7 @@ Deprecated properties for gpio sub nodes:
+>  Required properties for pin configuration node:
+>    - rockchip,pins: 3 integers array, represents a group of pins mux and
+> config setting. The format is rockchip,pins = <PIN_BANK PIN_BANK_IDX MUX
+> &phandle>. -    The MUX 0 means gpio and MUX 1 to 3 mean the specific
+> device function. +    The MUX 0 means gpio and MUX 1 to N mean the specific
+> device function. The phandle of a node containing the generic pinconfig
+> options to use, as described in pinctrl-bindings.txt in this directory.
+> 
+> diff --git a/include/dt-bindings/pinctrl/rockchip.h
+> b/include/dt-bindings/pinctrl/rockchip.h index cd5788b..743e66a 100644
+> --- a/include/dt-bindings/pinctrl/rockchip.h
+> +++ b/include/dt-bindings/pinctrl/rockchip.h
+> @@ -28,5 +28,7 @@
+>  #define RK_FUNC_GPIO	0
+>  #define RK_FUNC_1	1
+>  #define RK_FUNC_2	2
+> +#define RK_FUNC_3	3
+> +#define RK_FUNC_4	4
+> 
+>  #endif
+
