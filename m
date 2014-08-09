@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751129AbaHIDIs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 23:08:48 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:52191 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804AbaHIDIr (ORCPT
+	id S1751125AbaHIDtp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 23:49:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34807 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922AbaHIDto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 23:08:47 -0400
-Date: Sat, 9 Aug 2014 11:08:22 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Kees Cook <keescook@chromium.org>
-Cc: Dan Streetman <ddstreet@ieee.org>, Greg KH <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Linux-MM <linux-mm@kvack.org>, Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [PATCH] mm/zpool: use prefixed module loading
-Message-ID: <20140809030822.GA9422@gondor.apana.org.au>
-References: <20140808075316.GA21919@www.outflux.net>
- <CALZtONBNEg7kzUtwKihQuAU48MNh5NjhZcWoOxe-1-vgWqSLiw@mail.gmail.com>
- <CAGXu5jL3GjrqsixS6U+GYD1pxAOOcXsXbt5XOVC8KhZB+naXAA@mail.gmail.com>
+	Fri, 8 Aug 2014 23:49:44 -0400
+Date: Fri, 8 Aug 2014 20:49:11 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.16 00/17] 3.16.1-stable review
+Message-ID: <20140809034911.GA2348@kroah.com>
+References: <20140808213457.511493898@linuxfoundation.org>
+ <53E57279.1030106@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jL3GjrqsixS6U+GYD1pxAOOcXsXbt5XOVC8KhZB+naXAA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53E57279.1030106@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 05:06:41PM -0700, Kees Cook wrote:
->
-> I think we need to fix zswap now before it gets too far, and likely
-> adjust the crypto API to use a module prefix as well. Perhaps we need
-> a "crypto-" prefix?
+On Fri, Aug 08, 2014 at 05:59:37PM -0700, Guenter Roeck wrote:
+> On 08/08/2014 02:35 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.16.1 release.
+> >There are 17 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Sun Aug 10 21:34:49 UTC 2014.
+> >Anything received after that time might be too late.
+> >
+> 
+> Build results:
+> 	total: 136 pass: 136 fail: 0
 
-Yes I think a crypto- prefix would make sense.  Most crypto
-algorithms should be providing an alias already so it's mostly
-just changing the aliases.
+That's more than 3.15, nice!
 
-Patches are welcome :)
+Thanks for testing all of these and letting me know.
 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+greg k-h
