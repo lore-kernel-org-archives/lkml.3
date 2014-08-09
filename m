@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594AbaHILv2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 07:51:28 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:41276 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaHILv0 (ORCPT
+	id S1751581AbaHIMNJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 08:13:09 -0400
+Received: from mail-wg0-f65.google.com ([74.125.82.65]:47108 "EHLO
+	mail-wg0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123AbaHIMNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 07:51:26 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: clm@fb.com, jbacik@fb.com
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH] btrfs: Drop stray check of fixup_workers creation
-Date: Sat,  9 Aug 2014 14:51:15 +0300
-Message-Id: <1407585075-31035-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 1.8.5.5
+	Sat, 9 Aug 2014 08:13:05 -0400
+Date: Sat, 9 Aug 2014 14:13:00 +0200
+From: Janek Kozicki <janek.listy.mailowe@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: 3.16 crashes on resume from Suspend-To-disk, Intel pci_bus
+ problem?
+Message-ID: <20140809141300.2b6f55e6@absurd>
+In-Reply-To: <20140809115643.5b124e87@absurd>
+References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
+	<20140805115834.5e5e76f0@absurd>
+	<20140805190709.2b19c10a@absurd>
+	<140743930.1Lg0eFFrXs@vostro.rjw.lan>
+	<s5h4mxo3aot.wl%tiwai@suse.de>
+	<20140808182559.643f3b33@absurd>
+	<s5hegwqghsu.wl%tiwai@suse.de>
+	<20140809115643.5b124e87@absurd>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The issue was introduced in a79b7d4b3e8118f265dcb4bdf9a572c392f02708,
-adding allocation of extent_workers, so this stray check is surely not
-meant to be a check of something else.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=82021
-Reported-by: Maks Naumov <maksqwe1@ukr.net>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
----
- fs/btrfs/disk-io.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> PS: it appears that my email account has problems dealing with so much
+> email traffic. I will monitor archives online in this thread, and
+> please reply both to mailing list and my email.
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 08e65e9..1881713 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -2601,7 +2601,7 @@ int open_ctree(struct super_block *sb,
- 	      fs_info->endio_freespace_worker && fs_info->rmw_workers &&
- 	      fs_info->caching_workers && fs_info->readahead_workers &&
- 	      fs_info->fixup_workers && fs_info->delayed_workers &&
--	      fs_info->fixup_workers && fs_info->extent_workers &&
-+	      fs_info->extent_workers &&
- 	      fs_info->qgroup_rescan_workers)) {
- 		err = -ENOMEM;
- 		goto fail_sb_buffer;
--- 
-1.8.5.5
+I resubscribed the mailing list using another account:
+janek.listy.mailowe (at) gmail ! com  I hope this one will work.
+(also it's my current From: address)
 
+I hope that all of you received my message with full debug info, I see it in
+archives fortunately:
+
+http://lkml.iu.edu//hypermail/linux/kernel/1408.1/00372.html
+
+best regards
+Janek Kozicki
