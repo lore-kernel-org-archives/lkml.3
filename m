@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346AbaHIHjW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 03:39:22 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:58894 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117AbaHIHjV (ORCPT
+	id S1751414AbaHIHpq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 03:45:46 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55263 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaHIHpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 03:39:21 -0400
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Jeremiah Mahler <jmmahler@gmail.com>
-Subject: [PATCH v2 linux-next] arch/x86/mm: sparse 'tlb_single_page_flush_ceiling' warning
-Date: Sat,  9 Aug 2014 00:38:33 -0700
-Message-Id: <1407569913-4035-1-git-send-email-jmmahler@gmail.com>
-X-Mailer: git-send-email 2.1.0.rc1
-In-Reply-To: <alpine.DEB.2.02.1408081503270.15603@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1408081503270.15603@chino.kir.corp.google.com>
+	Sat, 9 Aug 2014 03:45:43 -0400
+Date: Sat, 9 Aug 2014 09:45:39 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        hannes@stressinduktion.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Reading large amounts from /dev/urandom broken
+Message-ID: <20140809074539.GA1467@amd.pavel.ucw.cz>
+References: <CANZNk81nyws__swPUoxz912wi5PJ2CBXbiLpJ-Jc4oLcX+J8vw@mail.gmail.com>
+ <20140723151459.GA6673@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140723151459.GA6673@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A sparse warning is generated about 'tlb_single_page_flush_ceiling'
-not being declared.
+Hi!
 
-  arch/x86/mm/tlb.c:177:15: warning: symbol
-  'tlb_single_page_flush_ceiling' was not declared. Should it be static?
+> I've inquired on the bugzilla why the reporter is abusing urandom in
+> this way.  The other commenter on the bug replicated the problem, but
+> that's not a "second bug report" in my book.
+> 
+> At the very least, this will probably cause me to insert a warning
+> printk: "insane user of /dev/urandom: [current->comm] requested %d
+> bytes" whenever someone tries to request more than 4k.
 
-Since it isn't used anywhere outside this file, fix the warning by
-making it static.
+Warn about my quick benchmark?
 
-Also, optimize the use of this variable by adding the __read_mostly
-directive.
+http://atrey.karlin.mff.cuni.cz/~pavel/quickbench.html
 
-Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
-Suggested-by: David Rientjes <rientjes@google.com>
----
+I don't see what is insane about it. Yes, there might be more
+effective generators of random bits, but that is not the point, this
+is quick&dirty attempt at benchmark.
 
-Notes:
-    I like the suggestion from David Rientjes, to add __read_mostly.
-    Patch updated.
+Also people will use cat /dev/urandom > /dev/sdX (and similar) to
+clean hard drives. There should be no need to warn about
+that. (Performance is going to be disk-limited anyway).
 
- arch/x86/mm/tlb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 1fe3398..bbe5766 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -174,7 +174,7 @@ void flush_tlb_current_task(void)
-  *
-  * This is in units of pages.
-  */
--unsigned long tlb_single_page_flush_ceiling = 33;
-+static unsigned long tlb_single_page_flush_ceiling __read_mostly = 33;
- 
- void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- 				unsigned long end, unsigned long vmflag)
+									Pavel
 -- 
-2.1.0.rc1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
