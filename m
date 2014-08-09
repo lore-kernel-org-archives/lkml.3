@@ -1,128 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaHIK5J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 06:57:09 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:38602 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaHIK5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 06:57:03 -0400
-Message-ID: <53E5FE78.4030903@hitachi.com>
-Date: Sat, 09 Aug 2014 19:56:56 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1751562AbaHIK5w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 06:57:52 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51524 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750904AbaHIK5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Aug 2014 06:57:50 -0400
+Date: Sat, 9 Aug 2014 12:57:42 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC PATCH] Flipped jump labels
+Message-ID: <20140809105742.GA5910@pd.tnic>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, bobby.prani@gmail.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: Re: [PATCH v3 tip/core/rcu 3/9] rcu: Add synchronous grace-period
- waiting for RCU-tasks
-References: <20140807150031.GB5821@linux.vnet.ibm.com> <20140807152600.GW9918@twins.programming.kicks-ass.net> <20140807172753.GG3588@twins.programming.kicks-ass.net> <20140807184635.GI3588@twins.programming.kicks-ass.net> <20140807154907.6f59cf6e@gandalf.local.home> <20140807155326.18481e66@gandalf.local.home> <20140807200813.GB3935@laptop> <20140807171823.1a481290@gandalf.local.home> <20140808064020.GZ9918@twins.programming.kicks-ass.net> <20140808101221.21056900@gandalf.local.home> <20140808142810.GV5821@linux.vnet.ibm.com>
-In-Reply-To: <20140808142810.GV5821@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/08 23:28), Paul E. McKenney wrote:
-> On Fri, Aug 08, 2014 at 10:12:21AM -0400, Steven Rostedt wrote:
->> On Fri, 8 Aug 2014 08:40:20 +0200
->> Peter Zijlstra <peterz@infradead.org> wrote:
->>
->>> On Thu, Aug 07, 2014 at 05:18:23PM -0400, Steven Rostedt wrote:
->>>> On Thu, 7 Aug 2014 22:08:13 +0200
->>>> Peter Zijlstra <peterz@infradead.org> wrote:
->>>>
->>>>> OK, you've got to start over and start at the beginning, because I'm
->>>>> really not understanding this..
->>>>>
->>>>> What is a 'trampoline' and what are you going to use them for.
->>>>
->>>> Great question! :-)
->>>>
->>>> The trampoline is some code that is used to jump to and then jump
->>>> someplace else. Currently, we use this for kprobes and ftrace. For
->>>> ftrace we have the ftrace_caller trampoline, which is static. When
->>>> booting, most functions in the kernel call the mcount code which
->>>> simply returns without doing anything. This too is a "trampoline". At
->>>> boot, we convert these calls to nops (as you already know). When we
->>>> enable callbacks from functions, we convert those calls to call
->>>> "ftrace_caller" which is a small assembly trampoline that will call
->>>> some function that registered with ftrace.
->>>>
->>>> Now why do we need the call_rcu_task() routine?
->>>>
->>>> Right now, if you register multiple callbacks to ftrace, even if they
->>>> are not tracing the same routine, ftrace has to change ftrace_caller to
->>>> call another trampoline (in C), that does a loop of all ops registered
->>>> with ftrace, and compares the function to the ops hash tables to see if
->>>> the ops function should be called for that function.
->>>>
->>>> What we want to do is to create a dynamic trampoline that is a copy of
->>>> the ftrace_caller code, but instead of calling this list trampoline, it
->>>> calls the ops function directly. This way, each ops registered with
->>>> ftrace can have its own custom trampoline that when called will only
->>>> call the ops function and not have to iterate over a list. This only
->>>> happens if the function being traced only has this one ops registered.
->>>> For functions with multiple ops attached to it, we need to call the
->>>> list anyway. But for the majority of the cases, this is not the case.
->>>>
->>>> The one caveat for this is, how do we free this custom trampoline when
->>>> the ops is done with it? Especially for users of ftrace that
->>>> dynamically create their own ops (like perf, and ftrace instances).
->>>>
->>>> We need to find a way to free it, but unfortunately, there's no way to
->>>> know when it is safe to free it. There's no way to disable preemption
->>>> or have some other notifier to let us know if a task has jumped to this
->>>> trampoline and has been preempted (sleeping). The only safe way to know
->>>> that no task is on the trampoline is to remove the calls to it,
->>>> synchronize the CPUS (so the trampolines are not even in the caches),
->>>> and then wait for all tasks to go through some quiescent state. This
->>>> state happens to be either not running, in userspace, or when it
->>>> voluntarily calls schedule. Because nothing that uses this trampoline
->>>> should do that, and if the task voluntarily calls schedule, we know
->>>> it's not on the trampoline.
->>>>
->>>> Make sense?
->>>
->>> Ok, so they're purely used in the function prologue/epilogue callchain.
->>
->> No, they are also used by optimized kprobes. This is why optimized
->> kprobes depend on !CONFIG_PREEMPT. [ added Masami to the discussion ].
->>
->> Which reminds me. On !CONFIG_PREEMPT, call_rcu_task() should be
->> equivalent to call_rcu_sched().
-> 
-> Almost.  One difference is that call_rcu_sched() won't wait for
-> idle-task execution.  So presumably you are currently prohibited from
-> putting kprobes in idle tasks.
+Hi dudes,
 
-No need to prohibit all kprobes, just prohibit optimizing if the kprobe
-is in the idle context (if I can detect it). Since I've already replaced
-text-area based __kprobes with list-based NOKPROBE_SYMOBOL in core kernel,
-I think it is an option to add NOOPTPROBE_SYMBOL for that purpose.
+with the current impl. of jump labels, people can't really do the
+following:
 
-Thank you,
+---
+JMP unlikely_code
+likely_code
 
-> Oleg slipped this one past me, and for more than a full hour,
-> (https://lkml.org/lkml/2014/8/2/18), but this time I remembered.  ;-)
-> 
-> 							Thanx, Paul
+unlikely_code:
+unlikely code
+---
+
+and after some initialization queries overwrite the JMP with a NOP so
+that the likely code gets executed at 0 cost.
+
+The issue is that jump labels unconditionally add NOPs by default
+(see arch_static_branch). For example, native_sched_clock() gets the
+following code layout here:
+
+--
+NOP
+unlikely code (which computes time in ns from jiffies)
+likely code (which does RDTSC)
+--
+
+Yes, unlikely code comes first.
+
+when the jump labels get initialized and all checks done, at runtime we
+have this:
+
+	   0xffffffff8100ce40 <sched_clock>:    push   %rbp
+	   0xffffffff8100ce41 <sched_clock+1>:  mov    %rsp,%rbp
+	   0xffffffff8100ce44 <sched_clock+4>:  and    $0xfffffffffffffff0,%rsp
+
+unconditional JMP!!!
+
+	   0xffffffff8100ce48 <sched_clock+8>:  jmpq   0xffffffff8100ce70 <sched_clock+48>
+
+unlikely code using jiffies
+
+	   0xffffffff8100ce4d <sched_clock+13>: mov    0x9a71ac(%rip),%r8        # 0xffffffff819b4000 <jiffies_64>
+	   0xffffffff8100ce54 <sched_clock+20>: movabs $0xffc2f745d964b800,%rax
+	   0xffffffff8100ce5e <sched_clock+30>: leaveq 
+	   0xffffffff8100ce5f <sched_clock+31>: imul   $0x3d0900,%r8,%rdx
+	   0xffffffff8100ce66 <sched_clock+38>: add    %rdx,%rax
+	   0xffffffff8100ce69 <sched_clock+41>: retq   
+	   0xffffffff8100ce6a <sched_clock+42>: nopw   0x0(%rax,%rax,1)
+
+likely code using RDTSC, see JMP target address.
+
+	   0xffffffff8100ce70 <sched_clock+48>: rdtsc
 
 
+so what we end up getting is not really helping because we always get to
+pay for that JMP on all modern systems which sport RDTSC even though we
+shouldn't really.
+
+And remember this is not something cheap: sched_clock uses the TSC
+even if it is unstable so we're always jumping like insane and
+unconditionally.
+
+So, long story short, we want this, instead:
+
+	   0xffffffff8100cf10 <sched_clock>:    push   %rbp
+	   0xffffffff8100cf11 <sched_clock+1>:  mov    %rsp,%rbp
+	   0xffffffff8100cf14 <sched_clock+4>:  and    $0xfffffffffffffff0,%rsp
+
+unconditional JMP is nopped out
+
+	   0xffffffff8100cf18 <sched_clock+8>:  data32 data32 data32 xchg %ax,%ax
+
+likely code which comes first in the function so all the advantages from
+it to front end, branch pred, yadda yadda, get to be enjoyed :)
+
+	   0xffffffff8100cf1d <sched_clock+13>: rdtsc  
+	   0xffffffff8100cf1f <sched_clock+15>: mov    %eax,%esi
+	   0xffffffff8100cf21 <sched_clock+17>: mov    %rdx,%rax
+	   0xffffffff8100cf24 <sched_clock+20>: shl    $0x20,%rax
+	   0xffffffff8100cf28 <sched_clock+24>: or     %rsi,%rax
+	   0xffffffff8100cf2b <sched_clock+27>: mov    %rax,%rcx
+	   0xffffffff8100cf2e <sched_clock+30>: incl   %gs:0xb8e0
+	   0xffffffff8100cf36 <sched_clock+38>: mov    %gs:0x1d0c30,%rsi
+	   0xffffffff8100cf3f <sched_clock+47>: mov    %gs:0x1d0c38,%rax
+	   0xffffffff8100cf48 <sched_clock+56>: cmp    %rax,%rsi
+	   0xffffffff8100cf4b <sched_clock+59>: jne    0xffffffff8100cf90 <sched_clock+128>
+	   0xffffffff8100cf4d <sched_clock+61>: mov    (%rsi),%eax
+	   0xffffffff8100cf4f <sched_clock+63>: mul    %rcx
+	   0xffffffff8100cf52 <sched_clock+66>: shrd   $0xa,%rdx,%rax
+	   0xffffffff8100cf57 <sched_clock+71>: add    0x8(%rsi),%rax
+	   0xffffffff8100cf5b <sched_clock+75>: decl   %gs:0xb8e0
+	   0xffffffff8100cf63 <sched_clock+83>: je     0xffffffff8100cf88 <sched_clock+120>
+	   0xffffffff8100cf65 <sched_clock+85>: leaveq 
+	   0xffffffff8100cf66 <sched_clock+86>: retq   
+
+Done, we return here.
+
+	   0xffffffff8100cf67 <sched_clock+87>: nop
+
+unlikely code which does the jiffies math.
+
+	   0xffffffff8100cf68 <sched_clock+88>: mov    0x9a7091(%rip),%rax        # 0xffffffff819b4000 <jiffies_64>
+	   0xffffffff8100cf6f <sched_clock+95>: leaveq 
+	   0xffffffff8100cf70 <sched_clock+96>: imul   $0x3d0900,%rax,%rdx
+	   ...
+
+
+So basically what I'm proposing is a jump label type which is
+initialized by default to jump to the unlikely code and once
+initialization has happened, JMP gets overwritten.
+
+The things to pay attention here is
+
+* this label should be used in places where it is very likely for the
+jump to get overwritten. Basically the opposite to tracepoints for which
+the jump labels were created initially, to be mostly off.
+
+* It must be used in places where JMP gets overwritten only after some
+initialization done first.
+
+Anyway, below is a concept patch for myself to try the idea first - it
+seems to work here. Constructive ideas and suggestions are welcome, as
+always.
+
+---
+diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
+index 6a2cefb4395a..2d963c6489a8 100644
+--- a/arch/x86/include/asm/jump_label.h
++++ b/arch/x86/include/asm/jump_label.h
+@@ -30,6 +30,22 @@ l_yes:
+ 	return true;
+ }
+ 
++static __always_inline bool arch_static_branch_active(struct static_key *key)
++{
++	asm_volatile_goto("1:"
++		"jmp %l[l_yes]\n\t"
++		".byte " __stringify(GENERIC_NOP3) "\n\t"
++		".pushsection __jump_table,  \"aw\" \n\t"
++		_ASM_ALIGN "\n\t"
++		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
++		".popsection \n\t"
++		: :  "i" (key) : : l_yes);
++	return false;
++l_yes:
++	return true;
++}
++
++
+ #endif /* __KERNEL__ */
+ 
+ #ifdef CONFIG_X86_64
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 4ca327e900ae..81bc2c4a7eab 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -33,7 +33,7 @@ EXPORT_SYMBOL(tsc_khz);
+  */
+ static int __read_mostly tsc_unstable;
+ 
+-static struct static_key __use_tsc = STATIC_KEY_INIT;
++static struct static_key __use_tsc = STATIC_KEY_INIT_FALSE;
+ 
+ int tsc_clocksource_reliable;
+ 
+@@ -280,7 +280,7 @@ u64 native_sched_clock(void)
+ 	 *   very important for it to be as fast as the platform
+ 	 *   can achieve it. )
+ 	 */
+-	if (!static_key_false(&__use_tsc)) {
++	if (arch_static_branch_active(&__use_tsc)) {
+ 		/* No locking but a rare wrong value is not a big deal: */
+ 		return (jiffies_64 - INITIAL_JIFFIES) * (1000000000 / HZ);
+ 	}
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
