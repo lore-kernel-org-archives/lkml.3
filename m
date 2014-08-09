@@ -1,159 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067AbaHIQt7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 12:49:59 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:61238 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205AbaHIQt4 (ORCPT
+	id S1752013AbaHIQvg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 12:51:36 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:36299 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770AbaHIQve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 12:49:56 -0400
+	Sat, 9 Aug 2014 12:51:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <1407571352-33867-1-git-send-email-learnertilldeath@gmail.com>
-References: <1407571352-33867-1-git-send-email-learnertilldeath@gmail.com>
-Date: Sat, 9 Aug 2014 12:49:54 -0400
-Message-ID: <CAC-25o-qMVTsZ=pvXNDJGKTsubGd_sfVJ6AJmsov=Nrz3o9VxQ@mail.gmail.com>
-Subject: Re: [PATCH] drivers: fixed spelling of "celcius" to "celsius"
+In-Reply-To: <1407530482-4483-62-git-send-email-kamal@canonical.com>
+References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
+	<1407530482-4483-62-git-send-email-kamal@canonical.com>
+Date: Sat, 9 Aug 2014 12:51:31 -0400
+Message-ID: <CAC-25o-V+hjyYAWU99GM+JJiqyivrooXOVJVoW+PpZoBBuKEFg@mail.gmail.com>
+Subject: Re: [PATCH 3.13 061/259] thermal: hwmon: Make the check for critical
+ temp valid consistent
 From: "edubezval@gmail.com" <edubezval@gmail.com>
-To: Ankit <learnertilldeath@gmail.com>
-Cc: airlied@linux.ie, shahed.shaikh@qlogic.com, sre@kernel.org,
-        dbaryshkov@gmail.com, dwmw2@infradead.org,
-        Zhang Rui <rui.zhang@intel.com>, dri-devel@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Aaron Lu <aaron.lu@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ankit,
+Hello,
 
-On Sat, Aug 9, 2014 at 4:02 AM, Ankit <learnertilldeath@gmail.com> wrote:
-> Fixed spelling issue -- changed celcius to celsius
+On Fri, Aug 8, 2014 at 4:38 PM, Kamal Mostafa <kamal@canonical.com> wrote:
+> 3.13.11.6 -stable review patch.  If anyone has any objections, please let me know.
 >
-> Kernel version: mainline
+> ------------------
 >
-> Signed-off-by: Ankit <learnertilldeath@gmail.com>
-
-On the thermal part,
+> From: Aaron Lu <aaron.lu@intel.com>
+>
+> commit e8db5d6736a712a3e2280c0e31f4b301d85172d8 upstream.
+>
+> On 05/21/2014 04:22 PM, Aaron Lu wrote:
+>> On 05/21/2014 01:57 PM, Kui Zhang wrote:
+>>> Hello,
+>>>
+>>> I get following error when rmmod thermal.
+>>>
+>>> rmmod  thermal
+>>> Killed
+>
+> While dealing with this problem, I found another problem that also
+> results in a kernel crash on thermal module removal:
+>
+> From: Aaron Lu <aaron.lu@intel.com>
+> Date: Wed, 21 May 2014 16:05:38 +0800
+> Subject: [PATCH] thermal: hwmon: Make the check for critical temp valid consistent
+>
+> We used the tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, temp)
+> to decide if we need to create the temp_crit attribute file but we just
+> check if tz->ops->get_crit_temp exists to decide if we need to remove
+> that attribute file. Some ACPI thermal zone doesn't have a valid critical
+> trip point and that would result in removing a non-existent device file
+> on thermal module unload.
+>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 
 Acked-by: Eduardo Valentin <edubezval@gmail.com>
 
-but I think might be worth splitting the change per domain, so we
-avoid merge conflicts. The change is just one liner though.
-
 > ---
->  drivers/gpu/drm/nouveau/core/engine/graph/nv10.c  | 4 ++--
->  drivers/gpu/drm/nouveau/core/engine/graph/nv20.c  | 2 +-
->  drivers/gpu/drm/nouveau/core/engine/graph/nv25.c  | 2 +-
->  drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c | 2 +-
->  drivers/power/ds2780_battery.c                    | 2 +-
->  drivers/power/ds2782_battery.c                    | 2 +-
->  drivers/thermal/thermal_core.c                    | 2 +-
->  7 files changed, 8 insertions(+), 8 deletions(-)
+>  drivers/thermal/thermal_hwmon.c | 33 ++++++++++++++++++---------------
+>  1 file changed, 18 insertions(+), 15 deletions(-)
 >
-> diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nv10.c b/drivers/gpu/drm/nouveau/core/engine/graph/nv10.c
-> index 4532f7e..1faeeb1 100644
-> --- a/drivers/gpu/drm/nouveau/core/engine/graph/nv10.c
-> +++ b/drivers/gpu/drm/nouveau/core/engine/graph/nv10.c
-> @@ -451,7 +451,7 @@ nv10_graph_sclass[] = {
->         { 0x0093, &nv04_graph_ofuncs }, /* surf3d */
->         { 0x0094, &nv04_graph_ofuncs }, /* ttri */
->         { 0x0095, &nv04_graph_ofuncs }, /* mtri */
-> -       { 0x0056, &nv04_graph_ofuncs }, /* celcius */
-> +       { 0x0056, &nv04_graph_ofuncs }, /* celsius */
->         {},
->  };
->
-> @@ -474,7 +474,7 @@ nv15_graph_sclass[] = {
->         { 0x0093, &nv04_graph_ofuncs }, /* surf3d */
->         { 0x0094, &nv04_graph_ofuncs }, /* ttri */
->         { 0x0095, &nv04_graph_ofuncs }, /* mtri */
-> -       { 0x0096, &nv04_graph_ofuncs }, /* celcius */
-> +       { 0x0096, &nv04_graph_ofuncs }, /* celsius */
->         {},
->  };
->
-> diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nv20.c b/drivers/gpu/drm/nouveau/core/engine/graph/nv20.c
-> index d145e08..eb00689 100644
-> --- a/drivers/gpu/drm/nouveau/core/engine/graph/nv20.c
-> +++ b/drivers/gpu/drm/nouveau/core/engine/graph/nv20.c
-> @@ -31,7 +31,7 @@ nv20_graph_sclass[] = {
->         { 0x0072, &nv04_graph_ofuncs, NULL }, /* beta4 */
->         { 0x0089, &nv04_graph_ofuncs, NULL }, /* sifm */
->         { 0x008a, &nv04_graph_ofuncs, NULL }, /* ifc */
-> -       { 0x0096, &nv04_graph_ofuncs, NULL }, /* celcius */
-> +       { 0x0096, &nv04_graph_ofuncs, NULL }, /* celsius */
->         { 0x0097, &nv04_graph_ofuncs, NULL }, /* kelvin */
->         { 0x009e, &nv04_graph_ofuncs, NULL }, /* swzsurf */
->         { 0x009f, &nv04_graph_ofuncs, NULL }, /* imageblit */
-> diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nv25.c b/drivers/gpu/drm/nouveau/core/engine/graph/nv25.c
-> index 7a80d00..fcfe1c5 100644
-> --- a/drivers/gpu/drm/nouveau/core/engine/graph/nv25.c
-> +++ b/drivers/gpu/drm/nouveau/core/engine/graph/nv25.c
-> @@ -28,7 +28,7 @@ nv25_graph_sclass[] = {
->         { 0x0072, &nv04_graph_ofuncs, NULL }, /* beta4 */
->         { 0x0089, &nv04_graph_ofuncs, NULL }, /* sifm */
->         { 0x008a, &nv04_graph_ofuncs, NULL }, /* ifc */
-> -       { 0x0096, &nv04_graph_ofuncs, NULL }, /* celcius */
-> +       { 0x0096, &nv04_graph_ofuncs, NULL }, /* celsius */
->         { 0x009e, &nv04_graph_ofuncs, NULL }, /* swzsurf */
->         { 0x009f, &nv04_graph_ofuncs, NULL }, /* imageblit */
->         { 0x0597, &nv04_graph_ofuncs, NULL }, /* kelvin */
-> diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c
-> index f5786d5..b0f7ab0 100644
-> --- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c
-> +++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c
-> @@ -1264,7 +1264,7 @@ static ssize_t qlcnic_hwmon_show_temp(struct device *dev,
->                 value = QLC_SHARED_REG_RD32(adapter, QLCNIC_ASIC_TEMP);
->
->         temperature = qlcnic_get_temp_val(value);
-> -       /* display millidegree celcius */
-> +       /* display millidegree celsius */
->         temperature *= 1000;
->         return sprintf(buf, "%u\n", temperature);
+> diff --git a/drivers/thermal/thermal_hwmon.c b/drivers/thermal/thermal_hwmon.c
+> index fdb0719..1967bee 100644
+> --- a/drivers/thermal/thermal_hwmon.c
+> +++ b/drivers/thermal/thermal_hwmon.c
+> @@ -140,6 +140,12 @@ thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
+>         return NULL;
 >  }
-> diff --git a/drivers/power/ds2780_battery.c b/drivers/power/ds2780_battery.c
-> index 9f418fa..bf7d4bd 100644
-> --- a/drivers/power/ds2780_battery.c
-> +++ b/drivers/power/ds2780_battery.c
-> @@ -210,7 +210,7 @@ static int ds2780_get_temperature(struct ds2780_device_info *dev_info,
->                 return ret;
 >
->         /*
-> -        * Temperature is measured in units of 0.125 degrees celcius, the
-> +        * Temperature is measured in units of 0.125 degrees celsius, the
->          * power_supply class measures temperature in tenths of degrees
->          * celsius. The temperature value is stored as a 10 bit number, plus
->          * sign in the upper bits of a 16 bit register.
-> diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
-> index 041f9b6..adc7d32 100644
-> --- a/drivers/power/ds2782_battery.c
-> +++ b/drivers/power/ds2782_battery.c
-> @@ -104,7 +104,7 @@ static int ds278x_get_temp(struct ds278x_info *info, int *temp)
->         int err;
+> +static bool thermal_zone_crit_temp_valid(struct thermal_zone_device *tz)
+> +{
+> +       unsigned long temp;
+> +       return tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, &temp);
+> +}
+> +
+>  int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+>  {
+>         struct thermal_hwmon_device *hwmon;
+> @@ -189,21 +195,18 @@ int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+>         if (result)
+>                 goto free_temp_mem;
 >
->         /*
-> -        * Temperature is measured in units of 0.125 degrees celcius, the
-> +        * Temperature is measured in units of 0.125 degrees celsius, the
->          * power_supply class measures temperature in tenths of degrees
->          * celsius. The temperature value is stored as a 10 bit number, plus
->          * sign in the upper bits of a 16 bit register.
-> diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> index 71b0ec0..e69db4f 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -691,7 +691,7 @@ passive_store(struct device *dev, struct device_attribute *attr,
->         if (!sscanf(buf, "%d\n", &state))
->                 return -EINVAL;
+> -       if (tz->ops->get_crit_temp) {
+> -               unsigned long temperature;
+> -               if (!tz->ops->get_crit_temp(tz, &temperature)) {
+> -                       snprintf(temp->temp_crit.name,
+> -                                sizeof(temp->temp_crit.name),
+> +       if (thermal_zone_crit_temp_valid(tz)) {
+> +               snprintf(temp->temp_crit.name,
+> +                               sizeof(temp->temp_crit.name),
+>                                 "temp%d_crit", hwmon->count);
+> -                       temp->temp_crit.attr.attr.name = temp->temp_crit.name;
+> -                       temp->temp_crit.attr.attr.mode = 0444;
+> -                       temp->temp_crit.attr.show = temp_crit_show;
+> -                       sysfs_attr_init(&temp->temp_crit.attr.attr);
+> -                       result = device_create_file(hwmon->device,
+> -                                                   &temp->temp_crit.attr);
+> -                       if (result)
+> -                               goto unregister_input;
+> -               }
+> +               temp->temp_crit.attr.attr.name = temp->temp_crit.name;
+> +               temp->temp_crit.attr.attr.mode = 0444;
+> +               temp->temp_crit.attr.show = temp_crit_show;
+> +               sysfs_attr_init(&temp->temp_crit.attr.attr);
+> +               result = device_create_file(hwmon->device,
+> +                                           &temp->temp_crit.attr);
+> +               if (result)
+> +                       goto unregister_input;
+>         }
 >
-> -       /* sanity check: values below 1000 millicelcius don't make sense
-> +       /* sanity check: values below 1000 millicelsius don't make sense
->          * and can cause the system to go into a thermal heart attack
->          */
->         if (state && state < 1000)
+>         mutex_lock(&thermal_hwmon_list_lock);
+> @@ -250,7 +253,7 @@ void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+>         }
+>
+>         device_remove_file(hwmon->device, &temp->temp_input.attr);
+> -       if (tz->ops->get_crit_temp)
+> +       if (thermal_zone_crit_temp_valid(tz))
+>                 device_remove_file(hwmon->device, &temp->temp_crit.attr);
+>
+>         mutex_lock(&thermal_hwmon_list_lock);
 > --
-> 1.8.3.4 (Apple Git-47)
+> 1.9.1
 >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
 
