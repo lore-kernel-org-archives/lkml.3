@@ -1,80 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaHIQke (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 12:40:34 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:33287 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875AbaHIQkd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 12:40:33 -0400
-Date: Sat, 9 Aug 2014 22:10:27 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] mfd: menelaus: remove null pointer dereference
-Message-ID: <20140809164027.GA20561@himangi-Dell>
+	id S1751966AbaHIQl3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 12:41:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42494 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751900AbaHIQlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Aug 2014 12:41:24 -0400
+Date: Sat, 9 Aug 2014 18:41:19 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: David Miller <davem@davemloft.net>, gregkh@linuxfoundation.org
+Cc: mcgrof@do-not-panic.com, tiwai@suse.de, linux-kernel@vger.kernel.org,
+        penguin-kernel@I-love.SAKURA.ne.jp, joseph.salisbury@canonical.com,
+        kay@vrfy.org, gnomes@lxorguk.ukuu.org.uk, tim.gardner@canonical.com,
+        pierre-fersing@pierref.org, akpm@linux-foundation.org, oleg@redhat.com,
+        bpoirier@suse.de, nagalakshmi.nandigama@avagotech.com,
+        praveen.krishnamoorthy@avagotech.com, sreekanth.reddy@avagotech.com,
+        abhijit.mahajan@avagotech.com, hariprasad@chelsio.com,
+        santosh@chelsio.com, MPT-FusionLinux.pdl@avagotech.com,
+        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred
+	probe from init
+Message-ID: <20140809164119.GI21930@wotan.suse.de>
+References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com> <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com> <20140730.151107.1328294951387764830.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140730.151107.1328294951387764830.davem@davemloft.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If vtg is NULL, it is not possible to access its mode_reg field. At all
-sites where the static function menelaus_set_voltage is called, the first
-argument is the address of a structure defined in the file. So, the null
-test is unnecessary and is removed. Also, a label is done away with.
+On Wed, Jul 30, 2014 at 03:11:07PM -0700, David Miller wrote:
+> From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+> Date: Mon, 28 Jul 2014 11:28:28 -0700
+> 
+> > Tetsuo bisected and found that commit 786235ee "kthread: make
+> > kthread_create() killable" modified kthread_create() to bail as
+> > soon as SIGKILL is received. This is causing some issues with
+> > some drivers and at times boot. Joseph then found that failures
+> > occur as the systemd-udevd process sends SIGKILL to modprobe if
+> > probe on a driver takes over 30 seconds. When this happens probe
+> > will fail on any driver, its why booting on some system will fail
+> > if the driver happens to be a storage related driver. Some folks
+> > have suggested fixing this by modifying kthread_create() to not
+> > leave upon SIGKILL [3], upon review Oleg rejected this change and
+> > the discussion was punted out to systemd to see if the default
+> > timeout could be increased from 30 seconds to 120. The opinion of
+> > the systemd maintainers is that the driver's behavior should
+> > be fixed [4]. Linus seems to agree [5], however more recently even
+> > networking drivers have been reported to fail on probe since just
+> > writing the firmware to a device and kicking it can take easy over
+> > 60 seconds [6]. Benjamim was able to trace the issues recently
+> > reported on cxgb4 down to the same systemd-udevd 30 second timeout [6].
+> > 
+> > This is an alternative solution which enables drivers that are
+> > known to take long to use deferred probe workqueue. This avoids
+> > the 30 second timeout and lets us annotate drivers with long
+> > init sequences.
+> > 
+> > As drivers determine a component is not yet available and needs
+> > to defer probe you'll be notified this happen upon init for each
+> > device but now with a message such as:
+> > 
+> > pci 0000:03:00.0: Driver cxgb4 requests probe deferral on init
+> > 
+> > You should see one of these per struct device probed.
+> 
+> It seems we're still discussing this.
+> 
+> I think I understand all of the underlying issues, and what I'll say
+> is that perhaps we should use what Greg KH requested but via a helper
+> that is easy to grep for.
+> 
+> I don't care if it's something like "module_long_probe_init()" and
+> "module_long_probe_exit()", but it just needs to be some properly
+> named interface which does the whole kthread or whatever bit.
 
-This problem was found using the following Coccinelle semantic match:
+I've tested the alternative kthread_run() proposal but unfortunately it
+does not help resolve the issue, the timeout is still hit and a SIGKILL
+still kills the driver probe. Please let me know how you'd all like us
+to proceed, these defer probe patches do help cure the issue though.
 
-// <smpl>
-@@
-expression E, E1;
-identifier f;
-statement S1,S2,S3;
-@@
+I should also note that these work around patches can only be done once we
+already know a driver fails to go over the timeout, root causing and
+associating driver issues to the timeout has been very difficult with a few
+drivers already, for this reason I've submitted a change for systemd to issue a
+warning instead of killing kmod usage on udev after a timeout, that would make
+this regression non-fatal, and let us more easily then hunt drivers that need
+fixing much easily [0] [1]. As noted we'd still want to have drivers easily
+annotated which require fixing, this orignal series would allow us to do that
+by hunting for delay_probe. If there alternative and preferred strategies
+please let me know.
 
-* if (E == NULL)
-{
-  ... when != if (E == NULL) S1 else S2
-      when != E = E1
-* E->f
-  ... when any
-  return ...;
-}
-else S3
-// </smpl>
+[0] http://lists.freedesktop.org/archives/systemd-devel/2014-August/021812.html
+[1] http://lists.freedesktop.org/archives/systemd-devel/2014-August/021821.html
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
-Not compile tested.
- drivers/mfd/menelaus.c | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-index 5e2667a..18ff56f 100644
---- a/drivers/mfd/menelaus.c
-+++ b/drivers/mfd/menelaus.c
-@@ -466,8 +466,6 @@ static int menelaus_set_voltage(const struct menelaus_vtg *vtg, int mV,
- 	struct i2c_client *c = the_menelaus->client;
- 
- 	mutex_lock(&the_menelaus->lock);
--	if (!vtg)
--		goto set_voltage;
- 
- 	ret = menelaus_read_reg(vtg->vtg_reg);
- 	if (ret < 0)
-@@ -482,7 +480,6 @@ static int menelaus_set_voltage(const struct menelaus_vtg *vtg, int mV,
- 	ret = menelaus_write_reg(vtg->vtg_reg, val);
- 	if (ret < 0)
- 		goto out;
--set_voltage:
- 	ret = menelaus_write_reg(vtg->mode_reg, mode);
- out:
- 	mutex_unlock(&the_menelaus->lock);
--- 
-1.9.1
-
+  Luis
