@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117AbaHIXoK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 19:44:10 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:58181 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380AbaHIXoI (ORCPT
+	id S1752091AbaHIXpV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 19:45:21 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:40744 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500AbaHIXpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 19:44:08 -0400
+	Sat, 9 Aug 2014 19:45:20 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] misc: ti-st: st_kim.c:  Cleaning up missing null-terminate after strncpy call
-Date: Sun, 10 Aug 2014 01:45:38 +0200
-Message-Id: <1407627938-24614-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Peng Tao <bergwolf@gmail.com>, Kees Cook <keescook@chromium.org>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Mike Sampson <mike@sambodata.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: lustre: lustre: libcfs: workitem.c:  Cleaning up missing null-terminate after strncpy call
+Date: Sun, 10 Aug 2014 01:46:49 +0200
+Message-Id: <1407628009-24701-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,21 +26,21 @@ Added a guaranteed null-terminate after call to strncpy.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/misc/ti-st/st_kim.c |    1 +
+ drivers/staging/lustre/lustre/libcfs/workitem.c |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-index 9d3dbb2..bce4468 100644
---- a/drivers/misc/ti-st/st_kim.c
-+++ b/drivers/misc/ti-st/st_kim.c
-@@ -593,6 +593,7 @@ static ssize_t store_dev_name(struct device *dev,
- 	struct kim_data_s *kim_data = dev_get_drvdata(dev);
- 	pr_debug("storing dev name >%s<", buf);
- 	strncpy(kim_data->dev_name, buf, count);
-+	kim_data->dev_name[count - 1] = '\n';
- 	pr_debug("stored dev name >%s<", kim_data->dev_name);
- 	return count;
- }
+diff --git a/drivers/staging/lustre/lustre/libcfs/workitem.c b/drivers/staging/lustre/lustre/libcfs/workitem.c
+index 0a03bf7..60326f2 100644
+--- a/drivers/staging/lustre/lustre/libcfs/workitem.c
++++ b/drivers/staging/lustre/lustre/libcfs/workitem.c
+@@ -365,6 +365,7 @@ cfs_wi_sched_create(char *name, struct cfs_cpt_table *cptab,
+ 		return -ENOMEM;
+ 
+ 	strncpy(sched->ws_name, name, CFS_WS_NAME_LEN);
++	sched->ws_name[CFS_WS_NAME_LEN - 1] = '\0';
+ 	sched->ws_cptab = cptab;
+ 	sched->ws_cpt = cpt;
+ 
 -- 
 1.7.10.4
 
