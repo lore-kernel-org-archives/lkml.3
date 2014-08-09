@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874AbaHIPsR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 11:48:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37847 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828AbaHIPsO (ORCPT
+	id S1751916AbaHIPss (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 11:48:48 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35205 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658AbaHIPsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 11:48:14 -0400
-Date: Sat, 9 Aug 2014 08:47:42 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Oleg Drokin <green@linuxhacker.ru>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Peng Tao <bergwolf@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lai Siyao <lai.siyao@intel.com>
-Subject: Re: [PATCH] staging/lustre: use rcu_dereference to access rcu
- protected current->real_parent field
-Message-ID: <20140809154742.GA22689@kroah.com>
-References: <20140806214216.GA16530@kroah.com>
- <CAGDhxoe4+jU=vCDedMC4VXfuNMmqP3-E1Lu3LLStbFLbd=BRSA@mail.gmail.com>
- <20140808034951.GA6626@kroah.com>
- <DFF36154-06AC-4D7E-87F5-259B73CB059B@linuxhacker.ru>
- <20140808044246.GA3084@kroah.com>
- <1FE03450-A256-4A18-85AB-6332A28E3EF5@linuxhacker.ru>
- <20140808053246.GA13588@kroah.com>
- <CA+a=Yy4SqXSe667DkU3KA80tAt5D=KG-9mfccvEwtJzuFr6vBA@mail.gmail.com>
- <20140809140426.GA20995@kroah.com>
- <A562EF9C-0B1E-48B2-BAB5-544C9AAC6DD0@linuxhacker.ru>
+	Sat, 9 Aug 2014 11:48:47 -0400
+Date: Sat, 9 Aug 2014 17:48:45 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Miguel Oliveira <cmroliv@gmail.com>, gulsah.1004@gmail.com,
+        peter.p.waskiewicz.jr@intel.com, kristina.martsenko@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: nokia_h4: use more consistent name for
+ intermediate object
+Message-ID: <20140809154845.GB6771@amd.pavel.ucw.cz>
+References: <1401445633-5290-1-git-send-email-cmroliv@gmail.com>
+ <20140530123023.GA10549@amd.pavel.ucw.cz>
+ <20140530155959.GA10682@kroah.com>
+ <201405301815.10811@pali>
+ <20140530163604.GA11943@kroah.com>
+ <DB71A450-EF1D-479F-9111-A36FF8EA89B2@holtmann.org>
+ <20140806213055.GA26046@amd.pavel.ucw.cz>
+ <20140807002532.GB23406@kroah.com>
+ <20140807081328.GB24700@amd.pavel.ucw.cz>
+ <20140807202407.GC6060@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <A562EF9C-0B1E-48B2-BAB5-544C9AAC6DD0@linuxhacker.ru>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140807202407.GC6060@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 09, 2014 at 10:34:36AM -0400, Oleg Drokin wrote:
+On Thu 2014-08-07 13:24:07, Greg KH wrote:
+> On Thu, Aug 07, 2014 at 10:13:29AM +0200, Pavel Machek wrote:
+> > 
+> > Signed-off-by: Pavel Machek <pavel@ucw.cz>
+> > 
+> > diff --git a/drivers/staging/nokia_h4p/Makefile b/drivers/staging/nokia_h4p/Makefile
+> > index 9625db4..daffe3c 100644
+> > --- a/drivers/staging/nokia_h4p/Makefile
+> > +++ b/drivers/staging/nokia_h4p/Makefile
+> > @@ -1,6 +1,6 @@
+> >  
+> > -obj-$(CONFIG_BT_NOKIA_H4P)		+= btnokia_h4p.o
+> > -btnokia_h4p-objs := nokia_core.o nokia_fw.o nokia_uart.o nokia_fw-csr.o \
+> > +obj-$(CONFIG_BT_NOKIA_H4P)		+= hci_h4p.o
+> > +hci_h4p-objs := nokia_core.o nokia_fw.o nokia_uart.o nokia_fw-csr.o \
+> >  		nokia_fw-bcm.o nokia_fw-ti1273.o
+> >  
+> >  ccflags-y += -D__CHECK_ENDIAN__
 > 
-> > Because maybe these stats preceed the introduction of perf and other
-> > tracing/debug tools?  I don't know, it's really low down on the list of
-> > reasons why lustre can't be merged out of staging at the moment, you all
-> > have much bigger issues to address first.
+> You just changed the kernel module name, did you really mean to do that?
 > 
-> I wonder what is the prioritized list you have in mind?
+> Why?
+> 
+> It's not an "intermediate" object here, it's a .ko file, right?
 
-Do I really have to spell out what is wrong with that codebase that
-needs to be fixed up?  It took me 50+ patches for 3.17-rc1 to just fix
-up a _portion_ of the include file mess that is in there.  Now is the
-first time the code actually _builds_ properly in the kernel tree (i.e.
-no magic header file include path modifications in Makefiles preventing
-individual files from being built correctly.)
+Ok, lets not do that now. btnokia_h4p is really strange name, and it
+will probably need to be fixed in future, but now may not be a good
+time.
 
-If you all don't know what needs to be done here, then I might as well
-just delete the drivers/staging/lustre/ tree right now.
-
-greg k-h
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
