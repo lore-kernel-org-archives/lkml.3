@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545AbaHIAq4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 20:46:56 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:39980 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764AbaHIAqy (ORCPT
+	id S1751438AbaHIA7m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 20:59:42 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61865 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926AbaHIA7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 20:46:54 -0400
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: [Patch] freezer: check OOM kill signal while being frozen
-Date: Fri,  8 Aug 2014 17:46:38 -0700
-Message-Id: <1407545198-9009-1-git-send-email-xiyou.wangcong@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Fri, 8 Aug 2014 20:59:41 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53E57279.1030106@roeck-us.net>
+Date: Fri, 08 Aug 2014 17:59:37 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.16 00/17] 3.16.1-stable review
+References: <20140808213457.511493898@linuxfoundation.org>
+In-Reply-To: <20140808213457.511493898@linuxfoundation.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race condition between OOM killer and freezer when
-they try to operate on the same process, something like below:
+On 08/08/2014 02:35 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.16.1 release.
+> There are 17 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Aug 10 21:34:49 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-	Process A	Process B		Process C
-trigger oom
-B=oom_scan_process_thread()
-					cgroup_freezer_freeze(B)
-			...
-			try_to_freeze()
-			stay in D state
-oom_kill_process(B)
+Build results:
+	total: 136 pass: 136 fail: 0
 
-In this case, process A triggers OOM and kernel selects process B
-as the victim, right before being killed process B was frozen by
-process C therefore went to D state, then kernel sent SIGKILL but
-it is already too late as process B will never care about pending
-signals any more. Fix this straightly by checking fatal pending signal
-from OOM killer, so that the frozen process will recover itself
-and then be killed finally.
+Qemu tests all passed
 
-Cc: David Rientjes <rientjes@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
----
-diff --git a/kernel/freezer.c b/kernel/freezer.c
-index aa6a8aa..c6d189d 100644
---- a/kernel/freezer.c
-+++ b/kernel/freezer.c
-@@ -68,7 +68,9 @@ bool __refrigerator(bool check_kthr_stop)
- 		spin_lock_irq(&freezer_lock);
- 		current->flags |= PF_FROZEN;
- 		if (!freezing(current) ||
--		    (check_kthr_stop && kthread_should_stop()))
-+		    (check_kthr_stop && kthread_should_stop()) ||
-+		    (test_tsk_thread_flag(current, TIF_MEMDIE) &&
-+			 fatal_signal_pending(current)))
- 			current->flags &= ~PF_FROZEN;
- 		spin_unlock_irq(&freezer_lock);
- 
+Details are available at http://server.roeck-us.net:8010/builders.
+
+Guenter
+
