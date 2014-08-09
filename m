@@ -1,142 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380AbaHIIC7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 04:02:59 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:50139 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117AbaHIICt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 04:02:49 -0400
-From: Ankit <learnertilldeath@gmail.com>
-To: airlied@linux.ie, shahed.shaikh@qlogic.com, sre@kernel.org,
-        dbaryshkov@gmail.com, dwmw2@infradead.org, rui.zhang@intel.com,
-        edubezval@gmail.com
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-pm@vger.kernel.org,
-        Ankit <learnertilldeath@gmail.com>
-Subject: [PATCH] drivers: fixed spelling of "celcius" to "celsius"
-Date: Sat,  9 Aug 2014 17:02:32 +0900
-Message-Id: <1407571352-33867-1-git-send-email-learnertilldeath@gmail.com>
-X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
+	id S1751366AbaHIIXK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 04:23:10 -0400
+Received: from mout.web.de ([212.227.17.12]:63101 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751212AbaHIIXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Aug 2014 04:23:07 -0400
+Message-ID: <53E5DA60.90902@users.sourceforge.net>
+Date: Sat, 09 Aug 2014 10:22:56 +0200
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Coccinelle <cocci@systeme.lip6.fr>
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Fabian Frederick <fabf@skynet.be>, Joe Perches <joe@perches.com>
+Subject: Re: [patch 119/197] scripts/coccinelle/free: Delete NULL test before
+ freeing functions
+References: <53e53fd1.zO3IbUqJ421c7VXf%akpm@linux-foundation.org>
+In-Reply-To: <53e53fd1.zO3IbUqJ421c7VXf%akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:yBB+MAGERiz+ouhu+TNOdjUri31NSLAFkQ43udRV6AKQ8hAxO3m
+ fk5GC/+p0dOI9dWMSQhUxhmRY9lQjnIgQHohi8zu/Kk6K6LNrMOdUKIVNL+Mu/KK4nVIxhM
+ fweV/bcnDIf8NM/QkqnHH14c5LSJ1VpANiIBOYytFkPM2qMHThDDwQ/pEk/lLQKBdkxo39j
+ XBuAdkH0h4SfCTrrfh51w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed spelling issue -- changed celcius to celsius
+> +@r depends on context || report || org @
+> +expression E;
+> +position p;
+> +@@
+> +
+> +* if (E)
+> +*	\(kfree@p\|debugfs_remove@p\|debugfs_remove_recursive@p\|usb_free_urb\)(E);
 
-Kernel version: mainline
+How do you think about to add the construct "@p" also behind the function name
+"usb_free_urb"?
 
-Signed-off-by: Ankit <learnertilldeath@gmail.com>
----
- drivers/gpu/drm/nouveau/core/engine/graph/nv10.c  | 4 ++--
- drivers/gpu/drm/nouveau/core/engine/graph/nv20.c  | 2 +-
- drivers/gpu/drm/nouveau/core/engine/graph/nv25.c  | 2 +-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c | 2 +-
- drivers/power/ds2780_battery.c                    | 2 +-
- drivers/power/ds2782_battery.c                    | 2 +-
- drivers/thermal/thermal_core.c                    | 2 +-
- 7 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nv10.c b/drivers/gpu/drm/nouveau/core/engine/graph/nv10.c
-index 4532f7e..1faeeb1 100644
---- a/drivers/gpu/drm/nouveau/core/engine/graph/nv10.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/nv10.c
-@@ -451,7 +451,7 @@ nv10_graph_sclass[] = {
- 	{ 0x0093, &nv04_graph_ofuncs }, /* surf3d */
- 	{ 0x0094, &nv04_graph_ofuncs }, /* ttri */
- 	{ 0x0095, &nv04_graph_ofuncs }, /* mtri */
--	{ 0x0056, &nv04_graph_ofuncs }, /* celcius */
-+	{ 0x0056, &nv04_graph_ofuncs }, /* celsius */
- 	{},
- };
- 
-@@ -474,7 +474,7 @@ nv15_graph_sclass[] = {
- 	{ 0x0093, &nv04_graph_ofuncs }, /* surf3d */
- 	{ 0x0094, &nv04_graph_ofuncs }, /* ttri */
- 	{ 0x0095, &nv04_graph_ofuncs }, /* mtri */
--	{ 0x0096, &nv04_graph_ofuncs }, /* celcius */
-+	{ 0x0096, &nv04_graph_ofuncs }, /* celsius */
- 	{},
- };
- 
-diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nv20.c b/drivers/gpu/drm/nouveau/core/engine/graph/nv20.c
-index d145e08..eb00689 100644
---- a/drivers/gpu/drm/nouveau/core/engine/graph/nv20.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/nv20.c
-@@ -31,7 +31,7 @@ nv20_graph_sclass[] = {
- 	{ 0x0072, &nv04_graph_ofuncs, NULL }, /* beta4 */
- 	{ 0x0089, &nv04_graph_ofuncs, NULL }, /* sifm */
- 	{ 0x008a, &nv04_graph_ofuncs, NULL }, /* ifc */
--	{ 0x0096, &nv04_graph_ofuncs, NULL }, /* celcius */
-+	{ 0x0096, &nv04_graph_ofuncs, NULL }, /* celsius */
- 	{ 0x0097, &nv04_graph_ofuncs, NULL }, /* kelvin */
- 	{ 0x009e, &nv04_graph_ofuncs, NULL }, /* swzsurf */
- 	{ 0x009f, &nv04_graph_ofuncs, NULL }, /* imageblit */
-diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nv25.c b/drivers/gpu/drm/nouveau/core/engine/graph/nv25.c
-index 7a80d00..fcfe1c5 100644
---- a/drivers/gpu/drm/nouveau/core/engine/graph/nv25.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/nv25.c
-@@ -28,7 +28,7 @@ nv25_graph_sclass[] = {
- 	{ 0x0072, &nv04_graph_ofuncs, NULL }, /* beta4 */
- 	{ 0x0089, &nv04_graph_ofuncs, NULL }, /* sifm */
- 	{ 0x008a, &nv04_graph_ofuncs, NULL }, /* ifc */
--	{ 0x0096, &nv04_graph_ofuncs, NULL }, /* celcius */
-+	{ 0x0096, &nv04_graph_ofuncs, NULL }, /* celsius */
- 	{ 0x009e, &nv04_graph_ofuncs, NULL }, /* swzsurf */
- 	{ 0x009f, &nv04_graph_ofuncs, NULL }, /* imageblit */
- 	{ 0x0597, &nv04_graph_ofuncs, NULL }, /* kelvin */
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c
-index f5786d5..b0f7ab0 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c
-@@ -1264,7 +1264,7 @@ static ssize_t qlcnic_hwmon_show_temp(struct device *dev,
- 		value = QLC_SHARED_REG_RD32(adapter, QLCNIC_ASIC_TEMP);
- 
- 	temperature = qlcnic_get_temp_val(value);
--	/* display millidegree celcius */
-+	/* display millidegree celsius */
- 	temperature *= 1000;
- 	return sprintf(buf, "%u\n", temperature);
- }
-diff --git a/drivers/power/ds2780_battery.c b/drivers/power/ds2780_battery.c
-index 9f418fa..bf7d4bd 100644
---- a/drivers/power/ds2780_battery.c
-+++ b/drivers/power/ds2780_battery.c
-@@ -210,7 +210,7 @@ static int ds2780_get_temperature(struct ds2780_device_info *dev_info,
- 		return ret;
- 
- 	/*
--	 * Temperature is measured in units of 0.125 degrees celcius, the
-+	 * Temperature is measured in units of 0.125 degrees celsius, the
- 	 * power_supply class measures temperature in tenths of degrees
- 	 * celsius. The temperature value is stored as a 10 bit number, plus
- 	 * sign in the upper bits of a 16 bit register.
-diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
-index 041f9b6..adc7d32 100644
---- a/drivers/power/ds2782_battery.c
-+++ b/drivers/power/ds2782_battery.c
-@@ -104,7 +104,7 @@ static int ds278x_get_temp(struct ds278x_info *info, int *temp)
- 	int err;
- 
- 	/*
--	 * Temperature is measured in units of 0.125 degrees celcius, the
-+	 * Temperature is measured in units of 0.125 degrees celsius, the
- 	 * power_supply class measures temperature in tenths of degrees
- 	 * celsius. The temperature value is stored as a 10 bit number, plus
- 	 * sign in the upper bits of a 16 bit register.
-diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index 71b0ec0..e69db4f 100644
---- a/drivers/thermal/thermal_core.c
-+++ b/drivers/thermal/thermal_core.c
-@@ -691,7 +691,7 @@ passive_store(struct device *dev, struct device_attribute *attr,
- 	if (!sscanf(buf, "%d\n", &state))
- 		return -EINVAL;
- 
--	/* sanity check: values below 1000 millicelcius don't make sense
-+	/* sanity check: values below 1000 millicelsius don't make sense
- 	 * and can cause the system to go into a thermal heart attack
- 	 */
- 	if (state && state < 1000)
--- 
-1.8.3.4 (Apple Git-47)
+Is my previous update suggestion for such an issue worth for another look, too?
 
+Regards,
+Markus
