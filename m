@@ -1,112 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965AbaHIQ4V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 12:56:21 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:38482 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779AbaHIQ4S (ORCPT
+	id S1751964AbaHIRFG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 13:05:06 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:60462 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752AbaHIRFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 12:56:18 -0400
-Date: Sat, 9 Aug 2014 22:26:12 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] clk: st: remove null pointer dereference
-Message-ID: <20140809165612.GA21631@himangi-Dell>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 9 Aug 2014 13:05:02 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH] vfio: Fix build failure seen if vfio is built as module and EEH is enabled
+Date: Sat,  9 Aug 2014 10:04:47 -0700
+Message-Id: <1407603887-1419-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If clk_data is NULL, it is not possible to access its clk_num field. So
-if the NULL test succeeds the control sequence mush jump after the loop.
-So, a new label is introduced and the labels are renamed to err0 and
-err1. If clk_data is NULL, only parents need to be freed and hence the
-goto now points to err0.
+The following build failure is seen with ppc:allmodconfig.
 
-This problem was found using the following Coccinelle semantic match:
+ERROR: ".vfio_spapr_iommu_eeh_ioctl" [drivers/vfio/vfio_iommu_spapr_tce.ko] undefined!
+ERROR: ".vfio_spapr_pci_eeh_open" [drivers/vfio/pci/vfio-pci.ko] undefined!
+ERROR: ".vfio_spapr_pci_eeh_release" [drivers/vfio/pci/vfio-pci.ko] undefined!
 
-// <smpl>
-@@
-expression E, E1;
-identifier f;
-statement S1,S2,S3;
-@@
+Simply exporting the missing symbols is insufficient, since drivers/vfio
+can be built as module but drivers/vfio/vfio_spapr_eeh.c depends on
+EEH which is boolean. The combination of obj-m for drivers/vfio and obj-y
+for drivers/vfio/vfio_spapr_eeh.o results in the symbols being missed even
+if exported.
 
-* if (E == NULL)
-{
-  ... when != if (E == NULL) S1 else S2
-      when != E = E1
-* E->f
-  ... when any
-  return ...;
-}
-else S3
-// </smpl>
+Export missing symbols and introduce new tristate configuration option
+VFIO_EEH depending on both EEH and VFIO to fix the problem.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Gavin Shan <gwshan@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
-Not compile tested.
- drivers/clk/st/clkgen-mux.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/vfio/Kconfig          | 6 ++++++
+ drivers/vfio/Makefile         | 2 +-
+ drivers/vfio/vfio_spapr_eeh.c | 4 ++++
+ 3 files changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/clk/st/clkgen-mux.c b/drivers/clk/st/clkgen-mux.c
-index 79dc40b..385b3d0 100644
---- a/drivers/clk/st/clkgen-mux.c
-+++ b/drivers/clk/st/clkgen-mux.c
-@@ -723,14 +723,14 @@ void __init st_of_clkgen_vcc_setup(struct device_node *np)
+diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
+index af7b204..06adecd 100644
+--- a/drivers/vfio/Kconfig
++++ b/drivers/vfio/Kconfig
+@@ -8,12 +8,18 @@ config VFIO_IOMMU_SPAPR_TCE
+ 	depends on VFIO && SPAPR_TCE_IOMMU
+ 	default n
  
- 	clk_data = kzalloc(sizeof(*clk_data), GFP_KERNEL);
- 	if (!clk_data)
--		goto err;
-+		goto err0;
- 
- 	clk_data->clk_num = VCC_MAX_CHANNELS;
- 	clk_data->clks = kzalloc(clk_data->clk_num * sizeof(struct clk *),
- 				 GFP_KERNEL);
- 
- 	if (!clk_data->clks)
--		goto err;
-+		goto err1;
- 
- 	for (i = 0; i < clk_data->clk_num; i++) {
- 		struct clk *clk;
-@@ -791,7 +791,7 @@ void __init st_of_clkgen_vcc_setup(struct device_node *np)
- 			kfree(gate);
- 			kfree(div);
- 			kfree(mux);
--			goto err;
-+			goto err1;
- 		}
- 
- 		pr_debug("%s: parent %s rate %u\n",
-@@ -807,7 +807,7 @@ void __init st_of_clkgen_vcc_setup(struct device_node *np)
- 	of_clk_add_provider(np, of_clk_src_onecell_get, clk_data);
- 	return;
- 
--err:
-+err1:
- 	for (i = 0; i < clk_data->clk_num; i++) {
- 		struct clk_composite *composite;
- 
-@@ -821,10 +821,11 @@ err:
- 		kfree(container_of(composite->mux_hw, struct clk_mux, hw));
- 	}
- 
--	if (clk_data)
--		kfree(clk_data->clks);
-+	kfree(clk_data->clks);
- 
- 	kfree(clk_data);
++config VFIO_EEH
++	tristate
++	depends on VFIO && EEH
++	default n
 +
-+err0:
- 	kfree(parents);
+ menuconfig VFIO
+ 	tristate "VFIO Non-Privileged userspace driver framework"
+ 	depends on IOMMU_API
+ 	select VFIO_IOMMU_TYPE1 if X86
+ 	select VFIO_IOMMU_SPAPR_TCE if (PPC_POWERNV || PPC_PSERIES)
+ 	select ANON_INODES
++	select VFIO_EEH if EEH
+ 	help
+ 	  VFIO provides a framework for secure userspace device drivers.
+ 	  See Documentation/vfio.txt for more details.
+diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
+index 50e30bc..26016cd 100644
+--- a/drivers/vfio/Makefile
++++ b/drivers/vfio/Makefile
+@@ -1,5 +1,5 @@
+ obj-$(CONFIG_VFIO) += vfio.o
+ obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
+ obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_spapr_tce.o
+-obj-$(CONFIG_EEH) += vfio_spapr_eeh.o
++obj-$(CONFIG_VFIO_EEH) += vfio_spapr_eeh.o
+ obj-$(CONFIG_VFIO_PCI) += pci/
+diff --git a/drivers/vfio/vfio_spapr_eeh.c b/drivers/vfio/vfio_spapr_eeh.c
+index f834b4c..e827309 100644
+--- a/drivers/vfio/vfio_spapr_eeh.c
++++ b/drivers/vfio/vfio_spapr_eeh.c
+@@ -9,6 +9,7 @@
+  * published by the Free Software Foundation.
+  */
+ 
++#include <linux/export.h>
+ #include <linux/uaccess.h>
+ #include <linux/vfio.h>
+ #include <asm/eeh.h>
+@@ -18,11 +19,13 @@ int vfio_spapr_pci_eeh_open(struct pci_dev *pdev)
+ {
+ 	return eeh_dev_open(pdev);
  }
- CLK_OF_DECLARE(clkgen_vcc, "st,clkgen-vcc", st_of_clkgen_vcc_setup);
++EXPORT_SYMBOL_GPL(vfio_spapr_pci_eeh_open);
+ 
+ void vfio_spapr_pci_eeh_release(struct pci_dev *pdev)
+ {
+ 	eeh_dev_release(pdev);
+ }
++EXPORT_SYMBOL(vfio_spapr_pci_eeh_release);
+ 
+ long vfio_spapr_iommu_eeh_ioctl(struct iommu_group *group,
+ 				unsigned int cmd, unsigned long arg)
+@@ -85,3 +88,4 @@ long vfio_spapr_iommu_eeh_ioctl(struct iommu_group *group,
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL(vfio_spapr_iommu_eeh_ioctl);
 -- 
 1.9.1
 
