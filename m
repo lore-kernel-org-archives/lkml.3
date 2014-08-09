@@ -1,205 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722AbaHINe2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 09:34:28 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:45706 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaHINe1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 09:34:27 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <53E5B41B.3030009@vmware.com>
-References: <53E50C1B.9080507@gmail.com> <53E5B41B.3030009@vmware.com>
+	id S1751672AbaHIN4O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 09:56:14 -0400
+Received: from sauhun.de ([89.238.76.85]:53904 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751065AbaHIN4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Aug 2014 09:56:11 -0400
+Date: Sat, 9 Aug 2014 15:56:01 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PULL REQUEST] i2c for 3.17
+Message-ID: <20140809135557.GA4837@katana>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Subject: Re: CONFIG_DMA_CMA causes ttm performance problems/hangs.
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Sat, 09 Aug 2014 09:33:53 -0400
-To: Thomas Hellstrom <thellstrom@vmware.com>,
-        Mario Kleiner <mario.kleiner.de@gmail.com>
-CC: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        kamal@canonical.com, LKML <linux-kernel@vger.kernel.org>,
-        ben@decadent.org.uk, m.szyprowski@samsung.com
-Message-ID: <60bd3db2-4919-40c4-a4ff-1b7b043cadfc@email.android.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KsGdsel6WgEHnImy"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On August 9, 2014 1:39:39 AM EDT, Thomas Hellstrom <thellstrom@vmware.com> wrote:
->Hi.
->
-Hey Thomas!
 
->IIRC I don't think the TTM DMA pool allocates coherent pages more than
->one page at a time, and _if that's true_ it's pretty unnecessary for
->the
->dma subsystem to route those allocations to CMA. Maybe Konrad could
->shed
->some light over this?
+--KsGdsel6WgEHnImy
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It should allocate in batches and keep them in the TTM DMA pool for some time to be reused.
+Linus,
 
-The pages that it gets are in 4kb granularity though.
->
->/Thomas
->
->
->On 08/08/2014 07:42 PM, Mario Kleiner wrote:
->> Hi all,
->>
->> there is a rather severe performance problem i accidentally found
->when
->> trying to give Linux 3.16.0 a final test on a x86_64 MacBookPro under
->> Ubuntu 14.04 LTS with nouveau as graphics driver.
->>
->> I was lazy and just installed the Ubuntu precompiled mainline kernel.
->> That kernel happens to have CONFIG_DMA_CMA=y set, with a default CMA
->> (contiguous memory allocator) size of 64 MB. Older Ubuntu kernels
->> weren't compiled with CMA, so i only observed this on 3.16, but
->> previous kernels would likely be affected too.
->>
->> After a few minutes of regular desktop use like switching workspaces,
->> scrolling text in a terminal window, Firefox with multiple tabs open,
->> Thunderbird etc. (tested with KDE/Kwin, with/without desktop
->> composition), i get chunky desktop updates, then multi-second
->freezes,
->> after a few minutes the desktop hangs for over a minute on almost any
->> GUI action like switching windows etc. --> Unuseable.
->>
->> ftrace'ing shows the culprit being this callchain (typical good/bad
->> example ftrace snippets at the end of this mail):
->>
->> ...ttm dma coherent memory allocations, e.g., from
->> __ttm_dma_alloc_page() ... --> dma_alloc_coherent() --> platform
->> specific hooks ... -> dma_generic_alloc_coherent() [on x86_64] -->
->> dma_alloc_from_contiguous()
->>
->> dma_alloc_from_contiguous() is a no-op without CONFIG_DMA_CMA, or
->when
->> the machine is booted with kernel boot cmdline parameter "cma=0", so
->> it triggers the fast alloc_pages_node() fallback at least on x86_64.
->>
->> With CMA, this function becomes progressively more slow with every
->> minute of desktop use, e.g., runtimes going up from < 0.3 usecs to
->> hundreds or thousands of microseconds (before it gives up and
->> alloc_pages_node() fallback is used), so this causes the
->> multi-second/minute hangs of the desktop.
->>
->> So it seems ttm memory allocations quickly fragment and/or exhaust
->the
->> CMA memory area, and dma_alloc_from_contiguous() tries very hard to
->> find a fitting hole big enough to satisfy allocations with a retry
->> loop (see
->>
->http://lxr.free-electrons.com/source/drivers/base/dma-contiguous.c#L339)
->> that takes forever.
+here is the pull request for 3.17 for the I2C subsystem. Highlights:
 
-I am curious why it does not end up using the pool. As in use the TTM DMA pool to pick pages instead of allocating (and freeing) new ones?
+* class based instantiation finally dropped for most embedded drivers
+  bringing boot up performance gains
+* removed two drivers (one outdated, one a duplicate)
+* ACPI has now operation region support (thanks to Lan Tianyu)
+* the i2c-stub driver got overhauled and gained new features to become
+  more useful when writing i2c client drivers (thanks to Guenter
+  Roeck and Jean Delvare)
 
->>
->> This is not good, also not for other devices which actually need a
->> non-fragmented CMA for DMA, so what to do? I doubt most current gpus
->> still need physically contiguous dma memory, maybe with exception of
->> some embedded gpus?
+The rest is driver bugfixes, added bindings/ids, cleanups, ...
+Please pull.
 
-Oh. If I understood you correctly - the CMA ends up giving huge chunks of contiguous area. But if the sizes are 4kb I wonder why it would do that?
+Thanks,
 
-The modern GPUs on x86 can deal with scatter gather and as you surmise don't need contiguous physical contiguous areas.
->>
->> My naive approach would be to add a new gfp_t flag a la
->> ___GFP_AVOIDCMA, and make callers of dma_alloc_from_contiguous()
->> refrain from doing so if they have some fallback for getting memory.
->> And then add that flag to ttm's ttm_dma_populate() gfp_flags, e.g.,
->> around here:
->>
->http://lxr.free-electrons.com/source/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c#L884
->>
->> However i'm not familiar enough with memory management, so likely
->> greater minds here have much better ideas on how to deal with this?
->>
-
-That is a bit of hack to deal with CMA being slow.
-
-Hmm. Let's first figure out why TTM DMA pool is not reusing pages.
->> thanks,
->> -mario
->>
->> Typical snippet from an example trace of a badly stalling desktop
->with
->> CMA (alloc_pages_node() fallback may have been missing in this traces
->> ftrace_filter settings):
->>
->> 1)               |                          ttm_dma_pool_get_pages
->> [ttm]() {
->>  1)               | ttm_dma_page_pool_fill_locked [ttm]() {
->>  1)               | ttm_dma_pool_alloc_new_pages [ttm]() {
->>  1)               | __ttm_dma_alloc_page [ttm]() {
->>  1)               | dma_generic_alloc_coherent() {
->>  1) ! 1873.071 us | dma_alloc_from_contiguous();
->>  1) ! 1874.292 us |                                  }
->>  1) ! 1875.400 us |                                }
->>  1)               | __ttm_dma_alloc_page [ttm]() {
->>  1)               | dma_generic_alloc_coherent() {
->>  1) ! 1868.372 us | dma_alloc_from_contiguous();
->>  1) ! 1869.586 us |                                  }
->>  1) ! 1870.053 us |                                }
->>  1)               | __ttm_dma_alloc_page [ttm]() {
->>  1)               | dma_generic_alloc_coherent() {
->>  1) ! 1871.085 us | dma_alloc_from_contiguous();
->>  1) ! 1872.240 us |                                  }
->>  1) ! 1872.669 us |                                }
->>  1)               | __ttm_dma_alloc_page [ttm]() {
->>  1)               | dma_generic_alloc_coherent() {
->>  1) ! 1888.934 us | dma_alloc_from_contiguous();
->>  1) ! 1890.179 us |                                  }
->>  1) ! 1890.608 us |                                }
->>  1)   0.048 us    | ttm_set_pages_caching [ttm]();
->>  1) ! 7511.000 us |                              }
->>  1) ! 7511.306 us |                            }
->>  1) ! 7511.623 us |                          }
->>
->> The good case (with cma=0 kernel cmdline, so
->> dma_alloc_from_contiguous() no-ops,)
->>
->> 0)               |                          ttm_dma_pool_get_pages
->> [ttm]() {
->>  0)               | ttm_dma_page_pool_fill_locked [ttm]() {
->>  0)               | ttm_dma_pool_alloc_new_pages [ttm]() {
->>  0)               | __ttm_dma_alloc_page [ttm]() {
->>  0)               | dma_generic_alloc_coherent() {
->>  0)   0.171 us    | dma_alloc_from_contiguous();
->>  0)   0.849 us    | __alloc_pages_nodemask();
->>  0)   3.029 us    |                                  }
->>  0)   3.882 us    |                                }
->>  0)               | __ttm_dma_alloc_page [ttm]() {
->>  0)               | dma_generic_alloc_coherent() {
->>  0)   0.037 us    | dma_alloc_from_contiguous();
->>  0)   0.163 us    | __alloc_pages_nodemask();
->>  0)   1.408 us    |                                  }
->>  0)   1.719 us    |                                }
->>  0)               | __ttm_dma_alloc_page [ttm]() {
->>  0)               | dma_generic_alloc_coherent() {
->>  0)   0.035 us    | dma_alloc_from_contiguous();
->>  0)   0.153 us    | __alloc_pages_nodemask();
->>  0)   1.454 us    |                                  }
->>  0)   1.720 us    |                                }
->>  0)               | __ttm_dma_alloc_page [ttm]() {
->>  0)               | dma_generic_alloc_coherent() {
->>  0)   0.036 us    | dma_alloc_from_contiguous();
->>  0)   0.112 us    | __alloc_pages_nodemask();
->>  0)   1.211 us    |                                  }
->>  0)   1.541 us    |                                }
->>  0)   0.035 us    | ttm_set_pages_caching [ttm]();
->>  0) + 10.902 us   |                              }
->>  0) + 11.577 us   |                            }
->>  0) + 11.988 us   |                          }
->>
->> _______________________________________________
->> dri-devel mailing list
->> dri-devel@lists.freedesktop.org
->> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+   Wolfram
 
 
+The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
+
+  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-3.17
+
+for you to fetch changes up to ebba48b702ab11bbb76e357a7246bc2f19ad02bc:
+
+  i2c: mpc: delete unneeded test before of_node_put (2014-08-08 18:45:30 +0=
+200)
+
+----------------------------------------------------------------
+Alan Cox (1):
+      i2c: designware: add new bindings
+
+Christoph Jaeger (1):
+      i2c: taos-evm: Use module_serio_driver()
+
+Doug Anderson (1):
+      i2c: exynos5: Properly use the "noirq" variants of suspend/resume
+
+Fabio Estevam (1):
+      i2c: i2c-st: Use %pa to print 'resource_size_t' type
+
+Guenter Roeck (1):
+      i2c: stub: Add support for SMBus block commands
+
+Jean Delvare (6):
+      i2c: stub: Remember the number of emulated chips
+      i2c: stub: Add support for banked register ranges
+      i2c: i801: Fix the alignment of the device table
+      i2c: i801: Add device ID for Intel Wildcat Point PCH
+      i2c: stub: Avoid an array overrun on I2C block transfers
+      i2c: gpio: Drop dead code in i2c_gpio_remove
+
+Jisheng Zhang (1):
+      i2c: pca954x: put the mux to disconnected state after resume
+
+Julia Lawall (1):
+      i2c: mpc: delete unneeded test before of_node_put
+
+Lan Tianyu (2):
+      I2C/ACPI: Add i2c ACPI operation region support
+      I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI config
+
+Maxime COQUELIN (1):
+      i2c: st: Update i2c timings
+
+Naveen Krishna Ch (2):
+      i2c: exynos5: remove an unnecessary read of FIFO_STATUS register
+      i2c: exynos5: remove extra line and fix an assignment
+
+Pramod Gurav (1):
+      i2c: qup: disable clks and return instead of just returning error
+
+Sachin Kamat (1):
+      i2c: exynos5: always enable HSI2C
+
+Uwe Kleine-K=C3=B6nig (1):
+      i2c: efm32: correct namespacing of location property
+
+Vincent Palatin (1):
+      i2c: s3c2410: resume the I2C controller earlier
+
+Wolfram Sang (19):
+      i2c: s6000: remove duplicate driver
+      i2c: scx200: drop GPIO based i2c driver
+      i2c: add debug info when class instantiation was dropped
+      i2c: i2c-at91: Drop class based scanning to improve bootup time
+      i2c: i2c-bcm2835: Drop class based scanning to improve bootup time
+      i2c: i2c-bfin-twi: Drop class based scanning to improve bootup time
+      i2c: i2c-davinci: Drop class based scanning to improve bootup time
+      i2c: i2c-designware-platdrv: Drop class based scanning to improve boo=
+tup time
+      i2c: i2c-mv64xxx: Drop class based scanning to improve bootup time
+      i2c: i2c-nomadik: Drop class based scanning to improve bootup time
+      i2c: i2c-ocores: Drop class based scanning to improve bootup time
+      i2c: i2c-omap: Drop class based scanning to improve bootup time
+      i2c: i2c-rcar: Drop class based scanning to improve bootup time
+      i2c: i2c-s3c2410: Drop class based scanning to improve bootup time
+      i2c: i2c-sirf: Drop class based scanning to improve bootup time
+      i2c: i2c-stu300: Drop class based scanning to improve bootup time
+      i2c: i2c-tegra: Drop class based scanning to improve bootup time
+      i2c: i2c-xiic: Drop class based scanning to improve bootup time
+      drivers/i2c/busses: use correct type for dma_map/unmap
+
+Xiubo Li (1):
+      i2c: imx: Fix format warning for dev_dbg
+
+addy ke (1):
+      i2c: rk3x: fix interrupt handling issue
+
+ .../devicetree/bindings/i2c/i2c-efm32.txt          |   4 +-
+ Documentation/i2c/busses/i2c-i801                  |   1 +
+ Documentation/i2c/i2c-stub                         |  23 +-
+ drivers/i2c/Kconfig                                |  18 +-
+ drivers/i2c/Makefile                               |   5 +-
+ drivers/i2c/busses/Kconfig                         |  46 +--
+ drivers/i2c/busses/Makefile                        |   2 -
+ drivers/i2c/busses/i2c-at91.c                      |   6 +-
+ drivers/i2c/busses/i2c-bcm2835.c                   |   2 +-
+ drivers/i2c/busses/i2c-bfin-twi.c                  |   2 +-
+ drivers/i2c/busses/i2c-davinci.c                   |   2 +-
+ drivers/i2c/busses/i2c-designware-pcidrv.c         |   9 +
+ drivers/i2c/busses/i2c-designware-platdrv.c        |   3 +-
+ drivers/i2c/busses/i2c-efm32.c                     |   8 +-
+ drivers/i2c/busses/i2c-exynos5.c                   |  16 +-
+ drivers/i2c/busses/i2c-gpio.c                      |   2 -
+ drivers/i2c/busses/i2c-i801.c                      | 139 +++----
+ drivers/i2c/busses/i2c-imx.c                       |   5 +-
+ drivers/i2c/busses/i2c-mpc.c                       |   3 +-
+ drivers/i2c/busses/i2c-mv64xxx.c                   |   2 +-
+ drivers/i2c/busses/i2c-nomadik.c                   |   8 +-
+ drivers/i2c/busses/i2c-ocores.c                    |  12 +-
+ drivers/i2c/busses/i2c-omap.c                      |   2 +-
+ drivers/i2c/busses/i2c-qup.c                       |  12 +-
+ drivers/i2c/busses/i2c-rcar.c                      |  14 +-
+ drivers/i2c/busses/i2c-rk3x.c                      |   2 +-
+ drivers/i2c/busses/i2c-s3c2410.c                   |  16 +-
+ drivers/i2c/busses/i2c-s6000.c                     | 404 -----------------=
+----
+ drivers/i2c/busses/i2c-s6000.h                     |  79 ----
+ drivers/i2c/busses/i2c-sirf.c                      |   2 +-
+ drivers/i2c/busses/i2c-st.c                        |  34 +-
+ drivers/i2c/busses/i2c-stu300.c                    |   2 +-
+ drivers/i2c/busses/i2c-taos-evm.c                  |  13 +-
+ drivers/i2c/busses/i2c-tegra.c                     |   2 +-
+ drivers/i2c/busses/i2c-xiic.c                      |  12 +-
+ drivers/i2c/busses/scx200_i2c.c                    | 129 -------
+ drivers/i2c/i2c-acpi.c                             | 362 ++++++++++++++++++
+ drivers/i2c/i2c-core.c                             | 107 +-----
+ drivers/i2c/i2c-stub.c                             | 237 +++++++++++-
+ drivers/i2c/muxes/i2c-mux-pca954x.c                |  15 +
+ include/linux/acpi.h                               |  11 +
+ include/linux/i2c.h                                |  12 +
+ include/linux/i2c/s6000.h                          |  10 -
+ 43 files changed, 853 insertions(+), 942 deletions(-)
+ delete mode 100644 drivers/i2c/busses/i2c-s6000.c
+ delete mode 100644 drivers/i2c/busses/i2c-s6000.h
+ delete mode 100644 drivers/i2c/busses/scx200_i2c.c
+ create mode 100644 drivers/i2c/i2c-acpi.c
+ delete mode 100644 include/linux/i2c/s6000.h
+
+--KsGdsel6WgEHnImy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT5ihtAAoJEBQN5MwUoCm29LIP/RG1oE783HpWdxJakcyf3G0s
+UYf/BLRxdjBRhHCu0PGoT3nnz9fYOAmjhNOgOGsJvarOlpp7zntUtYQHhr2IBPRC
+vnGu9Ye/n3VxjW93BbgT+KzGwAYVVlI4/D1SWmvMTsJj95oB1vi70hHjig3cdZKy
+Ul6PhymvtQdAgHYDmV48OT+YFgtdx27OU/3I+Ze/l8JYU4cunZD5nNwe9jNj1T9i
+q1SBnf2uMn82uCAtsInAGHaWdrQIx9mHc7hBC/cEnhz1SP581hU2KY0QzFN4/AcZ
+tkpbEtdyZlAjIzlpZ88wD0S1Wuqd2NGNmV+l5wieRkNC5i9LQ+bcbnrtbQQz9eJA
+Y+xG84L2RERClvJwfcsXLNWt8usHPgPkb1vxjZk4qnDaOeC4AV4nq1QLO7x8M+XS
+t5ywB0zmvETChhcCOzxWXBNk5hkISWLdaYpGQ639bLxINIw3Oh61A8DbluwXpqMC
+VqCPAe90cPYvJVEUvbXlxC441zb0Dpuxd0SXIacmeXvrfDd/C+DEZvqqlzxq4s10
+FFBitUnhv2w0BJIZG0/JWbE+j/zUqnCmhxKySc4EFu/uzY3oARyY3XMqekoSAjmY
+3ZTEg0kKFRuZJstRwQr5BuMT0ElJ8WKc7PBGWWbJBypnxzQZJlfOc9SPsrDdAyTG
+bT6eFr4SlNAs6fSUojR9
+=jC2Q
+-----END PGP SIGNATURE-----
+
+--KsGdsel6WgEHnImy--
