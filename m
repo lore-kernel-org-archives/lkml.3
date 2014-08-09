@@ -1,133 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751252AbaHIGQF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 02:16:05 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46547 "EHLO
+	id S1751341AbaHIGRa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 02:17:30 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46568 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaHIGQC (ORCPT
+	with ESMTP id S1750939AbaHIGR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 02:16:02 -0400
-Date: Sat, 9 Aug 2014 08:15:14 +0200
+	Sat, 9 Aug 2014 02:17:28 -0400
+Date: Sat, 9 Aug 2014 08:17:12 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140809061514.GK9918@twins.programming.kicks-ass.net>
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
- <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140808191326.GE3935@laptop>
- <20140808205826.GG5821@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Bart Van Assche <bvanassche@acm.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] spin_lock_nested(): Always evaluate second argument
+Message-ID: <20140809061712.GL9918@twins.programming.kicks-ass.net>
+References: <53CE1019.10708@acm.org>
+ <20140722133716.cff957eff4eff1cc9c1d9968@linux-foundation.org>
+ <alpine.DEB.2.02.1407221612330.10592@chino.kir.corp.google.com>
+ <53E260D9.6030803@acm.org>
+ <53E2618F.6040208@acm.org>
+ <alpine.DEB.2.02.1408061455290.13545@chino.kir.corp.google.com>
+ <53E4A73D.5080801@acm.org>
+ <53E4A7F8.1040700@acm.org>
+ <alpine.DEB.2.02.1408081451470.15603@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uoMAg3++HhpTySgs"
+	protocol="application/pgp-signature"; boundary="srAoGIOs8asUHz4E"
 Content-Disposition: inline
-In-Reply-To: <20140808205826.GG5821@linux.vnet.ibm.com>
+In-Reply-To: <alpine.DEB.2.02.1408081451470.15603@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---uoMAg3++HhpTySgs
+--srAoGIOs8asUHz4E
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Aug 08, 2014 at 01:58:26PM -0700, Paul E. McKenney wrote:
-> On Fri, Aug 08, 2014 at 09:13:26PM +0200, Peter Zijlstra wrote:
-> >=20
-> >=20
-> > So I think you can make the entire thing work with
-> > rcu_note_context_switch().
-> >=20
-> > If we have the sync thing do something like:
-> >=20
-> >=20
-> > 	for_each_task(t) {
-> > 		atomic_inc(&rcu_tasks);
-> > 		atomic_or(&t->rcu_attention, RCU_TASK);
-> > 		smp_mb__after_atomic();
-> > 		if (!t->on_rq) {
-> > 			if (atomic_test_and_clear(&t->rcu_attention, RCU_TASK))
-> > 				atomic_dec(&rcu_tasks);
-> > 		}
-> > 	}
-> >=20
-> > 	wait_event(&rcu_tasks_wq, !atomic_read(&rcu_tasks));
-> >=20
-> >=20
-> > And then we have rcu_task_note_context_switch() (as called from
-> > rcu_note_context_switch) do:
-> >=20
-> >=20
-> > 	/* we want actual context switches, ignore preemption */
-> > 	if (preempt_count() & PREEMPT_ACTIVE)
-> > 		return;
-> >=20
-> > 	/* if not marked for RCU attention, bail */
-> > 	if (!(atomic_read(&t->rcu_attention) & RCU_TASK))
-> > 		return;
-> >=20
-> > 	/* raced with sync_rcu_task(), all done */
-> > 	if (!atomic_test_and_clear(&t->rcu_attention, RCU_TASK))
-> > 		return;
-> >=20
-> > 	/* not the last.. */
-> > 	if (!atomic_dec_and_test(&rcu_tasks))
-> > 		return;
-> >=20
-> > 	wake_up(&rcu_task_rq);
-> >=20
-> >=20
-> > The idea is to share rcu_attention with rcu_preempt, such that we only
-> > touch a single 'extra' cacheline in case RCU doesn't need to pay
-> > attention to this task.
-> >=20
-> > Also, it would be good if we can manage to squeeze this variable in a
-> > cacheline that's already touched by the schedule() so as not to incur
-> > undue overhead.
+On Fri, Aug 08, 2014 at 02:52:50PM -0700, David Rientjes wrote:
+> On Fri, 8 Aug 2014, Bart Van Assche wrote:
 >=20
-> This approach does not get me the idle tasks and the NO_HZ_FULL usermode
-> tasks.  I am pretty sure that I am stuck polling in those cases, so I
-> might as well poll.
+> > diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
+> > index 3f2867f..262ba4e 100644
+> > --- a/include/linux/spinlock.h
+> > +++ b/include/linux/spinlock.h
+> > @@ -197,7 +197,13 @@ static inline void do_raw_spin_unlock(raw_spinlock=
+_t *lock) __releases(lock)
+> >  		 _raw_spin_lock_nest_lock(lock, &(nest_lock)->dep_map);	\
+> >  	 } while (0)
+> >  #else
+> > -# define raw_spin_lock_nested(lock, subclass)		_raw_spin_lock(lock)
+> > +/*
+> > + * Always evaluate the 'subclass' argument to avoid that the compiler
+> > + * warns about set-but-not-used variables when building with
+> > + * CONFIG_DEBUG_LOCK_ALLOC=3Dn and with W=3D1.
+> > + */
+>=20
+> I was hoping there was going to be a more important reason for this chang=
+e=20
+> than to avoid compiler warnings, such as an example where someone is doin=
+g=20
+> spin_lock_nested(lock, subclass) and the expression for "subclass"=20
+> requires evaluation in all configs.
 
-That's so wrong its not funny. If you need some abortion to deal with
-NOHZ_FULL then put it under CONFIG_NOHZ_FULL, don't burden the entire
-world with it.
+That would stink, having that argument have side effects. I'd call that
+a plain old bug that needs fixing.
 
-Also, I thought RCU already knew which CPUs were in nohz_full userspace,
-so we can insta check that in the sync, together with the !->on_rq test,
-if the task is running on a nohz_full cpu in rcu quiescent state, also
-clear the task.
 
-As for idle tasks, I'm not sure about those, I think that we should say
-NO to anything that would require waking idle CPUs, push the pain to
-ftrace/kprobes, we should _not_ be waking idle cpus.
 
---uoMAg3++HhpTySgs
+--srAoGIOs8asUHz4E
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJT5bxtAAoJEHZH4aRLwOS66XQP/1BVNXdyOm5jL43rn0KTvjUa
-uTlF9GV3AOu/tdXZczUy2mDN43BwTWXHSVeNjPwLFEmA9PT4lhOIERTJsfkJW7N1
-fI6BcVowUQxYLdpD+Hh+LMCTvleiOLG/+GB2n639vYR/2svqijyTZPZWe7hBisQ/
-0p/12Q3Q4LGZoUn53HXrh3Qs58LeSNWfZgWlGljND/4IfBDrJ7P6+IUWZhYDJtli
-a3DVgqeiHf1gBLHPrvsot4AqAOGDfEIr90WqylwyaM6pCbLj4Do8jgqF9+nI1taA
-C9RAeGgVQY6hK1hwU4WxZd2HEXxRF8/xdJC7TQbxs5dhQkwKuDkPqQxLExHit94v
-HG9fakOG3sKHgbeAtHvo45I9w06Z1Y1JClPdhL6tE4ZK5ntRyW12vgWcyE8CGy3U
-3dtHR+PBaMSvrbWAKdMStr9VilY8vhwjUdS5aQumxWTeoGWOYf5eXloPhdbBqecL
-Q3cjo9LMix0QjvXRYLLq+JXH/aBaFiWBi/R+mBv+tgH8mvSNjo1jEtckmZUP0inb
-k1hEpRM4xOVYhdXRomQCvcvFz4vH3Y6kcF/Q1M0rNdU8Ro2UNYtVmQebQFUhNapX
-ERyX6caMiRkz8nfnOYCzbZ3KUvmdaXtp1VkYXXEt/QIDKFS54r3IyiMCZHMv1xEZ
-IFMoyg5f/sKo20byUAie
-=eKCU
+iQIcBAEBAgAGBQJT5bzoAAoJEHZH4aRLwOS6UWUP/jzdmQiN2ATnjoDsqcIam7gg
+JKXFVU83zoC60nj9Fi6cIjgkFBthAXxjiUVxO6lftn5hUquT3b0QcrevfkMC5TvY
+wpseLjHc4nOavimRaWDvPp+qy6F3/yDX1GXfqi7zZWR7hp0vdPoNs/UetfnoKi62
+13xGh1CvC1w2hIqbEbWOD9pQ3uL8p4/iQH5t2vpTTYPJAN+dstmYIShXJlos1PNs
+sD5WebVH7Ao+FuUFCNPCXjXHsMlxH0jXTBXeU5WImXs8c8MQtrtwxSl/n7tIFKyL
+XfWl5NQ64yPklkjZuX/Oe9FVq981ygBHTiepzd/DOniQtHFHSc1+KchinpcEJ3qt
+3a8XyeSCNpaWZVOH5j1mbMImkGIcxop4xUy/BzVUEBtl7ltm+uA6xljaSmHHKfAH
+2usR03Lbn7JvPVjkubymEqhtIDKzmrdXGWuyvv6lvG2g2eJdmfQyNGAG8857gS/6
+ZlQlhqtXlfhqsP9qVSGZFvUiDq68WyW4BYPQvdGp579Kvu0jdbGV04Ygn9PqVYiW
+fQAiBW0S/x+A7xIJKTSAgo+p0+wDG39FO7msLUUauXxX2qKwQACCBYCKowheZstX
+paiwhl7p2OOeOuW2wjUH5TTSqcJVjNf40r7x1VFiKihqyvg0OlUtLmkVC7tpghLg
+vXK1rx8FRVDViEob3kQt
+=FHQY
 -----END PGP SIGNATURE-----
 
---uoMAg3++HhpTySgs--
+--srAoGIOs8asUHz4E--
