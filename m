@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751201AbaHIElv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 00:41:51 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:37320 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaHIElt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 00:41:49 -0400
+	id S1751224AbaHIEwv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 00:52:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:19613 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750893AbaHIEwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Aug 2014 00:52:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,830,1400050800"; 
+   d="scan'208";a="574075444"
+Date: Sat, 9 Aug 2014 12:52:44 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Marcel Holtmann <marcel@holtmann.org>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [rfcomm] WARNING: CPU: 0 PID: 105 at kernel/sched/core.c:7094
+ __might_sleep()
+Message-ID: <20140809045244.GA22456@localhost>
+References: <20140805140726.GC5593@localhost>
+ <CAPDOMVidvibruAOqYF9OHc9S4M-e081hegPerg7Ehb38p-PqBw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140807201600.GA5720@kroah.com>
-References: <1407388229-31807-1-git-send-email-valentina.manea.m@gmail.com>
-	<20140807053344.GA5754@kroah.com>
-	<CABdoFFd9ZuikFyaSfOyn-babECtno50_GGNHofK1-LmhLCqeTw@mail.gmail.com>
-	<20140807201600.GA5720@kroah.com>
-Date: Fri, 8 Aug 2014 21:41:48 -0700
-Message-ID: <CABdoFFebQmW+r2zyvcN4TXHgkcg9L1XZd06Za_T7TvXZDxQ_-A@mail.gmail.com>
-Subject: Re: [PATCH 0/3] usbip: move usbip out of staging
-From: Valentina Manea <valentina.manea.m@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: =?UTF-8?B?VMO8bGluIMSwemVy?= <tulinizer@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, mail@beyermatthias.de,
-        hdegoede@redhat.com, Federico Manzan <f.manzan@gmail.com>,
-        Kurt Garloff <kurt@garloff.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Linux Kernel Community @ ROSEdu" <firefly@lists.rosedu.org>,
-        Andy Grover <andy.grover@gmail.com>, max@vozeler.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPDOMVidvibruAOqYF9OHc9S4M-e081hegPerg7Ehb38p-PqBw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 7, 2014 at 1:16 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->
-> The top of the MAINTAINERS should have this information, look in the S:
-> Status section about what type of category you are in.
->
-> Basically I'd like you to be the one to handle patches that are sent in
-> for the code, just by reviewing them, you don't have to send them on to
-> me if you don't want to (some usb subsystem maintainers do do this, like
-> for usb-serial and xhci), it's up to you.
->
-> Also, any bug reports or questions about the code would come to you
-> first, along with the rest of the linux-usb@vger developers, you aren't
-> alone in this at all.
->
+Hi Nick,
 
-Ok, this sounds good. I suppose sending you the patches involves
-picking them up from the email, batching them and sending with
-send-email.
-Shuah, I would appreciate if you'd like to help with this. The more
-eyes for review, the better.
+> Fenguang,
+> Just asking , is this a new trace or are you reminding our or another
+> older trace you did a few months
+> back. If it isn't I will be glad to trace this for you and the maintainers.
+> Regards Nick
+
+It's a new trace. However should be an old problem newly disposed by
+Peter's debug patch.
 
 Thanks,
-Valentina
+Fengguang
