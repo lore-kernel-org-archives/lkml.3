@@ -1,99 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432AbaHHXzv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 19:55:51 -0400
-Received: from mailrelay.sea-ab.se ([91.223.232.53]:49268 "EHLO
-	mailrelay.sea-ab.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaHHXzu (ORCPT
+	id S1751594AbaHHX4K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 19:56:10 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58652 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751191AbaHHXzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 19:55:50 -0400
-Date: Sat, 9 Aug 2014 01:55:19 +0200
-From: Martin Berglund <martin@rogsta.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, Forest Bond <forest@alittletooquiet.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: vt6655: wpactl.c: Fix sparse warnings
-Message-ID: <20140808235519.GA22160@licorice>
-References: <20140807220834.GA21645@licorice>
- <20140808021813.GB22340@kroah.com>
- <20140808070755.GA12023@astc-ogir.Teknik.UU.SE>
- <20140808134725.GE4427@kroah.com>
+	Fri, 8 Aug 2014 19:55:53 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, oscar.mateo@intel.com,
+        intel-gfx@lists.freedesktop.org, Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [Intel-gfx] [PATCH 45/53] drm/i915/bdw: Do not call intel_runtime_pm_get() in an interrupt
+Date: Sat, 09 Aug 2014 02:14:36 +0200
+Message-ID: <100550251.L4NDXYU9Wh@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140808093701.GO8727@phenom.ffwll.local>
+References: <1402673891-14618-1-git-send-email-oscar.mateo@intel.com> <20140808092040.GD3021@nuc-i3427.alporthouse.com> <20140808093701.GO8727@phenom.ffwll.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140808134725.GE4427@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 06:47:25AM -0700, Greg Kroah-Hartman wrote:
-> On Fri, Aug 08, 2014 at 09:07:55AM +0200, Martin Berglund wrote:
-> > On Thu, Aug 07, 2014 at 07:18:13PM -0700, Greg Kroah-Hartman wrote:
-> > > On Thu, Aug 07, 2014 at 11:08:34PM +0100, Martin Berglund wrote:
-> > > > Add missing __user macro casting in the function wpa_set_keys.
-> > > > This is okay since the function handles the possibility of
-> > > > param->u.wpa_key.key and param->u.wpa_key.seq pointing to
-> > > > kernelspace using a flag, fcpfkernel.
+On Friday, August 08, 2014 11:37:01 AM Daniel Vetter wrote:
+> On Fri, Aug 08, 2014 at 10:20:40AM +0100, Chris Wilson wrote:
+> > On Tue, Jul 29, 2014 at 12:26:36PM +0200, Daniel Vetter wrote:
+> > > On Tue, Jul 29, 2014 at 08:37:48AM +0100, Chris Wilson wrote:
+> > > > On Mon, Jul 28, 2014 at 10:54:06AM +0200, Daniel Vetter wrote:
+> > > > > On Sat, Jul 26, 2014 at 11:27:38AM +0100, Chris Wilson wrote:
+> > > > > > On Wed, Jun 18, 2014 at 10:54:13PM +0200, Daniel Vetter wrote:
+> > > > > > > On Fri, Jun 13, 2014 at 04:38:03PM +0100, oscar.mateo@intel.com wrote:
+> > > > > > > > From: Oscar Mateo <oscar.mateo@intel.com>
+> > > > > > > > 
+> > > > > > > > Or with a spinlock grabbed, because it might sleep, which is not
+> > > > > > > > a nice thing to do. Instead, do the runtime_pm get/put together
+> > > > > > > > with the create/destroy request, and handle the forcewake get/put
+> > > > > > > > directly.
+> > > > > > > > 
+> > > > > > > > Signed-off-by: Oscar Mateo <oscar.mateo@intel.com>
+> > > > > > > 
+> > > > > > > Looks like a fixup that should be squashed into relevant earlier patches.
+> > > > > > 
+> > > > > > The whole gen6_gt_force_wake_get() calling intel_runtime_pm_get() is
+> > > > > > broken due to this - we must be able to read registers in atomic
+> > > > > > context!
+> > > > > > 
+> > > > > > Please revert c8c8fb33b37766acf6474784b0d5245dab9a1690
+> > > > > 
+> > > > > force_wake_get can't call runtime_pm_get becuase pm_get can sleep. So if
+> > > > > you want to read registers from atomic context you have to have a runtime
+> > > > > pm reference from someone else.
 > > > > 
-> > > > Signed-off-by: Martin Berglund <martin@rogsta.net>
-> > > > ---
-> > > > This was submitted as part of Eudyptula challenge task 16
-> > > > 
-> > > >  drivers/staging/vt6655/wpactl.c |    8 ++++++--
-> > > >  1 file changed, 6 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
-> > > > index 5f454ca..d75dd79 100644
-> > > > --- a/drivers/staging/vt6655/wpactl.c
-> > > > +++ b/drivers/staging/vt6655/wpactl.c
-> > > > @@ -224,7 +224,9 @@ int wpa_set_keys(PSDevice pDevice, void *ctx,
-> > > >  	} else {
-> > > >  		spin_unlock_irq(&pDevice->lock);
-> > > >  		if (param->u.wpa_key.key &&
-> > > > -		    copy_from_user(&abyKey[0], param->u.wpa_key.key, param->u.wpa_key.key_len)) {
-> > > > +		    copy_from_user(&abyKey[0],
-> > > > +				   (void __user *)param->u.wpa_key.key,
+> > > > Nope. That cannot work.
 > > > 
-> > > Would it be better to mark this pointer as __user in the structure
-> > > itself?  Or is it also used as a kernel structure in other places?
-> > > 
-> > > thanks,
-> > > 
-> > > greg k-h
+> > > Well it works currently. So where do you see the problem?
 > > 
-> > Yes, the structure is used as a kernel structure in some other places. 
-> > Even this function is sometimes called with the pointers in the
-> > structure pointing to kernel memory. However, that is correctly
-> > handled with a flag also sent to the function.
+> > Sampling registers from an timer - in particular, we really do not want
+> > to disable runtime pm whilst trying to monitor the impact of runtime pm.
 > 
-> Ugh, that's a mess.  And should be cleaned up...
+> In that case you can grab a runtime pm reference iff the device is powered
+> on already. Which won't call anything scary, just amounts to an
+> atomic_add_unless or so, and then drop it again. 
 > 
-> > As a side note: there are some uses of memcpy in this file that
-> > might be good to switch to copy_from/to_user but it's not as clear
-> > to me if these pointers never can point to kernel memory (because of
-> > the mixing of the two). For example all copying of ssid and bssid.
+> Unfortunately there doesn't seem to be such a thing around already, so
+> need to add it first. Greg, how much would you freak out if we add
+> something like
 > 
-> That also is not good, if memcpy is used for userspace memory pointers,
-> bad things can happen on some machines...
-> 
-> Look at how this was fixed up in the other staging vt* driver, odds are
-> you can do the same thing here, right?
-> 
-> thanks,
-> 
-> greg k-h
+> /**
+>  * pm_runtime_get_unless_suspended - grab a rpm ref if the device is on
+>  * 
+>  * Returns true if an rpm ref has been acquire, false otherwise. Can be
+>  * called from atomic context to e.g. sample perfomance counters (where we
+>  * obviously don't want to disturb system state if everything is off atm).
+>  */
+> static inline bool pm_runtime_get_unless_suspended(struct device *dev)
+> {
+> 	return atomic_add_unless(&dev->power.usage_count, 1, 0);
+> }
 
-I've looked into this driver some more now. It's definitely messy but not 
-as bad as I said in my previous mail. I could not find any instances where 
-copy_to/from_user was needed (the pointers were actually copied arrays).
+I don't think it'll work universally.
 
-As to solving it the same way as vt6656 was solved, of some reason vt6656
-has no function for ndo_do_ioctl, and therefore no need for the ioctl-part.
+That'd need to be synchronized with other stuff done under the spinlock
+and in fact, what you're interested in is runtime_status (and that being
+RPM_ACTIVE) and not just the usage count.
 
-I just submitted a very similar patch to solve the last two address space
-warnings in the vt6655 driver left after this patch.
-https://lkml.org/lkml/2014/8/8/960
+Rafael
 
-Cheers,
-                   Martin
