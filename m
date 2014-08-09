@@ -1,99 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaHIQl3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 12:41:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42494 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751900AbaHIQlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 12:41:24 -0400
-Date: Sat, 9 Aug 2014 18:41:19 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: David Miller <davem@davemloft.net>, gregkh@linuxfoundation.org
-Cc: mcgrof@do-not-panic.com, tiwai@suse.de, linux-kernel@vger.kernel.org,
-        penguin-kernel@I-love.SAKURA.ne.jp, joseph.salisbury@canonical.com,
-        kay@vrfy.org, gnomes@lxorguk.ukuu.org.uk, tim.gardner@canonical.com,
-        pierre-fersing@pierref.org, akpm@linux-foundation.org, oleg@redhat.com,
-        bpoirier@suse.de, nagalakshmi.nandigama@avagotech.com,
-        praveen.krishnamoorthy@avagotech.com, sreekanth.reddy@avagotech.com,
-        abhijit.mahajan@avagotech.com, hariprasad@chelsio.com,
-        santosh@chelsio.com, MPT-FusionLinux.pdl@avagotech.com,
-        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred
-	probe from init
-Message-ID: <20140809164119.GI21930@wotan.suse.de>
-References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com> <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com> <20140730.151107.1328294951387764830.davem@davemloft.net>
+	id S1751978AbaHIQo7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 12:44:59 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:62789 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751205AbaHIQo4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Aug 2014 12:44:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140730.151107.1328294951387764830.davem@davemloft.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <53E62EEF.9040801@gmail.com>
+References: <53E62EEF.9040801@gmail.com>
+Date: Sat, 9 Aug 2014 09:44:55 -0700
+X-Google-Sender-Auth: Dq35zXpd6a4VrjpHzi3-ExXIu6A
+Message-ID: <CAE9FiQVXkojPnTr4EQE7h2YhWqa5VBYRSCadB0B1qDL+eGY8jg@mail.gmail.com>
+Subject: Re: Loading initrd above 4G causes freeze on boot
+From: Yinghai Lu <yinghai@kernel.org>
+To: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 03:11:07PM -0700, David Miller wrote:
-> From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-> Date: Mon, 28 Jul 2014 11:28:28 -0700
-> 
-> > Tetsuo bisected and found that commit 786235ee "kthread: make
-> > kthread_create() killable" modified kthread_create() to bail as
-> > soon as SIGKILL is received. This is causing some issues with
-> > some drivers and at times boot. Joseph then found that failures
-> > occur as the systemd-udevd process sends SIGKILL to modprobe if
-> > probe on a driver takes over 30 seconds. When this happens probe
-> > will fail on any driver, its why booting on some system will fail
-> > if the driver happens to be a storage related driver. Some folks
-> > have suggested fixing this by modifying kthread_create() to not
-> > leave upon SIGKILL [3], upon review Oleg rejected this change and
-> > the discussion was punted out to systemd to see if the default
-> > timeout could be increased from 30 seconds to 120. The opinion of
-> > the systemd maintainers is that the driver's behavior should
-> > be fixed [4]. Linus seems to agree [5], however more recently even
-> > networking drivers have been reported to fail on probe since just
-> > writing the firmware to a device and kicking it can take easy over
-> > 60 seconds [6]. Benjamim was able to trace the issues recently
-> > reported on cxgb4 down to the same systemd-udevd 30 second timeout [6].
-> > 
-> > This is an alternative solution which enables drivers that are
-> > known to take long to use deferred probe workqueue. This avoids
-> > the 30 second timeout and lets us annotate drivers with long
-> > init sequences.
-> > 
-> > As drivers determine a component is not yet available and needs
-> > to defer probe you'll be notified this happen upon init for each
-> > device but now with a message such as:
-> > 
-> > pci 0000:03:00.0: Driver cxgb4 requests probe deferral on init
-> > 
-> > You should see one of these per struct device probed.
-> 
-> It seems we're still discussing this.
-> 
-> I think I understand all of the underlying issues, and what I'll say
-> is that perhaps we should use what Greg KH requested but via a helper
-> that is easy to grep for.
-> 
-> I don't care if it's something like "module_long_probe_init()" and
-> "module_long_probe_exit()", but it just needs to be some properly
-> named interface which does the whole kthread or whatever bit.
+On Sat, Aug 9, 2014 at 7:23 AM, Mantas Mikulėnas <grawity@gmail.com> wrote:
+> As of commit 4bf7111f5016 ("x86/efi: Support initrd loaded above 4G"),
+> the kernel freezes at the earliest possible moment when trying to boot
+> via UEFI on my Asus laptop. (It still boots via BIOS.)
+>
+> If I revert that commit on current master (c309bfa9b481), it boots
+> correctly again [although I see "setup_efi_pci() failed" being printed].
+>
+> (Seems like it freezes when handle_cmdline_files() attempts to read
+> the last chunk of the initramfs -- the last call to efi_file_read()
+> never returns. Figuring out why that happens is beyond me, though.)
+>
 
-I've tested the alternative kthread_run() proposal but unfortunately it
-does not help resolve the issue, the timeout is still hit and a SIGKILL
-still kills the driver probe. Please let me know how you'd all like us
-to proceed, these defer probe patches do help cure the issue though.
+Matt found that efi_file_read()/firmware has problem that could not do
+several reading. Please check if reverting that commit have any
+difference.
 
-I should also note that these work around patches can only be done once we
-already know a driver fails to go over the timeout, root causing and
-associating driver issues to the timeout has been very difficult with a few
-drivers already, for this reason I've submitted a change for systemd to issue a
-warning instead of killing kmod usage on udev after a timeout, that would make
-this regression non-fatal, and let us more easily then hunt drivers that need
-fixing much easily [0] [1]. As noted we'd still want to have drivers easily
-annotated which require fixing, this orignal series would allow us to do that
-by hunting for delay_probe. If there alternative and preferred strategies
-please let me know.
+---
+I spent some time playing around with this bug and it appears to be
+triggered by the read-a-chunk-at-a-time logic in handle_cmdline_files(),
+(which is itself a bug workaround) introduced here,
 
-[0] http://lists.freedesktop.org/archives/systemd-devel/2014-August/021812.html
-[1] http://lists.freedesktop.org/archives/systemd-devel/2014-August/021821.html
+  commit 2d2da60fb40a
+  Author: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+  Date:   Fri Dec 16 13:30:58 2011 +0100
 
-  Luis
+      x86, efi: Break up large initrd reads
+---
