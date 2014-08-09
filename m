@@ -1,96 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbaHHX7Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 19:59:24 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53581 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751343AbaHHX7X (ORCPT
+	id S1751452AbaHIAGo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 20:06:44 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:56743 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaHIAGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 19:59:23 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Greg KH <gregkh@linuxfoundation.org>, Daniel Vetter <daniel@ffwll.ch>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, oscar.mateo@intel.com,
-        intel-gfx@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Intel-gfx] [PATCH 45/53] drm/i915/bdw: Do not call intel_runtime_pm_get() in an interrupt
-Date: Sat, 09 Aug 2014 02:18:07 +0200
-Message-ID: <1423224.0OXfnJArx9@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140808134110.GB4427@kroah.com>
-References: <1402673891-14618-1-git-send-email-oscar.mateo@intel.com> <20140808093701.GO8727@phenom.ffwll.local> <20140808134110.GB4427@kroah.com>
+	Fri, 8 Aug 2014 20:06:42 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CALZtONBNEg7kzUtwKihQuAU48MNh5NjhZcWoOxe-1-vgWqSLiw@mail.gmail.com>
+References: <20140808075316.GA21919@www.outflux.net>
+	<CALZtONBNEg7kzUtwKihQuAU48MNh5NjhZcWoOxe-1-vgWqSLiw@mail.gmail.com>
+Date: Fri, 8 Aug 2014 17:06:41 -0700
+X-Google-Sender-Auth: N9l810CFz7LRel7z-syhGfKgo6w
+Message-ID: <CAGXu5jL3GjrqsixS6U+GYD1pxAOOcXsXbt5XOVC8KhZB+naXAA@mail.gmail.com>
+Subject: Re: [PATCH] mm/zpool: use prefixed module loading
+From: Kees Cook <keescook@chromium.org>
+To: Dan Streetman <ddstreet@ieee.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Linux-MM <linux-mm@kvack.org>, Vasiliy Kulikov <segoon@openwall.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 08, 2014 06:41:10 AM Greg KH wrote:
-> On Fri, Aug 08, 2014 at 11:37:01AM +0200, Daniel Vetter wrote:
-> > On Fri, Aug 08, 2014 at 10:20:40AM +0100, Chris Wilson wrote:
-> > > On Tue, Jul 29, 2014 at 12:26:36PM +0200, Daniel Vetter wrote:
-> > > > On Tue, Jul 29, 2014 at 08:37:48AM +0100, Chris Wilson wrote:
-> > > > > On Mon, Jul 28, 2014 at 10:54:06AM +0200, Daniel Vetter wrote:
-> > > > > > On Sat, Jul 26, 2014 at 11:27:38AM +0100, Chris Wilson wrote:
-> > > > > > > On Wed, Jun 18, 2014 at 10:54:13PM +0200, Daniel Vetter wrote:
-> > > > > > > > On Fri, Jun 13, 2014 at 04:38:03PM +0100, oscar.mateo@intel.com wrote:
-> > > > > > > > > From: Oscar Mateo <oscar.mateo@intel.com>
-> > > > > > > > > 
-> > > > > > > > > Or with a spinlock grabbed, because it might sleep, which is not
-> > > > > > > > > a nice thing to do. Instead, do the runtime_pm get/put together
-> > > > > > > > > with the create/destroy request, and handle the forcewake get/put
-> > > > > > > > > directly.
-> > > > > > > > > 
-> > > > > > > > > Signed-off-by: Oscar Mateo <oscar.mateo@intel.com>
-> > > > > > > > 
-> > > > > > > > Looks like a fixup that should be squashed into relevant earlier patches.
-> > > > > > > 
-> > > > > > > The whole gen6_gt_force_wake_get() calling intel_runtime_pm_get() is
-> > > > > > > broken due to this - we must be able to read registers in atomic
-> > > > > > > context!
-> > > > > > > 
-> > > > > > > Please revert c8c8fb33b37766acf6474784b0d5245dab9a1690
-> > > > > > 
-> > > > > > force_wake_get can't call runtime_pm_get becuase pm_get can sleep. So if
-> > > > > > you want to read registers from atomic context you have to have a runtime
-> > > > > > pm reference from someone else.
-> > > > > 
-> > > > > Nope. That cannot work.
-> > > > 
-> > > > Well it works currently. So where do you see the problem?
-> > > 
-> > > Sampling registers from an timer - in particular, we really do not want
-> > > to disable runtime pm whilst trying to monitor the impact of runtime pm.
-> > 
-> > In that case you can grab a runtime pm reference iff the device is powered
-> > on already. Which won't call anything scary, just amounts to an
-> > atomic_add_unless or so, and then drop it again. 
-> > 
-> > Unfortunately there doesn't seem to be such a thing around already, so
-> > need to add it first. Greg, how much would you freak out if we add
-> > something like
-> > 
-> > /**
-> >  * pm_runtime_get_unless_suspended - grab a rpm ref if the device is on
-> >  * 
-> >  * Returns true if an rpm ref has been acquire, false otherwise. Can be
-> >  * called from atomic context to e.g. sample perfomance counters (where we
-> >  * obviously don't want to disturb system state if everything is off atm).
-> >  */
-> > static inline bool pm_runtime_get_unless_suspended(struct device *dev)
-> > {
-> > 	return atomic_add_unless(&dev->power.usage_count, 1, 0);
-> > }
-> 
-> I'd freak out a lot :)
-> 
-> Rafael, isn't there some other better way to resolve this issue without
-> resorting to something as "horrid" as the above?
+On Fri, Aug 8, 2014 at 10:11 AM, Dan Streetman <ddstreet@ieee.org> wrote:
+> On Fri, Aug 8, 2014 at 3:53 AM, Kees Cook <keescook@chromium.org> wrote:
+>> To avoid potential format string expansion via module parameters,
+>> do not use the zpool type directly in request_module() without a
+>> format string. Additionally, to avoid arbitrary modules being loaded
+>> via zpool API (e.g. via the zswap_zpool_type module parameter) add a
+>> "zpool-" prefix to the requested module, as well as module aliases for
+>> the existing zpool types (zbud and zsmalloc).
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  mm/zbud.c     | 1 +
+>>  mm/zpool.c    | 2 +-
+>>  mm/zsmalloc.c | 1 +
+>>  3 files changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/mm/zbud.c b/mm/zbud.c
+>> index a05790b1915e..aa74f7addab1 100644
+>> --- a/mm/zbud.c
+>> +++ b/mm/zbud.c
+>> @@ -619,3 +619,4 @@ module_exit(exit_zbud);
+>>  MODULE_LICENSE("GPL");
+>>  MODULE_AUTHOR("Seth Jennings <sjenning@linux.vnet.ibm.com>");
+>>  MODULE_DESCRIPTION("Buddy Allocator for Compressed Pages");
+>> +MODULE_ALIAS("zpool-zbud");
+>
+> If we keep this, I'd recommend putting this inside the #ifdef
+> CONFIG_ZPOOL section, to keep all the zpool stuff together in zbud and
+> zsmalloc.
+>
+>> diff --git a/mm/zpool.c b/mm/zpool.c
+>> index e40612a1df00..739cdf0d183a 100644
+>> --- a/mm/zpool.c
+>> +++ b/mm/zpool.c
+>> @@ -150,7 +150,7 @@ struct zpool *zpool_create_pool(char *type, gfp_t gfp, struct zpool_ops *ops)
+>>         driver = zpool_get_driver(type);
+>>
+>>         if (!driver) {
+>> -               request_module(type);
+>> +               request_module("zpool-%s", type);
+>
+> I agree with a change of (type) to ("%s", type), but what's the need
+> to prefix "zpool-"?  Anyone who has access to modify the
+> zswap_zpool_type parameter is already root and can just as easily load
+> any module they want.  Additionally, the zswap_compressor parameter
+> also runs through request_module() (in crypto/api.c) and could be used
+> to load any kernel module.
 
-I'm not sure how to solve this at all, because the above isn't going to work
-in general in my opinion.
+Yeah, the "%s" should be the absolute minimum. :)
 
-Can anyone please try to explain the problem to me without referring to the
-i915 internals?
+> I'd prefer to leave out the "zpool-" prefix unless there is a specific
+> reason to include it.
 
-Rafael
+The reason is that the CAP_SYS_MODULE capability is supposed to be
+what controls the loading of arbitrary modules, and that's separate
+permission than changing module parameters via sysfs
+(/sys/modules/...). Which begs the question: maybe those parameters
+shouldn't be writable without CAP_SYS_MODULE? Greg, any thoughts here?
+kobjects don't seem to carry any capabilities checks.
 
+This is certainly much less serious than letting a non-root user load
+an arbitrary module, but it would be great if we could have a clear
+path to making sure that arbitrary module loading isn't the default
+case here (given this new ability). In the past (netdev module
+loading), a CVE was assigned for a CAP_NET_ADMIN privilege being able
+to load arbitrary modules, so I don't see this as much different.
+
+Ugh, yes, I didn't see the call to crypto_has_comp. Other users of
+this routine use const char arrays, so there wasn't any danger here.
+This would be the first user of the crypto API to expose this via a
+userspace-controlled arbitrary string.
+
+Herbert, what do you think here? I'm concerned we're going to get into
+a situation like we had to deal with for netdev:
+
+http://git.kernel.org/linus/8909c9ad8ff03611c9c96c9a92656213e4bb495b
+
+I think we need to fix zswap now before it gets too far, and likely
+adjust the crypto API to use a module prefix as well. Perhaps we need
+a "crypto-" prefix?
+
+-Kees
+
+>
+>>                 driver = zpool_get_driver(type);
+>>         }
+>>
+>> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+>> index 4e2fc83cb394..36af729eb3f6 100644
+>> --- a/mm/zsmalloc.c
+>> +++ b/mm/zsmalloc.c
+>> @@ -1199,3 +1199,4 @@ module_exit(zs_exit);
+>>
+>>  MODULE_LICENSE("Dual BSD/GPL");
+>>  MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
+>> +MODULE_ALIAS("zpool-zsmalloc");
+>> --
+>> 1.9.1
+>>
+>>
+>> --
+>> Kees Cook
+>> Chrome OS Security
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
