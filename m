@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751405AbaHIBua (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 21:50:30 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:57392 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaHIBu3 (ORCPT
+	id S1750878AbaHICAU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 22:00:20 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:45450 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaHICAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 21:50:29 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-e1-53e57e63ae51
-From: Chao Yu <chao2.yu@samsung.com>
-To: jack@suse.cz
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] udf: avoid unneeded up_write when fail to add entry in
- ->symlink
-Date: Sat, 09 Aug 2014 09:49:31 +0800
-Message-id: <00bd01cfb374$4b397a30$e1ac6e90$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac+zclpAfPYI4+1xTqGoOkQ5rFBsiQ==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t9jQd3kuqfBBpe3GFjMnt7MZHF51xw2
-	ByaPMwuOsHt83iQXwBTFZZOSmpNZllqkb5fAlXFt3wrmghnsFe0/6xoYv7F2MXJySAiYSGxu
-	e88OYYtJXLi3nq2LkYtDSGA6o8SPs6ehnB+MEotmfmAGqWITUJFY3vGfCcQWERCQeHvsJxuI
-	zSygIPHr3iawqcICwRLb5/xkBLFZBFQlNt58CxbnFbCUWLtmKyOELSjxY/I9FoheLYnN25pY
-	IWx5ic1r3jJDXKQgsePsa0aIXXoSN6buZIeoEZfYeOQWywRGgVlIRs1CMmoWklGzkLQsYGRZ
-	xSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcrM+kdzCuarA4xCjAwajEw7vC5mmwEGtiWXFl
-	7iFGCQ5mJRHehZVAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHW60DhQTSE0tSs1NTC1KLYLJM
-	HJxSDYz+/PWdC29ca1qr1XQ58+6D7bPfSXDfFTy8eeuXVc9/XG5evmv5Egc9YzP1A+fT1hZ9
-	2n120hTvdW3xVot2snvGrvuer3g/+sB8A23N0v+vVEOiy+w2rEnaYvPhSrEQw7veqoYHJ3db
-	Fur2s5o+Lzss4580uevdxrysNvuF9wMUtR+e+HCySHu+EktxRqKhFnNRcSIA07Ve41ICAAA=
+	Fri, 8 Aug 2014 22:00:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <1407545198-9009-1-git-send-email-xiyou.wangcong@gmail.com>
+References: <1407545198-9009-1-git-send-email-xiyou.wangcong@gmail.com>
+Date: Sat, 9 Aug 2014 11:00:18 +0900
+X-Google-Sender-Auth: FDREbQn7qrT7c1-QRfqSMCdUxqE
+Message-ID: <CAH9JG2XuC0A=MVNx=OQcutHaCtXKt=hoWoB9PW3V_PuND6RJ5g@mail.gmail.com>
+Subject: Re: [Patch] freezer: check OOM kill signal while being frozen
+From: Kyungmin Park <kmpark@infradead.org>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have released the ->i_data_sem before invoking udf_add_entry(),
-so in following error path, we should not release this lock again.
+On Sat, Aug 9, 2014 at 9:46 AM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
+> There is a race condition between OOM killer and freezer when
+> they try to operate on the same process, something like below:
+>
+>         Process A       Process B               Process C
+> trigger oom
+> B=oom_scan_process_thread()
+>                                         cgroup_freezer_freeze(B)
+>                         ...
+>                         try_to_freeze()
+>                         stay in D state
+> oom_kill_process(B)
+>
+> In this case, process A triggers OOM and kernel selects process B
+> as the victim, right before being killed process B was frozen by
+> process C therefore went to D state, then kernel sent SIGKILL but
+> it is already too late as process B will never care about pending
+> signals any more. Fix this straightly by checking fatal pending signal
+> from OOM killer, so that the frozen process will recover itself
+> and then be killed finally.
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/udf/namei.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Similar patch is posted and discussed but no conclusion.
+http://marc.info/?t=137699769400004&r=1&w=1
 
-diff --git a/fs/udf/namei.c b/fs/udf/namei.c
-index 9737cba..83a0600 100644
---- a/fs/udf/namei.c
-+++ b/fs/udf/namei.c
-@@ -1014,7 +1014,7 @@ static int udf_symlink(struct inode *dir, struct dentry *dentry,
- 
- 	fi = udf_add_entry(dir, dentry, &fibh, &cfi, &err);
- 	if (!fi)
--		goto out_no_entry;
-+		goto out_fail;
- 	cfi.icb.extLength = cpu_to_le32(sb->s_blocksize);
- 	cfi.icb.extLocation = cpu_to_lelb(iinfo->i_location);
- 	if (UDF_SB(inode->i_sb)->s_lvid_bh) {
-@@ -1036,6 +1036,7 @@ out:
- 
- out_no_entry:
- 	up_write(&iinfo->i_data_sem);
-+out_fail:
- 	inode_dec_link_count(inode);
- 	iput(inode);
- 	goto out;
--- 
-2.0.1.474.g72c7794
+Adding Bart,
 
-
+Thank you,
+Kyungmin Park
+>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+> ---
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index aa6a8aa..c6d189d 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -68,7 +68,9 @@ bool __refrigerator(bool check_kthr_stop)
+>                 spin_lock_irq(&freezer_lock);
+>                 current->flags |= PF_FROZEN;
+>                 if (!freezing(current) ||
+> -                   (check_kthr_stop && kthread_should_stop()))
+> +                   (check_kthr_stop && kthread_should_stop()) ||
+> +                   (test_tsk_thread_flag(current, TIF_MEMDIE) &&
+> +                        fatal_signal_pending(current)))
+>                         current->flags &= ~PF_FROZEN;
+>                 spin_unlock_irq(&freezer_lock);
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
