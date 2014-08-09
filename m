@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaHIRyT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 13:54:19 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:49047 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaHIRyS (ORCPT
+	id S1752095AbaHIRzF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 13:55:05 -0400
+Received: from smtp-vbr2.xs4all.nl ([194.109.24.22]:1044 "EHLO
+	smtp-vbr2.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360AbaHIRzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 13:54:18 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Huacai Chen <chenhc@lemote.com>,
-        Andreas Herrmann <andreas.herrmann@caviumnetworks.com>
-Subject: [PATCH] mips: Fix nlm_xlp_defconfig build error
-Date: Sat,  9 Aug 2014 10:54:03 -0700
-Message-Id: <1407606843-12984-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
+	Sat, 9 Aug 2014 13:55:02 -0400
+X-Greylist: delayed 437 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Aug 2014 13:55:00 EDT
+Message-ID: <53E65EA4.6080106@xs4all.nl>
+Date: Sat, 09 Aug 2014 19:47:16 +0200
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Suman Kumar <suman@inforcecomputing.com>
+CC: m.chehab@samsung.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] staging: soc_camera: soc_camera_platform.c: Fixed a Missing
+ blank line coding style issue
+References: <1407604952-15492-1-git-send-email-suman@inforcecomputing.com> <Pine.LNX.4.64.1408091934100.20541@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1408091934100.20541@axis700.grange>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The nlm_xlp_defconfig build fails with
+On 08/09/2014 07:36 PM, Guennadi Liakhovetski wrote:
+> Hi Suman,
+> 
+> On Sat, 9 Aug 2014, Suman Kumar wrote:
+> 
+>>     Fixes a coding style issue reported by checkpatch.pl
+> 
+> Thanks for your patch. To my taste checkpatch.pl has unfortunately become 
+> too noisy with meaningless / unimportant warnings like this one. Is this 
+> in CodingStyle? If not, my intention is to drop this.
 
-./arch/mips/include/asm/mach-netlogic/topology.h:15:0:
-			error: "topology_core_id" redefined [-Werror]
-In file included from include/linux/smp.h:59:0,
-	[ ...]
-                 from arch/mips/mm/dma-default.c:12:
-./arch/mips/include/asm/smp.h:41:0:
-			note: this is the location of the previous definition
+I don't see it being mentioned explicitly in the CodingStyle, but the coding
+style follows K&R, and they put an empty line between local variables and the
+start of the code. And I like it that way as well, it makes it easier to review.
 
-and similar errors.
+If you don't want to be bothered by such patches, just delegate them to me in
+patchwork, I don't mind.
 
-This is caused by commit bda4584cd943d7 ("MIPS: Support CPU topology files
-in sysfs") which adds the defines to arch/mips/include/asm/smp.h.
+Regards,
 
-Remove the defines from arch/mips/include/asm/mach-netlogic/topology.h
-as no longer necessary.
+	Hans
 
-Cc: Huacai Chen <chenhc@lemote.com>
-Cc: Andreas Herrmann <andreas.herrmann@caviumnetworks.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- arch/mips/include/asm/mach-netlogic/topology.h | 7 -------
- 1 file changed, 7 deletions(-)
-
-diff --git a/arch/mips/include/asm/mach-netlogic/topology.h b/arch/mips/include/asm/mach-netlogic/topology.h
-index ceeb1f5..0eb43c8 100644
---- a/arch/mips/include/asm/mach-netlogic/topology.h
-+++ b/arch/mips/include/asm/mach-netlogic/topology.h
-@@ -10,13 +10,6 @@
- 
- #include <asm/mach-netlogic/multi-node.h>
- 
--#ifdef CONFIG_SMP
--#define topology_physical_package_id(cpu)	cpu_to_node(cpu)
--#define topology_core_id(cpu)	(cpu_logical_map(cpu) / NLM_THREADS_PER_CORE)
--#define topology_thread_cpumask(cpu)		(&cpu_sibling_map[cpu])
--#define topology_core_cpumask(cpu)	cpumask_of_node(cpu_to_node(cpu))
--#endif
--
- #include <asm-generic/topology.h>
- 
- #endif /* _ASM_MACH_NETLOGIC_TOPOLOGY_H */
--- 
-1.9.1
+> However, Mauro may 
+> override by either taking this himself or asking me to apply this.
+> 
+> Thanks
+> Guennadi
+> 
+>>
+>> Signed-off-by: Suman Kumar <suman@inforcecomputing.com>
+>> ---
+>>  drivers/media/platform/soc_camera/soc_camera_platform.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/drivers/media/platform/soc_camera/soc_camera_platform.c b/drivers/media/platform/soc_camera/soc_camera_platform.c
+>> index ceaddfb..fe15a80 100644
+>> --- a/drivers/media/platform/soc_camera/soc_camera_platform.c
+>> +++ b/drivers/media/platform/soc_camera/soc_camera_platform.c
+>> @@ -27,12 +27,14 @@ struct soc_camera_platform_priv {
+>>  static struct soc_camera_platform_priv *get_priv(struct platform_device *pdev)
+>>  {
+>>  	struct v4l2_subdev *subdev = platform_get_drvdata(pdev);
+>> +
+>>  	return container_of(subdev, struct soc_camera_platform_priv, subdev);
+>>  }
+>>  
+>>  static int soc_camera_platform_s_stream(struct v4l2_subdev *sd, int enable)
+>>  {
+>>  	struct soc_camera_platform_info *p = v4l2_get_subdevdata(sd);
+>> +
+>>  	return p->set_capture(p, enable);
+>>  }
+>>  
+>> -- 
+>> 1.8.2
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
