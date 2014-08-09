@@ -1,115 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539AbaHIGu4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 02:50:56 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:33295 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbaHIGuR (ORCPT
+	id S1751346AbaHIHjW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 03:39:22 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:58894 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaHIHjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 02:50:17 -0400
-From: Goffredo Baroncelli <kreijack@gmail.com>
-X-Google-Original-From: Goffredo Baroncelli <kreijack@inwind.it>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Goffredo Baroncelli <kreijack@inwind.it>
-Subject: [PATCH 3/5] Add the "verbose" module option.
-Date: Sat,  9 Aug 2014 06:50:01 +0000
-Message-Id: <1407567003-18332-4-git-send-email-kreijack@inwind.it>
+	Sat, 9 Aug 2014 03:39:21 -0400
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Dave Hansen <dave.hansen@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Jeremiah Mahler <jmmahler@gmail.com>
+Subject: [PATCH v2 linux-next] arch/x86/mm: sparse 'tlb_single_page_flush_ceiling' warning
+Date: Sat,  9 Aug 2014 00:38:33 -0700
+Message-Id: <1407569913-4035-1-git-send-email-jmmahler@gmail.com>
 X-Mailer: git-send-email 2.1.0.rc1
-In-Reply-To: <1407567003-18332-1-git-send-email-kreijack@inwind.it>
-References: <1407567003-18332-1-git-send-email-kreijack@inwind.it>
+In-Reply-To: <alpine.DEB.2.02.1408081503270.15603@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1408081503270.15603@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a "verbose" option to control the message in the kernel log
-verbose = 0   no message
-verbose = 1   log only the fan speed changes
-verbose = 2   log the fan speed changes and the temperature changes
+A sparse warning is generated about 'tlb_single_page_flush_ceiling'
+not being declared.
 
-Signed-off-by: Goffredo Baroncelli <kreijack@inwind.it>
+  arch/x86/mm/tlb.c:177:15: warning: symbol
+  'tlb_single_page_flush_ceiling' was not declared. Should it be static?
+
+Since it isn't used anywhere outside this file, fix the warning by
+making it static.
+
+Also, optimize the use of this variable by adding the __read_mostly
+directive.
+
+Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
+Suggested-by: David Rientjes <rientjes@google.com>
 ---
- drivers/macintosh/therm_windtunnel.c | 38 +++++++++++++++++++++++-------------
- 1 file changed, 24 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/macintosh/therm_windtunnel.c b/drivers/macintosh/therm_windtunnel.c
-index 1e50455..68f1067 100644
---- a/drivers/macintosh/therm_windtunnel.c
-+++ b/drivers/macintosh/therm_windtunnel.c
-@@ -44,7 +44,9 @@
- #include <asm/sections.h>
- #include <asm/macio.h>
+Notes:
+    I like the suggestion from David Rientjes, to add __read_mostly.
+    Patch updated.
+
+ arch/x86/mm/tlb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 1fe3398..bbe5766 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -174,7 +174,7 @@ void flush_tlb_current_task(void)
+  *
+  * This is in units of pages.
+  */
+-unsigned long tlb_single_page_flush_ceiling = 33;
++static unsigned long tlb_single_page_flush_ceiling __read_mostly = 33;
  
--#define LOG_TEMP		0			/* continuously log temperature */
-+static int verbose = 1;
-+module_param(verbose, int, 0644);
-+MODULE_PARM_DESC(verbose, "Verbosity level: 0=silent, 1=log the fan tuning, 2=log the temperature");
- 
- static struct {
- 	volatile int		running;
-@@ -157,10 +159,6 @@ tune_fan( int fan_setting )
- 	/* write_reg( x.fan, 0x24, val, 1 ); */
- 	write_reg( x.fan, 0x25, val, 1 );
- 	write_reg( x.fan, 0x20, 0, 1 );
--	print_temp("CPU-temp: ", x.temp );
--	if( x.casetemp )
--		print_temp(", Case: ", x.casetemp );
--	printk(",  Fan: %d (tuned %+d)\n", 11-fan_setting, x.fan_level-fan_setting );
- 
- 	x.fan_level = fan_setting;
- }
-@@ -168,7 +166,7 @@ tune_fan( int fan_setting )
- static void
- poll_temp( void )
- {
--	int temp, i, level, casetemp;
-+	int temp, i, level, casetemp, tempchanged;
- 
- 	temp = read_reg( x.thermostat, 0, 2 );
- 
-@@ -179,14 +177,6 @@ poll_temp( void )
- 	casetemp = read_reg(x.fan, 0x0b, 1) << 8;
- 	casetemp |= (read_reg(x.fan, 0x06, 1) & 0x7) << 5;
- 
--	if( LOG_TEMP && x.temp != temp ) {
--		print_temp("CPU-temp: ", temp );
--		print_temp(", Case: ", casetemp );
--		printk(",  Fan: %d\n", 11-x.fan_level );
--	}
--	x.temp = temp;
--	x.casetemp = casetemp;
--
- 	level = -1;
- 	for( i=0; (temp & 0xffff) > fan_table[i].temp ; i++ )
- 		;
-@@ -200,6 +190,26 @@ poll_temp( void )
- 		level = fan_table[i].fan_up_setting;
- 	x.upind = i;
- 
-+	/*
-+	 * if verbose >=1 log each fan tuning
-+	 * if verbose >=2 log each cpu temperature change
-+	 */
-+	tempchanged = x.temp != temp || x.casetemp != casetemp;
-+	if ((verbose > 1 && tempchanged) ||
-+	    (verbose > 0 && level >= 0)) {
-+		print_temp(KERN_INFO "CPU-temp: ", temp);
-+		if (casetemp)
-+			print_temp(", Case: ", casetemp);
-+		if (level >= 0)
-+			printk(", Fan: %d (tuned %+d)\n", 11-level,
-+				x.fan_level-level);
-+		else
-+			printk(", Fan: %d\n", 11-x.fan_level);
-+	}
-+
-+	x.temp = temp;
-+	x.casetemp = casetemp;
-+
- 	if( level >= 0 )
- 		tune_fan( level );
- }
+ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 				unsigned long end, unsigned long vmflag)
 -- 
 2.1.0.rc1
 
