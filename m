@@ -1,96 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341AbaHIGRa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 02:17:30 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46568 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaHIGR2 (ORCPT
+	id S1751358AbaHIG0P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 02:26:15 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:23258
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750939AbaHIG0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 02:17:28 -0400
-Date: Sat, 9 Aug 2014 08:17:12 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Bart Van Assche <bvanassche@acm.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] spin_lock_nested(): Always evaluate second argument
-Message-ID: <20140809061712.GL9918@twins.programming.kicks-ass.net>
-References: <53CE1019.10708@acm.org>
- <20140722133716.cff957eff4eff1cc9c1d9968@linux-foundation.org>
- <alpine.DEB.2.02.1407221612330.10592@chino.kir.corp.google.com>
- <53E260D9.6030803@acm.org>
- <53E2618F.6040208@acm.org>
- <alpine.DEB.2.02.1408061455290.13545@chino.kir.corp.google.com>
- <53E4A73D.5080801@acm.org>
- <53E4A7F8.1040700@acm.org>
- <alpine.DEB.2.02.1408081451470.15603@chino.kir.corp.google.com>
+	Sat, 9 Aug 2014 02:26:10 -0400
+X-IronPort-AV: E=Sophos;i="5.01,831,1400018400"; 
+   d="scan'208,223";a="74368426"
+Date: Sat, 9 Aug 2014 08:26:04 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+        kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, joe@perches.com
+Subject: Re: [PATCH 1/1] dpt_i2o: delete unnecessary null test on array
+In-Reply-To: <1407518045.1686.0.camel@HansenPartnership.com>
+Message-ID: <alpine.DEB.2.02.1408090825250.2016@localhost6.localdomain6>
+References: <1407321551-27479-1-git-send-email-Julia.Lawall@lip6.fr>   <1407321551-27479-2-git-send-email-Julia.Lawall@lip6.fr>  <1407517179.2044.13.camel@jarvis.lan>  <alpine.DEB.2.10.1408081902400.2348@hadrien>
+ <1407518045.1686.0.camel@HansenPartnership.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="srAoGIOs8asUHz4E"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1408081451470.15603@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From nobody Sat Aug  9 08:17:15 CEST 2014
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,linux-scsi@vger.kernel.org,linux-kernel@vger.kernel.org
+Subject: [PATCH] dpt_i2o: delete unnecessary null test on array
 
---srAoGIOs8asUHz4E
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-On Fri, Aug 08, 2014 at 02:52:50PM -0700, David Rientjes wrote:
-> On Fri, 8 Aug 2014, Bart Van Assche wrote:
->=20
-> > diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
-> > index 3f2867f..262ba4e 100644
-> > --- a/include/linux/spinlock.h
-> > +++ b/include/linux/spinlock.h
-> > @@ -197,7 +197,13 @@ static inline void do_raw_spin_unlock(raw_spinlock=
-_t *lock) __releases(lock)
-> >  		 _raw_spin_lock_nest_lock(lock, &(nest_lock)->dep_map);	\
-> >  	 } while (0)
-> >  #else
-> > -# define raw_spin_lock_nested(lock, subclass)		_raw_spin_lock(lock)
-> > +/*
-> > + * Always evaluate the 'subclass' argument to avoid that the compiler
-> > + * warns about set-but-not-used variables when building with
-> > + * CONFIG_DEBUG_LOCK_ALLOC=3Dn and with W=3D1.
-> > + */
->=20
-> I was hoping there was going to be a more important reason for this chang=
-e=20
-> than to avoid compiler warnings, such as an example where someone is doin=
-g=20
-> spin_lock_nested(lock, subclass) and the expression for "subclass"=20
-> requires evaluation in all configs.
+Convert a NULL test on an array to a NULL test on its element.  Delete a
+redundant test and clean up the code a little.
 
-That would stink, having that argument have side effects. I'd call that
-a plain old bug that needs fixing.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
+// <smpl>
+@r@
+type T;
+T [] e;
+position p;
+@@
+e ==@p NULL
 
+@ disable fld_to_ptr@
+expression e;
+identifier f;
+position r.p;
+@@
+* e.f ==@p NULL
+// </smpl>
 
---srAoGIOs8asUHz4E
-Content-Type: application/pgp-signature
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+---
+v2: Test instead the array element, and clean up the code a bit.
 
-iQIcBAEBAgAGBQJT5bzoAAoJEHZH4aRLwOS6UWUP/jzdmQiN2ATnjoDsqcIam7gg
-JKXFVU83zoC60nj9Fi6cIjgkFBthAXxjiUVxO6lftn5hUquT3b0QcrevfkMC5TvY
-wpseLjHc4nOavimRaWDvPp+qy6F3/yDX1GXfqi7zZWR7hp0vdPoNs/UetfnoKi62
-13xGh1CvC1w2hIqbEbWOD9pQ3uL8p4/iQH5t2vpTTYPJAN+dstmYIShXJlos1PNs
-sD5WebVH7Ao+FuUFCNPCXjXHsMlxH0jXTBXeU5WImXs8c8MQtrtwxSl/n7tIFKyL
-XfWl5NQ64yPklkjZuX/Oe9FVq981ygBHTiepzd/DOniQtHFHSc1+KchinpcEJ3qt
-3a8XyeSCNpaWZVOH5j1mbMImkGIcxop4xUy/BzVUEBtl7ltm+uA6xljaSmHHKfAH
-2usR03Lbn7JvPVjkubymEqhtIDKzmrdXGWuyvv6lvG2g2eJdmfQyNGAG8857gS/6
-ZlQlhqtXlfhqsP9qVSGZFvUiDq68WyW4BYPQvdGp579Kvu0jdbGV04Ygn9PqVYiW
-fQAiBW0S/x+A7xIJKTSAgo+p0+wDG39FO7msLUUauXxX2qKwQACCBYCKowheZstX
-paiwhl7p2OOeOuW2wjUH5TTSqcJVjNf40r7x1VFiKihqyvg0OlUtLmkVC7tpghLg
-vXK1rx8FRVDViEob3kQt
-=FHQY
------END PGP SIGNATURE-----
+ drivers/scsi/dpt_i2o.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---srAoGIOs8asUHz4E--
+diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
+index 67283ef..4647c93 100644
+--- a/drivers/scsi/dpt_i2o.c
++++ b/drivers/scsi/dpt_i2o.c
+@@ -1169,15 +1169,14 @@ static struct adpt_device* adpt_find_device(adpt_hba* pHba, u32 chan, u32 id, u6
+ 	if(chan < 0 || chan >= MAX_CHANNEL)
+ 		return NULL;
+ 	
+-	if( pHba->channel[chan].device == NULL){
+-		printk(KERN_DEBUG"Adaptec I2O RAID: Trying to find device before they are allocated\n");
++	d = pHba->channel[chan].device[id];
++	if (!d) {
++		printk(KERN_DEBUG "Adaptec I2O RAID: Trying to find device before they are allocated\n");
+ 		return NULL;
+ 	}
+ 
+-	d = pHba->channel[chan].device[id];
+-	if(!d || d->tid == 0) {
++	if (d->tid == 0)
+ 		return NULL;
+-	}
+ 
+ 	/* If it is the only lun at that address then this should match*/
+ 	if(d->scsi_lun == lun){
+
