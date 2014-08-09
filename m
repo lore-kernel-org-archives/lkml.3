@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581AbaHIMNJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 08:13:09 -0400
-Received: from mail-wg0-f65.google.com ([74.125.82.65]:47108 "EHLO
-	mail-wg0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbaHIMNF (ORCPT
+	id S1751618AbaHIMou (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 08:44:50 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:49734 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751023AbaHIMot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 08:13:05 -0400
-Date: Sat, 9 Aug 2014 14:13:00 +0200
-From: Janek Kozicki <janek.listy.mailowe@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: 3.16 crashes on resume from Suspend-To-disk, Intel pci_bus
- problem?
-Message-ID: <20140809141300.2b6f55e6@absurd>
-In-Reply-To: <20140809115643.5b124e87@absurd>
-References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
-	<20140805115834.5e5e76f0@absurd>
-	<20140805190709.2b19c10a@absurd>
-	<140743930.1Lg0eFFrXs@vostro.rjw.lan>
-	<s5h4mxo3aot.wl%tiwai@suse.de>
-	<20140808182559.643f3b33@absurd>
-	<s5hegwqghsu.wl%tiwai@suse.de>
-	<20140809115643.5b124e87@absurd>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Sat, 9 Aug 2014 08:44:49 -0400
+Date: Sat, 9 Aug 2014 08:44:39 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140809084439.05778e33@gandalf.local.home>
+In-Reply-To: <20140809061514.GK9918@twins.programming.kicks-ass.net>
+References: <20140731215445.GA21933@linux.vnet.ibm.com>
+	<1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	<20140808191326.GE3935@laptop>
+	<20140808205826.GG5821@linux.vnet.ibm.com>
+	<20140809061514.GK9918@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 9 Aug 2014 08:15:14 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-> PS: it appears that my email account has problems dealing with so much
-> email traffic. I will monitor archives online in this thread, and
-> please reply both to mailing list and my email.
+ 
+> As for idle tasks, I'm not sure about those, I think that we should say
+> NO to anything that would require waking idle CPUs, push the pain to
+> ftrace/kprobes, we should _not_ be waking idle cpus.
 
-I resubscribed the mailing list using another account:
-janek.listy.mailowe (at) gmail ! com  I hope this one will work.
-(also it's my current From: address)
+I agree, but I haven't had a chance to review the patch set (will
+probably do that on Monday, just got back from vacation last week and
+was inundated by other things). Does the idle waking happen only when
+there's something queued in the call_rcu_tasks()? It should definitely
+not be waking all the time. That's just wrong.
 
-I hope that all of you received my message with full debug info, I see it in
-archives fortunately:
+But if it only wakes when something is queued, it wouldn't be burdening
+anything, unless it is needed.
 
-http://lkml.iu.edu//hypermail/linux/kernel/1408.1/00372.html
-
-best regards
-Janek Kozicki
+-- Steve
