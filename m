@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618AbaHIMou (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 08:44:50 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:49734 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751023AbaHIMot (ORCPT
+	id S1751631AbaHINEW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 09:04:22 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:38310 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaHINES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 08:44:49 -0400
-Date: Sat, 9 Aug 2014 08:44:39 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140809084439.05778e33@gandalf.local.home>
-In-Reply-To: <20140809061514.GK9918@twins.programming.kicks-ass.net>
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
-	<1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	<20140808191326.GE3935@laptop>
-	<20140808205826.GG5821@linux.vnet.ibm.com>
-	<20140809061514.GK9918@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 9 Aug 2014 09:04:18 -0400
+Message-ID: <1407589454.5156.308.camel@marge.simpson.net>
+Subject: Re: [PATCH RFC] sched: deferred set priority (dprio)
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Sergey Oboguev <oboguev.public@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        khalid.aziz@oracle.com
+Date: Sat, 09 Aug 2014 15:04:14 +0200
+In-Reply-To: <CA+80gGZWSeoHFM-_uoGFCw4nJAkQGfTjEKfSyAaqTw6xmUVMvA@mail.gmail.com>
+References: <CA+80gGYVjprinWEJWbVq4VxjOLjQri8EvGAJ+sx+ihcOxdstCA@mail.gmail.com>
+	 <8738dm9t4z.fsf@tassilo.jf.intel.com>
+	 <1406532289.5133.223.camel@marge.simpson.net>
+	 <CA+80gGaohO-RaG0_tWZJEFzisrrBpgfiw-mxMrTfSK0N=k7gQA@mail.gmail.com>
+	 <1407059776.5156.108.camel@marge.simpson.net>
+	 <CA+80gGZJGX6PjzwptNJ5gU3SvCxaYT8v4id+4NqMAPwgAAS26Q@mail.gmail.com>
+	 <1407303693.5090.171.camel@marge.simpson.net>
+	 <CA+80gGYUohD617FcmtD5XyrFh2ENc2nXFA=91CmZ+8zFNOrzFQ@mail.gmail.com>
+	 <1407402199.5141.283.camel@marge.simpson.net>
+	 <CA+80gGZWSeoHFM-_uoGFCw4nJAkQGfTjEKfSyAaqTw6xmUVMvA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 9 Aug 2014 08:15:14 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+On Fri, 2014-08-08 at 13:11 -0700, Sergey Oboguev wrote: 
+> On Thu, Aug 7, 2014 at 2:03 AM, Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+> 
+> > task priority cannot be used by any task to describe a critical section.
+> > I assert that is that there is _zero_ critical section information present.
+> 
+> This appears to be the crux of our disagreement.
+> 
+> This assertion is incorrect. The use of RT to bracket a critical section
+> obviously _does_ provide the following information:
 
- 
-> As for idle tasks, I'm not sure about those, I think that we should say
-> NO to anything that would require waking idle CPUs, push the pain to
-> ftrace/kprobes, we should _not_ be waking idle cpus.
+You sure don't give up easy.
 
-I agree, but I haven't had a chance to review the patch set (will
-probably do that on Monday, just got back from vacation last week and
-was inundated by other things). Does the idle waking happen only when
-there's something queued in the call_rcu_tasks()? It should definitely
-not be waking all the time. That's just wrong.
+> 1) designation of entry point for the start of critical activity
 
-But if it only wakes when something is queued, it wouldn't be burdening
-anything, unless it is needed.
+Yup, a task can elevate its priority upon entering scram_reactor(), iff
+it gets there, scram might still be considered a critical activity.
 
--- Steve
+> 2) designation of exit point, albeit with timing not known in advance at entry
+> time
+
+Yeah, exit works ok if enter happens.
+
+You are not going to convince me that it is cool to assign an imaginary
+priority to a SCHED_FIFO class task, and still call the resulting mutant
+a SCHED_FIFO class task.  Those things have defines semantics.  It is
+not ok for a SCHED_FIFO task of a lower priority to completely ignore a
+SCHED_FIFO task of a higher priority because it's part of an application
+which has one or more wild cards, or maybe even a get out of jail free
+card it can pull out of its butt.
+
+NAK.  There it is, my imaginary NAK to imaginary realtime priorities :)
+
+-Mike
+
+
