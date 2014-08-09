@@ -1,73 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358AbaHITXK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 15:23:10 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:61285 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055AbaHITXG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 15:23:06 -0400
-Date: Sat, 9 Aug 2014 20:23:02 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Mantas =?utf-8?Q?Mikul=C4=97nas?= <grawity@gmail.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org
-Subject: Re: Loading initrd above 4G causes freeze on boot
-Message-ID: <20140809192302.GJ15082@console-pimps.org>
-References: <53E62EEF.9040801@gmail.com>
- <CAE9FiQVXkojPnTr4EQE7h2YhWqa5VBYRSCadB0B1qDL+eGY8jg@mail.gmail.com>
+	id S1751431AbaHIT0i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 15:26:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20210 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071AbaHIT0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Aug 2014 15:26:35 -0400
+Date: Sat, 9 Aug 2014 21:24:17 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [sched] Out of memory: Kill process 2999 (rc) score 9 or
+	sacrifice child
+Message-ID: <20140809192417.GA32704@redhat.com>
+References: <20140809143034.GA28345@localhost> <20140809184616.GQ9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQVXkojPnTr4EQE7h2YhWqa5VBYRSCadB0B1qDL+eGY8jg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140809184616.GQ9918@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 09 Aug, at 09:44:55AM, Yinghai Lu wrote:
-> On Sat, Aug 9, 2014 at 7:23 AM, Mantas Mikulėnas <grawity@gmail.com> wrote:
-> > As of commit 4bf7111f5016 ("x86/efi: Support initrd loaded above 4G"),
-> > the kernel freezes at the earliest possible moment when trying to boot
-> > via UEFI on my Asus laptop. (It still boots via BIOS.)
-> >
-> > If I revert that commit on current master (c309bfa9b481), it boots
-> > correctly again [although I see "setup_efi_pci() failed" being printed].
-> >
-> > (Seems like it freezes when handle_cmdline_files() attempts to read
-> > the last chunk of the initramfs -- the last call to efi_file_read()
-> > never returns. Figuring out why that happens is beyond me, though.)
-> >
-> 
-> Matt found that efi_file_read()/firmware has problem that could not do
-> several reading. Please check if reverting that commit have any
-> difference.
-> 
-> ---
-> I spent some time playing around with this bug and it appears to be
-> triggered by the read-a-chunk-at-a-time logic in handle_cmdline_files(),
-> (which is itself a bug workaround) introduced here,
-> 
->   commit 2d2da60fb40a
->   Author: Maarten Lankhorst <m.b.lankhorst@gmail.com>
->   Date:   Fri Dec 16 13:30:58 2011 +0100
-> 
->       x86, efi: Break up large initrd reads
+On 08/09, Peter Zijlstra wrote:
+>
+> That would suggest we're failing to do the TASK_DEAD thing properly, and
+> ARGH! bloody obvious why, see the this_rq() comment right before the
+> finish_task_switch() call in context_switch().
 
-Right, I committed a patch to workaround this problem here,
+Heh ;) and a similar comment in __schedule() after context_switch().
 
-  http://git.kernel.org/cgit/linux/kernel/git/mfleming/efi.git/commit/?h=next&id=1c24a2bef39f041eb578189207240d0457ef0ac3
+rq->dead_task or something similar should work I guess, but i should be
+nullified before finish_lock_switch()...
 
-since on my ASUS machine the combination of breaking up initrd reads
-into chunks and reading into a buffer above 4G actually triggers a whole
-new bug.
+Oleg.
 
-Mantas, could you try out the patch referenced above and pass
-"efi=nochunk" on the command line to the EFI boot stub. I'm hoping that
-fixes your problem.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
