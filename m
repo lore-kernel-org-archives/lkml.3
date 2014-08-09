@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999AbaHIAg5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 20:36:57 -0400
-Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:51080
-	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751540AbaHIAgX (ORCPT
+	id S1751545AbaHIAq4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 20:46:56 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:39980 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764AbaHIAqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 20:36:23 -0400
-From: Shuah Khan <shuah.kh@samsung.com>
-To: m.chehab@samsung.com, dheitmueller@kernellabs.com
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] au0828: remove CONFIG_VIDEO_AU0828_RC scope around au0828_rc_*()
-Date: Fri,  8 Aug 2014 18:36:19 -0600
-Message-Id: <cae8929faf952b312460a09b8b05c7875b4c560f.1407544065.git.shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1407544065.git.shuah.kh@samsung.com>
-References: <cover.1407544065.git.shuah.kh@samsung.com>
-In-Reply-To: <cover.1407544065.git.shuah.kh@samsung.com>
-References: <cover.1407544065.git.shuah.kh@samsung.com>
+	Fri, 8 Aug 2014 20:46:54 -0400
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: [Patch] freezer: check OOM kill signal while being frozen
+Date: Fri,  8 Aug 2014 17:46:38 -0700
+Message-Id: <1407545198-9009-1-git-send-email-xiyou.wangcong@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove CONFIG_VIDEO_AU0828_RC scope around au0828_rc_register()
-and au0828_rc_unregister() calls in au0828-core
+There is a race condition between OOM killer and freezer when
+they try to operate on the same process, something like below:
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+	Process A	Process B		Process C
+trigger oom
+B=oom_scan_process_thread()
+					cgroup_freezer_freeze(B)
+			...
+			try_to_freeze()
+			stay in D state
+oom_kill_process(B)
+
+In this case, process A triggers OOM and kernel selects process B
+as the victim, right before being killed process B was frozen by
+process C therefore went to D state, then kernel sent SIGKILL but
+it is already too late as process B will never care about pending
+signals any more. Fix this straightly by checking fatal pending signal
+from OOM killer, so that the frozen process will recover itself
+and then be killed finally.
+
+Cc: David Rientjes <rientjes@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
 ---
- drivers/media/usb/au0828/au0828-core.c |    4 ----
- 1 file changed, 4 deletions(-)
-
-diff --git a/drivers/media/usb/au0828/au0828-core.c b/drivers/media/usb/au0828/au0828-core.c
-index eb5f2b1..2090498 100644
---- a/drivers/media/usb/au0828/au0828-core.c
-+++ b/drivers/media/usb/au0828/au0828-core.c
-@@ -153,9 +153,7 @@ static void au0828_usb_disconnect(struct usb_interface *interface)
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index aa6a8aa..c6d189d 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -68,7 +68,9 @@ bool __refrigerator(bool check_kthr_stop)
+ 		spin_lock_irq(&freezer_lock);
+ 		current->flags |= PF_FROZEN;
+ 		if (!freezing(current) ||
+-		    (check_kthr_stop && kthread_should_stop()))
++		    (check_kthr_stop && kthread_should_stop()) ||
++		    (test_tsk_thread_flag(current, TIF_MEMDIE) &&
++			 fatal_signal_pending(current)))
+ 			current->flags &= ~PF_FROZEN;
+ 		spin_unlock_irq(&freezer_lock);
  
- 	dprintk(1, "%s()\n", __func__);
- 
--#ifdef CONFIG_VIDEO_AU0828_RC
- 	au0828_rc_unregister(dev);
--#endif
- 	/* Digital TV */
- 	au0828_dvb_unregister(dev);
- 
-@@ -266,10 +264,8 @@ static int au0828_usb_probe(struct usb_interface *interface,
- 		pr_err("%s() au0282_dev_register failed\n",
- 		       __func__);
- 
--#ifdef CONFIG_VIDEO_AU0828_RC
- 	/* Remote controller */
- 	au0828_rc_register(dev);
--#endif
- 
- 	/*
- 	 * Store the pointer to the au0828_dev so it can be accessed in
--- 
-1.7.10.4
-
