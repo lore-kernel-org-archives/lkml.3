@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751224AbaHIDCV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 23:02:21 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54436 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaHIDCS (ORCPT
+	id S1751255AbaHIDFS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 23:05:18 -0400
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:43659 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaHIDFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 23:02:18 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53E58F37.7090402@roeck-us.net>
-Date: Fri, 08 Aug 2014 20:02:15 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 8 Aug 2014 23:05:15 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.15 00/26] 3.15.10-stable review
-References: <20140808213413.648794968@linuxfoundation.org>
-In-Reply-To: <20140808213413.648794968@linuxfoundation.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAH9JG2XuC0A=MVNx=OQcutHaCtXKt=hoWoB9PW3V_PuND6RJ5g@mail.gmail.com>
+References: <1407545198-9009-1-git-send-email-xiyou.wangcong@gmail.com>
+	<CAH9JG2XuC0A=MVNx=OQcutHaCtXKt=hoWoB9PW3V_PuND6RJ5g@mail.gmail.com>
+Date: Fri, 8 Aug 2014 20:05:14 -0700
+Message-ID: <CAM_iQpVzs8=8Vf709nObBzdM5GQme41jMW+NY4FXZDN6gd7ptg@mail.gmail.com>
+Subject: Re: [Patch] freezer: check OOM kill signal while being frozen
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2014 02:35 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.15.10 release.
-> There are 26 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Fri, Aug 8, 2014 at 7:00 PM, Kyungmin Park <kmpark@infradead.org> wrote:
 >
-> Responses should be made by Sun Aug 10 21:34:03 UTC 2014.
-> Anything received after that time might be too late.
+> Similar patch is posted and discussed but no conclusion.
+> http://marc.info/?t=137699769400004&r=1&w=1
 >
 
-Build results:
-	total: 137 pass: 137 fail: 0
+I noticed this thread before sending my patch. I don't think
+we are trying to solve the same problem:
 
-Qemu tests all passed.
+a) I only care OOM kill, not other SIGKILL cases
+b) I don't set the frozen process state to TASK_KILLABLE
+   at all
 
-Details are available at http://server.roeck-us.net:8010/builders.
+I think Bartlomiej was trying to make frozen processes
+killable by user-space SIGKILL, which is beyond my interest.
 
-Guenter
-
+Thanks.
