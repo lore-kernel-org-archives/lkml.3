@@ -1,143 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013AbaHIQvg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 12:51:36 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:36299 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770AbaHIQve (ORCPT
+	id S1751965AbaHIQ4V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 12:56:21 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:38482 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779AbaHIQ4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 12:51:34 -0400
+	Sat, 9 Aug 2014 12:56:18 -0400
+Date: Sat, 9 Aug 2014 22:26:12 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH] clk: st: remove null pointer dereference
+Message-ID: <20140809165612.GA21631@himangi-Dell>
 MIME-Version: 1.0
-In-Reply-To: <1407530482-4483-62-git-send-email-kamal@canonical.com>
-References: <1407530482-4483-1-git-send-email-kamal@canonical.com>
-	<1407530482-4483-62-git-send-email-kamal@canonical.com>
-Date: Sat, 9 Aug 2014 12:51:31 -0400
-Message-ID: <CAC-25o-V+hjyYAWU99GM+JJiqyivrooXOVJVoW+PpZoBBuKEFg@mail.gmail.com>
-Subject: Re: [PATCH 3.13 061/259] thermal: hwmon: Make the check for critical
- temp valid consistent
-From: "edubezval@gmail.com" <edubezval@gmail.com>
-To: Kamal Mostafa <kamal@canonical.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Aaron Lu <aaron.lu@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+If clk_data is NULL, it is not possible to access its clk_num field. So
+if the NULL test succeeds the control sequence mush jump after the loop.
+So, a new label is introduced and the labels are renamed to err0 and
+err1. If clk_data is NULL, only parents need to be freed and hence the
+goto now points to err0.
 
-On Fri, Aug 8, 2014 at 4:38 PM, Kamal Mostafa <kamal@canonical.com> wrote:
-> 3.13.11.6 -stable review patch.  If anyone has any objections, please let me know.
->
-> ------------------
->
-> From: Aaron Lu <aaron.lu@intel.com>
->
-> commit e8db5d6736a712a3e2280c0e31f4b301d85172d8 upstream.
->
-> On 05/21/2014 04:22 PM, Aaron Lu wrote:
->> On 05/21/2014 01:57 PM, Kui Zhang wrote:
->>> Hello,
->>>
->>> I get following error when rmmod thermal.
->>>
->>> rmmod  thermal
->>> Killed
->
-> While dealing with this problem, I found another problem that also
-> results in a kernel crash on thermal module removal:
->
-> From: Aaron Lu <aaron.lu@intel.com>
-> Date: Wed, 21 May 2014 16:05:38 +0800
-> Subject: [PATCH] thermal: hwmon: Make the check for critical temp valid consistent
->
-> We used the tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, temp)
-> to decide if we need to create the temp_crit attribute file but we just
-> check if tz->ops->get_crit_temp exists to decide if we need to remove
-> that attribute file. Some ACPI thermal zone doesn't have a valid critical
-> trip point and that would result in removing a non-existent device file
-> on thermal module unload.
->
-> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+This problem was found using the following Coccinelle semantic match:
 
-Acked-by: Eduardo Valentin <edubezval@gmail.com>
+// <smpl>
+@@
+expression E, E1;
+identifier f;
+statement S1,S2,S3;
+@@
 
-> ---
->  drivers/thermal/thermal_hwmon.c | 33 ++++++++++++++++++---------------
->  1 file changed, 18 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/thermal/thermal_hwmon.c b/drivers/thermal/thermal_hwmon.c
-> index fdb0719..1967bee 100644
-> --- a/drivers/thermal/thermal_hwmon.c
-> +++ b/drivers/thermal/thermal_hwmon.c
-> @@ -140,6 +140,12 @@ thermal_hwmon_lookup_temp(const struct thermal_hwmon_device *hwmon,
->         return NULL;
->  }
->
-> +static bool thermal_zone_crit_temp_valid(struct thermal_zone_device *tz)
-> +{
-> +       unsigned long temp;
-> +       return tz->ops->get_crit_temp && !tz->ops->get_crit_temp(tz, &temp);
-> +}
-> +
->  int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
->  {
->         struct thermal_hwmon_device *hwmon;
-> @@ -189,21 +195,18 @@ int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
->         if (result)
->                 goto free_temp_mem;
->
-> -       if (tz->ops->get_crit_temp) {
-> -               unsigned long temperature;
-> -               if (!tz->ops->get_crit_temp(tz, &temperature)) {
-> -                       snprintf(temp->temp_crit.name,
-> -                                sizeof(temp->temp_crit.name),
-> +       if (thermal_zone_crit_temp_valid(tz)) {
-> +               snprintf(temp->temp_crit.name,
-> +                               sizeof(temp->temp_crit.name),
->                                 "temp%d_crit", hwmon->count);
-> -                       temp->temp_crit.attr.attr.name = temp->temp_crit.name;
-> -                       temp->temp_crit.attr.attr.mode = 0444;
-> -                       temp->temp_crit.attr.show = temp_crit_show;
-> -                       sysfs_attr_init(&temp->temp_crit.attr.attr);
-> -                       result = device_create_file(hwmon->device,
-> -                                                   &temp->temp_crit.attr);
-> -                       if (result)
-> -                               goto unregister_input;
-> -               }
-> +               temp->temp_crit.attr.attr.name = temp->temp_crit.name;
-> +               temp->temp_crit.attr.attr.mode = 0444;
-> +               temp->temp_crit.attr.show = temp_crit_show;
-> +               sysfs_attr_init(&temp->temp_crit.attr.attr);
-> +               result = device_create_file(hwmon->device,
-> +                                           &temp->temp_crit.attr);
-> +               if (result)
-> +                       goto unregister_input;
->         }
->
->         mutex_lock(&thermal_hwmon_list_lock);
-> @@ -250,7 +253,7 @@ void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
->         }
->
->         device_remove_file(hwmon->device, &temp->temp_input.attr);
-> -       if (tz->ops->get_crit_temp)
-> +       if (thermal_zone_crit_temp_valid(tz))
->                 device_remove_file(hwmon->device, &temp->temp_crit.attr);
->
->         mutex_lock(&thermal_hwmon_list_lock);
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+* if (E == NULL)
+{
+  ... when != if (E == NULL) S1 else S2
+      when != E = E1
+* E->f
+  ... when any
+  return ...;
+}
+else S3
+// </smpl>
 
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+Not compile tested.
+ drivers/clk/st/clkgen-mux.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-
+diff --git a/drivers/clk/st/clkgen-mux.c b/drivers/clk/st/clkgen-mux.c
+index 79dc40b..385b3d0 100644
+--- a/drivers/clk/st/clkgen-mux.c
++++ b/drivers/clk/st/clkgen-mux.c
+@@ -723,14 +723,14 @@ void __init st_of_clkgen_vcc_setup(struct device_node *np)
+ 
+ 	clk_data = kzalloc(sizeof(*clk_data), GFP_KERNEL);
+ 	if (!clk_data)
+-		goto err;
++		goto err0;
+ 
+ 	clk_data->clk_num = VCC_MAX_CHANNELS;
+ 	clk_data->clks = kzalloc(clk_data->clk_num * sizeof(struct clk *),
+ 				 GFP_KERNEL);
+ 
+ 	if (!clk_data->clks)
+-		goto err;
++		goto err1;
+ 
+ 	for (i = 0; i < clk_data->clk_num; i++) {
+ 		struct clk *clk;
+@@ -791,7 +791,7 @@ void __init st_of_clkgen_vcc_setup(struct device_node *np)
+ 			kfree(gate);
+ 			kfree(div);
+ 			kfree(mux);
+-			goto err;
++			goto err1;
+ 		}
+ 
+ 		pr_debug("%s: parent %s rate %u\n",
+@@ -807,7 +807,7 @@ void __init st_of_clkgen_vcc_setup(struct device_node *np)
+ 	of_clk_add_provider(np, of_clk_src_onecell_get, clk_data);
+ 	return;
+ 
+-err:
++err1:
+ 	for (i = 0; i < clk_data->clk_num; i++) {
+ 		struct clk_composite *composite;
+ 
+@@ -821,10 +821,11 @@ err:
+ 		kfree(container_of(composite->mux_hw, struct clk_mux, hw));
+ 	}
+ 
+-	if (clk_data)
+-		kfree(clk_data->clks);
++	kfree(clk_data->clks);
+ 
+ 	kfree(clk_data);
++
++err0:
+ 	kfree(parents);
+ }
+ CLK_OF_DECLARE(clkgen_vcc, "st,clkgen-vcc", st_of_clkgen_vcc_setup);
 -- 
-Eduardo Bezerra Valentin
+1.9.1
+
