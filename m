@@ -1,105 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546AbaHIA2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Aug 2014 20:28:12 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:54370 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591AbaHIA2J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Aug 2014 20:28:09 -0400
-Message-ID: <53E56B16.5030402@codeaurora.org>
-Date: Fri, 08 Aug 2014 17:28:06 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752866AbaHIAcd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Aug 2014 20:32:33 -0400
+Received: from imap.thunk.org ([74.207.234.97]:51818 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751288AbaHIAcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Aug 2014 20:32:32 -0400
+Date: Fri, 8 Aug 2014 20:32:17 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Kees Cook <keescook@chromium.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Chris Ball <chris@printf.net>,
+        Peter Maydell <peter.maydell@linaro.org>,
+        Johan Rudholm <jrudholm@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [Regression] 3.15 mmc related ext4 corruption with
+ qemu-system-arm
+Message-ID: <20140809003217.GS25145@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	John Stultz <john.stultz@linaro.org>,
+	Kees Cook <keescook@chromium.org>,
+	Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
+	Peter Maydell <peter.maydell@linaro.org>,
+	Johan Rudholm <jrudholm@gmail.com>,
+	Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	lkml <linux-kernel@vger.kernel.org>
+References: <CALAqxLWAXU0hS8si-CmkOObBOHGv_skMVfPnUsdmLcZzkdUsWA@mail.gmail.com>
+ <53E53DCD.2020707@linaro.org>
+ <CAGXu5j+Q8F8TKy8sxCL6pxD-cni4RKxy46HwsCSZE+mWpuyn-g@mail.gmail.com>
+ <53E568B2.40206@linaro.org>
 MIME-Version: 1.0
-To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Paul Mackerras <paulus@samba.org>,
-        Jon Medhurst <tixy@linaro.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "Aneesh Kumar K.V." <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 0/4] CMA & device tree, once again
-References: <1405321966-28184-1-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1405321966-28184-1-git-send-email-m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E568B2.40206@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/14/2014 12:12 AM, Marek Szyprowski wrote:
-> Hello,
+On Fri, Aug 08, 2014 at 05:17:54PM -0700, John Stultz wrote:
+> On 08/08/2014 05:15 PM, Kees Cook wrote:
+> > On Fri, Aug 8, 2014 at 2:14 PM, John Stultz <john.stultz@linaro.org> wrote:
+> >> I sunk a couple of weeks bisecting to try to narrow down the more
+> >> sporadic issue, but was unsuccessful past the initial commit above.
+> >> Since then I've been far too swamped to spend any more time on it. Even
+> >> so, its a *major* pain for testing but it seems like no one else really
+> >> cares?
+> > I'm in the same boat as far as poor bisection results. :(
+> >
+> > However, I keep using the 3-patch mmci fix series from Ulf, and
+> > haven't hit any trouble with them. Though perhaps I'm just getting
+> > lucky?
+> >
+> > http://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=arm/fix-mmci
 > 
-> This is one more respin of the patches which add support for creating
-> reserved memory regions defined in device tree. The last attempt
-> (http://lists.linaro.org/pipermail/linaro-mm-sig/2014-February/003738.html)
-> ended in merging only half of the code, so right now we have complete
-> documentation merged and only basic code, which implements a half of it
-> is written in the documentation. Although the merged patches allow to
-> reserve memory, there is no way of using it for devices and drivers.
-> 
-> This situation makes CMA rather useless, as the main architecture (ARM),
-> which used it, has been converted from board-file based system
-> initialization to device tree. Thus there is no place to use direct
-> calls to dma_declare_contiguous() and some new solution, which bases on
-> device tree, is urgently needed.
-> 
-> This patch series fixes this issue. It provides two, already widely
-> discussed and already present in the kernel, drivers for reserved
-> memory: first based on DMA-coherent allocator, second using Contiguous
-> Memory Allocator. The first one nicely implements typical 'carved out'
-> reserved memory way of allocating contiguous buffers in a kernel-style
-> way. The memory is used exclusively by devices assigned to the given
-> memory region. The second one allows to reuse reserved memory for
-> movable kernel pages (like disk buffers, anonymous memory) and migrates
-> it out when device to allocates contiguous memory buffer. Both driver
-> provides memory buffers via standard dma-mapping API.
-> 
-> The patches have been rebased on top of latest CMA and mm changes merged
-> to akmp kernel tree.
-> 
-> To define a 64MiB CMA region following node is needed:
-> 
-> multimedia_reserved: multimedia_mem_region {
-> 	compatible = "shared-dma-pool";
-> 	reusable;
-> 	size = <0x4000000>;
-> 	alignment = <0x400000>;
-> };
-> 
-> Similarly, one can define 64MiB region with DMA coherent memory:
-> 
-> multimedia_reserved: multimedia_mem_region {
-> 	compatible = "shared-dma-pool";
-> 	no-map;
-> 	size = <0x4000000>;
-> 	alignment = <0x400000>;
-> };
-> 
+> I guess I'll give that another shot 
 
-Longer term, I think it would be good if we didn't have to use no-map with
-the coherent memory. With no-map and dma-coherent.c right now, not only
-do you lose out on the physical memory space, you also have to give up
-the same amount of vmalloc space for mapping. On arm32, if you have the default
-240MB vmalloc space, 64M is ~25% of the vmalloc space. At least on arm you can
-make this up by remapping the memory as coherent.
+There was an ext4 bug that might have caused this problem.  It was
+fixed in v3.15.6 and v3.16-rc5.
 
-I haven't seen this picked up anywhere yet so you are welcome to add
+commit f9ae9cf5d72b3926ca48ea60e15bdbb840f42372
+Author: Theodore Ts'o <tytso@mit.edu>
+Date:   Fri Jul 11 13:55:40 2014 -0400
 
-Tested-by: Laura Abbott <lauraa@codeaurora.org>
+    ext4: revert commit which was causing fs corruption after journal replays
+    
+    Commit 007649375f6af2 ("ext4: initialize multi-block allocator before
+    checking block descriptors") causes the block group descriptor's count
+    of the number of free blocks to become inconsistent with the number of
+    free blocks in the allocation bitmap.  This is a harmless form of fs
+    corruption, but it causes the kernel to potentially remount the file
+    system read-only, or to panic, depending on the file systems's error
+    behavior.
+    
+    Thanks to Eric Whitney for his tireless work to reproduce and to find
+    the guilty commit.
+    
+    Fixes: 007649375f6af2 ("ext4: initialize multi-block allocator before checki
+    
+    Cc: stable@vger.kernel.org  # 3.15
+    Reported-by: David Jander <david@protonic.nl>
+    Reported-by: Matteo Croce <technoboy85@gmail.com>
+    Tested-by: Eric Whitney <enwlinux@gmail.com>
+    Suggested-by: Eric Whitney <enwlinux@gmail.com>
+    Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 
-Thanks,
-Laura
+The bug wouldn't always trigger, which is probably why it gave you so
+much trouble trying to do the bisect.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Cheers,
+
+					- Ted
