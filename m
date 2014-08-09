@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751733AbaHIW2N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 18:28:13 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:65231 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255AbaHIW2M (ORCPT
+	id S1751776AbaHIWpT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 18:45:19 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:61396 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539AbaHIWpQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 18:28:12 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53E6A078.6040907@roeck-us.net>
-Date: Sat, 09 Aug 2014 15:28:08 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sat, 9 Aug 2014 18:45:16 -0400
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] vfio: Fix build failure seen if vfio is built as module
- and EEH is enabled
-References: <1407603887-1419-1-git-send-email-linux@roeck-us.net> <1407612480.9800.1.camel@ul30vt.home>
-In-Reply-To: <1407612480.9800.1.camel@ul30vt.home>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140809192302.GJ15082@console-pimps.org>
+References: <53E62EEF.9040801@gmail.com>
+	<CAE9FiQVXkojPnTr4EQE7h2YhWqa5VBYRSCadB0B1qDL+eGY8jg@mail.gmail.com>
+	<20140809192302.GJ15082@console-pimps.org>
+Date: Sun, 10 Aug 2014 01:45:16 +0300
+Message-ID: <CAPWNY8X+pRf4GuYAzKj-co0fkLMY0KNw+wB4KA8eaJ0QbE4MnA@mail.gmail.com>
+Subject: Re: Loading initrd above 4G causes freeze on boot
+From: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2014 12:28 PM, Alex Williamson wrote:
-> On Sat, 2014-08-09 at 10:04 -0700, Guenter Roeck wrote:
->> The following build failure is seen with ppc:allmodconfig.
->>
->> ERROR: ".vfio_spapr_iommu_eeh_ioctl" [drivers/vfio/vfio_iommu_spapr_tce.ko] undefined!
->> ERROR: ".vfio_spapr_pci_eeh_open" [drivers/vfio/pci/vfio-pci.ko] undefined!
->> ERROR: ".vfio_spapr_pci_eeh_release" [drivers/vfio/pci/vfio-pci.ko] undefined!
->>
->> Simply exporting the missing symbols is insufficient, since drivers/vfio
->> can be built as module but drivers/vfio/vfio_spapr_eeh.c depends on
->> EEH which is boolean. The combination of obj-m for drivers/vfio and obj-y
->> for drivers/vfio/vfio_spapr_eeh.o results in the symbols being missed even
->> if exported.
->>
->> Export missing symbols and introduce new tristate configuration option
->> VFIO_EEH depending on both EEH and VFIO to fix the problem.
->>
->> Cc: Gavin Shan <gwshan@linux.vnet.ibm.com>
->> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+On Sat, Aug 9, 2014 at 10:23 PM, Matt Fleming <matt@console-pimps.org> wrote:
 >
-> Please try:
+> On Sat, 09 Aug, at 09:44:55AM, Yinghai Lu wrote:
+> > On Sat, Aug 9, 2014 at 7:23 AM, Mantas Mikulėnas <grawity@gmail.com> wrote:
+> > > As of commit 4bf7111f5016 ("x86/efi: Support initrd loaded above 4G"),
+> > > the kernel freezes at the earliest possible moment when trying to boot
+> > > via UEFI on my Asus laptop. (It still boots via BIOS.)
+> > >
+> > > If I revert that commit on current master (c309bfa9b481), it boots
+> > > correctly again [although I see "setup_efi_pci() failed" being printed].
+> > >
+> > > (Seems like it freezes when handle_cmdline_files() attempts to read
+> > > the last chunk of the initramfs -- the last call to efi_file_read()
+> > > never returns. Figuring out why that happens is beyond me, though.)
+> > >
+> >
+> > Matt found that efi_file_read()/firmware has problem that could not do
+> > several reading. Please check if reverting that commit have any
+> > difference.
+> >
+> > ---
+> > I spent some time playing around with this bug and it appears to be
+> > triggered by the read-a-chunk-at-a-time logic in handle_cmdline_files(),
+> > (which is itself a bug workaround) introduced here,
+> >
+> >   commit 2d2da60fb40a
+> >   Author: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+> >   Date:   Fri Dec 16 13:30:58 2011 +0100
+> >
+> >       x86, efi: Break up large initrd reads
 >
-> git://github.com/awilliam/linux-vfio.git next
+> Right, I committed a patch to workaround this problem here,
 >
-> This will be part of the next linux-next build, should resolve the
-> problem, and I plan to ask for a pull early this coming week.  Thanks,
+>   http://git.kernel.org/cgit/linux/kernel/git/mfleming/efi.git/commit/?h=next&id=1c24a2bef39f041eb578189207240d0457ef0ac3
 >
+> since on my ASUS machine the combination of breaking up initrd reads
+> into chunks and reading into a buffer above 4G actually triggers a whole
+> new bug.
+>
+> Mantas, could you try out the patch referenced above and pass
+> "efi=nochunk" on the command line to the EFI boot stub. I'm hoping that
+> fixes your problem.
 
-That should do for the most part, but it will select VFIO_SPAPR_EEH
-even if EEH is not configured. You would need something like
-	select VFIO_SPAPR_EEH if (PPC_POWERNV || PPC_PSERIES) && EEH
-to prevent that.
+Thanks for the patch, I've just tested it but the problem remains; the
+system freezes even when reading the entire initramfs at once.
 
-Guenter
+[However... Whether it's five chunks, four (after making the initrd
+smaller), or just one (with your efi=nochunk), I noticed that it
+*always* hangs during the *last* read, and the allocated memory always
+ends at roughly the same address (0x137fffXXX). I wonder if it's
+selecting a memory location already in use, or something like that...]
 
+(The laptop is Asus K52JT, AMI firmware v206, no updates available.)
+
+-- 
+Mantas Mikulėnas <grawity@gmail.com>
