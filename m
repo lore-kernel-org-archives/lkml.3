@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038AbaHIRn5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 13:43:57 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:60916 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871AbaHIRnw (ORCPT
+	id S1752042AbaHIRyT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 13:54:19 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:49047 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360AbaHIRyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 13:43:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <53E65747.9070108@roeck-us.net>
-References: <20140808213457.511493898@linuxfoundation.org>
-	<53E57279.1030106@roeck-us.net>
-	<20140809034911.GA2348@kroah.com>
-	<20140809034950.GB2348@kroah.com>
-	<53E5A0D1.10507@roeck-us.net>
-	<20140809141609.GA21639@kroah.com>
-	<53E63871.5040504@roeck-us.net>
-	<CA+55aFwFMFgj2PqftqZLntjYkbm+pG8adJPMO+sD9=U67WOYkg@mail.gmail.com>
-	<53E65747.9070108@roeck-us.net>
-Date: Sat, 9 Aug 2014 10:43:51 -0700
-X-Google-Sender-Auth: PPYXiSXu6ogc8NqwNXRNCaw5j3E
-Message-ID: <CA+55aFw=1YEfa+J5xLMbSycT4YBvEmgbDGN62nD1AL9-q1NPoA@mail.gmail.com>
-Subject: Re: [PATCH 3.16 00/17] 3.16.1-stable review
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Guenter Roeck <linux@roeck-us.net>, YoungJun Cho <yj44.cho@samsung.com>,
-        Inki Dae <inki.dae@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        satoru takeuchi <satoru.takeuchi@gmail.com>,
-        Shuah Khan <shuah.kh@samsung.com>, stable <stable@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 9 Aug 2014 13:54:18 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>, Huacai Chen <chenhc@lemote.com>,
+        Andreas Herrmann <andreas.herrmann@caviumnetworks.com>
+Subject: [PATCH] mips: Fix nlm_xlp_defconfig build error
+Date: Sat,  9 Aug 2014 10:54:03 -0700
+Message-Id: <1407606843-12984-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 9, 2014 at 10:15 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->
-> ERROR (phandle_references): Reference to non-existent node or label
-> "disp_pd"
->
-> ERROR: Input tree has errors, aborting (use -f to force output)
-> make[1]: *** [arch/arm/boot/dts/exynos5420-arndale-octa.dtb] Error 2
+The nlm_xlp_defconfig build fails with
 
-Ok, so it's something else that was apparently known about in -next,
-but not mentioned when pushing to me. Oh well.
+./arch/mips/include/asm/mach-netlogic/topology.h:15:0:
+			error: "topology_core_id" redefined [-Werror]
+In file included from include/linux/smp.h:59:0,
+	[ ...]
+                 from arch/mips/mm/dma-default.c:12:
+./arch/mips/include/asm/smp.h:41:0:
+			note: this is the location of the previous definition
 
-The new disp_dt use was added by commit 5a8da524049c ("ARM: dts:
-exynos5420: add dsi node"), while commit d51cad7df871 ("ARM: dts:
-remove display power domain for exynos5420") removed the node.
+and similar errors.
 
-I'll leave it broken until the ARM people get around to fixing it.
-Likely by just removing the disp_dt line from the dsi node, but I'll
-let the proper people sort it out.
+This is caused by commit bda4584cd943d7 ("MIPS: Support CPU topology files
+in sysfs") which adds the defines to arch/mips/include/asm/smp.h.
 
-               Linus
+Remove the defines from arch/mips/include/asm/mach-netlogic/topology.h
+as no longer necessary.
+
+Cc: Huacai Chen <chenhc@lemote.com>
+Cc: Andreas Herrmann <andreas.herrmann@caviumnetworks.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ arch/mips/include/asm/mach-netlogic/topology.h | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/arch/mips/include/asm/mach-netlogic/topology.h b/arch/mips/include/asm/mach-netlogic/topology.h
+index ceeb1f5..0eb43c8 100644
+--- a/arch/mips/include/asm/mach-netlogic/topology.h
++++ b/arch/mips/include/asm/mach-netlogic/topology.h
+@@ -10,13 +10,6 @@
+ 
+ #include <asm/mach-netlogic/multi-node.h>
+ 
+-#ifdef CONFIG_SMP
+-#define topology_physical_package_id(cpu)	cpu_to_node(cpu)
+-#define topology_core_id(cpu)	(cpu_logical_map(cpu) / NLM_THREADS_PER_CORE)
+-#define topology_thread_cpumask(cpu)		(&cpu_sibling_map[cpu])
+-#define topology_core_cpumask(cpu)	cpumask_of_node(cpu_to_node(cpu))
+-#endif
+-
+ #include <asm-generic/topology.h>
+ 
+ #endif /* _ASM_MACH_NETLOGIC_TOPOLOGY_H */
+-- 
+1.9.1
+
