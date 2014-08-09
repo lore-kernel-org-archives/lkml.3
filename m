@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751129AbaHIEg6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 00:36:58 -0400
-Received: from homie.mail.dreamhost.com ([208.97.132.208]:39425 "EHLO
-	homiemail-a99.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750798AbaHIEgz (ORCPT
+	id S1751201AbaHIElv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 00:41:51 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:37320 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbaHIElt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 00:36:55 -0400
-X-Greylist: delayed 91885 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Aug 2014 00:36:55 EDT
-From: =?utf-8?B?56mN5Li55bC8?= Dan Jacobson <jidanni@jidanni.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: disable "Call Trace:"
-References: <877g2jznnt.fsf@jidanni.org>
-Date: Sat, 09 Aug 2014 12:36:52 +0800
-Message-ID: <87y4uyp9cr.fsf@jidanni.org>
+	Sat, 9 Aug 2014 00:41:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140807201600.GA5720@kroah.com>
+References: <1407388229-31807-1-git-send-email-valentina.manea.m@gmail.com>
+	<20140807053344.GA5754@kroah.com>
+	<CABdoFFd9ZuikFyaSfOyn-babECtno50_GGNHofK1-LmhLCqeTw@mail.gmail.com>
+	<20140807201600.GA5720@kroah.com>
+Date: Fri, 8 Aug 2014 21:41:48 -0700
+Message-ID: <CABdoFFebQmW+r2zyvcN4TXHgkcg9L1XZd06Za_T7TvXZDxQ_-A@mail.gmail.com>
+Subject: Re: [PATCH 0/3] usbip: move usbip out of staging
+From: Valentina Manea <valentina.manea.m@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: =?UTF-8?B?VMO8bGluIMSwemVy?= <tulinizer@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, mail@beyermatthias.de,
+        hdegoede@redhat.com, Federico Manzan <f.manzan@gmail.com>,
+        Kurt Garloff <kurt@garloff.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Linux Kernel Community @ ROSEdu" <firefly@lists.rosedu.org>,
+        Andy Grover <andy.grover@gmail.com>, max@vozeler.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "RD" == Randy Dunlap <rdunlap@infradead.org> writes:
+On Thu, Aug 7, 2014 at 1:16 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+> The top of the MAINTAINERS should have this information, look in the S:
+> Status section about what type of category you are in.
+>
+> Basically I'd like you to be the one to handle patches that are sent in
+> for the code, just by reviewing them, you don't have to send them on to
+> me if you don't want to (some usb subsystem maintainers do do this, like
+> for usb-serial and xhci), it's up to you.
+>
+> Also, any bug reports or questions about the code would come to you
+> first, along with the rest of the linux-usb@vger developers, you aren't
+> alone in this at all.
+>
 
-RD> When would you want to disable it?  at kernel boot time (as a boot option)
-RD> or sometime later?
+Ok, this sounds good. I suppose sending you the patches involves
+picking them up from the email, batching them and sending with
+send-email.
+Shuah, I would appreciate if you'd like to help with this. The more
+eyes for review, the better.
 
-RD> But would you only want to disable Call Trace: on panics or any time that a
-RD> call trace might be printed?  and would disabling call trace also disable
-RD> the raw stack dump and Code: output, or literally just the call trace?
-
-
-All I know is e.g., somehow something went wrong and the user finds
-himself unable to boot and unable to read the reason, as Linux is famous
-for not having a way to scroll messages that have flown off the screen
-and boot_delay= doesn't work good and he doesn't own another terminal he
-can plug into a port or even have a port etc. etc. etc.
-
-
-And he is sitting there and there is the reason, the main body of which
-has just flown off the screen.
-
-
-All pushed off due to this (useless to him) "Call Trace:" and some other
-hex stuff lying above "Call Trace".
-
-
-So if only he could please be able to, there hitting "e" in Grub,
-be able to add so "call_trace=no_thanks" "other_hex_stuff=no_thanks"
-to that linux command line, so then on the next run there will be
-something more left upon the screen! Thank you!
+Thanks,
+Valentina
