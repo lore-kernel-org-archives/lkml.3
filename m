@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712AbaHIUaZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 16:30:25 -0400
-Received: from jambon.ath.cx ([212.129.4.85]:50640 "EHLO debian"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751328AbaHIUaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 16:30:23 -0400
-X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Aug 2014 16:30:22 EDT
-From: Junien Fridrick <linux.kernel@junien.fridrick.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lai Siyao <lai.siyao@intel.com>, Oleg Drokin <oleg.drokin@intel.com>,
-        "John L. Hammond" <john.hammond@intel.com>,
-        Jinshan Xiong <jinshan.xiong@intel.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Junien Fridrick <linux.kernel@junien.fridrick.net>
-Subject: [PATCH] [next-20140808] [staging] [lustre] Fix coding style in llite/remote_perm.c
-Date: Sat,  9 Aug 2014 20:22:48 +0000
-Message-Id: <1407615768-6757-1-git-send-email-linux.kernel@junien.fridrick.net>
-X-Mailer: git-send-email 2.0.1
+	id S1751500AbaHIUjy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 16:39:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44829 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751055AbaHIUju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Aug 2014 16:39:50 -0400
+Date: Sat, 9 Aug 2014 22:39:47 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: Re: [PATCH] Input: wacom - Fix compiler warning if !CONFIG_PM
+In-Reply-To: <1407604023-7429-1-git-send-email-geert@linux-m68k.org>
+Message-ID: <alpine.LNX.2.00.1408092238290.15220@pobox.suse.cz>
+References: <1407604023-7429-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the noise, this is part of task 10 of the Eudyptula Challenge.
+On Sat, 9 Aug 2014, Geert Uytterhoeven wrote:
 
-Signed-off-by: Junien Fridrick <linux.kernel@junien.fridrick.net>
----
- drivers/staging/lustre/lustre/llite/remote_perm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> If CONFIG_PM is not set:
+> 
+> drivers/hid/wacom_sys.c:1436: warning: ‘wacom_reset_resume’ defined but
+> not used
+> 
+> Protect the unused functions by #ifdef CONFIG_PM to fix this.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-diff --git a/drivers/staging/lustre/lustre/llite/remote_perm.c b/drivers/staging/lustre/lustre/llite/remote_perm.c
-index f61fefc..3a9c8e8 100644
---- a/drivers/staging/lustre/lustre/llite/remote_perm.c
-+++ b/drivers/staging/lustre/lustre/llite/remote_perm.c
-@@ -100,7 +100,7 @@ void free_rmtperm_hash(struct hlist_head *hash)
- 	struct ll_remote_perm *lrp;
- 	struct hlist_node *next;
- 
--	if(!hash)
-+	if (!hash)
- 		return;
- 
- 	for (i = 0; i < REMOTE_PERM_HASHSIZE; i++)
+Thanks Geert.
+
+hid-wacom is in a sort of temporary mode of operation, being moved from 
+Input to HID driver.
+
+Adding Benjamin and Dmitry to CC, as this will likely still go through 
+Dmitry's queue.
+
+> ---
+>  drivers/hid/wacom_sys.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
+> index 3e388ec31da8..f0db7eca9023 100644
+> --- a/drivers/hid/wacom_sys.c
+> +++ b/drivers/hid/wacom_sys.c
+> @@ -1416,6 +1416,7 @@ static void wacom_remove(struct hid_device *hdev)
+>  	kfree(wacom);
+>  }
+>  
+> +#ifdef CONFIG_PM
+>  static int wacom_resume(struct hid_device *hdev)
+>  {
+>  	struct wacom *wacom = hid_get_drvdata(hdev);
+> @@ -1436,6 +1437,7 @@ static int wacom_reset_resume(struct hid_device *hdev)
+>  {
+>  	return wacom_resume(hdev);
+>  }
+> +#endif /* CONFIG_PM */
+>  
+>  static struct hid_driver wacom_driver = {
+>  	.name =		"wacom",
+> -- 
+> 1.9.1
+> 
+
 -- 
-2.0.1
-
+Jiri Kosina
+SUSE Labs
