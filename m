@@ -1,233 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835AbaHIQBI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 12:01:08 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:61938 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710AbaHIQBG (ORCPT
+	id S1751924AbaHIQBr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 12:01:47 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:37692 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862AbaHIQBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 12:01:06 -0400
-Date: Sat, 9 Aug 2014 21:30:59 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] ethernet: amd: Remove typedef local_info_t
-Message-ID: <20140809160058.GA15164@himangi-Dell>
+	Sat, 9 Aug 2014 12:01:44 -0400
+Date: Sat, 9 Aug 2014 09:01:37 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140809160137.GJ5821@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140731215445.GA21933@linux.vnet.ibm.com>
+ <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140808191326.GE3935@laptop>
+ <20140808205826.GG5821@linux.vnet.ibm.com>
+ <20140809061514.GK9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140809061514.GK9918@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14080916-6688-0000-0000-000003E341C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Linux kernel coding style guidelines suggest not using typedefs
-for structure types. This patch gets rid of the typedef for local_info_t.
-Also, the name of the struct is changed to drop the _t, to make the
-name look less typedef-like.
+On Sat, Aug 09, 2014 at 08:15:14AM +0200, Peter Zijlstra wrote:
+> On Fri, Aug 08, 2014 at 01:58:26PM -0700, Paul E. McKenney wrote:
+> > On Fri, Aug 08, 2014 at 09:13:26PM +0200, Peter Zijlstra wrote:
+> > > 
+> > > 
+> > > So I think you can make the entire thing work with
+> > > rcu_note_context_switch().
+> > > 
+> > > If we have the sync thing do something like:
+> > > 
+> > > 
+> > > 	for_each_task(t) {
+> > > 		atomic_inc(&rcu_tasks);
+> > > 		atomic_or(&t->rcu_attention, RCU_TASK);
+> > > 		smp_mb__after_atomic();
+> > > 		if (!t->on_rq) {
+> > > 			if (atomic_test_and_clear(&t->rcu_attention, RCU_TASK))
+> > > 				atomic_dec(&rcu_tasks);
+> > > 		}
+> > > 	}
+> > > 
+> > > 	wait_event(&rcu_tasks_wq, !atomic_read(&rcu_tasks));
+> > > 
+> > > 
+> > > And then we have rcu_task_note_context_switch() (as called from
+> > > rcu_note_context_switch) do:
+> > > 
+> > > 
+> > > 	/* we want actual context switches, ignore preemption */
+> > > 	if (preempt_count() & PREEMPT_ACTIVE)
+> > > 		return;
+> > > 
+> > > 	/* if not marked for RCU attention, bail */
+> > > 	if (!(atomic_read(&t->rcu_attention) & RCU_TASK))
+> > > 		return;
+> > > 
+> > > 	/* raced with sync_rcu_task(), all done */
+> > > 	if (!atomic_test_and_clear(&t->rcu_attention, RCU_TASK))
+> > > 		return;
+> > > 
+> > > 	/* not the last.. */
+> > > 	if (!atomic_dec_and_test(&rcu_tasks))
+> > > 		return;
+> > > 
+> > > 	wake_up(&rcu_task_rq);
+> > > 
+> > > 
+> > > The idea is to share rcu_attention with rcu_preempt, such that we only
+> > > touch a single 'extra' cacheline in case RCU doesn't need to pay
+> > > attention to this task.
+> > > 
+> > > Also, it would be good if we can manage to squeeze this variable in a
+> > > cacheline that's already touched by the schedule() so as not to incur
+> > > undue overhead.
+> > 
+> > This approach does not get me the idle tasks and the NO_HZ_FULL usermode
+> > tasks.  I am pretty sure that I am stuck polling in those cases, so I
+> > might as well poll.
+> 
+> That's so wrong its not funny. If you need some abortion to deal with
+> NOHZ_FULL then put it under CONFIG_NOHZ_FULL, don't burden the entire
+> world with it.
 
-The following Coccinelle semantic patch detects the case:
+Peter, the polling approach actually -reduces- the common-case
+per-context-switch burden, as in when RCU-tasks isn't doing anything.
+See your own code above.
 
-@tn@
-identifier i;
-type td;
-@@
+> Also, I thought RCU already knew which CPUs were in nohz_full userspace,
+> so we can insta check that in the sync, together with the !->on_rq test,
+> if the task is running on a nohz_full cpu in rcu quiescent state, also
+> clear the task.
 
--typedef
- struct i { ... }
--td
- ;
+RCU does know which are in nohz_full userspace, but it needs to handle
+the case where they are not nohz_full at the beginning of the RCU-tasks
+grace period.  Yes, I could hook into rcu_user_enter(), but that is
+backwards from the viewpoint of the common case where there is no
+RCU-tasks happening.
 
-@@
-type tn.td;
-identifier tn.i;
-@@
+> As for idle tasks, I'm not sure about those, I think that we should say
+> NO to anything that would require waking idle CPUs, push the pain to
+> ftrace/kprobes, we should _not_ be waking idle cpus.
 
--td
-+ struct i
+So the current patch set wakes an idle task once per RCU-tasks grace
+period, but only when that idle task did not otherwise get awakened.
+This is not a real problem.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/net/ethernet/xircom/xirc2ps_cs.c | 40 ++++++++++++++++----------------
- 1 file changed, 20 insertions(+), 20 deletions(-)
+And it could probably be reduced further, for example, for architectures
+where the program counter of sleeping CPUs can be remotely accessed and
+where the address of the am-asleep code is known.  I doubt that this
+would really be worth it, but it could be done, in theory anyway.  Or, as
+Steven suggested earlier, there could be a per-CPU variable that was set
+(with approapriate memory ordering) when the CPU was actually sleeping.
 
-diff --git a/drivers/net/ethernet/xircom/xirc2ps_cs.c b/drivers/net/ethernet/xircom/xirc2ps_cs.c
-index 7c81ffb..d56f869 100644
---- a/drivers/net/ethernet/xircom/xirc2ps_cs.c
-+++ b/drivers/net/ethernet/xircom/xirc2ps_cs.c
-@@ -266,7 +266,7 @@ static void xirc2ps_detach(struct pcmcia_device *p_dev);
- 
- static irqreturn_t xirc2ps_interrupt(int irq, void *dev_id);
- 
--typedef struct local_info_t {
-+struct local_info {
- 	struct net_device	*dev;
- 	struct pcmcia_device	*p_dev;
- 
-@@ -281,7 +281,7 @@ typedef struct local_info_t {
-     unsigned last_ptr_value; /* last packets transmitted value */
-     const char *manf_str;
-     struct work_struct tx_timeout_task;
--} local_info_t;
-+};
- 
- /****************
-  * Some more prototypes
-@@ -475,12 +475,12 @@ static int
- xirc2ps_probe(struct pcmcia_device *link)
- {
-     struct net_device *dev;
--    local_info_t *local;
-+    struct local_info *local;
- 
-     dev_dbg(&link->dev, "attach()\n");
- 
-     /* Allocate the device structure */
--    dev = alloc_etherdev(sizeof(local_info_t));
-+    dev = alloc_etherdev(sizeof(struct local_info));
-     if (!dev)
- 	    return -ENOMEM;
-     local = netdev_priv(dev);
-@@ -536,7 +536,7 @@ static int
- set_card_type(struct pcmcia_device *link)
- {
-     struct net_device *dev = link->priv;
--    local_info_t *local = netdev_priv(dev);
-+    struct local_info *local = netdev_priv(dev);
-     u8 *buf;
-     unsigned int cisrev, mediaid, prodid;
-     size_t len;
-@@ -690,7 +690,7 @@ static int
- xirc2ps_config(struct pcmcia_device * link)
- {
-     struct net_device *dev = link->priv;
--    local_info_t *local = netdev_priv(dev);
-+    struct local_info *local = netdev_priv(dev);
-     unsigned int ioaddr;
-     int err;
-     u8 *buf;
-@@ -931,7 +931,7 @@ xirc2ps_release(struct pcmcia_device *link)
- 
- 	if (link->resource[2]->end) {
- 		struct net_device *dev = link->priv;
--		local_info_t *local = netdev_priv(dev);
-+		struct local_info *local = netdev_priv(dev);
- 		if (local->dingo)
- 			iounmap(local->dingo_ccr - 0x0800);
- 	}
-@@ -975,7 +975,7 @@ static irqreturn_t
- xirc2ps_interrupt(int irq, void *dev_id)
- {
-     struct net_device *dev = (struct net_device *)dev_id;
--    local_info_t *lp = netdev_priv(dev);
-+    struct local_info *lp = netdev_priv(dev);
-     unsigned int ioaddr;
-     u_char saved_page;
-     unsigned bytes_rcvd;
-@@ -1194,8 +1194,8 @@ xirc2ps_interrupt(int irq, void *dev_id)
- static void
- xirc2ps_tx_timeout_task(struct work_struct *work)
- {
--	local_info_t *local =
--		container_of(work, local_info_t, tx_timeout_task);
-+	struct local_info *local =
-+		container_of(work, struct local_info, tx_timeout_task);
- 	struct net_device *dev = local->dev;
-     /* reset the card */
-     do_reset(dev,1);
-@@ -1206,7 +1206,7 @@ xirc2ps_tx_timeout_task(struct work_struct *work)
- static void
- xirc_tx_timeout(struct net_device *dev)
- {
--    local_info_t *lp = netdev_priv(dev);
-+    struct local_info *lp = netdev_priv(dev);
-     dev->stats.tx_errors++;
-     netdev_notice(dev, "transmit timed out\n");
-     schedule_work(&lp->tx_timeout_task);
-@@ -1215,7 +1215,7 @@ xirc_tx_timeout(struct net_device *dev)
- static netdev_tx_t
- do_start_xmit(struct sk_buff *skb, struct net_device *dev)
- {
--    local_info_t *lp = netdev_priv(dev);
-+    struct local_info *lp = netdev_priv(dev);
-     unsigned int ioaddr = dev->base_addr;
-     int okay;
-     unsigned freespace;
-@@ -1300,7 +1300,7 @@ static void set_address(struct set_address_info *sa_info, char *addr)
- static void set_addresses(struct net_device *dev)
- {
- 	unsigned int ioaddr = dev->base_addr;
--	local_info_t *lp = netdev_priv(dev);
-+	struct local_info *lp = netdev_priv(dev);
- 	struct netdev_hw_addr *ha;
- 	struct set_address_info sa_info;
- 	int i;
-@@ -1362,7 +1362,7 @@ set_multicast_list(struct net_device *dev)
- static int
- do_config(struct net_device *dev, struct ifmap *map)
- {
--    local_info_t *local = netdev_priv(dev);
-+    struct local_info *local = netdev_priv(dev);
- 
-     pr_debug("do_config(%p)\n", dev);
-     if (map->port != 255 && map->port != dev->if_port) {
-@@ -1387,7 +1387,7 @@ do_config(struct net_device *dev, struct ifmap *map)
- static int
- do_open(struct net_device *dev)
- {
--    local_info_t *lp = netdev_priv(dev);
-+    struct local_info *lp = netdev_priv(dev);
-     struct pcmcia_device *link = lp->p_dev;
- 
-     dev_dbg(&link->dev, "do_open(%p)\n", dev);
-@@ -1421,7 +1421,7 @@ static const struct ethtool_ops netdev_ethtool_ops = {
- static int
- do_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
- {
--    local_info_t *local = netdev_priv(dev);
-+    struct local_info *local = netdev_priv(dev);
-     unsigned int ioaddr = dev->base_addr;
-     struct mii_ioctl_data *data = if_mii(rq);
- 
-@@ -1453,7 +1453,7 @@ do_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
- static void
- hardreset(struct net_device *dev)
- {
--    local_info_t *local = netdev_priv(dev);
-+    struct local_info *local = netdev_priv(dev);
-     unsigned int ioaddr = dev->base_addr;
- 
-     SelectPage(4);
-@@ -1470,7 +1470,7 @@ hardreset(struct net_device *dev)
- static void
- do_reset(struct net_device *dev, int full)
- {
--    local_info_t *local = netdev_priv(dev);
-+    struct local_info *local = netdev_priv(dev);
-     unsigned int ioaddr = dev->base_addr;
-     unsigned value;
- 
-@@ -1631,7 +1631,7 @@ do_reset(struct net_device *dev, int full)
- static int
- init_mii(struct net_device *dev)
- {
--    local_info_t *local = netdev_priv(dev);
-+    struct local_info *local = netdev_priv(dev);
-     unsigned int ioaddr = dev->base_addr;
-     unsigned control, status, linkpartner;
-     int i;
-@@ -1715,7 +1715,7 @@ static int
- do_stop(struct net_device *dev)
- {
-     unsigned int ioaddr = dev->base_addr;
--    local_info_t *lp = netdev_priv(dev);
-+    struct local_info *lp = netdev_priv(dev);
-     struct pcmcia_device *link = lp->p_dev;
- 
-     dev_dbg(&link->dev, "do_stop(%p)\n", dev);
--- 
-1.9.1
+So I don't believe that the current wakeup rate is a problem, and it
+can be reduced if it proves to be a problem.
+
+							Thanx, Paul
 
