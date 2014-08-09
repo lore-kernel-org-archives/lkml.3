@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575AbaHIVev (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 17:34:51 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:53785 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187AbaHIVes (ORCPT
+	id S1751733AbaHIW2N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 18:28:13 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:65231 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255AbaHIW2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 17:34:48 -0400
-Date: Sat, 9 Aug 2014 14:34:46 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch v2] mm, hugetlb_cgroup: align hugetlb cgroup limit to
- hugepage size
-In-Reply-To: <87mwbem0zo.fsf@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.02.1408091434280.17896@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1408071333001.1762@chino.kir.corp.google.com> <alpine.DEB.2.02.1408081507180.15603@chino.kir.corp.google.com> <87mwbem0zo.fsf@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 9 Aug 2014 18:28:12 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53E6A078.6040907@roeck-us.net>
+Date: Sat, 09 Aug 2014 15:28:08 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH] vfio: Fix build failure seen if vfio is built as module
+ and EEH is enabled
+References: <1407603887-1419-1-git-send-email-linux@roeck-us.net> <1407612480.9800.1.camel@ul30vt.home>
+In-Reply-To: <1407612480.9800.1.camel@ul30vt.home>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 9 Aug 2014, Aneesh Kumar K.V wrote:
+On 08/09/2014 12:28 PM, Alex Williamson wrote:
+> On Sat, 2014-08-09 at 10:04 -0700, Guenter Roeck wrote:
+>> The following build failure is seen with ppc:allmodconfig.
+>>
+>> ERROR: ".vfio_spapr_iommu_eeh_ioctl" [drivers/vfio/vfio_iommu_spapr_tce.ko] undefined!
+>> ERROR: ".vfio_spapr_pci_eeh_open" [drivers/vfio/pci/vfio-pci.ko] undefined!
+>> ERROR: ".vfio_spapr_pci_eeh_release" [drivers/vfio/pci/vfio-pci.ko] undefined!
+>>
+>> Simply exporting the missing symbols is insufficient, since drivers/vfio
+>> can be built as module but drivers/vfio/vfio_spapr_eeh.c depends on
+>> EEH which is boolean. The combination of obj-m for drivers/vfio and obj-y
+>> for drivers/vfio/vfio_spapr_eeh.o results in the symbols being missed even
+>> if exported.
+>>
+>> Export missing symbols and introduce new tristate configuration option
+>> VFIO_EEH depending on both EEH and VFIO to fix the problem.
+>>
+>> Cc: Gavin Shan <gwshan@linux.vnet.ibm.com>
+>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>
+> Please try:
+>
+> git://github.com/awilliam/linux-vfio.git next
+>
+> This will be part of the next linux-next build, should resolve the
+> problem, and I plan to ask for a pull early this coming week.  Thanks,
+>
 
-> > diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-> > --- a/mm/hugetlb_cgroup.c
-> > +++ b/mm/hugetlb_cgroup.c
-> > @@ -275,6 +275,7 @@ static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
-> >  		ret = res_counter_memparse_write_strategy(buf, &val);
-> >  		if (ret)
-> >  			break;
-> > +		val = ALIGN(val, 1ULL << huge_page_shift(&hstates[idx]));
-> 
-> Do we really need ULL ? max value should fit in unsigned long right ?
-> 
+That should do for the most part, but it will select VFIO_SPAPR_EEH
+even if EEH is not configured. You would need something like
+	select VFIO_SPAPR_EEH if (PPC_POWERNV || PPC_PSERIES) && EEH
+to prevent that.
 
-I usually just go for type agreement.
+Guenter
 
-> >  		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
-> >  		break;
-> >  	default:
-> 
-> 
