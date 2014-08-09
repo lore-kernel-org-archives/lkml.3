@@ -1,37 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaHIO1z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 10:27:55 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36152 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786AbaHIO1u (ORCPT
+	id S1751847AbaHIO2m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 10:28:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37518 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512AbaHIO2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 10:27:50 -0400
-Message-ID: <53E62EEF.9040801@gmail.com>
-Date: Sat, 09 Aug 2014 17:23:43 +0300
-From: =?UTF-8?B?TWFudGFzIE1pa3VsxJduYXM=?= <grawity@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sat, 9 Aug 2014 10:28:40 -0400
+Date: Sat, 9 Aug 2014 07:20:45 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Sergey Klyaus <Sergey.Klyaus@Tune-IT.Ru>, Oliver Neukum <oneukum@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] driver core: fix race with userland in device_add()
+Message-ID: <20140809142045.GA21904@kroah.com>
+References: <53E2681D.3020508@Tune-IT.Ru>
+ <Pine.LNX.4.44L0.1408061610520.1145-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-CC: Yinghai Lu <yinghai@kernel.org>
-Subject: Loading initrd above 4G causes freeze on boot
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1408061610520.1145-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of commit 4bf7111f5016 ("x86/efi: Support initrd loaded above 4G"),
-the kernel freezes at the earliest possible moment when trying to boot
-via UEFI on my Asus laptop. (It still boots via BIOS.)
+On Wed, Aug 06, 2014 at 04:18:38PM -0400, Alan Stern wrote:
+> On Wed, 6 Aug 2014, Sergey Klyaus wrote:
+> 
+> > Hello.
+> > 
+> > I wrote a patch that fixes the problem that described above, here are a 
+> > patch for 3.16.0+ kernel (cloned from GitHub today). Maybe that "if 
+> > (MAJOR(dev->devt)) " part has to go even after BUS_NOTIFY_ADD_DEVICE abd 
+> > KOBJ_ADD? I put it before it, because there is no rollback code in 
+> > device_add() for that part.
+> 
+> I think this is fine.  However, I suspect the order of the other calls
+> there isn't totally right.  For instance, the
+> 
+> 	if (parent)
+> 		klist_add_tail(&dev->p->knode_parent,
+> 			       &parent->p->klist_children);
+> 
+> part should probably be the first thing after we know the routine can't 
+> abort.
+> 
+> I guess the time when bus_probe_device() gets called doesn't matter 
+> much, because the driver might not even be loaded at this point.  But 
+> what about all the dev->class stuff at the end of device_add()?  Should 
+> that happen before any uevents are sent out?
+> 
+> Greg, have you looked at this?
 
-If I revert that commit on current master (c309bfa9b481), it boots
-correctly again [although I see "setup_efi_pci() failed" being printed].
+I haven't, thanks for pointing it out, I'll put it on my list of things
+to do this week.
 
-(Seems like it freezes when handle_cmdline_files() attempts to read
-the last chunk of the initramfs -- the last call to efi_file_read()
-never returns. Figuring out why that happens is beyond me, though.)
-
--- 
-Mantas Mikulėnas <grawity@gmail.com>
+greg k-h
