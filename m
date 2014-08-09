@@ -1,119 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084AbaHISeX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 14:34:23 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43719 "EHLO
+	id S1752120AbaHISqc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 14:46:32 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43835 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949AbaHISeV (ORCPT
+	with ESMTP id S1751983AbaHISqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 14:34:21 -0400
-Date: Sat, 9 Aug 2014 20:33:55 +0200
+	Sat, 9 Aug 2014 14:46:30 -0400
+Date: Sat, 9 Aug 2014 20:46:16 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140809183355.GP9918@twins.programming.kicks-ass.net>
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
- <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140808191326.GE3935@laptop>
- <20140808205826.GG5821@linux.vnet.ibm.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [sched] Out of memory: Kill process 2999 (rc) score 9 or
+ sacrifice child
+Message-ID: <20140809184616.GQ9918@twins.programming.kicks-ass.net>
+References: <20140809143034.GA28345@localhost>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="K9fR5eBdO1VxXkhU"
+	protocol="application/pgp-signature"; boundary="qq/nmn35hA65zZ5G"
 Content-Disposition: inline
-In-Reply-To: <20140808205826.GG5821@linux.vnet.ibm.com>
+In-Reply-To: <20140809143034.GA28345@localhost>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---K9fR5eBdO1VxXkhU
-Content-Type: text/plain; charset=us-ascii
+--qq/nmn35hA65zZ5G
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Aug 08, 2014 at 01:58:26PM -0700, Paul E. McKenney wrote:
+On Sat, Aug 09, 2014 at 10:30:34PM +0800, Fengguang Wu wrote:
+> Hi Peter,
 >=20
-> > And on that, you probably should change rcu_sched_rq() to read:
-> >=20
-> > 	this_cpu_inc(rcu_sched_data.passed_quiesce);
-> >=20
-> > That avoids touching the per-cpu data offset.
+> We noticed the below changes on
 >=20
-> Hmmm...  Interrupts are disabled,
-
-No they are not, __schedule()->rcu_note_context_switch()->rcu_sched_qs()
-is only called with preemption disabled.
-
-We only disable IRQs later, where we take the rq->lock.
-
-> so no need to further disable
-> interrupts.  Storing 1 works fine, no need to increment.  If I followed
-> the twisty per_cpu passages correctly, my guess is that you would like
-> me to do something like this:
+> git://git.kernel.org/pub/scm/linux/kernel/git/peterz/queue.git sched/wait
+> commit d58d631b474c552dce72da2dce9dd276d731b79a ("sched: Fix finish_task_=
+switch vs prev_state")
 >=20
-> 	__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
+> test case: vm-vp-quantal-x86_64/boot/1
 >=20
-> Does that work?
-
-Yeah, should be more or less similar, the inc might be encoded shorter
-due to not requiring an immediate, but who cares :-)
-
-void rcu_sched_qs(int cpu)
-{
-	if (trace_rcu_grace_period_enabled()) {
-		if (!__this_cpu_read(rcu_sched_data.passed_quiesce))
-			trace_rcu_grace_period(...);
-	}
-	__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
-}
-
-Would further avoid emitting the conditional in the normal case where
-the tracepoint is inactive.
-
-Steve does it make sense to have __DO_TRACE() emit __trace_##name() to
-avoid the double static_branch thing?
-
-> > And it would be very good if we could avoid the unconditional IRQ flag
-> > fiddling in rcu_preempt_note_context_switch(), them expensive, this
-> > looks entirely feasibly in the 'normal' case where
-> > t->rcu_read_unlock_special doesn't have RCU_READ_UNLOCK_NEED_QS set.
+> 9e6e6179961e8dd  d58d631b474c552dce72da2dc  testbox/testcase/testparams
+> ---------------  -------------------------  ---------------------------
+>          0           +Inf%          1 =B1 0%  TOTAL dmesg.Out_of_memory:K=
+ill_process
+>          0           +Inf%          0 =B150%  TOTAL dmesg.Kernel_panic-no=
+t_syncing:Out_of_memory_and_no_killable_processes
 >=20
-> Agreed, but sometimes RCU_READ_UNLOCK_NEED_QS is set.
+> In commit 9e6e6179961e8dd, the boot dmesg is
 >=20
-> That said, I should probably revisit RCU_READ_UNLOCK_NEED_QS.  A lot has
-> changed since I wrote that code.
+> [    7.537598] Freeing unused kernel memory: 3352K (ffffffff82230000 - ff=
+ffffff82576000)
+> [    7.558273] random: init urandom read with 11 bits of entropy available
+> [    7.687132] init: Failed to create pty - disabling logging for job
+> [    7.688578] init: Temporary process spawn error: No space left on devi=
+ce
+> [   68.298970] reboot: Restarting system
+>=20
+> In d58d631b474c552dce72da2dc, the OOM occurred immediately after the
+> "No space left on device" line. The qemu has mem=3D320M and the initrds
+> are 24M in total. What's interesting is, in the 5 boot tests for
+> d58d631b47 and its parent commit, this OOM message is 100%
+> reproducible on commit d58d631b47, while its parent boots all fine.=20
 
-Sure, but a conditional testing RCU_READ_UNLOCK_NEED_QS is far cheaper
-than poking the IRQ flags. That said, its not entirely clear to me why
-that needs IRQs disabled at all, then again I didn't look long and I'm
-sure its all subtle.
+That would suggest we're failing to do the TASK_DEAD thing properly, and
+ARGH! bloody obvious why, see the this_rq() comment right before the
+finish_task_switch() call in context_switch().
 
---K9fR5eBdO1VxXkhU
+Oleg any clever ideas or do I store in a scratch per-cpu variable or
+something daft like that?
+
+---
+commit d58d631b474c552dce72da2dce9dd276d731b79a
+Author: Peter Zijlstra <peterz@infradead.org>
+Date:   Tue Jul 29 11:22:37 2014 +0200
+
+sched: Fix finish_task_switch vs prev_state
+
+Oleg wondered about the prev_state comment in finish_task_switch().
+
+Aside from it being confusingly worded -- we neither initially
+understood the actual problem being described -- we found that we'd
+broken the scenario described.
+
+Ever since commit e4a52bcb9a18 ("sched: Remove rq->lock from the first
+half of ttwu()") we don't actually acquire rq->lock on wakeups anymore
+and therefore holding rq->lock after the switch is no good.
+
+Even if we did, __ARCH_WANT_UNLOCKED_CTXSW was already broken, because
+it explicitly didn't hold the rq->lock anymore.
+
+We could fix things by placing a full barrier between the prev->state
+read and the next->on_cpu =3D 0 store, seeing how the remote wakeup code
+waits for ->on_cpu to become false before proceeding with the wakeup
+(so as to avoid having the task running on two cpus at the same time),
+however full barriers are expensive.
+
+Instead we read prev->state before the context switch and propagate it
+unto finish_task_switch. This trivially solves the problem without
+adding extra (and costly) memory barriers.
+
+I'm not sure why we've never seen crashes due to this, it appears
+entirely possible.
+
+Fixes: e4a52bcb9a18 ("sched: Remove rq->lock from the first half of ttwu()")
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140729092237.GU12054@laptop.lan
+---
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 1211575a2208..df2f691f09f6 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2190,6 +2190,7 @@ prepare_task_switch(struct rq *rq, struct task_struct=
+ *prev,
+  * finish_task_switch - clean up after a task-switch
+  * @rq: runqueue associated with task-switch
+  * @prev: the thread we just switched away from.
++ * @prev_state: the state of @prev before we switched away from it.
+  *
+  * finish_task_switch must be called after the context switch, paired
+  * with a prepare_task_switch call before the context switch.
+@@ -2201,26 +2202,14 @@ prepare_task_switch(struct rq *rq, struct task_stru=
+ct *prev,
+  * with the lock held can cause deadlocks; see schedule() for
+  * details.)
+  */
+-static void finish_task_switch(struct rq *rq, struct task_struct *prev)
++static void
++finish_task_switch(struct rq *rq, struct task_struct *prev, long prev_stat=
+e)
+ 	__releases(rq->lock)
+ {
+ 	struct mm_struct *mm =3D rq->prev_mm;
+-	long prev_state;
+=20
+ 	rq->prev_mm =3D NULL;
+=20
+-	/*
+-	 * A task struct has one reference for the use as "current".
+-	 * If a task dies, then it sets TASK_DEAD in tsk->state and calls
+-	 * schedule one last time. The schedule call will never return, and
+-	 * the scheduled task must drop that reference.
+-	 * The test for TASK_DEAD must occur while the runqueue locks are
+-	 * still held, otherwise prev could be scheduled on another cpu, die
+-	 * there before we look at prev->state, and then the reference would
+-	 * be dropped twice.
+-	 *		Manfred Spraul <manfred@colorfullife.com>
+-	 */
+-	prev_state =3D prev->state;
+ 	vtime_task_switch(prev);
+ 	finish_arch_switch(prev);
+ 	perf_event_task_sched_in(prev, current);
+@@ -2279,7 +2268,7 @@ asmlinkage __visible void schedule_tail(struct task_s=
+truct *prev)
+ {
+ 	struct rq *rq =3D this_rq();
+=20
+-	finish_task_switch(rq, prev);
++	finish_task_switch(rq, prev, 0);
+=20
+ 	/*
+ 	 * FIXME: do we need to worry about rq being invalidated by the
+@@ -2304,6 +2293,21 @@ context_switch(struct rq *rq, struct task_struct *pr=
+ev,
+ 	       struct task_struct *next)
+ {
+ 	struct mm_struct *mm, *oldmm;
++	/*
++	 * A task struct has one reference for the use as "current".
++	 * If a task dies, then it sets TASK_DEAD in tsk->state and calls
++	 * schedule one last time. The schedule call will never return, and
++	 * the scheduled task must drop that reference.
++	 *
++	 * We must observe prev->state before clearing prev->on_cpu (in
++	 * finish_lock_switch), otherwise a concurrent wakeup can get prev
++	 * running on another CPU and we could race with its RUNNING -> DEAD
++	 * transition, and then the reference would be dropped twice.
++	 *
++	 * We avoid the race by observing prev->state while it is still
++	 * current.
++	 */
++	long prev_state =3D prev->state;
+=20
+ 	prepare_task_switch(rq, prev, next);
+=20
+@@ -2347,7 +2351,7 @@ context_switch(struct rq *rq, struct task_struct *pre=
+v,
+ 	 * CPUs since it called schedule(), thus the 'rq' on its stack
+ 	 * frame will be invalid.
+ 	 */
+-	finish_task_switch(this_rq(), prev);
++	finish_task_switch(this_rq(), prev, prev_state);
+ }
+=20
+ /*
+
+--qq/nmn35hA65zZ5G
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJT5mmTAAoJEHZH4aRLwOS61tgP/jfwtyg6uTt582Al8PEtGccq
-iUxiQYUZRElI46gIpDN7sppWYdNsnrXvBXU/CSa/eGVMLBi51dPhRQxiE0WHFG1j
-V63aQPYozAb/curyTSGgIwEBxwp/tyKdHlsheJ5XpXHm3kx1R1TkkT8ZCiS1ltTK
-W/w/D+I6gKlPc3uypjQg+urCkSPVOFZn8ZvI87mxVS9PxcBk5kXN20p/1b9vmZop
-uyNkIm4Nsxve+hISd96cCC6Kd+bz3GE9gb/lNmS5HN7Zoo06OpgtkxNv+ZDEsQuq
-qmpLA/W6LptojV+lDLiHiuHNd+gNeEphwr2PAdxQdWz2WLH9I1pQVhQYey93yFEL
-JDT0TVDkbJ6l6J2i8l5kh0toK+5c27GrxkSdQhXWZvztF4q8a0JYM8wBHyWvcKva
-uI/NGQm7r7wxETTrgYLE2kiUdFr8M0WJqKgwzxkpNXdyoOjOyAWRB8RkPf8Gj7vL
-bxKSYRWFd8Xpw0nAyyBuvKa9R+Wmg+COs6C4jF/OGPcW5KmTPwoeeR1/nJcSu+b9
-iRaQLakH3qdziUkZwUKoH1/HMboCjirxVCDgBj2CHw8582qNaLeZF4LrWonmz7iq
-Z6JAEsA1HNGvofmiMoggDct7TaUD+y9JZOMpo0108u6wM86n1TtAd3FkVp5fsS2J
-qmeSm7Pn9crjw63UbL1l
-=pX90
+iQIcBAEBAgAGBQJT5mx4AAoJEHZH4aRLwOS6eXYP/RY/M9rhlVsyR2ZFycf9X9pr
+6DxwfkbWCNCfalesf22EwEZyjq7UtcwZmkRJ7wnYBDgN541f9dws4DFyFS+1KIid
+X/n/INZjdBWGM7F3xspZNHOfDgSqsR54kDpOuxVFCembewSdgZdZbewvsU+owFBJ
+9XMv6OZCx33fUDuP1kbFn4RO39AkxeRtsbgxr7VE0c7bzB3zPf62kJa6wuDFDKo+
+5tycULv+P/2qdf3eDxWWI9l3EeDOfI4SMciy8fgvXKVka3v/qJM39AUzhbjJg37J
+iiyq+2ZrBJl/d6O6CWvrHXa4r9xk9RU6+FOsncmGL8TAUQzbr3GOziwYogmcbxS/
+TVz2cTZPMktdgv4zh3ox4BqXW8TesZtUM8m9NcYV+Qd7zUhGu58pDal64lwpTz+w
+kMeMgjBMMVKAq0V7sDBLq50XAhQCdxWWZ2lBBCkbItUjcs6Um891J3N7SbDDf3JE
+xoETA6zRzG5hNfe60USYpKN3Lwspx9CYKX88I+iUCK6DMLzCADgnXrVhQLVhrgN0
+clx5grF+lXyNQnZ884S2+cylprdQSJIh8nc3NIdzrB8seEDQs7elyYl2I5olyf+2
+3arT8sUtnuA8S+Mdvi9MxCtZEwKOGsgcIuMoK3HiqDl9xCrE3+KwFTk0N/fxV+5n
+vIyhOfZlfz++rcfZNcBC
+=U8Sm
 -----END PGP SIGNATURE-----
 
---K9fR5eBdO1VxXkhU--
+--qq/nmn35hA65zZ5G--
