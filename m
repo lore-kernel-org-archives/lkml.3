@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752031AbaHIRP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 13:15:56 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55820 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821AbaHIRPy (ORCPT
+	id S1752036AbaHIRWr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 13:22:47 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:58450 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871AbaHIRWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 13:15:54 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53E65747.9070108@roeck-us.net>
-Date: Sat, 09 Aug 2014 10:15:51 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        satoru takeuchi <satoru.takeuchi@gmail.com>,
-        Shuah Khan <shuah.kh@samsung.com>, stable <stable@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH 3.16 00/17] 3.16.1-stable review
-References: <20140808213457.511493898@linuxfoundation.org>	<53E57279.1030106@roeck-us.net>	<20140809034911.GA2348@kroah.com>	<20140809034950.GB2348@kroah.com>	<53E5A0D1.10507@roeck-us.net>	<20140809141609.GA21639@kroah.com>	<53E63871.5040504@roeck-us.net> <CA+55aFwFMFgj2PqftqZLntjYkbm+pG8adJPMO+sD9=U67WOYkg@mail.gmail.com>
-In-Reply-To: <CA+55aFwFMFgj2PqftqZLntjYkbm+pG8adJPMO+sD9=U67WOYkg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 9 Aug 2014 13:22:44 -0400
+From: Suman Kumar <suman@inforcecomputing.com>
+To: g.liakhovetski@gmx.de
+Cc: m.chehab@samsung.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, suman@inforcecomputing.com,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH] staging: soc_camera: soc_camera_platform.c: Fixed a Missing blank line coding style issue
+Date: Sat,  9 Aug 2014 22:52:32 +0530
+Message-Id: <1407604952-15492-1-git-send-email-suman@inforcecomputing.com>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2014 09:07 AM, Linus Torvalds wrote:
-> On Sat, Aug 9, 2014 at 8:04 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>
->> There are two arm build failures in Linus' tree which are not seen
->> in -next.
->
-> Ugh. Did I screw up the semantic merge wrt the devm_phy_create()
-> argument changes despite having an example patch from Stephen? Or is
-> this something else due to something that just wasn't in -next?
->
-> Can you post the build failures?
->
+    Fixes a coding style issue reported by checkpatch.pl
 
-Building arm:multi_v7_defconfig ... failed
-Building arm:exynos_defconfig ... failed
---------------
-Error log (same for both builds):
+Signed-off-by: Suman Kumar <suman@inforcecomputing.com>
+---
+ drivers/media/platform/soc_camera/soc_camera_platform.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-ERROR (phandle_references): Reference to non-existent node or label "disp_pd"
-
-ERROR: Input tree has errors, aborting (use -f to force output)
-make[1]: *** [arch/arm/boot/dts/exynos5420-arndale-octa.dtb] Error 2
-
-and:
-
-$ git grep disp_pd
-arch/arm/boot/dts/exynos5420.dtsi:              samsung,power-domain = <&disp_pd>;
-
-So, yes, disp_pd is not defined.
-
-If I understand -next correctly, it includes a fixup which removes disp_pd
-from the file. From the -next build log:
-
-	Applying: ARM: dts: exynos5420: remove disp_pd
-
-Copying Stephen for additional input.
-
-Guenter
+diff --git a/drivers/media/platform/soc_camera/soc_camera_platform.c b/drivers/media/platform/soc_camera/soc_camera_platform.c
+index ceaddfb..fe15a80 100644
+--- a/drivers/media/platform/soc_camera/soc_camera_platform.c
++++ b/drivers/media/platform/soc_camera/soc_camera_platform.c
+@@ -27,12 +27,14 @@ struct soc_camera_platform_priv {
+ static struct soc_camera_platform_priv *get_priv(struct platform_device *pdev)
+ {
+ 	struct v4l2_subdev *subdev = platform_get_drvdata(pdev);
++
+ 	return container_of(subdev, struct soc_camera_platform_priv, subdev);
+ }
+ 
+ static int soc_camera_platform_s_stream(struct v4l2_subdev *sd, int enable)
+ {
+ 	struct soc_camera_platform_info *p = v4l2_get_subdevdata(sd);
++
+ 	return p->set_capture(p, enable);
+ }
+ 
+-- 
+1.8.2
 
