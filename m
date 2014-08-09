@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751397AbaHIGuV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 02:50:21 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:48557 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaHIGuO (ORCPT
+	id S1751428AbaHIGup (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 02:50:45 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:57465 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbaHIGuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 02:50:14 -0400
+	Sat, 9 Aug 2014 02:50:18 -0400
 From: Goffredo Baroncelli <kreijack@gmail.com>
 X-Google-Original-From: Goffredo Baroncelli <kreijack@inwind.it>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Jean Delvare <jdelvare@suse.de>,
         Guenter Roeck <linux@roeck-us.net>,
         Goffredo Baroncelli <kreijack@inwind.it>
-Subject: [PATCH 1/5] Update drivers names to the ones invoked by i2c-powermac
-Date: Sat,  9 Aug 2014 06:49:59 +0000
-Message-Id: <1407567003-18332-2-git-send-email-kreijack@inwind.it>
+Subject: [PATCH 4/5] Return the fan speed via sysfs
+Date: Sat,  9 Aug 2014 06:50:02 +0000
+Message-Id: <1407567003-18332-5-git-send-email-kreijack@inwind.it>
 X-Mailer: git-send-email 2.1.0.rc1
 In-Reply-To: <1407567003-18332-1-git-send-email-kreijack@inwind.it>
 References: <1407567003-18332-1-git-send-email-kreijack@inwind.it>
@@ -23,72 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update drivers names to the ones invoked by i2c-powermac:
-- therm_ds1775 -> MAC,ds1775
-- therm_adm1030 -> MAC,adm1030
-The background fan control loop is started from
-the devices probing methods.
+Return the fan speed via sysfs:
+/sys/devices/temperature/fan_level
+
+This patch is extracted from a Bryan Christianson's bigger one (see
+debian bug #741663)
 
 Signed-off-by: Goffredo Baroncelli <kreijack@inwind.it>
 ---
- drivers/macintosh/therm_windtunnel.c | 23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ drivers/macintosh/therm_windtunnel.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/macintosh/therm_windtunnel.c b/drivers/macintosh/therm_windtunnel.c
-index 3b4a157..a64a06f 100644
+index 68f1067..30a6588 100644
 --- a/drivers/macintosh/therm_windtunnel.c
 +++ b/drivers/macintosh/therm_windtunnel.c
-@@ -334,6 +334,23 @@ do_attach( struct i2c_adapter *adapter )
- 	return 0;
+@@ -109,9 +109,15 @@ show_case_temperature( struct device *dev, struct device_attribute *attr, char *
+ 	return sprintf(buf, "%d.%d\n", x.casetemp>>8, (x.casetemp & 255)*10/256 );
  }
  
-+static void
-+try_start_control_loop(void)
++static ssize_t
++show_fan_level(struct device *dev, struct device_attribute *attr, char *buf)
 +{
-+
-+	mutex_lock(&x.lock);
-+	if (!x.thermostat || !x.fan || x.running) {
-+		mutex_unlock(&x.lock);
-+		return;
-+	}
-+
-+	x.running = 1;
-+	mutex_unlock(&x.lock);
-+
-+	x.poll_task = kthread_run(control_loop, NULL, "g4fand");
-+
++	return sprintf(buf, "%d\n", 11 - x.fan_level);
 +}
 +
- static int
- do_remove(struct i2c_client *client)
+ static DEVICE_ATTR(cpu_temperature, S_IRUGO, show_cpu_temperature, NULL );
+ static DEVICE_ATTR(case_temperature, S_IRUGO, show_case_temperature, NULL );
+-
++static DEVICE_ATTR(fan_level, S_IRUGO, show_fan_level, NULL);
+ 
+ 
+ /************************************************************************/
+@@ -264,6 +270,7 @@ setup_hardware( void )
+ 
+ 	err = device_create_file( &x.of_dev->dev, &dev_attr_cpu_temperature );
+ 	err |= device_create_file( &x.of_dev->dev, &dev_attr_case_temperature );
++	err |= device_create_file(&x.of_dev->dev, &dev_attr_fan_level);
+ 	if (err)
+ 		printk(KERN_WARNING
+ 			"Failed to create temperature attribute file(s).\n");
+@@ -274,6 +281,7 @@ restore_regs( void )
  {
-@@ -364,6 +381,7 @@ attach_fan( struct i2c_client *cl )
- 	printk("ADM1030 fan controller [@%02x]\n", cl->addr );
+ 	device_remove_file( &x.of_dev->dev, &dev_attr_cpu_temperature );
+ 	device_remove_file( &x.of_dev->dev, &dev_attr_case_temperature );
++	device_remove_file(&x.of_dev->dev, &dev_attr_fan_level);
  
- 	x.fan = cl;
-+	try_start_control_loop();
-  out:
- 	return 0;
- }
-@@ -397,6 +415,7 @@ attach_thermostat( struct i2c_client *cl )
- 	x.overheat_temp = os_temp;
- 	x.overheat_hyst = hyst_temp;
- 	x.thermostat = cl;
-+	try_start_control_loop();
- out:
- 	return 0;
- }
-@@ -404,8 +423,8 @@ out:
- enum chip { ds1775, adm1030 };
- 
- static const struct i2c_device_id therm_windtunnel_id[] = {
--	{ "therm_ds1775", ds1775 },
--	{ "therm_adm1030", adm1030 },
-+	{ "MAC,ds1775", ds1775 },
-+	{ "MAC,adm1030", adm1030 },
- 	{ }
- };
- 
+ 	write_reg( x.fan, 0x01, x.r1, 1 );
+ 	write_reg( x.fan, 0x20, x.r20, 1 );
 -- 
 2.1.0.rc1
 
