@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569AbaHJT61 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 15:58:27 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:54139 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaHJT6Z (ORCPT
+	id S1751739AbaHJT7o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 15:59:44 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:33701 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630AbaHJT7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 15:58:25 -0400
-Date: Mon, 11 Aug 2014 01:28:19 +0530
+	Sun, 10 Aug 2014 15:59:42 -0400
+Date: Mon, 11 Aug 2014 01:29:37 +0530
 From: Himangi Saraogi <himangi774@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>, Olof Johansson <olof@lixom.net>,
-        Daniel Mack <zonque@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, Felipe Balbi <balbi@ti.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] drivers: net: davinci_cpdma: drop devm_kfree of
- devm_kzalloc'd data
-Message-ID: <20140810195819.GA3880@himangi-Dell>
+Subject: [PATCH] usb: phy: drop kfree of devm_kzalloc's data
+Message-ID: <20140810195937.GA3923@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,38 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_kfree should not have to be explicitly used.
+Using kfree to free data allocated with devm_kzalloc causes double frees.
 
 The Coccinelle semantic patch that fixes this problem is as follows:
 
 // <smpl>
 @@
-expression x,d;
+expression x;
 @@
 
 x = devm_kzalloc(...)
 ...
-?-devm_kfree(d,x);
+?-kfree(x);
 // </smpl>
 
 Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- drivers/net/ethernet/ti/davinci_cpdma.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/usb/phy/phy-gpio-vbus-usb.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/ti/davinci_cpdma.c b/drivers/net/ethernet/ti/davinci_cpdma.c
-index 4a000f6..af673f5 100644
---- a/drivers/net/ethernet/ti/davinci_cpdma.c
-+++ b/drivers/net/ethernet/ti/davinci_cpdma.c
-@@ -512,7 +512,6 @@ struct cpdma_chan *cpdma_chan_create(struct cpdma_ctlr *ctlr, int chan_num,
- 	spin_lock_irqsave(&ctlr->lock, flags);
- 	if (ctlr->channels[chan_num]) {
- 		spin_unlock_irqrestore(&ctlr->lock, flags);
--		devm_kfree(ctlr->dev, chan);
- 		return ERR_PTR(-EBUSY);
- 	}
+diff --git a/drivers/usb/phy/phy-gpio-vbus-usb.c b/drivers/usb/phy/phy-gpio-vbus-usb.c
+index ea9e705..f4b14bd 100644
+--- a/drivers/usb/phy/phy-gpio-vbus-usb.c
++++ b/drivers/usb/phy/phy-gpio-vbus-usb.c
+@@ -260,10 +260,8 @@ static int gpio_vbus_probe(struct platform_device *pdev)
  
+ 	gpio_vbus->phy.otg = devm_kzalloc(&pdev->dev, sizeof(struct usb_otg),
+ 					  GFP_KERNEL);
+-	if (!gpio_vbus->phy.otg) {
+-		kfree(gpio_vbus);
++	if (!gpio_vbus->phy.otg)
+ 		return -ENOMEM;
+-	}
+ 
+ 	platform_set_drvdata(pdev, gpio_vbus);
+ 	gpio_vbus->dev = &pdev->dev;
 -- 
 1.9.1
 
