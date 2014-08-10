@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461AbaHJQII (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 12:08:08 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38540 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751167AbaHJQIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 12:08:05 -0400
-Date: Sun, 10 Aug 2014 18:07:56 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jason Baron <jbaron@akamai.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH] Flipped jump labels
-Message-ID: <20140810160756.GB9490@pd.tnic>
-References: <20140809105742.GA5910@pd.tnic>
- <20140810061103.GA13968@gmail.com>
- <20140810061303.GA14206@gmail.com>
- <20140810153539.GA9490@pd.tnic>
- <20140810154515.GA27199@gmail.com>
+	id S1751438AbaHJQTV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 12:19:21 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:44385 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbaHJQTT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 12:19:19 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Li Yang <leoli@freescale.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [PATCH] net: ugg_geth: Fix build error in -next
+Date: Sun, 10 Aug 2014 09:19:14 -0700
+Message-Id: <1407687554-14539-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140810154515.GA27199@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 10, 2014 at 05:45:15PM +0200, Ingo Molnar wrote:
-> Indeed - but could we use that interface to cleanly expose the
-> arch_static_branch_active() code you've written, or do we need new
-> variants?
+powerpc:mpc83xx_defconfig and other builds fail with
 
-We could probably.
+drivers/net/ethernet/freescale/ucc_geth.c: In function 'ucc_geth_remove':
+drivers/net/ethernet/freescale/ucc_geth.c:3927:19: error:
+	'struct ucc_geth_private' has no member named 'info'
+  of_node_put(ugeth->info->tbi_node);
+                     ^
+drivers/net/ethernet/freescale/ucc_geth.c:3928:19: error:
+	     'struct ucc_geth_private' has no member named 'info'
+  of_node_put(ugeth->info->phy_node);
+  		     ^
 
-The thing is, if we want to do the _active thing, the whole jump labels
-infrastructure would need to know about those, let's call them "new
-types" because they'd need different handling when enabling - see
-__jump_label_transform() in arch/x86/kernel/jump_label.c with all the
-NOP checks.
+Introduced by commit "net: ucc_geth: drop acquired references in probe error
+path and remove".
 
-Which begs the more important question: is adding those just to save us
-a JMP penalty justify the additional code complexity. Frankly, I'm still
-on the fence here and I'd rather do some perf measurements of a kernel
-build with and without the JMP in native_sched_clock() to see whether it
-is even noticeable or it disappears in the noise.
+>From the context, it appears that the variable is named ug_info.
 
-Because if it does disappear, the whole trouble is just for nothing.
+Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+Only seen in -next.
 
-Thanks.
+ drivers/net/ethernet/freescale/ucc_geth.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
+index d6b64e3..3cf0478 100644
+--- a/drivers/net/ethernet/freescale/ucc_geth.c
++++ b/drivers/net/ethernet/freescale/ucc_geth.c
+@@ -3924,8 +3924,8 @@ static int ucc_geth_remove(struct platform_device* ofdev)
+ 	unregister_netdev(dev);
+ 	free_netdev(dev);
+ 	ucc_geth_memclean(ugeth);
+-	of_node_put(ugeth->info->tbi_node);
+-	of_node_put(ugeth->info->phy_node);
++	of_node_put(ugeth->ug_info->tbi_node);
++	of_node_put(ugeth->ug_info->phy_node);
+ 
+ 	return 0;
+ }
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
