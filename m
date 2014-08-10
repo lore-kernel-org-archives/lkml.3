@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779AbaHJXHt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 19:07:49 -0400
-Received: from jambon.ath.cx ([212.129.4.85]:41444 "EHLO debian"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751173AbaHJXHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 19:07:48 -0400
-From: Junien Fridrick <linux.kernel@junien.fridrick.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lai Siyao <lai.siyao@intel.com>, Oleg Drokin <oleg.drokin@intel.com>,
-        "John L. Hammond" <john.hammond@intel.com>,
-        Jinshan Xiong <jinshan.xiong@intel.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Junien Fridrick <linux.kernel@junien.fridrick.net>
-Subject: [PATCH v2] staging: lustre: fix coding style issue: missing space after 'if'
-Date: Sun, 10 Aug 2014 23:05:38 +0000
-Message-Id: <1407711938-2046-1-git-send-email-linux.kernel@junien.fridrick.net>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140810122411.GF28863@kroah.com>
-References: <20140810122411.GF28863@kroah.com>
+	id S1751841AbaHJXSR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 19:18:17 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50161 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640AbaHJXSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 19:18:16 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53E7FDB5.4070607@roeck-us.net>
+Date: Sun, 10 Aug 2014 16:18:13 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Oleg Nesterov <oleg@redhat.com>, Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: Runtime trouble with commit dbd952127d (seccomp: introduce writer
+ locking)
+References: <53E6CF2B.6090709@roeck-us.net>	<CAGXu5jLsbCpqG2cAxZWG+ZC=wdvhQ_9GPqXUb6p9pSvsqrXpOA@mail.gmail.com>	<20140810193308.GA31867@redhat.com>	<53E7DB59.6020300@roeck-us.net> <CA+55aFz3vW_qnrwa6kWMsN1pGbjnyGXGBNhH=DO0berKgyOtgQ@mail.gmail.com>
+In-Reply-To: <CA+55aFz3vW_qnrwa6kWMsN1pGbjnyGXGBNhH=DO0berKgyOtgQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Coding style issue reported by checkpatch.pl
+On 08/10/2014 02:10 PM, Linus Torvalds wrote:
+> On Sun, Aug 10, 2014 at 1:51 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> That means that the broken configuration is (CONFIG_DEBUG_SPINLOCK=n,
+>> CONFIG_SMP=n).
+>> It also means that the BUG_ON checks introduced with the seccomp commit
+>> will cause this configuration to fail hard at least for architectures where
+>> CONFIG_SMP
+>> can be disabled, and if those architectures use
+>> include/linux/spinlock_types_up.h.
+>
+> Yes. This is why we have "assert_spin_locked()". You can't use
+> BUG_ON(spin_is_locked()), and !spin_is_locked() tends to be even worse
+> unless you can prove that nobody else can get the lock simultaneously.
+>
 
-Signed-off-by: Junien Fridrick <linux.kernel@junien.fridrick.net>
----
-This patch is part of task 10 of the eudyptula challenge
-Applies to next-20140808
+git grep 'BUG_ON.*!spin_is_locked'
 
-v2 : fixed patch short summary and description
+suggests that this may be a spreading sickness ... unless the other users
+know for sure that SMP will always be configured.
 
- drivers/staging/lustre/lustre/llite/remote_perm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+What is the better fix ? Add NR_CPUS != 1 to the test, as mm does,
+or remove it entirely ? Or something else ?
 
-diff --git a/drivers/staging/lustre/lustre/llite/remote_perm.c b/drivers/staging/lustre/lustre/llite/remote_perm.c
-index f61fefc..3a9c8e8 100644
---- a/drivers/staging/lustre/lustre/llite/remote_perm.c
-+++ b/drivers/staging/lustre/lustre/llite/remote_perm.c
-@@ -100,7 +100,7 @@ void free_rmtperm_hash(struct hlist_head *hash)
- 	struct ll_remote_perm *lrp;
- 	struct hlist_node *next;
- 
--	if(!hash)
-+	if (!hash)
- 		return;
- 
- 	for (i = 0; i < REMOTE_PERM_HASHSIZE; i++)
--- 
-2.0.1
+Guenter
 
