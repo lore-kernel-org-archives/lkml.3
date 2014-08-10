@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaHJBr0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 21:47:26 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64896 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874AbaHJBrZ (ORCPT
+	id S1752047AbaHJCGM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 22:06:12 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:60537 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631AbaHJCGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 21:47:25 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53E6CF2B.6090709@roeck-us.net>
-Date: Sat, 09 Aug 2014 18:47:23 -0700
-From: Guenter Roeck <private@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sat, 9 Aug 2014 22:06:08 -0400
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andy Lutomirski <luto@amacapital.net>
-Subject: Runtime trouble with commit dbd952127d (seccomp: introduce writer
- locking)
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20140810112127.60b195b7@canb.auug.org.au>
+References: <20140808213457.511493898@linuxfoundation.org>
+	<53E57279.1030106@roeck-us.net>
+	<20140809034911.GA2348@kroah.com>
+	<20140809034950.GB2348@kroah.com>
+	<53E5A0D1.10507@roeck-us.net>
+	<20140809141609.GA21639@kroah.com>
+	<53E63871.5040504@roeck-us.net>
+	<CA+55aFwFMFgj2PqftqZLntjYkbm+pG8adJPMO+sD9=U67WOYkg@mail.gmail.com>
+	<53E65747.9070108@roeck-us.net>
+	<CA+55aFw=1YEfa+J5xLMbSycT4YBvEmgbDGN62nD1AL9-q1NPoA@mail.gmail.com>
+	<20140810112127.60b195b7@canb.auug.org.au>
+Date: Sat, 9 Aug 2014 19:06:07 -0700
+Message-ID: <CAOesGMhmcM6JeAhYVW5MzDY5NuN6F-TeZNT2-Y11c=L3J_D7oQ@mail.gmail.com>
+Subject: Re: [PATCH 3.16 00/17] 3.16.1-stable review
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        YoungJun Cho <yj44.cho@samsung.com>, Inki Dae <inki.dae@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        satoru takeuchi <satoru.takeuchi@gmail.com>,
+        Shuah Khan <shuah.kh@samsung.com>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
+On Sat, Aug 9, 2014 at 6:21 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Linus,
+>
+> On Sat, 9 Aug 2014 10:43:51 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>>
+>> On Sat, Aug 9, 2014 at 10:15 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> >
+>> > ERROR (phandle_references): Reference to non-existent node or label
+>> > "disp_pd"
+>> >
+>> > ERROR: Input tree has errors, aborting (use -f to force output)
+>> > make[1]: *** [arch/arm/boot/dts/exynos5420-arndale-octa.dtb] Error 2
+>>
+>> Ok, so it's something else that was apparently known about in -next,
+>> but not mentioned when pushing to me. Oh well.
 
-I am having some trouble with commit dbd952127d (seccomp: introduce
-writer locking) when running my qemu tests on the upstream kernel.
+Yeah, I had missed this one since I thought the DRM guys would fix it
+in their tree when it was reported.
 
-With powerpc, I get the following crash.
+It didn't show up for me since when I did my build/test before sending
+pull requests since that was done with a mainline branch that hadn't
+merged DRM yet.
 
-ftrace: allocating 20093 entries in 59 pages
-------------[ cut here ]------------
-kernel BUG at kernel/fork.c:1108!
-Oops: Exception in kernel mode, sig: 5 [#1]
-PREEMPT PowerMac
-Modules linked in:
-CPU: 0 PID: 0 Comm: swapper Not tainted 3.16.0-yocto-standard+ #1
-task: c08a03d0 ti: c08e4000 task.ti: c08e4000
-NIP: c002b98c LR: c002b988 CTR: c03837ec
-REGS: c08e5e30 TRAP: 0700   Not tainted  (3.16.0-yocto-standard+)
-MSR: 00021032 <ME,IR,DR,RI>  CR: 22282048  XER: 20000000
+>> The new disp_dt use was added by commit 5a8da524049c ("ARM: dts:
+>> exynos5420: add dsi node"), while commit d51cad7df871 ("ARM: dts:
+>> remove display power domain for exynos5420") removed the node.
+>>
+>> I'll leave it broken until the ARM people get around to fixing it.
+>> Likely by just removing the disp_dt line from the dsi node, but I'll
+>> let the proper people sort it out.
+>
+> Yeah, that's the correct fix (it was even tested).  Olof has the patch
+> for you.
 
-GPR00: c002b988 c08e5ee0 c08a03d0 00000001 c0a9b878 00000800 c783603c 00000020
-GPR08: c783603c 00000003 00000001 c08f61fc 22222044 00000000 07c5ac10 00800300
-GPR16: c7870000 00000010 00000000 07de7fa4 00000000 c08f594c c08f0000 c78702d0
-GPR24: 00000000 c08f0000 c08f5940 c000422c c08a8ea0 c7870310 00000000 c7808400
-NIP [c002b98c] copy_process.part.52+0x794/0x13e4
-LR [c002b988] copy_process.part.52+0x790/0x13e4
-Call Trace:
-[c08e5ee0] [c002b988] copy_process.part.52+0x790/0x13e4 (unreliable)
-[c08e5f60] [c002c768] do_fork+0xb8/0x3bc
-[c08e5fa0] [c00041c8] rest_init+0x30/0x94
-[c08e5fb0] [c083cf98] start_kernel+0x368/0x37c
-[c08e5ff0] [00003438] 0x3438
-Instruction dump:
-7d400124 38600001 48027e95 55e903e1 41820b84 80e202c0 90f002c0 81420570
-91500570 38600001 48027e75 39400001 <0f0a0000> 81420568 8162056c 91500568
----[ end trace dc8fa200cb88537f ]---
+Yep, I've got the patch to do that in my current fixes branch that
+I'll send tonight.
 
-With  mips (both 32 bit and 64 bit), I get
 
-NR_IRQS:256
-CPU frequency 200.00 MHz
-Console: colour dummy device 80x25
-console [tty0] enabled
-bootconsole [uart0] disabled
-
-[ and then there is silence ]
-
-In all cases I bisected the problem to the above mentioned commit.
-
-Failures are seen in both linux-next and the tip of Linus' tree.
-Test results are on http://server.roeck-us.net:8010/builders
-(look for qwmu results). Build and test scripts are in the mips,
-mips64, and powerpc subdirectories of
-https://github.com/groeck/linux-build-test/tree/master/rootfs.
-
-Any idea, anyone, what might be going on, or how I could do to
-help tracking this down ?
-
-Thanks,
-Guenter
-
+-Olof
