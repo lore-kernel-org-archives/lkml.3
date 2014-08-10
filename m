@@ -1,176 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751366AbaHJO6L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 10:58:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51121 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122AbaHJO6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 10:58:08 -0400
-Date: Sun, 10 Aug 2014 16:58:02 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: David Miller <davem@davemloft.net>, mcgrof@do-not-panic.com, tiwai@suse.de,
-        linux-kernel@vger.kernel.org, penguin-kernel@I-love.SAKURA.ne.jp,
-        joseph.salisbury@canonical.com, kay@vrfy.org,
-        gnomes@lxorguk.ukuu.org.uk, tim.gardner@canonical.com,
-        pierre-fersing@pierref.org, akpm@linux-foundation.org, oleg@redhat.com,
-        bpoirier@suse.de, nagalakshmi.nandigama@avagotech.com,
-        praveen.krishnamoorthy@avagotech.com, sreekanth.reddy@avagotech.com,
-        abhijit.mahajan@avagotech.com, hariprasad@chelsio.com,
-        santosh@chelsio.com, MPT-FusionLinux.pdl@avagotech.com,
-        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred
-	probe from init
-Message-ID: <20140810145802.GJ21930@wotan.suse.de>
-References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com> <1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com> <20140730.151107.1328294951387764830.davem@davemloft.net> <20140809164119.GI21930@wotan.suse.de> <20140810124331.GE30451@kroah.com>
+	id S1751385AbaHJPAY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 11:00:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58582 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaHJPAX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 11:00:23 -0400
+Date: Sun, 10 Aug 2014 17:00:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140810150005.GU9918@twins.programming.kicks-ass.net>
+References: <20140731215445.GA21933@linux.vnet.ibm.com>
+ <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140808191326.GE3935@laptop>
+ <20140808205826.GG5821@linux.vnet.ibm.com>
+ <20140809183355.GP9918@twins.programming.kicks-ass.net>
+ <20140810013829.GP5821@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SCaOIQf4OfYbUof5"
 Content-Disposition: inline
-In-Reply-To: <20140810124331.GE30451@kroah.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20140810013829.GP5821@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 10, 2014 at 08:43:31PM +0800, Greg KH wrote:
-> On Sat, Aug 09, 2014 at 06:41:19PM +0200, Luis R. Rodriguez wrote:
-> > On Wed, Jul 30, 2014 at 03:11:07PM -0700, David Miller wrote:
-> > > From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-> > > Date: Mon, 28 Jul 2014 11:28:28 -0700
-> > > 
-> > > > Tetsuo bisected and found that commit 786235ee "kthread: make
-> > > > kthread_create() killable" modified kthread_create() to bail as
-> > > > soon as SIGKILL is received. This is causing some issues with
-> > > > some drivers and at times boot. Joseph then found that failures
-> > > > occur as the systemd-udevd process sends SIGKILL to modprobe if
-> > > > probe on a driver takes over 30 seconds. When this happens probe
-> > > > will fail on any driver, its why booting on some system will fail
-> > > > if the driver happens to be a storage related driver. Some folks
-> > > > have suggested fixing this by modifying kthread_create() to not
-> > > > leave upon SIGKILL [3], upon review Oleg rejected this change and
-> > > > the discussion was punted out to systemd to see if the default
-> > > > timeout could be increased from 30 seconds to 120. The opinion of
-> > > > the systemd maintainers is that the driver's behavior should
-> > > > be fixed [4]. Linus seems to agree [5], however more recently even
-> > > > networking drivers have been reported to fail on probe since just
-> > > > writing the firmware to a device and kicking it can take easy over
-> > > > 60 seconds [6]. Benjamim was able to trace the issues recently
-> > > > reported on cxgb4 down to the same systemd-udevd 30 second timeout [6].
-> > > > 
-> > > > This is an alternative solution which enables drivers that are
-> > > > known to take long to use deferred probe workqueue. This avoids
-> > > > the 30 second timeout and lets us annotate drivers with long
-> > > > init sequences.
-> > > > 
-> > > > As drivers determine a component is not yet available and needs
-> > > > to defer probe you'll be notified this happen upon init for each
-> > > > device but now with a message such as:
-> > > > 
-> > > > pci 0000:03:00.0: Driver cxgb4 requests probe deferral on init
-> > > > 
-> > > > You should see one of these per struct device probed.
-> > > 
-> > > It seems we're still discussing this.
-> > > 
-> > > I think I understand all of the underlying issues, and what I'll say
-> > > is that perhaps we should use what Greg KH requested but via a helper
-> > > that is easy to grep for.
-> > > 
-> > > I don't care if it's something like "module_long_probe_init()" and
-> > > "module_long_probe_exit()", but it just needs to be some properly
-> > > named interface which does the whole kthread or whatever bit.
-> > 
-> > I've tested the alternative kthread_run() proposal but unfortunately it
-> > does not help resolve the issue, the timeout is still hit and a SIGKILL
-> > still kills the driver probe. Please let me know how you'd all like us
-> > to proceed, these defer probe patches do help cure the issue though.
-> 
-> Why doesn't it work?  Doesn't modprobe come right back and the init
-> sequence still takes a while to run?  What exactly fails?
 
-systemd uses kmod kmod_module_probe_insert_module(), what I see is that using
-kthread_run() as a work around still causes probe to fail on a driver that
-otherwise would work fine if all you do is sprinkle ssleep(33) (seconds) on the
-init sequence. To see the issue you can test this on any of your network
-drivers that get loaded automatically, I did my testing with iwlwifi by
-purposely breaking it and then using the work around. It seems the probe
-somehow still gets killed as before, I haven't debugged this further.
+--SCaOIQf4OfYbUof5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For example by breaking and fixing iwlwifi this yields:
+On Sat, Aug 09, 2014 at 06:38:29PM -0700, Paul E. McKenney wrote:
+> On Sat, Aug 09, 2014 at 08:33:55PM +0200, Peter Zijlstra wrote:
+> > On Fri, Aug 08, 2014 at 01:58:26PM -0700, Paul E. McKenney wrote:
+> > >=20
+> > > > And on that, you probably should change rcu_sched_rq() to read:
+> > > >=20
+> > > > 	this_cpu_inc(rcu_sched_data.passed_quiesce);
+> > > >=20
+> > > > That avoids touching the per-cpu data offset.
+> > >=20
+> > > Hmmm...  Interrupts are disabled,
+> >=20
+> > No they are not, __schedule()->rcu_note_context_switch()->rcu_sched_qs()
+> > is only called with preemption disabled.
+> >=20
+> > We only disable IRQs later, where we take the rq->lock.
+>=20
+> You want me not to disable irqs before invoking rcu_preempt_qs() from
+> rcu_preempt_note_context_switch(), I get that.  But right now, they
+> really are disabled courtesy of the local_irq_save() before the call
+> to rcu_preempt_qs() from rcu_preempt_note_context_switch().
 
-ergon:~ # journalctl -b -0 -u systemd-udevd 
+Ah, confusion there, I said rcu_sched_qs(), you're talking about
+rcu_preempt_qs().
 
--- Logs begin at Mon 2014-08-04 21:55:28 EDT, end at Sun 2014-08-10 10:50:14 EDT. --
-Aug 10 10:48:49 ergon systemd-udevd[257]: specified group 'input' unknown
-Aug 10 10:48:55 ergon mtp-probe[493]: checking bus 3, device 2: "/sys/devices/pci0000:00/0000:00:14.0/usb3/3-7"
-Aug 10 10:48:55 ergon mtp-probe[492]: checking bus 3, device 4: "/sys/devices/pci0000:00/0000:00:14.0/usb3/3-12"
-Aug 10 10:49:24 ergon systemd-udevd[465]: seq 1755 '/devices/pci0000:00/0000:00:1c.1/0000:03:00.0' killed
+Yes the call to rcu_preempt_qs() is unconditionally wrapped in IRQ
+disable.
 
-ergon:~ # dmesg | grep iwlwifi
-[   10.315538] iwlwifi Going to sleep for 33 seconds
-[   43.323958] iwlwifi Done sleeping
-[   43.324400] iwlwifi 0000:03:00.0: irq 50 for MSI/MSI-X
-[   43.324534] iwlwifi 0000:03:00.0: Error allocating IRQ 50
-[   43.326951] iwlwifi: probe of 0000:03:00.0 failed with error -4
+> > void rcu_sched_qs(int cpu)
+> > {
+> > 	if (trace_rcu_grace_period_enabled()) {
+> > 		if (!__this_cpu_read(rcu_sched_data.passed_quiesce))
+> > 			trace_rcu_grace_period(...);
+> > 	}
+> > 	__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
+> > }
+> >=20
+> > Would further avoid emitting the conditional in the normal case where
+> > the tracepoint is inactive.
+>=20
+> It might be better to avoid storing to rcu_sched_data.passed_quiesce when
+> it is already 1, though the difference would be quite hard to measure.
+> In that case, this would work nicely:
+>=20
+> static void rcu_preempt_qs(int cpu)
+> {
+> 	if (rdp->passed_quiesce =3D=3D 0) {
+> 		trace_rcu_grace_period(TPS("rcu_preempt"), rdp->gpnum, TPS("cpuqs"));
+> 	> 	__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
+> 	}
+> 	current->rcu_read_unlock_special &=3D ~RCU_READ_UNLOCK_NEED_QS;
+> }
 
-The patch used:
+Yes, that's a consideration, fair enough. Again note the confusion
+between sched/preempt. But yes, both can use this 'cleanup'.
 
-diff --git a/drivers/net/wireless/iwlwifi/mvm/ops.c b/drivers/net/wireless/iwlwifi/mvm/ops.c
-index 610dbcb..65e0ab2 100644
---- a/drivers/net/wireless/iwlwifi/mvm/ops.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/ops.c
-@@ -63,6 +63,7 @@
- #include <linux/module.h>
- #include <linux/vmalloc.h>
- #include <net/mac80211.h>
-+#include <linux/kthread.h>
- 
- #include "iwl-notif-wait.h"
- #include "iwl-trans.h"
-@@ -111,7 +112,7 @@ MODULE_PARM_DESC(power_scheme,
- /*
-  * module init and exit functions
-  */
--static int __init iwl_mvm_init(void)
-+static int iwl_mvm_init_real(void *arg)
- {
- 	int ret;
- 
-@@ -130,12 +131,21 @@ static int __init iwl_mvm_init(void)
- 
- 	return ret;
- }
-+
-+static struct task_struct *init_thread;
-+
-+static int __init iwl_mvm_init(void)
-+{
-+	init_thread = kthread_run(iwl_mvm_init_real, NULL, "iwl_mvm_init");
-+	return 0;
-+}
- module_init(iwl_mvm_init);
- 
- static void __exit iwl_mvm_exit(void)
- {
- 	iwl_opmode_deregister("iwlmvm");
- 	iwl_mvm_rate_control_unregister();
-+	kthread_stop(init_thread);
- }
- module_exit(iwl_mvm_exit);
- 
-diff --git a/drivers/net/wireless/iwlwifi/pcie/drv.c b/drivers/net/wireless/iwlwifi/pcie/drv.c
-index 98950e4..c1f2823 100644
---- a/drivers/net/wireless/iwlwifi/pcie/drv.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
-@@ -489,6 +489,10 @@ static int iwl_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	struct iwl_trans_pcie *trans_pcie;
- 	int ret;
- 
-+	printk("iwlwifi Going to sleep for 33 seconds\n");
-+	ssleep(33);
-+	printk("iwlwifi Done sleeping\n");
-+
- 	iwl_trans = iwl_trans_pcie_alloc(pdev, ent, cfg);
- 	if (IS_ERR(iwl_trans))
- 		return PTR_ERR(iwl_trans);
+--SCaOIQf4OfYbUof5
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT54jvAAoJEHZH4aRLwOS6W+4P/1SkcVPDOqtFlSacYHZninQ7
+/KFvX8i2vk9W1SCpn6NBsLsIXNwwAsGTAIfd0nVvparYW5ePU++8u+skLs2OBQ/z
+U20N+ErYTRfg7kZqTJhpAuJkdIo3WwV1Vedt7fdRfxDF/svi+uVQhrccKsui6/mI
+rPDvAe6YaR0iWklODbAksC2vtAQsvoE8q+bCqJhZrVp2CnRVGdFAAsaKvLI9cPbt
+l6sikmYyjXDJx/h3/CwPd/bqalqVPdfWV4QbOvjgZQXrlQPGeNjFw9tPjvVH3yik
+33gvEq84sztbo2uADmzoiImXc2rXd75PLDFYSXU+3O2bZ1Cv5xCYJcHZ0mP4vOqV
+D95pEvfX68w8a4vJl97V+EFKhNBxsGOpUhyFBaSv0rWTrUOH5x+XRbKXlvgSyZk4
+MTaE76DEw9kfRCP/z9gy4aqwIv5CHjtqCdGYtmrrd982gAZlDcyCmITW8jsd55ln
+da0durb/aQNXpw/Rl8yvDPwOthyj8y/dWqu6m1xACbkOWMnhSvoc/YCcHbs5yDuO
+Nv63aco9ncYTXyY9ZNopJ9MsqUVvNFfAHLEQ9knRLQGUtHs5CLZ2fcR3EsoJeNNc
+2pI2ZJfEWhZRDos4iGPxzdwYDdOxASerQJdeIk0tXZeLYXJKUQ+JeZOXZQL8UCpf
+ivNBF/9kHiGYwYL32Xl7
+=hO3x
+-----END PGP SIGNATURE-----
+
+--SCaOIQf4OfYbUof5--
