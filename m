@@ -1,74 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751226AbaHJFzH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 01:55:07 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:60561 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbaHJFzF (ORCPT
+	id S1751209AbaHJGLK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 02:11:10 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:57444 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022AbaHJGLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 01:55:05 -0400
+	Sun, 10 Aug 2014 02:11:09 -0400
+Date: Sun, 10 Aug 2014 08:11:03 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jason Baron <jbaron@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH] Flipped jump labels
+Message-ID: <20140810061103.GA13968@gmail.com>
+References: <20140809105742.GA5910@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <CAPWNY8X+pRf4GuYAzKj-co0fkLMY0KNw+wB4KA8eaJ0QbE4MnA@mail.gmail.com>
-References: <53E62EEF.9040801@gmail.com>
-	<CAE9FiQVXkojPnTr4EQE7h2YhWqa5VBYRSCadB0B1qDL+eGY8jg@mail.gmail.com>
-	<20140809192302.GJ15082@console-pimps.org>
-	<CAPWNY8X+pRf4GuYAzKj-co0fkLMY0KNw+wB4KA8eaJ0QbE4MnA@mail.gmail.com>
-Date: Sat, 9 Aug 2014 22:55:03 -0700
-X-Google-Sender-Auth: L-UgRMIRkrT0pQOy5Ywg13oMXyo
-Message-ID: <CAE9FiQVDURMvgVd55-onMDejCZT+OZ2vrr92wx8FJMKRNSX_GA@mail.gmail.com>
-Subject: Re: Loading initrd above 4G causes freeze on boot
-From: Yinghai Lu <yinghai@kernel.org>
-To: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org
-Content-Type: multipart/mixed; boundary=20cf3036405b673236050040140d
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140809105742.GA5910@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3036405b673236050040140d
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
 
-On Sat, Aug 9, 2014 at 3:45 PM, Mantas Mikul=C4=97nas <grawity@gmail.com> w=
-rote:
-> On Sat, Aug 9, 2014 at 10:23 PM, Matt Fleming <matt@console-pimps.org> wr=
-ote:
-> [However... Whether it's five chunks, four (after making the initrd
-> smaller), or just one (with your efi=3Dnochunk), I noticed that it
-> *always* hangs during the *last* read, and the allocated memory always
-> ends at roughly the same address (0x137fffXXX). I wonder if it's
-> selecting a memory location already in use, or something like that...]
->
-> (The laptop is Asus K52JT, AMI firmware v206, no updates available.)
+* Borislav Petkov <bp@alien8.de> wrote:
 
-wonder if  efi_file_read return with wrong chunksize.
+> Hi dudes,
+> 
+> with the current impl. of jump labels, people can't really do the
+> following:
+> 
+> ---
+> JMP unlikely_code
+> likely_code
+> 
+> unlikely_code:
+> unlikely code
+> ---
+> 
+> and after some initialization queries overwrite the JMP with a NOP so
+> that the likely code gets executed at 0 cost.
+> 
+> The issue is that jump labels unconditionally add NOPs by default
+> (see arch_static_branch). For example, native_sched_clock() gets the
+> following code layout here:
+> 
+> --
+> NOP
+> unlikely code (which computes time in ns from jiffies)
+> likely code (which does RDTSC)
+> --
+> 
+> Yes, unlikely code comes first.
+> 
+> when the jump labels get initialized and all checks done, at runtime we
+> have this:
+> 
+> 	   0xffffffff8100ce40 <sched_clock>:    push   %rbp
+> 	   0xffffffff8100ce41 <sched_clock+1>:  mov    %rsp,%rbp
+> 	   0xffffffff8100ce44 <sched_clock+4>:  and    $0xfffffffffffffff0,%rsp
+> 
+> unconditional JMP!!!
+> 
+> 	   0xffffffff8100ce48 <sched_clock+8>:  jmpq   0xffffffff8100ce70 <sched_clock+48>
+> 
+> unlikely code using jiffies
+> 
+> 	   0xffffffff8100ce4d <sched_clock+13>: mov    0x9a71ac(%rip),%r8        # 0xffffffff819b4000 <jiffies_64>
+> 	   0xffffffff8100ce54 <sched_clock+20>: movabs $0xffc2f745d964b800,%rax
+> 	   0xffffffff8100ce5e <sched_clock+30>: leaveq 
+> 	   0xffffffff8100ce5f <sched_clock+31>: imul   $0x3d0900,%r8,%rdx
+> 	   0xffffffff8100ce66 <sched_clock+38>: add    %rdx,%rax
+> 	   0xffffffff8100ce69 <sched_clock+41>: retq   
+> 	   0xffffffff8100ce6a <sched_clock+42>: nopw   0x0(%rax,%rax,1)
+> 
+> likely code using RDTSC, see JMP target address.
+> 
+> 	   0xffffffff8100ce70 <sched_clock+48>: rdtsc
+> 
+> 
+> so what we end up getting is not really helping because we always get to
+> pay for that JMP on all modern systems which sport RDTSC even though we
+> shouldn't really.
+> 
+> And remember this is not something cheap: sched_clock uses the TSC
+> even if it is unstable so we're always jumping like insane and
+> unconditionally.
+> 
+> So, long story short, we want this, instead:
+> 
+> 	   0xffffffff8100cf10 <sched_clock>:    push   %rbp
+> 	   0xffffffff8100cf11 <sched_clock+1>:  mov    %rsp,%rbp
+> 	   0xffffffff8100cf14 <sched_clock+4>:  and    $0xfffffffffffffff0,%rsp
+> 
+> unconditional JMP is nopped out
+> 
+> 	   0xffffffff8100cf18 <sched_clock+8>:  data32 data32 data32 xchg %ax,%ax
+> 
+> likely code which comes first in the function so all the advantages from
+> it to front end, branch pred, yadda yadda, get to be enjoyed :)
+> 
+> 	   0xffffffff8100cf1d <sched_clock+13>: rdtsc  
+> 	   0xffffffff8100cf1f <sched_clock+15>: mov    %eax,%esi
+> 	   0xffffffff8100cf21 <sched_clock+17>: mov    %rdx,%rax
+> 	   0xffffffff8100cf24 <sched_clock+20>: shl    $0x20,%rax
+> 	   0xffffffff8100cf28 <sched_clock+24>: or     %rsi,%rax
+> 	   0xffffffff8100cf2b <sched_clock+27>: mov    %rax,%rcx
+> 	   0xffffffff8100cf2e <sched_clock+30>: incl   %gs:0xb8e0
+> 	   0xffffffff8100cf36 <sched_clock+38>: mov    %gs:0x1d0c30,%rsi
+> 	   0xffffffff8100cf3f <sched_clock+47>: mov    %gs:0x1d0c38,%rax
+> 	   0xffffffff8100cf48 <sched_clock+56>: cmp    %rax,%rsi
+> 	   0xffffffff8100cf4b <sched_clock+59>: jne    0xffffffff8100cf90 <sched_clock+128>
+> 	   0xffffffff8100cf4d <sched_clock+61>: mov    (%rsi),%eax
+> 	   0xffffffff8100cf4f <sched_clock+63>: mul    %rcx
+> 	   0xffffffff8100cf52 <sched_clock+66>: shrd   $0xa,%rdx,%rax
+> 	   0xffffffff8100cf57 <sched_clock+71>: add    0x8(%rsi),%rax
+> 	   0xffffffff8100cf5b <sched_clock+75>: decl   %gs:0xb8e0
+> 	   0xffffffff8100cf63 <sched_clock+83>: je     0xffffffff8100cf88 <sched_clock+120>
+> 	   0xffffffff8100cf65 <sched_clock+85>: leaveq 
+> 	   0xffffffff8100cf66 <sched_clock+86>: retq   
+> 
+> Done, we return here.
+> 
+> 	   0xffffffff8100cf67 <sched_clock+87>: nop
+> 
+> unlikely code which does the jiffies math.
+> 
+> 	   0xffffffff8100cf68 <sched_clock+88>: mov    0x9a7091(%rip),%rax        # 0xffffffff819b4000 <jiffies_64>
+> 	   0xffffffff8100cf6f <sched_clock+95>: leaveq 
+> 	   0xffffffff8100cf70 <sched_clock+96>: imul   $0x3d0900,%rax,%rdx
+> 	   ...
+> 
+> 
+> So basically what I'm proposing is a jump label type which is
+> initialized by default to jump to the unlikely code and once
+> initialization has happened, JMP gets overwritten.
+> 
+> The things to pay attention here is
+> 
+> * this label should be used in places where it is very likely for the
+> jump to get overwritten. Basically the opposite to tracepoints for which
+> the jump labels were created initially, to be mostly off.
+> 
+> * It must be used in places where JMP gets overwritten only after some
+> initialization done first.
+> 
+> Anyway, below is a concept patch for myself to try the idea first - it
+> seems to work here. Constructive ideas and suggestions are welcome, as
+> always.
+> 
+> ---
+> diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
+> index 6a2cefb4395a..2d963c6489a8 100644
+> --- a/arch/x86/include/asm/jump_label.h
+> +++ b/arch/x86/include/asm/jump_label.h
+> @@ -30,6 +30,22 @@ l_yes:
+>  	return true;
+>  }
+>  
+> +static __always_inline bool arch_static_branch_active(struct static_key *key)
+> +{
+> +	asm_volatile_goto("1:"
+> +		"jmp %l[l_yes]\n\t"
+> +		".byte " __stringify(GENERIC_NOP3) "\n\t"
+> +		".pushsection __jump_table,  \"aw\" \n\t"
+> +		_ASM_ALIGN "\n\t"
+> +		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
+> +		".popsection \n\t"
+> +		: :  "i" (key) : : l_yes);
+> +	return false;
+> +l_yes:
+> +	return true;
+> +}
+> +
+> +
+>  #endif /* __KERNEL__ */
+>  
+>  #ifdef CONFIG_X86_64
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index 4ca327e900ae..81bc2c4a7eab 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -33,7 +33,7 @@ EXPORT_SYMBOL(tsc_khz);
+>   */
+>  static int __read_mostly tsc_unstable;
+>  
+> -static struct static_key __use_tsc = STATIC_KEY_INIT;
+> +static struct static_key __use_tsc = STATIC_KEY_INIT_FALSE;
+>  
+>  int tsc_clocksource_reliable;
+>  
+> @@ -280,7 +280,7 @@ u64 native_sched_clock(void)
+>  	 *   very important for it to be as fast as the platform
+>  	 *   can achieve it. )
+>  	 */
+> -	if (!static_key_false(&__use_tsc)) {
+> +	if (arch_static_branch_active(&__use_tsc)) {
+>  		/* No locking but a rare wrong value is not a big deal: */
+>  		return (jiffies_64 - INITIAL_JIFFIES) * (1000000000 / HZ);
+>  	}
 
-Can you try attached patch ?
+Wouldn't using STATIC_KEY_INIT_TRUE and static_key_true() [instead of 
+!static_key_false()] result in the same good code placement effects?
 
-Thanks
+Thanks,
 
-Yinghai
-
---20cf3036405b673236050040140d
-Content-Type: text/x-patch; charset=US-ASCII; name="efi_file_read_debug.patch"
-Content-Disposition: attachment; filename="efi_file_read_debug.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hynx35dq0
-
-LS0tCiBkcml2ZXJzL2Zpcm13YXJlL2VmaS9saWJzdHViL2VmaS1zdHViLWhlbHBlci5jIHwgICAg
-MyArKy0KIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2VydGlvbnMoKyksIDEgZGVsZXRpb24oLSkKCklu
-ZGV4OiBsaW51eC0yLjYvZHJpdmVycy9maXJtd2FyZS9lZmkvbGlic3R1Yi9lZmktc3R1Yi1oZWxw
-ZXIuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL2Zpcm13YXJlL2VmaS9s
-aWJzdHViL2VmaS1zdHViLWhlbHBlci5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9maXJtd2FyZS9l
-ZmkvbGlic3R1Yi9lZmktc3R1Yi1oZWxwZXIuYwpAQCAtNDMxLDcgKzQzMSw4IEBAIGVmaV9zdGF0
-dXNfdCBoYW5kbGVfY21kbGluZV9maWxlcyhlZmlfc3kKIAkJCQlzdGF0dXMgPSBlZmlfZmlsZV9y
-ZWFkKGZpbGVzW2pdLmhhbmRsZSwKIAkJCQkJCSAgICAgICAmY2h1bmtzaXplLAogCQkJCQkJICAg
-ICAgICh2b2lkICopYWRkcik7Ci0JCQkJaWYgKHN0YXR1cyAhPSBFRklfU1VDQ0VTUykgeworCQkJ
-CWlmIChzdGF0dXMgIT0gRUZJX1NVQ0NFU1MgfHwKKwkJCQkgICAgY2h1bmtzaXplID4gc2l6ZSB8
-fCAhY2h1bmtzaXplKSB7CiAJCQkJCXByX2VmaV9lcnIoc3lzX3RhYmxlX2FyZywgIkZhaWxlZCB0
-byByZWFkIGZpbGVcbiIpOwogCQkJCQlnb3RvIGZyZWVfZmlsZV90b3RhbDsKIAkJCQl9Cg==
---20cf3036405b673236050040140d--
+	Ingo
