@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaHJVIf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 17:08:35 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:58042 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaHJVId (ORCPT
+	id S1751862AbaHJVKv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 17:10:51 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:48942 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757AbaHJVKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 17:08:33 -0400
+	Sun, 10 Aug 2014 17:10:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <1404338448.14741.8.camel@joe-AO725>
-References: <20140702130210.fd40d67f0819cfb5f3e9e5ca@linux-foundation.org>
-	<1404331746.14624.95.camel@joe-AO725>
-	<20140702131534.c613f55f79519b3862f79e40@linux-foundation.org>
-	<1404338448.14741.8.camel@joe-AO725>
-Date: Sun, 10 Aug 2014 23:08:31 +0200
-X-Google-Sender-Auth: K6-UyM-P0MtbwsBWKkfKhRDpi5Y
-Message-ID: <CAMuHMdV1TXLmuAofwrUuT-KKUfkEYdXsM34VRrfhB6FxXfdeeg@mail.gmail.com>
-Subject: Re: [PATCH] checkpatch: Add test for commit id formatting style in
- commit log
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Git Mailing List <git@vger.kernel.org>
+In-Reply-To: <53E7DB59.6020300@roeck-us.net>
+References: <53E6CF2B.6090709@roeck-us.net>
+	<CAGXu5jLsbCpqG2cAxZWG+ZC=wdvhQ_9GPqXUb6p9pSvsqrXpOA@mail.gmail.com>
+	<20140810193308.GA31867@redhat.com>
+	<53E7DB59.6020300@roeck-us.net>
+Date: Sun, 10 Aug 2014 14:10:49 -0700
+X-Google-Sender-Auth: gKAkuMhjuZIT30ecMOHuEl5Op0c
+Message-ID: <CA+55aFz3vW_qnrwa6kWMsN1pGbjnyGXGBNhH=DO0berKgyOtgQ@mail.gmail.com>
+Subject: Re: Runtime trouble with commit dbd952127d (seccomp: introduce writer locking)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Oleg Nesterov <oleg@redhat.com>, Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+On Sun, Aug 10, 2014 at 1:51 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> That means that the broken configuration is (CONFIG_DEBUG_SPINLOCK=n,
+> CONFIG_SMP=n).
+> It also means that the BUG_ON checks introduced with the seccomp commit
+> will cause this configuration to fail hard at least for architectures where
+> CONFIG_SMP
+> can be disabled, and if those architectures use
+> include/linux/spinlock_types_up.h.
 
-On Thu, Jul 3, 2014 at 12:00 AM, Joe Perches <joe@perches.com> wrote:
-> Commit logs have various forms of commit id references.
->
-> Try to standardize on a 12 character long lower case
-> commit id along with a description of parentheses and
-> the quoted subject line
->
-> ie: commit 0123456789ab ("commit description")
+Yes. This is why we have "assert_spin_locked()". You can't use
+BUG_ON(spin_is_locked()), and !spin_is_locked() tends to be even worse
+unless you can prove that nobody else can get the lock simultaneously.
 
-Now this is in mainline, checkpatch starts complaining about my "too long"
-(40 chars) commit IDs in commit messages :-(
-
-40 chars may be too long (but it's quick to copy-and-paste, as "git show"
-shows that by default), but 12 sounds a bit short, as that's only 48 bits.
-
-According to the Birthday Paradox (en.wikipedia.org/wiki/Birthday_problem),
-there's a probability of 50% of a collision if you use 48 bits IDs in a
-repository with ca. 16 milion (2^24) objects. A Linux kernel repository
-counts ca. 4 million objects, so we're getting close...
-
-So soon we'll get "error: short SHA1 is ambiguous".
-
-BTW, is there actually an easy way to make "git show" show all options for
-an ambiguous SHA1?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+           Linus
