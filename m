@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227AbaHMFnj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 01:43:39 -0400
-Received: from natalenko.name ([78.47.77.148]:34536 "EHLO natalenko.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743AbaHMFnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 01:43:37 -0400
-DMARC-Filter: OpenDMARC Filter v1.2.0 natalenko.name CF9BDAB79
-Authentication-Results: mail.natalenko.name; dmarc=none header.from=natalenko.name
-From: Oleksandr Natalenko <oleksandr@natalenko.name>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [BUG] oops in cpufreq driver with AMD Kaveri CPU
-Date: Wed, 13 Aug 2014 08:43:27 +0300
-Message-ID: <3895042.gWY0G31aDD@spock>
-User-Agent: KMail/4.13.3 (Linux/3.15.0-pf5; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <CAKohponLC=NqTUG-mENuJ5Tomx6xgCYEBocj2P5RXXZumZaPZQ@mail.gmail.com>
-References: <4708675.eITUXPv8Ih@spock> <2067094.cJOA1APdny@spock> <CAKohponLC=NqTUG-mENuJ5Tomx6xgCYEBocj2P5RXXZumZaPZQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751380AbaHMFpe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 01:45:34 -0400
+Received: from thoros.lunarpages.com ([67.210.120.70]:41679 "EHLO
+	thoros.lunarpages.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818AbaHMFpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 01:45:33 -0400
+From: "Ragnar B. Johannsson" <ragnar@igo.is>
+To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        "Ragnar B. Johannsson" <ragnar@igo.is>
+Subject: [PATCH 2/3] staging: vt6656: fix incorrect indentation
+Date: Sun, 10 Aug 2014 22:23:49 +0000
+Message-Id: <1407709430-61260-3-git-send-email-ragnar@igo.is>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1407709430-61260-1-git-send-email-ragnar@igo.is>
+References: <1407709430-61260-1-git-send-email-ragnar@igo.is>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - thoros.lunarpages.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [0 0]
+X-AntiAbuse: Sender Address Domain - igo.is
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 13 August 2014 10:12:06 Viresh Kumar wrote: 
-> Also will it be possible for you to find the last working kernel after
-> which this
-> happened?
+Use tabs, not spaces.
 
-I'll try to reproduce the issue with older kernels, but that could be 
-problematic and may take some time. So far, I can say that 3.13 and 3.15 are 
-also affected (haven't tried 3.14, though).
+Signed-off-by: Ragnar B. Johannsson <ragnar@igo.is>
+---
+ drivers/staging/vt6656/rxtx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
+index 2d1ef88..08ce18d 100644
+--- a/drivers/staging/vt6656/rxtx.c
++++ b/drivers/staging/vt6656/rxtx.c
+@@ -573,7 +573,7 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
+ 		memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
+ 
+ 		return vnt_rxtx_datahead_g(tx_context, &buf->data_head);
+-        }
++	}
+ 
+ 	return 0;
+ }
 -- 
-Oleksandr post-factum Natalenko, MSc
-pf-kernel community
-https://natalenko.name/
+1.9.3
+
