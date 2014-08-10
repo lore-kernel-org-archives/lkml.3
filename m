@@ -1,309 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444AbaHJHg4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 03:36:56 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:57222 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaHJHgy (ORCPT
+	id S1751285AbaHJHkr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 03:40:47 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:36434 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaHJHkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 03:36:54 -0400
-Date: Sun, 10 Aug 2014 13:06:47 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Krzysztof Halasa <khc@pm.waw.pl>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] wan: wanxl: Remove typedefs from struct names
-Message-ID: <20140810073647.GA3684@himangi-Dell>
+	Sun, 10 Aug 2014 03:40:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Sun, 10 Aug 2014 11:40:44 +0400
+Message-ID: <CAHjPQwNFr5gA-vcQa0nk98U0yPgEdCj+iXWeP0_mXpjXdrW+sA@mail.gmail.com>
+Subject: iSCSI target stops sending responses to login requests
+From: Evgenii Lepikhin <johnlepikhin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Linux kernel coding style guidelines suggest not using typedefs
-for structure types. This patch gets rid of the typedefs for
-port_t, card_status_t and card_t. Also, the names of the structs
-are changed to drop the _t, to make the name look less typedef-like.
+Hello,
 
-The following Coccinelle semantic patch detects two cases and a
-similar one detects the case for card_t.
+We have several NAS servers with kernels 3.4.xx-3.13.xx. We've got a
+problem: after 1..4 months of work target servers stops responding to
+login requests.
 
-@tn1@
-type td;
-@@
+I made tcpdump on NAS when problem appears.
+ 1. TCP session has been established, server receives login request
+several times (in iSCSI protocol header: immediate marker bit = 1,
+opcode = 0x03, text dataload submited)
+ 2. Target sends response: TCP packet with incorrect checksum(!)
+ 3. Handshake starts again, also without success
+ 4. We reboot the target. Problem disappears for 1..4 months.
 
-typedef struct { ... } td;
+The dump:
 
-@script:python tf@
-td << tn1.td;
-tdres;
-@@
+17:34:56.671179 IP (tos 0x0, ttl 128, id 14261, offset 0, flags [DF],
+proto TCP (6), length 52)
+    10.0.1.44.1212 > 10.0.2.22.3260: Flags [S], cksum 0xedb0
+(correct), seq 3581240112, win 8192, options [mss 1460,nop,wscale
+8,nop,nop,sackOK], length 0
+        0x0000:  4500 0034 37b5 4000 8006 abcd 0a00 012c  E..47.@........,
+        0x0010:  0a00 0216 04bc 0cbc d575 6330 0000 0000  .........uc0....
+        0x0020:  8002 2000 edb0 0000 0204 05b4 0103 0308  ................
+        0x0030:  0101 0402                                ....
 
-coccinelle.tdres = td;
+17:34:56.671195 IP (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto
+TCP (6), length 52)
+    10.0.2.22.3260 > 10.0.1.44.1212: Flags [S.], cksum 0x1768
+(incorrect -> 0x534b), seq 418867286, ack 3581240113, win 14600,
+options [mss 1460,nop,nop,sackOK,nop,wscale 7], length 0
+        0x0000:  4500 0034 0000 4000 4006 2383 0a00 0216  E..4..@.@.#.....
+        0x0010:  0a00 012c 0cbc 04bc 18f7 6856 d575 6331  ...,......hV.uc1
+        0x0020:  8012 3908 1768 0000 0204 05b4 0101 0402  ..9..h..........
+        0x0030:  0103 0307                                ....
 
-@@
-type tn1.td;
-identifier tf.tdres;
-@@
+17:34:56.671345 IP (tos 0x0, ttl 128, id 14262, offset 0, flags [DF],
+proto TCP (6), length 40)
+    10.0.1.44.1212 > 10.0.2.22.3260: Flags [.], cksum 0xcc25
+(correct), ack 1, win 256, length 0
+        0x0000:  4500 0028 37b6 4000 8006 abd8 0a00 012c  E..(7.@........,
+        0x0010:  0a00 0216 04bc 0cbc d575 6331 18f7 6857  .........uc1..hW
+        0x0020:  5010 0100 cc25 0000 0000 0000 0000       P....%........
 
--typedef
- struct
-+  tdres
-   { ... }
--td
- ;
+17:34:56.671538 IP (tos 0x0, ttl 128, id 14263, offset 0, flags [DF],
+proto TCP (6), length 232)
+    10.0.1.44.1212 > 10.0.2.22.3260: Flags [P.], cksum 0xcc18
+(correct), seq 1:193, ack 1, win 256, length 192
+        0x0000:  4500 00e8 37b7 4000 8006 ab17 0a00 012c  E...7.@........,
+        0x0010:  0a00 0216 04bc 0cbc d575 6331 18f7 6857  .........uc1..hW
+        0x0020:  5018 0100 cc18 0000 4300 0000 0000 0090  P.......C.......
+        0x0030:  4000 0137 0001 0000 0000 0019 0001 0000  @..7............
+        0x0040:  0000 0001 0000 0001 0000 0000 0000 0000  ................
+        0x0050:  0000 0000 0000 0000 496e 6974 6961 746f  ........Initiato
+        0x0060:  724e 616d 653d 6971 6e2e 3139 3931 2d30  rName=iqn.1991-0
+        0x0070:  352e 636f 6d2e 6d69 6372 6f73 6f66 743a  5.com.microsoft:
+        0x0080:  7334 3400 5365 7373 696f 6e54 7970 653d  s44.SessionType=
+        0x0090:  4e6f 726d 616c 0054 6172 6765 744e 616d  Normal.TargetNam
+        0x00a0:  653d 6971 6e2e 3230 3033 2d30 312e 6f72  e=iqn.2003-01.or
+        0x00b0:  672e 6c69 6e75 782d 6973 6373 692e 6c32  g.linux-iscsi.l2
+        0x00c0:  322e 7838 3636 343a 736e 2e39 3665 6239  2.x8664:sn.96eb9
+        0x00d0:  3035 6630 6461 6200 4175 7468 4d65 7468  05f0dab.AuthMeth
+        0x00e0:  6f64 3d43 4841 5000                      od=CHAP.
 
-@@
-type tn1.td;
-identifier tf.tdres;
-@@
+17:34:56.981941 IP (tos 0x0, ttl 128, id 14264, offset 0, flags [DF],
+proto TCP (6), length 232)
+    10.0.1.44.1212 > 10.0.2.22.3260: Flags [P.], cksum 0xcc18
+(correct), seq 1:193, ack 1, win 256, length 192
+        0x0000:  4500 00e8 37b8 4000 8006 ab16 0a00 012c  E...7.@........,
+        0x0010:  0a00 0216 04bc 0cbc d575 6331 18f7 6857  .........uc1..hW
+        0x0020:  5018 0100 cc18 0000 4300 0000 0000 0090  P.......C.......
+        0x0030:  4000 0137 0001 0000 0000 0019 0001 0000  @..7............
+        0x0040:  0000 0001 0000 0001 0000 0000 0000 0000  ................
+        0x0050:  0000 0000 0000 0000 496e 6974 6961 746f  ........Initiato
+        0x0060:  724e 616d 653d 6971 6e2e 3139 3931 2d30  rName=iqn.1991-0
+        0x0070:  352e 636f 6d2e 6d69 6372 6f73 6f66 743a  5.com.microsoft:
+        0x0080:  7334 3400 5365 7373 696f 6e54 7970 653d  s44.SessionType=
+        0x0090:  4e6f 726d 616c 0054 6172 6765 744e 616d  Normal.TargetNam
+        0x00a0:  653d 6971 6e2e 3230 3033 2d30 312e 6f72  e=iqn.2003-01.or
+        0x00b0:  672e 6c69 6e75 782d 6973 6373 692e 6c32  g.linux-iscsi.l2
+        0x00c0:  322e 7838 3636 343a 736e 2e39 3665 6239  2.x8664:sn.96eb9
+        0x00d0:  3035 6630 6461 6200 4175 7468 4d65 7468  05f0dab.AuthMeth
+        0x00e0:  6f64 3d43 4841 5000                      od=CHAP.
 
--td
-+ struct tdres
+17:34:57.590302 IP (tos 0x0, ttl 128, id 14307, offset 0, flags [DF],
+proto TCP (6), length 232)
+    10.0.1.44.1212 > 10.0.2.22.3260: Flags [P.], cksum 0xcc18
+(correct), seq 1:193, ack 1, win 256, length 192
+        0x0000:  4500 00e8 37e3 4000 8006 aaeb 0a00 012c  E...7.@........,
+        0x0010:  0a00 0216 04bc 0cbc d575 6331 18f7 6857  .........uc1..hW
+        0x0020:  5018 0100 cc18 0000 4300 0000 0000 0090  P.......C.......
+        0x0030:  4000 0137 0001 0000 0000 0019 0001 0000  @..7............
+        0x0040:  0000 0001 0000 0001 0000 0000 0000 0000  ................
+        0x0050:  0000 0000 0000 0000 496e 6974 6961 746f  ........Initiato
+        0x0060:  724e 616d 653d 6971 6e2e 3139 3931 2d30  rName=iqn.1991-0
+        0x0070:  352e 636f 6d2e 6d69 6372 6f73 6f66 743a  5.com.microsoft:
+        0x0080:  7334 3400 5365 7373 696f 6e54 7970 653d  s44.SessionType=
+        0x0090:  4e6f 726d 616c 0054 6172 6765 744e 616d  Normal.TargetNam
+        0x00a0:  653d 6971 6e2e 3230 3033 2d30 312e 6f72  e=iqn.2003-01.or
+        0x00b0:  672e 6c69 6e75 782d 6973 6373 692e 6c32  g.linux-iscsi.l2
+        0x00c0:  322e 7838 3636 343a 736e 2e39 3665 6239  2.x8664:sn.96eb9
+        0x00d0:  3035 6630 6461 6200 4175 7468 4d65 7468  05f0dab.AuthMeth
+        0x00e0:  6f64 3d43 4841 5000                      od=CHAP.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
-To send to: Krzysztof Halasa <khc@pm.waw.pl>,netdev@vger.kernel.org,linux-kernel@vger.kernel.org
- drivers/net/wan/wanxl.c | 63 +++++++++++++++++++++++++------------------------
- 1 file changed, 32 insertions(+), 31 deletions(-)
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+17:34:57.662317 IP (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto
+TCP (6), length 52)
+    10.0.2.22.3260 > 10.0.1.44.1212: Flags [S.], cksum 0x1768
+(incorrect -> 0x534b), seq 418867286, ack 3581240113, win 14600,
+options [mss 1460,nop,nop,sackOK,nop,wscale 7], length 0
+        0x0000:  4500 0034 0000 4000 4006 2383 0a00 0216  E..4..@.@.#.....
+        0x0010:  0a00 012c 0cbc 04bc 18f7 6856 d575 6331  ...,......hV.uc1
+        0x0020:  8012 3908 1768 0000 0204 05b4 0101 0402  ..9..h..........
+        0x0030:  0103 0307                                ....
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-diff --git a/drivers/net/wan/wanxl.c b/drivers/net/wan/wanxl.c
-index f76aa90..1287c3e 100644
---- a/drivers/net/wan/wanxl.c
-+++ b/drivers/net/wan/wanxl.c
-@@ -54,24 +54,24 @@ static const char* version = "wanXL serial card driver version: 0.48";
- #define MBX2_MEMSZ_MASK 0xFFFF0000 /* PUTS Memory Size Register mask */
- 
- 
--typedef struct {
-+struct port {
- 	struct net_device *dev;
--	struct card_t *card;
-+	struct card *card;
- 	spinlock_t lock;	/* for wanxl_xmit */
-         int node;		/* physical port #0 - 3 */
- 	unsigned int clock_type;
- 	int tx_in, tx_out;
- 	struct sk_buff *tx_skbs[TX_BUFFERS];
--}port_t;
-+};
- 
- 
--typedef struct {
-+struct card_status {
- 	desc_t rx_descs[RX_QUEUE_LENGTH];
- 	port_status_t port_status[4];
--}card_status_t;
-+};
- 
- 
--typedef struct card_t {
-+struct card {
- 	int n_ports;		/* 1, 2 or 4 ports */
- 	u8 irq;
- 
-@@ -79,20 +79,20 @@ typedef struct card_t {
- 	struct pci_dev *pdev;	/* for pci_name(pdev) */
- 	int rx_in;
- 	struct sk_buff *rx_skbs[RX_QUEUE_LENGTH];
--	card_status_t *status;	/* shared between host and card */
-+	struct card_status *status;	/* shared between host and card */
- 	dma_addr_t status_address;
--	port_t ports[0];	/* 1 - 4 port_t structures follow */
--}card_t;
-+	struct port ports[0];	/* 1 - 4 port structures follow */
-+};
- 
- 
- 
--static inline port_t* dev_to_port(struct net_device *dev)
-+static inline struct port *dev_to_port(struct net_device *dev)
- {
--        return (port_t *)dev_to_hdlc(dev)->priv;
-+	return (struct port *)dev_to_hdlc(dev)->priv;
- }
- 
- 
--static inline port_status_t* get_status(port_t *port)
-+static inline port_status_t *get_status(struct port *port)
- {
- 	return &port->card->status->port_status[port->node];
- }
-@@ -115,7 +115,7 @@ static inline dma_addr_t pci_map_single_debug(struct pci_dev *pdev, void *ptr,
- 
- 
- /* Cable and/or personality module change interrupt service */
--static inline void wanxl_cable_intr(port_t *port)
-+static inline void wanxl_cable_intr(struct port *port)
- {
- 	u32 value = get_status(port)->cable;
- 	int valid = 1;
-@@ -160,7 +160,7 @@ static inline void wanxl_cable_intr(port_t *port)
- 
- 
- /* Transmit complete interrupt service */
--static inline void wanxl_tx_intr(port_t *port)
-+static inline void wanxl_tx_intr(struct port *port)
- {
- 	struct net_device *dev = port->dev;
- 	while (1) {
-@@ -193,7 +193,7 @@ static inline void wanxl_tx_intr(port_t *port)
- 
- 
- /* Receive complete interrupt service */
--static inline void wanxl_rx_intr(card_t *card)
-+static inline void wanxl_rx_intr(struct card *card)
- {
- 	desc_t *desc;
- 	while (desc = &card->status->rx_descs[card->rx_in],
-@@ -203,7 +203,7 @@ static inline void wanxl_rx_intr(card_t *card)
- 				pci_name(card->pdev));
- 		else {
- 			struct sk_buff *skb = card->rx_skbs[card->rx_in];
--			port_t *port = &card->ports[desc->stat &
-+			struct port *port = &card->ports[desc->stat &
- 						    PACKET_PORT_MASK];
- 			struct net_device *dev = port->dev;
- 
-@@ -245,7 +245,7 @@ static inline void wanxl_rx_intr(card_t *card)
- 
- static irqreturn_t wanxl_intr(int irq, void* dev_id)
- {
--        card_t *card = dev_id;
-+	struct card *card = dev_id;
-         int i;
-         u32 stat;
-         int handled = 0;
-@@ -272,7 +272,7 @@ static irqreturn_t wanxl_intr(int irq, void* dev_id)
- 
- static netdev_tx_t wanxl_xmit(struct sk_buff *skb, struct net_device *dev)
- {
--        port_t *port = dev_to_port(dev);
-+	struct port *port = dev_to_port(dev);
- 	desc_t *desc;
- 
-         spin_lock(&port->lock);
-@@ -319,7 +319,7 @@ static netdev_tx_t wanxl_xmit(struct sk_buff *skb, struct net_device *dev)
- static int wanxl_attach(struct net_device *dev, unsigned short encoding,
- 			unsigned short parity)
- {
--	port_t *port = dev_to_port(dev);
-+	struct port *port = dev_to_port(dev);
- 
- 	if (encoding != ENCODING_NRZ &&
- 	    encoding != ENCODING_NRZI)
-@@ -343,7 +343,7 @@ static int wanxl_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- {
- 	const size_t size = sizeof(sync_serial_settings);
- 	sync_serial_settings line;
--	port_t *port = dev_to_port(dev);
-+	struct port *port = dev_to_port(dev);
- 
- 	if (cmd != SIOCWANDEV)
- 		return hdlc_ioctl(dev, ifr, cmd);
-@@ -393,7 +393,7 @@ static int wanxl_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 
- static int wanxl_open(struct net_device *dev)
- {
--	port_t *port = dev_to_port(dev);
-+	struct port *port = dev_to_port(dev);
- 	u8 __iomem *dbr = port->card->plx + PLX_DOORBELL_TO_CARD;
- 	unsigned long timeout;
- 	int i;
-@@ -429,7 +429,7 @@ static int wanxl_open(struct net_device *dev)
- 
- static int wanxl_close(struct net_device *dev)
- {
--	port_t *port = dev_to_port(dev);
-+	struct port *port = dev_to_port(dev);
- 	unsigned long timeout;
- 	int i;
- 
-@@ -467,7 +467,7 @@ static int wanxl_close(struct net_device *dev)
- 
- static struct net_device_stats *wanxl_get_stats(struct net_device *dev)
- {
--	port_t *port = dev_to_port(dev);
-+	struct port *port = dev_to_port(dev);
- 
- 	dev->stats.rx_over_errors = get_status(port)->rx_overruns;
- 	dev->stats.rx_frame_errors = get_status(port)->rx_frame_errors;
-@@ -478,7 +478,7 @@ static struct net_device_stats *wanxl_get_stats(struct net_device *dev)
- 
- 
- 
--static int wanxl_puts_command(card_t *card, u32 cmd)
-+static int wanxl_puts_command(struct card *card, u32 cmd)
- {
- 	unsigned long timeout = jiffies + 5 * HZ;
- 
-@@ -495,7 +495,7 @@ static int wanxl_puts_command(card_t *card, u32 cmd)
- 
- 
- 
--static void wanxl_reset(card_t *card)
-+static void wanxl_reset(struct card *card)
- {
- 	u32 old_value = readl(card->plx + PLX_CONTROL) & ~PLX_CTL_RESET;
- 
-@@ -511,7 +511,7 @@ static void wanxl_reset(card_t *card)
- 
- static void wanxl_pci_remove_one(struct pci_dev *pdev)
- {
--	card_t *card = pci_get_drvdata(pdev);
-+	struct card *card = pci_get_drvdata(pdev);
- 	int i;
- 
- 	for (i = 0; i < card->n_ports; i++) {
-@@ -537,7 +537,7 @@ static void wanxl_pci_remove_one(struct pci_dev *pdev)
- 		iounmap(card->plx);
- 
- 	if (card->status)
--		pci_free_consistent(pdev, sizeof(card_status_t),
-+		pci_free_consistent(pdev, sizeof(struct card_status),
- 				    card->status, card->status_address);
- 
- 	pci_release_regions(pdev);
-@@ -560,7 +560,7 @@ static const struct net_device_ops wanxl_ops = {
- static int wanxl_pci_init_one(struct pci_dev *pdev,
- 			      const struct pci_device_id *ent)
- {
--	card_t *card;
-+	struct card *card;
- 	u32 ramsize, stat;
- 	unsigned long timeout;
- 	u32 plx_phy;		/* PLX PCI base address */
-@@ -601,7 +601,7 @@ static int wanxl_pci_init_one(struct pci_dev *pdev,
- 	default: ports = 4;
- 	}
- 
--	alloc_size = sizeof(card_t) + ports * sizeof(port_t);
-+	alloc_size = sizeof(struct card) + ports * sizeof(struct port);
- 	card = kzalloc(alloc_size, GFP_KERNEL);
- 	if (card == NULL) {
- 		pci_release_regions(pdev);
-@@ -612,7 +612,8 @@ static int wanxl_pci_init_one(struct pci_dev *pdev,
- 	pci_set_drvdata(pdev, card);
- 	card->pdev = pdev;
- 
--	card->status = pci_alloc_consistent(pdev, sizeof(card_status_t),
-+	card->status = pci_alloc_consistent(pdev,
-+					    sizeof(struct card_status),
- 					    &card->status_address);
- 	if (card->status == NULL) {
- 		wanxl_pci_remove_one(pdev);
-@@ -766,7 +767,7 @@ static int wanxl_pci_init_one(struct pci_dev *pdev,
- 
- 	for (i = 0; i < ports; i++) {
- 		hdlc_device *hdlc;
--		port_t *port = &card->ports[i];
-+		struct port *port = &card->ports[i];
- 		struct net_device *dev = alloc_hdlcdev(port);
- 		if (!dev) {
- 			pr_err("%s: unable to allocate memory\n",
+17:34:57.662396 IP (tos 0x0, ttl 128, id 14309, offset 0, flags [DF],
+proto TCP (6), length 52)
+    10.0.1.44.1212 > 10.0.2.22.3260: Flags [.], cksum 0x92b2
+(correct), ack 1, win 256, options [nop,nop,sack 1 {0:1}], length 0
+        0x0000:  4500 0034 37e5 4000 8006 ab9d 0a00 012c  E..47.@........,
+        0x0010:  0a00 0216 04bc 0cbc d575 63f1 18f7 6857  .........uc...hW
+        0x0020:  8010 0100 92b2 0000 0101 050a 18f7 6856  ..............hV
+        0x0030:  18f7 6857                                ..hW
+
+[here handshake cycles]
+
+Any ideas?
+
+
 -- 
-1.9.1
-
+UNIX engineer/developer at 1Gb.ru
+skype: john.lepikhin / +7(926)1462336
