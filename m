@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaHJMLc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 08:11:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42765 "EHLO
+	id S1752070AbaHJMLs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 08:11:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42788 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625AbaHJMLW (ORCPT
+	with ESMTP id S1751464AbaHJMLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 08:11:22 -0400
-Date: Sat, 9 Aug 2014 21:27:30 -0700
+	Sun, 10 Aug 2014 08:11:45 -0400
+Date: Sat, 9 Aug 2014 21:39:17 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Adrian Remonda <adrianremonda@gmail.com>
+To: Mark Einon <mark.einon@gmail.com>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Larry.Finger@lwfinger.net
-Subject: Re: [PATCHv2 2/2] Staging: rtl8188eu: Removed unnecessarry code.
-Message-ID: <20140810042730.GA25108@kroah.com>
-References: <1407447471-11632-1-git-send-email-adrianremonda@gmail.com>
- <1407447471-11632-2-git-send-email-adrianremonda@gmail.com>
- <20140808090538.GH4856@mwanda>
+        netdev@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] staging: et131x: Fix errors caused by phydev->addr
+ accesses before initialisation
+Message-ID: <20140810043917.GA17278@kroah.com>
+References: <1407279426-8021-1-git-send-email-mark.einon@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140808090538.GH4856@mwanda>
+In-Reply-To: <1407279426-8021-1-git-send-email-mark.einon@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 12:05:38PM +0300, Dan Carpenter wrote:
-> On Thu, Aug 07, 2014 at 11:37:51PM +0200, Adrian Remonda wrote:
-> > This patch clear some code that was not doing any help.
-> > Pointed out by Larry.Finger
-> > 
+On Tue, Aug 05, 2014 at 11:57:06PM +0100, Mark Einon wrote:
+> Fix two reported bugs, caused by et131x_adapter->phydev->addr being accessed
+> before it is initialised, by:
 > 
-> The patch is fine but the changelog doesn't inpsire confidence.  It
-> should say:
+> - letting et131x_mii_write() take a phydev address, instead of using the one
+>   stored in adapter by default. This is so et131x_mdio_write() can use it's own
+>   addr value.
+> - removing implementation of et131x_mdio_reset(), as it's not needed.
+> - moving a call to et131x_disable_phy_coma() in et131x_pci_setup(), which uses
+>   phydev->addr, until after the mdiobus has been registered.
 > 
-> This patch removes some unneeded code.
-> 1) kzalloc() allocates 4 extra bytes so that we can align the return
->    value.  But actually the return value is already aligned so we can
->    remove the + 4 and the call to N_BYTE_ALIGMENT().
-> 2) The memset() isn't needed because kzalloc() zeroes the allocation.
-> 
-> Suggested-by: Larry Finger <Larry.Finger@lwfinger.net>
+> Link: https://bugzilla.kernel.org/show_bug.cgi?id=80751
+> Link: https://bugzilla.kernel.org/show_bug.cgi?id=77121
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Mark Einon <mark.einon@gmail.com>
+> ---
+>  drivers/staging/et131x/et131x.c | 68 ++++++++++++++++-------------------------
+>  1 file changed, 27 insertions(+), 41 deletions(-)
 
-Adrian, can you please fix this up and resend the series based on Dan's
-comments?
+I got 3 copies of this patch, all look to be different?
+
+I don't know what to do, so I've deleted them all, please resend the
+version you want me to apply.
 
 thanks,
 
