@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034AbaHJB3c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 21:29:32 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:59047 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632AbaHJB3b (ORCPT
+	id S1751795AbaHJBgv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 21:36:51 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58752 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751548AbaHJBgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 21:29:31 -0400
-Date: Sat, 9 Aug 2014 18:29:24 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140810012924.GO5821@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
- <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140808191326.GE3935@laptop>
- <20140808205826.GG5821@linux.vnet.ibm.com>
- <20140809061514.GK9918@twins.programming.kicks-ass.net>
- <20140809160137.GJ5821@linux.vnet.ibm.com>
- <20140809181920.GO9918@twins.programming.kicks-ass.net>
- <20140809182400.GJ3588@twins.programming.kicks-ass.net>
+	Sat, 9 Aug 2014 21:36:49 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        "Mateo Lozano, Oscar" <oscar.mateo@intel.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Intel-gfx] [PATCH 45/53] drm/i915/bdw: Do not call intel_runtime_pm_get() in an interrupt
+Date: Sun, 10 Aug 2014 03:55:34 +0200
+Message-ID: <1766626.v17BJSfQ4M@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAKMK7uH8MU5awyVDLNi8h-+yrrSRW8JjV20aMZwXZ9Yw9XDZgA@mail.gmail.com>
+References: <100550251.L4NDXYU9Wh@vostro.rjw.lan> <Pine.LNX.4.44L0.1408082111240.17430-100000@netrider.rowland.org> <CAKMK7uH8MU5awyVDLNi8h-+yrrSRW8JjV20aMZwXZ9Yw9XDZgA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140809182400.GJ3588@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081001-0928-0000-0000-000003F32FF6
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 09, 2014 at 08:24:00PM +0200, Peter Zijlstra wrote:
-> On Sat, Aug 09, 2014 at 08:19:20PM +0200, Peter Zijlstra wrote:
-> > How about we simply assume 'idle' code, as defined by the rcu idle hooks
-> > are safe? Why do we want to bend over backwards to cover this?
+On Saturday, August 09, 2014 10:53:03 AM Daniel Vetter wrote:
+> On Sat, Aug 9, 2014 at 3:21 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > On Sat, 9 Aug 2014, Rafael J. Wysocki wrote:
+> >
+> >> > > > Well it works currently. So where do you see the problem?
+> >> > >
+> >> > > Sampling registers from an timer - in particular, we really do not want
+> >> > > to disable runtime pm whilst trying to monitor the impact of runtime pm.
+> >> >
+> >> > In that case you can grab a runtime pm reference iff the device is powered
+> >> > on already. Which won't call anything scary, just amounts to an
+> >> > atomic_add_unless or so, and then drop it again.
+> >> >
+> >> > Unfortunately there doesn't seem to be such a thing around already, so
+> >> > need to add it first. Greg, how much would you freak out if we add
+> >> > something like
+> >> >
+> >> > /**
+> >> >  * pm_runtime_get_unless_suspended - grab a rpm ref if the device is on
+> >> >  *
+> >> >  * Returns true if an rpm ref has been acquire, false otherwise. Can be
+> >> >  * called from atomic context to e.g. sample perfomance counters (where we
+> >> >  * obviously don't want to disturb system state if everything is off atm).
+> >> >  */
+> >> > static inline bool pm_runtime_get_unless_suspended(struct device *dev)
+> >> > {
+> >> >     return atomic_add_unless(&dev->power.usage_count, 1, 0);
+> >> > }
+> >>
+> >> I don't think it'll work universally.
+> >>
+> >> That'd need to be synchronized with other stuff done under the spinlock
+> >> and in fact, what you're interested in is runtime_status (and that being
+> >> RPM_ACTIVE) and not just the usage count.
+> >
+> > That's right.  You'd need to acquire the spinlock, test runtime_status,
+> > do the register sampling if the status is RPM_ACTIVE, and then drop the
+> > spinlock.
+> >
+> > I suppose wrapper routines for acquiring and releasing the spinlock
+> > could be added to the runtime-PM API.  Something like this:
+> >
+> > #define pm_runtime_lock(dev, flags)                     \
+> >                 spin_lock_irqsave(&(dev)->power.lock, flags)
+> > #define pm_runtime_unlock(dev, flags)                   \
+> >                 spin_unlock_irqrestore(&(dev)->power.lock, flags)
+> >
+> > It looks a little silly but it would work.
 > 
-> The thing is, we already have the special rcu trace hooks for tracing
-> inside this rcu-idle section, so why go beyond this now?
+> Oh right, I've totally ignored all the async resuming/suspending
+> stuff. Anyway what we want to do is sample a perf monitoring unit on
+> the gpu from an hrtimer and then expose that as a perf pmu. But we
+> don't want to wake up the gpu for the sampling or hold a special
+> reference, since that disturbs the sampling and also tends to upset
+> the gpu.
 
-I have to defer to Steven and Masami on this one, but I would guess that
-they want the ability to trace the idle loop for the same reasons they
-stated earlier.
+The way to go is as Alan said: take the spinlock, check the runtime status,
+do stuff and release the spinlock.
 
-							Thanx, Paul
+Rafael
 
