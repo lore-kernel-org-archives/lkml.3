@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaHJNmv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 09:42:51 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:65029 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463AbaHJNmu (ORCPT
+	id S1751926AbaHJNna (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 09:43:30 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:17386 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463AbaHJNn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 09:42:50 -0400
-Message-ID: <1407678135.9689.4.camel@debian>
-Subject: kill the current thread if MCG_STATUS_RIPV is not set
-From: Chen Yucong <slaoub@gmail.com>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 10 Aug 2014 21:42:15 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Sun, 10 Aug 2014 09:43:28 -0400
+To: gregkh@linuxfoundation.org, mcgrof@suse.com
+Cc: davem@davemloft.net, mcgrof@do-not-panic.com, tiwai@suse.de,
+        linux-kernel@vger.kernel.org, joseph.salisbury@canonical.com,
+        kay@vrfy.org, gnomes@lxorguk.ukuu.org.uk, tim.gardner@canonical.com,
+        pierre-fersing@pierref.org, akpm@linux-foundation.org, oleg@redhat.com,
+        bpoirier@suse.de, nagalakshmi.nandigama@avagotech.com,
+        praveen.krishnamoorthy@avagotech.com, sreekanth.reddy@avagotech.com,
+        abhijit.mahajan@avagotech.com, hariprasad@chelsio.com,
+        santosh@chelsio.com, MPT-FusionLinux.pdl@avagotech.com,
+        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred probefrom init
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com>
+	<1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com>
+	<20140730.151107.1328294951387764830.davem@davemloft.net>
+	<20140809164119.GI21930@wotan.suse.de>
+	<20140810124331.GE30451@kroah.com>
+In-Reply-To: <20140810124331.GE30451@kroah.com>
+Message-Id: <201408102242.FGG43287.FMFFLQJVOHOOSt@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sun, 10 Aug 2014 22:42:26 +0900
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony Luck,
+Greg KH wrote:
+> Why doesn't it work?  Doesn't modprobe come right back and the init
+> sequence still takes a while to run?  What exactly fails?
 
-According to the x86 ASDM vol.3A 15.9.3.2, we can find that
-Recoverable-not-continuable SRAR Error (RIPV=0, EIPV=x) includes the
-following two cases:
-  -IA32_MCG_STATUS.RIPV= 0, IA32_MCG_STATUS.EIPV=0, or
-  -IA32_MCG_STATUS.RIPV= 0, IA32_MCG_STATUS.EIPV=1.
+I guess ...
 
-For the first case, the MCE handler will directly panic the kernel
-according the item of severities[]:
+> @@ -5429,9 +5429,19 @@ mptsas_init(void)
+>  	return error;
+>  }
+>  
+> +static struct task_struct *init_thread;
+> +
+> +static int __init
+> +mptsas_init(void)
+> +{
+> +	init_thread = kthread_run(mptsas_real_init, NULL, "mptsas_init");
+> +	return 0;
+> +}
+> +
+>  static void __exit
+>  mptsas_exit(void)
+>  {
+> +	kthread_stop(init_thread);
+>  	pci_unregister_driver(&mptsas_driver);
+>  	sas_release_transport(mptsas_transport_template);
+>  
+> 
 
-/* Neither return not error IP -- no chance to recover -> PANIC */
-MCESEV(
-       PANIC, "Neither restart nor error IP",
-       MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, 0)
-       ),
+kthread_run() can fail. sas_attach_transport() and/or pci_register_driver()
+in mptsas_real_init() can fail. Caller process may fail to continue if
+sas_attach_transport() and pci_register_driver() in mptsas_real_init() has
+not completed yet.
 
-For the second case, the MCE handler should directly kill the current
-thread according to the ASDM vol.3A 15.9.3.2:
-
-The current executing thread cannot be continued. System software must
-terminate the interrupted stream of execution and provide a new stream
-of execution on return from the machine check handler for the affected
-logical processor.
-
-But the fact is that the MCE handler does not kill the current thread,
-but rather to further handling(invoke memory_failure() by TIF_MCE_NOTIFY
-).
-
-I think I have been confused by the gap between documentation and source
-code. Perhaps there may need a small fix.
-
-thx!
-cyc
-
-
-Signed-off-by: Chen Yucong <slaoub@gmail.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c
-b/arch/x86/kernel/cpu/mcheck/mce.c
-index bd9ccda..3394494 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1055,9 +1055,12 @@ void do_machine_check(struct pt_regs *regs, long
-error_code)
- 
- 	/*
- 	 * When no restart IP might need to kill or panic.
--	 * Assume the worst for now, but if we find the
--	 * severity is MCE_AR_SEVERITY we have other options.
-+	 * This indicates that the error is detected at the instruction
-+	 * pointer saved on the stack for this machine check exception
-+	 * and restarting execution with the interrupted context is not
-+	 * possible.(ASDM vol.3A 15.9.3.2)
- 	 */
-+
- 	if (!(m.mcgstatus & MCG_STATUS_RIPV))
- 		kill_it = 1;
- 
-@@ -1154,12 +1157,13 @@ void do_machine_check(struct pt_regs *regs, long
-error_code)
- 	if (cfg->tolerant < 3) {
- 		if (no_way_out)
- 			mce_panic("Fatal machine check on current CPU", &m, msg);
--		if (worst == MCE_AR_SEVERITY) {
-+
-+		if (kill_it) {
-+			force_sig(SIGBUS, current);
-+		} else if (worst == MCE_AR_SEVERITY) {
- 			/* schedule action before return to userland */
- 			mce_save_info(m.addr, m.mcgstatus & MCG_STATUS_RIPV);
- 			set_thread_flag(TIF_MCE_NOTIFY);
--		} else if (kill_it) {
--			force_sig(SIGBUS, current);
- 		}
- 	}
- 
--- 
-1.7.10.4
-
-
-
+kthread_stop() must not be called when kthread_run() failed.
+pci_unregister_driver() and/or sas_release_transport() must not be called
+when mptsas_real_init() did not return 0 (or has not returned 0 yet).
