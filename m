@@ -1,145 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352AbaHJIFt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 04:05:49 -0400
-Received: from mail.pfak.org ([198.50.219.4]:57014 "EHLO mail.pfak.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751194AbaHJIFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 04:05:44 -0400
-X-Greylist: delayed 614 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Aug 2014 04:05:43 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=kieser.ca; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type; q=dns; s=mail; b=BfVtLFtdYpVuc6CwWl8VPOC8+zPaBliq
-	j18M0R0REa/HDkKDP1vTIrpteZTkd/pphm3TwCJsoJ3rie7aYpaRchM1zXLQFbmi
-	Fcj2VYR2oAnDj2b+kOrx0xNvCIygMyK78uOfVQR8FQY6Lryq0d56dGgtN2fnrv0A
-	iEy81m53JfM=
-Message-ID: <53E7251B.3080305@kieser.ca>
-Date: Sun, 10 Aug 2014 00:54:03 -0700
-From: Peter Kieser <peter@kieser.ca>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751345AbaHJINO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 04:13:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57717 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaHJINK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 04:13:10 -0400
+Date: Sun, 10 Aug 2014 10:12:54 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140810081254.GS9918@twins.programming.kicks-ass.net>
+References: <20140731215445.GA21933@linux.vnet.ibm.com>
+ <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140808191326.GE3935@laptop>
+ <20140808205826.GG5821@linux.vnet.ibm.com>
+ <20140809061514.GK9918@twins.programming.kicks-ass.net>
+ <20140809160137.GJ5821@linux.vnet.ibm.com>
+ <20140809181920.GO9918@twins.programming.kicks-ass.net>
+ <20140810012612.GN5821@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>
-CC: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
-Subject: Re: [GIT PULL] bcache changes for 3.17
-References: <20140805043346.GF541@moria.home.lan> <53E10D48.1010700@kernel.dk>
-In-Reply-To: <53E10D48.1010700@kernel.dk>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms080807080708050807040201"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tCudArHln/pcmL9z"
+Content-Disposition: inline
+In-Reply-To: <20140810012612.GN5821@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
 
---------------ms080807080708050807040201
-Content-Type: text/plain; charset=windows-1252; format=flowed
+--tCudArHln/pcmL9z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
+On Sat, Aug 09, 2014 at 06:26:12PM -0700, Paul E. McKenney wrote:
+> On Sat, Aug 09, 2014 at 08:19:20PM +0200, Peter Zijlstra wrote:
+> > On Sat, Aug 09, 2014 at 09:01:37AM -0700, Paul E. McKenney wrote:
+> > > > That's so wrong its not funny. If you need some abortion to deal wi=
+th
+> > > > NOHZ_FULL then put it under CONFIG_NOHZ_FULL, don't burden the enti=
+re
+> > > > world with it.
+> > >=20
+> > > Peter, the polling approach actually -reduces- the common-case
+> > > per-context-switch burden, as in when RCU-tasks isn't doing anything.
+> > > See your own code above.
+> >=20
+> > I'm not seeing it, CONFIG_PREEMPT already touches a per task cacheline
+> > for each context switch. And for !PREEMPT this thing should pretty much
+> > reduce to rcu_sched.
+>=20
+> Except when you do the wakeup operation, in which case you have something
+> that is either complex, slow and non-scalable, or both.  I am surprised
+> that you want anything like that on that path.
 
-On 2014-08-05 9:58 AM, Jens Axboe wrote:
-> On 08/04/2014 10:33 PM, Kent Overstreet wrote:
->> Hey Jens, here's the pull request for 3.17 - typically late, but lots =
-of tasty
->> fixes in this one :)
-> Normally I'd say no, but since it's basically just fixes, I guess we ca=
-n
-> pull it in. But generally, it has to be in my hands a week before this,=
+Its a nr_cpus problem at that point, which is massively better than a
+nr_tasks problem, and I'm sure we've solved this counter thing many
+times, we can do it again.
 
-> so it can simmer a bit in for-next before going in...
->
-Are these fixes going to be backported to 3.10 or other stable releases?
+But for clarity of purpose the single atomic+waitqueue is far easier.
 
--Peter
+> > Would not the thing I proposed be a valid rcu_preempt implementation?
+> > one where its rcu read side primitives run from (voluntary) schedule()
+> > to (voluntary) schedule() call and therefore entirely cover smaller
+> > sections.
+>=20
+> In theory, sure.  In practice, blocking on tasks that are preempted
+> outside of an RCU read-side critical section would not be a good thing
+> for normal RCU, which has frequent update operations.  Among other things.
 
+Sure, just looking for parallels and verifying understanding here. By
+the very nature of not having read side primitives to limit coverage its
+a pessimistic thing.
 
+> > > > As for idle tasks, I'm not sure about those, I think that we should=
+ say
+> > > > NO to anything that would require waking idle CPUs, push the pain to
+> > > > ftrace/kprobes, we should _not_ be waking idle cpus.
+> > >=20
+> > > So the current patch set wakes an idle task once per RCU-tasks grace
+> > > period, but only when that idle task did not otherwise get awakened.
+> > > This is not a real problem.
+> >=20
+> > And on the other hand we're trying to reduce random wakeups, so this
+> > sure is a problem. If we don't start, we don't have to fix later.
+>=20
+> I doubt that a wakeup at the end of certain ftrace operations is going
+> to be a real problem.
 
---------------ms080807080708050807040201
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
+But its not ftrace, its rcu_task, and if we put it out there, we'll grow
+more and more customers, and soon we'll always have users and never let
+CPUs sleep.
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINgDCC
-BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
-KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
-8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
-DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
-2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
-zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
-Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
-c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
-UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
-p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
-+HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
-hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
-hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
-0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
-AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
-XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIHRDCCBiygAwIBAgICJYcwDQYJKoZIhvcNAQEF
-BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
-ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
-bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMjA4MjkyMzM0MjZa
-Fw0xNDA4MzExMzE0MzFaMIGOMRkwFwYDVQQNExBpd3JteTFzNGhOaHZLMDQ0MQswCQYDVQQG
-EwJDQTEZMBcGA1UECBMQQnJpdGlzaCBDb2x1bWJpYTESMBAGA1UEBxMJVmFuY291dmVyMRUw
-EwYDVQQDEwxQZXRlciBLaWVzZXIxHjAcBgkqhkiG9w0BCQEWD3BldGVyQGtpZXNlci5jYTCC
-ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOdZjqh64jWRFwTsYZZ0bKt5xOIxLlV4
-jrN0wY5KMu5RotLfYnu53fCMGJVk1n8h4QFRDxGuQmE4ugw47rv7FMDWYPb7PisPAWbcbUlG
-pmxhZB/avqpC8P2uuvJ0dsKsyNo8HeROfvrLkT6PSpYE35UXTLESoHSYkkyhcklVRf6ygChd
-PKUMNhEAMH3ZGtsw8N24hSoiW6Sb3vqv4ZCZcLvlKRVjJtOyc2vbSw8ndc62EbFMFeP+AZOw
-r7flFGQanYjfeXeeXV/29hstVPv88okwEpJCWdmSA1/gh5Yc6bjpQ7YuSxOVKP5UAl+Ehyld
-XWIcWEcUoeuZ1XeSyRuwRmcCAwEAAaOCA6owggOmMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSw
-MB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUKlB/4e9ZfesCCiNm
-UHJOZibv8FAwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGgYDVR0RBBMwEYEP
-cGV0ZXJAa2llc2VyLmNhMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8w
-LgYIKwYBBQUHAgEWImh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYB
-BQUHAgEWKGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsG
-AQUFBwICMIHqMCcWIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5U
-aGlzIGNlcnRpZmljYXRlIHdhcyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAyIFZh
-bGlkYXRpb24gcmVxdWlyZW1lbnRzIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlh
-bmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhl
-IHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGcBggrBgEFBQcCAjCBjzAnFiBTdGFydENv
-bSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRMaWFiaWxpdHkgYW5kIHdhcnJhbnRp
-ZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBhbmQgTGltaXRhdGlvbnMiIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwu
-c3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUH
-MAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MyL2NsaWVudC9jYTBCBggr
-BgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMi5jbGll
-bnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkqhkiG
-9w0BAQUFAAOCAQEAvd8Wn0ZXlB3mV+fWae/hAFquDNjyWMJ29rJymKaGOOYTCiPdmDRJNV9R
-k0YTP9+B06A0Vx6bbg+rZwIdv2k+GBSjCSb4T8IsawVphbbWMohFzxGzo36NaYZ/wCTcrlVv
-oXmPFkEaOJzqQ1DAYetJTfDMIfkBeOZSJ9KmdLos1Z9fOc0nGq9ioy/6gIPGchsWuhrl3vxW
-ej1MUPjVKn5wW967cPcLFnNLR1gxYB3fjptyHbJpRq/54rH2BMR0kicK9EyVUoDM35R6Ux6n
-djaJmH1ZFcHVc+FmalNisvlIlGSWwnkyvpmyD25LSJ+BlfZEUHE8tcicdZPAqQ8f+Yo/dTGC
-A9owggPWAgEBMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
-MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMv
-U3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAiWHMAkG
-BSsOAwIaBQCgggIbMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
-DTE0MDgxMDA3NTQwM1owIwYJKoZIhvcNAQkEMRYEFMXMEaUbWk7HdHWEubztKWBG4hquMGwG
-CSqGSIb3DQEJDzFfMF0wCwYJYIZIAWUDBAEqMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAO
-BggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgw
-gaQGCSsGAQQBgjcQBDGBljCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29t
-IEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
-BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENB
-AgIlhzCBpgYLKoZIhvcNAQkQAgsxgZaggZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQQICJYcwDQYJKoZIhvcNAQEBBQAEggEAPoCoVIbCfZnfnks2/t/MRfVKakoAK6jI
-AlpimTnOIufCPkS8MeLvmu1oO4zVdKlgJN+/Kp2az907Lvjwzzhzh+1ozPGr6wm4DjKbu7bR
-6gowC9kViHpiP1dD4w/L0pIyQgMZDacBWlyAKBimLsju7NTdq4oJOwuYGwNy3KJ8E2xAnQaw
-TZx1A+nC+BxG3hQu7z4m1s5yvGwbjUeYVuRDpiC61NvaE3ZIpZ2tsDh+IZhgJKu7rAyslK2T
-/zajDto7HqdCNW0xT/fwoc3N0+OaDMAQCI9x4yCnNc6M6GtDy396qWGsJy5bzX8dfiGPSCnW
-FkcYVmWweHmPntofTw/vCwAAAAAAAA==
---------------ms080807080708050807040201--
+That's how these things go, so we should really try and push back on
+these things, and that's the thing that worries me most in this
+discussion, you seem very happy to provide what's asked for without due
+consideration of the negatives.
+
+> > > So I don't believe that the current wakeup rate is a problem, and it
+> > > can be reduced if it proves to be a problem.
+> >=20
+> > How about we simply assume 'idle' code, as defined by the rcu idle hooks
+> > are safe? Why do we want to bend over backwards to cover this?
+>=20
+> Steven covered this earlier in this thread.  One addition might be "For
+> the same reason that event tracing provides the _rcuidle suffix."
+
+I really don't think its worth the cost.
+
+--tCudArHln/pcmL9z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT5ymGAAoJEHZH4aRLwOS6SkAP/2o/9QXodOtrFFQcA4jUOINM
+jT1EafKs/wbGPdw7mzqMPahVerJm66D0PmCLGqbnox/btlmgLjA2UgIxIvS42xN3
+Lwfj/M4u0o/aYxH8plbW7kJ/laBhbQ0x5hXsKRdGa5xfT2hePXoSgnIM58MYpCFO
+DfsHSwdSAUEH9Z9x7d8vPEUpINe+ZaZX0g94vvTG9k1lsB8qhU8Bz2fw6oSsbNne
+GmDw8oiuZ2nV4ioT5vh59TSmuynKLTTeHq4JYYMSTBY4zz+Z04PYjOYnDWVWM03m
+KKFDI6Hn8KBZ1KIFfjdmsVR/B6x8dDzAa/Wn1LKgsi/YyeATqT1kr+wP92nYtE0n
+uufSuYwXxPY7gg/ae7c0h7O0Gzg/4fVOgQwokIO/g0dgqvE0/Zc00MDuxMrBoCPP
+xciciZprwB0MUhOeTXa7Gg8uN5R/RkgnYUH5qvR6smyx43od/TbMaCfWEGJqrs9F
+/GA1CGOHLKCdikhQ/bTRcUiOf3LzqQUOzB2vBCRkWOLbC+l+HXM4VtnL6dTO+zq7
+svxH1Ab4eaNoUn6CbkLwECoNS0D4UrtfDzf18pxLiYk4WKXmj9wvpY8KsER+bM8d
+mNPTAoT2CDhIdqgpJovMZxU7JIYtM7X+e7KMcmILurY9p9O5H+N8QyhSrhOV6aXN
+ZxHTkoo7AfjqzI5MQ9pn
+=/igv
+-----END PGP SIGNATURE-----
+
+--tCudArHln/pcmL9z--
