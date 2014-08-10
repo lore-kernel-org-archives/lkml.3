@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739AbaHJT7o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 15:59:44 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:33701 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630AbaHJT7m (ORCPT
+	id S1751822AbaHJUBP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 16:01:15 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:36098 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaHJUBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 15:59:42 -0400
-Date: Mon, 11 Aug 2014 01:29:37 +0530
+	Sun, 10 Aug 2014 16:01:13 -0400
+Date: Mon, 11 Aug 2014 01:31:08 +0530
 From: Himangi Saraogi <himangi774@gmail.com>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-wireless@vger.kernel.org,
+        linux-nfc@ml01.01.org, linux-kernel@vger.kernel.org
 Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] usb: phy: drop kfree of devm_kzalloc's data
-Message-ID: <20140810195937.GA3923@himangi-Dell>
+Subject: [PATCH] NFC: st21nfcb: drop kfree of devm_kzalloc's data
+Message-ID: <20140810200107.GA4170@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -40,25 +41,43 @@ x = devm_kzalloc(...)
 Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- drivers/usb/phy/phy-gpio-vbus-usb.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/nfc/st21nfcb/st21nfcb.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/drivers/usb/phy/phy-gpio-vbus-usb.c b/drivers/usb/phy/phy-gpio-vbus-usb.c
-index ea9e705..f4b14bd 100644
---- a/drivers/usb/phy/phy-gpio-vbus-usb.c
-+++ b/drivers/usb/phy/phy-gpio-vbus-usb.c
-@@ -260,10 +260,8 @@ static int gpio_vbus_probe(struct platform_device *pdev)
+diff --git a/drivers/nfc/st21nfcb/st21nfcb.c b/drivers/nfc/st21nfcb/st21nfcb.c
+index 4d95863..b0c4a0f9 100644
+--- a/drivers/nfc/st21nfcb/st21nfcb.c
++++ b/drivers/nfc/st21nfcb/st21nfcb.c
+@@ -94,8 +94,7 @@ int st21nfcb_nci_probe(struct llt_ndlc *ndlc, int phy_headroom,
+ 					phy_headroom, phy_tailroom);
+ 	if (!ndlc->ndev) {
+ 		pr_err("Cannot allocate nfc ndev\n");
+-		r = -ENOMEM;
+-		goto err_alloc_ndev;
++		return -ENOMEM;
+ 	}
+ 	info->ndlc = ndlc;
  
- 	gpio_vbus->phy.otg = devm_kzalloc(&pdev->dev, sizeof(struct usb_otg),
- 					  GFP_KERNEL);
--	if (!gpio_vbus->phy.otg) {
--		kfree(gpio_vbus);
-+	if (!gpio_vbus->phy.otg)
- 		return -ENOMEM;
--	}
+@@ -109,19 +108,14 @@ int st21nfcb_nci_probe(struct llt_ndlc *ndlc, int phy_headroom,
+ err_regdev:
+ 	nci_free_device(ndlc->ndev);
  
- 	platform_set_drvdata(pdev, gpio_vbus);
- 	gpio_vbus->dev = &pdev->dev;
+-err_alloc_ndev:
+-	kfree(info);
+ 	return r;
+ }
+ EXPORT_SYMBOL_GPL(st21nfcb_nci_probe);
+ 
+ void st21nfcb_nci_remove(struct nci_dev *ndev)
+ {
+-	struct st21nfcb_nci_info *info = nci_get_drvdata(ndev);
+-
+ 	nci_unregister_device(ndev);
+ 	nci_free_device(ndev);
+-	kfree(info);
+ }
+ EXPORT_SYMBOL_GPL(st21nfcb_nci_remove);
+ 
 -- 
 1.9.1
 
