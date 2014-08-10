@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751167AbaHJFNk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 01:13:40 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:52860 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913AbaHJFNj (ORCPT
+	id S1751297AbaHJFPb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 01:15:31 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:35448 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaHJFPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 01:13:39 -0400
-Date: Sat, 9 Aug 2014 22:14:08 -0700
+	Sun, 10 Aug 2014 01:15:30 -0400
+Date: Sat, 9 Aug 2014 22:16:00 -0700
 From: Olof Johansson <olof@lixom.net>
 To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [GIT PULL] ARM: SoC fixes
-Message-ID: <20140810051408.GA14964@quad.lixom.net>
+Cc: olof@lixom.net, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] platform/chrome: Updates for 3.17
+Message-ID: <20140810051600.GA15267@quad.lixom.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,53 +23,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-The following changes since commit c309bfa9b481e7dbd3e1ab819271bf3009f44859:
+The following changes since commit cd3de83f147601356395b57a8673e9c5ff1e59d1:
 
-  Merge tag 'for-linus-20140808' of git://git.infradead.org/linux-mtd (2014-08-08 18:13:21 -0700)
+  Linux 3.16-rc4 (2014-07-06 12:37:51 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/olof/chrome-platform.git tags/for-linus
 
-for you to fetch changes up to ee34fb97a96ceac3334705ebab8b541ca291699f:
+for you to fetch changes up to 5502486a2077e4280c618b82e8a77ed35932956f:
 
-  ARM: dts: exynos5420: remove disp_pd (2014-08-09 08:25:50 -0700)
-
-----------------------------------------------------------------
-ARM: SoC fixes for 3.17 merge window
-
-- A short branch of OMAP fixes that we didn't merge before the window opened.
-- A small cleanup that sorts the rk3288 dts entries properly
-- A build fix due to a reference to a removed DT node on exynos
+  platform/chrome: chromeos_laptop - Add a limit for deferred retries (2014-07-15 18:02:01 -0700)
 
 ----------------------------------------------------------------
-Doug Anderson (1):
-      ARM: dts: Fix the sort ordering of EHCI and HSIC in rk3288.dtsi
+platform/chrome: Updates for 3.17
 
-Jeremy Vial (2):
-      ARM: OMAP3: Fix choice of omap3_restore_es function in OMAP34XX rev3.1.2 case.
-      ARM: OMAP3: Fix coding style problems in arch/arm/mach-omap2/control.c
+Updates to the Chromebook/box platform drivers:
+
+- A bugfix to pstore registration that makes it also work on non-Google
+  systems
+- Addition of new shipped Chromebooks (later models have more probing
+  through ACPI so the need for these updates will be less over time).
+- A couple of minor coding style updates
+
+----------------------------------------------------------------
+Benson Leung (2):
+      platform/chrome: chromeos_laptop - Add HP Chromebook 14
+      platform/chrome: chromeos_laptop - Add a limit for deferred retries
+
+Gene Chen (1):
+      platform/chrome: chromeos_laptop - Add Toshiba CB35 Touch
+
+Michael Mullin (1):
+      platform/chrome: Add support for the acer c720p touchscreen.
+
+Mika Westerberg (1):
+      platform/chrome: chromeos_laptop - Add support for Acer C720
+
+Mohammed Habibulla (1):
+      platform/chrome: chromeos_laptop - Add Dell Chromebook 11 touch
 
 Olof Johansson (1):
-      Merge tag 'omap-for-v3.17/soc-fixes' of git://git.kernel.org/.../tmlind/linux-omap into fixes
+      platform/chrome: pstore: fix dmi table to match all chrome systems
 
-Paul Walmsley (1):
-      ARM: OMAP2+: clock: allow omap2_dpll_round_rate() to round to next-lowest rate
+Robin Schroer (1):
+      platform/chrome: coding style fixes
 
-Stephen Rothwell (1):
-      ARM: dts: exynos5420: remove disp_pd
-
-Tomasz Figa (1):
-      ARM: EXYNOS: Fix suspend/resume sequences
-
-Tony Lindgren (1):
-      Merge tag 'for-v3.17/omap-clock-b' of git://git.kernel.org/.../pjw/omap-pending into omap-for-v3.17/soc
-
- arch/arm/boot/dts/exynos5420.dtsi |   1 -
- arch/arm/boot/dts/rk3288.dtsi     |  40 +++++-----
- arch/arm/mach-exynos/pm.c         | 163 ++++++++++++++++++--------------------
- arch/arm/mach-omap2/clkt_dpll.c   |  28 +++++--
- arch/arm/mach-omap2/control.c     |   6 +-
- arch/arm/mach-omap2/dpll3xxx.c    |  13 ++-
- drivers/cpuidle/cpuidle-exynos.c  |  25 +-----
- 7 files changed, 135 insertions(+), 141 deletions(-)
+ drivers/platform/chrome/chromeos_laptop.c | 140 +++++++++++++++++++++++++++---
+ drivers/platform/chrome/chromeos_pstore.c |  14 +--
+ 2 files changed, 132 insertions(+), 22 deletions(-)
