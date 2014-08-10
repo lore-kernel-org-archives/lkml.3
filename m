@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461AbaHJOpj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 10:45:39 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:58495 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbaHJOpe (ORCPT
+	id S1751512AbaHJOpo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 10:45:44 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:52092 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414AbaHJOpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 10:45:34 -0400
+	Sun, 10 Aug 2014 10:45:42 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 04/22] staging: rtl8188eu: Remove unused functions odm_ConfigRF_Radio[A,B]_8188E()
-Date: Sun, 10 Aug 2014 20:14:17 +0530
-Message-Id: <1407681875-2611-4-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 05/22] staging: rtl8188eu: Remove unused function odm_ConfigRFReg_8188E()
+Date: Sun, 10 Aug 2014 20:14:18 +0530
+Message-Id: <1407681875-2611-5-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1407681875-2611-1-git-send-email-navin.patidar@gmail.com>
 References: <1407681875-2611-1-git-send-email-navin.patidar@gmail.com>
@@ -23,53 +23,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/hal/odm_RegConfig8188E.c  |   19 -------------------
- .../staging/rtl8188eu/include/odm_RegConfig8188E.h  |    6 ------
- 2 files changed, 25 deletions(-)
+ drivers/staging/rtl8188eu/hal/odm_RegConfig8188E.c |   25 --------------------
+ .../staging/rtl8188eu/include/odm_RegConfig8188E.h |    3 ---
+ 2 files changed, 28 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/hal/odm_RegConfig8188E.c b/drivers/staging/rtl8188eu/hal/odm_RegConfig8188E.c
-index 4d4978b..41caff9 100644
+index 41caff9..9c6ad5b 100644
 --- a/drivers/staging/rtl8188eu/hal/odm_RegConfig8188E.c
 +++ b/drivers/staging/rtl8188eu/hal/odm_RegConfig8188E.c
-@@ -45,25 +45,6 @@ void odm_ConfigRFReg_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr,
- 	}
- }
+@@ -20,31 +20,6 @@
  
--void odm_ConfigRF_RadioA_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr, u32 Data)
+ #include "odm_precomp.h"
+ 
+-void odm_ConfigRFReg_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr,
+-			   u32 Data, enum rf_radio_path RF_PATH,
+-			   u32 RegAddr)
 -{
--	u32  content = 0x1000; /*  RF_Content: radioa_txt */
--	u32 maskforPhySet = (u32)(content&0xE000);
+-	struct adapter *adapter = pDM_Odm->Adapter;
 -
--	odm_ConfigRFReg_8188E(pDM_Odm, Addr, Data, RF_PATH_A, Addr|maskforPhySet);
--	ODM_RT_TRACE(pDM_Odm, ODM_COMP_INIT, ODM_DBG_TRACE, ("===> ODM_ConfigRFWithHeaderFile: [RadioA] %08X %08X\n", Addr, Data));
--}
--
--void odm_ConfigRF_RadioB_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr, u32 Data)
--{
--	u32  content = 0x1001; /*  RF_Content: radiob_txt */
--	u32 maskforPhySet = (u32)(content&0xE000);
--
--	odm_ConfigRFReg_8188E(pDM_Odm, Addr, Data, RF_PATH_B, Addr|maskforPhySet);
--
--	ODM_RT_TRACE(pDM_Odm, ODM_COMP_INIT, ODM_DBG_TRACE, ("===> ODM_ConfigRFWithHeaderFile: [RadioB] %08X %08X\n", Addr, Data));
+-	if (Addr == 0xffe) {
+-		msleep(50);
+-	} else if (Addr == 0xfd) {
+-		mdelay(5);
+-	} else if (Addr == 0xfc) {
+-		mdelay(1);
+-	} else if (Addr == 0xfb) {
+-		udelay(50);
+-	} else if (Addr == 0xfa) {
+-		udelay(5);
+-	} else if (Addr == 0xf9) {
+-		udelay(1);
+-	} else {
+-		PHY_SetRFReg(adapter, RF_PATH, RegAddr, bRFRegOffsetMask, Data);
+-		/*  Add 1us delay between BB/RF register setting. */
+-		udelay(1);
+-	}
 -}
 -
  void odm_ConfigMAC_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr, u8 Data)
  {
  	struct adapter *adapt = pDM_Odm->Adapter;
 diff --git a/drivers/staging/rtl8188eu/include/odm_RegConfig8188E.h b/drivers/staging/rtl8188eu/include/odm_RegConfig8188E.h
-index f2bf7a0..c33c45b 100644
+index c33c45b..b0d94e1 100644
 --- a/drivers/staging/rtl8188eu/include/odm_RegConfig8188E.h
 +++ b/drivers/staging/rtl8188eu/include/odm_RegConfig8188E.h
-@@ -23,12 +23,6 @@
- void odm_ConfigRFReg_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr, u32 Data,
- 			   enum rf_radio_path  RF_PATH, u32 RegAddr);
+@@ -20,9 +20,6 @@
+ #ifndef __INC_ODM_REGCONFIG_H_8188E
+ #define __INC_ODM_REGCONFIG_H_8188E
  
--void odm_ConfigRF_RadioA_8188E(struct odm_dm_struct *pDM_Odm,
--			       u32 Addr, u32 Data);
--
--void odm_ConfigRF_RadioB_8188E(struct odm_dm_struct *pDM_Odm,
--			       u32 Addr, u32 Data);
+-void odm_ConfigRFReg_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr, u32 Data,
+-			   enum rf_radio_path  RF_PATH, u32 RegAddr);
 -
  void odm_ConfigMAC_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr, u8 Data);
  
