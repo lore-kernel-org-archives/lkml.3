@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518AbaHJSkO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 14:40:14 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:55472 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101AbaHJSkJ (ORCPT
+	id S1751584AbaHJSmq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 14:42:46 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62124 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320AbaHJSmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 14:40:09 -0400
-From: Adrian Remonda <adrianremonda@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Adrian Remonda <adrianremonda@gmail.com>
-Subject: [PATCHv3 2/2] Staging: rtl8188eu: Removed unneeded code.
-Date: Sun, 10 Aug 2014 20:39:57 +0200
-Message-Id: <1407695997-9567-2-git-send-email-adrianremonda@gmail.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1407695997-9567-1-git-send-email-adrianremonda@gmail.com>
-References: <1407695997-9567-1-git-send-email-adrianremonda@gmail.com>
+	Sun, 10 Aug 2014 14:42:44 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53E7BD21.6010301@roeck-us.net>
+Date: Sun, 10 Aug 2014 11:42:41 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Li Yang <leoli@freescale.com>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: ugg_geth: Fix build error in -next
+References: <1407687554-14539-1-git-send-email-linux@roeck-us.net> <20140810183622.GC5134@pengutronix.de>
+In-Reply-To: <20140810183622.GC5134@pengutronix.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes some unneeded code.
-1) kzalloc() allocates 4 extra bytes so that we can align the return
-   value.  But actually the return value is already aligned so we can
-   remove the + 4 and the call to N_BYTE_ALIGMENT().
-2) The memset() isn't needed because kzalloc() zeroes the allocation.
+On 08/10/2014 11:36 AM, Uwe Kleine-König wrote:
+> Hello Guenter,
+>
+> On Sun, Aug 10, 2014 at 09:19:14AM -0700, Guenter Roeck wrote:
+>> powerpc:mpc83xx_defconfig and other builds fail with
+>>
+>> drivers/net/ethernet/freescale/ucc_geth.c: In function 'ucc_geth_remove':
+>> drivers/net/ethernet/freescale/ucc_geth.c:3927:19: error:
+>> 	'struct ucc_geth_private' has no member named 'info'
+>>    of_node_put(ugeth->info->tbi_node);
+>>                       ^
+>> drivers/net/ethernet/freescale/ucc_geth.c:3928:19: error:
+>> 	     'struct ucc_geth_private' has no member named 'info'
+>>    of_node_put(ugeth->info->phy_node);
+>>    		     ^
+>>
+>> Introduced by commit "net: ucc_geth: drop acquired references in probe error
+>> path and remove".
+>>
+>>  From the context, it appears that the variable is named ug_info.
+>>
+>> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>> ---
+>> Only seen in -next.
+> My patch was only sent just now, but it has the subject right:
+>
+Excellent.
 
-Suggested-by: Larry Finger <Larry.Finger@lwfinger.net>
+> 	http://mid.gmane.org/1407695525-32227-1-git-send-email-u.kleine-koenig@pengutronix.de
+>
+The link doesn't seem to work for some reason.
 
-Signed-off-by: Adrian Remonda <adrianremonda@gmail.com>
----
- drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+> Another upside is that it contains a Fixes: header.
+>
+Even better. I need to start using that.
 
-diff --git a/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c b/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
-index 8be4819..bc275b2 100644
---- a/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
-+++ b/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
-@@ -42,18 +42,15 @@ int	rtl8188eu_init_recv_priv(struct adapter *padapter)
- 	_rtw_init_queue(&precvpriv->free_recv_buf_queue);
- 
- 	precvpriv->pallocated_recv_buf =
--		kzalloc(NR_RECVBUFF * sizeof(struct recv_buf) + 4, GFP_KERNEL);
-+		kzalloc(NR_RECVBUFF * sizeof(struct recv_buf), GFP_KERNEL);
- 	if (precvpriv->pallocated_recv_buf == NULL) {
- 		res = _FAIL;
- 		RT_TRACE(_module_rtl871x_recv_c_, _drv_err_,
- 				("alloc recv_buf fail!\n"));
- 		goto exit;
- 	}
--	memset(precvpriv->pallocated_recv_buf, 0,
--			NR_RECVBUFF * sizeof(struct recv_buf) + 4);
- 
--	precvpriv->precv_buf = (u8 *)N_BYTE_ALIGMENT((size_t)
--			(precvpriv->pallocated_recv_buf), 4);
-+	precvpriv->precv_buf = precvpriv->pallocated_recv_buf;
- 
- 
- 	precvbuf = (struct recv_buf *)precvpriv->precv_buf;
--- 
-2.0.4
+> Other than that my patch is the same. In case davem picks up yours:
+>
+> Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>
+
+I don't need the glory ;-). Dave, please pick Uwe's patch.
+
+Thanks,
+Guenter
 
