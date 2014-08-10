@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbaHJOqU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 10:46:20 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:57696 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689AbaHJOqS (ORCPT
+	id S1751429AbaHJOqc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 10:46:32 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:43858 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771AbaHJOq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 10:46:18 -0400
+	Sun, 10 Aug 2014 10:46:29 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 08/22] staging: rtl8188eu: Remove odm_RegConfig8188E.[h,c] files
-Date: Sun, 10 Aug 2014 20:14:21 +0530
-Message-Id: <1407681875-2611-8-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 09/22] staging: rtl8188eu: Remove unused function storePwrIndexDiffRateOffset()
+Date: Sun, 10 Aug 2014 20:14:22 +0530
+Message-Id: <1407681875-2611-9-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1407681875-2611-1-git-send-email-navin.patidar@gmail.com>
 References: <1407681875-2611-1-git-send-email-navin.patidar@gmail.com>
@@ -21,172 +21,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-driver doesn't require these files anymore.
-
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/Makefile                 |    1 -
- drivers/staging/rtl8188eu/hal/odm_RegConfig8188E.c |   86 --------------------
- .../staging/rtl8188eu/include/odm_RegConfig8188E.h |   32 --------
- drivers/staging/rtl8188eu/include/odm_precomp.h    |    1 -
- 4 files changed, 120 deletions(-)
- delete mode 100644 drivers/staging/rtl8188eu/hal/odm_RegConfig8188E.c
- delete mode 100644 drivers/staging/rtl8188eu/include/odm_RegConfig8188E.h
+ drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c    |   44 --------------------
+ drivers/staging/rtl8188eu/include/Hal8188EPhyCfg.h |    2 -
+ 2 files changed, 46 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/Makefile b/drivers/staging/rtl8188eu/Makefile
-index 32d64a7..1b8c89b 100644
---- a/drivers/staging/rtl8188eu/Makefile
-+++ b/drivers/staging/rtl8188eu/Makefile
-@@ -30,7 +30,6 @@ r8188eu-y :=				\
- 		hal/odm.o		\
- 		hal/odm_debug.o		\
- 		hal/odm_HWConfig.o	\
--		hal/odm_RegConfig8188E.o\
- 		hal/odm_RTL8188E.o	\
- 		hal/rtl8188e_cmd.o	\
- 		hal/rtl8188e_dm.o	\
-diff --git a/drivers/staging/rtl8188eu/hal/odm_RegConfig8188E.c b/drivers/staging/rtl8188eu/hal/odm_RegConfig8188E.c
-deleted file mode 100644
-index 634d111..0000000
---- a/drivers/staging/rtl8188eu/hal/odm_RegConfig8188E.c
-+++ /dev/null
-@@ -1,86 +0,0 @@
--/******************************************************************************
-- *
-- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of version 2 of the GNU General Public License as
-- * published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
-- *
-- *
-- ******************************************************************************/
--
--#include "odm_precomp.h"
--
--void odm_ConfigBB_AGC_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr, u32 Bitmask, u32 Data)
+diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c b/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c
+index 96361b8..0f90cf4 100644
+--- a/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c
++++ b/drivers/staging/rtl8188eu/hal/rtl8188e_phycfg.c
+@@ -354,50 +354,6 @@ rtl8188e_PHY_SetRFReg(
+ 	phy_RFSerialWrite(Adapter, eRFPath, RegAddr, Data);
+ }
+ 
+-void storePwrIndexDiffRateOffset(struct adapter *Adapter, u32 RegAddr, u32 BitMask, u32 Data)
 -{
--	struct adapter *adapter = pDM_Odm->Adapter;
+-	struct hal_data_8188e	*pHalData = GET_HAL_DATA(Adapter);
 -
--	PHY_SetBBReg(adapter, Addr, Bitmask, Data);
--	/*  Add 1us delay between BB/RF register setting. */
--	udelay(1);
--
--	ODM_RT_TRACE(pDM_Odm, ODM_COMP_INIT, ODM_DBG_TRACE,
--		     ("===> ODM_ConfigBBWithHeaderFile: [AGC_TAB] %08X %08X\n",
--		     Addr, Data));
--}
--
--void odm_ConfigBB_PHY_REG_PG_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr,
--				   u32 Bitmask, u32 Data)
--{
--	if (Addr == 0xfe) {
--		msleep(50);
--	} else if (Addr == 0xfd) {
--		mdelay(5);
--	} else if (Addr == 0xfc) {
--		mdelay(1);
--	} else if (Addr == 0xfb) {
--		udelay(50);
--	} else if (Addr == 0xfa) {
--		udelay(5);
--	} else if (Addr == 0xf9) {
--		udelay(1);
--	} else{
--		ODM_RT_TRACE(pDM_Odm, ODM_COMP_INIT, ODM_DBG_LOUD,
--			     ("===> @@@@@@@ ODM_ConfigBBWithHeaderFile: [PHY_REG] %08X %08X %08X\n",
--			     Addr, Bitmask, Data));
--		storePwrIndexDiffRateOffset(pDM_Odm->Adapter, Addr, Bitmask, Data);
+-	if (RegAddr == rTxAGC_A_Rate18_06)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][0] = Data;
+-	if (RegAddr == rTxAGC_A_Rate54_24)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][1] = Data;
+-	if (RegAddr == rTxAGC_A_CCK1_Mcs32)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][6] = Data;
+-	if (RegAddr == rTxAGC_B_CCK11_A_CCK2_11 && BitMask == 0xffffff00)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][7] = Data;
+-	if (RegAddr == rTxAGC_A_Mcs03_Mcs00)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][2] = Data;
+-	if (RegAddr == rTxAGC_A_Mcs07_Mcs04)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][3] = Data;
+-	if (RegAddr == rTxAGC_A_Mcs11_Mcs08)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][4] = Data;
+-	if (RegAddr == rTxAGC_A_Mcs15_Mcs12) {
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][5] = Data;
+-		if (pHalData->rf_type == RF_1T1R)
+-			pHalData->pwrGroupCnt++;
+-	}
+-	if (RegAddr == rTxAGC_B_Rate18_06)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][8] = Data;
+-	if (RegAddr == rTxAGC_B_Rate54_24)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][9] = Data;
+-	if (RegAddr == rTxAGC_B_CCK1_55_Mcs32)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][14] = Data;
+-	if (RegAddr == rTxAGC_B_CCK11_A_CCK2_11 && BitMask == 0x000000ff)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][15] = Data;
+-	if (RegAddr == rTxAGC_B_Mcs03_Mcs00)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][10] = Data;
+-	if (RegAddr == rTxAGC_B_Mcs07_Mcs04)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][11] = Data;
+-	if (RegAddr == rTxAGC_B_Mcs11_Mcs08)
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][12] = Data;
+-	if (RegAddr == rTxAGC_B_Mcs15_Mcs12) {
+-		pHalData->MCSTxPowerLevelOriginalOffset[pHalData->pwrGroupCnt][13] = Data;
+-		if (pHalData->rf_type != RF_1T1R)
+-			pHalData->pwrGroupCnt++;
 -	}
 -}
 -
--void odm_ConfigBB_PHY_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr, u32 Bitmask, u32 Data)
--{
--	struct adapter *adapter = pDM_Odm->Adapter;
--
--	if (Addr == 0xfe) {
--		msleep(50);
--	} else if (Addr == 0xfd) {
--		mdelay(5);
--	} else if (Addr == 0xfc) {
--		mdelay(1);
--	} else if (Addr == 0xfb) {
--		udelay(50);
--	} else if (Addr == 0xfa) {
--		udelay(5);
--	} else if (Addr == 0xf9) {
--		udelay(1);
--	} else {
--		if (Addr == 0xa24)
--			pDM_Odm->RFCalibrateInfo.RegA24 = Data;
--		PHY_SetBBReg(adapter, Addr, Bitmask, Data);
--
--		/*  Add 1us delay between BB/RF register setting. */
--		udelay(1);
--		ODM_RT_TRACE(pDM_Odm, ODM_COMP_INIT, ODM_DBG_TRACE,
--			     ("===> ODM_ConfigBBWithHeaderFile: [PHY_REG] %08X %08X\n",
--			     Addr, Data));
--	}
--}
-diff --git a/drivers/staging/rtl8188eu/include/odm_RegConfig8188E.h b/drivers/staging/rtl8188eu/include/odm_RegConfig8188E.h
-deleted file mode 100644
-index dd49a86..0000000
---- a/drivers/staging/rtl8188eu/include/odm_RegConfig8188E.h
-+++ /dev/null
-@@ -1,32 +0,0 @@
--/******************************************************************************
-- *
-- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of version 2 of the GNU General Public License as
-- * published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
-- *
-- *
-- ******************************************************************************/
--#ifndef __INC_ODM_REGCONFIG_H_8188E
--#define __INC_ODM_REGCONFIG_H_8188E
--
--void odm_ConfigBB_AGC_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr,
--			    u32 Bitmask, u32 Data);
--
--void odm_ConfigBB_PHY_REG_PG_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr,
--				   u32 Bitmask, u32 Data);
--
--void odm_ConfigBB_PHY_8188E(struct odm_dm_struct *pDM_Odm, u32 Addr,
--			    u32 Bitmask, u32 Data);
--
--#endif
-diff --git a/drivers/staging/rtl8188eu/include/odm_precomp.h b/drivers/staging/rtl8188eu/include/odm_precomp.h
-index 683c5bd..436d6ff 100644
---- a/drivers/staging/rtl8188eu/include/odm_precomp.h
-+++ b/drivers/staging/rtl8188eu/include/odm_precomp.h
-@@ -46,7 +46,6 @@
+ static void getTxPowerIndex88E(struct adapter *Adapter, u8 channel, u8 *cckPowerLevel,
+ 			       u8 *ofdmPowerLevel, u8 *BW20PowerLevel,
+ 			       u8 *BW40PowerLevel)
+diff --git a/drivers/staging/rtl8188eu/include/Hal8188EPhyCfg.h b/drivers/staging/rtl8188eu/include/Hal8188EPhyCfg.h
+index ed156d3..49e1825 100644
+--- a/drivers/staging/rtl8188eu/include/Hal8188EPhyCfg.h
++++ b/drivers/staging/rtl8188eu/include/Hal8188EPhyCfg.h
+@@ -244,8 +244,6 @@ void PHY_EnableHostClkReq(struct adapter *adapter);
  
- #include "odm_reg.h"
+ bool SetAntennaConfig92C(struct adapter *adapter, u8 defaultant);
  
--#include "odm_RegConfig8188E.h"
- #include "odm_RTL8188E.h"
+-void storePwrIndexDiffRateOffset(struct adapter *adapter, u32 regaddr,
+-				 u32 mask, u32 data);
+ /*--------------------------Exported Function prototype---------------------*/
  
- void odm_CmnInfoHook_Debug(struct odm_dm_struct *pDM_Odm);
+ #define PHY_QueryBBReg(adapt, regaddr, mask)			\
 -- 
 1.7.10.4
 
