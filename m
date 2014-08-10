@@ -1,151 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426AbaHJHex (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 03:34:53 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51121 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaHJHev (ORCPT
+	id S1751444AbaHJHg4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 03:36:56 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:57222 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaHJHgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 03:34:51 -0400
-Date: Sun, 10 Aug 2014 09:34:50 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Trivial patch monkey <trivial@kernel.org>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Miguel Oliveira <cmroliv@gmail.com>, gulsah.1004@gmail.com,
-        peter.p.waskiewicz.jr@intel.com, kristina.martsenko@gmail.com,
-        linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH] bluetooth: avoid using __uX types
-Message-ID: <20140810073450.GD19735@amd.pavel.ucw.cz>
-References: <1401445633-5290-1-git-send-email-cmroliv@gmail.com>
- <20140530123023.GA10549@amd.pavel.ucw.cz>
- <20140530155959.GA10682@kroah.com>
- <201405301815.10811@pali>
- <20140530163604.GA11943@kroah.com>
- <DB71A450-EF1D-479F-9111-A36FF8EA89B2@holtmann.org>
- <20140806213055.GA26046@amd.pavel.ucw.cz>
- <20140807002532.GB23406@kroah.com>
- <20140807081328.GB24700@amd.pavel.ucw.cz>
- <20140807202407.GC6060@kroah.com>
+	Sun, 10 Aug 2014 03:36:54 -0400
+Date: Sun, 10 Aug 2014 13:06:47 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Krzysztof Halasa <khc@pm.waw.pl>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH] wan: wanxl: Remove typedefs from struct names
+Message-ID: <20140810073647.GA3684@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140807202407.GC6060@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Linux kernel coding style guidelines suggest not using typedefs
+for structure types. This patch gets rid of the typedefs for
+port_t, card_status_t and card_t. Also, the names of the structs
+are changed to drop the _t, to make the name look less typedef-like.
 
-__u8/16 types should not be neccessary inside kernel, u8/16 should
-be enough.
-    
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
+The following Coccinelle semantic patch detects two cases and a
+similar one detects the case for card_t.
 
-diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
-index 373000d..1176e67 100644
---- a/include/net/bluetooth/bluetooth.h
-+++ b/include/net/bluetooth/bluetooth.h
-@@ -58,8 +58,8 @@
+@tn1@
+type td;
+@@
+
+typedef struct { ... } td;
+
+@script:python tf@
+td << tn1.td;
+tdres;
+@@
+
+coccinelle.tdres = td;
+
+@@
+type tn1.td;
+identifier tf.tdres;
+@@
+
+-typedef
+ struct
++  tdres
+   { ... }
+-td
+ ;
+
+@@
+type tn1.td;
+identifier tf.tdres;
+@@
+
+-td
++ struct tdres
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+To send to: Krzysztof Halasa <khc@pm.waw.pl>,netdev@vger.kernel.org,linux-kernel@vger.kernel.org
+ drivers/net/wan/wanxl.c | 63 +++++++++++++++++++++++++------------------------
+ 1 file changed, 32 insertions(+), 31 deletions(-)
+
+diff --git a/drivers/net/wan/wanxl.c b/drivers/net/wan/wanxl.c
+index f76aa90..1287c3e 100644
+--- a/drivers/net/wan/wanxl.c
++++ b/drivers/net/wan/wanxl.c
+@@ -54,24 +54,24 @@ static const char* version = "wanXL serial card driver version: 0.48";
+ #define MBX2_MEMSZ_MASK 0xFFFF0000 /* PUTS Memory Size Register mask */
  
- #define BT_SECURITY	4
- struct bt_security {
--	__u8 level;
--	__u8 key_size;
-+	u8 level;
-+	u8 key_size;
- };
- #define BT_SECURITY_SDP		0
- #define BT_SECURITY_LOW		1
-@@ -76,7 +76,7 @@ struct bt_security {
  
- #define BT_POWER	9
- struct bt_power {
--	__u8 force_active;
-+	u8 force_active;
- };
- #define BT_POWER_FORCE_ACTIVE_OFF 0
- #define BT_POWER_FORCE_ACTIVE_ON  1
-@@ -110,7 +110,7 @@ struct bt_power {
+-typedef struct {
++struct port {
+ 	struct net_device *dev;
+-	struct card_t *card;
++	struct card *card;
+ 	spinlock_t lock;	/* for wanxl_xmit */
+         int node;		/* physical port #0 - 3 */
+ 	unsigned int clock_type;
+ 	int tx_in, tx_out;
+ 	struct sk_buff *tx_skbs[TX_BUFFERS];
+-}port_t;
++};
  
- #define BT_VOICE		11
- struct bt_voice {
--	__u16 setting;
-+	u16 setting;
- };
  
- #define BT_VOICE_TRANSPARENT			0x0003
-@@ -170,7 +170,7 @@ static inline const char *state_to_string(int state)
+-typedef struct {
++struct card_status {
+ 	desc_t rx_descs[RX_QUEUE_LENGTH];
+ 	port_status_t port_status[4];
+-}card_status_t;
++};
  
- /* BD Address */
- typedef struct {
--	__u8 b[6];
-+	u8 b[6];
- } __packed bdaddr_t;
  
- /* BD Address type */
-@@ -178,7 +178,7 @@ typedef struct {
- #define BDADDR_LE_PUBLIC	0x01
- #define BDADDR_LE_RANDOM	0x02
+-typedef struct card_t {
++struct card {
+ 	int n_ports;		/* 1, 2 or 4 ports */
+ 	u8 irq;
  
--static inline bool bdaddr_type_is_valid(__u8 type)
-+static inline bool bdaddr_type_is_valid(u8 type)
+@@ -79,20 +79,20 @@ typedef struct card_t {
+ 	struct pci_dev *pdev;	/* for pci_name(pdev) */
+ 	int rx_in;
+ 	struct sk_buff *rx_skbs[RX_QUEUE_LENGTH];
+-	card_status_t *status;	/* shared between host and card */
++	struct card_status *status;	/* shared between host and card */
+ 	dma_addr_t status_address;
+-	port_t ports[0];	/* 1 - 4 port_t structures follow */
+-}card_t;
++	struct port ports[0];	/* 1 - 4 port structures follow */
++};
+ 
+ 
+ 
+-static inline port_t* dev_to_port(struct net_device *dev)
++static inline struct port *dev_to_port(struct net_device *dev)
  {
- 	switch (type) {
- 	case BDADDR_BREDR:
-@@ -190,7 +190,7 @@ static inline bool bdaddr_type_is_valid(__u8 type)
- 	return false;
+-        return (port_t *)dev_to_hdlc(dev)->priv;
++	return (struct port *)dev_to_hdlc(dev)->priv;
  }
  
--static inline bool bdaddr_type_is_le(__u8 type)
-+static inline bool bdaddr_type_is_le(u8 type)
+ 
+-static inline port_status_t* get_status(port_t *port)
++static inline port_status_t *get_status(struct port *port)
  {
- 	switch (type) {
- 	case BDADDR_LE_PUBLIC:
-@@ -260,15 +260,15 @@ struct sock *bt_accept_dequeue(struct sock *parent, struct socket *newsock);
- 
- /* Skb helpers */
- struct l2cap_ctrl {
--	__u8	sframe:1,
-+	u8	sframe:1,
- 		poll:1,
- 		final:1,
- 		fcs:1,
- 		sar:2,
- 		super:2;
--	__u16	reqseq;
--	__u16	txseq;
--	__u8	retries;
-+	u16	reqseq;
-+	u16	txseq;
-+	u8	retries;
- };
- 
- struct hci_dev;
-@@ -282,10 +282,10 @@ struct hci_req_ctrl {
- };
- 
- struct bt_skb_cb {
--	__u8 pkt_type;
--	__u8 incoming;
--	__u16 expect;
--	__u8 force_active;
-+	u8 pkt_type;
-+	u8 incoming;
-+	u16 expect;
-+	u8 force_active;
- 	struct l2cap_chan *chan;
- 	struct l2cap_ctrl control;
- 	struct hci_req_ctrl req;
-@@ -336,7 +336,7 @@ out:
- 	return NULL;
+ 	return &port->card->status->port_status[port->node];
  }
+@@ -115,7 +115,7 @@ static inline dma_addr_t pci_map_single_debug(struct pci_dev *pdev, void *ptr,
  
--int bt_to_errno(__u16 code);
-+int bt_to_errno(u16 code);
  
- int hci_sock_init(void);
- void hci_sock_cleanup(void);
+ /* Cable and/or personality module change interrupt service */
+-static inline void wanxl_cable_intr(port_t *port)
++static inline void wanxl_cable_intr(struct port *port)
+ {
+ 	u32 value = get_status(port)->cable;
+ 	int valid = 1;
+@@ -160,7 +160,7 @@ static inline void wanxl_cable_intr(port_t *port)
+ 
+ 
+ /* Transmit complete interrupt service */
+-static inline void wanxl_tx_intr(port_t *port)
++static inline void wanxl_tx_intr(struct port *port)
+ {
+ 	struct net_device *dev = port->dev;
+ 	while (1) {
+@@ -193,7 +193,7 @@ static inline void wanxl_tx_intr(port_t *port)
+ 
+ 
+ /* Receive complete interrupt service */
+-static inline void wanxl_rx_intr(card_t *card)
++static inline void wanxl_rx_intr(struct card *card)
+ {
+ 	desc_t *desc;
+ 	while (desc = &card->status->rx_descs[card->rx_in],
+@@ -203,7 +203,7 @@ static inline void wanxl_rx_intr(card_t *card)
+ 				pci_name(card->pdev));
+ 		else {
+ 			struct sk_buff *skb = card->rx_skbs[card->rx_in];
+-			port_t *port = &card->ports[desc->stat &
++			struct port *port = &card->ports[desc->stat &
+ 						    PACKET_PORT_MASK];
+ 			struct net_device *dev = port->dev;
+ 
+@@ -245,7 +245,7 @@ static inline void wanxl_rx_intr(card_t *card)
+ 
+ static irqreturn_t wanxl_intr(int irq, void* dev_id)
+ {
+-        card_t *card = dev_id;
++	struct card *card = dev_id;
+         int i;
+         u32 stat;
+         int handled = 0;
+@@ -272,7 +272,7 @@ static irqreturn_t wanxl_intr(int irq, void* dev_id)
+ 
+ static netdev_tx_t wanxl_xmit(struct sk_buff *skb, struct net_device *dev)
+ {
+-        port_t *port = dev_to_port(dev);
++	struct port *port = dev_to_port(dev);
+ 	desc_t *desc;
+ 
+         spin_lock(&port->lock);
+@@ -319,7 +319,7 @@ static netdev_tx_t wanxl_xmit(struct sk_buff *skb, struct net_device *dev)
+ static int wanxl_attach(struct net_device *dev, unsigned short encoding,
+ 			unsigned short parity)
+ {
+-	port_t *port = dev_to_port(dev);
++	struct port *port = dev_to_port(dev);
+ 
+ 	if (encoding != ENCODING_NRZ &&
+ 	    encoding != ENCODING_NRZI)
+@@ -343,7 +343,7 @@ static int wanxl_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+ {
+ 	const size_t size = sizeof(sync_serial_settings);
+ 	sync_serial_settings line;
+-	port_t *port = dev_to_port(dev);
++	struct port *port = dev_to_port(dev);
+ 
+ 	if (cmd != SIOCWANDEV)
+ 		return hdlc_ioctl(dev, ifr, cmd);
+@@ -393,7 +393,7 @@ static int wanxl_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+ 
+ static int wanxl_open(struct net_device *dev)
+ {
+-	port_t *port = dev_to_port(dev);
++	struct port *port = dev_to_port(dev);
+ 	u8 __iomem *dbr = port->card->plx + PLX_DOORBELL_TO_CARD;
+ 	unsigned long timeout;
+ 	int i;
+@@ -429,7 +429,7 @@ static int wanxl_open(struct net_device *dev)
+ 
+ static int wanxl_close(struct net_device *dev)
+ {
+-	port_t *port = dev_to_port(dev);
++	struct port *port = dev_to_port(dev);
+ 	unsigned long timeout;
+ 	int i;
+ 
+@@ -467,7 +467,7 @@ static int wanxl_close(struct net_device *dev)
+ 
+ static struct net_device_stats *wanxl_get_stats(struct net_device *dev)
+ {
+-	port_t *port = dev_to_port(dev);
++	struct port *port = dev_to_port(dev);
+ 
+ 	dev->stats.rx_over_errors = get_status(port)->rx_overruns;
+ 	dev->stats.rx_frame_errors = get_status(port)->rx_frame_errors;
+@@ -478,7 +478,7 @@ static struct net_device_stats *wanxl_get_stats(struct net_device *dev)
+ 
+ 
+ 
+-static int wanxl_puts_command(card_t *card, u32 cmd)
++static int wanxl_puts_command(struct card *card, u32 cmd)
+ {
+ 	unsigned long timeout = jiffies + 5 * HZ;
+ 
+@@ -495,7 +495,7 @@ static int wanxl_puts_command(card_t *card, u32 cmd)
+ 
+ 
+ 
+-static void wanxl_reset(card_t *card)
++static void wanxl_reset(struct card *card)
+ {
+ 	u32 old_value = readl(card->plx + PLX_CONTROL) & ~PLX_CTL_RESET;
+ 
+@@ -511,7 +511,7 @@ static void wanxl_reset(card_t *card)
+ 
+ static void wanxl_pci_remove_one(struct pci_dev *pdev)
+ {
+-	card_t *card = pci_get_drvdata(pdev);
++	struct card *card = pci_get_drvdata(pdev);
+ 	int i;
+ 
+ 	for (i = 0; i < card->n_ports; i++) {
+@@ -537,7 +537,7 @@ static void wanxl_pci_remove_one(struct pci_dev *pdev)
+ 		iounmap(card->plx);
+ 
+ 	if (card->status)
+-		pci_free_consistent(pdev, sizeof(card_status_t),
++		pci_free_consistent(pdev, sizeof(struct card_status),
+ 				    card->status, card->status_address);
+ 
+ 	pci_release_regions(pdev);
+@@ -560,7 +560,7 @@ static const struct net_device_ops wanxl_ops = {
+ static int wanxl_pci_init_one(struct pci_dev *pdev,
+ 			      const struct pci_device_id *ent)
+ {
+-	card_t *card;
++	struct card *card;
+ 	u32 ramsize, stat;
+ 	unsigned long timeout;
+ 	u32 plx_phy;		/* PLX PCI base address */
+@@ -601,7 +601,7 @@ static int wanxl_pci_init_one(struct pci_dev *pdev,
+ 	default: ports = 4;
+ 	}
+ 
+-	alloc_size = sizeof(card_t) + ports * sizeof(port_t);
++	alloc_size = sizeof(struct card) + ports * sizeof(struct port);
+ 	card = kzalloc(alloc_size, GFP_KERNEL);
+ 	if (card == NULL) {
+ 		pci_release_regions(pdev);
+@@ -612,7 +612,8 @@ static int wanxl_pci_init_one(struct pci_dev *pdev,
+ 	pci_set_drvdata(pdev, card);
+ 	card->pdev = pdev;
+ 
+-	card->status = pci_alloc_consistent(pdev, sizeof(card_status_t),
++	card->status = pci_alloc_consistent(pdev,
++					    sizeof(struct card_status),
+ 					    &card->status_address);
+ 	if (card->status == NULL) {
+ 		wanxl_pci_remove_one(pdev);
+@@ -766,7 +767,7 @@ static int wanxl_pci_init_one(struct pci_dev *pdev,
+ 
+ 	for (i = 0; i < ports; i++) {
+ 		hdlc_device *hdlc;
+-		port_t *port = &card->ports[i];
++		struct port *port = &card->ports[i];
+ 		struct net_device *dev = alloc_hdlcdev(port);
+ 		if (!dev) {
+ 			pr_err("%s: unable to allocate memory\n",
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.1
+
