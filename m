@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480AbaHJPpW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 11:45:22 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:58498 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134AbaHJPpU (ORCPT
+	id S1751385AbaHJQFK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 12:05:10 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:38306 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaHJQFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 11:45:20 -0400
-Date: Sun, 10 Aug 2014 17:45:15 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jason Baron <jbaron@akamai.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH] Flipped jump labels
-Message-ID: <20140810154515.GA27199@gmail.com>
-References: <20140809105742.GA5910@pd.tnic>
- <20140810061103.GA13968@gmail.com>
- <20140810061303.GA14206@gmail.com>
- <20140810153539.GA9490@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140810153539.GA9490@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 10 Aug 2014 12:05:08 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>, Eric Paris <eparis@redhat.com>
+Subject: [PATCH] openrisc: Fix build failure
+Date: Sun, 10 Aug 2014 09:05:02 -0700
+Message-Id: <1407686702-15149-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Openrisc build fails with
 
-* Borislav Petkov <bp@alien8.de> wrote:
+In file included from arch/openrisc/kernel/signal.c:31:0:
+./arch/openrisc/include/asm/syscall.h: In function 'syscall_get_arch':
+./arch/openrisc/include/asm/syscall.h:77:9: error:
+			'EM_OPENRISC' undeclared (first use in this function)
+make[1]: *** [arch/openrisc/kernel/signal.o] Error 1
 
-> On Sun, Aug 10, 2014 at 08:13:03AM +0200, Ingo Molnar wrote:
-> > Wouldn't using STATIC_KEY_INIT_TRUE and static_key_true() [instead of
-> > !static_key_false()] result in the same good code placement effects?
-> 
-> Nope, not really. static_key_true() is !static_key_false() and we're not
-> changing anything, logically. ASM looks non-optimal here, in any case,
-> with the "true" version.
+Introduced by commit "ARCH: AUDIT: implement syscall_get_arch for all arches".
 
-Indeed - but could we use that interface to cleanly expose the 
-arch_static_branch_active() code you've written, or do we need new 
-variants?
+Fix by adding a missing include file.
 
-Thanks,
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+Only applies to -next at this time.
 
-	Ingo
+ arch/openrisc/kernel/signal.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/openrisc/kernel/signal.c b/arch/openrisc/kernel/signal.c
+index 7d1b823..a887cd8 100644
+--- a/arch/openrisc/kernel/signal.c
++++ b/arch/openrisc/kernel/signal.c
+@@ -27,6 +27,7 @@
+ #include <linux/stddef.h>
+ #include <linux/tracehook.h>
+ 
++#include <asm/elf.h>
+ #include <asm/processor.h>
+ #include <asm/syscall.h>
+ #include <asm/ucontext.h>
+-- 
+1.9.1
+
