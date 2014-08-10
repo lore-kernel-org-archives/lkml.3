@@ -1,107 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751491AbaHJPjs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 11:39:48 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751226AbaHJPjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 11:39:47 -0400
-Message-ID: <53E7923F.5000008@nod.at>
-Date: Sun, 10 Aug 2014 17:39:43 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751480AbaHJPpW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 11:45:22 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:58498 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaHJPpU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 11:45:20 -0400
+Date: Sun, 10 Aug 2014 17:45:15 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jason Baron <jbaron@akamai.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH] Flipped jump labels
+Message-ID: <20140810154515.GA27199@gmail.com>
+References: <20140809105742.GA5910@pd.tnic>
+ <20140810061103.GA13968@gmail.com>
+ <20140810061303.GA14206@gmail.com>
+ <20140810153539.GA9490@pd.tnic>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Guan Xuetao <gxt@mprc.pku.edu.cn>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] unicore32: Fix build error
-References: <1407684595-30785-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1407684595-30785-1-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140810153539.GA9490@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guenther,
 
-Am 10.08.2014 17:29, schrieb Guenter Roeck:
-> unicore32 builds fail with
+* Borislav Petkov <bp@alien8.de> wrote:
+
+> On Sun, Aug 10, 2014 at 08:13:03AM +0200, Ingo Molnar wrote:
+> > Wouldn't using STATIC_KEY_INIT_TRUE and static_key_true() [instead of
+> > !static_key_false()] result in the same good code placement effects?
 > 
-> arch/unicore32/kernel/signal.c: In function ‘setup_frame’:
-> arch/unicore32/kernel/signal.c:257: error:
-> 			‘usig’ undeclared (first use in this function)
-> arch/unicore32/kernel/signal.c:279: error:
-> 			‘usig’ undeclared (first use in this function)
-> arch/unicore32/kernel/signal.c: In function ‘handle_signal’:
-> arch/unicore32/kernel/signal.c:306: warning: unused variable ‘tsk’
-> arch/unicore32/kernel/signal.c: In function ‘do_signal’:
-> arch/unicore32/kernel/signal.c:376: error:
-> 			implicit declaration of function ‘get_signsl’
-> make[1]: *** [arch/unicore32/kernel/signal.o] Error 1
-> make: *** [arch/unicore32/kernel/signal.o] Error 2
-> 
-> Bisect points to commit 649671c90eaf ("unicore32: Use get_signal()
-> signal_setup_done()").
-> 
-> This code never even compiled. Reverting the patch does not work,
-> since previously used functions no longer exist, so try to fix it up.
-> Compile tested only.
+> Nope, not really. static_key_true() is !static_key_false() and we're not
+> changing anything, logically. ASM looks non-optimal here, in any case,
+> with the "true" version.
 
-Where did you get the unicore32 cross compiler from?
-
-The collection on kernel.org is missing it:
-https://www.kernel.org/pub/tools/crosstool/
-
-This is why it did not get any build testing.
+Indeed - but could we use that interface to cleanly expose the 
+arch_static_branch_active() code you've written, or do we need new 
+variants?
 
 Thanks,
-//richard
 
-> Cc: Richard Weinberger <richard@nod.at>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  arch/unicore32/kernel/signal.c | 9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/unicore32/kernel/signal.c b/arch/unicore32/kernel/signal.c
-> index 780d773..7c8fb70 100644
-> --- a/arch/unicore32/kernel/signal.c
-> +++ b/arch/unicore32/kernel/signal.c
-> @@ -254,7 +254,8 @@ static int setup_frame(struct ksignal *ksig, sigset_t *set,
->  
->  	err |= setup_sigframe(frame, regs, set);
->  	if (err == 0)
-> -		err |= setup_return(regs, &ksig->ka, frame->retcode, frame, usig);
-> +		err |= setup_return(regs, &ksig->ka, frame->retcode, frame,
-> +				    ksig->sig);
->  
->  	return err;
->  }
-> @@ -276,7 +277,8 @@ static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
->  	err |= __save_altstack(&frame->sig.uc.uc_stack, regs->UCreg_sp);
->  	err |= setup_sigframe(&frame->sig, regs, set);
->  	if (err == 0)
-> -		err |= setup_return(regs, &ksig->ka, frame->sig.retcode, frame, usig);
-> +		err |= setup_return(regs, &ksig->ka, frame->sig.retcode, frame,
-> +				    ksig->sig);
->  
->  	if (err == 0) {
->  		/*
-> @@ -303,7 +305,6 @@ static void handle_signal(struct ksignal *ksig, struct pt_regs *regs,
->  			  int syscall)
->  {
->  	struct thread_info *thread = current_thread_info();
-> -	struct task_struct *tsk = current;
->  	sigset_t *oldset = sigmask_to_save();
->  	int usig = ksig->sig;
->  	int ret;
-> @@ -373,7 +374,7 @@ static void do_signal(struct pt_regs *regs, int syscall)
->  	if (!user_mode(regs))
->  		return;
->  
-> -	if (get_signsl(&ksig)) {
-> +	if (get_signal(&ksig)) {
->  		handle_signal(&ksig, regs, syscall);
->  		return;
->  	}
-> 
+	Ingo
