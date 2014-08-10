@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaHJNna (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 09:43:30 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:17386 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463AbaHJNn2 (ORCPT
+	id S1751167AbaHJOni (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 10:43:38 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:60518 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaHJOnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 09:43:28 -0400
-To: gregkh@linuxfoundation.org, mcgrof@suse.com
-Cc: davem@davemloft.net, mcgrof@do-not-panic.com, tiwai@suse.de,
-        linux-kernel@vger.kernel.org, joseph.salisbury@canonical.com,
-        kay@vrfy.org, gnomes@lxorguk.ukuu.org.uk, tim.gardner@canonical.com,
-        pierre-fersing@pierref.org, akpm@linux-foundation.org, oleg@redhat.com,
-        bpoirier@suse.de, nagalakshmi.nandigama@avagotech.com,
-        praveen.krishnamoorthy@avagotech.com, sreekanth.reddy@avagotech.com,
-        abhijit.mahajan@avagotech.com, hariprasad@chelsio.com,
-        santosh@chelsio.com, MPT-FusionLinux.pdl@avagotech.com,
-        linux-scsi@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] driver core: enable drivers to use deferred probefrom init
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <1406572110-26823-1-git-send-email-mcgrof@do-not-panic.com>
-	<1406572110-26823-3-git-send-email-mcgrof@do-not-panic.com>
-	<20140730.151107.1328294951387764830.davem@davemloft.net>
-	<20140809164119.GI21930@wotan.suse.de>
-	<20140810124331.GE30451@kroah.com>
-In-Reply-To: <20140810124331.GE30451@kroah.com>
-Message-Id: <201408102242.FGG43287.FMFFLQJVOHOOSt@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sun, 10 Aug 2014 22:42:26 +0900
-Mime-Version: 1.0
+	Sun, 10 Aug 2014 10:43:37 -0400
+Date: Sun, 10 Aug 2014 20:13:20 +0530
+From: Srikrishan Malik <srikrishanmalik@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: andreas.dilger@intel.com, oleg.drokin@intel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/12] staging: lustre: remove space between function
+ name and and open parenthesis
+Message-ID: <20140810144320.GA26578@mordor>
+Mail-Followup-To: Srikrishan Malik <srikrishanmalik@gmail.com>,
+	Greg KH <greg@kroah.com>, andreas.dilger@intel.com,
+	oleg.drokin@intel.com, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
+References: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>
+ <20140810043222.GA2648@kroah.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140810043222.GA2648@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> Why doesn't it work?  Doesn't modprobe come right back and the init
-> sequence still takes a while to run?  What exactly fails?
-
-I guess ...
-
-> @@ -5429,9 +5429,19 @@ mptsas_init(void)
->  	return error;
->  }
->  
-> +static struct task_struct *init_thread;
-> +
-> +static int __init
-> +mptsas_init(void)
-> +{
-> +	init_thread = kthread_run(mptsas_real_init, NULL, "mptsas_init");
-> +	return 0;
-> +}
-> +
->  static void __exit
->  mptsas_exit(void)
->  {
-> +	kthread_stop(init_thread);
->  	pci_unregister_driver(&mptsas_driver);
->  	sas_release_transport(mptsas_transport_template);
->  
+On Sat, Aug 09, 2014 at 09:32:22PM -0700, Greg KH wrote:
+> On Wed, Aug 06, 2014 at 10:42:51PM +0530, Srikrishan Malik wrote:
+> > Fixes following checkpatch warning:
+> > 
+> > WARNING: space prohibited between function name and open parenthesis '('
+> > 
+> > Signed-off-by: Srikrishan Malik <srikrishanmalik@gmail.com>
 > 
+> Can you redo this whole series, based on the comments you have recieved?
 
-kthread_run() can fail. sas_attach_transport() and/or pci_register_driver()
-in mptsas_real_init() can fail. Caller process may fail to continue if
-sas_attach_transport() and pci_register_driver() in mptsas_real_init() has
-not completed yet.
+Have been busy due to festivals.
+I am planning to re-submit soon. 
 
-kthread_stop() must not be called when kthread_run() failed.
-pci_unregister_driver() and/or sas_release_transport() must not be called
-when mptsas_real_init() did not return 0 (or has not returned 0 yet).
+> 
+> thanks,
+> 
+> greg k-h
