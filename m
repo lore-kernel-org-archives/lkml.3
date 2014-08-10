@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522AbaHJU1E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 16:27:04 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:50887 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaHJU1B (ORCPT
+	id S1751648AbaHJUja (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 16:39:30 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52193 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406AbaHJUj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 16:27:01 -0400
-Message-ID: <53E7D587.9040303@gmail.com>
-Date: Sun, 10 Aug 2014 22:26:47 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Himangi Saraogi <himangi774@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Olof Johansson <olof@lixom.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>, Felipe Balbi <balbi@ti.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] drivers: net: davinci_cpdma: drop devm_kfree of devm_kzalloc'd
- data
-References: <20140810195819.GA3880@himangi-Dell>
-In-Reply-To: <20140810195819.GA3880@himangi-Dell>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sun, 10 Aug 2014 16:39:28 -0400
+From: Suman Kumar <suman@inforcecomputing.com>
+To: hverkuil@xs4all.nl
+Cc: g.liakhovetski@gmx.de, m.chehab@samsung.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, suman@inforcecomputing.com,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH] staging: soc_camera.c: Fixed a Missing blank line coding style issue
+Date: Mon, 11 Aug 2014 02:09:12 +0530
+Message-Id: <1407703152-1847-1-git-send-email-suman@inforcecomputing.com>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2014 09:58 PM, Himangi Saraogi wrote:
-> devm_kfree should not have to be explicitly used.
-> 
-> The Coccinelle semantic patch that fixes this problem is as follows:
-> 
-> // <smpl>
-> @@
-> expression x,d;
-> @@
-> 
-> x = devm_kzalloc(...)
-> ...
-> ?-devm_kfree(d,x);
-> // </smpl>
-> 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+    Fixes a coding style issue of 'Missing a blank line after
+    declarations' reported by checkpatch.pl
 
-Acked-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Suman Kumar <suman@inforcecomputing.com>
+---
+ drivers/media/platform/soc_camera/soc_camera.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-However, you need to resend this patch after 3.17-rc1 has been released
-and the net-next branch was opened again.
-
-
-Thanks,
-Daniel
-
-
-> ---
->  drivers/net/ethernet/ti/davinci_cpdma.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/net/ethernet/ti/davinci_cpdma.c b/drivers/net/ethernet/ti/davinci_cpdma.c
-> index 4a000f6..af673f5 100644
-> --- a/drivers/net/ethernet/ti/davinci_cpdma.c
-> +++ b/drivers/net/ethernet/ti/davinci_cpdma.c
-> @@ -512,7 +512,6 @@ struct cpdma_chan *cpdma_chan_create(struct cpdma_ctlr *ctlr, int chan_num,
->  	spin_lock_irqsave(&ctlr->lock, flags);
->  	if (ctlr->channels[chan_num]) {
->  		spin_unlock_irqrestore(&ctlr->lock, flags);
-> -		devm_kfree(ctlr->dev, chan);
->  		return ERR_PTR(-EBUSY);
->  	}
->  
-> 
+diff --git a/drivers/media/platform/soc_camera/soc_camera.c b/drivers/media/platform/soc_camera/soc_camera.c
+index 7fec8cd..968a64b 100644
+--- a/drivers/media/platform/soc_camera/soc_camera.c
++++ b/drivers/media/platform/soc_camera/soc_camera.c
+@@ -830,6 +830,7 @@ void soc_camera_lock(struct vb2_queue *vq)
+ {
+ 	struct soc_camera_device *icd = vb2_get_drv_priv(vq);
+ 	struct soc_camera_host *ici = to_soc_camera_host(icd->parent);
++
+ 	mutex_lock(&ici->host_lock);
+ }
+ EXPORT_SYMBOL(soc_camera_lock);
+@@ -838,6 +839,7 @@ void soc_camera_unlock(struct vb2_queue *vq)
+ {
+ 	struct soc_camera_device *icd = vb2_get_drv_priv(vq);
+ 	struct soc_camera_host *ici = to_soc_camera_host(icd->parent);
++
+ 	mutex_unlock(&ici->host_lock);
+ }
+ EXPORT_SYMBOL(soc_camera_unlock);
+@@ -1703,6 +1705,7 @@ static int soc_camera_remove(struct soc_camera_device *icd)
+ 	} else {
+ 		struct device *dev = to_soc_camera_control(icd);
+ 		struct device_driver *drv = dev ? dev->driver : NULL;
++
+ 		if (drv) {
+ 			sdesc->host_desc.del_device(icd);
+ 			module_put(drv->owner);
+@@ -1728,18 +1731,21 @@ static int default_cropcap(struct soc_camera_device *icd,
+ 			   struct v4l2_cropcap *a)
+ {
+ 	struct v4l2_subdev *sd = soc_camera_to_subdev(icd);
++
+ 	return v4l2_subdev_call(sd, video, cropcap, a);
+ }
+ 
+ static int default_g_crop(struct soc_camera_device *icd, struct v4l2_crop *a)
+ {
+ 	struct v4l2_subdev *sd = soc_camera_to_subdev(icd);
++
+ 	return v4l2_subdev_call(sd, video, g_crop, a);
+ }
+ 
+ static int default_s_crop(struct soc_camera_device *icd, const struct v4l2_crop *a)
+ {
+ 	struct v4l2_subdev *sd = soc_camera_to_subdev(icd);
++
+ 	return v4l2_subdev_call(sd, video, s_crop, a);
+ }
+ 
+@@ -1747,6 +1753,7 @@ static int default_g_parm(struct soc_camera_device *icd,
+ 			  struct v4l2_streamparm *parm)
+ {
+ 	struct v4l2_subdev *sd = soc_camera_to_subdev(icd);
++
+ 	return v4l2_subdev_call(sd, video, g_parm, parm);
+ }
+ 
+@@ -1754,6 +1761,7 @@ static int default_s_parm(struct soc_camera_device *icd,
+ 			  struct v4l2_streamparm *parm)
+ {
+ 	struct v4l2_subdev *sd = soc_camera_to_subdev(icd);
++
+ 	return v4l2_subdev_call(sd, video, s_parm, parm);
+ }
+ 
+-- 
+1.8.2
 
