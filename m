@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaHJBpf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 21:45:35 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:24533 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595AbaHJBpe (ORCPT
+	id S1752115AbaHJBr0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 21:47:26 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:64896 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874AbaHJBrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 21:45:34 -0400
-Message-ID: <53E6CEAA.9020105@oracle.com>
-Date: Sat, 09 Aug 2014 21:45:14 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Sat, 9 Aug 2014 21:47:25 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53E6CF2B.6090709@roeck-us.net>
+Date: Sat, 09 Aug 2014 18:47:23 -0700
+From: Guenter Roeck <private@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Dave Jones <davej@redhat.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: mm: compaction: buffer overflow in isolate_migratepages_range
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andy Lutomirski <luto@amacapital.net>
+Subject: Runtime trouble with commit dbd952127d (seccomp: introduce writer
+ locking)
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi folks,
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel with the KASAN patchset, I've stumbled on the following spew:
+I am having some trouble with commit dbd952127d (seccomp: introduce
+writer locking) when running my qemu tests on the upstream kernel.
 
+With powerpc, I get the following crash.
 
-[ 3837.070452] ==================================================================
-[ 3837.073101] AddressSanitizer: buffer overflow in isolate_migratepages_range+0x85f/0xd90 at addr ffff88051b70eb49
-[ 3837.076310] page:ffffea00146dc380 count:0 mapcount:0 mapping:          (null) index:0x0
-[ 3837.079876] page flags: 0xafffff80008000(tail)
-[ 3837.114592] page dumped because: kasan error
-[ 3837.115897] CPU: 4 PID: 29613 Comm: trinity-c467 Not tainted 3.16.0-next-20140808-sasha-00051-gf368221 #1051
-[ 3837.118024]  00000000000000fc 0000000000000000 ffffea00146dc380 ffff8801f326f718
-[ 3837.119837]  ffffffff97e0d344 ffff8801f326f7e8 ffff8801f326f7d8 ffffffff9342d5bc
-[ 3837.121708]  ffffea00085163c0 0000000000000000 ffff8801f326f8e0 ffffffff93fe02fb
-[ 3837.123704] Call Trace:
-[ 3837.124272] dump_stack (lib/dump_stack.c:52)
-[ 3837.125166] kasan_report_error (mm/kasan/report.c:98 mm/kasan/report.c:166)
-[ 3837.126128] ? trace_hardirqs_on_thunk (arch/x86/lib/thunk_64.S:33)
-[ 3837.127462] ? retint_restore_args (arch/x86/kernel/entry_64.S:828)
-[ 3837.128753] __asan_load8 (mm/kasan/kasan.c:364)
-[ 3837.129914] ? isolate_migratepages_range (./arch/x86/include/asm/bitops.h:311 include/linux/pagemap.h:70 include/linux/balloon_compaction.h:131 include/linux/balloon_compaction.h:156 mm/compaction.c:596)
-[ 3837.131613] isolate_migratepages_range (./arch/x86/include/asm/bitops.h:311 include/linux/pagemap.h:70 include/linux/balloon_compaction.h:131 include/linux/balloon_compaction.h:156 mm/compaction.c:596)
-[ 3837.132838] compact_zone (mm/compaction.c:877 mm/compaction.c:1044)
-[ 3837.133818] compact_zone_order (mm/compaction.c:1106)
-[ 3837.134982] try_to_compact_pages (mm/compaction.c:1161)
-[ 3837.135970] __alloc_pages_direct_compact (mm/page_alloc.c:2313)
-[ 3837.137217] ? next_zones_zonelist (mm/mmzone.c:72)
-[ 3837.138861] __alloc_pages_nodemask (mm/page_alloc.c:2640 mm/page_alloc.c:2806)
-[ 3837.139897] ? check_chain_key (kernel/locking/lockdep.c:2190)
-[ 3837.141220] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[ 3837.142434] alloc_pages_vma (mm/mempolicy.c:2046)
-[ 3837.143479] ? do_huge_pmd_wp_page (mm/huge_memory.c:774 mm/huge_memory.c:1123)
-[ 3837.144663] do_huge_pmd_wp_page (mm/huge_memory.c:774 mm/huge_memory.c:1123)
-[ 3837.145653] handle_mm_fault (mm/memory.c:3312 mm/memory.c:3370)
-[ 3837.146717] ? vmacache_find (mm/vmacache.c:100 (discriminator 1))
-[ 3837.147404] ? find_vma (mm/mmap.c:2024)
-[ 3837.147982] __do_page_fault (arch/x86/mm/fault.c:1231)
-[ 3837.148613] ? context_tracking_user_exit (kernel/context_tracking.c:184)
-[ 3837.149388] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[ 3837.150212] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2641 (discriminator 8))
-[ 3837.150977] ? trace_hardirqs_off (kernel/locking/lockdep.c:2647)
-[ 3837.151686] trace_do_page_fault (arch/x86/mm/fault.c:1314 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1315)
-[ 3837.152870] do_async_page_fault (arch/x86/kernel/kvm.c:279)
-[ 3837.153886] async_page_fault (arch/x86/kernel/entry_64.S:1313)
-[ 3837.155293] Read of size 8 by thread T29613:
-[ 3837.156058] Memory state around the buggy address:
-[ 3837.156885]  ffff88051b70e880: 00 00 00 00 00 00 00 fc fc fc fc fc fc fc fc fc
-[ 3837.158141]  ffff88051b70e900: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-[ 3837.159492]  ffff88051b70e980: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-[ 3837.160863]  ffff88051b70ea00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-[ 3837.162165]  ffff88051b70ea80: 00 00 00 00 00 00 00 fc fc fc fc fc fc fc fc fc
-[ 3837.163552] >ffff88051b70eb00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-[ 3837.164866]                                               ^
-[ 3837.165914]  ffff88051b70eb80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-[ 3837.167317]  ffff88051b70ec00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 3837.168616]  ffff88051b70ec80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 3837.169898]  ffff88051b70ed00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 3837.171298]  ffff88051b70ed80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-[ 3837.172611] ==================================================================
+ftrace: allocating 20093 entries in 59 pages
+------------[ cut here ]------------
+kernel BUG at kernel/fork.c:1108!
+Oops: Exception in kernel mode, sig: 5 [#1]
+PREEMPT PowerMac
+Modules linked in:
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.16.0-yocto-standard+ #1
+task: c08a03d0 ti: c08e4000 task.ti: c08e4000
+NIP: c002b98c LR: c002b988 CTR: c03837ec
+REGS: c08e5e30 TRAP: 0700   Not tainted  (3.16.0-yocto-standard+)
+MSR: 00021032 <ME,IR,DR,RI>  CR: 22282048  XER: 20000000
 
+GPR00: c002b988 c08e5ee0 c08a03d0 00000001 c0a9b878 00000800 c783603c 00000020
+GPR08: c783603c 00000003 00000001 c08f61fc 22222044 00000000 07c5ac10 00800300
+GPR16: c7870000 00000010 00000000 07de7fa4 00000000 c08f594c c08f0000 c78702d0
+GPR24: 00000000 c08f0000 c08f5940 c000422c c08a8ea0 c7870310 00000000 c7808400
+NIP [c002b98c] copy_process.part.52+0x794/0x13e4
+LR [c002b988] copy_process.part.52+0x790/0x13e4
+Call Trace:
+[c08e5ee0] [c002b988] copy_process.part.52+0x790/0x13e4 (unreliable)
+[c08e5f60] [c002c768] do_fork+0xb8/0x3bc
+[c08e5fa0] [c00041c8] rest_init+0x30/0x94
+[c08e5fb0] [c083cf98] start_kernel+0x368/0x37c
+[c08e5ff0] [00003438] 0x3438
+Instruction dump:
+7d400124 38600001 48027e95 55e903e1 41820b84 80e202c0 90f002c0 81420570
+91500570 38600001 48027e75 39400001 <0f0a0000> 81420568 8162056c 91500568
+---[ end trace dc8fa200cb88537f ]---
+
+With  mips (both 32 bit and 64 bit), I get
+
+NR_IRQS:256
+CPU frequency 200.00 MHz
+Console: colour dummy device 80x25
+console [tty0] enabled
+bootconsole [uart0] disabled
+
+[ and then there is silence ]
+
+In all cases I bisected the problem to the above mentioned commit.
+
+Failures are seen in both linux-next and the tip of Linus' tree.
+Test results are on http://server.roeck-us.net:8010/builders
+(look for qwmu results). Build and test scripts are in the mips,
+mips64, and powerpc subdirectories of
+https://github.com/groeck/linux-build-test/tree/master/rootfs.
+
+Any idea, anyone, what might be going on, or how I could do to
+help tracking this down ?
 
 Thanks,
-Sasha
+Guenter
+
