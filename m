@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541AbaHJRqu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 13:46:50 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55028 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387AbaHJRqs (ORCPT
+	id S1751632AbaHJRsb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 13:48:31 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:42773 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387AbaHJRsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 13:46:48 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53E7B006.9050605@roeck-us.net>
-Date: Sun, 10 Aug 2014 10:46:46 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sun, 10 Aug 2014 13:48:30 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH -mm] slab: fix cpuset check in fallback_alloc
+Date: Sun, 10 Aug 2014 21:48:11 +0400
+Message-ID: <1407692891-24312-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: Li Yang <leoli@freescale.com>
-CC: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH] net: ugg_geth: Fix build error in -next
-References: <1407687554-14539-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1407687554-14539-1-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Originating-IP: [81.5.99.36]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grumble. Headline should be s/ugg/ucc, obviously.
+fallback_alloc is called on kmalloc if the preferred node doesn't have
+free or partial slabs and there's no pages on the node's free list
+(GFP_THISNODE allocations fail). Before invoking the reclaimer it tries
+to locate a free or partial slab on other allowed nodes' lists. While
+iterating over the preferred node's zonelist it skips those zones which
+cpuset_zone_allowed_hardwall returns false for. That means that for a
+task bound to a specific node using cpusets fallback_alloc will always
+ignore free slabs on other nodes and go directly to the reclaimer,
+which, however, may allocate from other nodes if cpuset.mem_hardwall is
+unset (default). As a result, we may get lists of free slabs grow
+without bounds on other nodes, which is bad, because inactive slabs are
+only evicted by cache_reap at a very slow rate and cannot be dropped
+forcefully.
 
-Guenter
+To reproduce the issue, run a process that will walk over a directory
+tree with lots of files inside a cpuset bound to a node that constantly
+experiences memory pressure. Look at num_slabs vs active_slabs growth as
+reported by /proc/slabinfo.
 
-On 08/10/2014 09:19 AM, Guenter Roeck wrote:
-> powerpc:mpc83xx_defconfig and other builds fail with
->
-> drivers/net/ethernet/freescale/ucc_geth.c: In function 'ucc_geth_remove':
-> drivers/net/ethernet/freescale/ucc_geth.c:3927:19: error:
-> 	'struct ucc_geth_private' has no member named 'info'
->    of_node_put(ugeth->info->tbi_node);
->                       ^
-> drivers/net/ethernet/freescale/ucc_geth.c:3928:19: error:
-> 	     'struct ucc_geth_private' has no member named 'info'
->    of_node_put(ugeth->info->phy_node);
->    		     ^
->
-> Introduced by commit "net: ucc_geth: drop acquired references in probe error
-> path and remove".
->
->>From the context, it appears that the variable is named ug_info.
->
-> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> Only seen in -next.
->
->   drivers/net/ethernet/freescale/ucc_geth.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
-> index d6b64e3..3cf0478 100644
-> --- a/drivers/net/ethernet/freescale/ucc_geth.c
-> +++ b/drivers/net/ethernet/freescale/ucc_geth.c
-> @@ -3924,8 +3924,8 @@ static int ucc_geth_remove(struct platform_device* ofdev)
->   	unregister_netdev(dev);
->   	free_netdev(dev);
->   	ucc_geth_memclean(ugeth);
-> -	of_node_put(ugeth->info->tbi_node);
-> -	of_node_put(ugeth->info->phy_node);
-> +	of_node_put(ugeth->ug_info->tbi_node);
-> +	of_node_put(ugeth->ug_info->phy_node);
->
->   	return 0;
->   }
->
+We should use cpuset_zone_allowed_softwall in fallback_alloc. Since it
+can sleep, we only call it on __GFP_WAIT allocations. For atomic
+allocations we simply ignore cpusets, which is in agreement with the
+cpuset documenation (see the comment to __cpuset_node_allowed_softwall).
+
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/slab.c |   23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
+
+diff --git a/mm/slab.c b/mm/slab.c
+index 2e60bf3dedbb..1d77a4df7ee1 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3049,14 +3049,23 @@ retry:
+ 	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+ 		nid = zone_to_nid(zone);
+ 
+-		if (cpuset_zone_allowed_hardwall(zone, flags) &&
+-			get_node(cache, nid) &&
+-			get_node(cache, nid)->free_objects) {
+-				obj = ____cache_alloc_node(cache,
+-					flags | GFP_THISNODE, nid);
+-				if (obj)
+-					break;
++		if (!get_node(cache, nid) ||
++		    !get_node(cache, nid)->free_objects)
++			continue;
++
++		if (local_flags & __GFP_WAIT) {
++			bool allowed;
++
++			local_irq_enable();
++			allowed = cpuset_zone_allowed_softwall(zone, flags);
++			local_irq_disable();
++			if (!allowed)
++				continue;
+ 		}
++
++		obj = ____cache_alloc_node(cache, flags | GFP_THISNODE, nid);
++		if (obj)
++			break;
+ 	}
+ 
+ 	if (!obj) {
+-- 
+1.7.10.4
 
