@@ -1,43 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaHJVKv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 17:10:51 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:48942 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757AbaHJVKu (ORCPT
+	id S1751772AbaHJVRO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 17:17:14 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:54637 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224AbaHJVRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 17:10:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <53E7DB59.6020300@roeck-us.net>
-References: <53E6CF2B.6090709@roeck-us.net>
-	<CAGXu5jLsbCpqG2cAxZWG+ZC=wdvhQ_9GPqXUb6p9pSvsqrXpOA@mail.gmail.com>
-	<20140810193308.GA31867@redhat.com>
-	<53E7DB59.6020300@roeck-us.net>
-Date: Sun, 10 Aug 2014 14:10:49 -0700
-X-Google-Sender-Auth: gKAkuMhjuZIT30ecMOHuEl5Op0c
-Message-ID: <CA+55aFz3vW_qnrwa6kWMsN1pGbjnyGXGBNhH=DO0berKgyOtgQ@mail.gmail.com>
-Subject: Re: Runtime trouble with commit dbd952127d (seccomp: introduce writer locking)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Oleg Nesterov <oleg@redhat.com>, Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 10 Aug 2014 17:17:12 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Mark Einon <mark.einon@gmail.com>,
+        stable@vger.kernel.org
+Subject: [PATCH RESEND] staging: et131x: Fix errors caused by phydev->addr accesses before initialisation
+Date: Sun, 10 Aug 2014 22:16:55 +0100
+Message-Id: <1407705415-14886-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 2.1.0.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 10, 2014 at 1:51 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> That means that the broken configuration is (CONFIG_DEBUG_SPINLOCK=n,
-> CONFIG_SMP=n).
-> It also means that the BUG_ON checks introduced with the seccomp commit
-> will cause this configuration to fail hard at least for architectures where
-> CONFIG_SMP
-> can be disabled, and if those architectures use
-> include/linux/spinlock_types_up.h.
+Fix two reported bugs, caused by et131x_adapter->phydev->addr being accessed
+before it is initialised, by:
 
-Yes. This is why we have "assert_spin_locked()". You can't use
-BUG_ON(spin_is_locked()), and !spin_is_locked() tends to be even worse
-unless you can prove that nobody else can get the lock simultaneously.
+- letting et131x_mii_write() take a phydev address, instead of using the one
+  stored in adapter by default. This is so et131x_mdio_write() can use it's own
+  addr value.
+- removing implementation of et131x_mdio_reset(), as it's not needed.
+- moving a call to et131x_disable_phy_coma() in et131x_pci_setup(), which uses
+  phydev->addr, until after the mdiobus has been registered.
 
-           Linus
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=80751
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=77121
+Cc: stable@vger.kernel.org
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
+---
+ drivers/staging/et131x/et131x.c | 68 ++++++++++++++++-------------------------
+ 1 file changed, 27 insertions(+), 41 deletions(-)
+
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index 8bf1eb4..831b7c6 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -1421,22 +1421,16 @@ static int et131x_mii_read(struct et131x_adapter *adapter, u8 reg, u16 *value)
+  * @reg: the register to read
+  * @value: 16-bit value to write
+  */
+-static int et131x_mii_write(struct et131x_adapter *adapter, u8 reg, u16 value)
++static int et131x_mii_write(struct et131x_adapter *adapter, u8 addr, u8 reg,
++			    u16 value)
+ {
+ 	struct mac_regs __iomem *mac = &adapter->regs->mac;
+-	struct phy_device *phydev = adapter->phydev;
+ 	int status = 0;
+-	u8 addr;
+ 	u32 delay = 0;
+ 	u32 mii_addr;
+ 	u32 mii_cmd;
+ 	u32 mii_indicator;
+ 
+-	if (!phydev)
+-		return -EIO;
+-
+-	addr = phydev->addr;
+-
+ 	/* Save a local copy of the registers we are dealing with so we can
+ 	 * set them back
+ 	 */
+@@ -1631,17 +1625,7 @@ static int et131x_mdio_write(struct mii_bus *bus, int phy_addr,
+ 	struct net_device *netdev = bus->priv;
+ 	struct et131x_adapter *adapter = netdev_priv(netdev);
+ 
+-	return et131x_mii_write(adapter, reg, value);
+-}
+-
+-static int et131x_mdio_reset(struct mii_bus *bus)
+-{
+-	struct net_device *netdev = bus->priv;
+-	struct et131x_adapter *adapter = netdev_priv(netdev);
+-
+-	et131x_mii_write(adapter, MII_BMCR, BMCR_RESET);
+-
+-	return 0;
++	return et131x_mii_write(adapter, phy_addr, reg, value);
+ }
+ 
+ /*	et1310_phy_power_switch	-	PHY power control
+@@ -1656,18 +1640,20 @@ static int et131x_mdio_reset(struct mii_bus *bus)
+ static void et1310_phy_power_switch(struct et131x_adapter *adapter, bool down)
+ {
+ 	u16 data;
++	struct  phy_device *phydev = adapter->phydev;
+ 
+ 	et131x_mii_read(adapter, MII_BMCR, &data);
+ 	data &= ~BMCR_PDOWN;
+ 	if (down)
+ 		data |= BMCR_PDOWN;
+-	et131x_mii_write(adapter, MII_BMCR, data);
++	et131x_mii_write(adapter, phydev->addr, MII_BMCR, data);
+ }
+ 
+ /* et131x_xcvr_init - Init the phy if we are setting it into force mode */
+ static void et131x_xcvr_init(struct et131x_adapter *adapter)
+ {
+ 	u16 lcr2;
++	struct  phy_device *phydev = adapter->phydev;
+ 
+ 	/* Set the LED behavior such that LED 1 indicates speed (off =
+ 	 * 10Mbits, blink = 100Mbits, on = 1000Mbits) and LED 2 indicates
+@@ -1688,7 +1674,7 @@ static void et131x_xcvr_init(struct et131x_adapter *adapter)
+ 		else
+ 			lcr2 |= (LED_VAL_LINKON << LED_TXRX_SHIFT);
+ 
+-		et131x_mii_write(adapter, PHY_LED_2, lcr2);
++		et131x_mii_write(adapter, phydev->addr, PHY_LED_2, lcr2);
+ 	}
+ }
+ 
+@@ -3643,14 +3629,14 @@ static void et131x_adjust_link(struct net_device *netdev)
+ 
+ 			et131x_mii_read(adapter, PHY_MPHY_CONTROL_REG,
+ 					 &register18);
+-			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
+-					 register18 | 0x4);
+-			et131x_mii_write(adapter, PHY_INDEX_REG,
++			et131x_mii_write(adapter, phydev->addr,
++					 PHY_MPHY_CONTROL_REG, register18 | 0x4);
++			et131x_mii_write(adapter, phydev->addr, PHY_INDEX_REG,
+ 					 register18 | 0x8402);
+-			et131x_mii_write(adapter, PHY_DATA_REG,
++			et131x_mii_write(adapter, phydev->addr, PHY_DATA_REG,
+ 					 register18 | 511);
+-			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
+-					 register18);
++			et131x_mii_write(adapter, phydev->addr,
++					 PHY_MPHY_CONTROL_REG, register18);
+ 		}
+ 
+ 		et1310_config_flow_control(adapter);
+@@ -3662,7 +3648,8 @@ static void et131x_adjust_link(struct net_device *netdev)
+ 			et131x_mii_read(adapter, PHY_CONFIG, &reg);
+ 			reg &= ~ET_PHY_CONFIG_TX_FIFO_DEPTH;
+ 			reg |= ET_PHY_CONFIG_FIFO_DEPTH_32;
+-			et131x_mii_write(adapter, PHY_CONFIG, reg);
++			et131x_mii_write(adapter, phydev->addr, PHY_CONFIG,
++					 reg);
+ 		}
+ 
+ 		et131x_set_rx_dma_timer(adapter);
+@@ -3675,14 +3662,14 @@ static void et131x_adjust_link(struct net_device *netdev)
+ 
+ 			et131x_mii_read(adapter, PHY_MPHY_CONTROL_REG,
+ 					 &register18);
+-			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
+-					 register18 | 0x4);
+-			et131x_mii_write(adapter, PHY_INDEX_REG,
+-					 register18 | 0x8402);
+-			et131x_mii_write(adapter, PHY_DATA_REG,
+-					 register18 | 511);
+-			et131x_mii_write(adapter, PHY_MPHY_CONTROL_REG,
+-					 register18);
++			et131x_mii_write(adapter, phydev->addr,
++					PHY_MPHY_CONTROL_REG, register18 | 0x4);
++			et131x_mii_write(adapter, phydev->addr,
++					PHY_INDEX_REG, register18 | 0x8402);
++			et131x_mii_write(adapter, phydev->addr,
++					PHY_DATA_REG, register18 | 511);
++			et131x_mii_write(adapter, phydev->addr,
++					PHY_MPHY_CONTROL_REG, register18);
+ 		}
+ 
+ 		/* Free the packets being actively sent & stopped */
+@@ -4644,10 +4631,6 @@ static int et131x_pci_setup(struct pci_dev *pdev,
+ 	/* Copy address into the net_device struct */
+ 	memcpy(netdev->dev_addr, adapter->addr, ETH_ALEN);
+ 
+-	/* Init variable for counting how long we do not have link status */
+-	adapter->boot_coma = 0;
+-	et1310_disable_phy_coma(adapter);
+-
+ 	rc = -ENOMEM;
+ 
+ 	/* Setup the mii_bus struct */
+@@ -4663,7 +4646,6 @@ static int et131x_pci_setup(struct pci_dev *pdev,
+ 	adapter->mii_bus->priv = netdev;
+ 	adapter->mii_bus->read = et131x_mdio_read;
+ 	adapter->mii_bus->write = et131x_mdio_write;
+-	adapter->mii_bus->reset = et131x_mdio_reset;
+ 	adapter->mii_bus->irq = kmalloc_array(PHY_MAX_ADDR, sizeof(int),
+ 					      GFP_KERNEL);
+ 	if (!adapter->mii_bus->irq)
+@@ -4687,6 +4669,10 @@ static int et131x_pci_setup(struct pci_dev *pdev,
+ 	/* Setup et1310 as per the documentation */
+ 	et131x_adapter_setup(adapter);
+ 
++	/* Init variable for counting how long we do not have link status */
++	adapter->boot_coma = 0;
++	et1310_disable_phy_coma(adapter);
++
+ 	/* We can enable interrupts now
+ 	 *
+ 	 *  NOTE - Because registration of interrupt handler is done in the
+-- 
+2.1.0.rc1
+
