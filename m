@@ -1,178 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406AbaHJJPb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 05:15:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48619 "EHLO mx2.suse.de"
+	id S1751415AbaHJKyQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 06:54:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37380 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259AbaHJJP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 05:15:28 -0400
-Message-ID: <53E73827.7000703@suse.de>
-Date: Sun, 10 Aug 2014 10:15:19 +0100
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751329AbaHJKyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 06:54:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,836,1400050800"; 
+   d="scan'208";a="574545891"
+Date: Sun, 10 Aug 2014 18:54:13 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [sched] 143e1e28cb4: +17.9% aim7.jobs-per-min, -9.7%
+ hackbench.throughput
+Message-ID: <20140810105413.GA29451@localhost>
+References: <20140810044127.GB11810@localhost>
+ <20140810075915.GR9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        "'Doug Anderson'" <dianders@chromium.org>,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        "'Stephan van Schaik'" <stephan@synkhronix.com>,
-        "'Vincent Palatin'" <vpalatin@chromium.org>,
-        "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
-        "'Tomasz Figa'" <t.figa@samsung.com>,
-        "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Rob Herring'" <robh+dt@kernel.org>,
-        "'Pawel Moll'" <pawel.moll@arm.com>,
-        "'Mark Rutland'" <mark.rutland@arm.com>,
-        "'Ian Campbell'" <ijc+devicetree@hellion.org.uk>,
-        "'Kumar Gala'" <galak@codeaurora.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 05/10] ARM: dts: Move dp_hpd from exynos5250 into smdk5250
- and snow
-References: <1406868897-26874-1-git-send-email-afaerber@suse.de> <1406868897-26874-6-git-send-email-afaerber@suse.de> <CAD=FV=WhocoyQ=rU7dU1EPM-PAQq06gg9HhamSOm+BgMDeM8NA@mail.gmail.com> <53DBFE8A.7020505@suse.de> <53DBFF22.3010905@gmail.com> <000e01cfb0a7$25d0ed70$7172c850$%han@samsung.com>
-In-Reply-To: <000e01cfb0a7$25d0ed70$7172c850$%han@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140810075915.GR9918@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jingoo,
+On Sun, Aug 10, 2014 at 09:59:15AM +0200, Peter Zijlstra wrote:
+> On Sun, Aug 10, 2014 at 12:41:27PM +0800, Fengguang Wu wrote:
+> > Hi Vincent,
+> > 
+> > FYI, we noticed some performance ups/downs on
+> > 
+> > commit 143e1e28cb40bed836b0a06567208bd7347c9672 ("sched: Rework sched_domain topology definition")
+> > 
+> >     128529 ± 1%     +17.9%     151594 ± 0%  brickland1/aim7/6000-page_test
+> >      76064 ± 3%     -32.2%      51572 ± 6%  brickland1/aim7/6000-page_test
+> >   59366697 ± 3%     -46.1%   32017187 ± 7%  brickland1/aim7/6000-page_test
+> >       2561 ± 7%     -42.9%       1463 ± 9%  brickland1/aim7/6000-page_test
+> >       9926 ± 2%     -43.8%       5577 ± 4%  brickland1/aim7/6000-page_test
+> >      19542 ± 9%     -38.3%      12057 ± 4%  brickland1/aim7/6000-page_test
+> >     993654 ± 2%     -19.9%     795962 ± 3%  brickland1/aim7/6000-page_test
+> 
+> etc..
+> 
+> how does one read that? afaict its a random number generator..
 
-Am 05.08.2014 13:16, schrieb Jingoo Han:
-> On Saturday, August 02, 2014 5:57 AM, Tomasz Figa wrote:
->> On 01.08.2014 22:54, Andreas Färber wrote:
->>> Am 01.08.2014 22:33, schrieb Doug Anderson:
->>>> On Thu, Jul 31, 2014 at 9:54 PM, Andreas Färber <afaerber@suse.de> wrote:
->>>>> Spring uses a different GPIO, so this is not a generic SoC piece.
->>>>>
->>>>> Suggested-by: Tomasz Figa <t.figa@samsung.com>
->>>>> Signed-off-by: Andreas Färber <afaerber@suse.de>
->>>>> ---
->>>>>  v5: New (Tomasz Figa)
->>>>>  Frees dp_hpd for Spring.
->>>>>
->>>>>  arch/arm/boot/dts/exynos5250-pinctrl.dtsi | 7 -------
->>>>>  arch/arm/boot/dts/exynos5250-smdk5250.dts | 9 +++++++++
->>>>>  arch/arm/boot/dts/exynos5250-snow.dts     | 7 +++++++
->>>>>  3 files changed, 16 insertions(+), 7 deletions(-)
->>>>>
->>>>> diff --git a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
->>>>> index 886cfca044ac..ed0e5230514b 100644
->>>>> --- a/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
->>>>> +++ b/arch/arm/boot/dts/exynos5250-pinctrl.dtsi
->>>>> @@ -581,13 +581,6 @@
->>>>>                         samsung,pin-pud = <0>;
->>>>>                         samsung,pin-drv = <0>;
->>>>>                 };
->>>>> -
->>>>> -               dp_hpd: dp_hpd {
->>>>> -                       samsung,pins = "gpx0-7";
->>>>> -                       samsung,pin-function = <3>;
->>>>> -                       samsung,pin-pud = <0>;
->>>>> -                       samsung,pin-drv = <0>;
->>>>> -               };
->>>>>         };
->>>>>
->>>>>         pinctrl@13400000 {
->>>>> diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
->>>>> index aaa055ac0fe3..5d30fe1dcda4 100644
->>>>> --- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
->>>>> +++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
->>>>> @@ -414,3 +414,12 @@
->>>>>                 };
->>>>>         };
->>>>>  };
->>>>> +
->>>>> +&pinctrl_0 {
->>>>> +       dp_hpd: dp_hpd {
->>>>> +               samsung,pins = "gpx0-7";
->>>>> +               samsung,pin-function = <3>;
->>>>> +               samsung,pin-pud = <0>;
->>>>> +               samsung,pin-drv = <0>;
->>>>> +       };
->>>>> +};
->>>>> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
->>>>> index c4b0c73c736d..a9a2f2743794 100644
->>>>> --- a/arch/arm/boot/dts/exynos5250-snow.dts
->>>>> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
->>>>> @@ -547,6 +547,13 @@
->>>>>  };
->>>>>
->>>>>  &pinctrl_0 {
->>>>> +       dp_hpd: dp_hpd {
->>>>> +               samsung,pins = "gpx0-7";
->>>>> +               samsung,pin-function = <3>;
->>>>> +               samsung,pin-pud = <0>;
->>>>> +               samsung,pin-drv = <0>;
->>>>> +       };
->>>>> +
->>>>
->>>> NAK.  dp_hpd is a generic SoC piece.  Pin function 0 and 1 are GPIOs.
->>>> Pin function 3 is special function.  This pin _is_ the hot plug detect
->>>> pin for display port.  When it's set as special function 3 it goes
->>>> straight into the hot plug logic of the display port controller.
->>>>
->>>> Spring may have had its reasons to detect hot plug events on a GPIO
->>>> instead of using this pin, but that doesn't make this pin any less the
->>>> "hot plug pin".
->>>
->>> Please advise how to handle it then: Should there be two different
->>> pinctrl entries (if so, how should it be named?),
->>
->> IMHO this is the right way. Just name the GPIO variant dp_hpd_gpio.
-> 
-> Hi Andreas Färber,
-> 
-> I agree with Tomasz Figa and Doug Anderson.
-> Please refer to the following.
-> 
-> 1. case: Standard HPD pin is used. (smdk5420)
-> arch/arm/boot/dts/exynos5420-pinctrl.dts
-> 	pinctrl@13400000 {
-> 		dp_hpd: dp_hpd {
-> 			samsung,pins = "gpx0-7";
-> 			samsung,pin-function = <3>;
-> 			samsung,pin-pud = <0>;
-> 			samsung,pin-drv = <0>;
-> 		};
-> arch/arm/boot/dts/exynos5420-smdk5420.dts
-> 	dp-controller@145B0000 {
-> 		pinctrl-names = "default";
-> 		pinctrl-0 = <&dp_hpd>;
-> 		...
-> 
-> 2. case: non-standard HPD pin such as GPIO is used. (peach pit)
-> arch/arm/boot/dts/exynos5420-peach-pit.dts
-> 	pinctrl@13400000 {
-> 		dp_hpd_gpio: dp_hpd_gpio {
-> 			samsung,pins = "gpx2-6";
-> 			samsung,pin-function = <0>;
-> 			samsung,pin-pud = <3>;
-> 			samsung,pin-drv = <0>;
-> 		};
-> 	dp-controller@145B0000 {
-> 		pinctrl-names = "default";
-> 		pinctrl-0 = <&dp_hpd_gpio>;
-> 		...
-> 		samsung,hpd-gpio = <&gpx2 6 0>;
-> 
-> So, you need to follow the second case.
-> "dp_hpd_gpio" can be used for Spring board.
+The "brickland1/aim7/6000-page_test" is the test case part.
 
-I believe I already did so in v6 [0]? Please take a look there and let
-me know if you still need anything changed. The label name seems
-identical, whereas for the node name I adopted the dashes convention.
+The "TOTAL XXX" is the metric part. One test run may generate lots of
+metrics, reflecting different aspect of the system dynamics.
+
+This view may be easier to read, by grouping the metrics by test case.
+
+test case: brickland1/aim7/6000-page_test
+
+    128529 ± 1%     +17.9%     151594 ± 0%  TOTAL aim7.jobs-per-min
+    582269 ±14%     -55.6%     258617 ±16%  TOTAL softirqs.SCHED
+  59366697 ± 3%     -46.1%   32017187 ± 7%  TOTAL cpuidle.C1-IVT.time
+     54543 ±11%     -37.2%      34252 ±16%  TOTAL cpuidle.C1-IVT.usage
+      2561 ± 7%     -42.9%       1463 ± 9%  TOTAL numa-numastat.node2.other_node
+      9926 ± 2%     -43.8%       5577 ± 4%  TOTAL proc-vmstat.numa_other
+      2627 ±12%     -49.1%       1337 ±12%  TOTAL numa-numastat.node1.other_node
+     19542 ± 9%     -38.3%      12057 ± 4%  TOTAL cpuidle.C1E-IVT.usage
+      2455 ±10%     -41.0%       1448 ± 9%  TOTAL numa-numastat.node0.other_node
+    471304 ±11%     -31.4%     323251 ± 8%  TOTAL numa-vmstat.node1.nr_anon_pages
+      2281 ±12%     -41.8%       1327 ±16%  TOTAL numa-numastat.node3.other_node
+   1903446 ±11%     -30.7%    1318156 ± 7%  TOTAL numa-meminfo.node1.AnonPages
+    518274 ±11%     -30.4%     360742 ± 8%  TOTAL numa-vmstat.node1.nr_active_anon
+   2097138 ±10%     -30.0%    1469003 ± 8%  TOTAL numa-meminfo.node1.Active(anon)
+  49527464 ± 6%     -32.4%   33488833 ± 4%  TOTAL cpuidle.C1E-IVT.time
+   2118206 ±10%     -29.7%    1488874 ± 7%  TOTAL numa-meminfo.node1.Active
+     76064 ± 3%     -32.2%      51572 ± 6%  TOTAL cpuidle.C6-IVT.usage
+    188938 ±33%     -41.3%     110966 ±16%  TOTAL numa-meminfo.node2.PageTables
+     47262 ±35%     -42.3%      27273 ±16%  TOTAL numa-vmstat.node2.nr_page_table_pages
+   1944687 ±10%     -25.8%    1443923 ±16%  TOTAL numa-meminfo.node3.Active(anon)
+   1754763 ±11%     -26.6%    1288713 ±16%  TOTAL numa-meminfo.node3.AnonPages
+   1964722 ±10%     -25.5%    1464696 ±16%  TOTAL numa-meminfo.node3.Active
+    432109 ± 9%     -26.2%     318886 ±14%  TOTAL numa-vmstat.node3.nr_anon_pages
+    479527 ± 9%     -25.3%     358029 ±14%  TOTAL numa-vmstat.node3.nr_active_anon
+    463719 ± 8%     -24.7%     349388 ± 7%  TOTAL numa-vmstat.node0.nr_anon_pages
+   3157742 ±16%     -26.5%    2320253 ±10%  TOTAL numa-meminfo.node1.MemUsed
+   7303589 ± 2%     -24.8%    5495829 ± 3%  TOTAL meminfo.AnonPages
+   8064024 ± 2%     -24.0%    6132677 ± 3%  TOTAL meminfo.Active(anon)
+    511455 ± 8%     -23.9%     389447 ± 7%  TOTAL numa-vmstat.node0.nr_active_anon
+   1818612 ± 2%     -24.9%    1365670 ± 3%  TOTAL proc-vmstat.nr_anon_pages
+   2007155 ± 2%     -24.3%    1518688 ± 3%  TOTAL proc-vmstat.nr_active_anon
+   8145316 ± 2%     -23.7%    6213832 ± 3%  TOTAL meminfo.Active
+   1850230 ± 8%     -24.1%    1405061 ± 8%  TOTAL numa-meminfo.node0.AnonPages
+ 6.567e+11 ± 3%     -21.4%   5.16e+11 ± 4%  TOTAL meminfo.Committed_AS
+   2044097 ± 7%     -23.5%    1562809 ± 8%  TOTAL numa-meminfo.node0.Active(anon)
+   2064106 ± 7%     -23.3%    1582792 ± 8%  TOTAL numa-meminfo.node0.Active
+    235358 ± 5%     -19.8%     188793 ± 3%  TOTAL proc-vmstat.pgmigrate_success
+    235358 ± 5%     -19.8%     188793 ± 3%  TOTAL proc-vmstat.numa_pages_migrated
+    433235 ± 4%     -18.1%     354845 ± 5%  TOTAL numa-vmstat.node2.nr_anon_pages
+    198747 ±23%     -28.0%     143034 ± 3%  TOTAL proc-vmstat.nr_page_table_pages
+      3187 ± 5%     -18.5%       2599 ± 6%  TOTAL numa-vmstat.node0.numa_other
+    796281 ±23%     -27.7%     575352 ± 3%  TOTAL meminfo.PageTables
+   1395062 ± 6%     -19.0%    1130108 ± 3%  TOTAL proc-vmstat.numa_hint_faults
+    477037 ± 4%     -17.2%     394983 ± 5%  TOTAL numa-vmstat.node2.nr_active_anon
+      2829 ±10%     +18.7%       3357 ± 3%  TOTAL numa-vmstat.node2.nr_alloc_batch
+    993654 ± 2%     -19.9%     795962 ± 3%  TOTAL softirqs.RCU
+      2706 ± 4%     +26.1%       3411 ± 5%  TOTAL numa-vmstat.node1.nr_alloc_batch
+   2725835 ± 4%     -17.5%    2247537 ± 4%  TOTAL numa-meminfo.node2.MemUsed
+    393637 ± 6%     -15.3%     333296 ± 2%  TOTAL proc-vmstat.numa_hint_faults_local
+      2.82 ± 3%     +21.9%       3.43 ± 4%  TOTAL turbostat.%pc2
+      4.40 ± 2%     +22.0%       5.37 ± 4%  TOTAL turbostat.%c6
+   1742111 ± 4%     -16.9%    1447181 ± 5%  TOTAL numa-meminfo.node2.AnonPages
+  15865125 ± 1%     -15.0%   13485882 ± 1%  TOTAL softirqs.TIMER
+   1923000 ± 4%     -16.4%    1608509 ± 5%  TOTAL numa-meminfo.node2.Active(anon)
+   1943185 ± 4%     -16.2%    1629057 ± 5%  TOTAL numa-meminfo.node2.Active
+      3077 ± 1%     +14.5%       3523 ± 0%  TOTAL proc-vmstat.pgactivate
+       329 ± 1%     -13.3%        285 ± 0%  TOTAL uptime.boot
+     13158 ±13%     -14.4%      11261 ± 4%  TOTAL numa-meminfo.node3.SReclaimable
+      3289 ±13%     -14.4%       2815 ± 4%  TOTAL numa-vmstat.node3.nr_slab_reclaimable
+   3150464 ± 2%     -24.2%    2387551 ± 3%  TOTAL time.voluntary_context_switches
+       281 ± 1%     -15.1%        238 ± 0%  TOTAL time.elapsed_time
+     29294 ± 1%     -14.3%      25093 ± 0%  TOTAL time.system_time
+   4529818 ± 1%      -8.8%    4129398 ± 1%  TOTAL time.involuntary_context_switches
+     15.75 ± 1%      -3.4%      15.21 ± 0%  TOTAL turbostat.RAM_W
+     10655 ± 0%      +1.4%      10802 ± 0%  TOTAL time.percent_of_cpu_this_job_got
 
 Thanks,
-Andreas
-
-[0] https://patchwork.kernel.org/patch/4664691/
-
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+Fengguang
