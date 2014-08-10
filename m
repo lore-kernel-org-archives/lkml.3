@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444AbaHJQaW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 12:30:22 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63878 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbaHJQaV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 12:30:21 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53E79E16.7040603@roeck-us.net>
-Date: Sun, 10 Aug 2014 09:30:14 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, Guan Xuetao <gxt@mprc.pku.edu.cn>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] unicore32: Fix build error
-References: <1407684595-30785-1-git-send-email-linux@roeck-us.net> <53E7923F.5000008@nod.at>
-In-Reply-To: <53E7923F.5000008@nod.at>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1751432AbaHJQfe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 12:35:34 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:55080 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750991AbaHJQfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 12:35:33 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] USB: dbgp gadget: fix use after free in dbgp_unbind()
+Date: Sun, 10 Aug 2014 23:35:11 +0700
+Message-Id: <1407688511-30063-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2014 08:39 AM, Richard Weinberger wrote:
-> Guenther,
->
-> Am 10.08.2014 17:29, schrieb Guenter Roeck:
->> unicore32 builds fail with
->>
->> arch/unicore32/kernel/signal.c: In function ‘setup_frame’:
->> arch/unicore32/kernel/signal.c:257: error:
->> 			‘usig’ undeclared (first use in this function)
->> arch/unicore32/kernel/signal.c:279: error:
->> 			‘usig’ undeclared (first use in this function)
->> arch/unicore32/kernel/signal.c: In function ‘handle_signal’:
->> arch/unicore32/kernel/signal.c:306: warning: unused variable ‘tsk’
->> arch/unicore32/kernel/signal.c: In function ‘do_signal’:
->> arch/unicore32/kernel/signal.c:376: error:
->> 			implicit declaration of function ‘get_signsl’
->> make[1]: *** [arch/unicore32/kernel/signal.o] Error 1
->> make: *** [arch/unicore32/kernel/signal.o] Error 2
->>
->> Bisect points to commit 649671c90eaf ("unicore32: Use get_signal()
->> signal_setup_done()").
->>
->> This code never even compiled. Reverting the patch does not work,
->> since previously used functions no longer exist, so try to fix it up.
->> Compile tested only.
->
-> Where did you get the unicore32 cross compiler from?
->
-mprc.pku.edu.cn/~guanxuetao/linux/uc4-1.0.5-hard.tgz
+After dbgp_bind()-dbgp_unbind() cycle happens, static variable dbgp
+contains pointers to already deallocated memory (dbgp.serial and dbgp.req).
+If the next dbgp_bind() fails, for example in usb_ep_alloc_request(),
+dbgp_bind() calls dbgp_unbind() on failure path,
+and dbgp_unbind() frees dbgp.serial that still stores a pointer
+to already deallocated memory.
 
-Guenter
+The patch sets pointers to NULL in dbgp_unbind().
+
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/usb/gadget/legacy/dbgp.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/usb/gadget/legacy/dbgp.c b/drivers/usb/gadget/legacy/dbgp.c
+index 986fc511a2ed..225e385a6160 100644
+--- a/drivers/usb/gadget/legacy/dbgp.c
++++ b/drivers/usb/gadget/legacy/dbgp.c
+@@ -222,10 +222,12 @@ static void dbgp_unbind(struct usb_gadget *gadget)
+ {
+ #ifdef CONFIG_USB_G_DBGP_SERIAL
+ 	kfree(dbgp.serial);
++	dbgp.serial = NULL;
+ #endif
+ 	if (dbgp.req) {
+ 		kfree(dbgp.req->buf);
+ 		usb_ep_free_request(gadget->ep0, dbgp.req);
++		dbgp.req = NULL;
+ 	}
+ 
+ 	gadget->ep0->driver_data = NULL;
+-- 
+1.9.1
 
