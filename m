@@ -1,41 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550AbaHJR1i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 13:27:38 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:45600 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaHJR1h convert rfc822-to-8bit (ORCPT
+	id S1751541AbaHJRqu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 13:46:50 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:55028 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387AbaHJRqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 13:27:37 -0400
+	Sun, 10 Aug 2014 13:46:48 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53E7B006.9050605@roeck-us.net>
+Date: Sun, 10 Aug 2014 10:46:46 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-X-Originating-IP: [80.196.35.44]
-In-Reply-To: <1406365643-27020-2-git-send-email-m@bjorling.me>
-References: <1406365643-27020-1-git-send-email-m@bjorling.me>
-	<1406365643-27020-2-git-send-email-m@bjorling.me>
-Date: Sun, 10 Aug 2014 19:27:36 +0200
-Message-ID: <CAOu_J6mW-2e2Jgm+khodLPah_-RZrD599SmSH+Mszd0AjterrQ@mail.gmail.com>
-Subject: Re: [PATCH v11] NVMe: Convert to blk-mq
-From: =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
-To: Matthew Wilcox <willy@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
-        Jens Axboe <axboe@fb.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-nvme <linux-nvme@lists.infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Rob Nelson <rlnelson@google.com>, Ming Lei <tom.leiming@gmail.com>
-Cc: =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Li Yang <leoli@freescale.com>
+CC: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH] net: ugg_geth: Fix build error in -next
+References: <1407687554-14539-1-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1407687554-14539-1-git-send-email-linux@roeck-us.net>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 26, 2014 at 11:07 AM, Matias Bjørling <m@bjorling.me> wrote:
-> This converts the NVMe driver to a blk-mq request-based driver.
+Grumble. Headline should be s/ugg/ucc, obviously.
+
+Guenter
+
+On 08/10/2014 09:19 AM, Guenter Roeck wrote:
+> powerpc:mpc83xx_defconfig and other builds fail with
+>
+> drivers/net/ethernet/freescale/ucc_geth.c: In function 'ucc_geth_remove':
+> drivers/net/ethernet/freescale/ucc_geth.c:3927:19: error:
+> 	'struct ucc_geth_private' has no member named 'info'
+>    of_node_put(ugeth->info->tbi_node);
+>                       ^
+> drivers/net/ethernet/freescale/ucc_geth.c:3928:19: error:
+> 	     'struct ucc_geth_private' has no member named 'info'
+>    of_node_put(ugeth->info->phy_node);
+>    		     ^
+>
+> Introduced by commit "net: ucc_geth: drop acquired references in probe error
+> path and remove".
+>
+>>From the context, it appears that the variable is named ug_info.
+>
+> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> Only seen in -next.
+>
+>   drivers/net/ethernet/freescale/ucc_geth.c | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
+> index d6b64e3..3cf0478 100644
+> --- a/drivers/net/ethernet/freescale/ucc_geth.c
+> +++ b/drivers/net/ethernet/freescale/ucc_geth.c
+> @@ -3924,8 +3924,8 @@ static int ucc_geth_remove(struct platform_device* ofdev)
+>   	unregister_netdev(dev);
+>   	free_netdev(dev);
+>   	ucc_geth_memclean(ugeth);
+> -	of_node_put(ugeth->info->tbi_node);
+> -	of_node_put(ugeth->info->phy_node);
+> +	of_node_put(ugeth->ug_info->tbi_node);
+> +	of_node_put(ugeth->ug_info->phy_node);
+>
+>   	return 0;
+>   }
 >
 
-Willy, do you need me to make any changes to the conversion? Can you
-pick it up for 3.17?
-
-Thanks,
-Matias
