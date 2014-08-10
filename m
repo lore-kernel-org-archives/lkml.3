@@ -1,356 +1,583 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493AbaHJTm6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 15:42:58 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:36146 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaHJTm4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 15:42:56 -0400
-Message-ID: <53E7CB3D.3030403@gmail.com>
-Date: Sun, 10 Aug 2014 22:42:53 +0300
-From: Tair Rzayev <tair.rzayev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751653AbaHJTpl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 15:45:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751466AbaHJTpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 15:45:39 -0400
+Date: Sun, 10 Aug 2014 21:45:59 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Razya Ladelsky <razya@il.ibm.com>
+Cc: kvm@vger.kernel.org, GLIKSON@il.ibm.com, ERANRA@il.ibm.com,
+        YOSSIKU@il.ibm.com, JOELN@il.ibm.com, abel.gordon@gmail.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] vhost: Add polling mode
+Message-ID: <20140810194559.GA4344@redhat.com>
+References: <1407659404-razya@il.ibm.com>
+ <20140810083035.0CF58380729@moren.haifa.ibm.com>
 MIME-Version: 1.0
-To: gregkh@linuxfoundation.org
-CC: arve@android.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: android: binder.c: rename binder_user_error()
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140810083035.0CF58380729@moren.haifa.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename binder_user_error() to shorter but no less readable binder_usr_err()
-which fixes 34 "line over 80 characters" checkpatch warnings
+On Sun, Aug 10, 2014 at 11:30:35AM +0300, Razya Ladelsky wrote:
+> From: Razya Ladelsky <razya@il.ibm.com>
+> Date: Thu, 31 Jul 2014 09:47:20 +0300
+> Subject: [PATCH] vhost: Add polling mode
+> 
+> When vhost is waiting for buffers from the guest driver (e.g., more packets to
+> send in vhost-net's transmit queue), it normally goes to sleep and waits for the
+> guest to "kick" it. This kick involves a PIO in the guest, and therefore an exit
+> (and possibly userspace involvement in translating this PIO exit into a file
+> descriptor event), all of which hurts performance.
+> 
+> If the system is under-utilized (has cpu time to spare), vhost can continuously
+> poll the virtqueues for new buffers, and avoid asking the guest to kick us.
+> This patch adds an optional polling mode to vhost, that can be enabled via a
+> kernel module parameter, "poll_start_rate".
+> 
+> When polling is active for a virtqueue, the guest is asked to disable
+> notification (kicks), and the worker thread continuously checks for new buffers.
+> When it does discover new buffers, it simulates a "kick" by invoking the
+> underlying backend driver (such as vhost-net), which thinks it got a real kick
+> from the guest, and acts accordingly. If the underlying driver asks not to be
+> kicked, we disable polling on this virtqueue.
+> 
+> We start polling on a virtqueue when we notice it has work to do. Polling on
+> this virtqueue is later disabled after 3 seconds of polling turning up no new
+> work, as in this case we are better off returning to the exit-based notification
+> mechanism. The default timeout of 3 seconds can be changed with the
+> "poll_stop_idle" kernel module parameter.
+> 
+> This polling approach makes lot of sense for new HW with posted-interrupts for
+> which we have exitless host-to-guest notifications. But even with support for
+> posted interrupts, guest-to-host communication still causes exits. Polling adds
+> the missing part.
+> 
+> When systems are overloaded, there won't be enough cpu time for the various
+> vhost threads to poll their guests' devices. For these scenarios, we plan to add
+> support for vhost threads that can be shared by multiple devices, even of
+> multiple vms.
+> Our ultimate goal is to implement the I/O acceleration features described in:
+> KVM Forum 2013: Efficient and Scalable Virtio (by Abel Gordon)
+> https://www.youtube.com/watch?v=9EyweibHfEs
+> and
+> https://www.mail-archive.com/kvm@vger.kernel.org/msg98179.html
+> 
+> I ran some experiments with TCP stream netperf and filebench (having 2 threads
+> performing random reads) benchmarks on an IBM System x3650 M4.
+> I have two machines, A and B. A hosts the vms, B runs the netserver.
+> The vms (on A) run netperf, its destination server is running on B.
+> All runs loaded the guests in a way that they were (cpu) saturated. For example,
+> I ran netperf with 64B messages, which is heavily loading the vm (which is why
+> its throughput is low).
+> The idea was to get it 100% loaded, so we can see that the polling is getting it
+> to produce higher throughput.
 
-Signed-off-by: Tair Rzayev <tair.rzayev@gmail.com>
----
- drivers/staging/android/binder.c | 74 ++++++++++++++++++++--------------------
- 1 file changed, 37 insertions(+), 37 deletions(-)
+And, did your tests actually produce 100% load on both host CPUs?
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 4f34dc0..7b39a68 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -133,7 +133,7 @@ module_param_call(stop_on_user_error, binder_set_stop_on_user_error,
- 			pr_info(x); \
- 	} while (0)
- 
--#define binder_user_error(x...) \
-+#define binder_usr_err(x...) \
- 	do { \
- 		if (binder_debug_mask & BINDER_DEBUG_USER_ERROR) \
- 			pr_info(x); \
-@@ -446,7 +446,7 @@ static void binder_set_nice(long nice)
- 	set_user_nice(current, min_nice);
- 	if (min_nice <= MAX_NICE)
- 		return;
--	binder_user_error("%d RLIMIT_NICE not set\n", current->pid);
-+	binder_usr_err("%d RLIMIT_NICE not set\n", current->pid);
- }
- 
- static size_t binder_buffer_size(struct binder_proc *proc,
-@@ -664,7 +664,7 @@ static struct binder_buffer *binder_alloc_buf(struct binder_proc *proc,
- 		ALIGN(offsets_size, sizeof(void *));
- 
- 	if (size < data_size || size < offsets_size) {
--		binder_user_error("%d: got transaction with invalid size %zd-%zd\n",
-+		binder_usr_err("%d: got transaction with invalid size %zd-%zd\n",
- 				proc->pid, data_size, offsets_size);
- 		return NULL;
- 	}
-@@ -1135,7 +1135,7 @@ static int binder_dec_ref(struct binder_ref *ref, int strong)
- {
- 	if (strong) {
- 		if (ref->strong == 0) {
--			binder_user_error("%d invalid dec strong, ref %d desc %d s %d w %d\n",
-+			binder_usr_err("%d invalid dec strong, ref %d desc %d s %d w %d\n",
- 					  ref->proc->pid, ref->debug_id,
- 					  ref->desc, ref->strong, ref->weak);
- 			return -EINVAL;
-@@ -1150,7 +1150,7 @@ static int binder_dec_ref(struct binder_ref *ref, int strong)
- 		}
- 	} else {
- 		if (ref->weak == 0) {
--			binder_user_error("%d invalid dec weak, ref %d desc %d s %d w %d\n",
-+			binder_usr_err("%d invalid dec weak, ref %d desc %d s %d w %d\n",
- 					  ref->proc->pid, ref->debug_id,
- 					  ref->desc, ref->strong, ref->weak);
- 			return -EINVAL;
-@@ -1335,14 +1335,14 @@ static void binder_transaction(struct binder_proc *proc,
- 	if (reply) {
- 		in_reply_to = thread->transaction_stack;
- 		if (in_reply_to == NULL) {
--			binder_user_error("%d:%d got reply transaction with no transaction stack\n",
-+			binder_usr_err("%d:%d got reply transaction with no transaction stack\n",
- 					  proc->pid, thread->pid);
- 			return_error = BR_FAILED_REPLY;
- 			goto err_empty_call_stack;
- 		}
- 		binder_set_nice(in_reply_to->saved_priority);
- 		if (in_reply_to->to_thread != thread) {
--			binder_user_error("%d:%d got reply transaction with bad transaction stack, transaction %d has target %d:%d\n",
-+			binder_usr_err("%d:%d got reply transaction with bad transaction stack, transaction %d has target %d:%d\n",
- 				proc->pid, thread->pid, in_reply_to->debug_id,
- 				in_reply_to->to_proc ?
- 				in_reply_to->to_proc->pid : 0,
-@@ -1359,7 +1359,7 @@ static void binder_transaction(struct binder_proc *proc,
- 			goto err_dead_binder;
- 		}
- 		if (target_thread->transaction_stack != in_reply_to) {
--			binder_user_error("%d:%d got reply transaction with bad target transaction stack %d, expected %d\n",
-+			binder_usr_err("%d:%d got reply transaction with bad target transaction stack %d, expected %d\n",
- 				proc->pid, thread->pid,
- 				target_thread->transaction_stack ?
- 				target_thread->transaction_stack->debug_id : 0,
-@@ -1376,7 +1376,7 @@ static void binder_transaction(struct binder_proc *proc,
- 
- 			ref = binder_get_ref(proc, tr->target.handle);
- 			if (ref == NULL) {
--				binder_user_error("%d:%d got transaction to invalid handle\n",
-+				binder_usr_err("%d:%d got transaction to invalid handle\n",
- 					proc->pid, thread->pid);
- 				return_error = BR_FAILED_REPLY;
- 				goto err_invalid_target_handle;
-@@ -1400,7 +1400,7 @@ static void binder_transaction(struct binder_proc *proc,
- 
- 			tmp = thread->transaction_stack;
- 			if (tmp->to_thread != thread) {
--				binder_user_error("%d:%d got new transaction with bad transaction stack, transaction %d has target %d:%d\n",
-+				binder_usr_err("%d:%d got new transaction with bad transaction stack, transaction %d has target %d:%d\n",
- 					proc->pid, thread->pid, tmp->debug_id,
- 					tmp->to_proc ? tmp->to_proc->pid : 0,
- 					tmp->to_thread ?
-@@ -1492,20 +1492,20 @@ static void binder_transaction(struct binder_proc *proc,
- 
- 	if (copy_from_user(t->buffer->data, (const void __user *)(uintptr_t)
- 			   tr->data.ptr.buffer, tr->data_size)) {
--		binder_user_error("%d:%d got transaction with invalid data ptr\n",
-+		binder_usr_err("%d:%d got transaction with invalid data ptr\n",
- 				proc->pid, thread->pid);
- 		return_error = BR_FAILED_REPLY;
- 		goto err_copy_data_failed;
- 	}
- 	if (copy_from_user(offp, (const void __user *)(uintptr_t)
- 			   tr->data.ptr.offsets, tr->offsets_size)) {
--		binder_user_error("%d:%d got transaction with invalid offsets ptr\n",
-+		binder_usr_err("%d:%d got transaction with invalid offsets ptr\n",
- 				proc->pid, thread->pid);
- 		return_error = BR_FAILED_REPLY;
- 		goto err_copy_data_failed;
- 	}
- 	if (!IS_ALIGNED(tr->offsets_size, sizeof(binder_size_t))) {
--		binder_user_error("%d:%d got transaction with invalid offsets size, %lld\n",
-+		binder_usr_err("%d:%d got transaction with invalid offsets size, %lld\n",
- 				proc->pid, thread->pid, (u64)tr->offsets_size);
- 		return_error = BR_FAILED_REPLY;
- 		goto err_bad_offset;
-@@ -1517,7 +1517,7 @@ static void binder_transaction(struct binder_proc *proc,
- 		if (*offp > t->buffer->data_size - sizeof(*fp) ||
- 		    t->buffer->data_size < sizeof(*fp) ||
- 		    !IS_ALIGNED(*offp, sizeof(u32))) {
--			binder_user_error("%d:%d got transaction with invalid offset, %lld\n",
-+			binder_usr_err("%d:%d got transaction with invalid offset, %lld\n",
- 					  proc->pid, thread->pid, (u64)*offp);
- 			return_error = BR_FAILED_REPLY;
- 			goto err_bad_offset;
-@@ -1539,7 +1539,7 @@ static void binder_transaction(struct binder_proc *proc,
- 				node->accept_fds = !!(fp->flags & FLAT_BINDER_FLAG_ACCEPTS_FDS);
- 			}
- 			if (fp->cookie != node->cookie) {
--				binder_user_error("%d:%d sending u%016llx node %d, cookie mismatch %016llx != %016llx\n",
-+				binder_usr_err("%d:%d sending u%016llx node %d, cookie mismatch %016llx != %016llx\n",
- 					proc->pid, thread->pid,
- 					(u64)fp->binder, node->debug_id,
- 					(u64)fp->cookie, (u64)node->cookie);
-@@ -1570,7 +1570,7 @@ static void binder_transaction(struct binder_proc *proc,
- 			struct binder_ref *ref = binder_get_ref(proc, fp->handle);
- 
- 			if (ref == NULL) {
--				binder_user_error("%d:%d got transaction with invalid handle, %d\n",
-+				binder_usr_err("%d:%d got transaction with invalid handle, %d\n",
- 						proc->pid,
- 						thread->pid, fp->handle);
- 				return_error = BR_FAILED_REPLY;
-@@ -1614,13 +1614,13 @@ static void binder_transaction(struct binder_proc *proc,
- 
- 			if (reply) {
- 				if (!(in_reply_to->flags & TF_ACCEPT_FDS)) {
--					binder_user_error("%d:%d got reply with fd, %d, but target does not allow fds\n",
-+					binder_usr_err("%d:%d got reply with fd, %d, but target does not allow fds\n",
- 						proc->pid, thread->pid, fp->handle);
- 					return_error = BR_FAILED_REPLY;
- 					goto err_fd_not_allowed;
- 				}
- 			} else if (!target_node->accept_fds) {
--				binder_user_error("%d:%d got transaction with fd, %d, but target does not allow fds\n",
-+				binder_usr_err("%d:%d got transaction with fd, %d, but target does not allow fds\n",
- 					proc->pid, thread->pid, fp->handle);
- 				return_error = BR_FAILED_REPLY;
- 				goto err_fd_not_allowed;
-@@ -1628,7 +1628,7 @@ static void binder_transaction(struct binder_proc *proc,
- 
- 			file = fget(fp->handle);
- 			if (file == NULL) {
--				binder_user_error("%d:%d got transaction with invalid fd, %d\n",
-+				binder_usr_err("%d:%d got transaction with invalid fd, %d\n",
- 					proc->pid, thread->pid, fp->handle);
- 				return_error = BR_FAILED_REPLY;
- 				goto err_fget_failed;
-@@ -1648,7 +1648,7 @@ static void binder_transaction(struct binder_proc *proc,
- 		} break;
- 
- 		default:
--			binder_user_error("%d:%d got transaction with invalid object type, %x\n",
-+			binder_usr_err("%d:%d got transaction with invalid object type, %x\n",
- 				proc->pid, thread->pid, fp->type);
- 			return_error = BR_FAILED_REPLY;
- 			goto err_bad_object_type;
-@@ -1761,14 +1761,14 @@ static int binder_thread_write(struct binder_proc *proc,
- 				ref = binder_get_ref_for_node(proc,
- 					       binder_context_mgr_node);
- 				if (ref->desc != target) {
--					binder_user_error("%d:%d tried to acquire reference to desc 0, got %d instead\n",
-+					binder_usr_err("%d:%d tried to acquire reference to desc 0, got %d instead\n",
- 						proc->pid, thread->pid,
- 						ref->desc);
- 				}
- 			} else
- 				ref = binder_get_ref(proc, target);
- 			if (ref == NULL) {
--				binder_user_error("%d:%d refcount change on invalid ref %d\n",
-+				binder_usr_err("%d:%d refcount change on invalid ref %d\n",
- 					proc->pid, thread->pid, target);
- 				break;
- 			}
-@@ -1811,7 +1811,7 @@ static int binder_thread_write(struct binder_proc *proc,
- 			ptr += sizeof(binder_uintptr_t);
- 			node = binder_get_node(proc, node_ptr);
- 			if (node == NULL) {
--				binder_user_error("%d:%d %s u%016llx no match\n",
-+				binder_usr_err("%d:%d %s u%016llx no match\n",
- 					proc->pid, thread->pid,
- 					cmd == BC_INCREFS_DONE ?
- 					"BC_INCREFS_DONE" :
-@@ -1820,7 +1820,7 @@ static int binder_thread_write(struct binder_proc *proc,
- 				break;
- 			}
- 			if (cookie != node->cookie) {
--				binder_user_error("%d:%d %s u%016llx node %d cookie mismatch %016llx != %016llx\n",
-+				binder_usr_err("%d:%d %s u%016llx node %d cookie mismatch %016llx != %016llx\n",
- 					proc->pid, thread->pid,
- 					cmd == BC_INCREFS_DONE ?
- 					"BC_INCREFS_DONE" : "BC_ACQUIRE_DONE",
-@@ -1830,7 +1830,7 @@ static int binder_thread_write(struct binder_proc *proc,
- 			}
- 			if (cmd == BC_ACQUIRE_DONE) {
- 				if (node->pending_strong_ref == 0) {
--					binder_user_error("%d:%d BC_ACQUIRE_DONE node %d has no pending acquire request\n",
-+					binder_usr_err("%d:%d BC_ACQUIRE_DONE node %d has no pending acquire request\n",
- 						proc->pid, thread->pid,
- 						node->debug_id);
- 					break;
-@@ -1838,7 +1838,7 @@ static int binder_thread_write(struct binder_proc *proc,
- 				node->pending_strong_ref = 0;
- 			} else {
- 				if (node->pending_weak_ref == 0) {
--					binder_user_error("%d:%d BC_INCREFS_DONE node %d has no pending increfs request\n",
-+					binder_usr_err("%d:%d BC_INCREFS_DONE node %d has no pending increfs request\n",
- 						proc->pid, thread->pid,
- 						node->debug_id);
- 					break;
-@@ -1870,12 +1870,12 @@ static int binder_thread_write(struct binder_proc *proc,
- 
- 			buffer = binder_buffer_lookup(proc, data_ptr);
- 			if (buffer == NULL) {
--				binder_user_error("%d:%d BC_FREE_BUFFER u%016llx no match\n",
-+				binder_usr_err("%d:%d BC_FREE_BUFFER u%016llx no match\n",
- 					proc->pid, thread->pid, (u64)data_ptr);
- 				break;
- 			}
- 			if (!buffer->allow_user_free) {
--				binder_user_error("%d:%d BC_FREE_BUFFER u%016llx matched unreturned buffer\n",
-+				binder_usr_err("%d:%d BC_FREE_BUFFER u%016llx matched unreturned buffer\n",
- 					proc->pid, thread->pid, (u64)data_ptr);
- 				break;
- 			}
-@@ -1919,11 +1919,11 @@ static int binder_thread_write(struct binder_proc *proc,
- 				     proc->pid, thread->pid);
- 			if (thread->looper & BINDER_LOOPER_STATE_ENTERED) {
- 				thread->looper |= BINDER_LOOPER_STATE_INVALID;
--				binder_user_error("%d:%d ERROR: BC_REGISTER_LOOPER called after BC_ENTER_LOOPER\n",
-+				binder_usr_err("%d:%d ERROR: BC_REGISTER_LOOPER called after BC_ENTER_LOOPER\n",
- 					proc->pid, thread->pid);
- 			} else if (proc->requested_threads == 0) {
- 				thread->looper |= BINDER_LOOPER_STATE_INVALID;
--				binder_user_error("%d:%d ERROR: BC_REGISTER_LOOPER called without request\n",
-+				binder_usr_err("%d:%d ERROR: BC_REGISTER_LOOPER called without request\n",
- 					proc->pid, thread->pid);
- 			} else {
- 				proc->requested_threads--;
-@@ -1937,7 +1937,7 @@ static int binder_thread_write(struct binder_proc *proc,
- 				     proc->pid, thread->pid);
- 			if (thread->looper & BINDER_LOOPER_STATE_REGISTERED) {
- 				thread->looper |= BINDER_LOOPER_STATE_INVALID;
--				binder_user_error("%d:%d ERROR: BC_ENTER_LOOPER called after BC_REGISTER_LOOPER\n",
-+				binder_usr_err("%d:%d ERROR: BC_ENTER_LOOPER called after BC_REGISTER_LOOPER\n",
- 					proc->pid, thread->pid);
- 			}
- 			thread->looper |= BINDER_LOOPER_STATE_ENTERED;
-@@ -1964,7 +1964,7 @@ static int binder_thread_write(struct binder_proc *proc,
- 			ptr += sizeof(binder_uintptr_t);
- 			ref = binder_get_ref(proc, target);
- 			if (ref == NULL) {
--				binder_user_error("%d:%d %s invalid ref %d\n",
-+				binder_usr_err("%d:%d %s invalid ref %d\n",
- 					proc->pid, thread->pid,
- 					cmd == BC_REQUEST_DEATH_NOTIFICATION ?
- 					"BC_REQUEST_DEATH_NOTIFICATION" :
-@@ -1984,7 +1984,7 @@ static int binder_thread_write(struct binder_proc *proc,
- 
- 			if (cmd == BC_REQUEST_DEATH_NOTIFICATION) {
- 				if (ref->death) {
--					binder_user_error("%d:%d BC_REQUEST_DEATH_NOTIFICATION death notification already set\n",
-+					binder_usr_err("%d:%d BC_REQUEST_DEATH_NOTIFICATION death notification already set\n",
- 						proc->pid, thread->pid);
- 					break;
- 				}
-@@ -2011,13 +2011,13 @@ static int binder_thread_write(struct binder_proc *proc,
- 				}
- 			} else {
- 				if (ref->death == NULL) {
--					binder_user_error("%d:%d BC_CLEAR_DEATH_NOTIFICATION death notification not active\n",
-+					binder_usr_err("%d:%d BC_CLEAR_DEATH_NOTIFICATION death notification not active\n",
- 						proc->pid, thread->pid);
- 					break;
- 				}
- 				death = ref->death;
- 				if (death->cookie != cookie) {
--					binder_user_error("%d:%d BC_CLEAR_DEATH_NOTIFICATION death notification cookie mismatch %016llx != %016llx\n",
-+					binder_usr_err("%d:%d BC_CLEAR_DEATH_NOTIFICATION death notification cookie mismatch %016llx != %016llx\n",
- 						proc->pid, thread->pid,
- 						(u64)death->cookie,
- 						(u64)cookie);
-@@ -2060,7 +2060,7 @@ static int binder_thread_write(struct binder_proc *proc,
- 				     proc->pid, thread->pid, (u64)cookie,
- 				     death);
- 			if (death == NULL) {
--				binder_user_error("%d:%d BC_DEAD_BINDER_DONE %016llx not found\n",
-+				binder_usr_err("%d:%d BC_DEAD_BINDER_DONE %016llx not found\n",
- 					proc->pid, thread->pid, (u64)cookie);
- 				break;
- 			}
-@@ -2164,7 +2164,7 @@ retry:
- 	if (wait_for_proc_work) {
- 		if (!(thread->looper & (BINDER_LOOPER_STATE_REGISTERED |
- 					BINDER_LOOPER_STATE_ENTERED))) {
--			binder_user_error("%d:%d ERROR: Thread waiting for process work before calling BC_REGISTER_LOOPER or BC_ENTER_LOOPER (state %x)\n",
-+			binder_usr_err("%d:%d ERROR: Thread waiting for process work before calling BC_REGISTER_LOOPER or BC_ENTER_LOOPER (state %x)\n",
- 				proc->pid, thread->pid, thread->looper);
- 			wait_event_interruptible(binder_user_error_wait,
- 						 binder_stop_on_user_error < 2);
--- 
-1.9.1
-
-
+> The system had two cores per guest, as to allow for both the vcpu and the vhost
+> thread to run concurrently for maximum throughput (but I didn't pin the threads
+> to specific cores).
+> My experiments were fair in a sense that for both cases, with or without
+> polling, I run both threads, vcpu and vhost, on 2 cores (set their affinity that
+> way). The only difference was whether polling was enabled/disabled.
+> 
+> Results:
+> 
+> Netperf, 1 vm:
+> The polling patch improved throughput by ~33% (1516 MB/sec -> 2046 MB/sec).
+> Number of exits/sec decreased 6x.
+> The same improvement was shown when I tested with 3 vms running netperf
+> (4086 MB/sec -> 5545 MB/sec).
+> 
+> filebench, 1 vm:
+> ops/sec improved by 13% with the polling patch. Number of exits was reduced by
+> 31%.
+> The same experiment with 3 vms running filebench showed similar numbers.
+> 
+> Signed-off-by: Razya Ladelsky <razya@il.ibm.com>
+> ---
+>  drivers/vhost/net.c   |    6 +-
+>  drivers/vhost/scsi.c  |    6 +-
+>  drivers/vhost/vhost.c |  245 +++++++++++++++++++++++++++++++++++++++++++++++--
+>  drivers/vhost/vhost.h |   38 +++++++-
+>  4 files changed, 277 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 971a760..558aecb 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -742,8 +742,10 @@ static int vhost_net_open(struct inode *inode, struct file *f)
+>  	}
+>  	vhost_dev_init(dev, vqs, VHOST_NET_VQ_MAX);
+>  
+> -	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
+> -	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
+> +	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT,
+> +			vqs[VHOST_NET_VQ_TX]);
+> +	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN,
+> +			vqs[VHOST_NET_VQ_RX]);
+>  
+>  	f->private_data = n;
+>  
+> diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+> index 4f4ffa4..665eeeb 100644
+> --- a/drivers/vhost/scsi.c
+> +++ b/drivers/vhost/scsi.c
+> @@ -1528,9 +1528,9 @@ static int vhost_scsi_open(struct inode *inode, struct file *f)
+>  	if (!vqs)
+>  		goto err_vqs;
+>  
+> -	vhost_work_init(&vs->vs_completion_work, vhost_scsi_complete_cmd_work);
+> -	vhost_work_init(&vs->vs_event_work, tcm_vhost_evt_work);
+> -
+> +	vhost_work_init(&vs->vs_completion_work, NULL,
+> +						vhost_scsi_complete_cmd_work);
+> +	vhost_work_init(&vs->vs_event_work, NULL, tcm_vhost_evt_work);
+>  	vs->vs_events_nr = 0;
+>  	vs->vs_events_missed = false;
+>  
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index c90f437..fbe8174 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -24,9 +24,17 @@
+>  #include <linux/slab.h>
+>  #include <linux/kthread.h>
+>  #include <linux/cgroup.h>
+> +#include <linux/jiffies.h>
+>  #include <linux/module.h>
+>  
+>  #include "vhost.h"
+> +static int poll_start_rate = 0;
+> +module_param(poll_start_rate, int, S_IRUGO|S_IWUSR);
+> +MODULE_PARM_DESC(poll_start_rate, "Start continuous polling of virtqueue when rate of events is at least this number per jiffy. If 0, never start polling.");
+> +
+> +static int poll_stop_idle = 3*HZ; /* 3 seconds */
+> +module_param(poll_stop_idle, int, S_IRUGO|S_IWUSR);
+> +MODULE_PARM_DESC(poll_stop_idle, "Stop continuous polling of virtqueue after this many jiffies of no work.");
+>  
+>  enum {
+>  	VHOST_MEMORY_MAX_NREGIONS = 64,
+> @@ -58,27 +66,28 @@ static int vhost_poll_wakeup(wait_queue_t *wait, unsigned mode, int sync,
+>  	return 0;
+>  }
+>  
+> -void vhost_work_init(struct vhost_work *work, vhost_work_fn_t fn)
+> +void vhost_work_init(struct vhost_work *work, struct vhost_virtqueue *vq,
+> +							vhost_work_fn_t fn)
+>  {
+>  	INIT_LIST_HEAD(&work->node);
+>  	work->fn = fn;
+>  	init_waitqueue_head(&work->done);
+>  	work->flushing = 0;
+>  	work->queue_seq = work->done_seq = 0;
+> +	work->vq = vq;
+>  }
+>  EXPORT_SYMBOL_GPL(vhost_work_init);
+>  
+>  /* Init poll structure */
+>  void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
+> -		     unsigned long mask, struct vhost_dev *dev)
+> +		     unsigned long mask, struct vhost_virtqueue *vq)
+>  {
+>  	init_waitqueue_func_entry(&poll->wait, vhost_poll_wakeup);
+>  	init_poll_funcptr(&poll->table, vhost_poll_func);
+>  	poll->mask = mask;
+> -	poll->dev = dev;
+> +	poll->dev = vq->dev;
+>  	poll->wqh = NULL;
+> -
+> -	vhost_work_init(&poll->work, fn);
+> +	vhost_work_init(&poll->work, vq, fn);
+>  }
+>  EXPORT_SYMBOL_GPL(vhost_poll_init);
+>  
+> @@ -174,6 +183,86 @@ void vhost_poll_queue(struct vhost_poll *poll)
+>  }
+>  EXPORT_SYMBOL_GPL(vhost_poll_queue);
+>  
+> +/* Enable or disable virtqueue polling (vqpoll.enabled) for a virtqueue.
+> + *
+> + * Enabling this mode it tells the guest not to notify ("kick") us when its
+> + * has made more work available on this virtqueue; Rather, we will continuously
+> + * poll this virtqueue in the worker thread. If multiple virtqueues are polled,
+> + * the worker thread polls them all, e.g., in a round-robin fashion.
+> + * Note that vqpoll.enabled doesn't always mean that this virtqueue is
+> + * actually being polled: The backend (e.g., net.c) may temporarily disable it
+> + * using vhost_disable/enable_notify(), while vqpoll.enabled is unchanged.
+> + *
+> + * It is assumed that these functions are called relatively rarely, when vhost
+> + * notices that this virtqueue's usage pattern significantly changed in a way
+> + * that makes polling more efficient than notification, or vice versa.
+> + * Also, we assume that vhost_vq_disable_vqpoll() is always called on vq
+> + * cleanup, so any allocations done by vhost_vq_enable_vqpoll() can be
+> + * reclaimed.
+> + */
+> +static void vhost_vq_enable_vqpoll(struct vhost_virtqueue *vq)
+> +{
+> +	if (vq->vqpoll.enabled)
+> +		return; /* already enabled, nothing to do */
+> +	if (!vq->handle_kick)
+> +		return; /* polling will be a waste of time if no callback! */
+> +	if (!(vq->used_flags & VRING_USED_F_NO_NOTIFY)) {
+> +		/* vq has guest notifications enabled. Disable them,
+> +		   and instead add vq to the polling list */
+> +		vhost_disable_notify(vq->dev, vq);
+> +		list_add_tail(&vq->vqpoll.link, &vq->dev->vqpoll_list);
+> +	}
+> +	vq->vqpoll.jiffies_last_kick = jiffies;
+> +	__get_user(vq->avail_idx, &vq->avail->idx);
+> +	vq->vqpoll.enabled = true;
+> +
+> +	/* Map userspace's vq->avail to the kernel's memory space. */
+> +	if (get_user_pages_fast((unsigned long)vq->avail, 1, 0,
+> +		&vq->vqpoll.avail_page) != 1) {
+> +		/* TODO: can this happen, as we check access
+> +		to vq->avail in advance? */
+> +		BUG();
+> +	}
+> +	vq->vqpoll.avail_mapped = (struct vring_avail *) (
+> +		(unsigned long)kmap(vq->vqpoll.avail_page) |
+> +		((unsigned long)vq->avail & ~PAGE_MASK));
+> +}
+> +
+> +/*
+> + * This function doesn't always succeed in changing the mode. Sometimes
+> + * a temporary race condition prevents turning on guest notifications, so
+> + * vq should be polled next time again.
+> + */
+> +static void vhost_vq_disable_vqpoll(struct vhost_virtqueue *vq)
+> +{
+> +	if (!vq->vqpoll.enabled)
+> +		return; /* already disabled, nothing to do */
+> +
+> +	vq->vqpoll.enabled = false;
+> +
+> +	if (!list_empty(&vq->vqpoll.link)) {
+> +		/* vq is on the polling list, remove it from this list and
+> +		 * instead enable guest notifications. */
+> +		list_del_init(&vq->vqpoll.link);
+> +		if (unlikely(vhost_enable_notify(vq->dev, vq))
+> +			&& !vq->vqpoll.shutdown) {
+> +			/* Race condition: guest wrote before we enabled
+> +			 * notification, so we'll never get a notification for
+> +			 * this work - so continue polling mode for a while. */
+> +			vhost_disable_notify(vq->dev, vq);
+> +			vq->vqpoll.enabled = true;
+> +			vhost_enable_notify(vq->dev, vq);
+> +			return;
+> +		}
+> +	}
+> +
+> +	if (vq->vqpoll.avail_mapped) {
+> +		kunmap(vq->vqpoll.avail_page);
+> +		put_page(vq->vqpoll.avail_page);
+> +		vq->vqpoll.avail_mapped = 0;
+> +	}
+> +}
+> +
+>  static void vhost_vq_reset(struct vhost_dev *dev,
+>  			   struct vhost_virtqueue *vq)
+>  {
+> @@ -199,6 +288,48 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+>  	vq->call = NULL;
+>  	vq->log_ctx = NULL;
+>  	vq->memory = NULL;
+> +	INIT_LIST_HEAD(&vq->vqpoll.link);
+> +	vq->vqpoll.enabled = false;
+> +	vq->vqpoll.shutdown = false;
+> +	vq->vqpoll.avail_mapped = NULL;
+> +}
+> +
+> +/* roundrobin_poll() takes worker->vqpoll_list, and returns one of the
+> + * virtqueues which the caller should kick, or NULL in case none should be
+> + * kicked. roundrobin_poll() also disables polling on a virtqueue which has
+> + * been polled for too long without success.
+> + *
+> + * This current implementation (the "round-robin" implementation) only
+> + * polls the first vq in the list, returning it or NULL as appropriate, and
+> + * moves this vq to the end of the list, so next time a different one is
+> + * polled.
+> + */
+> +static struct vhost_virtqueue *roundrobin_poll(struct list_head *list)
+> +{
+> +	struct vhost_virtqueue *vq;
+> +	u16 avail_idx;
+> +
+> +	if (list_empty(list))
+> +		return NULL;
+> +
+> +	vq = list_first_entry(list, struct vhost_virtqueue, vqpoll.link);
+> +	WARN_ON(!vq->vqpoll.enabled);
+> +	list_move_tail(&vq->vqpoll.link, list);
+> +
+> +	/* See if there is any new work available from the guest. */
+> +	/* TODO: can check the optional idx feature, and if we haven't
+> +	* reached that idx yet, don't kick... */
+> +	avail_idx = vq->vqpoll.avail_mapped->idx;
+> +	if (avail_idx != vq->last_avail_idx)
+> +		return vq;
+> +
+> +	if (jiffies > vq->vqpoll.jiffies_last_kick + poll_stop_idle) {
+> +		/* We've been polling this virtqueue for a long time with no
+> +		* results, so switch back to guest notification
+> +		*/
+> +		vhost_vq_disable_vqpoll(vq);
+> +	}
+> +	return NULL;
+>  }
+>  
+>  static int vhost_worker(void *data)
+> @@ -237,12 +368,62 @@ static int vhost_worker(void *data)
+>  		spin_unlock_irq(&dev->work_lock);
+>  
+>  		if (work) {
+> +			struct vhost_virtqueue *vq = work->vq;
+>  			__set_current_state(TASK_RUNNING);
+>  			work->fn(work);
+> +			/* Keep track of the work rate, for deciding when to
+> +			 * enable polling */
+> +			if (vq) {
+> +				if (vq->vqpoll.jiffies_last_work != jiffies) {
+> +					vq->vqpoll.jiffies_last_work = jiffies;
+> +					vq->vqpoll.work_this_jiffy = 0;
+> +				}
+> +				vq->vqpoll.work_this_jiffy++;
+> +			}
+> +			/* If vq is in the round-robin list of virtqueues being
+> +			 * constantly checked by this thread, move vq the end
+> +			 * of the queue, because it had its fair chance now.
+> +			 */
+> +			if (vq && !list_empty(&vq->vqpoll.link)) {
+> +				list_move_tail(&vq->vqpoll.link,
+> +					&dev->vqpoll_list);
+> +			}
+> +			/* Otherwise, if this vq is looking for notifications
+> +			 * but vq polling is not enabled for it, do it now.
+> +			 */
+> +			else if (poll_start_rate && vq && vq->handle_kick &&
+> +				!vq->vqpoll.enabled &&
+> +				!vq->vqpoll.shutdown &&
+> +				!(vq->used_flags & VRING_USED_F_NO_NOTIFY) &&
+> +				vq->vqpoll.work_this_jiffy >=
+> +					poll_start_rate) {
+> +				vhost_vq_enable_vqpoll(vq);
+> +			}
+> +		}
+> +		/* Check one virtqueue from the round-robin list */
+> +		if (!list_empty(&dev->vqpoll_list)) {
+> +			struct vhost_virtqueue *vq;
+> +
+> +			vq = roundrobin_poll(&dev->vqpoll_list);
+> +
+> +			if (vq) {
+> +				vq->handle_kick(&vq->poll.work);
+> +				vq->vqpoll.jiffies_last_kick = jiffies;
+> +			}
+> +
+> +			/* If our polling list isn't empty, ask to continue
+> +			 * running this thread, don't yield.
+> +			 */
+> +			__set_current_state(TASK_RUNNING);
+>  			if (need_resched())
+>  				schedule();
+> -		} else
+> -			schedule();
+> +		} else {
+> +			if (work) {
+> +				if (need_resched())
+> +					schedule();
+> +			} else
+> +				schedule();
+> +		}
+>  
+>  	}
+>  	unuse_mm(dev->mm);
+> @@ -306,6 +487,7 @@ void vhost_dev_init(struct vhost_dev *dev,
+>  	dev->mm = NULL;
+>  	spin_lock_init(&dev->work_lock);
+>  	INIT_LIST_HEAD(&dev->work_list);
+> +	INIT_LIST_HEAD(&dev->vqpoll_list);
+>  	dev->worker = NULL;
+>  
+>  	for (i = 0; i < dev->nvqs; ++i) {
+> @@ -318,7 +500,7 @@ void vhost_dev_init(struct vhost_dev *dev,
+>  		vhost_vq_reset(dev, vq);
+>  		if (vq->handle_kick)
+>  			vhost_poll_init(&vq->poll, vq->handle_kick,
+> -					POLLIN, dev);
+> +					POLLIN, vq);
+>  	}
+>  }
+>  EXPORT_SYMBOL_GPL(vhost_dev_init);
+> @@ -350,7 +532,7 @@ static int vhost_attach_cgroups(struct vhost_dev *dev)
+>  	struct vhost_attach_cgroups_struct attach;
+>  
+>  	attach.owner = current;
+> -	vhost_work_init(&attach.work, vhost_attach_cgroups_work);
+> +	vhost_work_init(&attach.work, NULL, vhost_attach_cgroups_work);
+>  	vhost_work_queue(dev, &attach.work);
+>  	vhost_work_flush(dev, &attach.work);
+>  	return attach.ret;
+> @@ -444,6 +626,26 @@ void vhost_dev_stop(struct vhost_dev *dev)
+>  }
+>  EXPORT_SYMBOL_GPL(vhost_dev_stop);
+>  
+> +/* shutdown_vqpoll() asks the worker thread to shut down virtqueue polling
+> + * mode for a given virtqueue which is itself being shut down. We ask the
+> + * worker thread to do this rather than doing it directly, so that we don't
+> + * race with the worker thread's use of the queue.
+> + */
+> +static void shutdown_vqpoll_work(struct vhost_work *work)
+> +{
+> +	work->vq->vqpoll.shutdown = true;
+> +	vhost_vq_disable_vqpoll(work->vq);
+> +	WARN_ON(work->vq->vqpoll.avail_mapped);
+> +}
+> +
+> +static void shutdown_vqpoll(struct vhost_virtqueue *vq)
+> +{
+> +	struct vhost_work work;
+> +
+> +	vhost_work_init(&work, vq, shutdown_vqpoll_work);
+> +	vhost_work_queue(vq->dev, &work);
+> +	vhost_work_flush(vq->dev, &work);
+> +}
+>  /* Caller should have device mutex if and only if locked is set */
+>  void vhost_dev_cleanup(struct vhost_dev *dev, bool locked)
+>  {
+> @@ -460,6 +662,7 @@ void vhost_dev_cleanup(struct vhost_dev *dev, bool locked)
+>  			eventfd_ctx_put(dev->vqs[i]->call_ctx);
+>  		if (dev->vqs[i]->call)
+>  			fput(dev->vqs[i]->call);
+> +		shutdown_vqpoll(dev->vqs[i]);
+>  		vhost_vq_reset(dev, dev->vqs[i]);
+>  	}
+>  	vhost_dev_free_iovecs(dev);
+> @@ -1491,6 +1694,19 @@ bool vhost_enable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+>  	u16 avail_idx;
+>  	int r;
+>  
+> +	/* In polling mode, when the backend (e.g., net.c) asks to enable
+> +	 * notifications, we don't enable guest notifications. Instead, start
+> +	 * polling on this vq by adding it to the round-robin list.
+> +	 */
+> +	if (vq->vqpoll.enabled) {
+> +		if (list_empty(&vq->vqpoll.link)) {
+> +			list_add_tail(&vq->vqpoll.link,
+> +				&vq->dev->vqpoll_list);
+> +			vq->vqpoll.jiffies_last_kick = jiffies;
+> +		}
+> +		return false;
+> +	}
+> +
+>  	if (!(vq->used_flags & VRING_USED_F_NO_NOTIFY))
+>  		return false;
+>  	vq->used_flags &= ~VRING_USED_F_NO_NOTIFY;
+> @@ -1528,6 +1744,17 @@ void vhost_disable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+>  {
+>  	int r;
+>  
+> +	/* If this virtqueue is vqpoll.enabled, and on the polling list, it
+> +	 * will generate notifications even if the guest is asked not to send
+> +	 * them. So we must remove it from the round-robin polling list.
+> +	 * Note that vqpoll.enabled remains set.
+> +	 */
+> +	if (vq->vqpoll.enabled) {
+> +		if (!list_empty(&vq->vqpoll.link))
+> +			list_del_init(&vq->vqpoll.link);
+> +		return;
+> +	}
+> +
+>  	if (vq->used_flags & VRING_USED_F_NO_NOTIFY)
+>  		return;
+>  	vq->used_flags |= VRING_USED_F_NO_NOTIFY;
+> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> index 3eda654..11aaaf4 100644
+> --- a/drivers/vhost/vhost.h
+> +++ b/drivers/vhost/vhost.h
+> @@ -24,6 +24,7 @@ struct vhost_work {
+>  	int			  flushing;
+>  	unsigned		  queue_seq;
+>  	unsigned		  done_seq;
+> +	struct vhost_virtqueue    *vq;
+>  };
+>  
+>  /* Poll a file (eventfd or socket) */
+> @@ -37,11 +38,12 @@ struct vhost_poll {
+>  	struct vhost_dev	 *dev;
+>  };
+>  
+> -void vhost_work_init(struct vhost_work *work, vhost_work_fn_t fn);
+> +void vhost_work_init(struct vhost_work *work, struct vhost_virtqueue *vq,
+> +							vhost_work_fn_t fn);
+>  void vhost_work_queue(struct vhost_dev *dev, struct vhost_work *work);
+>  
+>  void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
+> -		     unsigned long mask, struct vhost_dev *dev);
+> +		     unsigned long mask, struct vhost_virtqueue  *vq);
+>  int vhost_poll_start(struct vhost_poll *poll, struct file *file);
+>  void vhost_poll_stop(struct vhost_poll *poll);
+>  void vhost_poll_flush(struct vhost_poll *poll);
+> @@ -54,8 +56,6 @@ struct vhost_log {
+>  	u64 len;
+>  };
+>  
+> -struct vhost_virtqueue;
+> -
+>  /* The virtqueue structure describes a queue attached to a device. */
+>  struct vhost_virtqueue {
+>  	struct vhost_dev *dev;
+> @@ -110,6 +110,35 @@ struct vhost_virtqueue {
+>  	/* Log write descriptors */
+>  	void __user *log_base;
+>  	struct vhost_log *log;
+> +	struct {
+> +      /* When a virtqueue is in vqpoll.enabled mode, it declares
+> +       * that instead of using guest notifications (kicks) to
+> +       * discover new work, we prefer to continuously poll this
+> +       * virtqueue in the worker thread.
+> +       * If !enabled, the rest of the fields below are undefined.
+> +       */
+> +		bool enabled;
+> +      /* vqpoll.enabled doesn't always mean that this virtqueue is
+> +       * actually being polled: The backend (e.g., net.c) may
+> +       * temporarily disable it using vhost_disable/enable_notify().
+> +       * vqpoll.link is used to maintain the thread's round-robin
+> +       * list of virtqueues that actually need to be polled.
+> +       * Note list_empty(link) means this virtqueue isn't polled.
+> +       */
+> +		struct list_head link;
+> +      /* If this flag is true, the virtqueue is being shut down,
+> +       * so vqpoll should not be re-enabled.
+> +       */
+> +		bool shutdown;
+> +      /* Various counters used to decide when to enter polling mode
+> +       * or leave it and return to notification mode.
+> +       */
+> +		unsigned long jiffies_last_kick;
+> +		unsigned long jiffies_last_work;
+> +		int work_this_jiffy;
+> +		struct page *avail_page;
+> +		volatile struct vring_avail *avail_mapped;
+> +	} vqpoll;
+>  };
+>  
+>  struct vhost_dev {
+> @@ -123,6 +152,7 @@ struct vhost_dev {
+>  	spinlock_t work_lock;
+>  	struct list_head work_list;
+>  	struct task_struct *worker;
+> +	struct list_head vqpoll_list;
+>  };
+>  
+>  void vhost_dev_init(struct vhost_dev *, struct vhost_virtqueue **vqs, int nvqs);
+> -- 
+> 1.7.9.5
