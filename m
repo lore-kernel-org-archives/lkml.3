@@ -1,87 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382AbaHJH7r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 03:59:47 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:34752 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194AbaHJH7q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 03:59:46 -0400
-Date: Sun, 10 Aug 2014 09:59:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [sched] 143e1e28cb4: +17.9% aim7.jobs-per-min, -9.7%
- hackbench.throughput
-Message-ID: <20140810075915.GR9918@twins.programming.kicks-ass.net>
-References: <20140810044127.GB11810@localhost>
+	id S1751352AbaHJIFt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 04:05:49 -0400
+Received: from mail.pfak.org ([198.50.219.4]:57014 "EHLO mail.pfak.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751194AbaHJIFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 04:05:44 -0400
+X-Greylist: delayed 614 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Aug 2014 04:05:43 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=kieser.ca; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type; q=dns; s=mail; b=BfVtLFtdYpVuc6CwWl8VPOC8+zPaBliq
+	j18M0R0REa/HDkKDP1vTIrpteZTkd/pphm3TwCJsoJ3rie7aYpaRchM1zXLQFbmi
+	Fcj2VYR2oAnDj2b+kOrx0xNvCIygMyK78uOfVQR8FQY6Lryq0d56dGgtN2fnrv0A
+	iEy81m53JfM=
+Message-ID: <53E7251B.3080305@kieser.ca>
+Date: Sun, 10 Aug 2014 00:54:03 -0700
+From: Peter Kieser <peter@kieser.ca>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="e/gjZozG3RDP5HMW"
-Content-Disposition: inline
-In-Reply-To: <20140810044127.GB11810@localhost>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>
+CC: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+Subject: Re: [GIT PULL] bcache changes for 3.17
+References: <20140805043346.GF541@moria.home.lan> <53E10D48.1010700@kernel.dk>
+In-Reply-To: <53E10D48.1010700@kernel.dk>
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms080807080708050807040201"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a cryptographically signed message in MIME format.
 
---e/gjZozG3RDP5HMW
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+--------------ms080807080708050807040201
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, Aug 10, 2014 at 12:41:27PM +0800, Fengguang Wu wrote:
-> Hi Vincent,
->=20
-> FYI, we noticed some performance ups/downs on
->=20
-> commit 143e1e28cb40bed836b0a06567208bd7347c9672 ("sched: Rework sched_dom=
-ain topology definition")
->=20
->     128529 =B1 1%     +17.9%     151594 =B1 0%  brickland1/aim7/6000-page=
-_test
->      76064 =B1 3%     -32.2%      51572 =B1 6%  brickland1/aim7/6000-page=
-_test
->   59366697 =B1 3%     -46.1%   32017187 =B1 7%  brickland1/aim7/6000-page=
-_test
->       2561 =B1 7%     -42.9%       1463 =B1 9%  brickland1/aim7/6000-page=
-_test
->       9926 =B1 2%     -43.8%       5577 =B1 4%  brickland1/aim7/6000-page=
-_test
->      19542 =B1 9%     -38.3%      12057 =B1 4%  brickland1/aim7/6000-page=
-_test
->     993654 =B1 2%     -19.9%     795962 =B1 3%  brickland1/aim7/6000-page=
-_test
 
-etc..
+On 2014-08-05 9:58 AM, Jens Axboe wrote:
+> On 08/04/2014 10:33 PM, Kent Overstreet wrote:
+>> Hey Jens, here's the pull request for 3.17 - typically late, but lots =
+of tasty
+>> fixes in this one :)
+> Normally I'd say no, but since it's basically just fixes, I guess we ca=
+n
+> pull it in. But generally, it has to be in my hands a week before this,=
 
-how does one read that? afaict its a random number generator..
+> so it can simmer a bit in for-next before going in...
+>
+Are these fixes going to be backported to 3.10 or other stable releases?
 
---e/gjZozG3RDP5HMW
-Content-Type: application/pgp-signature
+-Peter
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJT5yZPAAoJEHZH4aRLwOS67UAP/Rq3DGLtFajSWsifFKeJpXoz
-SY9K9fO2K1iojW0lsQfvIRWd20WZmx+4ui9pWUKDkNbeo8d7lku9By74BQZzqWq7
-ISA9egqnBUiXSwTE/R//qnk0OOX9YmQr0I8M4BX/8895awsi5MlmOB+DhSrVE/QF
-+/EW85rAl0mA9OGB7o0t44l1LiVPPge4dahrSj+GygqhYsuUyAbZLC2xQjiUqAlT
-POjComPXJK5nJkOyIjt1iBOjiIy2dxjtEJz9VWc5Cm/JGSk7m8e9jV1l6+wWU2nd
-6anGol3W4tA0u/1Yh5ak88J8EH+zkwksyi/YWNtyYeCaONz4pdJbzOusSU7RriqZ
-Tb4ktlri2CcewQj+8kui1vkuNUT1shWTY6XuDnzasoQp7nztUhLRnqpLI5zEXzzE
-XTL4AAjQX+N7iOy4uTa09iiA+wpfiW3zrj5w+tmVDNh8b0dkyd1QrEpJs62/EMNk
-0OShIVluQIEKWTccYRFVvTmKJr0NspQWMqcKT7Ds6Vc0Db97bVduYxFoNqB6fQ0A
-4t1kTrN+W7TXYYPBwZjZy7AGPXySnWvF2C0zZza1AxXCykZChEQ84yPUcXpS5o43
-gOm6gfkBjjqhrXfSUv6HUpVzD1tMC2yxeLrc3JpR6Iz161A5JjcScc2ukoqca9gd
-edS/aF8UUPeXdHjYCpg0
-=6fNB
------END PGP SIGNATURE-----
 
---e/gjZozG3RDP5HMW--
+--------------ms080807080708050807040201
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINgDCC
+BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
+KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
+8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
+DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
+2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
+zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
+Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
+c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
+UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
+p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
++HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
+hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
+hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
+0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
+AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
+XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIHRDCCBiygAwIBAgICJYcwDQYJKoZIhvcNAQEF
+BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
+ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
+bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMjA4MjkyMzM0MjZa
+Fw0xNDA4MzExMzE0MzFaMIGOMRkwFwYDVQQNExBpd3JteTFzNGhOaHZLMDQ0MQswCQYDVQQG
+EwJDQTEZMBcGA1UECBMQQnJpdGlzaCBDb2x1bWJpYTESMBAGA1UEBxMJVmFuY291dmVyMRUw
+EwYDVQQDEwxQZXRlciBLaWVzZXIxHjAcBgkqhkiG9w0BCQEWD3BldGVyQGtpZXNlci5jYTCC
+ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOdZjqh64jWRFwTsYZZ0bKt5xOIxLlV4
+jrN0wY5KMu5RotLfYnu53fCMGJVk1n8h4QFRDxGuQmE4ugw47rv7FMDWYPb7PisPAWbcbUlG
+pmxhZB/avqpC8P2uuvJ0dsKsyNo8HeROfvrLkT6PSpYE35UXTLESoHSYkkyhcklVRf6ygChd
+PKUMNhEAMH3ZGtsw8N24hSoiW6Sb3vqv4ZCZcLvlKRVjJtOyc2vbSw8ndc62EbFMFeP+AZOw
+r7flFGQanYjfeXeeXV/29hstVPv88okwEpJCWdmSA1/gh5Yc6bjpQ7YuSxOVKP5UAl+Ehyld
+XWIcWEcUoeuZ1XeSyRuwRmcCAwEAAaOCA6owggOmMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSw
+MB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUKlB/4e9ZfesCCiNm
+UHJOZibv8FAwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGgYDVR0RBBMwEYEP
+cGV0ZXJAa2llc2VyLmNhMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8w
+LgYIKwYBBQUHAgEWImh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYB
+BQUHAgEWKGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsG
+AQUFBwICMIHqMCcWIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5U
+aGlzIGNlcnRpZmljYXRlIHdhcyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAyIFZh
+bGlkYXRpb24gcmVxdWlyZW1lbnRzIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlh
+bmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhl
+IHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGcBggrBgEFBQcCAjCBjzAnFiBTdGFydENv
+bSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRMaWFiaWxpdHkgYW5kIHdhcnJhbnRp
+ZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBhbmQgTGltaXRhdGlvbnMiIG9m
+IHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwu
+c3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUH
+MAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MyL2NsaWVudC9jYTBCBggr
+BgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMi5jbGll
+bnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkqhkiG
+9w0BAQUFAAOCAQEAvd8Wn0ZXlB3mV+fWae/hAFquDNjyWMJ29rJymKaGOOYTCiPdmDRJNV9R
+k0YTP9+B06A0Vx6bbg+rZwIdv2k+GBSjCSb4T8IsawVphbbWMohFzxGzo36NaYZ/wCTcrlVv
+oXmPFkEaOJzqQ1DAYetJTfDMIfkBeOZSJ9KmdLos1Z9fOc0nGq9ioy/6gIPGchsWuhrl3vxW
+ej1MUPjVKn5wW967cPcLFnNLR1gxYB3fjptyHbJpRq/54rH2BMR0kicK9EyVUoDM35R6Ux6n
+djaJmH1ZFcHVc+FmalNisvlIlGSWwnkyvpmyD25LSJ+BlfZEUHE8tcicdZPAqQ8f+Yo/dTGC
+A9owggPWAgEBMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
+MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMv
+U3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAiWHMAkG
+BSsOAwIaBQCgggIbMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
+DTE0MDgxMDA3NTQwM1owIwYJKoZIhvcNAQkEMRYEFMXMEaUbWk7HdHWEubztKWBG4hquMGwG
+CSqGSIb3DQEJDzFfMF0wCwYJYIZIAWUDBAEqMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAO
+BggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgw
+gaQGCSsGAQQBgjcQBDGBljCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29t
+IEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
+BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENB
+AgIlhzCBpgYLKoZIhvcNAQkQAgsxgZaggZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQQICJYcwDQYJKoZIhvcNAQEBBQAEggEAPoCoVIbCfZnfnks2/t/MRfVKakoAK6jI
+AlpimTnOIufCPkS8MeLvmu1oO4zVdKlgJN+/Kp2az907Lvjwzzhzh+1ozPGr6wm4DjKbu7bR
+6gowC9kViHpiP1dD4w/L0pIyQgMZDacBWlyAKBimLsju7NTdq4oJOwuYGwNy3KJ8E2xAnQaw
+TZx1A+nC+BxG3hQu7z4m1s5yvGwbjUeYVuRDpiC61NvaE3ZIpZ2tsDh+IZhgJKu7rAyslK2T
+/zajDto7HqdCNW0xT/fwoc3N0+OaDMAQCI9x4yCnNc6M6GtDy396qWGsJy5bzX8dfiGPSCnW
+FkcYVmWweHmPntofTw/vCwAAAAAAAA==
+--------------ms080807080708050807040201--
