@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaHJSmq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 14:42:46 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62124 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320AbaHJSmo (ORCPT
+	id S1751711AbaHJSne (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 14:43:34 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:34126 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632AbaHJSnc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 14:42:44 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53E7BD21.6010301@roeck-us.net>
-Date: Sun, 10 Aug 2014 11:42:41 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sun, 10 Aug 2014 14:43:32 -0400
 MIME-Version: 1.0
-To: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Li Yang <leoli@freescale.com>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: ugg_geth: Fix build error in -next
-References: <1407687554-14539-1-git-send-email-linux@roeck-us.net> <20140810183622.GC5134@pengutronix.de>
-In-Reply-To: <20140810183622.GC5134@pengutronix.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQVDURMvgVd55-onMDejCZT+OZ2vrr92wx8FJMKRNSX_GA@mail.gmail.com>
+References: <53E62EEF.9040801@gmail.com>
+	<CAE9FiQVXkojPnTr4EQE7h2YhWqa5VBYRSCadB0B1qDL+eGY8jg@mail.gmail.com>
+	<20140809192302.GJ15082@console-pimps.org>
+	<CAPWNY8X+pRf4GuYAzKj-co0fkLMY0KNw+wB4KA8eaJ0QbE4MnA@mail.gmail.com>
+	<CAE9FiQVDURMvgVd55-onMDejCZT+OZ2vrr92wx8FJMKRNSX_GA@mail.gmail.com>
+Date: Sun, 10 Aug 2014 21:43:32 +0300
+Message-ID: <CAPWNY8WvyAt5oT3cJ53A07tbfZctE9Y-m5f2Nucgc3hVvCgdjQ@mail.gmail.com>
+Subject: Re: Loading initrd above 4G causes freeze on boot
+From: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2014 11:36 AM, Uwe Kleine-König wrote:
-> Hello Guenter,
->
-> On Sun, Aug 10, 2014 at 09:19:14AM -0700, Guenter Roeck wrote:
->> powerpc:mpc83xx_defconfig and other builds fail with
+On Sun, Aug 10, 2014 at 8:55 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Sat, Aug 9, 2014 at 3:45 PM, Mantas MikulÄ—nas <grawity@gmail.com> wrote:
+>> On Sat, Aug 9, 2014 at 10:23 PM, Matt Fleming <matt@console-pimps.org> wrote:
+>> [However... Whether it's five chunks, four (after making the initrd
+>> smaller), or just one (with your efi=nochunk), I noticed that it
+>> *always* hangs during the *last* read, and the allocated memory always
+>> ends at roughly the same address (0x137fffXXX). I wonder if it's
+>> selecting a memory location already in use, or something like that...]
 >>
->> drivers/net/ethernet/freescale/ucc_geth.c: In function 'ucc_geth_remove':
->> drivers/net/ethernet/freescale/ucc_geth.c:3927:19: error:
->> 	'struct ucc_geth_private' has no member named 'info'
->>    of_node_put(ugeth->info->tbi_node);
->>                       ^
->> drivers/net/ethernet/freescale/ucc_geth.c:3928:19: error:
->> 	     'struct ucc_geth_private' has no member named 'info'
->>    of_node_put(ugeth->info->phy_node);
->>    		     ^
->>
->> Introduced by commit "net: ucc_geth: drop acquired references in probe error
->> path and remove".
->>
->>  From the context, it appears that the variable is named ug_info.
->>
->> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->> ---
->> Only seen in -next.
-> My patch was only sent just now, but it has the subject right:
+>> (The laptop is Asus K52JT, AMI firmware v206, no updates available.)
 >
-Excellent.
-
-> 	http://mid.gmane.org/1407695525-32227-1-git-send-email-u.kleine-koenig@pengutronix.de
+> wonder if  efi_file_read return with wrong chunksize.
 >
-The link doesn't seem to work for some reason.
+> Can you try attached patch ?
 
-> Another upside is that it contains a Fixes: header.
->
-Even better. I need to start using that.
+Thanks, but it didn't change anything.
 
-> Other than that my patch is the same. In case davem picks up yours:
->
-> Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
->
+(I tried adding some efi_printk's, and as far as I can see,
+efi_file_read *doesn't* return at all.)
 
-I don't need the glory ;-). Dave, please pick Uwe's patch.
-
-Thanks,
-Guenter
-
+-- 
+Mantas MikulÄ—nas <grawity@gmail.com>
