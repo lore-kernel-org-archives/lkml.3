@@ -1,122 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081AbaHJBil (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Aug 2014 21:38:41 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:34270 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaHJBik (ORCPT
+	id S1751880AbaHJBpf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Aug 2014 21:45:35 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:24533 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbaHJBpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Aug 2014 21:38:40 -0400
-Date: Sat, 9 Aug 2014 18:38:29 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140810013829.GP5821@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140731215445.GA21933@linux.vnet.ibm.com>
- <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140808191326.GE3935@laptop>
- <20140808205826.GG5821@linux.vnet.ibm.com>
- <20140809183355.GP9918@twins.programming.kicks-ass.net>
+	Sat, 9 Aug 2014 21:45:34 -0400
+Message-ID: <53E6CEAA.9020105@oracle.com>
+Date: Sat, 09 Aug 2014 21:45:14 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140809183355.GP9918@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081001-7164-0000-0000-000003B4B47A
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Vlastimil Babka <vbabka@suse.cz>, David Rientjes <rientjes@google.com>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Dave Jones <davej@redhat.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: mm: compaction: buffer overflow in isolate_migratepages_range
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 09, 2014 at 08:33:55PM +0200, Peter Zijlstra wrote:
-> On Fri, Aug 08, 2014 at 01:58:26PM -0700, Paul E. McKenney wrote:
-> > 
-> > > And on that, you probably should change rcu_sched_rq() to read:
-> > > 
-> > > 	this_cpu_inc(rcu_sched_data.passed_quiesce);
-> > > 
-> > > That avoids touching the per-cpu data offset.
-> > 
-> > Hmmm...  Interrupts are disabled,
-> 
-> No they are not, __schedule()->rcu_note_context_switch()->rcu_sched_qs()
-> is only called with preemption disabled.
-> 
-> We only disable IRQs later, where we take the rq->lock.
+Hi all,
 
-You want me not to disable irqs before invoking rcu_preempt_qs() from
-rcu_preempt_note_context_switch(), I get that.  But right now, they
-really are disabled courtesy of the local_irq_save() before the call
-to rcu_preempt_qs() from rcu_preempt_note_context_switch().
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel with the KASAN patchset, I've stumbled on the following spew:
 
-> > so no need to further disable
-> > interrupts.  Storing 1 works fine, no need to increment.  If I followed
-> > the twisty per_cpu passages correctly, my guess is that you would like
-> > me to do something like this:
-> > 
-> > 	__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
-> > 
-> > Does that work?
-> 
-> Yeah, should be more or less similar, the inc might be encoded shorter
-> due to not requiring an immediate, but who cares :-)
-> 
-> void rcu_sched_qs(int cpu)
-> {
-> 	if (trace_rcu_grace_period_enabled()) {
-> 		if (!__this_cpu_read(rcu_sched_data.passed_quiesce))
-> 			trace_rcu_grace_period(...);
-> 	}
-> 	__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
-> }
-> 
-> Would further avoid emitting the conditional in the normal case where
-> the tracepoint is inactive.
 
-It might be better to avoid storing to rcu_sched_data.passed_quiesce when
-it is already 1, though the difference would be quite hard to measure.
-In that case, this would work nicely:
+[ 3837.070452] ==================================================================
+[ 3837.073101] AddressSanitizer: buffer overflow in isolate_migratepages_range+0x85f/0xd90 at addr ffff88051b70eb49
+[ 3837.076310] page:ffffea00146dc380 count:0 mapcount:0 mapping:          (null) index:0x0
+[ 3837.079876] page flags: 0xafffff80008000(tail)
+[ 3837.114592] page dumped because: kasan error
+[ 3837.115897] CPU: 4 PID: 29613 Comm: trinity-c467 Not tainted 3.16.0-next-20140808-sasha-00051-gf368221 #1051
+[ 3837.118024]  00000000000000fc 0000000000000000 ffffea00146dc380 ffff8801f326f718
+[ 3837.119837]  ffffffff97e0d344 ffff8801f326f7e8 ffff8801f326f7d8 ffffffff9342d5bc
+[ 3837.121708]  ffffea00085163c0 0000000000000000 ffff8801f326f8e0 ffffffff93fe02fb
+[ 3837.123704] Call Trace:
+[ 3837.124272] dump_stack (lib/dump_stack.c:52)
+[ 3837.125166] kasan_report_error (mm/kasan/report.c:98 mm/kasan/report.c:166)
+[ 3837.126128] ? trace_hardirqs_on_thunk (arch/x86/lib/thunk_64.S:33)
+[ 3837.127462] ? retint_restore_args (arch/x86/kernel/entry_64.S:828)
+[ 3837.128753] __asan_load8 (mm/kasan/kasan.c:364)
+[ 3837.129914] ? isolate_migratepages_range (./arch/x86/include/asm/bitops.h:311 include/linux/pagemap.h:70 include/linux/balloon_compaction.h:131 include/linux/balloon_compaction.h:156 mm/compaction.c:596)
+[ 3837.131613] isolate_migratepages_range (./arch/x86/include/asm/bitops.h:311 include/linux/pagemap.h:70 include/linux/balloon_compaction.h:131 include/linux/balloon_compaction.h:156 mm/compaction.c:596)
+[ 3837.132838] compact_zone (mm/compaction.c:877 mm/compaction.c:1044)
+[ 3837.133818] compact_zone_order (mm/compaction.c:1106)
+[ 3837.134982] try_to_compact_pages (mm/compaction.c:1161)
+[ 3837.135970] __alloc_pages_direct_compact (mm/page_alloc.c:2313)
+[ 3837.137217] ? next_zones_zonelist (mm/mmzone.c:72)
+[ 3837.138861] __alloc_pages_nodemask (mm/page_alloc.c:2640 mm/page_alloc.c:2806)
+[ 3837.139897] ? check_chain_key (kernel/locking/lockdep.c:2190)
+[ 3837.141220] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[ 3837.142434] alloc_pages_vma (mm/mempolicy.c:2046)
+[ 3837.143479] ? do_huge_pmd_wp_page (mm/huge_memory.c:774 mm/huge_memory.c:1123)
+[ 3837.144663] do_huge_pmd_wp_page (mm/huge_memory.c:774 mm/huge_memory.c:1123)
+[ 3837.145653] handle_mm_fault (mm/memory.c:3312 mm/memory.c:3370)
+[ 3837.146717] ? vmacache_find (mm/vmacache.c:100 (discriminator 1))
+[ 3837.147404] ? find_vma (mm/mmap.c:2024)
+[ 3837.147982] __do_page_fault (arch/x86/mm/fault.c:1231)
+[ 3837.148613] ? context_tracking_user_exit (kernel/context_tracking.c:184)
+[ 3837.149388] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[ 3837.150212] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2641 (discriminator 8))
+[ 3837.150977] ? trace_hardirqs_off (kernel/locking/lockdep.c:2647)
+[ 3837.151686] trace_do_page_fault (arch/x86/mm/fault.c:1314 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1315)
+[ 3837.152870] do_async_page_fault (arch/x86/kernel/kvm.c:279)
+[ 3837.153886] async_page_fault (arch/x86/kernel/entry_64.S:1313)
+[ 3837.155293] Read of size 8 by thread T29613:
+[ 3837.156058] Memory state around the buggy address:
+[ 3837.156885]  ffff88051b70e880: 00 00 00 00 00 00 00 fc fc fc fc fc fc fc fc fc
+[ 3837.158141]  ffff88051b70e900: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+[ 3837.159492]  ffff88051b70e980: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+[ 3837.160863]  ffff88051b70ea00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[ 3837.162165]  ffff88051b70ea80: 00 00 00 00 00 00 00 fc fc fc fc fc fc fc fc fc
+[ 3837.163552] >ffff88051b70eb00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+[ 3837.164866]                                               ^
+[ 3837.165914]  ffff88051b70eb80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+[ 3837.167317]  ffff88051b70ec00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+[ 3837.168616]  ffff88051b70ec80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+[ 3837.169898]  ffff88051b70ed00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+[ 3837.171298]  ffff88051b70ed80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+[ 3837.172611] ==================================================================
 
-static void rcu_preempt_qs(int cpu)
-{
-	if (rdp->passed_quiesce == 0) {
-		trace_rcu_grace_period(TPS("rcu_preempt"), rdp->gpnum, TPS("cpuqs"));
-	> 	__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
-	}
-	current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
-}
 
-> Steve does it make sense to have __DO_TRACE() emit __trace_##name() to
-> avoid the double static_branch thing?
-> 
-> > > And it would be very good if we could avoid the unconditional IRQ flag
-> > > fiddling in rcu_preempt_note_context_switch(), them expensive, this
-> > > looks entirely feasibly in the 'normal' case where
-> > > t->rcu_read_unlock_special doesn't have RCU_READ_UNLOCK_NEED_QS set.
-> > 
-> > Agreed, but sometimes RCU_READ_UNLOCK_NEED_QS is set.
-> > 
-> > That said, I should probably revisit RCU_READ_UNLOCK_NEED_QS.  A lot has
-> > changed since I wrote that code.
-> 
-> Sure, but a conditional testing RCU_READ_UNLOCK_NEED_QS is far cheaper
-> than poking the IRQ flags. That said, its not entirely clear to me why
-> that needs IRQs disabled at all, then again I didn't look long and I'm
-> sure its all subtle.
-
-This bit gets set from the scheduler-clock interrupt, so disabling
-interrupts is the standard approach to avoid confusion.  Might be possible
-to avoid it in this case, or make it less frequent, or whatever.  As I
-said, I haven't thought much about it since the initial implementation
-some years back, so worth worrying about again.
-
-							Thanx, Paul
-
+Thanks,
+Sasha
