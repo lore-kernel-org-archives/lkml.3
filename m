@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841AbaHJXSR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 19:18:17 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50161 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640AbaHJXSQ (ORCPT
+	id S1751867AbaHJXuN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 19:50:13 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:4355 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173AbaHJXuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 19:18:16 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53E7FDB5.4070607@roeck-us.net>
-Date: Sun, 10 Aug 2014 16:18:13 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Oleg Nesterov <oleg@redhat.com>, Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: Runtime trouble with commit dbd952127d (seccomp: introduce writer
- locking)
-References: <53E6CF2B.6090709@roeck-us.net>	<CAGXu5jLsbCpqG2cAxZWG+ZC=wdvhQ_9GPqXUb6p9pSvsqrXpOA@mail.gmail.com>	<20140810193308.GA31867@redhat.com>	<53E7DB59.6020300@roeck-us.net> <CA+55aFz3vW_qnrwa6kWMsN1pGbjnyGXGBNhH=DO0berKgyOtgQ@mail.gmail.com>
-In-Reply-To: <CA+55aFz3vW_qnrwa6kWMsN1pGbjnyGXGBNhH=DO0berKgyOtgQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+	Sun, 10 Aug 2014 19:50:12 -0400
+Message-ID: <1407714603.7594.10.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2 1/7] locking/rwsem: check for active writer/spinner
+ before wakeup
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, aswin@hp.com
+Date: Sun, 10 Aug 2014 16:50:03 -0700
+In-Reply-To: <53E7E712.9060201@hp.com>
+References: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com>
+	   <1407450408-11679-2-git-send-email-Waiman.Long@hp.com>
+	   <1407458726.2513.12.camel@buesod1.americas.hpqcorp.net>
+	  <1407476387.2513.39.camel@buesod1.americas.hpqcorp.net>
+	  <53E5172A.7090508@hp.com>
+	 <1407524600.6583.6.camel@buesod1.americas.hpqcorp.net>
+	 <53E7E712.9060201@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2014 02:10 PM, Linus Torvalds wrote:
-> On Sun, Aug 10, 2014 at 1:51 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> That means that the broken configuration is (CONFIG_DEBUG_SPINLOCK=n,
->> CONFIG_SMP=n).
->> It also means that the BUG_ON checks introduced with the seccomp commit
->> will cause this configuration to fail hard at least for architectures where
->> CONFIG_SMP
->> can be disabled, and if those architectures use
->> include/linux/spinlock_types_up.h.
->
-> Yes. This is why we have "assert_spin_locked()". You can't use
-> BUG_ON(spin_is_locked()), and !spin_is_locked() tends to be even worse
-> unless you can prove that nobody else can get the lock simultaneously.
->
+On Sun, 2014-08-10 at 17:41 -0400, Waiman Long wrote:
+> On 08/08/2014 03:03 PM, Davidlohr Bueso wrote:
+> > On Fri, 2014-08-08 at 14:30 -0400, Waiman Long wrote:
+> >> I have 2 issues about this. First of all, the timing windows between
+> >> atomic_set() and mutex_has_owner() check is really small, I doubt it
+> >> will be that effective.
+> > That is true, which is why I didn't bother showing any performance data
+> > in the changelog. However, more important than any performance, avoiding
+> > bogus wakeups is the _right_ thing to do when allowing lock stealing.
+> >
+> >> Secondly, I think you may need to call
+> >> mutex_release() and debug_mutex_unlock() to make the debugging code
+> >> work, but they seems to be called only under the wait_lock. So I think
+> >> there is more work that need to be done before this patch is ready.
+> > When !DEBUG both mutex_release() and debug_mutex_unlock() should be
+> > no-ops. So this allows us to do the mutex_has_owner() check *without*
+> > holding the wait_lock.
+> >
+> > When DEBUG is set, we don't even bother calling mutex_has_owner(), so
+> > nothing changes.
+> >
+> > I don't understand your concern.
+> 
+> It is true I forgot the fact that MUTEX_SPIN_ON_OWNER is disabled when 
+> DEBUG_MUTEX is on. However, mutex_release is controlled by the LOCKDEP 
+> config variable which is independent of DEBUG_MUTEX. So it is still a 
+> concern.
 
-git grep 'BUG_ON.*!spin_is_locked'
+But afaict you cannot have LOCKDEP without enabling DEBUG_MUTEX (but not
+necessarily vice-versa). Both are quite intertwined within other
+debugging dependencies/options.
 
-suggests that this may be a spreading sickness ... unless the other users
-know for sure that SMP will always be configured.
-
-What is the better fix ? Add NR_CPUS != 1 to the test, as mm does,
-or remove it entirely ? Or something else ?
-
-Guenter
+Thanks,
+Davidlohr
 
