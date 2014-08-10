@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352AbaHJHbS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 03:31:18 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50966 "EHLO
+	id S1751402AbaHJHdr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 03:33:47 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51100 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaHJHbR (ORCPT
+	with ESMTP id S1751033AbaHJHdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 03:31:17 -0400
-Date: Sun, 10 Aug 2014 09:31:15 +0200
+	Sun, 10 Aug 2014 03:33:46 -0400
+Date: Sun, 10 Aug 2014 09:33:43 +0200
 From: Pavel Machek <pavel@ucw.cz>
 To: Greg KH <gregkh@linuxfoundation.org>
 Cc: Marcel Holtmann <marcel@holtmann.org>,
@@ -15,8 +15,8 @@ Cc: Marcel Holtmann <marcel@holtmann.org>,
         Miguel Oliveira <cmroliv@gmail.com>, gulsah.1004@gmail.com,
         peter.p.waskiewicz.jr@intel.com, kristina.martsenko@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] staging: nokia_h4: avoid __uX types
-Message-ID: <20140810073115.GB19735@amd.pavel.ucw.cz>
+Subject: [PATCH 3/3] staging: use inlines where it makes sense
+Message-ID: <20140810073343.GC19735@amd.pavel.ucw.cz>
 References: <1401445633-5290-1-git-send-email-cmroliv@gmail.com>
  <20140530123023.GA10549@amd.pavel.ucw.cz>
  <20140530155959.GA10682@kroah.com>
@@ -37,85 +37,95 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-__u8/16 types should not be neccessary inside kernel, u8/16 should
-be enough.
+Make some uart function static inline to reduce ammount of exported code.
     
 Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
 diff --git a/drivers/staging/nokia_h4p/hci_h4p.h b/drivers/staging/nokia_h4p/hci_h4p.h
-index 76eaaaa..b91e8b3 100644
+index b91e8b3..6c72ca5 100644
 --- a/drivers/staging/nokia_h4p/hci_h4p.h
 +++ b/drivers/staging/nokia_h4p/hci_h4p.h
-@@ -100,12 +100,12 @@ struct hci_h4p_info {
- };
+@@ -26,6 +26,8 @@
+ #include <net/bluetooth/hci_core.h>
+ #include <net/bluetooth/hci.h>
  
- struct hci_h4p_radio_hdr {
--	__u8 evt;
--	__u8 dlen;
-+	u8 evt;
-+	u8 dlen;
- } __packed;
++#include <linux/serial_reg.h>
++
+ #define UART_SYSC_OMAP_RESET	0x03
+ #define UART_SYSS_RESETDONE	0x01
+ #define UART_OMAP_SCR_EMPTY_THR	0x08
+@@ -205,9 +207,28 @@ int hci_h4p_read_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue);
+ int hci_h4p_send_fw(struct hci_h4p_info *info, struct sk_buff_head *fw_queue);
+ void hci_h4p_parse_fw_event(struct hci_h4p_info *info, struct sk_buff *skb);
  
- struct hci_h4p_neg_hdr {
--	__u8 dlen;
-+	u8 dlen;
- } __packed;
- #define H4P_NEG_HDR_SIZE 1
+-void hci_h4p_outb(struct hci_h4p_info *info, unsigned int offset, u8 val);
+-u8 hci_h4p_inb(struct hci_h4p_info *info, unsigned int offset);
+-void hci_h4p_set_rts(struct hci_h4p_info *info, int active);
++static inline void hci_h4p_outb(struct hci_h4p_info *info, unsigned int offset, u8 val)
++{
++	__raw_writeb(val, info->uart_base + (offset << 2));
++}
++
++static inline u8 hci_h4p_inb(struct hci_h4p_info *info, unsigned int offset)
++{
++	return __raw_readb(info->uart_base + (offset << 2));
++}
++
++static inline void hci_h4p_set_rts(struct hci_h4p_info *info, int active)
++{
++	u8 b;
++
++	b = hci_h4p_inb(info, UART_MCR);
++	if (active)
++		b |= UART_MCR_RTS;
++	else
++		b &= ~UART_MCR_RTS;
++	hci_h4p_outb(info, UART_MCR, b);
++}
++
+ int hci_h4p_wait_for_cts(struct hci_h4p_info *info, int active, int timeout_ms);
+ void __hci_h4p_set_auto_ctsrts(struct hci_h4p_info *info, int on, u8 which);
+ void hci_h4p_set_auto_ctsrts(struct hci_h4p_info *info, int on, u8 which);
+diff --git a/drivers/staging/nokia_h4p/nokia_uart.c b/drivers/staging/nokia_h4p/nokia_uart.c
+index 0fb57de..9aab7bb 100644
+--- a/drivers/staging/nokia_h4p/nokia_uart.c
++++ b/drivers/staging/nokia_h4p/nokia_uart.c
+@@ -19,7 +19,6 @@
+  *
+  */
  
-@@ -121,36 +121,36 @@ struct hci_h4p_neg_hdr {
- #define H4P_ID_TI1271	0x31
+-#include <linux/serial_reg.h>
+ #include <linux/delay.h>
+ #include <linux/clk.h>
  
- struct hci_h4p_neg_cmd {
--	__u8	ack;
--	__u16	baud;
--	__u16	unused1;
--	__u8	proto;
--	__u16	sys_clk;
--	__u16	unused2;
-+	u8	ack;
-+	u16	baud;
-+	u16	unused1;
-+	u8	proto;
-+	u16	sys_clk;
-+	u16	unused2;
- } __packed;
+@@ -27,27 +26,7 @@
  
- struct hci_h4p_neg_evt {
--	__u8	ack;
--	__u16	baud;
--	__u16	unused1;
--	__u8	proto;
--	__u16	sys_clk;
--	__u16	unused2;
--	__u8	man_id;
--	__u8	ver_id;
-+	u8	ack;
-+	u16	baud;
-+	u16	unused1;
-+	u8	proto;
-+	u16	sys_clk;
-+	u16	unused2;
-+	u8	man_id;
-+	u8	ver_id;
- } __packed;
+ #include "hci_h4p.h"
  
- #define H4P_ALIVE_REQ	0x55
- #define H4P_ALIVE_RESP	0xcc
+-inline void hci_h4p_outb(struct hci_h4p_info *info, unsigned int offset, u8 val)
+-{
+-	__raw_writeb(val, info->uart_base + (offset << 2));
+-}
+-
+-inline u8 hci_h4p_inb(struct hci_h4p_info *info, unsigned int offset)
+-{
+-	return __raw_readb(info->uart_base + (offset << 2));
+-}
  
- struct hci_h4p_alive_hdr {
--	__u8	dlen;
-+	u8	dlen;
- } __packed;
- #define H4P_ALIVE_HDR_SIZE 1
+-void hci_h4p_set_rts(struct hci_h4p_info *info, int active)
+-{
+-	u8 b;
+-
+-	b = hci_h4p_inb(info, UART_MCR);
+-	if (active)
+-		b |= UART_MCR_RTS;
+-	else
+-		b &= ~UART_MCR_RTS;
+-	hci_h4p_outb(info, UART_MCR, b);
+-}
  
- struct hci_h4p_alive_pkt {
--	__u8	mid;
--	__u8	unused;
-+	u8	mid;
-+	u8	unused;
- } __packed;
- 
- #define MAX_BAUD_RATE		921600
+ int hci_h4p_wait_for_cts(struct hci_h4p_info *info, int active,
+ 			 int timeout_ms)
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
