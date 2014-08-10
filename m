@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751272AbaHMFem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 01:34:42 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:53914 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaHMFel (ORCPT
+	id S1751364AbaHMFg5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 01:36:57 -0400
+Received: from thoros.lunarpages.com ([67.210.120.70]:41403 "EHLO
+	thoros.lunarpages.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787AbaHMFg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 01:34:41 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/4] perf tools: Fix one of the probe events to exclude kernel
-References: <1407855871-15024-1-git-send-email-adrian.hunter@intel.com>
-	<1407855871-15024-3-git-send-email-adrian.hunter@intel.com>
-Date: Wed, 13 Aug 2014 14:34:33 +0900
-In-Reply-To: <1407855871-15024-3-git-send-email-adrian.hunter@intel.com>
-	(Adrian Hunter's message of "Tue, 12 Aug 2014 18:04:29 +0300")
-Message-ID: <87iolxdkba.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 13 Aug 2014 01:36:56 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Aug 2014 01:36:56 EDT
+From: "Ragnar B. Johannsson" <ragnar@igo.is>
+To: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        "Ragnar B. Johannsson" <ragnar@igo.is>
+Subject: [PATCH 3/3] staging: vt6656: add blank line after declaration
+Date: Sun, 10 Aug 2014 22:23:50 +0000
+Message-Id: <1407709430-61260-4-git-send-email-ragnar@igo.is>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1407709430-61260-1-git-send-email-ragnar@igo.is>
+References: <1407709430-61260-1-git-send-email-ragnar@igo.is>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - thoros.lunarpages.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [0 0]
+X-AntiAbuse: Sender Address Domain - igo.is
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Aug 2014 18:04:29 +0300, Adrian Hunter wrote:
-> When probing the kernel API the kernel should be excluded
-> otherwise the probe will fail for users with insufficient
-> privilege to profile the kernel.
->
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Adds a blank line after declaration to comply with coding style.
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Ragnar B. Johannsson <ragnar@igo.is>
+---
+ drivers/staging/vt6656/rxtx.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Thanks,
-Namhyung
+diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
+index 08ce18d..852ebe8 100644
+--- a/drivers/staging/vt6656/rxtx.c
++++ b/drivers/staging/vt6656/rxtx.c
+@@ -1036,6 +1036,7 @@ static int vnt_beacon_xmit(struct vnt_private *priv,
+ 	info = IEEE80211_SKB_CB(skb);
+ 	if (info->flags & IEEE80211_TX_CTL_ASSIGN_SEQ) {
+ 		struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)mgmt_hdr;
++
+ 		hdr->duration_id = 0;
+ 		hdr->seq_ctrl = cpu_to_le16(priv->seq_counter << 4);
+ 	}
+-- 
+1.9.3
 
-
-> ---
->  tools/perf/util/record.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-> index 787b882..68ad2d0 100644
-> --- a/tools/perf/util/record.c
-> +++ b/tools/perf/util/record.c
-> @@ -47,7 +47,7 @@ out_delete:
->  
->  static bool perf_probe_api(setup_probe_fn_t fn)
->  {
-> -	const char *try[] = {"cycles:u", "instructions:u", "cpu-clock", NULL};
-> +	const char *try[] = {"cycles:u", "instructions:u", "cpu-clock:u", NULL};
->  	struct cpu_map *cpus;
->  	int cpu, ret, i = 0;
