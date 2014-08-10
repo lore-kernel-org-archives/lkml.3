@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717AbaHJMYr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 08:24:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42902 "EHLO
+	id S1751854AbaHJM0D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 08:26:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42907 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaHJMYq (ORCPT
+	with ESMTP id S1751424AbaHJM0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 08:24:46 -0400
-Date: Sun, 10 Aug 2014 05:24:11 -0700
+	Sun, 10 Aug 2014 08:26:01 -0400
+Date: Sun, 10 Aug 2014 05:25:26 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Junien Fridrick <linux.kernel@junien.fridrick.net>
-Cc: Lai Siyao <lai.siyao@intel.com>, Oleg Drokin <oleg.drokin@intel.com>,
-        "John L. Hammond" <john.hammond@intel.com>,
-        Jinshan Xiong <jinshan.xiong@intel.com>, devel@driverdev.osuosl.org,
+To: Vincent Bernat <vincent@bernat.im>
+Cc: Eli Billauer <eli.billauer@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [next-20140808] [staging] [lustre] Fix coding style in
- llite/remote_perm.c
-Message-ID: <20140810122411.GF28863@kroah.com>
-References: <1407615768-6757-1-git-send-email-linux.kernel@junien.fridrick.net>
+Subject: Re: [PATCH] staging: xillybus: fix some coding style errors
+Message-ID: <20140810122526.GA29990@kroah.com>
+References: <1405516782-11434-1-git-send-email-vincent@bernat.im>
+ <20140810033413.GA20872@kroah.com>
+ <m3y4uwsfp7.fsf@neo.luffy.cx>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1407615768-6757-1-git-send-email-linux.kernel@junien.fridrick.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <m3y4uwsfp7.fsf@neo.luffy.cx>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 09, 2014 at 08:22:48PM +0000, Junien Fridrick wrote:
-> Sorry for the noise, this is part of task 10 of the Eudyptula Challenge.
+On Sun, Aug 10, 2014 at 02:16:04PM +0200, Vincent Bernat wrote:
+>  ❦  9 août 2014 20:34 -0700, Greg Kroah-Hartman <gregkh@linuxfoundation.org> :
+> 
+> >> This includes:
+> >>  - keep "else" on the same line as the closing brace
+> >>  - don't use "else" after "return"
+> >
+> >>  - don't issue a message for an out-of-memory error
+> >>  - blank line after a declaration
+> >> 
+> >> Signed-off-by: Vincent Bernat <vincent@bernat.im>
+> >> ---
+> >>  drivers/staging/xillybus/xillybus_core.c | 13 +++++--------
+> >>  1 file changed, 5 insertions(+), 8 deletions(-)
+> >
+> > This patch doesn't apply at all, as I think you made it against an old
+> > kernel tree :(
+> 
+> Hi Greg!
+> 
+> You already applied this patch. It is almost one month old. Dunno why
+> you received it a second time.
 
-It's not noise at all, but it's not needed in the changelog comment, as
-was pointed out.
-
-Can you resend without this line, and actually say _what_ coding style
-change you made?  And drop all of the [ ] in the subject, except for the
-[PATCH] part, that's not needed, just use ':' instead, so it would look
-like:
-	Subject: [PATCH] staging: lustre: fix...
-
-thanks,
+Ugh, you are right, somehow I never flushed it from my queue, sorry for
+the noise.
 
 greg k-h
