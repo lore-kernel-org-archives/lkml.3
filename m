@@ -1,70 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751415AbaHJHr5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 03:47:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38079 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaHJHrz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 03:47:55 -0400
-Date: Sun, 10 Aug 2014 00:46:37 -0700
-From: tip-bot for Jeremiah Mahler <tipbot@zytor.com>
-Message-ID: <tip-129ea00594bf993251a5c70d14cbe16f3624e505@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rdunlap@infradead.org, jmmahler@gmail.com, dave.hansen@linux.intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jmmahler@gmail.com, rdunlap@infradead.org, tglx@linutronix.de,
-        dave.hansen@linux.intel.com
-In-Reply-To: <1407484195-1441-1-git-send-email-jmmahler@gmail.com>
-References: <1407484195-1441-1-git-send-email-jmmahler@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/doc: Fix the 'tlb_single_page_flush_ceiling'
-  sysconfig path
-Git-Commit-ID: 129ea00594bf993251a5c70d14cbe16f3624e505
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1751307AbaHJH6Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 03:58:24 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:40525 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751194AbaHJH6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 03:58:22 -0400
+Date: Sun, 10 Aug 2014 08:58:19 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: Olof Johansson <olof@lixom.net>
+cc: YoungJun Cho <yj44.cho@samsung.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Wood <thomas.wood@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Inki Dae <daeinki@gmail.com>, Rahul Sharma <rahul.sharma@samsung.com>
+Subject: Re: linux-next: build failures after merge of the drm tree
+In-Reply-To: <CAOesGMg=kFM_9ksgoOXgqLFjzoE38tCuPy7pxbG5F_j5KovkVA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1408100856270.32072@skynet.skynet.ie>
+References: <20140805130926.4e8c8fe5@canb.auug.org.au> <53E0736E.7030901@samsung.com> <CAOesGMjjLHOaBJZwFENaWW41KFsNZ3pUqiYk0jtet=8NFvce3g@mail.gmail.com> <CAOesGMg=kFM_9ksgoOXgqLFjzoE38tCuPy7pxbG5F_j5KovkVA@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  129ea00594bf993251a5c70d14cbe16f3624e505
-Gitweb:     http://git.kernel.org/tip/129ea00594bf993251a5c70d14cbe16f3624e505
-Author:     Jeremiah Mahler <jmmahler@gmail.com>
-AuthorDate: Fri, 8 Aug 2014 00:49:55 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 10 Aug 2014 09:09:26 +0200
+> 
 
-x86/doc: Fix the 'tlb_single_page_flush_ceiling' sysconfig path
+Been on holidays, but ack for anything DT related,
 
-Fix the documented sysconfig location of 'tlb_single_page_flush_ceiling'
-which is under /sys/kernel/debug/... not /sys/debug/kernel/...
+Look I wishI knew how DT worked, and what tree is canonical for changes to 
+it, I'm not sure its well defined enough or sub maintaniers know enough, 
+so I do just trust the exynos guys with this.
 
-Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
-Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Link: http://lkml.kernel.org/r/1407484195-1441-1-git-send-email-jmmahler@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- Documentation/x86/tlb.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/Documentation/x86/tlb.txt b/Documentation/x86/tlb.txt
-index 2b3a82e..39d1723 100644
---- a/Documentation/x86/tlb.txt
-+++ b/Documentation/x86/tlb.txt
-@@ -35,7 +35,7 @@ invlpg instruction (or instructions _near_ it) show up high in
- profiles.  If you believe that individual invalidations being
- called too often, you can lower the tunable:
- 
--	/sys/debug/kernel/x86/tlb_single_page_flush_ceiling
-+	/sys/kernel/debug/x86/tlb_single_page_flush_ceiling
- 
- This will cause us to do the global flush for more cases.
- Lowering it to 0 will disable the use of the individual flushes.
+Dave.
