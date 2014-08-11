@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929AbaHKSQZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:16:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21000 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751588AbaHKSQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:16:23 -0400
-Date: Mon, 11 Aug 2014 14:15:43 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Shaun Ruffell <sruffell@digium.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org, ebiederm@xmission.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com,
-        bhe@redhat.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 11/15] purgatory: Core purgatory functionality
-Message-ID: <20140811181543.GD1863@redhat.com>
-References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
- <1403814824-7587-12-git-send-email-vgoyal@redhat.com>
- <20140811174017.GD12610@digium.com>
- <53E9028E.2070709@zytor.com>
- <20140811180213.GC1863@redhat.com>
- <53E906B0.5040105@zytor.com>
+	id S1754177AbaHKSSg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:18:36 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33922 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751506AbaHKSSf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 14:18:35 -0400
+Message-Id: <1407781112.3399765.151527845.7EC32D9C@webmail.messagingengine.com>
+X-Sasl-Enc: 53JfYkI73HLkDWipYhy04HdR1o9edeLXm5GLc8WBzqII 1407781112
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E906B0.5040105@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-e309cf77
+In-Reply-To: <53E8D876.1060004@zytor.com>
+References: <20140809231911.GA4843@khazad-dum.debian.net>
+ <53E8D876.1060004@zytor.com>
+Subject: Re: BUG: early intel microcode update violating alignment rules
+Date: Mon, 11 Aug 2014 15:18:32 -0300
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 11:08:48AM -0700, H. Peter Anvin wrote:
-> On 08/11/2014 11:02 AM, Vivek Goyal wrote:
-> > 
-> > Hi hpa,
-> > 
-> > I took it because kexec-tools uses it and in one of the committs Eric
-> > gave following reasoning.
-> > 
-> >     On x86_64 use -mcmodel=large so that the code is built without
-> >     any 32bit assumptions.  -mcmodel=medium and -mcmodel=small
-> >     result int code that has 32bit relocations against variables
-> >     that can live anywhere in the address space
-> > 
-> > We do want to load purgatory anywhere in the address space. 
-> > 
-> > But if there are other ways to achieve the same thing, I will do that
-> > change.
-> > 
-> > So when you say "small PIC", I need to use -mcmodel=small and -fPIC?
-> > 
-> 
-> Actually -fPIE is probably better than -fPIC.
-> 
-> -mcmodel=large is incompatible with all other code out there, which
-> means that even though it is supposed to work it will be poorly tested
-> at best.  So even despite the gcc version issue, using the small PIC
-> model would be better.
+On Mon, Aug 11, 2014, at 11:51, H. Peter Anvin wrote:
+> We could put a buffer in the initdata region (we really could use an
+> initbss region!) or in the brk.
 
-Ok, I will give it a try.
+That sounds much better than the hideous crap I came up with.  The
+buffer would need to be at least 64KiB in size to be on the safe side. 
+The largest public microcode update ATM is 23KiB.
 
-Thanks
-Vivek
+I am not sure if we might need more than 64KiB: the Intel SDM mentions
+that in real mode the update data must not cross a segment boundary, and
+also must not exceed a segment limit.  I am a bit rusty on real mode,
+but doesn't that mean, in practice, that microcode update data size is
+limited in size to 64KiB?
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
