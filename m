@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695AbaHKHty (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 03:49:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58438 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595AbaHKHtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 03:49:52 -0400
-Date: Mon, 11 Aug 2014 09:49:50 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/4] mm: memcontrol: reduce reclaim invocations for
- higher order requests
-Message-ID: <20140811074950.GA15312@dhcp22.suse.cz>
-References: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
- <1407186897-21048-2-git-send-email-hannes@cmpxchg.org>
- <20140807130822.GB12730@dhcp22.suse.cz>
- <20140807153141.GD14734@cmpxchg.org>
- <20140808123258.GK4004@dhcp22.suse.cz>
- <20140808132635.GJ14734@cmpxchg.org>
+	id S1751415AbaHKHy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 03:54:27 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:61587 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720AbaHKHy0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 03:54:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140808132635.GJ14734@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140808132510.68e8ae66@canb.auug.org.au>
+References: <20140728144608.7d9ac736@canb.auug.org.au>
+	<20140808132510.68e8ae66@canb.auug.org.au>
+Date: Mon, 11 Aug 2014 09:54:25 +0200
+Message-ID: <CAPDyKFqrTVP46+NU+pvf+gFMnEkuJFmARzMpm_2DEcNCK5-BAw@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the mmc-uh tree
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sonny Rao <sonnyrao@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 08-08-14 09:26:35, Johannes Weiner wrote:
-> On Fri, Aug 08, 2014 at 02:32:58PM +0200, Michal Hocko wrote:
-> > On Thu 07-08-14 11:31:41, Johannes Weiner wrote:
-[...]
-> > > although system time is reduced with the high limit.
-> > > High limit reclaim with SWAP_CLUSTER_MAX has better fault latency but
-> > > it doesn't actually contain the workload - with 1G high and a 4G load,
-> > > the consumption at the end of the run is 3.7G.
-> > 
-> > Wouldn't it help to simply fail the charge and allow the charger to
-> > fallback for THP allocations if the usage is above high limit too
-> > much? The follow up single page charge fallback would be still
-> > throttled.
-> 
-> This is about defining the limit semantics in unified hierarchy, and
-> not really the time or place to optimize THP charge latency.
-> 
-> What are you trying to accomplish here?
+On 8 August 2014 05:25, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> On Mon, 28 Jul 2014 14:46:08 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>> After merging the mmc-uh tree, today's linux-next build (arm
+>> multi_v7_defconfig) failed like this:
+>>
+>> drivers/mmc/host/dw_mmc.c: In function 'dw_mci_reset':
+>> drivers/mmc/host/dw_mmc.c:2262:3: error: implicit declaration of function 'dw_mci_idmac_reset' [-Werror=implicit-function-declaration]
+>>    dw_mci_idmac_reset(host);
+>>    ^
+>>
+>> Caused by commit 25f7dadbd982 ("mmc: dw_mmc: change to use recommended
+>> reset procedure").
+>>
+>> I have used the mmc-uh tree from next-20140725 for today.
+>
+> Ping.  We are nearly half way through the merge window and there has
+> been a patch posted for this, but the tree is still broken ...
 
-Well there are two things. The first one is that this patch changes the way
-how THP are charged for the hard limit without any data to back it up in the
-changelog. This is the primary concern.
+Sorry for the delay. I have picked up the new version of the patch now.
 
-The other part is the high limit behavior for large excess. You have
-chosen to reclaim all excessive charges even when quite a lot of pages
-might be direct reclaimed. This is potentially dangerous because the
-excess might be really huge (consider multiple tasks charging THPs
-simultaneously on many CPUs). Do you really want to direct reclaim
-nr_online_cpus * 512 pages in the single direct reclaim pass and for
-all those cpus? This is an extreme case, all right, but the point
-stays. There has to be a certain cap. Also it seems that the primary
-source of troubles is THP so the question is. Do we really want to push
-hard to reclaim enough charges or do we rather fail THP charge and go
-with single page retry?
--- 
-Michal Hocko
-SUSE Labs
+Kind regards
+Ulf Hansson
+
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
