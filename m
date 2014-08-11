@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaHKLd5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 07:33:57 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:43120 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871AbaHKLd4 (ORCPT
+	id S1752951AbaHKLe2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 07:34:28 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:50876 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810AbaHKLe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 07:33:56 -0400
-Subject: [RFC PATCH V2 03/19] sched/idle: Enumerate idle states in scheduler
- topology
+	Mon, 11 Aug 2014 07:34:27 -0400
+Subject: [RFC PATCH V2 04/19] sched: add sched balance policies in kernel
 From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 To: alex.shi@intel.com, vincent.guittot@linaro.org, peterz@infradead.org,
         pjt@google.com, efault@gmx.de, rjw@rjwysocki.net,
@@ -21,8 +20,8 @@ Cc: nicolas.pitre@linaro.org, len.brown@intel.com, yuyang.du@intel.com,
         dietmar.eggemann@arm.com, Lorenzo.Pieralisi@arm.com,
         mike.turquette@linaro.org, akpm@linux-foundation.org,
         paulmck@linux.vnet.ibm.com, tglx@linutronix.de
-Date: Mon, 11 Aug 2014 17:03:35 +0530
-Message-ID: <20140811113322.31956.58019.stgit@preeti.in.ibm.com>
+Date: Mon, 11 Aug 2014 17:04:07 +0530
+Message-ID: <20140811113354.31956.76259.stgit@preeti.in.ibm.com>
 In-Reply-To: <20140811113000.31956.52857.stgit@preeti.in.ibm.com>
 References: <20140811113000.31956.52857.stgit@preeti.in.ibm.com>
 User-Agent: StGit/0.17-dirty
@@ -31,86 +30,69 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081111-7164-0000-0000-000003BAA32A
+x-cbid: 14081111-9332-0000-0000-000001A6A0F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goal of the power aware scheduler design is to integrate
-all cpu power management in the scheduler. As a first step
-the idle state selection was moved into the scheduler. Doing
-this helps better decide which idle state to enter into using
-metrics known by the scheduler. However the cost of entering
-and exiting an idle state can help the scheduler do load balancing
-better.It would be even better if the idle states can let the
-scheduler know about the impact on the cache contents when
-the cpu enters that state. The scheduler can make use of this data
-while waking up tasks or scheduling new tasks. To make way for such
-information to be propogated to the scheduler, enumerate idle states
-in the scheduler topology levels.
+From: Alex Shi <alex.shi@intel.com>
 
-Doing so will also let the scheduler know the idle states
-that a *sched_group* can enter into at a given level of scheduling
-domain. This means the scheduler is implicitly made aware of the
-fact that idle state is not necessarily a per-cpu state, it can be a
-per-core state or a state shared by a group of cpus that is specified
-by the sched_group. The knowledge of this higher level cpuidle information
-is missing today too.
+Current scheduler behavior is just consider for larger performance
+of system. So it try to spread tasks on more cpu sockets and cpu cores
 
-The low level platform cpuidle drivers must expose to the scheduler
-the idle states at the different topology levels. This patch takes
-up the powernv cpuidle driver to illustrate this. The scheduling
-topology is left to the arch to decide.
-Commit 143e1e28cb40bed836 introduced this. The platform idle
-drivers are thus in a better position to fill up the topology
-levels with appropriate cpuidle state information while they discover
-it themselves.
+To adding the consideration of power awareness, the patchset adds
+a powersaving scheduler policy. It will use runnable load util in
+scheduler balancing. The current scheduling is taken as performance
+policy.
 
+performance: the current scheduling behaviour, try to spread tasks
+                on more CPU sockets or cores. performance oriented.
+powersaving: will pack tasks into few sched group until all LCPU in the
+                group is full, power oriented.
+
+The incoming patches will enable powersaving scheduling in CFS.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+[Added CONFIG_SCHED_POWER switch to enable this patch]
 Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 ---
 
- drivers/cpuidle/cpuidle-powernv.c |    8 ++++++++
- include/linux/sched.h             |    3 +++
- 2 files changed, 11 insertions(+)
+ kernel/sched/fair.c  |    5 +++++
+ kernel/sched/sched.h |    7 +++++++
+ 2 files changed, 12 insertions(+)
 
-diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
-index 95ef533..4232fbc 100644
---- a/drivers/cpuidle/cpuidle-powernv.c
-+++ b/drivers/cpuidle/cpuidle-powernv.c
-@@ -184,6 +184,11 @@ static int powernv_add_idle_states(void)
- 
- 	dt_idle_states = len_flags / sizeof(u32);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index bfa3c86..77da534 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -7800,6 +7800,11 @@ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task
+ 	return rr_interval;
+ }
  
 +#ifdef CONFIG_SCHED_POWER
-+	/* Snooze is a thread level idle state; the rest are core level idle states */
-+	sched_domain_topology[0].states[0] = powernv_states[0];
++/* The default scheduler policy is 'performance'. */
++int __read_mostly sched_balance_policy = SCHED_POLICY_PERFORMANCE;
 +#endif
 +
- 	for (i = 0; i < dt_idle_states; i++) {
+ /*
+  * All the scheduling class methods:
+  */
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 579712f..95fc013 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -23,6 +23,13 @@ extern atomic_long_t calc_load_tasks;
+ extern long calc_load_fold_active(struct rq *this_rq);
+ extern void update_cpu_load_active(struct rq *this_rq);
  
- 		flags = be32_to_cpu(idle_state_flags[i]);
-@@ -209,6 +214,9 @@ static int powernv_add_idle_states(void)
- 			powernv_states[nr_idle_states].enter = &fastsleep_loop;
- 			nr_idle_states++;
- 		}
 +#ifdef CONFIG_SCHED_POWER
-+		sched_domain_topology[1].states[i] = powernv_states[nr_idle_states];
++#define SCHED_POLICY_PERFORMANCE	(0x1)
++#define SCHED_POLICY_POWERSAVING	(0x2)
++
++extern int __read_mostly sched_balance_policy;
 +#endif
- 	}
- 
- 	return nr_idle_states;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5dd99b5..009da6a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1027,6 +1027,9 @@ struct sched_domain_topology_level {
- #ifdef CONFIG_SCHED_DEBUG
- 	char                *name;
- #endif
-+#ifdef CONFIG_SCHED_POWER
-+	struct cpuidle_state states[CPUIDLE_STATE_MAX];
-+#endif
- };
- 
- extern struct sched_domain_topology_level *sched_domain_topology;
++
+ /*
+  * Helpers for converting nanosecond timing to jiffy resolution
+  */
 
