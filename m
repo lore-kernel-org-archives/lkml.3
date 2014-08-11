@@ -1,122 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906AbaHKUG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:06:26 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:63826 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754641AbaHKUGY (ORCPT
+	id S1754963AbaHKUGx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:06:53 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:46616 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754937AbaHKUGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:06:24 -0400
+	Mon, 11 Aug 2014 16:06:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <1407729030-30283-1-git-send-email-linux@roeck-us.net>
-References: <1407729030-30283-1-git-send-email-linux@roeck-us.net>
-Date: Mon, 11 Aug 2014 13:06:24 -0700
-X-Google-Sender-Auth: 7QMq16STLKAZ5IKNHku1JKg6xfU
-Message-ID: <CAGXu5jLhyGSw0CndSS6iXc2xTrwV9zpBygnZRzSE60aELMBbyw@mail.gmail.com>
-Subject: Re: [PATCH] seccomp: Replace BUG(!spin_is_locked()) with assert_spin_lock
-From: Kees Cook <keescook@chromium.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <53E8B5EF.9080209@redhat.com>
+References: <1407519880-6719-1-git-send-email-dvlasenk@redhat.com>
+ <1407519880-6719-18-git-send-email-dvlasenk@redhat.com> <CALCETrXDjOPR9kEwx9fJFFz=A1jRKPBbfpoe8XztchktrUaz0Q@mail.gmail.com>
+ <53E7890F.4070109@redhat.com> <CALCETrVTw5amX-v_C+Bp5Y0B0KbzNKEEq_ZMke-AC7cZopGd9Q@mail.gmail.com>
+ <53E8B5EF.9080209@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 11 Aug 2014 13:06:30 -0700
+Message-ID: <CALCETrWC7pFBbycJLgLck9_qzZfOa8x4hCKm3OrC-5XeGFc8_w@mail.gmail.com>
+Subject: Re: [PATCH 17/17] x86: simplify iret stack handling on SYSCALL64 fastpath
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 10, 2014 at 8:50 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> Current upstream kernel hangs with mips and powerpc targets in
-> uniprocessor mode if SECCOMP is configured.
+On Mon, Aug 11, 2014 at 5:24 AM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
+> On 08/11/2014 12:42 AM, Andy Lutomirski wrote:
+>> On Mon, Aug 11, 2014 at 12:00 AM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
+>>> On 08/09/2014 12:59 AM, Andy Lutomirski wrote:
+>>>>> + * When returning through fast path, userspace sees rcx = return address,
+>>>>> + * r11 = rflags. When returning through iret (e.g. if audit is active),
+>>>>> + * these registers may contain garbage.
+>>>>> + * For ptrace we manage to avoid that: when we hit slow path on entry,
+>>>>> + * we do save rcx and r11 in pt_regs, so ptrace on exit also sees them.
+>>>>> + * If slow path is entered only on exit, there will be garbage.
+>>>>
+>>>> I don't like this.  At least the current code puts something
+>>>> deterministic in there (-1) for the slow path, even though it's wrong
+>>>> and makes the slow path behave visibly differently from the fast path.
+>>>>
+>>>> Leaking uninitialized data here is extra bad, though.  Keep in mind
+>>>> that, when a syscall entry is interrupted before fully setting up
+>>>> pt_regs, the interrupt frame overlaps task_pt_regs, so it's possible,
+>>>> depending on the stack slot ordering, for a kernel secret
+>>>> (kernel_stack?) to end up somewhere in task_pt_regs.
+>>>
+>>> It's easy to fix. We jump off fast path to slow path here:
+>>>
+>>>         movl TI_flags+THREAD_INFO(%rsp,SIZEOF_PTREGS),%edx
+>>>         andl %edi,%edx
+>>>         jnz  sysret_careful
+>>>
+>>> This is the only use of "sysret_careful" label.
+>>> Therefore, there we don't need to think about any other scenarios
+>>> besides "we are returning from syscall here".
+>>
+>> I may be missing something here (on vacation, not really testing
+>> things, no big monitor, etc), but how is this compatible with things
+>> like rt_sigreturn?  rt_sigreturn is call from the fastpath, via a
+>> stub, and it returns through int_ret_from_syscall.  The C part needs
+>> to modify all the regs, and those regs need to stick, so fixing up rcx
+>> and r11 after rt_sigreturn can't work.
 >
-> Bisect points to commit dbd952127d11 ("seccomp: introduce writer locking").
-> Turns out that code such as
->         BUG_ON(!spin_is_locked(&list_lock));
-> can not be used in uniprocessor mode because spin_is_locked() always
-> returns false in this configuration, and that assert_spin_locked()
-> exists for that very purpose and must be used instead.
+> Code at "sysret_careful" label is only reachable
+> on fast path return.
+> We don't go down this code path after rt_sigreturn.
+> stub_rt_sigreturn manually steers into iret code path instead:
 >
-> Fixes: dbd952127d11 ("seccomp: introduce writer locking")
-> Cc: Kees Cook <keescook@chromium.org>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ENTRY(stub_rt_sigreturn)
+>         CFI_STARTPROC
+>         addq $8, %rsp
+>         DEFAULT_FRAME 0
+>         SAVE_EXTRA_REGS
+>         STORE_IRET_FRAME_CS_SS
+>         call sys_rt_sigreturn
+>         movq %rax,RAX(%rsp)
+>         RESTORE_EXTRA_REGS
+>         jmp int_ret_from_sys_call   <==== NOTE THIS
+>
+> So, we don't do any rcx/r11 fixups after sys_rt_sigreturn.
 
-Applied, thanks! Should be visible here shortly:
+Oh, right.  rt_sigreturn overwrites all regs, so it doesn't need a
+fixup in advance.
 
-http://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=seccomp/tip
+That still leaves fork and everything that calls ptrace_event, though.
 
--Kees
-
-> ---
->  kernel/fork.c    |  2 +-
->  kernel/seccomp.c | 10 +++++-----
->  2 files changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 1380d8a..0cf9cdb 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -1105,7 +1105,7 @@ static void copy_seccomp(struct task_struct *p)
->          * needed because this new task is not yet running and cannot
->          * be racing exec.
->          */
-> -       BUG_ON(!spin_is_locked(&current->sighand->siglock));
-> +       assert_spin_locked(&current->sighand->siglock);
->
->         /* Ref-count the new filter user, and assign it. */
->         get_seccomp_filter(current);
-> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-> index 25b0043..44eb005 100644
-> --- a/kernel/seccomp.c
-> +++ b/kernel/seccomp.c
-> @@ -203,7 +203,7 @@ static u32 seccomp_run_filters(int syscall)
->
->  static inline bool seccomp_may_assign_mode(unsigned long seccomp_mode)
->  {
-> -       BUG_ON(!spin_is_locked(&current->sighand->siglock));
-> +       assert_spin_locked(&current->sighand->siglock);
->
->         if (current->seccomp.mode && current->seccomp.mode != seccomp_mode)
->                 return false;
-> @@ -214,7 +214,7 @@ static inline bool seccomp_may_assign_mode(unsigned long seccomp_mode)
->  static inline void seccomp_assign_mode(struct task_struct *task,
->                                        unsigned long seccomp_mode)
->  {
-> -       BUG_ON(!spin_is_locked(&task->sighand->siglock));
-> +       assert_spin_locked(&task->sighand->siglock);
->
->         task->seccomp.mode = seccomp_mode;
->         /*
-> @@ -253,7 +253,7 @@ static inline pid_t seccomp_can_sync_threads(void)
->         struct task_struct *thread, *caller;
->
->         BUG_ON(!mutex_is_locked(&current->signal->cred_guard_mutex));
-> -       BUG_ON(!spin_is_locked(&current->sighand->siglock));
-> +       assert_spin_locked(&current->sighand->siglock);
->
->         /* Validate all threads being eligible for synchronization. */
->         caller = current;
-> @@ -294,7 +294,7 @@ static inline void seccomp_sync_threads(void)
->         struct task_struct *thread, *caller;
->
->         BUG_ON(!mutex_is_locked(&current->signal->cred_guard_mutex));
-> -       BUG_ON(!spin_is_locked(&current->sighand->siglock));
-> +       assert_spin_locked(&current->sighand->siglock);
->
->         /* Synchronize all threads. */
->         caller = current;
-> @@ -464,7 +464,7 @@ static long seccomp_attach_filter(unsigned int flags,
->         unsigned long total_insns;
->         struct seccomp_filter *walker;
->
-> -       BUG_ON(!spin_is_locked(&current->sighand->siglock));
-> +       assert_spin_locked(&current->sighand->siglock);
->
->         /* Validate resulting filter length. */
->         total_insns = filter->prog->len;
-> --
-> 1.9.1
->
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+--Andy
