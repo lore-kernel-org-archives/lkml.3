@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629AbaHKNvP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 09:51:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53692 "EHLO bear.ext.ti.com"
+	id S1753603AbaHKNyf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 09:54:35 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63446 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753469AbaHKNvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 09:51:14 -0400
-Date: Mon, 11 Aug 2014 08:50:34 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Richard Leitner <richard.leitner@skidata.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] usb: gadget: serial: remove PREFIX macro
-Message-ID: <20140811135033.GD20177@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140718113946.0e70c0cb@lxbuild.skidata.net>
- <20140811150435.6235fbf6@lxbuild.skidata.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IMjqdzrDRly81ofr"
-Content-Disposition: inline
-In-Reply-To: <20140811150435.6235fbf6@lxbuild.skidata.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753411AbaHKNye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 09:54:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,841,1400050800"; 
+   d="scan'208";a="574986900"
+From: Jani Nikula <jani.nikula@intel.com>
+To: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Jean Delvare <khali@linux-fr.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Jon Mason <jon.mason@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, jani.nikula@intel.com
+Subject: [PATCH 0/4] module: add support for unsafe, tainting parameters
+Date: Mon, 11 Aug 2014 16:52:18 +0300
+Message-Id: <cover.1407764272.git.jani.nikula@intel.com>
+X-Mailer: git-send-email 1.9.1
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---IMjqdzrDRly81ofr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a generic version of Daniel's patch [1] letting us have unsafe
+module parameters (experimental, debugging, testing, etc.) that taint
+the kernel when set. Quoting Daniel,
 
-On Mon, Aug 11, 2014 at 03:04:35PM +0200, Richard Leitner wrote:
-> Hi,
-> this patch was lying around for some time...
-> are there any comments or objections on this?
+"""
+Users just love to set random piles of options since surely enabling all
+the experimental stuff helps. Later on we get bug reports because it all
+fell apart.
 
-you realise we're still in the middle of the merge window, right ?
+Even more fun when it's labelled a regression when some change only just
+made the feature possible (e.g. stolen memory fixes suddenly making fbc
+possible).
 
---=20
-balbi
+Make it clear that users are playing with fire here.
+"""
 
---IMjqdzrDRly81ofr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Patches 1-3 add the core functionality, patch 4 is our use case as an
+example.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+BR,
+Jani.
 
-iQIcBAEBAgAGBQJT6MopAAoJEIaOsuA1yqREdnAP/0QHddTAEKhBp2G34mnXc8nz
-YI5aoIpbxyJha8+B+cKxJQAPxCYEN8cEmAMUU6aTK/T0asMl9coseDc9F1nc6VSP
-2wMauX1lB0+dbGsBV0TWo9Dyh1iYyDw+bJUV2OlrOo0lKJVPotnLB0wXM9VJUjmx
-DwjGL1iIUMr0p5fJ1C0itI68sZP3CNZItANELx/zMxprkACArhFDfDDU+k8pJPxG
-V2iYmVFh00tWEkTI0IW1lFkmmZoIECXILjw3K1jr89e3YQZJ+L9ubfkybbI4DCSs
-ewv0jDN0SBkmZvSLaItLsFLKUkUCYDtBPPsctf4EfbWqiurbXV22hWKEGn81O/Hq
-nPJvDN9GlJDrUuQNFTewduaPw3C6YcK8tN7VLm+2NwdE+NUe9wAGwJ/8K9KFAFZG
-Bb8RQVHoNYX/t8ysJy9frp8mbfxZBvke0mlVtRq4OAcMhrZQWErh6EM78ROJkaHV
-P5H6esfzOXQjgyKlW4RzDQWKKMPh+9i+0TzsCgG5UmDKcld/SHJ0sjJteT3HmL83
-owFQSb/T20oKgii9q7KSLLQkOxHL/7rmV+WPXU00jXkNn8+vFB5DgCYbj0NDG1Xb
-El1AN4CJMO1wZ02iK5tvk+FTdO2JmQRDIAEaRNQ/smiglznsgcGbxlFjJN8nzlC1
-BoB5cDRX1P92RMdOh6J1
-=5rlg
------END PGP SIGNATURE-----
+[1] http://lkml.kernel.org/r/1394011994-30604-1-git-send-email-daniel.vetter@ffwll.ch
 
---IMjqdzrDRly81ofr--
+
+Jani Nikula (4):
+  module: rename KERNEL_PARAM_FL_NOARG to avoid confusion
+  module: make it possible to have unsafe, tainting module params
+  module: add module_param_unsafe and module_param_named_unsafe
+  drm/i915: taint the kernel if unsafe module parameters are set
+
+ drivers/gpu/drm/i915/i915_params.c  |  8 ++---
+ drivers/tty/serial/8250/8250_core.c |  2 +-
+ include/linux/moduleparam.h         | 64 +++++++++++++++++++++++++++++++------
+ kernel/module.c                     |  2 +-
+ kernel/params.c                     | 17 ++++++++--
+ security/apparmor/lsm.c             |  4 +--
+ 6 files changed, 76 insertions(+), 21 deletions(-)
+
+-- 
+1.9.1
+
