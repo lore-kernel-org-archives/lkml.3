@@ -1,86 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbaHKHeg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 03:34:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34261 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752040AbaHKHef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 03:34:35 -0400
-Date: Mon, 11 Aug 2014 09:34:08 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jayamohan Kallickal <Jayamohan.Kallickal@Emulex.Com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH v2 RESEND 01/23] be2iscsi: Use pci_enable_msix_exact()
- instead of pci_enable_msix()
-Message-ID: <20140811073408.GA16504@dhcp-27-160.brq.redhat.com>
-References: <cover.1405533479.git.agordeev@redhat.com>
- <c59d60c1d8b848222bbac6d32c314c9dfbfb13f2.1405533479.git.agordeev@redhat.com>
- <20140726080842.GB21129@agordeev.usersys.redhat.com>
- <37724B2049F71D4C9B086F99DDB2DE11571FB4AC@CMEXMB1.ad.emulex.com>
+	id S1752733AbaHKHiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 03:38:21 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:35479 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040AbaHKHiU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 03:38:20 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Minchan Kim <minchan@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/2] perf tools: Ensure --symfs ends with '/'
+References: <1406251908-8195-1-git-send-email-namhyung@kernel.org>
+	<20140729050246.GC22707@bbox> <20140729123305.GO7831@kernel.org>
+	<87ppgnhge3.fsf@sejong.aot.lge.com> <20140730151932.GS7831@kernel.org>
+	<20140730205521.GU7831@kernel.org> <87ha1ygnn3.fsf@sejong.aot.lge.com>
+	<20140731122621.GV7831@kernel.org> <87d2clgkv9.fsf@sejong.aot.lge.com>
+	<20140801201538.GA13375@kernel.org>
+Date: Mon, 11 Aug 2014 16:38:17 +0900
+In-Reply-To: <20140801201538.GA13375@kernel.org> (Arnaldo Carvalho de Melo's
+	message of "Fri, 1 Aug 2014 17:15:38 -0300")
+Message-ID: <87zjfbfpcm.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <37724B2049F71D4C9B086F99DDB2DE11571FB4AC@CMEXMB1.ad.emulex.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 11:29:51PM +0000, Jayamohan Kallickal wrote:
-> 
-> 
-> -----Original Message-----
-> From: Alexander Gordeev [mailto:agordeev@redhat.com] 
-> Sent: Saturday, July 26, 2014 1:09 AM
-> To: linux-kernel@vger.kernel.org; Jayamohan Kallickal
-> Subject: Re: [PATCH v2 RESEND 01/23] be2iscsi: Use pci_enable_msix_exact() instead of pci_enable_msix()
-> 
-> On Wed, Jul 16, 2014 at 08:05:05PM +0200, Alexander Gordeev wrote:
-> > As result of deprecation of MSI-X/MSI enablement functions
-> > pci_enable_msix() and pci_enable_msi_block() all drivers using these 
-> > two interfaces need to be updated to use the new 
-> > pci_enable_msi_range()  or pci_enable_msi_exact() and 
-> > pci_enable_msix_range() or pci_enable_msix_exact() interfaces.
-> 
-> Hi Jayamohan,
-> 
-> Could you please review this patch?
+Hi Arnaldo,
 
-Jayamohan?
+On Fri, 1 Aug 2014 17:15:38 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Aug 01, 2014 at 08:38:02AM +0900, Namhyung Kim escreveu:
+>> Hi Arnaldo,
+>> 
+>> On Thu, 31 Jul 2014 09:26:21 -0300, Arnaldo Carvalho de Melo wrote:
+>> > Em Thu, Jul 31, 2014 at 01:25:52PM +0900, Namhyung Kim escreveu:
+>> >> Are you still against my approach - adding '/' at the end of the symfs
+>> >> string itself?  It seems that mine is simpler and shorter.
+>
+>> > Yes, I am.
+>
+>> > We are not just concatenating two strings, we are joining two path
+>> > components.
+>
+>> > I think it is more clear and elegant to do it as python os.path.join()
+>> > does.
+>
+>> Then I think you also need to care about trailing and leading '/' in the
+>> components so that, say, joining '/home/' and '/namhyung/' can result in
+>> '/home/namhyung/' not '/home///namhyung/'.
+>
+> Well, "/home/namhyung/" is the same as "/home///namhyung/" for POSIX:
+> http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap03.html#tag_03_266
+>
+> So, when we can easily avoid it, no use to have a sequence of slashes,
+> but otherwise it is harmless.
 
-> Thanks!
-> 
-> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> > ---
-> >  drivers/scsi/be2iscsi/be_main.c |    6 ++----
-> >  1 files changed, 2 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/scsi/be2iscsi/be_main.c 
-> > b/drivers/scsi/be2iscsi/be_main.c index 56467df..1f63169 100644
-> > --- a/drivers/scsi/be2iscsi/be_main.c
-> > +++ b/drivers/scsi/be2iscsi/be_main.c
-> > @@ -5278,12 +5278,10 @@ static void beiscsi_msix_enable(struct beiscsi_hba *phba)
-> >  	for (i = 0; i <= phba->num_cpus; i++)
-> >  		phba->msix_entries[i].entry = i;
-> >  
-> > -	status = pci_enable_msix(phba->pcidev, phba->msix_entries,
-> > -				 (phba->num_cpus + 1));
-> > +	status = pci_enable_msix_exact(phba->pcidev, phba->msix_entries,
-> > +				       phba->num_cpus + 1);
-> >  	if (!status)
-> >  		phba->msix_enabled = true;
-> > -
-> > -	return;
-> >  }
-> >  
-> >  static void be_eqd_update(struct beiscsi_hba *phba)
-> > --
-> > 1.7.7.6
-> > 
-> 
-> 
-> Looks Good.
-> 
-> Acked-by:  Jayamohan Kallickal <jayamohan.kallickal@emulex.com>
-> --
+Yes, I know it's supported.  But I think it'd be better off avoiding it
+in order to be an elegant path joiner. :)
+
+
+>  
+>> Btw, it seems like python's os.path.join() just use latter if it's an
+>> absolute path.
+>> 
+>>   $ python
+>>   Python 2.7.3 (default, Jul 24 2012, 10:05:38) 
+>>   [GCC 4.7.0 20120507 (Red Hat 4.7.0-5)] on linux2
+>>   Type "help", "copyright", "credits" or "license" for more information.
+>>   >>> import os.path
+>>   >>> os.path.join('/home/', '/namhyung/')
+>>   '/namhyung/'
+>
+> Interesting, wonder what is the rationale for that or if this is a bug.
+
+Hmm.. pydoc os.path.join says below:
+
+ os.path.join = join(a, *p)
+
+    Join two or more pathname components, inserting '/' as needed.  If
+    any component is an absolute path, all previous path components will
+    be discarded.  An empty last part will result in a path that ends
+    with a separator.
+
+
+Thanks,
+Namhyung
