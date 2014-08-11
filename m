@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882AbaHKONM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 10:13:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61788 "EHLO mga11.intel.com"
+	id S1753903AbaHKOOG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 10:14:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49068 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753715AbaHKONK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 10:13:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,841,1400050800"; 
-   d="scan'208";a="583188451"
-Date: Mon, 11 Aug 2014 10:13:08 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the DAX
- page fault handler
-Message-ID: <20140811141308.GZ6754@linux.intel.com>
-References: <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
- <20140409102758.GM32103@quack.suse.cz>
- <20140409205111.GG5727@linux.intel.com>
- <20140409214331.GQ32103@quack.suse.cz>
- <20140729121259.GL6754@linux.intel.com>
- <20140729210457.GA17807@quack.suse.cz>
- <20140729212333.GO6754@linux.intel.com>
- <20140730095229.GA19205@quack.suse.cz>
- <20140809110000.GA32313@linux.intel.com>
- <20140811085147.GB29526@quack.suse.cz>
+	id S1753715AbaHKOOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 10:14:04 -0400
+Message-ID: <53E8CFA2.60408@redhat.com>
+Date: Mon, 11 Aug 2014 16:13:54 +0200
+From: Maurizio Lombardi <mlombard@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140811085147.GB29526@quack.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: axboe@kernel.dk
+CC: linux-kernel@vger.kernel.org, ming.lei@canonical.com, jet.chen@intel.com,
+        akpm@linux-foundation.org, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH] bio: merge_bvec_fn() must be called with the old bi_iter.bi_size
+ value
+References: <1405586950-4023-1-git-send-email-mlombard@redhat.com>
+In-Reply-To: <1405586950-4023-1-git-send-email-mlombard@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 10:51:47AM +0200, Jan Kara wrote:
-> So I'm afraid we'll have to find some other way to synchronize
-> page faults and truncate / punch hole in DAX.
+Hi Jens,
 
-What if we don't?  If we hit the race (which is vanishingly unlikely with
-real applications), the consequence is simply that after a truncate, a
-file may be left with one or two blocks allocated somewhere after i_size.
-As I understand it, that's not a real problem; they're temporarily
-unavailable for allocation but will be freed on file removal or the next
-truncation of that file.
+On 07/17/2014 10:49 AM, Maurizio Lombardi wrote:
+> The patch "bio: modify __bio_add_page() to accept pages that
+> don't start a new segment" updates bio->bi_iter.bi_size before
+> calling merge_bvec_fn().
+> 
+> This panics the kernel because merge_bvec_fn() expects bi_size to have
+> the old value.
+> 
+> This can be reproduced by trying to create a crypto device with cryptsetup.
 
-I'm also still considering the possibility of having truncate-down block
-until all mmaps that extend after the new i_size have been removed ...
+Can we give to this patch "bio: modify __bio_add_page() to accept pages that don't start a new segment"
+another chance to get in?
+
+Should I squash it with the following fix and resubmit as a single patch or it's not necessary?
+
+> 
+> Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+> Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
+> ---
+>  block/bio.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/block/bio.c b/block/bio.c
+> index fb12df9..40c5b12 100644
+> --- a/block/bio.c
+> +++ b/block/bio.c
+> @@ -795,7 +795,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+>  		struct bvec_merge_data bvm = {
+>  			.bi_bdev = bio->bi_bdev,
+>  			.bi_sector = bio->bi_iter.bi_sector,
+> -			.bi_size = bio->bi_iter.bi_size,
+> +			.bi_size = bio->bi_iter.bi_size - len,
+>  			.bi_rw = bio->bi_rw,
+>  		};
+>  
+> 
+
+Thanks,
+Maurizio Lombardi
