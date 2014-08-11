@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152AbaHKUeW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:34:22 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:44943 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754670AbaHKUeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:34:21 -0400
-Date: Mon, 11 Aug 2014 13:34:15 -0700
-From: Kees Cook <keescook@chromium.org>
-To: James Morris <jmorris@namei.org>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Kees Cook <keescook@chromium.org>
-Subject: [PULL] for-linus-seccomp update (for-linus-seccomp-3.17)
-Message-ID: <20140811203415.GA6150@www.outflux.net>
+	id S932201AbaHKUea (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:34:30 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:46527 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157AbaHKUe2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 16:34:28 -0400
+Date: Mon, 11 Aug 2014 13:34:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+Message-ID: <20140811203421.GE5821@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140808173710.GA13483@grmbl.mre>
+ <20140808181835.GD5821@linux.vnet.ibm.com>
+ <20140808183424.GB13483@grmbl.mre>
+ <20140808214347.GH5821@linux.vnet.ibm.com>
+ <20140808214648.GA19058@linux.vnet.ibm.com>
+ <20140811071308.GA4184@grmbl.mre>
+ <20140811162807.GW5821@linux.vnet.ibm.com>
+ <20140811194126.GF4184@grmbl.mre>
+ <20140811201102.GD5821@linux.vnet.ibm.com>
+ <20140811201845.GG4184@grmbl.mre>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <20140811201845.GG4184@grmbl.mre>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081120-8236-0000-0000-000004861534
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On Tue, Aug 12, 2014 at 01:48:45AM +0530, Amit Shah wrote:
+> On (Mon) 11 Aug 2014 [13:11:02], Paul E. McKenney wrote:
+> > On Tue, Aug 12, 2014 at 01:11:26AM +0530, Amit Shah wrote:
+> > > On (Mon) 11 Aug 2014 [09:28:07], Paul E. McKenney wrote:
+> > > > On Mon, Aug 11, 2014 at 12:43:08PM +0530, Amit Shah wrote:
+> > > > > On (Fri) 08 Aug 2014 [14:46:48], Paul E. McKenney wrote:
+> > > > > > On Fri, Aug 08, 2014 at 02:43:47PM -0700, Paul E. McKenney wrote:
+> > > > > > > On Sat, Aug 09, 2014 at 12:04:24AM +0530, Amit Shah wrote:
+> > > > > > > > On (Fri) 08 Aug 2014 [11:18:35], Paul E. McKenney wrote:
+> > > > > > > 
+> > > > > > > [ . . . ]
+> > > > > > > 
+> > > > > > > > > Hmmm... What happens if you boot a7d7a143d0b4cb1914705884ca5c25e322dba693
+> > > > > > > > > with the kernel parameter "acpi=off"?
+> > > > > > > > 
+> > > > > > > > That doesn't change anything - still hangs.
+> > > > > > > > 
+> > > > > > > > I intend to look at this more on Monday, though - turning in for
+> > > > > > > > today.  In the meantime, if there's anything else you'd like me to
+> > > > > > > > try, please let me know.
+> > > > > > > 
+> > > > > > > OK, given that I still cannot reproduce it, I do need your help with
+> > > > > > > the diagnostics.  And so what sorts of diagnostics work for you in
+> > > > > > > the hung state?  Are you able to dump ftrace buffers?
+> > > > > > > 
+> > > > > > > If you are able to dump ftrace buffers, please enable rcu:rcu_nocb_wake
+> > > > > > > and send me the resulting trace.
+> > > > > > 
+> > > > > > And another random kernel boot parameter to try is rcu_nocb_poll.
+> > > > > 
+> > > > > Right, this gets the boot going again:
+> > > > 
+> > > > OK, that likely indicates a lost wakeup.  The event tracing enabled by
+> > > > "rcu:rcu_nocb_wake" should help track those down.  Last time, it was qemu
+> > > > losing the wakeups, but maybe it is RCU this time.  ;-)
+> > > 
+> > > The guest goes dead pretty early; is there a trick to enabling and
+> > > getting these traces out of the guest that I don't know of that
+> > > doesn't involve being booted into userspace?  I can perhaps try
+> > > getting the trace output out from a virtio-serial channel; but even
+> > > that driver isn't probed yet when the lockup happens.
+> > 
+> > First boot with the kernel parameter "trace_event=rcu:rcu_nocb_wake".
+> > Then when the system hangs, do "sendkey alt-sysrq-z" at the "(qemu)"
+> > prompt to dump the ftrace buffer.  This hopefully dumps the trace buffer
+> > to dmesg.
+> > 
+> > In addition "sendkey alt-sysrq-t" at the "(qemu)" prompt dumps all tasks'
+> > stacks, which would also likely be useful information.
+> 
+> Nah, this doesn't work -- the guest's totally locked up.  I need a way
+> to continuously dump buffers till the lockup happens, I suppose.
 
-Please pull these for-linus-seccomp changes for for-linus-seccomp-3.17. Thanks!
+That is a bit surprising.  Is it possible that the system is OOMing
+quickly due to grace periods not proceeding?  If so, maybe giving the
+VM more memory would help.
 
--Kees
+							Thanx, Paul
 
-The following changes since commit c8d6637d0497d62093dbba0694c7b3a80b79bfe1:
-
-  Merge tag 'modules-next-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux (2014-08-10 21:31:58 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git tags/for-linus-seccomp-for-linus-seccomp-3.17
-
-for you to fetch changes up to 69f6a34bdeea4fec50bb90619bc9602973119572:
-
-  seccomp: Replace BUG(!spin_is_locked()) with assert_spin_lock (2014-08-11 13:29:12 -0700)
-
-----------------------------------------------------------------
-Building UP on some archs makes spin_is_locked return 0, which will BUG
-at boot with seccomp enabled.
-
-----------------------------------------------------------------
-Guenter Roeck (1):
-      seccomp: Replace BUG(!spin_is_locked()) with assert_spin_lock
-
- kernel/fork.c    |  2 +-
- kernel/seccomp.c | 10 +++++-----
- 2 files changed, 6 insertions(+), 6 deletions(-)
-
--- 
-Kees Cook
-Chrome OS Security
