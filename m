@@ -1,23 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434AbaHKWv0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 18:51:26 -0400
-Received: from mail-yk0-f171.google.com ([209.85.160.171]:52200 "EHLO
-	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420AbaHKWvX (ORCPT
+	id S1755423AbaHKWvW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 18:51:22 -0400
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:53689 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599AbaHKWvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 18:51:23 -0400
+	Mon, 11 Aug 2014 18:51:20 -0400
 From: Pranith Kumar <bobby.prani@gmail.com>
-To: Christopher Li <sparse@chrisli.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.eti.br>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        linux-kernel@vger.kernel.org (open list),
-        linux-sparse@vger.kernel.org (open list:SPARSE CHECKER)
-Subject: [PATCH] compiler.h: Move __memory_barrier() use to compiler-intel.h
-Date: Mon, 11 Aug 2014 18:51:42 -0400
-Message-Id: <1407797503-24727-4-git-send-email-bobby.prani@gmail.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org (open list:SCHEDULER)
+Subject: [PATCH] sched: Remove ACCESS_ONCE() for jiffies
+Date: Mon, 11 Aug 2014 18:51:41 -0400
+Message-Id: <1407797503-24727-3-git-send-email-bobby.prani@gmail.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1407797503-24727-1-git-send-email-bobby.prani@gmail.com>
 References: <1407797503-24727-1-git-send-email-bobby.prani@gmail.com>
@@ -25,53 +20,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 73679e5082012 ("compiler-intel.h: Remove duplicate definition") removed a
-duplicate definition of barrier() from compiler-intel.h. This is the wrong
-duplicate definition removed since __memory_barrier() is an intel compiler
-specific intrinsic and should live in compiler-intel.h.
-
-This commit reverts the previous commit and removes the definition from
-compiler.h
+jiffies is declared as a volatile variable. Therefore it is not neccessary to
+use ACCESS_ONCE() while reading it.
 
 Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- include/linux/compiler-intel.h | 3 +++
- include/linux/compiler.h       | 5 -----
- 2 files changed, 3 insertions(+), 5 deletions(-)
+ kernel/sched/core.c | 2 +-
+ kernel/sched/proc.c | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/compiler-intel.h b/include/linux/compiler-intel.h
-index ba147a1..5529c52 100644
---- a/include/linux/compiler-intel.h
-+++ b/include/linux/compiler-intel.h
-@@ -13,9 +13,12 @@
- /* Intel ECC compiler doesn't support gcc specific asm stmts.
-  * It uses intrinsics to do the equivalent things.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ec1a286..381d0d0 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2552,7 +2552,7 @@ void scheduler_tick(void)
+ u64 scheduler_tick_max_deferment(void)
+ {
+ 	struct rq *rq = this_rq();
+-	unsigned long next, now = ACCESS_ONCE(jiffies);
++	unsigned long next, now = jiffies;
+ 
+ 	next = rq->last_sched_tick + HZ;
+ 
+diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
+index 8ecd552..87ab31b 100644
+--- a/kernel/sched/proc.c
++++ b/kernel/sched/proc.c
+@@ -526,7 +526,7 @@ static inline unsigned long get_rq_runnable_load(struct rq *rq)
   */
-+#undef barrier
- #undef RELOC_HIDE
- #undef OPTIMIZER_HIDE_VAR
+ void update_idle_cpu_load(struct rq *this_rq)
+ {
+-	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
++	unsigned long curr_jiffies = jiffies;
+ 	unsigned long load = get_rq_runnable_load(this_rq);
+ 	unsigned long pending_updates;
  
-+#define barrier() __memory_barrier()
-+
- #define RELOC_HIDE(ptr, off)					\
-   ({ unsigned long __ptr;					\
-      __ptr = (unsigned long) (ptr);				\
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index d5ad7b1..bc24cad 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -160,11 +160,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
- # define unlikely(x)	__builtin_expect(!!(x), 0)
- #endif
+@@ -548,7 +548,7 @@ void update_idle_cpu_load(struct rq *this_rq)
+ void update_cpu_load_nohz(void)
+ {
+ 	struct rq *this_rq = this_rq();
+-	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
++	unsigned long curr_jiffies = jiffies;
+ 	unsigned long pending_updates;
  
--/* Optimization barrier */
--#ifndef barrier
--# define barrier() __memory_barrier()
--#endif
--
- /* Unreachable code */
- #ifndef unreachable
- # define unreachable() do { } while (1)
+ 	if (curr_jiffies == this_rq->last_load_update_tick)
 -- 
 1.9.1
 
