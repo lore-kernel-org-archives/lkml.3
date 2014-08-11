@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678AbaHKNiW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 09:38:22 -0400
-Received: from mail-yk0-f180.google.com ([209.85.160.180]:49723 "EHLO
-	mail-yk0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753594AbaHKNiU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 09:38:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABdoFFebQmW+r2zyvcN4TXHgkcg9L1XZd06Za_T7TvXZDxQ_-A@mail.gmail.com>
-References: <1407388229-31807-1-git-send-email-valentina.manea.m@gmail.com>
-	<20140807053344.GA5754@kroah.com>
-	<CABdoFFd9ZuikFyaSfOyn-babECtno50_GGNHofK1-LmhLCqeTw@mail.gmail.com>
-	<20140807201600.GA5720@kroah.com>
-	<CABdoFFebQmW+r2zyvcN4TXHgkcg9L1XZd06Za_T7TvXZDxQ_-A@mail.gmail.com>
-Date: Mon, 11 Aug 2014 07:38:19 -0600
-Message-ID: <CAKocOOMuSTgK5VFh7vovCY6crT7wXUrBM7CVVAhwwtojX=Gwrg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] usbip: move usbip out of staging
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Valentina Manea <valentina.manea.m@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        =?UTF-8?B?VMO8bGluIMSwemVy?= <tulinizer@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, mail@beyermatthias.de,
-        hdegoede@redhat.com, Federico Manzan <f.manzan@gmail.com>,
-        Kurt Garloff <kurt@garloff.de>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux Kernel Community @ ROSEdu" <firefly@lists.rosedu.org>,
-        Andy Grover <andy.grover@gmail.com>, max@vozeler.com
-Content-Type: text/plain; charset=UTF-8
+	id S1753742AbaHKNjE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 09:39:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5467 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753602AbaHKNjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 09:39:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,841,1400050800"; 
+   d="scan'208";a="586455706"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: Linus <linus.walleij@linaro.org>
+Cc: <mika.westerberg@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH] pinctrl: baytrail: resolve unbalanced IRQ wake disable warning
+Date: Mon, 11 Aug 2014 16:51:55 +0300
+Message-Id: <1407765115-31662-1-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 8, 2014 at 10:41 PM, Valentina Manea
-<valentina.manea.m@gmail.com> wrote:
-> On Thu, Aug 7, 2014 at 1:16 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>
->> The top of the MAINTAINERS should have this information, look in the S:
->> Status section about what type of category you are in.
->>
->> Basically I'd like you to be the one to handle patches that are sent in
->> for the code, just by reviewing them, you don't have to send them on to
->> me if you don't want to (some usb subsystem maintainers do do this, like
->> for usb-serial and xhci), it's up to you.
->>
->> Also, any bug reports or questions about the code would come to you
->> first, along with the rest of the linux-usb@vger developers, you aren't
->> alone in this at all.
->>
->
-> Ok, this sounds good. I suppose sending you the patches involves
-> picking them up from the email, batching them and sending with
-> send-email.
-> Shuah, I would appreciate if you'd like to help with this. The more
-> eyes for review, the better.
+Add the IRQCHIP_SKIP_SET_WAKE flag to baytrail gpio irq_chip
+to resolve unbalaced IRQ wake disable warnings.
 
-Great. I am happy to help. Please add me to the MAINTAINERS
-entry for this driver. shuah.kh@samsung.com is the email address.
+Suggested-by: Borun Fu <borun.fu@intel.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+---
+ drivers/pinctrl/pinctrl-baytrail.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-thanks,
--- Shuah
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index 975572e..f8359aa 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -481,6 +481,7 @@ static struct irq_chip byt_irqchip = {
+ 	.irq_set_type = byt_irq_type,
+ 	.irq_request_resources = byt_irq_reqres,
+ 	.irq_release_resources = byt_irq_relres,
++	.flags = IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+ static void byt_gpio_irq_init_hw(struct byt_gpio *vg)
+-- 
+1.8.3.2
+
