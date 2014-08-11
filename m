@@ -1,152 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617AbaHKRPb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 13:15:31 -0400
-Received: from cmexedge2.ext.emulex.com ([138.239.224.100]:52820 "EHLO
-	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071AbaHKRP3 (ORCPT
+	id S1754585AbaHKRPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 13:15:30 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35939 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751464AbaHKRP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 13:15:29 -0400
-Date: Mon, 11 Aug 2014 13:14:54 -0400
-From: James Smart <james.smart@emulex.com>
-Reply-To: <james.smart@emulex.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Mon, 11 Aug 2014 13:15:28 -0400
+Date: Mon, 11 Aug 2014 18:15:11 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 2/2] asm-generic: add memfd_create system call to unistd.h
+Message-ID: <20140811171511.GF8828@arm.com>
+References: <1407764228-7904-1-git-send-email-will.deacon@arm.com>
+ <1407764228-7904-2-git-send-email-will.deacon@arm.com>
+ <CANq1E4Q0gDaJ5XGnkoCQsG8xLh1Q-EBErtEVPpeeZgGj+Nr8dQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        <linux-scsi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        "Smart, James" <James.Smart@emulex.com>
-Subject: Re: [PATCH v2 RESEND 12/23] lpfc: Use pci_enable_msix_range() instead
- of pci_enable_msix()
-References: <cover.1405533479.git.agordeev@redhat.com> <ea1bf102a3ce0471996e2ddaaa498b088ac791c8.1405533479.git.agordeev@redhat.com> <20140726082227.GF21129@agordeev.usersys.redhat.com> <20140811080148.GG16504@dhcp-27-160.brq.redhat.com>
-In-Reply-To: <20140811080148.GG16504@dhcp-27-160.brq.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-Message-ID: <dfd59266-71ff-4112-8e11-835a08d7a94d@CMEXHTCAS2.ad.emulex.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANq1E4Q0gDaJ5XGnkoCQsG8xLh1Q-EBErtEVPpeeZgGj+Nr8dQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexander,
+On Mon, Aug 11, 2014 at 05:54:08PM +0100, David Herrmann wrote:
+> On Mon, Aug 11, 2014 at 3:37 PM, Will Deacon <will.deacon@arm.com> wrote:
+> > Commit 9183df25fe7b ("shm: add memfd_create() syscall") added a new
+> > system call (memfd_create) but didn't update the asm-generic unistd
+> > header.
+> >
+> > This patch adds the new system call to the asm-generic version of
+> > unistd.h so that it can be used by architectures such as arm64.
+> >
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: David Herrmann <dh.herrmann@gmail.com>
+> > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> 
+> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
 
-I haven't looked too deeply, but it's clear it doesn't jive with what 
-we've discussed in the past. Your original patches missed several other 
-similar sections for revision. I had sent a revised set of patches.
+Thanks, David.
 
-I was also unclear as to the merge path the patches were taking, as it 
-was mod'ing areas that have already changed in the scsi misc tree, but 
-the misc tree didn' have the pci mods.  I take it this is heading to 
-Christoph's tree ?  and that it has picked up the pci mods ?
+Arnd: shall I take this via the arm64 tree, or do you already have some
+asm-generic patches queued?
 
--- james s
+Will
 
-
-
-On 8/11/2014 4:01 AM, Alexander Gordeev wrote:
-> On Sat, Jul 26, 2014 at 09:22:27AM +0100, Alexander Gordeev wrote:
->> On Wed, Jul 16, 2014 at 08:05:16PM +0200, Alexander Gordeev wrote:
->>> As result of deprecation of MSI-X/MSI enablement functions
->>> pci_enable_msix() and pci_enable_msi_block() all drivers
->>> using these two interfaces need to be updated to use the
->>> new pci_enable_msi_range()  or pci_enable_msi_exact()
->>> and pci_enable_msix_range() or pci_enable_msix_exact()
->>> interfaces.
->> Hi James,
->>
->> Could you please review this patch?
-> James?
->
->> Thanks!
->>
->>> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
->>> Cc: James Smart <james.smart@emulex.com>
->>> Cc: linux-scsi@vger.kernel.org
->>> Cc: linux-pci@vger.kernel.org
->>> ---
->>>   drivers/scsi/lpfc/lpfc_init.c |   38 +++++++++++++++++---------------------
->>>   1 files changed, 17 insertions(+), 21 deletions(-)
->>>
->>> diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
->>> index a5769a9..d9caed9 100644
->>> --- a/drivers/scsi/lpfc/lpfc_init.c
->>> +++ b/drivers/scsi/lpfc/lpfc_init.c
->>> @@ -8211,9 +8211,9 @@ lpfc_sli4_pci_mem_unset(struct lpfc_hba *phba)
->>>    * @phba: pointer to lpfc hba data structure.
->>>    *
->>>    * This routine is invoked to enable the MSI-X interrupt vectors to device
->>> - * with SLI-3 interface specs. The kernel function pci_enable_msix() is
->>> - * called to enable the MSI-X vectors. Note that pci_enable_msix(), once
->>> - * invoked, enables either all or nothing, depending on the current
->>> + * with SLI-3 interface specs. The kernel function pci_enable_msix_exact()
->>> + * is called to enable the MSI-X vectors. Note that pci_enable_msix_exact(),
->>> + * once invoked, enables either all or nothing, depending on the current
->>>    * availability of PCI vector resources. The device driver is responsible
->>>    * for calling the individual request_irq() to register each MSI-X vector
->>>    * with a interrupt handler, which is done in this function. Note that
->>> @@ -8237,8 +8237,8 @@ lpfc_sli_enable_msix(struct lpfc_hba *phba)
->>>   		phba->msix_entries[i].entry = i;
->>>   
->>>   	/* Configure MSI-X capability structure */
->>> -	rc = pci_enable_msix(phba->pcidev, phba->msix_entries,
->>> -				ARRAY_SIZE(phba->msix_entries));
->>> +	rc = pci_enable_msix_exact(phba->pcidev, phba->msix_entries,
->>> +				   ARRAY_SIZE(phba->msix_entries));
->>>   	if (rc) {
->>>   		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
->>>   				"0420 PCI enable MSI-X failed (%d)\n", rc);
->>> @@ -8775,15 +8775,13 @@ out:
->>>    * @phba: pointer to lpfc hba data structure.
->>>    *
->>>    * This routine is invoked to enable the MSI-X interrupt vectors to device
->>> - * with SLI-4 interface spec. The kernel function pci_enable_msix() is called
->>> - * to enable the MSI-X vectors. Note that pci_enable_msix(), once invoked,
->>> - * enables either all or nothing, depending on the current availability of
->>> - * PCI vector resources. The device driver is responsible for calling the
->>> - * individual request_irq() to register each MSI-X vector with a interrupt
->>> - * handler, which is done in this function. Note that later when device is
->>> - * unloading, the driver should always call free_irq() on all MSI-X vectors
->>> - * it has done request_irq() on before calling pci_disable_msix(). Failure
->>> - * to do so results in a BUG_ON() and a device will be left with MSI-X
->>> + * with SLI-4 interface spec. The kernel function pci_enable_msix_range()
->>> + * is called to enable the MSI-X vectors. The device driver is responsible
->>> + * for calling the individual request_irq() to register each MSI-X vector
->>> + * with a interrupt handler, which is done in this function. Note that later
->>> + * when device is unloading, the driver should always call free_irq() on all
->>> + * MSI-X vectors it has done request_irq() on before calling pci_disable_msix()
->>> + * Failure to do so results in a BUG_ON() and a device will be left with MSI-X
->>>    * enabled and leaks its vectors.
->>>    *
->>>    * Return codes
->>> @@ -8805,18 +8803,16 @@ lpfc_sli4_enable_msix(struct lpfc_hba *phba)
->>>   		phba->sli4_hba.msix_entries[index].entry = index;
->>>   		vectors++;
->>>   	}
->>> -enable_msix_vectors:
->>> -	rc = pci_enable_msix(phba->pcidev, phba->sli4_hba.msix_entries,
->>> -			     vectors);
->>> -	if (rc > 1) {
->>> -		vectors = rc;
->>> -		goto enable_msix_vectors;
->>> -	} else if (rc) {
->>> +
->>> +	rc = pci_enable_msix_range(phba->pcidev, phba->sli4_hba.msix_entries,
->>> +				   2, vectors);
->>> +	if (rc < 0) {
->>>   		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
->>>   				"0484 PCI enable MSI-X failed (%d)\n", rc);
->>>   		goto vec_fail_out;
->>>   	}
->>>   
->>> +	vectors = rc;
->>>   	/* Log MSI-X vector assignment */
->>>   	for (index = 0; index < vectors; index++)
->>>   		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
->>> -- 
->>> 1.7.7.6
->>>
->> -- 
->> Regards,
->> Alexander Gordeev
->> agordeev@redhat.com
->
-
+> > ---
+> >  include/uapi/asm-generic/unistd.h | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
+> > index f1afd607f043..11d11bc5c78f 100644
+> > --- a/include/uapi/asm-generic/unistd.h
+> > +++ b/include/uapi/asm-generic/unistd.h
+> > @@ -703,9 +703,11 @@ __SYSCALL(__NR_renameat2, sys_renameat2)
+> >  __SYSCALL(__NR_seccomp, sys_seccomp)
+> >  #define __NR_getrandom 278
+> >  __SYSCALL(__NR_getrandom, sys_getrandom)
+> > +#define __NR_memfd_create 279
+> > +__SYSCALL(__NR_memfd_create, sys_memfd_create)
+> >
+> >  #undef __NR_syscalls
+> > -#define __NR_syscalls 279
+> > +#define __NR_syscalls 280
+> >
+> >  /*
+> >   * All syscalls below here should go away really,
+> > --
+> > 2.0.1
+> >
+> 
