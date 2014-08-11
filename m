@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaHKF3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 01:29:23 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19819 "EHLO mga03.intel.com"
+	id S1752602AbaHKF3b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 01:29:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48905 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752456AbaHKF3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 01:29:21 -0400
+	id S1752456AbaHKF33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 01:29:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,839,1400050800"; 
-   d="scan'208";a="467285883"
+   d="scan'208";a="586294935"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -18,9 +18,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         kan.liang@intel.com,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v3 07/23] perf: Add api for pmus to write to AUX space
-Date: Mon, 11 Aug 2014 08:19:36 +0300
-Message-Id: <1407734392-31097-8-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v3 09/23] perf: Support overwrite mode for AUX area
+Date: Mon, 11 Aug 2014 08:19:38 +0300
+Message-Id: <1407734392-31097-10-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1407734392-31097-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1407734392-31097-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -28,219 +28,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For pmus that wish to write data to AUX space, provide
-perf_aux_output_{begin,end}() calls to initiate/commit data writes,
-similarly to perf_output_{begin,end}. These also use the same output
-handle structure.
-
-After the perf_aux_output_begin() returns successfully, handle->size
-is set to the maximum amount of data that can be written wrt aux_tail
-pointer, so that no data that the user hasn't seen will be overwritten.
-
-PMU driver should pass the actual amount of data written as a parameter
-to perf_aux_output_end().
-
-Nested writers are forbidden and guards are in place to catch such
-attempts.
+This adds support for overwrite mode in the AUX area, which means "keep
+collecting data till you're stopped". It does not depend on data buffer's
+overwrite mode, so that it doesn't lose sideband data that is instrumental
+for processing AUX data.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- include/linux/perf_event.h  | 23 ++++++++++++-
- kernel/events/core.c        |  5 ++-
- kernel/events/internal.h    |  4 +++
- kernel/events/ring_buffer.c | 81 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 109 insertions(+), 4 deletions(-)
+ kernel/events/internal.h    |  1 +
+ kernel/events/ring_buffer.c | 40 +++++++++++++++++++++++++++++-----------
+ 2 files changed, 30 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index b8902ebcb7..94961c73e0 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -550,12 +550,22 @@ struct perf_output_handle {
- 	struct ring_buffer		*rb;
- 	unsigned long			wakeup;
- 	unsigned long			size;
--	void				*addr;
-+	union {
-+		void			*addr;
-+		unsigned long		head;
-+	};
- 	int				page;
- };
- 
- #ifdef CONFIG_PERF_EVENTS
- 
-+extern void *perf_aux_output_begin(struct perf_output_handle *handle,
-+				   struct perf_event *event);
-+extern void perf_aux_output_end(struct perf_output_handle *handle,
-+				unsigned long size, bool truncated);
-+extern int perf_aux_output_skip(struct perf_output_handle *handle,
-+				unsigned long size);
-+extern void *perf_get_aux(struct perf_output_handle *handle);
- extern int perf_pmu_register(struct pmu *pmu, const char *name, int type);
- extern void perf_pmu_unregister(struct pmu *pmu);
- 
-@@ -805,6 +815,17 @@ extern void perf_event_disable(struct perf_event *event);
- extern int __perf_event_disable(void *info);
- extern void perf_event_task_tick(void);
- #else /* !CONFIG_PERF_EVENTS: */
-+static inline void *
-+perf_aux_output_begin(struct perf_output_handle *handle,
-+		      struct perf_event *event)				{ return NULL; }
-+static inline void
-+perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
-+		    bool truncated)					{ }
-+static inline int
-+perf_aux_output_skip(struct perf_output_handle *handle,
-+		     unsigned long size)				{ return -EINVAL; }
-+static inline void *
-+perf_get_aux(struct perf_output_handle *handle)				{ return NULL; }
- static inline void
- perf_event_task_sched_in(struct task_struct *prev,
- 			 struct task_struct *task)			{ }
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 55cd524564..848f2af576 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3212,7 +3212,6 @@ static void free_event_rcu(struct rcu_head *head)
- 	kfree(event);
- }
- 
--static void ring_buffer_put(struct ring_buffer *rb);
- static void ring_buffer_attach(struct perf_event *event,
- 			       struct ring_buffer *rb);
- 
-@@ -3948,7 +3947,7 @@ static void rb_free_rcu(struct rcu_head *rcu_head)
- 	rb_free(rb);
- }
- 
--static struct ring_buffer *ring_buffer_get(struct perf_event *event)
-+struct ring_buffer *ring_buffer_get(struct perf_event *event)
- {
- 	struct ring_buffer *rb;
- 
-@@ -3963,7 +3962,7 @@ static struct ring_buffer *ring_buffer_get(struct perf_event *event)
- 	return rb;
- }
- 
--static void ring_buffer_put(struct ring_buffer *rb)
-+void ring_buffer_put(struct ring_buffer *rb)
- {
- 	if (!atomic_dec_and_test(&rb->refcount))
- 		return;
 diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index e5374030b1..b8f6c193ea 100644
+index c6b2987afe..4607742be8 100644
 --- a/kernel/events/internal.h
 +++ b/kernel/events/internal.h
-@@ -36,6 +36,8 @@ struct ring_buffer {
- 	struct user_struct		*mmap_user;
- 
- 	/* AUX area */
-+	local_t				aux_head;
-+	local_t				aux_nest;
+@@ -40,6 +40,7 @@ struct ring_buffer {
+ 	local_t				aux_nest;
  	unsigned long			aux_pgoff;
  	int				aux_nr_pages;
++	int				aux_overwrite;
  	atomic_t			aux_mmap_count;
-@@ -54,6 +56,8 @@ extern void perf_event_wakeup(struct perf_event *event);
- extern int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
- 			pgoff_t pgoff, int nr_pages, int flags);
- extern void rb_free_aux(struct ring_buffer *rb, struct perf_event *event);
-+extern struct ring_buffer *ring_buffer_get(struct perf_event *event);
-+extern void ring_buffer_put(struct ring_buffer *rb);
- 
- static inline bool rb_has_aux(struct ring_buffer *rb)
- {
+ 	unsigned long			aux_mmap_locked;
+ 	void				**aux_pages;
 diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index f5ee3669f8..feee52077f 100644
+index 598c02a555..4ee7723d87 100644
 --- a/kernel/events/ring_buffer.c
 +++ b/kernel/events/ring_buffer.c
-@@ -242,6 +242,87 @@ ring_buffer_init(struct ring_buffer *rb, long watermark, int flags)
- 	spin_lock_init(&rb->event_lock);
- }
+@@ -263,19 +263,23 @@ void *perf_aux_output_begin(struct perf_output_handle *handle,
+ 		goto err;
  
-+void *perf_aux_output_begin(struct perf_output_handle *handle,
-+			    struct perf_event *event)
-+{
-+	unsigned long aux_head, aux_tail;
-+	struct ring_buffer *rb;
+ 	aux_head = local_read(&rb->aux_head);
+-	aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
+ 
+ 	handle->rb = rb;
+ 	handle->event = event;
+ 	handle->head = aux_head;
+-	handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
+-
+-	if (!handle->size) {
+-		event->pending_disable = 1;
+-		event->hw.state = PERF_HES_STOPPED;
+-		perf_output_wakeup(handle);
+-		local_set(&rb->aux_nest, 0);
+-		goto err;
++	if (!rb->aux_overwrite) {
++		aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
++		handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
 +
-+	rb = ring_buffer_get(event);
-+	if (!rb)
-+		return NULL;
-+
-+	if (!rb_has_aux(rb))
-+		goto err;
-+
-+	/*
-+	 * Nesting is not supported for AUX area, make sure nested
-+	 * writers are caught early
-+	 */
-+	if (WARN_ON_ONCE(local_xchg(&rb->aux_nest, 1)))
-+		goto err;
-+
++		if (!handle->size) {
++			event->pending_disable = 1;
++			event->hw.state = PERF_HES_STOPPED;
++			perf_output_wakeup(handle);
++			local_set(&rb->aux_nest, 0);
++			goto err;
++		}
++	} else {
++		handle->size = 0;
+ 	}
+ 
+ 	return handle->rb->aux_priv;
+@@ -291,9 +295,22 @@ void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
+ 			 bool truncated)
+ {
+ 	struct ring_buffer *rb = handle->rb;
++	unsigned long aux_head;
+ 
+-	local_add(size, &rb->aux_head);
+-	perf_event_aux_event(handle->event, aux_head, size, truncated);
 +	aux_head = local_read(&rb->aux_head);
-+	aux_tail = ACCESS_ONCE(rb->user_page->aux_tail);
 +
-+	handle->rb = rb;
-+	handle->event = event;
-+	handle->head = aux_head;
-+	handle->size = CIRC_SPACE(aux_head, aux_tail, perf_aux_size(rb));
++	if (rb->aux_overwrite) {
++		local_set(&rb->aux_head, size);
 +
-+	if (!handle->size) {
-+		event->pending_disable = 1;
-+		event->hw.state = PERF_HES_STOPPED;
-+		perf_output_wakeup(handle);
-+		local_set(&rb->aux_nest, 0);
-+		goto err;
++		/*
++		 * Send a RECORD_AUX with size==0 to communicate aux_head
++		 * of this snapshot to userspace
++		 */
++		perf_event_aux_event(handle->event, size, 0, truncated);
++	} else {
++		local_add(size, &rb->aux_head);
++		perf_event_aux_event(handle->event, aux_head, size, truncated);
 +	}
-+
-+	return handle->rb->aux_priv;
-+
-+err:
-+	ring_buffer_put(rb);
-+	handle->event = NULL;
-+
-+	return NULL;
-+}
-+
-+void perf_aux_output_end(struct perf_output_handle *handle, unsigned long size,
-+			 bool truncated)
-+{
-+	struct ring_buffer *rb = handle->rb;
-+
-+	local_add(size, &rb->aux_head);
-+
-+	smp_wmb();
-+	rb->user_page->aux_head = local_read(&rb->aux_head);
-+
-+	perf_output_wakeup(handle);
-+	handle->event = NULL;
-+
-+	local_set(&rb->aux_nest, 0);
-+	ring_buffer_put(rb);
-+}
-+
-+int perf_aux_output_skip(struct perf_output_handle *handle, unsigned long size)
-+{
-+	struct ring_buffer *rb = handle->rb;
-+
-+	if (size > handle->size)
-+		return -ENOSPC;
-+
-+	local_add(size, &rb->aux_head);
-+	handle->head = local_read(&rb->aux_head);
-+	handle->size -= size;
-+
-+	return 0;
-+}
-+
-+void *perf_get_aux(struct perf_output_handle *handle)
-+{
-+	return handle->rb->aux_priv;
-+}
-+
- #define PERF_AUX_GFP	(GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY)
  
- static struct page *rb_alloc_aux_page(int node, int order)
+ 	smp_wmb();
+ 	rb->user_page->aux_head = local_read(&rb->aux_head);
+@@ -405,6 +422,7 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
+ 					     overwrite);
+ 	if (rb->aux_priv)
+ 		ret = 0;
++	rb->aux_overwrite = overwrite;
+ 
+ out:
+ 	if (!ret)
 -- 
 2.1.0.rc1
 
