@@ -1,53 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaHKLJx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 07:09:53 -0400
-Received: from smtp-out-205.synserver.de ([212.40.185.205]:1045 "EHLO
-	smtp-out-205.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaHKLJw (ORCPT
+	id S1752354AbaHKLKJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 07:10:09 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:50629 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871AbaHKLKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 07:09:52 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 11193
-Message-ID: <53E8A47A.4030808@metafoo.de>
-Date: Mon, 11 Aug 2014 13:09:46 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: dapm: Fix uninitialized variable in snd_soc_dapm_get_enum_double()
-References: <1407511775-26479-1-git-send-email-geert+renesas@glider.be>
-In-Reply-To: <1407511775-26479-1-git-send-email-geert+renesas@glider.be>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 11 Aug 2014 07:10:05 -0400
+Subject: Re: [PATCH v2 3/17] arcmsr: Add code to support system hibernation
+From: Ching Huang <ching2048@areca.com.tw>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <53E4DD71.4050203@redhat.com>
+References: <1407499546.5099.8.camel@Centos6.3-64>
+	 <53E4DD71.4050203@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 11 Aug 2014 19:09:55 +0800
+Message-ID: <1407755395.4803.10.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2014 05:29 PM, Geert Uytterhoeven wrote:
-> If soc_dapm_read() fails, reg_val will be uninitialized, and bogus
-> values will be written later:
->
-> sound/soc/soc-dapm.c: In function 'snd_soc_dapm_get_enum_double':
-> sound/soc/soc-dapm.c:2862:15: warning: 'reg_val' may be used uninitialized in this function [-Wmaybe-uninitialized]
->    unsigned int reg_val, val;
->                 ^
->
-> Return early on error to fix this.
->
-> Introduced by commit ce0fc93ae56e2ba50ff8c220d69e4e860e889320 ("ASoC:
-> Add DAPM support at the component level").
-> ---
-> Is this correct? Please review.
+Yes. 18/18 is obsolete.
+Thanks to Tomas's advice.
 
-Yes, thanks.
-
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Ching
+On Fri, 2014-08-08 at 16:23 +0200, Tomas Henzl wrote:
+> On 08/08/2014 02:05 PM, Ching Huang wrote:
+> > From: Ching Huang <ching2048@areca.com.tw>
+> >
+> > This patch adds code to support system hibernation.
+> >
+> > Changes in v2 of 3/17:
+> > * merge patch 18/18 to this patch, so 18/18 is obsolete.
+> 
+> Thanks, and please mark the the 18/18 as obsolete - add a comment there 
+> 
+> In my previous response were other comments too, you haven't probably 
+> noticed them. I could be wrong with my comments, but if you want a review
+> you should explain why the code is ok as it is.
+> 
+> >
+> > Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+> > ---
+> >
+> > Thanks to Tomas's advice.
+> >
+> > diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+> > --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-01 17:54:46.000000000 +0800
+> > +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-08 19:03:48.000000000 +0800
+> > @@ -89,11 +89,15 @@ static int arcmsr_bios_param(struct scsi
+> >  static int arcmsr_queue_command(struct Scsi_Host *h, struct scsi_cmnd *cmd);
+> >  static int arcmsr_probe(struct pci_dev *pdev,
+> >  				const struct pci_device_id *id);
+> > +static int arcmsr_suspend(struct pci_dev *pdev, pm_message_t state);
+> > +static int arcmsr_resume(struct pci_dev *pdev);
+> >  static void arcmsr_remove(struct pci_dev *pdev);
+> >  static void arcmsr_shutdown(struct pci_dev *pdev);
+> >  static void arcmsr_iop_init(struct AdapterControlBlock *acb);
+> >  static void arcmsr_free_ccb_pool(struct AdapterControlBlock *acb);
+> >  static u32 arcmsr_disable_outbound_ints(struct AdapterControlBlock *acb);
+> > +static void arcmsr_enable_outbound_ints(struct AdapterControlBlock *acb,
+> > +	u32 intmask_org);
+> >  static void arcmsr_stop_adapter_bgrb(struct AdapterControlBlock *acb);
+> >  static void arcmsr_flush_hba_cache(struct AdapterControlBlock *acb);
+> >  static void arcmsr_flush_hbb_cache(struct AdapterControlBlock *acb);
+> > @@ -167,6 +171,8 @@ static struct pci_driver arcmsr_pci_driv
+> >  	.id_table			= arcmsr_device_id_table,
+> >  	.probe			= arcmsr_probe,
+> >  	.remove			= arcmsr_remove,
+> > +	.suspend		= arcmsr_suspend,
+> > +	.resume			= arcmsr_resume,
+> >  	.shutdown		= arcmsr_shutdown,
+> >  };
+> >  /*
+> > @@ -772,6 +778,76 @@ static void arcmsr_free_irq(struct pci_d
+> >  		free_irq(pdev->irq, acb);
+> >  }
+> >  
+> > +static int arcmsr_suspend(struct pci_dev *pdev, pm_message_t state)
+> > +{
+> > +	uint32_t intmask_org;
+> > +	struct Scsi_Host *host = pci_get_drvdata(pdev);
+> > +	struct AdapterControlBlock *acb =
+> > +		(struct AdapterControlBlock *)host->hostdata;
+> > +
+> > +	intmask_org = arcmsr_disable_outbound_ints(acb);
+> > +	arcmsr_free_irq(pdev, acb);
+> > +	del_timer_sync(&acb->eternal_timer);
+> > +	flush_work(&acb->arcmsr_do_message_isr_bh);
+> > +	arcmsr_stop_adapter_bgrb(acb);
+> > +	arcmsr_flush_adapter_cache(acb);
+> > +	pci_set_drvdata(pdev, host);
+> > +	pci_save_state(pdev);
+> > +	pci_disable_device(pdev);
+> > +	pci_set_power_state(pdev, pci_choose_state(pdev, state));
+> > +	return 0;
+> > +}
+> > +
+> > +static int arcmsr_resume(struct pci_dev *pdev)
+> > +{
+> > +	int error;
+> > +	struct Scsi_Host *host = pci_get_drvdata(pdev);
+> > +	struct AdapterControlBlock *acb =
+> > +		(struct AdapterControlBlock *)host->hostdata;
+> > +
+> > +	pci_set_power_state(pdev, PCI_D0);
+> > +	pci_enable_wake(pdev, PCI_D0, 0);
+> > +	pci_restore_state(pdev);
+> > +	if (pci_enable_device(pdev)) {
+> > +		pr_warn("%s: pci_enable_device error\n", __func__);
+> > +		return -ENODEV;
+> > +	}
+> > +	error = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
+> > +	if (error) {
+> > +		error = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+> > +		if (error) {
+> > +			pr_warn("scsi%d: No suitable DMA mask available\n",
+> > +			       host->host_no);
+> > +			goto controller_unregister;
+> > +		}
+> > +	}
+> > +	pci_set_master(pdev);
+> > +	if (arcmsr_request_irq(pdev, acb) == FAILED)
+> > +		goto controller_stop;
+> > +	arcmsr_iop_init(acb);
+> > +	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
+> > +	atomic_set(&acb->rq_map_token, 16);
+> > +	atomic_set(&acb->ante_token_value, 16);
+> > +	acb->fw_flag = FW_NORMAL;
+> > +	init_timer(&acb->eternal_timer);
+> > +	acb->eternal_timer.expires = jiffies + msecs_to_jiffies(6 * HZ);
+> > +	acb->eternal_timer.data = (unsigned long) acb;
+> > +	acb->eternal_timer.function = &arcmsr_request_device_map;
+> > +	add_timer(&acb->eternal_timer);
+> > +	return 0;
+> > +controller_stop:
+> > +	arcmsr_stop_adapter_bgrb(acb);
+> > +	arcmsr_flush_adapter_cache(acb);
+> > +controller_unregister:
+> > +	scsi_remove_host(host);
+> > +	arcmsr_free_ccb_pool(acb);
+> > +	arcmsr_unmap_pciregion(acb);
+> > +	pci_release_regions(pdev);
+> > +	scsi_host_put(host);
+> > +	pci_disable_device(pdev);
+> > +	return -ENODEV;
+> > +}
+> > +
+> >  static uint8_t arcmsr_abort_hba_allcmd(struct AdapterControlBlock *acb)
+> >  {
+> >  	struct MessageUnit_A __iomem *reg = acb->pmuA;
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
 
