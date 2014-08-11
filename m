@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbaHKFgg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 01:36:36 -0400
-Received: from bastet.se.axis.com ([195.60.68.11]:48010 "EHLO
-	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338AbaHKFgf convert rfc822-to-8bit (ORCPT
+	id S1752813AbaHKFgk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 01:36:40 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:40619 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752599AbaHKFgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 01:36:35 -0400
-From: Mikael Starvik <mikael.starvik@axis.com>
-To: Maurizio Lombardi <mlombard@redhat.com>,
-        Nick Krause <xerofoiify@gmail.com>, Jesper Nilsson <jespern@axis.com>,
-        "open@axis.com" <open@axis.com>,
-        "list@" <"CRIS PORTlinux-cris-kernel"@axis.com>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Mon, 11 Aug 2014 07:36:27 +0200
-Subject: RE: [PATCH] cris: bug: add unreachable() to silence warnings
-Thread-Topic: [PATCH] cris: bug: add unreachable() to silence warnings
-Thread-Index: Ac+yEI4K7a9C+2jJRxqVyNiuPT0NiADFZujg
-Message-ID: <4BEA3FF3CAA35E408EA55C7BE2E61D0589EBFBC0FE@xmail3.se.axis.com>
-References: <1407384076-20060-1-git-send-email-xerofoiify@gmail.com>
- <53E32982.6010409@redhat.com>
-In-Reply-To: <53E32982.6010409@redhat.com>
-Accept-Language: sv-SE
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: sv-SE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Aug 2014 01:36:36 -0400
+X-Sasl-enc: 3e9V/fPGtoK3OzgjttTkctY8mNIHs6kQolB2nlodC4PV 1407735395
+Date: Mon, 11 Aug 2014 13:36:00 +0800
+From: Greg KH <greg@kroah.com>
+To: "Chen, Alvin" <alvin.chen@intel.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: Re: [PATCH] USB: pch_udc: USB gadget device support for Intel Quark
+ X1000
+Message-ID: <20140811053600.GA13727@kroah.com>
+References: <4656BEB6164FC34F8171C6538F1A595B2E971A2E@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E971A2E@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Agreed. If you include that, I will ack it
+On Mon, Aug 11, 2014 at 05:21:50AM +0000, Chen, Alvin wrote:
+> Hi Felipe,
+> 
+> Any update for this patch? Just want to follow-up.
 
------Original Message-----
-From: Maurizio Lombardi [mailto:mlombard@redhat.com] 
-Sent: den 7 augusti 2014 09:24
-To: Nick Krause; Mikael Starvik; Jesper Nilsson; open@axis.com; list@; open list
-Subject: Re: [PATCH] cris: bug: add unreachable() to silence warnings
+It's the middle of the merge window, we can't do anything until 3.17-rc1
+is out, please relax...
 
-
-
-On 08/07/2014 06:01 AM, Nick Krause wrote:
->  			      ".previous\n\t"				\
-> -			      : : "ri" (__FILE__), "i" (__LINE__))
-> +			      : : "ri" (__FILE__), "i" (__LINE__));	\
-> +	unreachable();
-> +} while (0)
-
-Does this code compile?
-There should be a trailing '\' character after "unreachable()".
-
-Regards,
-Maurizio Lombardi
+greg k-h
