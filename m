@@ -1,84 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaHKNTx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 09:19:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48014 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751155AbaHKNTw (ORCPT
+	id S1753476AbaHKNW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 09:22:26 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:48598 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753133AbaHKNWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 09:19:52 -0400
-Date: Mon, 11 Aug 2014 14:19:49 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Peter Chan <peter.chan@freescale.com>
-Cc: "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
-        Mark Brown <broonie@kernel.org>, Nicolin Chen <nicoleotsuka@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "tiwai@suse.de" <tiwai@suse.de>,
-        "patches@opensource.wolfsonmicro.com" 
-	<patches@opensource.wolfsonmicro.com>,
-        "shengjiu.wang@freescale.com" <shengjiu.wang@freescale.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rf@opensource.wolfsonmicro.com" <rf@opensource.wolfsonmicro.com>
-Subject: Re: [alsa-devel] [PATCH] ASoC: wm8962: Correct the bit offset to
-	enable mono speaker output
-Message-ID: <20140811131949.GA28085@opensource.wolfsonmicro.com>
-References: <1407412549-14983-1-git-send-email-nicoleotsuka@gmail.com> <20140807165836.GL17528@sirena.org.uk> <20140808082043.GB6333@MrMyself> <39712b9fd56546f8a943d605230a2f18@BL2PR03MB371.namprd03.prod.outlook.com>
+	Mon, 11 Aug 2014 09:22:23 -0400
+Message-ID: <53E8C389.2090408@linaro.org>
+Date: Mon, 11 Aug 2014 15:22:17 +0200
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <39712b9fd56546f8a943d605230a2f18@BL2PR03MB371.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Christoffer Dall <christoffer.dall@linaro.org>
+CC: Marc Zyngier <marc.zyngier@arm.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 7/9] KVM: arm: vgic: allow dynamic mapping of physical/virtual
+ interrupts
+References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com> <1403688530-23273-8-git-send-email-marc.zyngier@arm.com> <53DE0584.2040405@linaro.org> <87bns0gzy8.fsf@approximate.cambridge.arm.com> <53E39FA9.6040503@linaro.org> <20140811080125.GA10550@cbox>
+In-Reply-To: <20140811080125.GA10550@cbox>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 09:55:43AM +0000, Peter Chan wrote:
-> I have a question about the wm8962 mono speaker mode. In SPK_MONO description at table 73, it says "When SPK_MONO is enabled, both speakers output the signal from the left channel". Does it mean only the left channel control the output in mono speaker mode?
+On 08/11/2014 10:01 AM, Christoffer Dall wrote:
+> On Thu, Aug 07, 2014 at 05:47:53PM +0200, Eric Auger wrote:
+>> On 08/04/2014 03:13 PM, Marc Zyngier wrote:
+>>> On Sun, Aug 03 2014 at 10:48:52 am BST, Eric Auger <eric.auger@linaro.org> wrote:
+>>>> On 06/25/2014 11:28 AM, Marc Zyngier wrote:
+>>>>> In order to be able to feed physical interrupts to a guest, we need
+>>>>> to be able to establish the virtual-physical mapping between the two
+>>>>> worlds.
+>>>>>
+>>>>> As we try to keep the injection interface simple, find out what the
+>>>>> physical interrupt is (if any) when we actually build the LR.
+>>>>>
+>>>>> The mapping is kept in a rbtree, indexed by virtual interrupts.
+>>>>
+>>>> Hi Marc,
+>>>>
+>>>> I suspect there is a piece missing here related to bitmap state
+>>>> management. When using maintenance IRQ, in process_maintenance we cleared
+>>>> - dist->irq_pending (and new dist->irq_level)
+>>>> - vcpu->irq_queued
+>>>>
+>>>> Now this does not exist anymore for forwarded irqs, when a subsequent
+>>>> IRQ will be injected, vgic_update_irq_pending will fail in injecting the
+>>>> IRQ because the states are reflecting the IRQ is still in progress.
+>>>>
+>>>> Since I have a modified version of your code, using Christoffer patches
+>>>> I may have missed some modifications you did but at least on my side I
+>>>> was forced to add bitmap clearing.
+>>>>
+>>>> It is not clear to me where to put that code however. Since user-side
+>>>> can inject an IRQ while the previous one is not completed at guest and
+>>>> host level, it cannot be in update_irq_pending - or we shall prevent the
+>>>> user from injecting fwd IRQs - .
+>> Hi Marc,
+>>
+>> Christoffer suggested me to put state bitmap reset in
+>> __kvm_vgic_sync_hwstate where we check whether the LR were consumed. It
+>> seems to work fine and we do no assumption about user action.
+>>
 > 
-> Thanks,
-> Peter
+> What I said specifically was that we currently don't have to worry about
+> clearing the active bit or resample the level when we look through the
+> ELRSR bitmap, because level-triggered interrupts that have been
+> processed currently always raise a maintenance interrupt.
 > 
-> -----Original Message-----
-> From: Nicolin Chen [mailto:Guangyu.Chen@freescale.com] 
-> Sent: Friday, August 08, 2014 4:21 PM
-> To: Mark Brown
-> Cc: Nicolin Chen; alsa-devel@alsa-project.org; tiwai@suse.de; patches@opensource.wolfsonmicro.com; Wang Shengjiu-B02247; lgirdwood@gmail.com; linux-kernel@vger.kernel.org; CHAN Peter-B18700; ckeepax@opensource.wolfsonmicro.com; rf@opensource.wolfsonmicro.com
-> Subject: Re: [alsa-devel] [PATCH] ASoC: wm8962: Correct the bit offset to enable mono speaker output
+> So my suggestion would be to factor out the "this is some common
+> housekeeping we have to do for all level-triggered interrupts which have
+> not been completed on a VCPU interface" from vgic_process_maintenance()
+> and call this functionality from both vgic_process_maintenance() and
+> from __kvm_vgic_sync_hwstate().
 > 
-> On Thu, Aug 07, 2014 at 05:58:36PM +0100, Mark Brown wrote:
-> > On Thu, Aug 07, 2014 at 07:55:49PM +0800, Nicolin Chen wrote:
-> > > As WM8962 datasheet describes for SPK_MONO bit of R51: When SPK_MONO 
-> > > is set to '1', both speakers output the signal from the left channel.
-> > 
-> > > So for mono speaker widget, we shall enable Left Channel whose 
-> > > enable bit is 6 instead of 7 (Right Channel).
-> > > 
-> > > This patches just simply corrects the bit offset.
-> > 
-> > >  		   spkmixl, ARRAY_SIZE(spkmixl)),  SND_SOC_DAPM_MUX_E("Speaker 
-> > > PGA", WM8962_PWR_MGMT_2, 4, 0, &spkoutl_mux,
-> > >  		   out_pga_event, SND_SOC_DAPM_POST_PMU), 
-> > > -SND_SOC_DAPM_PGA("Speaker Output", WM8962_CLASS_D_CONTROL_1, 7, 0, 
-> > > NULL, 0),
-> > > +SND_SOC_DAPM_PGA("Speaker Output", WM8962_CLASS_D_CONTROL_1, 6, 0, 
-> > > +NULL, 0),
-> > >  SND_SOC_DAPM_OUTPUT("SPKOUT"),
-> > >  };
-> > 
-> > Someone who's name I'd need to look up submitted an identical fix off 
-> > list recently - I checked the datasheet and it seems that in mono mode 
-> > the speaker output actually wants both left and right channels active 
-> > so there is a bug here but this isn't the fix.
+> [...]
 > 
-> I rechecked the datasheet and found that the hardware needs to tie both outputs and enable both bits. So the patch should be invalid.
+>>>
+>>> Now, it is completely possible that we're missing something here (or
+>>> actually doing too much).
+>>>
+>>>> In my case (VFIO/IRQFD), by construction I only inject a new forwarded
+>>>> IRQ when the previous one was completed so I could put it in the irqfd
+>>>> injection function. But even irqfd is injected through eventfd trigger.
+>>>> We shall forbid the user-side to trigger that eventfd in place of the
+>>>> VFIO driver. What do you think?
 > 
-> But our customer reported that they did try to set both SPKOUTR_ENA and SPKOUTL_ENA bits in mono mode but the sound is lousy. If setting SPKOUTR_ENA alone, the speaker has no sound. Only setting SPKOUTL_ENA bit get the correct speaker output in mono mode.
+> I'm afraid I'm not quite sure what you mean here?
+Hi Christoffer,
 
->From the wording of "tie both outputs together" in the datasheet
-I would assume that means both should be fed the same audio? Was
-this done? I will try to give the hardware guys here a shout and
-see if I can get some clarification on mono mode on this device.
+you can forget that comment now we decorrelate status bitmap clearing
+from injection.
+> 
+>>>
+>>> Yup. userspace can't interfere with a forwarded interrupt, that's way
+>>> too dangerous.
+>>>
+>>>> A question related to guest kill. Cannot it happen the guest sometimes
+>>>> does not complete the vIRQ before exiting? Currently I observe cases
+>>>> where when I launch qemu-system after a kill, forwarded irqs do not work
+>>>> properly. I am not yet sure this is the cause of my problem but just in
+>>>> case, can the host write into GICV_EOIR in place of guest?
+>>>
+>>> It is quite possible that the interrupt is left active when the guest is
+>>> killed, which would tend to indicate that we need a way to cleanup
+>>> behind us. It should be enough to clear the active bit, shouldn't it?
+>> So in practice this will directly write into the GICC_DIR right? I will
+>> try this.
+>>
+> Not sure what you mean with "this will directly write into the
+> GICC_DIR"?  What is 'this' ?
+this = clear the active bit. Was looking for the translation into HW
+register.
 
-Thanks,
-Charles
+> 
+> I haven't experimented a lot with this, but I think you need to catch
+> all forwarded IRQs that may have been in flight when the VM was killed
+> and use the API to the irqchip to tell it that it's no longer forwarded
+> and either the cleanup then sits within the specific irqchip logic or
+> you do some more manual cleanup inside KVM.  I would lean towards the
+> first option (because the irqchip would always be in charge of
+> guaranteeting some queiesced state), but we should look at the specific
+> details of what needs to be done.
+OK
+> 
+> -Christoffer
+> 
+
