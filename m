@@ -1,251 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613AbaHKFxR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 01:53:17 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52572 "EHLO mga02.intel.com"
+	id S1752576AbaHKF5R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 01:57:17 -0400
+Received: from mga14.intel.com ([192.55.52.115]:33896 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752295AbaHKFxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 01:53:16 -0400
+	id S1752034AbaHKF5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 01:57:16 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,839,1400050800"; 
-   d="scan'208";a="586300725"
-Message-ID: <53E85A40.6030901@linux.intel.com>
-Date: Mon, 11 Aug 2014 13:53:04 +0800
-From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>
-CC: ulf.hansson@linaro.org, tgih.jun@samsung.com, aaron.lu@intel.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jackey.shen@amd.com, gregkh@linuxfoundation.org
-Subject: Re: One bug of SDHCI driver
-References: <53B249A4.2040404@linux.intel.com> <53B57B23.4020607@linux.intel.com> <53B61403.7040602@samsung.com> <53B968EB.60401@linux.intel.com> <53BC164E.4040900@linux.intel.com> <86zjgcjckz.fsf@void.printf.net> <53C497FD.2070000@linux.intel.com> <53C4AAB5.4070700@samsung.com> <53C4B0CA.1020504@samsung.com> <53CBD775.9000304@linux.intel.com> <53D125D6.3020203@linux.intel.com> <53D85CBF.3070409@linux.intel.com> <53D8691B.8080904@samsung.com> <53E0640D.2030709@linux.intel.com> <53E32387.20801@linux.intel.com>
-In-Reply-To: <53E32387.20801@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="370701510"
+Message-ID: <1407736621.2339.11.camel@rzhang1-toshiba>
+Subject: [GIT PULL] thermal management updates for v3.17-rc1
+From: Zhang Rui <rui.zhang@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 11 Aug 2014 13:57:01 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Linus,
 
-Hi, everyone
+please pull from 
 
-I have posted this new patch in a separate mail. Many thanks for your comments.
+ git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next
 
+to receive Thermal Management updates for v3.17-rc1 with top-most commit
 
-Thanks,
-Zhonghui
+47d104ba5879790c7c91c3390b0b08399e168efe:
 
-On 2014/8/7 14:58, Fu, Zhonghui wrote:
-> kindly reminder.
->
-> Thanks,
-> Zhonghui
->
-> On 2014/8/5 12:56, Fu, Zhonghui wrote:
->> Hi, Jaehoon
->>
->> According to your comments, I created a new patch for this issue as follows:
->>
->>
->> Thanks,
->> Zhonghui
->>
->>
->> From 6cee984e1d76ba0a3320430f8cf4318ab65fcf06 Mon Sep 17 00:00:00 2001
->> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->> Date: Tue, 5 Aug 2014 12:44:38 +0800
->> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
->>
->> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
->> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
->> the use of our own custom threaded IRQ handler, but left in an
->> unconditional wake_up_process() on that handler at resume-time.
->> Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
->>
->> In addition, the check for MMC_CAP_SDIO_IRQ capability is added
->> before enable sdio IRQ.
->>
->> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
->> Signed-off-by: Chris Ball <chris@printf.net>
->> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->> ---
->>  drivers/mmc/core/sdio.c     |   14 ++++++++++++--
->>  drivers/mmc/core/sdio_irq.c |    4 ++--
->>  2 files changed, 14 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
->> index e636d9e..e04a540 100644
->> --- a/drivers/mmc/core/sdio.c
->> +++ b/drivers/mmc/core/sdio.c
->> @@ -992,8 +992,18 @@ static int mmc_sdio_resume(struct mmc_host *host)
->>  		}
->>  	}
->>  
->> -	if (!err && host->sdio_irqs)
->> -		wake_up_process(host->sdio_irq_thread);
->> +	if (!err && host->sdio_irqs) {
->> +		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->> +			wake_up_process(host->sdio_irq_thread);
->> +		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
->> +			mmc_release_host(host);
->> +			mmc_host_clk_hold(host);
->> +			host->ops->enable_sdio_irq(host, 1);
->> +			mmc_host_clk_release(host);
->> +			mmc_claim_host(host);
->> +		}
->> +	}
->> +
->>  	mmc_release_host(host);
->>  
->>  	host->pm_flags &= ~MMC_PM_KEEP_POWER;
->> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
->> index 5cc13c8..696eca4 100644
->> --- a/drivers/mmc/core/sdio_irq.c
->> +++ b/drivers/mmc/core/sdio_irq.c
->> @@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
->>  				host->sdio_irqs--;
->>  				return err;
->>  			}
->> -		} else {
->> +		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>  			mmc_host_clk_hold(host);
->>  			host->ops->enable_sdio_irq(host, 1);
->>  			mmc_host_clk_release(host);
->> @@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
->>  		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->>  			atomic_set(&host->sdio_irq_thread_abort, 1);
->>  			kthread_stop(host->sdio_irq_thread);
->> -		} else {
->> +		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>  			mmc_host_clk_hold(host);
->>  			host->ops->enable_sdio_irq(host, 0);
->>  			mmc_host_clk_release(host);
->> -- 1.7.1
->>
->>
->>
->>
->>
->>
->> On 2014/7/30 11:40, Jaehoon Chung wrote:
->>> Hi, Zhonghui.
->>>
->>> On 07/30/2014 11:47 AM, Fu, Zhonghui wrote:
->>>> Hi,
->>>>
->>>> In the resume function, SDIO irq must be enabled, or the interrupts from devices on SDIO bus can't be acknowledged. I also uploaded this new patch to https://bugzilla.kernel.org/show_bug.cgi?id=80151.
->>>> Could you please help to review it?
->>>>
->>>>
->>>>
->>>>
->>>> Thanks,
->>>> Zhonghui
->>>>
->>>> On 2014/7/24 23:27, Fu, Zhonghui wrote:
->>>>> Hi,
->>>>>
->>>>> Any comments for this new patch?
->>>>>
->>>>> Thanks,
->>>>> Zhonghui
->>>>> On 2014/7/20 22:51, Fu, Zhonghui wrote:
->>>>>> Hi,
->>>>>>
->>>>>> Chris' patch is not enough to fix this bug. I made a patch as follows and verified it can work.  Could you please give out some comments about this patch?
->>>>>>
->>>>>>
->>>>>> Thanks,
->>>>>> Zhonghui
->>>>>>
->>>>>> >From 72d6f5b56fa04290fd3a055a3333de1d89e7c8d4 Mon Sep 17 00:00:00 2001
->>>>>> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->>>>>> Date: Sun, 20 Jul 2014 22:29:53 +0800
->>>>>> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
->>>>>>
->>>>>> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
->>>>>> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
->>>>>> the use of our own custom threaded IRQ handler, but left in an
->>>>>> unconditional wake_up_process() on that handler at resume-time.
->>>>>>
->>>>>> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->>>>>> ---
->>>>>>  drivers/mmc/core/sdio.c |   14 ++++++++++++--
->>>>>>  1 files changed, 12 insertions(+), 2 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
->>>>>> index e636d9e..8369e56 100644
->>>>>> --- a/drivers/mmc/core/sdio.c
->>>>>> +++ b/drivers/mmc/core/sdio.c
->>>>>> @@ -992,8 +992,18 @@ static int mmc_sdio_resume(struct mmc_host *host)
->>>>>>  		}
->>>>>>  	}
->>>>>>  
->>>>>> -	if (!err && host->sdio_irqs)
->>>>>> -		wake_up_process(host->sdio_irq_thread);
->>>>>> +	if (!err && host->sdio_irqs) {
->>>>>> +		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->>>>>> +			wake_up_process(host->sdio_irq_thread);
->>>>>> +		} else {
->>>>>> +			mmc_release_host(host);
->>>>>> +			mmc_host_clk_hold(host);
->>>>>> +			host->ops->enable_sdio_irq(host, 1);
->>>>>> +			mmc_host_clk_release(host);
->>>>>> +			mmc_claim_host(host);
->>>>>> +		}
->>>>>> +	}
->>> If you enable the sdio_irq, I think it needs to check whether MMC_CAP_SDIO_IRQ is set or not.
->>>
->>>
->>> Best Regards,
->>> Jaehoon Chung
->>>>>> +
->>>>>>  	mmc_release_host(host);
->>>>>>  
->>>>>>  	host->pm_flags &= ~MMC_PM_KEEP_POWER;
->>>>>> -- 1.7.1
->>>>>>
->>>>>>
->>>>>>
->>>>>> On 2014/7/15 12:40, Jaehoon Chung wrote:
->>>>>>> From: Chris Ball <chris@printf.net>
->>>>>>> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
->>>>>>>
->>>>>>> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
->>>>>>> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
->>>>>>> the use of our own custom threaded IRQ handler, but left in an
->>>>>>> unconditional wake_up_process() on that handler at resume-time.
->>>>>>>
->>>>>>> Reported-by: Fu, Zhonghui <zhonghui.fu@linux.intel.com>
->>>>>>> [Patch suggested by Jaehoon Chung]
->>>>>>> Signed-off-by: Chris Ball <chris@printf.net>
->>>>>>> ---
->>>>>>>  drivers/mmc/core/sdio.c |    3 ++-
->>>>>>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>>>>>
->>>>>>> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
->>>>>>> index e636d9e..11cc4e0 100644
->>>>>>> --- a/drivers/mmc/core/sdio.c
->>>>>>> +++ b/drivers/mmc/core/sdio.c
->>>>>>> @@ -992,7 +992,8 @@ static int mmc_sdio_resume(struct mmc_host *host)
->>>>>>>  		}
->>>>>>>  	}
->>>>>>>  
->>>>>>> -	if (!err && host->sdio_irqs)
->>>>>>> +	if (!err && host->sdio_irqs &&
->>>>>>> +			!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD))
->>>>>>>  		wake_up_process(host->sdio_irq_thread);
->>>>>>>  	mmc_release_host(host);
->>>>>>>  
->>>>>> --
->>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>>>> the body of a message to majordomo@vger.kernel.org
->>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>> Please read the FAQ at  http://www.tux.org/lkml/
+  Merge branches 'exynos-fix', 'for-rc', 'int3403-fix', 'misc',
+'rcar-thermal' and 'sti-thermal' of .git into next (2014-07-22 10:13:00
++0800)
+
+on top of commit 1795cd9b3a91d4b5473c97f491d63892442212ab:
+
+  Linux 3.16-rc5 (2014-07-13 14:04:33 -0700)
+
+Specifics:
+
+- adds full support for 2 types of Thermal Controllers
+produced by STMicroelectronics. One is a more traditional memory
+mapped variant, the other is controlled solely by system configuration
+registers. From: Lee Jones.
+
+- add TMU (Thermal Management Unit) support for Exynos3250 Soc. From:
+Chanwoo Choi.
+
+- add critical and passive trip point support for int3403 thermal
+driver. From: Srinivas Pandruvada.
+
+- a couple of small fixes/cleanups from Javi Merino, and Geert
+Uytterhoeven.
+
+----------------------------------------------------------------
+
+Bartlomiej Zolnierkiewicz (1):
+      thermal: exynos: fix ordering in exynos_tmu_remove()
+
+Chanwoo Choi (1):
+      thermal: samsung: Add TMU support for Exynos3250 SoC
+
+Geert Uytterhoeven (1):
+      thermal: rcar: Document SoC-specific bindings
+
+Javi Merino (2):
+      thermal: cpu_cooling: fix typo highjack -> hijack
+      thermal: document struct thermal_zone_device and thermal_governor
+
+Lee Jones (4):
+      thermal: sti: Supply Device Tree documentation
+      thermal: sti: Introduce ST Thermal core code
+      thermal: sti: Add support for ST's System Config Register based
+Thermal controller
+      thermal: sti: Add support for ST's Memory Mapped based Thermal
+controller
+
+Riku Voipio (1):
+      thermal: allow building dove_thermal with mvebu
+
+Srinivas Pandruvada (1):
+      Thermal: int3403: Add CRT and PSV trip
+
+Zhang Rui (1):
+      Merge branches 'exynos-fix', 'for-rc', 'int3403-fix', 'misc',
+'rcar-thermal' and 'sti-thermal' of .git into next
+
+ Documentation/devicetree/bindings/thermal/exynos-thermal.txt |   1 +
+ Documentation/devicetree/bindings/thermal/rcar-thermal.txt   |  18
++++++---
+ Documentation/devicetree/bindings/thermal/st-thermal.txt     |  42
++++++++++++++++++++
+ drivers/thermal/Kconfig                                      |   7 +++-
+ drivers/thermal/Makefile                                     |   1 +
+ drivers/thermal/cpu_cooling.c                                |   2 +-
+ drivers/thermal/int3403_thermal.c                            |  67
++++++++++++++++++++++++++----
+ drivers/thermal/samsung/exynos_tmu.c                         |  11
++++--
+ drivers/thermal/samsung/exynos_tmu.h                         |   3 +-
+ drivers/thermal/samsung/exynos_tmu_data.c                    |  89
++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/samsung/exynos_tmu_data.h                    |   7 ++++
+ drivers/thermal/st/Kconfig                                   |  12
+++++++
+ drivers/thermal/st/Makefile                                  |   3 ++
+ drivers/thermal/st/st_thermal.c                              | 313
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/st/st_thermal.h                              | 104
++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/st/st_thermal_memmap.c                       | 209
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/st/st_thermal_syscfg.c                       | 179
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/thermal.h                                      |  46
++++++++++++++++++++-
+ 18 files changed, 1093 insertions(+), 21 deletions(-)
+ create mode 100644
+Documentation/devicetree/bindings/thermal/st-thermal.txt
+ create mode 100644 drivers/thermal/st/Kconfig
+ create mode 100644 drivers/thermal/st/Makefile
+ create mode 100644 drivers/thermal/st/st_thermal.c
+ create mode 100644 drivers/thermal/st/st_thermal.h
+ create mode 100644 drivers/thermal/st/st_thermal_memmap.c
+ create mode 100644 drivers/thermal/st/st_thermal_syscfg.c
+
 
