@@ -1,163 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633AbaHKFjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 01:39:00 -0400
-Received: from mga14.intel.com ([192.55.52.115]:27340 "EHLO mga14.intel.com"
+	id S1752542AbaHKFkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 01:40:10 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:52826 "EHLO thoth.sbs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752335AbaHKFi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 01:38:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,839,1400050800"; 
-   d="scan'208";a="574813740"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v3 23/23] perf: itrace: Allow sampling of inherited events
-Date: Mon, 11 Aug 2014 08:19:52 +0300
-Message-Id: <1407734392-31097-24-git-send-email-alexander.shishkin@linux.intel.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1407734392-31097-1-git-send-email-alexander.shishkin@linux.intel.com>
-References: <1407734392-31097-1-git-send-email-alexander.shishkin@linux.intel.com>
+	id S1752241AbaHKFkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 01:40:09 -0400
+Message-ID: <53E85731.3000507@siemens.com>
+Date: Mon, 11 Aug 2014 07:40:01 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Daniel Thompson <daniel.thompson@linaro.org>
+CC: linux-kernel@vger.kernel.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH gdb/scripts] scripts/gdb: Ignore byte-compiled python
+ files
+References: <1407335269-9533-1-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1407335269-9533-1-git-send-email-daniel.thompson@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Try to find an itrace sampler event for the current event if none is linked.
-This is useful when these events are allocated by inheritance path,
-independently of one another.
+On 2014-08-06 16:27, Daniel Thompson wrote:
+> Using the gdb scripts leaves byte-compiled python files in the scripts/
+> directory. These should be ignored by git and cleaned up by mrproper.
+> 
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> Cc: Jan Kiszka <jan.kiszka@siemens.com>
+> Cc: Michal Marek <mmarek@suse.cz>
+> Cc: linux-kbuild@vger.kernel.org
+> ---
+> 
+> Notes:
+>     Relies upon (and intended for incorporation into) Jan Kiszka's gdb/scripts
+>     patch series.
+> 
+>  .gitignore                   | 1 +
+>  Makefile                     | 2 +-
+>  scripts/gdb/linux/.gitignore | 2 ++
+>  3 files changed, 4 insertions(+), 1 deletion(-)
+>  create mode 100644 scripts/gdb/linux/.gitignore
+> 
+> diff --git a/.gitignore b/.gitignore
+> index f4c0b09..a04486e 100644
+> --- a/.gitignore
+> +++ b/.gitignore
+> @@ -42,6 +42,7 @@ Module.symvers
+>  /TAGS
+>  /linux
+>  /vmlinux
+> +/vmlinux-gdb.py
+>  /vmlinuz
+>  /System.map
+>  /Module.markers
+> diff --git a/Makefile b/Makefile
+> index 7105eb2a..a3ca8ba 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -1136,7 +1136,7 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
+>  		  signing_key.priv signing_key.x509 x509.genkey		\
+>  		  extra_certificates signing_key.x509.keyid		\
+>  		  signing_key.x509.signer include/linux/version.h	\
+> -		  vmlinux-gdb.py
+> +		  vmlinux-gdb.py scripts/gdb/linux/*.py[co]
+>  
+>  # clean - Delete most, but leave enough to build external modules
+>  #
+> diff --git a/scripts/gdb/linux/.gitignore b/scripts/gdb/linux/.gitignore
+> new file mode 100644
+> index 0000000..52e4e61
+> --- /dev/null
+> +++ b/scripts/gdb/linux/.gitignore
+> @@ -0,0 +1,2 @@
+> +*.pyc
+> +*.pyo
+> 
 
-Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
----
- kernel/events/itrace.c | 91 +++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 60 insertions(+), 31 deletions(-)
+Thanks, picked up into my queue. Rebased version pushed. I'll repost the
+series once again soon.
 
-diff --git a/kernel/events/itrace.c b/kernel/events/itrace.c
-index eae85cf578..7dbac8ac63 100644
---- a/kernel/events/itrace.c
-+++ b/kernel/events/itrace.c
-@@ -48,46 +48,66 @@ static bool itrace_event_match(struct perf_event *e1, struct perf_event *e2)
-  * to configure and obtain itrace samples.
-  */
- 
-+struct perf_event *__find_sampling_counter(struct perf_event_context *ctx,
-+					   struct perf_event *event,
-+					   struct task_struct *task)
-+{
-+	struct perf_event *sampler = NULL;
-+
-+	list_for_each_entry(sampler, &ctx->event_list, event_entry) {
-+		/*
-+		 * event is not an itrace event, but all the relevant
-+		 * bits should match
-+		 */
-+		if (itrace_event_match(sampler, event) &&
-+		    kernel_rb_event(sampler) &&
-+		    sampler->attr.exclude_hv == event->attr.exclude_hv &&
-+		    sampler->attr.exclude_idle == event->attr.exclude_idle &&
-+		    sampler->attr.exclude_user == event->attr.exclude_user &&
-+		    sampler->attr.exclude_kernel == event->attr.exclude_kernel &&
-+		    sampler->attr.itrace_config == event->attr.itrace_config &&
-+		    sampler->attr.type == event->attr.itrace_sample_type &&
-+		    sampler->attr.itrace_sample_size >= event->attr.itrace_sample_size &&
-+		    atomic_long_inc_not_zero(&sampler->refcount))
-+			return sampler;
-+	}
-+
-+	return NULL;
-+}
-+
-+struct perf_event *find_sampling_counter(struct pmu *pmu,
-+					 struct perf_event *event,
-+					 struct task_struct *task)
-+{
-+	struct perf_event_context *ctx;
-+	struct perf_event *sampler = NULL;
-+	unsigned long flags;
-+
-+	ctx = find_get_context(pmu, task, event->cpu);
-+	if (!ctx)
-+		return NULL;
-+
-+	raw_spin_lock_irqsave(&ctx->lock, flags);
-+	sampler = __find_sampling_counter(ctx, event, task);
-+	--ctx->pin_count;
-+	put_ctx(ctx);
-+	raw_spin_unlock_irqrestore(&ctx->lock, flags);
-+
-+	return sampler;
-+}
-+
- int itrace_sampler_init(struct perf_event *event, struct task_struct *task,
- 			struct pmu *pmu)
- {
--	struct perf_event_context *ctx;
- 	struct perf_event_attr attr;
- 	struct perf_event *tevt = NULL;
- 	struct ring_buffer *rb;
--	unsigned long nr_pages, flags;
-+	unsigned long nr_pages;
- 
- 	if (!pmu || !(pmu->capabilities & PERF_PMU_CAP_ITRACE))
- 		return -ENOTSUPP;
- 
--	ctx = find_get_context(pmu, task, event->cpu);
--	if (ctx) {
--		raw_spin_lock_irqsave(&ctx->lock, flags);
--		list_for_each_entry(tevt, &ctx->event_list, event_entry) {
--			/*
--			 * event is not an itrace event, but all the relevant
--			 * bits should match
--			 */
--			if (itrace_event_match(tevt, event) &&
--			    tevt->attr.exclude_hv == event->attr.exclude_hv &&
--			    tevt->attr.exclude_idle == event->attr.exclude_idle &&
--			    tevt->attr.exclude_user == event->attr.exclude_user &&
--			    tevt->attr.exclude_kernel == event->attr.exclude_kernel &&
--			    tevt->attr.itrace_config == event->attr.itrace_config &&
--			    tevt->attr.type == event->attr.itrace_sample_type &&
--			    tevt->attr.itrace_sample_size >= event->attr.itrace_sample_size &&
--			    atomic_long_inc_not_zero(&tevt->refcount))
--				goto got_event;
--		}
--
--		tevt = NULL;
--
--got_event:
--		--ctx->pin_count;
--		put_ctx(ctx);
--		raw_spin_unlock_irqrestore(&ctx->lock, flags);
--	}
--
-+	tevt = find_sampling_counter(pmu, event, task);
- 	if (!tevt) {
- 		memset(&attr, 0, sizeof(attr));
- 		attr.type = pmu->type;
-@@ -139,9 +159,18 @@ void itrace_sampler_fini(struct perf_event *event)
- unsigned long itrace_sampler_trace(struct perf_event *event,
- 				   struct perf_sample_data *data)
- {
--	struct perf_event *tevt = event->trace_event;
-+	struct perf_event *tevt;
- 	struct ring_buffer *rb;
- 
-+	if (!event->trace_event) {
-+		/*
-+		 * down this path, event->ctx is already locked IF it's the
-+		 * same context
-+		 */
-+		event->trace_event = __find_sampling_counter(event->ctx, event, event->ctx->task);
-+	}
-+
-+	tevt = event->trace_event;
- 	/* Don't go further if the event is being scheduled out */
- 	if (!tevt || tevt->state != PERF_EVENT_STATE_ACTIVE) {
- 		data->trace.size = 0;
+Jan
+
 -- 
-2.1.0.rc1
-
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
