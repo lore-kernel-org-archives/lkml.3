@@ -1,55 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaHKIFh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 04:05:37 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55229 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbaHKIFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 04:05:35 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 2/8] perf tools: Make __hpp__fmt() receive an additional len argument
-References: <1406785662-5534-1-git-send-email-namhyung@kernel.org>
-	<1406785662-5534-3-git-send-email-namhyung@kernel.org>
-	<20140802133026.GD13375@kernel.org>
-Date: Mon, 11 Aug 2014 17:05:33 +0900
-In-Reply-To: <20140802133026.GD13375@kernel.org> (Arnaldo Carvalho de Melo's
-	message of "Sat, 2 Aug 2014 10:30:26 -0300")
-Message-ID: <87r40nfo36.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752142AbaHKIHs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 04:07:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20070 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751331AbaHKIHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 04:07:46 -0400
+Date: Mon, 11 Aug 2014 10:07:16 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Kashyap Desai <kashyap.desai@avagotech.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 13/23] megaraid: Fail resume if MSI-X
+ re-initialization failed
+Message-ID: <20140811080714.GH16504@dhcp-27-160.brq.redhat.com>
+References: <cover.1405533479.git.agordeev@redhat.com>
+ <3d2402ebfad625e508bb13257e1560abf92594cd.1405533479.git.agordeev@redhat.com>
+ <20140726082408.GG21129@agordeev.usersys.redhat.com>
+ <3b7c554551d306e2f58f5e09dc171db2@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3b7c554551d306e2f58f5e09dc171db2@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+On Mon, Jul 28, 2014 at 11:26:13AM +0530, Kashyap Desai wrote:
+> > -----Original Message-----
+> > From: Alexander Gordeev [mailto:agordeev@redhat.com]
+> > Sent: Saturday, July 26, 2014 1:54 PM
+> > To: linux-kernel@vger.kernel.org; Neela Syam Kolli
+> > Subject: Re: [PATCH v2 RESEND 13/23] megaraid: Fail resume if MSI-X re-
+> > initialization failed
+> >
+> > On Wed, Jul 16, 2014 at 08:05:17PM +0200, Alexander Gordeev wrote:
+> > > Currently the driver fails to analize MSI-X re-enablement status on
+> > > resuming and always assumes the success. This update checks the MSI-X
+> > > initialization result and fails to resume if MSI-Xs re-enablement
+> > > failed.
+> >
+> > Hi Neela,
+> >
+> > Could you please review megaraid patches in this series?
+> >
+> > Thanks!
+> Please consider this patch Acked by Me.
+> 
+> Acked-by: Kashyap Desai <Kashyap.desai@avagotech.com>
 
-On Sat, 2 Aug 2014 10:30:26 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Jul 31, 2014 at 02:47:36PM +0900, Namhyung Kim escreveu:
->> So that it can properly handle alignment requirements later.  To do
->> that, add percent_color_len_snprintf() fucntion to help coloring of
->> overhead columns.
->
-> Can you elaborate on this description? What is not possible to do before
-> this patch?
+Christoph,
 
-This patch is a preparation that moves hard-coded print width out of the
-format string so that it can be passed from external settings later.
+I guess, this patch could be picked?
 
->
-> Perhaps a formatted line before this patch and then the same line
-> formatted after the patch?
-
-The default behavior wasn't changed, it's only meaningful when user
-gives field width using -w option.  You can see the difference in the
-description 0/8.
-
-Thanks,
-Namhyung
+> >
+> > > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> > > ---
+> > >  drivers/scsi/megaraid/megaraid_sas_base.c |    8 +++++---
+> > >  1 files changed, 5 insertions(+), 3 deletions(-)
+> > >
+> > > diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c
+> > > b/drivers/scsi/megaraid/megaraid_sas_base.c
+> > > index 112799b..ba06102 100644
+> > > --- a/drivers/scsi/megaraid/megaraid_sas_base.c
+> > > +++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+> > > @@ -5134,9 +5134,10 @@ megasas_resume(struct pci_dev *pdev)
+> > >  		goto fail_ready_state;
+> > >
+> > >  	/* Now re-enable MSI-X */
+> > > -	if (instance->msix_vectors)
+> > > -		pci_enable_msix(instance->pdev, instance->msixentry,
+> > > -				instance->msix_vectors);
+> > > +	if (instance->msix_vectors &&
+> > > +	    pci_enable_msix(instance->pdev, instance->msixentry,
+> > > +			    instance->msix_vectors))
+> > > +		goto fail_reenable_msix;
+> > >
+> > >  	switch (instance->pdev->device) {
+> > >  	case PCI_DEVICE_ID_LSI_FUSION:
+> > > @@ -5245,6 +5246,7 @@ fail_init_mfi:
+> > >
+> > >  fail_set_dma_mask:
+> > >  fail_ready_state:
+> > > +fail_reenable_msix:
+> > >
+> > >  	pci_disable_device(pdev);
+> > >
+> > > --
+> > > 1.7.7.6
+> > >
+> >
+> > --
+> > Regards,
+> > Alexander Gordeev
+> > agordeev@redhat.com
