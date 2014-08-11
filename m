@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117AbaHKLzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 07:55:23 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:3850 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752854AbaHKLzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 07:55:22 -0400
-X-IronPort-AV: E=Sophos;i="5.01,841,1400025600"; 
-   d="scan'208";a="160543251"
-Date: Mon, 11 Aug 2014 12:54:03 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: <xen-devel@lists.xensource.com>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Dave Scott <Dave.Scott@eu.citrix.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xen_hvc: no reason to write the type key on xenstore
-Message-ID: <alpine.DEB.2.02.1408111250150.2293@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753140AbaHKL4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 07:56:23 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:48770 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618AbaHKL4V convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 07:56:21 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "hdegoede@redhat.com" <hdegoede@redhat.com>,
+        "kraxel@redhat.com" <kraxel@redhat.com>,
+        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH] uas: replace WARN_ON_ONCE() with assert_spin_locked().
+Thread-Topic: [PATCH] uas: replace WARN_ON_ONCE() with assert_spin_locked().
+Thread-Index: AQHPtThds7tfTj7cqkq3IdcFv++16pvLASuAgABJAYA=
+Date: Mon, 11 Aug 2014 11:56:17 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF2B2AE@EU-MBX-02.mgc.mentorg.com>
+References: <1407743966-25325-1-git-send-email-sanjeev_sharma@mentor.com>
+ <20140811082811.GC1422@kroah.com>
+In-Reply-To: <20140811082811.GC1422@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+X-OriginalArrivalTime: 11 Aug 2014 11:56:19.0222 (UTC) FILETIME=[43441360:01CFB55B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The backend type is chosen by the toolstack. Regardless, the frontend
-should not care, especially given that it cannot have an effect as the
-backend is started before this code is run.
+Hi Greg,
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Please find my comment in line.
 
-diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-index 636c9ba..b8491f5 100644
---- a/drivers/tty/hvc/hvc_xen.c
-+++ b/drivers/tty/hvc/hvc_xen.c
-@@ -402,9 +402,6 @@ static int xencons_connect_backend(struct xenbus_device *dev,
-			    evtchn);
-	if (ret)
-		goto error_xenbus;
--	ret = xenbus_printf(xbt, dev->nodename, "type", "ioemu");
--	if (ret)
--		goto error_xenbus;
-	ret = xenbus_transaction_end(xbt, 0);
-	if (ret) {
-		if (ret == -EAGAIN)
+-----Original Message-----
+From: Greg KH [mailto:gregkh@linuxfoundation.org] 
+Sent: Monday, August 11, 2014 1:58 PM
+To: Sharma, Sanjeev
+Cc: hdegoede@redhat.com; kraxel@redhat.com; mdharm-usb@one-eyed-alien.net; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] uas: replace WARN_ON_ONCE() with assert_spin_locked().
+
+On Mon, Aug 11, 2014 at 01:29:26PM +0530, Sanjeev Sharma wrote:
+> spin_is_locked() always return false in uniprocessor configuration
+
+Really?  On what processor type?  I don't see that being the case on a few processors, but I didn't check them all, or I might be totally confused with all of the arch_spin_is_locked() definitions in the tree.
+
+specially in case of mips and powerpc but we can configure our kernel to uniprocessor configuration for specific processor and in that case we should be extra cautious. Please check spinlock_up.h
+
+> and therefore it
+> would be advise to repalce with assert_spin_locked().
+
+This implies that all uses of this function is wrong and should be replaced and removed, right?
+
+Yes and there are only few places in driver for which I am submitting patches which need to be change and at other places it has been already taken care. Please have an look into the
+Old discussion for more details.
+
+http://linux-kernel.2935.n7.nabble.com/Is-spin-is-locked-safe-to-use-with-BUG-ON-WARN-ON-td654800.html#a921802
+
+thanks,
+
+greg k-h
