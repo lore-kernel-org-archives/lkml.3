@@ -1,39 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974AbaHKLu1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 07:50:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15415 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752754AbaHKLuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 07:50:24 -0400
-Date: Mon, 11 Aug 2014 13:48:23 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: Runtime trouble with commit dbd952127d (seccomp: introduce
-	writer locking)
-Message-ID: <20140811114822.GA2122@redhat.com>
-References: <53E6CF2B.6090709@roeck-us.net> <CAGXu5jLsbCpqG2cAxZWG+ZC=wdvhQ_9GPqXUb6p9pSvsqrXpOA@mail.gmail.com> <20140810193308.GA31867@redhat.com> <53E7DB59.6020300@roeck-us.net> <CA+55aFz3vW_qnrwa6kWMsN1pGbjnyGXGBNhH=DO0berKgyOtgQ@mail.gmail.com> <53E7FDB5.4070607@roeck-us.net> <CA+55aFyus4Le7EeCEaJpcVVshtwK93Et1C0AkPaC=5QnXJYjGw@mail.gmail.com>
+	id S1753063AbaHKLup (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 07:50:45 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:42640 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752996AbaHKLun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 07:50:43 -0400
+Subject: [RFC PATCH V2 19/19] sched: don't do power balance on share cpu
+ power domain
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+To: alex.shi@intel.com, vincent.guittot@linaro.org, peterz@infradead.org,
+        pjt@google.com, efault@gmx.de, rjw@rjwysocki.net,
+        morten.rasmussen@arm.com, svaidy@linux.vnet.ibm.com,
+        arjan@linux.intel.com, mingo@kernel.org
+Cc: nicolas.pitre@linaro.org, len.brown@intel.com, yuyang.du@intel.com,
+        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
+        corbet@lwn.net, catalin.marinas@arm.com, markgross@thegnar.org,
+        sundar.iyer@intel.com, linux-kernel@vger.kernel.org,
+        dietmar.eggemann@arm.com, Lorenzo.Pieralisi@arm.com,
+        mike.turquette@linaro.org, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de
+Date: Mon, 11 Aug 2014 17:20:20 +0530
+Message-ID: <20140811115000.32407.53101.stgit@preeti.in.ibm.com>
+In-Reply-To: <20140811114501.32407.61304.stgit@preeti.in.ibm.com>
+References: <20140811114501.32407.61304.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyus4Le7EeCEaJpcVVshtwK93Et1C0AkPaC=5QnXJYjGw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081111-0928-0000-0000-00000406ED0B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10, Linus Torvalds wrote:
->
-> So that should just be converted to assert_spin_is_locked().
+From: Alex Shi <alex.shi@intel.com>
 
-I still think that lockdep_assert_held() is better. Unlike
-assert_spin_locked() it checks that this lock is held by us, and this
-is what we want in this case.
+Packing tasks among such domain can't save power, just performance
+losing. So no power balance on them.
 
-Plus it depends on CONFIG_LOCKDEP, this is probably good too.
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+[Added CONFIG_SCHED_POWER switch to enable this patch]
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+---
 
-Oleg.
+ kernel/sched/fair.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c49ee6c..adda9cf 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4744,7 +4744,7 @@ static int get_cpu_for_power_policy(struct sched_domain *sd, int cpu,
+ 
+ 	policy = get_sd_sched_balance_policy(sd, cpu, p, sds);
+ 	if (policy != SCHED_POLICY_PERFORMANCE && sds->group_leader) {
+-		if (wakeup)
++		if (wakeup && !(sd->flags & SD_SHARE_CPUCAPACITY))
+ 			new_cpu = find_leader_cpu(sds->group_leader,
+ 							p, cpu, policy);
+ 		/* for fork balancing and a little busy task */
+@@ -5882,8 +5882,9 @@ static inline void init_sd_lb_stats(struct sd_lb_stats *sds)
+ static inline void init_sd_lb_power_stats(struct lb_env *env,
+ 						struct sd_lb_stats *sds)
+ {
+-	if (sched_balance_policy == SCHED_POLICY_PERFORMANCE ||
+-				env->idle == CPU_NOT_IDLE) {
++	if (sched_balance_policy == SCHED_POLICY_PERFORMANCE
++			|| env->sd->flags & SD_SHARE_CPUCAPACITY
++			|| env->idle == CPU_NOT_IDLE) {
+ 		env->flags &= ~LBF_POWER_BAL;
+ 		env->flags |= LBF_PERF_BAL;
+ 		return;
 
