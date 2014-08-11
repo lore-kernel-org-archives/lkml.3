@@ -1,115 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaHKAvs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 20:51:48 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:32981 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173AbaHKAvr (ORCPT
+	id S1751980AbaHKA6v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 20:58:51 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:33374 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaHKA6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 20:51:47 -0400
-Date: Mon, 11 Aug 2014 09:51:40 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tomasz Figa <t.figa@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Peter Griffin <peter.griffin@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.eti.br>
-Subject: Re: [PATCH] remove non-existent files from MAINTAINERS
-Message-ID: <20140811005140.GF26570@verge.net.au>
-References: <alpine.DEB.2.19.4.1408092332350.2758@trent.utfs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.19.4.1408092332350.2758@trent.utfs.org>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 10 Aug 2014 20:58:49 -0400
+Content-Type: multipart/signed; boundary="Apple-Mail=_06A30A93-0794-459E-B0C0-3C4C3857649E"; protocol="application/pgp-signature"; micalg=pgp-sha1
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] net: ethernet: myricom: myri10ge: myri10ge.c:  Cleaning up missing null-terminate after strncpy call
+From: Mark D Rustad <mrustad@gmail.com>
+In-Reply-To: <1407627638-24208-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Sun, 10 Aug 2014 17:58:46 -0700
+Cc: Hyong-Youb Kim <hykim@myri.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-Id: <85985E13-E12F-4C4A-A9AC-374C0E28312E@gmail.com>
+References: <1407627638-24208-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 09, 2014 at 11:38:22PM -0700, Christian Kujau wrote:
-> Inspired by some recent cleanups in MAINTAINERS the following
-> files (F:) cannot be found any more in the tree:
-> 
->     * arch/arm/mach-s5pv210/mach-aquila.c
->     * arch/arm/mach-s5pv210/mach-goni.c
-> 
->       Those two got removed in 28c8331 ("ARM: S5PV210: Remove support for board files").
->       Cc: Tomasz Figa <t.figa@samsung.com>
->       Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> 
->     * arch/arm/configs/genmai_defconfig
-> 
->       This one got removed in 3ed27bd9 ("ARM: shmobile: genmai: remove defconfig").
->       Cc: Simon Horman <horms@verge.net.au>
->       Cc: Magnus Damm <magnus.damm@gmail.com>
 
-I have already queued up a patch to remove genmai_defconfig from
-MAINTAINERS.
+--Apple-Mail=_06A30A93-0794-459E-B0C0-3C4C3857649E
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=us-ascii
 
->     * drivers/mmc/host/sdhci-st.c
-> 
->       This one was sent to be included in June 2014 but got dropped shortly after:
->       "mmc: sdhci-st: Intial support for ST SDHCI controller"
->       https://lkml.org/lkml/2014/6/4/446
->       https://lkml.org/lkml/2014/7/9/340
->       Cc: Peter Griffin <peter.griffin@linaro.org>
->       Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> 
->     * drivers/rtc/rtc-sec.c
-> 
->       A MAINTAINERS fix was attempted in November 2012, but dismissed as rtc-sec.c
->       was still being worked on. Alas, it's still not there.
->       "MAINTAINERS: fix drivers/rtc/rtc-sec.c"
->       http://lkml.iu.edu/hypermail/linux/kernel/1211.2/04820.html
->       Cc: Sangbeom Kim <sbkim73@samsung.com>
->       Cc: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
-> 
->     Signed-off-by: Christian Kujau <lists@nerdbynature.de>
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 7e2eb4c..7831e8d 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1303,8 +1303,7 @@ ARM/SAMSUNG MOBILE MACHINE SUPPORT
->  M:	Kyungmin Park <kyungmin.park@samsung.com>
->  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->  S:	Maintained
-> -F:	arch/arm/mach-s5pv210/mach-aquila.c
-> -F:	arch/arm/mach-s5pv210/mach-goni.c
-> +F:	arch/arm/mach-s5pv210/
-> 
->  ARM/SAMSUNG S5P SERIES 2D GRAPHICS ACCELERATION (G2D) SUPPORT
->  M:	Kyungmin Park <kyungmin.park@samsung.com>
-> @@ -1347,7 +1346,6 @@ F:	arch/arm/boot/dts/sh*
->  F:	arch/arm/configs/ape6evm_defconfig
->  F:	arch/arm/configs/armadillo800eva_defconfig
->  F:	arch/arm/configs/bockw_defconfig
-> -F:	arch/arm/configs/genmai_defconfig
->  F:	arch/arm/configs/koelsch_defconfig
->  F:	arch/arm/configs/kzm9g_defconfig
->  F:	arch/arm/configs/lager_defconfig
-> @@ -1383,7 +1381,6 @@ F:	drivers/pinctrl/pinctrl-st.c
->  F:	drivers/media/rc/st_rc.c
->  F:	drivers/i2c/busses/i2c-st.c
->  F:	drivers/tty/serial/st-asc.c
-> -F:	drivers/mmc/host/sdhci-st.c
-> 
->  ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
->  M:	Lennert Buytenhek <kernel@wantstofly.org>
-> @@ -7809,7 +7806,6 @@ S:	Supported
->  F:	drivers/mfd/sec*.c
->  F:	drivers/regulator/s2m*.c
->  F:	drivers/regulator/s5m*.c
-> -F:	drivers/rtc/rtc-sec.c
->  F:	include/linux/mfd/samsung/
-> 
->  SAMSUNG S5P/EXYNOS4 SOC SERIES CAMERA SUBSYSTEM DRIVERS
-> -- 
-> BOFH excuse #419:
-> 
-> Repeated reboots of the system failed to solve problem
-> 
+On Aug 9, 2014, at 4:40 PM, Rickard Strandqvist =
+<rickard_strandqvist@spectrumdigital.se> wrote:
+
+> Added a guaranteed null-terminate after call to strncpy.
+>=20
+> Signed-off-by: Rickard Strandqvist =
+<rickard_strandqvist@spectrumdigital.se>
+> ---
+> drivers/net/ethernet/myricom/myri10ge/myri10ge.c |    1 +
+> 1 file changed, 1 insertion(+)
+>=20
+> diff --git a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c =
+b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
+> index f3d5d79..de327b6 100644
+> --- a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
+> +++ b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
+> @@ -574,6 +574,7 @@ myri10ge_validate_firmware(struct myri10ge_priv =
+*mgp,
+>=20
+> 	/* save firmware version for ethtool */
+> 	strncpy(mgp->fw_version, hdr->version, sizeof(mgp->fw_version));
+> +	mgp->fw_version[sizeif(mgp->fw_version) - 1] =3D '\0';
+
+Surely you meant sizeof above. Did you really not even compile this?
+
+> 	sscanf(mgp->fw_version, "%d.%d.%d", &mgp->fw_ver_major,
+> 	       &mgp->fw_ver_minor, &mgp->fw_ver_tiny);
+
+--=20
+Mark Rustad, MRustad@gmail.com
+
+
+--Apple-Mail=_06A30A93-0794-459E-B0C0-3C4C3857649E
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename=signature.asc
+Content-Type: application/pgp-signature;
+	name=signature.asc
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - http://gpgtools.org
+
+iQIcBAEBAgAGBQJT6BVGAAoJEDwO/+eO4+5u2LoQAIqUgCLRQ61r0ti20fkEPRTs
+/MGKIurB8jjEjhoHdkd/nj5THBFCpDRaR42eUojhcIjkZWQh56oexxOdO24Z/Mei
+C6vedGwSIbdFCb0TAe1iGuTfUntu2PKloHyRVNUqUB+mfxPlZe0W6lFGx6bmvx5c
+JKoEFqUPLFhwhZwp+TLsfn+d7d4q6EwMYjDXYftMwLECWt9kxI9VNvMy7+mGY4XW
+s4jeOd/uHgD/92s8BZuxn2JlwcucPPkRf63Ax0mI/msfYOuhW/JVWAWBshA36SKK
+2KpfDuq6RIICLd5cG6WUsqOJ0G8mQSoScYOe1oagGPr7n8S/eGOBUbGsnTmXI6V1
+SPn90kVk23oL9Rt9herNKLfMD2YvYwyyaR4dXI0EcYtpeQQ6YBmPfvd0Stbz38nQ
++4KsQ0RiPoSzUcelVE+ZkXpc30sCAzoi8BvkDJx2rYHB6Y1bihuhKwcrtiDlcsZJ
+ZcCoWrMsOICyfC2CwR/K9mV69P6AOgRr9DsO9l/Oa06ESDrRMisa+xcIkJibyQif
+2VlLji2uTrwBzllWcngmQ8BVk0SeKDmNup/HJe0nI55mwZXQ6RBNAaSlYo3j+03V
+T8uYAk8cBSd8gOtrvmadAYDD2jVQL7u6B2CchswLgwN5r2AMl+xg6D4iIRa+ZIfG
+42j0twQ4w8yvbo0KUaT/
+=k1IK
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_06A30A93-0794-459E-B0C0-3C4C3857649E--
