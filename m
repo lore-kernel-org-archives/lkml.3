@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430AbaHKNFx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 09:05:53 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:61215
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751506AbaHKNFw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 09:05:52 -0400
-X-IronPort-AV: E=Sophos;i="5.01,841,1400018400"; 
-   d="scan'208";a="74511402"
-Date: Mon, 11 Aug 2014 15:05:21 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>, Coccinelle <cocci@systeme.lip6.fr>,
-        kernel-janitors@vger.kernel.org, Nicolas Palix <nicolas.palix@imag.fr>,
-        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/coccinelle/free/ifnullfree.cocci: simplify and
- extend to of_node_put
-In-Reply-To: <53E8BE84.3080505@users.sourceforge.net>
-Message-ID: <alpine.DEB.2.10.1408111503550.2518@hadrien>
-References: <1407752653-16883-1-git-send-email-Julia.Lawall@lip6.fr> <53E8BE84.3080505@users.sourceforge.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1753432AbaHKNHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 09:07:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49038 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752144AbaHKNHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 09:07:24 -0400
+Message-ID: <53E8C003.9020403@redhat.com>
+Date: Mon, 11 Aug 2014 15:07:15 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
+CC: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 15/23] mpt2sas: Use pci_enable_msix_exact()
+ instead of pci_enable_msix()
+References: <cover.1405533479.git.agordeev@redhat.com> <045986b7900c6b1703010675b590284e384b8207.1405533479.git.agordeev@redhat.com>
+In-Reply-To: <045986b7900c6b1703010675b590284e384b8207.1405533479.git.agordeev@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Mon, 11 Aug 2014, SF Markus Elfring wrote:
-
-> >  @r depends on context || report || org @
-> > @@ -37,7 +35,8 @@ position p;
-> >  @@
-> >
-> >  * if (E)
-> > -*	\(kfree@p\|debugfs_remove@p\|debugfs_remove_recursive@p\|usb_free_urb\)(E);
-> > +*  \(kfree@p\|debugfs_remove@p\|debugfs_remove_recursive@p\|usb_free_urb@p\|
-> > +*    of_node_put@p\)(E);
+On 07/16/2014 08:05 PM, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
 >
-> Why do you want to limit this semantic patch pattern to such a small list of
-> function names?
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
+> Cc: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+> Cc: support@lsi.com
+> Cc: DL-MPTFusionLinux@lsi.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
 
-Because these are the ones that kernel developers have cited as
-interesting for this kind of transformation.
+Looks good
 
-> Would you like to consider also the hundreds of other functions which perform
-> input parameter validation?
+Reviewed-by: Tomas Henzl <thenzl@redhat.com>
 
-Personally, no.  I think I have explained why several times already.
-
-julia
-
-> Are you interested to make the checked list more complete with further
-> (eventually automatic?) extensions?
+> ---
+>  drivers/scsi/mpt2sas/mpt2sas_base.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
 >
-> Regards,
-> Markus
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+> index 8b88118..6aca369 100644
+> --- a/drivers/scsi/mpt2sas/mpt2sas_base.c
+> +++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+> @@ -1432,10 +1432,10 @@ _base_enable_msix(struct MPT2SAS_ADAPTER *ioc)
+>  	for (i = 0, a = entries; i < ioc->reply_queue_count; i++, a++)
+>  		a->entry = i;
+>  
+> -	r = pci_enable_msix(ioc->pdev, entries, ioc->reply_queue_count);
+> +	r = pci_enable_msix_exact(ioc->pdev, entries, ioc->reply_queue_count);
+>  	if (r) {
+> -		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT "pci_enable_msix "
+> -		    "failed (r=%d) !!!\n", ioc->name, r));
+> +		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT
+> +		    "pci_enable_msix_exact failed (r=%d) !!!\n", ioc->name, r));
+>  		kfree(entries);
+>  		goto try_ioapic;
+>  	}
+
