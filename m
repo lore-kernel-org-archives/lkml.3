@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110AbaHKRw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 13:52:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54656 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857AbaHKRw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 13:52:28 -0400
-Message-ID: <53E9028E.2070709@zytor.com>
-Date: Mon, 11 Aug 2014 10:51:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Shaun Ruffell <sruffell@digium.com>, Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, mjg59@srcf.ucam.org, greg@kroah.com,
-        bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com, bhe@redhat.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 11/15] purgatory: Core purgatory functionality
-References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com> <1403814824-7587-12-git-send-email-vgoyal@redhat.com> <20140811174017.GD12610@digium.com>
-In-Reply-To: <20140811174017.GD12610@digium.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1753338AbaHKR4z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 13:56:55 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:50557 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984AbaHKR4y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 13:56:54 -0400
+From: Avinash kumar <avi.kp.137@gmail.com>
+To: forest@alittletooquiet.net
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Avinash kumar <avi.kp.137@gmail.com>
+Subject: [PATCH] drivers: staging: vt6655: wpactl.h: corrected comment format
+Date: Mon, 11 Aug 2014 23:26:32 +0530
+Message-Id: <1407779792-7926-1-git-send-email-avi.kp.137@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2014 10:40 AM, Shaun Ruffell wrote:
-> FYI, it looks like the following patch (committed in
-> 8fc5b4d4121c95482b2583) adds a new requirement to use at least gcc
-> 4.4 to build the kernel?
+corrected C99 style comment format related error
 
-Well, to build the kernel with that particular new functionality
-enabled, yes.
+Signed-off-by: Avinash Kumar <avi.kp.137@gmail.com>
+---
+ drivers/staging/vt6655/wpactl.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-However...
-
-> The above "-mcmodel=large" compiler flag produces the following output on GCC 4.1.2.
-> 
->   $ make modules_prepare ; gcc --version
->     CHK     include/config/kernel.release
->     CHK     include/generated/uapi/linux/version.h
->     CHK     include/generated/utsrelease.h
->     CC      arch/x86/purgatory/purgatory.o
->   arch/x86/purgatory/purgatory.c:1: sorry, unimplemented: code model ‘large’ not supported yet
->   make[1]: *** [arch/x86/purgatory/purgatory.o] Error 1
->   make: *** [archprepare] Error 2
->   gcc (GCC) 4.1.2 20080704 (Red Hat 4.1.2-54)
->   Copyright (C) 2006 Free Software Foundation, Inc.
->   This is free software; see the source for copying conditions.  There is NO
->   warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-> 
-> I did a quick search for a discussion the indicates this compiler is now
-> officially too old to build the kernel but did not find one.
-> 
-> If this is required, maybe Documentation/Changes needs to be updated
-> with the new minimum required version?
-
-... I'm having a very, very hard time to picture a reason why the
-"large" model would be necessary or even desirable for the purgatory
-code.  The "small PIC" model seem to fit much better...
-
-	-hpa
-
+diff --git a/drivers/staging/vt6655/wpactl.h b/drivers/staging/vt6655/wpactl.h
+index f7638ba..2ff42c5 100644
+--- a/drivers/staging/vt6655/wpactl.h
++++ b/drivers/staging/vt6655/wpactl.h
+@@ -36,7 +36,7 @@
+ 
+ /*---------------------  Export Definitions -------------------------*/
+ 
+-//WPA related
++/*WPA related*/
+ 
+ enum wpa_alg { WPA_ALG_NONE, WPA_ALG_WEP, WPA_ALG_TKIP, WPA_ALG_CCMP };
+ enum wpa_cipher { CIPHER_NONE, CIPHER_WEP40, CIPHER_TKIP, CIPHER_CCMP,
+@@ -61,4 +61,4 @@ int wpa_set_wpadev(PSDevice pDevice, int val);
+ int wpa_ioctl(PSDevice pDevice, struct iw_point *p);
+ int wpa_set_keys(PSDevice pDevice, void *ctx, bool fcpfkernel);
+ 
+-#endif // __WPACL_H__
++#endif /* __WPACL_H__*/
+-- 
+1.7.9.5
 
