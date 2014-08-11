@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556AbaHKGQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 02:16:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56836 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752227AbaHKGQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 02:16:27 -0400
-Message-ID: <53E85FB7.5020708@suse.de>
-Date: Mon, 11 Aug 2014 08:16:23 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752701AbaHKGSL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 02:18:11 -0400
+Received: from forward15.mail.yandex.net ([95.108.130.119]:56058 "EHLO
+	forward15.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbaHKGSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 02:18:10 -0400
+X-Greylist: delayed 387 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Aug 2014 02:18:09 EDT
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, "lkp@01.org" <lkp@01.org>
+In-Reply-To: <20140810152914.GA11947@redhat.com>
+References: <20140809143034.GA28345@localhost> <20140809184616.GQ9918@twins.programming.kicks-ass.net> <20140810152914.GA11947@redhat.com>
+Subject: Re: [sched] Out of memory: Kill process 2999 (rc) score 9 or sacrifice child
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Webb Scales <webbnh@hp.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] scsi: Fix qemu boot hang problem
-References: <1407675265-29192-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1407675265-29192-1-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Message-Id: <3568281407737493@web29j.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Mon, 11 Aug 2014 10:11:33 +0400
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2014 02:54 PM, Guenter Roeck wrote:
-> The latest kernel fails to boot qemu arm images when using scsi
-> for disk access. Boot gets stuck after the following messages.
->
-> brd: module loaded
-> sym53c8xx 0000:00:0c.0: enabling device (0100 -> 0103)
-> sym0: <895a> rev 0x0 at pci 0000:00:0c.0 irq 93
-> sym0: No NVRAM, ID 7, Fast-40, LVD, parity checking
-> sym0: SCSI BUS has been reset.
-> scsi host0: sym-2.2.3
->
-> Bisect points to commit 71e75c97f97a ("scsi: convert device_busy to
-> atomic_t"). Code inspection shows the following suspicious change
-> in scsi_request_fn.
->
-> out_delay:
-> -       if (sdev->device_busy == 0 && !scsi_device_blocked(sdev))
-> +       if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
-> 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
-> 	}
->
-> 'sdev->device_busy == 0' was replaced with 'atomic_read(&sdev->device_busy)',
-> meaning the logic was reversed. Changing this expression to
-> '!atomic_read(&sdev->device_busy)' fixes the problem.
->
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: Hannes Reinecke <hare@suse.de>
-> Cc: Webb Scales <webbnh@hp.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->   drivers/scsi/scsi_lib.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index 9c44392..ce62e87 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -1774,7 +1774,7 @@ static void scsi_request_fn(struct request_queue *q)
->   	blk_requeue_request(q, req);
->   	atomic_dec(&sdev->device_busy);
->   out_delay:
-> -	if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
-> +	if (!atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
->   		blk_delay_queue(q, SCSI_QUEUE_DELAY);
->   }
->
->
-Reviewed-by: Hannes Reinecke <hare@suse.de>
 
-Cheers,
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+10.08.2014, 19:31, "Oleg Nesterov" <oleg@redhat.com>:
+> On 08/09, Peter Zijlstra wrote:
+>> šThat would suggest we're failing to do the TASK_DEAD thing properly, and
+>> šARGH! bloody obvious why, see the this_rq() comment right before the
+>> šfinish_task_switch() call in context_switch().
+>
+> Off-topic, but perhaps we can make this a bit more clear?
+>
+> Hmm. But after I actually did this change I can't understand if it makes
+> this more clean or uglifies the code. See the patch below.
+>
+> OTOH, "int cpu" in __schedule() looks pointless and should die? Both
+> rcu_note_context_switch() and wq_worker_sleeping() can use
+> raw_smp_processor_id() ? In fact I think wq_worker_sleeping() doesn't
+> need the "task" argument too.
+>
+> And... Doesn't schedule_tail() need preempt_enable() before
+> finish_task_switch() ? IOW, shouldn't it do
+>
+> šššššššš#ifndef __ARCH_WANT_UNLOCKED_CTXSW
+> ššššššššššššššššpreempt_disable();
+> šššššššš#endif
+> ššššššššššššššššfinish_task_switch();
+> ššššššššššššššššpost_schedule(rq);
+>
+> ššššššššššššššššpreempt_enable();
+>
+> or I am totally confused?
+
+You're sure, this was discussed here:
+
+https://lkml.org/lkml/2014/2/14/243
