@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbaHKIKM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 04:10:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35068 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751380AbaHKIKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 04:10:10 -0400
-Date: Mon, 11 Aug 2014 10:09:42 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Kashyap Desai <kashyap.desai@avagotech.com>,
-        Neela Syam Kolli <megaraidlinux@avagotech.com>
-Cc: linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH v2 RESEND 14/23] megaraid: Use pci_enable_msix_range()
- instead of pci_enable_msix()
-Message-ID: <20140811080941.GI16504@dhcp-27-160.brq.redhat.com>
-References: <cover.1405533479.git.agordeev@redhat.com>
- <57071ec862e6e0cf6b1c9f7fa5c1d3b9fa97d087.1405533479.git.agordeev@redhat.com>
+	id S1752139AbaHKIMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 04:12:24 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:18861 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750720AbaHKIMW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 04:12:22 -0400
+Message-ID: <53E87ADA.6040204@arm.com>
+Date: Mon, 11 Aug 2014 09:12:10 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <57071ec862e6e0cf6b1c9f7fa5c1d3b9fa97d087.1405533479.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Harish.Kasiviswanathan@amd.com" <Harish.Kasiviswanathan@amd.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/4] irqchip: gic-v2m: Rework GICv2m Initialization
+References: <1407539836-9768-1-git-send-email-suravee.suthikulpanit@amd.com>
+In-Reply-To: <1407539836-9768-1-git-send-email-suravee.suthikulpanit@amd.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 08:05:18PM +0200, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
+Hi Suravee,
 
-Kashyap, Neela,
-
-Could you please reveiw this patch?
-
-Thanks!
-
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Neela Syam Kolli <megaraidlinux@lsi.com>
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/scsi/megaraid/megaraid_sas_base.c |   20 +++++++-------------
->  1 files changed, 7 insertions(+), 13 deletions(-)
+On 09/08/14 00:17, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 > 
-> diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
-> index ba06102..7a4e75e 100644
-> --- a/drivers/scsi/megaraid/megaraid_sas_base.c
-> +++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-> @@ -4105,17 +4105,11 @@ static int megasas_init_fw(struct megasas_instance *instance)
->  					     (unsigned int)num_online_cpus());
->  		for (i = 0; i < instance->msix_vectors; i++)
->  			instance->msixentry[i].entry = i;
-> -		i = pci_enable_msix(instance->pdev, instance->msixentry,
-> -				    instance->msix_vectors);
-> -		if (i >= 0) {
-> -			if (i) {
-> -				if (!pci_enable_msix(instance->pdev,
-> -						     instance->msixentry, i))
-> -					instance->msix_vectors = i;
-> -				else
-> -					instance->msix_vectors = 0;
-> -			}
-> -		} else
-> +		i = pci_enable_msix_range(instance->pdev, instance->msixentry,
-> +					  1, instance->msix_vectors);
-> +		if (i)
-> +			instance->msix_vectors = i;
-> +		else
->  			instance->msix_vectors = 0;
->  
->  		dev_info(&instance->pdev->dev, "[scsi%d]: FW supports"
-> @@ -5135,8 +5129,8 @@ megasas_resume(struct pci_dev *pdev)
->  
->  	/* Now re-enable MSI-X */
->  	if (instance->msix_vectors &&
-> -	    pci_enable_msix(instance->pdev, instance->msixentry,
-> -			    instance->msix_vectors))
-> +	    pci_enable_msix_exact(instance->pdev, instance->msixentry,
-> +				  instance->msix_vectors))
->  		goto fail_reenable_msix;
->  
->  	switch (instance->pdev->device) {
-> -- 
-> 1.7.7.6
+> This patch set reworks the GICv2m initialization based on Marc Zyngier
+> review comments.
 > 
+> * Rebase to git://git.infradead.org/users/jcooper/linux.git irqchip/gic-v2m
+> 
+> Suravee Suthikulpanit (1):
+>   irqchip/gic-v2m: Restructure the initalization code for v2m
+> 
+>  Documentation/devicetree/bindings/arm/gic.txt |  37 +++++++--
+>  drivers/irqchip/irq-gic-v2m.c                 | 115 +++++++++-----------------
+>  drivers/irqchip/irq-gic.c                     |  30 +++----
+>  drivers/irqchip/irq-gic.h                     |  10 +--
+>  4 files changed, 91 insertions(+), 101 deletions(-)
+> 
+
+While I appreciate that you're trying to reduce the amount of stuff we
+review, it is actually much easier to look at the patch series as a
+whole, rather then as a diff against the previous version.
+
+Please squash this into your original series and repost it with a log of
+what has changed in the cover letter.
+
+Thanks,
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
