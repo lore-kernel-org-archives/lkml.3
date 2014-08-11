@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaHKDJl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 23:09:41 -0400
-Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:42686
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751779AbaHKDJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 23:09:40 -0400
-Date: Mon, 11 Aug 2014 11:09:36 +0800
-From: Shengjiu Wang <shengjiu.wang@freescale.com>
-To: Shawn Guo <shawn.guo@freescale.com>
-CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <Guangyu.Chen@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 3/3] ARM: clk-imx6q: Add missing lvds and anaclk clock
- to the clock tree
-Message-ID: <20140811030935.GB13158@audiosh1>
-References: <cover.1407481023.git.shengjiu.wang@freescale.com>
- <9ecf6480464cffb3b4347ad3fd8ec5f07462a0fc.1407481023.git.shengjiu.wang@freescale.com>
- <20140809135841.GB8849@dragon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140809135841.GB8849@dragon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(51704005)(199002)(189002)(97736001)(80022001)(47776003)(87936001)(21056001)(50466002)(31966008)(79102001)(54356999)(76176999)(97756001)(77982001)(74502001)(74662001)(64706001)(76482001)(20776003)(106466001)(83072002)(105606002)(50986999)(81342001)(95666004)(81542001)(92566001)(85852003)(99396002)(86362001)(92726001)(4396001)(68736004)(85306004)(23726002)(33716001)(84676001)(83506001)(107046002)(33656002)(46406003)(44976005)(83322001)(102836001)(110136001)(6806004)(104016003)(46102001)(26826002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB340;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03008837BD
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=shengjiu.wang@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1752117AbaHKDRJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 23:17:09 -0400
+Received: from gate.crashing.org ([63.228.1.57]:37831 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751763AbaHKDRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 23:17:08 -0400
+Message-ID: <1407726995.4508.64.camel@pasglop>
+Subject: Re: [PATCH] powerpc: non-GPL export for eeh_dev_check_failure
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Vishal Mansur <vmansur@linux.vnet.ibm.com>, gwshan@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Mon, 11 Aug 2014 13:16:35 +1000
+In-Reply-To: <20140805155140.2b200061@alan.etchedpixels.co.uk>
+References: <53E0ED41.8030804@linux.vnet.ibm.com>
+	 <20140805155140.2b200061@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 09, 2014 at 09:58:42PM +0800, Shawn Guo wrote:
-> On Fri, Aug 08, 2014 at 03:02:49PM +0800, Shengjiu Wang wrote:
-> > @@ -176,8 +182,12 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
-> >  	 * the "output_enable" bit as a gate, even though it's really just
-> >  	 * enabling clock output.
-> >  	 */
-> > -	clk[IMX6QDL_CLK_LVDS1_GATE] = imx_clk_gate("lvds1_gate", "lvds1_sel", base + 0x160, 10);
-> > -	clk[IMX6QDL_CLK_LVDS2_GATE] = imx_clk_gate("lvds2_gate", "lvds2_sel", base + 0x160, 11);
-> > +	clk[IMX6QDL_CLK_LVDS1_GATE] = imx_clk_gate2("lvds1_gate", "lvds1_sel", base + 0x160, 10);
-> > +	clk[IMX6QDL_CLK_LVDS2_GATE] = imx_clk_gate2("lvds2_gate", "lvds2_sel", base + 0x160, 11);
+On Tue, 2014-08-05 at 15:51 +0100, One Thousand Gnomes wrote:
+> On Tue, 05 Aug 2014 20:12:09 +0530
+> Vishal Mansur <vmansur@linux.vnet.ibm.com> wrote:
 > 
-> I do not think you can simply change to use imx_clk_gate2() here.  It's
-> designed for those CCGR gate clocks, each of which is controlled by two
-> bits.
+> > EEH kernel services are inconsistently exported by the 
+> > kernel. eeh_check_failure is exported for any use, but 
+> > eeh_dev_check_failure is exported only for GPL use. 
+> > While eeh_check_failure is implemented for a specific 
+> > purpose to be used by services such as readl, it is 
+> > not suited for a purpose where caller needs eeh status. 
+> > This functionality is provided by eeh_dev_check_failure.
+> > 
+> > This patch relaxes the export for eeh_dev_check_failure
+> > to make it consistent with eeh_check_failure() and 
+> > usable by non-GPL modules.
 > 
-> Shawn
->
-As Lucas Stach's suggestion, we need to do add some method for mutually exclusive clock, 
-lvds1_gate with lvds1_in, lvds2_gate with lvds2_in. I add imx_clk_gate2_exclusive() function in clk-gate2.c.
-So I change imx_clk_gate() to imx_clk_gate2() here.
-As you said, this is not good solution. So I need your suggestion, how can I do?
-First, is it allowable that to add imx_clk_gate2_exclusive() function, is there a more better way?
-second, or should I change the clk-gate.c to add exclusive control?
+> The GPL covers all derivative works. Tweaking this doesn't magically
+> allow you to use the feature in non GPL code. Your legal department can I
+> am sure explain in detail further.
 
-Thanks
-wang shengjiu
+This is an interesting case... I assume this has to do with a well known
+GPU manufacturer...
 
-> > +	clk[IMX6QDL_CLK_LVDS1_IN] = imx_clk_gate2("lvds1_in", "anaclk1", base + 0x160, 12);
-> > +	clk[IMX6QDL_CLK_LVDS2_IN] = imx_clk_gate2("lvds2_in", "anaclk2", base + 0x160, 13);
-> > +	imx_clk_gate2_exclusive(clk[IMX6QDL_CLK_LVDS1_GATE], clk[IMX6QDL_CLK_LVDS1_IN]);
-> > +	imx_clk_gate2_exclusive(clk[IMX6QDL_CLK_LVDS2_GATE], clk[IMX6QDL_CLK_LVDS2_IN]);
-> >  
-> >  	/*                                            name              parent_name        reg       idx */
-> >  	clk[IMX6QDL_CLK_PLL2_PFD0_352M] = imx_clk_pfd("pll2_pfd0_352m", "pll2_bus",     base + 0x100, 0);
+The PCI APIs are generally exported in such a way that a non-GPL driver
+can use them (regardless of whether one considers a non-GPL driver to be
+legal here or not, this is besides the point).
+
+eeh_dev_check_failure() can be considered as powerpc specific extension
+of the PCI API for use by PCI drivers and as such, it *could* be
+construed that we should be consistent (and consistent with
+eeh_check_failure()) and expose it as an EXPORT_SYMBOL without the GPL
+suffix.
+
+So I'm somewhat tempted to take this patch, but Vishal, the driver in
+question could, I suppose, as a workaround, use a readl to some scratch
+register of some description, no ?
+
+Cheers,
+Ben.
+
+> Alan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
