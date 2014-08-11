@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067AbaHKVEk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 17:04:40 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:58518 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754670AbaHKVEi (ORCPT
+	id S1755130AbaHKVFW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 17:05:22 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:52206 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755097AbaHKVFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 17:04:38 -0400
-Message-ID: <1407791075.28221.74.camel@chimera>
-Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
-From: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org Wireless" 
-	<linux-wireless@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 11 Aug 2014 14:04:35 -0700
-In-Reply-To: <37210DB5-2911-4FA3-9299-7701C5003945@holtmann.org>
-References: <1407780269.28221.63.camel@chimera>
-	 <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org>
-	 <1407789645.28221.68.camel@chimera>
-	 <37210DB5-2911-4FA3-9299-7701C5003945@holtmann.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 11 Aug 2014 17:05:20 -0400
+Date: Mon, 11 Aug 2014 14:05:18 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH -mm] slab: fix cpuset check in fallback_alloc
+In-Reply-To: <20140811121739.GB18709@esperanza>
+Message-ID: <alpine.DEB.2.02.1408111354330.24240@chino.kir.corp.google.com>
+References: <1407692891-24312-1-git-send-email-vdavydov@parallels.com> <alpine.DEB.2.02.1408101512500.706@chino.kir.corp.google.com> <20140811071315.GA18709@esperanza> <alpine.DEB.2.02.1408110433140.15519@chino.kir.corp.google.com>
+ <20140811121739.GB18709@esperanza>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-11 at 13:56 -0700, Marcel Holtmann wrote:
-> The initial wlan0 can be removed as every other netdev attached to the
-> wiphy. It can also be as easily re-created.
+On Mon, 11 Aug 2014, Vladimir Davydov wrote:
+
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -1963,7 +1963,7 @@ zonelist_scan:
+> >  
+> >  	/*
+> >  	 * Scan zonelist, looking for a zone with enough free.
+> > -	 * See also __cpuset_node_allowed_softwall() comment in kernel/cpuset.c.
+> > +	 * See __cpuset_node_allowed() comment in kernel/cpuset.c.
+> >  	 */
+> >  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+> >  						high_zoneidx, nodemask) {
+> > @@ -1974,7 +1974,7 @@ zonelist_scan:
+> >  				continue;
+> >  		if (cpusets_enabled() &&
+> >  			(alloc_flags & ALLOC_CPUSET) &&
+> > -			!cpuset_zone_allowed_softwall(zone, gfp_mask))
+> > +			!cpuset_zone_allowed(zone, gfp_mask))
+> >  				continue;
 > 
-> Since the wiphy does not have a valid MAC address, my proposal here
-> would be to just not create the wlan0 in the first place. This means
-> that the wiphy can be still discovered via nl80211.
-
-I repeat, currently wlan0 is *not* created.
-
-> It also means that the wlan0 netdev needs to be created by userspace
-> now. And a valid NL80211_ATTR_MAC be provided. Similar to what is
-> already done for P2P devices at the moment. That should just solve the
-> problem.
-
-The creation of wlan0 already comes from userspace, but the PHY has its
-own MAC.
-
-> We really do not want to announce a netdev when registering the wiphy
-> device and then having to mess with its MAC address via sysfs somehow.
-> This all needs to be properly reflected over RTNL.
+> So, this is get_page_from_freelist. It's called from
+> __alloc_pages_nodemask with alloc_flags always having ALLOC_CPUSET bit
+> set and from __alloc_pages_slowpath with alloc_flags having ALLOC_CPUSET
+> bit set only for __GFP_WAIT allocations. That said, w/o your patch we
+> try to respect cpusets for all allocations, including atomic, and only
+> ignore cpusets if tight on memory (freelist's empty) for !__GFP_WAIT
+> allocations, while with your patch we always ignore cpusets for
+> !__GFP_WAIT allocations. Not sure if it really matters though, because
+> usually one uses cpuset.mems in conjunction with cpuset.cpus and it
+> won't make any difference then. It also doesn't conflict with any cpuset
+> documentation.
 > 
-Again, no netdev is announced. There just isn't a way to set the MAC of
-the wiphy device itself.
 
-How about this: What if the driver were to leave the MAC at all zeros
-initially, and sysfs could set that if and only if it's all zeros at the
-time?
-
+Yeah, that's why I'm asking Li, the cpuset maintainer, if we can do this.  
+The only thing that we get by falling back to the page allocator slowpath 
+is that kswapd gets woken up before the allocation is attempted without 
+ALLOC_CPUSET.  It seems pointless to wakeup kswapd when the allocation can 
+succeed on any node.  Even with the patch, if the allocation fails because 
+all nodes are below their min watermark, then we still fallback to the 
+slowpath and wake up kswapd but there's nothing much else we can do 
+because it's !__GFP_WAIT.
