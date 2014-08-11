@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265AbaHKWlO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 18:41:14 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:36578 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbaHKWlM convert rfc822-to-8bit (ORCPT
+	id S1754470AbaHKWnW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 18:43:22 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:3129 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751331AbaHKWnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 18:41:12 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1407791075.28221.74.camel@chimera>
-Date: Mon, 11 Aug 2014 15:41:38 -0700
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org Wireless" 
-	<linux-wireless@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <28066DB2-9EA9-4748-9C89-D3FBD3EC51F5@holtmann.org>
-References: <1407780269.28221.63.camel@chimera> <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org> <1407789645.28221.68.camel@chimera> <37210DB5-2911-4FA3-9299-7701C5003945@holtmann.org> <1407791075.28221.74.camel@chimera>
-To: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
-X-Mailer: Apple Mail (2.1878.6)
+	Mon, 11 Aug 2014 18:43:20 -0400
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+CC: Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-arm-msm@vger.kernel.org>
+Subject: [PATCH v5 0/3] Qualcomm Resource Power Manager driver
+Date: Mon, 11 Aug 2014 15:43:05 -0700
+Message-ID: <1407796988-25872-1-git-send-email-bjorn.andersson@sonymobile.com>
+X-Mailer: git-send-email 1.8.2.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+This series adds a regulator driver for the Resource Power Manager found in
+Qualcomm 8660, 8960 and 8064 based devices.
 
->> The initial wlan0 can be removed as every other netdev attached to the
->> wiphy. It can also be as easily re-created.
->> 
->> Since the wiphy does not have a valid MAC address, my proposal here
->> would be to just not create the wlan0 in the first place. This means
->> that the wiphy can be still discovered via nl80211.
-> 
-> I repeat, currently wlan0 is *not* created.
+The RPM driver exposes resources to its child devices, that can be accessed to
+implement drivers for the regulators, clocks and bus frequency control that's
+owned by the RPM in these devices.
 
-what kind of hardware are you actually using here?
 
->> It also means that the wlan0 netdev needs to be created by userspace
->> now. And a valid NL80211_ATTR_MAC be provided. Similar to what is
->> already done for P2P devices at the moment. That should just solve the
->> problem.
-> 
-> The creation of wlan0 already comes from userspace, but the PHY has its
-> own MAC.
-> 
->> We really do not want to announce a netdev when registering the wiphy
->> device and then having to mess with its MAC address via sysfs somehow.
->> This all needs to be properly reflected over RTNL.
->> 
-> Again, no netdev is announced. There just isn't a way to set the MAC of
-> the wiphy device itself.
-> 
-> How about this: What if the driver were to leave the MAC at all zeros
-> initially, and sysfs could set that if and only if it's all zeros at the
-> time?
+After receiving little interest and some confusion regarding maintainership of
+drivers/soc/qcom I had a chat with Andy Gross and we concluded that "the rpm
+driver is not glue code and should therefore not be in drivers/soc". So I'm
+moving it back into MFD.
 
-Internally it might do that, but I do not see it exposing the NL80211_ATTR_MAC when you get the attributes for wiphy.
+Changes since v4:
+  - Moved RPM driver to mfd
 
-So I am still saying that when you do NL80211_CMD_NEW_INTERFACE allow providing NL80211_ATTR_MAC to set the MAC address to be used. It might be useful that the wiphy exposes an attribute saying that it does not have a default MAC address, but that should be it. I do not like these magic 00:00:00:00:00:00 games. As I mentioned earlier, in Bluetooth we just deal with allowing the driver to set a flag that it does not have a valid address. And then the core takes care of dealing with it.
+Changes since v3:
+  - IPC register is acquired through syscon, as it's shared with others
 
-Regards
+Changes since v2:
+  - Fix copy-paste error in dt binding
+  - Correct incomplete move from mfd to soc
+  - Correct const mistake in regulator driver
 
-Marcel
+Changes since v1:
+  - Moved rpm driver to drivers/soc
+  - Extracted resource table structs from rpm struct, as per Srinivas request
+  - Dropped mode setting support for the regulators for now. Unsure if we need
+    it and it requires some rework from the codeaurora solution.
+  - Using set_voltage_sel instead of rolling my own "snapping", as per Marks
+    request
+  - Split regulator ops in mV, uV and swtich versions as per Marks request.
+  - Added devicetree property to enable pull down.
+
+Bjorn Andersson (3):
+  mfd: devicetree: bindings: Add Qualcomm RPM DT binding
+  mfd: qcom-rpm: Driver for the Qualcomm RPM
+  regulator: qcom-rpm: Regulator driver for the Qualcomm RPM
+
+ Documentation/devicetree/bindings/mfd/qcom,rpm.txt | 263 +++++++
+ drivers/mfd/Kconfig                                |  14 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/qcom_rpm.c                             | 596 ++++++++++++++++
+ drivers/regulator/Kconfig                          |  12 +
+ drivers/regulator/Makefile                         |   1 +
+ drivers/regulator/qcom_rpm-regulator.c             | 787 +++++++++++++++++++++
+ include/dt-bindings/mfd/qcom,rpm.h                 | 142 ++++
+ include/linux/mfd/qcom_rpm.h                       |  12 +
+ 9 files changed, 1828 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/qcom,rpm.txt
+ create mode 100644 drivers/mfd/qcom_rpm.c
+ create mode 100644 drivers/regulator/qcom_rpm-regulator.c
+ create mode 100644 include/dt-bindings/mfd/qcom,rpm.h
+ create mode 100644 include/linux/mfd/qcom_rpm.h
+
+-- 
+1.8.2.2
 
