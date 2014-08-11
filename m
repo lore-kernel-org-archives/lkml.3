@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000AbaHKUsW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:48:22 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:42235 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899AbaHKUsV (ORCPT
+	id S1755079AbaHKUwc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:52:32 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:46993 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836AbaHKUwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:48:21 -0400
-Date: Mon, 11 Aug 2014 13:48:20 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linux-foundation.org
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Ceph updates for 3.17-rc1
-Message-ID: <alpine.DEB.2.00.1408111342470.8075@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 11 Aug 2014 16:52:30 -0400
+Message-ID: <1407790341.334.2.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH RFC 0/2] percpu_tags: Prototype implementation
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Nicholas Bellinger <nab@daterainc.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, qla2xxx-upstream@qlogic.com,
+        Kent Overstreet <kmo@daterainc.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Christoph Hellwig <hch@lst.de>
+Date: Mon, 11 Aug 2014 13:52:21 -0700
+In-Reply-To: <20140811201744.GD8397@lenovo-rd230-04.lab.bos.redhat.com>
+References: <cover.1405678629.git.agordeev@redhat.com>
+	 <20140811201744.GD8397@lenovo-rd230-04.lab.bos.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+(Responding again without gmail, as the last email hit a failure when
+responding to the lists..)
 
-Please pull the following Ceph updates from
+On Mon, 2014-08-11 at 16:17 -0400, Alexander Gordeev wrote:
+> On Fri, Jul 18, 2014 at 12:20:56PM +0200, Alexander Gordeev wrote:
+> > The performance test is not decent, though. I used "fio" random
+> > read against a "null_blk" device sitting on top of "percpu_tags",
+> > which is not exactly how "percpu_ida" is used. This is another
+> > reason I am posting - an advice on how to properly test is very
+> > appreciated.
+> 
+> Hi Nicholas et al,
+> 
+> I expect the best possible performance test for percpu_ida/percpu_tags
+> would be to stress drivers/vhost/scsi.c vhost_scsi_get_tag() function.
+> 
+> I tried to make such test by attaching ramdisk to a virtual machine
+> (similar to https://lkml.org/lkml/2012/8/10/347) but ultimately failed
+> to configure the necessary environment - the stock qemu does not have
+> -vhost-scsi parameter.
+> 
+> Could you please advice how to make this configuration exposed to guests?
+> 
+> o- / ..................................................................... [...]
+>   o- backstores .......................................................... [...]
+>   | o- block .............................................. [Storage Objects: 0]
+>   | o- fileio ............................................. [Storage Objects: 0]
+>   | o- pscsi .............................................. [Storage Objects: 0]
+>   | o- ramdisk ............................................ [Storage Objects: 1]
+>   |   o- rda .............................................. [(1.0GiB) activated]
+>   o- iscsi ........................................................ [Targets: 0]
+>   o- loopback ..................................................... [Targets: 0]
+>   o- vhost ........................................................ [Targets: 1]
+>     o- naa.5001405b171ee405 .......................................... [TPGs: 1]
+>       o- tpg1 .............................. [naa.5001405983a5b1a4, no-gen-acls]
+>         o- acls ...................................................... [ACLs: 0]
+>         o- luns ...................................................... [LUNs: 1]
+>           o- lun0 ................................................ [ramdisk/rda]
+> 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+So qemu expects '-device vhost-scsi-pci' with the following syntax:
 
-There is a lot of refactoring and hardening of the libceph and rbd code 
-here from Ilya that fix various smaller bugs, and a few more important 
-fixes with clone overlap.  The main fix is a critical change to the 
-request_fn handling to not sleep that was exposed by the recent mutex 
-changes (which will also go to teh 3.16 stable series).
+   -device vhost-scsi-pci,wwpn=naa.5001405b171ee405,num_queues=1,cmd_per_lun=64
 
-Yan Zheng has several fixes in here for CephFS fixing ACL handling, time 
-stamps, and request resends when the MDS restarts.
+For best results I'd recommend setting the IRQ affinity for each of the
+virtio*_request MSI-X vectors to a dedicated vCPU in KVM guest.
 
-Finally, there are a few cleanups from Himangi Saraogi based on 
-Coccinelle.
+Also, I've been using the scsi-mq prototype for small block I/O
+performance testing in order to push vhost-scsi and avoid the legacy
+scsi_request_fn() bottleneck(s) with virtio-scsi, and now that hch's
+scsi-mq work (CC'ed) has been merged upstream in v3.17-rc0, it would be
+a good time for a scsi-mq + virtio-scsi + vhost-scsi performance
+checkpoint.  ;)
 
-Thanks!
-sage
+--nab
 
-
-----------------------------------------------------------------
-Himangi Saraogi (2):
-      rbd: use rbd_segment_name_free() instead of kfree()
-      ceph: replace comma with a semicolon
-
-Ilya Dryomov (29):
-      libceph: rename ceph_osd_request::r_linger_osd to r_linger_osd_item
-      libceph: add maybe_move_osd_to_lru() and switch to it
-      libceph: move and add dout()s to ceph_msg_{get,put}()
-      libceph: move and add dout()s to ceph_osdc_request_{get,put}()
-      libceph: harden ceph_osdc_request_release() a bit
-      libceph: assert both regular and lingering lists in __remove_osd()
-      libceph: unregister only registered linger requests
-      libceph: fix linger request check in __unregister_request()
-      libceph: introduce ceph_osdc_cancel_request()
-      rbd: rbd_obj_request_wait() should cancel the request if interrupted
-      rbd: add rbd_obj_watch_request_helper() helper
-      rbd: use rbd_obj_watch_request_helper() helper
-      libceph: nuke ceph_osdc_unregister_linger_request()
-      libceph: drop osd ref when canceling con work
-      rbd: do not leak image_id in rbd_dev_v2_parent_info()
-      rbd: show the entire chain of parent images
-      rbd: introduce rbd_dev_header_info()
-      rbd: remove unnecessary asserts in rbd_dev_image_probe()
-      rbd: split rbd_dev_spec_update() into two functions
-      rbd: harden rbd_dev_refresh() and callers a bit
-      rbd: update mapping size only on refresh
-      rbd: do not read in parent info before snap context
-      rbd: take snap_id into account when reading in parent info
-      ceph: remove redundant memset(0)
-      ceph: fix sizeof(struct tYpO *) typo
-      rbd: rework rbd_request_fn()
-      rbd: allocate img_request with GFP_NOIO instead GFP_ATOMIC
-      rbd: remove extra newlines from rbd_warn() messages
-      libceph: set last_piece in ceph_msg_data_pages_cursor_init() correctly
-
-Yan, Zheng (8):
-      ceph: check unsupported fallocate mode
-      ceph: include time stamp in replayed MDS requests
-      ceph: pass proper page offset to copy_page_to_iter()
-      ceph: properly apply umask when ACL is enabled
-      ceph: reset r_resend_mds after receiving -ESTALE
-      ceph: check zero length in ceph_sync_read()
-      ceph: fix append mode write
-      ceph: fix kick_requests()
-
- Documentation/ABI/testing/sysfs-bus-rbd |    4 +-
- drivers/block/rbd.c                     |  689 ++++++++++++++++---------------
- fs/ceph/acl.c                           |   14 +-
- fs/ceph/caps.c                          |    2 +-
- fs/ceph/file.c                          |   24 +-
- fs/ceph/mds_client.c                    |   16 +-
- fs/ceph/xattr.c                         |    4 +-
- include/linux/ceph/messenger.h          |   14 +-
- include/linux/ceph/osd_client.h         |   18 +-
- net/ceph/messenger.c                    |   47 ++-
- net/ceph/osd_client.c                   |  129 ++++--
- 11 files changed, 538 insertions(+), 423 deletions(-)
