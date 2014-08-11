@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338AbaHKR4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 13:56:55 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:50557 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984AbaHKR4y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 13:56:54 -0400
-From: Avinash kumar <avi.kp.137@gmail.com>
-To: forest@alittletooquiet.net
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Avinash kumar <avi.kp.137@gmail.com>
-Subject: [PATCH] drivers: staging: vt6655: wpactl.h: corrected comment format
-Date: Mon, 11 Aug 2014 23:26:32 +0530
-Message-Id: <1407779792-7926-1-git-send-email-avi.kp.137@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753499AbaHKSDK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:03:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3918 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752717AbaHKSDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 14:03:09 -0400
+Date: Mon, 11 Aug 2014 14:02:14 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Shaun Ruffell <sruffell@digium.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, ebiederm@xmission.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com,
+        bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 11/15] purgatory: Core purgatory functionality
+Message-ID: <20140811180213.GC1863@redhat.com>
+References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
+ <1403814824-7587-12-git-send-email-vgoyal@redhat.com>
+ <20140811174017.GD12610@digium.com>
+ <53E9028E.2070709@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53E9028E.2070709@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-corrected C99 style comment format related error
+On Mon, Aug 11, 2014 at 10:51:10AM -0700, H. Peter Anvin wrote:
+> On 08/11/2014 10:40 AM, Shaun Ruffell wrote:
+> > FYI, it looks like the following patch (committed in
+> > 8fc5b4d4121c95482b2583) adds a new requirement to use at least gcc
+> > 4.4 to build the kernel?
+> 
+> Well, to build the kernel with that particular new functionality
+> enabled, yes.
+> 
+> However...
+> 
+> > The above "-mcmodel=large" compiler flag produces the following output on GCC 4.1.2.
+> > 
+> >   $ make modules_prepare ; gcc --version
+> >     CHK     include/config/kernel.release
+> >     CHK     include/generated/uapi/linux/version.h
+> >     CHK     include/generated/utsrelease.h
+> >     CC      arch/x86/purgatory/purgatory.o
+> >   arch/x86/purgatory/purgatory.c:1: sorry, unimplemented: code model ‘large’ not supported yet
+> >   make[1]: *** [arch/x86/purgatory/purgatory.o] Error 1
+> >   make: *** [archprepare] Error 2
+> >   gcc (GCC) 4.1.2 20080704 (Red Hat 4.1.2-54)
+> >   Copyright (C) 2006 Free Software Foundation, Inc.
+> >   This is free software; see the source for copying conditions.  There is NO
+> >   warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+> > 
+> > I did a quick search for a discussion the indicates this compiler is now
+> > officially too old to build the kernel but did not find one.
+> > 
+> > If this is required, maybe Documentation/Changes needs to be updated
+> > with the new minimum required version?
+> 
+> ... I'm having a very, very hard time to picture a reason why the
+> "large" model would be necessary or even desirable for the purgatory
+> code.  The "small PIC" model seem to fit much better...
 
-Signed-off-by: Avinash Kumar <avi.kp.137@gmail.com>
----
- drivers/staging/vt6655/wpactl.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Hi hpa,
 
-diff --git a/drivers/staging/vt6655/wpactl.h b/drivers/staging/vt6655/wpactl.h
-index f7638ba..2ff42c5 100644
---- a/drivers/staging/vt6655/wpactl.h
-+++ b/drivers/staging/vt6655/wpactl.h
-@@ -36,7 +36,7 @@
- 
- /*---------------------  Export Definitions -------------------------*/
- 
--//WPA related
-+/*WPA related*/
- 
- enum wpa_alg { WPA_ALG_NONE, WPA_ALG_WEP, WPA_ALG_TKIP, WPA_ALG_CCMP };
- enum wpa_cipher { CIPHER_NONE, CIPHER_WEP40, CIPHER_TKIP, CIPHER_CCMP,
-@@ -61,4 +61,4 @@ int wpa_set_wpadev(PSDevice pDevice, int val);
- int wpa_ioctl(PSDevice pDevice, struct iw_point *p);
- int wpa_set_keys(PSDevice pDevice, void *ctx, bool fcpfkernel);
- 
--#endif // __WPACL_H__
-+#endif /* __WPACL_H__*/
--- 
-1.7.9.5
+I took it because kexec-tools uses it and in one of the committs Eric
+gave following reasoning.
 
+    On x86_64 use -mcmodel=large so that the code is built without
+    any 32bit assumptions.  -mcmodel=medium and -mcmodel=small
+    result int code that has 32bit relocations against variables
+    that can live anywhere in the address space
+
+We do want to load purgatory anywhere in the address space. 
+
+But if there are other ways to achieve the same thing, I will do that
+change.
+
+So when you say "small PIC", I need to use -mcmodel=small and -fPIC?
+
+I can give that a try.
+
+Thanks
+Vivek
