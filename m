@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaHKJIB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 05:08:01 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:45637 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375AbaHKJH6 convert rfc822-to-8bit (ORCPT
+	id S1752652AbaHKJJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 05:09:54 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:37423 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810AbaHKJJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 05:07:58 -0400
+	Mon, 11 Aug 2014 05:09:52 -0400
+Message-ID: <53E88851.6000705@collabora.co.uk>
+Date: Mon, 11 Aug 2014 11:09:37 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1407515785.31897.28.camel@hornet>
-References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
-	<1406298233-27876-3-git-send-email-pawel.moll@arm.com>
-	<1407515785.31897.28.camel@hornet>
-Date: Mon, 11 Aug 2014 11:07:57 +0200
-Message-ID: <CAPDyKFoLU6pnJFmKe7CB0q-hKfwv4uCPSr0cE4aoYMvfhjMteQ@mail.gmail.com>
-Subject: Re: [PATCH 3/5] mmc: sdhci-pltfm: Do not use parent as the host's device
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Chris Ball <chris@printf.net>, Anton Vorontsov <anton@enomsg.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "paul@pwsan.com" <paul@pwsan.com>, Arnd Bergmann <arnd@arndb.de>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Doug Anderson <dianders@chromium.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, Stephen Warren <swarren@nvidia.com>,
+        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Abraham <thomas.ab@samsung.com>
+Subject: Re: [PATCH v2 1/1] Input: atmel_mxt_ts - Get IRQ edge/level flags
+ on DT booting
+References: <1407397492-17475-1-git-send-email-javier.martinez@collabora.co.uk>	<53E4D9A5.908@itdev.co.uk>	<20140808162146.GC26820@core.coreip.homeip.net>	<53E4FD1B.6060600@collabora.co.uk>	<53E5170C.10302@collabora.co.uk>	<CAD=FV=WSNqjHLLbTh1LBF3RFrCnWnj498hivivcmx1SbuYp=Hw@mail.gmail.com>	<53E54E91.9060905@collabora.co.uk> <CACRpkdZ9-5Pw-SHFNuGtvxDDHrA13ShSSFN9uZRBLTfpe=m5ug@mail.gmail.com>
+In-Reply-To: <CACRpkdZ9-5Pw-SHFNuGtvxDDHrA13ShSSFN9uZRBLTfpe=m5ug@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 August 2014 18:36, Pawel Moll <pawel.moll@arm.com> wrote:
-> On Fri, 2014-07-25 at 15:23 +0100, Pawel Moll wrote:
->> The code selecting a device for the sdhci host has been
->> continuously tweaked (4b711cb13843f5082e82970dd1e8031383134a65
->> "mmc: sdhci-pltfm: Add structure for host-specific data" and
->> a4d2177f00a5252d825236c5124bc1e9918bdb41 "mmc: sdhci-pltfm: dt
->> device does not pass parent to sdhci_alloc_host") while there
->> does not seem to be any reason to use platform device's parent
->> in the first place.
->>
->> The comment saying "Some PCI-based MFD need the parent here"
->> seem to refer to Timberdale FPGA driver (the only MFD driver
->> registering SDHCI cell, drivers/mfd/timberdale.c) but again,
->> the only situation when parent device matter is runtime PM,
->> which is not implemented for Timberdale.
->>
->> Cc: Chris Ball <chris@printf.net>
->> Cc: Anton Vorontsov <anton@enomsg.org>
->> Cc: Ulf Hansson <ulf.hansson@linaro.org>
->> Cc: linux-mmc@vger.kernel.org
->> Cc: linuxppc-dev@lists.ozlabs.org
->> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
->> ---
->>
->> This patch is a part of effort to remove references to platform_bus
->> and make it static.
->>
->> Chris, Anton, Ulf - could you please advise if the assumptions
->> above are correct or if I'm completely wrong? Do you know what
->> where the real reasons to use parent originally? The PCI comment
->> seems like a red herring to me...
->
-> Can I take the silence as a suggestion that the change looks ok-ish for
-> you?
+Hello Linus,
 
-Sorry for the delay. I suppose this make sense, but I really don't
-know for sure.
+On 08/11/2014 10:32 AM, Linus Walleij wrote:
+> I guess this discussion is about drivers/pinctrl/samsung/pinctrl-exynos.c?
+> 
+> Or else I'm not really following this... $SUBJECT is a bit confusing.
+> 
 
-I guess we need some testing in linux-next, to get some confidence.
+Yes, the thing is that at the beginning I (wrongly) thought that the IRQ trigger
+type flags defined in the DTS were discarded if someone called
+request_threaded_irq() with a flags != 0. And since the atmel touchpad driver
+was pass pdata->irqflags | IRQF_ONESHOT I posted this patch to get the trigger
+type parsed from DT and pass it to request_threaded_irq().
 
-Kind regards
-Uffe
+But after digging further I found that the issue was in the pinctrl-exynos
+driver and Tomasz explained to me that the real cause was that the pin was being
+configured from GPIO IRQ to GPIO input (which on other platforms is just the
+same mode but on Exynos are two different modes).
 
->
-> Paweł
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+At the end passing the trigger type to request_threaded_irq() just had the side
+effect to call the exynos .irq_set_type function handler that reconfigured the
+pin as GPIO-IRQ and that is why it made it to work. So I posted a patch from
+Tomasz that fixes the real cause [0].
+
+I'm so sorry for the confusion.
+
+> Yours,
+> Linus Walleij
+> 
+
+Best regards,
+Javier
+
+[0]: https://lkml.org/lkml/2014/8/8/962
