@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbaHKN4S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 09:56:18 -0400
-Received: from verein.lst.de ([213.95.11.211]:41522 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753442AbaHKN4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 09:56:17 -0400
-Date: Mon, 11 Aug 2014 15:56:11 +0200
-From: Torsten Duwe <duwe@lst.de>
-To: Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Heiko Carstens <heicars2@linux.vnet.ibm.com>,
-        Hendrik Brueckner <brueckner@de.ibm.com>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Harald Freudenberger <freude@de.ibm.com>,
-        Ingo Tuchscherer <ingo.tuchscherer@linux.vnet.ibm.com>
-Subject: Re: [PATCH] s390/zcrypt: enable s390 hwrng to seed kernel entropy
-Message-ID: <20140811135611.GP27247@lst.de>
-References: <1406722656-6506-1-git-send-email-ingo.tuchscherer@de.ibm.com>
+	id S1753827AbaHKN4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 09:56:54 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:59159 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805AbaHKN4w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 09:56:52 -0400
+Date: Mon, 11 Aug 2014 14:56:45 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, ajitpal.singh@st.com, edubezval@gmail.com,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com
+Subject: Re: [RESEND PATCH 0/6] thermal: sti: Add new Thermal driver
+Message-ID: <20140811135645.GD31769@lee--X1>
+References: <20140624092309.GD13803@lee--X1>
+ <20140709120823.GA32573@lee--X1>
+ <1404911964.28592.4.camel@rzhang1-toshiba>
+ <20140709134646.GB479@lee--X1>
+ <20140714130824.GA3993@lee--X1>
+ <1405347277.28592.25.camel@rzhang1-toshiba>
+ <20140714142703.GC3993@lee--X1>
+ <20140721091753.GV30888@lee--X1>
+ <1405935299.2455.3.camel@rzhang1-toshiba>
+ <20140721101306.GW30888@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1406722656-6506-1-git-send-email-ingo.tuchscherer@de.ibm.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140721101306.GW30888@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 30, 2014 at 02:17:36PM +0200, Ingo Tuchscherer wrote:
-> Set the 'quality' property in the zcrypt rng device structure to enable the
-> zcrypt hwrng device to take part in the kernel entropy seeding process.
-> A module parameter named hwrng_seed will be introduced to disable the
-> participation. By default this parameter is set to 1 (enabled).
+On Mon, 21 Jul 2014, Lee Jones wrote:
+> On Mon, 21 Jul 2014, Zhang Rui wrote:
+> > On Mon, 2014-07-21 at 10:17 +0100, Lee Jones wrote:
+> > > On Mon, 14 Jul 2014, Lee Jones wrote:
+> > > > On Mon, 14 Jul 2014, Zhang Rui wrote:
+> > > > > On Mon, 2014-07-14 at 14:08 +0100, Lee Jones wrote:
+> > > > > > On Wed, 09 Jul 2014, Lee Jones wrote:
+> > > > > > > On Wed, 09 Jul 2014, Zhang Rui wrote:
+> > > > > > > > On Wed, 2014-07-09 at 13:08 +0100, Lee Jones wrote:
+> > > > > > > > > On Tue, 24 Jun 2014, Lee Jones wrote:
+> > > > > > > > > 
+> > > > > > > > > > > I'm re-sending this set, as one of the maintainers' email addresses
+> > > > > > > > > > > is incorrect in the MAINTAINERS file.
+> > > > > > > > > > > 
+> > > > > > > > > > > This patchset adds full support for 2 types of Thermal Controllers
+> > > > > > > > > > > produced by STMicroelectronics.  One is a more traditional memory
+> > > > > > > > > > > mapped variant, the other is controlled solely by system configuration
+> > > > > > > > > > > registers.
+> > > > > > > > > > 
+> > > > > > > > > > Any thing from the Thermal guys? Has this set fallen through the gaps?
+> > > > > > > > > 
+> > > > > > > > > Anything at all?  It's been well over a month now.
+> > > > > > > > > 
+> > > > > > > > Well, for the soc thermal drivers, I'd prefer to take them via Eduardo,
+> > > > > > > > but as we didn't get any feedback from Eduardo, I will take them.
+> > > > > > > 
+> > > > > > > Thanks Rui.
+> > > > > > > 
+> > > > > > > So have you taken all 4 "thermal: sti: *" patches?
+> > > > > > 
+> > > > > > Have you taken these yet?
+> > > > > 
+> > > > > Not yet. will do tomorrow.
+> > > 
+> > > I waited 7 days and still don't see them?
+> > > 
+> > Done, they're in my local tree and I forgot to push them.
+> > thanks for the reminder.
+> 
+> Thanks dude.
 
-I only had a one-liner that simply enabled it. I guess the extra switch
-is for certification scenarios? Anyway,
+Hi Rui,
 
-Acked-by: Torsten Duwe <duwe@suse.de>
-> 
-> Signed-off-by: Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>
-> ---
->  drivers/s390/crypto/ap_bus.c     | 5 +++++
->  drivers/s390/crypto/ap_bus.h     | 1 +
->  drivers/s390/crypto/zcrypt_api.c | 3 +++
->  3 files changed, 9 insertions(+)
-> 
-> diff --git a/drivers/s390/crypto/ap_bus.c b/drivers/s390/crypto/ap_bus.c
-> index 4038437..19fac5f 100644
-> --- a/drivers/s390/crypto/ap_bus.c
-> +++ b/drivers/s390/crypto/ap_bus.c
-> @@ -85,6 +85,11 @@ static int ap_thread_flag = 0;
->  module_param_named(poll_thread, ap_thread_flag, int, S_IRUSR|S_IRGRP);
->  MODULE_PARM_DESC(poll_thread, "Turn on/off poll thread, default is 0 (off).");
->  
-> +int ap_hwrng_seed = 1;
-> +EXPORT_SYMBOL(ap_hwrng_seed);
-> +module_param_named(hwrng_seed, ap_hwrng_seed, int, S_IRUSR|S_IRGRP);
-> +MODULE_PARM_DESC(hwrng_seed, "Turn on/off hwrng auto seed, default is 1 (on).");
-> +
->  static struct device *ap_root_device = NULL;
->  static struct ap_config_info *ap_configuration;
->  static DEFINE_SPINLOCK(ap_device_list_lock);
-> diff --git a/drivers/s390/crypto/ap_bus.h b/drivers/s390/crypto/ap_bus.h
-> index 6405ae2..b0be09a 100644
-> --- a/drivers/s390/crypto/ap_bus.h
-> +++ b/drivers/s390/crypto/ap_bus.h
-> @@ -38,6 +38,7 @@
->  #define AP_POLL_TIME 1		/* Time in ticks between receive polls. */
->  
->  extern int ap_domain_index;
-> +extern int ap_hwrng_seed;
->  
->  /**
->   * The ap_qid_t identifier of an ap queue. It contains a
-> diff --git a/drivers/s390/crypto/zcrypt_api.c b/drivers/s390/crypto/zcrypt_api.c
-> index 0e18c5d..ed91665 100644
-> --- a/drivers/s390/crypto/zcrypt_api.c
-> +++ b/drivers/s390/crypto/zcrypt_api.c
-> @@ -1374,6 +1374,7 @@ static int zcrypt_rng_data_read(struct hwrng *rng, u32 *data)
->  static struct hwrng zcrypt_rng_dev = {
->  	.name		= "zcrypt",
->  	.data_read	= zcrypt_rng_data_read,
-> +	.quality	= 990,
->  };
->  
->  static int zcrypt_rng_device_add(void)
-> @@ -1388,6 +1389,8 @@ static int zcrypt_rng_device_add(void)
->  			goto out;
->  		}
->  		zcrypt_rng_buffer_index = 0;
-> +		if (!ap_hwrng_seed)
-> +			zcrypt_rng_dev.quality = 0;
->  		rc = hwrng_register(&zcrypt_rng_dev);
->  		if (rc)
->  			goto out_free;
-> -- 
-> 1.8.5.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Do you know when you will send your pull-request?
+
+We are half way through the merge window and I don't see any new
+Thermal patches?
+
+Kind regards,
+Lee
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
