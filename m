@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076AbaHKPXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 11:23:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43589 "EHLO mx2.suse.de"
+	id S1754101AbaHKPZI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 11:25:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43645 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754039AbaHKPXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 11:23:35 -0400
-Date: Mon, 11 Aug 2014 17:23:32 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: himangi774@gmail.com, mmarek@suse.cz, shuah.kh@samsung.com,
-        ydroneaud@opteya.com, linux-kbuild@vger.kernel.org,
+	id S1753549AbaHKPZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 11:25:05 -0400
+Date: Mon, 11 Aug 2014 17:25:01 +0200
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Jan Kara <jack@suse.cz>, Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild misc changes for 3.17-rc1
-Message-ID: <20140811152332.GA4629@sepie.suse.cz>
+Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the DAX
+ page fault handler
+Message-ID: <20140811152501.GA12279@quack.suse.cz>
+References: <20140409214331.GQ32103@quack.suse.cz>
+ <20140729121259.GL6754@linux.intel.com>
+ <20140729210457.GA17807@quack.suse.cz>
+ <20140729212333.GO6754@linux.intel.com>
+ <20140730095229.GA19205@quack.suse.cz>
+ <20140809110000.GA32313@linux.intel.com>
+ <20140811085147.GB29526@quack.suse.cz>
+ <20140811141308.GZ6754@linux.intel.com>
+ <20140811143500.GF29526@quack.suse.cz>
+ <20140811150205.GA6754@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140811150205.GA6754@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon 11-08-14 11:02:05, Matthew Wilcox wrote:
+> On Mon, Aug 11, 2014 at 04:35:00PM +0200, Jan Kara wrote:
+> > On Mon 11-08-14 10:13:08, Matthew Wilcox wrote:
+> > > On Mon, Aug 11, 2014 at 10:51:47AM +0200, Jan Kara wrote:
+> > > > So I'm afraid we'll have to find some other way to synchronize
+> > > > page faults and truncate / punch hole in DAX.
+> > > 
+> > > What if we don't?  If we hit the race (which is vanishingly unlikely with
+> > > real applications), the consequence is simply that after a truncate, a
+> > > file may be left with one or two blocks allocated somewhere after i_size.
+> > > As I understand it, that's not a real problem; they're temporarily
+> > > unavailable for allocation but will be freed on file removal or the next
+> > > truncation of that file.
+> >   You mean if you won't have any locking between page fault and truncate?
+> > You can have:
+> > a) extending truncate making forgotten blocks with non-zeros visible
+> > b) filesystem corruption due to doubly used blocks (block will be freed
+> > from the truncated file and thus can be reallocated but it will still be
+> > accessible via mmap from the truncated file).
+> > 
+> >   So not a good idea.
+> 
+> Not *no* locking ... just no locking around get_block, like in v7.
+> So check i_size, call get_block, lock i_mmap_mutex, re-check i_size,
+> insert mapping if i_size is OK, drop i_mmap_mutex.  As long as get_block()
+> has enough locking of its own against set_size and concurrent calls
+> to get_block(), I don't think we can get visible non-zeroes or double
+> allocation.
+  Ah, right. Now I remember. Yes, that solution will only occasionally
+leave allocated blocks beyond EOF. That may be acceptable especially if we
+mark the file with some flag and truncate those blocks after file is closed
+in ext4_release_file().
 
-this is the non-critical part of kbuild for 3.17-rc1:
-- make help hint to use make -s with make kernelrelease et al.
-- Moved a kbuild document to Documentation/kbuild where it belongs
-- four new Coccinelle scripts, one dropped and one fixed
-- new make kselftest target to run various tests on the kernel
-
-Michal
-
-
-The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
-
-  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git misc
-
-for you to fetch changes up to 5a5da78b3a48120d942c8a18ecc645f6acdf7da6:
-
-  kbuild: kselftest - new make target to build and run kernel selftests (2014-08-07 22:30:01 +0200)
-
-----------------------------------------------------------------
-Himangi Saraogi (5):
-      coccinelle/null: solve parse error
-      Coccinelle: Script to detect cast after memory allocation
-      Coccinelle: Script to use ARRAY_SIZE instead of division of two sizeofs
-      Coccinelle: Script to detect incorrect argument to sizeof
-      Coccinelle: Script to replace if and BUG with BUG_ON
-
-Michal Marek (1):
-      kbuild: make -s should be used with kernelrelease/kernelversion/image_name
-
-Shuah Khan (1):
-      kbuild: kselftest - new make target to build and run kernel selftests
-
-Yann Droneaud (1):
-      Documentation: headers_install.txt is part of kbuild
-
- Documentation/kbuild/00-INDEX                      |  2 +
- Documentation/{make => kbuild}/headers_install.txt |  0
- Makefile                                           | 18 ++++-
- scripts/coccinelle/api/alloc/alloc_cast.cocci      | 72 ++++++++++++++++++
- scripts/coccinelle/misc/array_size.cocci           | 87 ++++++++++++++++++++++
- scripts/coccinelle/misc/badty.cocci                | 76 +++++++++++++++++++
- .../drop_kmalloc_cast.cocci => misc/bugon.cocci}   | 47 ++++++------
- scripts/coccinelle/null/badzero.cocci              |  3 +-
- 8 files changed, 275 insertions(+), 30 deletions(-)
- rename Documentation/{make => kbuild}/headers_install.txt (100%)
- create mode 100644 scripts/coccinelle/api/alloc/alloc_cast.cocci
- create mode 100644 scripts/coccinelle/misc/array_size.cocci
- create mode 100644 scripts/coccinelle/misc/badty.cocci
- rename scripts/coccinelle/{api/alloc/drop_kmalloc_cast.cocci => misc/bugon.cocci} (50%)
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
