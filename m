@@ -1,57 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875AbaHKEUH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 00:20:07 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38661 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720AbaHKEUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 00:20:05 -0400
-Message-ID: <1407730744.4508.67.camel@pasglop>
-Subject: Re: [tip:timers/core] timekeeping: Fixup typo in
- update_vsyscall_old definition
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: john.stultz@linaro.org
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, sfr@canb.auug.org.au,
-        linuxppc-dev@ozlabs.org
-Date: Mon, 11 Aug 2014 14:19:04 +1000
-In-Reply-To: <tip-953dec21aed4038464fec02f96a2f1b8701a5bce@git.kernel.org>
-References: <1406349439-11785-1-git-send-email-john.stultz@linaro.org>
-	 <tip-953dec21aed4038464fec02f96a2f1b8701a5bce@git.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752090AbaHKEZm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 00:25:42 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:55043 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720AbaHKEZk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 00:25:40 -0400
+From: HuKeping <hukeping@huawei.com>
+To: <vgoyal@redhat.com>, <hbabu@us.ibm.com>, <rdunlap@infradead.org>
+CC: <kexec@lists.infradead.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <peifeiyue@huawei.com>
+Subject: [PATCH V2] Add arm description to Documentation/kdump/kdump.txt
+Date: Mon, 11 Aug 2014 12:14:39 +0800
+Message-ID: <1407730479-20800-1-git-send-email-hukeping@huawei.com>
+X-Mailer: git-send-email 1.8.5.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-30 at 00:31 -0700, tip-bot for John Stultz wrote:
-> Commit-ID:  953dec21aed4038464fec02f96a2f1b8701a5bce
-> Gitweb:     http://git.kernel.org/tip/953dec21aed4038464fec02f96a2f1b8701a5bce
-> Author:     John Stultz <john.stultz@linaro.org>
-> AuthorDate: Fri, 25 Jul 2014 21:37:19 -0700
-> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Wed, 30 Jul 2014 09:26:25 +0200
-> 
-> timekeeping: Fixup typo in update_vsyscall_old definition
-> 
-> In commit 4a0e637738f0 ("clocksource: Get rid of cycle_last"),
-> currently in the -tip tree, there was a small typo where cycles_t
-> was used intstead of cycle_t. This broke ppc64 builds.
+----------------------------------------
 
-There's another bug in there... You fix timespec vs. timespec64 for the
-first argument of update_vsyscall_old but not the second one ...
-(wall_to_monotonic).
+Add arm specific parts to kdump kernel documentation.
 
-Also, in e2dff1ec0 you claim this is "minor", you seem to forget that
-arch/powerpc also deals with 32-bit kernels which use the same time
-keeping code, so we have a pretty serious regressions here...
+It seem that we prefer to use nr_cpus=1 instead of maxcpus=1. but nr_cpus
+does not work fine on arm.
+There will be a warning when dump-caputre kernel booting if use nr_cpus:
 
-BTW. Is there some documentation you can point me to to figure out what
-replace that "_OLD" stuff so we can update to whatever is "new" ?
+"[    0.000000] DT/cpu 2nodes greater than max cores 1, capping them"
 
-Cheers,
-Ben.
+This is from arch/arm/kernel/devtree.c, in function
+void __init arm_dt_init_cpu_maps(void)
 
+145    if (WARN(cpuidx > nr_cpu_ids, "DT /cpu %u nodes greater than "
+146                "max cores %u, capping them\n",
+147                cpuidx, nr_cpu_ids)) {
+148        cpuidx = nr_cpu_ids;
+149        break;
+150    }
+
+Since we have already using nr_cpus to specify the number of cpus we
+want to be online, kdump should not to make the comparison with dtb
+(which is strongly recommended on arm-32bit ) again, but it does, so the
+warning out.
+Meanwhile the maxcpus works fine.
+
+v1 -> v2:
+- Add description about dump-capture kernel config options(Arch Dependent, arm).
+
+- Add description about the defference between arm and the others.
+  on extended crashkernel syntax
+
+Signed-off-by: Hu Keping <hukeping@huawei.com>
+---
+ Documentation/kdump/kdump.txt | 37 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 34 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
+index 88d5a86..d07b902 100644
+--- a/Documentation/kdump/kdump.txt
++++ b/Documentation/kdump/kdump.txt
+@@ -18,7 +18,7 @@ memory image to a dump file on the local disk, or across the network to
+ a remote system.
+ 
+ Kdump and kexec are currently supported on the x86, x86_64, ppc64, ia64,
+-and s390x architectures.
++s390x and arm architectures.
+ 
+ When the system kernel boots, it reserves a small section of memory for
+ the dump-capture kernel. This ensures that ongoing Direct Memory Access
+@@ -112,7 +112,7 @@ There are two possible methods of using Kdump.
+ 2) Or use the system kernel binary itself as dump-capture kernel and there is
+    no need to build a separate dump-capture kernel. This is possible
+    only with the architectures which support a relocatable kernel. As
+-   of today, i386, x86_64, ppc64 and ia64 architectures support relocatable
++   of today, i386, x86_64, ppc64, ia64 and arm architectures support relocatable
+    kernel.
+ 
+ Building a relocatable kernel is advantageous from the point of view that
+@@ -241,6 +241,14 @@ Dump-capture kernel config options (Arch Dependent, ia64)
+   kernel will be aligned to 64Mb, so if the start address is not then
+   any space below the alignment point will be wasted.
+ 
++Dump-capture kernel config options (Arch Dependent, arm)
++----------------------------------------------------------
++
++-   To use a relocatable kernel,
++    Enable "AUTO_ZRELADDR" support under "Boot" options:
++
++    AUTO_ZRELADDR=y
++
+ 
+ Extended crashkernel syntax
+ ===========================
+@@ -256,6 +264,10 @@ The syntax is:
+     crashkernel=<range1>:<size1>[,<range2>:<size2>,...][@offset]
+     range=start-[end]
+ 
++Plesse note, on arm, the offset is required.
++    crashkernel=<range1>:<size1>[,<range2>:<size2>,...]@offset
++    range=start-[end]
++
+     'start' is inclusive and 'end' is exclusive.
+ 
+ For example:
+@@ -296,6 +308,12 @@ Boot into System Kernel
+    on the memory consumption of the kdump system. In general this is not
+    dependent on the memory size of the production system.
+ 
++   On arm, use "crashkernel=Y@X". Note that the start address of the kernel
++   will be aligned to 128MiB (0x08000000), so if the start address is not then
++   any space blow the alignment point may be overwrited by the dump-caputre kernel,
++   which means it is possible that the vmcore is not that precise as expected.
++
++
+ Load the Dump-capture Kernel
+ ============================
+ 
+@@ -315,7 +333,8 @@ For ia64:
+ 	- Use vmlinux or vmlinuz.gz
+ For s390x:
+ 	- Use image or bzImage
+-
++For arm:
++	- Use zImage
+ 
+ If you are using a uncompressed vmlinux image then use following command
+ to load dump-capture kernel.
+@@ -331,6 +350,15 @@ to load dump-capture kernel.
+    --initrd=<initrd-for-dump-capture-kernel> \
+    --append="root=<root-dev> <arch-specific-options>"
+ 
++If you are using a compressed zImage, then use following command
++to load dump-capture kernel.
++
++   kexec --type zImage -p <dump-capture-kernel-bzImage> \
++   --initrd=<initrd-for-dump-capture-kernel> \
++   --dtb=<dtb-for-dump-capture-kernel> \
++   --append="root=<root-dev> <arch-specific-options>"
++
++
+ Please note, that --args-linux does not need to be specified for ia64.
+ It is planned to make this a no-op on that architecture, but for now
+ it should be omitted
+@@ -347,6 +375,9 @@ For ppc64:
+ For s390x:
+ 	"1 maxcpus=1 cgroup_disable=memory"
+ 
++For arm:
++	"1 maxcpus=1 reset_devices"
++
+ Notes on loading the dump-capture kernel:
+ 
+ * By default, the ELF headers are stored in ELF64 format to support
+-- 
+1.8.5.5
 
