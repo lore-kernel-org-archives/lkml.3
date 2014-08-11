@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149AbaHKQNz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 12:13:55 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:58146 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050AbaHKQNx (ORCPT
+	id S1754173AbaHKQPl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 12:15:41 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:43531 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636AbaHKQPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 12:13:53 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53E8EBBD.6080500@roeck-us.net>
-Date: Mon, 11 Aug 2014 09:13:49 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 11 Aug 2014 12:15:39 -0400
+Date: Mon, 11 Aug 2014 09:15:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140811161531.GA530@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140808191326.GE3935@laptop>
+ <20140808205826.GG5821@linux.vnet.ibm.com>
+ <20140809061514.GK9918@twins.programming.kicks-ass.net>
+ <20140809160137.GJ5821@linux.vnet.ibm.com>
+ <20140809181920.GO9918@twins.programming.kicks-ass.net>
+ <20140809182400.GJ3588@twins.programming.kicks-ass.net>
+ <20140810012924.GO5821@linux.vnet.ibm.com>
+ <20140810081425.GT9918@twins.programming.kicks-ass.net>
+ <20140811033048.GT5821@linux.vnet.ibm.com>
+ <20140811115706.GX9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [RFC PATCH] gpiolib: Provide and export gpiod_export_name
-References: <1406139132-5404-1-git-send-email-linux@roeck-us.net> <CAAVeFuKsJpSYo2DMyTdYE2J5Cu_ZD=b9o-=S0DLDccyNmwniNg@mail.gmail.com> <53D0A8B7.2010005@roeck-us.net> <CAAVeFuK5uKhpkpEnoRFGKU4G4Fey0+giz5wwmtr+OCLJHPvnLQ@mail.gmail.com> <53E32C09.5000704@roeck-us.net> <CAAVeFuJohBznnjELvJj0OUCK+anbZ-j1xPc9gyKDGVq9X0MDSA@mail.gmail.com> <53E8DE1D.9070503@roeck-us.net> <CAAVeFuK8kb3kopVaM9qz+qOa4RT_oji8LNLQa_UHDxxxwyfZgw@mail.gmail.com>
-In-Reply-To: <CAAVeFuK8kb3kopVaM9qz+qOa4RT_oji8LNLQa_UHDxxxwyfZgw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140811115706.GX9918@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081116-0928-0000-0000-00000408C57F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2014 08:20 AM, Alexandre Courbot wrote:
-[ ... ]
->
-> Note that this doesn't change anything to the core of the argument ;
-> we have not heard what Linus thinks about named GPIOs in
-> /sys/class/gpio yet, maybe he will have a different opinion...
->
+On Mon, Aug 11, 2014 at 01:57:06PM +0200, Peter Zijlstra wrote:
+> On Sun, Aug 10, 2014 at 08:30:48PM -0700, Paul E. McKenney wrote:
+> > On Sun, Aug 10, 2014 at 10:14:25AM +0200, Peter Zijlstra wrote:
+> 
+> > > want want want, I want a damn pony but somehow I'm not getting one. Why
+> > > are they getting this?
+> > 
+> > We can only be glad that my daughters' old My Little Pony toys are
+> > long gone (http://en.wikipedia.org/wiki/My_Little_Pony).  Not sure I
+> > would have been able to resist sending one along.  ;-)
+> 
+> LOL, I _knew_ someone was going to propose doing that ;-)
 
-Well, please let me know if/when you are planning to take away
-that existing ABI so I can plan accordingly. FWIW, out-of-kernel
-users I am currently aware of are Juniper Networks and Zodiac
-Aerospace. The latter asked me to help them upstreaming their code.
+You know me too well, Peter!  ;-)
 
-If you plan to remove the ABI, you might want to inform its current
-in-kernel users. You can look those up yourself.
-
-Thanks,
-Guenter
+							Thanx, Paul
 
