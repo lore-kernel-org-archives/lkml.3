@@ -1,80 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967AbaHKOhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 10:37:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57813 "EHLO mx1.redhat.com"
+	id S1753809AbaHKOkk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 10:40:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38297 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753465AbaHKOhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 10:37:14 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
-        linux-unionfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Race in ovl_copy_up()?
+	id S1753235AbaHKOki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 10:40:38 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: dm: propagate QUEUE_FLAG_NO_SG_MERGE
+References: <x49iom3hvle.fsf@segfault.boston.devel.redhat.com>
+	<20140811011108.GA13946@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 11 Aug 2014 10:40:20 -0400
+In-Reply-To: <20140811011108.GA13946@redhat.com> (Mike Snitzer's message of
+	"Sun, 10 Aug 2014 21:11:08 -0400")
+Message-ID: <x49mwbbozsb.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <24269.1407767827.1@warthog.procyon.org.uk>
-Date: Mon, 11 Aug 2014 15:37:07 +0100
-Message-ID: <24270.1407767827@warthog.procyon.org.uk>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miklos,
+Mike Snitzer <snitzer@redhat.com> writes:
 
-Looking at the following:
+> Hi Jeff,
+>
+> Thanks for the patch.  But I think you need the following tweak.
+> Otherwise if the DM table is reloaded (and the devices in the table
+> happen to change) the flag won't get cleared as needed.
 
-	int ovl_copy_up(struct dentry *dentry)
-	{
-		int err;
+Ah, thanks for the education.  Looks good to me.
 
-		err = 0;
-		while (!err) {
-			struct dentry *next;
-			struct dentry *parent;
-			struct path lowerpath;
-			struct kstat stat;
-			enum ovl_path_type type = ovl_path_type(dentry);
-
-			if (type != OVL_PATH_LOWER)
-				break;
-
-			next = dget(dentry);
-			/* find the topmost dentry not yet copied up */
-			for (;;) {
-				parent = dget_parent(next);
-
-				type = ovl_path_type(parent);
-				if (type != OVL_PATH_LOWER)
-					break;
-
-				dput(next);
-				next = parent;
-			}
-
-			ovl_path_lower(next, &lowerpath);
-			err = vfs_getattr(&lowerpath, &stat);
-			if (!err)
-				err = ovl_copy_up_one(parent, next, &lowerpath, &stat);
-
-			dput(parent);
-			dput(next);
-		}
-
-		return err;
-	}
-
-In the for-loop in the middle, if you ascend any levels at all, how are you
-protected from racing with copy-ups taking place on those more rootwards
-dentries?
-
-I can see ovl_copy_up_one() using lock_rename() on the workdir and upperdir,
-but there's no relevant lock on the overlayfs fs.  You stepped out of the lock
-the VFS caller holds when you ascended.
-
-David
+Thanks!
+Jeff
