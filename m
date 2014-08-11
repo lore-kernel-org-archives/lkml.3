@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaHKHjO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 03:39:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3219 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527AbaHKHjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 03:39:12 -0400
-Date: Mon, 11 Aug 2014 09:39:02 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anil Gurumurthy <agurumur@brocade.com>,
-        Vijaya Mohan Guvva <vmohan@brocade.com>, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org,
-        Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
-        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>
-Subject: Re: [PATCH v2 RESEND 04/23] bfa: Use pci_enable_msix_exact() instead
- of pci_enable_msix()
-Message-ID: <20140811073902.GB16504@dhcp-27-160.brq.redhat.com>
-References: <cover.1405533479.git.agordeev@redhat.com>
- <bc13ddf17d035921de994d2f8a52902e0a5d1a60.1405533479.git.agordeev@redhat.com>
+	id S1752770AbaHKHnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 03:43:13 -0400
+Received: from 80-229-23-162.plus.com ([80.229.23.162]:48395 "EHLO
+	mail.einon.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291AbaHKHnM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 03:43:12 -0400
+X-Greylist: delayed 443 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Aug 2014 03:43:11 EDT
+Date: Mon, 11 Aug 2014 08:35:29 +0100
+From: Mark Einon <mark.einon@gmail.com>
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Cc: STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        stable <stable@vger.kernel.org>, gregkh@linuxfoundation.org
+Subject: Re: [PATCH RESEND] staging: et131x: Fix errors caused by
+ phydev->addr accesses before initialisation
+Message-ID: <20140811073529.GA4620@leicester.auvation.com>
+References: <1407705415-14886-1-git-send-email-mark.einon@gmail.com>
+ <CAJL_dMub6FN+HvueQ4ZJCT2TPi9-86x8VF2hG00K8CDm5bR7rw@mail.gmail.com>
+ <20140811053959.GD13727@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <bc13ddf17d035921de994d2f8a52902e0a5d1a60.1405533479.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140811053959.GD13727@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 16, 2014 at 08:05:08PM +0200, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
-
-Anil, Sudarsana,
-
-Could you please review bfa patches in this series?
-
-Thanks!
-
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Anil Gurumurthy <agurumur@brocade.com>
-> Cc: Vijaya Mohan Guvva <vmohan@brocade.com>
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> Acked-by: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
-> ---
->  drivers/scsi/bfa/bfad.c |   20 ++++++--------------
->  1 files changed, 6 insertions(+), 14 deletions(-)
+On Mon, Aug 11, 2014 at 01:39:59PM +0800, gregkh@linuxfoundation.org wrote:
+> On Mon, Aug 11, 2014 at 12:32:55AM +0300, Anca Emanuel wrote:
+> > Do you have this hardware ? And did you test this ?
 > 
-> diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
-> index c18279f..e90a374 100644
-> --- a/drivers/scsi/bfa/bfad.c
-> +++ b/drivers/scsi/bfa/bfad.c
-> @@ -1234,29 +1234,21 @@ bfad_setup_intr(struct bfad_s *bfad)
->  	if ((bfa_asic_id_ctc(pdev->device) && !msix_disable_ct) ||
->  	   (bfa_asic_id_cb(pdev->device) && !msix_disable_cb)) {
->  
-> -		error = pci_enable_msix(bfad->pcidev, msix_entries, bfad->nvec);
-> +		error = pci_enable_msix_exact(bfad->pcidev,
-> +					      msix_entries, bfad->nvec);
->  		/* In CT1 & CT2, try to allocate just one vector */
-> -		if (error > 0 && bfa_asic_id_ctc(pdev->device)) {
-> +		if (error == -ENOSPC && bfa_asic_id_ctc(pdev->device)) {
->  			printk(KERN_WARNING "bfa %s: trying one msix "
->  			       "vector failed to allocate %d[%d]\n",
->  			       bfad->pci_name, bfad->nvec, error);
->  			bfad->nvec = 1;
-> -			error = pci_enable_msix(bfad->pcidev,
-> -						msix_entries, bfad->nvec);
-> +			error = pci_enable_msix_exact(bfad->pcidev,
-> +						      msix_entries, 1);
->  		}
->  
-> -		/*
-> -		 * Only error number of vector is available.
-> -		 * We don't have a mechanism to map multiple
-> -		 * interrupts into one vector, so even if we
-> -		 * can try to request less vectors, we don't
-> -		 * know how to associate interrupt events to
-> -		 *  vectors. Linux doesn't duplicate vectors
-> -		 * in the MSIX table for this case.
-> -		 */
->  		if (error) {
->  			printk(KERN_WARNING "bfad%d: "
-> -			       "pci_enable_msix failed (%d), "
-> +			       "pci_enable_msix_exact failed (%d), "
->  			       "use line based.\n",
->  				bfad->inst_no, error);
->  			goto line_based;
-> -- 
-> 1.7.7.6
+> Mark is the maintainer of this driver, I assume he has the hardware, if
+> not, I don't care, I trust him :)
 > 
+
+Hi there,
+
+:) Yes, all tested on hardware.
+
+> > How can you cc stable without an Tested by somebody else ?
+> 
+> Since when is a tested-by a requirement for a stable@ marking?  Please
+> read Documentation/stable_kernel_rules.txt for the details.
+
+As Greg says, easily if you follow those rules.
+
+Cheers,
+
+Mark
