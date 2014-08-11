@@ -1,121 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483AbaHKDcx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 23:32:53 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6783 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752123AbaHKDcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 23:32:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="370648504"
-Message-ID: <53E83960.6020108@linux.intel.com>
-Date: Mon, 11 Aug 2014 11:32:48 +0800
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752213AbaHKDgG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 23:36:06 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:36604 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862AbaHKDgD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 23:36:03 -0400
+Date: Sun, 10 Aug 2014 20:23:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140811032312.GR5821@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140731215445.GA21933@linux.vnet.ibm.com>
+ <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140808191326.GE3935@laptop>
+ <20140808205826.GG5821@linux.vnet.ibm.com>
+ <20140809061514.GK9918@twins.programming.kicks-ass.net>
+ <20140809160137.GJ5821@linux.vnet.ibm.com>
+ <20140809181920.GO9918@twins.programming.kicks-ass.net>
+ <20140810012612.GN5821@linux.vnet.ibm.com>
+ <20140810081254.GS9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: "Sha, Ruibin" <ruibin.sha@intel.com>,
-        Chintan Pandya <cpandya@codeaurora.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "mel@csn.ul.ie" <mel@csn.ul.ie>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>, "He, Bo" <bo.he@intel.com>
-Subject: Re: [PATCH]  export the function kmap_flush_unused.
-References: <3C85A229999D6B4A89FA64D4680BA6142C7DFA@SHSMSX101.ccr.corp.intel.com> <53E4D312.5000601@codeaurora.org> <3C85A229999D6B4A89FA64D4680BA6142CAFF3@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <3C85A229999D6B4A89FA64D4680BA6142CAFF3@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140810081254.GS9918@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081103-0928-0000-0000-000004051D2A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Aug 10, 2014 at 10:12:54AM +0200, Peter Zijlstra wrote:
+> On Sat, Aug 09, 2014 at 06:26:12PM -0700, Paul E. McKenney wrote:
+> > On Sat, Aug 09, 2014 at 08:19:20PM +0200, Peter Zijlstra wrote:
+> > > On Sat, Aug 09, 2014 at 09:01:37AM -0700, Paul E. McKenney wrote:
+> > > > > That's so wrong its not funny. If you need some abortion to deal with
+> > > > > NOHZ_FULL then put it under CONFIG_NOHZ_FULL, don't burden the entire
+> > > > > world with it.
+> > > > 
+> > > > Peter, the polling approach actually -reduces- the common-case
+> > > > per-context-switch burden, as in when RCU-tasks isn't doing anything.
+> > > > See your own code above.
+> > > 
+> > > I'm not seeing it, CONFIG_PREEMPT already touches a per task cacheline
+> > > for each context switch. And for !PREEMPT this thing should pretty much
+> > > reduce to rcu_sched.
+> > 
+> > Except when you do the wakeup operation, in which case you have something
+> > that is either complex, slow and non-scalable, or both.  I am surprised
+> > that you want anything like that on that path.
+> 
+> Its a nr_cpus problem at that point, which is massively better than a
+> nr_tasks problem, and I'm sure we've solved this counter thing many
+> times, we can do it again.
+> 
+> But for clarity of purpose the single atomic+waitqueue is far easier.
 
-On 2014/8/11 9:26, Sha, Ruibin wrote:
-> Hi Chintan,
-> Thank you very much for your timely and kindly response and comments.
->
-> Here is more detail about our Scenario:
->
->      We have a big driver on Android product. The driver allocates lots of
->      DDR pages. When applications mmap a file exported from the driver,
->      driver would mmap the pages to the application space, usually with
->      uncachable prot.
->      On ia32/x86_64 arch, we have to avoid page cache alias issue. When
->      driver allocates the pages, it would change page original mapping in
->      page table with uncachable prot. Sometimes, the allocated page was
->      used by kmap/kunmap. After kunmap, the page is still mapped in KMAP
->      space. The entries in KMAP page table are not cleaned up until a
->      kernel thread flushes the freed KMAP pages(usually it is woken up by kunmap).
->      It means the driver need  force to flush the KMAP page table entries before mapping pages to
->      application space to be used. Otherwise, there is a race to create
->      cache alias.
->
->      To resolve this issue, we need export function kmap_flush_unused as
->      the driver is compiled as module. Then, the driver calls
->      kmap_flush_unused if the allocated pages are in HIGHMEM and being
->      used by kmap.
->
-> Thanks again!
->
-> Best Regards
-> ---------------------------------------------------------------
-> Sha, Rui bin ( Robin )
-> +86 13817890945
-> Android System Integration Shanghai
->
-> -----Original Message-----
-> From: Chintan Pandya [mailto:cpandya@codeaurora.org]
-> Sent: Friday, August 8, 2014 9:40 PM
-> To: Sha, Ruibin
-> Cc: linux-kernel@vger.kernel.org; linux-mm@kvack.org; mel@csn.ul.ie; a.p.zijlstra@chello.nl; mgorman@suse.de; mingo@redhat.com; Zhang, Yanmin; He, Bo
-> Subject: Re: [PATCH] export the function kmap_flush_unused.
->
-> On 08/08/2014 02:46 PM, Sha, Ruibin wrote:
->> export the function kmap_flush_unused.
->>
->> Scenario: When graphic driver need high memory spece, we use
->> alloc_pages() to allocate. But if the allocated page has just been
->> mapped in the KMAP space(like first kmap then kunmap) and no flush
->> page happened on PKMAP, the page virtual address is not NULL.Then when
->> we get that page and set page attribute like set_memory_uc and
->> set_memory_wc, we hit error.
-> Could you explain your scenario with more details ? set_memory_* should be applied on mapped address. And in attempt to map your page (which was just kmap and kunmap'ed), it will overwrite the previous mappings.
->
-> Moreover, in my view, kmap_flush_unused is just helping us in keeping the cache clean for kmap virtual addresses if they are unmapped. Is it serving any more purpose here ?
+Either way, it is very likely an NR_CPUS problem after the first scan
+of the task list.  Sure, you could have a million preempted tasks on an
+eight-CPU system, but if that is the case, an occasional poll loop is
+the very least of your worries.
 
-It depends on how to define 'clean' here. It resets pkmap_count[i] to 0,
-and cleans up page table entries used by PKMAP. Here, our scenario is
-caused by the late page table entry cleanup as driver need avoid page
-cache alias.
+And if we were trying to produce a textbook example, I might agree with
+your "clarity of purpose" point.  As it is, sorry, but no.
 
->
->> fix: For that scenario,when we get the allocated page and its virtual
->> address is not NULL, we would like first flush that page.
->> So need export that function kmap_flush_unused.
->>
->> Signed-off-by: sha, ruibin <ruibin.sha@intel.com>
->>
->> ---
->> mm/highmem.c | 1 +
->> 1 file changed, 1 insertion(+)
->>
->> diff --git a/mm/highmem.c b/mm/highmem.c
->> index b32b70c..511299b 100644
->> --- a/mm/highmem.c
->> +++ b/mm/highmem.c
->> @@ -156,6 +156,7 @@ void kmap_flush_unused(void)
->> flush_all_zero_pkmaps();
->> unlock_kmap();
->> }
->> +EXPORT_SYMBOL(kmap_flush_unused);
-> This symbol is already extern'ed. Is it not sufficient for your case ?
+> > > Would not the thing I proposed be a valid rcu_preempt implementation?
+> > > one where its rcu read side primitives run from (voluntary) schedule()
+> > > to (voluntary) schedule() call and therefore entirely cover smaller
+> > > sections.
+> > 
+> > In theory, sure.  In practice, blocking on tasks that are preempted
+> > outside of an RCU read-side critical section would not be a good thing
+> > for normal RCU, which has frequent update operations.  Among other things.
+> 
+> Sure, just looking for parallels and verifying understanding here. By
+> the very nature of not having read side primitives to limit coverage its
+> a pessimistic thing.
 
-We want to call it in driver module. extern is not enough.
+Fair enough!
 
-Thanks,
-Yanmin
+> > > > > As for idle tasks, I'm not sure about those, I think that we should say
+> > > > > NO to anything that would require waking idle CPUs, push the pain to
+> > > > > ftrace/kprobes, we should _not_ be waking idle cpus.
+> > > > 
+> > > > So the current patch set wakes an idle task once per RCU-tasks grace
+> > > > period, but only when that idle task did not otherwise get awakened.
+> > > > This is not a real problem.
+> > > 
+> > > And on the other hand we're trying to reduce random wakeups, so this
+> > > sure is a problem. If we don't start, we don't have to fix later.
+> > 
+> > I doubt that a wakeup at the end of certain ftrace operations is going
+> > to be a real problem.
+> 
+> But its not ftrace, its rcu_task, and if we put it out there, we'll grow
+> more and more customers, and soon we'll always have users and never let
+> CPUs sleep.
+> 
+> That's how these things go, so we should really try and push back on
+> these things, and that's the thing that worries me most in this
+> discussion, you seem very happy to provide what's asked for without due
+> consideration of the negatives.
 
+Good point.
+
+So I could make all the entry points static, and call into ftrace and
+friends passing them the addresses of the entry points.  I would also
+need to pass them to rcutorture.  Then no one uses this stuff without
+express permission.
+
+> > > > So I don't believe that the current wakeup rate is a problem, and it
+> > > > can be reduced if it proves to be a problem.
+> > > 
+> > > How about we simply assume 'idle' code, as defined by the rcu idle hooks
+> > > are safe? Why do we want to bend over backwards to cover this?
+> > 
+> > Steven covered this earlier in this thread.  One addition might be "For
+> > the same reason that event tracing provides the _rcuidle suffix."
+> 
+> I really don't think its worth the cost.
+
+That part has been coming in loud and clear for quite some time now.  ;-)
+
+							Thanx, Paul
 
