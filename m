@@ -1,69 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbaHKAqG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 20:46:06 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:40635 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407AbaHKAqE (ORCPT
+	id S1751862AbaHKAvs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 20:51:48 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:32981 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173AbaHKAvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 20:46:04 -0400
-Date: Mon, 11 Aug 2014 02:46:01 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete "struct
- pt_regs"
-Message-ID: <20140811004559.GA2656@lerouge>
-References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com>
- <1406904498-21647-4-git-send-email-dvlasenk@redhat.com>
- <20140801231929.GB26491@localhost.localdomain>
- <CAK1hOcNXdBwd4KZi1V2dLMtRdusvNLPZwTKwYvnpvz3PRnsM+Q@mail.gmail.com>
+	Sun, 10 Aug 2014 20:51:47 -0400
+Date: Mon, 11 Aug 2014 09:51:40 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.eti.br>
+Subject: Re: [PATCH] remove non-existent files from MAINTAINERS
+Message-ID: <20140811005140.GF26570@verge.net.au>
+References: <alpine.DEB.2.19.4.1408092332350.2758@trent.utfs.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAK1hOcNXdBwd4KZi1V2dLMtRdusvNLPZwTKwYvnpvz3PRnsM+Q@mail.gmail.com>
+In-Reply-To: <alpine.DEB.2.19.4.1408092332350.2758@trent.utfs.org>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 04, 2014 at 05:03:42AM +0200, Denys Vlasenko wrote:
-> On Sat, Aug 2, 2014 at 1:19 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >>       CFI_ESCAPE      0x0f /* DW_CFA_def_cfa_expression */, 6, \
-> >>                       0x77 /* DW_OP_breg7 */, 0, \
-> >>                       0x06 /* DW_OP_deref */, \
-> >> -                     0x08 /* DW_OP_const1u */, SS+8-RBP, \
-> >> +                     0x08 /* DW_OP_const1u */, SS+8, \
-> >>                       0x22 /* DW_OP_plus */
-> >>       /* We entered an interrupt context - irqs are off: */
-> >>       TRACE_IRQS_OFF
-> >> -
-> >>       call \func
-> >>       .endm
-> >>
-> >> @@ -749,10 +719,9 @@ ret_from_intr:
-> >>
-> >>       /* Restore saved previous stack */
-> >>       popq %rsi
-> >
-> > And then you pop to rsi. Ok that indeed works but perhaps we should keep it symetrical
-> > just for clarity? Any reason why we can't reuse rdi here?
+On Sat, Aug 09, 2014 at 11:38:22PM -0700, Christian Kujau wrote:
+> Inspired by some recent cleanups in MAINTAINERS the following
+> files (F:) cannot be found any more in the tree:
 > 
-> I changed this entire area in v2: basically, I will not change the logic,
-> but will add comments explaining what are we doing here, and why.
-> (Some minor code changes will be done, not affecting the logic).
+>     * arch/arm/mach-s5pv210/mach-aquila.c
+>     * arch/arm/mach-s5pv210/mach-goni.c
 > 
-> While we are at it, what this  CFI_ESCAPE thing does here?
-> As usual, it has no comment :/
+>       Those two got removed in 28c8331 ("ARM: S5PV210: Remove support for board files").
+>       Cc: Tomasz Figa <t.figa@samsung.com>
+>       Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> 
+>     * arch/arm/configs/genmai_defconfig
+> 
+>       This one got removed in 3ed27bd9 ("ARM: shmobile: genmai: remove defconfig").
+>       Cc: Simon Horman <horms@verge.net.au>
+>       Cc: Magnus Damm <magnus.damm@gmail.com>
 
-I don't know, only Jan Beulich understands those CFI black magic.
-BTW he doesn't appears to be Cc, we should add him. 
+I have already queued up a patch to remove genmai_defconfig from
+MAINTAINERS.
 
+>     * drivers/mmc/host/sdhci-st.c
 > 
+>       This one was sent to be included in June 2014 but got dropped shortly after:
+>       "mmc: sdhci-st: Intial support for ST SDHCI controller"
+>       https://lkml.org/lkml/2014/6/4/446
+>       https://lkml.org/lkml/2014/7/9/340
+>       Cc: Peter Griffin <peter.griffin@linaro.org>
+>       Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> 
+>     * drivers/rtc/rtc-sec.c
+> 
+>       A MAINTAINERS fix was attempted in November 2012, but dismissed as rtc-sec.c
+>       was still being worked on. Alas, it's still not there.
+>       "MAINTAINERS: fix drivers/rtc/rtc-sec.c"
+>       http://lkml.iu.edu/hypermail/linux/kernel/1211.2/04820.html
+>       Cc: Sangbeom Kim <sbkim73@samsung.com>
+>       Cc: Cesar Eduardo Barros <cesarb@cesarb.eti.br>
+> 
+>     Signed-off-by: Christian Kujau <lists@nerdbynature.de>
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 7e2eb4c..7831e8d 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1303,8 +1303,7 @@ ARM/SAMSUNG MOBILE MACHINE SUPPORT
+>  M:	Kyungmin Park <kyungmin.park@samsung.com>
+>  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>  S:	Maintained
+> -F:	arch/arm/mach-s5pv210/mach-aquila.c
+> -F:	arch/arm/mach-s5pv210/mach-goni.c
+> +F:	arch/arm/mach-s5pv210/
+> 
+>  ARM/SAMSUNG S5P SERIES 2D GRAPHICS ACCELERATION (G2D) SUPPORT
+>  M:	Kyungmin Park <kyungmin.park@samsung.com>
+> @@ -1347,7 +1346,6 @@ F:	arch/arm/boot/dts/sh*
+>  F:	arch/arm/configs/ape6evm_defconfig
+>  F:	arch/arm/configs/armadillo800eva_defconfig
+>  F:	arch/arm/configs/bockw_defconfig
+> -F:	arch/arm/configs/genmai_defconfig
+>  F:	arch/arm/configs/koelsch_defconfig
+>  F:	arch/arm/configs/kzm9g_defconfig
+>  F:	arch/arm/configs/lager_defconfig
+> @@ -1383,7 +1381,6 @@ F:	drivers/pinctrl/pinctrl-st.c
+>  F:	drivers/media/rc/st_rc.c
+>  F:	drivers/i2c/busses/i2c-st.c
+>  F:	drivers/tty/serial/st-asc.c
+> -F:	drivers/mmc/host/sdhci-st.c
+> 
+>  ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
+>  M:	Lennert Buytenhek <kernel@wantstofly.org>
+> @@ -7809,7 +7806,6 @@ S:	Supported
+>  F:	drivers/mfd/sec*.c
+>  F:	drivers/regulator/s2m*.c
+>  F:	drivers/regulator/s5m*.c
+> -F:	drivers/rtc/rtc-sec.c
+>  F:	include/linux/mfd/samsung/
+> 
+>  SAMSUNG S5P/EXYNOS4 SOC SERIES CAMERA SUBSYSTEM DRIVERS
 > -- 
-> vda
+> BOFH excuse #419:
+> 
+> Repeated reboots of the system failed to solve problem
+> 
