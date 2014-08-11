@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101AbaHKS5L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:57:11 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:63259 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527AbaHKS5I (ORCPT
+	id S1754586AbaHKS64 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:58:56 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58612 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325AbaHKS6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:57:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH 2/2] asm-generic: add memfd_create system call to unistd.h
-Date: Mon, 11 Aug 2014 20:57:00 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: David Herrmann <dh.herrmann@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <1407764228-7904-1-git-send-email-will.deacon@arm.com> <CANq1E4Q0gDaJ5XGnkoCQsG8xLh1Q-EBErtEVPpeeZgGj+Nr8dQ@mail.gmail.com> <20140811171511.GF8828@arm.com>
-In-Reply-To: <20140811171511.GF8828@arm.com>
+	Mon, 11 Aug 2014 14:58:55 -0400
+Date: Mon, 11 Aug 2014 19:58:49 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20140811185849.GK17528@sirena.org.uk>
+References: <1407557707.21696.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201408112057.01177.arnd@arndb.de>
-X-Provags-ID: V02:K0:3TtRjQxwWmXpaB76hIbqYstei7xVr50fNr2aTc4wpmv
- A8bSttzm7uJ0UWFrtA8DojhD85Ple2X8c+2KRs+TEFtQDtMsiX
- mYpVm+ZW5a5SOxadEkl2o/2ebxzvPaRuLUuiuzfMtPx9/uQjJI
- eneOPOstZJY8lOB1jwz6kgp72DykdhhD8V0fjYzFgesxqxteVD
- FR9nptx/S/Su3q58lMH0WlsPqtKwz1t/PnTTVsOGXrPWg8LMWu
- w54AYVToXBcFuzOOinCbz7i8ZGvdKKcPqnZ9V3WSbMaqjlH3r7
- tH32w9uniGFVGF8HL+GzD5AL7xS3wZCqvV/2Ud0HHqdQcq3lI2
- JoUFwC/6+y7b3t7Bd0nmjhOqwPDDSr9aqpnfhZKvJ
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vy7kBIpA56vuXHtb"
+Content-Disposition: inline
+In-Reply-To: <1407557707.21696.1.camel@phoenix>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: Add stub function for
+ devm_regulator_get_exclusive
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 August 2014, Will Deacon wrote:
-> On Mon, Aug 11, 2014 at 05:54:08PM +0100, David Herrmann wrote:
-> > On Mon, Aug 11, 2014 at 3:37 PM, Will Deacon <will.deacon@arm.com> wrote:
-> > > Commit 9183df25fe7b ("shm: add memfd_create() syscall") added a new
-> > > system call (memfd_create) but didn't update the asm-generic unistd
-> > > header.
-> > >
-> > > This patch adds the new system call to the asm-generic version of
-> > > unistd.h so that it can be used by architectures such as arm64.
-> > >
-> > > Cc: Arnd Bergmann <arnd@arndb.de>
-> > > Cc: David Herrmann <dh.herrmann@gmail.com>
-> > > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > 
-> > Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-> 
-> Thanks, David.
-> 
-> Arnd: shall I take this via the arm64 tree, or do you already have some
-> asm-generic patches queued?
 
-Please take it for arm64, I don't have any other patches queued at the moment
-and am currently on vacation.
+--vy7kBIpA56vuXHtb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	Arnd
+On Sat, Aug 09, 2014 at 12:15:07PM +0800, Axel Lin wrote:
+
+>  static inline struct regulator *__must_check
+> +devm_regulator_get_exclusive(struct device *dev, const char *id)
+> +{
+> +	return NULL;
+> +}
+> +
+> +static inline struct regulator *__must_check
+
+This should be returning an error pointer, something wanting exclusive
+control of a regulator would normally expect to have an actual regulator
+and want to do things with it and so probably won't work well with a
+dummy regulator.
+
+--vy7kBIpA56vuXHtb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT6RJmAAoJELSic+t+oim9ebUP/1wp2iRR6/Oqk0Yks7nv7aQe
+9Cko5caxn/nwyDspuwtY84jKo7G08z4d24gAwEEsVcNJWfr20nq1/MSqcnwLNcYA
+pHrxqKUAdJdhB0iT17TgjC071Ae6yZrcjrGymXAoUSSSrya/uW9ZqMn2dFtXDseW
+yyhAns36F2sx6uETtW+dE/X0ijNeJpNVSPmWci1H6NYROnGXmdJFL5eMoDdHjSPn
+0hDnBe5Qd9gJNe8pSsh87BMUqUIfR+spWeplV9Vn+D2+BlAhBUdDgJNbRk6HIBrx
+9cRtxoLyIbkaVFlvC0M25GX+C6tDhoU1lrM2eNE2rphArHdd25/IiJZR240+PvgO
+QAhsOg7nw92J4RHyVuprspi5LiAXtm8PRJ8HEKxxL5EMcVOZSjwB7vcaiSfsSguO
++XGF/Y/WT5w5FxSO1jxyYXNNB3yvMmuldLo98DU2yHtLvBNVmBweMNfenMzXbncX
+GyuHzW3mBDa58CvbfnSSau6/JnC/Hi+miJpa3CLOh9WhU4+4RWxmUxhu4Zx7lVc7
+nxNeioyuX6SFbnMbf4ceaIGmoOC2A4QlH4pNZySybsaYZKRlYVmcpwV+MVATDno3
+JsJkg3gm++XBwV6NFj6k3+aU7858Ci+9eoGfqTffyc4ynmCacY19n2l6cLaBDLt6
+yROjvXyRKN/yDBgQ1LMD
+=5YeC
+-----END PGP SIGNATURE-----
+
+--vy7kBIpA56vuXHtb--
