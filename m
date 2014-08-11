@@ -1,113 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376AbaHKTEl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:04:41 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60148 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203AbaHKTEk (ORCPT
+	id S1754627AbaHKTGt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 15:06:49 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:35650 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543AbaHKTGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:04:40 -0400
-Message-ID: <53E913C6.4040800@infradead.org>
-Date: Mon, 11 Aug 2014 12:04:38 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        lisa@xenapiadmin.com, Ben Hutchings <ben@decadent.org.uk>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
+	Mon, 11 Aug 2014 15:06:48 -0400
+Date: Mon, 11 Aug 2014 12:06:44 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        MTD Maling List <linux-mtd@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: Check against NULL in fw_download_code
-References: <1407780151-4674-1-git-send-email-xerofoify@gmail.com>	<CAPDOMVghgyQ72J6MS6uaWEeMFBvzDNmfoAS5Tbd7+XO_KgUmHg@mail.gmail.com>	<53E9066A.3030801@infradead.org>	<CAPDOMViHWMRRMqdEpjft0TDuVSLai8LuWRcXPdMeCtUYgB2sgw@mail.gmail.com>	<53E90F34.9030809@infradead.org> <CAPDOMVj0YcDc5ATxMiTLeciadJPiQxV2ap8Wo3Qg4RM=yeXmVQ@mail.gmail.com>
-In-Reply-To: <CAPDOMVj0YcDc5ATxMiTLeciadJPiQxV2ap8Wo3Qg4RM=yeXmVQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] mtd: nand: Use ULL-suffix for big u64 constant
+Message-ID: <20140811190644.GA3711@ld-irv-0074>
+References: <1407604073-7484-1-git-send-email-geert@linux-m68k.org>
+ <20140811175036.GU3711@ld-irv-0074>
+ <CAMuHMdUNoD5qFhfVP2jJvgqPi=c6xe6YAbmQWYt_ir7rtqp_OQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMuHMdUNoD5qFhfVP2jJvgqPi=c6xe6YAbmQWYt_ir7rtqp_OQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/14 11:55, Nick Krause wrote:
-> On Mon, Aug 11, 2014 at 2:45 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->> On 08/11/14 11:26, Nick Krause wrote:
->>> On Mon, Aug 11, 2014 at 2:07 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->>>> On 08/11/14 11:04, Nick Krause wrote:
->>>>> On Mon, Aug 11, 2014 at 2:02 PM, Nicholas Krause <xerofoify@gmail.com> wrote:
->>>>>> I am fixing the bug entry , https://bugzilla.kernel.org/show_bug.cgi?id=60461.
->>>>>> This entry states that we are not checking the skb allocated in fw_download_code
->>>>>> and after checking I fixed it to check for the NULL value before using the allocate
->>>>>> skb.
->>>>>>
->>>>>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->>>>>> ---
->>>>>>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 14 ++++++++------
->>>>>>  1 file changed, 8 insertions(+), 6 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->>>>>> index 1a95d1f..0a4c926 100644
->>>>>> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->>>>>> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->>>>>> @@ -60,13 +60,15 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
->>>>>>
->>>>>>                 }
->>>>>>
->>>>>> -               skb  = dev_alloc_skb(frag_length + 4);
->>>>>> -               memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
->>>>>> -               tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
->>>>>> -               tcb_desc->queue_index = TXCMD_QUEUE;
->>>>>> -               tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
->>>>>> -               tcb_desc->bLastIniPkt = bLastIniPkt;
->>>>>>
->>>>>> +               skb  = dev_alloc_skb(frag_length + 4);
->>>>>> +               if (skb) {
->>>>>> +                       memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
->>>>>> +                       tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
->>>>>> +                       tcb_desc->queue_index = TXCMD_QUEUE;
->>>>>> +                       tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
->>>>>> +                       tcb_desc->bLastIniPkt = bLastIniPkt;
->>>>>> +               }
->>>>
->>>> and what happens here (below) if skb is NULL?
->>
->> Nick,
->> I'm asking if you have completely fixed the bug or only partially fixed it.
->> The answer is that the patch is only a partial fix.  If skb is NULL, there
->> is still a problem in the statement below here.  The kernel will oops on
->> that reference to skb, which is NULL.
->>
->>>>
->>>>>>                 seg_ptr = skb->data;
->>>>>>                 for (i = 0; i < frag_length; i += 4) {
->>>>>>                         *seg_ptr++ = ((i+0) < frag_length) ?
->>>>>> --
->>>>>> 1.9.1
->>>>>>
->>>>> And I did check it against Linus's tree to make sure it applies , just
->>>>> to let you known.
->>>>> Nick
->>>>
->>>>
->>>> --
->>>> ~Randy
->>> Sorry Randy.
->>>  I may be mis reading this, but are you asking me to write a different
->>> commit message or is this patch just another bad patch in my series of
->>> bad patches?
->>
->>
->> --
->> ~Randy
+On Mon, Aug 11, 2014 at 08:51:51PM +0200, Geert Uytterhoeven wrote:
+> On Mon, Aug 11, 2014 at 7:50 PM, Brian Norris
+> <computersforpeace@gmail.com> wrote:
+> > On Sat, Aug 09, 2014 at 07:07:53PM +0200, Geert Uytterhoeven wrote:
+> >> drivers/mtd/nand/nand_timings.c:45: warning: integer constant is too large for ‘long’ type
+> >
+> > On what compiler / static analyzer?
 > 
-> Randy ,
-> Thanks for the catch :). Would you recommend just putting it in the if
-> statement I created or create a second if statement for
-> code readability.
+> Any 32-bit version of gcc at the standard warning level, at least
+> until gcc 4.4.7.
+> With gcc 4.6 it's indeed gone.
+> 
+> >> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> >> ---
+> >>  drivers/mtd/nand/nand_timings.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/mtd/nand/nand_timings.c b/drivers/mtd/nand/nand_timings.c
+> >> index 8b36253420fa..e81470a8ac67 100644
+> >> --- a/drivers/mtd/nand/nand_timings.c
+> >> +++ b/drivers/mtd/nand/nand_timings.c
+> >> @@ -42,7 +42,7 @@ static const struct nand_sdr_timings onfi_sdr_timings[] = {
+> >>               .tRHZ_max = 200000,
+> >>               .tRLOH_min = 0,
+> >>               .tRP_min = 50000,
+> >> -             .tRST_max = 250000000000,
+> >> +             .tRST_max = 250000000000ULL,
+> >
+> > See [1] and [2]. I'm pretty sure it is a bug in your tool to warn about
+> 
+> Yes, I saw those, after I had created my patch. I decided to send it anyway ;-)
+> 
+> > this. The C standard seems pretty clear that the large literal constant
+> > is automatically promoted to a sufficiently large type, so AIUI there
+> > should be no need for such a warning. A standards-compliant compiler
+> > will do the right thing.
+> 
+> Actually I didn't know there existed versions of gcc that did _not_ give
+> this warning. This seems to be a recent thing on gcc for 32-bit targets.
+> For 64-bit targets, apparently it only gives a warning if the constant
+> is that large that it can no longer fit in a 64-bit signed integer.
 
-Neither one of those choices.  I suggest that the code immediately check for
-skb == NULL and return 0 (or false) if it is NULL.  Then the code below that check
-won't need to be changed at all.
+I'm curious: do your broken compilers also generate broken code/data?
+i.e., does gcc 4.4.7 give 250000000000 its proper ULL value still?
 
+> > However, I could be convinced to apply this, if only to satisfy broken
+> > tools and to avoid addressing this question over and over...
+> 
+> So please apply. Too many people are still using 32-bit targets and
+> gcc < 4.6.
 
+OK, you've convinced me ;) Applied to l2-mtd.git/next, with an editorial
+comment.
 
--- 
-~Randy
+Brian
