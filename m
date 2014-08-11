@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484AbaHKRCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 13:02:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35945 "EHLO mx1.redhat.com"
+	id S1754534AbaHKRDG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 13:03:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21663 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753528AbaHKRCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 13:02:41 -0400
-Date: Mon, 11 Aug 2014 19:00:08 +0200
+	id S1754515AbaHKRDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 13:03:03 -0400
+Date: Mon, 11 Aug 2014 19:00:39 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>
 Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
@@ -19,35 +19,75 @@ Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Peter Zijlstra <peterz@infradead.org>,
         Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] fs/proc/task_nommu.c: copy-and-paste the changes from
-	task_mmu.c
-Message-ID: <20140811170008.GA24629@redhat.com>
-References: <20140805194627.GA30693@redhat.com>
+Subject: [PATCH 3/3] fs/proc/task_nommu.c: don't use priv->task->mm
+Message-ID: <20140811170039.GA24807@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140805194627.GA30693@redhat.com>
+In-Reply-To: <20140811170008.GA24629@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg, could you review? The changes are simple, but I am not familiar
-with NOMMU and I can't test this.
+I do not know if CONFIG_PREEMPT/SMP is possible without CONFIG_MMU
+but the usage of task->mm in m_stop(). The task can exit/exec before
+we take mmap_sem, in this case m_stop() can hit NULL or unlock the
+wrong rw_semaphore.
 
-Depends on
+Also, this code uses priv->task != NULL to decide whether we need
+up_read/mmput. This is correct, but we will probably kill priv->task.
+Change m_start/m_stop to rely on IS_ERR_OR_NULL() like task_mmu.c does.
 
-	[PATCH v2 3/7] proc: introduce proc_mem_open()
-	http://marc.info/?l=linux-kernel&m=140726831328943
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ fs/proc/task_nommu.c |   18 ++++++++++--------
+ 1 files changed, 10 insertions(+), 8 deletions(-)
 
-	[PATCH v2 4/7] fs/proc/task_mmu.c: shift mm_access() from m_start() to proc_maps_open()
-	http://marc.info/?l=linux-kernel&m=140726828328929
-	(only because it adds proc_maps_private->mm)
-
-I'll also send you mbox with the previous series just in case.
-
-Oleg.
-
- fs/proc/task_nommu.c |   65 ++++++++++++++++++++++++++++++--------------------
- 1 files changed, 39 insertions(+), 26 deletions(-)
+diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
+index 003f2be..e0237c1 100644
+--- a/fs/proc/task_nommu.c
++++ b/fs/proc/task_nommu.c
+@@ -217,17 +217,17 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+ 		return ERR_PTR(-ESRCH);
+ 
+ 	mm = priv->mm;
+-	if (!mm || !atomic_inc_not_zero(&mm->mm_users)) {
+-		put_task_struct(priv->task);
+-		priv->task = NULL;
++	if (!mm || !atomic_inc_not_zero(&mm->mm_users))
+ 		return NULL;
+-	}
+-	down_read(&mm->mmap_sem);
+ 
++	down_read(&mm->mmap_sem);
+ 	/* start from the Nth VMA */
+ 	for (p = rb_first(&mm->mm_rb); p; p = rb_next(p))
+ 		if (n-- == 0)
+ 			return p;
++
++	up_read(&mm->mmap_sem);
++	mmput(mm);
+ 	return NULL;
+ }
+ 
+@@ -235,11 +235,13 @@ static void m_stop(struct seq_file *m, void *_vml)
+ {
+ 	struct proc_maps_private *priv = m->private;
+ 
++	if (!IS_ERR_OR_NULL(_vml)) {
++		up_read(&priv->mm->mmap_sem);
++		mmput(priv->mm);
++	}
+ 	if (priv->task) {
+-		struct mm_struct *mm = priv->task->mm;
+-		up_read(&mm->mmap_sem);
+-		mmput(mm);
+ 		put_task_struct(priv->task);
++		priv->task = NULL;
+ 	}
+ }
+ 
+-- 
+1.5.5.1
 
