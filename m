@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800AbaHKKvI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 06:51:08 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:35447 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905AbaHKKvG (ORCPT
+	id S1752215AbaHKK4U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 06:56:20 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:48549 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787AbaHKK4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 06:51:06 -0400
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-X-Google-Original-From: "Lee, Chun-Yi" <jlee@suse.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>
-Cc: Takashi Iwai <tiwai@suse.de>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] Hibernate: Do not assume the first e820 area to be RAM
-Date: Mon, 11 Aug 2014 18:50:52 +0800
-Message-Id: <1407754252-22779-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.8.4.5
+	Mon, 11 Aug 2014 06:56:19 -0400
+Date: Mon, 11 Aug 2014 13:55:51 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oleg Drokin <oleg.drokin@intel.com>, devel@driverdev.osuosl.org,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Hongchao Zhang <hongchao.zhang@intel.com>,
+        Peng Tao <bergwolf@gmail.com>,
+        Alex Zhuravlev <alexey.zhuravlev@intel.com>,
+        linux-kernel@vger.kernel.org, Ann Koehler <amk@cray.com>,
+        Christoph Jaeger <email@christophjaeger.info>,
+        Lisa Nguyen <lisa@xenapiadmin.com>
+Subject: Re: [PATCH] staging: lustre: lustre: obdclass: genops.c: Cleaning up
+ missing null-terminate after strncpy call
+Message-ID: <20140811105550.GM4856@mwanda>
+References: <1407628080-24789-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407628080-24789-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In arch/x86/kernel/setup.c::trim_bios_range(), the codes introduced
-by 1b5576e6 (base on d8a9e6a5), it updates the first 4Kb of memory
-to be E820_RESERVED region. That's because it's a BIOS owned area
-but generally not listed in the E820 table:
+On Sun, Aug 10, 2014 at 01:48:00AM +0200, Rickard Strandqvist wrote:
+> Added a guaranteed null-terminate after call to strncpy.
+> 
 
-[    0.000000] e820: BIOS-provided physical RAM map:
-[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x0000000000096fff] usable
-[    0.000000] BIOS-e820: [mem 0x0000000000097000-0x0000000000097fff] reserved
-...
-[    0.000000] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved
-[    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
+No.  This one isn't needed.  The static checker *should* know this so it
+is a problem with the static checker and not with the code.
 
-But the region of first 4Kb didn't register to nosave memory:
+Don't change code, just because the static checker has problems.
 
-[    0.000000] PM: Registered nosave memory: [mem 0x00097000-0x00097fff]
-[    0.000000] PM: Registered nosave memory: [mem 0x000a0000-0x000fffff]
-
-The codes in e820_mark_nosave_regions() assumes the first e820 area to be
-RAM, so it causes the first 4Kb E820_RESERVED region ignored when register
-to nosave. This patch removed assumption of the first e820 area.
-
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- arch/x86/kernel/e820.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 988c00a..d595240 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -682,18 +682,17 @@ void __init parse_e820_ext(u64 phys_addr, u32 data_len)
-  * hibernation (32 bit) or software suspend and suspend to RAM (64 bit).
-  *
-  * This function requires the e820 map to be sorted and without any
-- * overlapping entries and assumes the first e820 area to be RAM.
-+ * overlapping entries.
-  */
- void __init e820_mark_nosave_regions(unsigned long limit_pfn)
- {
- 	int i;
- 	unsigned long pfn;
- 
--	pfn = PFN_DOWN(e820.map[0].addr + e820.map[0].size);
--	for (i = 1; i < e820.nr_map; i++) {
-+	for (i = 0; i < e820.nr_map; i++) {
- 		struct e820entry *ei = &e820.map[i];
- 
--		if (pfn < PFN_UP(ei->addr))
-+		if (i > 0 && pfn < PFN_UP(ei->addr))
- 			register_nosave_region(pfn, PFN_UP(ei->addr));
- 
- 		pfn = PFN_DOWN(ei->addr + ei->size);
--- 
-1.8.4.5
+regards,
+dan carpenter
 
