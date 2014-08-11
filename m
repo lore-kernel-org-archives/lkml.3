@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414AbaHKSsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:48:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55196 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753527AbaHKSsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:48:54 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1407781112.3399765.151527845.7EC32D9C@webmail.messagingengine.com>
-References: <20140809231911.GA4843@khazad-dum.debian.net> <53E8D876.1060004@zytor.com> <1407781112.3399765.151527845.7EC32D9C@webmail.messagingengine.com>
+	id S1754518AbaHKStD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:49:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58103 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754452AbaHKStA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 14:49:00 -0400
+Date: Tue, 12 Aug 2014 02:48:22 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Avinash kumar <avi.kp.137@gmail.com>
+Cc: forest@alittletooquiet.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: staging: vt6655: wpactl.h: corrected comment
+ format
+Message-ID: <20140811184822.GA947@kroah.com>
+References: <1407779792-7926-1-git-send-email-avi.kp.137@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: BUG: early intel microcode update violating alignment rules
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 11 Aug 2014 11:48:25 -0700
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Borislav Petkov <bp@alien8.de>, Fenghua Yu <fenghua.yu@intel.com>
-CC: linux-kernel@vger.kernel.org
-Message-ID: <06991931-9f04-49fc-9ef7-ba23384aeb32@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407779792-7926-1-git-send-email-avi.kp.137@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't think so.  I wouldn't count on that in the long run.
+On Mon, Aug 11, 2014 at 11:26:32PM +0530, Avinash kumar wrote:
+> corrected C99 style comment format related error
+> 
+> Signed-off-by: Avinash Kumar <avi.kp.137@gmail.com>
+> ---
+>  drivers/staging/vt6655/wpactl.h |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/vt6655/wpactl.h b/drivers/staging/vt6655/wpactl.h
+> index f7638ba..2ff42c5 100644
+> --- a/drivers/staging/vt6655/wpactl.h
+> +++ b/drivers/staging/vt6655/wpactl.h
+> @@ -36,7 +36,7 @@
+>  
+>  /*---------------------  Export Definitions -------------------------*/
+>  
+> -//WPA related
+> +/*WPA related*/
 
-I'm having some discussions about this integrally at the moment.
+Shouldn't you use 2 extra ' ' characters here?
 
-On August 11, 2014 11:18:32 AM PDT, Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
->On Mon, Aug 11, 2014, at 11:51, H. Peter Anvin wrote:
->> We could put a buffer in the initdata region (we really could use an
->> initbss region!) or in the brk.
->
->That sounds much better than the hideous crap I came up with.  The
->buffer would need to be at least 64KiB in size to be on the safe side. 
->The largest public microcode update ATM is 23KiB.
->
->I am not sure if we might need more than 64KiB: the Intel SDM mentions
->that in real mode the update data must not cross a segment boundary,
->and
->also must not exceed a segment limit.  I am a bit rusty on real mode,
->but doesn't that mean, in practice, that microcode update data size is
->limited in size to 64KiB?
+>  enum wpa_alg { WPA_ALG_NONE, WPA_ALG_WEP, WPA_ALG_TKIP, WPA_ALG_CCMP };
+>  enum wpa_cipher { CIPHER_NONE, CIPHER_WEP40, CIPHER_TKIP, CIPHER_CCMP,
+> @@ -61,4 +61,4 @@ int wpa_set_wpadev(PSDevice pDevice, int val);
+>  int wpa_ioctl(PSDevice pDevice, struct iw_point *p);
+>  int wpa_set_keys(PSDevice pDevice, void *ctx, bool fcpfkernel);
+>  
+> -#endif // __WPACL_H__
+> +#endif /* __WPACL_H__*/
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+And one extra ' ' here, right before the '*/' please.
+
+thanks,
+
+greg k-h
