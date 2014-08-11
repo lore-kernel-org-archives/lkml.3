@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432AbaHKNHZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 09:07:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49038 "EHLO mx1.redhat.com"
+	id S1753459AbaHKNHs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 09:07:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46655 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752144AbaHKNHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 09:07:24 -0400
-Message-ID: <53E8C003.9020403@redhat.com>
-Date: Mon, 11 Aug 2014 15:07:15 +0200
+	id S1753406AbaHKNHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 09:07:46 -0400
+Message-ID: <53E8C01B.4060607@redhat.com>
+Date: Mon, 11 Aug 2014 15:07:39 +0200
 From: Tomas Henzl <thenzl@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
@@ -16,10 +16,10 @@ CC: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
         Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
         DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
         linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 RESEND 15/23] mpt2sas: Use pci_enable_msix_exact()
+Subject: Re: [PATCH v2 RESEND 16/23] mpt3sas: Use pci_enable_msix_exact()
  instead of pci_enable_msix()
-References: <cover.1405533479.git.agordeev@redhat.com> <045986b7900c6b1703010675b590284e384b8207.1405533479.git.agordeev@redhat.com>
-In-Reply-To: <045986b7900c6b1703010675b590284e384b8207.1405533479.git.agordeev@redhat.com>
+References: <cover.1405533479.git.agordeev@redhat.com> <76ec123596e05dcbcd8957f00ad5f8d4627a32d0.1405533479.git.agordeev@redhat.com>
+In-Reply-To: <76ec123596e05dcbcd8957f00ad5f8d4627a32d0.1405533479.git.agordeev@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -47,25 +47,24 @@ Looks good
 Reviewed-by: Tomas Henzl <thenzl@redhat.com>
 
 > ---
->  drivers/scsi/mpt2sas/mpt2sas_base.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+>  drivers/scsi/mpt3sas/mpt3sas_base.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 >
-> diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-> index 8b88118..6aca369 100644
-> --- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-> +++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-> @@ -1432,10 +1432,10 @@ _base_enable_msix(struct MPT2SAS_ADAPTER *ioc)
+> diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c b/drivers/scsi/mpt3sas/mpt3sas_base.c
+> index 0cf4f70..7b65ec2 100644
+> --- a/drivers/scsi/mpt3sas/mpt3sas_base.c
+> +++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
+> @@ -1747,10 +1747,10 @@ _base_enable_msix(struct MPT3SAS_ADAPTER *ioc)
 >  	for (i = 0, a = entries; i < ioc->reply_queue_count; i++, a++)
 >  		a->entry = i;
 >  
 > -	r = pci_enable_msix(ioc->pdev, entries, ioc->reply_queue_count);
 > +	r = pci_enable_msix_exact(ioc->pdev, entries, ioc->reply_queue_count);
 >  	if (r) {
-> -		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT "pci_enable_msix "
-> -		    "failed (r=%d) !!!\n", ioc->name, r));
-> +		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT
-> +		    "pci_enable_msix_exact failed (r=%d) !!!\n", ioc->name, r));
+>  		dfailprintk(ioc, pr_info(MPT3SAS_FMT
+> -			"pci_enable_msix failed (r=%d) !!!\n",
+> +			"pci_enable_msix_exact failed (r=%d) !!!\n",
+>  			ioc->name, r));
 >  		kfree(entries);
 >  		goto try_ioapic;
->  	}
 
