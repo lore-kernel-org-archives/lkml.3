@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236AbaHKKSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 06:18:11 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:1922 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360AbaHKKSJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 06:18:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 11 Aug 2014 03:09:03 -0700
-From: Mikko Perttunen <mperttunen@nvidia.com>
-To: <tj@kernel.org>, <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>
-CC: <linux-ide@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH] ata: ahci_tegra: Change include to fix compilation
-Date: Mon, 11 Aug 2014 13:17:48 +0300
-Message-ID: <1407752268-18745-1-git-send-email-mperttunen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	id S1753259AbaHKKUJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 06:20:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36076 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752710AbaHKKUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 06:20:07 -0400
+Date: Mon, 11 Aug 2014 12:19:16 +0200
+From: chrubis@suse.cz
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "Carlos O'Donell" <carlos@redhat.com>
+Subject: Re: futex(2) man page update help request
+Message-ID: <20140811101916.GA17310@rei.suse.cz>
+References: <537346E5.4050407@gmail.com>
+ <CF98E3EF.90564%dvhart@linux.intel.com>
+ <20140515152834.GA6926@rei.Home>
+ <CF9A3521.90ECC%dvhart@linux.intel.com>
+ <20140515163004.GB7959@rei.Home>
+ <CF9A3A75.90F40%dvhart@linux.intel.com>
+ <20140515190529.GA8887@rei.Home>
+ <CF9A658E.91322%dvhart@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CF9A658E.91322%dvhart@linux.intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before this patch, the driver included <linux/tegra-powergate.h>,
-which was effectively renamed to <soc/tegra/pmc.h> at about the same
-time the ahci_tegra series landed. Fix the include path so that the
-driver compiles.
+Hi!
+> >> How much LTP harness type code needs to be used?
+> >
+> >Not much.
+> >
+> >For this complexity of tests you would just need to call the tst_resm()
+> >interface to report success/failure and, at the end of the test,
+> >tst_exit() to return the stored overall test status.
+> >
+> >And ideally call the standard option parsing code and call the test in
+> >standard loop so that the test can take advantage of standard options as
+> >number of iterations to run, etc.
+> >
+> >Have a look at:
+> >
+> >https://github.com/linux-test-project/ltp/wiki/Test-Writing-Guidelines
+> >
+> >there is simple test example as well as description of the interfaces.
+> 
+> 
+> Thanks Cyril,
+> 
+> I'll follow up with you in a couple weeks most likely. I have some urgent
+> things that will be taking all my time and then some until then. Feel free
+> to poke me though if I lose track of it :-)
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
----
-This would be for 3.17.
+Ping :)
 
- drivers/ata/ahci_tegra.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/ata/ahci_tegra.c b/drivers/ata/ahci_tegra.c
-index fc3df47..f1fef74 100644
---- a/drivers/ata/ahci_tegra.c
-+++ b/drivers/ata/ahci_tegra.c
-@@ -24,8 +24,8 @@
- #include <linux/module.h>
- #include <linux/of_device.h>
- #include <linux/platform_device.h>
--#include <linux/tegra-powergate.h>
- #include <linux/regulator/consumer.h>
-+#include <soc/tegra/pmc.h>
- #include "ahci.h"
- 
- #define SATA_CONFIGURATION_0				0x180
 -- 
-1.8.1.5
-
+Cyril Hrubis
+chrubis@suse.cz
