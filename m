@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaHKJQA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 05:16:00 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:32009 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751464AbaHKJP7 (ORCPT
+	id S1752582AbaHKJUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 05:20:44 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:31203 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaHKJUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 05:15:59 -0400
-Message-ID: <1407748550.3680.10.camel@hornet>
-Subject: Re: [PATCH 3/5] mmc: sdhci-pltfm: Do not use parent as the host's
- device
-From: Pawel Moll <pawel.moll@arm.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Chris Ball <chris@printf.net>, Anton Vorontsov <anton@enomsg.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "paul@pwsan.com" <paul@pwsan.com>, Arnd Bergmann <arnd@arndb.de>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Date: Mon, 11 Aug 2014 10:15:50 +0100
-In-Reply-To: <CAPDyKFoLU6pnJFmKe7CB0q-hKfwv4uCPSr0cE4aoYMvfhjMteQ@mail.gmail.com>
-References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
-	 <1406298233-27876-3-git-send-email-pawel.moll@arm.com>
-	 <1407515785.31897.28.camel@hornet>
-	 <CAPDyKFoLU6pnJFmKe7CB0q-hKfwv4uCPSr0cE4aoYMvfhjMteQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Aug 2014 05:20:43 -0400
+X-AuditID: cbfee690-b7f526d000003627-c7-53e88ae75b53
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH 0/2] extcon: sm5502: Clean up coding style
+Date: Mon, 11 Aug 2014 18:20:35 +0900
+Message-id: <1407748837-15153-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsWyRsSkWPd514tgg6szlSyuf3nOanG26Q27
+	xeVdc9gsbjeuYHNg8ejbsorR4/MmuQCmKC6blNSczLLUIn27BK6MppPXWQo+sVT83b6MtYGx
+	l6WLkZNDQsBE4sr+i4wQtpjEhXvr2boYuTiEBJYySjT9XMQOU7R0+15WiMQiRomu9hlQVU1M
+	Ejt+HGICqWIT0JLY/+IGG4gtIqAgsbn3GSuIzSwQL3G2uxtoBQeHsICVxLnVuiBhFgFVicsT
+	5oCV8wq4Sly5+oQZYpmcxIc9j9hB5ksIXGaTWPjiAjNEg4DEt8mHWEDmSAjISmw6AFUvKXFw
+	xQ2WCYyCCxgZVjGKphYkFxQnpReZ6BUn5haX5qXrJefnbmIEht7pf88m7GC8d8D6EGMy0LiJ
+	zFKiyfnA0M0riTc0NjOyMDUxNTYytzQjTVhJnFftUVKQkEB6YklqdmpqQWpRfFFpTmrxIUYm
+	Dk6pBsYQ2YsL56XLLDu5R0nZ4MHSd9UVCx+ky3xuSnqu//fLh18WjaVT63bxTpG9oWv1f1pd
+	bHnZhP9zf2xd1XWt7veErk3JO3b19nN26pZ+TPU2701mPqW1kznIb4+Ka0ht2s6JQi6bDXQv
+	b/Up/+xYkzztVAfrtYM8G1IVTW8tiJh0e9uBBXbrHv9QYinOSDTUYi4qTgQASwOg8FMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9jAd3nXS+CDbqfSVtc//Kc1eJs0xt2
+	i8u75rBZ3G5cwebA4tG3ZRWjx+dNcgFMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaG
+	uoaWFuZKCnmJuam2Si4+AbpumTlAm5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUY
+	GaCBhDWMGU0nr7MUfGKp+Lt9GWsDYy9LFyMnh4SAicTS7XtZIWwxiQv31rN1MXJxCAksYpTo
+	ap8B5TQxSez4cYgJpIpNQEti/4sbbCC2iICCxObeZ2DdzALxEme7uxm7GDk4hAWsJM6t1gUJ
+	swioSlyeMAesnFfAVeLK1SfMEMvkJD7secQ+gZF7ASPDKkbR1ILkguKk9FwjveLE3OLSvHS9
+	5PzcTYzgwH4mvYNxVYPFIUYBDkYlHt6DX54HC7EmlhVX5h5ilOBgVhLh/WnxIliINyWxsiq1
+	KD++qDQntfgQoynQ9onMUqLJ+cCoyyuJNzQ2MTOyNDI3tDAyNlcS5z3Yah0oJJCeWJKanZpa
+	kFoE08fEwSnVwJgm2jLV0pCbM5wzg1WUu8bC5KXtfE6xK81795evvxki+tNO67VASaqU4I3O
+	m0/uvNuQsVdpw3qFFeb3Jgm0tbu++Xl4oT7XZTvmg2YbXdL6a3KXJrj8tl7dIy0brGH47+eN
+	TcnuvTM2BJ31vFpdp3dOY7HF7U3bOIOibu7YeEtafm6885P8JUosxRmJhlrMRcWJAOh8+k2C	AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-11 at 10:07 +0100, Ulf Hansson wrote:
-> On 8 August 2014 18:36, Pawel Moll <pawel.moll@arm.com> wrote:
-> > On Fri, 2014-07-25 at 15:23 +0100, Pawel Moll wrote:
-> >> The code selecting a device for the sdhci host has been
-> >> continuously tweaked (4b711cb13843f5082e82970dd1e8031383134a65
-> >> "mmc: sdhci-pltfm: Add structure for host-specific data" and
-> >> a4d2177f00a5252d825236c5124bc1e9918bdb41 "mmc: sdhci-pltfm: dt
-> >> device does not pass parent to sdhci_alloc_host") while there
-> >> does not seem to be any reason to use platform device's parent
-> >> in the first place.
-> >>
-> >> The comment saying "Some PCI-based MFD need the parent here"
-> >> seem to refer to Timberdale FPGA driver (the only MFD driver
-> >> registering SDHCI cell, drivers/mfd/timberdale.c) but again,
-> >> the only situation when parent device matter is runtime PM,
-> >> which is not implemented for Timberdale.
-> >>
-> >> Cc: Chris Ball <chris@printf.net>
-> >> Cc: Anton Vorontsov <anton@enomsg.org>
-> >> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> >> Cc: linux-mmc@vger.kernel.org
-> >> Cc: linuxppc-dev@lists.ozlabs.org
-> >> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> >> ---
-> >>
-> >> This patch is a part of effort to remove references to platform_bus
-> >> and make it static.
-> >>
-> >> Chris, Anton, Ulf - could you please advise if the assumptions
-> >> above are correct or if I'm completely wrong? Do you know what
-> >> where the real reasons to use parent originally? The PCI comment
-> >> seems like a red herring to me...
-> >
-> > Can I take the silence as a suggestion that the change looks ok-ish for
-> > you?
-> 
-> Sorry for the delay. I suppose this make sense, but I really don't
-> know for sure.
-> 
-> I guess we need some testing in linux-next, to get some confidence.
+This patch clean up coding style for extcon-sm5502 driver and fix wrong mask
+operation to get cable_type value.
 
-Would you take it into -next then? Unless I'm completely wrong there
-should be no impact on any in-tree driver...
+Chanwoo Choi (2):
+  extcon: sm5502: Move sm5502.h header file to extcon directory
+  extcon: sm5502: Fix bug to check cable type
 
-Cheers!
+ drivers/extcon/extcon-sm5502.c |  14 +-
+ drivers/extcon/extcon-sm5502.h | 282 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/extcon/sm5502.h  | 287 -----------------------------------------
+ 3 files changed, 287 insertions(+), 296 deletions(-)
+ create mode 100644 drivers/extcon/extcon-sm5502.h
+ delete mode 100644 include/linux/extcon/sm5502.h
 
-Pawel
+-- 
+1.8.0
 
