@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108AbaHKQLe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 12:11:34 -0400
-Received: from mail.mij.gov.ve ([200.11.241.122]:21986 "EHLO mail.mij.gov.ve"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753790AbaHKQLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 12:11:32 -0400
-X-Greylist: delayed 11375 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Aug 2014 12:11:32 EDT
-X-Spam-Flag: NO
-X-Spam-Score: 4.746
-Date: Mon, 11 Aug 2014 08:25:10 -0430 (VET)
-From: Webmail Team <ymillan@mij.gov.ve>
-Reply-To: Webmail Team <webmail.team@foxmail.com>
-Message-ID: <7599671.12791407761710866.JavaMail.root@mail.mij.gov.ve>
-Subject: Final Warning!
+	id S1754149AbaHKQNz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 12:13:55 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:58146 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050AbaHKQNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 12:13:53 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53E8EBBD.6080500@roeck-us.net>
+Date: Mon, 11 Aug 2014 09:13:49 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Alexandre Courbot <gnurou@gmail.com>
+CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [RFC PATCH] gpiolib: Provide and export gpiod_export_name
+References: <1406139132-5404-1-git-send-email-linux@roeck-us.net> <CAAVeFuKsJpSYo2DMyTdYE2J5Cu_ZD=b9o-=S0DLDccyNmwniNg@mail.gmail.com> <53D0A8B7.2010005@roeck-us.net> <CAAVeFuK5uKhpkpEnoRFGKU4G4Fey0+giz5wwmtr+OCLJHPvnLQ@mail.gmail.com> <53E32C09.5000704@roeck-us.net> <CAAVeFuJohBznnjELvJj0OUCK+anbZ-j1xPc9gyKDGVq9X0MDSA@mail.gmail.com> <53E8DE1D.9070503@roeck-us.net> <CAAVeFuK8kb3kopVaM9qz+qOa4RT_oji8LNLQa_UHDxxxwyfZgw@mail.gmail.com>
+In-Reply-To: <CAAVeFuK8kb3kopVaM9qz+qOa4RT_oji8LNLQa_UHDxxxwyfZgw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.203.69.5]
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attn: Webmail Owner
+On 08/11/2014 08:20 AM, Alexandre Courbot wrote:
+[ ... ]
+>
+> Note that this doesn't change anything to the core of the argument ;
+> we have not heard what Linus thinks about named GPIOs in
+> /sys/class/gpio yet, maybe he will have a different opinion...
+>
 
-We just confirmed that you have not upgrade to the new web-mail version. That is why we are sending you this massage to upgrade your account now. This is because we are preventing your web-mail from closure. And also we have notice that your mail have been used for send spam mail to other mail. To prevent your account from this you will have to send a verification massage so that we will confirm from our computer system that you are the rightfully owner of this mail and also to upgrade your account to the version. To upgrade your account you have to send us the following information so that we can upgrade as soon as possible.
+Well, please let me know if/when you are planning to take away
+that existing ABI so I can plan accordingly. FWIW, out-of-kernel
+users I am currently aware of are Juniper Networks and Zodiac
+Aerospace. The latter asked me to help them upstreaming their code.
 
-CONFIRM YOUR EMAIL IDENTITY BELOW
-Email :
-Password :
-Date of Birth :
-Last login:
+If you plan to remove the ABI, you might want to inform its current
+in-kernel users. You can look those up yourself.
 
-Warning!!! if you refuse to send this information to us within (1) weeks of receiving this warning you will lose your account. Warning Code: PX2G99AAJ Thank you for using webmail
-.............................................................................
-NOTE: This message is authorize by the webmail Project email account protector unit.Notification message will be send back to you after verifying your account before account could be reset. All right reserve.
+Thanks,
+Guenter
 
-Thank you for using web mail
