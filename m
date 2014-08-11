@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817AbaHKI7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 04:59:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867AbaHKI7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 04:59:16 -0400
-Date: Mon, 11 Aug 2014 17:00:14 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Mark Salter <msalter@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
-Subject: Re: [PATCH 1/2] UEFI arm64: add noefi boot param
-Message-ID: <20140811090013.GD1834@darkstar.nay.redhat.com>
-References: <20140806083825.GA31711@dhcp-16-198.nay.redhat.com>
- <20140806130623.GI4179@bivouac.eciton.net>
- <20140806132021.GB15082@console-pimps.org>
- <20140806132941.GJ4179@bivouac.eciton.net>
- <20140806140155.GC15082@console-pimps.org>
- <CAKv+Gu8ey1iKu-_wS6yYaEXQaQMDXa+PF5Kiw+edA9a_OE1EAw@mail.gmail.com>
- <20140806141814.GD15082@console-pimps.org>
- <20140807061945.GE20295@darkstar.nay.redhat.com>
- <20140807202620.GI15082@console-pimps.org>
+	id S1752214AbaHKJHj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 05:07:39 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:55742 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaHKJHi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 05:07:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140807202620.GI15082@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53E89DA3020000780002B00B@mail.emea.novell.com>
+References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com>
+ <1406904498-21647-4-git-send-email-dvlasenk@redhat.com> <20140801231929.GB26491@localhost.localdomain>
+ <CAK1hOcNXdBwd4KZi1V2dLMtRdusvNLPZwTKwYvnpvz3PRnsM+Q@mail.gmail.com>
+ <20140811004559.GA2656@lerouge> <53E89DA3020000780002B00B@mail.emea.novell.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 11 Aug 2014 18:07:16 +0900
+Message-ID: <CALCETrXmSOmy55r4Ww2tc4MwtywwsWED_oP+dwBS1gTBja2yuA@mail.gmail.com>
+Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete "struct pt_regs"
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        X86 ML <x86@kernel.org>, Alexei Starovoitov <ast@plumgrid.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/14 at 09:26pm, Matt Fleming wrote:
-> On Thu, 07 Aug, at 02:19:45PM, Dave Young wrote:
-> > 
-> > The current efi_runtime_init() enables the bit after getting the efi
-> > callback phyaddr of SetVirtualAddressMap.
-> > 
-> > Thinking more about it, since SetVirtualAddressMap() could fail
-> > somehow it seems better to set EFI_RUNTIME_SERIVCES bit only when
-> > enter virtual mode return EFI_SUCCESS.
-> > 
-> > Does it make sense to you, Matt?
-> 
-> If you're going ahead with the scheme I proposed yesterday you'd
-> actually want to *clear* the EFI_RUNTIME_SERVICES bit if
-> SetVirtualAddressMap() fails, since we would have set it by default for
-> EFI_BOOT.
+On Mon, Aug 11, 2014 at 5:40 PM, Jan Beulich <JBeulich@suse.com> wrote:
+>>>> On 11.08.14 at 02:46, <fweisbec@gmail.com> wrote:
+>> On Mon, Aug 04, 2014 at 05:03:42AM +0200, Denys Vlasenko wrote:
+>>> On Sat, Aug 2, 2014 at 1:19 AM, Frederic Weisbecker <fweisbec@gmail.com>
+>> wrote:
+>>> >>       CFI_ESCAPE      0x0f /* DW_CFA_def_cfa_expression */, 6, \
+>>> >>                       0x77 /* DW_OP_breg7 */, 0, \
+>>> >>                       0x06 /* DW_OP_deref */, \
+>>> >> -                     0x08 /* DW_OP_const1u */, SS+8-RBP, \
+>>> >> +                     0x08 /* DW_OP_const1u */, SS+8, \
+>>> >>                       0x22 /* DW_OP_plus */
+>>> >>       /* We entered an interrupt context - irqs are off: */
+>>> >>       TRACE_IRQS_OFF
+>>> >> -
+>>> >>       call \func
+>>> >>       .endm
+>>> >>
+>>> >> @@ -749,10 +719,9 @@ ret_from_intr:
+>>> >>
+>>> >>       /* Restore saved previous stack */
+>>> >>       popq %rsi
+>>> >
+>>> > And then you pop to rsi. Ok that indeed works but perhaps we should keep it symetrical
+>>> > just for clarity? Any reason why we can't reuse rdi here?
+>>>
+>>> I changed this entire area in v2: basically, I will not change the logic,
+>>> but will add comments explaining what are we doing here, and why.
+>>> (Some minor code changes will be done, not affecting the logic).
+>>>
+>>> While we are at it, what this  CFI_ESCAPE thing does here?
+>>> As usual, it has no comment :/
+>
+> Each of its lines has a comment; with other CFI annotations not
+> each having comments, I don't see what else is needed here.
+>
+>> I don't know, only Jan Beulich understands those CFI black magic.
+>
+> That would be very said if true.
+>
+> In any case: This needs to be a CFI_ESCAPE because there's no
+> other way I know of to emit the DW_CFA_def_cfa_expression.
+> And the change to it looks correct to me.
+>
 
-There's one concern about the noefi early param handling in your proposal.
-Your patch depends on the parse_early_param() being called after setting
-EFI_RUNTIME_SERVICES bit. It's true in X86 setup.c, but it's not in arm64
-setup.c so I'm afraid there's other piece of code need early params and it
-will not work.
+How does one test the entry CFI annotations?  The best that I know of
+is to single-step through using gdb attached to qemu and see whether
+backtraces seem to work.
 
-How about using a variable like runtime_disabled, then add a global function
-efi_runtime_disabled() to get the status. 
-
-
-> 
-> However, I still think we want to panic() if SetVirtualAddressMap()
-> fails because we really never expect that function to return an error
-> under normal circumstances. Also, I'm not sure it's safe to make any
-> assumptions about the state of the system if SetVirtualAddressMap()
-> fails.
-
-Ok, so the panic is reasonable to me as well.
-
-Thanks
-Dave
+--Andy
