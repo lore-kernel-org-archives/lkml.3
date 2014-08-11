@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032AbaHKLgy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 07:36:54 -0400
-Received: from smtprelay0065.hostedemail.com ([216.40.44.65]:38773 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752894AbaHKLgv (ORCPT
+	id S1753081AbaHKLhU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 07:37:20 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:38884 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626AbaHKLhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 07:36:51 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:421:541:599:960:967:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2525:2553:2560:2563:2682:2685:2693:2828:2859:2911:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4425:5007:6119:7652:7903:9025:9108:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12679:12740:13069:13311:13357:13845:
-X-HE-Tag: tub97_14e244b2bf46
-X-Filterd-Recvd-Size: 3200
-Message-ID: <1407757007.20795.18.camel@joe-AO725>
-Subject: Re: [PATCH 10/12] staging: lustre: Fix misplaced opening brace
- warnings
-From: Joe Perches <joe@perches.com>
-To: Srikrishan Malik <srikrishanmalik@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, greg@kroah.com,
-        andreas.dilger@intel.com, oleg.drokin@intel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>,
-        Himangi Saraogi <himangi774@gmail.com>
-Date: Mon, 11 Aug 2014 04:36:47 -0700
-In-Reply-To: <20140811105706.GA17691@mordor.in.ibm.com>
-References: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>
-	 <1407345182-709-10-git-send-email-srikrishanmalik@gmail.com>
-	 <20140806201813.GE4856@mwanda> <20140807153136.GB4185@mordor.in.ibm.com>
-	 <20140807160103.GG4856@mwanda> <1407429343.2736.28.camel@joe-AO725>
-	 <20140811105706.GA17691@mordor.in.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Aug 2014 07:37:17 -0400
+Date: Mon, 11 Aug 2014 04:37:15 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH -mm] slab: fix cpuset check in fallback_alloc
+In-Reply-To: <20140811071315.GA18709@esperanza>
+Message-ID: <alpine.DEB.2.02.1408110433140.15519@chino.kir.corp.google.com>
+References: <1407692891-24312-1-git-send-email-vdavydov@parallels.com> <alpine.DEB.2.02.1408101512500.706@chino.kir.corp.google.com> <20140811071315.GA18709@esperanza>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-11 at 16:27 +0530, Srikrishan Malik wrote:
-> On Thu, Aug 07, 2014 at 09:35:43AM -0700, Joe Perches wrote:
-> > On Thu, 2014-08-07 at 19:01 +0300, Dan Carpenter wrote:
-> > > On Thu, Aug 07, 2014 at 09:01:36PM +0530, Srikrishan Malik wrote:
-> > > > On Wed, Aug 06, 2014 at 11:18:13PM +0300, Dan Carpenter wrote:
-> > > > > That looks silly before and after.  Everything is indented in a funny
-> > > > > way.
-> > > > 
-> > > > Is this better:
-> > > > 
-> > > > 	static const ldlm_policy_data_t lookup_policy = {
-> > > > 				.l_inodebits = { MDS_INODELOCK_LOOKUP }
-> > > > 	};
-> > > > 
-> > > 
-> > > That is indented too far.
-> > > 
-> > > Honestly, I think it looks best on one line but in terms of real life we
-> > > can't ignore checkpatch warnings because eventually someone else will
-> > > try to "fix" it to not be on one line.
-[]
-> > I think it looks odd to mix named and unnamed
-> > initializers for the typedef and its members.
-> > 
-> > ldlm_policy_data_t is a union and it could be
-> > explicit instead of a typedef.
-> > 
-> > Perhaps:
-> > 	static const union ldlm_policy_data lookup_policy = {
-> > 		.l_inodebits = {
-> > 			.bits = MDS_INODELOCK_LOOKUP,
-> > 		},
-> > 	};
-> > 
-> > or maybe use another DECLARE_<foo> macro indirection.
-> >
+On Mon, 11 Aug 2014, Vladimir Davydov wrote:
+
+> > diff --git a/mm/slab.c b/mm/slab.c
+> > --- a/mm/slab.c
+> > +++ b/mm/slab.c
+> > @@ -3047,16 +3047,19 @@ retry:
+> >  	 * from existing per node queues.
+> >  	 */
+> >  	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+> > -		nid = zone_to_nid(zone);
+> > +		struct kmem_cache_node *n;
+> >  
+> > -		if (cpuset_zone_allowed_hardwall(zone, flags) &&
+> > -			get_node(cache, nid) &&
+> > -			get_node(cache, nid)->free_objects) {
+> > -				obj = ____cache_alloc_node(cache,
+> > -					flags | GFP_THISNODE, nid);
+> > -				if (obj)
+> > -					break;
+> > -		}
+> > +		nid = zone_to_nid(zone);
+> > +		if (!cpuset_zone_allowed(zone, flags | __GFP_HARDWALL))
 > 
-> This patch set is aimed at removing checkpatch issues from files in
-> lustre/lustre/mdc.
+> We must use softwall check here, otherwise we will proceed to
+> alloc_pages even if there are lots of free slabs on other nodes.
+> alloc_pages, in turn, may allocate from other nodes in case
+> cpuset.mem_hardwall=0, because it uses softwall check, so it may add yet
+> another free slab to another node's list even if it isn't empty. As a
+> result, we may get free list bloating on other nodes. I've seen a
+> machine with one of its nodes almost completely filled with inactive
+> slabs for buffer_heads (dozens of GBs) w/o any chance to drop them. So,
+> this is a bug that must be fixed.
+> 
 
-I think eliminating checkpatch identified issues should
-not be the primary goal but a secondary one to the
-overall goal of code style uniformity.
+Right, I understand, and my patch makes no attempt to fix that issue, it's 
+simply collapsing the code down into a single cpuset_zone_allowed() 
+function and the context for the allocation is controlled by the gfp 
+flags (and hardwall is controlled by setting __GFP_HARDWALL) as it should 
+be.  I understand the issue you face, but I can't combine a cleanup with a 
+fix and I would prefer to have your patch keep your commit description.  
 
-Julia Lawall and Himangi Saraogi from coccinelle fame
-have created a "detypedef" script that is useful for
-structs, perhaps you could extend it for unions and
-run it over this lustre code.
-
-For instance:
-https://lkml.org/lkml/2014/8/9/104
-
-> Is it ok if I just fix those in this set and post another patch set
-> to take care of other issues identified in review?
-
-Up to you.
-
-
+The diffstat for my proposal removes many more lines than it adds and I 
+think it will avoid this type of issue in the future for new callers.  
+Your patch could then be based on the single cpuset_zone_allowed() 
+function where you would simply have to remove the __GFP_HARDWALL above.  
+Or, your patch could be merged first and then my cleanup on top, but it 
+seems like your one-liner would be more clear if it is based on mine.
