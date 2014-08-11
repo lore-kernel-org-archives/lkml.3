@@ -1,77 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388AbaHKNDP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 09:03:15 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:33138 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998AbaHKNDO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 09:03:14 -0400
-Date: Mon, 11 Aug 2014 16:02:54 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: rogerable@realtek.com
-Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        driverdev-devel@linuxdriverproject.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wei_wang@realsil.com.cn
-Subject: Re: [PATCH] mmc: rtsx: fix incorrect last byte in R2 response
-Message-ID: <20140811130254.GP4856@mwanda>
-References: <1407745936-18513-1-git-send-email-rogerable@realtek.com>
+	id S1753403AbaHKNEl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 09:04:41 -0400
+Received: from mail1.skidata.com ([91.230.2.99]:21121 "EHLO mail1.skidata.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752364AbaHKNEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 09:04:40 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArgEAG6+6FOsEApK/2dsb2JhbABbg19XBLVBlz+HTAGBLXeEBAEEAScTPwULCw0UJQ9IBgENBYg6DQjBOhMEjTyCEAeETAEEhg+MBYMqhnCHUZEJaoFH
+X-IPAS-Result: ArgEAG6+6FOsEApK/2dsb2JhbABbg19XBLVBlz+HTAGBLXeEBAEEAScTPwULCw0UJQ9IBgENBYg6DQjBOhMEjTyCEAeETAEEhg+MBYMqhnCHUZEJaoFH
+Date: Mon, 11 Aug 2014 15:04:35 +0200
+From: Richard Leitner <richard.leitner@skidata.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] usb: gadget: serial: remove PREFIX macro
+Message-ID: <20140811150435.6235fbf6@lxbuild.skidata.net>
+In-Reply-To: <20140718113946.0e70c0cb@lxbuild.skidata.net>
+References: <20140718113946.0e70c0cb@lxbuild.skidata.net>
+Organization: SKIDATA AG
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407745936-18513-1-git-send-email-rogerable@realtek.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.16.60.30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 04:32:16PM +0800, rogerable@realtek.com wrote:
-> From: Roger Tseng <rogerable@realtek.com>
-> 
-> Current code erroneously fill the last byte of R2 response with an undefined
-> value. In addition, it is impossible to obtain the real values since the
-> controller actually 'offloads' the last byte(CRC7, end bit) while receiving R2
-> response. This could cause mmc stack to obtain inconsistent CID from the same
-> card after resume and misidentify it as a different card.
-> 
-> Fix by assigning a dummy value 0x01 to the last byte of R2 response.
-> 
-> Signed-off-by: Roger Tseng <rogerable@realtek.com>
-> ---
->  drivers/mmc/host/rtsx_pci_sdmmc.c |    1 +
->  drivers/mmc/host/rtsx_usb_sdmmc.c |    1 +
->  2 files changed, 2 insertions(+)
-> 
-> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-> index dfde4a2..54849d8 100644
-> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-> @@ -412,6 +412,7 @@ static void sd_send_cmd_get_rsp(struct realtek_pci_sdmmc *host,
->  	}
->  
->  	if (rsp_type == SD_RSP_TYPE_R2) {
-> +		ptr[16] = 1;
-
-Avoid magic numbers like 16 and 0x1.
-
-This is subtle enough that it deserves a comment.
-
-		ptr[stat_idx] = 0x1 /* 0x1 chosen randomly */
-
->  		for (i = 0; i < 4; i++) {
->  			cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
->  			dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
-
-There are a lot of magic numbers in this function.  We could get rid
-of this i < 4 loop but doing:
-
-		memcpy(cmd->resp, ptr + 1, resp_len);
-
-Currently we don't use resp_len and the resp_len = 5 assignment is off
-by one...  It should be resp_len = 4.  This function is quite ugly.
+Hi,
+this patch was lying around for some time...
+are there any comments or objections on this?
 
 regards,
-dan carpenter
+richard
 
+On Fri, 18 Jul 2014 11:39:46 +0200
+Richard Leitner <richard.leitner@skidata.com> wrote:
+
+> Remove the ttyGS PREFIX macro from u_serial.c and replace all occurences with
+> the hardcoded ttyGS string.
+> 
+> This macro was mostly used in a few debug/warning messages and a lot of
+> hardcoded ttyGS existed beneath. It may have been used for renaming the
+> tty, but if done so most debug messages would have ignored this because
+> of the hardcoded strings.
+> 
+> Due to the fact the usage of this PREFIX instead of the hardcoded strings
+> in all debug calls would have resulted in a hard to read/grep code it
+> is removed completely.
+> 
+> Signed-off-by: Richard Leitner <richard.leitner@skidata.com>
+> ---
+> note: previous discussion was at https://lkml.org/lkml/2014/6/27/193
+> ---
+>  drivers/usb/gadget/u_serial.c |   21 +++++++++------------
+>  1 file changed, 9 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
+> index ad0aca8..7e7a6b0 100644
+> --- a/drivers/usb/gadget/u_serial.c
+> +++ b/drivers/usb/gadget/u_serial.c
+> @@ -55,11 +55,8 @@
+>   * for a telephone or fax link.  And ttyGS2 might be something that just
+>   * needs a simple byte stream interface for some messaging protocol that
+>   * is managed in userspace ... OBEX, PTP, and MTP have been mentioned.
+> - */
+> -
+> -#define PREFIX	"ttyGS"
+> -
+> -/*
+> + *
+> + *
+>   * gserial is the lifecycle interface, used by USB functions
+>   * gs_port is the I/O nexus, used by the tty driver
+>   * tty_struct links to the tty/filesystem framework
+> @@ -385,7 +382,7 @@ __acquires(&port->port_lock)
+>  		list_del(&req->list);
+>  		req->zero = (gs_buf_data_avail(&port->port_write_buf) == 0);
+>  
+> -		pr_vdebug(PREFIX "%d: tx len=%d, 0x%02x 0x%02x 0x%02x ...\n",
+> +		pr_vdebug("ttyGS%d: tx len=%d, 0x%02x 0x%02x 0x%02x ...\n",
+>  				port->port_num, len, *((u8 *)req->buf),
+>  				*((u8 *)req->buf+1), *((u8 *)req->buf+2));
+>  
+> @@ -503,12 +500,12 @@ static void gs_rx_push(unsigned long _port)
+>  		switch (req->status) {
+>  		case -ESHUTDOWN:
+>  			disconnect = true;
+> -			pr_vdebug(PREFIX "%d: shutdown\n", port->port_num);
+> +			pr_vdebug("ttyGS%d: shutdown\n", port->port_num);
+>  			break;
+>  
+>  		default:
+>  			/* presumably a transient fault */
+> -			pr_warning(PREFIX "%d: unexpected RX status %d\n",
+> +			pr_warn("ttyGS%d: unexpected RX status %d\n",
+>  					port->port_num, req->status);
+>  			/* FALLTHROUGH */
+>  		case 0:
+> @@ -537,7 +534,7 @@ static void gs_rx_push(unsigned long _port)
+>  			if (count != size) {
+>  				/* stop pushing; TTY layer can't handle more */
+>  				port->n_read += count;
+> -				pr_vdebug(PREFIX "%d: rx block %d/%d\n",
+> +				pr_vdebug("ttyGS%d: rx block %d/%d\n",
+>  						port->port_num,
+>  						count, req->actual);
+>  				break;
+> @@ -569,7 +566,7 @@ static void gs_rx_push(unsigned long _port)
+>  			if (do_push)
+>  				tasklet_schedule(&port->push);
+>  			else
+> -				pr_warning(PREFIX "%d: RX not scheduled?\n",
+> +				pr_warn("ttyGS%d: RX not scheduled?\n",
+>  					port->port_num);
+>  		}
+>  	}
+> @@ -985,7 +982,7 @@ static void gs_unthrottle(struct tty_struct *tty)
+>  		 * read queue backs up enough we'll be NAKing OUT packets.
+>  		 */
+>  		tasklet_schedule(&port->push);
+> -		pr_vdebug(PREFIX "%d: unthrottle\n", port->port_num);
+> +		pr_vdebug("ttyGS%d: unthrottle\n", port->port_num);
+>  	}
+>  	spin_unlock_irqrestore(&port->port_lock, flags);
+>  }
+> @@ -1295,7 +1292,7 @@ static int userial_init(void)
+>  		return -ENOMEM;
+>  
+>  	gs_tty_driver->driver_name = "g_serial";
+> -	gs_tty_driver->name = PREFIX;
+> +	gs_tty_driver->name = "ttyGS";
+>  	/* uses dynamically assigned dev_t values */
+>  
+>  	gs_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
