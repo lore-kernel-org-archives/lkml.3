@@ -1,72 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaHKTBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:01:10 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58627 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662AbaHKTBG (ORCPT
+	id S1754376AbaHKTEl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 15:04:41 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60148 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203AbaHKTEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:01:06 -0400
-Date: Mon, 11 Aug 2014 20:00:57 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lgirdwood@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20140811190057.GM17528@sirena.org.uk>
-References: <1407511775-26479-1-git-send-email-geert+renesas@glider.be>
+	Mon, 11 Aug 2014 15:04:40 -0400
+Message-ID: <53E913C6.4040800@infradead.org>
+Date: Mon, 11 Aug 2014 12:04:38 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1NsjvM78Wc2uYjy2"
-Content-Disposition: inline
-In-Reply-To: <1407511775-26479-1-git-send-email-geert+renesas@glider.be>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: dapm: Fix uninitialized variable in
- snd_soc_dapm_get_enum_double()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Nick Krause <xerofoify@gmail.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        lisa@xenapiadmin.com, Ben Hutchings <ben@decadent.org.uk>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: Check against NULL in fw_download_code
+References: <1407780151-4674-1-git-send-email-xerofoify@gmail.com>	<CAPDOMVghgyQ72J6MS6uaWEeMFBvzDNmfoAS5Tbd7+XO_KgUmHg@mail.gmail.com>	<53E9066A.3030801@infradead.org>	<CAPDOMViHWMRRMqdEpjft0TDuVSLai8LuWRcXPdMeCtUYgB2sgw@mail.gmail.com>	<53E90F34.9030809@infradead.org> <CAPDOMVj0YcDc5ATxMiTLeciadJPiQxV2ap8Wo3Qg4RM=yeXmVQ@mail.gmail.com>
+In-Reply-To: <CAPDOMVj0YcDc5ATxMiTLeciadJPiQxV2ap8Wo3Qg4RM=yeXmVQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/11/14 11:55, Nick Krause wrote:
+> On Mon, Aug 11, 2014 at 2:45 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>> On 08/11/14 11:26, Nick Krause wrote:
+>>> On Mon, Aug 11, 2014 at 2:07 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>>>> On 08/11/14 11:04, Nick Krause wrote:
+>>>>> On Mon, Aug 11, 2014 at 2:02 PM, Nicholas Krause <xerofoify@gmail.com> wrote:
+>>>>>> I am fixing the bug entry , https://bugzilla.kernel.org/show_bug.cgi?id=60461.
+>>>>>> This entry states that we are not checking the skb allocated in fw_download_code
+>>>>>> and after checking I fixed it to check for the NULL value before using the allocate
+>>>>>> skb.
+>>>>>>
+>>>>>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>>>>>> ---
+>>>>>>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 14 ++++++++------
+>>>>>>  1 file changed, 8 insertions(+), 6 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+>>>>>> index 1a95d1f..0a4c926 100644
+>>>>>> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+>>>>>> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+>>>>>> @@ -60,13 +60,15 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>>>>>>
+>>>>>>                 }
+>>>>>>
+>>>>>> -               skb  = dev_alloc_skb(frag_length + 4);
+>>>>>> -               memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+>>>>>> -               tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
+>>>>>> -               tcb_desc->queue_index = TXCMD_QUEUE;
+>>>>>> -               tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
+>>>>>> -               tcb_desc->bLastIniPkt = bLastIniPkt;
+>>>>>>
+>>>>>> +               skb  = dev_alloc_skb(frag_length + 4);
+>>>>>> +               if (skb) {
+>>>>>> +                       memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+>>>>>> +                       tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
+>>>>>> +                       tcb_desc->queue_index = TXCMD_QUEUE;
+>>>>>> +                       tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
+>>>>>> +                       tcb_desc->bLastIniPkt = bLastIniPkt;
+>>>>>> +               }
+>>>>
+>>>> and what happens here (below) if skb is NULL?
+>>
+>> Nick,
+>> I'm asking if you have completely fixed the bug or only partially fixed it.
+>> The answer is that the patch is only a partial fix.  If skb is NULL, there
+>> is still a problem in the statement below here.  The kernel will oops on
+>> that reference to skb, which is NULL.
+>>
+>>>>
+>>>>>>                 seg_ptr = skb->data;
+>>>>>>                 for (i = 0; i < frag_length; i += 4) {
+>>>>>>                         *seg_ptr++ = ((i+0) < frag_length) ?
+>>>>>> --
+>>>>>> 1.9.1
+>>>>>>
+>>>>> And I did check it against Linus's tree to make sure it applies , just
+>>>>> to let you known.
+>>>>> Nick
+>>>>
+>>>>
+>>>> --
+>>>> ~Randy
+>>> Sorry Randy.
+>>>  I may be mis reading this, but are you asking me to write a different
+>>> commit message or is this patch just another bad patch in my series of
+>>> bad patches?
+>>
+>>
+>> --
+>> ~Randy
+> 
+> Randy ,
+> Thanks for the catch :). Would you recommend just putting it in the if
+> statement I created or create a second if statement for
+> code readability.
 
---1NsjvM78Wc2uYjy2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Neither one of those choices.  I suggest that the code immediately check for
+skb == NULL and return 0 (or false) if it is NULL.  Then the code below that check
+won't need to be changed at all.
 
-On Fri, Aug 08, 2014 at 05:29:35PM +0200, Geert Uytterhoeven wrote:
 
-> ---
-> Is this correct? Please review.
->=20
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
-BTW please remember to put the signoff *before* the --- otherwise it
-gets discarded.
-
---1NsjvM78Wc2uYjy2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT6RLmAAoJELSic+t+oim9WhEP/0VLO6NpCm9S3fWDvzoWCzcP
-+C6ZKrWLHAD2ROuNn1OtZWanavx9/rBMsdmnp3x28/8j1ND5o27GpcEM2ZKIkqEV
-0XTKrvkq9WcvzziH74bYFJxWkvP62aWzwupF5K9pLW0oPu2Fj9wGolCdb6fHAl8w
-2PqXGOrngqDww7SfPFmOK6AJofa3H1KUSAlIB04n6Ak5WyeJGbBmvJIrxnUNVSEv
-M0sSCGSlKdw+t1/3OC7ZGhRqLMzubB+CHXCGTI/uaMPu8RCcIN0qi7mAdDNRL/mJ
-H2GbI+7q2ZEwWjZvdReFpOdXrGi2jN+fTKhQ13uwN20xfqJtL+hlejiQYllcOQ4N
-rAzvDpJepuPs7pgnnqB3YAdvDlAuroqBoBFxperdJxFOAyab3UKVPDCthJ26/qdy
-VTFTgjBU9Xk3knM2Il5RK8UMN1vXBWaz6wC8IRM3BL1s2c3mK92692bosA5ZEOGm
-SpScvzQpiQGtYQA8g7mx71eQq5c8jeB8O2s1JQUXglSzwZFXKvtPbHOiQhQj0t+A
-013cnjMVF91ryB+YSg98GwC3bnQNuPe8zUnHS2cig+DLSjhpAQ8wnldSrMcOzoof
-Spvrux24WPcAIfshxZnDGd+YkqRUdmbL6S/B0ZN0YKr8Uiz7Q/GSpaYzYq4nmBMD
-Hsdvzd14bPYKer7yNsFT
-=ZZZb
------END PGP SIGNATURE-----
-
---1NsjvM78Wc2uYjy2--
+-- 
+~Randy
