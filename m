@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaHKHpo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 03:45:44 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:38640 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590AbaHKHpn (ORCPT
+	id S1752841AbaHKHqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 03:46:36 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:55746 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590AbaHKHqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 03:45:43 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] perf script: Fix possible memory leaks
-References: <1406881486-5789-1-git-send-email-namhyung@kernel.org>
-	<53DB7AC3.3030207@intel.com>
-Date: Mon, 11 Aug 2014 16:45:41 +0900
-In-Reply-To: <53DB7AC3.3030207@intel.com> (Adrian Hunter's message of "Fri, 01
-	Aug 2014 14:32:19 +0300")
-Message-ID: <87vbpzfp0a.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 11 Aug 2014 03:46:34 -0400
+From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+To: <gregkh@linuxfoundation.org>
+CC: <hdegoede@redhat.com>, <kraxel@redhat.com>,
+        <mdharm-usb@one-eyed-alien.net>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH] uas: replace WARN_ON_ONCE() with assert_spin_locked().
+Date: Mon, 11 Aug 2014 13:29:26 +0530
+Message-ID: <1407743966-25325-1-git-send-email-sanjeev_sharma@mentor.com>
+X-Mailer: git-send-email 1.7.11.7
 MIME-Version: 1.0
 Content-Type: text/plain
+X-OriginalArrivalTime: 11 Aug 2014 07:46:32.0481 (UTC) FILETIME=[5E78E110:01CFB538]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Adrian,
+spin_is_locked() always return false in uniprocessor configuration and therefore it
+would be advise to repalce with assert_spin_locked().
 
-On Fri, 01 Aug 2014 14:32:19 +0300, Adrian Hunter wrote:
-> On 1/08/2014 11:24 a.m., Namhyung Kim wrote:
->> Some paths in perf script don't call perf_session__delete() after
->> creating a new session.
->>
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+ drivers/usb/storage/uas.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-[SNIP]
->> -	perf_session__delete(session);
->>   	cleanup_scripting();
->> +out_delete:
->> +	perf_session__delete(session);
->
-> Some of the db-export scripting I do relies on the session
-> being deleted before the script is stopped.  I would prefer
-> the original order i.e. perf_session__delete() then
-> cleanup_scripting()
+diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
+index 3f42785..8e5877d 100644
+--- a/drivers/usb/storage/uas.c
++++ b/drivers/usb/storage/uas.c
+@@ -154,7 +154,7 @@ static void uas_mark_cmd_dead(struct uas_dev_info *devinfo,
+ 	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+ 
+ 	uas_log_cmd_state(cmnd, caller);
+-	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
++	assert_spin_locked(&devinfo->lock);
+ 	WARN_ON_ONCE(cmdinfo->state & COMMAND_ABORTED);
+ 	cmdinfo->state |= COMMAND_ABORTED;
+ 	cmdinfo->state &= ~IS_IN_WORK_LIST;
+@@ -181,7 +181,7 @@ static void uas_add_work(struct uas_cmd_info *cmdinfo)
+ 	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+ 	struct uas_dev_info *devinfo = cmnd->device->hostdata;
+ 
+-	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
++	assert_spin_locked(&devinfo->lock);
+ 	cmdinfo->state |= IS_IN_WORK_LIST;
+ 	schedule_work(&devinfo->work);
+ }
+@@ -283,7 +283,7 @@ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller)
+ 	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
+ 	struct uas_dev_info *devinfo = (void *)cmnd->device->hostdata;
+ 
+-	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
++	assert_spin_locked(&devinfo->lock);
+ 	if (cmdinfo->state & (COMMAND_INFLIGHT |
+ 			      DATA_IN_URB_INFLIGHT |
+ 			      DATA_OUT_URB_INFLIGHT |
+@@ -622,7 +622,7 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
+ 	struct urb *urb;
+ 	int err;
+ 
+-	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
++	assert_spin_locked(&devinfo->lock);
+ 	if (cmdinfo->state & SUBMIT_STATUS_URB) {
+ 		urb = uas_submit_sense_urb(cmnd, gfp, cmdinfo->stream);
+ 		if (!urb)
+-- 
+1.7.11.7
 
-Okay, I'll fix it and send v2.
-
-Thanks,
-Namhyung
