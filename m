@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137AbaHKPnU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 11:43:20 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:45762 "EHLO extserv.mm-sol.com"
+	id S932116AbaHKPnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 11:43:18 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:45774 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753790AbaHKPk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754135AbaHKPk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 11 Aug 2014 11:40:56 -0400
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
         linux-arm-msm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: [PATCH v3 2/6] pinctrl: Introduce pinctrl driver for Qualcomm SSBI PMIC's
-Date: Mon, 11 Aug 2014 18:40:30 +0300
-Message-Id: <1407771634-14946-3-git-send-email-iivanov@mm-sol.com>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 4/6] pinctrl: Qualcomm SPMI PMIC pin controller driver
+Date: Mon, 11 Aug 2014 18:40:32 +0300
+Message-Id: <1407771634-14946-5-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1407771634-14946-1-git-send-email-iivanov@mm-sol.com>
 References: <1407771634-14946-1-git-send-email-iivanov@mm-sol.com>
@@ -23,59 +24,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-This introduces a pinctrl, pinconf, pinmux and gpio driver for the gpio
-block found in pm8018, pm8038, pm8058, pm8917 and pm8921 pmics from
-Qualcomm.
+This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+Qualcomm GPIO and MPP sub-function blocks found in the PMIC chips.
 
-Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
- drivers/pinctrl/qcom/Kconfig             |  11 +
- drivers/pinctrl/qcom/Makefile            |   1 +
- drivers/pinctrl/qcom/pinctrl-ssbi-pmic.c | 870 +++++++++++++++++++++++++++++++
- 3 files changed, 882 insertions(+)
- create mode 100644 drivers/pinctrl/qcom/pinctrl-ssbi-pmic.c
+ drivers/pinctrl/qcom/Kconfig             |   12 +
+ drivers/pinctrl/qcom/Makefile            |    1 +
+ drivers/pinctrl/qcom/pinctrl-spmi-pmic.c | 1532 ++++++++++++++++++++++++++++++
+ 3 files changed, 1545 insertions(+)
+ create mode 100644 drivers/pinctrl/qcom/pinctrl-spmi-pmic.c
 
 diff --git a/drivers/pinctrl/qcom/Kconfig b/drivers/pinctrl/qcom/Kconfig
-index d160a71..6bd4e4d 100644
+index 6bd4e4d..8a24fae 100644
 --- a/drivers/pinctrl/qcom/Kconfig
 +++ b/drivers/pinctrl/qcom/Kconfig
-@@ -39,4 +39,15 @@ config PINCTRL_MSM8X74
+@@ -39,6 +39,18 @@ config PINCTRL_MSM8X74
  	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
  	  Qualcomm TLMM block found in the Qualcomm 8974 platform.
  
-+config PINCTRL_SSBI_PMIC
-+       tristate "Qualcomm SSBI PMIC pin controller driver"
++config PINCTRL_SPMI_PMIC
++       tristate "Qualcomm SPMI PMIC pin controller driver"
 +       depends on GPIOLIB && OF
-+       select PINCONF
 +       select PINMUX
++       select PINCONF
 +       select GENERIC_PINCONF
 +       help
 +         This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-+         Qualcomm GPIO blocks found in the pm8018, pm8038, pm8058, pm8917 and
-+         pm8921 pmics from Qualcomm.
++         Qualcomm GPIO and MPP blocks found in the Qualcomm PMIC's chips,
++         which are using SPMI for communication with SoC. Example PMIC's
++         devices are pm8841, pm8941 and pma8084.
 +
- endif
+ config PINCTRL_SSBI_PMIC
+        tristate "Qualcomm SSBI PMIC pin controller driver"
+        depends on GPIOLIB && OF
 diff --git a/drivers/pinctrl/qcom/Makefile b/drivers/pinctrl/qcom/Makefile
-index 2a02602..8faa2ca 100644
+index 8faa2ca..d098058 100644
 --- a/drivers/pinctrl/qcom/Makefile
 +++ b/drivers/pinctrl/qcom/Makefile
-@@ -4,3 +4,4 @@ obj-$(CONFIG_PINCTRL_APQ8064)	+= pinctrl-apq8064.o
+@@ -4,4 +4,5 @@ obj-$(CONFIG_PINCTRL_APQ8064)	+= pinctrl-apq8064.o
  obj-$(CONFIG_PINCTRL_IPQ8064)	+= pinctrl-ipq8064.o
  obj-$(CONFIG_PINCTRL_MSM8960)	+= pinctrl-msm8960.o
  obj-$(CONFIG_PINCTRL_MSM8X74)	+= pinctrl-msm8x74.o
-+obj-$(CONFIG_PINCTRL_SSBI_PMIC) += pinctrl-ssbi-pmic.o
-diff --git a/drivers/pinctrl/qcom/pinctrl-ssbi-pmic.c b/drivers/pinctrl/qcom/pinctrl-ssbi-pmic.c
++obj-$(CONFIG_PINCTRL_SPMI_PMIC)	+= pinctrl-spmi-pmic.o
+ obj-$(CONFIG_PINCTRL_SSBI_PMIC) += pinctrl-ssbi-pmic.o
+diff --git a/drivers/pinctrl/qcom/pinctrl-spmi-pmic.c b/drivers/pinctrl/qcom/pinctrl-spmi-pmic.c
 new file mode 100644
-index 0000000..9a1b443
+index 0000000..ba19979
 --- /dev/null
-+++ b/drivers/pinctrl/qcom/pinctrl-ssbi-pmic.c
-@@ -0,0 +1,870 @@
-+/*
-+ * Copyright (c) 2014, Sony Mobile Communications AB.
-+ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++++ b/drivers/pinctrl/qcom/pinctrl-spmi-pmic.c
+@@ -0,0 +1,1532 @@
++/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -87,179 +88,800 @@ index 0000000..9a1b443
 + * GNU General Public License for more details.
 + */
 +
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/pinmux.h>
-+#include <linux/pinctrl/pinconf.h>
-+#include <linux/pinctrl/pinconf-generic.h>
-+#include <linux/slab.h>
-+#include <linux/regmap.h>
++#include <linux/export.h>
 +#include <linux/gpio.h>
-+#include <linux/mfd/pm8921-core.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/pinctrl/pinconf-generic.h>
++#include <linux/pinctrl/pinconf.h>
++#include <linux/pinctrl/pinmux.h>
++#include <linux/platform_device.h>
++#include <linux/regmap.h>
++#include <linux/slab.h>
++#include <linux/types.h>
 +
++#include <dt-bindings/pinctrl/qcom,pmic-mpp.h>
 +#include <dt-bindings/pinctrl/qcom,pmic-gpio.h>
 +
 +#include "../core.h"
-+#include "../pinconf.h"
 +#include "../pinctrl-utils.h"
 +
-+/* direction */
-+#define PM8XXX_GPIO_DIR_OUT		BIT(0)
-+#define PM8XXX_GPIO_DIR_IN		BIT(1)
++/*
++ * Mode select - indicates whether the pin should be input, output, or both
++ * for GPIOs. MPP pins also support bidirectional, analog input, analog output
++ * and current sink.
++ */
++#define QPNP_PIN_MODE_DIG_IN			0
++#define QPNP_PIN_MODE_DIG_OUT			1
++#define QPNP_PIN_MODE_DIG_IN_OUT		2
++#define QPNP_PIN_MODE_BIDIR			3
++#define QPNP_PIN_MODE_AIN			4
++#define QPNP_PIN_MODE_AOUT			5
++#define QPNP_PIN_MODE_SINK			6
 +
-+/* output buffer */
-+#define PM8XXX_GPIO_PUSH_PULL		0
-+#define PM8XXX_GPIO_OPEN_DRAIN		1
++/*
++ * Voltage select (GPIO, MPP) - specifies the voltage level when the output
++ * is set to 1. For an input GPIO specifies the voltage level at which
++ * the input is interpreted as a logical 1
++ * To be used with "power-func = <>"
++ */
++#define QPNP_PIN_VIN_4CH_INVALID		5
++#define QPNP_PIN_VIN_8CH_INVALID		8
 +
-+/* bias */
-+#define PM8XXX_GPIO_BIAS_PU_30		0
-+#define PM8XXX_GPIO_BIAS_PU_1P5		1
-+#define PM8XXX_GPIO_BIAS_PU_31P5	2
-+#define PM8XXX_GPIO_BIAS_PU_1P5_30	3
-+#define PM8XXX_GPIO_BIAS_PD		4
-+#define PM8XXX_GPIO_BIAS_NP		5
++/*
++ * Analog Output - Set the analog output reference.
++ * See PM8XXX_MPP_AOUT_XXX. To be used with "qcom,aout = <>"
++ */
++#define QPNP_MPP_AOUT_INVALID			8
 +
-+/* GPIO registers */
-+#define SSBI_REG_ADDR_GPIO_BASE		0x150
-+#define SSBI_REG_ADDR_GPIO(n)		(SSBI_REG_ADDR_GPIO_BASE + n)
++/*
++ * Analog Input - Set the func for analog input.
++ * See PM8XXX_MPP_AIN_XXX. To be used with "qcom,ain = <>"
++ */
++#define QPNP_MPP_AIN_INVALID			8
 +
-+#define PM8XXX_GPIO_WRITE		BIT(7)
++/*
++ * Output type - indicates pin should be configured as CMOS or
++ * open drain.
++ */
++#define QPNP_GPIO_OUT_BUF_CMOS			0
++#define QPNP_GPIO_OUT_BUF_OPEN_DRAIN_NMOS	1
++#define QPNP_GPIO_OUT_BUF_OPEN_DRAIN_PMOS	2
 +
-+#define PM8XXX_MAX_GPIOS		44
++/*
++ * Pull Up Values - it indicates whether a pull up or pull down
++ * should be applied. If a pull-up is required the current strength needs
++ * to be specified. Current values of 30uA, 1.5uA, 31.5uA, 1.5uA with 30uA
++ * boost are supported.
++ * Note that the hardware ignores this configuration if the GPIO is not set
++ * to input or output open-drain mode.
++ */
++#define QPNP_GPIO_PULL_UP_30			0
++#define QPNP_GPIO_PULL_UP_1P5			1
++#define QPNP_GPIO_PULL_UP_31P5			2
++#define QPNP_GPIO_PULL_UP_1P5_30		3
++#define QPNP_GPIO_PULL_DN			4
++#define QPNP_GPIO_PULL_NO			5
++
++/*
++ * Pull Up Values - it indicates whether a pull-up should be
++ * applied for bidirectional mode only. The hardware ignores the
++ * configuration when operating in other modes.
++ */
++#define QPNP_MPP_PULL_UP_0P6KOHM		0
++#define QPNP_MPP_PULL_UP_10KOHM			1
++#define QPNP_MPP_PULL_UP_30KOHM			2
++#define QPNP_MPP_PULL_UP_OPEN			3
++
++/* Out Strength (GPIO) - the amount of current supplied for an output GPIO */
++#define QPNP_GPIO_STRENGTH_LOW			1
++#define QPNP_GPIO_STRENGTH_MED			2
++#define QPNP_GPIO_STRENGTH_HIGH			3
++
++/*
++ * Master enable (GPIO, MPP) - Enable features within the pin block based on
++ * configurations. QPNP_PIN_MASTER_DISABLE = Completely disable the pin
++ * lock and let the pin float with high impedance regardless of other settings.
++ */
++#define QPNP_PIN_MASTER_DISABLE                 0
++#define QPNP_PIN_MASTER_ENABLE			1
++
++/* revision registers base address offsets */
++#define QPNP_REG_DIG_MINOR_REV			0x0
++#define QPNP_REG_DIG_MAJOR_REV			0x1
++#define QPNP_REG_ANA_MINOR_REV			0x2
++
++/* type registers base address offsets */
++#define QPNP_REG_TYPE				0x4
++#define QPNP_REG_SUBTYPE			0x5
++
++/* GPIO peripheral type and subtype values */
++#define QPNP_GPIO_TYPE				0x10
++#define QPNP_GPIO_SUBTYPE_GPIO_4CH		0x1
++#define QPNP_GPIO_SUBTYPE_GPIOC_4CH		0x5
++#define QPNP_GPIO_SUBTYPE_GPIO_8CH		0x9
++#define QPNP_GPIO_SUBTYPE_GPIOC_8CH		0xd
++
++/* mpp peripheral type and subtype values */
++#define QPNP_MPP_TYPE				0x11
++#define QPNP_MPP_SUBTYPE_4CH_NO_ANA_OUT		0x3
++#define QPNP_MPP_SUBTYPE_ULT_4CH_NO_ANA_OUT	0x4
++#define QPNP_MPP_SUBTYPE_4CH_NO_SINK		0x5
++#define QPNP_MPP_SUBTYPE_ULT_4CH_NO_SINK	0x6
++#define QPNP_MPP_SUBTYPE_4CH_FULL_FUNC		0x7
++#define QPNP_MPP_SUBTYPE_8CH_FULL_FUNC		0xf
++
++#define QPNP_REG_STATUS1			0x8
++#define QPNP_REG_STATUS1_VAL_MASK		0x1
++#define QPNP_REG_STATUS1_GPIO_EN_REV0_MASK	0x2
++#define QPNP_REG_STATUS1_GPIO_EN_MASK		0x80
++#define QPNP_REG_STATUS1_MPP_EN_MASK		0x80
++
++/* control register base address offsets */
++#define QPNP_REG_MODE_CTL			0x40
++#define QPNP_REG_DIG_VIN_CTL			0x41
++#define QPNP_REG_DIG_PULL_CTL			0x42
++#define QPNP_REG_DIG_IN_CTL			0x43
++#define QPNP_REG_DIG_OUT_CTL			0x45
++#define QPNP_REG_EN_CTL				0x46
++#define QPNP_REG_AOUT_CTL			0x4b
++#define QPNP_REG_AIN_CTL			0x4a
++#define QPNP_REG_SINK_CTL			0x4c
++
++/* QPNP_REG_MODE_CTL */
++#define QPNP_REG_MODE_INVERT_SHIFT		0
++#define QPNP_REG_MODE_INVERT_MASK		0x1
++#define QPNP_REG_MODE_FUNCTION_SHIFT		1
++#define QPNP_REG_MODE_FUNCTION_MASK		0x6
++#define QPNP_REG_MODE_SEL_SHIFT			4
++#define QPNP_REG_MODE_SEL_MASK			0x70
++
++/* QPNP_REG_DIG_VIN_CTL */
++#define QPNP_REG_VIN_SHIFT			0
++#define QPNP_REG_VIN_MASK			0x7
++
++/* QPNP_REG_DIG_PULL_CTL */
++#define QPNP_REG_PULL_SHIFT			0
++#define QPNP_REG_PULL_MASK			0x7
++
++/* QPNP_REG_DIG_OUT_CTL */
++#define QPNP_REG_OUT_STRENGTH_SHIFT		0
++#define QPNP_REG_OUT_STRENGTH_MASK		0x3
++#define QPNP_REG_OUT_TYPE_SHIFT			4
++#define QPNP_REG_OUT_TYPE_MASK			0x30
++
++/* QPNP_REG_EN_CTL */
++#define QPNP_REG_MASTER_EN_SHIFT		7
++#define QPNP_REG_MASTER_EN_MASK			0x80
++
++/* QPNP_REG_AOUT_CTL */
++#define QPNP_REG_AOUT_REF_SHIFT			0
++#define QPNP_REG_AOUT_REF_MASK			0x7
++
++/* QPNP_REG_AIN_CTL */
++#define QPNP_REG_AIN_ROUTE_SHIFT		0
++#define QPNP_REG_AIN_ROUTE_MASK			0x7
++
++/* QPNP_REG_SINK_CTL */
++#define QPNP_REG_CS_OUT_SHIFT			0
++#define QPNP_REG_CS_OUT_MASK			0x7
++
++#define QPNP_PIN_PHYSICAL_OFFSET		1
 +
 +/* Qualcomm specific pin configurations */
-+#define PM8XXX_PINCONF_PULL_UP		(PIN_CONFIG_END + 1)
-+#define PM8XXX_PINCONF_STRENGTH		(PIN_CONFIG_END + 2)
++#define QPNP_PINCONF_PULL_UP			(PIN_CONFIG_END + 1)
++#define QPNP_PINCONF_STRENGTH			(PIN_CONFIG_END + 2)
++#define QPNP_PINCONF_AMUX_ROUTE			(PIN_CONFIG_END + 3)
++#define QPNP_PINCONF_VREFENCE			(PIN_CONFIG_END + 4)
++#define QPNP_PINCONF_MODE			(PIN_CONFIG_END + 5)
 +
-+struct pm8xxx_pinbindings {
++struct qpnp_chipinfo {
++	unsigned npins;
++	unsigned base;
++	unsigned type;
++};
++
++struct qpnp_padinfo {
++	u16 offset;		/* address offset in SPMI device */
++	int irq;
++	const char *name;	/* pin name */
++	unsigned int modes;	/* supported modes: DI, DO, DIO, AI, AO... */
++	unsigned int type;	/* peripheral hardware type */
++	unsigned int subtype;	/* peripheral hardware subtype */
++	unsigned int major;	/* digital major version */
++};
++
++#define QPNP_REG_ADDR(pad, reg) ((pad)->offset + reg)
++#define QPNP_GET(buff, shift, mask) ((buff & mask) >> shift)
++
++struct qpnp_pinctrl {
++	struct device *dev;
++	struct regmap *map;
++	struct pinctrl_dev *ctrl;
++	struct pinctrl_desc desc;
++	struct gpio_chip chip;
++
++	struct qpnp_padinfo *pads;
++	const struct qpnp_chipinfo *info;
++	const char *const *groups;
++	const char *const *functions;
++};
++
++static inline struct qpnp_pinctrl *to_qpnp_pinctrl(struct gpio_chip *chip)
++{
++	return container_of(chip, struct qpnp_pinctrl, chip);
++};
++
++struct qpnp_pinbindings {
 +	const char *property;
 +	unsigned param;
 +	u32 default_value;
 +};
-+static struct pm8xxx_pinbindings pm8xxx_pinbindings[] = {
-+	/* PMIC_GPIO_PULL_UP_30...  */
-+	{"qcom,pull-up-strength",	PM8XXX_PINCONF_PULL_UP, 0},
-+	/* PMIC_GPIO_STRENGTH_NO... */
-+	{"qcom,drive-strength",		PM8XXX_PINCONF_STRENGTH, 0},
++
++struct qpnp_pinattrib {
++	unsigned addr;
++	unsigned shift;
++	unsigned mask;
++	unsigned val;
 +};
 +
-+struct pm8xxx_gpio_pin {
-+	int irq;
-+
-+	u8 power_source;
-+	u8 direction;
-+	u8 output_buffer;
-+	u8 output_value;
-+	u8 bias;
-+	u8 output_strength;
-+	u8 disable;
-+	u8 function;
-+	u8 non_inverted;
++static struct qpnp_pinbindings qpnp_pinbindings[] = {
++	/* QCOM_BIAS_PULL_UP_30...  */
++	{"qcom,pull-up-strength", QPNP_PINCONF_PULL_UP, 0},
++	/* QCOM_DRIVE_STRENGTH_NO... */
++	{"qcom,drive-strength",	QPNP_PINCONF_STRENGTH, 0},
++	/* PMIC_MPP_AMUX_ROUTE_CH5 ... */
++	{"qcom,amux-route",	QPNP_PINCONF_AMUX_ROUTE, 0},
++	/* PMIC_MPP_VREFERENCE_1V25 ... */
++	{"qcom,vrefence",	QPNP_PINCONF_VREFENCE, 0},
++	/* PMIC_MPP_MODE.. */
++	{"qcom,mode",	        QPNP_PINCONF_MODE, 0},
 +};
 +
-+struct pm8xxx_gpio_data {
-+	int ngpio;
-+};
-+
-+struct pm8xxx_gpio {
-+	struct device *dev;
-+	struct regmap *regmap;
-+	struct pinctrl_dev *pctrl;
-+	struct gpio_chip chip;
-+
-+	const struct pm8xxx_gpio_data *data;
-+
-+	struct pm8xxx_gpio_pin pins[PM8XXX_MAX_GPIOS];
-+};
-+
-+static inline struct pm8xxx_gpio *to_pm8xxx_gpio(struct gpio_chip *chip)
-+{
-+	return container_of(chip, struct pm8xxx_gpio, chip);
-+};
-+
-+static const char * const pm8xxx_gpio_groups[PM8XXX_MAX_GPIOS] = {
++static const char * const qpnp_gpio_groups[] = {
 +	"gpio1", "gpio2", "gpio3", "gpio4", "gpio5", "gpio6", "gpio7", "gpio8",
 +	"gpio9", "gpio10", "gpio11", "gpio12", "gpio13", "gpio14", "gpio15",
 +	"gpio16", "gpio17", "gpio18", "gpio19", "gpio20", "gpio21", "gpio22",
 +	"gpio23", "gpio24", "gpio25", "gpio26", "gpio27", "gpio28", "gpio29",
 +	"gpio30", "gpio31", "gpio32", "gpio33", "gpio34", "gpio35", "gpio36",
-+	"gpio37", "gpio38", "gpio39", "gpio40", "gpio41", "gpio42", "gpio43",
-+	"gpio44",
 +};
 +
-+static const char * const pm8xxx_gpio_functions[] = {
++static const char * const qpnp_mpp_groups[] = {
++	"mpp1", "mpp2", "mpp3", "mpp4", "mpp5", "mpp6", "mpp7", "mpp8",
++};
++
++static const char * const qpnp_gpio_functions[] = {
 +	PMIC_GPIO_FUNC_NORMAL, PMIC_GPIO_FUNC_PAIRED,
 +	PMIC_GPIO_FUNC_FUNC1, PMIC_GPIO_FUNC_FUNC2,
 +	PMIC_GPIO_FUNC_DTEST1, PMIC_GPIO_FUNC_DTEST2,
 +	PMIC_GPIO_FUNC_DTEST3, PMIC_GPIO_FUNC_DTEST4,
 +};
 +
-+static int pm8xxx_gpio_read(struct pm8xxx_gpio *pctrl, int pin, int bank)
-+{
-+	int reg = SSBI_REG_ADDR_GPIO(pin);
-+	unsigned int val = bank << 4;
-+	int ret;
++static const char * const qpnp_mpp_functions[] = {
++	PMIC_MPP_FUNC_NORMAL, PMIC_MPP_FUNC_PAIRED,
++	"reserved1", "reserved2",
++	PMIC_MPP_FUNC_DTEST1, PMIC_MPP_FUNC_DTEST2,
++	PMIC_MPP_FUNC_DTEST3, PMIC_MPP_FUNC_DTEST4,
++};
 +
-+	ret = regmap_write(pctrl->regmap, reg, val);
-+	if (ret) {
-+		dev_err(pctrl->dev,
-+			"failed to select bank %d of pin %d\n", bank, pin);
-+		return ret;
++static inline struct qpnp_padinfo *qpnp_get_desc(struct qpnp_pinctrl *qctrl,
++						 unsigned pin)
++{
++	if (pin >= qctrl->desc.npins) {
++		dev_warn(qctrl->dev, "invalid pin number %d", pin);
++		return NULL;
 +	}
 +
-+	ret = regmap_read(pctrl->regmap, reg, &val);
-+	if (ret) {
-+		dev_err(pctrl->dev,
-+			"failed to read register %d of pin %d\n", bank, pin);
-+		return ret;
++	return &qctrl->pads[pin];
++}
++
++static int qpnp_conv_to_pin(struct qpnp_pinctrl *qctrl,
++			   struct qpnp_padinfo *pad, unsigned param,
++			   unsigned val)
++{
++	struct qpnp_pinattrib attr[3];
++	unsigned int type, subtype;
++	int nattrs = 1, idx, ret;
++
++	type = pad->type;
++	subtype = pad->subtype;
++
++	switch (param) {
++	case PIN_CONFIG_DRIVE_PUSH_PULL:
++		if (type != QPNP_GPIO_TYPE)
++			return -ENXIO;
++		attr[0].addr  = QPNP_REG_DIG_OUT_CTL;
++		attr[0].shift = QPNP_REG_OUT_TYPE_SHIFT;
++		attr[0].mask  = QPNP_REG_OUT_TYPE_MASK;
++		attr[0].val   = QPNP_GPIO_OUT_BUF_CMOS;
++		break;
++	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
++		if (type != QPNP_GPIO_TYPE)
++			return -ENXIO;
++		if (subtype == QPNP_GPIO_SUBTYPE_GPIOC_4CH ||
++		    subtype == QPNP_GPIO_SUBTYPE_GPIOC_8CH)
++			return -EINVAL;
++		attr[0].addr  = QPNP_REG_DIG_OUT_CTL;
++		attr[0].shift = QPNP_REG_OUT_TYPE_SHIFT;
++		attr[0].mask  = QPNP_REG_OUT_TYPE_MASK;
++		attr[0].val   = QPNP_GPIO_OUT_BUF_OPEN_DRAIN_NMOS;
++		break;
++	case PIN_CONFIG_DRIVE_OPEN_SOURCE:
++		if (type != QPNP_GPIO_TYPE)
++			return -ENXIO;
++		if (subtype == QPNP_GPIO_SUBTYPE_GPIOC_4CH ||
++		    subtype == QPNP_GPIO_SUBTYPE_GPIOC_8CH)
++			return -EINVAL;
++		attr[0].addr  = QPNP_REG_DIG_OUT_CTL;
++		attr[0].shift = QPNP_REG_OUT_TYPE_SHIFT;
++		attr[0].mask  = QPNP_REG_OUT_TYPE_MASK;
++		attr[0].val   = QPNP_GPIO_OUT_BUF_OPEN_DRAIN_PMOS;
++		break;
++	case PIN_CONFIG_BIAS_DISABLE:
++		attr[0].addr  = QPNP_REG_DIG_PULL_CTL;
++		attr[0].shift = QPNP_REG_PULL_SHIFT;
++		attr[0].mask  = QPNP_REG_PULL_MASK;
++		if (type == QPNP_GPIO_TYPE)
++			attr[0].val = QPNP_GPIO_PULL_NO;
++		else
++			attr[0].val = QPNP_MPP_PULL_UP_OPEN;
++		break;
++	case PIN_CONFIG_BIAS_PULL_UP:
++		if (type != QPNP_MPP_TYPE)
++			return -EINVAL;
++		switch (val) {
++		case 0:
++			val = QPNP_MPP_PULL_UP_OPEN;
++			break;
++		case 600:
++			val = QPNP_MPP_PULL_UP_0P6KOHM;
++			break;
++		case 10000:
++			val = QPNP_MPP_PULL_UP_10KOHM;
++			break;
++		case 30000:
++			val = QPNP_MPP_PULL_UP_30KOHM;
++			break;
++		default:
++			return -EINVAL;
++		}
++		attr[0].addr  = QPNP_REG_DIG_PULL_CTL;
++		attr[0].shift = QPNP_REG_PULL_SHIFT;
++		attr[0].mask  = QPNP_REG_PULL_MASK;
++		attr[0].val   = val;
++		break;
++	case PIN_CONFIG_BIAS_PULL_DOWN:
++		if (type != QPNP_GPIO_TYPE)
++			return -EINVAL;
++		attr[0].addr  = QPNP_REG_DIG_PULL_CTL;
++		attr[0].shift = QPNP_REG_PULL_SHIFT;
++		attr[0].mask  = QPNP_REG_PULL_MASK;
++		if (val)
++			attr[0].val = QPNP_GPIO_PULL_DN;
++		else
++			attr[0].val = QPNP_GPIO_PULL_NO;
++		break;
++	case PIN_CONFIG_POWER_SOURCE:
++		if (val >= QPNP_PIN_VIN_8CH_INVALID)
++			return -EINVAL;
++		if (val >= QPNP_PIN_VIN_4CH_INVALID) {
++			if (type == QPNP_GPIO_TYPE &&
++			   (subtype == QPNP_GPIO_SUBTYPE_GPIO_4CH ||
++			    subtype == QPNP_GPIO_SUBTYPE_GPIOC_4CH))
++				return -EINVAL;
++			if (type == QPNP_MPP_TYPE &&
++			   (subtype == QPNP_MPP_SUBTYPE_4CH_NO_ANA_OUT ||
++			    subtype == QPNP_MPP_SUBTYPE_4CH_NO_SINK ||
++			    subtype == QPNP_MPP_SUBTYPE_4CH_FULL_FUNC ||
++			    subtype == QPNP_MPP_SUBTYPE_ULT_4CH_NO_ANA_OUT ||
++			    subtype == QPNP_MPP_SUBTYPE_ULT_4CH_NO_SINK))
++				return -EINVAL;
++		}
++		attr[0].addr  = QPNP_REG_DIG_VIN_CTL;
++		attr[0].shift = QPNP_REG_VIN_SHIFT;
++		attr[0].mask  = QPNP_REG_VIN_MASK;
++		attr[0].val   = val;
++		break;
++	case PIN_CONFIG_DRIVE_STRENGTH:
++		if (type != QPNP_MPP_TYPE)
++			return -EINVAL;
++		if (subtype == QPNP_MPP_SUBTYPE_4CH_NO_SINK ||
++		    subtype == QPNP_MPP_SUBTYPE_ULT_4CH_NO_SINK)
++			return -ENXIO;
++		if (val > 50)	/* mA */
++			return -EINVAL;
++		attr[0].addr  = QPNP_REG_SINK_CTL;
++		attr[0].shift = QPNP_REG_CS_OUT_SHIFT;
++		attr[0].mask  = QPNP_REG_CS_OUT_MASK;
++		attr[0].val   = (val / 5) - 1;
++		break;
++	case PIN_CONFIG_INPUT_ENABLE:
++		nattrs = 2;
++		attr[0].addr  = QPNP_REG_MODE_CTL;
++		attr[0].shift = QPNP_REG_MODE_SEL_SHIFT;
++		attr[0].mask  = QPNP_REG_MODE_SEL_MASK;
++		attr[0].val   = QPNP_PIN_MODE_DIG_IN;
++		attr[1].addr  = QPNP_REG_EN_CTL;
++		attr[1].shift = QPNP_REG_MASTER_EN_SHIFT;
++		attr[1].mask  = QPNP_REG_MASTER_EN_MASK;
++		attr[1].val   = 1;
++		if (val)
++			break;
++	/* Fallthrough */
++	case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
++		attr[1].addr  = QPNP_REG_EN_CTL;
++		attr[1].shift = QPNP_REG_MASTER_EN_SHIFT;
++		attr[1].mask  = QPNP_REG_MASTER_EN_MASK;
++		attr[1].val   = 0;
++		break;
++	case PIN_CONFIG_OUTPUT:
++		nattrs = 3;
++		attr[0].addr  = QPNP_REG_MODE_CTL;
++		attr[0].shift = QPNP_REG_MODE_INVERT_SHIFT;
++		attr[0].mask  = QPNP_REG_MODE_INVERT_MASK;
++		attr[0].val   = !!val;
++		attr[1].addr  = QPNP_REG_MODE_CTL;
++		attr[1].shift = QPNP_REG_MODE_SEL_SHIFT;
++		attr[1].mask  = QPNP_REG_MODE_SEL_MASK;
++		attr[1].val   = QPNP_PIN_MODE_DIG_OUT;
++		attr[2].addr  = QPNP_REG_EN_CTL;
++		attr[2].shift = QPNP_REG_MASTER_EN_SHIFT;
++		attr[2].mask  = QPNP_REG_MASTER_EN_MASK;
++		attr[2].val   = 1;
++		break;
++	case QPNP_PINCONF_PULL_UP:
++		if (type != QPNP_GPIO_TYPE)
++			return -EINVAL;
++		switch (val) {
++		default:
++			return -EINVAL;
++		case 0:
++			val = QPNP_GPIO_PULL_NO;
++			break;
++		case PMIC_GPIO_PULL_UP_30:
++			val = QPNP_GPIO_PULL_UP_30;
++			break;
++		case PMIC_GPIO_PULL_UP_1P5:
++			val = QPNP_GPIO_PULL_UP_1P5;
++			break;
++		case PMIC_GPIO_PULL_UP_31P5:
++			val = QPNP_GPIO_PULL_UP_31P5;
++			break;
++		case PMIC_GPIO_PULL_UP_1P5_30:
++			val = QPNP_GPIO_PULL_UP_1P5_30;
++			break;
++		}
++		attr[0].addr  = QPNP_REG_DIG_PULL_CTL;
++		attr[0].shift = QPNP_REG_PULL_SHIFT;
++		attr[0].mask  = QPNP_REG_PULL_MASK;
++		attr[0].val   = val;
++		break;
++	case QPNP_PINCONF_STRENGTH:
++		if (type != QPNP_GPIO_TYPE)
++			return -EINVAL;
++		switch (val) {
++		default:
++		case PMIC_GPIO_STRENGTH_NO:
++			return -EINVAL;
++		case PMIC_GPIO_STRENGTH_LOW:
++			attr[0].val = QPNP_GPIO_STRENGTH_LOW;
++			break;
++		case PMIC_GPIO_STRENGTH_MED:
++			attr[0].val = QPNP_GPIO_STRENGTH_MED;
++			break;
++		case PMIC_GPIO_STRENGTH_HIGH:
++			attr[0].val = QPNP_GPIO_STRENGTH_HIGH;
++			break;
++		}
++		attr[0].addr  = QPNP_REG_DIG_OUT_CTL;
++		attr[0].shift = QPNP_REG_OUT_STRENGTH_SHIFT;
++		attr[0].mask  = QPNP_REG_OUT_STRENGTH_MASK;
++		break;
++	case QPNP_PINCONF_VREFENCE:
++		if (type != QPNP_MPP_TYPE)
++			return -ENXIO;
++		if (val >= QPNP_MPP_AOUT_INVALID)
++			return -EINVAL;
++		if (subtype == QPNP_MPP_SUBTYPE_4CH_NO_ANA_OUT ||
++		    subtype == QPNP_MPP_SUBTYPE_ULT_4CH_NO_ANA_OUT)
++			return -ENXIO;
++		attr[0].addr  = QPNP_REG_AOUT_CTL;
++		attr[0].shift = QPNP_REG_AOUT_REF_SHIFT;
++		attr[0].mask  = QPNP_REG_AOUT_REF_MASK;
++		attr[0].val   = val;
++		break;
++	case QPNP_PINCONF_AMUX_ROUTE:
++		if (type != QPNP_MPP_TYPE)
++			return -ENXIO;
++		if (val >= QPNP_MPP_AIN_INVALID)
++			return -EINVAL;
++		attr[0].addr  = QPNP_REG_AIN_CTL;
++		attr[0].shift = QPNP_REG_AIN_ROUTE_SHIFT;
++		attr[0].mask  = QPNP_REG_AIN_ROUTE_MASK;
++		attr[0].val   = val;
++		break;
++	case QPNP_PINCONF_MODE:
++		if ((pad->modes & BIT(val)) == 0)
++			return -ENXIO;
++		attr[0].addr  = QPNP_REG_MODE_CTL;
++		attr[0].shift = QPNP_REG_MODE_SEL_SHIFT;
++		attr[0].mask  = QPNP_REG_MODE_SEL_MASK;
++		attr[0].val   = val;
++		break;
++	default:
++		return -EINVAL;
 +	}
 +
-+	return val;
++	for (idx = 0; idx < nattrs; idx++) {
++		/* add base offset */
++		attr[idx].addr = QPNP_REG_ADDR(pad, attr[idx].addr);
++		ret = regmap_update_bits(qctrl->map, attr[idx].addr,
++					 attr[idx].mask,
++					 attr[idx].val << attr[idx].shift);
++		if (ret < 0)
++			return ret;
++	}
++
++	return 0;
 +}
 +
-+static int pm8xxx_gpio_write(struct pm8xxx_gpio *pctrl,
-+			     int pin, int bank, u8 val)
++
++static int qpnp_conv_from_pin(struct qpnp_pinctrl *qctrl,
++			     struct qpnp_padinfo *pad,
++			     unsigned param, unsigned *val)
 +{
++	struct qpnp_pinattrib attr;
++	unsigned int type, subtype, field;
++	unsigned int addr, buff;
 +	int ret;
 +
-+	val |= PM8XXX_GPIO_WRITE;
-+	val |= bank << 4;
++	*val = 0;
++	type = pad->type;
++	subtype = pad->subtype;
 +
-+	ret = regmap_write(pctrl->regmap, SSBI_REG_ADDR_GPIO(pin), val);
-+	if (ret)
-+		dev_err(pctrl->dev, "failed to write register\n");
++	switch (param) {
++	case PIN_CONFIG_DRIVE_PUSH_PULL:
++	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
++	case PIN_CONFIG_DRIVE_OPEN_SOURCE:
++		if (type != QPNP_GPIO_TYPE)
++			return -ENXIO;
++		attr.addr  = QPNP_REG_DIG_OUT_CTL;
++		attr.shift = QPNP_REG_OUT_TYPE_SHIFT;
++		attr.mask  = QPNP_REG_OUT_TYPE_MASK;
++		break;
++	case PIN_CONFIG_BIAS_PULL_DOWN:
++		if (type != QPNP_GPIO_TYPE)
++			return -ENXIO;
++	/* Fallthrough */
++	case PIN_CONFIG_BIAS_DISABLE:
++	case PIN_CONFIG_BIAS_PULL_UP:
++		attr.addr  = QPNP_REG_DIG_PULL_CTL;
++		attr.shift = QPNP_REG_PULL_SHIFT;
++		attr.mask  = QPNP_REG_PULL_MASK;
++		break;
++	case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
++		attr.addr  = QPNP_REG_EN_CTL;
++		attr.shift = QPNP_REG_MASTER_EN_SHIFT;
++		attr.mask  = QPNP_REG_MASTER_EN_MASK;
++		break;
++	case PIN_CONFIG_POWER_SOURCE:
++		attr.addr  = QPNP_REG_DIG_VIN_CTL;
++		attr.shift = QPNP_REG_VIN_SHIFT;
++		attr.mask  = QPNP_REG_VIN_MASK;
++		break;
++	case PIN_CONFIG_DRIVE_STRENGTH:
++		if (type != QPNP_MPP_TYPE)
++			return -ENXIO;
++		attr.addr  = QPNP_REG_SINK_CTL;
++		attr.shift = QPNP_REG_CS_OUT_SHIFT;
++		attr.mask  = QPNP_REG_CS_OUT_MASK;
++		break;
++	case PIN_CONFIG_INPUT_ENABLE:
++		attr.addr  = QPNP_REG_EN_CTL;
++		attr.shift = QPNP_REG_MASTER_EN_SHIFT;
++		attr.mask  = QPNP_REG_MASTER_EN_MASK;
++		break;
++	case PIN_CONFIG_OUTPUT:
++		attr.addr  = QPNP_REG_MODE_CTL;
++		attr.shift = QPNP_REG_MODE_INVERT_SHIFT;
++		attr.mask  = QPNP_REG_MODE_INVERT_MASK;
++		break;
++	case QPNP_PINCONF_PULL_UP:
++		if (type != QPNP_GPIO_TYPE)
++			return -ENXIO;
++		attr.addr  = QPNP_REG_DIG_PULL_CTL;
++		attr.shift = QPNP_REG_PULL_SHIFT;
++		attr.mask  = QPNP_REG_PULL_MASK;
++		break;
++	case QPNP_PINCONF_STRENGTH:
++		if (type != QPNP_GPIO_TYPE)
++			return -ENXIO;
++		attr.addr  = QPNP_REG_DIG_OUT_CTL;
++		attr.shift = QPNP_REG_OUT_STRENGTH_SHIFT;
++		attr.mask  = QPNP_REG_OUT_STRENGTH_MASK;
++		break;
++	case QPNP_PINCONF_VREFENCE:
++		if (type != QPNP_MPP_TYPE)
++			return -ENXIO;
++		if (subtype == QPNP_MPP_SUBTYPE_4CH_NO_ANA_OUT ||
++		    subtype == QPNP_MPP_SUBTYPE_ULT_4CH_NO_ANA_OUT)
++			return -ENXIO;
++		attr.addr  = QPNP_REG_AOUT_CTL;
++		attr.shift = QPNP_REG_AOUT_REF_SHIFT;
++		attr.mask  = QPNP_REG_AOUT_REF_MASK;
++		break;
++	case QPNP_PINCONF_AMUX_ROUTE:
++		if (type != QPNP_MPP_TYPE)
++			return -ENXIO;
++		attr.addr  = QPNP_REG_AIN_CTL;
++		attr.shift = QPNP_REG_AIN_ROUTE_SHIFT;
++		attr.mask  = QPNP_REG_AIN_ROUTE_MASK;
++		break;
++	case QPNP_PINCONF_MODE:
++		attr.addr  = QPNP_REG_MODE_CTL;
++		attr.shift = QPNP_REG_MODE_SEL_SHIFT;
++		attr.mask  = QPNP_REG_MODE_SEL_MASK;
++		break;
++	default:
++		return -EINVAL;
++	}
 +
-+	return ret;
++	addr = QPNP_REG_ADDR(pad, attr.addr);
++	ret = regmap_read(qctrl->map, addr, &buff);
++	if (ret < 0)
++		return ret;
++
++	field = QPNP_GET(buff, attr.shift, attr.mask);
++
++	switch (param) {
++	case PIN_CONFIG_DRIVE_PUSH_PULL:
++		if (field == QPNP_GPIO_OUT_BUF_CMOS)
++			*val = 1;
++		break;
++	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
++		if (field == QPNP_GPIO_OUT_BUF_OPEN_DRAIN_NMOS)
++			*val = 1;
++		break;
++	case PIN_CONFIG_DRIVE_OPEN_SOURCE:
++		if (field == QPNP_GPIO_OUT_BUF_OPEN_DRAIN_PMOS)
++			*val = 1;
++		break;
++	case PIN_CONFIG_BIAS_DISABLE:
++		if (type == QPNP_GPIO_TYPE) {
++			if (field == QPNP_GPIO_PULL_NO)
++				*val = 1;
++		} else {
++			if (field == QPNP_MPP_PULL_UP_OPEN)
++				*val = 1;
++		}
++		break;
++	case PIN_CONFIG_BIAS_PULL_UP:
++		switch (field) {
++		default:
++		case QPNP_MPP_PULL_UP_OPEN:
++			*val = 0;
++			break;
++		case QPNP_MPP_PULL_UP_0P6KOHM:
++			*val = 600;
++			break;
++		case QPNP_MPP_PULL_UP_10KOHM:
++			*val = 10000;
++			break;
++		case QPNP_MPP_PULL_UP_30KOHM:
++			*val = 30000;
++			break;
++		}
++		break;
++	case PIN_CONFIG_BIAS_PULL_DOWN:
++		if (field == QPNP_GPIO_PULL_DN)
++			*val = 1;
++		break;
++	case PIN_CONFIG_POWER_SOURCE:
++		*val = field;
++		break;
++	case PIN_CONFIG_DRIVE_STRENGTH:
++		*val = (field + 1) * 5;
++		break;
++	case PIN_CONFIG_INPUT_ENABLE:
++		*val = field;
++		break;
++	case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
++		if (field == QPNP_PIN_MASTER_DISABLE)
++			*val = 1;
++		break;
++	case PIN_CONFIG_OUTPUT:
++		*val = field;
++		break;
++	case QPNP_PINCONF_PULL_UP:
++		switch (field) {
++		case QPNP_GPIO_PULL_NO:
++			field = 0;
++			break;
++		case QPNP_GPIO_PULL_UP_30:
++			field = PMIC_GPIO_PULL_UP_30;
++			break;
++		case QPNP_GPIO_PULL_UP_1P5:
++			field = PMIC_GPIO_PULL_UP_1P5;
++			break;
++		case QPNP_GPIO_PULL_UP_31P5:
++			field = PMIC_GPIO_PULL_UP_31P5;
++			break;
++
++		case QPNP_GPIO_PULL_UP_1P5_30:
++			field = PMIC_GPIO_PULL_UP_1P5_30;
++			break;
++		}
++		*val = field;
++		break;
++	case QPNP_PINCONF_STRENGTH:
++		switch (field) {
++		case QPNP_GPIO_STRENGTH_HIGH:
++			field = PMIC_GPIO_STRENGTH_HIGH;
++			break;
++		case QPNP_GPIO_STRENGTH_MED:
++			field = PMIC_GPIO_STRENGTH_MED;
++			break;
++		case QPNP_GPIO_STRENGTH_LOW:
++			field = PMIC_GPIO_STRENGTH_LOW;
++			break;
++		}
++		*val = field;
++		break;
++	case QPNP_PINCONF_MODE:
++	case QPNP_PINCONF_VREFENCE:
++	case QPNP_PINCONF_AMUX_ROUTE:
++		*val = field;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
 +}
 +
-+static int pm8xxx_gpio_get_groups_count(struct pinctrl_dev *pctldev)
++static int qpnp_get_groups_count(struct pinctrl_dev *pctldev)
 +{
-+	struct pm8xxx_gpio *pctrl = pinctrl_dev_get_drvdata(pctldev);
++	struct qpnp_pinctrl *qpctrl = pinctrl_dev_get_drvdata(pctldev);
 +
-+	return pctrl->data->ngpio;
++	/* Every PIN is a group */
++	return qpctrl->desc.npins;
 +}
 +
-+static const char *pm8xxx_gpio_get_group_name(struct pinctrl_dev *pctldev,
-+				      unsigned group)
++static const char *qpnp_get_group_name(struct pinctrl_dev *pctldev,
++				       unsigned pin)
 +{
-+	return pm8xxx_gpio_groups[group];
++	struct qpnp_pinctrl *qpctrl = pinctrl_dev_get_drvdata(pctldev);
++
++	/* Every PIN is a group */
++	return qpctrl->desc.pins[pin].name;
 +}
 +
-+static int pm8xxx_parse_dt_config(struct device *dev, struct device_node *np,
-+			unsigned long **configs, unsigned int *nconfigs)
++static int qpnp_get_group_pins(struct pinctrl_dev *pctldev,
++			      unsigned pin,
++			      const unsigned **pins,
++			      unsigned *num_pins)
 +{
-+	struct pm8xxx_pinbindings *par;
-+	unsigned long cfg[ARRAY_SIZE(pm8xxx_pinbindings)];
-+	unsigned int ncfg = 0;
++	struct qpnp_pinctrl *qpctrl = pinctrl_dev_get_drvdata(pctldev);
++
++	/* Every PIN is a group */
++	*pins = &qpctrl->desc.pins[pin].number;
++	*num_pins = 1;
++	return 0;
++}
++
++static int qpnp_parse_dt_config(struct device_node *np,
++			      struct pinctrl_dev *pctldev,
++			      unsigned long **configs, unsigned int *nconfs)
++{
++	struct qpnp_pinbindings *par;
++	unsigned long cfg;
 +	int ret, idx;
 +	u32 val;
 +
-+	if (!np)
-+		return -EINVAL;
++	for (idx = 0; idx < ARRAY_SIZE(qpnp_pinbindings); idx++) {
 +
-+	for (idx = 0; idx < ARRAY_SIZE(pm8xxx_pinbindings); idx++) {
-+		par = &pm8xxx_pinbindings[idx];
++		par = &qpnp_pinbindings[idx];
 +		ret = of_property_read_u32(np, par->property, &val);
 +
 +		/* property not found */
@@ -270,54 +892,36 @@ index 0000000..9a1b443
 +		if (ret)
 +			val = par->default_value;
 +
-+		dev_dbg(dev, "found %s with value %u\n", par->property, val);
-+		cfg[ncfg] = pinconf_to_config_packed(par->param, val);
-+		ncfg++;
++		dev_dbg(pctldev->dev, "found %s with value %u\n",
++			par->property, val);
++
++		cfg = pinconf_to_config_packed(par->param, val);
++
++		ret = pinctrl_utils_add_config(pctldev, configs, nconfs, cfg);
++		if (ret)
++			return ret;
 +	}
 +
-+	ret = 0;
-+
-+	/* no configs found at qchip->npads */
-+	if (ncfg == 0) {
-+		*configs = NULL;
-+		*nconfigs = 0;
-+		goto out;
-+	}
-+
-+	/*
-+	 * Now limit the number of configs to the real number of
-+	 * found properties.
-+	 */
-+	*configs = kcalloc(ncfg, sizeof(unsigned long), GFP_KERNEL);
-+	if (!*configs) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	memcpy(*configs, cfg, ncfg * sizeof(unsigned long));
-+	*nconfigs = ncfg;
-+
-+out:
-+	return ret;
++	return 0;
 +}
 +
-+static int pm8xxx_dt_subnode_to_map(struct pinctrl_dev *pctldev,
++static int qpnp_dt_subnode_to_map(struct pinctrl_dev *pctldev,
 +				  struct device_node *np,
 +				  struct pinctrl_map **map,
 +				  unsigned *reserv, unsigned *nmaps,
 +				  enum pinctrl_map_type type)
 +{
 +	unsigned long *configs = NULL;
-+	unsigned num_configs = 0;
++	unsigned nconfs = 0;
 +	struct property *prop;
 +	const char *group;
 +	int ret;
 +
-+	ret = pm8xxx_parse_dt_config(pctldev->dev, np, &configs, &num_configs);
++	ret = qpnp_parse_dt_config(np, pctldev, &configs, &nconfs);
 +	if (ret < 0)
 +		return ret;
 +
-+	if (!num_configs)
++	if (!nconfs)
 +		return 0;
 +
 +	ret = of_property_count_strings(np, "pins");
@@ -331,8 +935,7 @@ index 0000000..9a1b443
 +
 +	of_property_for_each_string(np, "pins", prop, group) {
 +		ret = pinctrl_utils_add_map_configs(pctldev, map,
-+				reserv, nmaps, group, configs,
-+				num_configs, type);
++				reserv, nmaps, group, configs, nconfs, type);
 +		if (ret < 0)
 +			break;
 +	}
@@ -341,7 +944,7 @@ index 0000000..9a1b443
 +	return ret;
 +}
 +
-+static int pm8xxx_dt_node_to_map(struct pinctrl_dev *pctldev,
++static int qpnp_dt_node_to_map(struct pinctrl_dev *pctldev,
 +			       struct device_node *np_config,
 +			       struct pinctrl_map **map,
 +			       unsigned *nmaps)
@@ -364,7 +967,7 @@ index 0000000..9a1b443
 +		if (ret)
 +			break;
 +
-+		ret = pm8xxx_dt_subnode_to_map(pctldev, np, map, &reserv,
++		ret = qpnp_dt_subnode_to_map(pctldev, np, map, &reserv,
 +					     nmaps, type);
 +		if (ret)
 +			break;
@@ -376,572 +979,634 @@ index 0000000..9a1b443
 +	return ret;
 +}
 +
-+static const struct pinctrl_ops pm8xxx_gpio_pinctrl_ops = {
-+	.get_groups_count	= pm8xxx_gpio_get_groups_count,
-+	.get_group_name		= pm8xxx_gpio_get_group_name,
-+	.dt_node_to_map		= pm8xxx_dt_node_to_map,
++static const struct pinctrl_ops qpnp_pinctrl_ops = {
++	.get_groups_count	= qpnp_get_groups_count,
++	.get_group_name		= qpnp_get_group_name,
++	.get_group_pins		= qpnp_get_group_pins,
++	.dt_node_to_map		= qpnp_dt_node_to_map,
 +	.dt_free_map		= pinctrl_utils_dt_free_map,
 +};
 +
-+static int pm8xxx_get_functions_count(struct pinctrl_dev *pctldev)
++static int qpnp_get_functions_count(struct pinctrl_dev *pctldev)
 +{
-+	return ARRAY_SIZE(pm8xxx_gpio_functions);
++	return ARRAY_SIZE(qpnp_gpio_functions);
 +}
 +
-+static const char *pm8xxx_get_function_name(struct pinctrl_dev *pctldev,
++static const char *qpnp_get_function_name(struct pinctrl_dev *pctldev,
 +					 unsigned function)
 +{
-+	return pm8xxx_gpio_functions[function];
++	struct qpnp_pinctrl *qctrl = pinctrl_dev_get_drvdata(pctldev);
++
++	return qctrl->functions[function];
 +}
 +
-+static int pm8xxx_get_function_groups(struct pinctrl_dev *pctldev,
-+				   unsigned function,
-+				   const char * const **groups,
-+				   unsigned * const num_groups)
++static int qpnp_get_function_groups(struct pinctrl_dev *pctldev,
++				  unsigned function,
++				  const char *const **groups,
++				  unsigned *const num_qgroups)
 +{
-+	struct pm8xxx_gpio *pctrl = pinctrl_dev_get_drvdata(pctldev);
++	struct qpnp_pinctrl *qctrl = pinctrl_dev_get_drvdata(pctldev);
 +
-+	*groups = pm8xxx_gpio_groups;
-+	*num_groups = pctrl->data->ngpio;
++	*groups = qctrl->groups;
++	*num_qgroups = qctrl->desc.npins;
 +	return 0;
 +}
 +
-+static int pm8xxx_pinmux_enable(struct pinctrl_dev *pctldev,
++static int qpnp_pinmux_enable(struct pinctrl_dev *pctldev,
 +			     unsigned function,
-+			     unsigned group)
++			     unsigned pin)
 +{
-+	struct pm8xxx_gpio *pctrl = pinctrl_dev_get_drvdata(pctldev);
-+	struct pm8xxx_gpio_pin *pin = &pctrl->pins[group];
-+	u8 val;
++	struct qpnp_pinctrl *qctrl = pinctrl_dev_get_drvdata(pctldev);
++	struct qpnp_padinfo *pad;
++	unsigned int addr, val, mask;
++	int ret;
 +
-+	pin->function = function;
-+	val = pin->function << 1;
++	pad = qpnp_get_desc(qctrl, pin);
++	if (!pad)
++		return -EINVAL;
 +
-+	pm8xxx_gpio_write(pctrl, group, 4, val);
++	addr = QPNP_REG_ADDR(pad, QPNP_REG_MODE_CTL);
++	val = function << QPNP_REG_MODE_FUNCTION_SHIFT;
++	mask = QPNP_REG_MODE_FUNCTION_MASK;
++	ret = regmap_update_bits(qctrl->map, addr, mask, val);
++	if (ret)
++		return ret;
 +
-+	return 0;
++	addr = QPNP_REG_ADDR(pad, QPNP_REG_EN_CTL);
++	val = BIT(QPNP_REG_MASTER_EN_SHIFT);
++	mask = QPNP_REG_MASTER_EN_MASK;
++	ret = regmap_update_bits(qctrl->map, addr, mask, val);
++
++	return ret;
 +}
 +
-+static const struct pinmux_ops pm8xxx_pinmux_ops = {
-+	.get_functions_count	= pm8xxx_get_functions_count,
-+	.get_function_name	= pm8xxx_get_function_name,
-+	.get_function_groups	= pm8xxx_get_function_groups,
-+	.enable			= pm8xxx_pinmux_enable,
++static const struct pinmux_ops qpnp_pinmux_ops = {
++	.get_functions_count	= qpnp_get_functions_count,
++	.get_function_name	= qpnp_get_function_name,
++	.get_function_groups	= qpnp_get_function_groups,
++	.enable			= qpnp_pinmux_enable,
 +};
 +
-+static int pm8xxx_gpio_config_get(struct pinctrl_dev *pctldev,
-+			  unsigned int offset,
-+			  unsigned long *config)
++static int qpnp_get(struct gpio_chip *chip, unsigned offset)
 +{
-+	struct pm8xxx_gpio *pctrl = pinctrl_dev_get_drvdata(pctldev);
-+	struct pm8xxx_gpio_pin *pin = &pctrl->pins[offset];
-+	unsigned param = pinconf_to_config_param(*config);
-+	unsigned arg;
++	struct qpnp_pinctrl *qctrl = to_qpnp_pinctrl(chip);
++	struct qpnp_padinfo *pad;
++	unsigned int val, en_mask, buff, addr;
++	int ret;
 +
-+	switch (param) {
-+	case PIN_CONFIG_BIAS_DISABLE:
-+		arg = pin->bias == PM8XXX_GPIO_BIAS_NP;
-+		break;
-+	case PIN_CONFIG_BIAS_PULL_DOWN:
-+		arg = pin->bias == PM8XXX_GPIO_BIAS_PD;
-+		break;
-+	case PM8XXX_PINCONF_PULL_UP:
-+		if (pin->bias >= PM8XXX_GPIO_BIAS_PU_30 &&
-+		    pin->bias <= PM8XXX_GPIO_BIAS_PU_1P5_30)
-+			arg = PMIC_GPIO_PULL_UP_30 + pin->bias;
-+		else
-+			arg = 0;
-+		break;
-+	case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
-+		arg = pin->disable;
-+		break;
-+	case PIN_CONFIG_INPUT_ENABLE:
-+		arg = pin->direction == PM8XXX_GPIO_DIR_IN;
-+		break;
-+	case PIN_CONFIG_OUTPUT:
-+		arg = pin->output_value;
-+		break;
-+	case PIN_CONFIG_POWER_SOURCE:
-+		arg = pin->power_source;
-+		break;
-+	case PM8XXX_PINCONF_STRENGTH:
-+		arg = pin->output_strength;
-+		break;
-+	case PIN_CONFIG_DRIVE_PUSH_PULL:
-+		arg = pin->output_buffer == PM8XXX_GPIO_PUSH_PULL;
-+		break;
-+	case PIN_CONFIG_DRIVE_OPEN_DRAIN:
-+		arg = pin->output_buffer == PM8XXX_GPIO_OPEN_DRAIN;
-+		break;
-+	default:
-+		dev_err(pctrl->dev,
-+			"unsupported config parameter: %x\n",
-+			param);
++	pad = qpnp_get_desc(qctrl, offset);
++	if (!pad)
 +		return -EINVAL;
++
++	addr = QPNP_REG_ADDR(pad, QPNP_REG_MODE_CTL);
++	ret = regmap_read(qctrl->map, addr, &buff);
++	if (ret < 0)
++		return ret;
++
++	/* GPIO val is from RT status if input is enabled */
++	if ((buff & QPNP_REG_MODE_SEL_MASK) ==
++	    (QPNP_PIN_MODE_DIG_IN << QPNP_REG_MODE_SEL_SHIFT)) {
++
++		addr = QPNP_REG_ADDR(pad, QPNP_REG_STATUS1);
++		ret = regmap_read(qctrl->map, addr, &val);
++		if (ret < 0)
++			return ret;
++
++		if (pad->type == QPNP_GPIO_TYPE && pad->major == 0)
++			en_mask = QPNP_REG_STATUS1_GPIO_EN_REV0_MASK;
++		else if (pad->type == QPNP_GPIO_TYPE &&
++			 pad->major > 0)
++			en_mask = QPNP_REG_STATUS1_GPIO_EN_MASK;
++		else		/* MPP */
++			en_mask = QPNP_REG_STATUS1_MPP_EN_MASK;
++
++		if (!(val & en_mask))
++			return -EPERM;
++
++		ret = val & QPNP_REG_STATUS1_VAL_MASK;
++
++	} else {
++		ret = buff & QPNP_REG_MODE_INVERT_MASK;
++		ret = ret >> QPNP_REG_MODE_INVERT_SHIFT;
 +	}
 +
-+	*config = pinconf_to_config_packed(param, arg);
++	return !!ret;
++}
 +
++static void qpnp_set(struct gpio_chip *chip, unsigned offset, int value)
++{
++	struct qpnp_pinctrl *qctrl = to_qpnp_pinctrl(chip);
++	struct qpnp_padinfo *pad;
++	unsigned int addr, buff;
++
++	pad = qpnp_get_desc(qctrl, offset);
++	if (!pad)
++		return;
++
++	addr = QPNP_REG_ADDR(pad, QPNP_REG_MODE_CTL);
++	buff = !!value << QPNP_REG_MODE_INVERT_SHIFT;
++
++	regmap_update_bits(qctrl->map, addr, QPNP_REG_MODE_INVERT_MASK, buff);
++}
++
++static int qpnp_config_get(struct pinctrl_dev *pctldev,
++			  unsigned int pin,
++			  unsigned long *config)
++{
++	struct qpnp_pinctrl *qctrl = pinctrl_dev_get_drvdata(pctldev);
++	unsigned param = pinconf_to_config_param(*config);
++	struct qpnp_padinfo *pad;
++	unsigned arg;
++	int ret;
++
++	pad = qpnp_get_desc(qctrl, pin);
++	if (!pad)
++		return -EINVAL;
++
++	/* Convert pinconf values to register values */
++	ret = qpnp_conv_from_pin(qctrl, pad, param, &arg);
++	if (ret)
++		return ret;
++
++	/* Convert register value to pinconf value */
++	*config = pinconf_to_config_packed(param, arg);
 +	return 0;
 +}
 +
-+static int pm8xxx_gpio_config_set(struct pinctrl_dev *pctldev,
-+				  unsigned int offset,
-+				  unsigned long *configs,
-+				  unsigned num_configs)
++static int qpnp_config_set(struct pinctrl_dev *pctldev, unsigned int pin,
++			  unsigned long *configs, unsigned nconfs)
 +{
-+	struct pm8xxx_gpio *pctrl = pinctrl_dev_get_drvdata(pctldev);
-+	struct pm8xxx_gpio_pin *pin = &pctrl->pins[offset];
++	struct qpnp_pinctrl *qctrl = pinctrl_dev_get_drvdata(pctldev);
++	struct qpnp_padinfo *pad;
 +	unsigned param;
 +	unsigned arg;
-+	unsigned i;
-+	u8 banks = 0;
-+	u8 val;
++	int idx, ret;
 +
-+	for (i = 0; i < num_configs; i++) {
-+		param = pinconf_to_config_param(configs[i]);
-+		arg = pinconf_to_config_argument(configs[i]);
++	pad = qpnp_get_desc(qctrl, pin);
++	if (!pad)
++		return -EINVAL;
 +
-+		switch (param) {
-+		case PIN_CONFIG_BIAS_DISABLE:
-+			pin->bias = PM8XXX_GPIO_BIAS_NP;
-+			banks |= BIT(2);
-+			pin->disable = 0;
-+			banks |= BIT(3);
-+			break;
-+		case PIN_CONFIG_BIAS_PULL_DOWN:
-+			pin->bias = PM8XXX_GPIO_BIAS_PD;
-+			banks |= BIT(2);
-+			pin->disable = 0;
-+			banks |= BIT(3);
-+			break;
-+		case PM8XXX_PINCONF_PULL_UP:
-+			if (arg < PMIC_GPIO_PULL_UP_30 ||
-+			    arg > PMIC_GPIO_PULL_UP_1P5_30) {
-+				dev_err(pctrl->dev, "invalid pull-up level\n");
-+				return -EINVAL;
-+			}
-+			pin->bias = arg - PM8XXX_GPIO_BIAS_PU_30;
-+			banks |= BIT(2);
-+			pin->disable = 0;
-+			banks |= BIT(3);
-+			break;
-+		case PIN_CONFIG_BIAS_HIGH_IMPEDANCE:
-+			pin->disable = 1;
-+			banks |= BIT(3);
-+			break;
-+		case PIN_CONFIG_INPUT_ENABLE:
-+			pin->direction = PM8XXX_GPIO_DIR_IN;
-+			banks |= BIT(1);
-+			break;
-+		case PIN_CONFIG_OUTPUT:
-+			pin->direction = PM8XXX_GPIO_DIR_OUT;
-+			pin->output_value = !!arg;
-+			banks |= BIT(1);
-+			break;
-+		case PIN_CONFIG_POWER_SOURCE:
-+			pin->power_source = arg;
-+			banks |= BIT(0);
-+			break;
-+		case PM8XXX_PINCONF_STRENGTH:
-+			if (arg > PMIC_GPIO_STRENGTH_LOW) {
-+				dev_err(pctrl->dev, "invalid drive strength\n");
-+				return -EINVAL;
-+			}
-+			pin->output_strength = arg;
-+			banks |= BIT(3);
-+			break;
-+		case PIN_CONFIG_DRIVE_PUSH_PULL:
-+			pin->output_buffer = PM8XXX_GPIO_PUSH_PULL;
-+			banks |= BIT(1);
-+			break;
-+		case PIN_CONFIG_DRIVE_OPEN_DRAIN:
-+			pin->output_buffer = PM8XXX_GPIO_OPEN_DRAIN;
-+			banks |= BIT(1);
-+			break;
-+		default:
-+			dev_err(pctrl->dev,
-+					"unsupported config parameter: %x\n",
-+					param);
-+			return -EINVAL;
++	for (idx = 0; idx < nconfs; idx++) {
++		param = pinconf_to_config_param(configs[idx]);
++		arg = pinconf_to_config_argument(configs[idx]);
++
++		/* Convert pinconf values to register values */
++		ret = qpnp_conv_to_pin(qctrl, pad, param, arg);
++		if (ret < 0) {
++			dev_err(pctldev->dev, "config %u = %u failed\n",
++				param, arg);
++			return ret;
 +		}
 +	}
 +
-+	if (banks & BIT(0))
-+		pm8xxx_gpio_write(pctrl, offset, 0, pin->power_source << 1);
-+
-+	if (banks & BIT(1)) {
-+		val = pin->direction << 2;
-+		val |= pin->output_buffer << 1;
-+		val |= pin->output_value;
-+		pm8xxx_gpio_write(pctrl, offset, 1, val);
-+	}
-+
-+	if (banks & BIT(2)) {
-+		val = pin->bias << 1;
-+		pm8xxx_gpio_write(pctrl, offset, 2, val);
-+	}
-+
-+	if (banks & BIT(3)) {
-+		val = pin->output_strength << 2;
-+		val |= pin->disable;
-+		pm8xxx_gpio_write(pctrl, offset, 3, val);
-+	}
-+
-+	if (banks & BIT(4)) {
-+		val = pin->function << 1;
-+		pm8xxx_gpio_write(pctrl, offset, 4, val);
-+	}
-+
-+	if (banks & BIT(5)) {
-+		val = 0;
-+		if (pin->non_inverted)
-+			val |= BIT(3);
-+		pm8xxx_gpio_write(pctrl, offset, 5, val);
-+	}
-+
 +	return 0;
 +}
 +
-+static const struct pinconf_ops pm8xxx_gpio_pinconf_ops = {
-+	.pin_config_group_get = pm8xxx_gpio_config_get,
-+	.pin_config_group_set = pm8xxx_gpio_config_set,
-+};
-+
-+static struct pinctrl_desc pm8xxx_gpio_desc = {
-+	.pctlops = &pm8xxx_gpio_pinctrl_ops,
-+	.pmxops = &pm8xxx_pinmux_ops,
-+	.confops = &pm8xxx_gpio_pinconf_ops,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int pm8xxx_gpio_direction_input(struct gpio_chip *chip,
-+				       unsigned offset)
++static void qpnp_config_dbg_show(struct pinctrl_dev *pctldev,
++				 struct seq_file *seq, unsigned pin)
 +{
-+	struct pm8xxx_gpio *pctrl = to_pm8xxx_gpio(chip);
-+	struct pm8xxx_gpio_pin *pin = &pctrl->pins[offset - 1];
-+	u8 val;
++	struct qpnp_pinctrl *qctrl = pinctrl_dev_get_drvdata(pctldev);
++	unsigned int en, buff, pull, out, drive, addr, mode, func, inv;
++	struct qpnp_padinfo *pad;
++	const char *name;
++	int ret;
 +
-+	pin->direction = PM8XXX_GPIO_DIR_IN;
-+	val = pin->direction << 2;
-+
-+	pm8xxx_gpio_write(pctrl, offset, 1, val);
-+
-+	return 0;
-+}
-+
-+static int pm8xxx_gpio_direction_output(struct gpio_chip *chip,
-+					unsigned offset,
-+					int value)
-+{
-+	struct pm8xxx_gpio *pctrl = to_pm8xxx_gpio(chip);
-+	struct pm8xxx_gpio_pin *pin = &pctrl->pins[offset - 1];
-+	u8 val;
-+
-+	pin->direction = PM8XXX_GPIO_DIR_OUT;
-+	pin->output_value = !!value;
-+
-+	val = pin->direction << 2;
-+	val |= pin->output_buffer << 1;
-+	val |= pin->output_value;
-+
-+	pm8xxx_gpio_write(pctrl, offset, 1, val);
-+
-+	return 0;
-+}
-+
-+static int pm8xxx_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct pm8xxx_gpio *pctrl = to_pm8xxx_gpio(chip);
-+	struct pm8xxx_gpio_pin *pin = &pctrl->pins[offset - 1];
-+
-+	if (pin->direction == PM8XXX_GPIO_DIR_OUT)
-+		return pin->output_value;
-+
-+	return pm8xxx_read_irq_status(pin->irq);
-+}
-+
-+static void pm8xxx_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
-+{
-+	struct pm8xxx_gpio *pctrl = to_pm8xxx_gpio(gc);
-+	struct pm8xxx_gpio_pin *pin = &pctrl->pins[offset - 1];
-+	u8 val;
-+
-+	pin->output_value = !!value;
-+
-+	val = pin->direction << 2;
-+	val |= pin->output_buffer << 1;
-+	val |= pin->output_value;
-+
-+	pm8xxx_gpio_write(pctrl, offset, 1, val);
-+}
-+
-+static int pm8xxx_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct pm8xxx_gpio *pctrl = to_pm8xxx_gpio(chip);
-+	struct pm8xxx_gpio_pin *pin = &pctrl->pins[offset - 1];
-+
-+	return pin->irq;
-+}
-+
-+#ifdef CONFIG_DEBUG_FS
-+#include <linux/seq_file.h>
-+
-+static void pm8xxx_gpio_dbg_show_one(struct seq_file *s,
-+				  struct pinctrl_dev *pctldev,
-+				  struct gpio_chip *chip,
-+				  unsigned offset,
-+				  unsigned gpio)
-+{
-+	struct pm8xxx_gpio *pctrl = to_pm8xxx_gpio(chip);
-+	struct pm8xxx_gpio_pin *pin = &pctrl->pins[offset];
-+
-+	static const char * const directions[] = {
-+		"off", "out", "in", "both"
++	static const char *const modes[] = {
++		"di", "do", "dio", "ai", "ao", "aio", "cs"
 +	};
 +	static const char * const biases[] = {
 +		"pull-up 30uA", "pull-up 1.5uA", "pull-up 31.5uA",
 +		"pull-up 1.5uA + 30uA boost", "pull-down 10uA", "no pull"
 +	};
 +	static const char * const buffer_types[] = {
-+		"push-pull", "open-drain"
++		"push-pull", "open-drain", "open-func"
 +	};
 +	static const char * const strengths[] = {
-+		"no", "high", "medium", "low"
++		"no", "low", "medium", "high"
 +	};
 +
-+	seq_printf(s, " gpio%-2d:", offset + 1);
-+	if (pin->disable) {
-+		seq_puts(s, " ---");
-+	} else {
-+		seq_printf(s, " %-4s", directions[pin->direction]);
-+		seq_printf(s, " %-7s", pm8xxx_gpio_functions[pin->function]);
-+		seq_printf(s, " VIN%d", pin->power_source);
-+		seq_printf(s, " %-27s", biases[pin->bias]);
-+		seq_printf(s, " %-10s", buffer_types[pin->output_buffer]);
-+		seq_printf(s, " %-4s", pin->output_value ? "high" : "low");
-+		seq_printf(s, " %-7s", strengths[pin->output_strength]);
-+		if (!pin->non_inverted)
-+			seq_puts(s, " inverted");
++	pad = qpnp_get_desc(qctrl, pin);
++	if (!pad)
++		return;
++
++	name = pad->name;
++
++	addr = QPNP_REG_ADDR(pad, QPNP_REG_MODE_CTL);
++	ret = regmap_read(qctrl->map, addr, &buff);
++	if (ret < 0) {
++		seq_printf(seq, " %-8s: read error %d", name, ret);
++		return;
 +	}
++
++	mode = QPNP_GET(buff, QPNP_REG_MODE_SEL_SHIFT,
++			QPNP_REG_MODE_SEL_MASK);
++	func = QPNP_GET(buff, QPNP_REG_MODE_FUNCTION_SHIFT,
++			QPNP_REG_MODE_FUNCTION_MASK);
++	inv  = QPNP_GET(buff, QPNP_REG_MODE_INVERT_SHIFT,
++			QPNP_REG_MODE_INVERT_MASK);
++
++	addr = QPNP_REG_ADDR(pad, QPNP_REG_DIG_PULL_CTL);
++	ret = regmap_read(qctrl->map, addr, &buff);
++	if (ret < 0) {
++		seq_printf(seq, " %-8s: read error %d", name, ret);
++		return;
++	}
++	pull = QPNP_GET(buff, QPNP_REG_PULL_SHIFT, QPNP_REG_PULL_MASK);
++
++	addr = QPNP_REG_ADDR(pad, QPNP_REG_DIG_OUT_CTL);
++	ret = regmap_read(qctrl->map, addr, &buff);
++	if (ret < 0) {
++		seq_printf(seq, " %-8s: read error %d", name, ret);
++		return;
++	}
++	out = QPNP_GET(buff, QPNP_REG_OUT_TYPE_SHIFT, QPNP_REG_OUT_TYPE_MASK);
++	drive = QPNP_GET(buff, QPNP_REG_OUT_STRENGTH_SHIFT,
++			 QPNP_REG_OUT_STRENGTH_MASK);
++
++	addr = QPNP_REG_ADDR(pad, QPNP_REG_EN_CTL);
++	ret = regmap_read(qctrl->map, addr, &buff);
++	if (ret < 0) {
++		seq_printf(seq, " %-8s: read error %d", name, ret);
++		return;
++	}
++	en = QPNP_GET(buff, QPNP_REG_MASTER_EN_SHIFT, QPNP_REG_MASTER_EN_MASK);
++
++	seq_printf(seq, " %-8s: %-4s", name, modes[mode]);
++	seq_printf(seq, " %-7s", qctrl->functions[func]);
++	seq_printf(seq, " %-24s %-12s", biases[pull], buffer_types[out]);
++	seq_printf(seq, " %-6s %-4s", strengths[drive], inv ? "inv" : "");
++	seq_printf(seq, " %s", !en ? "high-Z" : "");
++
 +}
 +
-+static void pm8xxx_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
-+{
-+	unsigned gpio = chip->base;
-+	unsigned i;
++static const struct pinconf_ops qpnp_pinconf_ops = {
++	.pin_config_group_get	= qpnp_config_get,
++	.pin_config_group_set	= qpnp_config_set,
++	.pin_config_group_dbg_show = qpnp_config_dbg_show,
++};
 +
-+	for (i = 0; i < chip->ngpio; i++, gpio++) {
-+		pm8xxx_gpio_dbg_show_one(s, NULL, chip, i, gpio);
++static int qpnp_direction_input(struct gpio_chip *chip, unsigned offset)
++{
++	struct qpnp_pinctrl *qctrl = to_qpnp_pinctrl(chip);
++	unsigned long config;
++
++	config = pinconf_to_config_packed(PIN_CONFIG_INPUT_ENABLE, 1);
++
++	return qpnp_config_set(qctrl->ctrl, offset, &config, 1);
++}
++
++static int qpnp_direction_output(struct gpio_chip *chip,
++			      unsigned offset, int val)
++{
++	struct qpnp_pinctrl *qctrl = to_qpnp_pinctrl(chip);
++	unsigned long config;
++
++	config = pinconf_to_config_packed(PIN_CONFIG_OUTPUT, val);
++	return qpnp_config_set(qctrl->ctrl, offset, &config, 1);
++}
++
++static int qpnp_request(struct gpio_chip *chip, unsigned offset)
++{
++	return pinctrl_request_gpio(chip->base + offset);
++}
++
++static void qpnp_free(struct gpio_chip *chip, unsigned offset)
++{
++	pinctrl_free_gpio(chip->base + offset);
++}
++
++static int qpnp_of_xlate(struct gpio_chip *chip,
++		       const struct of_phandle_args *gpio_desc, u32 *flags)
++{
++	struct qpnp_pinctrl *qctrl = to_qpnp_pinctrl(chip);
++	struct qpnp_padinfo *pad;
++	unsigned pin = gpio_desc->args[0] - QPNP_PIN_PHYSICAL_OFFSET;
++
++	if (chip->of_gpio_n_cells < 2)
++		return -EINVAL;
++
++	pad = qpnp_get_desc(qctrl, pin);
++	if (!pad)
++		return -EINVAL;
++
++	if (flags)
++		*flags = gpio_desc->args[1];
++
++	return pin;
++}
++
++static int qpnp_to_irq(struct gpio_chip *chip, unsigned offset)
++{
++	struct qpnp_pinctrl *qctrl = to_qpnp_pinctrl(chip);
++	struct qpnp_padinfo *pad;
++
++	pad = qpnp_get_desc(qctrl, offset);
++	if (!pad)
++		return -EINVAL;
++
++	return pad->irq;
++}
++
++static void qpnp_dbg_show(struct seq_file *s, struct gpio_chip *chip)
++{
++	struct qpnp_pinctrl *qctrl = to_qpnp_pinctrl(chip);
++	unsigned idx;
++
++	for (idx = 0; idx < chip->ngpio; idx++) {
++		qpnp_config_dbg_show(qctrl->ctrl, s, idx);
 +		seq_puts(s, "\n");
 +	}
 +}
 +
-+#else
-+#define msm_gpio_dbg_show NULL
-+#endif
-+
-+static struct gpio_chip pm8xxx_gpio_template = {
-+	.direction_input = pm8xxx_gpio_direction_input,
-+	.direction_output = pm8xxx_gpio_direction_output,
-+	.get = pm8xxx_gpio_get,
-+	.set = pm8xxx_gpio_set,
-+	.to_irq = pm8xxx_gpio_to_irq,
-+	.dbg_show = pm8xxx_gpio_dbg_show,
-+	.owner = THIS_MODULE,
++static const struct gpio_chip qpnp_gpio_template = {
++	.direction_input  = qpnp_direction_input,
++	.direction_output = qpnp_direction_output,
++	.get              = qpnp_get,
++	.set              = qpnp_set,
++	.request          = qpnp_request,
++	.free             = qpnp_free,
++	.of_xlate	  = qpnp_of_xlate,
++	.to_irq		  = qpnp_to_irq,
++	.dbg_show         = qpnp_dbg_show,
 +};
 +
-+static int pm8xxx_gpio_populate(struct pm8xxx_gpio *pctrl)
++static int qpnp_control_init(struct qpnp_pinctrl *qctrl,
++			  struct qpnp_padinfo *pad)
 +{
-+	struct pm8xxx_gpio_pin *pin;
-+	int val;
-+	int i;
++	pad->modes = 0;
 +
-+	for (i = 0; i < pctrl->data->ngpio; i++) {
-+		pin = &pctrl->pins[i];
++	if (pad->type == QPNP_GPIO_TYPE) {
++		switch (pad->subtype) {
++		case QPNP_GPIO_SUBTYPE_GPIO_4CH:
++		case QPNP_GPIO_SUBTYPE_GPIOC_4CH:
++		case QPNP_GPIO_SUBTYPE_GPIO_8CH:
++		case QPNP_GPIO_SUBTYPE_GPIOC_8CH:
 +
-+		val = pm8xxx_gpio_read(pctrl, i, 0);
-+		if (val < 0)
-+			return val;
-+
-+		pin->power_source = (val >> 1) & 0x7;
-+
-+		val = pm8xxx_gpio_read(pctrl, i, 1);
-+		if (val < 0)
-+			return val;
-+
-+		pin->direction = (val >> 2) & 0x3;
-+		pin->output_buffer = !!(val & BIT(1));
-+		pin->output_value = val & BIT(0);
-+
-+		val = pm8xxx_gpio_read(pctrl, i, 2);
-+		if (val < 0)
-+			return val;
-+
-+		pin->bias = (val >> 1) & 0x7;
-+
-+		val = pm8xxx_gpio_read(pctrl, i, 3);
-+		if (val < 0)
-+			return val;
-+
-+		pin->output_strength = (val >> 2) & 0x3;
-+		pin->disable = val & BIT(0);
-+
-+		val = pm8xxx_gpio_read(pctrl, i, 4);
-+		if (val < 0)
-+			return val;
-+
-+		pin->function = (val >> 1) & 0x7;
-+
-+		val = pm8xxx_gpio_read(pctrl, i, 5);
-+		if (val < 0)
-+			return val;
-+
-+		pin->non_inverted = !!(val & BIT(3));
-+	}
-+
-+	return 0;
-+}
-+
-+static const struct pm8xxx_gpio_data pm8018_gpio_data = {
-+	.ngpio = 6,
-+};
-+
-+static const struct pm8xxx_gpio_data pm8038_gpio_data = {
-+	.ngpio = 12,
-+};
-+
-+static const struct pm8xxx_gpio_data pm8058_gpio_data = {
-+	.ngpio = 40,
-+};
-+static const struct pm8xxx_gpio_data pm8917_gpio_data = {
-+	.ngpio = 38,
-+};
-+
-+static const struct pm8xxx_gpio_data pm8921_gpio_data = {
-+	.ngpio = 44,
-+};
-+
-+static const struct of_device_id pm8xxx_gpio_of_match[] = {
-+	{ .compatible = "qcom,pm8018-gpio", .data = &pm8018_gpio_data },
-+	{ .compatible = "qcom,pm8038-gpio", .data = &pm8038_gpio_data },
-+	{ .compatible = "qcom,pm8058-gpio", .data = &pm8058_gpio_data },
-+	{ .compatible = "qcom,pm8917-gpio", .data = &pm8917_gpio_data },
-+	{ .compatible = "qcom,pm8921-gpio", .data = &pm8921_gpio_data },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, pm8xxx_gpio_of_match);
-+
-+static int pm8xxx_gpio_probe(struct platform_device *pdev)
-+{
-+	const struct of_device_id *match;
-+	struct pm8xxx_gpio *pctrl;
-+	int ret;
-+	int i;
-+
-+	match = of_match_node(pm8xxx_gpio_of_match, pdev->dev.of_node);
-+	if (!match)
-+		return -ENXIO;
-+
-+	pctrl = devm_kzalloc(&pdev->dev, sizeof(*pctrl), GFP_KERNEL);
-+	if (!pctrl)
-+		return -ENOMEM;
-+
-+	pctrl->dev = &pdev->dev;
-+	pctrl->data = match->data;
-+
-+	BUG_ON(pctrl->data->ngpio > PM8XXX_MAX_GPIOS);
-+
-+	pctrl->chip = pm8xxx_gpio_template;
-+	pctrl->chip.base = -1;
-+	pctrl->chip.dev = &pdev->dev;
-+	pctrl->chip.of_node = pdev->dev.of_node;
-+	pctrl->chip.label = dev_name(pctrl->dev);
-+	pctrl->chip.ngpio = pctrl->data->ngpio;
-+
-+	pctrl->regmap = dev_get_regmap(pdev->dev.parent, NULL);
-+	if (!pctrl->regmap) {
-+		dev_err(&pdev->dev, "parent regmap unavailable\n");
-+		return -ENXIO;
-+	}
-+
-+	for (i = 0; i < pctrl->data->ngpio; i++) {
-+		ret = platform_get_irq(pdev, i);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev,
-+				"missing interrupts for pin %d\n", i);
-+			return ret;
++			/* only GPIO is supported*/
++			pad->modes |= BIT(QPNP_PIN_MODE_DIG_IN);
++			pad->modes |= BIT(QPNP_PIN_MODE_DIG_OUT);
++			pad->modes |= BIT(QPNP_PIN_MODE_DIG_IN_OUT);
++			break;
++		default:
++			dev_err(qctrl->dev, "invalid GPIO subtype 0x%x\n",
++				pad->subtype);
++			return -EINVAL;
 +		}
 +
-+		pctrl->pins[i].irq = ret;
++	} else if (pad->type == QPNP_MPP_TYPE) {
++
++		switch (pad->subtype) {
++		case QPNP_MPP_SUBTYPE_4CH_NO_SINK:
++		case QPNP_MPP_SUBTYPE_ULT_4CH_NO_SINK:
++
++			/* Current sink not supported*/
++			pad->modes |= BIT(QPNP_PIN_MODE_DIG_IN);
++			pad->modes |= BIT(QPNP_PIN_MODE_DIG_OUT);
++			pad->modes |= BIT(QPNP_PIN_MODE_DIG_IN_OUT);
++			pad->modes |= BIT(QPNP_PIN_MODE_BIDIR);
++			pad->modes |= BIT(QPNP_PIN_MODE_AIN);
++			pad->modes |= BIT(QPNP_PIN_MODE_AOUT);
++			break;
++		case QPNP_MPP_SUBTYPE_4CH_NO_ANA_OUT:
++		case QPNP_MPP_SUBTYPE_ULT_4CH_NO_ANA_OUT:
++
++			/* Analog output not supported */
++			pad->modes |= BIT(QPNP_PIN_MODE_DIG_IN);
++			pad->modes |= BIT(QPNP_PIN_MODE_DIG_OUT);
++			pad->modes |= BIT(QPNP_PIN_MODE_DIG_IN_OUT);
++			pad->modes |= BIT(QPNP_PIN_MODE_BIDIR);
++			pad->modes |= BIT(QPNP_PIN_MODE_AIN);
++			pad->modes |= BIT(QPNP_PIN_MODE_SINK);
++			break;
++		case QPNP_MPP_SUBTYPE_4CH_FULL_FUNC:
++		case QPNP_MPP_SUBTYPE_8CH_FULL_FUNC:
++
++			pad->modes |= BIT(QPNP_PIN_MODE_DIG_IN);
++			pad->modes |= BIT(QPNP_PIN_MODE_DIG_OUT);
++			pad->modes |= BIT(QPNP_PIN_MODE_DIG_IN_OUT);
++			pad->modes |= BIT(QPNP_PIN_MODE_BIDIR);
++			pad->modes |= BIT(QPNP_PIN_MODE_AIN);
++			pad->modes |= BIT(QPNP_PIN_MODE_AOUT);
++			pad->modes |= BIT(QPNP_PIN_MODE_SINK);
++			break;
++		default:
++			dev_err(qctrl->dev, "invalid MPP subtype 0x%x\n",
++				pad->subtype);
++			return -EINVAL;
++		}
++	} else {
++		dev_err(qctrl->dev, "invalid type 0x%x\n", pad->type);
++		return -EINVAL;
 +	}
 +
-+	ret = pm8xxx_gpio_populate(pctrl);
-+	if (ret)
-+		return ret;
++	return 0;
++}
 +
-+	pm8xxx_gpio_desc.name = dev_name(&pdev->dev);
-+	pctrl->pctrl = pinctrl_register(&pm8xxx_gpio_desc, &pdev->dev, pctrl);
-+	if (!pctrl->pctrl) {
-+		dev_err(&pdev->dev, "couldn't register pm8xxx gpio driver\n");
++static int qpnp_discover(struct platform_device *pdev,
++			struct qpnp_pinctrl *qctrl)
++{
++	struct device *dev = qctrl->dev;
++	struct pinctrl_pin_desc *desc, *descs;
++	struct qpnp_padinfo *pad, *pads;
++	unsigned int addr, npins;
++	int idx, ret;
++
++	npins = qctrl->info->npins;
++	pads = devm_kcalloc(dev, npins, sizeof(*pads), GFP_KERNEL);
++	if (!pads)
++		return -ENOMEM;
++
++	descs = devm_kcalloc(dev, npins, sizeof(*descs), GFP_KERNEL);
++	if (!descs)
++		return -ENOMEM;
++
++	for (idx = 0; idx < npins; idx++) {
++
++		pad = &pads[idx];
++		desc = &descs[idx];
++
++		pad->irq = platform_get_irq(pdev, idx);
++		if (pad->irq < 0)
++			return pad->irq;
++
++		pad->offset = qctrl->info->base + (idx * 0x100);
++
++		addr = QPNP_REG_ADDR(pad, QPNP_REG_DIG_MAJOR_REV);
++		ret = regmap_read(qctrl->map, addr, &pad->major);
++		if (ret < 0)
++			return ret;
++
++		addr = QPNP_REG_ADDR(pad, QPNP_REG_TYPE);
++		ret = regmap_read(qctrl->map, addr, &pad->type);
++		if (ret < 0)
++			return ret;
++
++		if (pad->type != qctrl->info->type) {
++			dev_err(dev, "Expected %x, found %x\n",
++				qctrl->info->type, pad->type);
++			return -EINVAL;
++		}
++
++		addr = QPNP_REG_ADDR(pad, QPNP_REG_SUBTYPE);
++		ret = regmap_read(qctrl->map, addr, &pad->subtype);
++		if (ret < 0)
++			return ret;
++
++		ret = qpnp_control_init(qctrl, pad);
++		if (ret)
++			return ret;
++
++		pad->name = qctrl->groups[idx];
++		desc->number = idx;
++		desc->name = pad->name;
++	}
++
++	qctrl->pads = pads;
++
++	qctrl->chip = qpnp_gpio_template;
++	qctrl->chip.dev = dev;
++	qctrl->chip.base = -1;
++	qctrl->chip.ngpio = qctrl->info->npins;
++	qctrl->chip.label = dev_name(dev);
++	qctrl->chip.of_gpio_n_cells = 2;
++	qctrl->chip.can_sleep = true;
++
++	qctrl->desc.pctlops = &qpnp_pinctrl_ops,
++	qctrl->desc.pmxops = &qpnp_pinmux_ops,
++	qctrl->desc.confops = &qpnp_pinconf_ops,
++	qctrl->desc.owner = THIS_MODULE,
++	qctrl->desc.name = dev_name(dev);
++	qctrl->desc.pins = descs;
++	qctrl->desc.npins = npins;
++
++	qctrl->ctrl = pinctrl_register(&qctrl->desc, dev, qctrl);
++	if (!qctrl->ctrl)
 +		return -ENODEV;
-+	}
 +
-+	ret = gpiochip_add(&pctrl->chip);
++	ret = gpiochip_add(&qctrl->chip);
 +	if (ret) {
-+		dev_err(&pdev->dev, "failed register gpiochip\n");
-+		goto unregister_pinctrl;
++		dev_err(qctrl->dev, "can't add gpio chip\n");
++		goto err_chip;
 +	}
 +
-+	ret = gpiochip_add_pin_range(&pctrl->chip,
-+				     dev_name(pctrl->dev),
-+				     1, 0, pctrl->data->ngpio);
++	ret = gpiochip_add_pin_range(&qctrl->chip, dev_name(dev),
++				     0, 0, npins);
 +	if (ret) {
-+		dev_err(pctrl->dev, "failed to add pin range\n");
-+		goto unregister_gpiochip;
++		dev_err(dev, "failed to add pin range\n");
++		goto err_range;
 +	}
-+
-+	platform_set_drvdata(pdev, pctrl);
-+
-+	dev_dbg(&pdev->dev, "Qualcomm pm8xxx gpio driver probed\n");
 +
 +	return 0;
 +
-+unregister_pinctrl:
-+	pinctrl_unregister(pctrl->pctrl);
++err_chip:
++	pinctrl_unregister(qctrl->ctrl);
 +
-+unregister_gpiochip:
-+	if (gpiochip_remove(&pctrl->chip))
-+		dev_err(&pdev->dev, "unable to unregister gpiochip\n");
++err_range:
++	gpiochip_remove(&qctrl->chip);
 +
 +	return ret;
++
 +}
 +
-+static int pm8xxx_gpio_remove(struct platform_device *pdev)
++static const struct of_device_id qpnp_pinctrl_of_match[];
++
++static int qpnp_pinctrl_probe(struct platform_device *pdev)
 +{
-+	struct pm8xxx_gpio *pctrl = platform_get_drvdata(pdev);
++	struct device *dev = &pdev->dev;
++	const struct qpnp_chipinfo *qchip;
++	struct qpnp_pinctrl *qctrl;
 +
-+	gpiochip_remove(&pctrl->chip);
++	qctrl = devm_kzalloc(dev, sizeof(*qctrl), GFP_KERNEL);
++	if (!qctrl)
++		return -ENOMEM;
 +
-+	pinctrl_unregister(pctrl->pctrl);
++	platform_set_drvdata(pdev, qctrl);
++
++	qchip = of_match_node(qpnp_pinctrl_of_match, dev->of_node)->data;
++
++	qctrl->info = qchip;
++	qctrl->dev = &pdev->dev;
++	qctrl->map = dev_get_regmap(dev->parent, NULL);
++
++	if (qchip->type == QPNP_GPIO_TYPE) {
++		if (WARN_ON(qchip->npins > ARRAY_SIZE(qpnp_gpio_groups)))
++			return -EINVAL;
++		qctrl->groups = qpnp_gpio_groups;
++		qctrl->functions = qpnp_gpio_functions;
++	} else {
++		if (WARN_ON(qchip->npins > ARRAY_SIZE(qpnp_mpp_groups)))
++			return -EINVAL;
++		qctrl->groups = qpnp_mpp_groups;
++		qctrl->functions = qpnp_mpp_functions;
++	}
++
++	return qpnp_discover(pdev, qctrl);
++}
++
++static int qpnp_pinctrl_remove(struct platform_device *pdev)
++{
++	struct qpnp_pinctrl *qctrl = platform_get_drvdata(pdev);
++
++	gpiochip_remove(&qctrl->chip);
++	pinctrl_unregister(qctrl->ctrl);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver pm8xxx_gpio_driver = {
-+	.driver = {
-+		.name = "ssbi-pmic-gpio",
-+		.owner = THIS_MODULE,
-+		.of_match_table = pm8xxx_gpio_of_match,
-+	},
-+	.probe = pm8xxx_gpio_probe,
-+	.remove = pm8xxx_gpio_remove,
++static const struct qpnp_chipinfo qpnp_pm8841_mpp_info = {
++	.npins	= 4,
++	.base	= 0xa000,
++	.type   = QPNP_MPP_TYPE,
 +};
 +
-+module_platform_driver(pm8xxx_gpio_driver);
++static const struct qpnp_chipinfo qpnp_pm8941_gpio_info = {
++	.npins	= 36,
++	.base	= 0xc000,
++	.type   = QPNP_GPIO_TYPE,
++};
 +
-+MODULE_AUTHOR("Bjorn Andersson <bjorn.andersson@sonymobile.com>");
-+MODULE_DESCRIPTION("Qualcomm SSBI PMIC GPIO driver");
++static const struct qpnp_chipinfo qpnp_pm8941_mpp_info = {
++	.npins	= 8,
++	.base	= 0xa000,
++	.type   = QPNP_MPP_TYPE,
++};
++
++static const struct qpnp_chipinfo qpnp_pma8084_mpp_info = {
++	.npins	= 4,
++	.base	= 0xa000,
++	.type   = QPNP_MPP_TYPE,
++};
++
++static const struct qpnp_chipinfo qpnp_pma8084_gpio_info = {
++	.npins	= 22,
++	.base	= 0xc000,
++	.type   = QPNP_GPIO_TYPE,
++};
++
++static const struct of_device_id qpnp_pinctrl_of_match[] = {
++	{ .compatible = "qcom,pm8941-gpio", .data = &qpnp_pm8941_gpio_info },
++	{ .compatible = "qcom,pm8941-mpp", .data = &qpnp_pm8941_mpp_info },
++	{ .compatible = "qcom,pm8841-mpp", .data = &qpnp_pm8841_mpp_info },
++	{ .compatible = "qcom,pma8084-gpio", .data = &qpnp_pma8084_gpio_info },
++	{ .compatible = "qcom,pma8084-mpp", .data = &qpnp_pma8084_mpp_info },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, qpnp_pinctrl_of_match);
++
++static struct platform_driver qpnp_pinctrl_driver = {
++	.driver = {
++		.name = "spmi-pmic-pinctrl",
++		.owner = THIS_MODULE,
++		.of_match_table = qpnp_pinctrl_of_match,
++	},
++	.probe = qpnp_pinctrl_probe,
++	.remove = qpnp_pinctrl_remove,
++};
++module_platform_driver(qpnp_pinctrl_driver);
++
++MODULE_AUTHOR("Ivan T. Ivanov <iivanov@mm-sol.com>");
++MODULE_DESCRIPTION("Qualcomm SPMI PMIC pin control driver");
++MODULE_ALIAS("platform:spmi-pmic-pinctrl");
 +MODULE_LICENSE("GPL v2");
 -- 
 1.8.3.2
