@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaHKSrj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:47:39 -0400
-Received: from mail-qg0-f74.google.com ([209.85.192.74]:33682 "EHLO
-	mail-qg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaHKSrh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:47:37 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Heiko Stuebner <heiko@sntech.de>
-Cc: Kever Yang <kever.yang@rock-chips.com>, Chris Zhong <zyw@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dts: Move the PMIC interrupt pinctrl line to rk3288-evb common
-Date: Mon, 11 Aug 2014 11:47:29 -0700
-Message-Id: <1407782849-11056-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	id S1754414AbaHKSsz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:48:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55196 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753527AbaHKSsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 14:48:54 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1407781112.3399765.151527845.7EC32D9C@webmail.messagingengine.com>
+References: <20140809231911.GA4843@khazad-dum.debian.net> <53E8D876.1060004@zytor.com> <1407781112.3399765.151527845.7EC32D9C@webmail.messagingengine.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: BUG: early intel microcode update violating alignment rules
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 11 Aug 2014 11:48:25 -0700
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Borislav Petkov <bp@alien8.de>, Fenghua Yu <fenghua.yu@intel.com>
+CC: linux-kernel@vger.kernel.org
+Message-ID: <06991931-9f04-49fc-9ef7-ba23384aeb32@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PMIC interrupt pinctrl line was added to the rk3288-evb-act8846,
-but it's the same line on both the ACT8846 version and the RK808
-version.  This makes a lot of sense since they share the same SoC
-daugherboard.  Move the pinctrl definition to the common file so we
-can use it for the RK808 version.
+I don't think so.  I wouldn't count on that in the long run.
 
-NOTE: The PMIC interrupt doesn't _actually_ go to the PMIC on the
-ACT8846 version of the board (it does on the RK808), but our
-convention is to label things as they're labelled on the schematics.
-In the very least you can argue that this is the interrupt from the
-PMIC daughtercard even if it doesn't actually go to the PMIC chip.
+I'm having some discussions about this integrally at the moment.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- arch/arm/boot/dts/rk3288-evb-act8846.dts | 10 +---------
- arch/arm/boot/dts/rk3288-evb.dtsi        |  6 ++++++
- 2 files changed, 7 insertions(+), 9 deletions(-)
+On August 11, 2014 11:18:32 AM PDT, Henrique de Moraes Holschuh <hmh@hmh.eng.br> wrote:
+>On Mon, Aug 11, 2014, at 11:51, H. Peter Anvin wrote:
+>> We could put a buffer in the initdata region (we really could use an
+>> initbss region!) or in the brk.
+>
+>That sounds much better than the hideous crap I came up with.  The
+>buffer would need to be at least 64KiB in size to be on the safe side. 
+>The largest public microcode update ATM is 23KiB.
+>
+>I am not sure if we might need more than 64KiB: the Intel SDM mentions
+>that in real mode the update data must not cross a segment boundary,
+>and
+>also must not exceed a segment limit.  I am a bit rusty on real mode,
+>but doesn't that mean, in practice, that microcode update data size is
+>limited in size to 64KiB?
 
-diff --git a/arch/arm/boot/dts/rk3288-evb-act8846.dts b/arch/arm/boot/dts/rk3288-evb-act8846.dts
-index 7d59ff4..a76dd44 100644
---- a/arch/arm/boot/dts/rk3288-evb-act8846.dts
-+++ b/arch/arm/boot/dts/rk3288-evb-act8846.dts
-@@ -26,7 +26,7 @@
- 		interrupts = <4 IRQ_TYPE_EDGE_FALLING>;
- 
- 		pinctrl-names = "default";
--		pinctrl-0 = <&hym8563_int>;
-+		pinctrl-0 = <&pmic_int>;
- 
- 		#clock-cells = <0>;
- 		clock-output-names = "xin32k";
-@@ -124,11 +124,3 @@
- 		};
- 	};
- };
--
--&pinctrl {
--	hym8563 {
--		hym8563_int: hym8563-int {
--			rockchip,pins = <RK_GPIO0 4 RK_FUNC_GPIO &pcfg_pull_up>;
--		};
--	};
--};
-diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
-index 4f57209..ae3e10b 100644
---- a/arch/arm/boot/dts/rk3288-evb.dtsi
-+++ b/arch/arm/boot/dts/rk3288-evb.dtsi
-@@ -84,6 +84,12 @@
- 		};
- 	};
- 
-+	pmic {
-+		pmic_int: pmic-int {
-+			rockchip,pins = <RK_GPIO0 4 RK_FUNC_GPIO &pcfg_pull_up>;
-+		};
-+	};
-+
- 	usb {
- 		host_vbus_drv: host-vbus-drv {
- 			rockchip,pins = <0 14 RK_FUNC_GPIO &pcfg_pull_none>;
 -- 
-2.0.0.526.g5318336
-
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
