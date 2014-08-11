@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208AbaHKRkt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 13:40:49 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:40023 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754110AbaHKRks (ORCPT
+	id S1754290AbaHKRl3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 13:41:29 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:36632 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367AbaHKRl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 13:40:48 -0400
-Message-ID: <53E9001C.9090409@gmail.com>
-Date: Mon, 11 Aug 2014 10:40:44 -0700
-From: Matthew Rushton <mvrushton@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 11 Aug 2014 13:41:28 -0400
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>, Matt Wilson <msw@linux.com>,
-        David Vrabel <david.vrabel@citrix.com>
-CC: konrad.wilk@oracle.com, msw@amazon.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, Matt Rushton <mrushton@amazon.com>
-Subject: Re: [PATCH v2 2/2] xen/setup: Remap Xen Identity Mapped RAM
-References: <1405814495-10868-1-git-send-email-mrushton@amazon.com> <1405814495-10868-2-git-send-email-mrushton@amazon.com> <53DA805D.4020300@citrix.com> <53DBA9AC.8000302@citrix.com> <20140801155206.GA13865@u109add4315675089e695.ant.amazon.com> <53DBB8BA.3030909@oracle.com>
-In-Reply-To: <53DBB8BA.3030909@oracle.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <C4A61A5CA4AD2246942F4BA6F20ACB8043576356@ALVA-EXMB04.alv.autoliv.int>
+References: <20140626151424.GT32514@n2100.arm.linux.org.uk>
+	<20140627112151.GF32514@n2100.arm.linux.org.uk>
+	<3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
+	<20140627163108.GP32514@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int>
+	<20140806095012.GN30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int>
+	<20140806125550.GO30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int>
+	<20140807121248.GY30282@n2100.arm.linux.org.uk>
+	<20140808180900.GG30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043576356@ALVA-EXMB04.alv.autoliv.int>
+Date: Mon, 11 Aug 2014 14:41:25 -0300
+Message-ID: <CAOMZO5B8GR+ABBoJ=dJcFqw3Wagfaip7HM+C1FTz+aE4CmqiPw@mail.gmail.com>
+Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
+From: Fabio Estevam <festevam@gmail.com>
+To: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Fredrik Noring <fredrik.noring@autoliv.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/14 08:56, Boris Ostrovsky wrote:
-> On 08/01/2014 11:52 AM, Matt Wilson wrote:
->> On Fri, Aug 01, 2014 at 03:52:28PM +0100, David Vrabel wrote:
->>> On 31/07/14 18:43, David Vrabel wrote:
->>>> On 20/07/14 01:01, Matt Rushton wrote:
->>>>> Instead of ballooning up and down dom0 memory this remaps the 
->>>>> existing mfns
->>>>> that were replaced by the identity map. The reason for this is 
->>>>> that the
->>>>> existing implementation ballooned memory up and and down which 
->>>>> caused dom0
->>>>> to have discontiguous pages. In some cases this resulted in the 
->>>>> use of bounce
->>>>> buffers which reduced network I/O performance significantly. This 
->>>>> change will
->>>>> honor the existing order of the pages with the exception of some 
->>>>> boundary
->>>>> conditions.
->>>>>
->>>>> To do this we need to update both the Linux p2m table and the Xen 
->>>>> m2p table.
->>>>> Particular care must be taken when updating the p2m table since 
->>>>> it's important
->>>>> to limit table memory consumption and reuse the existing leaf 
->>>>> pages which get
->>>>> freed when an entire leaf page is set to the identity map. To 
->>>>> implement this,
->>>>> mapping updates are grouped into blocks with table entries getting 
->>>>> cached
->>>>> temporarily and then released.
->>>>>
->>>>> On my test system before:
->>>>> Total pages: 2105014
->>>>> Total contiguous: 1640635
->>>>>
->>>>> After:
->>>>> Total pages: 2105014
->>>>> Total contiguous: 2098904
->>>> Applied to devel/for-linus-3.17
->>> Unfortunately, this produces too many WARNINGs on some boxes or
->>> with certain configurations.
->> Hi David,
+On Mon, Aug 11, 2014 at 10:32 AM, Mattis Lorentzon
+<Mattis.Lorentzon@autoliv.com> wrote:
+> Russell and Fabio,
+>
+>> I'd be interested to hear whether removing the
 >>
->> Do you have more information about the systems or configurations that
->> showed a problem?
+>>       interrupts-extended = ...
 >>
+>> property from your board's DT file, thereby causing you to revert back to the
+>> default I list above, also fixes the instability you are seeing.
 >
+> We have tried to remove the board specific interrupts-extended field and the
+> MX6QDL_PAD_GPIO_6__ENET_IRQ entry. Sadly this did not seem to improve
+> the stalls. Our interrupts look like this now:
 >
-> This appears to be happening on 32-bit dom0.
+> 150:      15519          0          0          0       GIC 150  2188000.ethernet
+> 151:          0          0          0          0       GIC 151  2188000.ethernet
 >
-> -boris
+> Our device tree might still be slightly incorrect. We have noticed that our
+> RGMII_INT is connected to GPIO 19 (P5) which might be nonstandard (we are
+> a bit surprised that this works at all). We are not quite sure how to configure
+> this properly.
 
-I just pushed a v3 version of the patch set which should fix the issue. 
-There was casting issue that would affect 32-bit builds.
+In order to try to narrow down whether this is a board issue, could
+you try to run the same kernel on a mx6q development board, such as
+mx6qsabresd, cubox-i, wandboard, etc?
