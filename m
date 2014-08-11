@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaHKRbK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 13:31:10 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:37687 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101AbaHKRbH (ORCPT
+	id S1753219AbaHKRbw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 13:31:52 -0400
+Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:15367 "EHLO
+	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642AbaHKRbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 13:31:07 -0400
-Message-ID: <53E8FDE4.40005@collabora.co.uk>
-Date: Mon, 11 Aug 2014 19:31:16 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH 2/2] ARM: dts: Add tps65090 FET constraints on
- Peach Pit and Pi
-References: <1407757091-18730-1-git-send-email-javier.martinez@collabora.co.uk> <1407757091-18730-2-git-send-email-javier.martinez@collabora.co.uk> <CAD=FV=XRmNkxXoxWaEfxFADrTgBrOPVX746woxiZoKck1ajwgA@mail.gmail.com> <20140811160222.GF17528@sirena.org.uk>
-In-Reply-To: <20140811160222.GF17528@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 11 Aug 2014 13:31:51 -0400
+Message-ID: <1407778307.14059.12.camel@j-VirtualBox>
+Subject: Re: [PATCH] sched: Reduce contention in update_cfs_rq_blocked_load
+From: Jason Low <jason.low2@hp.com>
+To: bsegall@google.com
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Waiman Long <Waiman.Long@hp.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Rik van Riel <riel@redhat.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Chegu Vinod <chegu_vinod@hp.com>, Scott J Norton <scott.norton@hp.com>,
+        pjt@google.com, jason.low2@hp.com
+Date: Mon, 11 Aug 2014 10:31:47 -0700
+In-Reply-To: <xm264mxsugds.fsf@sword-of-the-dawn.mtv.corp.google.com>
+References: <1407184118.11407.11.camel@j-VirtualBox>
+	 <xm264mxsugds.fsf@sword-of-the-dawn.mtv.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
-
-On 08/11/2014 06:02 PM, Mark Brown wrote:
-> On Mon, Aug 11, 2014 at 08:57:24AM -0700, Doug Anderson wrote:
->> On Mon, Aug 11, 2014 at 4:38 AM, Javier Martinez Canillas
+On Mon, 2014-08-04 at 13:52 -0700, bsegall@google.com wrote:
 > 
->> > After the switch is turned on, a safety timer is started
->> > and before this timer times out the output voltage must
->> > have reached the input voltage. Otherwise the switch is
->> > turned off expecting an overload condition.
-> 
->> > So using the maximum output voltage slew rate and the timer
->> > minimum and maximum timeouts, a voltage constraints can be
->> > expressed as bounded limits for the timeout. That is what
->> > is used in the board schematics and should be in the DT too.
-> 
->> I don't understand this, but if you and Mark are happy with it...
-> 
-> I have not looked at this change to my knowledge.
-> 
+> That said, it might be better to remove force_update for this function,
+> or make it just reduce the minimum to /64 or something. If the test is
+> easy to run it would be good to see what it's like just removing the
+> force_update param for this function to see if it's worth worrying
+> about or if the zero case catches ~all the perf gain.
 
-No worries, I have to re-spin anyways to fix the 17v typo that Doug pointed out.
-But basically is related to our previous discussion in patch:
+Hi Ben,
 
-"[RFC 3/5] regulator: core: Only apply constraints if available on list voltage"
+I removed the force update in __update_cfs_rq_tg_load_contrib and it
+helped reduce overhead a lot more. I saw up to a 20x reduction in system
+overhead from update_cfs_rq_blocked_load when running some of the AIM7
+workloads with this change.
 
-where you explained [0] to me that child regulators should explicit set their
-constraints instead of getting from its parent supply. So this patch adds the
-needed constraints for the children FETs even when their output voltage depend
-on its parent supply.
+-----
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index fea7d33..7a6e18b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2352,8 +2352,7 @@ static inline u64 __synchronize_entity_decay(struct sched_entity *se)
+ }
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+-						 int force_update)
++static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq)
+ {
+ 	struct task_group *tg = cfs_rq->tg;
+ 	long tg_contrib;
+@@ -2361,7 +2360,7 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+ 	tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
+ 	tg_contrib -= cfs_rq->tg_load_contrib;
+ 
+-	if (force_update || abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
++	if (abs(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
+ 		atomic_long_add(tg_contrib, &tg->load_avg);
+ 		cfs_rq->tg_load_contrib += tg_contrib;
+ 	}
+@@ -2436,8 +2435,7 @@ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+ 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
+ }
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+-static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+-						 int force_update) {}
++static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq) {}
+ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
+ 						  struct cfs_rq *cfs_rq) {}
+ static inline void __update_group_entity_contrib(struct sched_entity *se) {}
+@@ -2537,7 +2535,7 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+ 		cfs_rq->last_decay = now;
+ 	}
+ 
+-	__update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
++	__update_cfs_rq_tg_load_contrib(cfs_rq);
+ }
+ 
+ /* Add the load generated by se into cfs_rq's child load-average */
 
->> ...I'm also not 100% certain what the above description has to do with
->> this change, but I'll admit to having only skimmed some of the earlier
->> conversations.
-> 
-> It's not at all clear to me either looking at the quoted section.
-> 
 
-Yes, the commit message is not great to say the least. Also I didn't have the
-last version of the documentation so I misunderstood from where the constraints
-mentioned in the schematics came from. Will fix the commit message when posting v2.
-
-Thanks a lot and best regards,
-Javier
-
-[0]: https://lkml.org/lkml/2014/7/30/99
