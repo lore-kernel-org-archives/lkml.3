@@ -1,37 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843AbaHKOtz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 10:49:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26030 "EHLO mx1.redhat.com"
+	id S1753940AbaHKOuH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 10:50:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3239 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753235AbaHKOty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 10:49:54 -0400
+	id S1753700AbaHKOuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 10:50:05 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: akpm@linux-foundation.org
 Cc: kvm@vger.kernel.org, pbonzini@redhat.com, mingo@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 0/5] watchdog: various fixes
-Date: Mon, 11 Aug 2014 10:49:22 -0400
-Message-Id: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
+        LKML <linux-kernel@vger.kernel.org>,
+        chai wen <chaiw.fnst@cn.fujitsu.com>, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 2/5] softlockup: make detector be aware of task switch of processes hogging cpu
+Date: Mon, 11 Aug 2014 10:49:24 -0400
+Message-Id: <1407768567-171794-3-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
+References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just respinning these patches with my sign-off.  I keep forgetting which is
-easier for Andrew to digest (this way or just me replying with an ack).
+From: chai wen <chaiw.fnst@cn.fujitsu.com>
 
-Ulrich Obergfell (3):
-  watchdog: fix print-once on enable
-  watchdog: control hard lockup detection default
-  kvm: ensure hard lockup detection is disabled by default
+For now, soft lockup detector warns once for each case of process softlockup.
+But the thread 'watchdog/n' may not always get the cpu at the time slot between
+the task switch of two processes hogging that cpu to reset soft_watchdog_warn.
 
-chai wen (2):
-  watchdog: remove unnecessary head files
-  softlockup: make detector be aware of task switch of processes
-    hogging cpu
+An example would be two processes hogging the cpu.  Process A causes the
+softlockup warning and is killed manually by a user.  Process B immediately
+becomes the new process hogging the cpu preventing the softlockup code from
+resetting the soft_watchdog_warn variable.
 
- arch/x86/kernel/kvm.c |    8 +++++
- include/linux/nmi.h   |    9 +++++
- kernel/watchdog.c     |   78 +++++++++++++++++++++++++++++++++++++++++++-----
- 3 files changed, 86 insertions(+), 9 deletions(-)
+This case is a false negative of "warn only once for a process", as there may
+be a different process that is going to hog the cpu.  Resolve this by
+saving/checking the pid of the hogging process and use that to reset
+soft_watchdog_warn too.
+
+Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
+[modified the comment and changelog to be more specific]
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ kernel/watchdog.c |   20 ++++++++++++++++++--
+ 1 files changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 4c2e11c..6d0a891 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -42,6 +42,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
+ static DEFINE_PER_CPU(bool, soft_watchdog_warn);
+ static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
+ static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
++static DEFINE_PER_CPU(pid_t, softlockup_warn_pid_saved);
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ static DEFINE_PER_CPU(bool, hard_watchdog_warn);
+ static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
+@@ -317,6 +318,8 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	 */
+ 	duration = is_softlockup(touch_ts);
+ 	if (unlikely(duration)) {
++		pid_t pid = task_pid_nr(current);
++
+ 		/*
+ 		 * If a virtual machine is stopped by the host it can look to
+ 		 * the watchdog like a soft lockup, check to see if the host
+@@ -326,8 +329,20 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 			return HRTIMER_RESTART;
+ 
+ 		/* only warn once */
+-		if (__this_cpu_read(soft_watchdog_warn) == true)
++		if (__this_cpu_read(soft_watchdog_warn) == true) {
++
++			/*
++			 * Handle the case where multiple processes are
++			 * causing softlockups but the duration is small
++			 * enough, the softlockup detector can not reset
++			 * itself in time.  Use pids to detect this.
++			 */
++			if (__this_cpu_read(softlockup_warn_pid_saved) != pid) {
++				__this_cpu_write(soft_watchdog_warn, false);
++				__touch_watchdog();
++			}
+ 			return HRTIMER_RESTART;
++		}
+ 
+ 		if (softlockup_all_cpu_backtrace) {
+ 			/* Prevent multiple soft-lockup reports if one cpu is already
+@@ -342,7 +357,8 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 
+ 		printk(KERN_EMERG "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
+ 			smp_processor_id(), duration,
+-			current->comm, task_pid_nr(current));
++			current->comm, pid);
++		__this_cpu_write(softlockup_warn_pid_saved, pid);
+ 		print_modules();
+ 		print_irqtrace_events(current);
+ 		if (regs)
+-- 
+1.7.1
 
