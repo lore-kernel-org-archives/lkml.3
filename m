@@ -1,94 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035AbaHKULM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:11:12 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:36604 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754770AbaHKULJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:11:09 -0400
-Date: Mon, 11 Aug 2014 13:11:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
- kthread wakeups
-Message-ID: <20140811201102.GD5821@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <53E48D18.8080007@redhat.com>
- <20140808162502.GX5821@linux.vnet.ibm.com>
- <20140808173710.GA13483@grmbl.mre>
- <20140808181835.GD5821@linux.vnet.ibm.com>
- <20140808183424.GB13483@grmbl.mre>
- <20140808214347.GH5821@linux.vnet.ibm.com>
- <20140808214648.GA19058@linux.vnet.ibm.com>
- <20140811071308.GA4184@grmbl.mre>
- <20140811162807.GW5821@linux.vnet.ibm.com>
- <20140811194126.GF4184@grmbl.mre>
+	id S932140AbaHKUM7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:12:59 -0400
+Received: from mail.kernel.org ([198.145.19.201]:43360 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754835AbaHKUM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 16:12:57 -0400
+Date: Mon, 11 Aug 2014 17:12:49 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC 00/20] perf: Finish sampling commands when events are closed
+Message-ID: <20140811201249.GA4148@kernel.org>
+References: <1407747014-18394-1-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140811194126.GF4184@grmbl.mre>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081120-8236-0000-0000-00000485F26B
+In-Reply-To: <1407747014-18394-1-git-send-email-jolsa@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 01:11:26AM +0530, Amit Shah wrote:
-> On (Mon) 11 Aug 2014 [09:28:07], Paul E. McKenney wrote:
-> > On Mon, Aug 11, 2014 at 12:43:08PM +0530, Amit Shah wrote:
-> > > On (Fri) 08 Aug 2014 [14:46:48], Paul E. McKenney wrote:
-> > > > On Fri, Aug 08, 2014 at 02:43:47PM -0700, Paul E. McKenney wrote:
-> > > > > On Sat, Aug 09, 2014 at 12:04:24AM +0530, Amit Shah wrote:
-> > > > > > On (Fri) 08 Aug 2014 [11:18:35], Paul E. McKenney wrote:
-> > > > > 
-> > > > > [ . . . ]
-> > > > > 
-> > > > > > > Hmmm... What happens if you boot a7d7a143d0b4cb1914705884ca5c25e322dba693
-> > > > > > > with the kernel parameter "acpi=off"?
-> > > > > > 
-> > > > > > That doesn't change anything - still hangs.
-> > > > > > 
-> > > > > > I intend to look at this more on Monday, though - turning in for
-> > > > > > today.  In the meantime, if there's anything else you'd like me to
-> > > > > > try, please let me know.
-> > > > > 
-> > > > > OK, given that I still cannot reproduce it, I do need your help with
-> > > > > the diagnostics.  And so what sorts of diagnostics work for you in
-> > > > > the hung state?  Are you able to dump ftrace buffers?
-> > > > > 
-> > > > > If you are able to dump ftrace buffers, please enable rcu:rcu_nocb_wake
-> > > > > and send me the resulting trace.
-> > > > 
-> > > > And another random kernel boot parameter to try is rcu_nocb_poll.
-> > > 
-> > > Right, this gets the boot going again:
-> > 
-> > OK, that likely indicates a lost wakeup.  The event tracing enabled by
-> > "rcu:rcu_nocb_wake" should help track those down.  Last time, it was qemu
-> > losing the wakeups, but maybe it is RCU this time.  ;-)
+Em Mon, Aug 11, 2014 at 10:49:54AM +0200, Jiri Olsa escreveu:
+> hi,
+> adding support to quit sampling commands:
+>   record,top,trace,kvm stat live
 > 
-> The guest goes dead pretty early; is there a trick to enabling and
-> getting these traces out of the guest that I don't know of that
-> doesn't involve being booted into userspace?  I can perhaps try
-> getting the trace output out from a virtio-serial channel; but even
-> that driver isn't probed yet when the lockup happens.
+> when all the monitored events are closed, like following perf
+> command will now exit when monitored process (pid 1234) exits:
+> 
+>   $ perf record -p 1234
+> 
+> I added independent poller object to handle basic polling
+> tasks. I had to factor some parts, so sending this as RFC,
 
-First boot with the kernel parameter "trace_event=rcu:rcu_nocb_wake".
-Then when the system hangs, do "sendkey alt-sysrq-z" at the "(qemu)"
-prompt to dump the ftrace buffer.  This hopefully dumps the trace buffer
-to dmesg.
+Why? I'm trying to figure out why this poller class is needed, just from
+reading the changelog entries, no luck so far.
 
-In addition "sendkey alt-sysrq-t" at the "(qemu)" prompt dumps all tasks'
-stacks, which would also likely be useful information.
-
-							Thanx, Paul
-
+> because I'm pretty sure I broke something else ;-)
+> 
+> The patch#1 is kernel change, which is needed for the
+> patchset to work properly. The current behavior stays
+> without this kernel change.
+> 
+> The code is based on latest Arnaldo's perf/core and
+> following kernel change:
+>   http://marc.info/?l=linux-kernel&m=140715910417130&w=2
+> 
+> The patchset is also reachable in here:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+>   perf/core_poll
+> 
+> thanks for comments,
+> jirka
+> 
+> 
+> Cc: Adrian Hunter <adrian.hunter@intel.com>
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jean Pihet <jean.pihet@linaro.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> ---
+> Jiri Olsa (20):
+>       perf: Add PERF_EVENT_STATE_EXIT state for events with exited task
+>       perf tools: Add poller object to handle polling globaly
+>       perf tests: Add poller object test
+>       perf tools: Add support to traverse xyarrays
+>       perf tools: Introduce perf_evsel__fd function
+>       perf tools: Add evlist/evsel poller object support
+>       perf record: Add support to see event's ERR and HUP poll errors
+>       perf tools: Add set_term_quiet_input helper function
+>       perf tui browser: Add interface to terminate browser from uotside
+>       perf top: Add support to see event's ERR and HUP poll errors
+>       perf top: Join the display thread on exit
+>       perf top: Use set_term_quiet_input for terminal input
+>       perf top: Setup signals for terminal output
+>       perf top: Use poller object for display thread stdin
+>       perf kvm: Fix stdin handling for 'kvm stat live' command
+>       perf kvm: Add support to see event's ERR and HUP poll errors
+>       perf trace: Add support to see event's ERR and HUP poll errors
+>       perf python: Use poller object for polling
+>       perf tests: Use poller object for polling
+>       perf tools: Remove pollfd stuff out of evlist object
+> 
+>  include/linux/perf_event.h                |   1 +
+>  kernel/events/core.c                      |  12 ++++-
+>  tools/perf/Makefile.perf                  |   4 ++
+>  tools/perf/builtin-kvm.c                  | 123 +++++++++++++++++++++++------------------------
+>  tools/perf/builtin-record.c               |  29 ++++++++++-
+>  tools/perf/builtin-report.c               |   3 +-
+>  tools/perf/builtin-top.c                  | 104 ++++++++++++++++++++++++++--------------
+>  tools/perf/builtin-trace.c                |  25 +++++++++-
+>  tools/perf/tests/builtin-test.c           |   8 ++++
+>  tools/perf/tests/open-syscall-tp-fields.c |   9 +++-
+>  tools/perf/tests/perf-record.c            |   4 --
+>  tools/perf/tests/poller.c                 | 126 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/tests/task-exit.c              |   9 +++-
+>  tools/perf/tests/tests.h                  |   2 +
+>  tools/perf/tests/xyarray.c                |  33 +++++++++++++
+>  tools/perf/ui/browser.c                   |   4 +-
+>  tools/perf/ui/browser.h                   |   8 +++-
+>  tools/perf/ui/browsers/annotate.c         |   2 +-
+>  tools/perf/ui/browsers/header.c           |   2 +-
+>  tools/perf/ui/browsers/hists.c            |  39 ++++++++-------
+>  tools/perf/ui/browsers/map.c              |   2 +-
+>  tools/perf/ui/browsers/scripts.c          |   2 +-
+>  tools/perf/ui/keysyms.h                   |   1 +
+>  tools/perf/ui/tui/util.c                  |   2 +-
+>  tools/perf/util/evlist.c                  |  38 ++++++---------
+>  tools/perf/util/evlist.h                  |   7 ++-
+>  tools/perf/util/evsel.c                   |  21 +++++++-
+>  tools/perf/util/evsel.h                   |  10 ++++
+>  tools/perf/util/hist.h                    |   6 ++-
+>  tools/perf/util/kvm-stat.h                |   1 -
+>  tools/perf/util/poller.c                  | 233 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/poller.h                  |  88 ++++++++++++++++++++++++++++++++++
+>  tools/perf/util/python-ext-sources        |   2 +
+>  tools/perf/util/python.c                  |  19 ++++++--
+>  tools/perf/util/util.c                    |  13 +++++
+>  tools/perf/util/util.h                    |   2 +
+>  tools/perf/util/xyarray.c                 |   4 +-
+>  tools/perf/util/xyarray.h                 |   6 +++
+>  38 files changed, 832 insertions(+), 172 deletions(-)
+>  create mode 100644 tools/perf/tests/poller.c
+>  create mode 100644 tools/perf/tests/xyarray.c
+>  create mode 100644 tools/perf/util/poller.c
+>  create mode 100644 tools/perf/util/poller.h
