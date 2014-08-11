@@ -1,85 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398AbaHKFtX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 01:49:23 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:38374 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbaHKFtW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 01:49:22 -0400
+	id S1752588AbaHKFte (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 01:49:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52042 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752464AbaHKFtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 01:49:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,839,1400050800"; 
+   d="scan'208,223";a="586299645"
+Message-ID: <53E85967.5060503@linux.intel.com>
+Date: Mon, 11 Aug 2014 13:49:27 +0800
+From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <8738d3hfm4.fsf@x220.int.ebiederm.org>
-References: <20140811024720.GA11337@devel.8.8.4.4>
-	<8738d3hfm4.fsf@x220.int.ebiederm.org>
-Date: Mon, 11 Aug 2014 14:43:37 +0900
-Message-ID: <CAHb8M2CG8dKeONFieH+KkHSFYEvkT6av6UodDQFWCM6uMNjN_A@mail.gmail.com>
-Subject: Re: [PATCH] proc: potential ERR_PTR dereference on proc_fill_cache()
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, oleg <oleg@redhat.com>,
-        eparis@redhat.com, rgb@redhat.com, tixxdz@opendz.org,
-        adobriyan@gmail.com, bill.c.roberts@gmail.com,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        ulf.hansson@linaro.org, tgih.jun@samsung.com, aaron.lu@intel.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jackey.shen@amd.com, gregkh@linuxfoundation.org
+Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio
+ thread
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-11 12:25 GMT+09:00 Eric W. Biederman <ebiederm@xmission.com>:
-> Daeseok Youn <daeseok.youn@gmail.com> writes:
->
->> The d_hash_and_lookup() returns NULL or ERR_PTR on lookup
->> failure.
->
-> Given that the only error condition can come from .d_hash and that proc
-> does not implement .d_hash if we want to do something with error returns
-> let's call BUG_ON. aka:
-Yes, you're right. proc doesn't implement .d_hash, so my patch is not needed.
-It couldn't return ERR_PTR(-error) without implementing .d_hash
-This patch should be dropped.
+>From 6cee984e1d76ba0a3320430f8cf4318ab65fcf06 Mon Sep 17 00:00:00 2001
+From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+Date: Tue, 5 Aug 2014 12:44:38 +0800
+Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
 
->
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index f50d4be..49bc09c 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -1673,7 +1673,7 @@ bool proc_fill_cache(struct file *file, struct dir_context *ctx,
->         ino_t ino;
->
->         child = d_hash_and_lookup(dir, &qname);
-> +       BUG_ON(IS_ERR(child))
->         if (!child) {
->                 child = d_alloc(dir, &qname);
->                 if (!child)
->                         goto end_instantiate;
->
-> Or do you see something in d_hash_and_lookup that I am overlooking?
-No.. I should check more carefully. sorry for that.
+781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
+bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
+the use of our own custom threaded IRQ handler, but left in an
+unconditional wake_up_process() on that handler at resume-time.
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
 
-Thanks for review.
+In addition, the check for MMC_CAP_SDIO_IRQ capability is added
+before enable sdio IRQ.
 
-regards,
-Daeseok Youn.
+Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
+Signed-off-by: Chris Ball <chris@printf.net>
+Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+---
+ drivers/mmc/core/sdio.c     |   14 ++++++++++++--
+ drivers/mmc/core/sdio_irq.c |    4 ++--
+ 2 files changed, 14 insertions(+), 4 deletions(-)
 
->
-> Eric
->
->
->> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->> ---
->>  fs/proc/base.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/fs/proc/base.c b/fs/proc/base.c
->> index f50d4be..49bc09c 100644
->> --- a/fs/proc/base.c
->> +++ b/fs/proc/base.c
->> @@ -1673,7 +1673,7 @@ bool proc_fill_cache(struct file *file, struct dir_context *ctx,
->>       ino_t ino;
->>
->>       child = d_hash_and_lookup(dir, &qname);
->> -     if (!child) {
->> +     if (IS_ERR_OR_NULL(child)) {
->>               child = d_alloc(dir, &qname);
->>               if (!child)
->>                       goto end_instantiate;
+diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+index e636d9e..e04a540 100644
+--- a/drivers/mmc/core/sdio.c
++++ b/drivers/mmc/core/sdio.c
+@@ -992,8 +992,18 @@ static int mmc_sdio_resume(struct mmc_host *host)
+ 		}
+ 	}
+ 
+-	if (!err && host->sdio_irqs)
+-		wake_up_process(host->sdio_irq_thread);
++	if (!err && host->sdio_irqs) {
++		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
++			wake_up_process(host->sdio_irq_thread);
++		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
++			mmc_release_host(host);
++			mmc_host_clk_hold(host);
++			host->ops->enable_sdio_irq(host, 1);
++			mmc_host_clk_release(host);
++			mmc_claim_host(host);
++		}
++	}
++
+ 	mmc_release_host(host);
+ 
+ 	host->pm_flags &= ~MMC_PM_KEEP_POWER;
+diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
+index 5cc13c8..696eca4 100644
+--- a/drivers/mmc/core/sdio_irq.c
++++ b/drivers/mmc/core/sdio_irq.c
+@@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
+ 				host->sdio_irqs--;
+ 				return err;
+ 			}
+-		} else {
++		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
+ 			mmc_host_clk_hold(host);
+ 			host->ops->enable_sdio_irq(host, 1);
+ 			mmc_host_clk_release(host);
+@@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
+ 		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
+ 			atomic_set(&host->sdio_irq_thread_abort, 1);
+ 			kthread_stop(host->sdio_irq_thread);
+-		} else {
++		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
+ 			mmc_host_clk_hold(host);
+ 			host->ops->enable_sdio_irq(host, 0);
+ 			mmc_host_clk_release(host);
+-- 1.7.1
+
