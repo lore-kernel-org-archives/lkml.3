@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626AbaHKTA5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:00:57 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:51620 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbaHKTA4 (ORCPT
+	id S1754789AbaHKTBK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 15:01:10 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58627 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662AbaHKTBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:00:56 -0400
-Message-ID: <53E912E3.8010808@gmail.com>
-Date: Mon, 11 Aug 2014 12:00:51 -0700
-From: Matthew Rushton <mvrushton@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 11 Aug 2014 15:01:06 -0400
+Date: Mon, 11 Aug 2014 20:00:57 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lgirdwood@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Message-ID: <20140811190057.GM17528@sirena.org.uk>
+References: <1407511775-26479-1-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
-To: Matt Wilson <msw@linux.com>
-CC: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, msw@amazon.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, Matt Rushton <mrushton@amazon.com>
-Subject: Re: [PATCH v3 2/2] xen/setup: Remap Xen Identity Mapped RAM
-References: <1407778441-26604-1-git-send-email-mrushton@amazon.com> <1407778441-26604-2-git-send-email-mrushton@amazon.com> <20140811174124.GA3156@u109add4315675089e695.ant.amazon.com>
-In-Reply-To: <20140811174124.GA3156@u109add4315675089e695.ant.amazon.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1NsjvM78Wc2uYjy2"
+Content-Disposition: inline
+In-Reply-To: <1407511775-26479-1-git-send-email-geert+renesas@glider.be>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: dapm: Fix uninitialized variable in
+ snd_soc_dapm_get_enum_double()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/14 10:41, Matt Wilson wrote:
-> On Mon, Aug 11, 2014 at 10:34:01AM -0700, Matt Rushton wrote:
->> Instead of ballooning up and down dom0 memory this remaps the existing mfns
->> that were replaced by the identity map. The reason for this is that the
->> existing implementation ballooned memory up and and down which caused dom0
->> to have discontiguous pages. In some cases this resulted in the use of bounce
->> buffers which reduced network I/O performance significantly. This change will
->> honor the existing order of the pages with the exception of some boundary
->> conditions.
->>
->> To do this we need to update both the Linux p2m table and the Xen m2p table.
->> Particular care must be taken when updating the p2m table since it's important
->> to limit table memory consumption and reuse the existing leaf pages which get
->> freed when an entire leaf page is set to the identity map. To implement this,
->> mapping updates are grouped into blocks with table entries getting cached
->> temporarily and then released.
->>
->> On my test system before:
->> Total pages: 2105014
->> Total contiguous: 1640635
->>
->> After:
->> Total pages: 2105014
->> Total contiguous: 2098904
->>
->> Signed-off-by: Matthew Rushton <mrushton@amazon.com>
->> ---
-> Matt,
->
-> Could you provide a summary of v2->v3 changes here?
->
-> --msw
->
->>   arch/x86/xen/p2m.c   |   23 +---
->>   arch/x86/xen/p2m.h   |   15 ++
->>   arch/x86/xen/setup.c |  370 +++++++++++++++++++++++++++++++++++++++-----------
->>   3 files changed, 314 insertions(+), 94 deletions(-)
->>   create mode 100644 arch/x86/xen/p2m.h
-Resent patch set with:
 
-v3: One line change to fix 32-bit mfn casting issue with MMU_MACHPHYS_UPDATE
+--1NsjvM78Wc2uYjy2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Fri, Aug 08, 2014 at 05:29:35PM +0200, Geert Uytterhoeven wrote:
+
+> ---
+> Is this correct? Please review.
+>=20
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+
+BTW please remember to put the signoff *before* the --- otherwise it
+gets discarded.
+
+--1NsjvM78Wc2uYjy2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT6RLmAAoJELSic+t+oim9WhEP/0VLO6NpCm9S3fWDvzoWCzcP
++C6ZKrWLHAD2ROuNn1OtZWanavx9/rBMsdmnp3x28/8j1ND5o27GpcEM2ZKIkqEV
+0XTKrvkq9WcvzziH74bYFJxWkvP62aWzwupF5K9pLW0oPu2Fj9wGolCdb6fHAl8w
+2PqXGOrngqDww7SfPFmOK6AJofa3H1KUSAlIB04n6Ak5WyeJGbBmvJIrxnUNVSEv
+M0sSCGSlKdw+t1/3OC7ZGhRqLMzubB+CHXCGTI/uaMPu8RCcIN0qi7mAdDNRL/mJ
+H2GbI+7q2ZEwWjZvdReFpOdXrGi2jN+fTKhQ13uwN20xfqJtL+hlejiQYllcOQ4N
+rAzvDpJepuPs7pgnnqB3YAdvDlAuroqBoBFxperdJxFOAyab3UKVPDCthJ26/qdy
+VTFTgjBU9Xk3knM2Il5RK8UMN1vXBWaz6wC8IRM3BL1s2c3mK92692bosA5ZEOGm
+SpScvzQpiQGtYQA8g7mx71eQq5c8jeB8O2s1JQUXglSzwZFXKvtPbHOiQhQj0t+A
+013cnjMVF91ryB+YSg98GwC3bnQNuPe8zUnHS2cig+DLSjhpAQ8wnldSrMcOzoof
+Spvrux24WPcAIfshxZnDGd+YkqRUdmbL6S/B0ZN0YKr8Uiz7Q/GSpaYzYq4nmBMD
+Hsdvzd14bPYKer7yNsFT
+=ZZZb
+-----END PGP SIGNATURE-----
+
+--1NsjvM78Wc2uYjy2--
