@@ -1,132 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800AbaHKNo5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 09:44:57 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64780 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753704AbaHKNoy (ORCPT
+	id S1753830AbaHKNpf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 09:45:35 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:34179 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753546AbaHKNpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 09:44:54 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: [PATCH 1/6 v2] PM / sleep: Mechanism for aborting system suspends unconditionally
-Date: Mon, 11 Aug 2014 15:58:27 +0200
-Message-ID: <3600808.j5JGM0n4nv@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <26580319.OZP7jvJnA9@vostro.rjw.lan>
-References: <26580319.OZP7jvJnA9@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 11 Aug 2014 09:45:32 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-f4-53e8c8f84881
+Message-id: <53E8C8F7.2070101@samsung.com>
+Date: Mon, 11 Aug 2014 15:45:27 +0200
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH/RFC v4 15/21] media: Add registration helpers for V4L2 flash
+References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
+ <1405087464-13762-16-git-send-email-j.anaszewski@samsung.com>
+ <53CCF59E.3070200@iki.fi> <53DF9C2A.8060403@samsung.com>
+ <20140811122628.GG16460@valkosipuli.retiisi.org.uk>
+ <53E8C4BA.6050805@samsung.com>
+In-reply-to: <53E8C4BA.6050805@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xa7o/T7wINnhvZ7FxxnpWi/lHzrFa
+	LPm5i8nibNMbdovLu+awWWx9s47RomfDVlaLM/tXsjlweEz5vZHV4/DXhSwefVtWMXp83iQX
+	wBLFZZOSmpNZllqkb5fAlXH02AXGglaJivMn3rI3MM4Q7GLk5JAQMJFo3NDFDGGLSVy4t56t
+	i5GLQ0hgKaPEo7tPmSCcj4wSb76cZ+li5ODgFdCS2LXKF6SBRUBV4sHtnawgNpuAocTPF6+Z
+	QGxRgQiJP6f3gcV5BQQlfky+xwJiiwioSTzd9JAFZCazwHVGiRXvHrKDJIQFAiQWXJ4J1iAk
+	MItJ4tKXKhCbU0BbYuOnV2DXMQtYS6yctI0RwpaX2LzmLfMERoFZSHbMQlI2C0nZAkbmVYyi
+	qaXJBcVJ6bmGesWJucWleel6yfm5mxghQf5lB+PiY1aHGAU4GJV4eA1O3w0WYk0sK67MPcQo
+	wcGsJMJ7a9WLYCHelMTKqtSi/Pii0pzU4kOMTBycUg2MCm+8pzO07LvvoH1gxpwSm8yH39+9
+	frju8svDAisbz/1/bLt2it6OgkMcho2qT+zvOZY51VqIGUstfGjvu//Lh/ZbGvGvjiQItL3s
+	+MB+Kn7K0kaWc/+Zdj3ac9f2dmyris/Et9mv9xraVXbrnNVP7PtY+unhD4crf6YvPh7z1njL
+	Uf/M/bGb9iuxFGckGmoxFxUnAgAjsSfvUAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: PM / sleep: Mechanism for aborting system suspends unconditionally
+> On 08/11/2014 02:26 PM, Sakari Ailus wrote:
+>>
+>> Hi Jacek,
+>>
 
-It sometimes may be necessary to abort a system suspend in
-progress or wake up the system from suspend-to-idle even if the
-pm_wakeup_event()/pm_stay_awake() mechanism is not enabled.
+...
 
-For this purpose, introduce a new global variable abort_suspend and
-make pm_wakeup_pending() check its value.  Also add routines for
-manipulating that variable.
+>>>>> +static int v4l2_flash_s_ctrl(struct v4l2_ctrl *c)
+>>>>> +{
+>>>>> +    struct v4l2_flash *v4l2_flash = v4l2_ctrl_to_v4l2_flash(c);
+>>>>> +    struct led_classdev_flash *flash = v4l2_flash->flash;
+>>>>> +    struct v4l2_flash_ctrl *ctrl = &v4l2_flash->ctrl;
+>>>>> +    struct v4l2_flash_ctrl_config *config = &v4l2_flash->config;
+>>>>> +    enum led_brightness torch_brightness;
+>>>>> +    bool external_strobe;
+>>>>> +    int ret;
+>>>>> +
+>>>>> +    switch (c->id) {
+>>>>> +    case V4L2_CID_FLASH_LED_MODE:
+>>>>> +        switch (c->val) {
+>>>>> +        case V4L2_FLASH_LED_MODE_NONE:
+>>>>> +            call_flash_op(v4l2_flash, torch_brightness_set,
+>>>>> +                            &flash->led_cdev, 0);
+>>>>> +            return call_flash_op(v4l2_flash, strobe_set, flash,
+>>>>> +                            false);
+>>>>> +        case V4L2_FLASH_LED_MODE_FLASH:
+>>>>> +            /* Turn off torch LED */
+>>>>> +            call_flash_op(v4l2_flash, torch_brightness_set,
+>>>>> +                            &flash->led_cdev, 0);
+>>>>> +            external_strobe = (ctrl->source->val ==
+>>>>> +                    V4L2_FLASH_STROBE_SOURCE_EXTERNAL);
+>>>>> +            return call_flash_op(v4l2_flash, external_strobe_set,
+>>>>> +                        flash, external_strobe);
+>>>>> +        case V4L2_FLASH_LED_MODE_TORCH:
+>>>>> +            /* Stop flash strobing */
+>>>>> +            ret = call_flash_op(v4l2_flash, strobe_set, flash,
+>>>>> +                            false);
+>>>>> +            if (ret)
+>>>>> +                return ret;
+>>>>> +
+>>>>> +            torch_brightness =
+>>>>> +                v4l2_flash_intensity_to_led_brightness(
+>>>>> +                        &config->torch_intensity,
+>>>>> +                        ctrl->torch_intensity->val);
+>>>>> +            call_flash_op(v4l2_flash, torch_brightness_set,
+>>>>> +                    &flash->led_cdev, torch_brightness);
+>>>>> +            return ret;
+>>>>> +        }
+>>>>> +        break;
+>>>>> +    case V4L2_CID_FLASH_STROBE_SOURCE:
+>>>>> +        external_strobe = (c->val ==
+>>>>> V4L2_FLASH_STROBE_SOURCE_EXTERNAL);
+>>>>
+>>>> Is the external_strobe argument match exactly to the strobe source
+>>>> control? You seem to assume that in g_volatile_ctrl() above. I think
+>>>> having it the either way is fine but not both. :-)
+>>>
+>>> The STROBE_SOURCE_EXTERNAL control state is volatile if a flash device
+>>> depends on muxes that route strobe signals to more then one flash
+>>> device. In such a case it behaves similarly to FLASH_STROBE control,
+>>> i.e. it activates external strobe only for the flash timeout period.
+>>> I touched this issue in the cover letter of this patch series,
+>>> paragraph 2.
+>>
+>> I meant that flash->external_strobe is directly used as
+>> V4L2_CID_FLASH_STROBE_SOURCE. Are the two guaranteed to be the same?
 
-This is going to be used in subsequent changes.
+Yes, the external_strobe sysfs attribute is mapped to it.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-
-This patch is the same as the previous version.
-
----
- drivers/base/power/wakeup.c |   20 ++++++++++++++++++++
- include/linux/suspend.h     |    4 ++++
- kernel/power/process.c      |    1 +
- 3 files changed, 25 insertions(+)
-
-Index: linux-pm/include/linux/suspend.h
-===================================================================
---- linux-pm.orig/include/linux/suspend.h
-+++ linux-pm/include/linux/suspend.h
-@@ -371,6 +371,8 @@ extern int unregister_pm_notifier(struct
- extern bool events_check_enabled;
- 
- extern bool pm_wakeup_pending(void);
-+extern void pm_system_wakeup(void);
-+extern void pm_wakeup_clear(void);
- extern bool pm_get_wakeup_count(unsigned int *count, bool block);
- extern bool pm_save_wakeup_count(unsigned int count);
- extern void pm_wakep_autosleep_enabled(bool set);
-@@ -418,6 +420,8 @@ static inline int unregister_pm_notifier
- #define pm_notifier(fn, pri)	do { (void)(fn); } while (0)
- 
- static inline bool pm_wakeup_pending(void) { return false; }
-+static inline void pm_system_wakeup(void) {}
-+static inline void pm_wakeup_clear(void) {}
- 
- static inline void lock_system_sleep(void) {}
- static inline void unlock_system_sleep(void) {}
-Index: linux-pm/drivers/base/power/wakeup.c
-===================================================================
---- linux-pm.orig/drivers/base/power/wakeup.c
-+++ linux-pm/drivers/base/power/wakeup.c
-@@ -691,6 +691,8 @@ void pm_print_active_wakeup_sources(void
- }
- EXPORT_SYMBOL_GPL(pm_print_active_wakeup_sources);
- 
-+static bool abort_suspend;
-+
- /**
-  * pm_wakeup_pending - Check if power transition in progress should be aborted.
-  *
-@@ -712,6 +714,7 @@ bool pm_wakeup_pending(void)
- 		ret = (cnt != saved_count || inpr > 0);
- 		events_check_enabled = !ret;
- 	}
-+	ret = ret || abort_suspend;
- 	spin_unlock_irqrestore(&events_lock, flags);
- 
- 	if (ret) {
-@@ -722,6 +725,23 @@ bool pm_wakeup_pending(void)
- 	return ret;
- }
- 
-+void pm_system_wakeup(void)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&events_lock, flags);
-+	abort_suspend = true;
-+	spin_unlock_irqrestore(&events_lock, flags);
-+	freeze_wake();
-+}
-+
-+void pm_wakeup_clear(void)
-+{
-+	spin_lock_irq(&events_lock);
-+	abort_suspend = false;
-+	spin_unlock_irq(&events_lock);
-+}
-+
- /**
-  * pm_get_wakeup_count - Read the number of registered wakeup events.
-  * @count: Address to store the value at.
-Index: linux-pm/kernel/power/process.c
-===================================================================
---- linux-pm.orig/kernel/power/process.c
-+++ linux-pm/kernel/power/process.c
-@@ -129,6 +129,7 @@ int freeze_processes(void)
- 	if (!pm_freezing)
- 		atomic_inc(&system_freezing_cnt);
- 
-+	pm_wakeup_clear();
- 	printk("Freezing user space processes ... ");
- 	pm_freezing = true;
- 	error = try_to_freeze_tasks(true);
-
+Best Regards,
+Jacek Anaszewski
