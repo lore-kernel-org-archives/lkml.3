@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102AbaHKPhn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 11:37:43 -0400
-Received: from smtp121.ord1c.emailsrvr.com ([108.166.43.121]:57670 "EHLO
+	id S1754140AbaHKPhz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 11:37:55 -0400
+Received: from smtp121.ord1c.emailsrvr.com ([108.166.43.121]:40788 "EHLO
 	smtp121.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753914AbaHKPhm (ORCPT
+	by vger.kernel.org with ESMTP id S1753914AbaHKPhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 11:37:42 -0400
+	Mon, 11 Aug 2014 11:37:53 -0400
 X-Sender-Id: kiran.padwal@smartplayin.com
 From: Kiran Padwal <kiran.padwal@smartplayin.com>
 To: linus.walleij@linaro.org
 Cc: shawn.guo@linaro.org, kiran.padwal@smartplayin.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 00/11] pinctrl: imx*: Make of_device_id array const
-Date: Mon, 11 Aug 2014 21:04:26 +0530
-Message-Id: <1407771277-19477-1-git-send-email-kiran.padwal@smartplayin.com>
+Subject: [PATCH 01/11] pinctrl: imx23: Make of_device_id array const
+Date: Mon, 11 Aug 2014 21:04:27 +0530
+Message-Id: <1407771277-19477-2-git-send-email-kiran.padwal@smartplayin.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1407771277-19477-1-git-send-email-kiran.padwal@smartplayin.com>
+References: <1407771277-19477-1-git-send-email-kiran.padwal@smartplayin.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kiran Padwal (11):
-  pinctrl: imx23: Make of_device_id array const
-  pinctrl: imx25: Make of_device_id array const
-  pinctrl: imx27: Make of_device_id array const
-  pinctrl: imx28: Make of_device_id array const
-  pinctrl: imx35: Make of_device_id array const
-  pinctrl: imx50: Make of_device_id array const
-  pinctrl: imx51: Make of_device_id array const
-  pinctrl: imx53: Make of_device_id array const
-  pinctrl: imx6dl: Make of_device_id array const
-  pinctrl: imx6q: Make of_device_id array const
-  pinctrl: imx6sx: Make of_device_id array const
+Make of_device_id array const, because all OF functions handle it as const.
+---
+ drivers/pinctrl/pinctrl-imx23.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- drivers/pinctrl/pinctrl-imx23.c  |    2 +-
- drivers/pinctrl/pinctrl-imx25.c  |    2 +-
- drivers/pinctrl/pinctrl-imx27.c  |    2 +-
- drivers/pinctrl/pinctrl-imx28.c  |    2 +-
- drivers/pinctrl/pinctrl-imx35.c  |    2 +-
- drivers/pinctrl/pinctrl-imx50.c  |    2 +-
- drivers/pinctrl/pinctrl-imx51.c  |    2 +-
- drivers/pinctrl/pinctrl-imx53.c  |    2 +-
- drivers/pinctrl/pinctrl-imx6dl.c |    2 +-
- drivers/pinctrl/pinctrl-imx6q.c  |    2 +-
- drivers/pinctrl/pinctrl-imx6sx.c |    2 +-
- 11 files changed, 11 insertions(+), 11 deletions(-)
-
+diff --git a/drivers/pinctrl/pinctrl-imx23.c b/drivers/pinctrl/pinctrl-imx23.c
+index e76d75c..df79096 100644
+--- a/drivers/pinctrl/pinctrl-imx23.c
++++ b/drivers/pinctrl/pinctrl-imx23.c
+@@ -272,7 +272,7 @@ static int imx23_pinctrl_probe(struct platform_device *pdev)
+ 	return mxs_pinctrl_probe(pdev, &imx23_pinctrl_data);
+ }
+ 
+-static struct of_device_id imx23_pinctrl_of_match[] = {
++static const struct of_device_id imx23_pinctrl_of_match[] = {
+ 	{ .compatible = "fsl,imx23-pinctrl", },
+ 	{ /* sentinel */ }
+ };
 -- 
 1.7.9.5
 
