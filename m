@@ -1,61 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888AbaHKTvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:51:43 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:41085 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaHKTvl (ORCPT
+	id S1754927AbaHKTwz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 15:52:55 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:59969 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825AbaHKTwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:51:41 -0400
-Date: Mon, 11 Aug 2014 12:51:37 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: torvalds@linux-foundation.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, robherring2@gmail.com,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Marc Carino <marc.ceeeee@gmail.com>,
-        Gregory Fong <gregory.0xf0@gmail.com>
-Subject: Re: [GIT PULL 2/7] ARM: SoC platform changes for 3.17
-Message-ID: <20140811195137.GB3711@ld-irv-0074>
-References: <1407516479-1251-1-git-send-email-olof@lixom.net>
- <1407516479-1251-3-git-send-email-olof@lixom.net>
+	Mon, 11 Aug 2014 15:52:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407516479-1251-3-git-send-email-olof@lixom.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAfyv34X1naNEyht0q+bD3QUjCxLJribmfWfZkP073WS7ve4kA@mail.gmail.com>
+References: <1394052739-8589-1-git-send-email-marek@goldelico.com>
+	<1394052739-8589-2-git-send-email-marek@goldelico.com>
+	<20140305232513.GA9542@earth.universe>
+	<CAAfyv34X1naNEyht0q+bD3QUjCxLJribmfWfZkP073WS7ve4kA@mail.gmail.com>
+Date: Mon, 11 Aug 2014 21:52:52 +0200
+Message-ID: <CAAfyv35Hi-aE+SnTiN9O39ANi63gkNMz-Bz6hqCkkxJARSFcOg@mail.gmail.com>
+Subject: Re: [PATCH v2] power: twl4030-madc-battery: Convert to iio consumer.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ other involved parties
+Hi Sebastian,
 
-On Fri, Aug 08, 2014 at 09:47:54AM -0700, Olof Johansson wrote:
-> This is the bulk of new SoC enablement and other platform changes for 3.17:
-[...]
-> * Broadcom BCM7xxx settop box chipset is introduced
-[...]
-> Marc Carino (1):
->       ARM: brcmstb: add infrastructure for ARM-based Broadcom STB SoCs
+can you please take this series (I'll post update version with
+removing debug code). Thanks.
 
-I realize this is a bit late (the pull request is already merged), but
-I'd like to be up-front about this: there were some (late) oustanding
-review comments made on this patch [1]. I have a few patches queued
-locally for addressing many of them, but not all of the issues are
-completely resolved.
+On Thu, Mar 6, 2014 at 10:10 PM, Belisko Marek <marek.belisko@gmail.com> wrote:
+> Hi Sebastian,
+>
+> On Thu, Mar 6, 2014 at 12:25 AM, Sebastian Reichel <sre@debian.org> wrote:
+>> Hi Marek,
+>>
+>> I just have one comment:
+>>
+>> On Wed, Mar 05, 2014 at 09:52:17PM +0100, Marek Belisko wrote:
+>>> [...]
+>>> -static int madc_read(int index)
+>>> +static int madc_read(struct iio_channel *channel)
+>>>  {
+>>> -     struct twl4030_madc_request req;
+>>> -     int val;
+>>> -
+>>> -     req.channels = index;
+>>> -     req.method = TWL4030_MADC_SW2;
+>>> -     req.type = TWL4030_MADC_WAIT;
+>>> -     req.do_avg = 0;
+>>> -     req.raw = false;
+>>> -     req.func_cb = NULL;
+>>> -
+>>> -     val = twl4030_madc_conversion(&req);
+>>> -     if (val < 0)
+>>> -             return val;
+>>> -
+>>> -     return req.rbuf[ffs(index) - 1];
+>>> +     int val, err;
+>>> +     err = iio_read_channel_processed(channel, &val);
+>>> +     if (err < 0) {
+>>> +             pr_info("Error:%d\n", err);
+>>
+>> This should be "Error: %d\n" (with a space).
+> Ups this is remain from debugging messages. I'll remove it and re-post patches.
+> Thanks.
+>>
+>> Apart from that you should use dev_info() or dev_err(), so that the
+>> message is properly prefixed by the device. Currently there is no
+>> hint where this error message is generated.
+>>
+>>> +             return err;
+>>> +     }
+>>> +     return val;
+>>>  }
+>>> [...]
+>>
+>> After fixing this you can add
+>>
+>> Reviewed-By: Sebastian Reichel <sre@debian.org>
+>>
+>> -- Sebastian
+>
+> BR,
+>
+> marek
+>
+> --
+> as simple and primitive as possible
+> -------------------------------------------------
+> Marek Belisko - OPEN-NANDRA
+> Freelance Developer
+>
+> Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+> Tel: +421 915 052 184
+> skype: marekwhite
+> twitter: #opennandra
+> web: http://open-nandra.com
 
-Shall I simply send a revert patch for the
-arch/arm/mach-bcm/platsmp-brcmstb.c stuff, and get it in through the
-bcm -> arm-soc -> Linus merge path in 3.17-rcX? Or should I take the
-incremental improvement approach, as we have functioning code with no
-clear alternative proposal yet?
+BR,
 
-Again, sorry for the late noise.
+marek
 
-Brian
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-[1] version 8 patch:
-
-      http://article.gmane.org/gmane.linux.ports.arm.kernel/343391
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
