@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497AbaHKGgT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 02:36:19 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:42483 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050AbaHKGgR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 02:36:17 -0400
+	id S1752594AbaHKGgw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 02:36:52 -0400
+Received: from mga14.intel.com ([192.55.52.115]:5467 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752329AbaHKGgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 02:36:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="asc'?scan'208";a="370713009"
+Date: Mon, 11 Aug 2014 11:54:29 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>, lgirdwood@gmail.com,
+        tiwai@suse.de, alsa-devel@alsa-project.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH v3] ASOC: dapm: add code to configure dai
+ link parameters
+Message-ID: <20140811062429.GC13288@intel.com>
+References: <1407341786-14990-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+ <20140807141604.GJ8181@intel.com>
+ <20140807171324.GM17528@sirena.org.uk>
 MIME-Version: 1.0
-X-Originating-IP: [115.42.131.38]
-Date: Mon, 11 Aug 2014 14:36:17 +0800
-Message-ID: <CAMVG2ss=nx+K2c8jKxVY_sGJPZY+r3v3z2tW_fs7+=5WpXMH1w@mail.gmail.com>
-Subject: 3.15 btrfs free space cache oops
-From: Daniel J Blueman <daniel@quora.org>
-To: Linux BTRFS <linux-btrfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CdrF4e02JqNVZeln"
+Content-Disposition: inline
+In-Reply-To: <20140807171324.GM17528@sirena.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When running MonetDB against a BTRFS RAID-0 set over 4 SSDs [1] on
-3.15.5, we see io_ctl have a bad address of 0x200000, causing a fatal
-pagefault in memcpy():
 
-(gdb) list *(__btrfs_write_out_cache+0x3e4)
-0xffffffff81365984 is in __btrfs_write_out_cache
-(fs/btrfs/free-space-cache.c:521).
-516            if (io_ctl->index >= io_ctl->num_pages)
-517                return -ENOSPC;
-518            io_ctl_map_page(io_ctl, 0);
-519        }
-520
-521        memcpy(io_ctl->cur, bitmap, PAGE_CACHE_SIZE);
-522        io_ctl_set_crc(io_ctl, io_ctl->index - 1);
-523        if (io_ctl->index < io_ctl->num_pages)
-524            io_ctl_map_page(io_ctl, 0);
-525        return 0;
+--CdrF4e02JqNVZeln
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I can try to reproduce it if more data is useful?
+On Thu, Aug 07, 2014 at 06:13:24PM +0100, Mark Brown wrote:
+> On Thu, Aug 07, 2014 at 07:46:05PM +0530, Vinod Koul wrote:
+>=20
+> > I was thinking about this as well a while back, wont it make sense to l=
+et
+> > machine driver expose meaningful controls for this. Just like we have f=
+ixup
+> > for back-ends, we can add fixups for codec-codec links and let machine =
+tell
+> > you the parameters to configure.
+>=20
+> This is supposed to be pretty much the same thing (not looked at the
+> patch yet) - the machine driver passes in a list of possible settings
+> and then a control gets generated allowing the user to pick one.
+Yes but this is bit different from the current way of using fixups for BEs.
+So it would be bit incosistent. For pcms it would be only fixups and for
+loops it would be machine controls
 
-Thanks,
-  Daniel
+--=20
+~Vinod
 
--- [1]
+--CdrF4e02JqNVZeln
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-mkfs.btrfs -f -m raid0 -d raid0 -n 16k -l 16k -O skinny-metadata
-/dev/sda2 /dev/sdc2 /dev/sdb2 /dev/sdd2
-mount /dev/sda2 /scratch -o noatime,discard,nodatasum,nobarrier,ssd_spread
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
--- [2]
+iQIcBAEBAgAGBQJT6GGdAAoJEHwUBw8lI4NHO10P/jLg7pbaz5115CPquENsYLcL
+CIBTMl+9iwMijhWUDMouyzXwfo93G4apWZy8mEO9EE9E3s+lNhs2cyoQq+e/ots/
+/dxRRyPG+m9n8JRYQRf0IjE1JTXZLYcksEzXyhZxv30bPvI7N1v4KQAz1vynCX2g
+QNhVkyT7ot9oXIPRNL2fn8Hfbr93oTHGdnICf3XJLeJlBC8BpWRbcOnqtOHDVvLs
+yr25JYzqTCGSScNgWsMddQ0yiBpl6NRsRd5zhBMQKXRJX5l6gubYVWJgjr5QriSt
+d0V61rP5YKos+1maPmbJKUxK19TO5OsTSz1Gaa6C26JV8PSl8AVrwL00BGsWUvMO
+XE6rSCER4pgzf/oC3D4vF+OqLS+VQvWKuKjLG/uCArUU2CWn2OXDpeXpu8pqsciN
+cPwq8vE6pzWzFKDJONRLqh6PNhoKFlruyphio4bdvHYLDJDCo4l6GmUFFRp0AOVC
+muvarb5suc3PdAqgOuUcAMjtifY+aMIu8HFAaXYxAKDQzcIhQuUPaziDjgvUH2hu
+GTPXUbmc5lcQV85bMXmktBC6MUG9//mIwm0ywtTYGeIsHZoYg1zqZN3IezNuKylr
+apWGfHN6W9vYM0bEWMGMyd89TOwLNDzF3uzL/d7vMswNSx9ow1m81L/1kVExBd+v
+D/jLrbcIFGe3eVlZZRRW
+=HjRZ
+-----END PGP SIGNATURE-----
 
-BUG: unable to handle kernel paging request at 0000000000200000
-IP: [<ffffffff8135a374>] __btrfs_write_out_cache+0x3e4/0x8e0
-PGD 3bca02c067 PUD 3bcf5fb067 PMD 0
-Oops: 0000 [#1] SMP
-Modules linked in:
-CPU: 34 PID: 46645 Comm: mserver5 Not tainted 3.15.5-server #7
-Hardware name: Dell Inc. PowerEdge R815/0W13NR, BIOS 3.1.1 [1.1.54] 10/16/2013
-task: ffff880a8c7234f0 ti: ffff8809aefcc000 task.ti: ffff8809aefcc000
-RIP: 0010:[<ffffffff8135a374>] [<ffffffff8135a374>]
-__btrfs_write_out_cache+0x3e4/0x8e0
-RSP: 0018:ffff8809aefcfc40 EFLAGS: 00010246
-RAX: 0000004fb9321000 RBX: ffff8809aefcfca8 RCX: 0000000000000200
-RDX: 0000000000001000 RSI: 0000000000200000 RDI: ffff884fb9321000
-RBP: ffff8809aefcfd48 R08: 0000000000000200 R09: 0000000000000000
-R10: 0000000000000000 R11: ffff884fb9320ffc R12: ffff8831e3303740
-R13: ffff880100579970 R14: ffff880bb38061c0 R15: 0000000000200000
-FS: 00007fb9447ed700(0000) GS:ffff884bbfc80000(0000) knlGS:0000000000000000
-CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000200000 CR3: 000000329b71c000 CR4: 00000000000407e0
-Stack:
- ffff8809aefcfc90 0000000000000011 0000000e00000000 ffff884fbbc2c870
- ffff880bb38061c0 ffff8809aefcfc90 ffff880bb3806058 ffff880b000002ec
- ffff883bcd523800 ffff8833d338f2c0 ffff88476b1eb4e0 000000b890cde000
-Call Trace:
- [<ffffffff81a75b4b>] ? _raw_spin_lock+0xb/0x20
- [<ffffffff8135c0e1>] btrfs_write_out_cache+0xb1/0xf0
- [<ffffffff8130be0b>] btrfs_write_dirty_block_groups+0x58b/0x670
- [<ffffffff813199c5>] commit_cowonly_roots+0x195/0x250
- [<ffffffff8131b92f>] btrfs_commit_transaction+0x41f/0x9b0
- [<ffffffff81358e85>] ? btrfs_log_dentry_safe+0x55/0x70
- [<ffffffff8132b6b2>] btrfs_sync_file+0x182/0x2a0
- [<ffffffff8114a450>] do_fsync+0x50/0x80
- [<ffffffff8114a6de>] SyS_fdatasync+0xe/0x20
- [<ffffffff81a766e6>] system_call_fastpath+0x1a/0x1f
-Code: ff 4d 89 fc 49 89 c7 e9 ab 00 00 00 0f 1f 00 40 f6 c7 02 0f 85
-fe 00 00 00 40 f6 c7 04 0f 85 14 01 00 00 89 d1 c1 e9 03 f6 c2 04 <f3>
-48 a5 74 09 8b 0e 89 0f b9 04 00 00 00 f6 c2 02 74 0e 44 0f
-RIP [<ffffffff8135a374>] __btrfs_write_out_cache+0x3e4/0x8e0
- RSP <ffff8809aefcfc40>
-CR2: 0000000000200000
--- 
-Daniel J Blueman
+--CdrF4e02JqNVZeln--
