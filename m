@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177AbaHKSSg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:18:36 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33922 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751506AbaHKSSf (ORCPT
+	id S1754368AbaHKSTM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:19:12 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:43060 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444AbaHKSTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:18:35 -0400
-Message-Id: <1407781112.3399765.151527845.7EC32D9C@webmail.messagingengine.com>
-X-Sasl-Enc: 53JfYkI73HLkDWipYhy04HdR1o9edeLXm5GLc8WBzqII 1407781112
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-kernel@vger.kernel.org
+	Mon, 11 Aug 2014 14:19:09 -0400
+Date: Mon, 11 Aug 2014 11:19:05 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+Cc: gregkh@linuxfoundation.org, hdegoede@redhat.com, kraxel@redhat.com,
+        mdharm-usb@one-eyed-alien.net, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] uas: replace WARN_ON_ONCE() with assert_spin_locked().
+Message-ID: <20140811181905.GA25727@roeck-us.net>
+References: <1407743966-25325-1-git-send-email-sanjeev_sharma@mentor.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-e309cf77
-In-Reply-To: <53E8D876.1060004@zytor.com>
-References: <20140809231911.GA4843@khazad-dum.debian.net>
- <53E8D876.1060004@zytor.com>
-Subject: Re: BUG: early intel microcode update violating alignment rules
-Date: Mon, 11 Aug 2014 15:18:32 -0300
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407743966-25325-1-git-send-email-sanjeev_sharma@mentor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014, at 11:51, H. Peter Anvin wrote:
-> We could put a buffer in the initdata region (we really could use an
-> initbss region!) or in the brk.
+On Mon, Aug 11, 2014 at 01:29:26PM +0530, Sanjeev Sharma wrote:
+> spin_is_locked() always return false in uniprocessor configuration and therefore it
+> would be advise to repalce with assert_spin_locked().
+> 
+> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+> ---
+>  drivers/usb/storage/uas.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
+> index 3f42785..8e5877d 100644
+> --- a/drivers/usb/storage/uas.c
+> +++ b/drivers/usb/storage/uas.c
+> @@ -154,7 +154,7 @@ static void uas_mark_cmd_dead(struct uas_dev_info *devinfo,
+>  	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+>  
+>  	uas_log_cmd_state(cmnd, caller);
+> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+> +	assert_spin_locked(&devinfo->lock);
 
-That sounds much better than the hideous crap I came up with.  The
-buffer would need to be at least 64KiB in size to be on the safe side. 
-The largest public microcode update ATM is 23KiB.
+Seems to me that replacing WARN_ON_ONCE (which may be annoying but only
+creates a traceback, and only once) with assert_spin_locked (which
+crashes the kernel) is a bit drastic.
 
-I am not sure if we might need more than 64KiB: the Intel SDM mentions
-that in real mode the update data must not cross a segment boundary, and
-also must not exceed a segment limit.  I am a bit rusty on real mode,
-but doesn't that mean, in practice, that microcode update data size is
-limited in size to 64KiB?
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Guenter
