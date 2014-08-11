@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804AbaHKI7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 04:59:07 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:46353 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992AbaHKI7E convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 04:59:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E971A1D@SHSMSX101.ccr.corp.intel.com>
-References: <1403618196-7366-1-git-send-email-alvin.chen@intel.com>
-	<1403618196-7366-2-git-send-email-alvin.chen@intel.com>
-	<CAPDyKFq8cQHhadSAcaMG6XTKKaZ3XjX5PQyxsRteqhbcMaYZ0A@mail.gmail.com>
-	<AF233D1473C1364ABD51D28909A1B1B72F81CCA4@pgsmsx105.gar.corp.intel.com>
-	<4656BEB6164FC34F8171C6538F1A595B2E971A1D@SHSMSX101.ccr.corp.intel.com>
-Date: Mon, 11 Aug 2014 10:59:02 +0200
-Message-ID: <CAPDyKFpV_mGfQKPbUwN+vEhEVULXagvEAATzLkVuqxWnd7RBYw@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: sdhci-pci: SDIO host controller support for Intel
- Quark X1000
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Chen, Alvin" <alvin.chen@intel.com>
-Cc: Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
+	id S1752817AbaHKI7T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 04:59:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45570 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751867AbaHKI7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 04:59:16 -0400
+Date: Mon, 11 Aug 2014 17:00:14 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Mark Salter <msalter@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
+Subject: Re: [PATCH 1/2] UEFI arm64: add noefi boot param
+Message-ID: <20140811090013.GD1834@darkstar.nay.redhat.com>
+References: <20140806083825.GA31711@dhcp-16-198.nay.redhat.com>
+ <20140806130623.GI4179@bivouac.eciton.net>
+ <20140806132021.GB15082@console-pimps.org>
+ <20140806132941.GJ4179@bivouac.eciton.net>
+ <20140806140155.GC15082@console-pimps.org>
+ <CAKv+Gu8ey1iKu-_wS6yYaEXQaQMDXa+PF5Kiw+edA9a_OE1EAw@mail.gmail.com>
+ <20140806141814.GD15082@console-pimps.org>
+ <20140807061945.GE20295@darkstar.nay.redhat.com>
+ <20140807202620.GI15082@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140807202620.GI15082@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 August 2014 07:15, Chen, Alvin <alvin.chen@intel.com> wrote:
-> Hi Ulf,
->
-> Any update for this patch? Just want to follow-up.
+On 08/07/14 at 09:26pm, Matt Fleming wrote:
+> On Thu, 07 Aug, at 02:19:45PM, Dave Young wrote:
+> > 
+> > The current efi_runtime_init() enables the bit after getting the efi
+> > callback phyaddr of SetVirtualAddressMap.
+> > 
+> > Thinking more about it, since SetVirtualAddressMap() could fail
+> > somehow it seems better to set EFI_RUNTIME_SERIVCES bit only when
+> > enter virtual mode return EFI_SUCCESS.
+> > 
+> > Does it make sense to you, Matt?
+> 
+> If you're going ahead with the scheme I proposed yesterday you'd
+> actually want to *clear* the EFI_RUNTIME_SERVICES bit if
+> SetVirtualAddressMap() fails, since we would have set it by default for
+> EFI_BOOT.
 
-It will be included in my PR for 3.17.
+There's one concern about the noefi early param handling in your proposal.
+Your patch depends on the parse_early_param() being called after setting
+EFI_RUNTIME_SERVICES bit. It's true in X86 setup.c, but it's not in arm64
+setup.c so I'm afraid there's other piece of code need early params and it
+will not work.
 
-Kind regards
-Uffe
+How about using a variable like runtime_disabled, then add a global function
+efi_runtime_disabled() to get the status. 
 
->
->
->
-> Best regards，Alvin Chen
-> ICFS Platform Engineering Solution
-> Flex Services (CMMI Level 3, IQA2005, IQA2008), Greater Asia Region Intel Information Technology Tel. 010-82171960
-> inet.8-7581960
-> Email. alvin.chen@intel.com
->
->> -----Original Message-----
->> From: Ong, Boon Leong
->> Sent: Wednesday, August 6, 2014 3:32 PM
->> To: Ulf Hansson
->> Cc: Chris Ball; linux-mmc; linux-kernel@vger.kernel.org; Chen, Alvin
->> Subject: RE: [PATCH v2] mmc: sdhci-pci: SDIO host controller support for Intel
->> Quark X1000
->>
->> > -----Original Message-----
->> > From: Ulf Hansson [mailto:ulf.hansson@linaro.org]
->> > Sent: Wednesday, July 02, 2014 5:01 PM
->> > To: Chen, Alvin
->> > Cc: Chris Ball; linux-mmc; linux-kernel@vger.kernel.org; Ong, Boon
->> > Leong
->> > Subject: Re: [PATCH v2] mmc: sdhci-pci: SDIO host controller support
->> > for Intel Quark X1000
->> >
->> > On 24 June 2014 15:56, Chen, Alvin <alvin.chen@intel.com> wrote:
->> > > From: Derek Browne <Derek.Browne@intel.com>
->> > >
->> > > This patch is to enable SDIO host controller for Intel Quark X1000.
->> > >
->> > > Signed-off-by: Derek Browne <Derek.Browne@intel.com>
->> > > Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
->> >
->> > Thanks! Applied for next.
->> >
->>
->> Hi Ulf,
->>       For this patch, are you in progress of getting it into v3.17  merge
->> window?
->>       Just want to follow-up.
->>
->> Many thanks
->> Boon Leong
->
+
+> 
+> However, I still think we want to panic() if SetVirtualAddressMap()
+> fails because we really never expect that function to return an error
+> under normal circumstances. Also, I'm not sure it's safe to make any
+> assumptions about the state of the system if SetVirtualAddressMap()
+> fails.
+
+Ok, so the panic is reasonable to me as well.
+
+Thanks
+Dave
