@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334AbaHKF05 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 01:26:57 -0400
-Received: from mga11.intel.com ([192.55.52.93]:6699 "EHLO mga11.intel.com"
+	id S1752522AbaHKF1I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 01:27:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59263 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751695AbaHKF04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 01:26:56 -0400
+	id S1752360AbaHKF1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 01:27:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,839,1400050800"; 
-   d="scan'208";a="574810668"
+   d="scan'208";a="586294216"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -18,9 +18,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         kan.liang@intel.com,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v3 03/23] perf: Support high-order allocations for AUX space
-Date: Mon, 11 Aug 2014 08:19:32 +0300
-Message-Id: <1407734392-31097-4-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v3 05/23] perf: Add a pmu capability for "exclusive" events
+Date: Mon, 11 Aug 2014 08:19:34 +0300
+Message-Id: <1407734392-31097-6-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1407734392-31097-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1407734392-31097-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -28,117 +28,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some pmus (such as BTS or Intel PT without multiple-entry ToPA capability)
-don't support scatter-gather and will prefer larger contiguous areas for
-their output regions.
+Usually, pmus that do, for example, instruction tracing, would only ever
+be able to have one event per task per cpu (or per perf_context). For such
+pmus it makes sense to disallow creating conflicting events early on, so
+as to provide consistent behavior for the user.
 
-This patch adds a new pmu capability to request higher order allocations.
+This patch adds a pmu capability that indicates such constraint on event
+creation.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- include/linux/perf_event.h  |  1 +
- kernel/events/ring_buffer.c | 51 +++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 46 insertions(+), 6 deletions(-)
+ include/linux/perf_event.h |  1 +
+ kernel/events/core.c       | 45 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 46 insertions(+)
 
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index cf62338421..4d9ede200f 100644
+index 71be27169c..b8902ebcb7 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -170,6 +170,7 @@ struct perf_event;
-  * pmu::capabilities flags
-  */
+@@ -172,6 +172,7 @@ struct perf_event;
  #define PERF_PMU_CAP_NO_INTERRUPT		0x01
-+#define PERF_PMU_CAP_AUX_NO_SG			0x02
+ #define PERF_PMU_CAP_AUX_NO_SG			0x02
+ #define PERF_PMU_CAP_AUX_SW_DOUBLEBUF		0x04
++#define PERF_PMU_CAP_EXCLUSIVE			0x08
  
  /**
   * struct pmu - generic performance monitoring unit
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index 00708d5916..d10919ca42 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -242,29 +242,68 @@ ring_buffer_init(struct ring_buffer *rb, long watermark, int flags)
- 	spin_lock_init(&rb->event_lock);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index c07768d0a0..361a45eee2 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7149,6 +7149,32 @@ out:
+ 	return ret;
  }
  
-+#define PERF_AUX_GFP	(GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY)
-+
-+static struct page *rb_alloc_aux_page(int node, int order)
++static bool exclusive_event_match(struct perf_event *e1, struct perf_event *e2)
 +{
-+	struct page *page;
++	if ((e1->pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE) &&
++	    (e1->cpu == e2->cpu ||
++	     e1->cpu == -1 ||
++	     e2->cpu == -1))
++		return true;
++	return false;
++}
 +
-+	if (order > MAX_ORDER)
-+		order = MAX_ORDER;
++static bool exclusive_event_ok(struct perf_event *event,
++			      struct perf_event_context *ctx)
++{
++	struct perf_event *iter_event;
 +
-+	do {
-+		page = alloc_pages_node(node, PERF_AUX_GFP, order);
-+	} while (!page && order--);
++	if (!(event->pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE))
++		return true;
 +
-+	if (page && order) {
-+		/*
-+		 * Communicate the allocation size to the driver
-+		 */
-+		split_page(page, order);
-+		SetPagePrivate(page);
-+		set_page_private(page, order);
++	list_for_each_entry(iter_event, &ctx->event_list, event_entry) {
++		if (exclusive_event_match(iter_event, event))
++			return false;
 +	}
 +
-+	return page;
++	return true;
 +}
 +
-+static void rb_free_aux_page(struct ring_buffer *rb, int idx)
-+{
-+	struct page *page = virt_to_page(rb->aux_pages[idx]);
-+
-+	ClearPagePrivate(page);
-+	page->mapping = NULL;
-+	__free_page(page);
-+}
-+
- int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
- 		 pgoff_t pgoff, int nr_pages, int flags)
- {
- 	bool overwrite = !(flags & RING_BUFFER_WRITABLE);
- 	int node = (event->cpu == -1) ? -1 : cpu_to_node(event->cpu);
--	int ret = -ENOMEM;
-+	int ret = -ENOMEM, order = 0;
- 
- 	if (!has_aux(event))
- 		return -ENOTSUPP;
- 
-+	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG)
-+		order = get_order(nr_pages * PAGE_SIZE);
-+
- 	rb->aux_pages = kzalloc_node(nr_pages * sizeof(void *), GFP_KERNEL, node);
- 	if (!rb->aux_pages)
- 		return -ENOMEM;
- 
--	for (rb->aux_nr_pages = 0; rb->aux_nr_pages < nr_pages;
--	     rb->aux_nr_pages++) {
-+	for (rb->aux_nr_pages = 0; rb->aux_nr_pages < nr_pages;) {
- 		struct page *page;
-+		int last;
- 
--		page = alloc_pages_node(node, GFP_KERNEL | __GFP_ZERO, 0);
-+		page = rb_alloc_aux_page(node, order);
- 		if (!page)
- 			goto out;
- 
--		rb->aux_pages[rb->aux_nr_pages] = page_address(page);
-+		for (last = rb->aux_nr_pages + (1 << page_private(page));
-+		     last > rb->aux_nr_pages; rb->aux_nr_pages++)
-+			rb->aux_pages[rb->aux_nr_pages] = page_address(page++);
+ /**
+  * sys_perf_event_open - open a performance event, associate it to a task/cpu
+  *
+@@ -7300,6 +7326,11 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		goto err_alloc;
  	}
  
- 	rb->aux_priv = event->pmu->setup_aux(event->cpu, rb->aux_pages, nr_pages,
-@@ -298,7 +337,7 @@ void rb_free_aux(struct ring_buffer *rb, struct perf_event *event)
++	if ((pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE) && group_leader) {
++		err = -EBUSY;
++		goto err_context;
++	}
++
+ 	if (task) {
+ 		put_task_struct(task);
+ 		task = NULL;
+@@ -7385,6 +7416,12 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		}
  	}
  
- 	for (pg = 0; pg < rb->aux_nr_pages; pg++)
--		free_page((unsigned long)rb->aux_pages[pg]);
-+		rb_free_aux_page(rb, pg);
++	if (!exclusive_event_ok(event, ctx)) {
++		mutex_unlock(&ctx->mutex);
++		fput(event_file);
++		goto err_context;
++	}
++
+ 	perf_install_in_context(ctx, event, event->cpu);
+ 	perf_unpin_context(ctx);
+ 	mutex_unlock(&ctx->mutex);
+@@ -7468,6 +7505,14 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
  
- 	kfree(rb->aux_pages);
- 	rb->aux_nr_pages = 0;
+ 	WARN_ON_ONCE(ctx->parent_ctx);
+ 	mutex_lock(&ctx->mutex);
++	if (!exclusive_event_ok(event, ctx)) {
++		mutex_unlock(&ctx->mutex);
++		perf_unpin_context(ctx);
++		put_ctx(ctx);
++		err = -EBUSY;
++		goto err_free;
++	}
++
+ 	perf_install_in_context(ctx, event, cpu);
+ 	perf_unpin_context(ctx);
+ 	mutex_unlock(&ctx->mutex);
 -- 
 2.1.0.rc1
 
