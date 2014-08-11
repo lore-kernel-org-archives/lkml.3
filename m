@@ -1,123 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237AbaHKSoY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:44:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799AbaHKSoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:44:23 -0400
-Date: Mon, 11 Aug 2014 14:44:01 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        sahne@0x90.at
-Subject: Re: "resource: provide new functions to walk through resources"
- breaks UML
-Message-ID: <20140811184401.GE1863@redhat.com>
-References: <53E7A42E.4090702@nod.at>
- <20140811122229.GA26869@redhat.com>
- <53E8B654.2000807@nod.at>
+	id S1752637AbaHKSpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:45:13 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:50408 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaHKSpL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 14:45:11 -0400
+Message-ID: <53E90F34.9030809@infradead.org>
+Date: Mon, 11 Aug 2014 11:45:08 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E8B654.2000807@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nick Krause <xerofoify@gmail.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        lisa@xenapiadmin.com, Ben Hutchings <ben@decadent.org.uk>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: Check against NULL in fw_download_code
+References: <1407780151-4674-1-git-send-email-xerofoify@gmail.com>	<CAPDOMVghgyQ72J6MS6uaWEeMFBvzDNmfoAS5Tbd7+XO_KgUmHg@mail.gmail.com>	<53E9066A.3030801@infradead.org> <CAPDOMViHWMRRMqdEpjft0TDuVSLai8LuWRcXPdMeCtUYgB2sgw@mail.gmail.com>
+In-Reply-To: <CAPDOMViHWMRRMqdEpjft0TDuVSLai8LuWRcXPdMeCtUYgB2sgw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 02:25:56PM +0200, Richard Weinberger wrote:
-> Hi Vivek,
-> 
-> Am 11.08.2014 14:22, schrieb Vivek Goyal:
-> > On Sun, Aug 10, 2014 at 06:56:14PM +0200, Richard Weinberger wrote:
-> >> Hi Vivek,
-> >>
-> >> Daniel Walter reported that UML is currently broken.
-> >> The offending commit is:
-> >>
-> > 
-> > Hi Richard,
-> > 
-> > Thanks for pointing it out. I will look into it.
-> > 
-> > Would you have link to the report Daniel sent. I am interested in 
-> > looking at backtrace.
-> 
-> he reported it on IRC to me.
-> 
-> Here is a backtrace:
-> RIP: 0033:[<0000000060039b9f>]
-> RSP: 0000000081459da0  EFLAGS: 00010202
-> RAX: 0000000000000000 RBX: 00000000219b3fff RCX: 000000006010d1d9
-> RDX: 0000000000000001 RSI: 00000000602dfb94 RDI: 0000000081459df8
-> RBP: 0000000081459de0 R08: 00000000601b59f4 R09: ffffffff0000ff00
-> R10: ffffffff0000ff00 R11: 0000000081459e88 R12: 0000000081459df8
-> R13: 00000000219b3fff R14: 00000000602dfb94 R15: 0000000000000000
-> Kernel panic - not syncing: Segfault with no mm
-> CPU: 0 PID: 1 Comm: swapper Not tainted 3.16.0-10454-g58d08e3 #13
-> Stack:
->  00000000 000080d0 81459df0 219b3fff
->  81459e70 6010d1d9 ffffffff 6033e010
->  81459e50 6003a269 81459e30 00000000
-> Call Trace:
->  [<6010d1d9>] ? kclist_add_private+0x0/0xe7
->  [<6003a269>] walk_system_ram_range+0x61/0xb7
->  [<6000e859>] ? proc_kcore_init+0x0/0xf1
->  [<6010d574>] kcore_update_ram+0x4c/0x168
->  [<6010d72e>] ? kclist_add+0x0/0x2e
->  [<6000e943>] proc_kcore_init+0xea/0xf1
->  [<6000e859>] ? proc_kcore_init+0x0/0xf1
->  [<6000e859>] ? proc_kcore_init+0x0/0xf1
->  [<600189f0>] do_one_initcall+0x13c/0x204
->  [<6004ca46>] ? parse_args+0x1df/0x2e0
->  [<6004c82d>] ? parameq+0x0/0x3a
->  [<601b5990>] ? strcpy+0x0/0x18
->  [<60001e1a>] kernel_init_freeable+0x240/0x31e
->  [<6026f1c0>] kernel_init+0x12/0x148
->  [<60019fad>] new_thread_handler+0x81/0xa3
-> 
-> RIP is at kernel/resource.c:66.
+On 08/11/14 11:26, Nick Krause wrote:
+> On Mon, Aug 11, 2014 at 2:07 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>> On 08/11/14 11:04, Nick Krause wrote:
+>>> On Mon, Aug 11, 2014 at 2:02 PM, Nicholas Krause <xerofoify@gmail.com> wrote:
+>>>> I am fixing the bug entry , https://bugzilla.kernel.org/show_bug.cgi?id=60461.
+>>>> This entry states that we are not checking the skb allocated in fw_download_code
+>>>> and after checking I fixed it to check for the NULL value before using the allocate
+>>>> skb.
+>>>>
+>>>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>>>> ---
+>>>>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 14 ++++++++------
+>>>>  1 file changed, 8 insertions(+), 6 deletions(-)
+>>>>
+>>>> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+>>>> index 1a95d1f..0a4c926 100644
+>>>> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+>>>> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
+>>>> @@ -60,13 +60,15 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>>>>
+>>>>                 }
+>>>>
+>>>> -               skb  = dev_alloc_skb(frag_length + 4);
+>>>> -               memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+>>>> -               tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
+>>>> -               tcb_desc->queue_index = TXCMD_QUEUE;
+>>>> -               tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
+>>>> -               tcb_desc->bLastIniPkt = bLastIniPkt;
+>>>>
+>>>> +               skb  = dev_alloc_skb(frag_length + 4);
+>>>> +               if (skb) {
+>>>> +                       memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+>>>> +                       tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
+>>>> +                       tcb_desc->queue_index = TXCMD_QUEUE;
+>>>> +                       tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
+>>>> +                       tcb_desc->bLastIniPkt = bLastIniPkt;
+>>>> +               }
+>>
+>> and what happens here (below) if skb is NULL?
 
-Hi Richard,
+Nick,
+I'm asking if you have completely fixed the bug or only partially fixed it.
+The answer is that the patch is only a partial fix.  If skb is NULL, there
+is still a problem in the statement below here.  The kernel will oops on
+that reference to skb, which is NULL.
 
-Can you please give the attached patch a try and see if it fixes the UML
-issue.
+>>
+>>>>                 seg_ptr = skb->data;
+>>>>                 for (i = 0; i < frag_length; i += 4) {
+>>>>                         *seg_ptr++ = ((i+0) < frag_length) ?
+>>>> --
+>>>> 1.9.1
+>>>>
+>>> And I did check it against Linus's tree to make sure it applies , just
+>>> to let you known.
+>>> Nick
+>>
+>>
+>> --
+>> ~Randy
+> Sorry Randy.
+>  I may be mis reading this, but are you asking me to write a different
+> commit message or is this patch just another bad patch in my series of
+> bad patches?
 
-I noticed that previous code had a for() loop which will not execute
-if p was null. I have resorted back to same code now. 
 
-Thanks
-Vivek
-
-
----
- kernel/resource.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
-
-Index: linux-2.6/kernel/resource.c
-===================================================================
---- linux-2.6.orig/kernel/resource.c	2014-08-11 13:36:19.942423192 -0400
-+++ linux-2.6/kernel/resource.c	2014-08-11 13:50:20.529387653 -0400
-@@ -351,15 +351,12 @@ static int find_next_iomem_res(struct re
- 	end = res->end;
- 	BUG_ON(start >= end);
- 
--	read_lock(&resource_lock);
--
--	if (first_level_children_only) {
--		p = iomem_resource.child;
-+	if (first_level_children_only)
- 		sibling_only = true;
--	} else
--		p = &iomem_resource;
- 
--	while ((p = next_resource(p, sibling_only))) {
-+	read_lock(&resource_lock);
-+
-+	for (p = iomem_resource.child; p; p = next_resource(p, sibling_only)) {
- 		if (p->flags != res->flags)
- 			continue;
- 		if (name && strcmp(p->name, name))
+-- 
+~Randy
