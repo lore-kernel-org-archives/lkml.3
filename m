@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052AbaHKOvr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 10:51:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22204 "EHLO mx1.redhat.com"
+	id S1754080AbaHKOwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 10:52:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52594 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753876AbaHKOuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 10:50:03 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: akpm@linux-foundation.org
-Cc: kvm@vger.kernel.org, pbonzini@redhat.com, mingo@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        chai wen <chaiw.fnst@cn.fujitsu.com>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 1/5] watchdog: remove unnecessary head files
-Date: Mon, 11 Aug 2014 10:49:23 -0400
-Message-Id: <1407768567-171794-2-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
-References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
+	id S1753836AbaHKOwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 10:52:44 -0400
+Message-ID: <53E8D876.1060004@zytor.com>
+Date: Mon, 11 Aug 2014 07:51:34 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Borislav Petkov <bp@alien8.de>, Fenghua Yu <fenghua.yu@intel.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: BUG: early intel microcode update violating alignment rules
+References: <20140809231911.GA4843@khazad-dum.debian.net>
+In-Reply-To: <20140809231911.GA4843@khazad-dum.debian.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: chai wen <chaiw.fnst@cn.fujitsu.com>
+On 08/09/2014 04:19 PM, Henrique de Moraes Holschuh wrote:
+> 
+> This will only happen when the microcode update file data inside the early
+> initramfs archive is not 16-byte aligned.  Unfortunately, the cpio format
+> used in the early initramfs aligns the member file data just to 4-byte
+> boundaries.
+> 
+> Is there a way to fix this in the kernel for the BSP?  We already have
+> several microcode updates that are >16KiB in size and they seem to be
+> getting bigger and bigger, so doing it on the stack is out.
+> 
+> Maybe there is a 64KiB scratch area that could be used just to get the BSP
+> microcode update done?  vmalloc isn't available that early, but it can be
+> used to fix the issue for the APs.
+> 
 
-Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- kernel/watchdog.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+We could put a buffer in the initdata region (we really could use an
+initbss region!) or in the brk.
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index c3319bd..4c2e11c 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -15,11 +15,6 @@
- #include <linux/cpu.h>
- #include <linux/nmi.h>
- #include <linux/init.h>
--#include <linux/delay.h>
--#include <linux/freezer.h>
--#include <linux/kthread.h>
--#include <linux/lockdep.h>
--#include <linux/notifier.h>
- #include <linux/module.h>
- #include <linux/sysctl.h>
- #include <linux/smpboot.h>
--- 
-1.7.1
+	-hpa
 
