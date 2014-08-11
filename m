@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080AbaHKOwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 10:52:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52594 "EHLO mail.zytor.com"
+	id S1754099AbaHKOw7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 10:52:59 -0400
+Received: from mail1.skidata.com ([91.230.2.99]:35067 "EHLO mail1.skidata.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753836AbaHKOwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 10:52:44 -0400
-Message-ID: <53E8D876.1060004@zytor.com>
-Date: Mon, 11 Aug 2014 07:51:34 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1754032AbaHKOwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 10:52:45 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArcEAF3Y6FOsEApK/2dsb2JhbABbhDYEtUGfCwGBLXeEAwEBBAE6PwULCw0LCSUPSAYOBYg6DcIKF49MBxaENgEEkhSKGodRkQlqgUc
+X-IPAS-Result: ArcEAF3Y6FOsEApK/2dsb2JhbABbhDYEtUGfCwGBLXeEAwEBBAE6PwULCw0LCSUPSAYOBYg6DcIKF49MBxaENgEEkhSKGodRkQlqgUc
+Date: Mon, 11 Aug 2014 16:52:38 +0200
+From: Richard Leitner <richard.leitner@skidata.com>
+To: <balbi@ti.com>
+CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] usb: gadget: serial: remove PREFIX macro
+Message-ID: <20140811165238.1957ec69@lxbuild.skidata.net>
+In-Reply-To: <20140811135033.GD20177@saruman.home>
+References: <20140718113946.0e70c0cb@lxbuild.skidata.net>
+	<20140811150435.6235fbf6@lxbuild.skidata.net>
+	<20140811135033.GD20177@saruman.home>
+Organization: SKIDATA AG
 MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Borislav Petkov <bp@alien8.de>, Fenghua Yu <fenghua.yu@intel.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: BUG: early intel microcode update violating alignment rules
-References: <20140809231911.GA4843@khazad-dum.debian.net>
-In-Reply-To: <20140809231911.GA4843@khazad-dum.debian.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.16.60.30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2014 04:19 PM, Henrique de Moraes Holschuh wrote:
+Hi,
+
+On Mon, 11 Aug 2014 08:50:34 -0500
+Felipe Balbi <balbi@ti.com> wrote:
+
+> On Mon, Aug 11, 2014 at 03:04:35PM +0200, Richard Leitner wrote:
+> > Hi,
+> > this patch was lying around for some time...
+> > are there any comments or objections on this?
 > 
-> This will only happen when the microcode update file data inside the early
-> initramfs archive is not 16-byte aligned.  Unfortunately, the cpio format
-> used in the early initramfs aligns the member file data just to 4-byte
-> boundaries.
-> 
-> Is there a way to fix this in the kernel for the BSP?  We already have
-> several microcode updates that are >16KiB in size and they seem to be
-> getting bigger and bigger, so doing it on the stack is out.
-> 
-> Maybe there is a 64KiB scratch area that could be used just to get the BSP
-> microcode update done?  vmalloc isn't available that early, but it can be
-> used to fix the issue for the APs.
+> you realise we're still in the middle of the merge window, right ?
 > 
 
-We could put a buffer in the initdata region (we really could use an
-initbss region!) or in the brk.
+yeah I know, but I didn't knew that I shouldn't ask for the status of my
+patches during merge windows...
 
-	-hpa
+Sorry for that, this was one of my first patches submitted, so I hope you'll be
+clement with beginners like me ;-)
 
+I'll come back to you when the merge window is closed.
+
+thanks & regards,
+richard
