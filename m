@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043AbaHKMWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 08:22:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61041 "EHLO mx1.redhat.com"
+	id S1753294AbaHKMXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 08:23:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27069 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752853AbaHKMWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 08:22:50 -0400
-Date: Mon, 11 Aug 2014 08:22:29 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        sahne@0x90.at
-Subject: Re: "resource: provide new functions to walk through resources"
- breaks UML
-Message-ID: <20140811122229.GA26869@redhat.com>
-References: <53E7A42E.4090702@nod.at>
+	id S1753143AbaHKMXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 08:23:51 -0400
+Date: Mon, 11 Aug 2014 14:23:21 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 13/41] perf tools: Add machine__kernel_ip()
+Message-ID: <20140811122321.GB26811@krava.brq.redhat.com>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+ <1405332185-4050-14-git-send-email-adrian.hunter@intel.com>
+ <20140716141519.GC9441@krava.redhat.com>
+ <53C68A9E.6060302@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53E7A42E.4090702@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53C68A9E.6060302@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 10, 2014 at 06:56:14PM +0200, Richard Weinberger wrote:
-> Hi Vivek,
+On Wed, Jul 16, 2014 at 05:22:22PM +0300, Adrian Hunter wrote:
+> On 16/07/2014 5:15 p.m., Jiri Olsa wrote:
+> >On Mon, Jul 14, 2014 at 01:02:37PM +0300, Adrian Hunter wrote:
+> >
+> >SNIP
+> >
+> >>+
+> >>+int machine__get_kernel_start(struct machine *machine)
+> >>+{
+> >>+	struct map *map = machine__kernel_map(machine, MAP__FUNCTION);
+> >>+	int err = 0;
+> >>+
+> >>+	/*
+> >>+	 * The only addresses above 2^63 are kernel addresses of a 64-bit
+> >>+	 * kernel.  Note that addresses are unsigned so that on a 32-bit system
+> >>+	 * all addresses including kernel addresses are less than 2^32.  In
+> >>+	 * that case (32-bit system), if the kernel mapping is unknown, all
+> >>+	 * addresses will be assumed to be in user space - see
+> >>+	 * machine__kernel_ip().
+> >>+	 */
+> >>+	machine->kernel_start = 1ULL << 63;
+> >>+	if (map) {
+> >>+		err = map__load(map, machine->symbol_filter);
+> >>+		if (map->start)
+> >>+			machine->kernel_start = map->start;
+> >>+	}
+> >>+	return err;
+> >>+}
+> >
+> >we just recently got machine__get_kernel_start_addr function,
+> >I think we want just one function for this
 > 
-> Daniel Walter reported that UML is currently broken.
-> The offending commit is:
+> They do quite different things.
 > 
 
-Hi Richard,
+so one of those two should have different name
 
-Thanks for pointing it out. I will look into it.
-
-Would you have link to the report Daniel sent. I am interested in 
-looking at backtrace.
-
-Thanks
-Vivek
-
-> commit 8c86e70acead629aacb4afcd818add66bf6844d9
-> Author: Vivek Goyal <vgoyal@redhat.com>
-> Date:   Fri Aug 8 14:25:50 2014 -0700
-> 
->     resource: provide new functions to walk through resources
-> 
-> It dies in next_resource():
->         /* Caller wants to traverse through siblings only */
->         if (sibling_only)
->                 return p->sibling;
-> 
-> because p is NULL.
-> Please note that UML has no iomem, maybe this is the problem...
-> 
-> Thanks,
-> //richard
+jirka
