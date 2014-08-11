@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaHKMeI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 08:34:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38714 "EHLO mx2.suse.de"
+	id S1753368AbaHKMho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 08:37:44 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:4666 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752998AbaHKMeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 08:34:07 -0400
-Message-ID: <53E8B83D.1070004@suse.cz>
-Date: Mon, 11 Aug 2014 14:34:05 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752637AbaHKMhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 08:37:42 -0400
+X-IronPort-AV: E=Sophos;i="5.01,841,1400025600"; 
+   d="scan'208";a="161220852"
+Message-ID: <53E8B914.8080504@citrix.com>
+Date: Mon, 11 Aug 2014 13:37:40 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 6/6] mm: page_alloc: Reduce cost of the fair zone allocation
- policy
-References: <1404893588-21371-1-git-send-email-mgorman@suse.de> <1404893588-21371-7-git-send-email-mgorman@suse.de> <53E4EC53.1050904@suse.cz> <20140811121241.GD7970@suse.de>
-In-Reply-To: <20140811121241.GD7970@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        Stephen Hemminger <stephen@networkplumber.org>
+CC: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        <netdev@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen-netback: Turn off the carrier if the
+ guest is not able to receive
+References: <1406749849-4356-1-git-send-email-zoltan.kiss@citrix.com>	<1406749849-4356-2-git-send-email-zoltan.kiss@citrix.com>	<53DF8C24.6030709@citrix.com>	<53DFA30E.2000301@citrix.com> <20140808093356.04d7228b@haswell.linuxnetplumber.net> <53E8B7BF.2020107@citrix.com>
+In-Reply-To: <53E8B7BF.2020107@citrix.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2014 02:12 PM, Mel Gorman wrote:
-> On Fri, Aug 08, 2014 at 05:27:15PM +0200, Vlastimil Babka wrote:
->> On 07/09/2014 10:13 AM, Mel Gorman wrote:
->>> --- a/mm/page_alloc.c
->>> +++ b/mm/page_alloc.c
->>> @@ -1604,6 +1604,9 @@ again:
->>>   	}
->>>
->>>   	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+On 11/08/14 13:31, Zoltan Kiss wrote:
+> On 08/08/14 17:33, Stephen Hemminger wrote:
+>> This idea of bouncing carrier is wrong. If guest is flow blocked you
+>> don't
+>> want to toggle carrier. That will cause problems because applications
+>> that are
+>> looking for carrier transistions like routing daemons will be notified.
 >>
->> This can underflow zero, right?
+>> If running a routing daemon this will also lead to link flapping which
+>> is very bad and cause lots of other work for peer routing daemons.
 >>
->
-> Yes, because of per-cpu accounting drift.
-
-I meant mainly because of order > 0.
-
->>> +	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
+>> Carrier is not a suitable flow control mechanism.
 >>
->> AFAICS, zone_page_state will correct negative values to zero only for
->> CONFIG_SMP. Won't this check be broken on !CONFIG_SMP?
->>
->
-> On !CONFIG_SMP how can there be per-cpu accounting drift that would make
-> that counter negative?
+> 
+> Hi,
+> 
+> Indeed, I also had some concerns about using carrier state to solve this
+> problem, as the notifier can kick a lot of things, and flapping is not
+> impossible. That's why the frontend has 10 seconds by default to do
+> something. Practice shows that if a frontend can't do any receive work
+> for that time, it is unlikely it will be able to do it soon.
+> So worst case carrier flapping can happen only in every 10 seconds, I
+> think that's manageable. I think the majority of the users have simple
+> bridged setups where this carrier change doesn't start any expensive
+> operation.
+> The reason we choose carrier change for this purpose because we needed
+> something which ditched everything in QDisc and made sure nothing will
+> be queued up there until there is a chance we can transmit to the guest.
+> Calling dev_deactivate straight away seemed less appropriate.
 
-Well original code used "if (zone_page_state(zone, NR_ALLOC_BATCH) <= 
-0)" elsewhere, that you are replacing with zone_is_fair_depleted check. 
-I assumed it's because it can get negative due to order > 0. I might 
-have not looked thoroughly enough but it seems to me there's nothing 
-that would prevent it, such as skipping a zone because its remaining 
-batch is lower than 1 << order.
-So I think the check should be "<= 0" to be safe.
+I do think we need to revisit this and introduce a per-queue
+stop_and_flush operation we can use instead.
 
-Vlastimil
-
-
+David
