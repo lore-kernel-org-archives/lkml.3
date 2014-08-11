@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038AbaHKM4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 08:56:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18756 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126AbaHKM4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 08:56:21 -0400
-Date: Mon, 11 Aug 2014 14:55:51 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 13/41] perf tools: Add machine__kernel_ip()
-Message-ID: <20140811125550.GB31858@krava.brq.redhat.com>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
- <1405332185-4050-14-git-send-email-adrian.hunter@intel.com>
- <20140716141519.GC9441@krava.redhat.com>
- <53C68A9E.6060302@intel.com>
- <20140811122321.GB26811@krava.brq.redhat.com>
- <53E8B8D8.4040809@intel.com>
- <20140811124330.GA31858@krava.brq.redhat.com>
- <53E8BB34.1050700@intel.com>
+	id S1753073AbaHKNBa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 09:01:30 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:32157 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698AbaHKNB3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 09:01:29 -0400
+Date: Mon, 11 Aug 2014 15:54:22 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Srikrishan Malik <srikrishanmalik@gmail.com>,
+        Joe Perches <joe@perches.com>, greg@kroah.com,
+        andreas.dilger@intel.com, oleg.drokin@intel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/12] staging: lustre: Fix misplaced opening brace
+ warnings
+Message-ID: <20140811110745.GJ11899@mwanda>
+References: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>
+ <1407345182-709-10-git-send-email-srikrishanmalik@gmail.com>
+ <20140806201813.GE4856@mwanda>
+ <20140807153136.GB4185@mordor.in.ibm.com>
+ <20140807160103.GG4856@mwanda>
+ <1407429343.2736.28.camel@joe-AO725>
+ <20140811105706.GA17691@mordor.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53E8BB34.1050700@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140811105706.GA17691@mordor.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 03:46:44PM +0300, Adrian Hunter wrote:
-> On 08/11/2014 03:43 PM, Jiri Olsa wrote:
-> > On Mon, Aug 11, 2014 at 03:36:40PM +0300, Adrian Hunter wrote:
-> >> On 08/11/2014 03:23 PM, Jiri Olsa wrote:
-> >>> On Wed, Jul 16, 2014 at 05:22:22PM +0300, Adrian Hunter wrote:
-> >>>> On 16/07/2014 5:15 p.m., Jiri Olsa wrote:
-> >>>>> On Mon, Jul 14, 2014 at 01:02:37PM +0300, Adrian Hunter wrote:
-> >>>>>
-> >>>>> SNIP
-> >>>>>
-> >>>>>> +
-> >>>>>> +int machine__get_kernel_start(struct machine *machine)
-> >>>>>> +{
-> >>>>>> +	struct map *map = machine__kernel_map(machine, MAP__FUNCTION);
-> >>>>>> +	int err = 0;
-> >>>>>> +
-> >>>>>> +	/*
-> >>>>>> +	 * The only addresses above 2^63 are kernel addresses of a 64-bit
-> >>>>>> +	 * kernel.  Note that addresses are unsigned so that on a 32-bit system
-> >>>>>> +	 * all addresses including kernel addresses are less than 2^32.  In
-> >>>>>> +	 * that case (32-bit system), if the kernel mapping is unknown, all
-> >>>>>> +	 * addresses will be assumed to be in user space - see
-> >>>>>> +	 * machine__kernel_ip().
-> >>>>>> +	 */
-> >>>>>> +	machine->kernel_start = 1ULL << 63;
-> >>>>>> +	if (map) {
-> >>>>>> +		err = map__load(map, machine->symbol_filter);
-> >>>>>> +		if (map->start)
-> >>>>>> +			machine->kernel_start = map->start;
-> >>>>>> +	}
-> >>>>>> +	return err;
-> >>>>>> +}
-> >>>>>
-> >>>>> we just recently got machine__get_kernel_start_addr function,
-> >>>>> I think we want just one function for this
-> >>>>
-> >>>> They do quite different things.
-> >>>>
-> >>>
-> >>> so one of those two should have different name
-> >>
-> >> Such as?
-> > 
-> > dont know ;-) but if they do 'quite different things' as u said,
-> > I expect to see that at least in the function name
+On Mon, Aug 11, 2014 at 04:27:06PM +0530, Srikrishan Malik wrote:
+> This patch set is aimed at removing checkpatch issues from files in
+> lustre/lustre/mdc.
 > 
-> How about:
+> Is it ok if I just fix those in this set and post another patch set
+> to take care of other issues identified in review?
+
+checkpatch fixes are worthless if they don't make the code better for
+human readers.
+
 > 
-> 	machine__get_kernel_start_addr -> machine__get_running_kernel_start
+> - removing typedef for ldlm_policy_data_t will touch many other
+> files/dirs which were not initially targeted for this patch set.
 
-sounds good
+Yeah.  You're right.  This should be done in a separate patch because
+it doesn't completely fall under the "cleanup variable declarations in
+mdc_enqueue()" header.
 
-jirka
+> - There can be a separate patch to remove __u64.
+
+It's all part of the same thing "variable declarations in that
+function."
+
+regards,
+dan carpenter
