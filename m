@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851AbaHKTgP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:36:15 -0400
-Received: from asavdk4.altibox.net ([109.247.116.15]:58686 "EHLO
-	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaHKTgM (ORCPT
+	id S1754855AbaHKTho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 15:37:44 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:45151 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825AbaHKThn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:36:12 -0400
-Date: Mon, 11 Aug 2014 21:36:06 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: josh@joshtriplett.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/2] x86: Add "make tinyconfig" to configure the
- tiniest possible kernel
-Message-ID: <20140811193605.GA20482@ravnborg.org>
-References: <20140807190243.GA5580@jtriplet-mobl1>
- <20140809001010.GA9437@jtriplet-mobl1>
- <CA+55aFxaY5q4XhCVgpOBP_dmn+=6JzK+PkX8OHhzZmM7g+NU2g@mail.gmail.com>
- <20140811181521.GA29208@cloud>
+	Mon, 11 Aug 2014 15:37:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140811181521.GA29208@cloud>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <201408112057.01177.arnd@arndb.de>
+References: <1407764228-7904-1-git-send-email-will.deacon@arm.com>
+	<CANq1E4Q0gDaJ5XGnkoCQsG8xLh1Q-EBErtEVPpeeZgGj+Nr8dQ@mail.gmail.com>
+	<20140811171511.GF8828@arm.com>
+	<201408112057.01177.arnd@arndb.de>
+Date: Mon, 11 Aug 2014 21:37:41 +0200
+X-Google-Sender-Auth: A5jX6MRiU4li3pgXXkgYoQIVcLw
+Message-ID: <CAMuHMdWZ30ZKO2ddh8whmw5ThrKZC0wsU+rhgoc8fRZni0Zduw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] asm-generic: add memfd_create system call to unistd.h
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Will Deacon <will.deacon@arm.com>, David Herrmann <dh.herrmann@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 11:15:21AM -0700, josh@joshtriplett.org wrote:
-> On Fri, Aug 08, 2014 at 06:22:20PM -0700, Linus Torvalds wrote:
-> > On Fri, Aug 8, 2014 at 5:10 PM, Josh Triplett <josh@joshtriplett.org> wrote:
-> > > Since commit 5d2acfc7b974bbd3858b4dd3f2cdc6362dd8843a ("kconfig: make
-> > > allnoconfig disable options behind EMBEDDED and EXPERT") in 3.15-rc1,
-> > > "make allnoconfig" disables every possible config option.
-> > 
-> > May I suggest pushing these through the kbuild tree, rather than
-> > (judging by the people cc'd) the x86 trees?
-> 
-> By all means; v3 seems sufficiently generic that it makes more sense for
-> both of these patches to go in through a kbuild tree, or something else
-> suitably general such as Andrew's tree.
-> 
-> Would someone mind picking it up, please?
-I will take care that they are channeled through kbuild tree.
+On Mon, Aug 11, 2014 at 8:57 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 11 August 2014, Will Deacon wrote:
+>> On Mon, Aug 11, 2014 at 05:54:08PM +0100, David Herrmann wrote:
+>> > On Mon, Aug 11, 2014 at 3:37 PM, Will Deacon <will.deacon@arm.com> wrote:
+>> > > Commit 9183df25fe7b ("shm: add memfd_create() syscall") added a new
+>> > > system call (memfd_create) but didn't update the asm-generic unistd
+>> > > header.
+>> > >
+>> > > This patch adds the new system call to the asm-generic version of
+>> > > unistd.h so that it can be used by architectures such as arm64.
+>> > >
+>> > > Cc: Arnd Bergmann <arnd@arndb.de>
+>> > > Cc: David Herrmann <dh.herrmann@gmail.com>
+>> > > Signed-off-by: Will Deacon <will.deacon@arm.com>
+>> >
+>> > Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+>>
+>> Thanks, David.
+>>
+>> Arnd: shall I take this via the arm64 tree, or do you already have some
+>> asm-generic patches queued?
+>
+> Please take it for arm64, I don't have any other patches queued at the moment
+> and am currently on vacation.
 
-We are too late for this merge window so we are not in a hurry.
+Thanks, I was just going to look into adding it...
 
-	Sam
+BTW, another one sneaked in: kexec_file_load. I say "sneaked", as
+scripts/checksyscalls.sh doesn't catch it, due to it being wired up on
+amd64 only.
+
+Will, you can please add that one, too, while you're at it?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
