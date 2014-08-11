@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbaHKJJy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 05:09:54 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:37423 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810AbaHKJJw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 05:09:52 -0400
-Message-ID: <53E88851.6000705@collabora.co.uk>
-Date: Mon, 11 Aug 2014 11:09:37 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1752623AbaHKJOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 05:14:52 -0400
+Received: from sauhun.de ([89.238.76.85]:42418 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751370AbaHKJOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 05:14:51 -0400
+Date: Mon, 11 Aug 2014 11:14:37 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Mark D Rustad <mrustad@gmail.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] misc: ti-st: st_kim.c:  Cleaning up missing
+ null-terminate after strncpy call
+Message-ID: <20140811091437.GA2730@katana>
+References: <1407627938-24614-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <6ACE8FE9-A4AD-4A7A-890F-49F42B81C0A4@gmail.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Doug Anderson <dianders@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, Stephen Warren <swarren@nvidia.com>,
-        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Abraham <thomas.ab@samsung.com>
-Subject: Re: [PATCH v2 1/1] Input: atmel_mxt_ts - Get IRQ edge/level flags
- on DT booting
-References: <1407397492-17475-1-git-send-email-javier.martinez@collabora.co.uk>	<53E4D9A5.908@itdev.co.uk>	<20140808162146.GC26820@core.coreip.homeip.net>	<53E4FD1B.6060600@collabora.co.uk>	<53E5170C.10302@collabora.co.uk>	<CAD=FV=WSNqjHLLbTh1LBF3RFrCnWnj498hivivcmx1SbuYp=Hw@mail.gmail.com>	<53E54E91.9060905@collabora.co.uk> <CACRpkdZ9-5Pw-SHFNuGtvxDDHrA13ShSSFN9uZRBLTfpe=m5ug@mail.gmail.com>
-In-Reply-To: <CACRpkdZ9-5Pw-SHFNuGtvxDDHrA13ShSSFN9uZRBLTfpe=m5ug@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
+Content-Disposition: inline
+In-Reply-To: <6ACE8FE9-A4AD-4A7A-890F-49F42B81C0A4@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
 
-On 08/11/2014 10:32 AM, Linus Walleij wrote:
-> I guess this discussion is about drivers/pinctrl/samsung/pinctrl-exynos.c?
-> 
-> Or else I'm not really following this... $SUBJECT is a bit confusing.
-> 
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, the thing is that at the beginning I (wrongly) thought that the IRQ trigger
-type flags defined in the DTS were discarded if someone called
-request_threaded_irq() with a flags != 0. And since the atmel touchpad driver
-was pass pdata->irqflags | IRQF_ONESHOT I posted this patch to get the trigger
-type parsed from DT and pass it to request_threaded_irq().
 
-But after digging further I found that the issue was in the pinctrl-exynos
-driver and Tomasz explained to me that the real cause was that the pin was being
-configured from GPIO IRQ to GPIO input (which on other platforms is just the
-same mode but on Exynos are two different modes).
+> > 	strncpy(kim_data->dev_name, buf, count);
+> > +	kim_data->dev_name[count - 1] =3D '\n';
+>=20
+> Of course this does not add termination, but adds a newline at the end of=
+ the buffer? Huh?
 
-At the end passing the trigger type to request_threaded_irq() just had the side
-effect to call the exynos .irq_set_type function handler that reconfigured the
-pin as GPIO-IRQ and that is why it made it to work. So I posted a patch from
-Tomasz that fixes the real cause [0].
+strlcpy?
 
-I'm so sorry for the confusion.
 
-> Yours,
-> Linus Walleij
-> 
+--TB36FDmn/VVEgNH/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Best regards,
-Javier
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-[0]: https://lkml.org/lkml/2014/8/8/962
+iQIcBAEBAgAGBQJT6Il9AAoJEBQN5MwUoCm2aSsQAIoKSx+gXSkJjcS7yMwGyaci
+fllrrG8ywGE+uSOUuUc5+8qshK75fq7avodvDTZxIAL21nswkJzJOVl/YdmafyFN
+atuf7p/yEJE4PB+RyFvcAp+WEy/9MdU4R7SaXxNO/165OxWfB6fh7R1X/VR5S2C+
+PQQseA8Gd7QwudBjIN7/ev79bfpGrIQx/0z8l2DFCWR4aK7aOi/FS+7vJLlNQkt8
+2ZKIid1jStCrFWvq8+2kE/Giz8yFcVM+8zv8ya4kivVhW6RjpbcnqMtc82dCfvks
+1xB7NKcr6FJG18fPEpsXTTIQ2PM8AtGXtTKhJdV57rI0wVg/PR9rklT3xxQXJ9Z7
+25RuUI+qPkMTkYhX2ZOuLMzLKDcmOIWQ7PubSSliHQ9Lj4pRXD0QYSWX6iKtwsf9
+5JCxfBvKpOnn8uLNDkhXvIsTDr8e9rOb6ytHfakuB8UCej1vWMMrbn96Wqqr491a
+fZUxfvp3oswJTobGQ6S439WVneiiBH4TJc+4l5XaWde7U1gBzgHkWTquplAC9K2f
+o0f40YI+BDTDroGexb1w7vkxBKBJAvmpCGy7Svhi7qG4Llte8uvzdQKxMuXkAW3Y
+s+fT4vcrmAA7eRThjOJW9EF0NaodFezOyDIcdF+dnc1y2sc2cdyyFSg9bi1Qgydf
+nkuJdtXV4DYzUelX0JCM
+=lHmt
+-----END PGP SIGNATURE-----
+
+--TB36FDmn/VVEgNH/--
