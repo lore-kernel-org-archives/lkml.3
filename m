@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171AbaHKMF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 08:05:59 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:60567 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998AbaHKMF5 (ORCPT
+	id S1753183AbaHKMHx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 08:07:53 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:56573 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629AbaHKMHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 08:05:57 -0400
-Message-ID: <1407758751.4246.134.camel@xylophone>
-Subject: Re: [Linux-kernel] [PATCH] seq_file: Document seq_open_private(),
- seq_release_private()
-From: Ben Hutchings <ben.hutchings@codethink.co.uk>
-To: Rob Jones <rob.jones@codethink.co.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@lists.codethink.co.uk,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, swhiteho@redhat.com, viro@ZenIV.linux.org.uk
-Date: Mon, 11 Aug 2014 13:05:51 +0100
-In-Reply-To: <1407423064-30816-1-git-send-email-rob.jones@codethink.co.uk>
-References: <1407423064-30816-1-git-send-email-rob.jones@codethink.co.uk>
-Organization: Codethink Ltd.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Aug 2014 08:07:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1405612571-32598-1-git-send-email-t.figa@samsung.com>
+References: <1405612571-32598-1-git-send-email-t.figa@samsung.com>
+From: Tomeu Vizoso <tomeu@tomeuvizoso.net>
+Date: Mon, 11 Aug 2014 14:07:30 +0200
+X-Google-Sender-Auth: XwdNuxDo51l9m57Au21wVbKuoNs
+Message-ID: <CAAObsKB3vO1KtgSvDY-+1WA4qDFVS_A6cXZM=vr9U1gVM=v=5g@mail.gmail.com>
+Subject: Re: [PATCH v2 0/2] Firmware-assisted suspend/resume of Exynos SoCs
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        swarren@nvidia.com, acourbot@nvidia.com,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Daniel Drake <drake@endlessm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-07 at 15:51 +0100, Rob Jones wrote:
-> Despite the fact that these functions have been around for years, they are
-> little used (only 15 uses in 13 files at the preseht time) even though
-> many other files use work-arounds to achieve the same result.
-> 
-> By documenting them, hopefully they will become more widely used.
-> 
-> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
-> ---
->  Documentation/filesystems/seq_file.txt |   33 ++++++++++++++++++++++++++++++++
->  1 file changed, 33 insertions(+)
-> 
-> diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
-> index a1e2e0d..c9b8f6b 100644
-> --- a/Documentation/filesystems/seq_file.txt
-> +++ b/Documentation/filesystems/seq_file.txt
-> @@ -226,6 +226,39 @@ be used for more than one file, you can store an arbitrary pointer in the
->  private field of the seq_file structure; that value can then be retrieved
->  by the iterator functions.
->  
-> +There is also a wrapper function to seq_open(), seq_open_private(). It
-> +kmallocs a zero filled block of memory and stores a pointer to it in the
-> +private field of the seq_file structure, returning 0 on success. The
-> +block size is specified in a third parameter to the function, e.g.:
-> +
-> +	static int ct_open(struct inode *inode, struct file *file)
-> +	{
-> +		return seq_open_private(file, &ct_seq_ops,
-> +					sizeof(struct mystruct);
+For both patches, on the Odroid U2:
 
-Missing close-parenthesis.
+Tested-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 
-> +	}
-> +
-> +There is also a variant function, __seq_open_private(), which is functionally
-> +identical except that, if successful, it returns the pointer to the allocated
-> +memory block, allowing further initialisation e.g.:
-> +
-> +	static int ct_open(struct inode *inode, struct file *file)
-> +	{
-> +		struct mystruct *p =
-> +			__seq_open_private(file, &ct_seq_ops, sizeof(*p);
-[...]
+Thanks,
 
-and here.
+Tomeu
 
-Ben.
-
-
+On 17 July 2014 17:56, Tomasz Figa <t.figa@samsung.com> wrote:
+> On Exynos-based boards running secure firmware the sequence of low level
+> operations to enter and leave system-wide sleep mode is different than
+> on those without the firmware. Namely:
+>  - CP15 power control and diagnostic registers cannot be written directly,
+>  - the way of setting boot address and boot flag is different,
+>  - different resume handler needs to be used,
+>  - dedicated SMC call needs to be performed instead of letting the CPU enter
+>    WFI.
+>
+> This series introduces .suspend() and .resume() firmware operations to
+> perform low level firmware-specific suspend and resume and then leverages
+> them to provide suspend-resume path meeting the above requirements.
+>
+> The series is based on Kgene's for-next branch and tested on:
+>  - Exynos4412-based Trats2 board running in non-secure mode (under secure
+>    firmware) with few board-specific fixes that will be sent separately soon,
+>  - Exynos4210-based Trats board running in secure mode,
+>  - Exynos4412-based ODROID-U3 board running in non-secure mode with one minor
+>    board-specific fix which will be send shortly.
+>
+> Depends on:
+>  - [PATCH v3] ARM: save/restore Cortex-A9 CP15 registers on suspend/resume
+>    (http://www.spinics.net/lists/arm-kernel/msg346212.html)
+>  - [PATCH v3] ARM: EXYNOS: Fix suspend/resume sequences
+>    (https://lkml.org/lkml/2014/7/15/319)
+>  - [PATCH] ARM: make it easier to check the CPU part number correctly
+>    (http://thread.gmane.org/gmane.linux.ports.arm.kernel/335126
+>     already in linux-next)
+>
+> Changes since v1:
+>  - dropped outer_resume() - will be handled in assembly in further patches,
+>    as support for L2C in non-secure mode gets added,
+>  - moved CP15 resume to assembly as it needs to be done before MMU is enabled,
+>  - surrounded CP15 save with a check for cpuid part, because it is valid only
+>    on Cortex A9,
+>  - rebased on next-20140717 tag of linux-next tree.
+>
+> Tomasz Figa (2):
+>   ARM: firmware: Introduce suspend and resume operations
+>   ARM: EXYNOS: Add support for firmware-assisted suspend/resume
+>
+>  Documentation/arm/firmware.txt  | 28 +++++--------------------
+>  arch/arm/include/asm/firmware.h |  8 ++++++++
+>  arch/arm/mach-exynos/Makefile   |  1 +
+>  arch/arm/mach-exynos/common.h   |  4 ++++
+>  arch/arm/mach-exynos/firmware.c | 45 +++++++++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-exynos/pm.c       | 16 ++++++++++-----
+>  arch/arm/mach-exynos/sleep.S    | 28 +++++++++++++++++++++++++
+>  arch/arm/mach-exynos/smc.h      |  4 ++++
+>  8 files changed, 106 insertions(+), 28 deletions(-)
+>
+> --
+> 1.9.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
