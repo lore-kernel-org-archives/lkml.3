@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001AbaHKWtT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 18:49:19 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:42832 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863AbaHKWtO (ORCPT
+	id S1755404AbaHKWuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 18:50:22 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:36113 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754727AbaHKWtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 18:49:14 -0400
+	Mon, 11 Aug 2014 18:49:16 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,182 +15,138 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v5 tip/core/rcu 02/16] rcu: Provide cond_resched_rcu_qs() to force quiescent states in long loops
-Date: Mon, 11 Aug 2014 15:48:51 -0700
-Message-Id: <1407797345-28227-2-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v5 tip/core/rcu 04/16] rcu: Make TASKS_RCU handle tasks that are almost done exiting
+Date: Mon, 11 Aug 2014 15:48:53 -0700
+Message-Id: <1407797345-28227-4-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140811224840.GA25594@linux.vnet.ibm.com>
  <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081122-1344-0000-0000-0000036590F0
+x-cbid: 14081122-7164-0000-0000-000003BF2E07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-RCU-tasks requires the occasional voluntary context switch
-from CPU-bound in-kernel tasks.  In some cases, this requires
-instrumenting cond_resched().  However, there is some reluctance
-to countenance unconditionally instrumenting cond_resched() (see
-http://lwn.net/Articles/603252/), so this commit creates a separate
-cond_resched_rcu_qs() that may be used in place of cond_resched() in
-locations prone to long-duration in-kernel looping.
+Once a task has passed exit_notify() in the do_exit() code path, it
+is no longer on the task lists, and is therefore no longer visible
+to rcu_tasks_kthread().  This means that an almost-exited task might
+be preempted while within a trampoline, and this task won't be waited
+on by rcu_tasks_kthread().  This commit fixes this bug by adding an
+srcu_struct.  An exiting task does srcu_read_lock() just before calling
+exit_notify(), and does the corresponding srcu_read_unlock() after
+doing the final preempt_disable().  This means that rcu_tasks_kthread()
+can do synchronize_srcu() to wait for all mostly-exited tasks to reach
+their final preempt_disable() region, and then use synchronize_sched()
+to wait for those tasks to finish exiting.
 
-This commit currently instruments only RCU-tasks.  Future possibilities
-include also instrumenting RCU, RCU-bh, and RCU-sched in order to reduce
-IPI usage.
-
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Suggested-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- fs/file.c                |  2 +-
- include/linux/rcupdate.h | 13 +++++++++++++
- kernel/rcu/rcutorture.c  |  4 ++--
- kernel/rcu/tree.c        | 12 ++++++------
- kernel/rcu/tree_plugin.h |  2 +-
- mm/mlock.c               |  2 +-
- 6 files changed, 24 insertions(+), 11 deletions(-)
+ include/linux/rcupdate.h |  3 +++
+ kernel/exit.c            |  3 +++
+ kernel/rcu/update.c      | 21 +++++++++++++++++++++
+ 3 files changed, 27 insertions(+)
 
-diff --git a/fs/file.c b/fs/file.c
-index 66923fe3176e..1cafc4c9275b 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -367,7 +367,7 @@ static struct fdtable *close_files(struct files_struct * files)
- 				struct file * file = xchg(&fdt->fd[i], NULL);
- 				if (file) {
- 					filp_close(file, files);
--					cond_resched();
-+					cond_resched_rcu_qs();
- 				}
- 			}
- 			i++;
 diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 829efc99df3e..ac87f587a1c1 100644
+index 1f073af940a5..e6aea256ad39 100644
 --- a/include/linux/rcupdate.h
 +++ b/include/linux/rcupdate.h
-@@ -330,6 +330,19 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+@@ -321,6 +321,8 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+  * macro rather than an inline function to avoid #include hell.
+  */
+ #ifdef CONFIG_TASKS_RCU
++#define TASKS_RCU(x) x
++extern struct srcu_struct tasks_rcu_exit_srcu;
+ #define rcu_note_voluntary_context_switch(t) \
+ 	do { \
+ 		preempt_disable(); /* Exclude synchronize_sched(); */ \
+@@ -329,6 +331,7 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+ 		preempt_enable(); \
+ 	} while (0)
+ #else /* #ifdef CONFIG_TASKS_RCU */
++#define TASKS_RCU(x) do { } while (0)
  #define rcu_note_voluntary_context_switch(t)	do { } while (0)
  #endif /* #else #ifdef CONFIG_TASKS_RCU */
  
-+/**
-+ * cond_resched_rcu_qs - Report potential quiescent states to RCU
-+ *
-+ * This macro resembles cond_resched(), except that it is defined to
-+ * report potential quiescent states to RCU-tasks even if the cond_resched()
-+ * machinery were to be shut off, as some advocate for PREEMPT kernels.
-+ */
-+#define cond_resched_rcu_qs() \
-+do { \
-+	rcu_note_voluntary_context_switch(current); \
-+	cond_resched(); \
-+} while (0)
+diff --git a/kernel/exit.c b/kernel/exit.c
+index e5c4668f1799..b63823876afc 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -663,6 +663,7 @@ void do_exit(long code)
+ {
+ 	struct task_struct *tsk = current;
+ 	int group_dead;
++	TASKS_RCU(int tasks_rcu_i);
+ 
+ 	profile_task_exit(tsk);
+ 
+@@ -772,6 +773,7 @@ void do_exit(long code)
+ 	 */
+ 	flush_ptrace_hw_breakpoint(tsk);
+ 
++	TASKS_RCU(tasks_rcu_i = __srcu_read_lock(&tasks_rcu_exit_srcu));
+ 	exit_notify(tsk, group_dead);
+ 	proc_exit_connector(tsk);
+ #ifdef CONFIG_NUMA
+@@ -811,6 +813,7 @@ void do_exit(long code)
+ 	if (tsk->nr_dirtied)
+ 		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
+ 	exit_rcu();
++	TASKS_RCU(__srcu_read_unlock(&tasks_rcu_exit_srcu, tasks_rcu_i));
+ 
+ 	/*
+ 	 * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index d6fa54befa22..4cece6e886ee 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -370,6 +370,13 @@ static struct rcu_head *rcu_tasks_cbs_head;
+ static struct rcu_head **rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
+ static DEFINE_RAW_SPINLOCK(rcu_tasks_cbs_lock);
+ 
++/* Track exiting tasks in order to allow them to be waited for. */
++DEFINE_SRCU(tasks_rcu_exit_srcu);
 +
- #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP)
- bool __rcu_is_watching(void);
- #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
-diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-index 7fa34f86e5ba..febe07062ac5 100644
---- a/kernel/rcu/rcutorture.c
-+++ b/kernel/rcu/rcutorture.c
-@@ -667,7 +667,7 @@ static int rcu_torture_boost(void *arg)
- 				}
- 				call_rcu_time = jiffies;
- 			}
--			cond_resched();
-+			cond_resched_rcu_qs();
- 			stutter_wait("rcu_torture_boost");
- 			if (torture_must_stop())
- 				goto checkwait;
-@@ -1019,7 +1019,7 @@ rcu_torture_reader(void *arg)
- 		__this_cpu_inc(rcu_torture_batch[completed]);
- 		preempt_enable();
- 		cur_ops->readunlock(idx);
--		cond_resched();
-+		cond_resched_rcu_qs();
- 		stutter_wait("rcu_torture_reader");
- 	} while (!torture_must_stop());
- 	if (irqreader && cur_ops->irq_capable) {
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index f958c52f644d..645a33efc0d4 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -1650,7 +1650,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
- 		    system_state == SYSTEM_RUNNING)
- 			udelay(200);
- #endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
--		cond_resched();
-+		cond_resched_rcu_qs();
- 	}
++/* Control stall timeouts.  Disable with <= 0, otherwise jiffies till stall. */
++static int rcu_task_stall_timeout __read_mostly = HZ * 60 * 3;
++module_param(rcu_task_stall_timeout, int, 0644);
++
+ /* Post an RCU-tasks callback. */
+ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
+ {
+@@ -521,6 +528,15 @@ static int __noreturn rcu_tasks_kthread(void *arg)
+ 		rcu_read_unlock();
  
- 	mutex_unlock(&rsp->onoff_mutex);
-@@ -1739,7 +1739,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
- 		/* smp_mb() provided by prior unlock-lock pair. */
- 		nocb += rcu_future_gp_cleanup(rsp, rnp);
- 		raw_spin_unlock_irq(&rnp->lock);
--		cond_resched();
-+		cond_resched_rcu_qs();
- 	}
- 	rnp = rcu_get_root(rsp);
- 	raw_spin_lock_irq(&rnp->lock);
-@@ -1788,7 +1788,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
- 			/* Locking provides needed memory barrier. */
- 			if (rcu_gp_init(rsp))
- 				break;
--			cond_resched();
-+			cond_resched_rcu_qs();
- 			flush_signals(current);
- 			trace_rcu_grace_period(rsp->name,
- 					       ACCESS_ONCE(rsp->gpnum),
-@@ -1831,10 +1831,10 @@ static int __noreturn rcu_gp_kthread(void *arg)
- 				trace_rcu_grace_period(rsp->name,
- 						       ACCESS_ONCE(rsp->gpnum),
- 						       TPS("fqsend"));
--				cond_resched();
-+				cond_resched_rcu_qs();
- 			} else {
- 				/* Deal with stray signal. */
--				cond_resched();
-+				cond_resched_rcu_qs();
- 				flush_signals(current);
- 				trace_rcu_grace_period(rsp->name,
- 						       ACCESS_ONCE(rsp->gpnum),
-@@ -2437,7 +2437,7 @@ static void force_qs_rnp(struct rcu_state *rsp,
- 	struct rcu_node *rnp;
+ 		/*
++		 * Wait for tasks that are in the process of exiting.
++		 * This does only part of the job, ensuring that all
++		 * tasks that were previously exiting reach the point
++		 * where they have disabled preemption, allowing the
++		 * later synchronize_sched() to finish the job.
++		 */
++		synchronize_srcu(&tasks_rcu_exit_srcu);
++
++		/*
+ 		 * Each pass through the following loop scans the list
+ 		 * of holdout tasks, removing any that are no longer
+ 		 * holdouts.  When the list is empty, we are done.
+@@ -549,6 +565,11 @@ static int __noreturn rcu_tasks_kthread(void *arg)
+ 		 * ->rcu_tasks_holdout accesses to be within the grace
+ 		 * period, avoiding the need for memory barriers for
+ 		 * ->rcu_tasks_holdout accesses.
++		 *
++		 * In addition, this synchronize_sched() waits for exiting
++		 * tasks to complete their final preempt_disable() region
++		 * of execution, cleaning up after the synchronize_srcu()
++		 * above.
+ 		 */
+ 		synchronize_sched();
  
- 	rcu_for_each_leaf_node(rsp, rnp) {
--		cond_resched();
-+		cond_resched_rcu_qs();
- 		mask = 0;
- 		raw_spin_lock_irqsave(&rnp->lock, flags);
- 		smp_mb__after_unlock_lock();
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 02ac0fb186b8..a86a363ea453 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -1842,7 +1842,7 @@ static int rcu_oom_notify(struct notifier_block *self,
- 	get_online_cpus();
- 	for_each_online_cpu(cpu) {
- 		smp_call_function_single(cpu, rcu_oom_notify_cpu, NULL, 1);
--		cond_resched();
-+		cond_resched_rcu_qs();
- 	}
- 	put_online_cpus();
- 
-diff --git a/mm/mlock.c b/mm/mlock.c
-index b1eb53634005..bc386a22d647 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -782,7 +782,7 @@ static int do_mlockall(int flags)
- 
- 		/* Ignore errors */
- 		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
--		cond_resched();
-+		cond_resched_rcu_qs();
- 	}
- out:
- 	return 0;
 -- 
 1.8.1.5
 
