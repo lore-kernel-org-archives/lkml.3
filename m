@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848AbaHKTUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:20:48 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58314 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbaHKTUq (ORCPT
+	id S1754643AbaHKTZH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 15:25:07 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:42501 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaHKTZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:20:46 -0400
-Date: Mon, 11 Aug 2014 12:20:45 -0700 (PDT)
-Message-Id: <20140811.122045.1648179759087421559.davem@davemloft.net>
-To: himangi774@gmail.com
-Cc: khc@pm.waw.pl, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        julia.lawall@lip6.fr
-Subject: Re: [PATCH] hdlc: Remove typedefs from struct names
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140809164716.GA21548@himangi-Dell>
-References: <20140809164716.GA21548@himangi-Dell>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 11 Aug 2014 12:20:45 -0700 (PDT)
+	Mon, 11 Aug 2014 15:25:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140811190644.GA3711@ld-irv-0074>
+References: <1407604073-7484-1-git-send-email-geert@linux-m68k.org>
+	<20140811175036.GU3711@ld-irv-0074>
+	<CAMuHMdUNoD5qFhfVP2jJvgqPi=c6xe6YAbmQWYt_ir7rtqp_OQ@mail.gmail.com>
+	<20140811190644.GA3711@ld-irv-0074>
+Date: Mon, 11 Aug 2014 21:25:03 +0200
+X-Google-Sender-Auth: YTPH9yO4-1CbhmpDnX7ETbILRbU
+Message-ID: <CAMuHMdVaNsd6dO0rNNiP2GxekQdeJQ1mLhoppR=WrRPJ=uUawg@mail.gmail.com>
+Subject: Re: [PATCH] mtd: nand: Use ULL-suffix for big u64 constant
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        MTD Maling List <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Himangi Saraogi <himangi774@gmail.com>
-Date: Sat, 9 Aug 2014 22:17:16 +0530
+Hi Brian,
 
-> The Linux kernel coding style guidelines suggest not using typedefs
-> for structure types. This patch gets rid of the typedefs for
-> fr_hdr and pvc_device. Also, the names of the structs are changed to
-> drop the _t, to make the name look less typedef-like.
-> 
-> The following Coccinelle semantic patch detects the case fr_hdr and a
-> similar one detects the case for pvc_device.
- ...
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+On Mon, Aug 11, 2014 at 9:06 PM, Brian Norris
+<computersforpeace@gmail.com> wrote:
+> I'm curious: do your broken compilers also generate broken code/data?
+> i.e., does gcc 4.4.7 give 250000000000 its proper ULL value still?
 
-Applied.
+Yes it does (checked the assembler output).
+
+>> > However, I could be convinced to apply this, if only to satisfy broken
+>> > tools and to avoid addressing this question over and over...
+>>
+>> So please apply. Too many people are still using 32-bit targets and
+>> gcc < 4.6.
+>
+> OK, you've convinced me ;) Applied to l2-mtd.git/next, with an editorial
+> comment.
+
+Thanks!
+
+BTW, I had some faint memories of integer constants never being 64-bit
+without the "LL" suffix, but that's no longer true in c99 (I did check that a
+few days ago).
+
+The warning does go away when adding -std=c99 with gcc-4.4.
+Interestingly, it doesn't appear with -std=c89 with gcc 4.6.2 or 4.8.2.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
