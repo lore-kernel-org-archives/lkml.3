@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254AbaHKMBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 08:01:53 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:59280 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091AbaHKMBv (ORCPT
+	id S1752891AbaHKMDc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 08:03:32 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:44392 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545AbaHKMDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 08:01:51 -0400
-X-IronPort-AV: E=Sophos;i="5.01,841,1400025600"; 
-   d="scan'208";a="161210749"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: [PATCH net-next v2] xen-netback: Don't deschedule NAPI when carrier off
-Date: Mon, 11 Aug 2014 13:01:44 +0100
-Message-ID: <1407758504-8150-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 11 Aug 2014 08:03:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+In-Reply-To: <alpine.DEB.2.02.1408110448470.15519@chino.kir.corp.google.com>
+References: <CAOLZvyFuDqi4+pEae=n7+ZJoAx-vca-pRS8ZAQqvTk-tSyPiwg@mail.gmail.com>
+ <alpine.DEB.2.02.1408110448470.15519@chino.kir.corp.google.com>
+From: Manuel Lauss <manuel.lauss@gmail.com>
+Date: Mon, 11 Aug 2014 14:02:49 +0200
+Message-ID: <CAOLZvyGUBy_aezR32kUiwGSpT0CJhK9_b6_ApCi8GJwJAQNpQw@mail.gmail.com>
+Subject: Re: MIPS: hang in kmalloc with seccomp writer locks
+To: David Rientjes <rientjes@google.com>
+Cc: Kees Cook <keescook@chromium.org>, Linux-MIPS <linux-mips@linux-mips.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the patch called "xen-netback: Turn off the carrier if the guest is not able
-to receive" NAPI was descheduled when the carrier was set off. That's
-not what most of the drivers do, and we don't have any specific reason to do so
-as well, so revert that change.
+On Mon, Aug 11, 2014 at 1:49 PM, David Rientjes <rientjes@google.com> wrote:
+> On Mon, 11 Aug 2014, Manuel Lauss wrote:
+>
+>> Hi Kees,
+>>
+>> My MIPS32 toys hang early during bootup at the first kmalloc() with
+>> seccomp enabled.
+>> I've bisected it to commit dbd952127d11bb44a4ea30b08cc60531b6a23d71
+>> ("seccomp: introduce writer locking").  And indeed, reverting this
+>> commit fixes the hang.
+>>
+>> I'm not sure if seccomp is even working on MIPS, but I've never had
+>> problems with
+>> it before so I thought I let you know.
+>>
+>
+> Does enabling CONFIG_DEBUG_SPINLOCK fix the issue?
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org
----
-v2: delete spurious space
+Yes it does indeed.
 
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index 48a55cd..bfd10cb 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -78,12 +78,8 @@ int xenvif_poll(struct napi_struct *napi, int budget)
- 	/* This vif is rogue, we pretend we've there is nothing to do
- 	 * for this vif to deschedule it from NAPI. But this interface
- 	 * will be turned off in thread context later.
--	 * Also, if a guest doesn't post enough slots to receive data on one of
--	 * its queues, the carrier goes down and NAPI is descheduled here so
--	 * the guest can't send more packets until it's ready to receive.
- 	 */
--	if (unlikely(queue->vif->disabled ||
--		     !netif_carrier_ok(queue->vif->dev))) {
-+	if (unlikely(queue->vif->disabled)) {
- 		napi_complete(napi);
- 		return 0;
- 	}
+
+Manuel
