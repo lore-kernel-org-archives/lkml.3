@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713AbaHKSxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:53:46 -0400
-Received: from mail.tmr.com ([64.65.253.246]:59107 "EHLO partygirl.tmr.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753822AbaHKSxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:53:45 -0400
-Message-ID: <53E90BCF.3030004@tmr.com>
-Date: Mon, 11 Aug 2014 14:30:39 -0400
-From: Bill Davidsen <davidsen@tmr.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120715 Firefox/14.0.1 SeaMonkey/2.11
+	id S1754495AbaHKSzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:55:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43750 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752314AbaHKSzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 14:55:19 -0400
+Message-ID: <53E9118B.3020309@redhat.com>
+Date: Mon, 11 Aug 2014 20:55:07 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: iSCSI target stops sending responses to login requests
-References: <CAHjPQwNFr5gA-vcQa0nk98U0yPgEdCj+iXWeP0_mXpjXdrW+sA@mail.gmail.com>
-In-Reply-To: <CAHjPQwNFr5gA-vcQa0nk98U0yPgEdCj+iXWeP0_mXpjXdrW+sA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Guenter Roeck <linux@roeck-us.net>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>
+CC: gregkh@linuxfoundation.org, kraxel@redhat.com,
+        mdharm-usb@one-eyed-alien.net, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] uas: replace WARN_ON_ONCE() with assert_spin_locked().
+References: <1407743966-25325-1-git-send-email-sanjeev_sharma@mentor.com> <20140811181905.GA25727@roeck-us.net>
+In-Reply-To: <20140811181905.GA25727@roeck-us.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Evgenii Lepikhin wrote:
-> Hello,
->
-> We have several NAS servers with kernels 3.4.xx-3.13.xx. We've got a
-> problem: after 1..4 months of work target servers stops responding to
-> login requests.
->
-I have seen a very similar problem on file servers, in my case an NFS workgroup 
-server. I thought it was due to down level 3.8.13-fc17 kernel, not scheduled for 
-upgrade for a few months yet, probably over Labor Day weekend.
+Hi,
 
-However, existing connections on the machine also will respond to ENTER with a 
-newline, but any connand requiring a new process hangs. It behaves as if the 
-machine was out of processes, but I traced processes every few minutes and saw 
-no buildup.
+On 08/11/2014 08:19 PM, Guenter Roeck wrote:
+> On Mon, Aug 11, 2014 at 01:29:26PM +0530, Sanjeev Sharma wrote:
+>> spin_is_locked() always return false in uniprocessor configuration and therefore it
+>> would be advise to repalce with assert_spin_locked().
+>>
+>> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+>> ---
+>>  drivers/usb/storage/uas.c | 8 ++++----
+>>  1 file changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
+>> index 3f42785..8e5877d 100644
+>> --- a/drivers/usb/storage/uas.c
+>> +++ b/drivers/usb/storage/uas.c
+>> @@ -154,7 +154,7 @@ static void uas_mark_cmd_dead(struct uas_dev_info *devinfo,
+>>  	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+>>  
+>>  	uas_log_cmd_state(cmnd, caller);
+>> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+>> +	assert_spin_locked(&devinfo->lock);
+> 
+> Seems to me that replacing WARN_ON_ONCE (which may be annoying but only
+> creates a traceback, and only once) with assert_spin_locked (which
+> crashes the kernel) is a bit drastic.
 
-In addition, the machine hosts a virtual machine which continues to work just 
-fine. Does any of this match additional issues you didn't mention or haven't 
-checked?
+I can see your point, but so far these paranoia checks have never triggered,
+and having them trigger _always_ one some uni-processor (which is the reason
+for this patch) to me seems the worse problem of the 2.
 
-[__ snip __]
->
-> Any ideas?
->
-May or may not be related, we have a console open on the machine and can verify 
-the odd behavior.
+Ideally we would have a warn_spin_not_locked or such ...
 
--- 
-Bill Davidsen <davidsen@tmr.com>
-   "We have more to fear from the bungling of the incompetent than from
-the machinations of the wicked."  - from Slashdot
+Regards,
+
+Hans
