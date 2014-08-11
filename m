@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742AbaHKSa0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:30:26 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:38771 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602AbaHKS3D (ORCPT
+	id S1754349AbaHKSh4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:37:56 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:48557 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324AbaHKShz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:29:03 -0400
-From: Srikrishan Malik <srikrishanmalik@gmail.com>
-To: greg@kroah.com, andreas.dilger@intel.com, oleg.drokin@intel.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Srikrishan Malik <srikrishanmalik@gmail.com>
-Subject: [PATCH v2 09/13] staging: lustre: Added space between type name and *
-Date: Mon, 11 Aug 2014 23:57:35 +0530
-Message-Id: <1407781659-728-9-git-send-email-srikrishanmalik@gmail.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1407781659-728-1-git-send-email-srikrishanmalik@gmail.com>
-References: <1407781659-728-1-git-send-email-srikrishanmalik@gmail.com>
+	Mon, 11 Aug 2014 14:37:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANP1eJG572cAR1t+pzCExk7EQWb=aDz77-PuP50GAP2j2mETiw@mail.gmail.com>
+References: <cover.1406043029.git.milosz@adfin.com>
+	<53CE8862.7020201@adfin.com>
+	<28626.1406648278@warthog.procyon.org.uk>
+	<CANP1eJG572cAR1t+pzCExk7EQWb=aDz77-PuP50GAP2j2mETiw@mail.gmail.com>
+Date: Mon, 11 Aug 2014 14:37:54 -0400
+Message-ID: <CANP1eJFCRmu704uZvP1EfBqU7-FdFbKZ3cnOH8+ZGtXDycy6kQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] FS-Cache: Reduce cookie ref count if submit fails.
+From: Milosz Tanski <milosz@adfin.com>
+To: David Howells <dhowells@redhat.com>
+Cc: "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
+        Shantanu Goel <sgoel01@yahoo.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the following checkpatch error:
+Any suggestion what's the right thing to do here David? I'd like to
+re-spin and re-submit the patches.
 
-ERROR: "(foo*)" should be "(foo *)"
+- M
 
-Signed-off-by: Srikrishan Malik <srikrishanmalik@gmail.com>
----
- drivers/staging/lustre/lustre/mdc/mdc_locks.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, Aug 6, 2014 at 11:21 AM, Milosz Tanski <milosz@adfin.com> wrote:
+> The honest answer is I don't know if it know if needs to be unlocked
+> before or after. I saw a same pattern with unlocking order inside of
+> __fscache_attr_changed in the failure case.
+>
+> If this can be re-ordered I can take care of that in my next version I
+> submit to you.
+>
+> - Milosz
+>
+> On Tue, Jul 29, 2014 at 11:37 AM, David Howells <dhowells@redhat.com> wrote:
+>> Milosz Tanski <milosz@adfin.com> wrote:
+>>
+>>> +     wake_cookie = __fscache_unuse_cookie(cookie);
+>>>       spin_unlock(&cookie->lock);
+>>> +     if (wake_cookie)
+>>> +             __fscache_wake_unused_cookie(cookie);
+>>
+>> Why do __fscache_unuse_cookie() with cookie->lock held?
+>>
+>> David
+>
+>
+>
+> --
+> Milosz Tanski
+> CTO
+> 16 East 34th Street, 15th floor
+> New York, NY 10016
+>
+> p: 646-253-9055
+> e: milosz@adfin.com
 
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-index 7f724e3c3f06..c03d77c9c5b8 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-@@ -218,7 +218,7 @@ int mdc_find_cbdata(struct obd_export *exp,
- 	struct ldlm_res_id res_id;
- 	int rc = 0;
- 
--	fid_build_reg_res_name((struct lu_fid*)fid, &res_id);
-+	fid_build_reg_res_name((struct lu_fid *)fid, &res_id);
- 	rc = ldlm_resource_iterate(class_exp2obd(exp)->obd_namespace, &res_id,
- 				   it, data);
- 	if (rc == LDLM_ITER_STOP)
+
+
 -- 
-1.9.3
+Milosz Tanski
+CTO
+16 East 34th Street, 15th floor
+New York, NY 10016
 
+p: 646-253-9055
+e: milosz@adfin.com
