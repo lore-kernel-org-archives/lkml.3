@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155AbaHKW5I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 18:57:08 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35601 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753190AbaHKW5F (ORCPT
+	id S1753627AbaHKXAY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 19:00:24 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:47772 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593AbaHKXAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 18:57:05 -0400
-X-Sasl-enc: LP0JeRl2XuqxHZj9fHXKU7KwY+280Io/HSInbGSaDaPS 1407797822
-Date: Tue, 12 Aug 2014 06:55:27 +0800
-From: Greg KH <greg@kroah.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: stable@vger.kernel.org, Amos Kong <akong@redhat.com>,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [3.16 stable PATCH 1/1] virtio-rng: fix multi-device startup
-Message-ID: <20140811225527.GB10721@kroah.com>
-References: <5ef3aa4ea1932b7655d9db5a0139b8a2922af0db.1407760907.git.amit.shah@redhat.com>
+	Mon, 11 Aug 2014 19:00:23 -0400
+Date: Tue, 12 Aug 2014 01:00:20 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/2] nohz: Avoid double clock write
+Message-ID: <20140811230018.GA1492@lerouge>
+References: <1406825156-11901-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5ef3aa4ea1932b7655d9db5a0139b8a2922af0db.1407760907.git.amit.shah@redhat.com>
+In-Reply-To: <1406825156-11901-1-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 06:11:47PM +0530, Amit Shah wrote:
-> This is a 3.16-only patch.  The linux.git fix is
-> 5c06273401f2eb7b290cadbae18ee00f8f65e893, which fixes this issue in a
-> different way.
+Ping?
 
-Why "different"?  Why can't I take that original patch instead?  What is
-different in this patch, and why?
-
-thanks,
-
-greg k-h
+On Thu, Jul 31, 2014 at 06:45:54PM +0200, Frederic Weisbecker wrote:
+> Hi Thomas,
+> 
+> The tick reschedules itself unconditionally. That's what we want as long
+> as the CPU is in periodic mode. It's not that relevant when the CPU
+> is in dynticks mode though as the clock write is likely to be overwritten
+> by the nohz code on irq exit.
+> 
+> In low-res mode, that even result in unexpected periodic behaviour when
+> no timer is scheduled in the future.
+> 
+> So here is a set that proposes the removal of these double writes.
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> 	origin/nohz/drop-double-write-v2
+> 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Viresh Kumar (2):
+>       nohz: Fix spurious periodic tick behaviour in low-res dynticks mode
+>       nohz: Avoid tick's double reprogramming in highres mode
+> 
+> 
+>  kernel/time/tick-sched.c | 8 ++++++++
+>  1 file changed, 8 insertions(+)
