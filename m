@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592AbaHKS24 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:28:56 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:51832 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490AbaHKS2y (ORCPT
+	id S1754653AbaHKS3M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:29:12 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:54424 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754490AbaHKS3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:28:54 -0400
+	Mon, 11 Aug 2014 14:29:08 -0400
 From: Srikrishan Malik <srikrishanmalik@gmail.com>
 To: greg@kroah.com, andreas.dilger@intel.com, oleg.drokin@intel.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Srikrishan Malik <srikrishanmalik@gmail.com>
-Subject: [PATCH v2 07/13] staging: lustre: add blank lines after declarations
-Date: Mon, 11 Aug 2014 23:57:33 +0530
-Message-Id: <1407781659-728-7-git-send-email-srikrishanmalik@gmail.com>
+Subject: [PATCH v2 10/13] staging: lustre: Fix misplaced opening brace warnings
+Date: Mon, 11 Aug 2014 23:57:36 +0530
+Message-Id: <1407781659-728-10-git-send-email-srikrishanmalik@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1407781659-728-1-git-send-email-srikrishanmalik@gmail.com>
 References: <1407781659-728-1-git-send-email-srikrishanmalik@gmail.com>
@@ -21,101 +21,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the following checkpatch warning:
+Fixes the following checkpatch error:
 
-WARNING: Missing a blank line after declarations
+ERROR: that open brace { should be on the previous line
 
 Signed-off-by: Srikrishan Malik <srikrishanmalik@gmail.com>
 ---
- drivers/staging/lustre/lustre/mdc/mdc_lib.c     | 1 +
- drivers/staging/lustre/lustre/mdc/mdc_locks.c   | 3 +++
- drivers/staging/lustre/lustre/mdc/mdc_request.c | 5 +++++
- 3 files changed, 9 insertions(+)
+ drivers/staging/lustre/lustre/mdc/mdc_locks.c   | 18 +++++++++++-------
+ drivers/staging/lustre/lustre/mdc/mdc_reint.c   |  3 +--
+ drivers/staging/lustre/lustre/mdc/mdc_request.c |  7 +++++--
+ 3 files changed, 17 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_lib.c b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
-index 8b301f4d7e23..e8732cc30ce2 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_lib.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_lib.c
-@@ -490,6 +490,7 @@ void mdc_getattr_pack(struct ptlrpc_request *req, __u64 valid, int flags,
- 
- 	if (op_data->op_name) {
- 		char *tmp = req_capsule_client_get(&req->rq_pill, &RMF_NAME);
-+
- 		LOGL0(op_data->op_name, op_data->op_namelen, tmp);
- 
- 	}
 diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-index a5a2597616e9..4d837d61be65 100644
+index c03d77c9c5b8..288ce9119ed5 100644
 --- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
 +++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-@@ -134,6 +134,7 @@ int mdc_set_lock_data(struct obd_export *exp, __u64 *lockh, void *data,
- 	if (lock->l_resource->lr_lvb_inode &&
- 	    lock->l_resource->lr_lvb_inode != data) {
- 		struct inode *old_inode = lock->l_resource->lr_lvb_inode;
-+
- 		LASSERTF(old_inode->i_state & I_FREEING,
- 			 "Found existing inode %p/%lu/%u state %lu in lock: "
- 			 "setting data to %p/%lu/%u\n", old_inode,
-@@ -678,6 +679,7 @@ static int mdc_finish_enqueue(struct obd_export *exp,
- 			 */
- 			if ((it->it_op & IT_OPEN) && req->rq_replay) {
- 				void *lmm;
-+
- 				if (req_capsule_get_size(pill, &RMF_EADATA,
- 							 RCL_CLIENT) <
- 				    body->eadatasize)
-@@ -1029,6 +1031,7 @@ static int mdc_finish_intent_lock(struct obd_export *exp,
- 	lock = ldlm_handle2lock(lockh);
- 	if (lock) {
- 		ldlm_policy_data_t policy = lock->l_policy_data;
-+
- 		LDLM_DEBUG(lock, "matching against this");
+@@ -785,14 +785,18 @@ int mdc_enqueue(struct obd_export *exp, struct ldlm_enqueue_info *einfo,
+ 	__u64		  flags, saved_flags = extra_lock_flags;
+ 	int		    rc;
+ 	struct ldlm_res_id res_id;
+-	static const ldlm_policy_data_t lookup_policy =
+-			    { .l_inodebits = { MDS_INODELOCK_LOOKUP } };
+-	static const ldlm_policy_data_t update_policy =
+-			    { .l_inodebits = { MDS_INODELOCK_UPDATE } };
+-	static const ldlm_policy_data_t layout_policy =
+-			    { .l_inodebits = { MDS_INODELOCK_LAYOUT } };
++	static const ldlm_policy_data_t lookup_policy = {
++		.l_inodebits = { MDS_INODELOCK_LOOKUP }
++	};
++	static const ldlm_policy_data_t update_policy = {
++		.l_inodebits = { MDS_INODELOCK_UPDATE }
++	};
++	static const ldlm_policy_data_t layout_policy = {
++		.l_inodebits = { MDS_INODELOCK_LAYOUT }
++	};
+ 	static const ldlm_policy_data_t getxattr_policy = {
+-			      .l_inodebits = { MDS_INODELOCK_XATTR } };
++		.l_inodebits = { MDS_INODELOCK_XATTR }
++	};
+ 	ldlm_policy_data_t const *policy = &lookup_policy;
+ 	int		    generation, resends = 0;
+ 	struct ldlm_reply     *lockrep;
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_reint.c b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
+index 46800335ca7d..01af30ac1a52 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_reint.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
+@@ -152,8 +152,7 @@ int mdc_setattr(struct obd_export *exp, struct md_op_data *op_data,
  
- 		LASSERTF(fid_res_name_eq(&mdt_body->fid1,
+ 	ptlrpc_request_set_replen(req);
+ 	if (mod && (op_data->op_flags & MF_EPOCH_OPEN) &&
+-	    req->rq_import->imp_replayable)
+-	{
++	    req->rq_import->imp_replayable) {
+ 		LASSERT(*mod == NULL);
+ 
+ 		*mod = obd_mod_alloc();
 diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-index 6def92133227..57d903156917 100644
+index 6c691a4763b5..bf2dcf50afd4 100644
 --- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
 +++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-@@ -203,6 +203,7 @@ static int mdc_getattr_common(struct obd_export *exp,
- 
- 	if (body->valid & OBD_MD_FLMDSCAPA) {
- 		struct lustre_capa *capa;
+@@ -1794,8 +1794,11 @@ static int mdc_iocontrol(unsigned int cmd, struct obd_export *exp, int len,
+ 		GOTO(out, rc);
+ 	case OBD_IOC_CHANGELOG_CLEAR: {
+ 		struct ioc_changelog *icc = karg;
+-		struct changelog_setinfo cs =
+-			{.cs_recno = icc->icc_recno, .cs_id = icc->icc_id};
++		struct changelog_setinfo cs = {
++			.cs_recno = icc->icc_recno,
++			.cs_id = icc->icc_id
++		};
 +
- 		capa = req_capsule_server_get(pill, &RMF_CAPA1);
- 		if (capa == NULL)
- 			return -EPROTO;
-@@ -283,6 +284,7 @@ int mdc_getattr_name(struct obd_export *exp, struct md_op_data *op_data,
- 
- 	if (op_data->op_name) {
- 		char *name = req_capsule_client_get(&req->rq_pill, &RMF_NAME);
-+
- 		LASSERT(strnlen(op_data->op_name, op_data->op_namelen) ==
- 				op_data->op_namelen);
- 		memcpy(name, op_data->op_name, op_data->op_namelen);
-@@ -696,6 +698,7 @@ void mdc_replay_open(struct ptlrpc_request *req)
- void mdc_commit_open(struct ptlrpc_request *req)
- {
- 	struct md_open_data *mod = req->rq_cb_data;
-+
- 	if (mod == NULL)
- 		return;
- 
-@@ -2390,6 +2393,7 @@ int mdc_fid_alloc(struct obd_export *exp, struct lu_fid *fid,
- struct obd_uuid *mdc_get_uuid(struct obd_export *exp)
- {
- 	struct client_obd *cli = &exp->exp_obd->u.cli;
-+
- 	return &cli->cl_target_uuid;
- }
- 
-@@ -2742,6 +2746,7 @@ int __init mdc_init(void)
- {
- 	int rc;
- 	struct lprocfs_static_vars lvars = { NULL };
-+
- 	lprocfs_mdc_init_vars(&lvars);
- 
- 	rc = class_register_type(&mdc_obd_ops, &mdc_md_ops, lvars.module_vars,
+ 		rc = obd_set_info_async(NULL, exp, strlen(KEY_CHANGELOG_CLEAR),
+ 					KEY_CHANGELOG_CLEAR, sizeof(cs), &cs,
+ 					NULL);
 -- 
 1.9.3
 
