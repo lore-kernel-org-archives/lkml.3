@@ -1,87 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaHKLiI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 07:38:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37604 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810AbaHKLiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 07:38:07 -0400
-Date: Mon, 11 Aug 2014 13:38:03 +0200
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: [GIT PULL] Quota, reiserfs, udf updates for 3.17-rc1
-Message-ID: <20140811113803.GE29526@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753224AbaHKLic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 07:38:32 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:37501 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599AbaHKLi2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 07:38:28 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [RESEND PATCH 1/2] ARM: dts: Improve Peach Pit and Pi power scheme
+Date: Mon, 11 Aug 2014 13:38:10 +0200
+Message-Id: <1407757091-18730-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+The DeviceTree files for the Peach Pit and Pi machines have
+a simplistic model of the connections between the different
+regulators since not all the tps65090 regulators get their
+input supply voltage from the VDC. DCDC1-3, LD0-1 and fet7
+parent supply is indded VDC but the fet1-6 get their input
+supply from the DCDC1 and DCDC2 output voltage rails.
 
-  could you please pull from
+Update the DeviceTree to better reflect the real connections
+between tps65090 regulators. Having this information in the
+DTS is useful since FETs are switches that don't provide an
+output voltage so the regulator core needs to fetch the FET
+parent output voltage if the child voltage is queried.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Acked-by: Mark Brown <broonie@linaro.org>
+---
+ arch/arm/boot/dts/exynos5420-peach-pit.dts | 12 ++++++------
+ arch/arm/boot/dts/exynos5800-peach-pi.dts  | 12 ++++++------
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
-to get scalability improvements for quota, a few reiserfs fixes, and couple
-of misc cleanups (udf, ext2).
-
-Top of the tree is 20601c5299c8. The full shortlog is:
-
-Andy Shevchenko (1):
-      fs/udf: re-use hex_asc_upper_{hi,lo} macros
-
-Chao Yu (1):
-      udf: avoid redundant memcpy when writing data in ICB
-
-Fabian Frederick (2):
-      udf: use linux/uaccess.h
-      fs/quota: kernel-doc warning fixes
-
-Himangi Saraogi (1):
-      fs/ext2/super.c: Drop memory allocation cast
-
-Jan Kara (2):
-      reiserfs: Avoid warning from unlock_new_inode()
-      reiserfs: Fix use after free in journal teardown
-
-Jeff Mahoney (1):
-      reiserfs: fix corruption introduced by balance_leaf refactor
-
-Niu Yawei (5):
-      quota: missing lock in dqcache_shrink_scan()
-      quota: protect Q_GETFMT by dqonoff_mutex
-      quota: avoid unnecessary dqget()/dqput() calls
-      quota: simplify remove_inode_dquot_ref()
-      quota: remove dqptr_sem
-
-The diffstat is
-
- fs/ext2/super.c        |   2 +-
- fs/quota/dquot.c       | 182 +++++++++++++++++++++++--------------------------
- fs/quota/kqid.c        |   2 +-
- fs/quota/netlink.c     |   3 +-
- fs/quota/quota.c       |   6 +-
- fs/reiserfs/do_balan.c | 111 +++++++++++++++++-------------
- fs/reiserfs/journal.c  |  22 ++++--
- fs/reiserfs/lbalance.c |   5 +-
- fs/reiserfs/namei.c    |  41 ++++++-----
- fs/reiserfs/reiserfs.h |   9 +--
- fs/reiserfs/super.c    |   6 +-
- fs/super.c             |   1 -
- fs/udf/file.c          |  22 +-----
- fs/udf/lowlevel.c      |   2 +-
- fs/udf/super.c         |   2 +-
- fs/udf/symlink.c       |   2 +-
- fs/udf/unicode.c       |   9 ++-
- include/linux/quota.h  |   1 -
- 18 files changed, 216 insertions(+), 212 deletions(-)
-
-							Thanks
-								Honza
+diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+index 228a6b1..d8710c1 100644
+--- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
++++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+@@ -365,12 +365,12 @@
+ 				vsys2-supply = <&vbat>;
+ 				vsys3-supply = <&vbat>;
+ 				infet1-supply = <&vbat>;
+-				infet2-supply = <&vbat>;
+-				infet3-supply = <&vbat>;
+-				infet4-supply = <&vbat>;
+-				infet5-supply = <&vbat>;
+-				infet6-supply = <&vbat>;
+-				infet7-supply = <&vbat>;
++				infet2-supply = <&tps65090_dcdc1>;
++				infet3-supply = <&tps65090_dcdc2>;
++				infet4-supply = <&tps65090_dcdc2>;
++				infet5-supply = <&tps65090_dcdc2>;
++				infet6-supply = <&tps65090_dcdc2>;
++				infet7-supply = <&tps65090_dcdc1>;
+ 				vsys-l1-supply = <&vbat>;
+ 				vsys-l2-supply = <&vbat>;
+ 
+diff --git a/arch/arm/boot/dts/exynos5800-peach-pi.dts b/arch/arm/boot/dts/exynos5800-peach-pi.dts
+index f3ee48b..07b29b7 100644
+--- a/arch/arm/boot/dts/exynos5800-peach-pi.dts
++++ b/arch/arm/boot/dts/exynos5800-peach-pi.dts
+@@ -363,12 +363,12 @@
+ 				vsys2-supply = <&vbat>;
+ 				vsys3-supply = <&vbat>;
+ 				infet1-supply = <&vbat>;
+-				infet2-supply = <&vbat>;
+-				infet3-supply = <&vbat>;
+-				infet4-supply = <&vbat>;
+-				infet5-supply = <&vbat>;
+-				infet6-supply = <&vbat>;
+-				infet7-supply = <&vbat>;
++				infet2-supply = <&tps65090_dcdc1>;
++				infet3-supply = <&tps65090_dcdc2>;
++				infet4-supply = <&tps65090_dcdc2>;
++				infet5-supply = <&tps65090_dcdc2>;
++				infet6-supply = <&tps65090_dcdc2>;
++				infet7-supply = <&tps65090_dcdc1>;
+ 				vsys-l1-supply = <&vbat>;
+ 				vsys-l2-supply = <&vbat>;
+ 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+2.0.0.rc2
+
