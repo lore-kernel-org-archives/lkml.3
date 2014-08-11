@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340AbaHKFWa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 01:22:30 -0400
-Received: from mga14.intel.com ([192.55.52.115]:49669 "EHLO mga14.intel.com"
+	id S1752407AbaHKFXP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 01:23:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5751 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317AbaHKFW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 01:22:29 -0400
+	id S1752114AbaHKFXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 01:23:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,839,1400050800"; 
-   d="scan'208";a="574809653"
+   d="scan'208";a="586293208"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -18,76 +18,66 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         kan.liang@intel.com,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v3 00/23] perf: Add infrastructure and support for Intel PT
-Date: Mon, 11 Aug 2014 08:19:29 +0300
-Message-Id: <1407734392-31097-1-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v3 01/23] perf: Add data_{offset,size} to user_page
+Date: Mon, 11 Aug 2014 08:19:30 +0300
+Message-Id: <1407734392-31097-2-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1407734392-31097-1-git-send-email-alexander.shishkin@linux.intel.com>
+References: <1407734392-31097-1-git-send-email-alexander.shishkin@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter and all,
+Currently, the actual perf ring buffer is one page into the mmap area,
+following the user page and the userspace follows this convention. This
+patch adds data_{offset,size} fields to user_page that can be used by
+userspace instead for locating perf data in the mmap area. This is also
+helpful when mapping existing or shared buffers if their size is not
+known in advance.
 
-Here's a new version of PT support patchset, this time including PT and
-BTS drivers and a few more tweaks to the core. I still left out some bits
-like core dump support for now. Tooling support is not included in this
-series so that it's easier to review the kernel bits, I suppose it's best
-to send it separately, since it's quite a huge patchset of its own.
+Right now, it is made to follow the existing convention that
 
-Alexander Shishkin (22):
-  perf: Add data_{offset,size} to user_page
-  perf: Support high-order allocations for AUX space
-  perf: Add a capability for AUX_NO_SG pmus to do software double
-    buffering
-  perf: Add a pmu capability for "exclusive" events
-  perf: Redirect output from inherited events to parents
-  perf: Add api for pmus to write to AUX space
-  perf: Add AUX record
-  perf: Support overwrite mode for AUX area
-  perf: Add wakeup watermark control to AUX area
-  perf: Add itrace_config to the event attribute
-  perf: add ITRACE_START record to indicate that tracing has started
-  x86: Add Intel Processor Trace (INTEL_PT) cpu feature detection
-  x86: perf: Intel PT and LBR/BTS are mutually exclusive
-  x86: perf: intel_pt: Intel PT PMU driver
-  x86: perf: intel_bts: Add BTS PMU driver
-  perf: Add rb_{alloc,free}_kernel api
-  perf: Add a helper to copy AUX data in the kernel
-  perf: Add a helper for looking up pmus by type
-  perf: itrace: Infrastructure for sampling instruction flow traces
-  perf: Allocate ring buffers for inherited per-task kernel events
-  perf: itrace: Allow itrace sampling for multiple events
-  perf: itrace: Allow sampling of inherited events
+	data_offset == PAGE_SIZE and
+	data_offset + data_size == mmap_size.
 
-Peter Zijlstra (1):
-  perf: Add AUX area to ring buffer for raw data streams
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+---
+ include/uapi/linux/perf_event.h | 5 +++++
+ kernel/events/core.c            | 2 ++
+ 2 files changed, 7 insertions(+)
 
- arch/x86/include/asm/cpufeature.h          |   1 +
- arch/x86/include/uapi/asm/msr-index.h      |  18 +
- arch/x86/kernel/cpu/Makefile               |   1 +
- arch/x86/kernel/cpu/intel_pt.h             | 129 ++++
- arch/x86/kernel/cpu/perf_event.h           |  14 +
- arch/x86/kernel/cpu/perf_event_intel.c     |  14 +-
- arch/x86/kernel/cpu/perf_event_intel_bts.c | 496 +++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_ds.c  |  11 +-
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   9 +-
- arch/x86/kernel/cpu/perf_event_intel_pt.c  | 952 +++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/scattered.c            |   1 +
- include/linux/itrace.h                     |  45 ++
- include/linux/perf_event.h                 |  61 +-
- include/uapi/linux/perf_event.h            |  69 ++-
- kernel/events/Makefile                     |   2 +-
- kernel/events/core.c                       | 348 +++++++++--
- kernel/events/internal.h                   |  54 ++
- kernel/events/itrace.c                     | 234 +++++++
- kernel/events/ring_buffer.c                | 313 +++++++++-
- 19 files changed, 2724 insertions(+), 48 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/intel_pt.h
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_bts.c
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
- create mode 100644 include/linux/itrace.h
- create mode 100644 kernel/events/itrace.c
-
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 9269de2548..f7d18c2cb7 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -489,9 +489,14 @@ struct perf_event_mmap_page {
+ 	 * In this case the kernel will not over-write unread data.
+ 	 *
+ 	 * See perf_output_put_handle() for the data ordering.
++	 *
++	 * data_{offset,size} indicate the location and size of the perf record
++	 * buffer within the mmapped area.
+ 	 */
+ 	__u64   data_head;		/* head in the data section */
+ 	__u64	data_tail;		/* user-space written tail */
++	__u64	data_offset;		/* where the buffer starts */
++	__u64	data_size;		/* data buffer size */
+ };
+ 
+ #define PERF_RECORD_MISC_CPUMODE_MASK		(7 << 0)
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1cf24b3e42..bf58d40a26 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3780,6 +3780,8 @@ static void perf_event_init_userpage(struct perf_event *event)
+ 	/* Allow new userspace to detect that bit 0 is deprecated */
+ 	userpg->cap_bit0_is_deprecated = 1;
+ 	userpg->size = offsetof(struct perf_event_mmap_page, __reserved);
++	userpg->data_offset = PAGE_SIZE;
++	userpg->data_size = perf_data_size(rb);
+ 
+ unlock:
+ 	rcu_read_unlock();
 -- 
 2.1.0.rc1
 
