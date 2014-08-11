@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508AbaHKNRn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 09:17:43 -0400
-Received: from mail.kernel.org ([198.145.19.201]:55077 "EHLO mail.kernel.org"
+	id S1753485AbaHKNSc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 09:18:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39945 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753370AbaHKNRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 09:17:42 -0400
-Date: Mon, 11 Aug 2014 10:17:38 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 2/8] perf tools: Make __hpp__fmt() receive an additional
- len argument
-Message-ID: <20140811131738.GB3277@kernel.org>
-References: <1406785662-5534-1-git-send-email-namhyung@kernel.org>
- <1406785662-5534-3-git-send-email-namhyung@kernel.org>
- <20140802133026.GD13375@kernel.org>
- <87r40nfo36.fsf@sejong.aot.lge.com>
+	id S1751126AbaHKNSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 09:18:31 -0400
+Date: Mon, 11 Aug 2014 15:18:28 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch] freezer: check OOM kill signal while being frozen
+Message-ID: <20140811131828.GF15312@dhcp22.suse.cz>
+References: <1407545198-9009-1-git-send-email-xiyou.wangcong@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87r40nfo36.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <1407545198-9009-1-git-send-email-xiyou.wangcong@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Aug 11, 2014 at 05:05:33PM +0900, Namhyung Kim escreveu:
-> Hi Arnaldo,
+On Fri 08-08-14 17:46:38, Cong Wang wrote:
+> There is a race condition between OOM killer and freezer when
+> they try to operate on the same process, something like below:
 > 
-> On Sat, 2 Aug 2014 10:30:26 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Jul 31, 2014 at 02:47:36PM +0900, Namhyung Kim escreveu:
-> >> So that it can properly handle alignment requirements later.  To do
-> >> that, add percent_color_len_snprintf() fucntion to help coloring of
-> >> overhead columns.
-> >
-> > Can you elaborate on this description? What is not possible to do before
-> > this patch?
+> 	Process A	Process B		Process C
+> trigger oom
+> B=oom_scan_process_thread()
+> 					cgroup_freezer_freeze(B)
+> 			...
+> 			try_to_freeze()
+> 			stay in D state
+> oom_kill_process(B)
 > 
-> This patch is a preparation that moves hard-coded print width out of the
-> format string so that it can be passed from external settings later.
+> In this case, process A triggers OOM and kernel selects process B
+> as the victim, right before being killed process B was frozen by
+> process C therefore went to D state, then kernel sent SIGKILL but
+> it is already too late as process B will never care about pending
+> signals any more.
 
-Ok, please add this to the patch description?
- 
-> > Perhaps a formatted line before this patch and then the same line
-> > formatted after the patch?
- 
-> The default behavior wasn't changed, it's only meaningful when user
-> gives field width using -w option.  You can see the difference in the
-> description 0/8.
+OK, so the system/memcg is still OOM and a new allocation/charge
+would trigger killer again, right? Then oom_scan_process_thread sees
+TIF_MEMDIE frozen task and thaw it so it can go away and die. So this
+shouldn't be a permanent state. Or am I missing something?
 
-- Arnaldo
+> Fix this straightly by checking fatal pending signal
+> from OOM killer, so that the frozen process will recover itself
+> and then be killed finally.
+> 
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+> ---
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index aa6a8aa..c6d189d 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -68,7 +68,9 @@ bool __refrigerator(bool check_kthr_stop)
+>  		spin_lock_irq(&freezer_lock);
+>  		current->flags |= PF_FROZEN;
+>  		if (!freezing(current) ||
+> -		    (check_kthr_stop && kthread_should_stop()))
+> +		    (check_kthr_stop && kthread_should_stop()) ||
+> +		    (test_tsk_thread_flag(current, TIF_MEMDIE) &&
+> +			 fatal_signal_pending(current)))
+>  			current->flags &= ~PF_FROZEN;
+>  		spin_unlock_irq(&freezer_lock);
+>  
+
+-- 
+Michal Hocko
+SUSE Labs
