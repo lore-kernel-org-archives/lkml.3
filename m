@@ -1,126 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921AbaHKOR4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 10:17:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34491 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873AbaHKORv (ORCPT
+	id S1753791AbaHKOVz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 10:21:55 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:58125
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753554AbaHKOVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 10:17:51 -0400
-Date: Mon, 11 Aug 2014 16:17:36 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Dave Hansen <dave.hansen@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org
-Subject: Re: [sched/numa] 096aa33863a: -21.4% hackbench.throughput, -20.2%
- netperf.Throughput_Mbps
-Message-ID: <20140811141736.GD9918@twins.programming.kicks-ass.net>
-References: <20140807105311.GA17655@localhost>
- <53E3C270.1010302@redhat.com>
+	Mon, 11 Aug 2014 10:21:54 -0400
+X-IronPort-AV: E=Sophos;i="5.01,841,1400018400"; 
+   d="scan'208";a="74517462"
+Date: Mon, 11 Aug 2014 16:21:23 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Joe Perches <joe@perches.com>
+cc: Srikrishan Malik <srikrishanmalik@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, greg@kroah.com,
+        andreas.dilger@intel.com, oleg.drokin@intel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        Himangi Saraogi <himangi774@gmail.com>
+Subject: Re: [PATCH 10/12] staging: lustre: Fix misplaced opening brace
+ warnings
+In-Reply-To: <1407757007.20795.18.camel@joe-AO725>
+Message-ID: <alpine.DEB.2.10.1408111619510.2518@hadrien>
+References: <1407345182-709-1-git-send-email-srikrishanmalik@gmail.com>  <1407345182-709-10-git-send-email-srikrishanmalik@gmail.com>  <20140806201813.GE4856@mwanda> <20140807153136.GB4185@mordor.in.ibm.com>  <20140807160103.GG4856@mwanda>
+ <1407429343.2736.28.camel@joe-AO725>  <20140811105706.GA17691@mordor.in.ibm.com> <1407757007.20795.18.camel@joe-AO725>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1FTutcXiQhqXqWGN"
-Content-Disposition: inline
-In-Reply-To: <53E3C270.1010302@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---1FTutcXiQhqXqWGN
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Aug 07, 2014 at 02:16:16PM -0400, Rik van Riel wrote:
-> On 08/07/2014 06:53 AM, Fengguang Wu wrote:
-> > Hi Rik,
-> >=20
-> > We noticed the below performance regression in commit
-> > 096aa33863a5e48de52d2ff30e0801b7487944f4 ("sched/numa: Decay
-> > ->wakee_flips instead of zeroing")
-> >=20
-> > b1ad065e65f5610  096aa33863a5e48de52d2ff30  testbox/testcase/testparams
-> > ---------------  -------------------------  ---------------------------
-> >     122361 =B1 0%     -21.4%      96140 =B1 0%  lkp-snb01/hackbench/50%=
--process-pipe
-> >     122361 =B1 0%     -21.4%      96140 =B1 0%  TOTAL hackbench.through=
-put
->=20
-> I guess the performance of that benchmark depends on it
-> "slipping under the wire" after each time the kernel
-> zeroes out ->wakee_flips.
->=20
-> Depending on repeatedly pulling the wakee back to the same
-> node as the waker suggests something else in the kernel may
-> be pulling the wakee to another place in the system repeatedly,
-> as well, just at a lower frequency (load balancer?).
->=20
-> I have also noticed that select_idle_sibling often fails to
-> find an idle sibling within the LLC domain, even when it
-> exists. Fixing that bug sometimes results in lower performance.
->=20
-> It appears that some of the performance results of the scheduler
-> appear on the code acting in an opposite way to its documented
-> intention.
->=20
-> It may be best to revert 096aa33863a for now...
+On Mon, 11 Aug 2014, Joe Perches wrote:
 
-Does something like so cure anything? Is that a 'normal' hackbench run?
-lemme see if I can reproduce on anything.
+> On Mon, 2014-08-11 at 16:27 +0530, Srikrishan Malik wrote:
+> > On Thu, Aug 07, 2014 at 09:35:43AM -0700, Joe Perches wrote:
+> > > On Thu, 2014-08-07 at 19:01 +0300, Dan Carpenter wrote:
+> > > > On Thu, Aug 07, 2014 at 09:01:36PM +0530, Srikrishan Malik wrote:
+> > > > > On Wed, Aug 06, 2014 at 11:18:13PM +0300, Dan Carpenter wrote:
+> > > > > > That looks silly before and after.  Everything is indented in a funny
+> > > > > > way.
+> > > > >
+> > > > > Is this better:
+> > > > >
+> > > > > 	static const ldlm_policy_data_t lookup_policy = {
+> > > > > 				.l_inodebits = { MDS_INODELOCK_LOOKUP }
+> > > > > 	};
+> > > > >
+> > > >
+> > > > That is indented too far.
+> > > >
+> > > > Honestly, I think it looks best on one line but in terms of real life we
+> > > > can't ignore checkpatch warnings because eventually someone else will
+> > > > try to "fix" it to not be on one line.
+> []
+> > > I think it looks odd to mix named and unnamed
+> > > initializers for the typedef and its members.
+> > >
+> > > ldlm_policy_data_t is a union and it could be
+> > > explicit instead of a typedef.
+> > >
+> > > Perhaps:
+> > > 	static const union ldlm_policy_data lookup_policy = {
+> > > 		.l_inodebits = {
+> > > 			.bits = MDS_INODELOCK_LOOKUP,
+> > > 		},
+> > > 	};
+> > >
+> > > or maybe use another DECLARE_<foo> macro indirection.
+> > >
+> >
+> > This patch set is aimed at removing checkpatch issues from files in
+> > lustre/lustre/mdc.
+>
+> I think eliminating checkpatch identified issues should
+> not be the primary goal but a secondary one to the
+> overall goal of code style uniformity.
+>
+> Julia Lawall and Himangi Saraogi from coccinelle fame
+> have created a "detypedef" script that is useful for
+> structs, perhaps you could extend it for unions and
+> run it over this lustre code.
+>
+> For instance:
+> https://lkml.org/lkml/2014/8/9/104
 
----
- kernel/sched/fair.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+The complete semantic patch is below.  It is in two parts: first for the
+case where there is a name for the struct and the second for the case
+where there is not.  The code could be extended to automatically drop the
+_t's that are commonly put on typedefs.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bfa3c86d0d68..13f00daf8028 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4098,14 +4098,19 @@ static unsigned long cpu_avg_load_per_task(int cpu)
-=20
- static void record_wakee(struct task_struct *p)
- {
-+	unsigned long now =3D jiffies;
- 	/*
- 	 * Rough decay (wiping) for cost saving, don't worry
- 	 * about the boundary, really active task won't care
- 	 * about the loss.
- 	 */
--	if (time_after(jiffies, current->wakee_flip_decay_ts + HZ)) {
-+	if (time_after(now, current->wakee_flip_decay_ts + BITS_PER_LONG * HZ)) {
-+		current->wakee_flips =3D 0;
-+		current->wakee_flip_decay_ts =3D now;
-+	} else while (time_after(now, current->wakee_flip_decay_ts + HZ) &&=20
-+		      current->wakee_flips) {
- 		current->wakee_flips >>=3D 1;
--		current->wakee_flip_decay_ts =3D jiffies;
-+		current->wakee_flip_decay_ts +=3D HZ;
- 	}
-=20
- 	if (current->last_wakee !=3D p) {
+julia
 
---1FTutcXiQhqXqWGN
-Content-Type: application/pgp-signature
+@tn@
+identifier i;
+type td;
+@@
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+-typedef
+ struct i { ... }
+-td
+ ;
 
-iQIcBAEBAgAGBQJT6NCAAAoJEHZH4aRLwOS6AtoP/07NPdizskWyDMuPtGtWmVGG
-hVpEaVD15wo3kMPeUwpEkXVeVKTYM2SaJV3WGJaIPidj9M4GwBlqFpWP50eKSPpJ
-d/CNM9dJXKFZa6nYJZ/4WaCW2K5canKhBoU7zQLIsjVz3ffGcu+zUfT7t8/TCU5i
-uclPRpZoE1Cq8Ebr/ufq/0Biva+d2Ls+FsO+I9sqnqRMe+zo3QT2lVEosY4So9/I
-60x93nBxEy8KMSNYoo4QjHBFzdJown4hrXd2ljvyyifwkWzupPRkB6TxGRGIt3fK
-a51rXLWOlq0R8jPxxlA1iqmmi/c+yMW1WOCwJINackfaJOgYP2R/zfxi2w9zvEsf
-py94TxzF1SB6iUnf3ltgZDz3aMJYmbiwZHgfAgNnyHCtYP60yuoPUa2Ykzs+RgLx
-SndTtgvKBfr5o8odiCviv57Ms68o6k0sxQmbImhx8/ZgYnllLi9rchQXI3wsXvY0
-d+8LhdQsUH/9zJpeJDmJtivV0t9o4Ca50TFtEJPxG5MrJMatP93IphIF2DvadeRB
-YHsg9bQSGm6idxWSNplsRu5q8X19rPByk3U2i7Yfi4hKPJOW6zLaIxLkK20jFvLA
-4Xh5VSJofL53UR3zJkT7LP+V6tvBxAn8YpffEUR8nf0yKzdaxEik9Ft3/9wZbN68
-1dHT8KAN0m7jbicT+n3f
-=t/O+
------END PGP SIGNATURE-----
+@@
+type tn.td;
+identifier tn.i;
+@@
 
---1FTutcXiQhqXqWGN--
+-td
++ struct i
+
+// ----------------------------------------------------------------------
+// No name case
+
+@tn1@
+type td;
+@@
+
+typedef struct { ... } td;
+
+@script:python tf@
+td << tn1.td;
+tdres;
+@@
+
+coccinelle.tdres = td
+
+@@
+type tn1.td;
+identifier tf.tdres;
+@@
+
+-typedef
+ struct
++  tdres
+   { ... }
+-td
+ ;
+
+@@
+type tn1.td;
+identifier tf.tdres;
+@@
+
+-td
++ struct tdres
