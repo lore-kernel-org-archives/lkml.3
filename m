@@ -1,93 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963AbaHKUGx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:06:53 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:46616 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754937AbaHKUGw (ORCPT
+	id S1755011AbaHKUHQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:07:16 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:60534 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754991AbaHKUHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:06:52 -0400
+	Mon, 11 Aug 2014 16:07:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <53E8B5EF.9080209@redhat.com>
-References: <1407519880-6719-1-git-send-email-dvlasenk@redhat.com>
- <1407519880-6719-18-git-send-email-dvlasenk@redhat.com> <CALCETrXDjOPR9kEwx9fJFFz=A1jRKPBbfpoe8XztchktrUaz0Q@mail.gmail.com>
- <53E7890F.4070109@redhat.com> <CALCETrVTw5amX-v_C+Bp5Y0B0KbzNKEEq_ZMke-AC7cZopGd9Q@mail.gmail.com>
- <53E8B5EF.9080209@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 11 Aug 2014 13:06:30 -0700
-Message-ID: <CALCETrWC7pFBbycJLgLck9_qzZfOa8x4hCKm3OrC-5XeGFc8_w@mail.gmail.com>
-Subject: Re: [PATCH 17/17] x86: simplify iret stack handling on SYSCALL64 fastpath
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
+In-Reply-To: <20140806162754.3BCA1660E61@gitolite.kernel.org>
+References: <20140806162754.3BCA1660E61@gitolite.kernel.org>
+Date: Mon, 11 Aug 2014 22:07:12 +0200
+X-Google-Sender-Auth: 7iVjwJHMcjrmutTvscjIfA8Hih8
+Message-ID: <CAMuHMdWp1iWm9xLqRN0q3hV72bD8jPRLDW74Cm+Gxp3gB76asQ@mail.gmail.com>
+Subject: Re: seccomp: add "seccomp" syscall
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 5:24 AM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
-> On 08/11/2014 12:42 AM, Andy Lutomirski wrote:
->> On Mon, Aug 11, 2014 at 12:00 AM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
->>> On 08/09/2014 12:59 AM, Andy Lutomirski wrote:
->>>>> + * When returning through fast path, userspace sees rcx = return address,
->>>>> + * r11 = rflags. When returning through iret (e.g. if audit is active),
->>>>> + * these registers may contain garbage.
->>>>> + * For ptrace we manage to avoid that: when we hit slow path on entry,
->>>>> + * we do save rcx and r11 in pt_regs, so ptrace on exit also sees them.
->>>>> + * If slow path is entered only on exit, there will be garbage.
->>>>
->>>> I don't like this.  At least the current code puts something
->>>> deterministic in there (-1) for the slow path, even though it's wrong
->>>> and makes the slow path behave visibly differently from the fast path.
->>>>
->>>> Leaking uninitialized data here is extra bad, though.  Keep in mind
->>>> that, when a syscall entry is interrupted before fully setting up
->>>> pt_regs, the interrupt frame overlaps task_pt_regs, so it's possible,
->>>> depending on the stack slot ordering, for a kernel secret
->>>> (kernel_stack?) to end up somewhere in task_pt_regs.
->>>
->>> It's easy to fix. We jump off fast path to slow path here:
->>>
->>>         movl TI_flags+THREAD_INFO(%rsp,SIZEOF_PTREGS),%edx
->>>         andl %edi,%edx
->>>         jnz  sysret_careful
->>>
->>> This is the only use of "sysret_careful" label.
->>> Therefore, there we don't need to think about any other scenarios
->>> besides "we are returning from syscall here".
->>
->> I may be missing something here (on vacation, not really testing
->> things, no big monitor, etc), but how is this compatible with things
->> like rt_sigreturn?  rt_sigreturn is call from the fastpath, via a
->> stub, and it returns through int_ret_from_syscall.  The C part needs
->> to modify all the regs, and those regs need to stick, so fixing up rcx
->> and r11 after rt_sigreturn can't work.
->
-> Code at "sysret_careful" label is only reachable
-> on fast path return.
-> We don't go down this code path after rt_sigreturn.
-> stub_rt_sigreturn manually steers into iret code path instead:
->
-> ENTRY(stub_rt_sigreturn)
->         CFI_STARTPROC
->         addq $8, %rsp
->         DEFAULT_FRAME 0
->         SAVE_EXTRA_REGS
->         STORE_IRET_FRAME_CS_SS
->         call sys_rt_sigreturn
->         movq %rax,RAX(%rsp)
->         RESTORE_EXTRA_REGS
->         jmp int_ret_from_sys_call   <==== NOTE THIS
->
-> So, we don't do any rcx/r11 fixups after sys_rt_sigreturn.
+Hi Kees,
 
-Oh, right.  rt_sigreturn overwrites all regs, so it doesn't need a
-fixup in advance.
+v3.17 is gonna get a lot of new syscalls...
 
-That still leaves fork and everything that calls ptrace_event, though.
+On Wed, Aug 6, 2014 at 6:27 PM, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=48dc92b9fc3926844257316e75ba11eb5c742b2c
+> Commit:     48dc92b9fc3926844257316e75ba11eb5c742b2c
+> Parent:     3b23dd12846215eff4afb073366b80c0c4d7543e
+> Refname:    refs/heads/master
+> Author:     Kees Cook <keescook@chromium.org>
+> AuthorDate: Wed Jun 25 16:08:24 2014 -0700
+> Committer:  Kees Cook <keescook@chromium.org>
+> CommitDate: Fri Jul 18 12:13:37 2014 -0700
+>
+>     seccomp: add "seccomp" syscall
+>
+>     This adds the new "seccomp" syscall with both an "operation" and "flags"
+>     parameter for future expansion. The third argument is a pointer value,
+>     used with the SECCOMP_SET_MODE_FILTER operation. Currently, flags must
+>     be 0. This is functionally equivalent to prctl(PR_SET_SECCOMP, ...).
+>
+>     In addition to the TSYNC flag later in this patch series, there is a
+>     non-zero chance that this syscall could be used for configuring a fixed
+>     argument area for seccomp-tracer-aware processes to pass syscall arguments
+>     in the future. Hence, the use of "seccomp" not simply "seccomp_add_filter"
+>     for this syscall. Additionally, this syscall uses operation, flags,
+>     and user pointer for arguments because strictly passing arguments via
+>     a user pointer would mean seccomp itself would be unable to trivially
+>     filter the seccomp syscall itself.
+>
+>     Signed-off-by: Kees Cook <keescook@chromium.org>
+>     Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+>     Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 
---Andy
+Is this something that I should enable?
+
+As it depends on CONFIG_SECCOMP, it only makes sense on architectures that
+already support CONFIG_SECCOMP, right?
+Does it make sense to reserve a syscall slot for it on architectures that
+don't support it yet?
+
+Thanks!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
