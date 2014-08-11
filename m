@@ -1,102 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186AbaHKWQf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 18:16:35 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37641 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799AbaHKWQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 18:16:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="asc'?scan'208";a="371080925"
-Message-ID: <1407795392.2189.13.camel@jtkirshe-mobl.jf.intel.com>
-Subject: Re: [linux-nics] linux-next: Tree for Aug 11
- (net/ethernet/intel/i40e)
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: rdunlap@infradead.org, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux.nics@intel.com, linux-kernel@vger.kernel.org
-Date: Mon, 11 Aug 2014 15:16:32 -0700
-In-Reply-To: <20140811.145454.185028525560881583.davem@davemloft.net>
-References: <20140811155213.0aa083ce@canb.auug.org.au>
-	 <53E8ECA9.6060806@infradead.org>
-	 <1407786786.2189.0.camel@jtkirshe-mobl.jf.intel.com>
-	 <20140811.145454.185028525560881583.davem@davemloft.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-sjR+vxTll9NccxAxRr92"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	id S1755204AbaHKWQw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 18:16:52 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:64237 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754710AbaHKWQv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 18:16:51 -0400
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Jeremiah Mahler <jmmahler@gmail.com>,
+        Teodora Baluta <teobaluta@gmail.com>,
+        Andrea Merello <andrea.merello@gmail.com>,
+        Joel Pelaez Jorge <joelpelaez@gmail.com>,
+        Bob Copeland <me@bobcopeland.com>, Joe Perches <joe@perches.com>,
+        Arnd Bergmann <arnd@arndb.de>, Himangi Saraogi <himangi774@gmail.com>
+Subject: [PATCH] staging: rtl8192u/ieee80211: Fix sparse ieee80211_debug_init/_exit not declared warning
+Date: Mon, 11 Aug 2014 15:15:54 -0700
+Message-Id: <1407795354-1700-1-git-send-email-jmmahler@gmail.com>
+X-Mailer: git-send-email 2.1.0.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A sparse warning is generated about 'ieee80211_debug_init' and
+'ieee80211_debug_exit' not being declared.
 
---=-sjR+vxTll9NccxAxRr92
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+  drivers/staging/rtl8192u/ieee80211/ieee80211_module.c:275:12: warning:
+  symbol 'ieee80211_debug_init' was not declared. Should it be static?
+  drivers/staging/rtl8192u/ieee80211/ieee80211_module.c:297:13: warning:
+  symbol 'ieee80211_debug_exit' was not declared. Should it be static?
 
-On Mon, 2014-08-11 at 14:54 -0700, David Miller wrote:
-> From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> Date: Mon, 11 Aug 2014 12:53:06 -0700
->=20
-> > On Mon, 2014-08-11 at 09:17 -0700, Randy Dunlap wrote:
-> >> On 08/10/14 22:52, Stephen Rothwell wrote:
-> >> > Hi all,
-> >> >=20
-> >> > Please do not add code intended for v3.18 until after v3.17-rc1 is
-> >> > released.
-> >> >=20
-> >> > Changes since 20140808:
-> >> >=20
-> >>=20
-> >> on i386 and x86_64:
-> >>=20
-> >> ../drivers/net/ethernet/intel/i40e/i40e_fcoe.c: In function
-> >> 'i40e_get_fcoe_tc_map':
-> >> ../drivers/net/ethernet/intel/i40e/i40e_fcoe.c:354:23: error:
-> >> 'IEEE_8021QAZ_APP_SEL_ETHERTYPE' undeclared (first use in this
-> >> function)
-> >>    if (app.selector =3D=3D IEEE_8021QAZ_APP_SEL_ETHERTYPE &&
-> >>=20
-> >>=20
-> >> Needs to #include <uapi/linux/dcbnl.h> ??
-> >=20
-> > Yeah, Dave has already accepted a patch to resolve that, which I believ=
-e
-> > went into his net tree.
->=20
-> I see no such change in my tree.
+These functions are used outside of this file so using static will not
+work.  Fix the warning by declaring the functions in the header file,
+ieee80211.h
 
-http://patchwork.ozlabs.org/patch/376699/
+Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Teodora Baluta <teobaluta@gmail.com>
+Cc: Andrea Merello <andrea.merello@gmail.com>
+Cc: Joel Pelaez Jorge <joelpelaez@gmail.com>
+Cc: Bob Copeland <me@bobcopeland.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Himangi Saraogi <himangi774@gmail.com>
+---
+ drivers/staging/rtl8192u/ieee80211/ieee80211.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-This is what I was referring to, it looks like you set the patch status
-to "Awaiting upstream" yet you responded that you applied it.  So my
-bad, I thought you had already sucked it into you tree.  I get this
-resolved and send you this and a few other fixes later today.
-
---=-sjR+vxTll9NccxAxRr92
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJT6UDAAAoJEOVv75VaS+3O+0EP/1nQwfiNghl0oBB3VJifrEc4
-VrvVNO7/Xz94mbIcFOECvGzDz7ybHAcTBvGbAdRBB4FSJKMll4/CivkEXvr/wFiH
-znr4SQJTQ3/4qLBYY3AoBBckpGZo2+bKn3R9noUISoqo0srg5mvM/lnLB2moRTz0
-djs2EK9ueS8RsnsIciqSD2ybgwEKs+xKbl5p9DBcSNXjgGMzvyr3JdaFp9UT56Td
-/LfKDXyWxKauLmPVUe3gx/+453DNO+89CMUrfMPYi/oQzikzlh0Jo7a9ljkI7mEj
-nT5i1cSBb5jmMzR+bqjkeP+VmAHsWiNcKNG4/sDURUj2a9T1/yEihxV2AVOwd/Ki
-kfmEUWy8/eZoPbC93nq1lTB/YkJmiJWqFTAXz3wUT5/vehisUzpamSwktfxUS6Cp
-8EowgClbO0ufwszgwccEIOTl2nTyJipzYenldIvQJ3+oPDRyQzYK0PiYID7ZfINI
-z7S51eJAXcYyjU4rvlA3ypWRQBdG7WxQz1CbewNeH6OUqFZdmHZ6PjetaT5r25o5
-eL+eE0kM1ZQ39lxlYLR9L8nMiKNpMemSAPylheme/DHfv4n0aSQCmNHdG/lBn/Xn
-lix4K0Zf7bZZVjUpvxjpWFuoLLCPTwkl9SR/9C6sx8UOym6Lh9ku2XG2V3oxP5x0
-sB+VV+J8WBjmVg8Sqcn+
-=2nM2
------END PGP SIGNATURE-----
-
---=-sjR+vxTll9NccxAxRr92--
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211.h b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
+index 1040bab..9cbda69 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211.h
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
+@@ -2485,6 +2485,12 @@ extern int ieee80211_wx_set_freq(struct ieee80211_device *ieee, struct iw_reques
+ extern int ieee80211_wx_get_freq(struct ieee80211_device *ieee, struct iw_request_info *a,
+ 			     union iwreq_data *wrqu, char *b);
+ 
++/* ieee80211_module.c */
++#ifdef CONFIG_IEEE80211_DEBUG
++extern int __init ieee80211_debug_init(void);
++extern void __exit ieee80211_debug_exit(void);
++#endif /* CONFIG_IEEE80211_DEBUG */
++
+ //extern void ieee80211_wx_sync_scan_wq(struct ieee80211_device *ieee);
+ extern void ieee80211_wx_sync_scan_wq(struct work_struct *work);
+ 
+-- 
+2.1.0.rc1
 
