@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933AbaHKUYX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:24:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29919 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429AbaHKUYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:24:22 -0400
-Date: Mon, 11 Aug 2014 16:23:35 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Shaun Ruffell <sruffell@digium.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org, ebiederm@xmission.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com,
-        bhe@redhat.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 11/15] purgatory: Core purgatory functionality
-Message-ID: <20140811202335.GA30740@redhat.com>
-References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
- <1403814824-7587-12-git-send-email-vgoyal@redhat.com>
- <20140811174017.GD12610@digium.com>
- <53E9028E.2070709@zytor.com>
- <20140811180213.GC1863@redhat.com>
- <53E906B0.5040105@zytor.com>
-MIME-Version: 1.0
+	id S1754991AbaHKUZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:25:11 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:57079 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825AbaHKUZJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 16:25:09 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E906B0.5040105@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1407780269.28221.63.camel@chimera>
+Date: Mon, 11 Aug 2014 13:25:40 -0700
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org>
+References: <1407780269.28221.63.camel@chimera>
+To: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 11:08:48AM -0700, H. Peter Anvin wrote:
-> On 08/11/2014 11:02 AM, Vivek Goyal wrote:
-> > 
-> > Hi hpa,
-> > 
-> > I took it because kexec-tools uses it and in one of the committs Eric
-> > gave following reasoning.
-> > 
-> >     On x86_64 use -mcmodel=large so that the code is built without
-> >     any 32bit assumptions.  -mcmodel=medium and -mcmodel=small
-> >     result int code that has 32bit relocations against variables
-> >     that can live anywhere in the address space
-> > 
-> > We do want to load purgatory anywhere in the address space. 
-> > 
-> > But if there are other ways to achieve the same thing, I will do that
-> > change.
-> > 
-> > So when you say "small PIC", I need to use -mcmodel=small and -fPIC?
-> > 
+Hi Daniel,
+
+> On embedded devices, often the BSSID of an access point must be set from
+> userspace during the boot process. This provides a relatively clean way
+> of doing that without major side effects.
 > 
-> Actually -fPIE is probably better than -fPIC.
+> Signed-off-by: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
+> --- 
+> --- a/net/wireless/sysfs.c	2014-04-19 08:36:52.048511623 -0700
+> +++ b/net/wireless/sysfs.c	2014-04-19 08:38:09.196894176 -0700
+> @@ -24,18 +24,30 @@
+> 	return container_of(dev, struct cfg80211_registered_device, wiphy.dev);
+> }
 > 
-> -mcmodel=large is incompatible with all other code out there, which
-> means that even though it is supposed to work it will be poorly tested
-> at best.  So even despite the gcc version issue, using the small PIC
-> model would be better.
+> -#define SHOW_FMT(name, fmt, member)					\
+> +#define SHOW_FMT(name, fmt, member, perm)				\
+> static ssize_t name ## _show(struct device *dev,			\
+> 			      struct device_attribute *attr,		\
+> 			      char *buf)				\
+> {									\
+> 	return sprintf(buf, fmt "\n", dev_to_rdev(dev)->member);	\
+> }									\
+> -static DEVICE_ATTR_RO(name)
+> +static DEVICE_ATTR_ ## perm(name)
+> 
+> -SHOW_FMT(index, "%d", wiphy_idx);
+> -SHOW_FMT(macaddress, "%pM", wiphy.perm_addr);
+> -SHOW_FMT(address_mask, "%pM", wiphy.addr_mask);
+> +static ssize_t macaddress_store(struct device *dev,
+> +			      struct device_attribute *attr,
+> +			      const char *buf, size_t count)
+> +{
+> +	u8 temp[ETH_ALEN];
+> +
+> +	if (sscanf(buf, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", temp, temp + 1,
+> +			temp + 2, temp + 3, temp + 4, temp + 5) == ETH_ALEN)
+> +		memcpy(dev_to_rdev(dev)->wiphy.perm_addr, temp, ETH_ALEN);
+> +	return count;
+> +}
+> +
+> +SHOW_FMT(index, "%d", wiphy_idx, RO);
+> +SHOW_FMT(macaddress, "%pM", wiphy.perm_addr, RW);
+> +SHOW_FMT(address_mask, "%pM", wiphy.addr_mask, RO);
 
-Hi hpa,
+isn't this dangerous to just allow writing to wiphy.perm_addr via sysfs. We ran into the same issue with Bluetooth and ROM only devices that have to unique address. Doing this via sysfs seems the wrong approach. It is messy and full of potential race conditions. I clearly opted against the sysfs solution for Bluetooth. Instead we build an infrastructure that allowed doing it cleanly via the Bluetooth mgmt API. Controllers that have no unique address are brought up as unconfigured and userspace clearly knows that it has to take steps to get an address programmed into the controller.
 
-I have not introduced a new config option for new system call. It compiles
-under existing config option CONFIG_KEXEC and I think that's the reason
-Shaun is running into this issue.
+And I think something similar should be done for WiFi. It might be better to not create the initial wlan0 netdev interface if the hardware has not a single unique address available. That way the supplicant can just either get one from the flash filesystem or make up a proper random one before creating the netdev interface.
 
-I passed -mcmodel=small and -fPIE for purgaotry build.
+Regards
 
-KBUILD_CFLAGS := -fno-strict-aliasing -Wall -Wstrict-prototypes
--fno-zero-initialized-in-bss -fno-builtin -ffreestanding -c -MD -Os
--mcmodel=small -fPIE
+Marcel
 
-On the surface I see new reclocation types. 
-
-000000000022  003000000004 R_X86_64_PLT32    00000000000000d8 sha256_init - 4
-000000000034  003f00000004 R_X86_64_PLT32    000000000000011a sha256_update - 4
-000000000049  004100000004 R_X86_64_PLT32    0000000000001d4d sha256_final - 4
-
-Current code does not take care of these. I am hoping these can be
-managed.
-
-I also see undefined symbol.
-
-    64: 0000000000000000     0 NOTYPE  GLOBAL DEFAULT  UND _GLOBAL_OFFSET_TABLE_
-
-And current purgatory relocation code does not expect any undefined
-symbols and errors out. IIUC, undefined symbols expect to be resolved
-externally by linking against somehing else. But in case of purgatory
-this is suppoed to be stand alone and does not link against anything
-else. So I am not sure how to take care of this.
-
-I doubt that I can get this code working with -fPIE in short
-amount of time (Given my lack of knowledge in this area). So while we
-continue to explore it, will it make sense that I also work on a patch to
-hide all the new functionality behind a new config option
-(say CONFIG_KEXEC_FILE). That way existing users will not be impacted and
-only users of the new syscall will be expected to have newer gcc with
--mcmodel=large.
-
-And then I can continue to look into how to get rid of -mcmodel=large
-requirement.
-
-Thanks
-Vivek
