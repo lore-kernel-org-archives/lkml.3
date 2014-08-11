@@ -1,82 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438AbaHKIkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 04:40:42 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:33987 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141AbaHKIkl convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
-	Mon, 11 Aug 2014 04:40:41 -0400
-Message-Id: <53E89DA3020000780002B00B@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.0 
-Date: Mon, 11 Aug 2014 09:40:35 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Denys Vlasenko" <vda.linux@googlemail.com>
-Cc: "Andy Lutomirski" <luto@amacapital.net>,
-        "Kees Cook" <keescook@chromium.org>, "Will Drewry" <wad@chromium.org>,
-        "X86 ML" <x86@kernel.org>, "Alexei Starovoitov" <ast@plumgrid.com>,
-        "Denys Vlasenko" <dvlasenk@redhat.com>,
-        "Oleg Nesterov" <oleg@redhat.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete
- "struct pt_regs"
-References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com>
- <1406904498-21647-4-git-send-email-dvlasenk@redhat.com>
- <20140801231929.GB26491@localhost.localdomain>
- <CAK1hOcNXdBwd4KZi1V2dLMtRdusvNLPZwTKwYvnpvz3PRnsM+Q@mail.gmail.com>
- <20140811004559.GA2656@lerouge>
-In-Reply-To: <20140811004559.GA2656@lerouge>
+	id S1752198AbaHKIo7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 04:44:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53741 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751543AbaHKIo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 04:44:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,839,1400050800"; 
+   d="scan'208";a="586355466"
+Message-ID: <1407746495.25561.112.camel@sauron.fi.intel.com>
+Subject: [GIT PULL] UBI/UBIFS fixes for 3.17-rc1
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 11 Aug 2014 11:41:35 +0300
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 11.08.14 at 02:46, <fweisbec@gmail.com> wrote:
-> On Mon, Aug 04, 2014 at 05:03:42AM +0200, Denys Vlasenko wrote:
->> On Sat, Aug 2, 2014 at 1:19 AM, Frederic Weisbecker <fweisbec@gmail.com> 
-> wrote:
->> >>       CFI_ESCAPE      0x0f /* DW_CFA_def_cfa_expression */, 6, \
->> >>                       0x77 /* DW_OP_breg7 */, 0, \
->> >>                       0x06 /* DW_OP_deref */, \
->> >> -                     0x08 /* DW_OP_const1u */, SS+8-RBP, \
->> >> +                     0x08 /* DW_OP_const1u */, SS+8, \
->> >>                       0x22 /* DW_OP_plus */
->> >>       /* We entered an interrupt context - irqs are off: */
->> >>       TRACE_IRQS_OFF
->> >> -
->> >>       call \func
->> >>       .endm
->> >>
->> >> @@ -749,10 +719,9 @@ ret_from_intr:
->> >>
->> >>       /* Restore saved previous stack */
->> >>       popq %rsi
->> >
->> > And then you pop to rsi. Ok that indeed works but perhaps we should keep it symetrical
->> > just for clarity? Any reason why we can't reuse rdi here?
->> 
->> I changed this entire area in v2: basically, I will not change the logic,
->> but will add comments explaining what are we doing here, and why.
->> (Some minor code changes will be done, not affecting the logic).
->> 
->> While we are at it, what this  CFI_ESCAPE thing does here?
->> As usual, it has no comment :/
+Hi Linus,
 
-Each of its lines has a comment; with other CFI annotations not
-each having comments, I don't see what else is needed here.
+The following changes since commit 033ead8230c2cf9cdc2d6e1148bfdf5674012a9c:
 
-> I don't know, only Jan Beulich understands those CFI black magic.
+  Merge tag 'upstream-3.16-rc6' of git://git.infradead.org/linux-ubifs (2014-07-18 06:23:34 -1000)
 
-That would be very said if true.
+are available in the git repository at:
 
-In any case: This needs to be a CFI_ESCAPE because there's no
-other way I know of to emit the DW_CFA_def_cfa_expression.
-And the change to it looks correct to me.
 
-Jan
+  git://git.infradead.org/linux-ubifs.git tags/upstream-3.17-rc1
+
+for you to fetch changes up to 25601a3c9737fed554169759582c690b98ead5d4:
+
+  UBIFS: Add log overlap assertions (2014-07-31 15:52:51 +0300)
+
+----------------------------------------------------------------
+No significant changes, mostly small fixes here and there. The more important
+fixes are:
+
+* UBI deleted list items while iterating the list with 'list_for_each_entry'
+* The UBI block driver did not work properly with very large UBI volumes
+
+----------------------------------------------------------------
+Artem Bityutskiy (5):
+      UBIFS: fix spelling of "scanned"
+      UBIFS: remove mst_mutex
+      UBIFS: remove unnecessary check
+      UBIFS: add a log overlap assertion
+      Revert "UBIFS: add a log overlap assertion"
+
+Ezequiel Garcia (2):
+      UBI: block: Make ubiblock_resize return something
+      UBI: block: Set disk_capacity out of the mutex
+
+Fabian Frederick (4):
+      UBIFS: kernel-doc warning fix
+      UBIFS: replace count*size kzalloc by kcalloc
+      UBIFS: replace seq_printf by seq_puts
+      UBIFS: kernel-doc warning fix
+
+Richard Weinberger (3):
+      UBI: init_volumes: Ignore volumes with no LEBs
+      UBI: block: Avoid disk size integer overflow
+      UBI: bugfix in ubi_wl_flush()
+
+Seunghun Lee (1):
+      UBIFS: fix some comments
+
+hujianyang (6):
+      UBIFS: fix error handling in dump_lpt_leb()
+      UBIFS: Add missing break statements in dbg_chk_pnode()
+      UBIFS: remove useless statements
+      UBIFS: remove useless @ecc in struct ubifs_scan_leb
+      UBIFS: fix error path in create_default_filesystem()
+      UBIFS: Add log overlap assertions
+
+ drivers/mtd/ubi/block.c | 18 ++++++++++++------
+ drivers/mtd/ubi/vtbl.c  |  2 +-
+ drivers/mtd/ubi/wl.c    |  4 ++--
+ fs/ubifs/commit.c       |  2 --
+ fs/ubifs/io.c           |  2 +-
+ fs/ubifs/log.c          | 12 ++++++------
+ fs/ubifs/lpt.c          |  5 ++---
+ fs/ubifs/lpt_commit.c   |  7 +++++--
+ fs/ubifs/master.c       |  7 +++----
+ fs/ubifs/orphan.c       |  1 -
+ fs/ubifs/recovery.c     |  5 ++---
+ fs/ubifs/sb.c           |  4 +++-
+ fs/ubifs/scan.c         | 14 +++++++-------
+ fs/ubifs/super.c        | 19 +++++++++----------
+ fs/ubifs/tnc.c          |  1 -
+ fs/ubifs/tnc_commit.c   |  1 -
+ fs/ubifs/ubifs.h        |  4 ----
+ 17 files changed, 53 insertions(+), 55 deletions(-)
+
+-- 
+Best Regards,
+Artem Bityutskiy
 
