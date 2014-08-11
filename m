@@ -1,103 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201AbaHKUea (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:34:30 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:46527 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157AbaHKUe2 (ORCPT
+	id S932242AbaHKUfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:35:06 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:38425 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157AbaHKUfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:34:28 -0400
-Date: Mon, 11 Aug 2014 13:34:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
- kthread wakeups
-Message-ID: <20140811203421.GE5821@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140808173710.GA13483@grmbl.mre>
- <20140808181835.GD5821@linux.vnet.ibm.com>
- <20140808183424.GB13483@grmbl.mre>
- <20140808214347.GH5821@linux.vnet.ibm.com>
- <20140808214648.GA19058@linux.vnet.ibm.com>
- <20140811071308.GA4184@grmbl.mre>
- <20140811162807.GW5821@linux.vnet.ibm.com>
- <20140811194126.GF4184@grmbl.mre>
- <20140811201102.GD5821@linux.vnet.ibm.com>
- <20140811201845.GG4184@grmbl.mre>
+	Mon, 11 Aug 2014 16:35:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140811201845.GG4184@grmbl.mre>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081120-8236-0000-0000-000004861534
+X-Originating-IP: [2620:0:1000:157d:28a4:d7e2:1da8:e877]
+In-Reply-To: <20140811195137.GB3711@ld-irv-0074>
+References: <1407516479-1251-1-git-send-email-olof@lixom.net>
+	<1407516479-1251-3-git-send-email-olof@lixom.net>
+	<20140811195137.GB3711@ld-irv-0074>
+Date: Mon, 11 Aug 2014 13:35:03 -0700
+Message-ID: <CAOesGMhXJGeSKwtty=Jr6DUMFFpQYRsBBzE_bFOwB5vaP7=iFQ@mail.gmail.com>
+Subject: Re: [GIT PULL 2/7] ARM: SoC platform changes for 3.17
+From: Olof Johansson <olof@lixom.net>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robherring2@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Marc Carino <marc.ceeeee@gmail.com>,
+        Gregory Fong <gregory.0xf0@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 01:48:45AM +0530, Amit Shah wrote:
-> On (Mon) 11 Aug 2014 [13:11:02], Paul E. McKenney wrote:
-> > On Tue, Aug 12, 2014 at 01:11:26AM +0530, Amit Shah wrote:
-> > > On (Mon) 11 Aug 2014 [09:28:07], Paul E. McKenney wrote:
-> > > > On Mon, Aug 11, 2014 at 12:43:08PM +0530, Amit Shah wrote:
-> > > > > On (Fri) 08 Aug 2014 [14:46:48], Paul E. McKenney wrote:
-> > > > > > On Fri, Aug 08, 2014 at 02:43:47PM -0700, Paul E. McKenney wrote:
-> > > > > > > On Sat, Aug 09, 2014 at 12:04:24AM +0530, Amit Shah wrote:
-> > > > > > > > On (Fri) 08 Aug 2014 [11:18:35], Paul E. McKenney wrote:
-> > > > > > > 
-> > > > > > > [ . . . ]
-> > > > > > > 
-> > > > > > > > > Hmmm... What happens if you boot a7d7a143d0b4cb1914705884ca5c25e322dba693
-> > > > > > > > > with the kernel parameter "acpi=off"?
-> > > > > > > > 
-> > > > > > > > That doesn't change anything - still hangs.
-> > > > > > > > 
-> > > > > > > > I intend to look at this more on Monday, though - turning in for
-> > > > > > > > today.  In the meantime, if there's anything else you'd like me to
-> > > > > > > > try, please let me know.
-> > > > > > > 
-> > > > > > > OK, given that I still cannot reproduce it, I do need your help with
-> > > > > > > the diagnostics.  And so what sorts of diagnostics work for you in
-> > > > > > > the hung state?  Are you able to dump ftrace buffers?
-> > > > > > > 
-> > > > > > > If you are able to dump ftrace buffers, please enable rcu:rcu_nocb_wake
-> > > > > > > and send me the resulting trace.
-> > > > > > 
-> > > > > > And another random kernel boot parameter to try is rcu_nocb_poll.
-> > > > > 
-> > > > > Right, this gets the boot going again:
-> > > > 
-> > > > OK, that likely indicates a lost wakeup.  The event tracing enabled by
-> > > > "rcu:rcu_nocb_wake" should help track those down.  Last time, it was qemu
-> > > > losing the wakeups, but maybe it is RCU this time.  ;-)
-> > > 
-> > > The guest goes dead pretty early; is there a trick to enabling and
-> > > getting these traces out of the guest that I don't know of that
-> > > doesn't involve being booted into userspace?  I can perhaps try
-> > > getting the trace output out from a virtio-serial channel; but even
-> > > that driver isn't probed yet when the lockup happens.
-> > 
-> > First boot with the kernel parameter "trace_event=rcu:rcu_nocb_wake".
-> > Then when the system hangs, do "sendkey alt-sysrq-z" at the "(qemu)"
-> > prompt to dump the ftrace buffer.  This hopefully dumps the trace buffer
-> > to dmesg.
-> > 
-> > In addition "sendkey alt-sysrq-t" at the "(qemu)" prompt dumps all tasks'
-> > stacks, which would also likely be useful information.
-> 
-> Nah, this doesn't work -- the guest's totally locked up.  I need a way
-> to continuously dump buffers till the lockup happens, I suppose.
+On Mon, Aug 11, 2014 at 12:51 PM, Brian Norris
+<computersforpeace@gmail.com> wrote:
+> + other involved parties
+>
+> On Fri, Aug 08, 2014 at 09:47:54AM -0700, Olof Johansson wrote:
+>> This is the bulk of new SoC enablement and other platform changes for 3.17:
+> [...]
+>> * Broadcom BCM7xxx settop box chipset is introduced
+> [...]
+>> Marc Carino (1):
+>>       ARM: brcmstb: add infrastructure for ARM-based Broadcom STB SoCs
+>
+> I realize this is a bit late (the pull request is already merged), but
+> I'd like to be up-front about this: there were some (late) oustanding
+> review comments made on this patch [1]. I have a few patches queued
+> locally for addressing many of them, but not all of the issues are
+> completely resolved.
+>
+> Shall I simply send a revert patch for the
+> arch/arm/mach-bcm/platsmp-brcmstb.c stuff, and get it in through the
+> bcm -> arm-soc -> Linus merge path in 3.17-rcX? Or should I take the
+> incremental improvement approach, as we have functioning code with no
+> clear alternative proposal yet?
 
-That is a bit surprising.  Is it possible that the system is OOMing
-quickly due to grace periods not proceeding?  If so, maybe giving the
-VM more memory would help.
+Yeah, looks like the discussion happened the first day I was on
+vacation and I missed the thread in the backlog. :(
 
-							Thanx, Paul
+Looks like all the outstanding issues are with the SMP support. How
+about you send a patch that removes/stubs those portions? It won't be
+a pure revert since as mentioned in the thread SMP was combined with
+platform support, but that's OK.
 
+That way the basic platform stuff can still go in for 3.17, and we can
+re-queue the SMP pieces for 3.18 once things are sorted out.
+
+
+-Olof
