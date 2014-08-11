@@ -1,97 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaHKLyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 07:54:51 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45497 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196AbaHKLyu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 07:54:50 -0400
-Date: Mon, 11 Aug 2014 13:54:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Sha, Ruibin" <ruibin.sha@intel.com>
-Cc: Chintan Pandya <cpandya@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "mel@csn.ul.ie" <mel@csn.ul.ie>, "mgorman@suse.de" <mgorman@suse.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>, "He, Bo" <bo.he@intel.com>
-Subject: Re: [PATCH]  export the function kmap_flush_unused.
-Message-ID: <20140811115431.GW9918@twins.programming.kicks-ass.net>
-References: <3C85A229999D6B4A89FA64D4680BA6142C7DFA@SHSMSX101.ccr.corp.intel.com>
- <53E4D312.5000601@codeaurora.org>
- <3C85A229999D6B4A89FA64D4680BA6142CAFF3@SHSMSX101.ccr.corp.intel.com>
+	id S1753117AbaHKLzX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 07:55:23 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:3850 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752854AbaHKLzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 07:55:22 -0400
+X-IronPort-AV: E=Sophos;i="5.01,841,1400025600"; 
+   d="scan'208";a="160543251"
+Date: Mon, 11 Aug 2014 12:54:03 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <xen-devel@lists.xensource.com>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Dave Scott <Dave.Scott@eu.citrix.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] xen_hvc: no reason to write the type key on xenstore
+Message-ID: <alpine.DEB.2.02.1408111250150.2293@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PPU/y5W3JEc6wR1b"
-Content-Disposition: inline
-In-Reply-To: <3C85A229999D6B4A89FA64D4680BA6142CAFF3@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The backend type is chosen by the toolstack. Regardless, the frontend
+should not care, especially given that it cannot have an effect as the
+backend is started before this code is run.
 
---PPU/y5W3JEc6wR1b
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-On Mon, Aug 11, 2014 at 01:26:45AM +0000, Sha, Ruibin wrote:
-> Hi Chintan,
-> Thank you very much for your timely and kindly response and comments.
->=20
-> Here is more detail about our Scenario:
->=20
->     We have a big driver on Android product. The driver allocates lots of
->     DDR pages. When applications mmap a file exported from the driver,
->     driver would mmap the pages to the application space, usually with
->     uncachable prot.
->     On ia32/x86_64 arch, we have to avoid page cache alias issue. When
->     driver allocates the pages, it would change page original mapping in
->     page table with uncachable prot. Sometimes, the allocated page was
->     used by kmap/kunmap. After kunmap, the page is still mapped in KMAP
->     space. The entries in KMAP page table are not cleaned up until a
->     kernel thread flushes the freed KMAP pages(usually it is woken up by =
-kunmap).
->     It means the driver need  force to flush the KMAP page table entries =
-before mapping pages to
->     application space to be used. Otherwise, there is a race to create
->     cache alias.
->=20
->     To resolve this issue, we need export function kmap_flush_unused as
->     the driver is compiled as module. Then, the driver calls
->     kmap_flush_unused if the allocated pages are in HIGHMEM and being
->     used by kmap.
-
-A: Because it messes up the order in which people normally read text.
-Q: Why is top-posting such a bad thing?
-A: Top-posting.
-Q: What is the most annoying thing in e-mail?
-
-That said, it sounds like you want set_memory_() to call
-kmap_flush_unused(). Because this race it not at all specific to your
-usage, it could happen to any set_memory_() site, right?
-
---PPU/y5W3JEc6wR1b
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT6K7yAAoJEHZH4aRLwOS684sQAK4J9mCnVRUMUPR7DHtyfh0m
-jv8U6nSsXIQ5pY454Z/zxXMnhWTKqFJ5e+QzRdgTZC24pg4dj1qzQImXcdjwuPTN
-3gUlDoajSU2IXT3JODFtSfKm/weylsWaObzn6ou7t3FboPLhfymrAdR0nkbO+bxh
-Vpz9SPnAMQqPXeTbLzbPUfB0udtUzudFkk85tP+okGpj13uqvfTpEqX0EnaIk9hS
-Zb9t+W49z3e4T9B6NWuA2PBhVWMRKrpGAdKq9/OqkFierwLKkt1UFLuP84VUedwZ
-haEKlLlp6mT/DfP8v62cGXOSZrDTDxm9fSeZVhPUlNzwpSXcJg+BNWrpW58wLs1g
-mNHIBe/a+tRwqZ2WwSkDD5kJWHAhqkbeOfzt6+lmRh/bZinwm7urpW/KDMZcnvGV
-S8qKXNhY2I0mzKzkxok1vB7GRP/OLjjauRfNk7WxVJNV++gq7AcyQYzNhzWPhKw7
-hpx+Y7NEqnHPHbBirq0jqrv8GeNuZCfwWZfi60M3d3K62Zx14rpDkySiCdMNpJq5
-ebPGpa49VAaxhzpR7Tr2aIltDet5C3rJOioQp4qrUjvpkbdCYvoxzxgD1AIDZNvX
-7cp+dbYsT3f242Nl0uGgxznsrcr6e6lhzEFkmLm9mVSI6NjClJs/OA8EJ3VELKSo
-TwQfCfSE2FOWWezBk0jR
-=vCVR
------END PGP SIGNATURE-----
-
---PPU/y5W3JEc6wR1b--
+diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+index 636c9ba..b8491f5 100644
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@ -402,9 +402,6 @@ static int xencons_connect_backend(struct xenbus_device *dev,
+			    evtchn);
+	if (ret)
+		goto error_xenbus;
+-	ret = xenbus_printf(xbt, dev->nodename, "type", "ioemu");
+-	if (ret)
+-		goto error_xenbus;
+	ret = xenbus_transaction_end(xbt, 0);
+	if (ret) {
+		if (ret == -EAGAIN)
