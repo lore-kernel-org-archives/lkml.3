@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020AbaHKOuy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 10:50:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55283 "EHLO mx1.redhat.com"
+	id S1754038AbaHKOvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 10:51:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52572 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753959AbaHKOuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 10:50:11 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: akpm@linux-foundation.org
-Cc: kvm@vger.kernel.org, pbonzini@redhat.com, mingo@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ulrich Obergfell <uobergfe@redhat.com>,
-        Andrew Jones <drjones@redhat.com>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 5/5] kvm: ensure hard lockup detection is disabled by default
-Date: Mon, 11 Aug 2014 10:49:27 -0400
-Message-Id: <1407768567-171794-6-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
-References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
+	id S1753947AbaHKOvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 10:51:05 -0400
+Message-ID: <53E8D81E.7050705@zytor.com>
+Date: Mon, 11 Aug 2014 07:50:06 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: BUG: early intel microcode update violating alignment rules
+References: <20140809231911.GA4843@khazad-dum.debian.net> <20140811102245.GC4236@nazgul.tnic> <20140811131613.GA4541@khazad-dum.debian.net> <20140811140057.GA21693@pd.tnic>
+In-Reply-To: <20140811140057.GA21693@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ulrich Obergfell <uobergfe@redhat.com>
+On 08/11/2014 07:00 AM, Borislav Petkov wrote:
+>>
+>> I often wonder how much of the Intel SDM is really a fairy tale...  it
+>> certainly has enough legends from times long past inside ;-)  But just like
+>> old stories, should you forget all about them, they sometimes grow fangs
+>> back and get you when you're least prepared.
+>>
+> 
+> It seems to me you're looking for issues where there are none. We simply
+> have to ask Intel people what's with the 16-byte alignment and fix
+> the SDM, apparently. If the processor accepts the non-16-byte-aligned
+> update, why do you care?
+> 
 
-Use watchdog_enable_hardlockup_detector() to set hard lockup detection's
-default value to false. It's risky to run this detection in a guest, as
-false positives are easy to trigger, especially if the host is
-overcommitted.
+The SDM is the contract between the hardware and the software.  This
+doesn't mean that not following the SDM doesn't work, but following the
+procedure in the SDM is what his guaranteed to work.
 
-Signed-off-by: Ulrich Obergfell <uobergfe@redhat.com>
-Signed-off-by: Andrew Jones <drjones@redhat.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/kernel/kvm.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+So Henrique is right, we should fix this if we can.
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 3dd8e2c..95c3cb1 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -35,6 +35,7 @@
- #include <linux/slab.h>
- #include <linux/kprobes.h>
- #include <linux/debugfs.h>
-+#include <linux/nmi.h>
- #include <asm/timer.h>
- #include <asm/cpu.h>
- #include <asm/traps.h>
-@@ -499,6 +500,13 @@ void __init kvm_guest_init(void)
- #else
- 	kvm_guest_cpu_init();
- #endif
-+
-+	/*
-+	 * Hard lockup detection is enabled by default. Disable it, as guests
-+	 * can get false positives too easily, for example if the host is
-+	 * overcommitted.
-+	 */
-+	watchdog_enable_hardlockup_detector(false);
- }
- 
- static noinline uint32_t __kvm_cpuid_base(void)
--- 
-1.7.1
+	-hpa
 
