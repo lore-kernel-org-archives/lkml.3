@@ -1,64 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756AbaHKTf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:35:28 -0400
-Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:2114 "EHLO
-	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaHKTf1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:35:27 -0400
-Message-ID: <53E91AFC.1030307@hp.com>
-Date: Mon, 11 Aug 2014 15:35:24 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1754803AbaHKTgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 15:36:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32230 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752825AbaHKTgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 15:36:06 -0400
+Date: Mon, 11 Aug 2014 15:35:55 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] PCI/MSI: Remove arch_msi_check_device()
+Message-ID: <20140811193555.GC8397@lenovo-rd230-04.lab.bos.redhat.com>
+References: <cover.1405160163.git.agordeev@redhat.com>
+ <1005232855c3af2c0c669818ee63be445389b6ad.1405160163.git.agordeev@redhat.com>
+ <20140716222024.GE14366@google.com>
+ <20140811114536.GA3427@dhcp-27-160.brq.redhat.com>
+ <0a23568bd6eb4dfbb5f4acc96bba3706@BLUPR03MB566.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>
-CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
-        Scott J Norton <scott.norton@hp.com>, aswin@hp.com
-Subject: Re: [PATCH v2 1/7] locking/rwsem: check for active writer/spinner
- before wakeup
-References: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com>    <1407450408-11679-2-git-send-email-Waiman.Long@hp.com>    <1407458726.2513.12.camel@buesod1.americas.hpqcorp.net>   <1407476387.2513.39.camel@buesod1.americas.hpqcorp.net>   <53E5172A.7090508@hp.com>  <1407524600.6583.6.camel@buesod1.americas.hpqcorp.net>  <53E7E712.9060201@hp.com> <1407714603.7594.10.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1407714603.7594.10.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0a23568bd6eb4dfbb5f4acc96bba3706@BLUPR03MB566.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2014 07:50 PM, Davidlohr Bueso wrote:
-> On Sun, 2014-08-10 at 17:41 -0400, Waiman Long wrote:
->> On 08/08/2014 03:03 PM, Davidlohr Bueso wrote:
->>> On Fri, 2014-08-08 at 14:30 -0400, Waiman Long wrote:
->>>> I have 2 issues about this. First of all, the timing windows between
->>>> atomic_set() and mutex_has_owner() check is really small, I doubt it
->>>> will be that effective.
->>> That is true, which is why I didn't bother showing any performance data
->>> in the changelog. However, more important than any performance, avoiding
->>> bogus wakeups is the _right_ thing to do when allowing lock stealing.
->>>
->>>> Secondly, I think you may need to call
->>>> mutex_release() and debug_mutex_unlock() to make the debugging code
->>>> work, but they seems to be called only under the wait_lock. So I think
->>>> there is more work that need to be done before this patch is ready.
->>> When !DEBUG both mutex_release() and debug_mutex_unlock() should be
->>> no-ops. So this allows us to do the mutex_has_owner() check *without*
->>> holding the wait_lock.
->>>
->>> When DEBUG is set, we don't even bother calling mutex_has_owner(), so
->>> nothing changes.
->>>
->>> I don't understand your concern.
->> It is true I forgot the fact that MUTEX_SPIN_ON_OWNER is disabled when
->> DEBUG_MUTEX is on. However, mutex_release is controlled by the LOCKDEP
->> config variable which is independent of DEBUG_MUTEX. So it is still a
->> concern.
-> But afaict you cannot have LOCKDEP without enabling DEBUG_MUTEX (but not
-> necessarily vice-versa). Both are quite intertwined within other
-> debugging dependencies/options.
->
+On Mon, Aug 11, 2014 at 02:33:25PM +0000, Bharat.Bhushan@freescale.com wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-owner@vger.kernel.org]
+> > On Behalf Of Alexander Gordeev
+> > Sent: Monday, August 11, 2014 5:16 PM
+> > To: Bjorn Helgaas
+> > Cc: linux-kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
+> > pci@vger.kernel.org
+> > Subject: [PATCH v2 2/2] PCI/MSI: Remove arch_msi_check_device()
+> > 
+> > There are no archs that override arch_msi_check_device() hook. Remove it as it
+> > is completely redundant.
+> 
+> Is not we are still overriding this in powerpc (not sure I missed some patch , if so please point to that).
 
-I think you are right. This will require comment in the code to avoid 
-this kind of confusion.
+Patch 1/2 ;)
 
--Longman
+> $ grep -r  arch_msi_check_device arch/powerpc/
+> Binary file arch/powerpc/kernel/msi.o matches
+> arch/powerpc/kernel/msi.c:int arch_msi_check_device(struct pci_dev* dev, int nvec, int type)
+> Binary file arch/powerpc/kernel/built-in.o matches
+> 
+> Thanks
+> -Bharat
+> 
+> > 
+> > If an arch would need to check MSI/MSI-X possibility for a device it should make
+> > it within arch_setup_msi_irqs() hook.
+> > 
+> > Cc: linuxppc-dev@lists.ozlabs.org
+> > Cc: linux-pci@vger.kernel.org
+> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> > ---
+> >  drivers/pci/msi.c   | 49 +++++++++++++------------------------------------
+> >  include/linux/msi.h |  3 ---
+> >  2 files changed, 13 insertions(+), 39 deletions(-)
+> > 
+> > diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c index 5a40516..6c2cc41 100644
+> > --- a/drivers/pci/msi.c
+> > +++ b/drivers/pci/msi.c
+> > @@ -56,16 +56,6 @@ void __weak arch_teardown_msi_irq(unsigned int irq)
+> >  	chip->teardown_irq(chip, irq);
+> >  }
+> > 
+> > -int __weak arch_msi_check_device(struct pci_dev *dev, int nvec, int type) -{
+> > -	struct msi_chip *chip = dev->bus->msi;
+> > -
+> > -	if (!chip || !chip->check_device)
+> > -		return 0;
+> > -
+> > -	return chip->check_device(chip, dev, nvec, type);
+> > -}
+> > -
+> >  int __weak arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)  {
+> >  	struct msi_desc *entry;
+> > @@ -806,22 +796,23 @@ out_free:
+> >  }
+> > 
+> >  /**
+> > - * pci_msi_check_device - check whether MSI may be enabled on a device
+> > + * pci_msi_supported - check whether MSI may be enabled on a device
+> >   * @dev: pointer to the pci_dev data structure of MSI device function
+> >   * @nvec: how many MSIs have been requested ?
+> > - * @type: are we checking for MSI or MSI-X ?
+> >   *
+> >   * Look at global flags, the device itself, and its parent buses
+> >   * to determine if MSI/-X are supported for the device. If MSI/-X is
+> >   * supported return 0, else return an error code.
+> >   **/
+> > -static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+> > +static int pci_msi_supported(struct pci_dev *dev, int nvec)
+> >  {
+> >  	struct pci_bus *bus;
+> > -	int ret;
+> > 
+> >  	/* MSI must be globally enabled and supported by the device */
+> > -	if (!pci_msi_enable || !dev || dev->no_msi)
+> > +	if (!pci_msi_enable)
+> > +		return -EINVAL;
+> > +
+> > +	if (!dev || dev->no_msi || dev->current_state != PCI_D0)
+> >  		return -EINVAL;
+> > 
+> >  	/*
+> > @@ -843,10 +834,6 @@ static int pci_msi_check_device(struct pci_dev *dev, int
+> > nvec, int type)
+> >  		if (bus->bus_flags & PCI_BUS_FLAGS_NO_MSI)
+> >  			return -EINVAL;
+> > 
+> > -	ret = arch_msi_check_device(dev, nvec, type);
+> > -	if (ret)
+> > -		return ret;
+> > -
+> >  	return 0;
+> >  }
+> > 
+> > @@ -949,13 +936,13 @@ int pci_enable_msix(struct pci_dev *dev, struct msix_entry
+> > *entries, int nvec)
+> >  	int status, nr_entries;
+> >  	int i, j;
+> > 
+> > -	if (!entries || !dev->msix_cap || dev->current_state != PCI_D0)
+> > -		return -EINVAL;
+> > -
+> > -	status = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSIX);
+> > +	status = pci_msi_supported(dev, nvec);
+> >  	if (status)
+> >  		return status;
+> > 
+> > +	if (!entries)
+> > +		return -EINVAL;
+> > +
+> >  	nr_entries = pci_msix_vec_count(dev);
+> >  	if (nr_entries < 0)
+> >  		return nr_entries;
+> > @@ -1062,8 +1049,9 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec,
+> > int maxvec)
+> >  	int nvec;
+> >  	int rc;
+> > 
+> > -	if (dev->current_state != PCI_D0)
+> > -		return -EINVAL;
+> > +	rc = pci_msi_supported(dev, minvec);
+> > +	if (rc)
+> > +		return rc;
+> > 
+> >  	WARN_ON(!!dev->msi_enabled);
+> > 
+> > @@ -1086,17 +1074,6 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec,
+> > int maxvec)
+> >  		nvec = maxvec;
+> > 
+> >  	do {
+> > -		rc = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSI);
+> > -		if (rc < 0) {
+> > -			return rc;
+> > -		} else if (rc > 0) {
+> > -			if (rc < minvec)
+> > -				return -ENOSPC;
+> > -			nvec = rc;
+> > -		}
+> > -	} while (rc);
+> > -
+> > -	do {
+> >  		rc = msi_capability_init(dev, nvec);
+> >  		if (rc < 0) {
+> >  			return rc;
+> > diff --git a/include/linux/msi.h b/include/linux/msi.h index 8103f32..dbf7cc9
+> > 100644
+> > --- a/include/linux/msi.h
+> > +++ b/include/linux/msi.h
+> > @@ -60,7 +60,6 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc
+> > *desc);  void arch_teardown_msi_irq(unsigned int irq);  int
+> > arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);  void
+> > arch_teardown_msi_irqs(struct pci_dev *dev); -int arch_msi_check_device(struct
+> > pci_dev* dev, int nvec, int type);  void arch_restore_msi_irqs(struct pci_dev
+> > *dev);
+> > 
+> >  void default_teardown_msi_irqs(struct pci_dev *dev); @@ -77,8 +76,6 @@ struct
+> > msi_chip {
+> >  	int (*setup_irq)(struct msi_chip *chip, struct pci_dev *dev,
+> >  			 struct msi_desc *desc);
+> >  	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
+> > -	int (*check_device)(struct msi_chip *chip, struct pci_dev *dev,
+> > -			    int nvec, int type);
+> >  };
+> > 
+> >  #endif /* LINUX_MSI_H */
+> > --
+> > 1.9.3
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in the body
+> > of a message to majordomo@vger.kernel.org More majordomo info at
+> > http://vger.kernel.org/majordomo-info.html
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
