@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934AbaHKAGD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 20:06:03 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:63051 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbaHKAGA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 20:06:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <53E7FDB5.4070607@roeck-us.net>
-References: <53E6CF2B.6090709@roeck-us.net>
-	<CAGXu5jLsbCpqG2cAxZWG+ZC=wdvhQ_9GPqXUb6p9pSvsqrXpOA@mail.gmail.com>
-	<20140810193308.GA31867@redhat.com>
-	<53E7DB59.6020300@roeck-us.net>
-	<CA+55aFz3vW_qnrwa6kWMsN1pGbjnyGXGBNhH=DO0berKgyOtgQ@mail.gmail.com>
-	<53E7FDB5.4070607@roeck-us.net>
-Date: Sun, 10 Aug 2014 17:05:59 -0700
-X-Google-Sender-Auth: eyjJ-DWYOpKVP0XhtiwKdGAKaeQ
-Message-ID: <CA+55aFyus4Le7EeCEaJpcVVshtwK93Et1C0AkPaC=5QnXJYjGw@mail.gmail.com>
-Subject: Re: Runtime trouble with commit dbd952127d (seccomp: introduce writer locking)
-From: Linus Torvalds <torvalds@linux-foundation.org>
+	id S1751930AbaHKAVA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 20:21:00 -0400
+Received: from ozlabs.org ([103.22.144.67]:40471 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271AbaHKAU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 20:20:59 -0400
+Date: Mon, 11 Aug 2014 10:20:52 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Guenter Roeck <linux@roeck-us.net>
-Cc: Oleg Nesterov <oleg@redhat.com>, Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: Fix "attempt to move .org backwards" error
+Message-ID: <20140811102052.6d9c28cb@canb.auug.org.au>
+In-Reply-To: <1407561732-817-1-git-send-email-linux@roeck-us.net>
+References: <1407561732-817-1-git-send-email-linux@roeck-us.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Je.kQBUMvSEkChVVghKMWnP"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 10, 2014 at 4:18 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On 08/10/2014 02:10 PM, Linus Torvalds wrote:
->>
->> Yes. This is why we have "assert_spin_locked()". You can't use
->> BUG_ON(spin_is_locked()), and !spin_is_locked() tends to be even worse
->> unless you can prove that nobody else can get the lock simultaneously.
+--Sig_/Je.kQBUMvSEkChVVghKMWnP
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Ignore that '!spin_is_locked()' is even worse part. We have indeed had
-cases where people checked that something is not locked (and then did
-bad things if somebody *else* locked it), but that's not what that
-BUG_ON(!locked) tests, so
+Hi Guenter,
 
-   BUG_ON(!spin_is_locked());
-
-concept is fine (to test that the caller got the lock), it's just that
-you have to use "assert_spin_locked()" for it because of all these
-"the spinlock may not even _exist_" cases.
-
-> git grep 'BUG_ON.*!spin_is_locked'
+On Fri,  8 Aug 2014 22:22:12 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
 >
-> suggests that this may be a spreading sickness ..
+> Once again, we see
+>=20
+> arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
+> arch/powerpc/kernel/exceptions-64s.S:865: Error: attempt to move .org bac=
+kwards
+> arch/powerpc/kernel/exceptions-64s.S:866: Error: attempt to move .org bac=
+kwards
+> arch/powerpc/kernel/exceptions-64s.S:890: Error: attempt to move .org bac=
+kwards
+>=20
+> when compiling ppc:allmodconfig.
+>=20
+> This time the problem has been caused by to commit 0869b6fd209bda
+> ("powerpc/book3s: Add basic infrastructure to handle HMI in Linux"),
+> which adds functions hmi_exception_early and hmi_exception_after_realmode
+> into a critical (size-limited) code area, even though that does not appear
+> to be necessary.
+>=20
+> Move those functions to a non-critical area of the file.
+>=20
+> Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> Compile tested with all ppc configurations.
+> The reported checkpatch error appears to be a false positive.
 
-So that should just be converted to assert_spin_is_locked().
+Thanks.
 
-And we should probably try to get rid of users of "spin_is_locked()".
-The problem is that there tends to be a few (very few) valid reasons
-for using it, but then people mis-use it for testing the spinlock
-state, and they *always* get it wrong.
+I have added that to my fixes tree for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The two wrong cases are exactly the "we're on UP, and there is no
-spinlock state at all" and the "somebody requires it to be unlocked by
-*that* process, but does crazy things if another process has happened
-to lock it".
+--Sig_/Je.kQBUMvSEkChVVghKMWnP
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-             Linus
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT6AxpAAoJEMDTa8Ir7ZwVQBgP/3Ie7o02bek22/BasSgXzUqh
+OpdoVzL3FGZFfUTPA83IiMt6r+qJGwHybnDOFBdp3vDV6FVncFbPfhaGnKfVPDwa
+LBcj0vfNU9yksVoETtZZ0nyJ4V2X5YM+ziZMspNQeSfpzmK4k22ydaXBdPEM+9S1
+xzq79p+SqmbwnbK+9S0pn+6hpZw8Cgr0buH35Bg0NPwdRxwvMflrIaCyMJ6WvCe2
+XlCRAdkJ4O/W04o3+d/vSqi6fKsDjsX8P81O40w3h+S0zZTt56qXT8TnptmpglrY
+IRi1ohMfY/3c0lXsCxawO5quwavDnBdv1mPsavgkCD7TV8eBPHy0rLz6/YPdpth9
+Rc6IGnifLKbDouGInJToev7QmTKwewdmHMdDdcqeoWm0e/lha+iN3iDNz+EcGSPV
+r5u8VxTuK7SpNE9zEOSO8QYi0G+RJvmZOACIUE5tJLzDlZ0+RgjqXf/g+Hhyk+BP
+g3AF2IGXY5yulmM6XQEsJZ5hP9NHcp++b9+ELEYOgDRlzKXCpbljsFjfeLTfXSrr
+C6S2+4xENS2PBjQZCl3ecLG2vhlzwE76UVzLBeiv1JDP89/wwDol6zb9pYbruJKr
+jPE/YD7xDmkW4qDq+90mBLpPwkU7ugb1o35tugclG8C9WDDBt/NoZ8lvKBZCBZVt
+JESCTLfRd4296OCgdR/q
+=7aEu
+-----END PGP SIGNATURE-----
+
+--Sig_/Je.kQBUMvSEkChVVghKMWnP--
