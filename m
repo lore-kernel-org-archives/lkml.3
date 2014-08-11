@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaHKIo7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 04:44:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53741 "EHLO mga02.intel.com"
+	id S1752485AbaHKIs4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 04:48:56 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40079 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543AbaHKIo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 04:44:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,839,1400050800"; 
-   d="scan'208";a="586355466"
-Message-ID: <1407746495.25561.112.camel@sauron.fi.intel.com>
-Subject: [GIT PULL] UBI/UBIFS fixes for 3.17-rc1
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 11 Aug 2014 11:41:35 +0300
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751543AbaHKIsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 04:48:55 -0400
+Date: Mon, 11 Aug 2014 10:42:58 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jason Baron <jbaron@akamai.com>
+Cc: Ingo Molnar <mingo@kernel.org>, x86-ml <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH] Flipped jump labels
+Message-ID: <20140811084258.GA4236@nazgul.tnic>
+References: <20140809105742.GA5910@pd.tnic>
+ <20140810061103.GA13968@gmail.com>
+ <20140810061303.GA14206@gmail.com>
+ <20140810153539.GA9490@pd.tnic>
+ <20140810154515.GA27199@gmail.com>
+ <20140810160756.GB9490@pd.tnic>
+ <53E8394F.4020600@akamai.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53E8394F.4020600@akamai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, Aug 10, 2014 at 11:32:31PM -0400, Jason Baron wrote:
+> That is correct. We don't currently support having the default
+> branch direction or the fast path be different from how the
+> 'static_key' is initialized.
+> 
+> If I understand your use-case correctly,  you can't have the tsc
+> path be the default *before* tsc_init() is called?
 
-The following changes since commit 033ead8230c2cf9cdc2d6e1148bfdf5674012a9c:
+Yes. And also have it come first in the function so that after nopping
+out the JMP later turns it into a 0-cost path.
 
-  Merge tag 'upstream-3.16-rc6' of git://git.infradead.org/linux-ubifs (2014-07-18 06:23:34 -1000)
+> If not, another thought on the implementation here might be
+> to re-visit the work the Steven Rostedt  proposed a while back,
+> to use jump instead of no-ops by default, and then convert
+> the jumps to no-ops in a post-processing phase in order to
+> reduce code size (by having 2-byte jumps for example on
+> x86). Potentially, we could then avoid converting some of the
+> jumps, if they didn't match the default branch direction.
+> See: http://www.serverphorums.com/read.php?12,759207
 
-are available in the git repository at:
+Haha, so I did a very similar thing too, independently from Steve (patch
+at the end):
 
+https://lkml.kernel.org/r/20140809105742.GA5910@pd.tnic
 
-  git://git.infradead.org/linux-ubifs.git tags/upstream-3.17-rc1
+but mine is dumber.
 
-for you to fetch changes up to 25601a3c9737fed554169759582c690b98ead5d4:
+I'll dig out Steve's version and play with it a bit.
 
-  UBIFS: Add log overlap assertions (2014-07-31 15:52:51 +0300)
+> In that way there is no API change, we are just relaxing the
+> restriction that the default branch direction must match the
+> way that the keys are initialized.
 
-----------------------------------------------------------------
-No significant changes, mostly small fixes here and there. The more important
-fixes are:
+Which would make the change even smaller and invisible to users, good!
 
-* UBI deleted list items while iterating the list with 'list_for_each_entry'
-* The UBI block driver did not work properly with very large UBI volumes
-
-----------------------------------------------------------------
-Artem Bityutskiy (5):
-      UBIFS: fix spelling of "scanned"
-      UBIFS: remove mst_mutex
-      UBIFS: remove unnecessary check
-      UBIFS: add a log overlap assertion
-      Revert "UBIFS: add a log overlap assertion"
-
-Ezequiel Garcia (2):
-      UBI: block: Make ubiblock_resize return something
-      UBI: block: Set disk_capacity out of the mutex
-
-Fabian Frederick (4):
-      UBIFS: kernel-doc warning fix
-      UBIFS: replace count*size kzalloc by kcalloc
-      UBIFS: replace seq_printf by seq_puts
-      UBIFS: kernel-doc warning fix
-
-Richard Weinberger (3):
-      UBI: init_volumes: Ignore volumes with no LEBs
-      UBI: block: Avoid disk size integer overflow
-      UBI: bugfix in ubi_wl_flush()
-
-Seunghun Lee (1):
-      UBIFS: fix some comments
-
-hujianyang (6):
-      UBIFS: fix error handling in dump_lpt_leb()
-      UBIFS: Add missing break statements in dbg_chk_pnode()
-      UBIFS: remove useless statements
-      UBIFS: remove useless @ecc in struct ubifs_scan_leb
-      UBIFS: fix error path in create_default_filesystem()
-      UBIFS: Add log overlap assertions
-
- drivers/mtd/ubi/block.c | 18 ++++++++++++------
- drivers/mtd/ubi/vtbl.c  |  2 +-
- drivers/mtd/ubi/wl.c    |  4 ++--
- fs/ubifs/commit.c       |  2 --
- fs/ubifs/io.c           |  2 +-
- fs/ubifs/log.c          | 12 ++++++------
- fs/ubifs/lpt.c          |  5 ++---
- fs/ubifs/lpt_commit.c   |  7 +++++--
- fs/ubifs/master.c       |  7 +++----
- fs/ubifs/orphan.c       |  1 -
- fs/ubifs/recovery.c     |  5 ++---
- fs/ubifs/sb.c           |  4 +++-
- fs/ubifs/scan.c         | 14 +++++++-------
- fs/ubifs/super.c        | 19 +++++++++----------
- fs/ubifs/tnc.c          |  1 -
- fs/ubifs/tnc_commit.c   |  1 -
- fs/ubifs/ubifs.h        |  4 ----
- 17 files changed, 53 insertions(+), 55 deletions(-)
-
--- 
-Best Regards,
-Artem Bityutskiy
-
+Thanks.
