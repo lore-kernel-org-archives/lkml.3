@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011AbaHKUHQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:07:16 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:60534 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754991AbaHKUHO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:07:14 -0400
+	id S1755013AbaHKUKI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:10:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39809 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754664AbaHKUKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 16:10:06 -0400
+Date: Mon, 11 Aug 2014 16:09:31 -0400
+From: Dave Jones <davej@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: nohz fail (was: perf related boot hang.)
+Message-ID: <20140811200931.GA18865@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20140806143621.GA13832@redhat.com>
+ <20140806161934.GF19379@twins.programming.kicks-ass.net>
+ <20140806194656.GA11570@redhat.com>
+ <20140807090333.GL19379@twins.programming.kicks-ass.net>
+ <20140807131646.GB19662@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <20140806162754.3BCA1660E61@gitolite.kernel.org>
-References: <20140806162754.3BCA1660E61@gitolite.kernel.org>
-Date: Mon, 11 Aug 2014 22:07:12 +0200
-X-Google-Sender-Auth: 7iVjwJHMcjrmutTvscjIfA8Hih8
-Message-ID: <CAMuHMdWp1iWm9xLqRN0q3hV72bD8jPRLDW74Cm+Gxp3gB76asQ@mail.gmail.com>
-Subject: Re: seccomp: add "seccomp" syscall
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140807131646.GB19662@localhost.localdomain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
+On Thu, Aug 07, 2014 at 03:16:49PM +0200, Frederic Weisbecker wrote:
+ 
+ > > >   <<EOE>>  <IRQ>  [<ffffffff8a0ccd2f>] lock_acquired+0xaf/0x450
+ > > >   [<ffffffff8a0f74c5>] ? lock_hrtimer_base.isra.20+0x25/0x50
+ > > >   [<ffffffff8a7fc678>] _raw_spin_lock_irqsave+0x78/0x90
+ > > >   [<ffffffff8a0f74c5>] ? lock_hrtimer_base.isra.20+0x25/0x50
+ > > >   [<ffffffff8a0f74c5>] lock_hrtimer_base.isra.20+0x25/0x50
+ > > >   [<ffffffff8a0f7723>] hrtimer_try_to_cancel+0x33/0x1e0
+ > > >   [<ffffffff8a0f78ea>] hrtimer_cancel+0x1a/0x30
+ > > >   [<ffffffff8a109237>] tick_nohz_restart+0x17/0x90
+ > > >   [<ffffffff8a10a213>] __tick_nohz_full_check+0xc3/0x100
+ > > >   [<ffffffff8a10a25e>] nohz_full_kick_work_func+0xe/0x10
+ > > >   [<ffffffff8a17c884>] irq_work_run_list+0x44/0x70
+ > > >   [<ffffffff8a17c8da>] irq_work_run+0x2a/0x50
+ > > >   [<ffffffff8a0f700b>] update_process_times+0x5b/0x70
+ > > >   [<ffffffff8a109005>] tick_sched_handle.isra.21+0x25/0x60
+ > > >   [<ffffffff8a109b81>] tick_sched_timer+0x41/0x60
+ > > >   [<ffffffff8a0f7aa2>] __run_hrtimer+0x72/0x470
+ > > >   [<ffffffff8a109b40>] ? tick_sched_do_timer+0xb0/0xb0
+ > > >   [<ffffffff8a0f8707>] hrtimer_interrupt+0x117/0x270
+ > > >   [<ffffffff8a034357>] local_apic_timer_interrupt+0x37/0x60
+ > > >   [<ffffffff8a80010f>] smp_apic_timer_interrupt+0x3f/0x50
+ > > >   [<ffffffff8a7fe52f>] apic_timer_interrupt+0x6f/0x80
+ > > 
+ > > And that looks like someone trying to cancel a timer from a timer, I
+ > > guess that won't work, seeing how cancel will wait for the timer handler
+ > > completion etc.
+ > > 
+ > > This is because of the fallback irq_work_run() in the tick
+ > > (update_process_times).
+ > > 
+ > 
+ > Indeed, I saw that too but very rarely.
 
-v3.17 is gonna get a lot of new syscalls...
+FWIW, I'm now seeing this quite often (several times a day) when I run
+trinity on current git master.
 
-On Wed, Aug 6, 2014 at 6:27 PM, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
-> Gitweb:     http://git.kernel.org/linus/;a=commit;h=48dc92b9fc3926844257316e75ba11eb5c742b2c
-> Commit:     48dc92b9fc3926844257316e75ba11eb5c742b2c
-> Parent:     3b23dd12846215eff4afb073366b80c0c4d7543e
-> Refname:    refs/heads/master
-> Author:     Kees Cook <keescook@chromium.org>
-> AuthorDate: Wed Jun 25 16:08:24 2014 -0700
-> Committer:  Kees Cook <keescook@chromium.org>
-> CommitDate: Fri Jul 18 12:13:37 2014 -0700
->
->     seccomp: add "seccomp" syscall
->
->     This adds the new "seccomp" syscall with both an "operation" and "flags"
->     parameter for future expansion. The third argument is a pointer value,
->     used with the SECCOMP_SET_MODE_FILTER operation. Currently, flags must
->     be 0. This is functionally equivalent to prctl(PR_SET_SECCOMP, ...).
->
->     In addition to the TSYNC flag later in this patch series, there is a
->     non-zero chance that this syscall could be used for configuring a fixed
->     argument area for seccomp-tracer-aware processes to pass syscall arguments
->     in the future. Hence, the use of "seccomp" not simply "seccomp_add_filter"
->     for this syscall. Additionally, this syscall uses operation, flags,
->     and user pointer for arguments because strictly passing arguments via
->     a user pointer would mean seccomp itself would be unable to trivially
->     filter the seccomp syscall itself.
->
->     Signed-off-by: Kees Cook <keescook@chromium.org>
->     Reviewed-by: Oleg Nesterov <oleg@redhat.com>
->     Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+	Dave
 
-Is this something that I should enable?
-
-As it depends on CONFIG_SECCOMP, it only makes sense on architectures that
-already support CONFIG_SECCOMP, right?
-Does it make sense to reserve a syscall slot for it on architectures that
-don't support it yet?
-
-Thanks!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
