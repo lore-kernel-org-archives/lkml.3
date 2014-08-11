@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089AbaHKXz5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 19:55:57 -0400
-Received: from mail-bn1hn0252.outbound.protection.outlook.com ([157.56.110.252]:29958
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751365AbaHKXz4 convert rfc822-to-8bit (ORCPT
+	id S1753537AbaHKX40 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 19:56:26 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:35527 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528AbaHKX4Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 19:55:56 -0400
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
+	Mon, 11 Aug 2014 19:56:24 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1407798738.28221.81.camel@chimera>
+Date: Mon, 11 Aug 2014 16:56:55 -0700
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Attention User
-To: Recipients <austring@unm.edu>
-From: WEBMAIL UPGRADING TEAM <austring@unm.edu>
-Date: Tue, 12 Aug 2014 05:25:08 +0530
-Reply-To: <account_cc@noreply.com>
-Message-ID: <83b91bac-c090-4ef0-8230-39452de79921@BY2PR07MB518.namprd07.prod.outlook.com>
-X-Originating-IP: [116.202.28.98]
-X-ClientProxiedBy: SIXPR06CA010.apcprd06.prod.outlook.com (10.242.58.50) To
- BY2PR07MB518.namprd07.prod.outlook.com (10.141.218.147)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03008837BD
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(6049001)(6009001)(199002)(189002)(75432001)(15202345003)(83322001)(89122001)(4396001)(23756003)(77096002)(42186005)(50986999)(31696002)(95666004)(229853001)(74502001)(33646002)(83072002)(107046002)(53806999)(105586002)(19580395003)(74662001)(107886001)(54356999)(110136001)(85306004)(85852003)(106356001)(2171001)(575854001)(81542001)(101416001)(102836001)(1496007)(99396002)(87976001)(50466002)(81342001)(47776003)(66066001)(221733001)(64706001)(20776003)(21056001)(80022001)(76482001)(46102001)(79102001)(53256004)(92726001)(88552001)(77982001)(86362001)(76576001)(43066003)(74316001)(15975445006)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:BY2PR07MB518;H:[116.202.28.98];FPR:;MLV:spm;PTR:InfoNoRecords;MX:1;LANG:en;
-X-OriginatorOrg: unm.edu
+Message-Id: <52896C9C-8560-4CE4-A1FB-C896D766EC87@holtmann.org>
+References: <1407780269.28221.63.camel@chimera> <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org> <1407789645.28221.68.camel@chimera> <37210DB5-2911-4FA3-9299-7701C5003945@holtmann.org> <1407791075.28221.74.camel@chimera> <28066DB2-9EA9-4748-9C89-D3FBD3EC51F5@holtmann.org> <1407798738.28221.81.camel@chimera>
+To: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attention User
+Hi Daniel,
 
-This is a courtesy notice that you are approaching the limit of 2GB data plan. Your e-
-mail account would be blocked from sending and receiving emails, If your email account is
-not verified within 24 hours.
+>> Internally it might do that, but I do not see it exposing the
+>> NL80211_ATTR_MAC when you get the attributes for wiphy.
+> 
+> When wlan0 is created, it can be created with its own MAC irrespective
+> of the wiphy MAC. In OpenWrt, the wlan0 MAC can be supplied and assigned
+> to a netdev created on a specific wiphy identified by its MAC, and if
+> that cannot be predicted, there is no wlan0.
 
-You will not be able to send or receive new mail until you upgrade your email quota.
-You may click on the verification link below to reactivate your account
+the way I read the nl80211 code is that the NL80211_CMD_NEW_INTERFACE requires a wiphy device to be specified. And that is actually just a number. So I have no idea what the MAC has to here.
 
-http://webmail1upgrading.webs.com/
+>> So I am still saying that when you do NL80211_CMD_NEW_INTERFACE allow
+>> providing NL80211_ATTR_MAC to set the MAC address to be used. It might
+>> be useful that the wiphy exposes an attribute saying that it does not
+>> have a default MAC address, but that should be it. I do not like these
+>> magic 00:00:00:00:00:00 games. As I mentioned earlier, in Bluetooth we
+>> just deal with allowing the driver to set a flag that it does not have
+>> a valid address. And then the core takes care of dealing with it.
+>> 
+> An attribute saying there is no default MAC is helpful only if there is
+> a way to supply a new default to the wiphy.
 
-* Important:
-In general, within 24 hours your account will be activated.
+Why does the wiphy need to know the MAC if it is always specified from userspace when actually creating the new netdev interface. Works for P2P devices, so why wouldn't it work for access point and station mode?
 
-Service Providers International. © 2014
+Regards
+
+Marcel
+
+
+
