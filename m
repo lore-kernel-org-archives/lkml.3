@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349AbaHKD3h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 23:29:37 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:51654 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331AbaHKD3g (ORCPT
+	id S1752394AbaHKDah (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 23:30:37 -0400
+Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:35431
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751841AbaHKDaf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 23:29:36 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: akpm@linux-foundation.org, oleg@redhat.com, eparis@redhat.com,
-        rgb@redhat.com, tixxdz@opendz.org, adobriyan@gmail.com,
-        bill.c.roberts@gmail.com, linux-kernel@vger.kernel.org
-References: <20140811024720.GA11337@devel.8.8.4.4>
-Date: Sun, 10 Aug 2014 20:25:39 -0700
-In-Reply-To: <20140811024720.GA11337@devel.8.8.4.4> (Daeseok Youn's message of
-	"Mon, 11 Aug 2014 11:47:20 +0900")
-Message-ID: <8738d3hfm4.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Sun, 10 Aug 2014 23:30:35 -0400
+From: Dexuan Cui <decui@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "olaf@aepfle.de" <olaf@aepfle.de>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Shao <huishao@microsoft.com>,
+        "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>,
+        "David Miller" <davem@davemloft.net>,
+        Stephen Hemminger <stephen@networkplumber.org>
+Subject: RE: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+Thread-Topic: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+Thread-Index: AQHPspA/W9GLuVF6+E2lxD+S7UVRVpvF95oQgAAV/QCAAC25AIAAfa+AgAP4svCAABDZYA==
+Date: Mon, 11 Aug 2014 03:29:51 +0000
+Message-ID: <EE124450C0AAF944A40DD71E61F878C991B6B4@SINEX14MBXC417.southpacific.corp.microsoft.com>
+References: <DC7803B42427924284F2D5252E076A3B4476A479@SINEX14MBXC416.southpacific.corp.microsoft.com>
+ <53CCD6F2.6020909@nod.at> <20140721091851.GA28171@aepfle.de>
+ <20140721.143225.2040366896972949930.davem@davemloft.net>
+ <CAFLxGvyfy1UkxN6_-c_ST7f8n7DvqYsCPKChWmt9CerWb0dh7g@mail.gmail.com>
+ <EE124450C0AAF944A40DD71E61F878C99149D0@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <20140808033220.GB10503@kroah.com>
+ <EE124450C0AAF944A40DD71E61F878C991569A@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <20140808134549.GD4427@kroah.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.3.93]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/a/lDRQ4LKDw9LmsTqNfco2zMN0ZWT3do=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4723]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Daeseok Youn <daeseok.youn@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] proc: potential ERR_PTR dereference on proc_fill_cache()
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(164054003)(51704005)(189002)(199002)(377454003)(13464003)(50466002)(31966008)(74502001)(16796002)(86612001)(26826002)(107046002)(106116001)(76482001)(81156004)(46102001)(106466001)(79102001)(46406003)(95666004)(47776003)(55846006)(77982001)(64706001)(20776003)(74662001)(84676001)(93886004)(81542001)(83072002)(110136001)(23726002)(87936001)(85306004)(2656002)(6806004)(44976005)(69596002)(68736004)(33656002)(97736001)(97756001)(85806002)(83322001)(77096002)(4396001)(80022001)(21056001)(81342001)(92726001)(92566001)(86362001)(85852003)(76176999)(54356999)(99396002)(50986999);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB247;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 03008837BD
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=decui@microsoft.com; 
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daeseok Youn <daeseok.youn@gmail.com> writes:
+> -----Original Message-----
+> From: Dexuan Cui
+> Sent: Monday, August 11, 2014 11:24 AM
+> Now I understand it's not good to pass the event to the udev daemon,
+> and it's not good to use a SLEEP(10s) in the kernel space(even if it's in a
+> "work" task here).
+> 
+> Please let me know if it's the correct direction to fix the user-space
+> daemons (ifplugd, systemd-networkd, etc).
+> If you think this is viable and we should do this, I'll submit a
+> netif_carrier_off/on patch first and will start to work with the
+> projects of ifplugd, systemd-networkd and many OSVs to make the
+> while thing work eventually.
 
-> The d_hash_and_lookup() returns NULL or ERR_PTR on lookup
-> failure.
+I forgot to mention: due to the huge efforts to fix the user-space
+daemons, I wish the "tearing down the net device and re-creating it"
+method could work with the daemons -- I'm going to try it.
 
-Given that the only error condition can come from .d_hash and that proc
-does not implement .d_hash if we want to do something with error returns
-let's call BUG_ON. aka:
+Anybody objects to this method?
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index f50d4be..49bc09c 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -1673,7 +1673,7 @@ bool proc_fill_cache(struct file *file, struct dir_context *ctx,
- 	ino_t ino;
- 
- 	child = d_hash_and_lookup(dir, &qname);
-+	BUG_ON(IS_ERR(child))
-	if (!child) {
- 		child = d_alloc(dir, &qname);
- 		if (!child)
- 			goto end_instantiate;
-
-Or do you see something in d_hash_and_lookup that I am overlooking?
-
-Eric
-
-
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> ---
->  fs/proc/base.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index f50d4be..49bc09c 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -1673,7 +1673,7 @@ bool proc_fill_cache(struct file *file, struct dir_context *ctx,
->  	ino_t ino;
->  
->  	child = d_hash_and_lookup(dir, &qname);
-> -	if (!child) {
-> +	if (IS_ERR_OR_NULL(child)) {
->  		child = d_alloc(dir, &qname);
->  		if (!child)
->  			goto end_instantiate;
+Thanks,
+-- Dexuan
