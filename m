@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976AbaHKUgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:36:48 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:64405 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754670AbaHKUgr (ORCPT
+	id S932263AbaHKUkx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:40:53 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:63713 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932192AbaHKUku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:36:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140811105837.GO4856@mwanda>
-References: <1407628152-24876-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20140811105837.GO4856@mwanda>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Mon, 11 Aug 2014 22:36:26 +0200
-Message-ID: <CAFo99gZr9MtM3YWj74KgpkBzKcVoMCEZtxU9mTUq2f3iY2NmKw@mail.gmail.com>
-Subject: Re: [PATCH] staging: lustre: lustre: ptlrpc: nrs.c: Cleaning up
- missing null-terminate after strncpy call
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Oleg Drokin <oleg.drokin@intel.com>, devel@driverdev.osuosl.org,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Liang Zhen <liang.zhen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ann Koehler <amk@cray.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 11 Aug 2014 16:40:50 -0400
+Message-ID: <1407789645.28221.68.camel@chimera>
+Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
+From: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 11 Aug 2014 13:40:45 -0700
+In-Reply-To: <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org>
+References: <1407780269.28221.63.camel@chimera>
+	 <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-11 12:58 GMT+02:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Sun, Aug 10, 2014 at 01:49:12AM +0200, Rickard Strandqvist wrote:
->> Added a guaranteed null-terminate after call to strncpy.
->
-> No.  This is a problem in the static checker and not in the code.
->
-> Look at the start of the function.  This stuff should be obvious for the
-> static checker.
->
-> regards,
-> dan carpenter
->
+On Mon, 2014-08-11 at 13:25 -0700, Marcel Holtmann wrote:
+> isn't this dangerous to just allow writing to wiphy.perm_addr via
+> sysfs. We ran into the same issue with Bluetooth and ROM only devices
+> that have to unique address. Doing this via sysfs seems the wrong
+> approach. It is messy and full of potential race conditions. I clearly
+> opted against the sysfs solution for Bluetooth. Instead we build an
+> infrastructure that allowed doing it cleanly via the Bluetooth mgmt
+> API. Controllers that have no unique address are brought up as
+> unconfigured and userspace clearly knows that it has to take steps to
+> get an address programmed into the controller.
 
-Hi Dan
+My inclination is to agree; however, this does not exist for WiFi and
+implementing it would require modifying every single driver.
 
-Okay, no, it was me who missed it, not cppcheck.
+> And I think something similar should be done for WiFi. It might be
+> better to not create the initial wlan0 netdev interface if the
+> hardware has not a single unique address available. That way the
+> supplicant can just either get one from the flash filesystem or make
+> up a proper random one before creating the netdev interface.
+> 
+The initial wlan0 netdev interface is *not* created, but the PHY records
+a MAC address that cannot be overriden at the level that this sysfs node
+reads. Perhaps a compromise would be to create a single new syscall to
+write to it?
 
-Ensuring that from string will fit was an unusual solution.
-If I see code where an effort is made to ensure that no more than x
-characters copied I react to it.
-But it is zeroing of the string you were looking for then. Ok sorry :-(
-
-Kind regards
-Rickard Strandqvist
