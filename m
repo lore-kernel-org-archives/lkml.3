@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140AbaHKL4X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 07:56:23 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:48770 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618AbaHKL4V convert rfc822-to-8bit (ORCPT
+	id S1753118AbaHKL6D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 07:58:03 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:45635 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774AbaHKL6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 07:56:21 -0400
-From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "hdegoede@redhat.com" <hdegoede@redhat.com>,
-        "kraxel@redhat.com" <kraxel@redhat.com>,
-        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH] uas: replace WARN_ON_ONCE() with assert_spin_locked().
-Thread-Topic: [PATCH] uas: replace WARN_ON_ONCE() with assert_spin_locked().
-Thread-Index: AQHPtThds7tfTj7cqkq3IdcFv++16pvLASuAgABJAYA=
-Date: Mon, 11 Aug 2014 11:56:17 +0000
-Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF2B2AE@EU-MBX-02.mgc.mentorg.com>
-References: <1407743966-25325-1-git-send-email-sanjeev_sharma@mentor.com>
- <20140811082811.GC1422@kroah.com>
-In-Reply-To: <20140811082811.GC1422@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.202.0.76]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Aug 2014 07:58:00 -0400
+Date: Mon, 11 Aug 2014 13:57:06 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
+Message-ID: <20140811115706.GX9918@twins.programming.kicks-ass.net>
+References: <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140808191326.GE3935@laptop>
+ <20140808205826.GG5821@linux.vnet.ibm.com>
+ <20140809061514.GK9918@twins.programming.kicks-ass.net>
+ <20140809160137.GJ5821@linux.vnet.ibm.com>
+ <20140809181920.GO9918@twins.programming.kicks-ass.net>
+ <20140809182400.GJ3588@twins.programming.kicks-ass.net>
+ <20140810012924.GO5821@linux.vnet.ibm.com>
+ <20140810081425.GT9918@twins.programming.kicks-ass.net>
+ <20140811033048.GT5821@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 11 Aug 2014 11:56:19.0222 (UTC) FILETIME=[43441360:01CFB55B]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iZdB8qX0qQjXwPd1"
+Content-Disposition: inline
+In-Reply-To: <20140811033048.GT5821@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
 
-Please find my comment in line.
+--iZdB8qX0qQjXwPd1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
------Original Message-----
-From: Greg KH [mailto:gregkh@linuxfoundation.org] 
-Sent: Monday, August 11, 2014 1:58 PM
-To: Sharma, Sanjeev
-Cc: hdegoede@redhat.com; kraxel@redhat.com; mdharm-usb@one-eyed-alien.net; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] uas: replace WARN_ON_ONCE() with assert_spin_locked().
+On Sun, Aug 10, 2014 at 08:30:48PM -0700, Paul E. McKenney wrote:
+> On Sun, Aug 10, 2014 at 10:14:25AM +0200, Peter Zijlstra wrote:
 
-On Mon, Aug 11, 2014 at 01:29:26PM +0530, Sanjeev Sharma wrote:
-> spin_is_locked() always return false in uniprocessor configuration
+> > want want want, I want a damn pony but somehow I'm not getting one. Why
+> > are they getting this?
+>=20
+> We can only be glad that my daughters' old My Little Pony toys are
+> long gone (http://en.wikipedia.org/wiki/My_Little_Pony).  Not sure I
+> would have been able to resist sending one along.  ;-)
 
-Really?  On what processor type?  I don't see that being the case on a few processors, but I didn't check them all, or I might be totally confused with all of the arch_spin_is_locked() definitions in the tree.
+LOL, I _knew_ someone was going to propose doing that ;-)
 
-specially in case of mips and powerpc but we can configure our kernel to uniprocessor configuration for specific processor and in that case we should be extra cautious. Please check spinlock_up.h
+--iZdB8qX0qQjXwPd1
+Content-Type: application/pgp-signature
 
-> and therefore it
-> would be advise to repalce with assert_spin_locked().
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-This implies that all uses of this function is wrong and should be replaced and removed, right?
+iQIcBAEBAgAGBQJT6K+SAAoJEHZH4aRLwOS6P8EQAJ6saqlPE6znOgHsk0EC/APS
+7trhIafkZmP9a6noOgwENMhsBXOUsmkrVv9+s4J2m09qj2I8zLYNuknGHpfAgQLa
+Thu8+N0pGNd2dvbBBD6YLAH1duo52Bl6Mu6qRVGPuabzq4++zbaBu2ceDn6CURsy
+xh2tu3hKTx3dUZbaA+zlsPsMe9o2Rs3Vp2zYQ7UkxsT1re8/BNxJ7LoAXlQDPZJv
+XHAcU2p0pM3Kj4S8zXwt2gWtwjGWrAQ84fg6iIe5bYQv5hvJNWivhrE7e3VkX7xo
+RfLSNGaI+X+KxgFoD76VgTCrvY2zpsR6Vdw7nwFWV1JqyP+DgQvP0Y0JQNji1W9q
+cJQPI3XTn5hm/KeOtCowrXD8OgxEaz/k2Fu+7Ay1K83mPCM9j0hOfn0m5P3Byq7P
+UdOfC7nck7/aV+nidPPbEOkVeUmrZ0EXlNKx9oWuBhZTVq8NAi+UdvmO6O8V/6Vu
+NHbNQtwpzLoCbIP9x5d49TJSMhvifJoeMEKilyX/oBi9mi1mu+zCVcf7IcL2HmM/
+aL30vguq+fCqJ2G6MnRR9uDyP0Kqgd1TxpF4LTtoiYB4ilpRG+O2OnlDrcpmU/Al
+zshhCXYKc5gdLeJtyVH3CAeDUGt0Laot94CCyAij4A9y8mEvrbmy5xQyyhciTIL7
+fbvedWMDdkOOMnPMcuLG
+=w+i9
+-----END PGP SIGNATURE-----
 
-Yes and there are only few places in driver for which I am submitting patches which need to be change and at other places it has been already taken care. Please have an look into the
-Old discussion for more details.
-
-http://linux-kernel.2935.n7.nabble.com/Is-spin-is-locked-safe-to-use-with-BUG-ON-WARN-ON-td654800.html#a921802
-
-thanks,
-
-greg k-h
+--iZdB8qX0qQjXwPd1--
