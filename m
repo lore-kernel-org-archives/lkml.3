@@ -1,232 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121AbaHKPRK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 11:17:10 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:64230 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993AbaHKPRI (ORCPT
+	id S1753992AbaHKPVC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 11:21:02 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:53753 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833AbaHKPU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 11:17:08 -0400
-Date: Mon, 11 Aug 2014 11:17:14 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: Mario Kleiner <mario.kleiner.de@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dave Airlie <airlied@redhat.com>, kamal@canonical.com,
-        ben@decadent.org.uk, LKML <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        m.szyprowski@samsung.com
-Subject: Re: CONFIG_DMA_CMA causes ttm performance problems/hangs.
-Message-ID: <20140811151712.GA3541@gmail.com>
-References: <53E50C1B.9080507@gmail.com>
- <53E5B41B.3030009@vmware.com>
- <60bd3db2-4919-40c4-a4ff-1b7b043cadfc@email.android.com>
- <53E628FE.10808@vmware.com>
- <53E6E2CE.8070005@gmail.com>
- <53E75192.3070003@vmware.com>
- <53E7B39D.2060900@gmail.com>
- <53E896C9.5010501@vmware.com>
+	Mon, 11 Aug 2014 11:20:59 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="wac7ysb48OaltWcw"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53E896C9.5010501@vmware.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53E8DE1D.9070503@roeck-us.net>
+References: <1406139132-5404-1-git-send-email-linux@roeck-us.net>
+ <CAAVeFuKsJpSYo2DMyTdYE2J5Cu_ZD=b9o-=S0DLDccyNmwniNg@mail.gmail.com>
+ <53D0A8B7.2010005@roeck-us.net> <CAAVeFuK5uKhpkpEnoRFGKU4G4Fey0+giz5wwmtr+OCLJHPvnLQ@mail.gmail.com>
+ <53E32C09.5000704@roeck-us.net> <CAAVeFuJohBznnjELvJj0OUCK+anbZ-j1xPc9gyKDGVq9X0MDSA@mail.gmail.com>
+ <53E8DE1D.9070503@roeck-us.net>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 12 Aug 2014 00:20:38 +0900
+Message-ID: <CAAVeFuK8kb3kopVaM9qz+qOa4RT_oji8LNLQa_UHDxxxwyfZgw@mail.gmail.com>
+Subject: Re: [RFC PATCH] gpiolib: Provide and export gpiod_export_name
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 12, 2014 at 12:15 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 08/11/2014 08:01 AM, Alexandre Courbot wrote:
+>>
+>> On Thu, Aug 7, 2014 at 4:34 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>>
+>>>> Or you could have a platform device which sole purpose is to request
+>>>> the GPIOs to export and export them using gpio_export() and
+>>>> gpio_export_link() using itself as the device parameters. All your
+>>>> links would then appear under the same sysfs directory, and that
+>>>> directory name would be consistent across platforms. What is wrong
+>>>> with this approach?
+>>>>
+>>> The link does not appear in /sys/class/gpio. I understand you don't like
+>>> the
+>>> idea of having named gpio pins in that directory, but that is supported
+>>> today,
+>>> it works, and others do like it.
+>>
+>>
+>> Who are these "others" that like it?
+>>
+>>>
+>>>
+>>>> As for the patch itself, as I said before I am not a huge fan of
+>>>> putting randomly-named exports under /sys/class/gpio, but since there
+>>>> is a precedent with the driver GPIO names array I don't think this
+>>>> makes the situation much worse. Still I'd like you to explain me what
+>>>> I missed and why you cannot use the technique described above to
+>>>> achieve your goal with the currently existing interfaces.
+>>>>
+>>>
+>>> I thought I explained it before; my users (ie the people writing user
+>>> space
+>>> applications accessing the pins) expect to see the exported pins in
+>>> /sys/class/gpio
+>>> and not in a more or less arbitrary directory. They are used to this
+>>> approach, and they are less than enthusiastic to change it. The code
+>>> needed
+>>> to generate the exported pin names is a bit messy, it being tied to the
+>>> driver,
+>>> but it does both exist and work. This patch was an attempt to provide a
+>>> cleaner API to accomplish the same without having to touch various gpio
+>>> drivers which don't provide the ability to configure the names array.
+>>>
+>>> Note that I don't consider the names "random". They are much less random
+>>> than gpioX, where X can change each time the system boots or, for OIR
+>>> capable systems, each time a gpio driver is instantiated or removed.
+>>> In today's system, without well defined names, one never knows if gpioX
+>>> points
+>>> to the pin the user is looking for. If the pin is named
+>>> "this-is-your-pin"
+>>> it is much easier to write user space code using it.
+>>>
+>>> Oddly enough, if I would use the platform driver approach you suggest,
+>>> I would still need a well defined directory, say, /sys/class/named_gpios,
+>>
+>>
+>> Which you would have through your platform device, and I guess you are
+>> not denying that it is possible to do it that way using the existing
+>> APIs. The discussion now seems to be "let's allow named GPIOs in
+>> /sys/class/gpio". Why? Because the customer wants it this way. The
+>> point is, that in mainline we don't merge changes because to make the
+>> customer happy, but because they generally make sense. I fail to see
+>> how it makes more sense to allow named GPIOs in /sys/class/gpio
+>> instead of the node of the device controlled by these GPIOs.
+>>
+>> Let me elaborate some more on why: GPIOs are generally tied to fulfil
+>> a precise function for a given device. Having them appearing under the
+>> node of the device in question makes it clear what their relationship
+>> to that device is ; and the name of the node can then be a reflection
+>> of that function. On the contrary, letting them all bloom under a
+>> single directory forces you to resort to complex and confusing names
+>> to differenciate your GPIOs, with everyone coming with their own
+>> naming pattern and so on. If it doesn't look like a bad idea to you,
+>> I'm afraid I cannot be any more convincing.
+>>
+>> Also, it did not occur to me until now, but with this patch alone you
+>> are going to be hit by the objection that we don't add APIs that do
+>> not have upstream users. That policy is quite strongly enforced, and
+>> I'm afraid this makes this patch even more unlikely to be accepted.
+>>
+> This is just one of many patches which would make it possible to submit
+> the rest, which would make use of it. What you are saying is that it won't
+> make sense to submit that series into the kernel, because one of the very
+> first patches needed to enable that won't be accepted. Kind of a circular
+> argument, but I guess I'll have to live with it.
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well I have not seen the other patches you mention and cannot guess
+their existence. If you send the full series it will of course be
+considered as such, but right now this lone patch does not hint any
+upstream user for this interface.
 
-On Mon, Aug 11, 2014 at 12:11:21PM +0200, Thomas Hellstrom wrote:
-> On 08/10/2014 08:02 PM, Mario Kleiner wrote:
-> > On 08/10/2014 01:03 PM, Thomas Hellstrom wrote:
-> >> On 08/10/2014 05:11 AM, Mario Kleiner wrote:
-> >>> Resent this time without HTML formatting which lkml doesn't like.
-> >>> Sorry.
-> >>>
-> >>> On 08/09/2014 03:58 PM, Thomas Hellstrom wrote:
-> >>>> On 08/09/2014 03:33 PM, Konrad Rzeszutek Wilk wrote:
-> >>>>> On August 9, 2014 1:39:39 AM EDT, Thomas
-> >>>>> Hellstrom<thellstrom@vmware.com>  wrote:
-> >>>>>> Hi.
-> >>>>>>
-> >>>>> Hey Thomas!
-> >>>>>
-> >>>>>> IIRC I don't think the TTM DMA pool allocates coherent pages more
-> >>>>>> than
-> >>>>>> one page at a time, and _if that's true_ it's pretty unnecessary for
-> >>>>>> the
-> >>>>>> dma subsystem to route those allocations to CMA. Maybe Konrad could
-> >>>>>> shed
-> >>>>>> some light over this?
-> >>>>> It should allocate in batches and keep them in the TTM DMA pool for
-> >>>>> some time to be reused.
-> >>>>>
-> >>>>> The pages that it gets are in 4kb granularity though.
-> >>>> Then I feel inclined to say this is a DMA subsystem bug. Single page
-> >>>> allocations shouldn't get routed to CMA.
-> >>>>
-> >>>> /Thomas
-> >>> Yes, seems you're both right. I read through the code a bit more and
-> >>> indeed the TTM DMA pool allocates only one page during each
-> >>> dma_alloc_coherent() call, so it doesn't need CMA memory. The current
-> >>> allocators don't check for single page CMA allocations and therefore
-> >>> try to get it from the CMA area anyway, instead of skipping to the
-> >>> much cheaper fallback.
-> >>>
-> >>> So the callers of dma_alloc_from_contiguous() could need that little
-> >>> optimization of skipping it if only one page is requested. For
-> >>>
-> >>> dma_generic_alloc_coherent
-> >>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3Ddma_generic_alloc_coherent&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=d1852625e2ab2ff07eb34a7f33fc1f55f7f13959912d5a6ce9316d23070ce939>
-> >>>
-> >>> andintel_alloc_coherent
-> >>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3Dintel_alloc_coherent&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=82d587e9b6aeced5cf9a7caefa91bf47fba809f3522b7379d22e45a2d5d35ebd> 
-> >>> this
-> >>> seems easy to do. Looking at the arm arch variants, e.g.,
-> >>>
-> >>> https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/source/arch/arm/mm/dma-mapping.c%23L1194&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=4c178257eab9b5d7ca650dedba76cf27abeb49ddc7aebb9433f52b6c8bb3bbac
-> >>>
-> >>>
-> >>> and
-> >>>
-> >>> https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/source/arch/arm64/mm/dma-mapping.c%23L44&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=5f62f4cbe8cee1f1dd4cbba656354efe6867bcdc664cf90e9719e2f42a85de08
-> >>>
-> >>>
-> >>> i'm not sure if it is that easily done, as there aren't any fallbacks
-> >>> for such a case and the code looks to me as if that's at least
-> >>> somewhat intentional.
-> >>>
-> >>> As far as TTM goes, one quick one-line fix to prevent it from using
-> >>> the CMA at least on SWIOTLB, NOMMU and Intel IOMMU (when using the
-> >>> above methods) would be to clear the __GFP_WAIT
-> >>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__GFP_WAIT&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=d56d076770d3416264be6c9ea2829ac0d6951203696fa3ad04144f13307577bc>
-> >>> flag from the
-> >>> passed gfp_t flags. That would trigger the well working fallback.
-> >>> So, is
-> >>>
-> >>> __GFP_WAIT 
-> >>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__GFP_WAIT&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=d56d076770d3416264be6c9ea2829ac0d6951203696fa3ad04144f13307577bc> 
-> >>> needed
-> >>> for those single page allocations that go through__ttm_dma_alloc_page
-> >>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__ttm_dma_alloc_page&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=7898522bba274e4dcc332735fbcf0c96e48918f60c2ee8e9a3e9c73ab3487bd0>?
-> >>>
-> >>>
-> >>> It would be nice to have such a simple, non-intrusive one-line patch
-> >>> that we still could get into 3.17 and then backported to older stable
-> >>> kernels to avoid the same desktop hangs there if CMA is enabled. It
-> >>> would be also nice for actual users of CMA to not use up lots of CMA
-> >>> space for gpu's which don't need it. I think DMA_CMA was introduced
-> >>> around 3.12.
-> >>>
-> >> I don't think that's a good idea. Omitting __GFP_WAIT would cause
-> >> unnecessary memory allocation errors on systems under stress.
-> >> I think this should be filed as a DMA subsystem kernel bug / regression
-> >> and an appropriate solution should be worked out together with the DMA
-> >> subsystem maintainers and then backported.
-> >
-> > Ok, so it is needed. I'll file a bug report.
-> >
-> >>> The other problem is that probably TTM does not reuse pages from the
-> >>> DMA pool. If i trace the __ttm_dma_alloc_page
-> >>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__ttm_dma_alloc_page&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=7898522bba274e4dcc332735fbcf0c96e48918f60c2ee8e9a3e9c73ab3487bd0>
-> >>> and
-> >>> __ttm_dma_free_page
-> >>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__ttm_dma_alloc_page&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=7898522bba274e4dcc332735fbcf0c96e48918f60c2ee8e9a3e9c73ab3487bd0>
-> >>> calls for
-> >>> those single page allocs/frees, then over a 20 second interval of
-> >>> tracing and switching tabs in firefox, scrolling things around etc. i
-> >>> find about as many alloc's as i find free's, e.g., 1607 allocs vs.
-> >>> 1648 frees.
-> >> This is because historically the pools have been designed to keep only
-> >> pages with nonstandard caching attributes since changing page caching
-> >> attributes have been very slow but the kernel page allocators have been
-> >> reasonably fast.
-> >>
-> >> /Thomas
-> >
-> > Ok. A bit more ftraceing showed my hang problem case goes through the
-> > "if (is_cached)" paths, so the pool doesn't recycle anything and i see
-> > it bouncing up and down by 4 pages all the time.
-> >
-> > But for the non-cached case, which i don't hit with my problem, could
-> > one of you look at line 954...
-> >
-> > https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/source/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c%23L954&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=e15c51805d429ee6d8960d6b88035e9811a1cdbfbf13168eec2fbb2214b99c60
-> >
-> >
-> > ... and tell me why that unconditional npages = count; assignment
-> > makes sense? It seems to essentially disable all recycling for the dma
-> > pool whenever the pool isn't filled up to/beyond its maximum with free
-> > pages? When the pool is filled up, lots of stuff is recycled, but when
-> > it is already somewhat below capacity, it gets "punished" by not
-> > getting refilled? I'd just like to understand the logic behind that line.
-> >
-> > thanks,
-> > -mario
-> 
-> I'll happily forward that question to Konrad who wrote the code (or it
-> may even stem from the ordinary page pool code which IIRC has Dave
-> Airlie / Jerome Glisse as authors)
-
-This is effectively bogus code, i now wonder how it came to stay alive.
-Attached patch will fix that.
-
-
-> 
-> /Thomas
->  
-
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: attachment; filename="0001-drm-ttm-fix-object-deallocation-to-properly-fill-in-.patch"
-Content-Transfer-Encoding: 8bit
-
->From f65e796fea5f79e4834f4609147ea06c123d6396 Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>
-Date: Mon, 11 Aug 2014 11:10:31 -0400
-Subject: [PATCH] drm/ttm: fix object deallocation to properly fill in the page
- pool.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-Current code never allowed the page pool to actualy fill in anyway. This fix
-it and also allow it to grow over its limit until it grow beyond the batch
-size for allocation and deallocation.
-
-Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
----
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index fb8259f..73744cd 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -951,14 +951,9 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
- 	} else {
- 		pool->npages_free += count;
- 		list_splice(&ttm_dma->pages_list, &pool->free_list);
--		npages = count;
--		if (pool->npages_free > _manager->options.max_size) {
-+		if (pool->npages_free >= (_manager->options.max_size +
-+					  NUM_PAGES_TO_ALLOC))
- 			npages = pool->npages_free - _manager->options.max_size;
--			/* free at least NUM_PAGES_TO_ALLOC number of pages
--			 * to reduce calls to set_memory_wb */
--			if (npages < NUM_PAGES_TO_ALLOC)
--				npages = NUM_PAGES_TO_ALLOC;
--		}
- 	}
- 	spin_unlock_irqrestore(&pool->lock, irq_flags);
- 
--- 
-1.9.3
-
-
---wac7ysb48OaltWcw--
+Note that this doesn't change anything to the core of the argument ;
+we have not heard what Linus thinks about named GPIOs in
+/sys/class/gpio yet, maybe he will have a different opinion...
