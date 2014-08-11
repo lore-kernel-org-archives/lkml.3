@@ -1,80 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041AbaHKU0M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:26:12 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:56884 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816AbaHKU0K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:26:10 -0400
-Date: Mon, 11 Aug 2014 13:26:05 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Kees Cook <keescook@chromium.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: Runtime trouble with commit dbd952127d (seccomp: introduce
- writer locking)
-Message-ID: <20140811202605.GA2986@roeck-us.net>
-References: <53E6CF2B.6090709@roeck-us.net>
- <CAGXu5jLsbCpqG2cAxZWG+ZC=wdvhQ_9GPqXUb6p9pSvsqrXpOA@mail.gmail.com>
- <20140810193308.GA31867@redhat.com>
- <53E7DB59.6020300@roeck-us.net>
- <CA+55aFz3vW_qnrwa6kWMsN1pGbjnyGXGBNhH=DO0berKgyOtgQ@mail.gmail.com>
- <53E7FDB5.4070607@roeck-us.net>
- <CA+55aFyus4Le7EeCEaJpcVVshtwK93Et1C0AkPaC=5QnXJYjGw@mail.gmail.com>
- <20140811114822.GA2122@redhat.com>
- <53E8CF26.9050707@roeck-us.net>
- <CAGXu5jJ7AKTG+d50Mo8WfvZQ2dYkE8syq=517TkHMYouvJCZXw@mail.gmail.com>
+	id S1755078AbaHKU2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:28:20 -0400
+Received: from mail.kernel.org ([198.145.19.201]:43704 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754997AbaHKU2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 16:28:19 -0400
+Date: Mon, 11 Aug 2014 17:28:12 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC 00/20] perf: Finish sampling commands when events are closed
+Message-ID: <20140811202812.GB4148@kernel.org>
+References: <1407747014-18394-1-git-send-email-jolsa@kernel.org>
+ <20140811201249.GA4148@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJ7AKTG+d50Mo8WfvZQ2dYkE8syq=517TkHMYouvJCZXw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140811201249.GA4148@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 12:51:22PM -0700, Kees Cook wrote:
-> On Mon, Aug 11, 2014 at 7:11 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > On 08/11/2014 04:48 AM, Oleg Nesterov wrote:
-> >>
-> >> On 08/10, Linus Torvalds wrote:
-> >>>
-> >>>
-> >>> So that should just be converted to assert_spin_is_locked().
-> >>
-> >>
-> >> I still think that lockdep_assert_held() is better. Unlike
-> >> assert_spin_locked() it checks that this lock is held by us, and this
-> >> is what we want in this case.
-> >>
-> >
-> > assert_spin_locked maps to "BUG_ON(!raw_spin_is_locked(x))"
-> > which it seems is exactly what the current code is doing.
-> > I submitted a patch to make that change to use assert_spin_locked.
-> > Presumably the author had a reason for using BUG_ON and not
-> > lockdep_assert_held(), ie to perform the checks all the time
-> > and not just while debugging. For me this was the safe change
-> > to make. Anything else should, in my opinion, come from the
-> > original author who introduced the code.
+Em Mon, Aug 11, 2014 at 05:12:49PM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Mon, Aug 11, 2014 at 10:49:54AM +0200, Jiri Olsa escreveu:
+> > hi,
+> > adding support to quit sampling commands:
+> >   record,top,trace,kvm stat live
+> > 
+> > when all the monitored events are closed, like following perf
+> > command will now exit when monitored process (pid 1234) exits:
+> > 
+> >   $ perf record -p 1234
+> > 
+> > I added independent poller object to handle basic polling
+> > tasks. I had to factor some parts, so sending this as RFC,
 > 
-> Thanks for the patch! Yeah, that's a weird case; I think we need some
-> documentation in the header file about the UP vs SMP logic when using
-> spin_is_locked(). I note that all other stuff gets hidden behind the
-> _up and _smp headers.
-> 
-Guess one has to know what to look for.
+> Why? I'm trying to figure out why this poller class is needed, just from
+> reading the changelog entries, no luck so far.
 
-Documentation/scsi/ChangeLog.megaraid gives a hint, as do the comments
-next to WARN_ON_SMP.
+So this is all about accounting for when all events are closed? I.e. as
+we receive the ERR and HUP we go on closing the entries in the pollfd?
+Then, when none are closed, then we exit, is that the case?
 
-Not that I knew before last night :-).
+Why not just mark them -1 and decrement evlist->nr_open_fds (new field)?
 
-> I don't prefer lockdep_assert_held(), though, since I want lock
-> failures to hit BUG. I'll apply the patch and ask James to pull it.
-> 
-Thanks a lot!
+struct pollfds {
+	struct pollfd *pollfds;
+	int    nr_fds;
+	int    nr_open_fds;
+};
 
-Guenter
+Don't use callbacks and then that poller_item doesn't need to exist :-\
+
+I'll try to cook a patch with those ideas later today, if for anything,
+to validate your patches :-)
+
+- Arnaldo
+ 
+> > because I'm pretty sure I broke something else ;-)
+> > 
+> > The patch#1 is kernel change, which is needed for the
+> > patchset to work properly. The current behavior stays
+> > without this kernel change.
+> > 
+> > The code is based on latest Arnaldo's perf/core and
+> > following kernel change:
+> >   http://marc.info/?l=linux-kernel&m=140715910417130&w=2
+> > 
+> > The patchset is also reachable in here:
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+> >   perf/core_poll
+> > 
+> > thanks for comments,
+> > jirka
+> > 
+> > 
+> > Cc: Adrian Hunter <adrian.hunter@intel.com>
+> > Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> > Cc: David Ahern <dsahern@gmail.com>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Jean Pihet <jean.pihet@linaro.org>
+> > Cc: Namhyung Kim <namhyung@kernel.org>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> > ---
+> > Jiri Olsa (20):
+> >       perf: Add PERF_EVENT_STATE_EXIT state for events with exited task
+> >       perf tools: Add poller object to handle polling globaly
+> >       perf tests: Add poller object test
+> >       perf tools: Add support to traverse xyarrays
+> >       perf tools: Introduce perf_evsel__fd function
+> >       perf tools: Add evlist/evsel poller object support
+> >       perf record: Add support to see event's ERR and HUP poll errors
+> >       perf tools: Add set_term_quiet_input helper function
+> >       perf tui browser: Add interface to terminate browser from uotside
+> >       perf top: Add support to see event's ERR and HUP poll errors
+> >       perf top: Join the display thread on exit
+> >       perf top: Use set_term_quiet_input for terminal input
+> >       perf top: Setup signals for terminal output
+> >       perf top: Use poller object for display thread stdin
+> >       perf kvm: Fix stdin handling for 'kvm stat live' command
+> >       perf kvm: Add support to see event's ERR and HUP poll errors
+> >       perf trace: Add support to see event's ERR and HUP poll errors
+> >       perf python: Use poller object for polling
+> >       perf tests: Use poller object for polling
+> >       perf tools: Remove pollfd stuff out of evlist object
+> > 
+> >  include/linux/perf_event.h                |   1 +
+> >  kernel/events/core.c                      |  12 ++++-
+> >  tools/perf/Makefile.perf                  |   4 ++
+> >  tools/perf/builtin-kvm.c                  | 123 +++++++++++++++++++++++------------------------
+> >  tools/perf/builtin-record.c               |  29 ++++++++++-
+> >  tools/perf/builtin-report.c               |   3 +-
+> >  tools/perf/builtin-top.c                  | 104 ++++++++++++++++++++++++++--------------
+> >  tools/perf/builtin-trace.c                |  25 +++++++++-
+> >  tools/perf/tests/builtin-test.c           |   8 ++++
+> >  tools/perf/tests/open-syscall-tp-fields.c |   9 +++-
+> >  tools/perf/tests/perf-record.c            |   4 --
+> >  tools/perf/tests/poller.c                 | 126 ++++++++++++++++++++++++++++++++++++++++++++++++
+> >  tools/perf/tests/task-exit.c              |   9 +++-
+> >  tools/perf/tests/tests.h                  |   2 +
+> >  tools/perf/tests/xyarray.c                |  33 +++++++++++++
+> >  tools/perf/ui/browser.c                   |   4 +-
+> >  tools/perf/ui/browser.h                   |   8 +++-
+> >  tools/perf/ui/browsers/annotate.c         |   2 +-
+> >  tools/perf/ui/browsers/header.c           |   2 +-
+> >  tools/perf/ui/browsers/hists.c            |  39 ++++++++-------
+> >  tools/perf/ui/browsers/map.c              |   2 +-
+> >  tools/perf/ui/browsers/scripts.c          |   2 +-
+> >  tools/perf/ui/keysyms.h                   |   1 +
+> >  tools/perf/ui/tui/util.c                  |   2 +-
+> >  tools/perf/util/evlist.c                  |  38 ++++++---------
+> >  tools/perf/util/evlist.h                  |   7 ++-
+> >  tools/perf/util/evsel.c                   |  21 +++++++-
+> >  tools/perf/util/evsel.h                   |  10 ++++
+> >  tools/perf/util/hist.h                    |   6 ++-
+> >  tools/perf/util/kvm-stat.h                |   1 -
+> >  tools/perf/util/poller.c                  | 233 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  tools/perf/util/poller.h                  |  88 ++++++++++++++++++++++++++++++++++
+> >  tools/perf/util/python-ext-sources        |   2 +
+> >  tools/perf/util/python.c                  |  19 ++++++--
+> >  tools/perf/util/util.c                    |  13 +++++
+> >  tools/perf/util/util.h                    |   2 +
+> >  tools/perf/util/xyarray.c                 |   4 +-
+> >  tools/perf/util/xyarray.h                 |   6 +++
+> >  38 files changed, 832 insertions(+), 172 deletions(-)
+> >  create mode 100644 tools/perf/tests/poller.c
+> >  create mode 100644 tools/perf/tests/xyarray.c
+> >  create mode 100644 tools/perf/util/poller.c
+> >  create mode 100644 tools/perf/util/poller.h
