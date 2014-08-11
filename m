@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454AbaHKIcX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 04:32:23 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:55395 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342AbaHKIcU (ORCPT
+	id S1751842AbaHKIcL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 04:32:11 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:58069 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800AbaHKIcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 04:32:20 -0400
+	Mon, 11 Aug 2014 04:32:09 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s7B8VZLT010732, This message is accepted by code: ctloc85258
+From: <rogerable@realtek.com>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <rogerable@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <driverdev-devel@linuxdriverproject.org>,
+        <wei_wang@realsil.com.cn>, <micky_ching@realsil.com.cn>
+Subject: [PATCH] mmc: rtsx: fix incorrect last byte in R2 response
+Date: Mon, 11 Aug 2014 16:32:16 +0800
+Message-ID: <1407745936-18513-1-git-send-email-rogerable@realtek.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <53E54E91.9060905@collabora.co.uk>
-References: <1407397492-17475-1-git-send-email-javier.martinez@collabora.co.uk>
-	<53E4D9A5.908@itdev.co.uk>
-	<20140808162146.GC26820@core.coreip.homeip.net>
-	<53E4FD1B.6060600@collabora.co.uk>
-	<53E5170C.10302@collabora.co.uk>
-	<CAD=FV=WSNqjHLLbTh1LBF3RFrCnWnj498hivivcmx1SbuYp=Hw@mail.gmail.com>
-	<53E54E91.9060905@collabora.co.uk>
-Date: Mon, 11 Aug 2014 10:32:19 +0200
-Message-ID: <CACRpkdZ9-5Pw-SHFNuGtvxDDHrA13ShSSFN9uZRBLTfpe=m5ug@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] Input: atmel_mxt_ts - Get IRQ edge/level flags on
- DT booting
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, Stephen Warren <swarren@nvidia.com>,
-        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Abraham <thomas.ab@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [172.21.81.121]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I guess this discussion is about drivers/pinctrl/samsung/pinctrl-exynos.c?
+From: Roger Tseng <rogerable@realtek.com>
 
-Or else I'm not really following this... $SUBJECT is a bit confusing.
+Current code erroneously fill the last byte of R2 response with an undefined
+value. In addition, it is impossible to obtain the real values since the
+controller actually 'offloads' the last byte(CRC7, end bit) while receiving R2
+response. This could cause mmc stack to obtain inconsistent CID from the same
+card after resume and misidentify it as a different card.
 
-On Sat, Aug 9, 2014 at 12:26 AM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
+Fix by assigning a dummy value 0x01 to the last byte of R2 response.
 
-> Regardless of this though I think that both the patch to move the IRQ
-> pinmux setup from .irq_set_type to the .irq_request_resources and the patch to
-> to prevent any pinmux reconfiguration are good improvements to avoid future
-> issues like the one we found here.
+Signed-off-by: Roger Tseng <rogerable@realtek.com>
+---
+ drivers/mmc/host/rtsx_pci_sdmmc.c |    1 +
+ drivers/mmc/host/rtsx_usb_sdmmc.c |    1 +
+ 2 files changed, 2 insertions(+)
 
-I think someone should look into switching the Samsung/Exynos pinctrl
-driver to the gpiolib irqchip helpers, I looked at it but was scared by
-the special wkup chip and stuff I can't test.
+diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+index dfde4a2..54849d8 100644
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -412,6 +412,7 @@ static void sd_send_cmd_get_rsp(struct realtek_pci_sdmmc *host,
+ 	}
+ 
+ 	if (rsp_type == SD_RSP_TYPE_R2) {
++		ptr[16] = 1;
+ 		for (i = 0; i < 4; i++) {
+ 			cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
+ 			dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
+diff --git a/drivers/mmc/host/rtsx_usb_sdmmc.c b/drivers/mmc/host/rtsx_usb_sdmmc.c
+index 5d3766e..ca08df1 100644
+--- a/drivers/mmc/host/rtsx_usb_sdmmc.c
++++ b/drivers/mmc/host/rtsx_usb_sdmmc.c
+@@ -435,6 +435,7 @@ static void sd_send_cmd_get_rsp(struct rtsx_usb_sdmmc *host,
+ 	}
+ 
+ 	if (rsp_type == SD_RSP_TYPE_R2) {
++		ptr[16] = 1;
+ 		for (i = 0; i < 4; i++) {
+ 			cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
+ 			dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
+-- 
+1.7.10.4
 
-The irqchip helpers will atleast help out in flagging GPIO lines as
-used for IRQs so the core can keep track of stuff and show that
-properly in debugfs.
-
-The orthogonality compliance between GPIO and irqchip must
-however be solved in the driver itself, the core only helps out
-in blocking some abuse of the API.
-
-Yours,
-Linus Walleij
