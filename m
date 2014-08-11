@@ -1,125 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927AbaHKTwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:52:55 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:59969 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaHKTwx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:52:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAAfyv34X1naNEyht0q+bD3QUjCxLJribmfWfZkP073WS7ve4kA@mail.gmail.com>
-References: <1394052739-8589-1-git-send-email-marek@goldelico.com>
-	<1394052739-8589-2-git-send-email-marek@goldelico.com>
-	<20140305232513.GA9542@earth.universe>
-	<CAAfyv34X1naNEyht0q+bD3QUjCxLJribmfWfZkP073WS7ve4kA@mail.gmail.com>
-Date: Mon, 11 Aug 2014 21:52:52 +0200
-Message-ID: <CAAfyv35Hi-aE+SnTiN9O39ANi63gkNMz-Bz6hqCkkxJARSFcOg@mail.gmail.com>
-Subject: Re: [PATCH v2] power: twl4030-madc-battery: Convert to iio consumer.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754965AbaHKTxd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 15:53:33 -0400
+Received: from mga14.intel.com ([192.55.52.115]:51220 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754839AbaHKTxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 15:53:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,843,1400050800"; 
+   d="asc'?scan'208";a="575185375"
+Message-ID: <1407786786.2189.0.camel@jtkirshe-mobl.jf.intel.com>
+Subject: Re: [linux-nics] linux-next: Tree for Aug 11
+ (net/ethernet/intel/i40e)
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux.nics@intel.com, linux-kernel@vger.kernel.org
+Date: Mon, 11 Aug 2014 12:53:06 -0700
+In-Reply-To: <53E8ECA9.6060806@infradead.org>
+References: <20140811155213.0aa083ce@canb.auug.org.au>
+	 <53E8ECA9.6060806@infradead.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-1Kh2MfbG97oYqtDz88Av"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
 
-can you please take this series (I'll post update version with
-removing debug code). Thanks.
+--=-1Kh2MfbG97oYqtDz88Av
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Mar 6, 2014 at 10:10 PM, Belisko Marek <marek.belisko@gmail.com> wrote:
-> Hi Sebastian,
->
-> On Thu, Mar 6, 2014 at 12:25 AM, Sebastian Reichel <sre@debian.org> wrote:
->> Hi Marek,
->>
->> I just have one comment:
->>
->> On Wed, Mar 05, 2014 at 09:52:17PM +0100, Marek Belisko wrote:
->>> [...]
->>> -static int madc_read(int index)
->>> +static int madc_read(struct iio_channel *channel)
->>>  {
->>> -     struct twl4030_madc_request req;
->>> -     int val;
->>> -
->>> -     req.channels = index;
->>> -     req.method = TWL4030_MADC_SW2;
->>> -     req.type = TWL4030_MADC_WAIT;
->>> -     req.do_avg = 0;
->>> -     req.raw = false;
->>> -     req.func_cb = NULL;
->>> -
->>> -     val = twl4030_madc_conversion(&req);
->>> -     if (val < 0)
->>> -             return val;
->>> -
->>> -     return req.rbuf[ffs(index) - 1];
->>> +     int val, err;
->>> +     err = iio_read_channel_processed(channel, &val);
->>> +     if (err < 0) {
->>> +             pr_info("Error:%d\n", err);
->>
->> This should be "Error: %d\n" (with a space).
-> Ups this is remain from debugging messages. I'll remove it and re-post patches.
-> Thanks.
->>
->> Apart from that you should use dev_info() or dev_err(), so that the
->> message is properly prefixed by the device. Currently there is no
->> hint where this error message is generated.
->>
->>> +             return err;
->>> +     }
->>> +     return val;
->>>  }
->>> [...]
->>
->> After fixing this you can add
->>
->> Reviewed-By: Sebastian Reichel <sre@debian.org>
->>
->> -- Sebastian
->
-> BR,
->
-> marek
->
-> --
-> as simple and primitive as possible
-> -------------------------------------------------
-> Marek Belisko - OPEN-NANDRA
-> Freelance Developer
->
-> Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-> Tel: +421 915 052 184
-> skype: marekwhite
-> twitter: #opennandra
-> web: http://open-nandra.com
+On Mon, 2014-08-11 at 09:17 -0700, Randy Dunlap wrote:
+> On 08/10/14 22:52, Stephen Rothwell wrote:
+> > Hi all,
+> >=20
+> > Please do not add code intended for v3.18 until after v3.17-rc1 is
+> > released.
+> >=20
+> > Changes since 20140808:
+> >=20
+>=20
+> on i386 and x86_64:
+>=20
+> ../drivers/net/ethernet/intel/i40e/i40e_fcoe.c: In function
+> 'i40e_get_fcoe_tc_map':
+> ../drivers/net/ethernet/intel/i40e/i40e_fcoe.c:354:23: error:
+> 'IEEE_8021QAZ_APP_SEL_ETHERTYPE' undeclared (first use in this
+> function)
+>    if (app.selector =3D=3D IEEE_8021QAZ_APP_SEL_ETHERTYPE &&
+>=20
+>=20
+> Needs to #include <uapi/linux/dcbnl.h> ??
 
-BR,
+Yeah, Dave has already accepted a patch to resolve that, which I believe
+went into his net tree.
 
-marek
+--=-1Kh2MfbG97oYqtDz88Av
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+iQIcBAABCgAGBQJT6R8iAAoJEOVv75VaS+3OUcUQAKfxnygAOBA684idv3BxCkXg
+eXgVT+6ip4/jzW9bSj4s9IQkNZafEK4IVfcJfDzEGbZEJkd2nUh/CI9jV5+l3Unc
+SkCpMiws9LgH+jam2Uv5ZkPGMuHH30HstYcWFXCLcBXn+mbdxijKOx3wVj0eJBpX
+6Ff+j+Blqx8uIuezSanFgOBeQI0mtbcmoCo5uPTXwPoKZXdzadq29IadGsINcYyE
+Iirqco3MR+ih33MoqyjOM173SiOIDu+VuLr+F496oyCMyTIVpdK/+sM8V7oPgTAN
+JWF9ZnvBbYdg0oVJrgIR6bNeariWrthEwV0BhIuTlaNHLB4hn32KzveAnp8ycwgZ
+h46GKpC754BUcSXHC+TwrrZaHizpPR7anbTUejs6aGui0gLsw5Jkm6BaR3xM9yK0
+tkjeAgIBxFzvgxpeObLNWdEhGPj+QF2QDyoIkf1ZL97ZKF3obieGb1PPmZM3KRvN
+FdW6vVZlD8IAilpz6LqZ4P4az7g/w4Up6TteRP/a1KYYKg+sJDtc8hz16m6PJDRF
+A1QZ8Rfi1t4hlxjuJsa2ShAyvYOhDuy2XWAnAEm5vyYw9YCNe5Rwosilpcoavv+5
+QqjQAbCYcnlbnhOMMS6DgzMDoEW+SN8qy67U9WEeft/HZRKghUGhyOfb2OP/qAVt
+UiCOZw0K6WvaOy90GvDd
+=aq7b
+-----END PGP SIGNATURE-----
+
+--=-1Kh2MfbG97oYqtDz88Av--
+
