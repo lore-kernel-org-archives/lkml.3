@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991AbaHKUZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:25:11 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:57079 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaHKUZJ convert rfc822-to-8bit (ORCPT
+	id S1755041AbaHKU0M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:26:12 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:56884 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816AbaHKU0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:25:09 -0400
+	Mon, 11 Aug 2014 16:26:10 -0400
+Date: Mon, 11 Aug 2014 13:26:05 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Kees Cook <keescook@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: Runtime trouble with commit dbd952127d (seccomp: introduce
+ writer locking)
+Message-ID: <20140811202605.GA2986@roeck-us.net>
+References: <53E6CF2B.6090709@roeck-us.net>
+ <CAGXu5jLsbCpqG2cAxZWG+ZC=wdvhQ_9GPqXUb6p9pSvsqrXpOA@mail.gmail.com>
+ <20140810193308.GA31867@redhat.com>
+ <53E7DB59.6020300@roeck-us.net>
+ <CA+55aFz3vW_qnrwa6kWMsN1pGbjnyGXGBNhH=DO0berKgyOtgQ@mail.gmail.com>
+ <53E7FDB5.4070607@roeck-us.net>
+ <CA+55aFyus4Le7EeCEaJpcVVshtwK93Et1C0AkPaC=5QnXJYjGw@mail.gmail.com>
+ <20140811114822.GA2122@redhat.com>
+ <53E8CF26.9050707@roeck-us.net>
+ <CAGXu5jJ7AKTG+d50Mo8WfvZQ2dYkE8syq=517TkHMYouvJCZXw@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1407780269.28221.63.camel@chimera>
-Date: Mon, 11 Aug 2014 13:25:40 -0700
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org Wireless" 
-	<linux-wireless@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org>
-References: <1407780269.28221.63.camel@chimera>
-To: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
-X-Mailer: Apple Mail (2.1878.6)
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jJ7AKTG+d50Mo8WfvZQ2dYkE8syq=517TkHMYouvJCZXw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-> On embedded devices, often the BSSID of an access point must be set from
-> userspace during the boot process. This provides a relatively clean way
-> of doing that without major side effects.
+On Mon, Aug 11, 2014 at 12:51:22PM -0700, Kees Cook wrote:
+> On Mon, Aug 11, 2014 at 7:11 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > On 08/11/2014 04:48 AM, Oleg Nesterov wrote:
+> >>
+> >> On 08/10, Linus Torvalds wrote:
+> >>>
+> >>>
+> >>> So that should just be converted to assert_spin_is_locked().
+> >>
+> >>
+> >> I still think that lockdep_assert_held() is better. Unlike
+> >> assert_spin_locked() it checks that this lock is held by us, and this
+> >> is what we want in this case.
+> >>
+> >
+> > assert_spin_locked maps to "BUG_ON(!raw_spin_is_locked(x))"
+> > which it seems is exactly what the current code is doing.
+> > I submitted a patch to make that change to use assert_spin_locked.
+> > Presumably the author had a reason for using BUG_ON and not
+> > lockdep_assert_held(), ie to perform the checks all the time
+> > and not just while debugging. For me this was the safe change
+> > to make. Anything else should, in my opinion, come from the
+> > original author who introduced the code.
 > 
-> Signed-off-by: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
-> --- 
-> --- a/net/wireless/sysfs.c	2014-04-19 08:36:52.048511623 -0700
-> +++ b/net/wireless/sysfs.c	2014-04-19 08:38:09.196894176 -0700
-> @@ -24,18 +24,30 @@
-> 	return container_of(dev, struct cfg80211_registered_device, wiphy.dev);
-> }
+> Thanks for the patch! Yeah, that's a weird case; I think we need some
+> documentation in the header file about the UP vs SMP logic when using
+> spin_is_locked(). I note that all other stuff gets hidden behind the
+> _up and _smp headers.
 > 
-> -#define SHOW_FMT(name, fmt, member)					\
-> +#define SHOW_FMT(name, fmt, member, perm)				\
-> static ssize_t name ## _show(struct device *dev,			\
-> 			      struct device_attribute *attr,		\
-> 			      char *buf)				\
-> {									\
-> 	return sprintf(buf, fmt "\n", dev_to_rdev(dev)->member);	\
-> }									\
-> -static DEVICE_ATTR_RO(name)
-> +static DEVICE_ATTR_ ## perm(name)
+Guess one has to know what to look for.
+
+Documentation/scsi/ChangeLog.megaraid gives a hint, as do the comments
+next to WARN_ON_SMP.
+
+Not that I knew before last night :-).
+
+> I don't prefer lockdep_assert_held(), though, since I want lock
+> failures to hit BUG. I'll apply the patch and ask James to pull it.
 > 
-> -SHOW_FMT(index, "%d", wiphy_idx);
-> -SHOW_FMT(macaddress, "%pM", wiphy.perm_addr);
-> -SHOW_FMT(address_mask, "%pM", wiphy.addr_mask);
-> +static ssize_t macaddress_store(struct device *dev,
-> +			      struct device_attribute *attr,
-> +			      const char *buf, size_t count)
-> +{
-> +	u8 temp[ETH_ALEN];
-> +
-> +	if (sscanf(buf, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", temp, temp + 1,
-> +			temp + 2, temp + 3, temp + 4, temp + 5) == ETH_ALEN)
-> +		memcpy(dev_to_rdev(dev)->wiphy.perm_addr, temp, ETH_ALEN);
-> +	return count;
-> +}
-> +
-> +SHOW_FMT(index, "%d", wiphy_idx, RO);
-> +SHOW_FMT(macaddress, "%pM", wiphy.perm_addr, RW);
-> +SHOW_FMT(address_mask, "%pM", wiphy.addr_mask, RO);
+Thanks a lot!
 
-isn't this dangerous to just allow writing to wiphy.perm_addr via sysfs. We ran into the same issue with Bluetooth and ROM only devices that have to unique address. Doing this via sysfs seems the wrong approach. It is messy and full of potential race conditions. I clearly opted against the sysfs solution for Bluetooth. Instead we build an infrastructure that allowed doing it cleanly via the Bluetooth mgmt API. Controllers that have no unique address are brought up as unconfigured and userspace clearly knows that it has to take steps to get an address programmed into the controller.
-
-And I think something similar should be done for WiFi. It might be better to not create the initial wlan0 netdev interface if the hardware has not a single unique address available. That way the supplicant can just either get one from the flash filesystem or make up a proper random one before creating the netdev interface.
-
-Regards
-
-Marcel
-
+Guenter
