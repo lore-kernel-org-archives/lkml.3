@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731AbaHKTZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:25:26 -0400
-Received: from mout.gmx.net ([212.227.15.18]:53532 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753532AbaHKTZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:25:24 -0400
-Message-ID: <53E91894.3060501@gmx.de>
-Date: Mon, 11 Aug 2014 21:25:08 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>, Richard Weinberger <richard@nod.at>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        sahne@0x90.at
-Subject: Re: [uml-devel] "resource: provide new functions to walk through
- resources" breaks UML
-References: <53E7A42E.4090702@nod.at> <20140811122229.GA26869@redhat.com>	<53E8B654.2000807@nod.at> <20140811184401.GE1863@redhat.com>
-In-Reply-To: <20140811184401.GE1863@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:VRaZrVpmLLpatQKec4cRtaFydEz6Dkv3YLNO2//Mau8R18ZsUK2
- UP+Ls7JW1YT7aNX/RRRfitv/cMU+PbAoZeqWYTwFwEeCAokd/evI8AnUfOos0vVRU4cShfm
- Ij4Y03N/tkS5ICa/HegZsSydJrvBrFsiPs2TQV3kpjZHCbj350xj8Q9ePMivkFElqFM3Zb+
- aABlpguM1UkR+3chCnx8A==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1754793AbaHKT0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 15:26:33 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:49331 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754660AbaHKT0c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 15:26:32 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com
+Subject: [PATCH v2 0/4] perf/x86: simplify PEBS event constraint management
+Date: Mon, 11 Aug 2014 21:27:09 +0200
+Message-Id: <1407785233-32193-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2014 08:44 PM, Vivek Goyal wrote:
-> 
-> Hi Richard,
-> 
-> Can you please give the attached patch a try and see if it fixes the UML
-> issue.
-> 
-> I noticed that previous code had a for() loop which will not execute
-> if p was null. I have resorted back to same code now. 
-> 
-> Thanks
-> Vivek
-> 
-> 
-> ---
->  kernel/resource.c |   11 ++++-------
->  1 file changed, 4 insertions(+), 7 deletions(-)
-> 
-> Index: linux-2.6/kernel/resource.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/resource.c	2014-08-11 13:36:19.942423192 -0400
-> +++ linux-2.6/kernel/resource.c	2014-08-11 13:50:20.529387653 -0400
-> @@ -351,15 +351,12 @@ static int find_next_iomem_res(struct re
->  	end = res->end;
->  	BUG_ON(start >= end);
->  
-> -	read_lock(&resource_lock);
-> -
-> -	if (first_level_children_only) {
-> -		p = iomem_resource.child;
-> +	if (first_level_children_only)
->  		sibling_only = true;
-> -	} else
-> -		p = &iomem_resource;
->  
-> -	while ((p = next_resource(p, sibling_only))) {
-> +	read_lock(&resource_lock);
-> +
-> +	for (p = iomem_resource.child; p; p = next_resource(p, sibling_only)) {
->  		if (p->flags != res->flags)
->  			continue;
->  		if (name && strcmp(p->name, name))
-> 
-At least at my system (32 bit x86) the patch seems to work (applied on top of v3.16-10473-gc8d6637)
+This patchkit revamps the PEBS tables on most Intel CPUs, both simplifying
+and fixing a couple of problems on Haswell processors:
+ - All PEBS event supported
+ - data address and data source is now reported correctly for all events
+
+We simplify the tables by using the fact that non-PEBS event when used
+in PEBS mode do not generate any PEBS records , thus they are safe to use.
+This helps simplify the PEBS event constraints because they do not need
+to list all suported PEBS events anymore. They only need to list
+the special PEBS events, such as precise store and load latency.
+This avoid some issues where the kernel is missing some PEBS events.
+
+In V2, we cleanup some more the precise_datala() for store events.
+
+Andi Kleen (2):
+  perf/x86: Revamp PEBS event selection
+  perf/x86: Don't mark DataLA addresses as store
+
+Stephane Eranian (2):
+  perf/x86: fix data source encoding issues for load latency/precise
+    store
+  perf/x86: code cleanups for __intel_pmu_pebs_event()
+
+ arch/x86/include/asm/perf_event.h         |    8 ++
+ arch/x86/kernel/cpu/perf_event.h          |   48 +++++++-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |  183 +++++++++++------------------
+ include/linux/perf_event.h                |    9 +-
+ 4 files changed, 129 insertions(+), 119 deletions(-)
 
 -- 
-Toralf
+1.7.9.5
 
