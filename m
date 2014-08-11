@@ -1,138 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013AbaHKB1S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 21:27:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14910 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751173AbaHKB1R convert rfc822-to-8bit (ORCPT
+	id S1751930AbaHKBlI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 21:41:08 -0400
+Received: from mail.tiggerswelt.net ([94.186.151.130]:60532 "EHLO
+	mail.tiggerswelt.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407AbaHKBlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 21:27:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,838,1400050800"; 
-   d="scan'208";a="556638469"
-From: "Sha, Ruibin" <ruibin.sha@intel.com>
-To: Chintan Pandya <cpandya@codeaurora.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "mel@csn.ul.ie" <mel@csn.ul.ie>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>, "He, Bo" <bo.he@intel.com>
-Subject: RE: [PATCH]  export the function kmap_flush_unused.
-Thread-Topic: [PATCH]  export the function kmap_flush_unused.
-Thread-Index: Ac+y5+HQpmMHN67ATFSpsTtU//26Wf//xnwA//uWruA=
-Date: Mon, 11 Aug 2014 01:26:45 +0000
-Message-ID: <3C85A229999D6B4A89FA64D4680BA6142CAFF3@SHSMSX101.ccr.corp.intel.com>
-References: <3C85A229999D6B4A89FA64D4680BA6142C7DFA@SHSMSX101.ccr.corp.intel.com>
- <53E4D312.5000601@codeaurora.org>
-In-Reply-To: <53E4D312.5000601@codeaurora.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 10 Aug 2014 21:41:07 -0400
+X-Greylist: delayed 1832 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Aug 2014 21:41:06 EDT
+Message-ID: <53E81801.8000907@phihag.de>
+Date: Mon, 11 Aug 2014 03:10:25 +0200
+From: Philipp Hagemeister <phihag@phihag.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>, Wei WANG <wei_wang@realsil.com.cn>
+CC: 757733@bugs.debian.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Bug#757733: RTS2557 SD card reader does not work
+References: <20140810225012.3425.19201.reportbug@t4.home.phihag.de> <1407715088.3017.73.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1407715088.3017.73.camel@deadeye.wl.decadent.org.uk>
+OpenPGP: id=A4826A18
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="md2SAJqIRJv76kXNskqQA5tcDxTH9QgXR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chintan,
-Thank you very much for your timely and kindly response and comments.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--md2SAJqIRJv76kXNskqQA5tcDxTH9QgXR
+Content-Type: multipart/mixed;
+ boundary="------------020605060606050500090508"
 
-Here is more detail about our Scenario:
+This is a multi-part message in MIME format.
+--------------020605060606050500090508
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-    We have a big driver on Android product. The driver allocates lots of
-    DDR pages. When applications mmap a file exported from the driver,
-    driver would mmap the pages to the application space, usually with
-    uncachable prot.
-    On ia32/x86_64 arch, we have to avoid page cache alias issue. When
-    driver allocates the pages, it would change page original mapping in
-    page table with uncachable prot. Sometimes, the allocated page was
-    used by kmap/kunmap. After kunmap, the page is still mapped in KMAP
-    space. The entries in KMAP page table are not cleaned up until a
-    kernel thread flushes the freed KMAP pages(usually it is woken up by kunmap).
-    It means the driver need  force to flush the KMAP page table entries before mapping pages to
-    application space to be used. Otherwise, there is a race to create
-    cache alias.
-
-    To resolve this issue, we need export function kmap_flush_unused as
-    the driver is compiled as module. Then, the driver calls
-    kmap_flush_unused if the allocated pages are in HIGHMEM and being
-    used by kmap.
-
-Thanks again!
-
-Best Regards
----------------------------------------------------------------
-Sha, Rui bin ( Robin )
-+86 13817890945
-Android System Integration Shanghai
-
------Original Message-----
-From: Chintan Pandya [mailto:cpandya@codeaurora.org] 
-Sent: Friday, August 8, 2014 9:40 PM
-To: Sha, Ruibin
-Cc: linux-kernel@vger.kernel.org; linux-mm@kvack.org; mel@csn.ul.ie; a.p.zijlstra@chello.nl; mgorman@suse.de; mingo@redhat.com; Zhang, Yanmin; He, Bo
-Subject: Re: [PATCH] export the function kmap_flush_unused.
-
-On 08/08/2014 02:46 PM, Sha, Ruibin wrote:
-> export the function kmap_flush_unused.
+> A web search shows some similar reports (e.g.
+> <https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1329566>,
 >
-> Scenario: When graphic driver need high memory spece, we use 
-> alloc_pages() to allocate. But if the allocated page has just been 
-> mapped in the KMAP space(like first kmap then kunmap) and no flush 
-> page happened on PKMAP, the page virtual address is not NULL.Then when 
-> we get that page and set page attribute like set_memory_uc and 
-> set_memory_wc, we hit error.
+<http://askubuntu.com/questions/473848/ubuntu-14-04-realtek-semiconductor=
+-co-ltd-rts5227-pci-express-card-reader-isn>).
+> But in that last one, it turns out that the out-of-tree driver does
+> work.
 
-Could you explain your scenario with more details ? set_memory_* should be applied on mapped address. And in attempt to map your page (which was just kmap and kunmap'ed), it will overwrite the previous mappings.
-
-Moreover, in my view, kmap_flush_unused is just helping us in keeping the cache clean for kmap virtual addresses if they are unmapped. Is it serving any more purpose here ?
-
->
-> fix: For that scenario,when we get the allocated page and its virtual
-> address is not NULL, we would like first flush that page.
-> So need export that function kmap_flush_unused.
->
-> Signed-off-by: sha, ruibin <ruibin.sha@intel.com>
->
-> ---
-> mm/highmem.c | 1 +
-> 1 file changed, 1 insertion(+)
->
-> diff --git a/mm/highmem.c b/mm/highmem.c
-> index b32b70c..511299b 100644
-> --- a/mm/highmem.c
-> +++ b/mm/highmem.c
-> @@ -156,6 +156,7 @@ void kmap_flush_unused(void)
-> flush_all_zero_pkmaps();
-> unlock_kmap();
-> }
-> +EXPORT_SYMBOL(kmap_flush_unused);
-This symbol is already extern'ed. Is it not sufficient for your case ?
->
-> static inline unsigned long map_new_virtual(struct page *page)
-> {
-> --
-> 1.7.9.5
->
-> Best Regards
->
-> ---------------------------------------------------------------
->
-> Sha, Rui bin ( Robin )
->
-> +86 13817890945
->
-> Android System Integration Shanghai
->
+Indeed, that is a workaround - download from
+http://www.realtek.com.tw/downloads/downloadsView.aspx?Langid=3D1&PNid=3D=
+15&PFid=3D25&Level=3D4&Conn=3D3&DownTypeID=3D3&GetDown=3Dfalse
+, apply the attached patch, remove all rtsx_* modules, and insert the
+new rts2557 module into the kernel.
 
 
--- 
-Chintan Pandya
+--------------020605060606050500090508
+Content-Type: text/x-patch;
+ name="rts5229.patch"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment;
+ filename="rts5229.patch"
 
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-member of the Code Aurora Forum, hosted by The Linux Foundation
+commit 31eeecabfabe62c9667464f2144cbbd57c370b6f
+Author: Philipp Hagemeister <phihag@phihag.de>
+Date:   Mon Aug 11 03:03:56 2014 +0200
+
+    Rename rts2559 to rts2557 and remove outdated macros
+
+diff --git a/Makefile b/Makefile
+index 6536bd4..7815096 100644
+--- a/Makefile
++++ b/Makefile
+@@ -22,7 +22,7 @@
+ # Makefile for the PCI-Express Card Reader drivers.
+ #
+=20
+-TARGET_MODULE :=3D rts5229
++TARGET_MODULE :=3D rts5227
+=20
+ EXTRA_CFLAGS :=3D -Idrivers/scsi=20
+=20
+diff --git a/rtsx.c b/rtsx.c
+index 7fd7a92..8ba9e19 100644
+--- a/rtsx.c
++++ b/rtsx.c
+@@ -263,7 +263,6 @@ static struct scsi_host_template rtsx_host_template =3D=
+ {
+ =09
+ 	.name =3D				CR_DRIVER_NAME,
+ 	.proc_name =3D			CR_DRIVER_NAME,
+-	.proc_info =3D			proc_info,
+ 	.info =3D				host_info,
+=20
+ =09
+@@ -911,7 +910,7 @@ static void rtsx_init_options(struct rtsx_chip *chip)=
+
+ 	chip->support_mmc =3D 1;
+ }
+=20
+-static int __devinit rtsx_probe(struct pci_dev *pci, const struct pci_de=
+vice_id *pci_id)
++static int rtsx_probe(struct pci_dev *pci, const struct pci_device_id *p=
+ci_id)
+ {
+ 	struct Scsi_Host *host;
+ 	struct rtsx_dev *dev;
+@@ -1066,7 +1065,7 @@ errout:
+ }
+=20
+=20
+-static void __devexit rtsx_remove(struct pci_dev *pci)
++static void rtsx_remove(struct pci_dev *pci)
+ {
+ 	struct rtsx_dev *dev =3D (struct rtsx_dev *)pci_get_drvdata(pci);
+=20
+@@ -1092,7 +1091,7 @@ static struct pci_driver driver =3D {
+ 	.name =3D CR_DRIVER_NAME,
+ 	.id_table =3D rts5229_ids,
+ 	.probe =3D rtsx_probe,
+-	.remove =3D __devexit_p(rtsx_remove),
++	.remove =3D rtsx_remove,
+ #ifdef CONFIG_PM
+ 	.suspend =3D rtsx_suspend,
+ 	.resume =3D rtsx_resume,
+diff --git a/rtsx.h b/rtsx.h
+index 3a1bb2f..98b26c4 100644
+--- a/rtsx.h
++++ b/rtsx.h
+@@ -52,7 +52,7 @@
+ #include "trace.h"
+ #include "general.h"
+=20
+-#define CR_DRIVER_NAME		"rts5229"
++#define CR_DRIVER_NAME		"rts5227"
+=20
+=20
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14)
+
+--------------020605060606050500090508--
+
+--md2SAJqIRJv76kXNskqQA5tcDxTH9QgXR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJT6BgBAAoJENtLVMukgmoYdvcQANydril5tXzq6c0v5WFrp5DR
+yJWwb7eTho1Aj69F24Kh4PxvpuaaqSt9HG7k0kYoxz+VuruhQheWsI7KTWzk43L5
+M4HzafECt/dQ8tZGpZUQ38HMo6CNDgVcIy7DpaPAPQB2nZCLGCQ6z17BVZsU9MiW
+d1PIU+14xonEJmsmBjNBqTplskRjEzzVpxNSDVXsb/U6Br+vbgEfpD/wUuxw1aha
+nn3U2hevqL/Sp5SzlIAge8VPfOtRqlNnSxpNEKnQum1QIbEg6xDIECtZRV45RGd1
+djZMeiGyS2+wfyHCK4upZl0g6HKNlFCTUTXZ6bcD3Kvn59fG1iyXkAKomjN1Vz3E
+9BiQYOaBr5uadKLJHYfO7Tz3niXtBpJYgYIFQvHktMrPxSJjUcKZCBzaq2mZ8SHV
+MJpvLjcIsk+gbXZ4ROI0exejKV2Ije8Tx7EcJhA6fiNboR3o5g4dvve06XmzqhhI
+BYwDmI4NuwgFOTUCzEa/AuenNqS9hfnNAzmnxuUm3dVMMfH/RvBiA7gTtQrYpgzt
+kWF6+ra8WGkpTvUT98C2XmwVuyker3+autR25uIXT53z8fn8L3Dvik5WaOLSzDWJ
+4oYAhEK+WsXiasW1H4UiyF+kg686/lIK/+gyJ4TTbm9gy6Qv2bjDcn2ay2Tu3qoE
+WQQOzFMcgNqwPfP+Uy8B
+=+uRi
+-----END PGP SIGNATURE-----
+
+--md2SAJqIRJv76kXNskqQA5tcDxTH9QgXR--
