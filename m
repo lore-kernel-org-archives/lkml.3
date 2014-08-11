@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116AbaHKWyF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 18:54:05 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47439 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753399AbaHKWyC (ORCPT
+	id S932256AbaHKWyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 18:54:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33894 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755105AbaHKWyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 18:54:02 -0400
-Date: Mon, 11 Aug 2014 23:53:26 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, akpm@linux-foundation.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jean Delvare <jdelvare@suse.de>, catalin.marinas@arm.com,
-        will.deacon@arm.com, tony.luck@intel.com, fenghua.yu@intel.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch: Kconfig: Let all little endian architectures
-	define CPU_LITTLE_ENDIAN explicitly
-Message-ID: <20140811225326.GF30401@n2100.arm.linux.org.uk>
-References: <53E93334.5000205@gmail.com>
+	Mon, 11 Aug 2014 18:54:11 -0400
+Date: Tue, 12 Aug 2014 06:53:32 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+Cc: "hdegoede@redhat.com" <hdegoede@redhat.com>,
+        "kraxel@redhat.com" <kraxel@redhat.com>,
+        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] uas: replace WARN_ON_ONCE() with assert_spin_locked().
+Message-ID: <20140811225332.GA10721@kroah.com>
+References: <1407743966-25325-1-git-send-email-sanjeev_sharma@mentor.com>
+ <20140811082811.GC1422@kroah.com>
+ <FDC088D3B5555644AE135ED28A7ABDE94DF2B2AE@EU-MBX-02.mgc.mentorg.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53E93334.5000205@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <FDC088D3B5555644AE135ED28A7ABDE94DF2B2AE@EU-MBX-02.mgc.mentorg.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 05:18:44AM +0800, Chen Gang wrote:
-> x86, ia64, and arm(64) are little endian, and also another architectures
-> may be little endian (mips, sh, powerpc, and m32r) which already marked
-> CPU_LITTLE_ENDIAN explicitly.
+On Mon, Aug 11, 2014 at 11:56:17AM +0000, Sharma, Sanjeev wrote:
+> Hi Greg,
+> 
+> Please find my comment in line.
 
-This is incorrect.  ARM can be either endian.
+As it should, but where is it, your quoting is all messed up...
 
-arch/arm/mm/Kconfig:
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org] 
+> Sent: Monday, August 11, 2014 1:58 PM
+> To: Sharma, Sanjeev
+> Cc: hdegoede@redhat.com; kraxel@redhat.com; mdharm-usb@one-eyed-alien.net; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org
+> Subject: Re: [PATCH] uas: replace WARN_ON_ONCE() with assert_spin_locked().
+> 
+> On Mon, Aug 11, 2014 at 01:29:26PM +0530, Sanjeev Sharma wrote:
+> > spin_is_locked() always return false in uniprocessor configuration
+> 
+> Really?  On what processor type?  I don't see that being the case on a few processors, but I didn't check them all, or I might be totally confused with all of the arch_spin_is_locked() definitions in the tree.
+> 
+> specially in case of mips and powerpc but we can configure our kernel to uniprocessor configuration for specific processor and in that case we should be extra cautious. Please check spinlock_up.h
 
-config CPU_BIG_ENDIAN
-        bool "Build big-endian kernel"
-        depends on ARCH_SUPPORTS_BIG_ENDIAN
-        help
-          Say Y if you plan on running a kernel in big-endian mode.
-          Note that your board must be properly built and your board
-          port must properly enable any big-endian related features
-          of your chipset/board/processor.
+Shouldn't you just fix your .h file to not do this?  x86 is not this
+way, nor is ARM, right?
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+> > and therefore it
+> > would be advise to repalce with assert_spin_locked().
+> 
+> This implies that all uses of this function is wrong and should be replaced and removed, right?
+> 
+> Yes and there are only few places in driver for which I am submitting patches which need to be change and at other places it has been already taken care. Please have an look into the
+> Old discussion for more details.
+> 
+> http://linux-kernel.2935.n7.nabble.com/Is-spin-is-locked-safe-to-use-with-BUG-ON-WARN-ON-td654800.html#a921802
+
+Ok, just remove all the tests, it doesn't help anyone :)
+
+thanks,
+
+greg k-h
