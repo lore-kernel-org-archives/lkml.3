@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173AbaHKQPl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 12:15:41 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:43531 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636AbaHKQPj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 12:15:39 -0400
-Date: Mon, 11 Aug 2014 09:15:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140811161531.GA530@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140808191326.GE3935@laptop>
- <20140808205826.GG5821@linux.vnet.ibm.com>
- <20140809061514.GK9918@twins.programming.kicks-ass.net>
- <20140809160137.GJ5821@linux.vnet.ibm.com>
- <20140809181920.GO9918@twins.programming.kicks-ass.net>
- <20140809182400.GJ3588@twins.programming.kicks-ass.net>
- <20140810012924.GO5821@linux.vnet.ibm.com>
- <20140810081425.GT9918@twins.programming.kicks-ass.net>
- <20140811033048.GT5821@linux.vnet.ibm.com>
- <20140811115706.GX9918@twins.programming.kicks-ass.net>
+	id S1754200AbaHKQPy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 12:15:54 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55705 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754175AbaHKQPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 12:15:52 -0400
+Date: Mon, 11 Aug 2014 11:15:11 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Richard Leitner <richard.leitner@skidata.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] usb: gadget: serial: remove PREFIX macro
+Message-ID: <20140811161511.GH20177@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140718113946.0e70c0cb@lxbuild.skidata.net>
+ <20140811150435.6235fbf6@lxbuild.skidata.net>
+ <20140811135033.GD20177@saruman.home>
+ <20140811165238.1957ec69@lxbuild.skidata.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="82evfD9Ogz2JrdWZ"
 Content-Disposition: inline
-In-Reply-To: <20140811115706.GX9918@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081116-0928-0000-0000-00000408C57F
+In-Reply-To: <20140811165238.1957ec69@lxbuild.skidata.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 01:57:06PM +0200, Peter Zijlstra wrote:
-> On Sun, Aug 10, 2014 at 08:30:48PM -0700, Paul E. McKenney wrote:
-> > On Sun, Aug 10, 2014 at 10:14:25AM +0200, Peter Zijlstra wrote:
-> 
-> > > want want want, I want a damn pony but somehow I'm not getting one. Why
-> > > are they getting this?
-> > 
-> > We can only be glad that my daughters' old My Little Pony toys are
-> > long gone (http://en.wikipedia.org/wiki/My_Little_Pony).  Not sure I
-> > would have been able to resist sending one along.  ;-)
-> 
-> LOL, I _knew_ someone was going to propose doing that ;-)
+--82evfD9Ogz2JrdWZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You know me too well, Peter!  ;-)
+Hi,
 
-							Thanx, Paul
+On Mon, Aug 11, 2014 at 04:52:38PM +0200, Richard Leitner wrote:
+> On Mon, 11 Aug 2014 08:50:34 -0500
+> Felipe Balbi <balbi@ti.com> wrote:
+>=20
+> > On Mon, Aug 11, 2014 at 03:04:35PM +0200, Richard Leitner wrote:
+> > > Hi,
+> > > this patch was lying around for some time...
+> > > are there any comments or objections on this?
+> >=20
+> > you realise we're still in the middle of the merge window, right ?
+> >=20
+>=20
+> yeah I know, but I didn't knew that I shouldn't ask for the status of
+> my patches during merge windows...
 
+well, usually during merge windows most maintainers take a "break", if
+you will. For many, it's the only time we have to sit back and enjoy the
+show.
+
+> Sorry for that, this was one of my first patches submitted, so I hope
+> you'll be clement with beginners like me ;-)
+
+hehe, no problem.
+
+> I'll come back to you when the merge window is closed.
+
+sure thing. Once v3.17-rc1 is tagged, I'll start queueing patches. Once
+they are in my final branches (fixes or next) you'll get an automated
+email. Until then you can, if you wish, poll my testing branches
+(testing/fixes and testing/next) to check the status of your patches.
+
+cheers
+
+--=20
+balbi
+
+--82evfD9Ogz2JrdWZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT6OwPAAoJEIaOsuA1yqREB+AP/Rva97SWdLZUiBIdWxqcPZBb
+2KvbYprIuwJTuH/vpkaqPzxMpIi3fG5b6qlsYL+SOzCAFA7QXw1jXDOMPq6IT5j/
+3rH4B5C/uVpfhMsO0bbJ4/xiPGzxC03zN89RKGhlJAx9GhQ89OWbHE9hXCvljKbj
+w98jlV6MpjPkVb2+CgQlfTACpwJ+LpHW0BaHhj4NjfqhTw0tTUZlHiLJi0RBb2hb
+ZWZl4XZigO0cbR5i4ITuQfBt849TV9llXC7jN9lktJd4M6n8PtP3j2bgE33NRnWW
+XkA6/1mNEmJJ5gFIitxZJLug8qKILrtWppDwK8t8DRM3FqhoJYA90k/0acANQi43
+6iOpzotS9p9K8M3ZfFmg62WaIWpFyInACn8cTIS8gijTcfDKoacDwA9tEHNq4qwY
+ahqp7/YDROpnP2eGfMQAFzKHhKDm5tey5RFL3fKmaCgTCtiHQnkhoEAmr7OqBI6I
+rDwm0tYR5bt2icnaE1p3/jIrgpeQKAN2un+VsoKQ/fp/+pknVlLYB2hirJhcX6WE
+6kNSuznaHFpy3g4bWjsIL9kSst4AWTqqHD6bzaI3Czo0zQ8g83TjqCABJVvUaN0A
+uAuDztKPVltchWd7DmY5Vj6O5obzFj5MVbHK5LWfKqNq5wvYZCEPRTvCmbcoMW2y
+F2E0oU+iX1c/eZOQQAck
+=w2nH
+-----END PGP SIGNATURE-----
+
+--82evfD9Ogz2JrdWZ--
