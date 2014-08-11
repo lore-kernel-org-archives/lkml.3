@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420AbaHKWwJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 18:52:09 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:62606 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786AbaHKWvS (ORCPT
+	id S1755364AbaHKWuN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 18:50:13 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:37467 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754825AbaHKWtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 18:51:18 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        David Howells <dhowells@redhat.com>,
-        Masanari Iida <standby24x7@gmail.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] doc: memory-barriers.txt: Add barrier() to provide ordering
-Date: Mon, 11 Aug 2014 18:51:40 -0400
-Message-Id: <1407797503-24727-2-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1407797503-24727-1-git-send-email-bobby.prani@gmail.com>
-References: <1407797503-24727-1-git-send-email-bobby.prani@gmail.com>
+	Mon, 11 Aug 2014 18:49:16 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v5 tip/core/rcu 13/16] rcu: Make rcu_tasks_kthread()'s GP-wait loop allow preemption
+Date: Mon, 11 Aug 2014 15:49:02 -0700
+Message-Id: <1407797345-28227-13-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140811224840.GA25594@linux.vnet.ibm.com>
+ <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081122-0928-0000-0000-000003FE0201
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the provably false case, add barrier() in both the legs of the if() condition
-to provide ordering.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+The grace-period-wait loop in rcu_tasks_kthread() is under (unnecessary)
+RCU protection, and therefore has no preemption points in a PREEMPT=n
+kernel.  This commit therefore removes the RCU protection and inserts
+cond_resched().
+
+Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/memory-barriers.txt | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/rcu/update.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index 41a6c9c..0f2903f 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -689,9 +689,11 @@ should do something like the following:
- 	q = ACCESS_ONCE(a);
- 	BUILD_BUG_ON(MAX <= 1); /* Order load from a with store to b. */
- 	if (q % MAX) {
-+		barrier();
- 		ACCESS_ONCE(b) = p;
- 		do_something();
- 	} else {
-+		barrier();
- 		ACCESS_ONCE(b) = p;
- 		do_something_else();
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index a4140f25cf1a..2ae6fb8752d4 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -470,7 +470,7 @@ static void check_holdout_task(struct task_struct *t,
+ 	    (IS_ENABLED(CONFIG_NO_HZ_FULL) &&
+ 	     !is_idle_task(t) && t->rcu_tasks_idle_cpu >= 0)) {
+ 		ACCESS_ONCE(t->rcu_tasks_holdout) = 0;
+-		list_del_rcu(&t->rcu_tasks_holdout_list);
++		list_del_init(&t->rcu_tasks_holdout_list);
+ 		put_task_struct(t);
+ 		return;
  	}
+@@ -576,6 +576,7 @@ static int __noreturn rcu_tasks_kthread(void *arg)
+ 			bool firstreport;
+ 			bool needreport;
+ 			int rtst;
++			struct task_struct *t1;
+ 
+ 			schedule_timeout_interruptible(HZ);
+ 			rtst = ACCESS_ONCE(rcu_task_stall_timeout);
+@@ -585,11 +586,11 @@ static int __noreturn rcu_tasks_kthread(void *arg)
+ 				lastreport = jiffies;
+ 			firstreport = true;
+ 			WARN_ON(signal_pending(current));
+-			rcu_read_lock();
+-			list_for_each_entry_rcu(t, &rcu_tasks_holdouts,
+-						rcu_tasks_holdout_list)
++			list_for_each_entry_safe(t, t1, &rcu_tasks_holdouts,
++						rcu_tasks_holdout_list) {
+ 				check_holdout_task(t, needreport, &firstreport);
+-			rcu_read_unlock();
++				cond_resched();
++			}
+ 		}
+ 
+ 		/*
 -- 
-1.9.1
+1.8.1.5
 
