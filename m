@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199AbaHKL6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 07:58:42 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:48862 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638AbaHKL6l convert rfc822-to-8bit (ORCPT
+	id S1753231AbaHKL6x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 07:58:53 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:31532 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506AbaHKL6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 07:58:41 -0400
-From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "steve.glendinning@shawell.net" <steve.glendinning@shawell.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] smsc: replace WARN_ON() with WARN_ON_SMP()
-Thread-Topic: [PATCH] smsc: replace WARN_ON() with WARN_ON_SMP()
-Thread-Index: AQHPtTq5zUyjXrbfeEGo5ny0RRaI85vK/u6AgABNL6A=
-Date: Mon, 11 Aug 2014 11:58:38 +0000
-Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF2B2C5@EU-MBX-02.mgc.mentorg.com>
-References: <1407744983-29289-1-git-send-email-sanjeev_sharma@mentor.com>
- <20140811082015.GA1422@kroah.com>
-In-Reply-To: <20140811082015.GA1422@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.202.0.76]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Aug 2014 07:58:51 -0400
+X-IronPort-AV: E=Sophos;i="5.01,841,1400025600"; 
+   d="scan'208";a="161209858"
+Message-ID: <53E8AFF7.70207@citrix.com>
+Date: Mon, 11 Aug 2014 12:58:47 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-X-OriginalArrivalTime: 11 Aug 2014 11:58:39.0733 (UTC) FILETIME=[97045A50:01CFB55B]
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dave Scott <Dave.Scott@eu.citrix.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen_hvc: no reason to write the type key on xenstore
+References: <alpine.DEB.2.02.1408111250150.2293@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1408111250150.2293@kaball.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok Greg probably Steve will have a look.
-
-Regards
-Sanjeev Sharma
-
------Original Message-----
-From: Greg KH [mailto:gregkh@linuxfoundation.org] 
-Sent: Monday, August 11, 2014 1:50 PM
-To: Sharma, Sanjeev
-Cc: steve.glendinning@shawell.net; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] smsc: replace WARN_ON() with WARN_ON_SMP()
-
-On Mon, Aug 11, 2014 at 01:46:23PM +0530, Sanjeev Sharma wrote:
-> spin_is_locked() always return false in uniprocessor configuration and 
-> therefore it would be advise to repalce with WARN_ON_SMP().
+On 11/08/14 12:54, Stefano Stabellini wrote:
+> The backend type is chosen by the toolstack. Regardless, the frontend
+> should not care, especially given that it cannot have an effect as the
+> backend is started before this code is run.
 > 
-> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-> ---
->  drivers/net/ethernet/smsc/smsc911x.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Hint, I have nothing to do with this file, no need to send a patch for it to me, I can't do anything with it...
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
-thanks,
+This needs go via the TTY subsystem (you didn't Cc the maintainers).
 
-greg k-h
+David
