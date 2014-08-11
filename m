@@ -1,61 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488AbaHKNQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 09:16:27 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:45876 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751101AbaHKNQ0 (ORCPT
+	id S1753498AbaHKNRE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 09:17:04 -0400
+Received: from exprod7og125.obsmtp.com ([64.18.2.28]:45331 "EHLO
+	exprod7og125.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271AbaHKNRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 09:16:26 -0400
-X-Sasl-enc: squzBDKeA8cvGchMtPD4w/MzI483gCb7Roh4EVZYwJBq 1407762985
-Date: Mon, 11 Aug 2014 10:16:13 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: H Peter Anvin <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: BUG: early intel microcode update violating alignment rules
-Message-ID: <20140811131613.GA4541@khazad-dum.debian.net>
-References: <20140809231911.GA4843@khazad-dum.debian.net>
- <20140811102245.GC4236@nazgul.tnic>
+	Mon, 11 Aug 2014 09:17:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140811102245.GC4236@nazgul.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAK=zhgpiyt9xukGCNDOpEDmWRwFSMCcEiUQ190BW0UgiLGVP6g@mail.gmail.com>
+References: <20140625103445.GA12943@avagotech.com>
+	<yq1zjg2m6lu.fsf@sermon.lab.mkp.net>
+	<CAK=zhgoQt5J=jh4jShAy5rBXNz34sN-tqf=uZDkY4zQJ9XhM5g@mail.gmail.com>
+	<yq18unklvda.fsf@sermon.lab.mkp.net>
+	<CAK=zhgpDWJLBMBB1mV-7u+o_UC86PiOCAp4vi4-UAn_hXHtF2A@mail.gmail.com>
+	<yq1r41bkgdp.fsf@sermon.lab.mkp.net>
+	<CAK=zhgp_v_sdt+VLDs1Mxxi8Cg4nZNnzgQ=d228h+Ht2EpdEqw@mail.gmail.com>
+	<yq138dpgr6z.fsf@sermon.lab.mkp.net>
+	<CAK=zhgoEhW7fT7SV6ZkzgFa_A49W9quzWOgXb=DH3D_CrMAdDw@mail.gmail.com>
+	<yq161i6epv5.fsf@sermon.lab.mkp.net>
+	<CAK=zhgpqW-t11JKiBRRM7Z4TEMyaEUBX943qT8faaKPk6Pk4XA@mail.gmail.com>
+	<CAK=zhgpiyt9xukGCNDOpEDmWRwFSMCcEiUQ190BW0UgiLGVP6g@mail.gmail.com>
+Date: Mon, 11 Aug 2014 18:47:01 +0530
+Message-ID: <CAK=zhgpGp57nMXeDGsNKg3SHsUc-LV25BtBuCcUBXqXUESzOWQ@mail.gmail.com>
+Subject: Re: [RESEND][PATCH 07/10][SCSI]mpt2sas: Added Reply Descriptor Post
+ Queue (RDPQ) Array support
+From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: jejb@kernel.org, "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org,
+        Sathya Prakash <Sathya.Prakash@avagotech.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Aug 2014, Borislav Petkov wrote:
-> On Sat, Aug 09, 2014 at 08:19:11PM -0300, Henrique de Moraes Holschuh wrote:
-> > Is there a way to fix this in the kernel for the BSP?
-> 
-> I think you're looking at this the wrong way around. :-) The thing that
-> needs fixing is the SDM since some CPUs seem to accept 16-byte unaligned
-> microcode just fine.
+Hi Martin,
 
-I often wonder how much of the Intel SDM is really a fairy tale...  it
-certainly has enough legends from times long past inside ;-)  But just like
-old stories, should you forget all about them, they sometimes grow fangs
-back and get you when you're least prepared.
+Please let me known any further changes are required so that I can
+send this patch once again with git send-email.
 
-Now, seriously, we're neither aligning the thing, nor checking any of it for
-alignment, so userspace can mess with us at will.  Unless it is trying to be
-actively malicious, we'll get 4-byte alignment out of userspace for the data
-inside the early initramfs (assuming the use of the common cpio tools: GNU
-cpio and GNU pax), but that's it.
+Regards,
+Sreekanth
 
-I can easily propose fixes to reject incorrectly aligned data (and will do
-so), but you *really* don't want to know the kind of crap I came up with to
-try to align the microcode update for the BSP: Standard Lovecraftian Mythos
-Safety Procedures apply!  So I am turning to you for ideas...
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+On Mon, Aug 11, 2014 at 6:45 PM, Sreekanth Reddy
+<sreekanth.reddy@avagotech.com> wrote:
+> Hi Martin,
+>
+> Please let me known any further changes are required so that I can send this
+> patch once again with git send-email.
+>
+> Regards,
+> Sreekanth
+>
+>
+> On Wed, Aug 6, 2014 at 10:57 AM, Sreekanth Reddy
+> <sreekanth.reddy@avagotech.com> wrote:
+>>
+>> Hi Martin,
+>>
+>> Replied inline.
+>>
+>> On Wed, Aug 6, 2014 at 12:16 AM, Martin K. Petersen
+>> <martin.petersen@oracle.com> wrote:
+>>>
+>>> >>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+>>> >>>>> writes:
+>>>
+>>> Sreekanth,
+>>>
+>>> Patch was mangled and I had to apply every single hunk by hand. Please
+>>> use git send-email.
+>>>
+>> Sorry, Next time onwards I will take of this.
+>>
+>>>
+>>> +static int dma_mask;
+>>> +
+>>> +static int
+>>> +_base_wait_for_doorbell_int(struct MPT2SAS_ADAPTER *ioc, int timeout,
+>>> +                int sleep_flag);
+>>> +static int
+>>> +_base_wait_for_doorbell_ack(struct MPT2SAS_ADAPTER *ioc, int timeout,
+>>> +                int sleep_flag);
+>>> +static int
+>>> +_base_wait_for_doorbell_not_used(struct MPT2SAS_ADAPTER *ioc, int
+>>> timeout,
+>>> +                 int sleep_flag);
+>>> +static int
+>>> +_base_handshake_req_reply_wait(struct MPT2SAS_ADAPTER *ioc, int
+>>> request_bytes,
+>>> +    u32 *request, int reply_bytes, u16 *reply, int timeout, int
+>>> sleep_flag);
+>>> +static int
+>>> +_base_get_ioc_facts(struct MPT2SAS_ADAPTER *ioc, int sleep_flag);
+>>>
+>>> Are you sure you need all these? _base_get_ioc_facts was the only one
+>>> that needed to be declared in my original patch.
+>>
+>>
+>> Accepted only _base_get_ioc_facts is needs to be declared here.
+>>
+>>>
+>>>
+>>> +    if (ioc->rdpq_array_enable)
+>>> +        sz = reply_post_free_sz;
+>>> +    else {
+>>> +        if (_base_is_controller_msix_enabled(ioc))
+>>> +            sz = reply_post_free_sz * ioc->reply_queue_count;
+>>> +        else
+>>> +            sz = reply_post_free_sz;
+>>> +    }
+>>>
+>>> sz = reply_post_free_sz;
+>>> if (_base_is_controller_msix_enabled(ioc) && !ioc->rdpq_array_enable)
+>>>    sz *= ioc->reply_queue_count;
+>>
+>>
+>> Accepted. In the next time I will update this in the patch.
+>>>
+>>>
+>>> +    ioc->reply_post = kcalloc((ioc->rdpq_array_enable) ?
+>>> +        (ioc->reply_queue_count):1,
+>>> +        sizeof(struct reply_post_struct), GFP_KERNEL);
+>>>
+>>> You're special casing the !rdpq code path again. Why don't you just make
+>>> sure reply_queue_count is always correct?
+>>
+>>
+>> Here we are using the reply_post queue to store the base address of the
+>> complete reply_post_free queue pool in case of non rdpq support scenario
+>> (since here we allocate a complete memory pool of all the reply_queue_count
+>> number of reply queues in single shot, so there is only one continuous
+>> memory pool). so here the number of entries in the reply_post queue is one
+>> in case of non rdpq support scenario.
+>>
+>> In case of rdpq support scenario reply_post queue will store the base
+>> addresses of each and every reply_queue_count number of reply_post_free
+>> queue pool. since here we allocate individual and separate reply_post_free
+>> memory pool for each msix vector. so here reply_queue_count number of
+>> individual reply_post_free queue pools are allocated, so the number of
+>> entries in the reply_post queue is reply_queue_count value.
+>>
+>> So, here the number of entries in the reply_post queue is not dependent on
+>> the reply_queue_count but it depends on the the rdpq_support enabled or not.
+>> i.e. if rdpq support is enabled then the number of entries in this
+>> reply_post queue is reply_queue_count value other wise it is one.
+>>
+>>>
+>>>
+>>> +    do {
+>>> +        ioc->reply_post[i].reply_post_free =
+>>> +            pci_pool_alloc(ioc->reply_post_free_dma_pool,
+>>> +            GFP_KERNEL,
+>>> +            &ioc->reply_post[i].reply_post_free_dma);
+>>> +        if (!ioc->reply_post[i].reply_post_free) {
+>>> +            printk(MPT2SAS_ERR_FMT
+>>> +            "reply_post_free pool: pci_pool_alloc failed\n",
+>>> +            ioc->name);
+>>> +            goto out;
+>>> +        }
+>>> +        memset(ioc->reply_post[i].reply_post_free, 0, sz);
+>>> +        dinitprintk(ioc, printk(MPT2SAS_INFO_FMT
+>>> +            "reply post free pool (0x%p): depth(%d),"
+>>> +            "element_size(%d), pool_size(%d kB)\n", ioc->name,
+>>> +            ioc->reply_post[i].reply_post_free,
+>>> +            ioc->reply_post_queue_depth, 8, sz/1024));
+>>> +        dinitprintk(ioc, printk(MPT2SAS_INFO_FMT
+>>> +            "reply_post_free_dma = (0x%llx)\n", ioc->name,
+>>> +            (unsigned long long)
+>>> +            ioc->reply_post[i].reply_post_free_dma));
+>>> +        total_sz += sz;
+>>> +    } while (ioc->rdpq_array_enable && (++i < ioc->reply_queue_count));
+>>>
+>>> Same thing. I think:
+>>>
+>>>      for (i = 0; i < ioc->reply_queue_count ; i++) {
+>>>
+>>> was much clearer.
+>>
+>>
+>> I feel do while loop is suitable to reduce the redundancy code between the
+>> rdpq support and non rdpq support scenarios.
+>>
+>> In case of non rdpq support scenario, this loop is executed only once to
+>> allocate a continuous single memory pool for all reply_queue_count number of
+>> reply_post_free queues.
+>>
+>> where as in case of rdpq support scenario, this loop is executed
+>> reply_queue_count number of times for allocating individual and separate
+>> memory pools for each reply_post_free queue.
+>>
+>>>
+>>>
+>>> If reply_queue_count is ever inconsistent wrt. ioc->rdpq_array_enable
+>>> and _base_is_controller_msix_enabled(ioc) then that's an orthogonal
+>>> problem that you should address directly instead of working around it
+>>> several places in the code.
+>>
+>>
+>>>
+>>> --
+>>> Martin K. Petersen      Oracle Linux Engineering
+>>
+>>
+>> Regards,
+>> Sreekanth
+>
+>
