@@ -1,80 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197AbaHKD1M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 23:27:12 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53582 "EHLO gate.crashing.org"
+	id S1752222AbaHKD1R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 23:27:17 -0400
+Received: from s87.loopia.se ([194.9.94.112]:51159 "EHLO s87.loopia.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751763AbaHKD1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 23:27:10 -0400
-Message-ID: <1407725838.4508.57.camel@pasglop>
-Subject: Re: [PATCH 4/14] powerpc/pseries: delete unneeded test before
- of_node_put
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Date: Mon, 11 Aug 2014 12:57:18 +1000
-In-Reply-To: <1407492475-26283-6-git-send-email-Julia.Lawall@lip6.fr>
-References: <1407492475-26283-6-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752200AbaHKD1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 23:27:15 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -1
+Message-ID: <53E8385C.8030905@hanshq.net>
+Date: Sun, 10 Aug 2014 20:28:28 -0700
+From: Hans Wennborg <hans@hanshq.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 16/19] staging: rtl8192ee: fix %d confusingly prefixed
+ with 0x in format strings
+References: <1407111658-15236-1-git-send-email-hans@hanshq.net> <20140810042358.GA15249@kroah.com>
+In-Reply-To: <20140810042358.GA15249@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-08-08 at 12:07 +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Of_node_put supports NULL as its argument, so the initial test is not
-> necessary.
-> 
-> Suggested by Uwe Kleine-König.
-> 
-> The semantic patch that fixes this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression e;
-> @@
-> 
-> -if (e)
->    of_node_put(e);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+On 08/09/2014 09:23 PM, Greg KH wrote:
+> On Sun, Aug 03, 2014 at 05:20:58PM -0700, Hans Wennborg wrote:
+>> Signed-off-by: Hans Wennborg <hans@hanshq.net>
+>> ---
+>>   drivers/staging/rtl8192ee/pci.c | 6 +++---
+>>   1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> This patch fails to apply to my tree :(
+>
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Sorry about that. I'll try to rebase and re-post the patch.
 
-> 
-> ---
->  arch/powerpc/platforms/pseries/iommu.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
-> index 33b552f..2ea6831 100644
-> --- a/arch/powerpc/platforms/pseries/iommu.c
-> +++ b/arch/powerpc/platforms/pseries/iommu.c
-> @@ -575,8 +575,7 @@ static void pci_dma_bus_setup_pSeries(struct pci_bus *bus)
->  	while (isa_dn && isa_dn != dn)
->  		isa_dn = isa_dn->parent;
->  
-> -	if (isa_dn_orig)
-> -		of_node_put(isa_dn_orig);
-> +	of_node_put(isa_dn_orig);
->  
->  	/* Count number of direct PCI children of the PHB. */
->  	for (children = 0, tmp = dn->child; tmp; tmp = tmp->sibling)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+  - Hans
