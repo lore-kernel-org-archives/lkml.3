@@ -1,76 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081AbaHKLhU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 07:37:20 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:38884 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626AbaHKLhR (ORCPT
+	id S1753138AbaHKLhk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 07:37:40 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:38152 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753058AbaHKLhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 07:37:17 -0400
-Date: Mon, 11 Aug 2014 04:37:15 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH -mm] slab: fix cpuset check in fallback_alloc
-In-Reply-To: <20140811071315.GA18709@esperanza>
-Message-ID: <alpine.DEB.2.02.1408110433140.15519@chino.kir.corp.google.com>
-References: <1407692891-24312-1-git-send-email-vdavydov@parallels.com> <alpine.DEB.2.02.1408101512500.706@chino.kir.corp.google.com> <20140811071315.GA18709@esperanza>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 11 Aug 2014 07:37:19 -0400
+Subject: [RFC PATCH V2 09/19] sched: get rq potential maximum utilization
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+To: alex.shi@intel.com, vincent.guittot@linaro.org, peterz@infradead.org,
+        pjt@google.com, efault@gmx.de, rjw@rjwysocki.net,
+        morten.rasmussen@arm.com, svaidy@linux.vnet.ibm.com,
+        arjan@linux.intel.com, mingo@kernel.org
+Cc: nicolas.pitre@linaro.org, len.brown@intel.com, yuyang.du@intel.com,
+        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
+        corbet@lwn.net, catalin.marinas@arm.com, markgross@thegnar.org,
+        sundar.iyer@intel.com, linux-kernel@vger.kernel.org,
+        dietmar.eggemann@arm.com, Lorenzo.Pieralisi@arm.com,
+        mike.turquette@linaro.org, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de
+Date: Mon, 11 Aug 2014 17:06:58 +0530
+Message-ID: <20140811113645.31956.19686.stgit@preeti.in.ibm.com>
+In-Reply-To: <20140811113000.31956.52857.stgit@preeti.in.ibm.com>
+References: <20140811113000.31956.52857.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081111-8236-0000-0000-00000481EE24
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Aug 2014, Vladimir Davydov wrote:
+From: Alex Shi <alex.shi@intel.com>
 
-> > diff --git a/mm/slab.c b/mm/slab.c
-> > --- a/mm/slab.c
-> > +++ b/mm/slab.c
-> > @@ -3047,16 +3047,19 @@ retry:
-> >  	 * from existing per node queues.
-> >  	 */
-> >  	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
-> > -		nid = zone_to_nid(zone);
-> > +		struct kmem_cache_node *n;
-> >  
-> > -		if (cpuset_zone_allowed_hardwall(zone, flags) &&
-> > -			get_node(cache, nid) &&
-> > -			get_node(cache, nid)->free_objects) {
-> > -				obj = ____cache_alloc_node(cache,
-> > -					flags | GFP_THISNODE, nid);
-> > -				if (obj)
-> > -					break;
-> > -		}
-> > +		nid = zone_to_nid(zone);
-> > +		if (!cpuset_zone_allowed(zone, flags | __GFP_HARDWALL))
-> 
-> We must use softwall check here, otherwise we will proceed to
-> alloc_pages even if there are lots of free slabs on other nodes.
-> alloc_pages, in turn, may allocate from other nodes in case
-> cpuset.mem_hardwall=0, because it uses softwall check, so it may add yet
-> another free slab to another node's list even if it isn't empty. As a
-> result, we may get free list bloating on other nodes. I've seen a
-> machine with one of its nodes almost completely filled with inactive
-> slabs for buffer_heads (dozens of GBs) w/o any chance to drop them. So,
-> this is a bug that must be fixed.
-> 
+Since the rt task priority is higher than fair tasks, cfs_rq utilization
+is just the left of rt utilization.
 
-Right, I understand, and my patch makes no attempt to fix that issue, it's 
-simply collapsing the code down into a single cpuset_zone_allowed() 
-function and the context for the allocation is controlled by the gfp 
-flags (and hardwall is controlled by setting __GFP_HARDWALL) as it should 
-be.  I understand the issue you face, but I can't combine a cleanup with a 
-fix and I would prefer to have your patch keep your commit description.  
+When there are some cfs tasks in queue, the potential utilization may
+be yielded, so mulitiplying cfs task number to get max potential
+utilization of cfs. Then the rq utilization is sum of rt util and cfs
+util.
 
-The diffstat for my proposal removes many more lines than it adds and I 
-think it will avoid this type of issue in the future for new callers.  
-Your patch could then be based on the single cpuset_zone_allowed() 
-function where you would simply have to remove the __GFP_HARDWALL above.  
-Or, your patch could be merged first and then my cleanup on top, but it 
-seems like your one-liner would be more clear if it is based on mine.
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+[Added CONFIG_SCHED_POWER switch to enable this patch]
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+---
+
+ kernel/sched/fair.c |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 031d115..60abaf4 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3308,6 +3308,53 @@ static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
+ 	return cfs_bandwidth_used() && cfs_rq->throttle_count;
+ }
+ 
++#ifdef CONFIG_SCHED_POWER
++static unsigned long scale_rt_util(int cpu)
++{
++	struct rq *rq = cpu_rq(cpu);
++	u64 total, age_stamp, avg;
++	s64 delta;
++
++	/*
++	 * Since we're reading these variables without serialization make sure
++	 * we read them once before doing sanity checks on them.
++	 */
++	age_stamp = ACCESS_ONCE(rq->age_stamp);
++	avg = ACCESS_ONCE(rq->rt_avg);
++
++	delta = rq_clock(rq) - age_stamp;
++	if (unlikely(delta < 0))
++		delta = 0;
++
++	total = sched_avg_period() + delta;
++
++	if (unlikely(total < avg)) {
++		/* Ensures that capacity won't go beyond full scaled value */
++		return SCHED_CAPACITY_SCALE;
++	}
++
++	if (unlikely((s64)total < SCHED_CAPACITY_SCALE))
++		total = SCHED_CAPACITY_SCALE;
++
++	total >>= SCHED_CAPACITY_SHIFT;
++
++	return div_u64(avg, total);
++}
++
++static unsigned int max_rq_util(int cpu)
++{
++	struct rq *rq = cpu_rq(cpu);
++	unsigned int rt_util = scale_rt_util(cpu);
++	unsigned int cfs_util;
++	unsigned int nr_running;
++
++	cfs_util = (FULL_UTIL - rt_util) > rq->util ? rq->util
++			: (FULL_UTIL - rt_util);
++	nr_running = rq->nr_running ? rq->nr_running : 1;
++
++	return rt_util + cfs_util * nr_running;
++}
++#endif
+ /*
+  * Ensure that neither of the group entities corresponding to src_cpu or
+  * dest_cpu are members of a throttled hierarchy when performing group
+
