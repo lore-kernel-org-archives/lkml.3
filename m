@@ -1,87 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172AbaHKMTa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 08:19:30 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58031 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784AbaHKMT3 (ORCPT
+	id S1753252AbaHKMTt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 08:19:49 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:56340 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194AbaHKMTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 08:19:29 -0400
-Date: Mon, 11 Aug 2014 13:19:12 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>, lgirdwood@gmail.com,
-        tiwai@suse.de, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Message-ID: <20140811121912.GY17528@sirena.org.uk>
-References: <1407341786-14990-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
- <20140807141604.GJ8181@intel.com>
- <20140807171324.GM17528@sirena.org.uk>
- <20140811062429.GC13288@intel.com>
+	Mon, 11 Aug 2014 08:19:48 -0400
+Date: Mon, 11 Aug 2014 05:18:01 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Chintan Pandya <cpandya@codeaurora.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v3 2/2] ksm: provide support to use deferrable timers
+ for scanner thread
+In-Reply-To: <1406793591-26793-3-git-send-email-cpandya@codeaurora.org>
+Message-ID: <alpine.LSU.2.11.1408110332350.1500@eggly.anvils>
+References: <1406793591-26793-2-git-send-email-cpandya@codeaurora.org> <1406793591-26793-3-git-send-email-cpandya@codeaurora.org>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7GWBejRy/Pz6SUcf"
-Content-Disposition: inline
-In-Reply-To: <20140811062429.GC13288@intel.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH v3] ASOC: dapm: add code to configure dai
- link parameters
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 31 Jul 2014, Chintan Pandya wrote:
 
---7GWBejRy/Pz6SUcf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> KSM thread to scan pages is scheduled on definite timeout.  That wakes up
+> CPU from idle state and hence may affect the power consumption.  Provide
+> an optional support to use deferrable timer which suites low-power
+> use-cases.
 
-On Mon, Aug 11, 2014 at 11:54:29AM +0530, Vinod Koul wrote:
-> On Thu, Aug 07, 2014 at 06:13:24PM +0100, Mark Brown wrote:
-> > On Thu, Aug 07, 2014 at 07:46:05PM +0530, Vinod Koul wrote:
+Thanks for drawing attention to this: anything to stop KSM from being
+such a CPU hog while it's giving no value, should be welcome.
 
-> > > I was thinking about this as well a while back, wont it make sense to let
-> > > machine driver expose meaningful controls for this. Just like we have fixup
-> > > for back-ends, we can add fixups for codec-codec links and let machine tell
-> > > you the parameters to configure.
+(I wonder if KSM could draw more feedback from its own success,
+and slow down when nothing is happening on VM_MERGEABLE areas;
+but I guess that's a slightly different topic from your concern
+with not-quite-idle power consumption, I'd better not divert us.)
 
-> > This is supposed to be pretty much the same thing (not looked at the
-> > patch yet) - the machine driver passes in a list of possible settings
-> > and then a control gets generated allowing the user to pick one.
+> 
+> Typically, on our setup we observed, 10% less power consumption with some
+> use-cases in which CPU goes to power collapse frequently.  For example,
+> playing audio while typically CPU remains idle.
 
-> Yes but this is bit different from the current way of using fixups for BEs.
-> So it would be bit incosistent. For pcms it would be only fixups and for
-> loops it would be machine controls
+I'm probably stupid, but I don't quite get your scenario from that
+description: please would you spell it out a little more clearly for me?
 
-That doesn't mean it's the best way to go in the end though - long term
-I expect to see us move away from that to something more data driven and
-DAPM integrated.  Requiring drivers to open code things rather than
-factoring out the code doesn't seem like the right way forwards.
+Are you thinking of two CPUs, one of them running a process busily
+streaming audio (with no VM_MERGEABLE areas to work on), most other
+processes sleeping, and ksmd "pinned" to another, otherwise idle CPU?
 
---7GWBejRy/Pz6SUcf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I'm very inexperienced in scheduler (and audio) matters, but I'd like
+to think that the scheduler would migrate ksmd to the mostly busy CPU
+in that case - or is it actually 100% busy, with no room for ksmd too?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+kernel/sched/core.c shows the CONFIG_NO_HZ_COMMON get_nohz_timer_target(),
+which looks like it would migrate it if possible (and CONFIG_NO_HZ_COMMON
+appears to be more prevalent than CONFIG_NO_HZ_FULL).
 
-iQIcBAEBAgAGBQJT6LS9AAoJELSic+t+oim9ePEP+gN40rIzGUUFzVUWvY9BySgJ
-FJkXpoLJR7GWmVdWlcWYOy3ehOTTMzJvv5UwGCpzfKFQEwqvw2817kyaeq0Z+7Sx
-K9LnCXpZLgeq+hjULi5qLNzKvj+ur5iUtIkuG7y2ZXszOraSL4acA5DVBkXxMdOA
-noY58Y6nwVDGgwOi0X+sF9Z7PiUK7pTpBNT/sYulm/LbOxEVq13Wf2WzLUmxMyB6
-r/3+IS8ReP77BiNiuWJu0YDpeQt7xOqt2FQQleTUM9mlAexvP2GWjCWN1bTpTu0u
-VCTt9HodU299Bug3YEdR81gRUZTFXgdHkPZLGe6/a5TlkFEc+HakEu7HKOyUVKpu
-imnl3I9pMS4RDSw7ZU1AGFhWfGHrEgvCWYiXx3J5y9iv3Z7Ix4mp5uP3pJOyQPfJ
-IUuvarMYajlCt1qWaRWxbDmGd60ovwBRKjmaDpmWa48DhfoEoXD7y3ayVEVnn3Ir
-gK+6eZKG5IbqQaJ/0gPK4XEnETMF3jXTjGfOApJKpAfhNMry8fC2LWIaNvZgWNhG
-fI61kzFvFNFuaAigUK2qKEDOFy34oCXLGMuSiClJNbet7cvgorFoj92vto+DZ+rZ
-JMIfa0FKk6IT9pLhMgpN6+QZW39dSeifYXok1PA1TNvhW3lFyAUtTtuzFfodE0++
-/cs7lNWrcuha8qSEmSwD
-=3Rhm
------END PGP SIGNATURE-----
+> 
+> To enable deferrable timers,
+> $ echo 1 > /sys/kernel/mm/ksm/deferrable_timer
 
---7GWBejRy/Pz6SUcf--
+I do share Andrew's original reservations: I'd much prefer this if we
+can just go ahead and do the deferrable timer without a new tunable
+to concern the user, simple though your "deferrable_timer" knob is.
+
+In an earlier mail, you said "We have observed that KSM does maximum
+savings when system is idle", as reason why some will prefer a non-
+deferrable timer.  I am somewhat suspicious of that observation:
+because KSM waits for a page's checksum to stabilize before it saves
+it in its "unstable" tree of pages to compare against.  So when the
+rest of the system goes idle, KSM is briefly more likely to find
+matches; but that may be a short-lived "success" once the system
+becomes active again.  So, I'm wondering if your observation just
+reflects the mechanics of KSM, and is not actually a reason to
+refrain from using a deferrable timer for everyone.
+
+On the other hand, I have a worry about using deferrable timer here.
+I think I understand the value of a deferrable timer, in doing a job
+which is bound to a particular cpu (mm/slab.c's cache_reap() gives
+me a good example of that).  But ksmd is potentially serving every
+process, every cpu: we would not want it to be deferred indefinitely,
+if other cpus (running processes with VM_MERGEABLE vmas) are active.
+
+Perhaps the likelihood of that scenario is too low; or perhaps it's
+a reason why we do need to offer your "deferrable_timer" knob.
+
+Please, I need to understand better before acking this change.
+
+By the way: perhaps KSM is the right place to start, but please take
+a look also at THP in mm/huge_memory.c, whose khugepaged was originally
+modelled on ksmd (but now seems to be using wait_event_freezable_timeout
+rather than schedule_timeout_interruptible - I've not yet researched the
+history behind that difference).  I expect it to need the same treatment.
+
+Hugh
+
+> 
+> Signed-off-by: Chintan Pandya <cpandya@codeaurora.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Hugh Dickins <hughd@google.com>
+> ---
+> Changes:
+> 
+> V2-->V3:
+> 	- Handled error case properly
+> 	- Corrected indentation in Documentation
+> 	- Fixed build failure
+> 	- Removed left over process_timeout()
+> V1-->V2:
+> 	- allowing only valid values to be updated as use_deferrable_timer
+> 	- using only 'deferrable' and not 'deferred'
+> 	- moved out schedule_timeout code for deferrable timer into timer.c
+> 
+>  Documentation/vm/ksm.txt |  7 +++++++
+>  mm/ksm.c                 | 36 ++++++++++++++++++++++++++++++++++--
+>  2 files changed, 41 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/vm/ksm.txt b/Documentation/vm/ksm.txt
+> index f34a8ee..9735c87 100644
+> --- a/Documentation/vm/ksm.txt
+> +++ b/Documentation/vm/ksm.txt
+> @@ -87,6 +87,13 @@ pages_sharing    - how many more sites are sharing them i.e. how much saved
+>  pages_unshared   - how many pages unique but repeatedly checked for merging
+>  pages_volatile   - how many pages changing too fast to be placed in a tree
+>  full_scans       - how many times all mergeable areas have been scanned
+> +deferrable_timer - whether to use deferrable timers or not
+> +                   e.g. "echo 1 > /sys/kernel/mm/ksm/deferrable_timer"
+> +                   Default: 0 (means, we are not using deferrable timers. Users
+> +		   might want to set deferrable_timer option if they donot want
+> +		   ksm thread to wakeup CPU to carryout ksm activities thus
+> +		   gaining on battery while compromising slightly on memory
+> +		   that could have been saved.)
+>  
+>  A high ratio of pages_sharing to pages_shared indicates good sharing, but
+>  a high ratio of pages_unshared to pages_sharing indicates wasted effort.
+> diff --git a/mm/ksm.c b/mm/ksm.c
+> index fb75902..434a50a 100644
+> --- a/mm/ksm.c
+> +++ b/mm/ksm.c
+> @@ -223,6 +223,9 @@ static unsigned int ksm_thread_pages_to_scan = 100;
+>  /* Milliseconds ksmd should sleep between batches */
+>  static unsigned int ksm_thread_sleep_millisecs = 20;
+>  
+> +/* Boolean to indicate whether to use deferrable timer or not */
+> +static bool use_deferrable_timer;
+> +
+>  #ifdef CONFIG_NUMA
+>  /* Zeroed when merging across nodes is not allowed */
+>  static unsigned int ksm_merge_across_nodes = 1;
+> @@ -1725,8 +1728,13 @@ static int ksm_scan_thread(void *nothing)
+>  		try_to_freeze();
+>  
+>  		if (ksmd_should_run()) {
+> -			schedule_timeout_interruptible(
+> -				msecs_to_jiffies(ksm_thread_sleep_millisecs));
+> +			signed long to;
+> +
+> +			to = msecs_to_jiffies(ksm_thread_sleep_millisecs);
+> +			if (use_deferrable_timer)
+> +				schedule_timeout_deferrable_interruptible(to);
+> +			else
+> +				schedule_timeout_interruptible(to);
+>  		} else {
+>  			wait_event_freezable(ksm_thread_wait,
+>  				ksmd_should_run() || kthread_should_stop());
+> @@ -2175,6 +2183,29 @@ static ssize_t run_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  }
+>  KSM_ATTR(run);
+>  
+> +static ssize_t deferrable_timer_show(struct kobject *kobj,
+> +				    struct kobj_attribute *attr, char *buf)
+> +{
+> +	return snprintf(buf, 8, "%d\n", use_deferrable_timer);
+> +}
+> +
+> +static ssize_t deferrable_timer_store(struct kobject *kobj,
+> +				     struct kobj_attribute *attr,
+> +				     const char *buf, size_t count)
+> +{
+> +	unsigned long enable;
+> +	int err;
+> +
+> +	err = kstrtoul(buf, 10, &enable);
+> +	if (err < 0)
+> +		return err;
+> +	if (enable >= 1)
+> +		return -EINVAL;
+
+I haven't studied the patch itself, I'm still worrying about the concept.
+But this caught my eye just before hitting Send: I don't think we need
+a tunable which only accepts the value 0 ;)
+
+> +	use_deferrable_timer = enable;
+> +	return count;
+> +}
+> +KSM_ATTR(deferrable_timer);
+> +
+>  #ifdef CONFIG_NUMA
+>  static ssize_t merge_across_nodes_show(struct kobject *kobj,
+>  				struct kobj_attribute *attr, char *buf)
+> @@ -2287,6 +2318,7 @@ static struct attribute *ksm_attrs[] = {
+>  	&pages_unshared_attr.attr,
+>  	&pages_volatile_attr.attr,
+>  	&full_scans_attr.attr,
+> +	&deferrable_timer_attr.attr,
+>  #ifdef CONFIG_NUMA
+>  	&merge_across_nodes_attr.attr,
+>  #endif
+> -- 
+> Chintan Pandya
+> 
+> QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+> member of the Code Aurora Forum, hosted by The Linux Foundation
