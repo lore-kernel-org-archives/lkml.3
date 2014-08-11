@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013AbaHKUKI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:10:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39809 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754664AbaHKUKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:10:06 -0400
-Date: Mon, 11 Aug 2014 16:09:31 -0400
-From: Dave Jones <davej@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: nohz fail (was: perf related boot hang.)
-Message-ID: <20140811200931.GA18865@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20140806143621.GA13832@redhat.com>
- <20140806161934.GF19379@twins.programming.kicks-ass.net>
- <20140806194656.GA11570@redhat.com>
- <20140807090333.GL19379@twins.programming.kicks-ass.net>
- <20140807131646.GB19662@localhost.localdomain>
+	id S1755035AbaHKULM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:11:12 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:36604 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754770AbaHKULJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 16:11:09 -0400
+Date: Mon, 11 Aug 2014 13:11:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+Message-ID: <20140811201102.GD5821@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <53E48D18.8080007@redhat.com>
+ <20140808162502.GX5821@linux.vnet.ibm.com>
+ <20140808173710.GA13483@grmbl.mre>
+ <20140808181835.GD5821@linux.vnet.ibm.com>
+ <20140808183424.GB13483@grmbl.mre>
+ <20140808214347.GH5821@linux.vnet.ibm.com>
+ <20140808214648.GA19058@linux.vnet.ibm.com>
+ <20140811071308.GA4184@grmbl.mre>
+ <20140811162807.GW5821@linux.vnet.ibm.com>
+ <20140811194126.GF4184@grmbl.mre>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140807131646.GB19662@localhost.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140811194126.GF4184@grmbl.mre>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081120-8236-0000-0000-00000485F26B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 03:16:49PM +0200, Frederic Weisbecker wrote:
- 
- > > >   <<EOE>>  <IRQ>  [<ffffffff8a0ccd2f>] lock_acquired+0xaf/0x450
- > > >   [<ffffffff8a0f74c5>] ? lock_hrtimer_base.isra.20+0x25/0x50
- > > >   [<ffffffff8a7fc678>] _raw_spin_lock_irqsave+0x78/0x90
- > > >   [<ffffffff8a0f74c5>] ? lock_hrtimer_base.isra.20+0x25/0x50
- > > >   [<ffffffff8a0f74c5>] lock_hrtimer_base.isra.20+0x25/0x50
- > > >   [<ffffffff8a0f7723>] hrtimer_try_to_cancel+0x33/0x1e0
- > > >   [<ffffffff8a0f78ea>] hrtimer_cancel+0x1a/0x30
- > > >   [<ffffffff8a109237>] tick_nohz_restart+0x17/0x90
- > > >   [<ffffffff8a10a213>] __tick_nohz_full_check+0xc3/0x100
- > > >   [<ffffffff8a10a25e>] nohz_full_kick_work_func+0xe/0x10
- > > >   [<ffffffff8a17c884>] irq_work_run_list+0x44/0x70
- > > >   [<ffffffff8a17c8da>] irq_work_run+0x2a/0x50
- > > >   [<ffffffff8a0f700b>] update_process_times+0x5b/0x70
- > > >   [<ffffffff8a109005>] tick_sched_handle.isra.21+0x25/0x60
- > > >   [<ffffffff8a109b81>] tick_sched_timer+0x41/0x60
- > > >   [<ffffffff8a0f7aa2>] __run_hrtimer+0x72/0x470
- > > >   [<ffffffff8a109b40>] ? tick_sched_do_timer+0xb0/0xb0
- > > >   [<ffffffff8a0f8707>] hrtimer_interrupt+0x117/0x270
- > > >   [<ffffffff8a034357>] local_apic_timer_interrupt+0x37/0x60
- > > >   [<ffffffff8a80010f>] smp_apic_timer_interrupt+0x3f/0x50
- > > >   [<ffffffff8a7fe52f>] apic_timer_interrupt+0x6f/0x80
- > > 
- > > And that looks like someone trying to cancel a timer from a timer, I
- > > guess that won't work, seeing how cancel will wait for the timer handler
- > > completion etc.
- > > 
- > > This is because of the fallback irq_work_run() in the tick
- > > (update_process_times).
- > > 
- > 
- > Indeed, I saw that too but very rarely.
+On Tue, Aug 12, 2014 at 01:11:26AM +0530, Amit Shah wrote:
+> On (Mon) 11 Aug 2014 [09:28:07], Paul E. McKenney wrote:
+> > On Mon, Aug 11, 2014 at 12:43:08PM +0530, Amit Shah wrote:
+> > > On (Fri) 08 Aug 2014 [14:46:48], Paul E. McKenney wrote:
+> > > > On Fri, Aug 08, 2014 at 02:43:47PM -0700, Paul E. McKenney wrote:
+> > > > > On Sat, Aug 09, 2014 at 12:04:24AM +0530, Amit Shah wrote:
+> > > > > > On (Fri) 08 Aug 2014 [11:18:35], Paul E. McKenney wrote:
+> > > > > 
+> > > > > [ . . . ]
+> > > > > 
+> > > > > > > Hmmm... What happens if you boot a7d7a143d0b4cb1914705884ca5c25e322dba693
+> > > > > > > with the kernel parameter "acpi=off"?
+> > > > > > 
+> > > > > > That doesn't change anything - still hangs.
+> > > > > > 
+> > > > > > I intend to look at this more on Monday, though - turning in for
+> > > > > > today.  In the meantime, if there's anything else you'd like me to
+> > > > > > try, please let me know.
+> > > > > 
+> > > > > OK, given that I still cannot reproduce it, I do need your help with
+> > > > > the diagnostics.  And so what sorts of diagnostics work for you in
+> > > > > the hung state?  Are you able to dump ftrace buffers?
+> > > > > 
+> > > > > If you are able to dump ftrace buffers, please enable rcu:rcu_nocb_wake
+> > > > > and send me the resulting trace.
+> > > > 
+> > > > And another random kernel boot parameter to try is rcu_nocb_poll.
+> > > 
+> > > Right, this gets the boot going again:
+> > 
+> > OK, that likely indicates a lost wakeup.  The event tracing enabled by
+> > "rcu:rcu_nocb_wake" should help track those down.  Last time, it was qemu
+> > losing the wakeups, but maybe it is RCU this time.  ;-)
+> 
+> The guest goes dead pretty early; is there a trick to enabling and
+> getting these traces out of the guest that I don't know of that
+> doesn't involve being booted into userspace?  I can perhaps try
+> getting the trace output out from a virtio-serial channel; but even
+> that driver isn't probed yet when the lockup happens.
 
-FWIW, I'm now seeing this quite often (several times a day) when I run
-trinity on current git master.
+First boot with the kernel parameter "trace_event=rcu:rcu_nocb_wake".
+Then when the system hangs, do "sendkey alt-sysrq-z" at the "(qemu)"
+prompt to dump the ftrace buffer.  This hopefully dumps the trace buffer
+to dmesg.
 
-	Dave
+In addition "sendkey alt-sysrq-t" at the "(qemu)" prompt dumps all tasks'
+stacks, which would also likely be useful information.
+
+							Thanx, Paul
 
