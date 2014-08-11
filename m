@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128AbaHKUz4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:55:56 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:56057 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816AbaHKUzz convert rfc822-to-8bit (ORCPT
+	id S932235AbaHKU5s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:57:48 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:51650 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932130AbaHKU5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:55:55 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1407789645.28221.68.camel@chimera>
-Date: Mon, 11 Aug 2014 13:56:26 -0700
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org Wireless" 
-	<linux-wireless@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <37210DB5-2911-4FA3-9299-7701C5003945@holtmann.org>
-References: <1407780269.28221.63.camel@chimera> <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org> <1407789645.28221.68.camel@chimera>
-To: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
-X-Mailer: Apple Mail (2.1878.6)
+	Mon, 11 Aug 2014 16:57:47 -0400
+Message-ID: <1407790665.334.5.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH RFC 0/2] percpu_tags: Prototype implementation
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Nicholas Bellinger <nab@daterainc.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, qla2xxx-upstream@qlogic.com,
+        Kent Overstreet <kmo@daterainc.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Christoph Hellwig <hch@lst.de>
+Date: Mon, 11 Aug 2014 13:57:45 -0700
+In-Reply-To: <1407790341.334.2.camel@haakon3.risingtidesystems.com>
+References: <cover.1405678629.git.agordeev@redhat.com>
+	 <20140811201744.GD8397@lenovo-rd230-04.lab.bos.redhat.com>
+	 <1407790341.334.2.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
->> isn't this dangerous to just allow writing to wiphy.perm_addr via
->> sysfs. We ran into the same issue with Bluetooth and ROM only devices
->> that have to unique address. Doing this via sysfs seems the wrong
->> approach. It is messy and full of potential race conditions. I clearly
->> opted against the sysfs solution for Bluetooth. Instead we build an
->> infrastructure that allowed doing it cleanly via the Bluetooth mgmt
->> API. Controllers that have no unique address are brought up as
->> unconfigured and userspace clearly knows that it has to take steps to
->> get an address programmed into the controller.
+On Mon, 2014-08-11 at 13:52 -0700, Nicholas A. Bellinger wrote:
+> (Responding again without gmail, as the last email hit a failure when
+> responding to the lists..)
 > 
-> My inclination is to agree; however, this does not exist for WiFi and
-> implementing it would require modifying every single driver.
+> On Mon, 2014-08-11 at 16:17 -0400, Alexander Gordeev wrote:
+> > On Fri, Jul 18, 2014 at 12:20:56PM +0200, Alexander Gordeev wrote:
+> > > The performance test is not decent, though. I used "fio" random
+> > > read against a "null_blk" device sitting on top of "percpu_tags",
+> > > which is not exactly how "percpu_ida" is used. This is another
+> > > reason I am posting - an advice on how to properly test is very
+> > > appreciated.
+> > 
+> > Hi Nicholas et al,
+> > 
+> > I expect the best possible performance test for percpu_ida/percpu_tags
+> > would be to stress drivers/vhost/scsi.c vhost_scsi_get_tag() function.
+> > 
+> > I tried to make such test by attaching ramdisk to a virtual machine
+> > (similar to https://lkml.org/lkml/2012/8/10/347) but ultimately failed
+> > to configure the necessary environment - the stock qemu does not have
+> > -vhost-scsi parameter.
+> > 
+> > Could you please advice how to make this configuration exposed to guests?
+> > 
+> > o- / ..................................................................... [...]
+> >   o- backstores .......................................................... [...]
+> >   | o- block .............................................. [Storage Objects: 0]
+> >   | o- fileio ............................................. [Storage Objects: 0]
+> >   | o- pscsi .............................................. [Storage Objects: 0]
+> >   | o- ramdisk ............................................ [Storage Objects: 1]
+> >   |   o- rda .............................................. [(1.0GiB) activated]
+> >   o- iscsi ........................................................ [Targets: 0]
+> >   o- loopback ..................................................... [Targets: 0]
+> >   o- vhost ........................................................ [Targets: 1]
+> >     o- naa.5001405b171ee405 .......................................... [TPGs: 1]
+> >       o- tpg1 .............................. [naa.5001405983a5b1a4, no-gen-acls]
+> >         o- acls ...................................................... [ACLs: 0]
+> >         o- luns ...................................................... [LUNs: 1]
+> >           o- lun0 ................................................ [ramdisk/rda]
+> > 
+> 
+> So qemu expects '-device vhost-scsi-pci' with the following syntax:
+> 
+>    -device vhost-scsi-pci,wwpn=naa.5001405b171ee405,num_queues=1,cmd_per_lun=64
+> 
+> For best results I'd recommend setting the IRQ affinity for each of the
+> virtio*_request MSI-X vectors to a dedicated vCPU in KVM guest.
+> 
+> Also, I've been using the scsi-mq prototype for small block I/O
+> performance testing in order to push vhost-scsi and avoid the legacy
+> scsi_request_fn() bottleneck(s) with virtio-scsi, and now that hch's
+> scsi-mq work (CC'ed) has been merged upstream in v3.17-rc0, it would be
+> a good time for a scsi-mq + virtio-scsi + vhost-scsi performance
+> checkpoint.  ;)
+> 
 
-so what? That is not a reason to just hack something into sysfs. If it means every driver needs to be modified, then that has to be done.
+Oh yeah, for performance testing you'll want to use the rd_nullio=1 flag
+when creating RAMDISK backends, to avoid the normal fast-path memcpys
+between ramdisk + per I/O descriptor memory.
 
->> And I think something similar should be done for WiFi. It might be
->> better to not create the initial wlan0 netdev interface if the
->> hardware has not a single unique address available. That way the
->> supplicant can just either get one from the flash filesystem or make
->> up a proper random one before creating the netdev interface.
->> 
-> The initial wlan0 netdev interface is *not* created, but the PHY records
-> a MAC address that cannot be overriden at the level that this sysfs node
-> reads. Perhaps a compromise would be to create a single new syscall to
-> write to it?
-
-The initial wlan0 can be removed as every other netdev attached to the wiphy. It can also be as easily re-created.
-
-Since the wiphy does not have a valid MAC address, my proposal here would be to just not create the wlan0 in the first place. This means that the wiphy can be still discovered via nl80211.
-
-It also means that the wlan0 netdev needs to be created by userspace now. And a valid NL80211_ATTR_MAC be provided. Similar to what is already done for P2P devices at the moment. That should just solve the problem.
-
-We really do not want to announce a netdev when registering the wiphy device and then having to mess with its MAC address via sysfs somehow. This all needs to be properly reflected over RTNL.
-
-Regards
-
-Marcel
+--nab
 
