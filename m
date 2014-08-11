@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaHKSpN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:45:13 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:50408 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaHKSpL (ORCPT
+	id S1754010AbaHKSrj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:47:39 -0400
+Received: from mail-qg0-f74.google.com ([209.85.192.74]:33682 "EHLO
+	mail-qg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673AbaHKSrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:45:11 -0400
-Message-ID: <53E90F34.9030809@infradead.org>
-Date: Mon, 11 Aug 2014 11:45:08 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        lisa@xenapiadmin.com, Ben Hutchings <ben@decadent.org.uk>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: Check against NULL in fw_download_code
-References: <1407780151-4674-1-git-send-email-xerofoify@gmail.com>	<CAPDOMVghgyQ72J6MS6uaWEeMFBvzDNmfoAS5Tbd7+XO_KgUmHg@mail.gmail.com>	<53E9066A.3030801@infradead.org> <CAPDOMViHWMRRMqdEpjft0TDuVSLai8LuWRcXPdMeCtUYgB2sgw@mail.gmail.com>
-In-Reply-To: <CAPDOMViHWMRRMqdEpjft0TDuVSLai8LuWRcXPdMeCtUYgB2sgw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Aug 2014 14:47:37 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>
+Cc: Kever Yang <kever.yang@rock-chips.com>, Chris Zhong <zyw@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dts: Move the PMIC interrupt pinctrl line to rk3288-evb common
+Date: Mon, 11 Aug 2014 11:47:29 -0700
+Message-Id: <1407782849-11056-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/14 11:26, Nick Krause wrote:
-> On Mon, Aug 11, 2014 at 2:07 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->> On 08/11/14 11:04, Nick Krause wrote:
->>> On Mon, Aug 11, 2014 at 2:02 PM, Nicholas Krause <xerofoify@gmail.com> wrote:
->>>> I am fixing the bug entry , https://bugzilla.kernel.org/show_bug.cgi?id=60461.
->>>> This entry states that we are not checking the skb allocated in fw_download_code
->>>> and after checking I fixed it to check for the NULL value before using the allocate
->>>> skb.
->>>>
->>>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->>>> ---
->>>>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 14 ++++++++------
->>>>  1 file changed, 8 insertions(+), 6 deletions(-)
->>>>
->>>> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->>>> index 1a95d1f..0a4c926 100644
->>>> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->>>> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->>>> @@ -60,13 +60,15 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
->>>>
->>>>                 }
->>>>
->>>> -               skb  = dev_alloc_skb(frag_length + 4);
->>>> -               memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
->>>> -               tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
->>>> -               tcb_desc->queue_index = TXCMD_QUEUE;
->>>> -               tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
->>>> -               tcb_desc->bLastIniPkt = bLastIniPkt;
->>>>
->>>> +               skb  = dev_alloc_skb(frag_length + 4);
->>>> +               if (skb) {
->>>> +                       memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
->>>> +                       tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
->>>> +                       tcb_desc->queue_index = TXCMD_QUEUE;
->>>> +                       tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
->>>> +                       tcb_desc->bLastIniPkt = bLastIniPkt;
->>>> +               }
->>
->> and what happens here (below) if skb is NULL?
+The PMIC interrupt pinctrl line was added to the rk3288-evb-act8846,
+but it's the same line on both the ACT8846 version and the RK808
+version.  This makes a lot of sense since they share the same SoC
+daugherboard.  Move the pinctrl definition to the common file so we
+can use it for the RK808 version.
 
-Nick,
-I'm asking if you have completely fixed the bug or only partially fixed it.
-The answer is that the patch is only a partial fix.  If skb is NULL, there
-is still a problem in the statement below here.  The kernel will oops on
-that reference to skb, which is NULL.
+NOTE: The PMIC interrupt doesn't _actually_ go to the PMIC on the
+ACT8846 version of the board (it does on the RK808), but our
+convention is to label things as they're labelled on the schematics.
+In the very least you can argue that this is the interrupt from the
+PMIC daughtercard even if it doesn't actually go to the PMIC chip.
 
->>
->>>>                 seg_ptr = skb->data;
->>>>                 for (i = 0; i < frag_length; i += 4) {
->>>>                         *seg_ptr++ = ((i+0) < frag_length) ?
->>>> --
->>>> 1.9.1
->>>>
->>> And I did check it against Linus's tree to make sure it applies , just
->>> to let you known.
->>> Nick
->>
->>
->> --
->> ~Randy
-> Sorry Randy.
->  I may be mis reading this, but are you asking me to write a different
-> commit message or is this patch just another bad patch in my series of
-> bad patches?
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ arch/arm/boot/dts/rk3288-evb-act8846.dts | 10 +---------
+ arch/arm/boot/dts/rk3288-evb.dtsi        |  6 ++++++
+ 2 files changed, 7 insertions(+), 9 deletions(-)
 
-
+diff --git a/arch/arm/boot/dts/rk3288-evb-act8846.dts b/arch/arm/boot/dts/rk3288-evb-act8846.dts
+index 7d59ff4..a76dd44 100644
+--- a/arch/arm/boot/dts/rk3288-evb-act8846.dts
++++ b/arch/arm/boot/dts/rk3288-evb-act8846.dts
+@@ -26,7 +26,7 @@
+ 		interrupts = <4 IRQ_TYPE_EDGE_FALLING>;
+ 
+ 		pinctrl-names = "default";
+-		pinctrl-0 = <&hym8563_int>;
++		pinctrl-0 = <&pmic_int>;
+ 
+ 		#clock-cells = <0>;
+ 		clock-output-names = "xin32k";
+@@ -124,11 +124,3 @@
+ 		};
+ 	};
+ };
+-
+-&pinctrl {
+-	hym8563 {
+-		hym8563_int: hym8563-int {
+-			rockchip,pins = <RK_GPIO0 4 RK_FUNC_GPIO &pcfg_pull_up>;
+-		};
+-	};
+-};
+diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
+index 4f57209..ae3e10b 100644
+--- a/arch/arm/boot/dts/rk3288-evb.dtsi
++++ b/arch/arm/boot/dts/rk3288-evb.dtsi
+@@ -84,6 +84,12 @@
+ 		};
+ 	};
+ 
++	pmic {
++		pmic_int: pmic-int {
++			rockchip,pins = <RK_GPIO0 4 RK_FUNC_GPIO &pcfg_pull_up>;
++		};
++	};
++
+ 	usb {
+ 		host_vbus_drv: host-vbus-drv {
+ 			rockchip,pins = <0 14 RK_FUNC_GPIO &pcfg_pull_none>;
 -- 
-~Randy
+2.0.0.526.g5318336
+
