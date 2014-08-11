@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342AbaHKNCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 09:02:45 -0400
-Received: from mout.web.de ([212.227.15.14]:56526 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753204AbaHKNCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 09:02:43 -0400
-Message-ID: <53E8BE84.3080505@users.sourceforge.net>
-Date: Mon, 11 Aug 2014 15:00:52 +0200
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753388AbaHKNDP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 09:03:15 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:33138 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998AbaHKNDO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 09:03:14 -0400
+Date: Mon, 11 Aug 2014 16:02:54 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: rogerable@realtek.com
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wei_wang@realsil.com.cn
+Subject: Re: [PATCH] mmc: rtsx: fix incorrect last byte in R2 response
+Message-ID: <20140811130254.GP4856@mwanda>
+References: <1407745936-18513-1-git-send-email-rogerable@realtek.com>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Coccinelle <cocci@systeme.lip6.fr>, kernel-janitors@vger.kernel.org,
-        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/coccinelle/free/ifnullfree.cocci: simplify and
- extend to of_node_put
-References: <1407752653-16883-1-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1407752653-16883-1-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:OVtafOIBnMlRPcLEZjbyspecuKIeXkz93bebFd0UT5do45LvWwo
- 8mAJ6dozurb4J50EhX2icumnQxMIqtFGkmR3/DuXfXcRFLb41QCufsUbZdKU8ZeH/UUaNK8
- P0grVC28UXqVduLyvHma05mIH4aOqPfIvKmWtqdGkLtCwwsutdBCGl/6OlNpMViQG/n/eSh
- Dtrb+8/PQ0gjT246ZrMCA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407745936-18513-1-git-send-email-rogerable@realtek.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  @r depends on context || report || org @
-> @@ -37,7 +35,8 @@ position p;
->  @@
+On Mon, Aug 11, 2014 at 04:32:16PM +0800, rogerable@realtek.com wrote:
+> From: Roger Tseng <rogerable@realtek.com>
+> 
+> Current code erroneously fill the last byte of R2 response with an undefined
+> value. In addition, it is impossible to obtain the real values since the
+> controller actually 'offloads' the last byte(CRC7, end bit) while receiving R2
+> response. This could cause mmc stack to obtain inconsistent CID from the same
+> card after resume and misidentify it as a different card.
+> 
+> Fix by assigning a dummy value 0x01 to the last byte of R2 response.
+> 
+> Signed-off-by: Roger Tseng <rogerable@realtek.com>
+> ---
+>  drivers/mmc/host/rtsx_pci_sdmmc.c |    1 +
+>  drivers/mmc/host/rtsx_usb_sdmmc.c |    1 +
+>  2 files changed, 2 insertions(+)
+> 
+> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+> index dfde4a2..54849d8 100644
+> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
+> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+> @@ -412,6 +412,7 @@ static void sd_send_cmd_get_rsp(struct realtek_pci_sdmmc *host,
+>  	}
 >  
->  * if (E)
-> -*	\(kfree@p\|debugfs_remove@p\|debugfs_remove_recursive@p\|usb_free_urb\)(E);
-> +*  \(kfree@p\|debugfs_remove@p\|debugfs_remove_recursive@p\|usb_free_urb@p\|
-> +*    of_node_put@p\)(E);
+>  	if (rsp_type == SD_RSP_TYPE_R2) {
+> +		ptr[16] = 1;
 
-Why do you want to limit this semantic patch pattern to such a small list of
-function names?
+Avoid magic numbers like 16 and 0x1.
 
-Would you like to consider also the hundreds of other functions which perform
-input parameter validation?
-Are you interested to make the checked list more complete with further
-(eventually automatic?) extensions?
+This is subtle enough that it deserves a comment.
 
-Regards,
-Markus
+		ptr[stat_idx] = 0x1 /* 0x1 chosen randomly */
+
+>  		for (i = 0; i < 4; i++) {
+>  			cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
+>  			dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
+
+There are a lot of magic numbers in this function.  We could get rid
+of this i < 4 loop but doing:
+
+		memcpy(cmd->resp, ptr + 1, resp_len);
+
+Currently we don't use resp_len and the resp_len = 5 assignment is off
+by one...  It should be resp_len = 4.  This function is quite ugly.
+
+regards,
+dan carpenter
+
