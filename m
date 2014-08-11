@@ -1,126 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094AbaHKWtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 18:49:21 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:37453 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336AbaHKWtP (ORCPT
+	id S1755266AbaHKWtf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 18:49:35 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47422 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752880AbaHKWtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 18:49:15 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v5 tip/core/rcu 03/16] rcu: Add synchronous grace-period waiting for RCU-tasks
-Date: Mon, 11 Aug 2014 15:48:52 -0700
-Message-Id: <1407797345-28227-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140811224840.GA25594@linux.vnet.ibm.com>
- <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081122-0928-0000-0000-000003FE01F4
+	Mon, 11 Aug 2014 18:49:33 -0400
+Date: Mon, 11 Aug 2014 23:49:25 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sadasivan Shaiju <sshaiju@mvista.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: PATCH -RCU locking on last_VFP_context[cpu] in vfp_notifier
+	[2.6.32]
+Message-ID: <20140811224925.GE30401@n2100.arm.linux.org.uk>
+References: <ad46c9518e35397c8f4d281a3f88d129@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ad46c9518e35397c8f4d281a3f88d129@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Mon, Aug 11, 2014 at 03:24:18PM -0700, Sadasivan Shaiju wrote:
+> Hi ,
+> 
+> I  work for Montavista (Cavium Inc) as  a  Technical  Lead .  I want to
+> push some  of the kernel  patches to  rt community (2.6.32 kernel 2.6.33
+> rt patch)  , so  that  It  will  go  to  the  main line These patches  are
+> reviewed  and approved  by  our system Architect.  I request  you to
+> include  in the main line .  These  issues  were  reported  during econa
+> board bringup at montavista.
+> 
+> Problem Description:
+> Using cge60-econa-cns3420-2.6.32, the kernel failed to boot with the
+> following
+> error:
+> 
+> Internal error: Oops: 817 [#1] from cpu 1 PREEMPT SMP
+> last sysfs file: /sys/devices/virtual/bdi/0:19/uevent
+> Modules linked in: hmac ctr deflate
+> CPU: 1    Tainted: G        W   (2.6.32.46.cge #1)
+> PC is at vfp_notifier+0x48/0xbc
+> LR is at vfp_notifier+0x44/0xbc
+> pc : []    lr : []    psr: 60000013
+> sp : aeee1d30  ip : aeee1d50  fp : aeee1d4c
+> r10: af8d6460  r9 : ffffffff  r8 : af88c000
+> r7 : a05ba584  r6 : af88c000  r5 : 00000001  r4 : 40000000
+> r3 : 00000000  r2 : 00000000  r1 : 40000000  r0 : aeee0230
+> Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+> Control: 00c5787d  Table: 2eeec00a  DAC: 00000017
+> Process grep (pid: 1710, stack limit = 0xaeee0270)
+> Stack:  from cpu 1 (0xaeee1d30 to 0xaeee2000)
+> 
+> Root Cause:
+> On the SMP architecture, last_VFP_context[cpu] becomes NULL because it
+> gets
+> released on a different CPU.
+> 
+> How Solved:
+> Fixed by exiting the thread instead of releasing the thread in the
+> vfp_notifier.
+> 
+> I  request you  to include  the above patch to  the main line kernel .  If
+> any questions  please contact me  at  sshaiju@mvista.com
+> (shaiju_sada@yahoo.com)
 
-It turns out to be easier to add the synchronous grace-period waiting
-functions to RCU-tasks than to work around their absense in rcutorture,
-so this commit adds them.  The key point is that the existence of
-call_rcu_tasks() means that rcutorture needs an rcu_barrier_tasks().
+This is totally insufficient for fixing a bug in a complex piece of code.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- include/linux/rcupdate.h |  2 ++
- kernel/rcu/update.c      | 55 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 57 insertions(+)
+You fail to explain exactly _how_ the bug arises.  You say
+"last_VFP_context[cpu] becomes NULL because it gets released on a
+different CPU" - how does that happen?
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index ac87f587a1c1..1f073af940a5 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -216,6 +216,8 @@ void synchronize_sched(void);
-  * memory ordering guarantees.
-  */
- void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
-+void synchronize_rcu_tasks(void);
-+void rcu_barrier_tasks(void);
- 
- #ifdef CONFIG_PREEMPT_RCU
- 
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index f6f164119a14..d6fa54befa22 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -384,6 +384,61 @@ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
- }
- EXPORT_SYMBOL_GPL(call_rcu_tasks);
- 
-+/**
-+ * synchronize_rcu_tasks - wait until an rcu-tasks grace period has elapsed.
-+ *
-+ * Control will return to the caller some time after a full rcu-tasks
-+ * grace period has elapsed, in other words after all currently
-+ * executing rcu-tasks read-side critical sections have elapsed.  These
-+ * read-side critical sections are delimited by calls to schedule(),
-+ * cond_resched_rcu_qs(), idle execution, userspace execution, calls
-+ * to synchronize_rcu_tasks(), and (in theory, anyway) cond_resched().
-+ *
-+ * This is a very specialized primitive, intended only for a few uses in
-+ * tracing and other situations requiring manipulation of function
-+ * preambles and profiling hooks.  The synchronize_rcu_tasks() function
-+ * is not (yet) intended for heavy use from multiple CPUs.
-+ *
-+ * Note that this guarantee implies further memory-ordering guarantees.
-+ * On systems with more than one CPU, when synchronize_rcu_tasks() returns,
-+ * each CPU is guaranteed to have executed a full memory barrier since the
-+ * end of its last RCU-tasks read-side critical section whose beginning
-+ * preceded the call to synchronize_rcu_tasks().  In addition, each CPU
-+ * having an RCU-tasks read-side critical section that extends beyond
-+ * the return from synchronize_rcu_tasks() is guaranteed to have executed
-+ * a full memory barrier after the beginning of synchronize_rcu_tasks()
-+ * and before the beginning of that RCU-tasks read-side critical section.
-+ * Note that these guarantees include CPUs that are offline, idle, or
-+ * executing in user mode, as well as CPUs that are executing in the kernel.
-+ *
-+ * Furthermore, if CPU A invoked synchronize_rcu_tasks(), which returned
-+ * to its caller on CPU B, then both CPU A and CPU B are guaranteed
-+ * to have executed a full memory barrier during the execution of
-+ * synchronize_rcu_tasks() -- even if CPU A and CPU B are the same CPU
-+ * (but again only if the system has more than one CPU).
-+ */
-+void synchronize_rcu_tasks(void)
-+{
-+	/* Complain if the scheduler has not started.  */
-+	rcu_lockdep_assert(!rcu_scheduler_active,
-+			   "synchronize_rcu_tasks called too soon");
-+
-+	/* Wait for the grace period. */
-+	wait_rcu_gp(call_rcu_tasks);
-+}
-+
-+/**
-+ * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
-+ *
-+ * Although the current implementation is guaranteed to wait, it is not
-+ * obligated to, for example, if there are no pending callbacks.
-+ */
-+void rcu_barrier_tasks(void)
-+{
-+	/* There is only one callback queue, so this is easy.  ;-) */
-+	synchronize_rcu_tasks();
-+}
-+
- /* See if tasks are still holding out, complain if so. */
- static void check_holdout_task(struct task_struct *t)
- {
+The only places that last_VFP_context[cpu] is set to NULL is within a
+cpu = get_cpu()..put_cpu() region, which by definition *must* be running
+on the CPU specified by 'cpu'.
+
+Without a proper diagnosis showing exactly what the race is which causes
+the above oops, there's nothing I can do.  Sorry.
+
 -- 
-1.8.1.5
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
