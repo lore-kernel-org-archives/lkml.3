@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081AbaHKCor (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 22:44:47 -0400
-Received: from ozlabs.org ([103.22.144.67]:52588 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751735AbaHKCoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 22:44:46 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "LKML" <linux-kernel@vger.kernel.org>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Petr Mladek <pmladek@suse.cz>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Stewart Smith <stewart@linux.vnet.ibm.com>
-Subject: [PULL] modules-next
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 11 Aug 2014 12:02:30 +0930
-Message-ID: <87sil3ah8h.fsf@rustcorp.com.au>
+	id S1752132AbaHKCs1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 22:48:27 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:36974 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaHKCs0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 22:48:26 -0400
+Date: Mon, 11 Aug 2014 11:46:53 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] dcache: Fix no spaces at the start of a line in dcache.c
+Message-ID: <20140811024653.GA11323@devel.8.8.4.4>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 15ba2236f3556fc01b9ca91394465152b5ea74b6:
+Fixed coding style in dcache.c
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-07-21 22:46:01 -0700)
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ fs/dcache.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-are available in the git repository at:
+diff --git a/fs/dcache.c b/fs/dcache.c
+index b7e8b20..7252cac 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2104,10 +2104,10 @@ struct dentry *d_lookup(const struct dentry *parent, const struct qstr *name)
+ 	struct dentry *dentry;
+ 	unsigned seq;
+ 
+-        do {
+-                seq = read_seqbegin(&rename_lock);
+-                dentry = __d_lookup(parent, name);
+-                if (dentry)
++	do {
++		seq = read_seqbegin(&rename_lock);
++		dentry = __d_lookup(parent, name);
++		if (dentry)
+ 			break;
+ 	} while (read_seqretry(&rename_lock, seq));
+ 	return dentry;
+-- 
+1.7.1
 
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/modules-next-for-linus
-
-for you to fetch changes up to 76215b04fd297c008b91ece732ed36e67e0181fa:
-
-  arch/powerpc/platforms/powernv/opal-dump.c: fix world-writable sysfs files (2014-08-07 22:38:55 +0930)
-
-----------------------------------------------------------------
-This finally applies the stricter sysfs perms checking we pulled out
-before last merge window.  A few stragglers are fixed (thanks linux-next!)
-
-Cheers,
-Rusty.
-
-----------------------------------------------------------------
-Michal Nazarewicz (1):
-      scripts: modpost: fix compilation warning
-
-Petr Mladek (2):
-      module: add within_module() function
-      module: return bool from within_module*()
-
-Rasmus Villemoes (1):
-      scripts: modpost: Remove numeric suffix pattern matching
-
-Russell King (1):
-      ARM: avoid ARM binutils leaking ELF local symbols
-
-Rusty Russell (5):
-      modules: Fix build error in moduleloader.h
-      sysfs: disallow world-writable files.
-      drivers/video/fbdev/s3c2410fb.c: don't make debug world-writable.
-      arch/powerpc/platforms/powernv/opal-elog.c: fix world-writable sysfs files
-      arch/powerpc/platforms/powernv/opal-dump.c: fix world-writable sysfs files
-
- arch/powerpc/platforms/powernv/opal-dump.c |  4 +--
- arch/powerpc/platforms/powernv/opal-elog.c |  4 +--
- drivers/video/fbdev/s3c2410fb.c            |  2 +-
- include/linux/kernel.h                     |  2 ++
- include/linux/module.h                     | 11 ++++--
- include/linux/moduleloader.h               |  6 ++--
- kernel/module.c                            | 14 ++++----
- scripts/mod/modpost.c                      | 58 ++++++++----------------------
- 8 files changed, 40 insertions(+), 61 deletions(-)
