@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958AbaHKOfG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 10:35:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42032 "EHLO mx2.suse.de"
+	id S1753967AbaHKOhQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 10:37:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57813 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753943AbaHKOfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 10:35:04 -0400
-Date: Mon, 11 Aug 2014 16:35:00 +0200
-From: Jan Kara <jack@suse.cz>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Jan Kara <jack@suse.cz>, Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+	id S1753465AbaHKOhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 10:37:14 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
+        linux-unionfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the DAX
- page fault handler
-Message-ID: <20140811143500.GF29526@quack.suse.cz>
-References: <20140409102758.GM32103@quack.suse.cz>
- <20140409205111.GG5727@linux.intel.com>
- <20140409214331.GQ32103@quack.suse.cz>
- <20140729121259.GL6754@linux.intel.com>
- <20140729210457.GA17807@quack.suse.cz>
- <20140729212333.GO6754@linux.intel.com>
- <20140730095229.GA19205@quack.suse.cz>
- <20140809110000.GA32313@linux.intel.com>
- <20140811085147.GB29526@quack.suse.cz>
- <20140811141308.GZ6754@linux.intel.com>
+Subject: Race in ovl_copy_up()?
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140811141308.GZ6754@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <24269.1407767827.1@warthog.procyon.org.uk>
+Date: Mon, 11 Aug 2014 15:37:07 +0100
+Message-ID: <24270.1407767827@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 11-08-14 10:13:08, Matthew Wilcox wrote:
-> On Mon, Aug 11, 2014 at 10:51:47AM +0200, Jan Kara wrote:
-> > So I'm afraid we'll have to find some other way to synchronize
-> > page faults and truncate / punch hole in DAX.
-> 
-> What if we don't?  If we hit the race (which is vanishingly unlikely with
-> real applications), the consequence is simply that after a truncate, a
-> file may be left with one or two blocks allocated somewhere after i_size.
-> As I understand it, that's not a real problem; they're temporarily
-> unavailable for allocation but will be freed on file removal or the next
-> truncation of that file.
-  You mean if you won't have any locking between page fault and truncate?
-You can have:
-a) extending truncate making forgotten blocks with non-zeros visible
-b) filesystem corruption due to doubly used blocks (block will be freed
-from the truncated file and thus can be reallocated but it will still be
-accessible via mmap from the truncated file).
+Hi Miklos,
 
-  So not a good idea.
- 
-> I'm also still considering the possibility of having truncate-down block
-> until all mmaps that extend after the new i_size have been removed ...
-  Hum, I'm not sure how you would do that with current locking scheme and
-wait for all page faults on that range to finish but maybe you have some
-good idea :)
+Looking at the following:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+	int ovl_copy_up(struct dentry *dentry)
+	{
+		int err;
+
+		err = 0;
+		while (!err) {
+			struct dentry *next;
+			struct dentry *parent;
+			struct path lowerpath;
+			struct kstat stat;
+			enum ovl_path_type type = ovl_path_type(dentry);
+
+			if (type != OVL_PATH_LOWER)
+				break;
+
+			next = dget(dentry);
+			/* find the topmost dentry not yet copied up */
+			for (;;) {
+				parent = dget_parent(next);
+
+				type = ovl_path_type(parent);
+				if (type != OVL_PATH_LOWER)
+					break;
+
+				dput(next);
+				next = parent;
+			}
+
+			ovl_path_lower(next, &lowerpath);
+			err = vfs_getattr(&lowerpath, &stat);
+			if (!err)
+				err = ovl_copy_up_one(parent, next, &lowerpath, &stat);
+
+			dput(parent);
+			dput(next);
+		}
+
+		return err;
+	}
+
+In the for-loop in the middle, if you ascend any levels at all, how are you
+protected from racing with copy-ups taking place on those more rootwards
+dentries?
+
+I can see ovl_copy_up_one() using lock_rename() on the workdir and upperdir,
+but there's no relevant lock on the overlayfs fs.  You stepped out of the lock
+the VFS caller holds when you ascended.
+
+David
