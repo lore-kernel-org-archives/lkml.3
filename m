@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaHKFcT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 01:32:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:60033 "EHLO mga09.intel.com"
+	id S1752767AbaHKFcf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 01:32:35 -0400
+Received: from mga02.intel.com ([134.134.136.20]:49413 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752712AbaHKFcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 01:32:14 -0400
+	id S1752712AbaHKFcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 01:32:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,839,1400050800"; 
-   d="scan'208";a="586295764"
+   d="scan'208";a="556698817"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -18,9 +18,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         kan.liang@intel.com,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v3 18/23] perf: Add a helper to copy AUX data in the kernel
-Date: Mon, 11 Aug 2014 08:19:47 +0300
-Message-Id: <1407734392-31097-19-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v3 14/23] x86: perf: Intel PT and LBR/BTS are mutually exclusive
+Date: Mon, 11 Aug 2014 08:19:43 +0300
+Message-Id: <1407734392-31097-15-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1407734392-31097-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1407734392-31097-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -28,81 +28,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a helper for the kernel counters that generate AUX data to
-copy this data around, for example, to output it to the perf ring buffer
-as a sample record or write it to a core dump file.
+Intel PT cannot be used at the same time as LBR or BTS and will cause a
+general protection fault if they are used together. In order to avoid
+fixing up GPs in the fast path, instead we use flags to indicate that
+that one of these is in use so that the other avoids MSR access altogether.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- kernel/events/internal.h    |  5 +++++
- kernel/events/ring_buffer.c | 31 +++++++++++++++++++++++++++++++
- 2 files changed, 36 insertions(+)
+ arch/x86/kernel/cpu/perf_event.h           | 6 ++++++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  | 8 +++++++-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 9 +++++----
+ 3 files changed, 18 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index f4cfa4cabb..bb035dd645 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -52,6 +52,9 @@ struct ring_buffer {
- 	void				*data_pages[0];
- };
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 8ade93111e..da07b41496 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -146,6 +146,7 @@ struct cpu_hw_events {
+ 	 * Intel DebugStore bits
+ 	 */
+ 	struct debug_store	*ds;
++	unsigned int		bts_enabled;
+ 	u64			pebs_enabled;
  
-+typedef unsigned long (*aux_copyfn)(void *data, const void *src,
-+				    unsigned long len);
-+
- extern void rb_free(struct ring_buffer *rb);
- extern struct ring_buffer *
- rb_alloc(int nr_pages, long watermark, int cpu, int flags);
-@@ -59,6 +62,8 @@ extern void perf_event_wakeup(struct perf_event *event);
- extern int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
- 			pgoff_t pgoff, int nr_pages, long watermark, int flags);
- extern void rb_free_aux(struct ring_buffer *rb, struct perf_event *event);
-+extern long rb_output_aux(struct ring_buffer *rb, unsigned long from,
-+			  unsigned long to, aux_copyfn copyfn, void *data);
- extern struct ring_buffer *
- rb_alloc_kernel(struct perf_event *event, int nr_pages, int aux_nr_pages);
- extern void rb_free_kernel(struct ring_buffer *rb, struct perf_event *event);
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index 43c4cc1892..3434bd145c 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -348,6 +348,37 @@ void *perf_get_aux(struct perf_output_handle *handle)
- 	return handle->rb->aux_priv;
- }
+ 	/*
+@@ -159,6 +160,11 @@ struct cpu_hw_events {
+ 	u64				br_sel;
  
-+long rb_output_aux(struct ring_buffer *rb, unsigned long from,
-+		   unsigned long to, aux_copyfn copyfn, void *data)
-+{
-+	unsigned long tocopy, remainder, len = 0;
-+	void *addr;
+ 	/*
++	 * Intel Processor Trace
++	 */
++	unsigned int			pt_enabled;
 +
-+	from &= (rb->aux_nr_pages << PAGE_SHIFT) - 1;
-+	to &= (rb->aux_nr_pages << PAGE_SHIFT) - 1;
-+
-+	do {
-+		tocopy = PAGE_SIZE - offset_in_page(from);
-+		if (to > from)
-+			tocopy = min(tocopy, to - from);
-+		if (!tocopy)
-+			break;
-+
-+		addr = rb->aux_pages[from >> PAGE_SHIFT];
-+		addr += offset_in_page(from);
-+
-+		remainder = copyfn(data, addr, tocopy);
-+		if (remainder)
-+			return -EFAULT;
-+
-+		len += tocopy;
-+		from += tocopy;
-+		from &= (rb->aux_nr_pages << PAGE_SHIFT) - 1;
-+	} while (to != from);
-+
-+	return len;
-+}
-+
- #define PERF_AUX_GFP	(GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY)
++	/*
+ 	 * Intel host/guest exclude bits
+ 	 */
+ 	u64				intel_ctrl_guest_mask;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 696ade311d..b8a7f9315f 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -456,8 +456,13 @@ struct event_constraint bts_constraint =
  
- static struct page *rb_alloc_aux_page(int node, int order)
+ void intel_pmu_enable_bts(u64 config)
+ {
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	unsigned long debugctlmsr;
+ 
++	if (cpuc->pt_enabled)
++		return;
++
++	cpuc->bts_enabled = 1;
+ 	debugctlmsr = get_debugctlmsr();
+ 
+ 	debugctlmsr |= DEBUGCTLMSR_TR;
+@@ -478,9 +483,10 @@ void intel_pmu_disable_bts(void)
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	unsigned long debugctlmsr;
+ 
+-	if (!cpuc->ds)
++	if (!cpuc->ds || cpuc->pt_enabled)
+ 		return;
+ 
++	cpuc->bts_enabled = 0;
+ 	debugctlmsr = get_debugctlmsr();
+ 
+ 	debugctlmsr &=
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 9dd2459a4c..516e52d0ac 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -172,7 +172,9 @@ static void intel_pmu_lbr_reset_64(void)
+ 
+ void intel_pmu_lbr_reset(void)
+ {
+-	if (!x86_pmu.lbr_nr)
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++
++	if (!x86_pmu.lbr_nr || cpuc->pt_enabled)
+ 		return;
+ 
+ 	if (x86_pmu.intel_cap.lbr_format == LBR_FORMAT_32)
+@@ -185,7 +187,7 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+-	if (!x86_pmu.lbr_nr)
++	if (!x86_pmu.lbr_nr || cpuc->pt_enabled)
+ 		return;
+ 
+ 	/*
+@@ -205,11 +207,10 @@ void intel_pmu_lbr_disable(struct perf_event *event)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+-	if (!x86_pmu.lbr_nr)
++	if (!x86_pmu.lbr_nr || !cpuc->lbr_users || cpuc->pt_enabled)
+ 		return;
+ 
+ 	cpuc->lbr_users--;
+-	WARN_ON_ONCE(cpuc->lbr_users < 0);
+ 
+ 	if (cpuc->enabled && !cpuc->lbr_users) {
+ 		__intel_pmu_lbr_disable();
 -- 
 2.1.0.rc1
 
