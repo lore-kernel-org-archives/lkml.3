@@ -1,171 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551AbaHKWfN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 18:35:13 -0400
-Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:56653
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753054AbaHKWfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 18:35:11 -0400
-Message-ID: <53E94517.4090103@caviumnetworks.com>
-Date: Mon, 11 Aug 2014 15:35:03 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Sadasivan Shaiju <sshaiju@mvista.com>
-CC: <linux-kernel@vger.kernel.org>, <ralf@linux-mips.org>,
-        <david.daney@cavium.com>, <shaiju_sada@yahoo.com>
-Subject: Re: [PATCH] delaying interrupts in mips [ 2.6.32]
-References: <5bf77c903d6df6cfe656a3585c314df1@mail.gmail.com> <53E94382.1010203@caviumnetworks.com> <eedac437fcb12ece914ccb716c3d4cb9@mail.gmail.com>
-In-Reply-To: <eedac437fcb12ece914ccb716c3d4cb9@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.195]
-X-ClientProxiedBy: BLUPR07CA096.namprd07.prod.outlook.com (25.160.24.51) To
- BY2PR07MB583.namprd07.prod.outlook.com (10.141.221.155)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03008837BD
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(5423002)(479174003)(377454003)(51704005)(189002)(13464003)(50944004)(199002)(288314003)(24454002)(575784001)(85306004)(36756003)(64706001)(77982001)(83072002)(42186005)(46102001)(33656002)(66066001)(15975445006)(65956001)(80022001)(69596002)(87976001)(102836001)(77096002)(76482001)(53416004)(47776003)(92566001)(59896001)(20776003)(92726001)(4396001)(50466002)(95666004)(107046002)(74662001)(31966008)(74502001)(110136001)(106356001)(81156004)(19580395003)(19580405001)(23676002)(105586002)(83322001)(65806001)(101416001)(83506001)(64126003)(85852003)(79102001)(54356999)(65816999)(99396002)(87266999)(76176999)(81542001)(50986999)(21056001)(80316001)(81342001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR07MB583;H:dl.caveonetworks.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-X-OriginatorOrg: caviumnetworks.com
+	id S1755265AbaHKWlO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 18:41:14 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:36578 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaHKWlM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 18:41:12 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1407791075.28221.74.camel@chimera>
+Date: Mon, 11 Aug 2014 15:41:38 -0700
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <28066DB2-9EA9-4748-9C89-D3FBD3EC51F5@holtmann.org>
+References: <1407780269.28221.63.camel@chimera> <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org> <1407789645.28221.68.camel@chimera> <37210DB5-2911-4FA3-9299-7701C5003945@holtmann.org> <1407791075.28221.74.camel@chimera>
+To: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2014 03:33 PM, Sadasivan Shaiju wrote:
-> Hi David,
->
-> Sorry  ,  I  didn't  check  that  .  I  am late  in submitting  it .
+Hi Daniel,
 
-OK.  Next time try to apply your patch and test it before submitting.
+>> The initial wlan0 can be removed as every other netdev attached to the
+>> wiphy. It can also be as easily re-created.
+>> 
+>> Since the wiphy does not have a valid MAC address, my proposal here
+>> would be to just not create the wlan0 in the first place. This means
+>> that the wiphy can be still discovered via nl80211.
+> 
+> I repeat, currently wlan0 is *not* created.
 
-David Daney
+what kind of hardware are you actually using here?
 
->
-> Regards,
-> Shaiju.
->
-> -----Original Message-----
-> From: David Daney [mailto:ddaney@caviumnetworks.com]
-> Sent: Monday, August 11, 2014 3:28 PM
-> To: Sadasivan Shaiju
-> Cc: linux-kernel@vger.kernel.org; ralf@linux-mips.org;
-> david.daney@cavium.com; shaiju_sada@yahoo.com
-> Subject: Re: [PATCH] delaying interrupts in mips [ 2.6.32]
->
-> On 08/11/2014 03:13 PM, Sadasivan Shaiju wrote:
->> Hi ,
->>
->> I  work for Montavista (Cavium Inc) as  a  Technical  Lead .  I want
->> to push some  of the kernel  patches to  rt community (2.6.32 kernel
->> 2.6.33 rt patch)  , so  that  It  will  go  to  the  main line These
->> patches  are reviewed  and approved  by  our system Architect.  I
->> request  you to include  in the main line .
->
-> It is already in the "main line":
->
-> commit 1bcfecc028686ea32e49b0f4f6e8a665917cb49a
-> Author: Yong Zhang <yong.zhang@windriver.com>
-> Date:   Thu Jul 19 09:13:53 2012 +0200
->
->       MIPS: Octeon: delay enable irq to ->smp_finish()
->
->       To prepare for smoothing set_cpu_[active|online]() mess up
->
->       Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
->       Cc: Sergei Shtylyov <sshtylyov@mvista.com>
->       Cc: David Daney <david.daney@cavium.com>
->       Acked-by: David Daney <david.daney@cavium.com>
->       Patchwork: https://patchwork.linux-mips.org/patch/3845/
->       Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
->
-> Why are you sending it again?
->
-> David Daney
->
->
->
->     These  issues  were  reported  by our
->> customer CISCO .
->>
->> Problem Description:
->> When CONFIG_DEBUG_PREEMPT is enabled the following stack trace occurs.
->>
->> [ 170.814470] BUG: using smp_processor_id() in preemptible [00000000]
->> code: sirq-timer/4/62
->> [ 170.814482] caller is hrtimer_run_pending+0x10/0x20 [ 170.814488]
->> Call Trace:
->> [ 170.814496] [<ffffffff8010d844>] dump_stack+0x8/0x34 [ 170.814507]
->> [<ffffffff803c2598>] debug_smp_processor_id+0xe0/0xf0 [ 170.814517]
->> [<ffffffff80254158>] hrtimer_run_pending+0x10/0x20 [ 170.814528]
->> [<ffffffff80242400>] run_timer_softirq+0x60/0x348 [ 170.814539]
->> [<ffffffff8023ae80>] run_ksoftirqd+0x1c8/0x348 [ 170.814550]
->> [<ffffffff802503f8>] kthread+0x88/0x90 [ 170.814561]
->> [<ffffffff80206c80>] kernel_thread_helper+0x10/0x18
->>
->> Root Cause:
->> Interrupt was occurring before the processor was completely up, and
->> the softirq threads were unable to schedule on the processor and then
->> ran on the wrong CPU.
->>
->> How Solved:
->> Enabling of interrupt has been delayed till smp_finish so that
->> kthread_bind can safely bind threads to any possible CPU.
->>
->> I request you  to merge  the above patch  to the  main line .  If  any
->> questions please contact me atsshaiju@mvista.com
->> (shaiju_sada@yahoo.com)
->>
->> Regards,
->> Shaiju.
->>
->>
->> 0001-Interrupt-delaying-enabling-of-interrupt.patch
->>
->>
->>   From 58512475cba93003c23f2b380b573e64eebcabd5 Mon Sep 17 00:00:00
->> 2001
->> From: Sadasivan Shaiju<sshaiju@mvista.com>
->> Date: Mon, 20 Feb 2012 13:25:50 -0800
->> Subject: [PATCH] Interrupt : delaying enabling of interrupt
->>
->> Source: MontaVista Software, LLC
->> MR: 47157
->> Type: Defect Fix
->> Disposition: Local
->> ChangeID: 48c837329556b161f3111e6fded1c9857fa3a149
->> Description:
->>
->> This patch is to delay the enabling of interrupt till smp_finish . So
->> that kthread_bind can safely bind threads to any possible cpu. Without
->> this change interrupt should occur beofre  the  processor was
->> completely up, and  the softirq threads were unable to schedule on the
->> processor and  then  ran on the wrong CPU.
->>
->> Signed-off-by: Sadasivan Shaiju<sshaiju@mvista.com>
->> ---
->>    arch/mips/cavium-octeon/smp.c |    3 ++-
->>    1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/mips/cavium-octeon/smp.c
->> b/arch/mips/cavium-octeon/smp.c index ff21542..c7de7ac 100644
->> --- a/arch/mips/cavium-octeon/smp.c
->> +++ b/arch/mips/cavium-octeon/smp.c
->> @@ -308,7 +308,6 @@ static void octeon_init_secondary(void)
->>    	octeon_init_cvmcount();
->>
->>    	octeon_irq_setup_secondary();
->> -	raw_local_irq_enable();
->>    }
->>
->>    /**
->> @@ -365,6 +364,8 @@ static void octeon_smp_finish(void)
->>
->>    	/* to generate the first CPU timer interrupt */
->>    	write_c0_compare(read_c0_count() + mips_hpt_frequency / HZ);
->> +	/* enable local interrupts */
->> +	raw_local_irq_enable();
->>    }
->>
->>    /**
->> -- 1.7.0.1
+>> It also means that the wlan0 netdev needs to be created by userspace
+>> now. And a valid NL80211_ATTR_MAC be provided. Similar to what is
+>> already done for P2P devices at the moment. That should just solve the
+>> problem.
+> 
+> The creation of wlan0 already comes from userspace, but the PHY has its
+> own MAC.
+> 
+>> We really do not want to announce a netdev when registering the wiphy
+>> device and then having to mess with its MAC address via sysfs somehow.
+>> This all needs to be properly reflected over RTNL.
+>> 
+> Again, no netdev is announced. There just isn't a way to set the MAC of
+> the wiphy device itself.
+> 
+> How about this: What if the driver were to leave the MAC at all zeros
+> initially, and sysfs could set that if and only if it's all zeros at the
+> time?
+
+Internally it might do that, but I do not see it exposing the NL80211_ATTR_MAC when you get the attributes for wiphy.
+
+So I am still saying that when you do NL80211_CMD_NEW_INTERFACE allow providing NL80211_ATTR_MAC to set the MAC address to be used. It might be useful that the wiphy exposes an attribute saying that it does not have a default MAC address, but that should be it. I do not like these magic 00:00:00:00:00:00 games. As I mentioned earlier, in Bluetooth we just deal with allowing the driver to set a flag that it does not have a valid address. And then the core takes care of dealing with it.
+
+Regards
+
+Marcel
 
