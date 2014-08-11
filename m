@@ -1,106 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaHKIue (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 04:50:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50049 "EHLO mx1.redhat.com"
+	id S1753039AbaHKI5R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 04:57:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63372 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370AbaHKIud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 04:50:33 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 01/20] perf: Add PERF_EVENT_STATE_EXIT state for events with exited task
-Date: Mon, 11 Aug 2014 10:49:55 +0200
-Message-Id: <1407747014-18394-2-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1407747014-18394-1-git-send-email-jolsa@kernel.org>
-References: <1407747014-18394-1-git-send-email-jolsa@kernel.org>
+	id S1751444AbaHKI5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 04:57:15 -0400
+Date: Mon, 11 Aug 2014 10:57:10 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: qla2xxx-upstream@qlogic.com
+Cc: linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 21/23] qla2xxx: Use pci_enable_msix_range()
+ instead of pci_enable_msix()
+Message-ID: <20140811085709.GM16504@dhcp-27-160.brq.redhat.com>
+References: <cover.1405533479.git.agordeev@redhat.com>
+ <cf38d1596543fd61c099bc0b834c2ea7a11f8b28.1405533479.git.agordeev@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cf38d1596543fd61c099bc0b834c2ea7a11f8b28.1405533479.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding new perf event state to indicate that the monitored
-task has exited.  In this case the event stays alive until
-the owner task exits or close the event fd while providing
-the last data through the read syscall and ring buffer.
+On Wed, Jul 16, 2014 at 08:05:25PM +0200, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
+> 
+> Log message code 0x00c6 preserved, although it is reported
+> after successful call to pci_enable_msix_range(), not before
+> possibly unsuccessful call to pci_enable_msix(). Consumers
+> of the error code should not notice the difference.
 
-Instead it needs to propagate the error info (monitored task
-has died)  via poll and read  syscalls by  returning POLLHUP
-and 0 respectively.
+Hello,
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- include/linux/perf_event.h |  1 +
- kernel/events/core.c       | 12 ++++++++++--
- 2 files changed, 11 insertions(+), 2 deletions(-)
+Please, anyone (from QLogic especially) review this patch.
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 707617a8c0f6..54f3a6241386 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -268,6 +268,7 @@ struct pmu {
-  * enum perf_event_active_state - the states of a event
-  */
- enum perf_event_active_state {
-+	PERF_EVENT_STATE_EXIT		= -3,
- 	PERF_EVENT_STATE_ERROR		= -2,
- 	PERF_EVENT_STATE_OFF		= -1,
- 	PERF_EVENT_STATE_INACTIVE	=  0,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 14086e45c5c4..dde0eefa410a 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3499,7 +3499,8 @@ perf_read_hw(struct perf_event *event, char __user *buf, size_t count)
- 	 * error state (i.e. because it was pinned but it couldn't be
- 	 * scheduled on to the CPU at some point).
- 	 */
--	if (event->state == PERF_EVENT_STATE_ERROR)
-+	if ((event->state == PERF_EVENT_STATE_ERROR) ||
-+	    (event->state == PERF_EVENT_STATE_EXIT))
- 		return 0;
- 
- 	if (count < event->read_size)
-@@ -3526,9 +3527,13 @@ static unsigned int perf_poll(struct file *file, poll_table *wait)
- {
- 	struct perf_event *event = file->private_data;
- 	struct ring_buffer *rb;
--	unsigned int events = POLL_HUP;
-+	unsigned int events = POLLHUP;
- 
- 	poll_wait(file, &event->waitq, wait);
-+
-+	if (event->state == PERF_EVENT_STATE_EXIT)
-+		return POLLHUP;
-+
- 	/*
- 	 * Pin the event->rb by taking event->mmap_mutex; otherwise
- 	 * perf_event_set_output() can swizzle our rb and make us miss wakeups.
-@@ -7484,6 +7489,9 @@ __perf_event_exit_task(struct perf_event *child_event,
- 	if (child_event->parent) {
- 		sync_child_event(child_event, child);
- 		free_event(child_event);
-+	} else {
-+		child_event->state = PERF_EVENT_STATE_EXIT;
-+		perf_event_wakeup(child_event);
- 	}
- }
- 
--- 
-1.8.3.1
+Thanks!
 
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: qla2xxx-upstream@qlogic.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/scsi/qla2xxx/qla_isr.c |   27 +++++++++++----------------
+>  1 files changed, 11 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
+> index a56825c..52d420f 100644
+> --- a/drivers/scsi/qla2xxx/qla_isr.c
+> +++ b/drivers/scsi/qla2xxx/qla_isr.c
+> @@ -2923,27 +2923,22 @@ qla24xx_enable_msix(struct qla_hw_data *ha, struct rsp_que *rsp)
+>  	for (i = 0; i < ha->msix_count; i++)
+>  		entries[i].entry = i;
+>  
+> -	ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
+> -	if (ret) {
+> -		if (ret < MIN_MSIX_COUNT)
+> -			goto msix_failed;
+> -
+> +	ret = pci_enable_msix_range(ha->pdev,
+> +				    entries, MIN_MSIX_COUNT, ha->msix_count);
+> +	if (ret < 0) {
+> +		ql_log(ql_log_fatal, vha, 0x00c7,
+> +		    "MSI-X: Failed to enable support, "
+> +		    "giving   up -- %d/%d.\n",
+> +		    ha->msix_count, ret);
+> +		goto msix_out;
+> +	} else if (ret < ha->msix_count) {
+>  		ql_log(ql_log_warn, vha, 0x00c6,
+>  		    "MSI-X: Failed to enable support "
+>  		    "-- %d/%d\n Retry with %d vectors.\n",
+>  		    ha->msix_count, ret, ret);
+> -		ha->msix_count = ret;
+> -		ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
+> -		if (ret) {
+> -msix_failed:
+> -			ql_log(ql_log_fatal, vha, 0x00c7,
+> -			    "MSI-X: Failed to enable support, "
+> -			    "giving   up -- %d/%d.\n",
+> -			    ha->msix_count, ret);
+> -			goto msix_out;
+> -		}
+> -		ha->max_rsp_queues = ha->msix_count - 1;
+>  	}
+> +	ha->msix_count = ret;
+> +	ha->max_rsp_queues = ha->msix_count - 1;
+>  	ha->msix_entries = kzalloc(sizeof(struct qla_msix_entry) *
+>  				ha->msix_count, GFP_KERNEL);
+>  	if (!ha->msix_entries) {
+> -- 
+> 1.7.7.6
+> 
