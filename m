@@ -1,79 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448AbaHKDce (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 23:32:34 -0400
-Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:40626 "EHLO
-	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751886AbaHKDcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 23:32:33 -0400
-Message-ID: <53E8394F.4020600@akamai.com>
-Date: Sun, 10 Aug 2014 23:32:31 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752483AbaHKDcx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 23:32:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6783 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752123AbaHKDcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 23:32:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="370648504"
+Message-ID: <53E83960.6020108@linux.intel.com>
+Date: Mon, 11 Aug 2014 11:32:48 +0800
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>
-CC: x86-ml <x86@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH] Flipped jump labels
-References: <20140809105742.GA5910@pd.tnic> <20140810061103.GA13968@gmail.com> <20140810061303.GA14206@gmail.com> <20140810153539.GA9490@pd.tnic> <20140810154515.GA27199@gmail.com> <20140810160756.GB9490@pd.tnic>
-In-Reply-To: <20140810160756.GB9490@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
+To: "Sha, Ruibin" <ruibin.sha@intel.com>,
+        Chintan Pandya <cpandya@codeaurora.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "mel@csn.ul.ie" <mel@csn.ul.ie>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>, "He, Bo" <bo.he@intel.com>
+Subject: Re: [PATCH]  export the function kmap_flush_unused.
+References: <3C85A229999D6B4A89FA64D4680BA6142C7DFA@SHSMSX101.ccr.corp.intel.com> <53E4D312.5000601@codeaurora.org> <3C85A229999D6B4A89FA64D4680BA6142CAFF3@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <3C85A229999D6B4A89FA64D4680BA6142CAFF3@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2014 12:07 PM, Borislav Petkov wrote:
-> On Sun, Aug 10, 2014 at 05:45:15PM +0200, Ingo Molnar wrote:
->> Indeed - but could we use that interface to cleanly expose the
->> arch_static_branch_active() code you've written, or do we need new
->> variants?
-> We could probably.
->
-> The thing is, if we want to do the _active thing, the whole jump labels
-> infrastructure would need to know about those, let's call them "new
-> types" because they'd need different handling when enabling - see
-> __jump_label_transform() in arch/x86/kernel/jump_label.c with all the
-> NOP checks.
->
-> Which begs the more important question: is adding those just to save us
-> a JMP penalty justify the additional code complexity. Frankly, I'm still
-> on the fence here and I'd rather do some perf measurements of a kernel
-> build with and without the JMP in native_sched_clock() to see whether it
-> is even noticeable or it disappears in the noise.
->
-> Because if it does disappear, the whole trouble is just for nothing.
->
-> Thanks.
->
 
-That is correct. We don't currently support having the default
-branch direction or the fast path be different from how the
-'static_key' is initialized.
+On 2014/8/11 9:26, Sha, Ruibin wrote:
+> Hi Chintan,
+> Thank you very much for your timely and kindly response and comments.
+>
+> Here is more detail about our Scenario:
+>
+>      We have a big driver on Android product. The driver allocates lots of
+>      DDR pages. When applications mmap a file exported from the driver,
+>      driver would mmap the pages to the application space, usually with
+>      uncachable prot.
+>      On ia32/x86_64 arch, we have to avoid page cache alias issue. When
+>      driver allocates the pages, it would change page original mapping in
+>      page table with uncachable prot. Sometimes, the allocated page was
+>      used by kmap/kunmap. After kunmap, the page is still mapped in KMAP
+>      space. The entries in KMAP page table are not cleaned up until a
+>      kernel thread flushes the freed KMAP pages(usually it is woken up by kunmap).
+>      It means the driver need  force to flush the KMAP page table entries before mapping pages to
+>      application space to be used. Otherwise, there is a race to create
+>      cache alias.
+>
+>      To resolve this issue, we need export function kmap_flush_unused as
+>      the driver is compiled as module. Then, the driver calls
+>      kmap_flush_unused if the allocated pages are in HIGHMEM and being
+>      used by kmap.
+>
+> Thanks again!
+>
+> Best Regards
+> ---------------------------------------------------------------
+> Sha, Rui bin ( Robin )
+> +86 13817890945
+> Android System Integration Shanghai
+>
+> -----Original Message-----
+> From: Chintan Pandya [mailto:cpandya@codeaurora.org]
+> Sent: Friday, August 8, 2014 9:40 PM
+> To: Sha, Ruibin
+> Cc: linux-kernel@vger.kernel.org; linux-mm@kvack.org; mel@csn.ul.ie; a.p.zijlstra@chello.nl; mgorman@suse.de; mingo@redhat.com; Zhang, Yanmin; He, Bo
+> Subject: Re: [PATCH] export the function kmap_flush_unused.
+>
+> On 08/08/2014 02:46 PM, Sha, Ruibin wrote:
+>> export the function kmap_flush_unused.
+>>
+>> Scenario: When graphic driver need high memory spece, we use
+>> alloc_pages() to allocate. But if the allocated page has just been
+>> mapped in the KMAP space(like first kmap then kunmap) and no flush
+>> page happened on PKMAP, the page virtual address is not NULL.Then when
+>> we get that page and set page attribute like set_memory_uc and
+>> set_memory_wc, we hit error.
+> Could you explain your scenario with more details ? set_memory_* should be applied on mapped address. And in attempt to map your page (which was just kmap and kunmap'ed), it will overwrite the previous mappings.
+>
+> Moreover, in my view, kmap_flush_unused is just helping us in keeping the cache clean for kmap virtual addresses if they are unmapped. Is it serving any more purpose here ?
 
-If I understand your use-case correctly,  you can't have the tsc
-path be the default *before* tsc_init() is called?
+It depends on how to define 'clean' here. It resets pkmap_count[i] to 0,
+and cleans up page table entries used by PKMAP. Here, our scenario is
+caused by the late page table entry cleanup as driver need avoid page
+cache alias.
 
-If not, another thought on the implementation here might be
-to re-visit the work the Steven Rostedt  proposed a while back,
-to use jump instead of no-ops by default, and then convert
-the jumps to no-ops in a post-processing phase in order to
-reduce code size (by having 2-byte jumps for example on
-x86). Potentially, we could then avoid converting some of the
-jumps, if they didn't match the default branch direction.
-See: http://www.serverphorums.com/read.php?12,759207
+>
+>> fix: For that scenario,when we get the allocated page and its virtual
+>> address is not NULL, we would like first flush that page.
+>> So need export that function kmap_flush_unused.
+>>
+>> Signed-off-by: sha, ruibin <ruibin.sha@intel.com>
+>>
+>> ---
+>> mm/highmem.c | 1 +
+>> 1 file changed, 1 insertion(+)
+>>
+>> diff --git a/mm/highmem.c b/mm/highmem.c
+>> index b32b70c..511299b 100644
+>> --- a/mm/highmem.c
+>> +++ b/mm/highmem.c
+>> @@ -156,6 +156,7 @@ void kmap_flush_unused(void)
+>> flush_all_zero_pkmaps();
+>> unlock_kmap();
+>> }
+>> +EXPORT_SYMBOL(kmap_flush_unused);
+> This symbol is already extern'ed. Is it not sufficient for your case ?
 
-In that way there is no API change, we are just relaxing the
-restriction that the default branch direction must match the
-way that the keys are initialized.
+We want to call it in driver module. extern is not enough.
 
 Thanks,
-
--Jason
+Yanmin
 
 
