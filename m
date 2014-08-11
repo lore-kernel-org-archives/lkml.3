@@ -1,163 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247AbaHKFWD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 01:22:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58576 "EHLO mga09.intel.com"
+	id S1752340AbaHKFWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 01:22:30 -0400
+Received: from mga14.intel.com ([192.55.52.115]:49669 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751174AbaHKFWA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 01:22:00 -0400
+	id S1752317AbaHKFW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 01:22:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,839,1400050800"; 
-   d="scan'208";a="586292840"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: "balbi@ti.com" <balbi@ti.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Subject: Re: [PATCH] USB: pch_udc: USB gadget device support for Intel Quark
- X1000
-Thread-Topic: [PATCH] USB: pch_udc: USB gadget device support for Intel
- Quark X1000
-Thread-Index: Ac+1I+FIS10Tg82SQGO0sbaqpGevBg==
-Date: Mon, 11 Aug 2014 05:21:50 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E971A2E@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+   d="scan'208";a="574809653"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [PATCH v3 00/23] perf: Add infrastructure and support for Intel PT
+Date: Mon, 11 Aug 2014 08:19:29 +0300
+Message-Id: <1407734392-31097-1-git-send-email-alexander.shishkin@linux.intel.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+Hi Peter and all,
 
-Any update for this patch? Just want to follow-up.
+Here's a new version of PT support patchset, this time including PT and
+BTS drivers and a few more tweaks to the core. I still left out some bits
+like core dump support for now. Tooling support is not included in this
+series so that it's easier to review the kernel bits, I suppose it's best
+to send it separately, since it's quite a huge patchset of its own.
 
+Alexander Shishkin (22):
+  perf: Add data_{offset,size} to user_page
+  perf: Support high-order allocations for AUX space
+  perf: Add a capability for AUX_NO_SG pmus to do software double
+    buffering
+  perf: Add a pmu capability for "exclusive" events
+  perf: Redirect output from inherited events to parents
+  perf: Add api for pmus to write to AUX space
+  perf: Add AUX record
+  perf: Support overwrite mode for AUX area
+  perf: Add wakeup watermark control to AUX area
+  perf: Add itrace_config to the event attribute
+  perf: add ITRACE_START record to indicate that tracing has started
+  x86: Add Intel Processor Trace (INTEL_PT) cpu feature detection
+  x86: perf: Intel PT and LBR/BTS are mutually exclusive
+  x86: perf: intel_pt: Intel PT PMU driver
+  x86: perf: intel_bts: Add BTS PMU driver
+  perf: Add rb_{alloc,free}_kernel api
+  perf: Add a helper to copy AUX data in the kernel
+  perf: Add a helper for looking up pmus by type
+  perf: itrace: Infrastructure for sampling instruction flow traces
+  perf: Allocate ring buffers for inherited per-task kernel events
+  perf: itrace: Allow itrace sampling for multiple events
+  perf: itrace: Allow sampling of inherited events
 
-> -----Original Message-----
-> From: Chen, Alvin
-> Sent: Tuesday, August 05, 2014 1:23 AM
-> To: Felipe Balbi
-> Cc: linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Ong, Boon 
-> Leong
-> Subject: [PATCH] USB: pch_udc: USB gadget device support for Intel 
-> Quark
-> X1000
-> 
-> From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-> 
-> This patch is to enable the USB gadget device for Intel Quark X1000
-> 
-> Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-> Signed-off-by: Bing Niu <bing.niu@intel.com>
-> Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
-> ---
->  drivers/usb/gadget/udc/Kconfig   |    3 ++-
->  drivers/usb/gadget/udc/pch_udc.c |   22 +++++++++++++++++++---
->  2 files changed, 21 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/udc/Kconfig 
-> b/drivers/usb/gadget/udc/Kconfig index 5151f94..34ebaa6 100644
-> --- a/drivers/usb/gadget/udc/Kconfig
-> +++ b/drivers/usb/gadget/udc/Kconfig
-> @@ -332,7 +332,7 @@ config USB_GOKU
->  	   gadget drivers to also be dynamically linked.
-> 
->  config USB_EG20T
-> -	tristate "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7831)
-> UDC"
-> +	tristate "Intel QUARK X1000/EG20T PCH/LAPIS Semiconductor
-> IOH(ML7213/ML7831) UDC"
->  	depends on PCI
->  	help
->  	  This is a USB device driver for EG20T PCH.
-> @@ -353,6 +353,7 @@ config USB_EG20T
->  	  ML7213/ML7831 is companion chip for Intel Atom E6xx series.
->  	  ML7213/ML7831 is completely compatible for Intel EG20T PCH.
-> 
-> +	  This driver can be used with Intel's Quark X1000 SOC platform
->  #
->  # LAST -- dummy/emulated controller
->  #
-> diff --git a/drivers/usb/gadget/udc/pch_udc.c
-> b/drivers/usb/gadget/udc/pch_udc.c
-> index eb8c3be..460d953 100644
-> --- a/drivers/usb/gadget/udc/pch_udc.c
-> +++ b/drivers/usb/gadget/udc/pch_udc.c
-> @@ -343,6 +343,7 @@ struct pch_vbus_gpio_data {
->   * @setup_data:		Received setup data
->   * @phys_addr:		of device memory
->   * @base_addr:		for mapped device memory
-> + * @bar:		Indicates which PCI BAR for USB regs
->   * @irq:		IRQ line for the device
->   * @cfg_data:		current cfg, intf, and alt in use
->   * @vbus_gpio:		GPIO informaton for detecting VBUS
-> @@ -370,14 +371,17 @@ struct pch_udc_dev {
->  	struct usb_ctrlrequest		setup_data;
->  	unsigned long			phys_addr;
->  	void __iomem			*base_addr;
-> +	unsigned			bar;
->  	unsigned			irq;
->  	struct pch_udc_cfg_data		cfg_data;
->  	struct pch_vbus_gpio_data	vbus_gpio;
->  };
->  #define to_pch_udc(g)	(container_of((g), struct pch_udc_dev,
-> gadget))
-> 
-> +#define PCH_UDC_PCI_BAR_QUARK_X1000	0
->  #define PCH_UDC_PCI_BAR			1
->  #define PCI_DEVICE_ID_INTEL_EG20T_UDC	0x8808
-> +#define PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC	0x0939
->  #define PCI_VENDOR_ID_ROHM		0x10DB
->  #define PCI_DEVICE_ID_ML7213_IOH_UDC	0x801D
->  #define PCI_DEVICE_ID_ML7831_IOH_UDC	0x8808
-> @@ -3076,7 +3080,7 @@ static void pch_udc_remove(struct pci_dev *pdev)
->  		iounmap(dev->base_addr);
->  	if (dev->mem_region)
->  		release_mem_region(dev->phys_addr,
-> -				   pci_resource_len(pdev,
-> PCH_UDC_PCI_BAR));
-> +				   pci_resource_len(pdev, dev->bar));
->  	if (dev->active)
->  		pci_disable_device(pdev);
->  	kfree(dev);
-> @@ -3144,9 +3148,15 @@ static int pch_udc_probe(struct pci_dev *pdev,
->  	dev->active = 1;
->  	pci_set_drvdata(pdev, dev);
-> 
-> +	/* Determine BAR based on PCI ID */
-> +	if (id->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC)
-> +		dev->bar = PCH_UDC_PCI_BAR_QUARK_X1000;
-> +	else
-> +		dev->bar = PCH_UDC_PCI_BAR;
-> +
->  	/* PCI resource allocation */
-> -	resource = pci_resource_start(pdev, 1);
-> -	len = pci_resource_len(pdev, 1);
-> +	resource = pci_resource_start(pdev, dev->bar);
-> +	len = pci_resource_len(pdev, dev->bar);
-> 
->  	if (!request_mem_region(resource, len, KBUILD_MODNAME)) {
->  		dev_err(&pdev->dev, "%s: pci device used already\n", __func__); @@ 
-> -3212,6 +3222,12 @@ finished:
-> 
->  static const struct pci_device_id pch_udc_pcidev_id[] = {
->  	{
-> +		PCI_DEVICE(PCI_VENDOR_ID_INTEL,
-> +			   PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC),
-> +		.class = (PCI_CLASS_SERIAL_USB << 8) | 0xfe,
-> +		.class_mask = 0xffffffff,
-> +	},
-> +	{
->  		PCI_DEVICE(PCI_VENDOR_ID_INTEL,
-> PCI_DEVICE_ID_INTEL_EG20T_UDC),
->  		.class = (PCI_CLASS_SERIAL_USB << 8) | 0xfe,
->  		.class_mask = 0xffffffff,
-> --
-> 1.7.9.5
+Peter Zijlstra (1):
+  perf: Add AUX area to ring buffer for raw data streams
+
+ arch/x86/include/asm/cpufeature.h          |   1 +
+ arch/x86/include/uapi/asm/msr-index.h      |  18 +
+ arch/x86/kernel/cpu/Makefile               |   1 +
+ arch/x86/kernel/cpu/intel_pt.h             | 129 ++++
+ arch/x86/kernel/cpu/perf_event.h           |  14 +
+ arch/x86/kernel/cpu/perf_event_intel.c     |  14 +-
+ arch/x86/kernel/cpu/perf_event_intel_bts.c | 496 +++++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  |  11 +-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   9 +-
+ arch/x86/kernel/cpu/perf_event_intel_pt.c  | 952 +++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/scattered.c            |   1 +
+ include/linux/itrace.h                     |  45 ++
+ include/linux/perf_event.h                 |  61 +-
+ include/uapi/linux/perf_event.h            |  69 ++-
+ kernel/events/Makefile                     |   2 +-
+ kernel/events/core.c                       | 348 +++++++++--
+ kernel/events/internal.h                   |  54 ++
+ kernel/events/itrace.c                     | 234 +++++++
+ kernel/events/ring_buffer.c                | 313 +++++++++-
+ 19 files changed, 2724 insertions(+), 48 deletions(-)
+ create mode 100644 arch/x86/kernel/cpu/intel_pt.h
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_bts.c
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
+ create mode 100644 include/linux/itrace.h
+ create mode 100644 kernel/events/itrace.c
+
+-- 
+2.1.0.rc1
 
