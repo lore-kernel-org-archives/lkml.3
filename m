@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205AbaHKWvU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 18:51:20 -0400
-Received: from mail-yk0-f179.google.com ([209.85.160.179]:56967 "EHLO
-	mail-yk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755AbaHKWvQ (ORCPT
+	id S1755434AbaHKWv0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 18:51:26 -0400
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:52200 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755420AbaHKWvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 18:51:16 -0400
+	Mon, 11 Aug 2014 18:51:23 -0400
 From: Pranith Kumar <bobby.prani@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        David Howells <dhowells@redhat.com>,
-        Masanari Iida <standby24x7@gmail.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] doc: memory-barriers.txt: Minor correction in Control dependencies
-Date: Mon, 11 Aug 2014 18:51:39 -0400
-Message-Id: <1407797503-24727-1-git-send-email-bobby.prani@gmail.com>
+To: Christopher Li <sparse@chrisli.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.eti.br>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        linux-kernel@vger.kernel.org (open list),
+        linux-sparse@vger.kernel.org (open list:SPARSE CHECKER)
+Subject: [PATCH] compiler.h: Move __memory_barrier() use to compiler-intel.h
+Date: Mon, 11 Aug 2014 18:51:42 -0400
+Message-Id: <1407797503-24727-4-git-send-email-bobby.prani@gmail.com>
 X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1407797503-24727-1-git-send-email-bobby.prani@gmail.com>
+References: <1407797503-24727-1-git-send-email-bobby.prani@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor corrections in memory-barriers.txt document.
+Commit 73679e5082012 ("compiler-intel.h: Remove duplicate definition") removed a
+duplicate definition of barrier() from compiler-intel.h. This is the wrong
+duplicate definition removed since __memory_barrier() is an intel compiler
+specific intrinsic and should live in compiler-intel.h.
+
+This commit reverts the previous commit and removes the definition from
+compiler.h
 
 Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- Documentation/memory-barriers.txt | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ include/linux/compiler-intel.h | 3 +++
+ include/linux/compiler.h       | 5 -----
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index abec3f9..41a6c9c 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -627,7 +627,7 @@ proving the value of 'a', and the pair of barrier() invocations are
- required to prevent the compiler from pulling the two identical stores
- to 'b' out from the legs of the "if" statement.
+diff --git a/include/linux/compiler-intel.h b/include/linux/compiler-intel.h
+index ba147a1..5529c52 100644
+--- a/include/linux/compiler-intel.h
++++ b/include/linux/compiler-intel.h
+@@ -13,9 +13,12 @@
+ /* Intel ECC compiler doesn't support gcc specific asm stmts.
+  * It uses intrinsics to do the equivalent things.
+  */
++#undef barrier
+ #undef RELOC_HIDE
+ #undef OPTIMIZER_HIDE_VAR
  
--It is important to note that control dependencies absolutely require a
-+It is important to note that control dependencies absolutely require
- a conditional.  For example, the following "optimized" version of
- the above example breaks ordering, which is why the barrier() invocations
- are absolutely required if you have identical stores in both legs of
-@@ -652,7 +652,7 @@ for example, as follows:
- 		do_something();
- 	} else {
- 		barrier();
--		ACCESS_ONCE(b) = q / 3;
-+		ACCESS_ONCE(b) = q / 2;
- 		do_something_else();
- 	}
++#define barrier() __memory_barrier()
++
+ #define RELOC_HIDE(ptr, off)					\
+   ({ unsigned long __ptr;					\
+      __ptr = (unsigned long) (ptr);				\
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index d5ad7b1..bc24cad 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -160,11 +160,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ # define unlikely(x)	__builtin_expect(!!(x), 0)
+ #endif
  
-@@ -710,7 +710,7 @@ x and y both being zero:
- 
- The above two-CPU example will never trigger the assert().  However,
- if control dependencies guaranteed transitivity (which they do not),
--then adding the following two CPUs would guarantee a related assertion:
-+then adding the following CPU would guarantee a related assertion:
- 
- 	CPU 2
- 	=====================
-@@ -719,8 +719,8 @@ then adding the following two CPUs would guarantee a related assertion:
- 	assert(!(r1 == 2 && r2 == 1 && x == 2)); /* FAILS!!! */
- 
- But because control dependencies do -not- provide transitivity, the
--above assertion can fail after the combined four-CPU example completes.
--If you need the four-CPU example to provide ordering, you will need
-+above assertion can fail after the combined three-CPU example completes.
-+If you need the three-CPU example to provide ordering, you will need
- smp_mb() between the loads and stores in the CPU 0 and CPU 1 code fragments,
- that is, just before or just after the "if" statements.
- 
+-/* Optimization barrier */
+-#ifndef barrier
+-# define barrier() __memory_barrier()
+-#endif
+-
+ /* Unreachable code */
+ #ifndef unreachable
+ # define unreachable() do { } while (1)
 -- 
 1.9.1
 
