@@ -1,65 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564AbaHKRFW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 13:05:22 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:34995 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000AbaHKRFQ (ORCPT
+	id S1754617AbaHKRPb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 13:15:31 -0400
+Received: from cmexedge2.ext.emulex.com ([138.239.224.100]:52820 "EHLO
+	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071AbaHKRP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 13:05:16 -0400
-Date: Mon, 11 Aug 2014 10:05:10 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 11
-Message-ID: <20140811170510.GA19750@roeck-us.net>
-References: <20140811155213.0aa083ce@canb.auug.org.au>
+	Mon, 11 Aug 2014 13:15:29 -0400
+Date: Mon, 11 Aug 2014 13:14:54 -0400
+From: James Smart <james.smart@emulex.com>
+Reply-To: <james.smart@emulex.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140811155213.0aa083ce@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        <linux-scsi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        "Smart, James" <James.Smart@emulex.com>
+Subject: Re: [PATCH v2 RESEND 12/23] lpfc: Use pci_enable_msix_range() instead
+ of pci_enable_msix()
+References: <cover.1405533479.git.agordeev@redhat.com> <ea1bf102a3ce0471996e2ddaaa498b088ac791c8.1405533479.git.agordeev@redhat.com> <20140726082227.GF21129@agordeev.usersys.redhat.com> <20140811080148.GG16504@dhcp-27-160.brq.redhat.com>
+In-Reply-To: <20140811080148.GG16504@dhcp-27-160.brq.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+Message-ID: <dfd59266-71ff-4112-8e11-835a08d7a94d@CMEXHTCAS2.ad.emulex.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 03:52:13PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Please do not add code intended for v3.18 until after v3.17-rc1 is
-> released.
-> 
-> Changes since 20140808:
-> 
-> The ext3 tree lost its build failure.
-> 
-> The pm tree gained conflicts against Linus' tree and a build failure for
-> which I applied a merge fix patch.
-> 
-> The mmc-uh tree still had its build failure so I used the version from
-> next-20140725.
-> 
-> The akpm tree lost several patches that turned up in Linus' tree.
-> 
-> Non-merge commits (relative to Linus' tree): 1547
->  1041 files changed, 31446 insertions(+), 15956 deletions(-)
-> 
+Alexander,
 
-New build failures:
+I haven't looked too deeply, but it's clear it doesn't jive with what 
+we've discussed in the past. Your original patches missed several other 
+similar sections for revision. I had sent a revised set of patches.
 
-Building arm:s5pv210_defconfig ... failed
---------------
-Error log:
-arch/arm/mach-s5pv210/pm.c:150:12: error: 'suspend_valid_only_mem' undeclared
-here (not in a function)
-make[1]: *** [arch/arm/mach-s5pv210/pm.o] Error 1
+I was also unclear as to the merge path the patches were taking, as it 
+was mod'ing areas that have already changed in the scsi misc tree, but 
+the misc tree didn' have the pci mods.  I take it this is heading to 
+Christoph's tree ?  and that it has picked up the pci mods ?
 
-Building arm:pxa910_defconfig ... failed
---------------
-Error log:
-arch/arm/mach-mmp/pm-pxa910.c: In function 'pxa910_pm_valid':
-arch/arm/mach-mmp/pm-pxa910.c:243:65: error: expected ')' before ';' token
-arch/arm/mach-mmp/pm-pxa910.c:244:1: error: expected ';' before '}' token
-make[1]: *** [arch/arm/mach-mmp/pm-pxa910.o] Error 1
+-- james s
 
-Guenter
+
+
+On 8/11/2014 4:01 AM, Alexander Gordeev wrote:
+> On Sat, Jul 26, 2014 at 09:22:27AM +0100, Alexander Gordeev wrote:
+>> On Wed, Jul 16, 2014 at 08:05:16PM +0200, Alexander Gordeev wrote:
+>>> As result of deprecation of MSI-X/MSI enablement functions
+>>> pci_enable_msix() and pci_enable_msi_block() all drivers
+>>> using these two interfaces need to be updated to use the
+>>> new pci_enable_msi_range()  or pci_enable_msi_exact()
+>>> and pci_enable_msix_range() or pci_enable_msix_exact()
+>>> interfaces.
+>> Hi James,
+>>
+>> Could you please review this patch?
+> James?
+>
+>> Thanks!
+>>
+>>> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+>>> Cc: James Smart <james.smart@emulex.com>
+>>> Cc: linux-scsi@vger.kernel.org
+>>> Cc: linux-pci@vger.kernel.org
+>>> ---
+>>>   drivers/scsi/lpfc/lpfc_init.c |   38 +++++++++++++++++---------------------
+>>>   1 files changed, 17 insertions(+), 21 deletions(-)
+>>>
+>>> diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+>>> index a5769a9..d9caed9 100644
+>>> --- a/drivers/scsi/lpfc/lpfc_init.c
+>>> +++ b/drivers/scsi/lpfc/lpfc_init.c
+>>> @@ -8211,9 +8211,9 @@ lpfc_sli4_pci_mem_unset(struct lpfc_hba *phba)
+>>>    * @phba: pointer to lpfc hba data structure.
+>>>    *
+>>>    * This routine is invoked to enable the MSI-X interrupt vectors to device
+>>> - * with SLI-3 interface specs. The kernel function pci_enable_msix() is
+>>> - * called to enable the MSI-X vectors. Note that pci_enable_msix(), once
+>>> - * invoked, enables either all or nothing, depending on the current
+>>> + * with SLI-3 interface specs. The kernel function pci_enable_msix_exact()
+>>> + * is called to enable the MSI-X vectors. Note that pci_enable_msix_exact(),
+>>> + * once invoked, enables either all or nothing, depending on the current
+>>>    * availability of PCI vector resources. The device driver is responsible
+>>>    * for calling the individual request_irq() to register each MSI-X vector
+>>>    * with a interrupt handler, which is done in this function. Note that
+>>> @@ -8237,8 +8237,8 @@ lpfc_sli_enable_msix(struct lpfc_hba *phba)
+>>>   		phba->msix_entries[i].entry = i;
+>>>   
+>>>   	/* Configure MSI-X capability structure */
+>>> -	rc = pci_enable_msix(phba->pcidev, phba->msix_entries,
+>>> -				ARRAY_SIZE(phba->msix_entries));
+>>> +	rc = pci_enable_msix_exact(phba->pcidev, phba->msix_entries,
+>>> +				   ARRAY_SIZE(phba->msix_entries));
+>>>   	if (rc) {
+>>>   		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
+>>>   				"0420 PCI enable MSI-X failed (%d)\n", rc);
+>>> @@ -8775,15 +8775,13 @@ out:
+>>>    * @phba: pointer to lpfc hba data structure.
+>>>    *
+>>>    * This routine is invoked to enable the MSI-X interrupt vectors to device
+>>> - * with SLI-4 interface spec. The kernel function pci_enable_msix() is called
+>>> - * to enable the MSI-X vectors. Note that pci_enable_msix(), once invoked,
+>>> - * enables either all or nothing, depending on the current availability of
+>>> - * PCI vector resources. The device driver is responsible for calling the
+>>> - * individual request_irq() to register each MSI-X vector with a interrupt
+>>> - * handler, which is done in this function. Note that later when device is
+>>> - * unloading, the driver should always call free_irq() on all MSI-X vectors
+>>> - * it has done request_irq() on before calling pci_disable_msix(). Failure
+>>> - * to do so results in a BUG_ON() and a device will be left with MSI-X
+>>> + * with SLI-4 interface spec. The kernel function pci_enable_msix_range()
+>>> + * is called to enable the MSI-X vectors. The device driver is responsible
+>>> + * for calling the individual request_irq() to register each MSI-X vector
+>>> + * with a interrupt handler, which is done in this function. Note that later
+>>> + * when device is unloading, the driver should always call free_irq() on all
+>>> + * MSI-X vectors it has done request_irq() on before calling pci_disable_msix()
+>>> + * Failure to do so results in a BUG_ON() and a device will be left with MSI-X
+>>>    * enabled and leaks its vectors.
+>>>    *
+>>>    * Return codes
+>>> @@ -8805,18 +8803,16 @@ lpfc_sli4_enable_msix(struct lpfc_hba *phba)
+>>>   		phba->sli4_hba.msix_entries[index].entry = index;
+>>>   		vectors++;
+>>>   	}
+>>> -enable_msix_vectors:
+>>> -	rc = pci_enable_msix(phba->pcidev, phba->sli4_hba.msix_entries,
+>>> -			     vectors);
+>>> -	if (rc > 1) {
+>>> -		vectors = rc;
+>>> -		goto enable_msix_vectors;
+>>> -	} else if (rc) {
+>>> +
+>>> +	rc = pci_enable_msix_range(phba->pcidev, phba->sli4_hba.msix_entries,
+>>> +				   2, vectors);
+>>> +	if (rc < 0) {
+>>>   		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
+>>>   				"0484 PCI enable MSI-X failed (%d)\n", rc);
+>>>   		goto vec_fail_out;
+>>>   	}
+>>>   
+>>> +	vectors = rc;
+>>>   	/* Log MSI-X vector assignment */
+>>>   	for (index = 0; index < vectors; index++)
+>>>   		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
+>>> -- 
+>>> 1.7.7.6
+>>>
+>> -- 
+>> Regards,
+>> Alexander Gordeev
+>> agordeev@redhat.com
+>
+
