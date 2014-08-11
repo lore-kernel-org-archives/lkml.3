@@ -1,66 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493AbaHKHtT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 03:49:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58424 "EHLO mx2.suse.de"
+	id S1751550AbaHKHtr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 03:49:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26337 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751076AbaHKHtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 03:49:15 -0400
-Date: Mon, 11 Aug 2014 09:49:11 +0200
-From: Jan Kara <jack@suse.cz>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] udf: avoid unneeded up_write when fail to add entry in
- ->symlink
-Message-ID: <20140811074911.GA29526@quack.suse.cz>
-References: <00bd01cfb374$4b397a30$e1ac6e90$@samsung.com>
+	id S1750720AbaHKHtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 03:49:45 -0400
+Date: Mon, 11 Aug 2014 09:49:18 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Cc: Naresh Kumar Inna <naresh@chelsio.com>,
+        Arvind Bhushan <arvindb@chelsio.com>, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 06/23] csiostor: Use pci_enable_msix_range()
+ instead of pci_enable_msix()
+Message-ID: <20140811074916.GD16504@dhcp-27-160.brq.redhat.com>
+References: <cover.1405533479.git.agordeev@redhat.com>
+ <66f5bda4546f61484a27570f9971fdb6683210da.1405533479.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <00bd01cfb374$4b397a30$e1ac6e90$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <66f5bda4546f61484a27570f9971fdb6683210da.1405533479.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 09-08-14 09:49:31, Chao Yu wrote:
-> We have released the ->i_data_sem before invoking udf_add_entry(),
-> so in following error path, we should not release this lock again.
-  Good catch. I've merged the patch to my tree. Thanks.
+On Wed, Jul 16, 2014 at 08:05:10PM +0200, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
 
-							Honza
+Christoph,
 
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+This driver does not have maintainers in Chelsio anymore.
+
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Naresh Kumar Inna <naresh@chelsio.com>
+> Cc: Arvind Bhushan <arvindb@chelsio.com>
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
 > ---
->  fs/udf/namei.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+>  drivers/scsi/csiostor/csio_hw.h  |    2 +-
+>  drivers/scsi/csiostor/csio_isr.c |   22 +++++++++-------------
+>  2 files changed, 10 insertions(+), 14 deletions(-)
 > 
-> diff --git a/fs/udf/namei.c b/fs/udf/namei.c
-> index 9737cba..83a0600 100644
-> --- a/fs/udf/namei.c
-> +++ b/fs/udf/namei.c
-> @@ -1014,7 +1014,7 @@ static int udf_symlink(struct inode *dir, struct dentry *dentry,
+> diff --git a/drivers/scsi/csiostor/csio_hw.h b/drivers/scsi/csiostor/csio_hw.h
+> index 49b1daa..5db2d85 100644
+> --- a/drivers/scsi/csiostor/csio_hw.h
+> +++ b/drivers/scsi/csiostor/csio_hw.h
+> @@ -94,7 +94,7 @@ enum {
+>  };
 >  
->  	fi = udf_add_entry(dir, dentry, &fibh, &cfi, &err);
->  	if (!fi)
-> -		goto out_no_entry;
-> +		goto out_fail;
->  	cfi.icb.extLength = cpu_to_le32(sb->s_blocksize);
->  	cfi.icb.extLocation = cpu_to_lelb(iinfo->i_location);
->  	if (UDF_SB(inode->i_sb)->s_lvid_bh) {
-> @@ -1036,6 +1036,7 @@ out:
+>  struct csio_msix_entries {
+> -	unsigned short	vector;		/* Vector assigned by pci_enable_msix */
+> +	unsigned short	vector;		/* Assigned MSI-X vector */
+>  	void		*dev_id;	/* Priv object associated w/ this msix*/
+>  	char		desc[24];	/* Description of this vector */
+>  };
+> diff --git a/drivers/scsi/csiostor/csio_isr.c b/drivers/scsi/csiostor/csio_isr.c
+> index 91ba91d..a8c748a 100644
+> --- a/drivers/scsi/csiostor/csio_isr.c
+> +++ b/drivers/scsi/csiostor/csio_isr.c
+> @@ -499,7 +499,7 @@ csio_reduce_sqsets(struct csio_hw *hw, int cnt)
+>  static int
+>  csio_enable_msix(struct csio_hw *hw)
+>  {
+> -	int rv, i, j, k, n, min, cnt;
+> +	int i, j, k, n, min, cnt;
+>  	struct csio_msix_entries *entryp;
+>  	struct msix_entry *entries;
+>  	int extra = CSIO_EXTRA_VECS;
+> @@ -521,19 +521,15 @@ csio_enable_msix(struct csio_hw *hw)
 >  
->  out_no_entry:
->  	up_write(&iinfo->i_data_sem);
-> +out_fail:
->  	inode_dec_link_count(inode);
->  	iput(inode);
->  	goto out;
+>  	csio_dbg(hw, "FW supp #niq:%d, trying %d msix's\n", hw->cfg_niq, cnt);
+>  
+> -	while ((rv = pci_enable_msix(hw->pdev, entries, cnt)) >= min)
+> -		cnt = rv;
+> -	if (!rv) {
+> -		if (cnt < (hw->num_sqsets + extra)) {
+> -			csio_dbg(hw, "Reducing sqsets to %d\n", cnt - extra);
+> -			csio_reduce_sqsets(hw, cnt - extra);
+> -		}
+> -	} else {
+> -		if (rv > 0)
+> -			csio_info(hw, "Not using MSI-X, remainder:%d\n", rv);
+> -
+> +	cnt = pci_enable_msix_range(hw->pdev, entries, min, cnt);
+> +	if (cnt < 0) {
+>  		kfree(entries);
+> -		return -ENOMEM;
+> +		return cnt;
+> +	}
+> +
+> +	if (cnt < (hw->num_sqsets + extra)) {
+> +		csio_dbg(hw, "Reducing sqsets to %d\n", cnt - extra);
+> +		csio_reduce_sqsets(hw, cnt - extra);
+>  	}
+>  
+>  	/* Save off vectors */
 > -- 
-> 2.0.1.474.g72c7794
+> 1.7.7.6
 > 
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
