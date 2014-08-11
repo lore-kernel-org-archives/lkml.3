@@ -1,136 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaHKGp7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 02:45:59 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:54419 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180AbaHKGp6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 02:45:58 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s7B6jNe8018511, This message is accepted by code: ctloc85258
-From: =?utf-8?B?546L54Kc?= <wei_wang@realsil.com.cn>
-To: Philipp Hagemeister <phihag@phihag.de>,
-        Ben Hutchings <ben@decadent.org.uk>
-CC: "757733@bugs.debian.org" <757733@bugs.debian.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: =?utf-8?B?562U5aSNOiBCdWcjNzU3NzMzOiBSVFMyNTU3IFNEIGNhcmQgcmVhZGVyIGRv?==?utf-8?Q?es_not_work?=
-Thread-Topic: Bug#757733: RTS2557 SD card reader does not work
-Thread-Index: AQHPtPcCzbKIMdVpmEaoThk1c/seN5vKEgWAgADjAYA=
-Date: Mon, 11 Aug 2014 06:45:24 +0000
-Message-ID: <B801BD58FDB66349A47F17A55A52796045FF6429@rsex2.realsil.com.cn>
-References: <20140810225012.3425.19201.reportbug@t4.home.phihag.de>
- <1407715088.3017.73.camel@deadeye.wl.decadent.org.uk>
- <53E81801.8000907@phihag.de>
-In-Reply-To: <53E81801.8000907@phihag.de>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.29.41.10]
-Content-Type: multipart/mixed;
-	boundary="_002_B801BD58FDB66349A47F17A55A52796045FF6429rsex2realsilcom_"
-MIME-Version: 1.0
+	id S1752452AbaHKHAD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 03:00:03 -0400
+Received: from mga03.intel.com ([143.182.124.21]:60093 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752030AbaHKHAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 03:00:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,839,1400050800"; 
+   d="scan'208";a="467305454"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: wsa@the-dreams.de, torvalds@linux-foundation.org,
+        mika.westerberg@linux.intel.com
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] I2C: Make I2C core able to be module when I2C_ACPI is selected.
+Date: Mon, 11 Aug 2014 15:00:55 +0800
+Message-Id: <1407740455-21269-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_B801BD58FDB66349A47F17A55A52796045FF6429rsex2realsilcom_
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+Commit da3c6647(I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI
+config) adds a new kernel config I2C_ACPI and make I2C core built in
+when the config is selected. This is wrong because distributions
+etc generally compile I2C as a module and the commit broken that.
+This patch is to make I2C core able to be a module when I2C_ACPI is
+selected. Original issue the commit da3c6647 tried to avoid will
+be fixed in ACPICA and it's rarely triggered during unloading module. 
 
-DQo+IC0tLS0t6YKu5Lu25Y6f5Lu2LS0tLS0NCj4g5Y+R5Lu25Lq6OiBQaGlsaXBwIEhhZ2VtZWlz
-dGVyIFttYWlsdG86cGhpaGFnQHBoaWhhZy5kZV0NCj4g5Y+R6YCB5pe26Ze0OiAyMDE05bm0OOac
-iDEx5pelIDk6MTANCj4g5pS25Lu25Lq6OiBCZW4gSHV0Y2hpbmdzOyDnjovngpwNCj4g5oqE6YCB
-OiA3NTc3MzNAYnVncy5kZWJpYW4ub3JnOyBMS01MDQo+IOS4u+mimDogUmU6IEJ1ZyM3NTc3MzM6
-IFJUUzI1NTcgU0QgY2FyZCByZWFkZXIgZG9lcyBub3Qgd29yaw0KPiANCj4gPiBBIHdlYiBzZWFy
-Y2ggc2hvd3Mgc29tZSBzaW1pbGFyIHJlcG9ydHMgKGUuZy4NCj4gPiA8aHR0cHM6Ly9idWdzLmxh
-dW5jaHBhZC5uZXQvdWJ1bnR1Lytzb3VyY2UvbGludXgvK2J1Zy8xMzI5NTY2PiwNCj4gPg0KPiA8
-aHR0cDovL2Fza3VidW50dS5jb20vcXVlc3Rpb25zLzQ3Mzg0OC91YnVudHUtMTQtMDQtcmVhbHRl
-ay1zZW1pY29uZHVjdG8NCj4gci1jby1sdGQtcnRzNTIyNy1wY2ktZXhwcmVzcy1jYXJkLXJlYWRl
-ci1pc24+KS4NCj4gPiBCdXQgaW4gdGhhdCBsYXN0IG9uZSwgaXQgdHVybnMgb3V0IHRoYXQgdGhl
-IG91dC1vZi10cmVlIGRyaXZlciBkb2VzDQo+ID4gd29yay4NCj4gDQo+IEluZGVlZCwgdGhhdCBp
-cyBhIHdvcmthcm91bmQgLSBkb3dubG9hZCBmcm9tDQo+IGh0dHA6Ly93d3cucmVhbHRlay5jb20u
-dHcvZG93bmxvYWRzL2Rvd25sb2Fkc1ZpZXcuYXNweD9MYW5naWQ9MSZQTmlkPQ0KPiAxNSZQRmlk
-PTI1JkxldmVsPTQmQ29ubj0zJkRvd25UeXBlSUQ9MyZHZXREb3duPWZhbHNlDQo+ICwgYXBwbHkg
-dGhlIGF0dGFjaGVkIHBhdGNoLCByZW1vdmUgYWxsIHJ0c3hfKiBtb2R1bGVzLCBhbmQgaW5zZXJ0
-IHRoZSBuZXcNCj4gcnRzMjU1NyBtb2R1bGUgaW50byB0aGUga2VybmVsLg0KDQoNCkhpIFBoaWxp
-cHAgJiBCZW46DQoNCldvdWxkIHlvdSBwbGVhc2UgdHJ5IHRoaXMgcGF0Y2guIElmIGl0IGRvZXMg
-d29yaywgd2Ugd2lsbCBzdWJtaXQgaXQgdG8gdXBzdHJlYW0ga2VybmVsLg0KDQpCUiwNCldlaQ0K
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ drivers/i2c/Kconfig | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---_002_B801BD58FDB66349A47F17A55A52796045FF6429rsex2realsilcom_
-Content-Type: application/octet-stream;
-	name="0001-mfd-rtsx-fix-rts5227-suspend-resume-setting.patch"
-Content-Description: 0001-mfd-rtsx-fix-rts5227-suspend-resume-setting.patch
-Content-Disposition: attachment;
-	filename="0001-mfd-rtsx-fix-rts5227-suspend-resume-setting.patch"; size=3681;
-	creation-date="Mon, 11 Aug 2014 06:43:24 GMT";
-	modification-date="Mon, 11 Aug 2014 06:15:12 GMT"
-Content-Transfer-Encoding: base64
+diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
+index 3e3b680..436ba27 100644
+--- a/drivers/i2c/Kconfig
++++ b/drivers/i2c/Kconfig
+@@ -2,9 +2,7 @@
+ # I2C subsystem configuration
+ #
+ 
+-menu "I2C support"
+-
+-config I2C
++menuconfig I2C
+ 	tristate "I2C support"
+ 	select RT_MUTEXES
+ 	---help---
+@@ -25,8 +23,7 @@ config I2C
+ 
+ config I2C_ACPI
+ 	bool "I2C ACPI support"
+-	select I2C
+-	depends on ACPI
++	depends on I2C && ACPI
+ 	default y
+ 	help
+ 	  Say Y here if you want to enable ACPI I2C support. This includes support
+@@ -139,4 +136,3 @@ config I2C_DEBUG_BUS
+ 
+ endif # I2C
+ 
+-endmenu
+-- 
+1.8.3.1
 
-RnJvbSBiMmM5MDIxNzM5MmVjZGYwNWJjOThmNzNjY2U0MWMyMDA4ZjliMGRmIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQ0KRnJvbTogTWlja3kgQ2hpbmcgPG1pY2t5X2NoaW5nQHJlYWxzaWwuY29t
-LmNuPg0KRGF0ZTogTW9uLCAxMSBBdWcgMjAxNCAxNDoxMjo0MiArMDgwMA0KU3ViamVjdDogW1BB
-VENIXSBtZmQ6IHJ0c3g6IGZpeCBydHM1MjI3IHN1c3BlbmQvcmVzdW1lIHNldHRpbmcNCg0KU2ln
-bmVkLW9mZi1ieTogTWlja3kgQ2hpbmcgPG1pY2t5X2NoaW5nQHJlYWxzaWwuY29tLmNuPg0KLS0t
-DQogZHJpdmVycy9tZmQvcnRzNTIyNy5jICAgICAgICB8ICAgMTMgKysrKysrKysrKysrKw0KIGRy
-aXZlcnMvbWZkL3J0c3hfcGNyLmMgICAgICAgfCAgIDE2ICsrKysrKysrKysrKy0tLS0NCiBpbmNs
-dWRlL2xpbnV4L21mZC9ydHN4X3BjaS5oIHwgICAxOCArKysrKysrKysrKysrKysrKysNCiAzIGZp
-bGVzIGNoYW5nZWQsIDQzIGluc2VydGlvbnMoKyksIDQgZGVsZXRpb25zKC0pDQoNCmRpZmYgLS1n
-aXQgYS9kcml2ZXJzL21mZC9ydHM1MjI3LmMgYi9kcml2ZXJzL21mZC9ydHM1MjI3LmMNCmluZGV4
-IDljOGVlYzguLjY1ZjIzNmIgMTAwNjQ0DQotLS0gYS9kcml2ZXJzL21mZC9ydHM1MjI3LmMNCisr
-KyBiL2RyaXZlcnMvbWZkL3J0czUyMjcuYw0KQEAgLTEyOCw4ICsxMjgsMjEgQEAgc3RhdGljIGlu
-dCBydHM1MjI3X2V4dHJhX2luaXRfaHcoc3RydWN0IHJ0c3hfcGNyICpwY3IpDQogCXJldHVybiBy
-dHN4X3BjaV9zZW5kX2NtZChwY3IsIDEwMCk7DQogfQ0KIA0KK3N0YXRpYyBpbnQgcnRzNTIyN19y
-ZXNldF9maXJzdChzdHJ1Y3QgcnRzeF9wY3IgKnBjcikNCit7DQorCS8qIGluaXQgYXNwbSAqLw0K
-KwlpZiAocnRzeF9wY2lfdXBkYXRlX2NmZ19ieXRlKHBjciwgTENUTFIsIDB4RkMsIDApKQ0KKwkJ
-cGNyX2VycihwY3IsICJ1cGRhdGUgTENUTFIgZmFpbGVkXG4iKTsNCisJLyogcmVzZXQgUE0gYmVm
-b3JlIHNlbmQgYnVmZmVyIGNtZCAqLw0KKwlpZiAocnRzeF9wY2lfd3JpdGVfcmVnaXN0ZXIocGNy
-LCBQTV9DVFJMMywgMHgxMCwgMHgwMCkpDQorCQlwY3JfZXJyKHBjciwgInNldCBQTV9DVFJMMyBm
-YWlsZWRcbiIpOw0KKw0KKwlyZXR1cm4gMDsNCit9DQorDQogc3RhdGljIGludCBydHM1MjI3X29w
-dGltaXplX3BoeShzdHJ1Y3QgcnRzeF9wY3IgKnBjcikNCiB7DQorCXJ0czUyMjdfcmVzZXRfZmly
-c3QocGNyKTsNCiAJLyogT3B0aW1pemUgUlggc2Vuc2l0aXZpdHkgKi8NCiAJcmV0dXJuIHJ0c3hf
-cGNpX3dyaXRlX3BoeV9yZWdpc3RlcihwY3IsIDB4MDAsIDB4QkE0Mik7DQogfQ0KZGlmZiAtLWdp
-dCBhL2RyaXZlcnMvbWZkL3J0c3hfcGNyLmMgYi9kcml2ZXJzL21mZC9ydHN4X3Bjci5jDQppbmRl
-eCAxZDE1NzM1Li5hNjE3MzllIDEwMDY0NA0KLS0tIGEvZHJpdmVycy9tZmQvcnRzeF9wY3IuYw0K
-KysrIGIvZHJpdmVycy9tZmQvcnRzeF9wY3IuYw0KQEAgLTk1MiwxNiArOTUyLDIwIEBAIHN0YXRp
-YyBpbnQgcnRzeF9wY2lfaW5pdF9odyhzdHJ1Y3QgcnRzeF9wY3IgKnBjcikNCiANCiAJLyogUG93
-ZXIgb24gU1NDICovDQogCWVyciA9IHJ0c3hfcGNpX3dyaXRlX3JlZ2lzdGVyKHBjciwgRlBEQ1RM
-LCBTU0NfUE9XRVJfRE9XTiwgMCk7DQotCWlmIChlcnIgPCAwKQ0KKwlpZiAoZXJyIDwgMCkgew0K
-KwkJcGNyX2VycihwY3IsICJwb3dlciBvbiBzc2NcbiIpOw0KIAkJcmV0dXJuIGVycjsNCisJfQ0K
-IA0KIAkvKiBXYWl0IFNTQyBwb3dlciBzdGFibGUgKi8NCiAJdWRlbGF5KDIwMCk7DQogDQogCWlm
-IChwY3ItPm9wcy0+b3B0aW1pemVfcGh5KSB7DQogCQllcnIgPSBwY3ItPm9wcy0+b3B0aW1pemVf
-cGh5KHBjcik7DQotCQlpZiAoZXJyIDwgMCkNCisJCWlmIChlcnIgPCAwKSB7DQorCQkJcGNyX2Vy
-cihwY3IsICJvcHRpbWl6ZSBwaHlcbiIpOw0KIAkJCXJldHVybiBlcnI7DQorCQl9DQogCX0NCiAN
-CiAJcnRzeF9wY2lfaW5pdF9jbWQocGNyKTsNCkBAIC0xMDAzLDggKzEwMDcsMTAgQEAgc3RhdGlj
-IGludCBydHN4X3BjaV9pbml0X2h3KHN0cnVjdCBydHN4X3BjciAqcGNyKQ0KIAlydHN4X3BjaV9h
-ZGRfY21kKHBjciwgV1JJVEVfUkVHX0NNRCwgTkZUU19UWF9DVFJMLCAweDAyLCAwKTsNCiANCiAJ
-ZXJyID0gcnRzeF9wY2lfc2VuZF9jbWQocGNyLCAxMDApOw0KLQlpZiAoZXJyIDwgMCkNCisJaWYg
-KGVyciA8IDApIHsNCisJCXBjcl9lcnIocGNyLCAic2VuZCBpbml0IGh3IGNtZFxuIik7DQogCQly
-ZXR1cm4gZXJyOw0KKwl9DQogDQogCXJ0c3hfcGNpX3dyaXRlX2NvbmZpZ19ieXRlKHBjciwgTENU
-TFIsIDApOw0KIA0KQEAgLTEwMTUsOCArMTAyMSwxMCBAQCBzdGF0aWMgaW50IHJ0c3hfcGNpX2lu
-aXRfaHcoc3RydWN0IHJ0c3hfcGNyICpwY3IpDQogDQogCWlmIChwY3ItPm9wcy0+ZXh0cmFfaW5p
-dF9odykgew0KIAkJZXJyID0gcGNyLT5vcHMtPmV4dHJhX2luaXRfaHcocGNyKTsNCi0JCWlmIChl
-cnIgPCAwKQ0KKwkJaWYgKGVyciA8IDApIHsNCisJCQlwY3JfZXJyKHBjciwgImluaXQgZXh0cmEg
-aHdcbiIpOw0KIAkJCXJldHVybiBlcnI7DQorCQl9DQogCX0NCiANCiAJLyogTm8gQ0QgaW50ZXJy
-dXB0IGlmIHByb2JpbmcgZHJpdmVyIHdpdGggY2FyZCBpbnNlcnRlZC4NCmRpZmYgLS1naXQgYS9p
-bmNsdWRlL2xpbnV4L21mZC9ydHN4X3BjaS5oIGIvaW5jbHVkZS9saW51eC9tZmQvcnRzeF9wY2ku
-aA0KaW5kZXggMGNlNzcyMS4uYTI5NDk1MSAxMDA2NDQNCi0tLSBhL2luY2x1ZGUvbGludXgvbWZk
-L3J0c3hfcGNpLmgNCisrKyBiL2luY2x1ZGUvbGludXgvbWZkL3J0c3hfcGNpLmgNCkBAIC05MTUs
-NiArOTE1LDExIEBAIHN0cnVjdCBydHN4X3BjciB7DQogCXN0cnVjdCBydHN4X3Nsb3QJCSpzbG90
-czsNCiB9Ow0KIA0KKyNkZWZpbmUgcGNyX2VycihwY3IsIGZtdCwgYXJnLi4uKQkJCVwNCisJZGV2
-X2VycigmKHBjciktPnBjaS0+ZGV2LCAiJXMgZXJyb3I6ICIgZm10LCBfX2Z1bmNfXywgIyNhcmcp
-DQorI2RlZmluZSBwY3JfZGJnKHBjciwgZm10LCBhcmcuLi4pCQkJXA0KKwlkZXZfZGJnKCYocGNy
-KS0+cGNpLT5kZXYsICIlczogIiBmbXQsIF9fZnVuY19fLCAjI2FyZykNCisNCiAjZGVmaW5lIENI
-S19QQ0lfUElEKHBjciwgcGlkKQkJKChwY3IpLT5wY2ktPmRldmljZSA9PSAocGlkKSkNCiAjZGVm
-aW5lIFBDSV9WSUQocGNyKQkJCSgocGNyKS0+cGNpLT52ZW5kb3IpDQogI2RlZmluZSBQQ0lfUElE
-KHBjcikJCQkoKHBjciktPnBjaS0+ZGV2aWNlKQ0KQEAgLTk2MSw0ICs5NjYsMTcgQEAgc3RhdGlj
-IGlubGluZSB1OCAqcnRzeF9wY2lfZ2V0X2NtZF9kYXRhKHN0cnVjdCBydHN4X3BjciAqcGNyKQ0K
-IAlyZXR1cm4gKHU4ICopKHBjci0+aG9zdF9jbWRzX3B0cik7DQogfQ0KIA0KK3N0YXRpYyBpbmxp
-bmUgaW50IHJ0c3hfcGNpX3VwZGF0ZV9jZmdfYnl0ZShzdHJ1Y3QgcnRzeF9wY3IgKnBjciwgaW50
-IGFkZHIsDQorCQl1OCBtYXNrLCB1OCBhcHBlbmQpDQorew0KKwlpbnQgZXJyOw0KKwl1OCB2YWw7
-DQorDQorCWVyciA9IHBjaV9yZWFkX2NvbmZpZ19ieXRlKHBjci0+cGNpLCBhZGRyLCAmdmFsKTsN
-CisJaWYgKGVycikNCisJCXJldHVybiBlcnI7DQorCWVyciA9IHBjaV93cml0ZV9jb25maWdfYnl0
-ZShwY3ItPnBjaSwgYWRkciwgKHZhbCAmIG1hc2spIHwgYXBwZW5kKTsNCisJcmV0dXJuIGVycjsN
-Cit9DQorDQogI2VuZGlmDQotLSANCjEuNy45LjUNCg0K
-
---_002_B801BD58FDB66349A47F17A55A52796045FF6429rsex2realsilcom_--
