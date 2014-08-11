@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297AbaHKKZi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 06:25:38 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:37378 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864AbaHKKZg (ORCPT
+	id S1753304AbaHKK0S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 06:26:18 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:43426 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921AbaHKK0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 06:25:36 -0400
-Message-ID: <53E89A1A.2060600@atmel.com>
-Date: Mon, 11 Aug 2014 12:25:30 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 11 Aug 2014 06:26:16 -0400
+Message-ID: <53E89A36.80104@mentor.com>
+Date: Mon, 11 Aug 2014 15:55:58 +0530
+From: Deepak <deepak_das@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: <kernel-janitors@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] drivers: video: fbdev: atmel_lcdfb.c: fix error return
- code
-References: <1407355938-10932-4-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1407355938-10932-4-git-send-email-Julia.Lawall@lip6.fr>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] net: Replace del_timer() with del_timer_sync()
+References: <53E31A47.9000407@mentor.com> ,<1407394542.11943.21.camel@edumazet-glaptop2.roam.corp.google.com>  <38E11AEFEB035045A1BA4C1177FBFC424A89BEBE@EU-MBX-03.mgc.mentorg.com> <1407430083.11943.37.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1407430083.11943.37.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+X-OriginalArrivalTime: 11 Aug 2014 10:26:07.0292 (UTC) FILETIME=[A98117C0:01CFB54E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2014 22:12, Julia Lawall :
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Convert a zero return value on error to a negative one, as returned
-> elsewhere in the function.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
-> 
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Thanks for the clarification Eric.
+I re-analysed the code and found that sk_stop_timer() is called under 
+lock_sock(sk)/bh_lock_sock(sk) so we can not replace del_timer() with 
+del_timer_sync() here and will lead to dead-lock as you suggested .
 
-Okay, seems good patch:
+Thanks,
+Deepak Das
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+On Thursday 07 August 2014 10:18 PM, Eric Dumazet wrote:
+> On Thu, 2014-08-07 at 15:15 +0000, Das, Deepak wrote:
+>
+> Please do not top post on netdev, thanks.
+>
+>> I apologies for not explaining the scenario previously.
+>>
+>> sk_stop_timer() is used to stop the tcp timers with expiry callback
+>> tcp_write_timer(), tcp_delack_timer(), tcp_keepalive_timer(), ...
+>> del_timer() is used to stop the the timer in sk_stop_timer(), which
+>> might return a non-zero result even if one of these timer handler functions
+>> (tcp_write_timer(), tcp_delack_timer(), tcp_keepalive_timer(), ...)
+>> is already executing on another processor.
+>>
+>> Following is the possible scenario :-
+>> on CPU #0: sk_stop_timer() decrements the sk->sk_refcnt if del_timer(timer)
+>> returns non-zero.
+>>
+>> on CPU #1: If a timer handler callback runs then it also calls sock_put(sk)
+>> which decrements sk->sk_refcnt and if the sk_refcnt becomes zero it frees the
+>> structure sock pointed to by sk.
+>>
+>> if the sk->sk_refcnt decrements twice then that will cause a mismatch in the
+>> number of "puts" and "holds" resulting in a malfunction of the sk->sk_refcnt mechanism.
+> Not at all.
+>
+> There is no mismatch, sk_refcnt is decremented once in all cases.
+>
+> I believe you misunderstood del_timer_sync() / del_timer() behaviors and
+> differences.
+>
+> In the case you describe, del_timer() should return 0, and timer
+> function will call sock_put() to decrement socket refcount.
+>
+> The problem' of del_timer() is the following :
+>
+> When/If it returns 0, another cpu _might_ be running the timer, we have
+> no guarantee timer function is completed.
+>
+> For sockets, we do not care, because the active timer owns a refcount on
+> the socket. When timer is finally completed, refcount will be released.
+>
+>> The solution is to use del_timer_sync() instead of del_timer()
+>> because del_timer_sync() will wait for timer handler functions to
+>> complete execution.
+> Except that some sk_stop_timer() callers hold the socket lock, so the
+> timer will deadlock trying to acquire it.
+>
+>> yes, we are facing some memory corruption issues due to access of already released
+>> struct sock in our environment. Our memory corruption issue looks like memory locations
+>> being decremented which could be consistent with a rogue decrement of a reference counter.
+> Is 'Your environment' some out of tree module or is it part of standard
+> linux kernel ?
+>
+>> similar suggestion is also made by Dean Jenkins in rfcomm_dlc_clear_timer() and accepted by Marcel.
+>> http://www.spinics.net/lists/linux-bluetooth/msg51132.html
+> Fix might be good in this case, but the changelog is completely bogus.
+>
+>
+>
 
-Thanks, best regards,
-
-> ---
-> The error codes chosen are the ones that are commonly used elsewhere or
-> these functions.  Perhaps something else is wanted.
-> 
->  drivers/video/fbdev/atmel_lcdfb.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/video/fbdev/atmel_lcdfb.c b/drivers/video/fbdev/atmel_lcdfb.c
-> index 92640d4..1d8bdb9 100644
-> --- a/drivers/video/fbdev/atmel_lcdfb.c
-> +++ b/drivers/video/fbdev/atmel_lcdfb.c
-> @@ -1102,12 +1102,14 @@ static int atmel_lcdfb_of_init(struct atmel_lcdfb_info *sinfo)
->  	timings = of_get_display_timings(display_np);
->  	if (!timings) {
->  		dev_err(dev, "failed to get display timings\n");
-> +		ret = -EINVAL;
->  		goto put_display_node;
->  	}
->  
->  	timings_np = of_find_node_by_name(display_np, "display-timings");
->  	if (!timings_np) {
->  		dev_err(dev, "failed to find display-timings node\n");
-> +		ret = -ENODEV;
->  		goto put_display_node;
->  	}
->  
-> 
-> 
-
-
--- 
-Nicolas Ferre
