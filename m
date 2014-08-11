@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792AbaHKTaJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:30:09 -0400
-Received: from david.siemens.de ([192.35.17.14]:56637 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752712AbaHKTaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:30:07 -0400
-Message-ID: <53E919AF.1090607@siemens.com>
-Date: Mon, 11 Aug 2014 21:29:51 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1754756AbaHKTf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 15:35:28 -0400
+Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:2114 "EHLO
+	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825AbaHKTf1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 15:35:27 -0400
+Message-ID: <53E91AFC.1030307@hp.com>
+Date: Mon, 11 Aug 2014 15:35:24 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: x86: HPET as CPU-local timer + interrupt remapping = lockup
-Content-Type: text/plain; charset=ISO-8859-1
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Jason Low <jason.low2@hp.com>,
+        Scott J Norton <scott.norton@hp.com>, aswin@hp.com
+Subject: Re: [PATCH v2 1/7] locking/rwsem: check for active writer/spinner
+ before wakeup
+References: <1407450408-11679-1-git-send-email-Waiman.Long@hp.com>    <1407450408-11679-2-git-send-email-Waiman.Long@hp.com>    <1407458726.2513.12.camel@buesod1.americas.hpqcorp.net>   <1407476387.2513.39.camel@buesod1.americas.hpqcorp.net>   <53E5172A.7090508@hp.com>  <1407524600.6583.6.camel@buesod1.americas.hpqcorp.net>  <53E7E712.9060201@hp.com> <1407714603.7594.10.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1407714603.7594.10.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 08/10/2014 07:50 PM, Davidlohr Bueso wrote:
+> On Sun, 2014-08-10 at 17:41 -0400, Waiman Long wrote:
+>> On 08/08/2014 03:03 PM, Davidlohr Bueso wrote:
+>>> On Fri, 2014-08-08 at 14:30 -0400, Waiman Long wrote:
+>>>> I have 2 issues about this. First of all, the timing windows between
+>>>> atomic_set() and mutex_has_owner() check is really small, I doubt it
+>>>> will be that effective.
+>>> That is true, which is why I didn't bother showing any performance data
+>>> in the changelog. However, more important than any performance, avoiding
+>>> bogus wakeups is the _right_ thing to do when allowing lock stealing.
+>>>
+>>>> Secondly, I think you may need to call
+>>>> mutex_release() and debug_mutex_unlock() to make the debugging code
+>>>> work, but they seems to be called only under the wait_lock. So I think
+>>>> there is more work that need to be done before this patch is ready.
+>>> When !DEBUG both mutex_release() and debug_mutex_unlock() should be
+>>> no-ops. So this allows us to do the mutex_has_owner() check *without*
+>>> holding the wait_lock.
+>>>
+>>> When DEBUG is set, we don't even bother calling mutex_has_owner(), so
+>>> nothing changes.
+>>>
+>>> I don't understand your concern.
+>> It is true I forgot the fact that MUTEX_SPIN_ON_OWNER is disabled when
+>> DEBUG_MUTEX is on. However, mutex_release is controlled by the LOCKDEP
+>> config variable which is independent of DEBUG_MUTEX. So it is still a
+>> concern.
+> But afaict you cannot have LOCKDEP without enabling DEBUG_MUTEX (but not
+> necessarily vice-versa). Both are quite intertwined within other
+> debugging dependencies/options.
+>
 
-just noticed an apparent regression of x86-64 on CPUs without ARAT but a
-sufficient number if HPET timers: If you have interrupt remapping
-enabled, the kernel will lock up during boot, apparently waiting for
-some never-arriving interrupts.
+I think you are right. This will require comment in the code to avoid 
+this kind of confusion.
 
-I'm currently adding VT-d interrupt emulation to QEMU and stumbled over
-this behavior. It didn't turn out to be an emulation issue, I just
-reproduced on real hardware (ARAT patched out) and found some old 3.0
-kernel booting fine inside my QEMU version.
-
-FWIW, some further details I found out under QEMU: the HPET timers do
-not seem to be switched to MSI mode yet when the lockup happens.
-
-I suppose the issue is uncritical as the combination of hardware feature
-(or their absence) is probably untypical, correct? I can't invest much
-into bisecting or debugging right now unfortunately. But maybe someone
-has an idea what could case this.
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+-Longman
