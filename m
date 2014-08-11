@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886AbaHKTqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:46:19 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:49418 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaHKTqS (ORCPT
+	id S1754913AbaHKTqY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 15:46:24 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58468 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825AbaHKTqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:46:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140811091437.GA2730@katana>
-References: <1407627938-24614-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <6ACE8FE9-A4AD-4A7A-890F-49F42B81C0A4@gmail.com> <20140811091437.GA2730@katana>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Mon, 11 Aug 2014 21:45:57 +0200
-Message-ID: <CAFo99gb4_1Qne+Mnt=iApepVyn00_eM2S4Nw+L3hMatZtwROSA@mail.gmail.com>
-Subject: Re: [PATCH] misc: ti-st: st_kim.c: Cleaning up missing null-terminate
- after strncpy call
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Mark D Rustad <mrustad@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 11 Aug 2014 15:46:22 -0400
+Date: Mon, 11 Aug 2014 12:46:21 -0700 (PDT)
+Message-Id: <20140811.124621.576073630604147753.davem@davemloft.net>
+To: mst@redhat.com
+Cc: razya@il.ibm.com, kvm@vger.kernel.org, GLIKSON@il.ibm.com,
+        ERANRA@il.ibm.com, YOSSIKU@il.ibm.com, JOELN@il.ibm.com,
+        abel.gordon@gmail.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] vhost: Add polling mode
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140810194559.GA4344@redhat.com>
+References: <1407659404-razya@il.ibm.com>
+	<20140810083035.0CF58380729@moren.haifa.ibm.com>
+	<20140810194559.GA4344@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 11 Aug 2014 12:46:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-11 11:14 GMT+02:00 Wolfram Sang <wsa@the-dreams.de>:
->
->> >     strncpy(kim_data->dev_name, buf, count);
->> > +   kim_data->dev_name[count - 1] = '\n';
->>
->> Of course this does not add termination, but adds a newline at the end of the buffer? Huh?
->
-> strlcpy?
->
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Sun, 10 Aug 2014 21:45:59 +0200
 
-Hi Wolfram
+> On Sun, Aug 10, 2014 at 11:30:35AM +0300, Razya Ladelsky wrote:
+ ...
+> And, did your tests actually produce 100% load on both host CPUs?
+ ...
 
-Sure, strlcpy is preferable in many ways if we only can guarantee that
-it is safe.
-I have seldom been so much criticism when I start switching to
-strlcpy, although much of it was justified :)
-Even Linus was getting into the debate.  See more:
+Michael, please do not quote an entire patch just to ask a one line
+question.
 
-https://plus.google.com/111049168280159033135/posts/1amLbuhWbh5
+I truly, truly, wish it was simpler in modern email clients to delete
+the unrelated quoted material because I bet when people do this they
+are simply being lazy.
 
-
-I do this only when I'm sure it will not cause any other problems.
-But if you or anyone else can guarantee that in this case, so I'd make
-a new patch.
-
-
-Kind regards
-Rickard Strandqvist
+Thank you.
