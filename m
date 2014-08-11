@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534AbaHKRDG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 13:03:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754515AbaHKRDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754516AbaHKRDD (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 11 Aug 2014 13:03:03 -0400
-Date: Mon, 11 Aug 2014 19:00:39 +0200
+Received: from mx1.redhat.com ([209.132.183.28]:53863 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754495AbaHKRDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 13:03:00 -0400
+Date: Mon, 11 Aug 2014 19:00:30 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>
 Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
@@ -19,8 +19,9 @@ Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Peter Zijlstra <peterz@infradead.org>,
         Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] fs/proc/task_nommu.c: don't use priv->task->mm
-Message-ID: <20140811170039.GA24807@redhat.com>
+Subject: [PATCH 1/3] fs/proc/task_nommu.c: change maps_open() to use
+	__seq_open_private()
+Message-ID: <20140811170030.GA24793@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -30,64 +31,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I do not know if CONFIG_PREEMPT/SMP is possible without CONFIG_MMU
-but the usage of task->mm in m_stop(). The task can exit/exec before
-we take mmap_sem, in this case m_stop() can hit NULL or unlock the
-wrong rw_semaphore.
-
-Also, this code uses priv->task != NULL to decide whether we need
-up_read/mmput. This is correct, but we will probably kill priv->task.
-Change m_start/m_stop to rely on IS_ERR_OR_NULL() like task_mmu.c does.
+Cleanup and preparation. maps_open() can use __seq_open_private()
+like proc_maps_open() does.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- fs/proc/task_nommu.c |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
+ fs/proc/task_nommu.c |   22 +++++++---------------
+ 1 files changed, 7 insertions(+), 15 deletions(-)
 
 diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
-index 003f2be..e0237c1 100644
+index 678455d..c12eab3 100644
 --- a/fs/proc/task_nommu.c
 +++ b/fs/proc/task_nommu.c
-@@ -217,17 +217,17 @@ static void *m_start(struct seq_file *m, loff_t *pos)
- 		return ERR_PTR(-ESRCH);
- 
- 	mm = priv->mm;
--	if (!mm || !atomic_inc_not_zero(&mm->mm_users)) {
--		put_task_struct(priv->task);
--		priv->task = NULL;
-+	if (!mm || !atomic_inc_not_zero(&mm->mm_users))
- 		return NULL;
--	}
--	down_read(&mm->mmap_sem);
- 
-+	down_read(&mm->mmap_sem);
- 	/* start from the Nth VMA */
- 	for (p = rb_first(&mm->mm_rb); p; p = rb_next(p))
- 		if (n-- == 0)
- 			return p;
-+
-+	up_read(&mm->mmap_sem);
-+	mmput(mm);
- 	return NULL;
- }
- 
-@@ -235,11 +235,13 @@ static void m_stop(struct seq_file *m, void *_vml)
+@@ -268,21 +268,13 @@ static const struct seq_operations proc_tid_maps_ops = {
+ static int maps_open(struct inode *inode, struct file *file,
+ 		     const struct seq_operations *ops)
  {
- 	struct proc_maps_private *priv = m->private;
- 
-+	if (!IS_ERR_OR_NULL(_vml)) {
-+		up_read(&priv->mm->mmap_sem);
-+		mmput(priv->mm);
-+	}
- 	if (priv->task) {
--		struct mm_struct *mm = priv->task->mm;
--		up_read(&mm->mmap_sem);
--		mmput(mm);
- 		put_task_struct(priv->task);
-+		priv->task = NULL;
- 	}
+-	struct proc_maps_private *priv;
+-	int ret = -ENOMEM;
+-
+-	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+-	if (priv) {
+-		priv->pid = proc_pid(inode);
+-		ret = seq_open(file, ops);
+-		if (!ret) {
+-			struct seq_file *m = file->private_data;
+-			m->private = priv;
+-		} else {
+-			kfree(priv);
+-		}
+-	}
+-	return ret;
++	struct proc_maps_private *priv = __seq_open_private(file, ops,
++					 sizeof(struct proc_maps_private));
++	if (!priv)
++		return -ENOMEM;
++
++	priv->pid = proc_pid(inode);
++	return 0;
  }
  
+ static int pid_maps_open(struct inode *inode, struct file *file)
 -- 
 1.5.5.1
 
