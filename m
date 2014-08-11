@@ -1,130 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014AbaHKIBZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 04:01:25 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:35710 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444AbaHKIBY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 04:01:24 -0400
-Date: Mon, 11 Aug 2014 10:01:25 +0200
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Eric Auger <eric.auger@linaro.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 7/9] KVM: arm: vgic: allow dynamic mapping of
- physical/virtual interrupts
-Message-ID: <20140811080125.GA10550@cbox>
-References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com>
- <1403688530-23273-8-git-send-email-marc.zyngier@arm.com>
- <53DE0584.2040405@linaro.org>
- <87bns0gzy8.fsf@approximate.cambridge.arm.com>
- <53E39FA9.6040503@linaro.org>
+	id S1751786AbaHKICT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 04:02:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50457 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751228AbaHKICQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 04:02:16 -0400
+Date: Mon, 11 Aug 2014 10:01:49 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: James Smart <james.smart@emulex.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 12/23] lpfc: Use pci_enable_msix_range()
+ instead of pci_enable_msix()
+Message-ID: <20140811080148.GG16504@dhcp-27-160.brq.redhat.com>
+References: <cover.1405533479.git.agordeev@redhat.com>
+ <ea1bf102a3ce0471996e2ddaaa498b088ac791c8.1405533479.git.agordeev@redhat.com>
+ <20140726082227.GF21129@agordeev.usersys.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53E39FA9.6040503@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140726082227.GF21129@agordeev.usersys.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 07, 2014 at 05:47:53PM +0200, Eric Auger wrote:
-> On 08/04/2014 03:13 PM, Marc Zyngier wrote:
-> > On Sun, Aug 03 2014 at 10:48:52 am BST, Eric Auger <eric.auger@linaro.org> wrote:
-> >> On 06/25/2014 11:28 AM, Marc Zyngier wrote:
-> >>> In order to be able to feed physical interrupts to a guest, we need
-> >>> to be able to establish the virtual-physical mapping between the two
-> >>> worlds.
-> >>>
-> >>> As we try to keep the injection interface simple, find out what the
-> >>> physical interrupt is (if any) when we actually build the LR.
-> >>>
-> >>> The mapping is kept in a rbtree, indexed by virtual interrupts.
-> >>
-> >> Hi Marc,
-> >>
-> >> I suspect there is a piece missing here related to bitmap state
-> >> management. When using maintenance IRQ, in process_maintenance we cleared
-> >> - dist->irq_pending (and new dist->irq_level)
-> >> - vcpu->irq_queued
-> >>
-> >> Now this does not exist anymore for forwarded irqs, when a subsequent
-> >> IRQ will be injected, vgic_update_irq_pending will fail in injecting the
-> >> IRQ because the states are reflecting the IRQ is still in progress.
-> >>
-> >> Since I have a modified version of your code, using Christoffer patches
-> >> I may have missed some modifications you did but at least on my side I
-> >> was forced to add bitmap clearing.
-> >>
-> >> It is not clear to me where to put that code however. Since user-side
-> >> can inject an IRQ while the previous one is not completed at guest and
-> >> host level, it cannot be in update_irq_pending - or we shall prevent the
-> >> user from injecting fwd IRQs - .
-> Hi Marc,
+On Sat, Jul 26, 2014 at 09:22:27AM +0100, Alexander Gordeev wrote:
+> On Wed, Jul 16, 2014 at 08:05:16PM +0200, Alexander Gordeev wrote:
+> > As result of deprecation of MSI-X/MSI enablement functions
+> > pci_enable_msix() and pci_enable_msi_block() all drivers
+> > using these two interfaces need to be updated to use the
+> > new pci_enable_msi_range()  or pci_enable_msi_exact()
+> > and pci_enable_msix_range() or pci_enable_msix_exact()
+> > interfaces.
 > 
-> Christoffer suggested me to put state bitmap reset in
-> __kvm_vgic_sync_hwstate where we check whether the LR were consumed. It
-> seems to work fine and we do no assumption about user action.
+> Hi James,
 > 
+> Could you please review this patch?
 
-What I said specifically was that we currently don't have to worry about
-clearing the active bit or resample the level when we look through the
-ELRSR bitmap, because level-triggered interrupts that have been
-processed currently always raise a maintenance interrupt.
+James?
 
-So my suggestion would be to factor out the "this is some common
-housekeeping we have to do for all level-triggered interrupts which have
-not been completed on a VCPU interface" from vgic_process_maintenance()
-and call this functionality from both vgic_process_maintenance() and
-from __kvm_vgic_sync_hwstate().
-
-[...]
-
-> > 
-> > Now, it is completely possible that we're missing something here (or
-> > actually doing too much).
-> > 
-> >> In my case (VFIO/IRQFD), by construction I only inject a new forwarded
-> >> IRQ when the previous one was completed so I could put it in the irqfd
-> >> injection function. But even irqfd is injected through eventfd trigger.
-> >> We shall forbid the user-side to trigger that eventfd in place of the
-> >> VFIO driver. What do you think?
-
-I'm afraid I'm not quite sure what you mean here?
-
-> > 
-> > Yup. userspace can't interfere with a forwarded interrupt, that's way
-> > too dangerous.
-> > 
-> >> A question related to guest kill. Cannot it happen the guest sometimes
-> >> does not complete the vIRQ before exiting? Currently I observe cases
-> >> where when I launch qemu-system after a kill, forwarded irqs do not work
-> >> properly. I am not yet sure this is the cause of my problem but just in
-> >> case, can the host write into GICV_EOIR in place of guest?
-> > 
-> > It is quite possible that the interrupt is left active when the guest is
-> > killed, which would tend to indicate that we need a way to cleanup
-> > behind us. It should be enough to clear the active bit, shouldn't it?
-> So in practice this will directly write into the GICC_DIR right? I will
-> try this.
+> Thanks!
 > 
-Not sure what you mean with "this will directly write into the
-GICC_DIR"?  What is 'this' ?
-
-I haven't experimented a lot with this, but I think you need to catch
-all forwarded IRQs that may have been in flight when the VM was killed
-and use the API to the irqchip to tell it that it's no longer forwarded
-and either the cleanup then sits within the specific irqchip logic or
-you do some more manual cleanup inside KVM.  I would lean towards the
-first option (because the irqchip would always be in charge of
-guaranteeting some queiesced state), but we should look at the specific
-details of what needs to be done.
-
--Christoffer
+> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> > Cc: James Smart <james.smart@emulex.com>
+> > Cc: linux-scsi@vger.kernel.org
+> > Cc: linux-pci@vger.kernel.org
+> > ---
+> >  drivers/scsi/lpfc/lpfc_init.c |   38 +++++++++++++++++---------------------
+> >  1 files changed, 17 insertions(+), 21 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+> > index a5769a9..d9caed9 100644
+> > --- a/drivers/scsi/lpfc/lpfc_init.c
+> > +++ b/drivers/scsi/lpfc/lpfc_init.c
+> > @@ -8211,9 +8211,9 @@ lpfc_sli4_pci_mem_unset(struct lpfc_hba *phba)
+> >   * @phba: pointer to lpfc hba data structure.
+> >   *
+> >   * This routine is invoked to enable the MSI-X interrupt vectors to device
+> > - * with SLI-3 interface specs. The kernel function pci_enable_msix() is
+> > - * called to enable the MSI-X vectors. Note that pci_enable_msix(), once
+> > - * invoked, enables either all or nothing, depending on the current
+> > + * with SLI-3 interface specs. The kernel function pci_enable_msix_exact()
+> > + * is called to enable the MSI-X vectors. Note that pci_enable_msix_exact(),
+> > + * once invoked, enables either all or nothing, depending on the current
+> >   * availability of PCI vector resources. The device driver is responsible
+> >   * for calling the individual request_irq() to register each MSI-X vector
+> >   * with a interrupt handler, which is done in this function. Note that
+> > @@ -8237,8 +8237,8 @@ lpfc_sli_enable_msix(struct lpfc_hba *phba)
+> >  		phba->msix_entries[i].entry = i;
+> >  
+> >  	/* Configure MSI-X capability structure */
+> > -	rc = pci_enable_msix(phba->pcidev, phba->msix_entries,
+> > -				ARRAY_SIZE(phba->msix_entries));
+> > +	rc = pci_enable_msix_exact(phba->pcidev, phba->msix_entries,
+> > +				   ARRAY_SIZE(phba->msix_entries));
+> >  	if (rc) {
+> >  		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
+> >  				"0420 PCI enable MSI-X failed (%d)\n", rc);
+> > @@ -8775,15 +8775,13 @@ out:
+> >   * @phba: pointer to lpfc hba data structure.
+> >   *
+> >   * This routine is invoked to enable the MSI-X interrupt vectors to device
+> > - * with SLI-4 interface spec. The kernel function pci_enable_msix() is called
+> > - * to enable the MSI-X vectors. Note that pci_enable_msix(), once invoked,
+> > - * enables either all or nothing, depending on the current availability of
+> > - * PCI vector resources. The device driver is responsible for calling the
+> > - * individual request_irq() to register each MSI-X vector with a interrupt
+> > - * handler, which is done in this function. Note that later when device is
+> > - * unloading, the driver should always call free_irq() on all MSI-X vectors
+> > - * it has done request_irq() on before calling pci_disable_msix(). Failure
+> > - * to do so results in a BUG_ON() and a device will be left with MSI-X
+> > + * with SLI-4 interface spec. The kernel function pci_enable_msix_range()
+> > + * is called to enable the MSI-X vectors. The device driver is responsible
+> > + * for calling the individual request_irq() to register each MSI-X vector
+> > + * with a interrupt handler, which is done in this function. Note that later
+> > + * when device is unloading, the driver should always call free_irq() on all
+> > + * MSI-X vectors it has done request_irq() on before calling pci_disable_msix()
+> > + * Failure to do so results in a BUG_ON() and a device will be left with MSI-X
+> >   * enabled and leaks its vectors.
+> >   *
+> >   * Return codes
+> > @@ -8805,18 +8803,16 @@ lpfc_sli4_enable_msix(struct lpfc_hba *phba)
+> >  		phba->sli4_hba.msix_entries[index].entry = index;
+> >  		vectors++;
+> >  	}
+> > -enable_msix_vectors:
+> > -	rc = pci_enable_msix(phba->pcidev, phba->sli4_hba.msix_entries,
+> > -			     vectors);
+> > -	if (rc > 1) {
+> > -		vectors = rc;
+> > -		goto enable_msix_vectors;
+> > -	} else if (rc) {
+> > +
+> > +	rc = pci_enable_msix_range(phba->pcidev, phba->sli4_hba.msix_entries,
+> > +				   2, vectors);
+> > +	if (rc < 0) {
+> >  		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
+> >  				"0484 PCI enable MSI-X failed (%d)\n", rc);
+> >  		goto vec_fail_out;
+> >  	}
+> >  
+> > +	vectors = rc;
+> >  	/* Log MSI-X vector assignment */
+> >  	for (index = 0; index < vectors; index++)
+> >  		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
+> > -- 
+> > 1.7.7.6
+> > 
+> 
+> -- 
+> Regards,
+> Alexander Gordeev
+> agordeev@redhat.com
