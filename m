@@ -1,88 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbaHKSDK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:03:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3918 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752717AbaHKSDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:03:09 -0400
-Date: Mon, 11 Aug 2014 14:02:14 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Shaun Ruffell <sruffell@digium.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org, ebiederm@xmission.com, mjg59@srcf.ucam.org,
-        greg@kroah.com, bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com,
-        bhe@redhat.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 11/15] purgatory: Core purgatory functionality
-Message-ID: <20140811180213.GC1863@redhat.com>
-References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
- <1403814824-7587-12-git-send-email-vgoyal@redhat.com>
- <20140811174017.GD12610@digium.com>
- <53E9028E.2070709@zytor.com>
+	id S1753926AbaHKSDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:03:18 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:43525 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717AbaHKSDN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 14:03:13 -0400
+Date: Mon, 11 Aug 2014 11:03:09 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: linux-input@vger.kernel.org
+Cc: Nick Dyer <nick.dyer@itdev.co.uk>, Yufeng Shen <miletus@chromium.org>,
+        Benson Leung <bleung@chromium.org>,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: atmel_mxt_ts - fix a few issues reported by Coverity
+Message-ID: <20140811180307.GA25677@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53E9028E.2070709@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 10:51:10AM -0700, H. Peter Anvin wrote:
-> On 08/11/2014 10:40 AM, Shaun Ruffell wrote:
-> > FYI, it looks like the following patch (committed in
-> > 8fc5b4d4121c95482b2583) adds a new requirement to use at least gcc
-> > 4.4 to build the kernel?
-> 
-> Well, to build the kernel with that particular new functionality
-> enabled, yes.
-> 
-> However...
-> 
-> > The above "-mcmodel=large" compiler flag produces the following output on GCC 4.1.2.
-> > 
-> >   $ make modules_prepare ; gcc --version
-> >     CHK     include/config/kernel.release
-> >     CHK     include/generated/uapi/linux/version.h
-> >     CHK     include/generated/utsrelease.h
-> >     CC      arch/x86/purgatory/purgatory.o
-> >   arch/x86/purgatory/purgatory.c:1: sorry, unimplemented: code model ‘large’ not supported yet
-> >   make[1]: *** [arch/x86/purgatory/purgatory.o] Error 1
-> >   make: *** [archprepare] Error 2
-> >   gcc (GCC) 4.1.2 20080704 (Red Hat 4.1.2-54)
-> >   Copyright (C) 2006 Free Software Foundation, Inc.
-> >   This is free software; see the source for copying conditions.  There is NO
-> >   warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-> > 
-> > I did a quick search for a discussion the indicates this compiler is now
-> > officially too old to build the kernel but did not find one.
-> > 
-> > If this is required, maybe Documentation/Changes needs to be updated
-> > with the new minimum required version?
-> 
-> ... I'm having a very, very hard time to picture a reason why the
-> "large" model would be necessary or even desirable for the purgatory
-> code.  The "small PIC" model seem to fit much better...
+This should fix the following issues reported by Coverity:
 
-Hi hpa,
+*** CID 1230625:  Logically dead code  (DEADCODE)
+/drivers/input/touchscreen/atmel_mxt_ts.c: 1692 in mxt_initialize()
 
-I took it because kexec-tools uses it and in one of the committs Eric
-gave following reasoning.
+*** CID 1230627:  Missing break in switch  (MISSING_BREAK)
+/drivers/input/touchscreen/atmel_mxt_ts.c: 1436 in mxt_get_object_table()
 
-    On x86_64 use -mcmodel=large so that the code is built without
-    any 32bit assumptions.  -mcmodel=medium and -mcmodel=small
-    result int code that has 32bit relocations against variables
-    that can live anywhere in the address space
+*** CID 1230629:  Out-of-bounds write  (OVERRUN)
+/drivers/input/touchscreen/atmel_mxt_ts.c: 1267 in mxt_update_cfg()
 
-We do want to load purgatory anywhere in the address space. 
+*** CID 1230632:  Unused pointer value  (UNUSED_VALUE)
+/drivers/input/touchscreen/atmel_mxt_ts.c: 1211 in mxt_update_cfg()
 
-But if there are other ways to achieve the same thing, I will do that
-change.
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/touchscreen/atmel_mxt_ts.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-So when you say "small PIC", I need to use -mcmodel=small and -fPIC?
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index bbaf3ff..db178ed 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -1098,8 +1098,12 @@ static int mxt_prepare_cfg_mem(struct mxt_data *data,
+ 			/* Skip object */
+ 			for (i = 0; i < size; i++) {
+ 				ret = sscanf(cfg->data + data_pos, "%hhx%n",
+-					     &val,
+-					     &offset);
++					     &val, &offset);
++				if (ret != 1) {
++					dev_err(dev, "Bad format in T%d at %d\n",
++						type, i);
++					return -EINVAL;
++				}
+ 				data_pos += offset;
+ 			}
+ 			continue;
+@@ -1139,7 +1143,8 @@ static int mxt_prepare_cfg_mem(struct mxt_data *data,
+ 				     &val,
+ 				     &offset);
+ 			if (ret != 1) {
+-				dev_err(dev, "Bad format in T%d\n", type);
++				dev_err(dev, "Bad format in T%d at %d\n",
++					type, i);
+ 				return -EINVAL;
+ 			}
+ 			data_pos += offset;
+@@ -1149,8 +1154,7 @@ static int mxt_prepare_cfg_mem(struct mxt_data *data,
+ 
+ 			byte_offset = reg + i - cfg_start_ofs;
+ 
+-			if (byte_offset >= 0 &&
+-			    byte_offset <= config_mem_size) {
++			if (byte_offset >= 0 && byte_offset < config_mem_size) {
+ 				*(config_mem + byte_offset) = val;
+ 			} else {
+ 				dev_err(dev, "Bad object: reg:%d, T%d, ofs=%d\n",
+@@ -1454,6 +1458,7 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 				data->T5_msg_size = mxt_obj_size(object) - 1;
+ 			}
+ 			data->T5_address = object->start_address;
++			break;
+ 		case MXT_GEN_COMMAND_T6:
+ 			data->T6_reportid = min_id;
+ 			data->T6_address = object->start_address;
+@@ -1707,7 +1712,7 @@ static int mxt_initialize(struct mxt_data *data)
+ 		return error;
+ 	}
+ 
+-	mxt_acquire_irq(data);
++	error = mxt_acquire_irq(data);
+ 	if (error)
+ 		goto err_free_object_table;
+ 
+-- 
+2.0.0.526.g5318336
 
-I can give that a try.
 
-Thanks
-Vivek
+-- 
+Dmitry
