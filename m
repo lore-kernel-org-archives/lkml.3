@@ -1,174 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875AbaHKLpr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 07:45:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20724 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751787AbaHKLpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 07:45:45 -0400
-Date: Mon, 11 Aug 2014 13:45:36 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 2/2] PCI/MSI: Remove arch_msi_check_device()
-Message-ID: <20140811114536.GA3427@dhcp-27-160.brq.redhat.com>
-References: <cover.1405160163.git.agordeev@redhat.com>
- <1005232855c3af2c0c669818ee63be445389b6ad.1405160163.git.agordeev@redhat.com>
- <20140716222024.GE14366@google.com>
+	id S1751651AbaHKLtR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 07:49:17 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:51268 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196AbaHKLtQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 07:49:16 -0400
+Subject: [RFC PATCH V2 17/19] sched: power aware load balance
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+To: alex.shi@intel.com, vincent.guittot@linaro.org, peterz@infradead.org,
+        pjt@google.com, efault@gmx.de, rjw@rjwysocki.net,
+        morten.rasmussen@arm.com, svaidy@linux.vnet.ibm.com,
+        arjan@linux.intel.com, mingo@kernel.org
+Cc: nicolas.pitre@linaro.org, len.brown@intel.com, yuyang.du@intel.com,
+        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
+        corbet@lwn.net, catalin.marinas@arm.com, markgross@thegnar.org,
+        sundar.iyer@intel.com, linux-kernel@vger.kernel.org,
+        dietmar.eggemann@arm.com, Lorenzo.Pieralisi@arm.com,
+        mike.turquette@linaro.org, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de
+Date: Mon, 11 Aug 2014 17:18:55 +0530
+Message-ID: <20140811114501.32407.61304.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140716222024.GE14366@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081111-0928-0000-0000-000003F9B33E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no archs that override arch_msi_check_device()
-hook. Remove it as it is completely redundant.
+From: Alex Shi <alex.shi@intel.com>
 
-If an arch would need to check MSI/MSI-X possibility for a
-device it should make it within arch_setup_msi_irqs() hook.
+This patch enabled the power aware consideration in load balance.
 
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-pci@vger.kernel.org
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+As mentioned in the power aware scheduler proposal, Power aware
+scheduling has 2 assumptions:
+1, race to idle is helpful for power saving
+2, less active sched_groups will reduce power consumption
+
+The first assumption make performance policy take over scheduling when
+any scheduler group is busy.
+The second assumption make power aware scheduling try to pack disperse
+tasks into fewer groups.
+
+The enabling logical summary here:
+1, Collect power aware scheduler statistics during performance load
+balance statistics collection.
+2, If the balance cpu is eligible for power load balance, just do it
+and forget performance load balance. If the domain is suitable for
+power balance, but the cpu is inappropriate(idle or full), stop both
+power/performance balance in this domain. If using performance balance
+or any group is busy, do performance balance.
+
+Above logical is mainly implemented in update_sd_lb_power_stats(). It
+decides if a domain is suitable for power aware scheduling. If so,
+it will fill the dst group and source group accordingly.
+
+This patch reused some of Suresh's power saving load balance code.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+[Added CONFIG_SCHED_POWER switch to enable this patch]
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 ---
- drivers/pci/msi.c   | 49 +++++++++++++------------------------------------
- include/linux/msi.h |  3 ---
- 2 files changed, 13 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 5a40516..6c2cc41 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -56,16 +56,6 @@ void __weak arch_teardown_msi_irq(unsigned int irq)
- 	chip->teardown_irq(chip, irq);
+ kernel/sched/fair.c |  126 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 125 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 6d40aa3..2e64e96 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5871,6 +5871,109 @@ static inline void init_sd_lb_stats(struct sd_lb_stats *sds)
+ 	};
  }
  
--int __weak arch_msi_check_device(struct pci_dev *dev, int nvec, int type)
--{
--	struct msi_chip *chip = dev->bus->msi;
--
--	if (!chip || !chip->check_device)
--		return 0;
--
--	return chip->check_device(chip, dev, nvec, type);
--}
--
- int __weak arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- {
- 	struct msi_desc *entry;
-@@ -806,22 +796,23 @@ out_free:
- }
- 
++#ifdef CONFIG_SCHED_POWER
++/**
++ * init_sd_lb_power_stats - Initialize power savings statistics for
++ * the given sched_domain, during load balancing.
++ *
++ * @env: The load balancing environment.
++ * @sds: Variable containing the statistics for sd.
++ */
++static inline void init_sd_lb_power_stats(struct lb_env *env,
++						struct sd_lb_stats *sds)
++{
++	if (sched_balance_policy == SCHED_POLICY_PERFORMANCE ||
++				env->idle == CPU_NOT_IDLE) {
++		env->flags &= ~LBF_POWER_BAL;
++		env->flags |= LBF_PERF_BAL;
++		return;
++	}
++	env->flags &= ~LBF_PERF_BAL;
++	env->flags |= LBF_POWER_BAL;
++	sds->min_util = UINT_MAX;
++	sds->leader_util = 0;
++}
++
++/**
++ * update_sd_lb_power_stats - Update the power saving stats for a
++ * sched_domain while performing load balancing.
++ *
++ * @env: The load balancing environment.
++ * @group: sched_group belonging to the sched_domain under consideration.
++ * @sds: Variable containing the statistics of the sched_domain
++ * @local_group: Does group contain the CPU for which we're performing
++ * load balancing?
++ * @sgs: Variable containing the statistics of the group.
++ */
++static inline void update_sd_lb_power_stats(struct lb_env *env,
++			struct sched_group *group, struct sd_lb_stats *sds,
++			int local_group, struct sg_lb_stats *sgs)
++{
++	unsigned long threshold_util;
++
++	if (env->flags & LBF_PERF_BAL)
++		return;
++
++	threshold_util =  sgs->group_weight * FULL_UTIL;
++
++	/*
++	 * If the local group is idle or full loaded
++	 * no need to do power savings balance at this domain
++	 */
++	if (local_group && (!sgs->sum_nr_running ||
++		sgs->group_util + FULL_UTIL > threshold_util))
++		env->flags &= ~LBF_POWER_BAL;
++
++	/* Do performance load balance if any group overload */
++	if (sgs->group_util > threshold_util) {
++		env->flags |= LBF_PERF_BAL;
++		env->flags &= ~LBF_POWER_BAL;
++	}
++
++	/*
++	 * If a group is idle,
++	 * don't include that group in power savings calculations
++	 */
++	if (!(env->flags & LBF_POWER_BAL) || !sgs->sum_nr_running)
++		return;
++
++	/*
++	 * Calculate the group which has the least non-idle load.
++	 * This is the group from where we need to pick up the load
++	 * for saving power
++	 */
++	if ((sgs->group_util < sds->min_util) ||
++	    (sgs->group_util == sds->min_util &&
++	     group_first_cpu(group) > group_first_cpu(sds->group_min))) {
++		sds->group_min = group;
++		sds->min_util = sgs->group_util;
++		sds->min_load_per_task = sgs->sum_weighted_load /
++						sgs->sum_nr_running;
++	}
++
++	/*
++	 * Calculate the group which is almost near its
++	 * capacity but still has some space to pick up some load
++	 * from other group and save more power
++	 */
++	if (sgs->group_util + FULL_UTIL > threshold_util)
++		return;
++
++	if (sgs->group_util > sds->leader_util ||
++	    (sgs->group_util == sds->leader_util && sds->group_leader &&
++	     group_first_cpu(group) < group_first_cpu(sds->group_leader))) {
++		sds->group_leader = group;
++		sds->leader_util = sgs->group_util;
++	}
++}
++#else
++static inline void init_sd_lb_power_stats(struct lb_env *env,
++                                                struct sd_lb_stats *sds) {}
++static inline void update_sd_lb_power_stats(struct lb_env *env,
++                        struct sched_group *group, struct sd_lb_stats *sds,
++                        int local_group, struct sg_lb_stats *sgs) {}
++#endif /* CONFIG_SCHED_POWER */
++
  /**
-- * pci_msi_check_device - check whether MSI may be enabled on a device
-+ * pci_msi_supported - check whether MSI may be enabled on a device
-  * @dev: pointer to the pci_dev data structure of MSI device function
-  * @nvec: how many MSIs have been requested ?
-- * @type: are we checking for MSI or MSI-X ?
-  *
-  * Look at global flags, the device itself, and its parent buses
-  * to determine if MSI/-X are supported for the device. If MSI/-X is
-  * supported return 0, else return an error code.
-  **/
--static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
-+static int pci_msi_supported(struct pci_dev *dev, int nvec)
- {
- 	struct pci_bus *bus;
--	int ret;
+  * get_sd_load_idx - Obtain the load index for a given sched domain.
+  * @sd: The sched_domain whose load_idx is to be obtained.
+@@ -6248,6 +6351,10 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 		sgs->group_load += load;
+ 		sgs->sum_nr_running += rq->nr_running;
  
- 	/* MSI must be globally enabled and supported by the device */
--	if (!pci_msi_enable || !dev || dev->no_msi)
-+	if (!pci_msi_enable)
-+		return -EINVAL;
++#ifdef CONFIG_SCHED_POWER
++		/* add scaled rt utilization */
++                sgs->group_util += max_rq_util(i);
++#endif
+ 		if (rq->nr_running > 1)
+ 			*overload = true;
+ 
+@@ -6381,6 +6488,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+ 
+ 	if (child && child->flags & SD_PREFER_SIBLING)
+ 		prefer_sibling = 1;
++	init_sd_lb_power_stats(env, sds);
+ 
+ 	load_idx = get_sd_load_idx(env->sd, env->idle);
+ 
+@@ -6433,6 +6541,7 @@ next_group:
+ 		sds->total_load += sgs->group_load;
+ 		sds->total_capacity += sgs->group_capacity;
+ 
++		update_sd_lb_power_stats(env, sg, sds, local_group, sgs);
+ 		sg = sg->next;
+ 	} while (sg != env->sd->groups);
+ 
+@@ -6665,6 +6774,21 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
+ 	 * this level.
+ 	 */
+ 	update_sd_lb_stats(env, &sds);
 +
-+	if (!dev || dev->no_msi || dev->current_state != PCI_D0)
- 		return -EINVAL;
++#ifdef CONFIG_SCHED_POWER
++        if (!(env->flags & LBF_POWER_BAL) && !(env->flags & LBF_PERF_BAL))
++                return  NULL;
++ 
++        if (env->flags & LBF_POWER_BAL) {
++                if (sds.this == sds.group_leader &&
++                                sds.group_leader != sds.group_min) {
++                        env->imbalance = sds.min_load_per_task;
++                        return sds.group_min;
++                }
++                env->flags &= ~LBF_POWER_BAL;
++                return NULL;
++        }
++#endif
+ 	local = &sds.local_stat;
+ 	busiest = &sds.busiest_stat;
  
- 	/*
-@@ -843,10 +834,6 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
- 		if (bus->bus_flags & PCI_BUS_FLAGS_NO_MSI)
- 			return -EINVAL;
- 
--	ret = arch_msi_check_device(dev, nvec, type);
--	if (ret)
--		return ret;
--
- 	return 0;
- }
- 
-@@ -949,13 +936,13 @@ int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
- 	int status, nr_entries;
- 	int i, j;
- 
--	if (!entries || !dev->msix_cap || dev->current_state != PCI_D0)
--		return -EINVAL;
--
--	status = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSIX);
-+	status = pci_msi_supported(dev, nvec);
- 	if (status)
- 		return status;
- 
-+	if (!entries)
-+		return -EINVAL;
-+
- 	nr_entries = pci_msix_vec_count(dev);
- 	if (nr_entries < 0)
- 		return nr_entries;
-@@ -1062,8 +1049,9 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
- 	int nvec;
- 	int rc;
- 
--	if (dev->current_state != PCI_D0)
--		return -EINVAL;
-+	rc = pci_msi_supported(dev, minvec);
-+	if (rc)
-+		return rc;
- 
- 	WARN_ON(!!dev->msi_enabled);
- 
-@@ -1086,17 +1074,6 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
- 		nvec = maxvec;
- 
- 	do {
--		rc = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSI);
--		if (rc < 0) {
--			return rc;
--		} else if (rc > 0) {
--			if (rc < minvec)
--				return -ENOSPC;
--			nvec = rc;
--		}
--	} while (rc);
--
--	do {
- 		rc = msi_capability_init(dev, nvec);
- 		if (rc < 0) {
- 			return rc;
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 8103f32..dbf7cc9 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -60,7 +60,6 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc);
- void arch_teardown_msi_irq(unsigned int irq);
- int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
- void arch_teardown_msi_irqs(struct pci_dev *dev);
--int arch_msi_check_device(struct pci_dev* dev, int nvec, int type);
- void arch_restore_msi_irqs(struct pci_dev *dev);
- 
- void default_teardown_msi_irqs(struct pci_dev *dev);
-@@ -77,8 +76,6 @@ struct msi_chip {
- 	int (*setup_irq)(struct msi_chip *chip, struct pci_dev *dev,
- 			 struct msi_desc *desc);
- 	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
--	int (*check_device)(struct msi_chip *chip, struct pci_dev *dev,
--			    int nvec, int type);
- };
- 
- #endif /* LINUX_MSI_H */
--- 
-1.9.3
+@@ -6923,7 +7047,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		.loop_break	= sched_nr_migrate_break,
+ 		.cpus		= cpus,
+ #ifdef CONFIG_SCHED_POWER
+-		.flags		= LBF_PERF_BAL,
++		.flags		= LBF_POWER_BAL,
+ #endif
+ 		.fbq_type	= all,
+ 	};
 
