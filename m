@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965AbaHKTxd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:53:33 -0400
-Received: from mga14.intel.com ([192.55.52.115]:51220 "EHLO mga14.intel.com"
+	id S932125AbaHKTxq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 15:53:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9173 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754839AbaHKTxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:53:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,843,1400050800"; 
-   d="asc'?scan'208";a="575185375"
-Message-ID: <1407786786.2189.0.camel@jtkirshe-mobl.jf.intel.com>
-Subject: Re: [linux-nics] linux-next: Tree for Aug 11
- (net/ethernet/intel/i40e)
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux.nics@intel.com, linux-kernel@vger.kernel.org
-Date: Mon, 11 Aug 2014 12:53:06 -0700
-In-Reply-To: <53E8ECA9.6060806@infradead.org>
-References: <20140811155213.0aa083ce@canb.auug.org.au>
-	 <53E8ECA9.6060806@infradead.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-1Kh2MfbG97oYqtDz88Av"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	id S1754818AbaHKTxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 15:53:43 -0400
+Message-ID: <53E91F3E.6000308@redhat.com>
+Date: Mon, 11 Aug 2014 21:53:34 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Sanjeev Sharma <sanjeev_sharma@mentor.com>, gregkh@linuxfoundation.org,
+        kraxel@redhat.com, mdharm-usb@one-eyed-alien.net,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] uas: replace WARN_ON_ONCE() with assert_spin_locked().
+References: <1407743966-25325-1-git-send-email-sanjeev_sharma@mentor.com> <20140811181905.GA25727@roeck-us.net> <53E9118B.3020309@redhat.com> <20140811190823.GA18503@roeck-us.net>
+In-Reply-To: <20140811190823.GA18503@roeck-us.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-1Kh2MfbG97oYqtDz88Av
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 08/11/2014 09:08 PM, Guenter Roeck wrote:
+> On Mon, Aug 11, 2014 at 08:55:07PM +0200, Hans de Goede wrote:
+>> Hi,
+>>
+>> On 08/11/2014 08:19 PM, Guenter Roeck wrote:
+>>> On Mon, Aug 11, 2014 at 01:29:26PM +0530, Sanjeev Sharma wrote:
+>>>> spin_is_locked() always return false in uniprocessor configuration and therefore it
+>>>> would be advise to repalce with assert_spin_locked().
+>>>>
+>>>> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+>>>> ---
+>>>>  drivers/usb/storage/uas.c | 8 ++++----
+>>>>  1 file changed, 4 insertions(+), 4 deletions(-)
+>>>>
+>>>> diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
+>>>> index 3f42785..8e5877d 100644
+>>>> --- a/drivers/usb/storage/uas.c
+>>>> +++ b/drivers/usb/storage/uas.c
+>>>> @@ -154,7 +154,7 @@ static void uas_mark_cmd_dead(struct uas_dev_info *devinfo,
+>>>>  	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+>>>>  
+>>>>  	uas_log_cmd_state(cmnd, caller);
+>>>> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+>>>> +	assert_spin_locked(&devinfo->lock);
+>>>
+>>> Seems to me that replacing WARN_ON_ONCE (which may be annoying but only
+>>> creates a traceback, and only once) with assert_spin_locked (which
+>>> crashes the kernel) is a bit drastic.
+>>
+>> I can see your point, but so far these paranoia checks have never triggered,
+>> and having them trigger _always_ one some uni-processor (which is the reason
+>> for this patch) to me seems the worse problem of the 2.
+>>
+> If those are just paranoia checks, it might make sense to use
+> lockdep_assert_held() to reduce runtime overhead if lockdep
+> debugging is disabled.
 
-On Mon, 2014-08-11 at 09:17 -0700, Randy Dunlap wrote:
-> On 08/10/14 22:52, Stephen Rothwell wrote:
-> > Hi all,
-> >=20
-> > Please do not add code intended for v3.18 until after v3.17-rc1 is
-> > released.
-> >=20
-> > Changes since 20140808:
-> >=20
->=20
-> on i386 and x86_64:
->=20
-> ../drivers/net/ethernet/intel/i40e/i40e_fcoe.c: In function
-> 'i40e_get_fcoe_tc_map':
-> ../drivers/net/ethernet/intel/i40e/i40e_fcoe.c:354:23: error:
-> 'IEEE_8021QAZ_APP_SEL_ETHERTYPE' undeclared (first use in this
-> function)
->    if (app.selector =3D=3D IEEE_8021QAZ_APP_SEL_ETHERTYPE &&
->=20
->=20
-> Needs to #include <uapi/linux/dcbnl.h> ??
+Ah yes, that is a good idea.
 
-Yeah, Dave has already accepted a patch to resolve that, which I believe
-went into his net tree.
+Sanjeev, can you please send a v2 using lockdep_assert_held() ?
 
---=-1Kh2MfbG97oYqtDz88Av
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Thanks & Regards,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJT6R8iAAoJEOVv75VaS+3OUcUQAKfxnygAOBA684idv3BxCkXg
-eXgVT+6ip4/jzW9bSj4s9IQkNZafEK4IVfcJfDzEGbZEJkd2nUh/CI9jV5+l3Unc
-SkCpMiws9LgH+jam2Uv5ZkPGMuHH30HstYcWFXCLcBXn+mbdxijKOx3wVj0eJBpX
-6Ff+j+Blqx8uIuezSanFgOBeQI0mtbcmoCo5uPTXwPoKZXdzadq29IadGsINcYyE
-Iirqco3MR+ih33MoqyjOM173SiOIDu+VuLr+F496oyCMyTIVpdK/+sM8V7oPgTAN
-JWF9ZnvBbYdg0oVJrgIR6bNeariWrthEwV0BhIuTlaNHLB4hn32KzveAnp8ycwgZ
-h46GKpC754BUcSXHC+TwrrZaHizpPR7anbTUejs6aGui0gLsw5Jkm6BaR3xM9yK0
-tkjeAgIBxFzvgxpeObLNWdEhGPj+QF2QDyoIkf1ZL97ZKF3obieGb1PPmZM3KRvN
-FdW6vVZlD8IAilpz6LqZ4P4az7g/w4Up6TteRP/a1KYYKg+sJDtc8hz16m6PJDRF
-A1QZ8Rfi1t4hlxjuJsa2ShAyvYOhDuy2XWAnAEm5vyYw9YCNe5Rwosilpcoavv+5
-QqjQAbCYcnlbnhOMMS6DgzMDoEW+SN8qy67U9WEeft/HZRKghUGhyOfb2OP/qAVt
-UiCOZw0K6WvaOy90GvDd
-=aq7b
------END PGP SIGNATURE-----
-
---=-1Kh2MfbG97oYqtDz88Av--
-
+Hans (the uas driver maintainer)
