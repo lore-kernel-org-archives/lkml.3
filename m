@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263AbaHKUkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:40:53 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:63713 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932192AbaHKUku (ORCPT
+	id S932234AbaHKUn6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:43:58 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:34180 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932083AbaHKUn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:40:50 -0400
-Message-ID: <1407789645.28221.68.camel@chimera>
-Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
-From: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org Wireless" 
-	<linux-wireless@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
+	Mon, 11 Aug 2014 16:43:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <53E32022.2090006@infradead.org>
+References: <1406383386-1400-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <53E13D78.6000903@tilera.com> <CAFo99gZ1rOqD-RFN7Shx4mWO4kfVLCXpuxUWqOwK5uY6uwAh3Q@mail.gmail.com>
+ <201408061838.s76Ic6lV014201@farm-0039.internal.tilera.com> <53E32022.2090006@infradead.org>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Mon, 11 Aug 2014 22:43:36 +0200
+Message-ID: <CAFo99gYMtpVo9=dZ-dW5iiiRgKGjwxwaLBe6C5Ci9v6-7o8H+A@mail.gmail.com>
+Subject: Re: [PATCH v2] tile: avoid errors from truncating long strings in
+ mpipe gxio
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 11 Aug 2014 13:40:45 -0700
-In-Reply-To: <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org>
-References: <1407780269.28221.63.camel@chimera>
-	 <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-11 at 13:25 -0700, Marcel Holtmann wrote:
-> isn't this dangerous to just allow writing to wiphy.perm_addr via
-> sysfs. We ran into the same issue with Bluetooth and ROM only devices
-> that have to unique address. Doing this via sysfs seems the wrong
-> approach. It is messy and full of potential race conditions. I clearly
-> opted against the sysfs solution for Bluetooth. Instead we build an
-> infrastructure that allowed doing it cleanly via the Bluetooth mgmt
-> API. Controllers that have no unique address are brought up as
-> unconfigured and userspace clearly knows that it has to take steps to
-> get an address programmed into the controller.
+2014-08-07 8:43 GMT+02:00 Randy Dunlap <rdunlap@infradead.org>:
+> On 08/06/14 11:16, Chris Metcalf wrote:
+>> Using strncpy() will just silently truncate long strings; we should
+>> instead return an appropriate error.  Using strlcpy() would suffer from
+>> the same problem.  Instead, use strnlen()+memcpy(), and add an
+>> error-checking step to make sure the lengths are reasonable.
+>>
+>> I called the convenience wrapper strscpy(), and a case could be made for
+>> making it more generic (possibly with a better name), but that seems
+>> outside the scope of this initial commit.
+>
+> Well, having looked at the function before I read this comment, my first
+> thought was that it should be added to lib/string.c for general
+> availability.
+>
+>>
+>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>> ---
+>> v2: use strnlen instead of strlen
+>>
+>>  arch/tile/gxio/mpipe.c | 30 +++++++++++++++++++++++++-----
+>>  1 file changed, 25 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/arch/tile/gxio/mpipe.c b/arch/tile/gxio/mpipe.c
+>> index 5301a9ffbae1..27a56be8d583 100644
+>> --- a/arch/tile/gxio/mpipe.c
+>> +++ b/arch/tile/gxio/mpipe.c
+>> @@ -29,6 +29,25 @@
+>>  /* HACK: Avoid pointless "shadow" warnings. */
+>>  #define link link_shadow
+>>
+>> +/*
+>> + * Use this routine to avoid copying too-long strings.  Unlike strncpy
+>> + * or strlcpy, we don't enable programmers who don't check return codes;
+>> + * partially-copied strings can be problematic.  The routine returns
+>> + * the total number of bytes copied (including the trailing NUL) or
+>> + * zero if the buffer wasn't big enough.
+>> + */
+>> +static size_t strscpy(char *dest, const char *src, size_t size)
+>> +{
+>> +     size_t ret = strnlen(src, size) + 1;
+>> +     if (ret > size) {
+>> +             if (size)
+>> +                     dest[0] = '\0';
+>> +             return 0;
+>> +     }
+>> +     memcpy(dest, src, ret);
+>> +     return ret;
+>> +}
+>
+> --
+> ~Randy
 
-My inclination is to agree; however, this does not exist for WiFi and
-implementing it would require modifying every single driver.
 
-> And I think something similar should be done for WiFi. It might be
-> better to not create the initial wlan0 netdev interface if the
-> hardware has not a single unique address available. That way the
-> supplicant can just either get one from the flash filesystem or make
-> up a proper random one before creating the netdev interface.
-> 
-The initial wlan0 netdev interface is *not* created, but the PHY records
-a MAC address that cannot be overriden at the level that this sysfs node
-reads. Perhaps a compromise would be to create a single new syscall to
-write to it?
+Hi
 
+Sounds like a great idea!
+
+Do it Chris!  Randy?
+
+
+Kind regards
+Rickard Strandqvist
