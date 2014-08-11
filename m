@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118AbaHKL6D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 07:58:03 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45635 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaHKL6A (ORCPT
+	id S1753199AbaHKL6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 07:58:42 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:48862 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638AbaHKL6l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 07:58:00 -0400
-Date: Mon, 11 Aug 2014 13:57:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v3 tip/core/rcu 1/9] rcu: Add call_rcu_tasks()
-Message-ID: <20140811115706.GX9918@twins.programming.kicks-ass.net>
-References: <1406843709-23396-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140808191326.GE3935@laptop>
- <20140808205826.GG5821@linux.vnet.ibm.com>
- <20140809061514.GK9918@twins.programming.kicks-ass.net>
- <20140809160137.GJ5821@linux.vnet.ibm.com>
- <20140809181920.GO9918@twins.programming.kicks-ass.net>
- <20140809182400.GJ3588@twins.programming.kicks-ass.net>
- <20140810012924.GO5821@linux.vnet.ibm.com>
- <20140810081425.GT9918@twins.programming.kicks-ass.net>
- <20140811033048.GT5821@linux.vnet.ibm.com>
+	Mon, 11 Aug 2014 07:58:41 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "steve.glendinning@shawell.net" <steve.glendinning@shawell.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] smsc: replace WARN_ON() with WARN_ON_SMP()
+Thread-Topic: [PATCH] smsc: replace WARN_ON() with WARN_ON_SMP()
+Thread-Index: AQHPtTq5zUyjXrbfeEGo5ny0RRaI85vK/u6AgABNL6A=
+Date: Mon, 11 Aug 2014 11:58:38 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF2B2C5@EU-MBX-02.mgc.mentorg.com>
+References: <1407744983-29289-1-git-send-email-sanjeev_sharma@mentor.com>
+ <20140811082015.GA1422@kroah.com>
+In-Reply-To: <20140811082015.GA1422@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iZdB8qX0qQjXwPd1"
-Content-Disposition: inline
-In-Reply-To: <20140811033048.GT5821@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-OriginalArrivalTime: 11 Aug 2014 11:58:39.0733 (UTC) FILETIME=[97045A50:01CFB55B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ok Greg probably Steve will have a look.
 
---iZdB8qX0qQjXwPd1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Regards
+Sanjeev Sharma
 
-On Sun, Aug 10, 2014 at 08:30:48PM -0700, Paul E. McKenney wrote:
-> On Sun, Aug 10, 2014 at 10:14:25AM +0200, Peter Zijlstra wrote:
+-----Original Message-----
+From: Greg KH [mailto:gregkh@linuxfoundation.org] 
+Sent: Monday, August 11, 2014 1:50 PM
+To: Sharma, Sanjeev
+Cc: steve.glendinning@shawell.net; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] smsc: replace WARN_ON() with WARN_ON_SMP()
 
-> > want want want, I want a damn pony but somehow I'm not getting one. Why
-> > are they getting this?
->=20
-> We can only be glad that my daughters' old My Little Pony toys are
-> long gone (http://en.wikipedia.org/wiki/My_Little_Pony).  Not sure I
-> would have been able to resist sending one along.  ;-)
+On Mon, Aug 11, 2014 at 01:46:23PM +0530, Sanjeev Sharma wrote:
+> spin_is_locked() always return false in uniprocessor configuration and 
+> therefore it would be advise to repalce with WARN_ON_SMP().
+> 
+> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+> ---
+>  drivers/net/ethernet/smsc/smsc911x.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-LOL, I _knew_ someone was going to propose doing that ;-)
+Hint, I have nothing to do with this file, no need to send a patch for it to me, I can't do anything with it...
 
---iZdB8qX0qQjXwPd1
-Content-Type: application/pgp-signature
+thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT6K+SAAoJEHZH4aRLwOS6P8EQAJ6saqlPE6znOgHsk0EC/APS
-7trhIafkZmP9a6noOgwENMhsBXOUsmkrVv9+s4J2m09qj2I8zLYNuknGHpfAgQLa
-Thu8+N0pGNd2dvbBBD6YLAH1duo52Bl6Mu6qRVGPuabzq4++zbaBu2ceDn6CURsy
-xh2tu3hKTx3dUZbaA+zlsPsMe9o2Rs3Vp2zYQ7UkxsT1re8/BNxJ7LoAXlQDPZJv
-XHAcU2p0pM3Kj4S8zXwt2gWtwjGWrAQ84fg6iIe5bYQv5hvJNWivhrE7e3VkX7xo
-RfLSNGaI+X+KxgFoD76VgTCrvY2zpsR6Vdw7nwFWV1JqyP+DgQvP0Y0JQNji1W9q
-cJQPI3XTn5hm/KeOtCowrXD8OgxEaz/k2Fu+7Ay1K83mPCM9j0hOfn0m5P3Byq7P
-UdOfC7nck7/aV+nidPPbEOkVeUmrZ0EXlNKx9oWuBhZTVq8NAi+UdvmO6O8V/6Vu
-NHbNQtwpzLoCbIP9x5d49TJSMhvifJoeMEKilyX/oBi9mi1mu+zCVcf7IcL2HmM/
-aL30vguq+fCqJ2G6MnRR9uDyP0Kqgd1TxpF4LTtoiYB4ilpRG+O2OnlDrcpmU/Al
-zshhCXYKc5gdLeJtyVH3CAeDUGt0Laot94CCyAij4A9y8mEvrbmy5xQyyhciTIL7
-fbvedWMDdkOOMnPMcuLG
-=w+i9
------END PGP SIGNATURE-----
-
---iZdB8qX0qQjXwPd1--
+greg k-h
