@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaHKPIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 11:08:18 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:50436 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465AbaHKPIR convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
-	Mon, 11 Aug 2014 11:08:17 -0400
-Message-Id: <53E8F87B020000780002B41D@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.0 
-Date: Mon, 11 Aug 2014 16:08:11 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Andy Lutomirski" <luto@amacapital.net>,
-        "Kees Cook" <keescook@chromium.org>, "Will Drewry" <wad@chromium.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Denys Vlasenko" <vda.linux@googlemail.com>, "X86 ML" <x86@kernel.org>,
-        "Alexei Starovoitov" <ast@plumgrid.com>,
-        "Denys Vlasenko" <dvlasenk@redhat.com>,
-        "Oleg Nesterov" <oleg@redhat.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete
- "struct pt_regs"
-References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com>
- <1406904498-21647-4-git-send-email-dvlasenk@redhat.com>
- <20140801231929.GB26491@localhost.localdomain>
- <CAK1hOcNXdBwd4KZi1V2dLMtRdusvNLPZwTKwYvnpvz3PRnsM+Q@mail.gmail.com>
- <20140811004559.GA2656@lerouge>
- <53E89DA3020000780002B00B@mail.emea.novell.com>
- <53E8C476.8000800@redhat.com>
- <53E8EC9F020000780002B383@mail.emea.novell.com>
- <53E8D905.7030809@zytor.com>
-In-Reply-To: <53E8D905.7030809@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753963AbaHKPLa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 11:11:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43099 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753706AbaHKPL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 11:11:29 -0400
+Date: Mon, 11 Aug 2014 17:11:25 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ak@linux.intel.com, behanw@converseincode.com, mmarek@suse.cz,
+        yamada.m@jp.panasonic.com, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild for 3.17-rc1
+Message-ID: <20140811151125.GA4302@sepie.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 11.08.14 at 16:53, <hpa@zytor.com> wrote:
-> On 08/11/2014 07:17 AM, Jan Beulich wrote:
->>>
->>> The existing comments explain what every byte means.
->>> They are useful if CFI-literate reader wants to check correctness
->>> of the encoding of this annotation.
->>>
->>> There is no overall comment what this CFI annotation
->>> *achieves*. In human language, what do we say
->>> to DWARF decoder here?
->> 
->> Short answer: DW_CFA_def_cfa_expression.
->> 
->> Longer response: Just like I said before, what you're asking for is
->> identical to ask for each other CFI annotation to get a comment
->> associated to tell you what it's doing, which I don't think you
->> really mean to ask for. (Our main problem here is that we can't
->> specify expressions with the .cfi_* gas directives, and hence have
->> to resort to .cfi_escape.)
->> 
-> 
-> No, in *human language*.  What does the DW_CFA_def_cfa_expression
-> actually aim to accomplish?  If you don't know the innards of the DWARF
-> spec, the whole thing might as well be Hungarian.
+Hi Linus,
 
-Just like the other DW_CFA_def_cfa_* ones it sets the current
-frame address (CFA), just not via one of the pre-canned shortcuts,
-but via an expression (in the case here de-referencing the stack
-pointer to read the top of stack, and then adding the necessary
-offset). So it indeed is similar enough to other .cfi_* annotations we
-use without further comments.
+please pull the following kbuild changes for 3.17-rc1:
+- make clean also considers $(extra-m) and $(extra-) to be consistent
+- Cleanup and fixes in scripts/Makefile.host
+- Allow to override the name of the Python 2 executable with make
+  PYTHON=... (only needed for ia64 in practice)
+- Option to split debugingo into *.dwo files to save disk space if the
+  compiler supports it (CONFIG_DEBUG_INFO_SPLIT)
+- Option to use dwarf4 debuginfo if the compiler supports it
+  (CONFIG_DEBUG_INFO_DWARF4)
+- Fix for disabling certain warnings with clang
+- Fix for unneeded rebuild with dash when a command contains backslashes
 
-And btw., Hungarian isn't _that_ bad.
+Michal
 
-Jan
+The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
 
+  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kbuild
+
+for you to fetch changes up to 164f0d2efaaef835473e74b162eae750341d6a8c:
+
+  kbuild: Fix handling of backslashes in *.cmd files (2014-08-07 21:53:20 +0200)
+
+----------------------------------------------------------------
+Andi Kleen (2):
+      kbuild: Support split debug info v4
+      Kbuild: Add a option to enable dwarf4 v2
+
+Behan Webster (1):
+      kbuild, LLVMLinux: Supress warnings unless W=1-3
+
+Masahiro Yamada (7):
+      scripts/Makefile.clean: clean also $(extra-m) and $(extra-)
+      kbuild: fix a typo in scripts/Makefile.host
+      kbuild: fix a bug of C++ host program handling
+      kbuild: drop shared library support from Makefile.host
+      kbuild: clean up scripts/Makefile.host
+      kbuild: clean-up and bug fix of scripts/Makefile.host
+      kbuild: allow to override Python command name
+
+Michal Marek (1):
+      kbuild: Fix handling of backslashes in *.cmd files
+
+ .gitignore                         |  1 +
+ Documentation/kbuild/makefiles.txt | 39 +++++-------------------
+ Makefile                           | 12 +++++++-
+ arch/ia64/Makefile                 |  2 +-
+ lib/Kconfig.debug                  | 24 +++++++++++++++
+ scripts/Kbuild.include             | 14 +++++----
+ scripts/Makefile.clean             |  4 +--
+ scripts/Makefile.extrawarn         | 21 ++++++-------
+ scripts/Makefile.host              | 61 ++++++--------------------------------
+ 9 files changed, 75 insertions(+), 103 deletions(-)
