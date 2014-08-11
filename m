@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144AbaHKSPa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:15:30 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:48895 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaHKSP3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:15:29 -0400
-Date: Mon, 11 Aug 2014 11:15:21 -0700
-From: josh@joshtriplett.org
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Sam Ravnborg <sam@ravnborg.org>,
-        David Rientjes <rientjes@google.com>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/2] x86: Add "make tinyconfig" to configure the
- tiniest possible kernel
-Message-ID: <20140811181521.GA29208@cloud>
-References: <20140807190243.GA5580@jtriplet-mobl1>
- <20140809001010.GA9437@jtriplet-mobl1>
- <CA+55aFxaY5q4XhCVgpOBP_dmn+=6JzK+PkX8OHhzZmM7g+NU2g@mail.gmail.com>
+	id S1753929AbaHKSQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:16:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21000 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751588AbaHKSQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 14:16:23 -0400
+Date: Mon, 11 Aug 2014 14:15:43 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Shaun Ruffell <sruffell@digium.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, ebiederm@xmission.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com,
+        bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 11/15] purgatory: Core purgatory functionality
+Message-ID: <20140811181543.GD1863@redhat.com>
+References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
+ <1403814824-7587-12-git-send-email-vgoyal@redhat.com>
+ <20140811174017.GD12610@digium.com>
+ <53E9028E.2070709@zytor.com>
+ <20140811180213.GC1863@redhat.com>
+ <53E906B0.5040105@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxaY5q4XhCVgpOBP_dmn+=6JzK+PkX8OHhzZmM7g+NU2g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <53E906B0.5040105@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 06:22:20PM -0700, Linus Torvalds wrote:
-> On Fri, Aug 8, 2014 at 5:10 PM, Josh Triplett <josh@joshtriplett.org> wrote:
-> > Since commit 5d2acfc7b974bbd3858b4dd3f2cdc6362dd8843a ("kconfig: make
-> > allnoconfig disable options behind EMBEDDED and EXPERT") in 3.15-rc1,
-> > "make allnoconfig" disables every possible config option.
+On Mon, Aug 11, 2014 at 11:08:48AM -0700, H. Peter Anvin wrote:
+> On 08/11/2014 11:02 AM, Vivek Goyal wrote:
+> > 
+> > Hi hpa,
+> > 
+> > I took it because kexec-tools uses it and in one of the committs Eric
+> > gave following reasoning.
+> > 
+> >     On x86_64 use -mcmodel=large so that the code is built without
+> >     any 32bit assumptions.  -mcmodel=medium and -mcmodel=small
+> >     result int code that has 32bit relocations against variables
+> >     that can live anywhere in the address space
+> > 
+> > We do want to load purgatory anywhere in the address space. 
+> > 
+> > But if there are other ways to achieve the same thing, I will do that
+> > change.
+> > 
+> > So when you say "small PIC", I need to use -mcmodel=small and -fPIC?
+> > 
 > 
-> May I suggest pushing these through the kbuild tree, rather than
-> (judging by the people cc'd) the x86 trees?
+> Actually -fPIE is probably better than -fPIC.
+> 
+> -mcmodel=large is incompatible with all other code out there, which
+> means that even though it is supposed to work it will be poorly tested
+> at best.  So even despite the gcc version issue, using the small PIC
+> model would be better.
 
-By all means; v3 seems sufficiently generic that it makes more sense for
-both of these patches to go in through a kbuild tree, or something else
-suitably general such as Andrew's tree.
+Ok, I will give it a try.
 
-Would someone mind picking it up, please?
-
-- Josh Triplett
+Thanks
+Vivek
