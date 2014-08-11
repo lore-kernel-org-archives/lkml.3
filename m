@@ -1,196 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967AbaHKBXp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Aug 2014 21:23:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14490 "EHLO mga09.intel.com"
+	id S1752013AbaHKB1S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Aug 2014 21:27:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14910 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751711AbaHKBXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Aug 2014 21:23:44 -0400
+	id S1751173AbaHKB1R convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Aug 2014 21:27:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,838,1400050800"; 
-   d="scan'208";a="586224679"
-Date: Mon, 11 Aug 2014 09:23:40 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [sched] 143e1e28cb4: +17.9% aim7.jobs-per-min, -9.7%
- hackbench.throughput
-Message-ID: <20140811012340.GA6593@localhost>
-References: <20140810044127.GB11810@localhost>
- <20140810075915.GR9918@twins.programming.kicks-ass.net>
- <20140810105413.GA29451@localhost>
- <20140810150503.GV9918@twins.programming.kicks-ass.net>
+   d="scan'208";a="556638469"
+From: "Sha, Ruibin" <ruibin.sha@intel.com>
+To: Chintan Pandya <cpandya@codeaurora.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "mel@csn.ul.ie" <mel@csn.ul.ie>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>, "He, Bo" <bo.he@intel.com>
+Subject: RE: [PATCH]  export the function kmap_flush_unused.
+Thread-Topic: [PATCH]  export the function kmap_flush_unused.
+Thread-Index: Ac+y5+HQpmMHN67ATFSpsTtU//26Wf//xnwA//uWruA=
+Date: Mon, 11 Aug 2014 01:26:45 +0000
+Message-ID: <3C85A229999D6B4A89FA64D4680BA6142CAFF3@SHSMSX101.ccr.corp.intel.com>
+References: <3C85A229999D6B4A89FA64D4680BA6142C7DFA@SHSMSX101.ccr.corp.intel.com>
+ <53E4D312.5000601@codeaurora.org>
+In-Reply-To: <53E4D312.5000601@codeaurora.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140810150503.GV9918@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 10, 2014 at 05:05:03PM +0200, Peter Zijlstra wrote:
-> On Sun, Aug 10, 2014 at 06:54:13PM +0800, Fengguang Wu wrote:
-> > The "brickland1/aim7/6000-page_test" is the test case part.
-> > 
-> > The "TOTAL XXX" is the metric part. One test run may generate lots of
-> > metrics, reflecting different aspect of the system dynamics.
-> > 
-> > This view may be easier to read, by grouping the metrics by test case.
-> 
-> Right, at least that makes more sense.
-> 
-> > test case: brickland1/aim7/6000-page_test
-> 
-> Ok, so next question, what is a brickland? I suspect its a machine of
-> sorts, seeing how some others had wsm in that part of the test. Now I
-> know what a westmere is, but I've never heard of a brickland.
+Hi Chintan,
+Thank you very much for your timely and kindly response and comments.
 
-As Ingo says, it's the "Brickland" platform with "Ivy Bridge-EX" CPU.
+Here is more detail about our Scenario:
 
-Sorry this part can be improved -- I'll add description of the test
-boxes in future reports.
+    We have a big driver on Android product. The driver allocates lots of
+    DDR pages. When applications mmap a file exported from the driver,
+    driver would mmap the pages to the application space, usually with
+    uncachable prot.
+    On ia32/x86_64 arch, we have to avoid page cache alias issue. When
+    driver allocates the pages, it would change page original mapping in
+    page table with uncachable prot. Sometimes, the allocated page was
+    used by kmap/kunmap. After kunmap, the page is still mapped in KMAP
+    space. The entries in KMAP page table are not cleaned up until a
+    kernel thread flushes the freed KMAP pages(usually it is woken up by kunmap).
+    It means the driver need  force to flush the KMAP page table entries before mapping pages to
+    application space to be used. Otherwise, there is a race to create
+    cache alias.
 
-> Please describe the machine, this is a topology patch, so we need to
-> know the topology of the affected machines.
+    To resolve this issue, we need export function kmap_flush_unused as
+    the driver is compiled as module. Then, the driver calls
+    kmap_flush_unused if the allocated pages are in HIGHMEM and being
+    used by kmap.
 
-Here they are. If you need more (or less) information (now and future),
-please let me know.
+Thanks again!
 
-brickland1: Brickland Ivy Bridge-EX
-Memory: 128G
+Best Regards
+---------------------------------------------------------------
+Sha, Rui bin ( Robin )
++86 13817890945
+Android System Integration Shanghai
 
-brickland3: Brickland Ivy Bridge-EX
-Memory: 512G
-Architecture:          x86_64
-CPU op-mode(s):        32-bit, 64-bit
-Byte Order:            Little Endian
-CPU(s):                120
-On-line CPU(s) list:   0-119
-Thread(s) per core:    2
-Core(s) per socket:    15
-Socket(s):             4
-NUMA node(s):          4
-Vendor ID:             GenuineIntel
-CPU family:            6
-Model:                 62
-Stepping:              7
-CPU MHz:               3192.875
-BogoMIPS:              5593.49
-Virtualization:        VT-x
-L1d cache:             32K
-L1i cache:             32K
-L2 cache:              256K
-L3 cache:              38400K
-NUMA node0 CPU(s):     0-14,60-74
-NUMA node1 CPU(s):     15-29,75-89
-NUMA node2 CPU(s):     30-44,90-104
-NUMA node3 CPU(s):     45-59,105-119
+-----Original Message-----
+From: Chintan Pandya [mailto:cpandya@codeaurora.org] 
+Sent: Friday, August 8, 2014 9:40 PM
+To: Sha, Ruibin
+Cc: linux-kernel@vger.kernel.org; linux-mm@kvack.org; mel@csn.ul.ie; a.p.zijlstra@chello.nl; mgorman@suse.de; mingo@redhat.com; Zhang, Yanmin; He, Bo
+Subject: Re: [PATCH] export the function kmap_flush_unused.
 
-lkp-snb01: Sandy Bridge-EP
-Memory: 32G
-Architecture:          x86_64
-CPU op-mode(s):        32-bit, 64-bit
-Byte Order:            Little Endian
-CPU(s):                32
-On-line CPU(s) list:   0-31
-Thread(s) per core:    2
-Core(s) per socket:    8
-Socket(s):             2
-NUMA node(s):          2
-Vendor ID:             GenuineIntel
-CPU family:            6
-Model:                 45
-Stepping:              6
-CPU MHz:               3498.820
-BogoMIPS:              5391.31
-Virtualization:        VT-x
-L1d cache:             32K
-L1i cache:             32K
-L2 cache:              256K
-L3 cache:              20480K
-NUMA node0 CPU(s):     0-7,16-23
-NUMA node1 CPU(s):     8-15,24-31
+On 08/08/2014 02:46 PM, Sha, Ruibin wrote:
+> export the function kmap_flush_unused.
+>
+> Scenario: When graphic driver need high memory spece, we use 
+> alloc_pages() to allocate. But if the allocated page has just been 
+> mapped in the KMAP space(like first kmap then kunmap) and no flush 
+> page happened on PKMAP, the page virtual address is not NULL.Then when 
+> we get that page and set page attribute like set_memory_uc and 
+> set_memory_wc, we hit error.
 
-wsm: Westmere
-Memory: 6G
-Architecture:          x86_64
-CPU op-mode(s):        32-bit, 64-bit
-Byte Order:            Little Endian
-CPU(s):                12
-On-line CPU(s) list:   0-11
-Thread(s) per core:    2
-Core(s) per socket:    6
-Socket(s):             1
-NUMA node(s):          1
-Vendor ID:             GenuineIntel
-CPU family:            6
-Model:                 44
-Stepping:              2
-CPU MHz:               3458.000
-BogoMIPS:              6756.46
-Virtualization:        VT-x
-L1d cache:             32K
-L1i cache:             32K
-L2 cache:              256K
-L3 cache:              12288K
-NUMA node0 CPU(s):     0-11
+Could you explain your scenario with more details ? set_memory_* should be applied on mapped address. And in attempt to map your page (which was just kmap and kunmap'ed), it will overwrite the previous mappings.
 
-lkp-nex04: Nehalem-EX
-Memory: 256G
-Architecture:          x86_64
-CPU op-mode(s):        32-bit, 64-bit
-Byte Order:            Little Endian
-CPU(s):                64
-On-line CPU(s) list:   0-63
-Thread(s) per core:    2
-Core(s) per socket:    8
-Socket(s):             4
-NUMA node(s):          4
-Vendor ID:             GenuineIntel
-CPU family:            6
-Model:                 46
-Stepping:              6
-CPU MHz:               2262.000
-BogoMIPS:              4521.30
-Virtualization:        VT-x
-L1d cache:             32K
-L1i cache:             32K
-L2 cache:              256K
-L3 cache:              24576K
-NUMA node0 CPU(s):     0-7,32-39
-NUMA node1 CPU(s):     8-15,40-47
-NUMA node2 CPU(s):     16-23,48-55
-NUMA node3 CPU(s):     24-31,56-63
+Moreover, in my view, kmap_flush_unused is just helping us in keeping the cache clean for kmap virtual addresses if they are unmapped. Is it serving any more purpose here ?
 
-nhm4: Nehalem
-Memory: 4G
-Architecture:          x86_64
-CPU op-mode(s):        32-bit, 64-bit
-Byte Order:            Little Endian
-CPU(s):                8
-On-line CPU(s) list:   0-7
-Thread(s) per core:    2
-Core(s) per socket:    4
-Socket(s):             1
-NUMA node(s):          1
-Vendor ID:             GenuineIntel
-CPU family:            6
-Model:                 26
-Stepping:              4
-CPU MHz:               3193.000
-BogoMIPS:              6400.40
-Virtualization:        VT-x
-L1d cache:             32K
-L1i cache:             32K
-L2 cache:              256K
-L3 cache:              8192K
-NUMA node0 CPU(s):     0-7
+>
+> fix: For that scenario,when we get the allocated page and its virtual
+> address is not NULL, we would like first flush that page.
+> So need export that function kmap_flush_unused.
+>
+> Signed-off-by: sha, ruibin <ruibin.sha@intel.com>
+>
+> ---
+> mm/highmem.c | 1 +
+> 1 file changed, 1 insertion(+)
+>
+> diff --git a/mm/highmem.c b/mm/highmem.c
+> index b32b70c..511299b 100644
+> --- a/mm/highmem.c
+> +++ b/mm/highmem.c
+> @@ -156,6 +156,7 @@ void kmap_flush_unused(void)
+> flush_all_zero_pkmaps();
+> unlock_kmap();
+> }
+> +EXPORT_SYMBOL(kmap_flush_unused);
+This symbol is already extern'ed. Is it not sufficient for your case ?
+>
+> static inline unsigned long map_new_virtual(struct page *page)
+> {
+> --
+> 1.7.9.5
+>
+> Best Regards
+>
+> ---------------------------------------------------------------
+>
+> Sha, Rui bin ( Robin )
+>
+> +86 13817890945
+>
+> Android System Integration Shanghai
+>
 
-Thanks,
-Fengguang
+
+-- 
+Chintan Pandya
+
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+member of the Code Aurora Forum, hosted by The Linux Foundation
