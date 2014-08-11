@@ -1,79 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455AbaHKSHn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:07:43 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39827 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717AbaHKSHm (ORCPT
+	id S932071AbaHKSID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:08:03 -0400
+Received: from mx0b-0016ce01.pphosted.com ([67.231.156.153]:8846 "EHLO
+	mx0b-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753324AbaHKSIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:07:42 -0400
-Message-ID: <53E9066A.3030801@infradead.org>
-Date: Mon, 11 Aug 2014 11:07:38 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 11 Aug 2014 14:08:01 -0400
+Date: Mon, 11 Aug 2014 14:07:52 -0400
+From: Chad Dupuis <chad.dupuis@qlogic.com>
+X-X-Sender: cdupuis@administrators-macbook-pro.local
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: <qla2xxx-upstream@qlogic.com>, <linux-scsi@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 RESEND 21/23] qla2xxx: Use pci_enable_msix_range()
+ instead of pci_enable_msix()
+In-Reply-To: <20140811085709.GM16504@dhcp-27-160.brq.redhat.com>
+Message-ID: <alpine.OSX.2.00.1408111407050.1722@administrators-macbook-pro.local>
+References: <cover.1405533479.git.agordeev@redhat.com> <cf38d1596543fd61c099bc0b834c2ea7a11f8b28.1405533479.git.agordeev@redhat.com> <20140811085709.GM16504@dhcp-27-160.brq.redhat.com>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Nick Krause <xerofoify@gmail.com>, Greg KH <gregkh@linuxfoundation.org>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        lisa@xenapiadmin.com, Ben Hutchings <ben@decadent.org.uk>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: Check against NULL in fw_download_code
-References: <1407780151-4674-1-git-send-email-xerofoify@gmail.com> <CAPDOMVghgyQ72J6MS6uaWEeMFBvzDNmfoAS5Tbd7+XO_KgUmHg@mail.gmail.com>
-In-Reply-To: <CAPDOMVghgyQ72J6MS6uaWEeMFBvzDNmfoAS5Tbd7+XO_KgUmHg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"; format=flowed
+X-Originating-IP: [10.1.4.10]
+disclaimer: bypass
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7526 signatures=670498
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1408110206
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/14 11:04, Nick Krause wrote:
-> On Mon, Aug 11, 2014 at 2:02 PM, Nicholas Krause <xerofoify@gmail.com> wrote:
->> I am fixing the bug entry , https://bugzilla.kernel.org/show_bug.cgi?id=60461.
->> This entry states that we are not checking the skb allocated in fw_download_code
->> and after checking I fixed it to check for the NULL value before using the allocate
->> skb.
+
+
+On Mon, 11 Aug 2014, Alexander Gordeev wrote:
+
+> On Wed, Jul 16, 2014 at 08:05:25PM +0200, Alexander Gordeev wrote:
+>> As result of deprecation of MSI-X/MSI enablement functions
+>> pci_enable_msix() and pci_enable_msi_block() all drivers
+>> using these two interfaces need to be updated to use the
+>> new pci_enable_msi_range()  or pci_enable_msi_exact()
+>> and pci_enable_msix_range() or pci_enable_msix_exact()
+>> interfaces.
 >>
->> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> Log message code 0x00c6 preserved, although it is reported
+>> after successful call to pci_enable_msix_range(), not before
+>> possibly unsuccessful call to pci_enable_msix(). Consumers
+>> of the error code should not notice the difference.
+>
+> Hello,
+>
+> Please, anyone (from QLogic especially) review this patch.
+>
+> Thanks!
+
+Looks good.
+
+Ack-by: Chad Dupuis <chad.dupuis@qlogic.com>
+
+>
+>> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+>> Cc: qla2xxx-upstream@qlogic.com
+>> Cc: linux-scsi@vger.kernel.org
+>> Cc: linux-pci@vger.kernel.org
 >> ---
->>  drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c | 14 ++++++++------
->>  1 file changed, 8 insertions(+), 6 deletions(-)
+>>  drivers/scsi/qla2xxx/qla_isr.c |   27 +++++++++++----------------
+>>  1 files changed, 11 insertions(+), 16 deletions(-)
 >>
->> diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->> index 1a95d1f..0a4c926 100644
->> --- a/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->> +++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_firmware.c
->> @@ -60,13 +60,15 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+>> diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
+>> index a56825c..52d420f 100644
+>> --- a/drivers/scsi/qla2xxx/qla_isr.c
+>> +++ b/drivers/scsi/qla2xxx/qla_isr.c
+>> @@ -2923,27 +2923,22 @@ qla24xx_enable_msix(struct qla_hw_data *ha, struct rsp_que *rsp)
+>>  	for (i = 0; i < ha->msix_count; i++)
+>>  		entries[i].entry = i;
 >>
->>                 }
->>
->> -               skb  = dev_alloc_skb(frag_length + 4);
->> -               memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
->> -               tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
->> -               tcb_desc->queue_index = TXCMD_QUEUE;
->> -               tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
->> -               tcb_desc->bLastIniPkt = bLastIniPkt;
->>
->> +               skb  = dev_alloc_skb(frag_length + 4);
->> +               if (skb) {
->> +                       memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
->> +                       tcb_desc = (struct cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
->> +                       tcb_desc->queue_index = TXCMD_QUEUE;
->> +                       tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
->> +                       tcb_desc->bLastIniPkt = bLastIniPkt;
->> +               }
-
-and what happens here (below) if skb is NULL?
-
->>                 seg_ptr = skb->data;
->>                 for (i = 0; i < frag_length; i += 4) {
->>                         *seg_ptr++ = ((i+0) < frag_length) ?
+>> -	ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
+>> -	if (ret) {
+>> -		if (ret < MIN_MSIX_COUNT)
+>> -			goto msix_failed;
+>> -
+>> +	ret = pci_enable_msix_range(ha->pdev,
+>> +				    entries, MIN_MSIX_COUNT, ha->msix_count);
+>> +	if (ret < 0) {
+>> +		ql_log(ql_log_fatal, vha, 0x00c7,
+>> +		    "MSI-X: Failed to enable support, "
+>> +		    "giving   up -- %d/%d.\n",
+>> +		    ha->msix_count, ret);
+>> +		goto msix_out;
+>> +	} else if (ret < ha->msix_count) {
+>>  		ql_log(ql_log_warn, vha, 0x00c6,
+>>  		    "MSI-X: Failed to enable support "
+>>  		    "-- %d/%d\n Retry with %d vectors.\n",
+>>  		    ha->msix_count, ret, ret);
+>> -		ha->msix_count = ret;
+>> -		ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
+>> -		if (ret) {
+>> -msix_failed:
+>> -			ql_log(ql_log_fatal, vha, 0x00c7,
+>> -			    "MSI-X: Failed to enable support, "
+>> -			    "giving   up -- %d/%d.\n",
+>> -			    ha->msix_count, ret);
+>> -			goto msix_out;
+>> -		}
+>> -		ha->max_rsp_queues = ha->msix_count - 1;
+>>  	}
+>> +	ha->msix_count = ret;
+>> +	ha->max_rsp_queues = ha->msix_count - 1;
+>>  	ha->msix_entries = kzalloc(sizeof(struct qla_msix_entry) *
+>>  				ha->msix_count, GFP_KERNEL);
+>>  	if (!ha->msix_entries) {
 >> --
->> 1.9.1
+>> 1.7.7.6
 >>
-> And I did check it against Linus's tree to make sure it applies , just
-> to let you known.
-> Nick
-
-
--- 
-~Randy
+>
