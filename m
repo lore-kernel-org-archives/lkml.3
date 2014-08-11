@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866AbaHKN5g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 09:57:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:21615 "EHLO mga11.intel.com"
+	id S1753648AbaHKOBK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 10:01:10 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43962 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753834AbaHKN5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 09:57:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,841,1400050800"; 
-   d="scan'208";a="574988080"
-From: Jani Nikula <jani.nikula@intel.com>
-To: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Jean Delvare <khali@linux-fr.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Jon Mason <jon.mason@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, jani.nikula@intel.com
-Subject: [PATCH 3/4] module: add module_param_unsafe and module_param_named_unsafe
-Date: Mon, 11 Aug 2014 16:52:21 +0300
-Message-Id: <acb5af81e9ab220d5567c853f8cee5f1333af641.1407764272.git.jani.nikula@intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1407764272.git.jani.nikula@intel.com>
-References: <cover.1407764272.git.jani.nikula@intel.com>
-In-Reply-To: <cover.1407764272.git.jani.nikula@intel.com>
-References: <cover.1407764272.git.jani.nikula@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+	id S1753370AbaHKOBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 10:01:08 -0400
+Date: Mon, 11 Aug 2014 16:00:57 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: H Peter Anvin <hpa@zytor.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: BUG: early intel microcode update violating alignment rules
+Message-ID: <20140811140057.GA21693@pd.tnic>
+References: <20140809231911.GA4843@khazad-dum.debian.net>
+ <20140811102245.GC4236@nazgul.tnic>
+ <20140811131613.GA4541@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140811131613.GA4541@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the helpers to be used by modules wishing to expose unsafe debugging
-or testing module parameters that taint the kernel when set.
+On Mon, Aug 11, 2014 at 10:16:13AM -0300, Henrique de Moraes Holschuh wrote:
+> On Mon, 11 Aug 2014, Borislav Petkov wrote:
+> > On Sat, Aug 09, 2014 at 08:19:11PM -0300, Henrique de Moraes Holschuh wrote:
+> > > Is there a way to fix this in the kernel for the BSP?
+> > 
+> > I think you're looking at this the wrong way around. :-) The thing that
+> > needs fixing is the SDM since some CPUs seem to accept 16-byte unaligned
+> > microcode just fine.
+> 
+> I often wonder how much of the Intel SDM is really a fairy tale...  it
+> certainly has enough legends from times long past inside ;-)  But just like
+> old stories, should you forget all about them, they sometimes grow fangs
+> back and get you when you're least prepared.
+> 
+> Now, seriously, we're neither aligning the thing, nor checking any of it for
+> alignment, so userspace can mess with us at will.  Unless it is trying to be
+> actively malicious, we'll get 4-byte alignment out of userspace for the data
+> inside the early initramfs (assuming the use of the common cpio tools: GNU
+> cpio and GNU pax), but that's it.
+> 
+> I can easily propose fixes to reject incorrectly aligned data (and will do
+> so), but you *really* don't want to know the kind of crap I came up with to
+> try to align the microcode update for the BSP: Standard Lovecraftian Mythos
+> Safety Procedures apply!  So I am turning to you for ideas...
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Jon Mason <jon.mason@intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
----
- include/linux/moduleparam.h | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+It seems to me you're looking for issues where there are none. We simply
+have to ask Intel people what's with the 16-byte alignment and fix
+the SDM, apparently. If the processor accepts the non-16-byte-aligned
+update, why do you care?
 
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-index 1e3ffb839daa..9531f9f9729e 100644
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -123,6 +123,12 @@ struct kparam_array
- 	module_param_named(name, name, type, perm)
- 
- /**
-+ * module_param_unsafe - same as module_param but taints kernel
-+ */
-+#define module_param_unsafe(name, type, perm)			\
-+	module_param_named_unsafe(name, name, type, perm)
-+
-+/**
-  * module_param_named - typesafe helper for a renamed module/cmdline parameter
-  * @name: a valid C identifier which is the parameter name.
-  * @value: the actual lvalue to alter.
-@@ -139,6 +145,14 @@ struct kparam_array
- 	__MODULE_PARM_TYPE(name, #type)
- 
- /**
-+ * module_param_named_unsafe - same as module_param_named but taints kernel
-+ */
-+#define module_param_named_unsafe(name, value, type, perm)		\
-+	param_check_##type(name, &(value));				\
-+	module_param_cb_unsafe(name, &param_ops_##type, &value, perm);	\
-+	__MODULE_PARM_TYPE(name, #type)
-+
-+/**
-  * module_param_cb - general callback for a module/cmdline parameter
-  * @name: a valid C identifier which is the parameter name.
-  * @ops: the set & get operations for this parameter.
-@@ -149,6 +163,10 @@ struct kparam_array
- #define module_param_cb(name, ops, arg, perm)				      \
- 	__module_param_call(MODULE_PARAM_PREFIX, name, ops, arg, perm, -1, 0)
- 
-+#define module_param_cb_unsafe(name, ops, arg, perm)			      \
-+	__module_param_call(MODULE_PARAM_PREFIX, name, ops, arg, perm, -1,    \
-+			    KERNEL_PARAM_FL_UNSAFE)
-+
- /**
-  * <level>_param_cb - general callback for a module/cmdline parameter
-  *                    to be evaluated before certain initcall level
 -- 
-1.9.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
