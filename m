@@ -1,86 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266AbaHKWtf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 18:49:35 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47422 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752880AbaHKWtd (ORCPT
+	id S1755001AbaHKWtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 18:49:19 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:42832 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752863AbaHKWtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 18:49:33 -0400
-Date: Mon, 11 Aug 2014 23:49:25 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sadasivan Shaiju <sshaiju@mvista.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: PATCH -RCU locking on last_VFP_context[cpu] in vfp_notifier
-	[2.6.32]
-Message-ID: <20140811224925.GE30401@n2100.arm.linux.org.uk>
-References: <ad46c9518e35397c8f4d281a3f88d129@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ad46c9518e35397c8f4d281a3f88d129@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 11 Aug 2014 18:49:14 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v5 tip/core/rcu 02/16] rcu: Provide cond_resched_rcu_qs() to force quiescent states in long loops
+Date: Mon, 11 Aug 2014 15:48:51 -0700
+Message-Id: <1407797345-28227-2-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140811224840.GA25594@linux.vnet.ibm.com>
+ <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081122-1344-0000-0000-0000036590F0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 03:24:18PM -0700, Sadasivan Shaiju wrote:
-> Hi ,
-> 
-> I  work for Montavista (Cavium Inc) as  a  Technical  Lead .  I want to
-> push some  of the kernel  patches to  rt community (2.6.32 kernel 2.6.33
-> rt patch)  , so  that  It  will  go  to  the  main line These patches  are
-> reviewed  and approved  by  our system Architect.  I request  you to
-> include  in the main line .  These  issues  were  reported  during econa
-> board bringup at montavista.
-> 
-> Problem Description:
-> Using cge60-econa-cns3420-2.6.32, the kernel failed to boot with the
-> following
-> error:
-> 
-> Internal error: Oops: 817 [#1] from cpu 1 PREEMPT SMP
-> last sysfs file: /sys/devices/virtual/bdi/0:19/uevent
-> Modules linked in: hmac ctr deflate
-> CPU: 1    Tainted: G        W   (2.6.32.46.cge #1)
-> PC is at vfp_notifier+0x48/0xbc
-> LR is at vfp_notifier+0x44/0xbc
-> pc : []    lr : []    psr: 60000013
-> sp : aeee1d30  ip : aeee1d50  fp : aeee1d4c
-> r10: af8d6460  r9 : ffffffff  r8 : af88c000
-> r7 : a05ba584  r6 : af88c000  r5 : 00000001  r4 : 40000000
-> r3 : 00000000  r2 : 00000000  r1 : 40000000  r0 : aeee0230
-> Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> Control: 00c5787d  Table: 2eeec00a  DAC: 00000017
-> Process grep (pid: 1710, stack limit = 0xaeee0270)
-> Stack:  from cpu 1 (0xaeee1d30 to 0xaeee2000)
-> 
-> Root Cause:
-> On the SMP architecture, last_VFP_context[cpu] becomes NULL because it
-> gets
-> released on a different CPU.
-> 
-> How Solved:
-> Fixed by exiting the thread instead of releasing the thread in the
-> vfp_notifier.
-> 
-> I  request you  to include  the above patch to  the main line kernel .  If
-> any questions  please contact me  at  sshaiju@mvista.com
-> (shaiju_sada@yahoo.com)
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This is totally insufficient for fixing a bug in a complex piece of code.
+RCU-tasks requires the occasional voluntary context switch
+from CPU-bound in-kernel tasks.  In some cases, this requires
+instrumenting cond_resched().  However, there is some reluctance
+to countenance unconditionally instrumenting cond_resched() (see
+http://lwn.net/Articles/603252/), so this commit creates a separate
+cond_resched_rcu_qs() that may be used in place of cond_resched() in
+locations prone to long-duration in-kernel looping.
 
-You fail to explain exactly _how_ the bug arises.  You say
-"last_VFP_context[cpu] becomes NULL because it gets released on a
-different CPU" - how does that happen?
+This commit currently instruments only RCU-tasks.  Future possibilities
+include also instrumenting RCU, RCU-bh, and RCU-sched in order to reduce
+IPI usage.
 
-The only places that last_VFP_context[cpu] is set to NULL is within a
-cpu = get_cpu()..put_cpu() region, which by definition *must* be running
-on the CPU specified by 'cpu'.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ fs/file.c                |  2 +-
+ include/linux/rcupdate.h | 13 +++++++++++++
+ kernel/rcu/rcutorture.c  |  4 ++--
+ kernel/rcu/tree.c        | 12 ++++++------
+ kernel/rcu/tree_plugin.h |  2 +-
+ mm/mlock.c               |  2 +-
+ 6 files changed, 24 insertions(+), 11 deletions(-)
 
-Without a proper diagnosis showing exactly what the race is which causes
-the above oops, there's nothing I can do.  Sorry.
-
+diff --git a/fs/file.c b/fs/file.c
+index 66923fe3176e..1cafc4c9275b 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -367,7 +367,7 @@ static struct fdtable *close_files(struct files_struct * files)
+ 				struct file * file = xchg(&fdt->fd[i], NULL);
+ 				if (file) {
+ 					filp_close(file, files);
+-					cond_resched();
++					cond_resched_rcu_qs();
+ 				}
+ 			}
+ 			i++;
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 829efc99df3e..ac87f587a1c1 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -330,6 +330,19 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+ #define rcu_note_voluntary_context_switch(t)	do { } while (0)
+ #endif /* #else #ifdef CONFIG_TASKS_RCU */
+ 
++/**
++ * cond_resched_rcu_qs - Report potential quiescent states to RCU
++ *
++ * This macro resembles cond_resched(), except that it is defined to
++ * report potential quiescent states to RCU-tasks even if the cond_resched()
++ * machinery were to be shut off, as some advocate for PREEMPT kernels.
++ */
++#define cond_resched_rcu_qs() \
++do { \
++	rcu_note_voluntary_context_switch(current); \
++	cond_resched(); \
++} while (0)
++
+ #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP)
+ bool __rcu_is_watching(void);
+ #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index 7fa34f86e5ba..febe07062ac5 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -667,7 +667,7 @@ static int rcu_torture_boost(void *arg)
+ 				}
+ 				call_rcu_time = jiffies;
+ 			}
+-			cond_resched();
++			cond_resched_rcu_qs();
+ 			stutter_wait("rcu_torture_boost");
+ 			if (torture_must_stop())
+ 				goto checkwait;
+@@ -1019,7 +1019,7 @@ rcu_torture_reader(void *arg)
+ 		__this_cpu_inc(rcu_torture_batch[completed]);
+ 		preempt_enable();
+ 		cur_ops->readunlock(idx);
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 		stutter_wait("rcu_torture_reader");
+ 	} while (!torture_must_stop());
+ 	if (irqreader && cur_ops->irq_capable) {
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index f958c52f644d..645a33efc0d4 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -1650,7 +1650,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 		    system_state == SYSTEM_RUNNING)
+ 			udelay(200);
+ #endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 	}
+ 
+ 	mutex_unlock(&rsp->onoff_mutex);
+@@ -1739,7 +1739,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
+ 		/* smp_mb() provided by prior unlock-lock pair. */
+ 		nocb += rcu_future_gp_cleanup(rsp, rnp);
+ 		raw_spin_unlock_irq(&rnp->lock);
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 	}
+ 	rnp = rcu_get_root(rsp);
+ 	raw_spin_lock_irq(&rnp->lock);
+@@ -1788,7 +1788,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ 			/* Locking provides needed memory barrier. */
+ 			if (rcu_gp_init(rsp))
+ 				break;
+-			cond_resched();
++			cond_resched_rcu_qs();
+ 			flush_signals(current);
+ 			trace_rcu_grace_period(rsp->name,
+ 					       ACCESS_ONCE(rsp->gpnum),
+@@ -1831,10 +1831,10 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ 				trace_rcu_grace_period(rsp->name,
+ 						       ACCESS_ONCE(rsp->gpnum),
+ 						       TPS("fqsend"));
+-				cond_resched();
++				cond_resched_rcu_qs();
+ 			} else {
+ 				/* Deal with stray signal. */
+-				cond_resched();
++				cond_resched_rcu_qs();
+ 				flush_signals(current);
+ 				trace_rcu_grace_period(rsp->name,
+ 						       ACCESS_ONCE(rsp->gpnum),
+@@ -2437,7 +2437,7 @@ static void force_qs_rnp(struct rcu_state *rsp,
+ 	struct rcu_node *rnp;
+ 
+ 	rcu_for_each_leaf_node(rsp, rnp) {
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 		mask = 0;
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
+ 		smp_mb__after_unlock_lock();
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 02ac0fb186b8..a86a363ea453 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -1842,7 +1842,7 @@ static int rcu_oom_notify(struct notifier_block *self,
+ 	get_online_cpus();
+ 	for_each_online_cpu(cpu) {
+ 		smp_call_function_single(cpu, rcu_oom_notify_cpu, NULL, 1);
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 	}
+ 	put_online_cpus();
+ 
+diff --git a/mm/mlock.c b/mm/mlock.c
+index b1eb53634005..bc386a22d647 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -782,7 +782,7 @@ static int do_mlockall(int flags)
+ 
+ 		/* Ignore errors */
+ 		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 	}
+ out:
+ 	return 0;
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.8.1.5
+
