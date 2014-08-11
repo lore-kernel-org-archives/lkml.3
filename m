@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887AbaHKJXz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 05:23:55 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:60793 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaHKJXx (ORCPT
+	id S1752925AbaHKJYh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 05:24:37 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61688 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752637AbaHKJYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 05:23:53 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2 2/8] mm/isolation: remove unstable check for isolated page
-In-Reply-To: <1407309517-3270-4-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com> <1407309517-3270-4-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Mon, 11 Aug 2014 14:53:35 +0530
-Message-ID: <87a97b5qi0.fsf@linux.vnet.ibm.com>
+	Mon, 11 Aug 2014 05:24:35 -0400
+Date: Mon, 11 Aug 2014 10:24:09 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
+        Deepak Saxena <dsaxena@linaro.org>, Will Drewry <wad@chromium.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lee Campbell <leecam@google.com>
+Subject: Re: [PATCH v5 3/3] arm64: Add seccomp support
+Message-ID: <20140811092409.GE15344@arm.com>
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
+ <1406020499-5537-4-git-send-email-takahiro.akashi@linaro.org>
+ <53D082E9.8090303@amacapital.net>
+ <53D09C4F.9010104@linaro.org>
+ <CALCETrWTDS7VSyuR5wgGxpu-_YMWVUVmv9ht6t1tCSX=GA46cQ@mail.gmail.com>
+ <53D2255C.9050006@linaro.org>
+ <CAGXu5jJL=zXuSRNomGrB09kqpUhEpkuxDH18JN4NRbWocMw4xg@mail.gmail.com>
+ <53E47DCE.4080902@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081109-9574-0000-0000-0000008D54FC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E47DCE.4080902@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+On Fri, Aug 08, 2014 at 08:35:42AM +0100, AKASHI Takahiro wrote:
+> On 08/06/2014 12:08 AM, Kees Cook wrote:
+> > On Fri, Jul 25, 2014 at 2:37 AM, AKASHI Takahiro
+> > <takahiro.akashi@linaro.org> wrote:
+> >> I found a bug in my current patch (v5). When 32-bit tracer skips a system call,
+> >> we should not update syscallno from x8 since syscallno is re-written directly
+> >> via ptrace(PTRACE_SET_SYSCALL).
+> >
+> > Ah, yes. Will aarch64 have a PTRACE_SET_SYSCALL option, or is this
+> > strictly a 32-bit vs 64-bit issue?
+> 
+> As discussed in a few weeks ago, aarch64 won't support PTRACE_SET_SYSCALL.
 
-> The check '!PageBuddy(page) && page_count(page) == 0 &&
-> migratetype == MIGRATE_ISOLATE' would mean the page on free processing.
-> Although it could go into buddy allocator within a short time,
-> futher operation such as isolate_freepages_range() in CMA, called after
-> test_page_isolated_in_pageblock(), could be failed due to this unstability
-> since it requires that the page is on buddy. I think that removing
-> this unstability is good thing.
+Well, I don't think anything was set in stone. If you have a compelling
+reason why adding the new request gives you something over setting w8
+directly, then we can extend ptrace.
 
-Is that true in case of check_pages_isolated_cb ? Does that require
-PageBuddy to be true ?
-
->
-> And, following patch makes isolated freepage has new status matched with
-> this condition and this check is the obstacle to that change. So remove
-> it.
-
-Can you quote the patch summary in the above case ? ie, something like
-
-And the followiing patch "mm/....." makes isolate freepage.
-
-
--aneesh
-
+Will
