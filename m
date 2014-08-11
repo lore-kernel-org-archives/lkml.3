@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaHKMoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 08:44:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52218 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529AbaHKMoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 08:44:04 -0400
-Date: Mon, 11 Aug 2014 14:43:30 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 13/41] perf tools: Add machine__kernel_ip()
-Message-ID: <20140811124330.GA31858@krava.brq.redhat.com>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
- <1405332185-4050-14-git-send-email-adrian.hunter@intel.com>
- <20140716141519.GC9441@krava.redhat.com>
- <53C68A9E.6060302@intel.com>
- <20140811122321.GB26811@krava.brq.redhat.com>
- <53E8B8D8.4040809@intel.com>
+	id S1753288AbaHKMq4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 08:46:56 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:57898 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaHKMqz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 08:46:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E8B8D8.4040809@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CACRpkdaJS0PUDLaCnrhtiuXPf4ccx51uNTqYWVWm47mhOhGEbA@mail.gmail.com>
+References: <3923586.SsVg941346@diego>
+	<CACRpkdaJS0PUDLaCnrhtiuXPf4ccx51uNTqYWVWm47mhOhGEbA@mail.gmail.com>
+Date: Mon, 11 Aug 2014 14:46:54 +0200
+Message-ID: <CAPDyKFpiHf+urR85iJPqAXxREO+yPrDMcXM4K+BJqq=ur3DZtA@mail.gmail.com>
+Subject: Re: io-domain voltages as regulators?
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: Mark Brown <broonie@kernel.org>, Addy Ke <addy.ke@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 03:36:40PM +0300, Adrian Hunter wrote:
-> On 08/11/2014 03:23 PM, Jiri Olsa wrote:
-> > On Wed, Jul 16, 2014 at 05:22:22PM +0300, Adrian Hunter wrote:
-> >> On 16/07/2014 5:15 p.m., Jiri Olsa wrote:
-> >>> On Mon, Jul 14, 2014 at 01:02:37PM +0300, Adrian Hunter wrote:
-> >>>
-> >>> SNIP
-> >>>
-> >>>> +
-> >>>> +int machine__get_kernel_start(struct machine *machine)
-> >>>> +{
-> >>>> +	struct map *map = machine__kernel_map(machine, MAP__FUNCTION);
-> >>>> +	int err = 0;
-> >>>> +
-> >>>> +	/*
-> >>>> +	 * The only addresses above 2^63 are kernel addresses of a 64-bit
-> >>>> +	 * kernel.  Note that addresses are unsigned so that on a 32-bit system
-> >>>> +	 * all addresses including kernel addresses are less than 2^32.  In
-> >>>> +	 * that case (32-bit system), if the kernel mapping is unknown, all
-> >>>> +	 * addresses will be assumed to be in user space - see
-> >>>> +	 * machine__kernel_ip().
-> >>>> +	 */
-> >>>> +	machine->kernel_start = 1ULL << 63;
-> >>>> +	if (map) {
-> >>>> +		err = map__load(map, machine->symbol_filter);
-> >>>> +		if (map->start)
-> >>>> +			machine->kernel_start = map->start;
-> >>>> +	}
-> >>>> +	return err;
-> >>>> +}
-> >>>
-> >>> we just recently got machine__get_kernel_start_addr function,
-> >>> I think we want just one function for this
-> >>
-> >> They do quite different things.
-> >>
-> > 
-> > so one of those two should have different name
-> 
-> Such as?
+On 11 August 2014 09:44, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Mon, Aug 4, 2014 at 12:18 AM, Heiko Stübner <heiko@sntech.de> wrote:
+>
+> [Adding Ulf Hansson to this discussion...]
+>
+>> Hi Mark, Linus,
+>>
+>> I'd like to clarify what the appropriate way to handle pin output voltages is.
+>> On the Rockchip SoCs the voltage for some groups of pins can be set between
+>> 3.3V and 1.8V ... like the MMC/SD pins who need this to support UHS mode
+>> cards.
+>
+> This is called "vqmmc" in the mmc/sd subsystem.
+>
+> grep for mmc_set_signal_voltage() in drivers/mmc/core/*
+>
+> In drivers/mmc/core/core.c, you find:
+>
+>  mmc->supply.vqmmc = devm_regulator_get_optional(dev, "vqmmc");
+>
+> Which gets the regulator to set the signal voltage, if such
+> a regulator is specified for the host.
+>
+> Very simple and straight-forward, and handled by the MMC core.
+>
+>> In [0] when talking about something different, Linus Walleij described a
+>> similar case as
+>>
+>> "I think we need to have a discussion with Mark Brown on how to
+>> handle this.
+>> We have previously had the case of MMC/SD level-shifters, where
+>> a certain setting gives a certain level of signals out, and another setting
+>> gives another level. Like two discrete levels.
+>> So we modeled that as a regulator provider inside the pin control
+>> driver eventually, see sh-pfc/pfc-sh73a0.c"
+>>
+>> As this sound like exactly the thing I'm trying to solve, is handling this via
+>> a regulator the correct general way?
+>
+> Ithinkso.
 
-dont know ;-) but if they do 'quite different things' as u said,
-I expect to see that at least in the function name
+Just to confirm, I fully agree with the above said.
 
-jirka
+You may also find a good example in the mmci host driver for how to
+make use of the vqmmc regulator.
+
+Kind regards
+Uffe
