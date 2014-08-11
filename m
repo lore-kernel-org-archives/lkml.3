@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211AbaHKT6N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 15:58:13 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:47592 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117AbaHKT6M (ORCPT
+	id S1754867AbaHKUGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:06:01 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:37671 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754641AbaHKUF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 15:58:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140811195659.GG3935@laptop>
-References: <1407785233-32193-1-git-send-email-eranian@google.com>
-	<20140811195659.GG3935@laptop>
-Date: Mon, 11 Aug 2014 21:58:11 +0200
-Message-ID: <CABPqkBTm=svpU+PJq93ku6JVk0kcCCMqh4jLw8bQKwe+Y5nneQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] perf/x86: simplify PEBS event constraint management
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 11 Aug 2014 16:05:59 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] misc: ti-st: st_kim.c:  Cleaning up missing null-terminate after strncpy call
+Date: Mon, 11 Aug 2014 22:07:30 +0200
+Message-Id: <1407787650-32102-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 9:56 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Aug 11, 2014 at 09:27:09PM +0200, Stephane Eranian wrote:
->> This patchkit revamps the PEBS tables on most Intel CPUs, both simplifying
->> and fixing a couple of problems on Haswell processors:
->>  - All PEBS event supported
->>  - data address and data source is now reported correctly for all events
->>
->> We simplify the tables by using the fact that non-PEBS event when used
->> in PEBS mode do not generate any PEBS records , thus they are safe to use.
->> This helps simplify the PEBS event constraints because they do not need
->> to list all suported PEBS events anymore. They only need to list
->> the special PEBS events, such as precise store and load latency.
->> This avoid some issues where the kernel is missing some PEBS events.
->>
->> In V2, we cleanup some more the precise_datala() for store events.
->
-> Ah, I just queued your v1, time to swap patches around I suppose :-)
+Added a guaranteed null-terminate after call to strncpy.
 
-Yeah, I cleanup some more based on more comments from Andi.
-No more hardcoded event codes.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/misc/ti-st/st_kim.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index 9d3dbb2..d050f53 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -593,6 +593,7 @@ static ssize_t store_dev_name(struct device *dev,
+ 	struct kim_data_s *kim_data = dev_get_drvdata(dev);
+ 	pr_debug("storing dev name >%s<", buf);
+ 	strncpy(kim_data->dev_name, buf, count);
++	kim_data->dev_name[count - 1] = '\0';
+ 	pr_debug("stored dev name >%s<", kim_data->dev_name);
+ 	return count;
+ }
+-- 
+1.7.10.4
+
