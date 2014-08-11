@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653AbaHKH7f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 03:59:35 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34204 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800AbaHKH7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 03:59:34 -0400
-Message-ID: <53E877BA.6040705@ti.com>
-Date: Mon, 11 Aug 2014 10:58:50 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751826AbaHKIAz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 04:00:55 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:49554 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720AbaHKIAy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 04:00:54 -0400
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: <nsekhar@ti.com>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [PATCH] ARM: edma: Fix configuration parsing for SoCs with multiple
- eDMA3 CC
-References: <1407155216-20267-1-git-send-email-peter.ujfalusi@ti.com> <20140805163229.GZ8181@intel.com>
-In-Reply-To: <20140805163229.GZ8181@intel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyo3S=4fWO0x5we_Fs9O28+ohOfo9JFGNCqwat2D89fJA@mail.gmail.com>
+References: <CADDKRnDD_W5yJLo2otWXH8oEgmGdMP0N_p7wenBQbh17xKGZJg@mail.gmail.com>
+	<CA+55aFzDpH8ntPO=JMdJ4Pu-SFV=9HQsXBcPakrZZq2mE9rJsA@mail.gmail.com>
+	<8761i0hzzn.fsf@x220.int.ebiederm.org>
+	<CA+55aFyo3S=4fWO0x5we_Fs9O28+ohOfo9JFGNCqwat2D89fJA@mail.gmail.com>
+Date: Mon, 11 Aug 2014 10:00:53 +0200
+Message-ID: <CADDKRnAtSOAdMsoZtWnM7HuoSdv6ipGDquknyLpneuYsarkcsg@mail.gmail.com>
+Subject: Re: [proc:] 3.16.0-10436-g9138475: access denied to /proc/1540/task/1540/net/dev
+From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2014 07:32 PM, Vinod Koul wrote:
-> On Mon, Aug 04, 2014 at 03:26:56PM +0300, Peter Ujfalusi wrote:
->> The edma_setup_from_hw() should know about the CC number when parsing the
->> CCCFG register - when it reads the register to be precise. The base
->> addresses for CCs stored in an array and we need to provide the correct id
->> to edma_read() in order to read the correct register.
-> 
-> Just an othognal question:
-> 
-> I still see lot of code for edma in arm/. What is the plan to re/move that
-> to dma/
+2014-08-11 6:30 GMT+02:00 Linus Torvalds <torvalds@linux-foundation.org>:
+> On Sun, Aug 10, 2014 at 1:05 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>>
+>> Linus would you like me to send pull request with those two changes reverted?
+>
+> I just did them (delayed it a bit in the hope to get confirmation, but
+> it looks very straightforward, so since I'll be on airplanes most of
+> tomorrow..)
+>
+>              Linus
 
-Yes, there's still a big split. The code under arch/arm/common/ provides still
-the 'legacy' edma API. This is still used by audio
-sound/soc/davinci/davinci-pcm for older daVinci devices (AM335x. AM43xx uses
-the edma-pcm).
+OK, Kernel: 3.16.0-10473-gc8d6637 fixes the problem for me.
 
-And it is not that simple to deprecate davinci-pcm: it can use so called
-ping-pong mode for audio data transfer. This mode is not possible via
-dmaengine AFAIK.
-I'm going to check if edma-pcm would work fine instead of the ping-pong mode.
-If it does I can remove davinci-pcm and we can start cleaning up the edma code.
-
--- 
-Péter
+Thanks,
+JÃ¶rg
