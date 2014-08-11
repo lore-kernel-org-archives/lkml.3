@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565AbaHKSvD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 14:51:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23287 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751203AbaHKSvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 14:51:01 -0400
-From: Amit Shah <amit.shah@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: hpa@linux.intel.com, Rusty Russell <rusty@rustcorp.com.au>,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        kvm list <kvm@vger.kernel.org>, jgarzik@bitpay.com, duwe@lst.de,
-        Amos Kong <akong@redhat.com>, ricardo.neri-calderon@linux.intel.com,
-        tytso@mit.edu, herbert@gondor.apana.org.au,
-        Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH 1/1] virtio: rng: add derating factor for use by hwrng core
-Date: Tue, 12 Aug 2014 00:19:42 +0530
-Message-Id: <6f2df652355d6e78da846d06e32489b7d9cdfcc2.1407782982.git.amit.shah@redhat.com>
+	id S1754625AbaHKSv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 14:51:28 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:33658 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754573AbaHKSvZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 14:51:25 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] net: wireless: ipw2x00: ipw2200.c:  Cleaning up missing null-terminate in conjunction with strncpy 
+Date: Mon, 11 Aug 2014 20:52:55 +0200
+Message-Id: <1407783176-31297-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The khwrngd thread is started when a hwrng device of sufficient
-quality is registered.  The virtio-rng device is backed by the
-hypervisor, and we trust the hypervisor to provide real entropy.  A
-malicious hypervisor is a scenario that's ruled out, so we are certain
-the quality of randomness we receive is perfectly trustworthy.  Hence,
-we use 100% for the factor, indicating maximum confidence in the source.
+Is there any reason that can not simply use the variable ssid directly
+in IPW_DEBUG_MERGE call instead of copying it to the escaped variable?
 
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Rickard Strandqvist (1):
+  net: wireless: ipw2x00: ipw2200.c:  Cleaning up missing null-terminate in conjunction with
+    strncpy
 
----
-Pretty small and contained patch; would be great if it is picked up for
-3.17.
----
- drivers/char/hw_random/virtio-rng.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/ipw2x00/ipw2200.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
-index 0027137..2e3139e 100644
---- a/drivers/char/hw_random/virtio-rng.c
-+++ b/drivers/char/hw_random/virtio-rng.c
-@@ -116,6 +116,7 @@ static int probe_common(struct virtio_device *vdev)
- 		.cleanup = virtio_cleanup,
- 		.priv = (unsigned long)vi,
- 		.name = vi->name,
-+		.quality = 1000,
- 	};
- 	vdev->priv = vi;
- 
 -- 
-1.9.3
+1.7.10.4
 
