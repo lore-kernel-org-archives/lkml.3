@@ -1,41 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108AbaHKUxv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 16:53:51 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:39836 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754670AbaHKUxu (ORCPT
+	id S1755128AbaHKUz4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 16:55:56 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:56057 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816AbaHKUzz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 16:53:50 -0400
-Date: Mon, 11 Aug 2014 13:53:48 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: sanjeev sharma <sanjeevsharmaengg@gmail.com>
-cc: Guenter Roeck <linux@roeck-us.net>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drm: Do not use BUG_ON(!spin_is_locked())
-In-Reply-To: <CAGUYZuSk4u5jyPcrYTjwjXmQRyr0kCEvxkgFfjcyP+ex544CLA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1408111352090.24240@chino.kir.corp.google.com>
-References: <1407731491-22446-1-git-send-email-linux@roeck-us.net> <alpine.DEB.2.02.1408110439580.15519@chino.kir.corp.google.com> <CAGUYZuS=_rFpukssRebxXBccPrJAen15i8Qf3K+1YyF+feShdQ@mail.gmail.com>
- <CAGUYZuSk4u5jyPcrYTjwjXmQRyr0kCEvxkgFfjcyP+ex544CLA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 11 Aug 2014 16:55:55 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1407789645.28221.68.camel@chimera>
+Date: Mon, 11 Aug 2014 13:56:26 -0700
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <37210DB5-2911-4FA3-9299-7701C5003945@holtmann.org>
+References: <1407780269.28221.63.camel@chimera> <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org> <1407789645.28221.68.camel@chimera>
+To: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Aug 2014, sanjeev sharma wrote:
+Hi Daniel,
 
-> Hello David,
+>> isn't this dangerous to just allow writing to wiphy.perm_addr via
+>> sysfs. We ran into the same issue with Bluetooth and ROM only devices
+>> that have to unique address. Doing this via sysfs seems the wrong
+>> approach. It is messy and full of potential race conditions. I clearly
+>> opted against the sysfs solution for Bluetooth. Instead we build an
+>> infrastructure that allowed doing it cleanly via the Bluetooth mgmt
+>> API. Controllers that have no unique address are brought up as
+>> unconfigured and userspace clearly knows that it has to take steps to
+>> get an address programmed into the controller.
 > 
-> Here is the old discussion carried out on this.
-> 
-> http://linux-kernel.2935.n7.nabble.com/Is-spin-is-locked-safe-to-use-with-BUG-ON-WARN-ON-td654800.html#a921802
-> 
+> My inclination is to agree; however, this does not exist for WiFi and
+> implementing it would require modifying every single driver.
 
-I'm suggesting that if you don't want to incur the cost of the conditional 
-everytime you call a certain function with assert_spin_locked() that you 
-could covert these to lockdep_assert_held() so the check is only done when 
-lockdep is enabled for debugging.
+so what? That is not a reason to just hack something into sysfs. If it means every driver needs to be modified, then that has to be done.
+
+>> And I think something similar should be done for WiFi. It might be
+>> better to not create the initial wlan0 netdev interface if the
+>> hardware has not a single unique address available. That way the
+>> supplicant can just either get one from the flash filesystem or make
+>> up a proper random one before creating the netdev interface.
+>> 
+> The initial wlan0 netdev interface is *not* created, but the PHY records
+> a MAC address that cannot be overriden at the level that this sysfs node
+> reads. Perhaps a compromise would be to create a single new syscall to
+> write to it?
+
+The initial wlan0 can be removed as every other netdev attached to the wiphy. It can also be as easily re-created.
+
+Since the wiphy does not have a valid MAC address, my proposal here would be to just not create the wlan0 in the first place. This means that the wiphy can be still discovered via nl80211.
+
+It also means that the wlan0 netdev needs to be created by userspace now. And a valid NL80211_ATTR_MAC be provided. Similar to what is already done for P2P devices at the moment. That should just solve the problem.
+
+We really do not want to announce a netdev when registering the wiphy device and then having to mess with its MAC address via sysfs somehow. This all needs to be properly reflected over RTNL.
+
+Regards
+
+Marcel
+
