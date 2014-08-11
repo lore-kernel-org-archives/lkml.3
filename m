@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437AbaHKMmp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 08:42:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64442 "EHLO mx1.redhat.com"
+	id S1753333AbaHKMoG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 08:44:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52218 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753286AbaHKMmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 08:42:43 -0400
-From: Amit Shah <amit.shah@redhat.com>
-To: stable@vger.kernel.org
-Cc: Amos Kong <akong@redhat.com>,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Amit Shah <amit.shah@redhat.com>
-Subject: [3.16 stable PATCH 1/1] virtio-rng: fix multi-device startup
-Date: Mon, 11 Aug 2014 18:11:47 +0530
-Message-Id: <5ef3aa4ea1932b7655d9db5a0139b8a2922af0db.1407760907.git.amit.shah@redhat.com>
+	id S1751529AbaHKMoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 08:44:04 -0400
+Date: Mon, 11 Aug 2014 14:43:30 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 13/41] perf tools: Add machine__kernel_ip()
+Message-ID: <20140811124330.GA31858@krava.brq.redhat.com>
+References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
+ <1405332185-4050-14-git-send-email-adrian.hunter@intel.com>
+ <20140716141519.GC9441@krava.redhat.com>
+ <53C68A9E.6060302@intel.com>
+ <20140811122321.GB26811@krava.brq.redhat.com>
+ <53E8B8D8.4040809@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E8B8D8.4040809@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a 3.16-only patch.  The linux.git fix is
-5c06273401f2eb7b290cadbae18ee00f8f65e893, which fixes this issue in a
-different way.
+On Mon, Aug 11, 2014 at 03:36:40PM +0300, Adrian Hunter wrote:
+> On 08/11/2014 03:23 PM, Jiri Olsa wrote:
+> > On Wed, Jul 16, 2014 at 05:22:22PM +0300, Adrian Hunter wrote:
+> >> On 16/07/2014 5:15 p.m., Jiri Olsa wrote:
+> >>> On Mon, Jul 14, 2014 at 01:02:37PM +0300, Adrian Hunter wrote:
+> >>>
+> >>> SNIP
+> >>>
+> >>>> +
+> >>>> +int machine__get_kernel_start(struct machine *machine)
+> >>>> +{
+> >>>> +	struct map *map = machine__kernel_map(machine, MAP__FUNCTION);
+> >>>> +	int err = 0;
+> >>>> +
+> >>>> +	/*
+> >>>> +	 * The only addresses above 2^63 are kernel addresses of a 64-bit
+> >>>> +	 * kernel.  Note that addresses are unsigned so that on a 32-bit system
+> >>>> +	 * all addresses including kernel addresses are less than 2^32.  In
+> >>>> +	 * that case (32-bit system), if the kernel mapping is unknown, all
+> >>>> +	 * addresses will be assumed to be in user space - see
+> >>>> +	 * machine__kernel_ip().
+> >>>> +	 */
+> >>>> +	machine->kernel_start = 1ULL << 63;
+> >>>> +	if (map) {
+> >>>> +		err = map__load(map, machine->symbol_filter);
+> >>>> +		if (map->start)
+> >>>> +			machine->kernel_start = map->start;
+> >>>> +	}
+> >>>> +	return err;
+> >>>> +}
+> >>>
+> >>> we just recently got machine__get_kernel_start_addr function,
+> >>> I think we want just one function for this
+> >>
+> >> They do quite different things.
+> >>
+> > 
+> > so one of those two should have different name
+> 
+> Such as?
 
-Amos reported using multiple virtio-rng devices cause boot to freeze
-even after the recent fixes.  We need the probe_done test per device
-rather than just once for the driver.
+dont know ;-) but if they do 'quite different things' as u said,
+I expect to see that at least in the function name
 
-Reported-by: Amos Kong <akong@redhat.com>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
----
- drivers/char/hw_random/virtio-rng.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
-index e9b15bc..124cac5 100644
---- a/drivers/char/hw_random/virtio-rng.c
-+++ b/drivers/char/hw_random/virtio-rng.c
-@@ -34,12 +34,11 @@ struct virtrng_info {
- 	unsigned int data_avail;
- 	struct completion have_data;
- 	bool busy;
-+	bool probe_done;
- 	char name[25];
- 	int index;
- };
- 
--static bool probe_done;
--
- static void random_recv_done(struct virtqueue *vq)
- {
- 	struct virtrng_info *vi = vq->vdev->priv;
-@@ -73,7 +72,7 @@ static int virtio_read(struct hwrng *rng, void *buf, size_t size, bool wait)
- 	 * Don't ask host for data till we're setup.  This call can
- 	 * happen during hwrng_register(), after commit d9e7972619.
- 	 */
--	if (unlikely(!probe_done))
-+	if (unlikely(!vi->probe_done))
- 		return 0;
- 
- 	if (!vi->busy) {
-@@ -146,7 +145,7 @@ static int probe_common(struct virtio_device *vdev)
- 		return err;
- 	}
- 
--	probe_done = true;
-+	vi->probe_done = true;
- 	return 0;
- }
- 
--- 
-1.9.3
-
+jirka
