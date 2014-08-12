@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaHLHNF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:13:05 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:55849 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253AbaHLHNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:13:04 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 2/8] perf tools: Make __hpp__fmt() receive an additional len argument
-References: <1406785662-5534-1-git-send-email-namhyung@kernel.org>
-	<1406785662-5534-3-git-send-email-namhyung@kernel.org>
-	<20140802133026.GD13375@kernel.org>
-	<87r40nfo36.fsf@sejong.aot.lge.com> <20140811131738.GB3277@kernel.org>
-Date: Tue, 12 Aug 2014 16:13:01 +0900
-In-Reply-To: <20140811131738.GB3277@kernel.org> (Arnaldo Carvalho de Melo's
-	message of "Mon, 11 Aug 2014 10:17:38 -0300")
-Message-ID: <87iolyfaf6.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752656AbaHLHPZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:15:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37157 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464AbaHLHPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 03:15:24 -0400
+Date: Tue, 12 Aug 2014 15:14:43 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH 1/5] efi: move noefi early param code out of x86 arch code
+Message-ID: <20140812071443.GB14031@darkstar.nay.redhat.com>
+References: <1407823822-23829-1-git-send-email-dyoung@redhat.com>
+ <53E9B9B3.1050504@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E9B9B3.1050504@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+On 08/11/14 at 11:52pm, Randy Dunlap wrote:
+> On 08/11/14 23:10, Dave Young wrote:
+> > noefi param can be used for arches other than X86 later, thus move it out of
+> > x86 platform code.
+> > 
+> > Signed-off-by: Dave Young <dyoung@redhat.com>
+> > ---
+> >  arch/x86/platform/efi/efi.c | 10 +---------
+> >  drivers/firmware/efi/efi.c  | 13 +++++++++++++
+> >  include/linux/efi.h         |  1 +
+> >  3 files changed, 15 insertions(+), 9 deletions(-)
+> 
+> This line in Documentation/kernel-parameters.txt needs to be updated:
+> 
+> 	noefi		[X86] Disable EFI runtime services support.
 
-On Mon, 11 Aug 2014 10:17:38 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Aug 11, 2014 at 05:05:33PM +0900, Namhyung Kim escreveu:
->> Hi Arnaldo,
->> 
->> On Sat, 2 Aug 2014 10:30:26 -0300, Arnaldo Carvalho de Melo wrote:
->> > Em Thu, Jul 31, 2014 at 02:47:36PM +0900, Namhyung Kim escreveu:
->> >> So that it can properly handle alignment requirements later.  To do
->> >> that, add percent_color_len_snprintf() fucntion to help coloring of
->> >> overhead columns.
->> >
->> > Can you elaborate on this description? What is not possible to do before
->> > this patch?
->> 
->> This patch is a preparation that moves hard-coded print width out of the
->> format string so that it can be passed from external settings later.
->
-> Ok, please add this to the patch description?
+Randy, thanks
 
-Will do.  Btw, do you want me to resend the series?  It seems your tree
-already merged it..
+Will update the documentation.
 
-Thanks,
-Namhyung
+Dave
