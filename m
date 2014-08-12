@@ -1,86 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaHLQZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 12:25:46 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46412 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060AbaHLQZn (ORCPT
+	id S1754151AbaHLQ1D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 12:27:03 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54733 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753391AbaHLQ0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 12:25:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWp1iWm9xLqRN0q3hV72bD8jPRLDW74Cm+Gxp3gB76asQ@mail.gmail.com>
-References: <20140806162754.3BCA1660E61@gitolite.kernel.org>
-	<CAMuHMdWp1iWm9xLqRN0q3hV72bD8jPRLDW74Cm+Gxp3gB76asQ@mail.gmail.com>
-Date: Tue, 12 Aug 2014 09:25:43 -0700
-X-Google-Sender-Auth: 8SBtZY7DuYJTIA6z1X9anOX5aJA
-Message-ID: <CAGXu5jLxkhaDU7KtHLLXAbseHXc9nEuj93EYM9JvtWvPLzW=ug@mail.gmail.com>
-Subject: Re: seccomp: add "seccomp" syscall
-From: Kees Cook <keescook@chromium.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 12 Aug 2014 12:26:52 -0400
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-pci <linux-pci@vger.kernel.org>
+Cc: linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v9 07/12] PCI: Create pci_host_bridge before its associated bus in pci_create_root_bus.
+Date: Tue, 12 Aug 2014 17:25:20 +0100
+Message-Id: <1407860725-25202-8-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 1:07 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Hi Kees,
->
-> v3.17 is gonna get a lot of new syscalls...
+Before commit 7b5436635800 the pci_host_bridge was created before the root bus.
+As that commit has added a needless dependency on the bus for pci_alloc_host_bridge()
+the creation order has been changed for no good reason. Revert the order of
+creation as we are going to depend on the pci_host_bridge structure to retrieve the
+domain number of the root bus.
 
-4 so far! :P
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Acked-by: Grant Likely <grant.likely@linaro.org>
+Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+---
+ drivers/pci/probe.c | 32 +++++++++++++++++---------------
+ 1 file changed, 17 insertions(+), 15 deletions(-)
 
->
-> On Wed, Aug 6, 2014 at 6:27 PM, Linux Kernel Mailing List
-> <linux-kernel@vger.kernel.org> wrote:
->> Gitweb:     http://git.kernel.org/linus/;a=commit;h=48dc92b9fc3926844257316e75ba11eb5c742b2c
->> Commit:     48dc92b9fc3926844257316e75ba11eb5c742b2c
->> Parent:     3b23dd12846215eff4afb073366b80c0c4d7543e
->> Refname:    refs/heads/master
->> Author:     Kees Cook <keescook@chromium.org>
->> AuthorDate: Wed Jun 25 16:08:24 2014 -0700
->> Committer:  Kees Cook <keescook@chromium.org>
->> CommitDate: Fri Jul 18 12:13:37 2014 -0700
->>
->>     seccomp: add "seccomp" syscall
->>
->>     This adds the new "seccomp" syscall with both an "operation" and "flags"
->>     parameter for future expansion. The third argument is a pointer value,
->>     used with the SECCOMP_SET_MODE_FILTER operation. Currently, flags must
->>     be 0. This is functionally equivalent to prctl(PR_SET_SECCOMP, ...).
->>
->>     In addition to the TSYNC flag later in this patch series, there is a
->>     non-zero chance that this syscall could be used for configuring a fixed
->>     argument area for seccomp-tracer-aware processes to pass syscall arguments
->>     in the future. Hence, the use of "seccomp" not simply "seccomp_add_filter"
->>     for this syscall. Additionally, this syscall uses operation, flags,
->>     and user pointer for arguments because strictly passing arguments via
->>     a user pointer would mean seccomp itself would be unable to trivially
->>     filter the seccomp syscall itself.
->>
->>     Signed-off-by: Kees Cook <keescook@chromium.org>
->>     Reviewed-by: Oleg Nesterov <oleg@redhat.com>
->>     Reviewed-by: Andy Lutomirski <luto@amacapital.net>
->
-> Is this something that I should enable?
->
-> As it depends on CONFIG_SECCOMP, it only makes sense on architectures that
-> already support CONFIG_SECCOMP, right?
-> Does it make sense to reserve a syscall slot for it on architectures that
-> don't support it yet?
-
-I don't see a good reason to reserve the syscall slot if seccomp
-filter is not already implemented. I've CCed linux-api in case there
-is something I'm not considering, though.
-
-FWIW, if someone wants to add it for m68k, the steps to support
-seccomp are listed in the arch/Kconfig for HAVE_ARCH_SECCOMP_FILTER.
-
--Kees
-
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index e3cf8a2..5ff72ec 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -515,7 +515,7 @@ static void pci_release_host_bridge_dev(struct device *dev)
+ 	kfree(bridge);
+ }
+ 
+-static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
++static struct pci_host_bridge *pci_alloc_host_bridge(void)
+ {
+ 	struct pci_host_bridge *bridge;
+ 
+@@ -524,7 +524,8 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+ 		return NULL;
+ 
+ 	INIT_LIST_HEAD(&bridge->windows);
+-	bridge->bus = b;
++	bridge->dev.release = pci_release_host_bridge_dev;
++
+ 	return bridge;
+ }
+ 
+@@ -1761,9 +1762,15 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	char bus_addr[64];
+ 	char *fmt;
+ 
++	bridge = pci_alloc_host_bridge();
++	if (!bridge)
++		return NULL;
++
++	bridge->dev.parent = parent;
++
+ 	b = pci_alloc_bus();
+ 	if (!b)
+-		return NULL;
++		goto err_out;
+ 
+ 	b->sysdata = sysdata;
+ 	b->ops = ops;
+@@ -1772,26 +1779,19 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	if (b2) {
+ 		/* If we already got to this bus through a different bridge, ignore it */
+ 		dev_dbg(&b2->dev, "bus already known\n");
+-		goto err_out;
++		goto err_bus_out;
+ 	}
+ 
+-	bridge = pci_alloc_host_bridge(b);
+-	if (!bridge)
+-		goto err_out;
+-
+-	bridge->dev.parent = parent;
+-	bridge->dev.release = pci_release_host_bridge_dev;
++	bridge->bus = b;
+ 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+ 	error = pcibios_root_bridge_prepare(bridge);
+-	if (error) {
+-		kfree(bridge);
++	if (error)
+ 		goto err_out;
+-	}
+ 
+ 	error = device_register(&bridge->dev);
+ 	if (error) {
+ 		put_device(&bridge->dev);
+-		goto err_out;
++		goto err_bus_out;
+ 	}
+ 	b->bridge = get_device(&bridge->dev);
+ 	device_enable_async_suspend(b->bridge);
+@@ -1848,8 +1848,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ class_dev_reg_err:
+ 	put_device(&bridge->dev);
+ 	device_unregister(&bridge->dev);
+-err_out:
++err_bus_out:
+ 	kfree(b);
++err_out:
++	kfree(bridge);
+ 	return NULL;
+ }
+ 
 -- 
-Kees Cook
-Chrome OS Security
+2.0.4
+
