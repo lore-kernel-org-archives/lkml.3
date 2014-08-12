@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574AbaHLHYa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:24:30 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58954 "EHLO mga11.intel.com"
+	id S1753610AbaHLH0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:26:43 -0400
+Received: from natalenko.name ([78.47.77.148]:55102 "EHLO natalenko.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752178AbaHLHY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:24:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="371236504"
-Message-ID: <53E9C129.2020902@linux.intel.com>
-Date: Tue, 12 Aug 2014 15:24:25 +0800
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751798AbaHLH0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 03:26:41 -0400
+DMARC-Filter: OpenDMARC Filter v1.2.0 natalenko.name 97608A5B3
+Authentication-Results: mail.natalenko.name; dmarc=none header.from=natalenko.name
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAOh2x=k09cQ40EiK72ELfDH8e2M9_ZYbrtK3wz9_1dtYU1+DCQ@mail.gmail.com>
+References: <4708675.eITUXPv8Ih@spock> <2651364.4shODVy8cx@spock> <CAOh2x=k2xpfqz+VjYpPbQy6Z5aeo8DxkYmk7JSmrAZxQOJSU9Q@mail.gmail.com> <1827037.Yd5d4GH5Ub@spock> <CAOh2x=k09cQ40EiK72ELfDH8e2M9_ZYbrtK3wz9_1dtYU1+DCQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        "Sha, Ruibin" <ruibin.sha@intel.com>
-CC: Chintan Pandya <cpandya@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "mel@csn.ul.ie" <mel@csn.ul.ie>, "mgorman@suse.de" <mgorman@suse.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Zhang, Yanmin" <yanmin.zhang@intel.com>, "He, Bo" <bo.he@intel.com>
-Subject: Re: [PATCH]  export the function kmap_flush_unused.
-References: <3C85A229999D6B4A89FA64D4680BA6142C7DFA@SHSMSX101.ccr.corp.intel.com> <53E4D312.5000601@codeaurora.org> <3C85A229999D6B4A89FA64D4680BA6142CAFF3@SHSMSX101.ccr.corp.intel.com> <20140811115431.GW9918@twins.programming.kicks-ass.net>
-In-Reply-To: <20140811115431.GW9918@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [BUG] oops in cpufreq driver with AMD Kaveri CPU
+From: Oleksandr Natalenko <oleksandr@natalenko.name>
+Date: Tue, 12 Aug 2014 10:26:35 +0300
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Message-ID: <97078cc7-f961-4575-ab72-ec88e6f30b9e@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/8/11 19:54, Peter Zijlstra wrote:
-> On Mon, Aug 11, 2014 at 01:26:45AM +0000, Sha, Ruibin wrote:
->> Hi Chintan,
->> Thank you very much for your timely and kindly response and comments.
->>
->> Here is more detail about our Scenario:
->>
->>      We have a big driver on Android product. The driver allocates lots of
->>      DDR pages. When applications mmap a file exported from the driver,
->>      driver would mmap the pages to the application space, usually with
->>      uncachable prot.
->>      On ia32/x86_64 arch, we have to avoid page cache alias issue. When
->>      driver allocates the pages, it would change page original mapping in
->>      page table with uncachable prot. Sometimes, the allocated page was
->>      used by kmap/kunmap. After kunmap, the page is still mapped in KMAP
->>      space. The entries in KMAP page table are not cleaned up until a
->>      kernel thread flushes the freed KMAP pages(usually it is woken up by kunmap).
->>      It means the driver need  force to flush the KMAP page table entries before mapping pages to
->>      application space to be used. Otherwise, there is a race to create
->>      cache alias.
->>
->>      To resolve this issue, we need export function kmap_flush_unused as
->>      the driver is compiled as module. Then, the driver calls
->>      kmap_flush_unused if the allocated pages are in HIGHMEM and being
->>      used by kmap.
-> A: Because it messes up the order in which people normally read text.
-> Q: Why is top-posting such a bad thing?
-> A: Top-posting.
-> Q: What is the most annoying thing in e-mail?
+Got that and will try to investigate ASAP.
 
-Sorry, Peter. Ruibin is a new guy in LKML community. He uses outlook
-to send emails. He would improve that.
+Just to note: I tried to use powersave governor and got the same result. I believe notifiers are used with powersave governor as well. Am I wrong?
 
+On August 12, 2014 9:16:21 AM EEST, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>On Tue, Aug 12, 2014 at 11:25 AM, Oleksandr Natalenko
+><oleksandr@natalenko.name> wrote:
+>> What should I do to debug it? Is that necessary to recompile kernel
+>with full
+>> debug?
 >
-> That said, it sounds like you want set_memory_() to call
-> kmap_flush_unused(). Because this race it not at all specific to your
-> usage, it could happen to any set_memory_() site, right?
-No. set_memory_() assumes the memory is not in HIGHMEM.
-This scenario is driver allocates HIGHMEM pages, which are kmapped before.
-Kernel uses a lazy method when kunmap a HIGHMEM page.
-The pages are not unmapped from KMAP page table entries immediately.
-When next kmap calling uses the same entry, kernel would change pte.
-Or when change_page_attr_set_clr is called.
+>Yeah, you need to recompile the kernel for sure but not necessarily
+>with debug
+>support..
+>
+>Some background:
+>
+>In cpufreq framework, we manage a CPUs frequency based on the load
+>on CPU. You are using ondemand governor which tries to
+>increase/decrease frequency
+>continuously at fixed intervals.
+>
+>Now, when we change the frequency we *may* need to communicate this to
+>few
+>drivers which *may* depend on CPUs frequency for their functioning.
+>
+>This is handled via notifications.
+>
+>Other drivers are required to do this:
+>cpufreq_register_notifier(&<some-local-struct>,
+>CPUFREQ_TRANSITION_NOTIFIER);
+>
+>to register themselves for frequency-change and them a routine of
+>theirs would
+>be called from cpufreq-core..
+>
+>This is exactly where it is crashing for you. i.e. while calling the
+>notifier list.
+>
+>So, you need to check which all notifiers are registered and out of
+>those which
+>one is crashing..
+>
+>The first parameter of the above register-call should be declared this
+>way:
+>
+>static struct notifier_block xyz_notifier_block = {
+>    .notifier_call = xyz_freq_notifier,
+>};
+>
+>I would have done it this way:
+>
+>- Add a print in cpufreq_register_notifier() to print the address of
+>routine
+>present in .notifier_call for case: CPUFREQ_TRANSITION_NOTIFIER
+>
+>- Then add prints to all the notifiers added for your configuration,
+>shouldn't
+>be much only 4-5 I believe. i.e. you can add print messages to the
+>notifier
+>callbacks..
+>
+>- Then see the sequence/order in which they are called normally, when
+>we
+>don't crash.. and check that when it crashes..
+>
+>- You will be able to make out which notifier is crashing. And then we
+>can
+>see why?
+>
+>- You can add something like this to notifier routines:
+>pr_info("%s\n", __func__);
+>
+>This will print function name.
+>
+>>> Which patch are you talking about here?
+>>
+>> I thought about this one [1], but I guess that's not my case.
+>>
+>> [1] https://lkml.org/lkml/2014/7/16/815
+>
+>I guessed so and I don't think it will help as the crashes reported in
+>this
+>bug-log is something different.
 
-Our big driver doesn't call change_page_attr_set_clr when mmap the
-pages with UNCACHABLE prot. It need call kmap_flush_unused directly after
-allocating HIGHMEM pages.
-
-Thanks for the kind comments.
-
-Yanmin
-
+-- 
+Sent from my Android device with K-9 Mail. Please excuse my brevity.
+-- 
+Sent from my Android device with K-9 Mail. Please excuse my brevity.
