@@ -1,45 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036AbaHLSMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 14:12:48 -0400
-Received: from void.printf.net ([89.145.121.20]:47859 "EHLO void.printf.net"
+	id S1753742AbaHLSSO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 14:18:14 -0400
+Received: from natalenko.name ([78.47.77.148]:58355 "EHLO natalenko.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753895AbaHLSMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 14:12:47 -0400
-From: Chris Ball <chris@printf.net>
-To: Apelete Seketeli <apelete@seketeli.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Alex Smith <alex.smith@imgtec.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 2/2] mmc: jz4740: prepare next dma transfer in parallel with current transfer
-References: <1405917465-18185-1-git-send-email-apelete@seketeli.net>
-	<1405917465-18185-3-git-send-email-apelete@seketeli.net>
-Date: Tue, 12 Aug 2014 19:12:33 +0100
-In-Reply-To: <1405917465-18185-3-git-send-email-apelete@seketeli.net> (Apelete
-	Seketeli's message of "Mon, 21 Jul 2014 06:37:45 +0200")
-Message-ID: <86y4ut60ha.fsf@void.printf.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753049AbaHLSSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 14:18:12 -0400
+DMARC-Filter: OpenDMARC Filter v1.2.0 natalenko.name 0AD89AB64
+Authentication-Results: mail.natalenko.name; dmarc=none header.from=natalenko.name
+From: Oleksandr Natalenko <oleksandr@natalenko.name>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [BUG] oops in cpufreq driver with AMD Kaveri CPU
+Date: Tue, 12 Aug 2014 21:18:09 +0300
+Message-ID: <3606476.mQLS7miLfb@spock>
+User-Agent: KMail/4.13.3 (Linux/3.15.0-pf5; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1449757.YVvGmvgCpE@spock>
+References: <4708675.eITUXPv8Ih@spock> <CAOh2x=nJTuKKKyM72MUFSkrsH1eh1YgRUbfLcTCpfZzO85q80w@mail.gmail.com> <1449757.YVvGmvgCpE@spock>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Apelete,
+Hmm, looks like I've put pr_info to policy notifier instead of transition 
+notifier. Will fix it now and post new logs.
 
-On Mon, Jul 21 2014, Apelete Seketeli wrote:
-> It should help reduce the impact of DMA preparation overhead on the SD
-> card performance.
-
-Did you do any benchmarking to check that this is true?  (If so, it'd
-be good to note what performance change you saw in the commit message.)
-
-Thanks!
-
-- Chris.
+On Tuesday 12 August 2014 21:04:30 Oleksandr Natalenko wrote:
+> Well, I've added the following code to cpufreq_register_notifier()
+> (drivers/cpufreq/cpufreq.c) to CPUFREQ_TRANSITION_NOTIFIER case:
+> 
+> ===
+> pr_info("Registered transition notifier: %p, (%p)\n", nb->notifier_call,
+> &nb-
+> >notifier_call);
+> 
+> ===
+> 
+> And got the following in my dmesg (only 1 line):
+> 
+> ===
+> $ cat /var/log/kern.log | grep "Registered transition notifier"
+> Aug 12 17:23:45 defiant kernel: [    3.084977] cpufreq: Registered
+> transition notifier: ffffffff81590378, (ffffffff81cb0ba0)
+> ===
+> 
+> System.map tells me, that ffffffff81590378 corresponds to
+> cpufreq_stat_notifier_trans() (in drivers/cpufreq/cpufreq_stats.c).
+> 
+> Also I've added
+> 
+> ===
+> pr_info("%s\n", __func__);
+> ===
+> 
+> to all callbacks (hello, LXR :)), and got the following occurrences in
+> dmesg:
+> 
+> ===
+> $ cat /var/log/kern.log | egrep -e '(acpi_|cpufreq|notifier)' | awk
+> '{print($7)}' | sort -u
+> acpi_processor_ppc_notifier
+> acpi_thermal_cpufreq_notifier
+> cpufreq_stat_notifier_policy
+> ===
+> 
+> No extra notifiers are involved so far, but also I haven't caught new hang
+> yet as it occurs randomly. Still waiting for it, but I hope my little
+> investigation could help somehow.
+> 
+> On Tuesday 12 August 2014 13:16:25 Viresh Kumar wrote:
+> > On Tue, Aug 12, 2014 at 12:56 PM, Oleksandr Natalenko
+> > 
+> > <oleksandr@natalenko.name> wrote:
+> > > Got that and will try to investigate ASAP.
+> > > 
+> > > Just to note: I tried to use powersave governor and got the same result.
+> > > I
+> > > believe notifiers are used with powersave governor as well. Am I wrong?
+> > 
+> > Notifiers are used from the cpufreq core when frequency is changed.
+> > And the powersave governor should have changed the frequency only
+> > ONCE, i.e. to go to lowest frequency.
+> > 
+> > So, it probably happened at the first & only change at that time as well..
+> > But it shouldn't happen any later. So, see what the log looks like on
+> > that crash.
 -- 
-Chris Ball   <http://printf.net/>
+Oleksandr post-factum Natalenko, MSc
+pf-kernel community
+https://natalenko.name/
