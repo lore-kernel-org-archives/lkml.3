@@ -1,259 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644AbaHLCwo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 22:52:44 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:38704 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207AbaHLCwm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 22:52:42 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [nfs] BUG: sleeping function called from invalid context at include/linux/wait.h:976
-From: Weston Andros Adamson <dros@primarydata.com>
-In-Reply-To: <CAPDOMVibdcRRdqGRsK4kq+cdh3yBjBU4XB7JjTfyOMFk+jYyvA@mail.gmail.com>
-Date: Mon, 11 Aug 2014 22:52:38 -0400
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-nfs list <linux-nfs@vger.kernel.org>,
-        Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <7EA40233-6820-4F0E-A2B7-687DC01BDD78@primarydata.com>
-References: <20140805140307.GB5593@localhost> <DBF9CA04-ACDF-47AC-9FA6-57DD202D2AC1@primarydata.com> <CAPDOMVibdcRRdqGRsK4kq+cdh3yBjBU4XB7JjTfyOMFk+jYyvA@mail.gmail.com>
-To: Nick Krause <xerofoify@gmail.com>
-X-Mailer: Apple Mail (2.1878.6)
+	id S1754595AbaHLDCj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 23:02:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58902 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750763AbaHLDCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 23:02:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,846,1400050800"; 
+   d="scan'208";a="586776177"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: rjw@rjwysocki.net, lenb@kernel.org
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH V2] ACPI/OSL: Replace synchronize_rcu() with call_rcu() in the acpi_os_map_cleanup() to avoid dead lock with cpu hot plug
+Date: Tue, 12 Aug 2014 10:59:11 +0800
+Message-Id: <1407812351-13129-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <5565710.HfsfjXfcL3@vostro.rjw.lan>
+References: <5565710.HfsfjXfcL3@vostro.rjw.lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+When cpu hotplug and evaluating ACPI method happen at the same time,
+there is a dead lock between ACPICA namespace lock and cpu hotplug lock.
 
-I posted a 5 patch series to the nfs list last week with the cover letter titled
-"nfs_page_group_lock cleanup”, but neglected to mail the wider list.
+During cpu hotplug, cpu core will call acpi_cpu_soft_notify() to notify
+Linux ACPI under cpu hotplug lock. acpi_cpu_soft_notify() calls
+acpi_bus_get_device() to convert ACPI handle to struct acpi_struct.
+ACPICA namespace lock will be held in the acpi_bus_get_device().
 
-The might_sleep check was being hit because nfs_page_group_lock with wait=False called
-wait_on_bit_lock (which might sleep). I also had to be careful to ignore the nonblock argument
-in nfs_lock_and_join_requests and always call nonblocking, because the inode lock is held.
-Blocking is handled by dropping the inode lock, calling wait_on_bit(), then trying again.
+Evaluating ACPI method may involve in accessing system mem operation
+region and the associated address space will be unmapped under
+ACPICA namespace lock after accessing. Currently, osl.c uses RCU to
+protect io mem pages used by ACPICA. During unmapping, synchronize_rcu()
+will be called in the acpi_os_map_cleanup(). Synchronize_rcu() blocks
+cpu hotplug via getting cpu hotplug lock. This causes dead lock with
+cpu hotplug. Cpu hotplug thread holds cpu hotplug lock first and
+then get ACPICA namespace lock. The thread of evaluating ACPI method
+does the converse thing. This patch is to replace synchronize_rcu()
+with call_rcu() to avoid dead lock. call_rcu() can help to umap address
+space asynchronously via provided callback.
 
-The cover letter for the patchset is below.
+Here is dead lock log.
+[   97.149005] INFO: task bash:741 blocked for more than 30 seconds.
+[   97.155914]       Not tainted 3.16.0-rc5+ #671
+[   97.160969] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[   97.169850] bash            D ffff88014e214140     0   741    716 0x00000080
+[   97.177885]  ffff88009b9f3a10 0000000000000086 ffff88009dcfb840 ffff88009b9f3fd8
+[   97.186316]  0000000000014140 0000000000014140 ffffffff81c18460 ffffffff81c40fc8
+[   97.194746]  ffffffff81c40fcc ffff88009dcfb840 00000000ffffffff ffffffff81c40fd0
+[   97.203175] Call Trace:
+[   97.205946]  [<ffffffff817a1b29>] schedule_preempt_disabled+0x29/0x70
+[   97.213246]  [<ffffffff817a34fa>] __mutex_lock_slowpath+0xca/0x1c0
+[   97.220258]  [<ffffffff817a360f>] mutex_lock+0x1f/0x2f
+[   97.226085]  [<ffffffff810bc8cc>] get_online_cpus+0x2c/0x50
+[   97.232408]  [<ffffffff8111bbd4>] synchronize_sched_expedited+0x64/0x1c0
+[   97.240011]  [<ffffffff8111bb65>] synchronize_sched+0x45/0x50
+[   97.246522]  [<ffffffff81431498>] acpi_os_map_cleanup.part.7+0x14/0x3e
+[   97.253928]  [<ffffffff81795c54>] acpi_os_unmap_iomem+0xe2/0xea
+[   97.260636]  [<ffffffff81795c6a>] acpi_os_unmap_memory+0xe/0x14
+[   97.267355]  [<ffffffff814459bc>] acpi_ev_system_memory_region_setup+0x2d/0x97
+[   97.275550]  [<ffffffff81459504>] acpi_ut_update_ref_count+0x24d/0x2de
+[   97.282958]  [<ffffffff814596af>] acpi_ut_update_object_reference+0x11a/0x18b
+[   97.291055]  [<ffffffff81459282>] acpi_ut_remove_reference+0x2e/0x31
+[   97.298265]  [<ffffffff8144ffdf>] acpi_ns_detach_object+0x7b/0x80
+[   97.305180]  [<ffffffff8144ef11>] acpi_ns_delete_namespace_subtree+0x47/0x81
+[   97.313179]  [<ffffffff81440488>] acpi_ds_terminate_control_method+0x85/0x11b
+[   97.321276]  [<ffffffff81454625>] acpi_ps_parse_aml+0x164/0x289
+[   97.327988]  [<ffffffff81454da6>] acpi_ps_execute_method+0x1c1/0x26c
+[   97.335195]  [<ffffffff8144f764>] acpi_ns_evaluate+0x1c1/0x258
+[   97.341814]  [<ffffffff81451f86>] acpi_evaluate_object+0x126/0x22f
+[   97.348826]  [<ffffffff8144d1ac>] acpi_hw_execute_sleep_method+0x3d/0x68
+[   97.356427]  [<ffffffff8144d5cf>] ? acpi_hw_enable_all_runtime_gpes+0x17/0x19
+[   97.364523]  [<ffffffff8144deb0>] acpi_hw_legacy_wake+0x4d/0x9d
+[   97.371239]  [<ffffffff8144e599>] acpi_hw_sleep_dispatch+0x2a/0x2c
+[   97.378243]  [<ffffffff8144e5cb>] acpi_leave_sleep_state+0x17/0x19
+[   97.385252]  [<ffffffff8143335c>] acpi_pm_finish+0x3f/0x99
+[   97.391471]  [<ffffffff81108c49>] suspend_devices_and_enter+0x139/0x560
+[   97.398972]  [<ffffffff81109162>] pm_suspend+0xf2/0x370
+[   97.404900]  [<ffffffff81107e69>] state_store+0x79/0xf0
+[   97.410824]  [<ffffffff813bc4af>] kobj_attr_store+0xf/0x20
+[   97.417038]  [<ffffffff81284f3d>] sysfs_kf_write+0x3d/0x50
+[   97.423260]  [<ffffffff81284580>] kernfs_fop_write+0xe0/0x160
+[   97.429776]  [<ffffffff81210f47>] vfs_write+0xb7/0x1f0
+[   97.435602]  [<ffffffff81211ae6>] SyS_write+0x46/0xb0
+[   97.441334]  [<ffffffff8114d986>] ? __audit_syscall_exit+0x1f6/0x2a0
+[   97.448544]  [<ffffffff817a4ea9>] system_call_fastpath+0x16/0x1b
+[   97.455361] INFO: task async-enable-no:749 blocked for more than 30 seconds.
+[   97.463353]       Not tainted 3.16.0-rc5+ #671
+[   97.468391] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[   97.477271] async-enable-no D ffff88014e254140     0   749      2 0x00000080
+[   97.485286]  ffff88009de83bf0 0000000000000046 ffff88009b850000 ffff88009de83fd8
+[   97.493714]  0000000000014140 0000000000014140 ffff880148305dc0 ffff880149804160
+[   97.502142]  7fffffffffffffff 0000000000000002 0000000000000000 ffff88009b850000
+[   97.510573] Call Trace:
+[   97.513344]  [<ffffffff817a1689>] schedule+0x29/0x70
+[   97.518974]  [<ffffffff817a0b49>] schedule_timeout+0x1f9/0x270
+[   97.525588]  [<ffffffff81284bfe>] ? __kernfs_create_file+0x7e/0xa0
+[   97.532599]  [<ffffffff8128546b>] ? sysfs_add_file_mode_ns+0x9b/0x160
+[   97.539903]  [<ffffffff817a36b2>] __down_common+0x93/0xd8
+[   97.546027]  [<ffffffff817a376a>] __down_timeout+0x16/0x18
+[   97.552252]  [<ffffffff8110546c>] down_timeout+0x4c/0x60
+[   97.558274]  [<ffffffff81431f97>] acpi_os_wait_semaphore+0x43/0x57
+[   97.565285]  [<ffffffff8145a8f4>] acpi_ut_acquire_mutex+0x48/0x88
+[   97.572200]  [<ffffffff81435d1b>] ? acpi_match_device+0x4f/0x4f
+[   97.578918]  [<ffffffff8145250f>] acpi_get_data_full+0x3a/0x8e
+[   97.585537]  [<ffffffff81435b30>] acpi_bus_get_device+0x23/0x40
+[   97.592253]  [<ffffffff8145d839>] acpi_cpu_soft_notify+0x50/0xe6
+[   97.599064]  [<ffffffff810e1ddc>] notifier_call_chain+0x4c/0x70
+[   97.605776]  [<ffffffff810e1eee>] __raw_notifier_call_chain+0xe/0x10
+[   97.612983]  [<ffffffff810bc993>] cpu_notify+0x23/0x50
+[   97.618815]  [<ffffffff810bcb98>] _cpu_up+0x168/0x180
+[   97.624542]  [<ffffffff810bcc5c>] _cpu_up_with_trace+0x2c/0xe0
+[   97.631153]  [<ffffffff810bd050>] ? disable_nonboot_cpus+0x1c0/0x1c0
+[   97.638360]  [<ffffffff810bd06f>] async_enable_nonboot_cpus+0x1f/0x70
+[   97.645670]  [<ffffffff810dda02>] kthread+0xd2/0xf0
+[   97.651201]  [<ffffffff810dd930>] ? insert_kthread_work+0x40/0x40
+[   97.658117]  [<ffffffff817a4dfc>] ret_from_fork+0x7c/0xb0
 
-Thanks!
--dros
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ drivers/acpi/osl.c | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-
-These patches clean up some issues surrouding nfs_page_group_lock:
-
-- normalize wait/nonblock argument
-- make nonblocking calls really nonblocking
-- handle errors
-- ensure that we don't call blocking nfs_page_group_lock when holding the
-  inode spinlock
-
-This cleanup was inspired by Fengguang Wu's report that we were sleeping with
-locks held in nfs_lock_and_join_requests.
-
-Weston Andros Adamson (5):
- nfs: change nfs_page_group_lock argument
- nfs: fix nonblocking calls to nfs_page_group_lock
- nfs: use blocking page_group_lock in add_request
- nfs: fix error handling in lock_and_join_requests
- nfs: don't sleep with inode lock in lock_and_join_requests
-
-fs/nfs/pagelist.c        | 59 ++++++++++++++++++++++++++++++------------------
-fs/nfs/write.c           | 21 +++++++++++++----
-include/linux/nfs_page.h |  1 +
-3 files changed, 55 insertions(+), 26 deletions(-)
-
-
-On Aug 9, 2014, at 12:11 AM, Nick Krause <xerofoify@gmail.com> wrote:
-
-> On Tue, Aug 5, 2014 at 11:08 AM, Weston Andros Adamson
-> <dros@primarydata.com> wrote:
->> Thanks, I’ll investigate.
->> 
->> -dros
->> 
->> 
->> On Aug 5, 2014, at 10:03 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
->> 
->>> Greetings,
->>> 
->>> Here is an NFS error triggered by this debug check.
->>> 
->>> git://git.kernel.org/pub/scm/linux/kernel/git/peterz/queue.git sched/wait
->>> commit b87699e5fa31f451987a992b9cbda22d29ebcb46
->>> Author:     Peter Zijlstra <peterz@infradead.org>
->>> AuthorDate: Mon Aug 4 11:12:21 2014 +0200
->>> Commit:     Peter Zijlstra <a.p.zijlstra@chello.nl>
->>> CommitDate: Mon Aug 4 13:29:57 2014 +0200
->>> 
->>>   wait: Add might_sleep()
->>> 
->>>   Add more might_sleep() checks, suppose someone put a wait_event() like
->>>   thing in a wait loop..
->>> 
->>>   Can't put might_sleep() in ___wait_event() because there's the locked
->>>   primitives which call ___wait_event() with locks held.
->>> 
->>>   Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->>>   Link: http://lkml.kernel.org/n/tip-amr894sd1j012khd3fgyh9m8@git.kernel.org
->>> 
->>> 
->>> [   13.363454] BUG: sleeping function called from invalid context at include/linux/wait.h:976
->>> [   13.365679] in_atomic(): 1, irqs_disabled(): 0, pid: 2715, name: dmesg
->>> [   13.367109] CPU: 1 PID: 2715 Comm: dmesg Not tainted 3.16.0-00048-gb87699e #1
->>> [   13.368385] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
->>> [   13.369544]  0000000000000000 ffff88003e3efad0 ffffffff819c6bad ffff880035e9e480
->>> [   13.371838]  ffff88003e3efae0 ffffffff81106e96 ffff88003e3efb00 ffffffff81306a2e
->>> [   13.373822]  ffff880035e9e480 ffff88001b8a1a40 ffff88003e3efb48 ffffffff8130975a
->>> [   13.376165] Call Trace:
->>> [   13.376890]  [<ffffffff819c6bad>] dump_stack+0x4d/0x66
->>> [   13.377903]  [<ffffffff81106e96>] __might_sleep+0x10a/0x10c
->>> [   13.379247]  [<ffffffff81306a2e>] nfs_page_group_lock+0x4e/0x7b
->>> [   13.380739]  [<ffffffff8130975a>] nfs_lock_and_join_requests+0x83/0x334
->>> [   13.381884]  [<ffffffff81309a9f>] nfs_do_writepage+0x94/0x191
->>> [   13.383078]  [<ffffffff81309baf>] nfs_writepages_callback+0x13/0x25
->>> [   13.384592]  [<ffffffff81309b9c>] ? nfs_do_writepage+0x191/0x191
->>> [   13.385745]  [<ffffffff811963d0>] write_cache_pages+0x281/0x3a9
->>> [   13.386829]  [<ffffffff81309b9c>] ? nfs_do_writepage+0x191/0x191
->>> [   13.388524]  [<ffffffff8130a1fd>] nfs_writepages+0xa9/0x10f
->>> [   13.389903]  [<ffffffff811994e1>] ? release_pages+0x1a2/0x20b
->>> [   13.391087]  [<ffffffff81194835>] ? free_pcppages_bulk+0x298/0x33c
->>> [   13.392198]  [<ffffffff81197c8b>] do_writepages+0x1e/0x2c
->>> [   13.393202]  [<ffffffff8118e3f4>] __filemap_fdatawrite_range+0x55/0x57
->>> [   13.394313]  [<ffffffff8118e4b4>] filemap_write_and_wait_range+0x2a/0x58
->>> [   13.395448]  [<ffffffff812ff101>] nfs_file_fsync+0x4e/0x10c
->>> [   13.396546]  [<ffffffff81211395>] vfs_fsync_range+0x1b/0x23
->>> [   13.397567]  [<ffffffff812113b9>] vfs_fsync+0x1c/0x1e
->>> [   13.398517]  [<ffffffff812ff679>] nfs_file_flush+0x6c/0x6f
->>> [   13.399513]  [<ffffffff811e918b>] filp_close+0x3c/0x72
->>> [   13.400646]  [<ffffffff8120295a>] put_files_struct+0x67/0xb3
->>> [   13.401759]  [<ffffffff81202a43>] exit_files+0x4a/0x4f
->>> [   13.402756]  [<ffffffff810e4073>] do_exit+0x3c9/0x985
->>> [   13.403740]  [<ffffffff8106e605>] ? trace_do_page_fault+0x52/0xb7
->>> [   13.404875]  [<ffffffff810e46a9>] do_group_exit+0x44/0xac
->>> [   13.405878]  [<ffffffff810e4725>] SyS_exit_group+0x14/0x14
->>> [   13.406892]  [<ffffffff819ce6a9>] system_call_fastpath+0x16/0x1b
->>> [   15.733276] BUG: sleeping function called from invalid context at include/linux/wait.h:976
->>> [   15.735154] in_atomic(): 1, irqs_disabled(): 0, pid: 2716, name: cat
->>> [   15.736263] CPU: 1 PID: 2716 Comm: cat Not tainted 3.16.0-00048-gb87699e #1
->>> [   15.737414] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
->>> [   15.738754]  0000000000000000 ffff88000068b910 ffffffff819c6bad ffff880035e9e080
->>> [   15.746872]  ffff88000068b920 ffffffff81106e96 ffff88000068b940 ffffffff81306a2e
->>> [   15.748694]  ffff880035e9e080 ffff88001b8a1a40 ffff88000068b988 ffffffff8130975a
->>> [   15.750479] Call Trace:
->>> [   15.751164]  [<ffffffff819c6bad>] dump_stack+0x4d/0x66
->>> [   15.752141]  [<ffffffff81106e96>] __might_sleep+0x10a/0x10c
->>> [   15.753148]  [<ffffffff81306a2e>] nfs_page_group_lock+0x4e/0x7b
->>> [   15.754183]  [<ffffffff8130975a>] nfs_lock_and_join_requests+0x83/0x334
->>> [   15.755294]  [<ffffffff81309a9f>] nfs_do_writepage+0x94/0x191
->>> [   15.756335]  [<ffffffff81309baf>] nfs_writepages_callback+0x13/0x25
->>> [   15.757405]  [<ffffffff81309b9c>] ? nfs_do_writepage+0x191/0x191
->>> [   15.758452]  [<ffffffff811963d0>] write_cache_pages+0x281/0x3a9
->>> [   15.759483]  [<ffffffff81309b9c>] ? nfs_do_writepage+0x191/0x191
->>> [   15.760547]  [<ffffffff8130a1fd>] nfs_writepages+0xa9/0x10f
->>> [   15.761541]  [<ffffffff81197c8b>] do_writepages+0x1e/0x2c
->>> [   15.762514]  [<ffffffff8118e3f4>] __filemap_fdatawrite_range+0x55/0x57
->>> [   15.763612]  [<ffffffff8118e4b4>] filemap_write_and_wait_range+0x2a/0x58
->>> [   15.764746]  [<ffffffff812ff101>] nfs_file_fsync+0x4e/0x10c
->>> [   15.765748]  [<ffffffff81211395>] vfs_fsync_range+0x1b/0x23
->>> [   15.766745]  [<ffffffff812113b9>] vfs_fsync+0x1c/0x1e
->>> [   15.767681]  [<ffffffff812ff679>] nfs_file_flush+0x6c/0x6f
->>> [   15.768690]  [<ffffffff811e918b>] filp_close+0x3c/0x72
->>> [   15.769638]  [<ffffffff8120295a>] put_files_struct+0x67/0xb3
->>> [   15.770635]  [<ffffffff81202a43>] exit_files+0x4a/0x4f
->>> [   15.771581]  [<ffffffff810e4073>] do_exit+0x3c9/0x985
->>> [   15.772537]  [<ffffffff819caf04>] ? __schedule+0x4cb/0x734
->>> [   15.773522]  [<ffffffff810e46a9>] do_group_exit+0x44/0xac
->>> [   15.774493]  [<ffffffff810f0c03>] get_signal_to_deliver+0x53b/0x5cb
->>> [   15.775575]  [<ffffffff810392b9>] do_signal+0x49/0x511
->>> [   15.776561]  [<ffffffff81127334>] ? do_syslog+0x141/0x4a8
->>> [   15.777564]  [<ffffffff8124915d>] ? kmsg_read+0x2d/0x54
->>> [   15.778513]  [<ffffffff8123d924>] ? proc_reg_read+0x56/0x69
->>> [   15.779504]  [<ffffffff810397b6>] do_notify_resume+0x35/0x72
->>> [   15.780521]  [<ffffffff819ce908>] int_signal+0x12/0x17
->>> 
->>> This script may reproduce the error.
->>> 
->>> ----------------------------------------------------------------------------
->>> #!/bin/bash
->>> 
->>> kernel=$1
->>> initrd=debian-x86_64.cgz
->>> 
->>> wget --no-clobber https://github.com/fengguang/reproduce-kernel-bug/raw/master/initrd/$initrd
->>> 
->>> kvm=(
->>>      qemu-system-x86_64
->>>      -enable-kvm
->>>      -cpu Nehalem
->>>      -kernel $kernel
->>>      -initrd $initrd
->>>      -m 1024
->>>      -smp 2
->>>      -net nic,vlan=1,model=e1000
->>>      -net user,vlan=1
->>>      -boot order=nc
->>>      -no-reboot
->>>      -watchdog i6300esb
->>>      -rtc base=localtime
->>>      -serial stdio
->>>      -display none
->>>      -monitor null
->>> )
->>> 
->>> append=(
->>>      root=/dev/ram0
->>>      ip=::::vm-vp-1G-5::dhcp
->>>      oops=panic
->>>      earlyprintk=ttyS0,115200
->>>      debug
->>>      apic=debug
->>>      sysrq_always_enabled
->>>      rcupdate.rcu_cpu_stall_timeout=100
->>>      panic=10
->>>      softlockup_panic=1
->>>      nmi_watchdog=panic
->>>      load_ramdisk=2
->>>      prompt_ramdisk=0
->>>      console=ttyS0,115200
->>>      console=tty0
->>>      vga=normal
->>> )
->>> 
->>> "${kvm[@]}" --append "${append[*]}"
->>> ----------------------------------------------------------------------------
->>> 
->>> Thanks,
->>> Fengguang
->>> _______________________________________________
->>> LKP mailing list
->>> LKP@linux.intel.com
->> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> Hey Weston,
-> After doing the trace for you . seems the issue is in ,nfs_page_group_lock.
-> As due to the head not being equal to head be are hitiing a warn on.
-> 
-> 152 nfs_page_group_lock(struct nfs_page *req)
-> 153 {
-> 154 struct nfs_page *head = req->wb_head;
-> 155
-> 156 WARN_ON_ONCE(head != head->wb_head);
-> 157
-> 158 wait_on_bit_lock(&head->wb_flags, PG_HEADLOCK,
-> 159 nfs_wait_bit_uninterruptible,
-> 160 TASK_UNINTERRUPTIBLE);
-> 161 }
-> 
-> I am pasting the function for your convenience.
-> Please CC me to let me known how this goes.
-> Cheers Nick
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index bad25b0..d8674ab 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -94,6 +94,7 @@ struct acpi_ioremap {
+ 	acpi_physical_address phys;
+ 	acpi_size size;
+ 	unsigned long refcount;
++	struct rcu_head rcu;
+ };
+ 
+ static LIST_HEAD(acpi_ioremaps);
+@@ -421,13 +422,18 @@ static void acpi_os_drop_map_ref(struct acpi_ioremap *map)
+ 		list_del_rcu(&map->list);
+ }
+ 
++static void acpi_os_map_reclaim(struct rcu_head *rcu)
++{
++	struct acpi_ioremap *map = container_of(rcu, struct acpi_ioremap, rcu);
++
++	acpi_unmap(map->phys, map->virt);
++	kfree(map);
++}
++
+ static void acpi_os_map_cleanup(struct acpi_ioremap *map)
+ {
+-	if (!map->refcount) {
+-		synchronize_rcu();
+-		acpi_unmap(map->phys, map->virt);
+-		kfree(map);
+-	}
++	if (!map->refcount)
++		call_rcu(&map->rcu, acpi_os_map_reclaim);
+ }
+ 
+ void __ref acpi_os_unmap_iomem(void __iomem *virt, acpi_size size)
+-- 
+1.8.4.rc0.1.g8f6a3e5.dirty
 
