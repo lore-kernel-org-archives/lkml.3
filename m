@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502AbaHLCRN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 22:17:13 -0400
-Received: from mga14.intel.com ([192.55.52.115]:2302 "EHLO mga14.intel.com"
+	id S1754512AbaHLCSr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 22:18:47 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:34493 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752777AbaHLCRL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 22:17:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,846,1400050800"; 
-   d="scan'208";a="575313454"
-From: "Drokin, Oleg" <oleg.drokin@intel.com>
-To: Srikrishan Malik <srikrishanmalik@gmail.com>
-CC: "<greg@kroah.com>" <greg@kroah.com>,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        "<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 08/13] staging: lustre: fix multi line strings
-Thread-Topic: [PATCH v2 08/13] staging: lustre: fix multi line strings
-Thread-Index: AQHPtZJbX9ibFvEgw0mPyrtggdGpP5vMsTuA
-Date: Tue, 12 Aug 2014 02:17:07 +0000
-Message-ID: <FBE0C2BE-D82B-40E6-93B2-929E66130883@intel.com>
-References: <1407781659-728-1-git-send-email-srikrishanmalik@gmail.com>
- <1407781659-728-8-git-send-email-srikrishanmalik@gmail.com>
-In-Reply-To: <1407781659-728-8-git-send-email-srikrishanmalik@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.254.188.74]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <CFF6005A58F0BF4AA4FA7E40CCCFE1FA@intel.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752865AbaHLCSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 22:18:46 -0400
+From: Oleg Drokin <green@linuxhacker.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Cc: Oleg Drokin <green@linuxhacker.ru>
+Subject: [PATCH] staging/lustre/lnet: Fix potential uninitialized variable warning
+Date: Mon, 11 Aug 2014 22:18:29 -0400
+Message-Id: <1407809909-1776-1-git-send-email-green@linuxhacker.ru>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Greg reports that with one of the patches in his queue
+there's now an unused variable warning in lnet_parse_ip2nets
+for ipaddrs variable.
+Apparently the warning is a false positive as in all cases where
+lnet_ipaddr_enumerate can return without setting ipaddrs to something
+a negative return value is returned that is then checked
+before we actually use ipaddrs.
 
-On Aug 11, 2014, at 2:27 PM, Srikrishan Malik wrote:
+Assign ipaddrs to NULL to quiet this.
 
-> Fixes the following checkpatch warning:
-> 
-> WARNING: quoted string split across lines
+Signed-off-by: Oleg Drokin <green@linuxhacker.ru>
+---
+ drivers/staging/lustre/lnet/lnet/config.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-> index 57d903156917..6c691a4763b5 100644
-> --- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
-> +++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-> @@ -2055,8 +2055,8 @@ static int mdc_hsm_copytool_send(int len, void *val)
-> 		return -EPROTO;
-> 	}
-> 
-> -	CDEBUG(D_HSM, " Received message mg=%x t=%d m=%d l=%d actions=%d "
-> -	       "on %s\n",
-> +	CDEBUG(D_HSM,
-> +	       " Received message mg=%x t=%d m=%d l=%d actions=%d on %s\n",
-> 	       lh->kuc_magic, lh->kuc_transport, lh->kuc_msgtype,
-> 	       lh->kuc_msglen, hal->hal_count, hal->hal_fsname);
-
-I imagine we can drop the leading space here as well.
-
-Thanks.
-
-Bye,
-    Oleg
+diff --git a/drivers/staging/lustre/lnet/lnet/config.c b/drivers/staging/lustre/lnet/lnet/config.c
+index 7c8b947..d77aa31 100644
+--- a/drivers/staging/lustre/lnet/lnet/config.c
++++ b/drivers/staging/lustre/lnet/lnet/config.c
+@@ -1187,7 +1187,7 @@ lnet_ipaddr_enumerate(__u32 **ipaddrsp)
+ int
+ lnet_parse_ip2nets(char **networksp, char *ip2nets)
+ {
+-	__u32     *ipaddrs;
++	__u32     *ipaddrs = NULL;
+ 	int	nip = lnet_ipaddr_enumerate(&ipaddrs);
+ 	int	rc;
+ 
+-- 
+1.9.0
 
