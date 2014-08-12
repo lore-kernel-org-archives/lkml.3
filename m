@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646AbaHLJJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 05:09:58 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:58216 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752702AbaHLJJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 05:09:55 -0400
-X-IronPort-AV: E=Sophos;i="5.01,847,1400025600"; 
-   d="scan'208";a="160864610"
-Message-ID: <53E9D9DD.3060901@citrix.com>
-Date: Tue, 12 Aug 2014 10:09:49 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1753940AbaHLJOd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 05:14:33 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57475 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264AbaHLJOc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 05:14:32 -0400
+Date: Tue, 12 Aug 2014 11:14:28 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, hannes@stressinduktion.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Reading large amounts from /dev/urandom broken
+Message-ID: <20140812091428.GA3950@amd.pavel.ucw.cz>
+References: <CANZNk81nyws__swPUoxz912wi5PJ2CBXbiLpJ-Jc4oLcX+J8vw@mail.gmail.com>
+ <20140723151459.GA6673@thunk.org>
+ <20140809074539.GA1467@amd.pavel.ucw.cz>
+ <CANZNk83jWeqkESFVVNb4KS+H6gQYgcVtcU8xEMiMHz7jfE52nQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-mips@linux-mips.org>, <linux-ia64@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <sparclinux@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Joerg Roedel <joro@8bytes.org>, <x86@kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <xen-devel@lists.xenproject.org>, <arnab.basu@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <marc.zyngier@arm.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Tony Luck <tony.luck@intel.com>, <linux-kernel@vger.kernel.org>,
-        <iommu@lists.linux-foundation.org>, Wuyun <wuyun.wu@huawei.com>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [Xen-devel] [RFC PATCH 01/20] x86/xen/MSI: Eliminate arch_msix_mask_irq()
- and arch_msi_mask_irq()
-References: <1407828373-24322-1-git-send-email-wangyijing@huawei.com> <1407828373-24322-2-git-send-email-wangyijing@huawei.com>
-In-Reply-To: <1407828373-24322-2-git-send-email-wangyijing@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANZNk83jWeqkESFVVNb4KS+H6gQYgcVtcU8xEMiMHz7jfE52nQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/14 08:25, Yijing Wang wrote:
-> Commit 0e4ccb150 added two __weak arch functions arch_msix_mask_irq()
-> and arch_msi_mask_irq() to fix a bug found when running xen in x86.
-> Introduced these two funcntions make MSI code complex. This patch
-> reverted commit 0e4ccb150 and add #ifdef for x86 msi_chip to fix this
-> bug for simplicity. Also this is preparation for using struct
-> msi_chip instead of weak arch MSI functions in all platforms.
-[...]
->  static struct irq_chip msi_chip = {
->  	.name			= "PCI-MSI",
-> +#ifdef CONFIG_XEN
-> +	.irq_unmask		= nop_unmask_msi_irq,
-> +	.irq_mask		= nop_mask_msi_irq,
-> +#else
->  	.irq_unmask		= unmask_msi_irq,
->  	.irq_mask		= mask_msi_irq,
-> +#endif
+On Sun 2014-08-10 14:51:08, Andrey Utkin wrote:
+> 2014-08-09 10:45 GMT+03:00 Pavel Machek <pavel@ucw.cz>:
+> > Warn about my quick benchmark?
+> >
+> > http://atrey.karlin.mff.cuni.cz/~pavel/quickbench.html
+> >
+> > I don't see what is insane about it. Yes, there might be more
+> > effective generators of random bits, but that is not the point, this
+> > is quick&dirty attempt at benchmark.
+> >
+> > Also people will use cat /dev/urandom > /dev/sdX (and similar) to
+> > clean hard drives. There should be no need to warn about
+> > that. (Performance is going to be disk-limited anyway).
+> 
+> I believe "cat /dev/urandom" doesn't result in reading with _block
+> size_ more than 32 MB. As it was already explained by Theodore,
+> currently single read() operation will return "short read" when
+> requested to give more than 32 MB at once. You still can read more in
+> consecuential reading acts.
 
-No.  CONFIG_XEN kernels can run on Xen and bare metal so this must be a
-runtime option.
+Well, I still don't think this behaviour change is a good idea.
 
-David
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
