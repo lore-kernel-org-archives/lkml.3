@@ -1,103 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804AbaHLD73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 23:59:29 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:38406 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753033AbaHLD71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 23:59:27 -0400
-Message-ID: <53E99117.9010500@linux.vnet.ibm.com>
-Date: Tue, 12 Aug 2014 09:29:19 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751118AbaHLEAk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 00:00:40 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:56202 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699AbaHLEAj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 00:00:39 -0400
+Date: Mon, 11 Aug 2014 20:45:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+Message-ID: <20140812034531.GA13801@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140808181835.GD5821@linux.vnet.ibm.com>
+ <20140808183424.GB13483@grmbl.mre>
+ <20140808214347.GH5821@linux.vnet.ibm.com>
+ <20140808214648.GA19058@linux.vnet.ibm.com>
+ <20140811071308.GA4184@grmbl.mre>
+ <20140811162807.GW5821@linux.vnet.ibm.com>
+ <20140811194126.GF4184@grmbl.mre>
+ <20140811201102.GD5821@linux.vnet.ibm.com>
+ <20140811201845.GG4184@grmbl.mre>
+ <20140811203421.GE5821@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-CC: Vincent Guittot <vincent.guittot@linaro.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Subject: Re: [sched] 143e1e28cb4: +17.9% aim7.jobs-per-min, -9.7% hackbench.throughput
-References: <20140810044127.GB11810@localhost> <20140810075915.GR9918@twins.programming.kicks-ass.net> <20140810105413.GA29451@localhost> <20140811133352.GC9918@twins.programming.kicks-ass.net>
-In-Reply-To: <20140811133352.GC9918@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140811203421.GE5821@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081203-0320-0000-0000-000000346285
+x-cbid: 14081204-0928-0000-0000-0000040C5D41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2014 07:03 PM, Peter Zijlstra wrote:
+On Mon, Aug 11, 2014 at 01:34:21PM -0700, Paul E. McKenney wrote:
+> On Tue, Aug 12, 2014 at 01:48:45AM +0530, Amit Shah wrote:
+> > On (Mon) 11 Aug 2014 [13:11:02], Paul E. McKenney wrote:
+> > > On Tue, Aug 12, 2014 at 01:11:26AM +0530, Amit Shah wrote:
+> > > > On (Mon) 11 Aug 2014 [09:28:07], Paul E. McKenney wrote:
+> > > > > On Mon, Aug 11, 2014 at 12:43:08PM +0530, Amit Shah wrote:
+> > > > > > On (Fri) 08 Aug 2014 [14:46:48], Paul E. McKenney wrote:
+> > > > > > > On Fri, Aug 08, 2014 at 02:43:47PM -0700, Paul E. McKenney wrote:
+> > > > > > > > On Sat, Aug 09, 2014 at 12:04:24AM +0530, Amit Shah wrote:
+> > > > > > > > > On (Fri) 08 Aug 2014 [11:18:35], Paul E. McKenney wrote:
+> > > > > > > > 
+> > > > > > > > [ . . . ]
+> > > > > > > > 
+> > > > > > > > > > Hmmm... What happens if you boot a7d7a143d0b4cb1914705884ca5c25e322dba693
+> > > > > > > > > > with the kernel parameter "acpi=off"?
+> > > > > > > > > 
+> > > > > > > > > That doesn't change anything - still hangs.
+> > > > > > > > > 
+> > > > > > > > > I intend to look at this more on Monday, though - turning in for
+> > > > > > > > > today.  In the meantime, if there's anything else you'd like me to
+> > > > > > > > > try, please let me know.
+> > > > > > > > 
+> > > > > > > > OK, given that I still cannot reproduce it, I do need your help with
+> > > > > > > > the diagnostics.  And so what sorts of diagnostics work for you in
+> > > > > > > > the hung state?  Are you able to dump ftrace buffers?
+> > > > > > > > 
+> > > > > > > > If you are able to dump ftrace buffers, please enable rcu:rcu_nocb_wake
+> > > > > > > > and send me the resulting trace.
+> > > > > > > 
+> > > > > > > And another random kernel boot parameter to try is rcu_nocb_poll.
+> > > > > > 
+> > > > > > Right, this gets the boot going again:
+> > > > > 
+> > > > > OK, that likely indicates a lost wakeup.  The event tracing enabled by
+> > > > > "rcu:rcu_nocb_wake" should help track those down.  Last time, it was qemu
+> > > > > losing the wakeups, but maybe it is RCU this time.  ;-)
+> > > > 
+> > > > The guest goes dead pretty early; is there a trick to enabling and
+> > > > getting these traces out of the guest that I don't know of that
+> > > > doesn't involve being booted into userspace?  I can perhaps try
+> > > > getting the trace output out from a virtio-serial channel; but even
+> > > > that driver isn't probed yet when the lockup happens.
+> > > 
+> > > First boot with the kernel parameter "trace_event=rcu:rcu_nocb_wake".
+> > > Then when the system hangs, do "sendkey alt-sysrq-z" at the "(qemu)"
+> > > prompt to dump the ftrace buffer.  This hopefully dumps the trace buffer
+> > > to dmesg.
+> > > 
+> > > In addition "sendkey alt-sysrq-t" at the "(qemu)" prompt dumps all tasks'
+> > > stacks, which would also likely be useful information.
+> > 
+> > Nah, this doesn't work -- the guest's totally locked up.  I need a way
+> > to continuously dump buffers till the lockup happens, I suppose.
 > 
-> Now I think I see why this is; we've reduced load balancing frequency
-> significantly on this machine due to:
+> That is a bit surprising.  Is it possible that the system is OOMing
+> quickly due to grace periods not proceeding?  If so, maybe giving the
+> VM more memory would help.
 
-We have also changed the value of busy_factor to 32 from 64 across all
-domains. This would contribute to increased frequency of load balancing?
+Oh, and it is necessary to build the kernel with CONFIG_RCU_TRACE=y
+for the rcu_nocb_wake trace events to be enabled in the first place.
+I am assuming that your kernel was built with CONFIG_MAGIC_SYSRQ=y.
 
-Regards
-Preeti U Murthy
-> 
-> 
-> -#define SD_SIBLING_INIT (struct sched_domain) {                                \
-> -       .min_interval           = 1,                                    \
-> -       .max_interval           = 2,                                    \
-> 
-> 
-> -#define SD_MC_INIT (struct sched_domain) {                             \
-> -       .min_interval           = 1,                                    \
-> -       .max_interval           = 4,                                    \
-> 
-> 
-> -#define SD_CPU_INIT (struct sched_domain) {                            \
-> -       .min_interval           = 1,                                    \
-> -       .max_interval           = 4,                                    \
-> 
-> 
->         *sd = (struct sched_domain){
->                 .min_interval           = sd_weight,
->                 .max_interval           = 2*sd_weight,
-> 
-> Which both increased the min and max value significantly for all domains
-> involved.
-> 
-> That said; I think we might want to do something like the below; I can
-> imagine decreasing load balancing too much will negatively impact other
-> workloads.
-> 
-> Maybe slightly modified to make sure the first domain has a min_interval
-> of 1.
-> 
-> ---
->  kernel/sched/core.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 1211575a2208..67ed5d854da1 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -6049,8 +6049,8 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
->  		sd_flags &= ~TOPOLOGY_SD_FLAGS;
->  
->  	*sd = (struct sched_domain){
-> -		.min_interval		= sd_weight,
-> -		.max_interval		= 2*sd_weight,
-> +		.min_interval		= max(1, sd_weight/2),
-> +		.max_interval		= sd_weight,
->  		.busy_factor		= 32,
->  		.imbalance_pct		= 125,
->  
-> @@ -6076,7 +6076,7 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
->  					,
->  
->  		.last_balance		= jiffies,
-> -		.balance_interval	= sd_weight,
-> +		.balance_interval	= max(1, sd_weight/2),
->  		.smt_gain		= 0,
->  		.max_newidle_lb_cost	= 0,
->  		.next_decay_max_lb_cost	= jiffies,
-> 
+If all of that is in place and no joy, is it possible to extract the
+ftrace buffer from the running/hung guest?  It should be in there
+somewhere!  ;-)
+
+							Thanx, Paul
 
