@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878AbaHLQSg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 12:18:36 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:33139 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524AbaHLQSd (ORCPT
+	id S1753963AbaHLQVD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 12:21:03 -0400
+Received: from mtaout22.012.net.il ([80.179.55.172]:52915 "EHLO
+	mtaout22.012.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300AbaHLQVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 12:18:33 -0400
-From: Phong Tran <tranmanphong@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: swetland@google.com, ccross@android.com, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Phong Tran <tranmanphong@gmail.com>
-Subject: [PATCH 1/5] staging: android: ion: ion.c Fix checkpatch warning
-Date: Tue, 12 Aug 2014 23:17:26 +0700
-Message-Id: <1407860250-9779-2-git-send-email-tranmanphong@gmail.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1407860250-9779-1-git-send-email-tranmanphong@gmail.com>
-References: <1407860250-9779-1-git-send-email-tranmanphong@gmail.com>
+	Tue, 12 Aug 2014 12:21:00 -0400
+Date: Tue, 12 Aug 2014 19:20:52 +0300
+From: Oren Twaig <oren@scalemp.com>
+Subject: Re: x86: vmalloc and THP
+In-reply-to: <20140812060745.GA7987@node.dhcp.inet.fi>
+X-012-Sender: ira_oren@012.net.il
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org,
+        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
+Message-id: <53EA3EE4.6090100@scalemp.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Antivirus: avast! (VPS 140812-0, 08/12/2014), Outbound message
+X-Antivirus-Status: Clean
+References: <53E99F86.5020100@scalemp.com> <20140812060745.GA7987@node.dhcp.inet.fi>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix the coding style
+Hi Kirill,
 
-- Add a new line after variable declaration
-- Remove return of void fuction
+I saw the thread has developed nicely :), still - wanted to answer your 
+question
+below.
 
-Tested by compilation
+On 8/12/2014 9:07 AM, Kirill A. Shutemov wrote:
+> On Tue, Aug 12, 2014 at 08:00:54AM +0300, Oren Twaig wrote:
+>> <html style="direction: ltr;">
+> plain/text, please.
+Yes - noticed the html, sent again in plain text.
+>> If not, is there any fast way to change this behavior ? Maybe by
+>> changing the granularity/alignment of such allocations to allow such
+>> mapping ?
+> What's the point to use vmalloc() in this case?
+I've noticed that some lock/s are using linear addresses which are
+located at 0xffffc901922b4500 and from what I understand
+from mm.txt (kernel 3.0.101):
+*ffffc90000000000 - ffffe8ffffffffff (=45 bits) vmalloc/ioremap space
 
-Signed-off-by: Phong Tran <tranmanphong@gmail.com>
+*So I'm not sure who/how/why this lock got allocated there, but obviously
+it is using that linear set. No ?
+
+>
+
+
 ---
- drivers/staging/android/ion/ion.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-index 2703609..56604f4 100644
---- a/drivers/staging/android/ion/ion.c
-+++ b/drivers/staging/android/ion/ion.c
-@@ -805,6 +805,7 @@ struct ion_client *ion_client_create(struct ion_device *dev,
- 						client, &debug_client_fops);
- 	if (!client->debug_root) {
- 		char buf[256], *path;
-+
- 		path = dentry_path(dev->clients_debug_root, buf, 256);
- 		pr_err("Failed to create client debugfs at %s/%s\n",
- 			path, client->display_name);
-@@ -1056,7 +1057,6 @@ static void *ion_dma_buf_kmap(struct dma_buf *dmabuf, unsigned long offset)
- static void ion_dma_buf_kunmap(struct dma_buf *dmabuf, unsigned long offset,
- 			       void *ptr)
- {
--	return;
- }
- 
- static int ion_dma_buf_begin_cpu_access(struct dma_buf *dmabuf, size_t start,
--- 
-1.9.3
+This email is free from viruses and malware because avast! Antivirus protection is active.
+http://www.avast.com
 
