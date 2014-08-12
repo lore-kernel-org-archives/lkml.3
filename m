@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732AbaHLF4k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 01:56:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37730 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526AbaHLF4j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 01:56:39 -0400
-Date: Tue, 12 Aug 2014 07:56:26 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] perf, x86: Use extended offcore mask on Haswell
-Message-ID: <20140812055626.GJ9918@twins.programming.kicks-ass.net>
-References: <1407802290-619-1-git-send-email-andi@firstfloor.org>
+	id S1752779AbaHLF6L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 01:58:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30171 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750765AbaHLF6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 01:58:09 -0400
+Message-ID: <53E9ACE9.4000608@redhat.com>
+Date: Tue, 12 Aug 2014 07:58:01 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SQdXmIN7lSx8hpjK"
-Content-Disposition: inline
-In-Reply-To: <1407802290-619-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+CC: gregkh@linuxfoundation.org, kraxel@redhat.com,
+        mdharm-usb@one-eyed-alien.net, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH v2] uas: replace WARN_ON_ONCE() with lockdep_assert_held()
+References: <1407823717-17265-1-git-send-email-sanjeev_sharma@mentor.com>
+In-Reply-To: <1407823717-17265-1-git-send-email-sanjeev_sharma@mentor.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---SQdXmIN7lSx8hpjK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/12/2014 08:08 AM, Sanjeev Sharma wrote:
+> spin_is_locked() always return false in uniprocessor configuration and therefore it
+> would be advise to replace with lockdep_assert_held().
+> 
+> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+> ---
+> Changes in v2:
+>  - replaced WARN_ON_ONCE() with lockdep_assert_held() to
+>  avoid runtime overhead instead of assert_spin_locked()
 
-On Mon, Aug 11, 2014 at 05:11:30PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->=20
-> HSW-EP has a larger offcore mask than the client Haswell CPUs.
-> It is the same mask as on Sandy/IvyBridge-EP. All of
-> Haswell was using the client mask, so some bits were missing.
->=20
-> On the client parts some bits were also missing compared
-> to Sandy/IvyBridge, in particular the bits to match on a L4
-> cache hit.
->=20
-> The Haswell core in both client and server incarnations
-> accepts the same bits (but some are nops), so we can use
-> the same mask.
->=20
-> So use the snbep extended mask, which is a superset of the
-> client and the server, for all of Haswell.
->=20
-> This allows specifying a number of extra offcore events, like
-> for example for HSW-EP.
->=20
-> % perf stat -e cpu/event=3D0xb7,umask=3D0x1,offcore_rsp=3D0x3fffc00100,na=
-me=3Doffcore_response_pf_l3_rfo_l3_miss_any_response/ true
->=20
-> which were <not supported> before.
->=20
-> v2: Post correct patch.
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Thanks!
 
-I seem to have this patch; so that means this is a repost right?
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 
+Regards,
 
---SQdXmIN7lSx8hpjK
-Content-Type: application/pgp-signature
+Hans
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT6ayKAAoJEHZH4aRLwOS6igEP/R2drG3WfIrVy8lv1WOuQRst
-H3zDJl5qh/xMMrQkebzOFB/8jzekD91npM/Mv6I+OiHnAFph1bCPjJKfdKnQiFIG
-3eUgw10bS2GAqS10h3V2kMG2qKSDBS9FlEA47rr/xG7pG2W7opj84eF7j/xl/gFc
-6ytqzhT8AKivkDj3lovG66ZHOBgMkfFKQtYC1GJz20Pb6JIMvs26YoOkeQeTq3Xh
-MJZeotjftlMGRQJELF5k0Qbu+4oDIHCwWxisC+33Saa0KWworbeXvAztm9GJDJpo
-Fxlu3WB9qaXIV9D2medzQSA903/1ZNRlAgAPikmYlNFiu+2XG7TpLGrGZPLZjIAQ
-zjwwY1JDR0IRdNnwtmePiQg1RLf6Ngoyheqtdcq0oRlaueyJqIiQXnhdN1hgAlct
-6fCU/5y40jMinQ1cc/xmP7Ue6+eJoZT5PD2o2ChYZeI3TzeB5P6/z5ZrjUAYMBcJ
-lAevIu37JSQ6UX/vLiuI0F5UAYmwc8JRzpGE8h2EaG4fN2JYWqO7Aas/iJg2ep2W
-VLCIWxiZC15JGTAk9tAy0qwoTLGiJQzzj7672fVVun7HTdUSoHpV3GY81nCIf9cM
-uj+BPzxVdNlX/KIBAtUAe+fz4cuROfrm12ijUx62xmIZ4PKkoSkS7rBJW0Va2uFW
-7aoHtKEwa1och7Bn80Ve
-=L3U3
------END PGP SIGNATURE-----
-
---SQdXmIN7lSx8hpjK--
+> 
+>  drivers/usb/storage/uas.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
+> index 3f42785..05b2d8e 100644
+> --- a/drivers/usb/storage/uas.c
+> +++ b/drivers/usb/storage/uas.c
+> @@ -154,7 +154,7 @@ static void uas_mark_cmd_dead(struct uas_dev_info *devinfo,
+>  	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+>  
+>  	uas_log_cmd_state(cmnd, caller);
+> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+> +	lockdep_assert_held(&devinfo->lock);
+>  	WARN_ON_ONCE(cmdinfo->state & COMMAND_ABORTED);
+>  	cmdinfo->state |= COMMAND_ABORTED;
+>  	cmdinfo->state &= ~IS_IN_WORK_LIST;
+> @@ -181,7 +181,7 @@ static void uas_add_work(struct uas_cmd_info *cmdinfo)
+>  	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+>  	struct uas_dev_info *devinfo = cmnd->device->hostdata;
+>  
+> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+> +	lockdep_assert_held(&devinfo->lock);
+>  	cmdinfo->state |= IS_IN_WORK_LIST;
+>  	schedule_work(&devinfo->work);
+>  }
+> @@ -283,7 +283,7 @@ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller)
+>  	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
+>  	struct uas_dev_info *devinfo = (void *)cmnd->device->hostdata;
+>  
+> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+> +	lockdep_assert_held(&devinfo->lock);
+>  	if (cmdinfo->state & (COMMAND_INFLIGHT |
+>  			      DATA_IN_URB_INFLIGHT |
+>  			      DATA_OUT_URB_INFLIGHT |
+> @@ -622,7 +622,7 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
+>  	struct urb *urb;
+>  	int err;
+>  
+> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+> +	lockdep_assert_held(&devinfo->lock);
+>  	if (cmdinfo->state & SUBMIT_STATUS_URB) {
+>  		urb = uas_submit_sense_urb(cmnd, gfp, cmdinfo->stream);
+>  		if (!urb)
+> 
