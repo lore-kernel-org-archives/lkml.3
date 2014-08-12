@@ -1,137 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbaHLHDO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:03:14 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:64829 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264AbaHLHDI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:03:08 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, <linux-pci@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <arnab.basu@freescale.com>,
-        <x86@kernel.org>, "Arnd Bergmann" <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [RFC PATCH 06/20] PCI/MSI: Introduce arch_get_match_msi_chip() to find the match msi_chip
-Date: Tue, 12 Aug 2014 15:25:59 +0800
-Message-ID: <1407828373-24322-7-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
-References: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.175.100.166]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020209.53E9BC13.0072,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 72a3d6f8bb94c33bbdaf75d5b1c70beb
+	id S932108AbaHLHHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:07:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19046 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754153AbaHLHHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 03:07:49 -0400
+From: Amit Shah <amit.shah@redhat.com>
+To: stable@vger.kernel.org
+Cc: Amos Kong <akong@redhat.com>,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Amit Shah <amit.shah@redhat.com>
+Subject: [3.16 stable PATCH 1/2] virtio: rng: delay hwrng_register() till driver is ready
+Date: Tue, 12 Aug 2014 12:36:54 +0530
+Message-Id: <76f5c012de1f6adeb1f8c105db5dc21a6e99fbc4.1407827215.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce __weak arch_get_match_msi_chip() to find the match msi_chip.
-We prepare to use struct msi_chip to eliminate arch_xxx functions
-in all platforms. The MSI device and the msi_chip binding is platform
-specific. For instance, in x86, LAPICs receive all MSI irq, but in
-arm, PCI device usually deliver their MSI to PCI hostbridge, if more
-than one msi_chip found in system, DTS file will report the binding
-between MSI devices and target msi_chip. So we need a platform implemented
-interface to do that.
+Instead of calling hwrng_register() in the probe routing, call it in the
+scan routine.  This ensures that when hwrng_register() is successful,
+and it requests a few random bytes to seed the kernel's pool at init,
+we're ready to service that request.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+This will also enable us to remove the workaround added previously to
+check whether probe was completed, and only then ask for data from the
+host.  The revert follows in the next commit.
+
+There's a slight behaviour change here on unsuccessful hwrng_register().
+Previously, when hwrng_register() failed, the probe() routine would
+fail, and the vqs would be torn down, and driver would be marked not
+initialized.  Now, the vqs will remain initialized, driver would be
+marked initialized as well, but won't be available in the list of RNGs
+available to hwrng core.  To fix the failures, the procedure remains the
+same, i.e. unload and re-load the module, and hope things succeed the
+next time around.
+
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+(cherry picked from commit 5c06273401f2eb7b290cadbae18ee00f8f65e893)
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+
+Conflicts:
+	drivers/char/hw_random/virtio-rng.c
+
+  Context conflict due to not backporting two commits that changed
+  struct layout.
 ---
- drivers/pci/msi.c |   30 ++++++++++++++++++++++++++----
- 1 files changed, 26 insertions(+), 4 deletions(-)
+ drivers/char/hw_random/virtio-rng.c | 25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 7b7abe9..feba5dd 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -29,10 +29,22 @@ static int pci_msi_enable = 1;
+diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
+index e9b15bc..f4e04f3 100644
+--- a/drivers/char/hw_random/virtio-rng.c
++++ b/drivers/char/hw_random/virtio-rng.c
+@@ -36,6 +36,7 @@ struct virtrng_info {
+ 	bool busy;
+ 	char name[25];
+ 	int index;
++	bool hwrng_register_done;
+ };
  
- /* Arch hooks */
+ static bool probe_done;
+@@ -137,15 +138,6 @@ static int probe_common(struct virtio_device *vdev)
+ 		return err;
+ 	}
  
--int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
-+struct msi_chip * __weak arch_get_match_msi_chip(struct device *dev)
-+{
-+	if (dev_is_pci(dev)) {
-+		struct pci_dev *pdev = to_pci_dev(dev);
-+		struct msi_chip *chip = pdev->bus->msi;
-+
-+		return chip;
-+	}
-+
-+	return NULL;
-+}
-+
-+int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+-	err = hwrng_register(&vi->hwrng);
+-	if (err) {
+-		vdev->config->del_vqs(vdev);
+-		vi->vq = NULL;
+-		kfree(vi);
+-		ida_simple_remove(&rng_index_ida, index);
+-		return err;
+-	}
+-
+ 	probe_done = true;
+ 	return 0;
+ }
+@@ -153,9 +145,11 @@ static int probe_common(struct virtio_device *vdev)
+ static void remove_common(struct virtio_device *vdev)
  {
--	struct msi_chip *chip = dev->bus->msi;
- 	int err;
-+	struct msi_chip *chip = arch_get_match_msi_chip(&dev->dev);
- 
- 	if (!chip || !chip->setup_irq)
- 		return -EINVAL;
-@@ -46,7 +58,8 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
- 
- void __weak arch_teardown_msi_irq(unsigned int irq)
- {
--	struct msi_chip *chip = irq_get_chip_data(irq);
-+	struct msi_desc *entry = irq_get_msi_desc(irq);
-+	struct msi_chip *chip = arch_get_match_msi_chip(&entry->dev->dev);
- 
- 	if (!chip || !chip->teardown_irq)
- 		return;
-@@ -56,7 +69,7 @@ void __weak arch_teardown_msi_irq(unsigned int irq)
- 
- int __weak arch_msi_check_device(struct pci_dev *dev, int nvec, int type)
- {
--	struct msi_chip *chip = dev->bus->msi;
-+	struct msi_chip *chip = arch_get_match_msi_chip(&dev->dev);
- 
- 	if (!chip || !chip->check_device)
- 		return 0;
-@@ -68,7 +81,12 @@ int __weak arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- {
- 	struct msi_desc *entry;
- 	int ret;
-+	struct msi_chip *chip;
- 
-+	chip = arch_get_match_msi_chip(&dev->dev);
-+	if (chip && chip->setup_irqs)
-+		return chip->setup_irqs(&dev->dev, nvec, type);
+ 	struct virtrng_info *vi = vdev->priv;
 +
- 	/*
- 	 * If an architecture wants to support multiple MSI, it needs to
- 	 * override arch_setup_msi_irqs()
-@@ -133,6 +151,10 @@ static void default_restore_msi_irq(struct pci_dev *dev, int irq)
- 
- void __weak arch_restore_msi_irqs(struct pci_dev *dev)
- {
-+	struct msi_chip *chip = arch_get_msi_chip(&dev->dev);
-+	if (chip && chip->restore_irqs)
-+		return chip->restore_irqs(&dev->dev);
-+
- 	return default_restore_msi_irqs(dev);
+ 	vdev->config->reset(vdev);
+ 	vi->busy = false;
+-	hwrng_unregister(&vi->hwrng);
++	if (vi->hwrng_register_done)
++		hwrng_unregister(&vi->hwrng);
+ 	vdev->config->del_vqs(vdev);
+ 	ida_simple_remove(&rng_index_ida, vi->index);
+ 	kfree(vi);
+@@ -171,6 +165,16 @@ static void virtrng_remove(struct virtio_device *vdev)
+ 	remove_common(vdev);
  }
  
++static void virtrng_scan(struct virtio_device *vdev)
++{
++	struct virtrng_info *vi = vdev->priv;
++	int err;
++
++	err = hwrng_register(&vi->hwrng);
++	if (!err)
++		vi->hwrng_register_done = true;
++}
++
+ #ifdef CONFIG_PM_SLEEP
+ static int virtrng_freeze(struct virtio_device *vdev)
+ {
+@@ -195,6 +199,7 @@ static struct virtio_driver virtio_rng_driver = {
+ 	.id_table =	id_table,
+ 	.probe =	virtrng_probe,
+ 	.remove =	virtrng_remove,
++	.scan =		virtrng_scan,
+ #ifdef CONFIG_PM_SLEEP
+ 	.freeze =	virtrng_freeze,
+ 	.restore =	virtrng_restore,
 -- 
-1.7.1
+1.9.3
 
