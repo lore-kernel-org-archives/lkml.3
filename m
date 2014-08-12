@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734AbaHLLtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 07:49:12 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59702 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787AbaHLLtK (ORCPT
+	id S1752773AbaHLLvh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 07:51:37 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:46233 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaHLLvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 07:49:10 -0400
-Date: Tue, 12 Aug 2014 12:48:49 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Message-ID: <20140812114849.GN17528@sirena.org.uk>
-References: <1407843829-4908-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+	Tue, 12 Aug 2014 07:51:35 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GI3Lgxc05n+zHXcf"
-Content-Disposition: inline
-In-Reply-To: <1407843829-4908-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: wm8994: register irq handler for mic1 detect
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1407839872-12864-1-git-send-email-pawel.moll@arm.com>
+References: <CAPDyKFrb9OSbhHtn=wgbs9Yky1t453rdNBJVgGA62vER-65dYw@mail.gmail.com>
+	<1407839872-12864-1-git-send-email-pawel.moll@arm.com>
+Date: Tue, 12 Aug 2014 13:51:34 +0200
+Message-ID: <CAPDyKFpR2fuCjD3v6wMWkfCqY4gO3K52vOv8nkyfuLtB1e792w@mail.gmail.com>
+Subject: Re: [PATCH 3/5 v2] mmc: sdhci-pltfm: Do not use parent as the host's device
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Chris Ball <chris@printf.net>, Anton Vorontsov <anton@enomsg.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12 August 2014 12:37, Pawel Moll <pawel.moll@arm.com> wrote:
+> The code selecting a device for the sdhci host has been
+> continuously tweaked (4b711cb13843f5082e82970dd1e8031383134a65
+> "mmc: sdhci-pltfm: Add structure for host-specific data" and
+> a4d2177f00a5252d825236c5124bc1e9918bdb41 "mmc: sdhci-pltfm: dt
+> device does not pass parent to sdhci_alloc_host" while there
+> does not seem to be any reason to use platform device's parent
+> in the first place.
+>
+> The comment saying "Some PCI-based MFD need the parent here"
+> seem to refer to Timberdale FPGA driver (the only MFD driver
+> registering SDHCI cell, drivers/mfd/timberdale.c) but again,
+> the only situation when parent device matter is runtime PM,
+> which is not implemented for Timberdale.
+>
+> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 
---GI3Lgxc05n+zHXcf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks! Queued for 3.18.
 
-On Tue, Aug 12, 2014 at 12:43:49PM +0100, Nikesh Oswal wrote:
+Kind regards
+Uffe
 
-> --- a/sound/soc/codecs/wm8994.c
-> +++ b/sound/soc/codecs/wm8994.c
-> @@ -4099,6 +4099,15 @@ static int wm8994_codec_probe(struct snd_soc_codec *codec)
->  				dev_warn(codec->dev,
->  					 "Failed to request Mic1 detect IRQ: %d\n",
->  					 ret);
-> +		} else {
-> +			ret = wm8994_request_irq(wm8994->wm8994,
-> +					WM8994_IRQ_MIC1_DET,
-> +					wm8994_mic_irq, "Mic 1 detect",
-> +					wm8994);
-> +			if (ret != 0)
-> +				dev_warn(codec->dev,
-> +				"Failed to request Mic1 detect IRQ: %d\n",
-> +				ret);
-
-This need a better changelog and possibly some editing of the code to
-make it clearer.  According to the above diff we're in the else case for
-an if statement where the true path also requests the same interrupt (or
-at least something with the same text reported in the error message).
-
---GI3Lgxc05n+zHXcf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT6f8eAAoJELSic+t+oim9HL8QAI+tLB4Eli/RmtQsAPyVkxD6
-fF8mAuykUnJIE3ALY79dbEPpghx1CR+y+sSc5DLMmdnpLh1GEYRABySZ0bFjeJxR
-/ZuDvh3NtNE/C3/3NZBNrqIGmDH19f0i3OzElsVZUL10NWS7OdgJ+l6r+adxd6fk
-d9Ka50Pv6ajK9EKukH7/qiAN0sm4pMq1gV2IbLRx5TCVaprQZNH6f2NjQm8I1r+M
-YD/HmyDbn3A12Cj1GZ8vpUddMKZxa489Vwrsdp5zVHwrSy6lNYOVaKPAlhx8wT7l
-j0J4S+sbeI5kOI8ir38xcV50qDfCMKAH1/c2A/yA93RG7WHjfozoraSt9t57Hgrt
-2QSAZN9Gu1G5TmxmCs5w1NMiJs434RIsUnI5QXtsSBQZNQbkA7ld25Ia5+0OsMrY
-5GdMAEe1bSm20aooiFIxFL4MpikyargWEzPSzUxXi61hS4O3cBE6YsSjzbfTqR7U
-Nzv+oS7g/boyWI9isTlSJKOErJAcJrRMug2tLzNZazYOii92oMwodWse71aACljN
-ehpwLfwNWfShNu1lI2SFY+ymUOEvCp9Ge2lMBvk9j1JqqvbYKoczlS0v7pBj3TTS
-K9LukEYRUCF/P5HPJTa0Oe6PTiMTTaAeUjzVlqyPZGXdPgRsxyu/ewF1FaLbul7K
-uoTr1CdSRhu3W+mrOm3n
-=AiIY
------END PGP SIGNATURE-----
-
---GI3Lgxc05n+zHXcf--
+> ---
+>  drivers/mmc/host/sdhci-pltfm.c | 10 ++--------
+>  1 file changed, 2 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-pltfm.c b/drivers/mmc/host/sdhci-pltfm.c
+> index 7e834fb..c5b01d6 100644
+> --- a/drivers/mmc/host/sdhci-pltfm.c
+> +++ b/drivers/mmc/host/sdhci-pltfm.c
+> @@ -123,7 +123,6 @@ struct sdhci_host *sdhci_pltfm_init(struct platform_device *pdev,
+>                                     size_t priv_size)
+>  {
+>         struct sdhci_host *host;
+> -       struct device_node *np = pdev->dev.of_node;
+>         struct resource *iomem;
+>         int ret;
+>
+> @@ -136,13 +135,8 @@ struct sdhci_host *sdhci_pltfm_init(struct platform_device *pdev,
+>         if (resource_size(iomem) < 0x100)
+>                 dev_err(&pdev->dev, "Invalid iomem size!\n");
+>
+> -       /* Some PCI-based MFD need the parent here */
+> -       if (pdev->dev.parent != &platform_bus && !np)
+> -               host = sdhci_alloc_host(pdev->dev.parent,
+> -                       sizeof(struct sdhci_pltfm_host) + priv_size);
+> -       else
+> -               host = sdhci_alloc_host(&pdev->dev,
+> -                       sizeof(struct sdhci_pltfm_host) + priv_size);
+> +       host = sdhci_alloc_host(&pdev->dev,
+> +               sizeof(struct sdhci_pltfm_host) + priv_size);
+>
+>         if (IS_ERR(host)) {
+>                 ret = PTR_ERR(host);
+> --
+> 1.9.1
+>
