@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767AbaHLHDU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:03:20 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:51257 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282AbaHLHDP (ORCPT
+	id S1754173AbaHLHDh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:03:37 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:42417 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820AbaHLHD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:03:15 -0400
+	Tue, 12 Aug 2014 03:03:26 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
@@ -26,9 +26,9 @@ CC: <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
         "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
         Chris Metcalf <cmetcalf@tilera.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [RFC PATCH 12/20] MIPS/Xlp/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
-Date: Tue, 12 Aug 2014 15:26:05 +0800
-Message-ID: <1407828373-24322-13-git-send-email-wangyijing@huawei.com>
+Subject: [RFC PATCH 15/20] s390/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
+Date: Tue, 12 Aug 2014 15:26:08 +0800
+Message-ID: <1407828373-24322-16-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
 References: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
@@ -40,58 +40,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a new struct msi_chip xlp_chip instead of weak arch
+Introduce a new struct msi_chip zpci_msi_chip instead of weak arch
 functions to configure MSI/MSI-X.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/mips/pci/msi-xlp.c |   15 +++++++++++++--
- 1 files changed, 13 insertions(+), 2 deletions(-)
+ arch/s390/pci/pci.c |   16 ++++++++++++++--
+ 1 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/pci/msi-xlp.c b/arch/mips/pci/msi-xlp.c
-index fa374fe..6c27346 100644
---- a/arch/mips/pci/msi-xlp.c
-+++ b/arch/mips/pci/msi-xlp.c
-@@ -245,7 +245,7 @@ static struct irq_chip xlp_msix_chip = {
- 	.irq_unmask	= unmask_msi_irq,
- };
+diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+index 9ddc51e..ee7b05c 100644
+--- a/arch/s390/pci/pci.c
++++ b/arch/s390/pci/pci.c
+@@ -398,8 +398,9 @@ static void zpci_irq_handler(struct airq_struct *airq)
+ 	}
+ }
  
--void arch_teardown_msi_irq(unsigned int irq)
-+void xlp_teardown_msi_irq(unsigned int irq)
+-int arch_setup_msi_irqs(struct pci_dev *pdev, int nvec, int type)
++int zpci_setup_msi_irqs(struct device *dev, int nvec, int type)
  {
++	struct pci_dev *pdev = to_pci_dev(dev);
+ 	struct zpci_dev *zdev = get_zdev(pdev);
+ 	unsigned int hwirq, msi_vecs;
+ 	unsigned long aisb;
+@@ -474,8 +475,9 @@ out:
+ 	return rc;
  }
  
-@@ -452,11 +452,12 @@ static int xlp_setup_msix(uint64_t lnkbase, int node, int link,
- 	return 0;
- }
- 
--int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
-+int xlp_setup_msi_irq(struct device *d, struct msi_desc *desc)
+-void arch_teardown_msi_irqs(struct pci_dev *pdev)
++void zpci_teardown_msi_irqs(struct device *dev)
  {
- 	struct pci_dev *lnkdev;
- 	uint64_t lnkbase;
- 	int node, link, slot;
-+	struct pci_dev *dev = to_pci_dev(d);
- 
- 	lnkdev = xlp_get_pcie_link(dev);
- 	if (lnkdev == NULL) {
-@@ -474,6 +475,16 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
- 		return xlp_setup_msi(lnkbase, node, link, desc);
++	struct pci_dev *pdev = to_pci_dev(dev);
+ 	struct zpci_dev *zdev = get_zdev(pdev);
+ 	struct msi_desc *msi;
+ 	int rc;
+@@ -501,6 +503,16 @@ void arch_teardown_msi_irqs(struct pci_dev *pdev)
+ 	airq_iv_free_bit(zpci_aisb_iv, zdev->aisb);
  }
  
-+struct msi_chip xlp_chip = {
-+	.setup_irq = xlp_setup_msi_irq,
-+	.teardown_irq = xlp_teardown_msi_irq,
++struct msi_chip zpci_msi_chip = {
++	.setup_irqs = zpci_setup_msi_irqs,
++	.teardown_irqs = zpci_teardown_msi_irqs,
 +};
 +
 +struct msi_chip *arch_get_match_msi_chip(struct device *dev)
 +{
-+	return &xlp_chip;
++	return &zpci_msi_chip;
 +}
 +
- void __init xlp_init_node_msi_irqs(int node, int link)
+ static void zpci_map_resources(struct zpci_dev *zdev)
  {
- 	struct nlm_soc_info *nodep;
+ 	struct pci_dev *pdev = zdev->pdev;
 -- 
 1.7.1
 
