@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411AbaHLC2M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 22:28:12 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:41494
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754083AbaHLC2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 22:28:10 -0400
-x-originating-ip: 72.167.245.219
-From: Dexuan Cui <decui@microsoft.com>
-To: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com
-Cc: kys@microsoft.com, haiyangz@microsoft.com
-Subject: [PATCH] Input: serio: make HYPERV_KEYBOARD depend on SERIO_I8042=y
-Date: Mon, 11 Aug 2014 20:30:40 -0700
-Message-Id: <1407814240-4275-1-git-send-email-decui@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754540AbaHLCdo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 22:33:44 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22593 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752648AbaHLCdm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 22:33:42 -0400
+To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, jejb@kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org,
+        Sathya Prakash <Sathya.Prakash@avagotech.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RESEND][PATCH 07/10][SCSI]mpt2sas: Added Reply Descriptor Post Queue (RDPQ) Array support
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20140625103445.GA12943@avagotech.com>
+	<yq1zjg2m6lu.fsf@sermon.lab.mkp.net>
+	<CAK=zhgoQt5J=jh4jShAy5rBXNz34sN-tqf=uZDkY4zQJ9XhM5g@mail.gmail.com>
+	<yq18unklvda.fsf@sermon.lab.mkp.net>
+	<CAK=zhgpDWJLBMBB1mV-7u+o_UC86PiOCAp4vi4-UAn_hXHtF2A@mail.gmail.com>
+	<yq1r41bkgdp.fsf@sermon.lab.mkp.net>
+	<CAK=zhgp_v_sdt+VLDs1Mxxi8Cg4nZNnzgQ=d228h+Ht2EpdEqw@mail.gmail.com>
+	<yq138dpgr6z.fsf@sermon.lab.mkp.net>
+	<CAK=zhgoEhW7fT7SV6ZkzgFa_A49W9quzWOgXb=DH3D_CrMAdDw@mail.gmail.com>
+	<yq161i6epv5.fsf@sermon.lab.mkp.net>
+	<CAK=zhgpqW-t11JKiBRRM7Z4TEMyaEUBX943qT8faaKPk6Pk4XA@mail.gmail.com>
+	<CAK=zhgpiyt9xukGCNDOpEDmWRwFSMCcEiUQ190BW0UgiLGVP6g@mail.gmail.com>
+Date: Mon, 11 Aug 2014 22:32:59 -0400
+In-Reply-To: <CAK=zhgpiyt9xukGCNDOpEDmWRwFSMCcEiUQ190BW0UgiLGVP6g@mail.gmail.com>
+	(Sreekanth Reddy's message of "Mon, 11 Aug 2014 18:45:12 +0530")
+Message-ID: <yq1d2c65tes.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hyperv_keyboard invokes serio_interrupt(), which needs a valid serio driver
-like atkbd.c.
-atkbd.c depends on libps2.c because it invokes ps2_command().
-libps2.c depends on i8042.c because it invokes i8042_check_port_owner().
-As a result, hyperv_keyboard actually depends on i8042.c.
+>>>>> "Sreekanth" == Sreekanth Reddy <sreekanth.reddy@avagotech.com> writes:
 
-For a Generation 2 Hyper-V VM (meaning no i8042 device emulated), if a Linux
-VM (like Arch Linux) happens to configure CONFIG_SERIO_I8042=m rather than
-=y, atkbd.ko can't load because i8042.ko can't load(due to no i8042 device
-emulated) and finally hyperv_keyboard can't work and the user can't input:
-https://bugs.archlinux.org/task/39820
-(Ubuntu/RHEL/SUSE aren't affected since they use CONFIG_SERIO_I8042=y)
+Sreekanth> Please let me known any further changes are required so that
+Sreekanth> I can send this patch once again with git send-email.
 
-Decoupling the dependency between hyperv_keyboard and i8042 needs
-non-trivial efforts and is hence a long term goal.
+I'm OK with the latest iteration.
 
-For now, let's make the dependency explicit so people can beware of this.
-
-Thank Claudio for the initial reporting, investigation and suggesting the fix.
-
-Signed-off-by: Dexuan Cui <decui@microsoft.com>
-Reported-by: Claudio Latini <claudio.latini@live.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/input/serio/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
-index bc2d474..3277bff 100644
---- a/drivers/input/serio/Kconfig
-+++ b/drivers/input/serio/Kconfig
-@@ -273,7 +273,7 @@ config SERIO_OLPC_APSP
- 
- config HYPERV_KEYBOARD
- 	tristate "Microsoft Synthetic Keyboard driver"
--	depends on HYPERV
-+	depends on HYPERV && SERIO_I8042=y
- 	default HYPERV
- 	help
- 	  Select this option to enable the Hyper-V Keyboard driver.
 -- 
-1.9.1
-
+Martin K. Petersen	Oracle Linux Engineering
