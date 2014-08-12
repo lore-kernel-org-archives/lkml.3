@@ -1,95 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032AbaHLJl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 05:41:26 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46703 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751442AbaHLJlZ (ORCPT
+	id S1754938AbaHLJlf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 05:41:35 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:23186 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518AbaHLJla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 05:41:25 -0400
-Date: Tue, 12 Aug 2014 10:40:58 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Deepak Saxena <dsaxena@linaro.org>, Lee Campbell <leecam@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 3/3] arm64: Add seccomp support
-Message-ID: <20140812094058.GD29013@arm.com>
-References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org>
- <1406020499-5537-4-git-send-email-takahiro.akashi@linaro.org>
- <53D082E9.8090303@amacapital.net>
- <53D09C4F.9010104@linaro.org>
- <CALCETrWTDS7VSyuR5wgGxpu-_YMWVUVmv9ht6t1tCSX=GA46cQ@mail.gmail.com>
- <53D2255C.9050006@linaro.org>
- <CAGXu5jJL=zXuSRNomGrB09kqpUhEpkuxDH18JN4NRbWocMw4xg@mail.gmail.com>
- <53E47DCE.4080902@linaro.org>
- <20140811092409.GE15344@arm.com>
- <53E9BAD5.3080201@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E9BAD5.3080201@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 12 Aug 2014 05:41:30 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-c9-53e9e1489a21
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Minchan Kim'" <minchan@kernel.org>
+Cc: ngupta@vflare.org, linux-kernel@vger.kernel.org,
+        "'Jerome Marchand'" <jmarchan@redhat.com>,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+References: <000001cfb53f$d63b6ea0$82b24be0$@samsung.com>
+ <20140812073740.GA9227@bbox>
+In-reply-to: <20140812073740.GA9227@bbox>
+Subject: RE: [PATCH] zram: fix incorrectly stat with failed_reads
+Date: Tue, 12 Aug 2014 17:40:32 +0800
+Message-id: <005201cfb611$97362100$c5a26300$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQF4FQUURvVmlZfToiq37apX9RhKNwG2iExAnG4ot8A=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t9jAV2Phy+DDb7c4rKYs34Nm8WpP9eZ
+	LC7vmsNmsezre3aLDS2z2C3Wfn7M7sDmsXPWXXaPTas62TxOzPjN4vF+31Wg2KfNrB6fN8kF
+	sEVx2aSk5mSWpRbp2yVwZTRc+8NY8E+uomfyY5YGxkviXYycHBICJhLvD9xjh7DFJC7cW8/W
+	xcjFISSwiFGi4+c+RpCEkMAPRon/29NAbDYBFYnlHf+ZQGwRATWJdQdfsIA0MAscYZRo+XuY
+	HaIhQuLykdlARRwcnAKaErO21ICEhQUcJXYeuMEKYrMIqEpsffoMzOYVsJTYN+8+lC0o8WPy
+	PRYQm1lAXWLSvEXMELa8xOY1b5khDlWQ2HH2NSPEDVYS/3bcgaoXl9h45BbLBEahWUhGzUIy
+	ahaSUbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERwtz6R2MK5ssDjEKMDBqMTD
+	O+Pvi2Ah1sSy4srcQ4wSHMxKIryCt18GC/GmJFZWpRblxxeV5qQWH2KU5mBREuc90GodKCSQ
+	nliSmp2aWpBaBJNl4uCUamAs2sbEtqqvPLBQSelhwJaLoYnlG89bLSv2azQ1/MT20T+kdKbk
+	uhkJHTf+fJH7/LDqWeWP43cmsr0SLlt5MCG5Pu2pwf+r2ZznFjuo5qXlF3NtOe5idP3PAYXc
+	qRrZsnfkskzP/9Nj+PQiZ6LCTp/VEe71p1wmWOm9f3OnJObK6Q9/P5SbRacqsRRnJBpqMRcV
+	JwIADz2ZP5ICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Akashi,
+Hi Minchan,
 
-On Tue, Aug 12, 2014 at 07:57:25AM +0100, AKASHI Takahiro wrote:
-> On 08/11/2014 06:24 PM, Will Deacon wrote:
-> > On Fri, Aug 08, 2014 at 08:35:42AM +0100, AKASHI Takahiro wrote:
-> >> As discussed in a few weeks ago, aarch64 won't support PTRACE_SET_SYSCALL.
+> -----Original Message-----
+> From: Minchan Kim [mailto:minchan@kernel.org]
+> Sent: Tuesday, August 12, 2014 3:38 PM
+> To: Chao Yu
+> Cc: ngupta@vflare.org; linux-kernel@vger.kernel.org; Jerome Marchand; Sergey Senozhatsky;
+> Andrew Morton
+> Subject: Re: [PATCH] zram: fix incorrectly stat with failed_reads
+> 
+> On Mon, Aug 11, 2014 at 04:39:17PM +0800, Chao Yu wrote:
+> > Since we allocate a temporary buffer in zram_bvec_read to handle partial page
+> > operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
+> > zram: allow partial page operations), our ->failed_reads value may be incorrect
+> > as we do not increase its value when failed to allocate the temporary buffer.
 > >
-> > Well, I don't think anything was set in stone. If you have a compelling
-> > reason why adding the new request gives you something over setting w8
-> > directly, then we can extend ptrace.
+> > Let's fix this issue and correct the annotation of failed_reads.
 > 
-> Yeah, I think I may have to change my mind. Looking into __secure_computing(),
-> I found the code below:
+> Good catch.
+> Just out of curiosity.
 > 
->  >     case SECCOMP_MODE_FILTER:
->  >         case SECCOMP_RET_TRACE:
->  >             ...
->  >             if (syscall_get_nr(current, regs) < 0)
->  >                 goto skip;
+> Did you catch it by code review or real workload?
+
+I found this one by code review.
+
 > 
-> This implies that we should modify syscallno *before* __secure_computing()
-> returns.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> >  drivers/block/zram/zram_drv.c | 1 +
+> >  drivers/block/zram/zram_drv.h | 2 +-
+> >  2 files changed, 2 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index dfa4024..bf8ea1b 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -413,6 +413,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+> >
+> >  	if (!uncmem) {
+> >  		pr_info("Unable to allocate temp memory\n");
+> > +		atomic64_inc(&zram->stats.failed_reads);
+> >  		ret = -ENOMEM;
+> >  		goto out_cleanup;
+> >  	}
+> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > index 5b0afde..e0f725c 100644
+> > --- a/drivers/block/zram/zram_drv.h
+> > +++ b/drivers/block/zram/zram_drv.h
+> > @@ -84,7 +84,7 @@ struct zram_stats {
+> >  	atomic64_t compr_data_size;	/* compressed size of pages stored */
+> >  	atomic64_t num_reads;	/* failed + successful */
+> >  	atomic64_t num_writes;	/* --do-- */
+> > -	atomic64_t failed_reads;	/* should NEVER! happen */
+> > +	atomic64_t failed_reads;	/* can happen when memory is too low */
+> >  	atomic64_t failed_writes;	/* can happen when memory is too low */
+> >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+> >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
+> > --
+> > 2.0.1.474.g72c7794
+> 
+> How abouting moving failed_reads/writes in zram_bvec_rw?
 
-Why does it imply that? There are four competing entities here:
+I think this implementation of yours is pretty clean and simple because this one
+hides every error paths inside zram_bvec_{read,write}, so we do not need to
+consider covering the stat code to everywhere of inside.
 
- - seccomp
- - tracehook
- - ftrace (trace_sys_*)
- - audit
+IMHO, your implementation also fixed the issue in following call chain:
+->zram_bvec_rw
+  ->zram_bvec_write
+    ->zram_decompress_page
+      ->atomic64_inc(failed_reads)    ---at perspective of user, this kind of
+      failure should be regarded as the write one's, because user pay fewer
+      attention to inner error of zram.
 
-With the exception of ftrace, they can all potentially rewrite the pt_regs
-(the code you cite above is just below a ptrace_event call), so we have
-to choose some order in which to call them.
+Please correct me if I'm wrong, and thanks for your review and suggestion. :)
 
-On entry, x86 and arm call them in the order I listed above, so it seems
-sensible to follow that.
+Regards,
+Yu
 
-> I assumed, in my next version, we could skip a system call by overwriting
-> syscallno with x8 in syscall_trace_enter() after __secure_computing()
-> returns 0, and it actually works.
+> 
+> int zram_bvec_rw(..)
+> {
+>         if (rw == READ) {
+>                 atomic64_inc(num_reads);
+>                 ret = zram_bvec_read(xxx);
+>         } else {
+>                 atomic64_inc(&num_writes);
+>                 ret = zram_bvec_write(xxx);
+>         }
+> 
+>         if (unlikely(ret)) {
+>                 if (rw == READ)
+>                         atomic64_inc(failed_reads);
+>                 else
+>                         atomic64_inc(failed_writes);
+>         }
+> }
+> 
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> --
+> Kind regards,
+> Minchan Kim
 
-Why does overwriting the syscallno with x8 skip the syscall?
-
-I thought the idea was that we would save w8 prior to each call that could
-change the pt_regs, then if it was changed to -1 we would replace it with
-the saved value and return -1? The only confusion I have is whether we
-should call the exit hooks after skipping a syscall. I *think* x86 does
-call them, but ARM doesn't. Andy says this can trigger an OOPs:
-
-  http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/274988.html
-
-so we should fix that for ARM while we're here.
-
-Will
