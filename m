@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254AbaHLMlV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 08:41:21 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:38892 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbaHLMlU (ORCPT
+	id S1751797AbaHLMqW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 08:46:22 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:46146 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113AbaHLMqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 08:41:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <s5hbnrpgah7.wl%tiwai@suse.de>
-References: <1407845740-3524-1-git-send-email-sudipm.mukherjee@gmail.com>
-	<s5hbnrpgah7.wl%tiwai@suse.de>
-Date: Tue, 12 Aug 2014 18:11:19 +0530
-Message-ID: <CADVatmObZZ+DkFsuyagD05f=LhobVP4u-7gC9LXr_UcDgV_TOg@mail.gmail.com>
-Subject: Re: [PATCH] sound: pci: es1968: use pci_device_id
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: perex@perex.cz, alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Aug 2014 08:46:20 -0400
+From: Chen Yucong <slaoub@gmail.com>
+To: tony.luck@intel.com
+Cc: gong.chen@linux.intel.com, andi@firstfloor.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chen Yucong <slaoub@gmail.com>
+Subject: [PATCH] x86, MCE: support raising machine check poll for software MCE injection in IRQ context
+Date: Tue, 12 Aug 2014 20:45:44 +0800
+Message-Id: <1407847544-13224-1-git-send-email-slaoub@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 5:56 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Tue, 12 Aug 2014 17:45:40 +0530,
-> Sudip Mukherjee wrote:
->>
->> Uses the struct pci_device_id instead of the depreciated macro DEFINE_PCI_DEVICE_TABLE.
->
-> If we do this, better to apply to all sound/pci/* at once after
-> 3.17-rc1 is released.
->
->
-> thanks,
->
-> Takashi
+At present MCJ_NMI_BROADCAST(same for raise_local) supports both raise_exception()
+and raise_poll(), but MCJ_IRQ_BROADCAST only supports raise_exception(). The goal
+of this patch is that MCJ_IRQ_BROADCAST can support raising machine check poll.
 
-If we apply to all sound.pci/* , then it will be 69 replacements in
-one go. If you all want that way , then will do it after 3.17-rc1 is
-releases .
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce-inject.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-Thanks
-Sudip
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+index 5ac2d1f..97e4f7a 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+@@ -99,11 +99,13 @@ static void mce_irq_ipi(void *info)
+ 	int cpu = smp_processor_id();
+ 	struct mce *m = &__get_cpu_var(injectm);
+ 
+-	if (cpumask_test_cpu(cpu, mce_inject_cpumask) &&
+-			m->inject_flags & MCJ_EXCEPTION) {
+-		cpumask_clear_cpu(cpu, mce_inject_cpumask);
++	if (!cpumask_test_cpu(cpu, mce_inject_cpumask))
++		return;
++	cpumask_clear_cpu(cpu, mce_inject_cpumask);
++	if (m->inject_flags & MCJ_EXCEPTION)
+ 		raise_exception(m, NULL);
+-	}
++	else if (m->status)
++		raise_poll(m);
+ }
+ 
+ /* Inject mce on current CPU */
+-- 
+1.7.10.4
+
