@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003AbaHLGQY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 02:16:24 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:37101 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207AbaHLGQW (ORCPT
+	id S1752742AbaHLG1h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 02:27:37 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:63461 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223AbaHLG1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 02:16:22 -0400
+	Tue, 12 Aug 2014 02:27:35 -0400
+From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+To: <hdegoede@redhat.com>
+CC: <gregkh@linuxfoundation.org>, <kraxel@redhat.com>,
+        <mdharm-usb@one-eyed-alien.net>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH v3] uas: replace WARN_ON_ONCE() with lockdep_assert_held()
+Date: Tue, 12 Aug 2014 12:10:21 +0530
+Message-ID: <1407825621-23322-1-git-send-email-sanjeev_sharma@mentor.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <yes>
+References: <yes>
 MIME-Version: 1.0
-In-Reply-To: <1827037.Yd5d4GH5Ub@spock>
-References: <4708675.eITUXPv8Ih@spock>
-	<2651364.4shODVy8cx@spock>
-	<CAOh2x=k2xpfqz+VjYpPbQy6Z5aeo8DxkYmk7JSmrAZxQOJSU9Q@mail.gmail.com>
-	<1827037.Yd5d4GH5Ub@spock>
-Date: Tue, 12 Aug 2014 11:46:21 +0530
-X-Google-Sender-Auth: TS5S0T1_YOE1XwtsW9zkWi77ZU0
-Message-ID: <CAOh2x=k09cQ40EiK72ELfDH8e2M9_ZYbrtK3wz9_1dtYU1+DCQ@mail.gmail.com>
-Subject: Re: [BUG] oops in cpufreq driver with AMD Kaveri CPU
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Oleksandr Natalenko <oleksandr@natalenko.name>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginalArrivalTime: 12 Aug 2014 06:27:33.0549 (UTC) FILETIME=[8042FDD0:01CFB5F6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 11:25 AM, Oleksandr Natalenko
-<oleksandr@natalenko.name> wrote:
-> What should I do to debug it? Is that necessary to recompile kernel with full
-> debug?
+on some architecture spin_is_locked() always return false in
+uniprocessor configuration and therefore it would be advise
+to replace with lockdep_assert_held().
 
-Yeah, you need to recompile the kernel for sure but not necessarily with debug
-support..
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+Changes in v3:
+ incorporated review comment suggested by Greg
 
-Some background:
+ drivers/usb/storage/uas.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-In cpufreq framework, we manage a CPUs frequency based on the load
-on CPU. You are using ondemand governor which tries to
-increase/decrease frequency
-continuously at fixed intervals.
+diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
+index 3f42785..05b2d8e 100644
+--- a/drivers/usb/storage/uas.c
++++ b/drivers/usb/storage/uas.c
+@@ -154,7 +154,7 @@ static void uas_mark_cmd_dead(struct uas_dev_info *devinfo,
+ 	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+ 
+ 	uas_log_cmd_state(cmnd, caller);
+-	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
++	lockdep_assert_held(&devinfo->lock);
+ 	WARN_ON_ONCE(cmdinfo->state & COMMAND_ABORTED);
+ 	cmdinfo->state |= COMMAND_ABORTED;
+ 	cmdinfo->state &= ~IS_IN_WORK_LIST;
+@@ -181,7 +181,7 @@ static void uas_add_work(struct uas_cmd_info *cmdinfo)
+ 	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+ 	struct uas_dev_info *devinfo = cmnd->device->hostdata;
+ 
+-	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
++	lockdep_assert_held(&devinfo->lock);
+ 	cmdinfo->state |= IS_IN_WORK_LIST;
+ 	schedule_work(&devinfo->work);
+ }
+@@ -283,7 +283,7 @@ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller)
+ 	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
+ 	struct uas_dev_info *devinfo = (void *)cmnd->device->hostdata;
+ 
+-	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
++	lockdep_assert_held(&devinfo->lock);
+ 	if (cmdinfo->state & (COMMAND_INFLIGHT |
+ 			      DATA_IN_URB_INFLIGHT |
+ 			      DATA_OUT_URB_INFLIGHT |
+@@ -622,7 +622,7 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
+ 	struct urb *urb;
+ 	int err;
+ 
+-	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
++	lockdep_assert_held(&devinfo->lock);
+ 	if (cmdinfo->state & SUBMIT_STATUS_URB) {
+ 		urb = uas_submit_sense_urb(cmnd, gfp, cmdinfo->stream);
+ 		if (!urb)
+-- 
+1.7.11.7
 
-Now, when we change the frequency we *may* need to communicate this to few
-drivers which *may* depend on CPUs frequency for their functioning.
-
-This is handled via notifications.
-
-Other drivers are required to do this:
-cpufreq_register_notifier(&<some-local-struct>, CPUFREQ_TRANSITION_NOTIFIER);
-
-to register themselves for frequency-change and them a routine of theirs would
-be called from cpufreq-core..
-
-This is exactly where it is crashing for you. i.e. while calling the
-notifier list.
-
-So, you need to check which all notifiers are registered and out of those which
-one is crashing..
-
-The first parameter of the above register-call should be declared this way:
-
-static struct notifier_block xyz_notifier_block = {
-    .notifier_call = xyz_freq_notifier,
-};
-
-I would have done it this way:
-
-- Add a print in cpufreq_register_notifier() to print the address of routine
-present in .notifier_call for case: CPUFREQ_TRANSITION_NOTIFIER
-
-- Then add prints to all the notifiers added for your configuration, shouldn't
-be much only 4-5 I believe. i.e. you can add print messages to the notifier
-callbacks..
-
-- Then see the sequence/order in which they are called normally, when we
-don't crash.. and check that when it crashes..
-
-- You will be able to make out which notifier is crashing. And then we can
-see why?
-
-- You can add something like this to notifier routines:
-pr_info("%s\n", __func__);
-
-This will print function name.
-
->> Which patch are you talking about here?
->
-> I thought about this one [1], but I guess that's not my case.
->
-> [1] https://lkml.org/lkml/2014/7/16/815
-
-I guessed so and I don't think it will help as the crashes reported in this
-bug-log is something different.
