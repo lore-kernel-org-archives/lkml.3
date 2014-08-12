@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782AbaHLQtF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 12:49:05 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:36746 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409AbaHLQtD convert rfc822-to-8bit (ORCPT
+	id S1753604AbaHLQ71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 12:59:27 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60169 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753126AbaHLQ7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 12:49:03 -0400
-Date: Tue, 12 Aug 2014 17:48:58 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v9] arm64: Add architectural support for PCIe
-Message-ID: <20140812164858.GJ25761@e106497-lin.cambridge.arm.com>
-References: <1407860760-25252-1-git-send-email-Liviu.Dudau@arm.com>
- <1407860760-25252-2-git-send-email-Liviu.Dudau@arm.com>
+	Tue, 12 Aug 2014 12:59:25 -0400
+Date: Tue, 12 Aug 2014 17:58:52 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140812165852.GT17528@sirena.org.uk>
+References: <1407861868-20097-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1407861868-20097-2-git-send-email-javier.martinez@collabora.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <1407860760-25252-2-git-send-email-Liviu.Dudau@arm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 12 Aug 2014 16:48:59.0853 (UTC) FILETIME=[50A177D0:01CFB64D]
-X-MC-Unique: 114081217490000501
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="opPAX5Xc6j4THLmW"
 Content-Disposition: inline
+In-Reply-To: <1407861868-20097-2-git-send-email-javier.martinez@collabora.co.uk>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/6] ARM: dts: Create fragment for tps65090 PMU
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Somehow, my cover letter went AWOL. Here it is:
 
-Hi,
+--opPAX5Xc6j4THLmW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This patch adds support for PCI to AArch64. It is based on my v9 patch
-that adds support for creating generic host bridge structure from
-device tree. With that in place, I was able to boot a platform that
-has PCIe host bridge support and use a PCIe network card.
+On Tue, Aug 12, 2014 at 06:44:23PM +0200, Javier Martinez Canillas wrote:
+> The tps65090 is a Power Management Unit (PMU) used in several
+> boards so the same information is described on different DTS.
+> It is better to create a .dtsi fragment that can be included.
 
-Changes from v8:
-  - Added support for generic PCI domains
+Why is it better to do this?
 
-Changes from v7:
-  - Rebased to v3.16-rc3
-  - Removed pci_ioremap_io() function as it is provided by my v8 generic
-    PCI host bridge patches under a different name.
+> +	regulators {
+> +		tps65090_dcdc1: dcdc1 {
+> +		};
+> +
 
-Changes from v6:
-  - Guard the pci_domain_nr() inline implementation with #ifdef CONFIG_PCI as
-    to avoid conflict with default empty version present in include/linux/pci.h.
-    Thanks to Jingoo Han for catching this.
+It appears to be largely content free, exactly the same effect should be
+achieved by removing the entire regulators node.
 
-Changes from v5:
-  - Removed pcibios_fixup_bridge_ranges() as the week default version is fine.
-  - Removed the ALIGN() call in pcibios_align_resource()
-  - Stopped exporting pcibios_align_resource()
+--opPAX5Xc6j4THLmW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Changes from v4:
-  - Fixed the pci_domain_nr() implementation for arm64. Now we use
-    find_pci_host_bride() to find the host bridge before we retrieve
-    the domain number.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Changes from v3:
-  - Added Acks accumulated so far ;)
-  - Still carrying Catalin's patch for moving the PCI_IO_BASE until it
-    lands in linux-next or mainline, in order to ease applying the series
+iQIcBAEBAgAGBQJT6kfJAAoJELSic+t+oim9VVYP/iUUHeUs610ceooZPqBP1L+s
+f96QsZpIikhxYXW42eYY3IHxW2E82yF86quid6Gq+c9bdWQEWxuH1rS10BzYrBZX
+Lvbk0fma844K8MNb06/gsfLTrr4eSK0/zZTeUWMNgPFSaSY/+9wN7cCKu8S9ilv4
+43Ylehc2rvTBFYvQetf/Vdsth8gjthTmDhYrLCUpUiYifuaRth5PQnSR64Nhvl8z
+bKoEwMKCFjOHMxrIVSn7xVVpeUv4+3GG2Ed+Sy//ZuRgBrNRT2npI1MHW+pRLq+j
+MliFKetEwnKYSZ8mRDuN6acC2/QyIr/QatGZQx8HhO6DSGolhDQaMSv3qeIDitWl
+yuNq52WHK+IgtpkjXRBvjkRrHYnIfOA/kVtcS+LM283Bq0uZaAc/vbXx0zPdYxve
+Mr1e1wQx/7aaBFoURR7x55S4V1U6jFCwE3LmuJLBy+RvxPAhG8KVAeCUOhv4FMj5
+nD0DZZImBXFdTz2hbXh2UD06lfhJ715eVILuuBKorMeFiqWjtcLwnUA+nZ0kU6pF
+cogck/gGjlJqG5RfHIcLXasHkYJcWmuJVH+XdQnul3sQwyMGjF4BNGqmU6E1FjjG
+S18vfl4/7uFryUZing9hiiraBd3f4oUDwzl6J2kzd6IR7uHw+W6wh4W4MsL6A/IK
+Uijx9WTj3lEnRcQ2G9VX
+=D5qG
+-----END PGP SIGNATURE-----
 
-Changes from v2:
-  - Implement an arch specific version of pci_register_io_range() and
-    pci_address_to_pio().
-  - Return 1 from pci_proc_domain().
-
-Changes from v1:
-  - Added Catalin's patch for moving the PCI_IO_BASE location and extend
-    its size to 16MB
-  - Integrated Arnd's version of pci_ioremap_io that uses a bitmap for
-    keeping track of assigned IO space and returns an io_offset. At the
-    moment the code is added in arch/arm64 but it can be moved in drivers/pci.
-  - Added a fix for the generic ioport_map() function when !CONFIG_GENERIC_IOMAP
-    as suggested by Arnd.
-
-v8 thread here: https://lkml.org/lkml/2014/7/1/705
-v7 thread here: https://lkml.org/lkml/2014/3/14/320
-v6 thread here: https://lkml.org/lkml/2014/3/5/41
-v5 thread here: https://lkml.org/lkml/2014/3/4/307
-v4 thread here: https://lkml.org/lkml/2014/3/3/298
-v3 thread here: https://lkml.org/lkml/2014/2/28/211
-v2 thread here: https://lkml.org/lkml/2014/2/27/255
-v1 thread here: https://lkml.org/lkml/2014/2/3/389
-
-Liviu Dudau (1):
-  arm64: Add architectural support for PCIe
-
- arch/arm64/Kconfig            | 22 +++++++++++++++++++-
- arch/arm64/include/asm/Kbuild |  1 +
- arch/arm64/include/asm/io.h   |  3 ++-
- arch/arm64/include/asm/pci.h  | 37 +++++++++++++++++++++++++++++++++
- arch/arm64/kernel/Makefile    |  1 +
- arch/arm64/kernel/pci.c       | 48 +++++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 110 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm64/include/asm/pci.h
- create mode 100644 arch/arm64/kernel/pci.c
-
--- 
-2.0.4
-
-
+--opPAX5Xc6j4THLmW--
