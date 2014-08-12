@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaHLMrz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 08:47:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21152 "EHLO mx1.redhat.com"
+	id S1752651AbaHLMub (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 08:50:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9712 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752591AbaHLMry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 08:47:54 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CANP1eJG572cAR1t+pzCExk7EQWb=aDz77-PuP50GAP2j2mETiw@mail.gmail.com>
-References: <CANP1eJG572cAR1t+pzCExk7EQWb=aDz77-PuP50GAP2j2mETiw@mail.gmail.com> <cover.1406043029.git.milosz@adfin.com> <53CE8862.7020201@adfin.com> <28626.1406648278@warthog.procyon.org.uk>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: dhowells@redhat.com, "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, NeilBrown <neilb@suse.de>,
-        Shantanu Goel <sgoel01@yahoo.com>
-Subject: Re: [PATCH 2/3] FS-Cache: Reduce cookie ref count if submit fails.
+	id S1751494AbaHLMua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 08:50:30 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@fb.com>, Akhil.Bhansali@hgst.com
+Subject: Re: [patch] skd: add build dependency on HARDIRQ
+References: <x49a97apxf6.fsf@segfault.boston.devel.redhat.com>
+	<CAMuHMdWRsxFt+J0JufFtbUGFJeCncD99K6J538QJzhrxfHPXrg@mail.gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 12 Aug 2014 08:50:19 -0400
+In-Reply-To: <CAMuHMdWRsxFt+J0JufFtbUGFJeCncD99K6J538QJzhrxfHPXrg@mail.gmail.com>
+	(Geert Uytterhoeven's message of "Tue, 12 Aug 2014 11:20:56 +0200")
+Message-ID: <x49lhqt6fec.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <17619.1407847665.1@warthog.procyon.org.uk>
-Date: Tue, 12 Aug 2014 13:47:45 +0100
-Message-ID: <17620.1407847665@warthog.procyon.org.uk>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Milosz Tanski <milosz@adfin.com> wrote:
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
-> The honest answer is I don't know if it know if needs to be unlocked
-> before or after. I saw a same pattern with unlocking order inside of
-> __fscache_attr_changed in the failure case.
+Hi, Geer,
 
-Following the enomem label, I'm calling fscache_unuse_cookie() which does this
-without holding the lock in the same function.
+> Which kernel version does this apply to?
+>
+> GENERIC_HARDIRQS was removed in
+> commit 0244ad004a54e39308d495fee0a2e637f8b5c317
+> Author: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Date:   Fri Aug 30 09:39:53 2013 +0200
+>
+>     Remove GENERIC_HARDIRQ config option
+>
+>     After the last architecture switched to generic hard irqs the config
+>     options HAVE_GENERIC_HARDIRQS & GENERIC_HARDIRQS and the related code
+>     for !CONFIG_GENERIC_HARDIRQS can be removed.
+>
+>     Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+>
+> after it became supported by all architectures.
 
-I don't think the lock is required because:
+Ah, thanks for pointing that out.  I needed the patch on an older (3.10
+based) kernel and didn't realize it wasn't needed any more.  Sorry for
+the noise!
 
- (1) We hold a ref on cookie->n_active so the cookie cannot go away until we
-     release it, so calling __fscache_unuse_cookie() without the lock held
-     should be fine.
-
- (2) wake_up_atomic_t() does not access cookie->n_active.  The address is
-     merely needed as a key for the waiters to match on.
-
-David
+Cheers,
+Jeff
