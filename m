@@ -1,98 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578AbaHLS0Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 14:26:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45312 "EHLO mx1.redhat.com"
+	id S1754254AbaHLSZw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 14:25:52 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:58367 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753417AbaHLS0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 14:26:14 -0400
-Date: Tue, 12 Aug 2014 14:25:39 -0400
-From: Rik van Riel <riel@redhat.com>
+	id S1753019AbaHLSZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 14:25:50 -0400
+From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: [PATCH RFC] time: drop do_sys_times spinlock
-Message-ID: <20140812142539.01851e52@annuminas.surriel.com>
-Organization: Red Hat, Inc.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: Kees Cook <keescook@chromium.org>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Mark Salter <msalter@redhat.com>, Rabin Vincent <rabin@rab.in>,
+        Liu hua <sdu.liu@huawei.com>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 4/7] ARM: kexec: Make .text R/W in machine_kexec
+Date: Tue, 12 Aug 2014 11:24:26 -0700
+Message-Id: <1407867869-5194-5-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407867869-5194-1-git-send-email-keescook@chromium.org>
+References: <1407867869-5194-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Back in 2009, Spencer Candland pointed out there is a race with
-do_sys_times, where multiple threads calling do_sys_times can
-sometimes get decreasing results.
+From: Nikolay Borisov <Nikolay.Borisov@arm.com>
 
-https://lkml.org/lkml/2009/11/3/522
+With the introduction of Kees Cook's patch to make the kernel .text
+read-only the existing method by which kexec works got broken since it
+directly pokes some values in the template code, which resides in the
+.text section.
 
-As a result of that discussion, some of the code in do_sys_times
-was moved under a spinlock.
+The current patch changes the way those values are inserted so that poking
+.text section occurs only in machine_kexec (e.g when we are about to nuke
+the old kernel and are beyond the point of return). This allows to use
+set_kernel_text_rw() to directly patch the values in the .text section.
 
-However, that does not seem to actually make the race go away on
-larger systems. One obvious remaining race is that after one thread
-is about to return from do_sys_times, it is preempted by another
-thread, which also runs do_sys_times, and stores a larger value in
-the shared variable than what the first thread got.
+I had already sent a patch which achieved this but it was significantly
+more complicated, so this is a cleaner/straight-forward approach.
 
-This race is on the kernel/userspace boundary, and not fixable
-with spinlocks.
-
-Removing the spinlock from do_sys_times does not seem to result
-in an increase in the number of times a decreasing utime is
-observed when running the test case. In fact, on the 80 CPU test
-system that I tried, I saw a small decrease, from an average
-14.8 to 6.5 instances of backwards utime running the test case.
-
-Back in 2009, in changeset 2b5fe6de5 Oleg Nesterov already found
-that it should be safe to remove the spinlock.  I believe this is
-true, because it appears that nobody changes another task's ->sighand
-pointer, except at fork time and exit time, during which the task
-cannot be in do_sys_times.
-
-This is subtle enough to warrant documenting.
-
-The increased scalability of removing the spinlock should help
-things like databases and middleware that measure the resource
-use of every query processed.
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Frank Mayhar <fmayhar@google.com>
-Cc: Frederic Weisbecker <fweisbec@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sanjay Rao <srao@redhat.com>
-Cc: Larry Woodman <lwoodman@redhat.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Nikolay Borisov <Nikolay.Borisov@arm.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+[kees: collapsed kexec_boot_atags (will.daecon)]
+[kees: for bisectability, moved set_kernel_text_rw() to RODATA patch]
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- kernel/sys.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/arm/kernel/machine_kexec.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 66a751e..cb81ce4 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -862,11 +862,15 @@ void do_sys_times(struct tms *tms)
- {
- 	cputime_t tgutime, tgstime, cutime, cstime;
+diff --git a/arch/arm/kernel/machine_kexec.c b/arch/arm/kernel/machine_kexec.c
+index 8cf0996aa1a8..8f75250cbe30 100644
+--- a/arch/arm/kernel/machine_kexec.c
++++ b/arch/arm/kernel/machine_kexec.c
+@@ -29,6 +29,7 @@ extern unsigned long kexec_boot_atags;
  
--	spin_lock_irq(&current->sighand->siglock);
-+	/*
-+	 * sys_times gets away with not locking &current->sighand->siglock
-+	 * because most of the time only the current process gets to change
-+	 * its own sighand pointer. The exception is exit, which changes
-+	 * the sighand pointer of an exiting process.
-+	 */
- 	thread_group_cputime_adjusted(current, &tgutime, &tgstime);
- 	cutime = current->signal->cutime;
- 	cstime = current->signal->cstime;
--	spin_unlock_irq(&current->sighand->siglock);
- 	tms->tms_utime = cputime_to_clock_t(tgutime);
- 	tms->tms_stime = cputime_to_clock_t(tgstime);
- 	tms->tms_cutime = cputime_to_clock_t(cutime);
+ static atomic_t waiting_for_crash_ipi;
+ 
++static unsigned long dt_mem;
+ /*
+  * Provide a dummy crash_notes definition while crash dump arrives to arm.
+  * This prevents breakage of crash_notes attribute in kernel/ksysfs.c.
+@@ -64,7 +65,7 @@ int machine_kexec_prepare(struct kimage *image)
+ 			return err;
+ 
+ 		if (be32_to_cpu(header) == OF_DT_HEADER)
+-			kexec_boot_atags = current_segment->mem;
++			dt_mem = current_segment->mem;
+ 	}
+ 	return 0;
+ }
+@@ -166,9 +167,8 @@ void machine_kexec(struct kimage *image)
+ 	kexec_start_address = image->start;
+ 	kexec_indirection_page = page_list;
+ 	kexec_mach_type = machine_arch_type;
+-	if (!kexec_boot_atags)
+-		kexec_boot_atags = image->start - KEXEC_ARM_ZIMAGE_OFFSET + KEXEC_ARM_ATAGS_OFFSET;
+-
++	kexec_boot_atags = dt_mem ?: image->start - KEXEC_ARM_ZIMAGE_OFFSET
++				     + KEXEC_ARM_ATAGS_OFFSET;
+ 
+ 	/* copy our kernel relocation code to the control code page */
+ 	reboot_entry = fncpy(reboot_code_buffer,
+-- 
+1.9.1
+
