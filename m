@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179AbaHLStl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 14:49:41 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:38363 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019AbaHLStj (ORCPT
+	id S1754465AbaHLSxH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 14:53:07 -0400
+Received: from mail-oi0-f43.google.com ([209.85.218.43]:41160 "EHLO
+	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406AbaHLSxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 14:49:39 -0400
-Message-ID: <53EA61B9.2070805@collabora.co.uk>
-Date: Tue, 12 Aug 2014 20:49:29 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Tue, 12 Aug 2014 14:53:05 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] ARM: dts: Add tps65090 FETs constraints
-References: <1407861868-20097-1-git-send-email-javier.martinez@collabora.co.uk> <1407861868-20097-7-git-send-email-javier.martinez@collabora.co.uk> <20140812172552.GU17528@sirena.org.uk>
-In-Reply-To: <20140812172552.GU17528@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53EA5782.1080301@canonical.com>
+References: <53E4B281.5050302@canonical.com>
+	<53E4C5D5.2090103@citrix.com>
+	<53E4E042.1070300@canonical.com>
+	<CAGXu5jJ+FTqgYpLH5x0VBm9QMND-b0Sze6q6pc=tRe2oFMu5uA@mail.gmail.com>
+	<53EA5782.1080301@canonical.com>
+Date: Tue, 12 Aug 2014 11:53:03 -0700
+X-Google-Sender-Auth: 8mg6RAqfU_UZfo_QvZHnZn0CGDA
+Message-ID: <CAGXu5jJXHd9WqWs+FHQsRZdJNv1n075q7rwm20EwwXBdVgaVsA@mail.gmail.com>
+Subject: Re: [Xen-devel] Xen PV domain regression with KASLR enabled (kernel 3.16)
+From: Kees Cook <keescook@chromium.org>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: David Vrabel <david.vrabel@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2014 07:25 PM, Mark Brown wrote:
-> 
->>  		tps65090_fet1: fet1 {
->> +			regulator-min-microvolt = <5000000>;
->> +			regulator-max-microvolt = <17000000>;
->>  		};
-> 
-> No, this is completely broken and exactly the sort of thing that makes
-> doing generic device .dtsi a bad idea.  We have absolutely no idea if
-> these voltage ranges are suitable for use on a given board using the
-> device, these are the design limits for the device but tell us nothing
-> about the system they are deployed in.
-> 
+On Tue, Aug 12, 2014 at 11:05 AM, Stefan Bader
+<stefan.bader@canonical.com> wrote:
+> On 12.08.2014 19:28, Kees Cook wrote:
+>> On Fri, Aug 8, 2014 at 7:35 AM, Stefan Bader <stefan.bader@canonical.com> wrote:
+>>> On 08.08.2014 14:43, David Vrabel wrote:
+>>>> On 08/08/14 12:20, Stefan Bader wrote:
+>>>>> Unfortunately I have not yet figured out why this happens, but can confirm by
+>>>>> compiling with or without CONFIG_RANDOMIZE_BASE being set that without KASLR all
+>>>>> is ok, but with it enabled there are issues (actually a dom0 does not even boot
+>>>>> as a follow up error).
+>>>>>
+>>>>> Details can be seen in [1] but basically this is always some portion of a
+>>>>> vmalloc allocation failing after hitting a freshly allocated PTE space not being
+>>>>> PTE_NONE (usually from a module load triggered by systemd-udevd). In the
+>>>>> non-dom0 case this repeats many times but ends in a guest that allows login. In
+>>>>> the dom0 case there is a more fatal error at some point causing a crash.
+>>>>>
+>>>>> I have not tried this for a normal PV guest but for dom0 it also does not help
+>>>>> to add "nokaslr" to the kernel command-line.
+>>>>
+>>>> Maybe it's overlapping with regions of the virtual address space
+>>>> reserved for Xen?  What the the VA that fails?
+>>>>
+>>>> David
+>>>>
+>>> Yeah, there is some code to avoid some regions of memory (like initrd). Maybe
+>>> missing p2m tables? I probably need to add debugging to find the failing VA (iow
+>>> not sure whether it might be somewhere in the stacktraces in the report).
+>>>
+>>> The kernel-command line does not seem to be looked at. It should put something
+>>> into dmesg and that never shows up. Also today's random feature is other PV
+>>> guests crashing after a bit somewhere in the check_for_corruption area...
+>>
+>> Right now, the kaslr code just deals with initrd, cmdline, etc. If
+>> there are other reserved regions that aren't listed in the e820, it'll
+>> need to locate and skip them.
+>>
+>> -Kees
+>>
+> Making my little steps towards more understanding I figured out that it isn't
+> the code that does the relocation. Even with that completely disabled there were
+> the vmalloc issues. What causes it seems to be the default of the upper limit
+> and that this changes the split between kernel and modules to 1G+1G instead of
+> 512M+1.5G. That is the reason why nokaslr has no effect.
 
-Thanks for the explanation. I did the refactoring because I saw that there are
-.dtsi files for other PMICs already (twl4030, twl6030, tps65*) but now you also
-explained that those are broken as well.
+Oh! That's very interesting. There must be some assumption in Xen
+about the kernel VM layout then?
 
-So, is adding these voltages ranges (the design limits) in the Peach Pit DTS
-file directly an acceptable solution? Basically what my previous patch [0] did.
+-Kees
 
-That matches what is in the board schematic so I assume that it's safe to use
-these voltage ranges for that machine. If so I'll drop this series and repost
-that patch fixing the typo error and commit message pointed by Doug that were
-already addressed in $subject.
-
-Best regards,
-Javier
-
-[0]: https://lkml.org/lkml/2014/8/11/204
+-- 
+Kees Cook
+Chrome OS Security
