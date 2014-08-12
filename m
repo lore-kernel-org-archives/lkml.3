@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779AbaHLF6L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 01:58:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30171 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750765AbaHLF6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 01:58:09 -0400
-Message-ID: <53E9ACE9.4000608@redhat.com>
-Date: Tue, 12 Aug 2014 07:58:01 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752301AbaHLF7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 01:59:49 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:52168 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422AbaHLF7s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 01:59:48 -0400
+Date: Tue, 12 Aug 2014 08:00:31 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com,
+        zheng.z.yan@intel.com
+Subject: [PATCH] perf/x86/uncore: export basic memory events for IVT IMC PMU
+Message-ID: <20140812060031.GA25239@quad>
 MIME-Version: 1.0
-To: Sanjeev Sharma <sanjeev_sharma@mentor.com>
-CC: gregkh@linuxfoundation.org, kraxel@redhat.com,
-        mdharm-usb@one-eyed-alien.net, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH v2] uas: replace WARN_ON_ONCE() with lockdep_assert_held()
-References: <1407823717-17265-1-git-send-email-sanjeev_sharma@mentor.com>
-In-Reply-To: <1407823717-17265-1-git-send-email-sanjeev_sharma@mentor.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 08/12/2014 08:08 AM, Sanjeev Sharma wrote:
-> spin_is_locked() always return false in uniprocessor configuration and therefore it
-> would be advise to replace with lockdep_assert_held().
-> 
-> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-> ---
-> Changes in v2:
->  - replaced WARN_ON_ONCE() with lockdep_assert_held() to
->  avoid runtime overhead instead of assert_spin_locked()
+This patch exposes two basic events for Ivytown IMC uncore PMU:
 
-Thanks!
+- cas_count_read: number of full-cache line reads to memory controller
+- cas_count_write: number of full-cache line writes to memory controller
 
-Acked-by: Hans de Goede <hdegoede@redhat.com>
+Those events use the same encoding as for SNB-EP, so reuse the same
+event table. See specification in:
 
-Regards,
+http://www.intel.com/content/dam/www/public/us/en/documents/manuals/xeon-e5-2600-v2-uncore-manual.pdf
 
-Hans
+By aggregating all the read and write events from all the memory controllers
+of each processor socket, one can determine the total memory bandwidth utilization.
 
-> 
->  drivers/usb/storage/uas.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
-> index 3f42785..05b2d8e 100644
-> --- a/drivers/usb/storage/uas.c
-> +++ b/drivers/usb/storage/uas.c
-> @@ -154,7 +154,7 @@ static void uas_mark_cmd_dead(struct uas_dev_info *devinfo,
->  	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
->  
->  	uas_log_cmd_state(cmnd, caller);
-> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
-> +	lockdep_assert_held(&devinfo->lock);
->  	WARN_ON_ONCE(cmdinfo->state & COMMAND_ABORTED);
->  	cmdinfo->state |= COMMAND_ABORTED;
->  	cmdinfo->state &= ~IS_IN_WORK_LIST;
-> @@ -181,7 +181,7 @@ static void uas_add_work(struct uas_cmd_info *cmdinfo)
->  	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
->  	struct uas_dev_info *devinfo = cmnd->device->hostdata;
->  
-> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
-> +	lockdep_assert_held(&devinfo->lock);
->  	cmdinfo->state |= IS_IN_WORK_LIST;
->  	schedule_work(&devinfo->work);
->  }
-> @@ -283,7 +283,7 @@ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller)
->  	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
->  	struct uas_dev_info *devinfo = (void *)cmnd->device->hostdata;
->  
-> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
-> +	lockdep_assert_held(&devinfo->lock);
->  	if (cmdinfo->state & (COMMAND_INFLIGHT |
->  			      DATA_IN_URB_INFLIGHT |
->  			      DATA_OUT_URB_INFLIGHT |
-> @@ -622,7 +622,7 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
->  	struct urb *urb;
->  	int err;
->  
-> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
-> +	lockdep_assert_held(&devinfo->lock);
->  	if (cmdinfo->state & SUBMIT_STATUS_URB) {
->  		urb = uas_submit_sense_urb(cmnd, gfp, cmdinfo->stream);
->  		if (!urb)
-> 
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index cfc6f9d..800e087 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -1391,6 +1391,7 @@ static struct intel_uncore_type ivt_uncore_imc = {
+ 	.fixed_ctr_bits	= 48,
+ 	.fixed_ctr	= SNBEP_MC_CHy_PCI_PMON_FIXED_CTR,
+ 	.fixed_ctl	= SNBEP_MC_CHy_PCI_PMON_FIXED_CTL,
++	.event_descs	= snbep_uncore_imc_events,
+ 	IVT_UNCORE_PCI_COMMON_INIT(),
+ };
+ 
+-- 
+1.7.9.5
+
