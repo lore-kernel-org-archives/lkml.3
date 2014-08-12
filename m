@@ -1,112 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaHLItc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 04:49:32 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:47300 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916AbaHLIt3 (ORCPT
+	id S1753333AbaHLIv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 04:51:56 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:52494 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769AbaHLIvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 04:49:29 -0400
+	Tue, 12 Aug 2014 04:51:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <1407819913-2488-1-git-send-email-tim.kryger@gmail.com>
-References: <1407819913-2488-1-git-send-email-tim.kryger@gmail.com>
-Date: Tue, 12 Aug 2014 10:49:28 +0200
-Message-ID: <CAPDyKFo1pAyx2DNH2Q0R6RF5=dPSccvKi0vgQ0KeZ3gf+xisWQ@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: core: Remove fixed voltage regulator logic
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Tim Kryger <tim.kryger@gmail.com>
-Cc: Chris Ball <chris@printf.net>, Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <53E93FF1.1010809@codeaurora.org>
+References: <1406250448-470-1-git-send-email-skannan@codeaurora.org>
+	<1406250448-470-4-git-send-email-skannan@codeaurora.org>
+	<CAKohpom-+At=YjEkZH-mn8OP1ATDBzuLw7mTPaUnG+1qvJ8FTA@mail.gmail.com>
+	<53E93FF1.1010809@codeaurora.org>
+Date: Tue, 12 Aug 2014 14:21:53 +0530
+Message-ID: <CAKohpokZjAu5E1=m8LRMb=Z87qV1pdLbwZd7gc-462EuJRU4pg@mail.gmail.com>
+Subject: Re: [PATCH v4 3/5] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
+        Todd Poynor <toddpoynor@google.com>,
+        "Srivatsa S . Bhat" <srivatsa@mit.edu>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 August 2014 07:05, Tim Kryger <tim.kryger@gmail.com> wrote:
-> There is no need for regulator consumers to include special logic for
-> fixed voltage regulators as they support regulator_set_voltage() just
-> like their non-fixed regulator counterparts.
->
-> Signed-off-by: Tim Kryger <tim.kryger@gmail.com>
+On 12 August 2014 03:43, Saravana Kannan <skannan@codeaurora.org> wrote:
+> On 08/07/2014 03:48 AM, Viresh Kumar wrote:
 
-Thanks! Queued for 3.18.
+>>> @@ -1369,24 +1354,15 @@ static int __cpufreq_remove_dev_prepare(struct
+>>> device *dev,
+>>>                  }
+>>>          }
+>>>
+>>> -       if (!cpufreq_driver->setpolicy)
+>>> -               strncpy(per_cpu(cpufreq_cpu_governor, cpu),
+>>> -                       policy->governor->name, CPUFREQ_NAME_LEN);
+>>> -
+>>
+>>
+>> Why? Probably I did mention this earlier as well?
+>
+>
+> This code is saving the governor name here to restore it when the policy is
+> created again after suspend/resume or hotplug of all CPUs. Since we no
+> longer throw away the policy struct, there's no point in doing this.
+>
+> I should remove this per cpu variable though. Will do it in v5.
 
-Kind regards
-Uffe
+Hmm, makes sense. So probably keep this code in this patch and get rid
+of all uses of 'cpufreq_cpu_governor' in a separate patch.
 
-> ---
->
-> Changes in v2:
->   - Remove query of the current voltage, just set the desired voltage
->
->
-> This simplification of logic is possible due to a recent change that
-> allows fixed regulators to return success for regulator_set_voltage
-> operations if the requested range overlaps with the fixed voltage.
->
-> c00dc35 regulator: core: Allow regulator_set_voltage for fixed regulators
->
-> I have verified this change on a BeagleBone Black where the eMMC and SD
-> card receive a fixed 3.3v supply.  The TI HSMMC driver used on the BBB,
-> like the Intel PXA MMC driver, ensures that software only requests VMMC
-> be set to supported voltage ranges by calling mmc_regulator_get_ocrmask.
-> This function considers the capabilities of the regulator in order to
-> determine an appropriate OCR mask of supported voltages that constrains
-> the set of values which may later be passed into mmc_regulator_set_ocr.
->
-> Once the following (queued) patch is merged, the SDHCI driver will call
-> mmc_regulator_get_supply which then calls mmc_regulator_get_ocrmask.
->
-> https://lkml.org/lkml/2014/6/13/451
->
-> The Atmel, ARM, Freescale MXC, SuperH Internal MMCIF, Allwinner sunxi,
-> Toshiba Mobile IO Controller, and Renesas USDHI6ROL0 drivers already
-> call mmc_regulator_get_supply so they too only request voltages that
-> are achievable.
->
-> There are no other callers of mmc_regulator_set_ocr so this patch should
-> be safe.
+>>> +       if (cpus > 1) {
+>>> +               if (cpu == policy->cpu) {
+>>> +                       new_cpu = cpumask_any_but(policy->cpus, cpu);
+>>> +                       if (new_cpu >= 0)
+>>
+>>
+>> Can this ever be false?
 >
 >
->  drivers/mmc/core/core.c |   18 +-----------------
->  1 file changed, 1 insertion(+), 17 deletions(-)
+> If this is the last CPU going down.
+
+Can that be true? Its present in (cpus > 1) block :)
+
+>>>   static int cpufreq_remove_dev(struct device *dev, struct
+>>> subsys_interface *sif)
+>>>   {
+>>>          unsigned int cpu = dev->id;
+>>> -       int ret;
+>>> -
+>>> -       if (cpu_is_offline(cpu))
+>>> -               return 0;
+>>> +       int ret = 0;
+>>>
+>>> -       ret = __cpufreq_remove_dev_prepare(dev, sif);
+>>> +       if (cpu_online(cpu))
+>>> +               ret = __cpufreq_remove_dev_prepare(dev, sif);
+>>
+>>
+>> Why do you need a change here?
 >
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index 7dc0c85..1a3e35b 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -1263,7 +1263,6 @@ int mmc_regulator_set_ocr(struct mmc_host *mmc,
 >
->         if (vdd_bit) {
->                 int             tmp;
-> -               int             voltage;
->
->                 /*
->                  * REVISIT mmc_vddrange_to_ocrmask() may have set some
-> @@ -1280,22 +1279,7 @@ int mmc_regulator_set_ocr(struct mmc_host *mmc,
->                         max_uV = min_uV + 100 * 1000;
->                 }
->
-> -               /*
-> -                * If we're using a fixed/static regulator, don't call
-> -                * regulator_set_voltage; it would fail.
-> -                */
-> -               voltage = regulator_get_voltage(supply);
-> -
-> -               if (!regulator_can_change_voltage(supply))
-> -                       min_uV = max_uV = voltage;
-> -
-> -               if (voltage < 0)
-> -                       result = voltage;
-> -               else if (voltage < min_uV || voltage > max_uV)
-> -                       result = regulator_set_voltage(supply, min_uV, max_uV);
-> -               else
-> -                       result = 0;
-> -
-> +               result = regulator_set_voltage(supply, min_uV, max_uV);
->                 if (result == 0 && !mmc->regulator_enabled) {
->                         result = regulator_enable(supply);
->                         if (!result)
-> --
-> 1.7.9.5
->
+> Since we no longer do remove_dev_finish during hotplug, we can't just short
+> circuit the entire function. We have to finish the remove when the CPU is
+> hot-removed or when the cpufreq driver is unregistered.
+
+I think this is tricky and we must have a clear comment here..
+I missed this on my initial reviews..
