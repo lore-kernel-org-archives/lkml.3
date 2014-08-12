@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaHLOw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 10:52:27 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:22659 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbaHLOw0 (ORCPT
+	id S1753023AbaHLOxB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 10:53:01 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:39844 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377AbaHLOw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 10:52:26 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Hannes Reinecke <hare@suse.de>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Doug Gilbert <dgilbert@interlog.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: RE: [RFC PATCH 01/10] scsi/constants: Cleanup printk message in
- __scsi_print_sense()
-Thread-Topic: [RFC PATCH 01/10] scsi/constants: Cleanup printk message in
- __scsi_print_sense()
-Thread-Index: AQHPswBZyo7pF8Tcvk+aemW20MEd4JvNDb2Q
-Date: Tue, 12 Aug 2014 14:51:42 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958BE5A76@G9W0745.americas.hpqcorp.net>
-References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal>
- <20140808115006.6768.5118.stgit@yuno-kbuild.novalocal>
-In-Reply-To: <20140808115006.6768.5118.stgit@yuno-kbuild.novalocal>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 12 Aug 2014 10:52:59 -0400
+Date: Tue, 12 Aug 2014 16:52:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
+Cc: mingo@redhat.com, peterz@infradead.org, juri.lelli@gmail.com,
+        linux-kernel@vger.kernel.org, xiaofeng.yan2012@gmail.com
+Subject: Re: [PATCH v3] sched/deadline: overrun could happen in
+ start_hrtick_dl
+Message-ID: <20140812145254.GA7103@gmail.com>
+References: <1407316094-18207-1-git-send-email-xiaofeng.yan@huawei.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407316094-18207-1-git-send-email-xiaofeng.yan@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7CEqWPm014282
 
 
+* xiaofeng.yan <xiaofeng.yan@huawei.com> wrote:
 
-> -----Original Message-----
-> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
-> owner@vger.kernel.org] On Behalf Of Yoshihiro YUNOMAE
-> Sent: Friday, 08 August, 2014 6:50 AM
-...
-> Subject: [RFC PATCH 01/10] scsi/constants: Cleanup printk message in
-> __scsi_print_sense()
+> It could be wrong for the precision of runtime and deadline
+> when the precision is within microsecond level. For example:
+> Task runtime deadline period
+>  P1   200us   500us   500us
 > 
-> A device name is output like "sda: Sense Key : Medium Error [current]"
-> in __scsi_print_sense(), but it should be "[sda] Sense Key : Medium Error
-> [current]" because other printk messages output a device name like "[sda]
-> foo."
+> This case need enbale HRTICK feature by the next command
+>
+> PC#echo "HRTICK" > /sys/kernel/debug/sched_features
+> PC#trace-cmd record -e sched_switch &
+> PC#./schedtool -E -t 200000:500000 -e ./test
 > 
-...
-> diff --git a/drivers/scsi/constants.c b/drivers/scsi/constants.c
-> index c6a7a4a..a0e8159 100644
-> --- a/drivers/scsi/constants.c
-> +++ b/drivers/scsi/constants.c
-> @@ -1470,7 +1470,7 @@ void __scsi_print_sense(struct scsi_device *sdev,
-> const char *name,
->  		return;
->  	}
+> Some of runtime and deadline run with millisecond level by
+> reading kernershark. Some pieces of trace.dat are as follows:
+> (remove some irrelevant information)
+> <idle>-0   157.603157: sched_switch: :R ==> 2481:4294967295: test
+> test-2481  157.603203: sched_switch:  2481:R ==> 0:120: swapper/2
+> <idle>-0   157.605657: sched_switch:  :R ==> 2481:4294967295: test
+> test-2481  157.608183: sched_switch:  2481:R ==> 2483:120: trace-cmd
+> trace-cmd-2483 157.609656: sched_switch:2483:R==>2481:4294967295: test
 > 
-> -	sdev_printk(KERN_INFO, sdev, "%s: Sense Key : %s %s%s\n", name,
-> +	sdev_printk(KERN_INFO, sdev, "[%s] Sense Key : %s %s%s\n", name,
->  	       scsi_sense_key_string(sshdr.sense_key),
->  	       scsi_sense_type_string(&sshdr),
->  	       scsi_sense_format_string(&sshdr));
+> We can get the runtime from the information at some point.
+> runtime = 157.605657 - 157.608183
+> runtime = 0.002526(2.526ms)
+> The correct runtime should be less than or equal to 200us at some point.
 > 
+> The problem is caused by a conditional judgment "delta > 10000".
+> Because no hrtimer start up to control the runtime when runtime is less than 10us.
+> So the process will continue to run until tick-period coming.
+> 
+> Move the code with the limit of the least time slice
+> from hrtick_start_fair() to hrtick_start() because
+> EDF schedule class also need this function in start_hrtick_dl().
+> 
+> To fix this problem, we call hrtimer_start() unconditionally in start_hrtick_dl(),
+> and make sure schedule slice won't be smaller than 10us in hrtimer_start().
+> 
+> Signed-off-by: Xiaofeng Yan <xiaofeng.yan@huawei.com>
+> Reviewed-by:   Peter Zijlstra <peterz@infradead.org>
+> Reviewed-by:   Li Zefan <lizefan@huawei.com>
 
+The whole changelog is very hard to read and isn't proper English, nor 
+is it truly explanatory. Could you please fix the changelog, or bounce 
+it to someone who will fix it for you?
 
-The callers of __scsi_print_sense do not always pass in a name
-like "sda".  In fact, sd.c doesn't even call that function; its
-sd_print_sense_hdr calls sd_printk (which prints name as "[%s]")
-and scsi_show_sense_hdr.
+Thanks,
 
-There are just 3 kernel files that call this function:
-osst.c:                 __scsi_print_sense("osst ", SRpnt->sense, SCSI_SENSE_BUFFERSIZE);
-osst.c:                 __scsi_print_sense("osst ", SRpnt->sense, SCSI_SENSE_BUFFERSIZE);
-There is a separate call to printk just before each of those,
-which prints out the name, without [].
-
-sg.c:                   __scsi_print_sense(__func__, sense,
-That's printing the C function name.
-
-st.c:                    __scsi_print_sense(name, SRpnt->sense, SCSI_SENSE_BUFFERSIZE);
-st.c:                   __scsi_print_sense(name, SRpnt->sense, SCSI_SENSE_BUFFERSIZE);
-This is more like what you have in mind.
-
-
----
-Rob Elliott    HP Server Storage
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	Ingo
