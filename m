@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838AbaHLMPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 08:15:06 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:35811 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455AbaHLMPD (ORCPT
+	id S1752020AbaHLMQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 08:16:23 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:32890 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851AbaHLMQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 08:15:03 -0400
-Message-ID: <1407845701.10122.60.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] tcp: don't use timestamp from repaired skb-s to
- calculate RTT
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Tue, 12 Aug 2014 05:15:01 -0700
-In-Reply-To: <1407836714-26813-1-git-send-email-avagin@openvz.org>
-References: <1407836714-26813-1-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 12 Aug 2014 08:16:21 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: perex@perex.cz, tiwai@suse.de
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] sound: pci: es1968: use pci_device_id
+Date: Tue, 12 Aug 2014 17:45:40 +0530
+Message-Id: <1407845740-3524-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-08-12 at 13:45 +0400, Andrey Vagin wrote:
-> We don't know right timestamp for repaired skb-s. Wrong RTT estimations
-> isn't good, because some congestion modules heavily depends on it.
-> 
-> This patch adds the TCPCB_REPAIRED flag, which is included in
-> TCPCB_RETRANS.
-
-...
-
-> +
-> +				/* All packets are restored as if they have
-> +				 * already been sent. skb_mstamp isn't set to
-> +				 * avoid wrong rtt estimation.
-> +				 */
-> +				if (tp->repair) {
-> +					TCP_SKB_CB(skb)->sacked |= TCPCB_REPAIRED;
-> +					TCP_SKB_CB(skb)->when = tcp_time_stamp;
-> +				}
->  			}
->  
->  			/* Try to append data to the end of skb. */
+Uses the struct pci_device_id instead of the depreciated macro DEFINE_PCI_DEVICE_TABLE.
 
 
-Are you sure TCP_SKB_CB(skb)->when needs to be set ?
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ sound/pci/es1968.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-It should not anymore.
-
-If yes, I believe a comment would help a lot here.
-
-Also, please include this tag to ease stable backports (3.15+) :
-
-Fixes: 431a91242d8d ("tcp: timestamp SYN+DATA messages")
-Fixes: 740b0f1841f6 ("tcp: switch rtt estimations to usec resolution")
-
-Thanks !
-
+diff --git a/sound/pci/es1968.c b/sound/pci/es1968.c
+index 5bb1cf6..a9956a7 100644
+--- a/sound/pci/es1968.c
++++ b/sound/pci/es1968.c
+@@ -570,7 +570,7 @@ struct es1968 {
+ 
+ static irqreturn_t snd_es1968_interrupt(int irq, void *dev_id);
+ 
+-static DEFINE_PCI_DEVICE_TABLE(snd_es1968_ids) = {
++static const struct pci_device_id snd_es1968_ids[] = {
+ 	/* Maestro 1 */
+         { 0x1285, 0x0100, PCI_ANY_ID, PCI_ANY_ID, PCI_CLASS_MULTIMEDIA_AUDIO << 8, 0xffff00, TYPE_MAESTRO },
+ 	/* Maestro 2 */
+-- 
+1.8.1.2
 
