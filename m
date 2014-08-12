@@ -1,117 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610AbaHLH0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:26:43 -0400
-Received: from natalenko.name ([78.47.77.148]:55102 "EHLO natalenko.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798AbaHLH0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:26:41 -0400
-DMARC-Filter: OpenDMARC Filter v1.2.0 natalenko.name 97608A5B3
-Authentication-Results: mail.natalenko.name; dmarc=none header.from=natalenko.name
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAOh2x=k09cQ40EiK72ELfDH8e2M9_ZYbrtK3wz9_1dtYU1+DCQ@mail.gmail.com>
-References: <4708675.eITUXPv8Ih@spock> <2651364.4shODVy8cx@spock> <CAOh2x=k2xpfqz+VjYpPbQy6Z5aeo8DxkYmk7JSmrAZxQOJSU9Q@mail.gmail.com> <1827037.Yd5d4GH5Ub@spock> <CAOh2x=k09cQ40EiK72ELfDH8e2M9_ZYbrtK3wz9_1dtYU1+DCQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [BUG] oops in cpufreq driver with AMD Kaveri CPU
-From: Oleksandr Natalenko <oleksandr@natalenko.name>
-Date: Tue, 12 Aug 2014 10:26:35 +0300
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Message-ID: <97078cc7-f961-4575-ab72-ec88e6f30b9e@email.android.com>
+	id S1753663AbaHLH3q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:29:46 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:45258 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaHLH3o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 03:29:44 -0400
+From: Manfred Spraul <manfred@colorfullife.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Rafael Aquini <aquini@redhat.com>, Rik van Riel <riel@redhat.com>,
+        1vier1@web.de, Manfred Spraul <manfred@colorfullife.com>
+Subject: [PATCH 0/3] ipc: Further updates to sysv/mqueue limits
+Date: Tue, 12 Aug 2014 09:29:14 +0200
+Message-Id: <1407828557-31995-1-git-send-email-manfred@colorfullife.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Got that and will try to investigate ASAP.
+Hi Andrew,
 
-Just to note: I tried to use powersave governor and got the same result. I believe notifiers are used with powersave governor as well. Am I wrong?
+I got some positive and no negative feedback on my patches, thus:
+Could you add the patches to -mm and push them towards Linus?
 
-On August 12, 2014 9:16:21 AM EEST, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->On Tue, Aug 12, 2014 at 11:25 AM, Oleksandr Natalenko
-><oleksandr@natalenko.name> wrote:
->> What should I do to debug it? Is that necessary to recompile kernel
->with full
->> debug?
->
->Yeah, you need to recompile the kernel for sure but not necessarily
->with debug
->support..
->
->Some background:
->
->In cpufreq framework, we manage a CPUs frequency based on the load
->on CPU. You are using ondemand governor which tries to
->increase/decrease frequency
->continuously at fixed intervals.
->
->Now, when we change the frequency we *may* need to communicate this to
->few
->drivers which *may* depend on CPUs frequency for their functioning.
->
->This is handled via notifications.
->
->Other drivers are required to do this:
->cpufreq_register_notifier(&<some-local-struct>,
->CPUFREQ_TRANSITION_NOTIFIER);
->
->to register themselves for frequency-change and them a routine of
->theirs would
->be called from cpufreq-core..
->
->This is exactly where it is crashing for you. i.e. while calling the
->notifier list.
->
->So, you need to check which all notifiers are registered and out of
->those which
->one is crashing..
->
->The first parameter of the above register-call should be declared this
->way:
->
->static struct notifier_block xyz_notifier_block = {
->    .notifier_call = xyz_freq_notifier,
->};
->
->I would have done it this way:
->
->- Add a print in cpufreq_register_notifier() to print the address of
->routine
->present in .notifier_call for case: CPUFREQ_TRANSITION_NOTIFIER
->
->- Then add prints to all the notifiers added for your configuration,
->shouldn't
->be much only 4-5 I believe. i.e. you can add print messages to the
->notifier
->callbacks..
->
->- Then see the sequence/order in which they are called normally, when
->we
->don't crash.. and check that when it crashes..
->
->- You will be able to make out which notifier is crashing. And then we
->can
->see why?
->
->- You can add something like this to notifier routines:
->pr_info("%s\n", __func__);
->
->This will print function name.
->
->>> Which patch are you talking about here?
->>
->> I thought about this one [1], but I guess that's not my case.
->>
->> [1] https://lkml.org/lkml/2014/7/16/815
->
->I guessed so and I don't think it will help as the crashes reported in
->this
->bug-log is something different.
+0001-ipc-msg-increase-MSGMNI-remove-scaling.patch
+	- increase MSGMNI to 32000
+	- as a bonus, this removes around 300 lines
 
--- 
-Sent from my Android device with K-9 Mail. Please excuse my brevity.
--- 
-Sent from my Android device with K-9 Mail. Please excuse my brevity.
+0002-ipc-sem.c-increase-SEMMSL-SEMMNI-SEMOPM.patch
+	- increase all limits
+	- update the documentation, it was stale
+
+   Note: Redhat/Oracle recommend values that exceed what I would recommend
+   as safe upper limits.
+ 
+https://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/5/html/Tuning_and_Optimizing_Red_Hat_Enterprise_Linux_for_Oracle_9i_and_10g_Databases/sect-Oracle_9i_and_10g_Tuning_Guide-Setting_Semaphores-An_Example_of_Semaphore_Settings.html 
+
+   Unfortunately I didn't get any replies, thus I don't know how to proceed.
+
+   One option would be to switch from kmalloc to ipc_alloc, then the risk of
+   failing due to memory fragmentation would be resolved.
+
+0003-ipc-namespace-copy-settings-from-parent-namespace.patch
+	Change the namespace code so that a new namespace inherits the values
+	from it's parent instead of the boot time defaults.
+
+	Serge Hallyn and Michael Kerrisk also consider the new approach as better.
+	One thing that is a bit surprising is that clone(CLONE_NEWIPC)k
+
+I've tested the changes both with unshare -i and with my own test apps.
+Unfortunately I didn't manage to get lxc to run on my busybox test setup :-(
+
+--
+	Manfred
