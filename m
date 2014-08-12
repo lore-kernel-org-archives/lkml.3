@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822AbaHLF3D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 01:29:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20975 "EHLO mx1.redhat.com"
+	id S1752188AbaHLFa5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 01:30:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7272 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750699AbaHLF3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 01:29:01 -0400
-Date: Tue, 12 Aug 2014 10:57:26 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
- kthread wakeups
-Message-ID: <20140812052726.GH4184@grmbl.mre>
-References: <20140808181835.GD5821@linux.vnet.ibm.com>
- <20140808183424.GB13483@grmbl.mre>
- <20140808214347.GH5821@linux.vnet.ibm.com>
- <20140808214648.GA19058@linux.vnet.ibm.com>
- <20140811071308.GA4184@grmbl.mre>
- <20140811162807.GW5821@linux.vnet.ibm.com>
- <20140811194126.GF4184@grmbl.mre>
- <20140811201102.GD5821@linux.vnet.ibm.com>
- <20140811201845.GG4184@grmbl.mre>
- <20140811203421.GE5821@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140811203421.GE5821@linux.vnet.ibm.com>
+	id S1752081AbaHLFaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 01:30:55 -0400
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: ebiederm@xmission.com, vgoyal@redhat.com, hpa@zytor.com,
+        akpm@linux-foundation.org, Baoquan He <bhe@redhat.com>
+Subject: [PATCH 1/2] take the segment adding out of locate_mem_hole functions
+Date: Tue, 12 Aug 2014 13:29:27 +0800
+Message-Id: <1407821368-2358-1-git-send-email-bhe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Mon) 11 Aug 2014 [13:34:21], Paul E. McKenney wrote:
-> On Tue, Aug 12, 2014 at 01:48:45AM +0530, Amit Shah wrote:
-> > On (Mon) 11 Aug 2014 [13:11:02], Paul E. McKenney wrote:
-> > > On Tue, Aug 12, 2014 at 01:11:26AM +0530, Amit Shah wrote:
-> > > > On (Mon) 11 Aug 2014 [09:28:07], Paul E. McKenney wrote:
-> > > > > On Mon, Aug 11, 2014 at 12:43:08PM +0530, Amit Shah wrote:
-> > > > > > On (Fri) 08 Aug 2014 [14:46:48], Paul E. McKenney wrote:
-> > > > > > > On Fri, Aug 08, 2014 at 02:43:47PM -0700, Paul E. McKenney wrote:
-> > > > > > > > On Sat, Aug 09, 2014 at 12:04:24AM +0530, Amit Shah wrote:
-> > > > > > > > > On (Fri) 08 Aug 2014 [11:18:35], Paul E. McKenney wrote:
-> > > > > > > > 
-> > > > > > > > [ . . . ]
-> > > > > > > > 
-> > > > > > > > > > Hmmm... What happens if you boot a7d7a143d0b4cb1914705884ca5c25e322dba693
-> > > > > > > > > > with the kernel parameter "acpi=off"?
-> > > > > > > > > 
-> > > > > > > > > That doesn't change anything - still hangs.
-> > > > > > > > > 
-> > > > > > > > > I intend to look at this more on Monday, though - turning in for
-> > > > > > > > > today.  In the meantime, if there's anything else you'd like me to
-> > > > > > > > > try, please let me know.
-> > > > > > > > 
-> > > > > > > > OK, given that I still cannot reproduce it, I do need your help with
-> > > > > > > > the diagnostics.  And so what sorts of diagnostics work for you in
-> > > > > > > > the hung state?  Are you able to dump ftrace buffers?
-> > > > > > > > 
-> > > > > > > > If you are able to dump ftrace buffers, please enable rcu:rcu_nocb_wake
-> > > > > > > > and send me the resulting trace.
-> > > > > > > 
-> > > > > > > And another random kernel boot parameter to try is rcu_nocb_poll.
-> > > > > > 
-> > > > > > Right, this gets the boot going again:
-> > > > > 
-> > > > > OK, that likely indicates a lost wakeup.  The event tracing enabled by
-> > > > > "rcu:rcu_nocb_wake" should help track those down.  Last time, it was qemu
-> > > > > losing the wakeups, but maybe it is RCU this time.  ;-)
-> > > > 
-> > > > The guest goes dead pretty early; is there a trick to enabling and
-> > > > getting these traces out of the guest that I don't know of that
-> > > > doesn't involve being booted into userspace?  I can perhaps try
-> > > > getting the trace output out from a virtio-serial channel; but even
-> > > > that driver isn't probed yet when the lockup happens.
-> > > 
-> > > First boot with the kernel parameter "trace_event=rcu:rcu_nocb_wake".
-> > > Then when the system hangs, do "sendkey alt-sysrq-z" at the "(qemu)"
-> > > prompt to dump the ftrace buffer.  This hopefully dumps the trace buffer
-> > > to dmesg.
-> > > 
-> > > In addition "sendkey alt-sysrq-t" at the "(qemu)" prompt dumps all tasks'
-> > > stacks, which would also likely be useful information.
-> > 
-> > Nah, this doesn't work -- the guest's totally locked up.  I need a way
-> > to continuously dump buffers till the lockup happens, I suppose.
-> 
-> That is a bit surprising.  Is it possible that the system is OOMing
-> quickly due to grace periods not proceeding?  If so, maybe giving the
-> VM more memory would help.
+In locate_mem_hole functions, a memory hole is located and added as
+kexec_segment. But from the name of locate_mem_hole, it should only
+take responsibility of searching a available memory hole to contain
+data of a specified size.
 
-I bumped it up to 1G and then 2G, same result.
+So in this patch add a new field 'mem' into kexec_buf, then take that
+kexec segment adding code out of locate_mem_hole_top_down and
+locate_mem_hole_bottom_up. This make clear of the functionality of
+locate_mem_hole just like it declars to do. And by this
+locate_mem_hole_callback chould be used later if anyone want to locate
+a memory hole for other use.
 
-		Amit
+Signed-off-by: Baoquan He <bhe@redhat.com>
+---
+ include/linux/kexec.h | 1 +
+ kernel/kexec.c        | 9 +++++----
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+index 4b2a0e1..9d957b7 100644
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -178,6 +178,7 @@ struct kexec_buf {
+ 	struct kimage *image;
+ 	char *buffer;
+ 	unsigned long bufsz;
++	unsigned long mem;
+ 	unsigned long memsz;
+ 	unsigned long buf_align;
+ 	unsigned long buf_min;
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 0b49a0a..586444e 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -2054,8 +2054,7 @@ static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
+ 	} while (1);
+ 
+ 	/* If we are here, we found a suitable memory range */
+-	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
+-			    kbuf->memsz);
++	kbuf->mem = temp_start;
+ 
+ 	/* Success, stop navigating through remaining System RAM ranges */
+ 	return 1;
+@@ -2089,8 +2088,7 @@ static int locate_mem_hole_bottom_up(unsigned long start, unsigned long end,
+ 	} while (1);
+ 
+ 	/* If we are here, we found a suitable memory range */
+-	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
+-			    kbuf->memsz);
++	kbuf->mem = temp_start;
+ 
+ 	/* Success, stop navigating through remaining System RAM ranges */
+ 	return 1;
+@@ -2176,6 +2174,9 @@ int kexec_add_buffer(struct kimage *image, char *buffer, unsigned long bufsz,
+ 		return -EADDRNOTAVAIL;
+ 	}
+ 
++	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, kbuf->mem,
++			    kbuf->memsz);
++
+ 	/* Found a suitable memory range */
+ 	ksegment = &image->segment[image->nr_segments - 1];
+ 	*load_addr = ksegment->mem;
+-- 
+1.8.5.3
+
