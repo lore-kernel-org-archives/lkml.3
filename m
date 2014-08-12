@@ -1,220 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952AbaHLBiQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 21:38:16 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:42968 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753564AbaHLBiP (ORCPT
+	id S1754087AbaHLBkx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 21:40:53 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:41950 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306AbaHLBkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 21:38:15 -0400
-Message-ID: <53E96FFF.8030101@hitachi.com>
-Date: Tue, 12 Aug 2014 10:38:07 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 11 Aug 2014 21:40:52 -0400
+Date: Tue, 12 Aug 2014 01:45:23 +0000
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/8] mm/page_alloc: correct to clear guard attribute
+ in DEBUG_PAGEALLOC
+Message-ID: <20140812014523.GB23418@gmail.com>
+References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1407309517-3270-5-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-Cc: Wang Nan <wangnan0@huawei.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
-        "lizefan@huawei.com" <lizefan@huawei.com>
-Subject: Re: [PATCH v3] kprobes: arm: enable OPTPROBES for ARM 32
-References: <1407550339-34805-1-git-send-email-wangnan0@huawei.com> <20140811134832.GD15853@arm.com>
-In-Reply-To: <20140811134832.GD15853@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407309517-3270-5-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/11 22:48), Will Deacon wrote:
-> Hello,
+On Wed, Aug 06, 2014 at 04:18:30PM +0900, Joonsoo Kim wrote:
+> In __free_one_page(), we check the buddy page if it is guard page.
+> And, if so, we should clear guard attribute on the buddy page. But,
+> currently, we clear original page's order rather than buddy one's.
+> This doesn't have any problem, because resetting buddy's order
+> is useless and the original page's order is re-assigned soon.
+> But, it is better to correct code.
 > 
-> On Sat, Aug 09, 2014 at 03:12:19AM +0100, Wang Nan wrote:
->> This patch introduce kprobeopt for ARM 32.
->>
->> Limitations:
->>  - Currently only kernel compiled with ARM ISA is supported.
->>
->>  - Offset between probe point and optinsn slot must not larger than
->>    32MiB. Masami Hiramatsu suggests replacing 2 words, it will make
->>    things complex. Futher patch can make such optimization.
->>
->> Kprobe opt on ARM is relatively simpler than kprobe opt on x86 because
->> ARM instruction is always 4 bytes aligned and 4 bytes long. This patch
->> replace probed instruction by a 'b', branch to trampoline code and then
->> calls optimized_callback(). optimized_callback() calls opt_pre_handler()
->> to execute kprobe handler. It also emulate/simulate replaced instruction.
+> Additionally, I change (set/clear)_page_guard_flag() to
+> (set/clear)_page_guard() and makes these functions do all works
+> needed for guard page. This may make code more understandable.
 > 
-> Could you briefly describe the optimisation please?
+> One more thing, I did in this patch, is that fixing freepage accounting.
+> If we clear guard page and link it onto isolate buddy list, we should
+> not increase freepage count.
 
-On arm32, optimization means "replacing a breakpoint with a branch".
-Of course simple branch instruction doesn't memorize the source(probe)
-address, optprobe makes a trampoline code for each probe point and
-each trampoline stores "struct kprobe" of that probe point.
-
-At first, the kprobe puts a breakpoint into the probe site, and builds
-a trampoline. After a while, it starts optimizing the probe site by
-replacing the breakpoint with a branch.
-
-> I'm not familiar with
-> kprobes internals, but if you're trying to patch an arbitrary instruction
-> with a branch then that's not guaranteed to be atomic by the ARM
-> architecture.
-
-Hmm, I'm not sure about arm32 too. Would you mean patch_text() can't
-replace an instruction atomically? Or only the breakpoint is special?
-(for cache?)
-optprobe always swaps branch and breakpoint, isn't that safe?
+You are saying just "shouldn't do that" but don't say "why" and "result"
+I know the reason but as you know, I'm one of the person who is rather
+familiar with this part but I guess others should spend some time to get.
+Kind detail description is never to look down on person. :)
 
 > 
-> We can, however, patch branches with other branches.
+
+Nice catch, Joonsoo! But what make me worry is is this patch makes 3 thing
+all at once.
+
+1. fix - no candidate for stable
+2. clean up
+3. fix - candidate for stable.
+
+Could you separate 3 and (1,2) in next spin?
+
+
+> Acked-by: Vlastimil Babka <vbabka@suse.cz>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  mm/page_alloc.c |   29 ++++++++++++++++-------------
+>  1 file changed, 16 insertions(+), 13 deletions(-)
 > 
-> Anyway, minor comments in-line:
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 44672dc..3e1e344 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -441,18 +441,28 @@ static int __init debug_guardpage_minorder_setup(char *buf)
+>  }
+>  __setup("debug_guardpage_minorder=", debug_guardpage_minorder_setup);
+>  
+> -static inline void set_page_guard_flag(struct page *page)
+> +static inline void set_page_guard(struct zone *zone, struct page *page,
+> +				unsigned int order, int migratetype)
+>  {
+>  	__set_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
+> +	set_page_private(page, order);
+> +	/* Guard pages are not available for any usage */
+> +	__mod_zone_freepage_state(zone, -(1 << order), migratetype);
+>  }
+>  
+> -static inline void clear_page_guard_flag(struct page *page)
+> +static inline void clear_page_guard(struct zone *zone, struct page *page,
+> +				unsigned int order, int migratetype)
+>  {
+>  	__clear_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
+> +	set_page_private(page, 0);
+> +	if (!is_migrate_isolate(migratetype))
+> +		__mod_zone_freepage_state(zone, (1 << order), migratetype);
+>  }
+>  #else
+> -static inline void set_page_guard_flag(struct page *page) { }
+> -static inline void clear_page_guard_flag(struct page *page) { }
+> +static inline void set_page_guard(struct zone *zone, struct page *page,
+> +				unsigned int order, int migratetype) {}
+> +static inline void clear_page_guard(struct zone *zone, struct page *page,
+> +				unsigned int order, int migratetype) {}
+>  #endif
+>  
+>  static inline void set_page_order(struct page *page, unsigned int order)
+> @@ -594,10 +604,7 @@ static inline void __free_one_page(struct page *page,
+>  		 * merge with it and move up one order.
+>  		 */
+>  		if (page_is_guard(buddy)) {
+> -			clear_page_guard_flag(buddy);
+> -			set_page_private(page, 0);
+> -			__mod_zone_freepage_state(zone, 1 << order,
+> -						  migratetype);
+> +			clear_page_guard(zone, buddy, order, migratetype);
+>  		} else {
+>  			list_del(&buddy->lru);
+>  			zone->free_area[order].nr_free--;
+> @@ -876,11 +883,7 @@ static inline void expand(struct zone *zone, struct page *page,
+>  			 * pages will stay not present in virtual address space
+>  			 */
+>  			INIT_LIST_HEAD(&page[size].lru);
+> -			set_page_guard_flag(&page[size]);
+> -			set_page_private(&page[size], high);
+> -			/* Guard pages are not available for any usage */
+> -			__mod_zone_freepage_state(zone, -(1 << high),
+> -						  migratetype);
+> +			set_page_guard(zone, &page[size], high, migratetype);
+>  			continue;
+>  		}
+>  #endif
+> -- 
+> 1.7.9.5
 > 
->> +/* Caller must ensure addr & 3 == 0 */
->> +static int can_optimize(unsigned long paddr)
->> +{
->> +	return 1;
->> +}
-> 
-> Why not check the paddr alignment here, rather than have a comment?
-
-Actually, we don't need to care about that. The alignment is already
-checked before calling this function (at arch_prepare_kprobe() in
-arch/arm/kernel/kprobes.c).
-
-> 
->> +/* Free optimized instruction slot */
->> +static void
->> +__arch_remove_optimized_kprobe(struct optimized_kprobe *op, int dirty)
->> +{
->> +	if (op->optinsn.insn) {
->> +		free_optinsn_slot(op->optinsn.insn, dirty);
->> +		op->optinsn.insn = NULL;
->> +	}
->> +}
->> +
->> +extern void kprobe_handler(struct pt_regs *regs);
->> +
->> +static void
->> +optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
->> +{
->> +	unsigned long flags;
->> +	struct kprobe *p = &op->kp;
->> +	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
->> +
->> +	/* Save skipped registers */
->> +	regs->ARM_pc = (unsigned long)op->kp.addr;
->> +	regs->ARM_ORIG_r0 = ~0UL;
-> 
-> Why are you writing ORIG_r0?
-
-In x86, optimization(breakpoint to jump) is transparently done, thus
-we have to mimic all registers as the breakpoint exception. And in x86
-int3(which is the breakpoint) exception sets -1 to orig_ax.
-So, if arm32's breakpoint doesn't attach the ARM_ORIG_r0, you don't
-need to touch it. We just consider the pt_regs looks same as that
-at the breakpoint handler.
-
-> 
->> +	local_irq_save(flags);
->> +
->> +	if (kprobe_running()) {
->> +		kprobes_inc_nmissed_count(&op->kp);
->> +	} else {
->> +		__this_cpu_write(current_kprobe, &op->kp);
->> +		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
->> +		opt_pre_handler(&op->kp, regs);
->> +		__this_cpu_write(current_kprobe, NULL);
->> +	}
->> +
->> +	/* In each case, we must singlestep the replaced instruction. */
->> +	op->kp.ainsn.insn_singlestep(p->opcode, &p->ainsn, regs);
->> +
->> +	local_irq_restore(flags);
->> +}
->> +
->> +int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
->> +{
->> +	u8 *buf;
->> +	unsigned long rel_chk;
->> +	unsigned long val;
->> +
->> +	if (!can_optimize((unsigned long)op->kp.addr))
->> +		return -EILSEQ;
->> +
->> +	op->optinsn.insn = get_optinsn_slot();
->> +	if (!op->optinsn.insn)
->> +		return -ENOMEM;
->> +
->> +	/*
->> +	 * Verify if the address gap is in 32MiB range, because this uses
->> +	 * a relative jump.
->> +	 *
->> +	 * kprobe opt use a 'b' instruction to branch to optinsn.insn.
->> +	 * According to ARM manual, branch instruction is:
->> +	 *
->> +	 *   31  28 27           24 23             0
->> +	 *  +------+---+---+---+---+----------------+
->> +	 *  | cond | 1 | 0 | 1 | 0 |      imm24     |
->> +	 *  +------+---+---+---+---+----------------+
->> +	 *
->> +	 * imm24 is a signed 24 bits integer. The real branch offset is computed
->> +	 * by: imm32 = SignExtend(imm24:'00', 32);
->> +	 *
->> +	 * So the maximum forward branch should be:
->> +	 *   (0x007fffff << 2) = 0x01fffffc =  0x1fffffc
->> +	 * The maximum backword branch should be:
->> +	 *   (0xff800000 << 2) = 0xfe000000 = -0x2000000
->> +	 *
->> +	 * We can simply check (rel & 0xfe000003):
->> +	 *  if rel is positive, (rel & 0xfe000000) shoule be 0
->> +	 *  if rel is negitive, (rel & 0xfe000000) should be 0xfe000000
->> +	 *  the last '3' is used for alignment checking.
->> +	 */
->> +	rel_chk = (unsigned long)((long)op->optinsn.insn -
->> +			(long)op->kp.addr + 8) & 0xfe000003;
->> +
->> +	if ((rel_chk != 0) && (rel_chk != 0xfe000000)) {
->> +		__arch_remove_optimized_kprobe(op, 0);
->> +		return -ERANGE;
->> +	}
->> +
->> +	buf = (u8 *)op->optinsn.insn;
->> +
->> +	/* Copy arch-dep-instance from template */
->> +	memcpy(buf, &optprobe_template_entry, TMPL_END_IDX);
->> +
->> +	/* Set probe information */
->> +	val = (unsigned long)op;
->> +	memcpy(buf + TMPL_VAL_IDX, &val, sizeof(val));
->> +
->> +	/* Set probe function call */
->> +	val = (unsigned long)optimized_callback;
->> +	memcpy(buf + TMPL_CALL_IDX, &val, sizeof(val));
-> 
-> Ok, so this is updating the `offset' portion of a b instruction, right? What
-> if memcpy does that byte-by-byte?
-
-No, as you can see a indirect call "blx r2" in optprobe_template_entry(
-inline asm), this sets .data bytes at optprobe_template_call which is loaded
-to r2 register. :-)
-So all the 4bytes are used for storing the address.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
