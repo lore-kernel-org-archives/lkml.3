@@ -1,128 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaHLLRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 07:17:47 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:62155 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaHLLRo (ORCPT
+	id S1752204AbaHLLSD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 07:18:03 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:64147 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152AbaHLLSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 07:17:44 -0400
-Message-ID: <53E9F679.8060302@huawei.com>
-Date: Tue, 12 Aug 2014 19:11:53 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 12 Aug 2014 07:18:01 -0400
+Message-ID: <53E9F7E1.9090405@linaro.org>
+Date: Tue, 12 Aug 2014 20:17:53 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-mips@linux-mips.org>, <linux-ia64@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <sparclinux@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        "Joerg Roedel" <joro@8bytes.org>, <x86@kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <xen-devel@lists.xenproject.org>, <arnab.basu@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <marc.zyngier@arm.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Tony Luck <tony.luck@intel.com>, <linux-kernel@vger.kernel.org>,
-        <iommu@lists.linux-foundation.org>, Wuyun <wuyun.wu@huawei.com>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [Xen-devel] [RFC PATCH 01/20] x86/xen/MSI: Eliminate arch_msix_mask_irq()
- and arch_msi_mask_irq()
-References: <1407828373-24322-1-git-send-email-wangyijing@huawei.com> <1407828373-24322-2-git-send-email-wangyijing@huawei.com> <53E9D9DD.3060901@citrix.com>
-In-Reply-To: <53E9D9DD.3060901@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Will Deacon <will.deacon@arm.com>
+CC: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Deepak Saxena <dsaxena@linaro.org>, Lee Campbell <leecam@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 3/3] arm64: Add seccomp support
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org> <1406020499-5537-4-git-send-email-takahiro.akashi@linaro.org> <53D082E9.8090303@amacapital.net> <53D09C4F.9010104@linaro.org> <CALCETrWTDS7VSyuR5wgGxpu-_YMWVUVmv9ht6t1tCSX=GA46cQ@mail.gmail.com> <53D2255C.9050006@linaro.org> <CAGXu5jJL=zXuSRNomGrB09kqpUhEpkuxDH18JN4NRbWocMw4xg@mail.gmail.com> <53E47DCE.4080902@linaro.org> <20140811092409.GE15344@arm.com> <53E9BAD5.3080201@linaro.org> <20140812094058.GD29013@arm.com>
+In-Reply-To: <20140812094058.GD29013@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/8/12 17:09, David Vrabel wrote:
-> On 12/08/14 08:25, Yijing Wang wrote:
->> Commit 0e4ccb150 added two __weak arch functions arch_msix_mask_irq()
->> and arch_msi_mask_irq() to fix a bug found when running xen in x86.
->> Introduced these two funcntions make MSI code complex. This patch
->> reverted commit 0e4ccb150 and add #ifdef for x86 msi_chip to fix this
->> bug for simplicity. Also this is preparation for using struct
->> msi_chip instead of weak arch MSI functions in all platforms.
-> [...]
->>  static struct irq_chip msi_chip = {
->>  	.name			= "PCI-MSI",
->> +#ifdef CONFIG_XEN
->> +	.irq_unmask		= nop_unmask_msi_irq,
->> +	.irq_mask		= nop_mask_msi_irq,
->> +#else
->>  	.irq_unmask		= unmask_msi_irq,
->>  	.irq_mask		= mask_msi_irq,
->> +#endif
-> 
-> No.  CONFIG_XEN kernels can run on Xen and bare metal so this must be a
-> runtime option.
+On 08/12/2014 06:40 PM, Will Deacon wrote:
+> Hi Akashi,
+>
+> On Tue, Aug 12, 2014 at 07:57:25AM +0100, AKASHI Takahiro wrote:
+>> On 08/11/2014 06:24 PM, Will Deacon wrote:
+>>> On Fri, Aug 08, 2014 at 08:35:42AM +0100, AKASHI Takahiro wrote:
+>>>> As discussed in a few weeks ago, aarch64 won't support PTRACE_SET_SYSCALL.
+>>>
+>>> Well, I don't think anything was set in stone. If you have a compelling
+>>> reason why adding the new request gives you something over setting w8
+>>> directly, then we can extend ptrace.
+>>
+>> Yeah, I think I may have to change my mind. Looking into __secure_computing(),
+>> I found the code below:
+>>
+>>   >     case SECCOMP_MODE_FILTER:
+>>   >         case SECCOMP_RET_TRACE:
+>>   >             ...
+>>   >             if (syscall_get_nr(current, regs) < 0)
+>>   >                 goto skip;
+>>
+>> This implies that we should modify syscallno *before* __secure_computing()
+>> returns.
+>
+> Why does it imply that? There are four competing entities here:
+>
+>   - seccomp
+>   - tracehook
+>   - ftrace (trace_sys_*)
+>   - audit
+>
+> With the exception of ftrace, they can all potentially rewrite the pt_regs
+> (the code you cite above is just below a ptrace_event call), so we have
+> to choose some order in which to call them.
 
-Hi David, that's my mistake, what about export struct irq_chip msi_chip, then
-change the msi_chip->irq_mask/irq_unmask() in xen init functions.
+(audit won't change registers.)
 
+> On entry, x86 and arm call them in the order I listed above, so it seems
+> sensible to follow that.
 
-Eg.
+Right, but as far as I understand, ptrace_event() in __secure_computing()
+calls ptrace_notify(), and eventually executes ptrace_stop(), which can
+be stopped while tracer runs (until ptrace(PTRACE_CONT)?).
+So syscall_get_nr() is expected to return -1 if trace changes a syscall number to -1
+(as far as sycall_get_nr() refers to syscallno in pt_regs).
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 19b0eba..bb6af00 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -43,6 +43,10 @@ static inline void generic_apic_probe(void)
- }
- #endif
+That is why I think we should have PTRACE_SET_SYSCALL.
 
-+#ifdef CONFIG_PCI_MSI
-+extern struct irq_chip msi_chip;
-+#endif
-+
- #ifdef CONFIG_X86_LOCAL_APIC
-[...]
-+
-+#ifdef CONFIG_PCI_MSI
-+void xen_nop_msi_mask(struct irq_data *data)
- {
--       return 0;
- }
- #endif
+>> I assumed, in my next version, we could skip a system call by overwriting
+>> syscallno with x8 in syscall_trace_enter() after __secure_computing()
+>> returns 0, and it actually works.
+>
+> Why does overwriting the syscallno with x8 skip the syscall?
+>
+> I thought the idea was that we would save w8 prior to each call that could
+> change the pt_regs, then if it was changed to -1 we would replace it with
+> the saved value and return -1?
 
-@@ -424,8 +423,8 @@ int __init pci_xen_init(void)
-        x86_msi.setup_msi_irqs = xen_setup_msi_irqs;
-        x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
-        x86_msi.teardown_msi_irqs = xen_teardown_msi_irqs;
--       x86_msi.msi_mask_irq = xen_nop_msi_mask_irq;
--       x86_msi.msix_mask_irq = xen_nop_msix_mask_irq;
-+       msi_chip.irq_mask = xen_nop_msi_mask;
-+       msi_chip.irq_unmask = xen_nop_msi_mask;
- #endif
-        return 0;
- }
-@@ -505,8 +504,8 @@ int __init pci_xen_initial_domain(void)
-        x86_msi.setup_msi_irqs = xen_initdom_setup_msi_irqs;
-        x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
-        x86_msi.restore_msi_irqs = xen_initdom_restore_msi_irqs;
--       x86_msi.msi_mask_irq = xen_nop_msi_mask_irq;
--       x86_msi.msix_mask_irq = xen_nop_msix_mask_irq;
-+       msi_chip.irq_mask = xen_nop_msi_mask;
-+       msi_chip.irq_unmask = xen_nop_msi_mask;
- #endif
-        xen_setup_acpi_sci();
+I think its the right way to do.
+But x86 rewrites orig_ax and arm rewrites syscallno directly, and
+refer to these values as "syscall numbers" later on, for example,
+see the arguments to audit_syscall_entry().
+So if we don't update syscallno, we may see different behaviors from x86 or arm?
 
+> The only confusion I have is whether we
+> should call the exit hooks after skipping a syscall. I *think* x86 does
+> call them, but ARM doesn't. Andy says this can trigger an OOPs:
 
-> 
-> David
-> 
-> .
-> 
+Again, right. we should definitely avoid OOPs.
+But we may be able to avoid OOPs by not calling entry hooks for skipped system
+calls, instead of calling exit hooks, if we rewrite syscallno as mentioned above.
+(Please note, as I mentioned, audit_syscall_xx() ignores any request for logging
+invalid system calls.)
 
+Thanks,
+-Takahiro AKASHI
 
--- 
-Thanks!
-Yijing
-
+>    http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/274988.html
+>
+> so we should fix that for ARM while we're here.
+>
+> Will
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
