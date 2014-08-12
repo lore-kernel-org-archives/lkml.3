@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630AbaHLUjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 16:39:12 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:61096 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247AbaHLUjK (ORCPT
+	id S1752334AbaHLUnL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 16:43:11 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:38770 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbaHLUnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 16:39:10 -0400
-Message-ID: <53EA7B69.9060800@colorfullife.com>
-Date: Tue, 12 Aug 2014 22:39:05 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 12 Aug 2014 16:43:09 -0400
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Rafael Aquini <aquini@redhat.com>, Rik van Riel <riel@redhat.com>,
-        1vier1@web.de, serge@hallyn.com, containers@lists.linux-foundation.org
-Subject: Re: [PATCH 3/3] ipc namespace: copy settings from parent namespace
-References: <1407828557-31995-1-git-send-email-manfred@colorfullife.com> <1407828557-31995-2-git-send-email-manfred@colorfullife.com> <1407828557-31995-3-git-send-email-manfred@colorfullife.com> <1407828557-31995-4-git-send-email-manfred@colorfullife.com> <877g2ec7tg.fsf@x220.int.ebiederm.org>
-In-Reply-To: <877g2ec7tg.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALCETrUV+CSJzBzec7fRc6k4yDd+kCxz6Zi8zGNOQvACoKkP9A@mail.gmail.com>
+References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
+	<1405657206-12060-11-git-send-email-ast@plumgrid.com>
+	<CALCETrUt1yLXTt5pDZJd0s4s+4dhs0LB7tbJYd6p1+EbdNWw7w@mail.gmail.com>
+	<CAMEtUuygJoH+PBNksTwRHyRObCZixoTDFzmnHroErZHZLaGNbg@mail.gmail.com>
+	<CALCETrUDb6kLH_Qp=YMm=m3P_hmEu3dfDTse=ptCsdpO9EEcAQ@mail.gmail.com>
+	<CAMEtUuz2DS8Ks0L15K0Jsj_nFjgvDh0TBwb+5pHzrdU+o6co_g@mail.gmail.com>
+	<CALCETrUV+CSJzBzec7fRc6k4yDd+kCxz6Zi8zGNOQvACoKkP9A@mail.gmail.com>
+Date: Tue, 12 Aug 2014 13:43:07 -0700
+Message-ID: <CAMEtUuyUfgMJkKmWVp-4409TqZouKum_f1NP8T_H+XSHWAfRRg@mail.gmail.com>
+Subject: Re: [PATCH RFC v2 net-next 10/16] bpf: add eBPF verifier
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
-
-On 08/12/2014 12:37 PM, Eric W. Biederman wrote:
-> Manfred Spraul <manfred@colorfullife.com> writes:
->
-> Sigh. Patches for new code during the merge window.  It is a really
-> rotten time to look at new things.
->
->> Right now, each new IPC namespace starts with the kernel default values.
->> This means that changes that were made to the limits get overwritten.
+On Tue, Aug 12, 2014 at 1:10 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Tue, Aug 12, 2014 at 1:00 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> On Tue, Aug 12, 2014 at 12:32 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Thu, Jul 24, 2014 at 12:25 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>>> On Thu, Jul 24, 2014 at 11:25 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>>> On Thu, Jul 17, 2014 at 9:20 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>>>>> Safety of eBPF programs is statically determined by the verifier, which detects:
+>>>>>> - loops
+>>>>>> - out of range jumps
+>>>>>> - unreachable instructions
+>>>>>> - invalid instructions
+>>>>>> - uninitialized register access
+>>>>>> - uninitialized stack access
+>>>>>> - misaligned stack access
+>>>>>> - out of range stack access
+>>>>>> - invalid calling convention
+>>>>>
+>>>>> Is there something that documents exactly what conditions an eBPF
+>>>>> program must satisfy in order to be considered valid?
+>>>>
+>>>> I did a writeup in the past on things that verifiers checks and gave it
+>>>> to internal folks to review. Guys have said that now they understand very
+>>>> well how it works, but in reality it didn't help at all to write valid programs.
+>>>> What worked is 'verification trace' = the instruction by instruction dump
+>>>> of verifier state while it's analyzing the program.
+>>>> I gave few simple examples of it in
+>>>> 'Understanding eBPF verifier messages' section:
+>>>> https://git.kernel.org/cgit/linux/kernel/git/ast/bpf.git/diff/Documentation/networking/filter.txt?id=b22459133b9f52d2176c8c0f8b5eb036478a40c9
+>>>> Every example there is what "program must satisfy to be valid"...
+>>>>
+>>>> Therefore I'm addressing two things:
+>>>> 1. how verifier works and what it checks for.
+>>>>   that is described in 'eBPF verifier' section of the doc and
+>>>>   in 200 lines of comments inside verifier.c
+>>>
+>>> That doc is pretty good.  I'll try to read it carefully soon.  Sorry
+>>> for the huge delay here -- I've been on vacation.
 >>
->> With this patch, a new namespace inherits the settings from the parent
->> namespace, which is less surprising.
-> In principle I agree.
+>> I've been sitting on v4 for few weeks, since it's a merge window.
+>> So please hold on a careful review. I'll post v4 later today.
+>> Mainly I've split the verifier into several patches to make it
+>> easier to read.
+>> Thanks!
 >
-> In practice I have to ask what have you done to survey applications
-> that use the ipc namespace to see if they will break with this change in
-> semantics.
-I know this is the wrong answer, but:
-What I find are problems caused by the current behavior.
+> Will you be at KS / LSS / LinuxCon?
 
-See e.g.:
-https://bugzilla.redhat.com/show_bug.cgi?id=1004724
-
-Some background:
-The e.g. sysvshm limits were not updated for many years and many
-applications only ran properly if sysvshm limits are increased.
-(now the defaults are large, but only since ~3.15)
-
-Increasing is simple: sysctl kernel.shmmax=<>, but somehow this
-must happen inside the container.
-
-Right now, the most common approach seems to be the solution from the 
-bugzilla above:
-Just marc /proc as read-write and do it manually.
-
-With the patch, the kernel would propagate the value from parent to child.
-
---
-     Manfred
+I would love to, but I didn't get an invite for KS.
+I'll be at plumbers in October.
