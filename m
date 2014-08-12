@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717AbaHLKXg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 06:23:36 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:37300 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381AbaHLKXe (ORCPT
+	id S1751852AbaHLKZr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 06:25:47 -0400
+Received: from exprod7og105.obsmtp.com ([64.18.2.163]:49440 "EHLO
+	exprod7og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455AbaHLKZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 06:23:34 -0400
+	Tue, 12 Aug 2014 06:25:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <53E85967.5060503@linux.intel.com>
-References: <53E85967.5060503@linux.intel.com>
-Date: Tue, 12 Aug 2014 12:23:33 +0200
-Message-ID: <CAPDyKFqLE-09=3k_6stMXiY3+Ax3xoRBO3q__GHyqH4fd-XmsQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on
- sdio thread
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
-        Aaron Lu <aaron.lu@intel.com>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jackey Shen <jackey.shen@amd.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+In-Reply-To: <yq1a98av9vi.fsf@sermon.lab.mkp.net>
+References: <20140625104207.GA13042@avagotech.com>
+	<yq1a98av9vi.fsf@sermon.lab.mkp.net>
+Date: Tue, 12 Aug 2014 15:55:43 +0530
+Message-ID: <CAK=zhgqGVBsgxheZ1ixvGEeOFJ_7fPhO0d4HAh1f4YD1mWG7Sw@mail.gmail.com>
+Subject: Re: [RESEND][PATCH 8/8][SCSI]mpt3sas: Bump mpt3sas driver version to 04.100.00.00
+From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: jejb@kernel.org, "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org,
+        Sathya Prakash <Sathya.Prakash@avagotech.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 August 2014 07:49, Fu, Zhonghui <zhonghui.fu@linux.intel.com> wrote:
-> From 6cee984e1d76ba0a3320430f8cf4318ab65fcf06 Mon Sep 17 00:00:00 2001
-> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
-> Date: Tue, 5 Aug 2014 12:44:38 +0800
-> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
->
-> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
-> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
-> the use of our own custom threaded IRQ handler, but left in an
-> unconditional wake_up_process() on that handler at resume-time.
-> Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
->
-> In addition, the check for MMC_CAP_SDIO_IRQ capability is added
-> before enable sdio IRQ.
->
-> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
-> Signed-off-by: Chris Ball <chris@printf.net>
-> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
-> ---
->  drivers/mmc/core/sdio.c     |   14 ++++++++++++--
->  drivers/mmc/core/sdio_irq.c |    4 ++--
->  2 files changed, 14 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-> index e636d9e..e04a540 100644
-> --- a/drivers/mmc/core/sdio.c
-> +++ b/drivers/mmc/core/sdio.c
-> @@ -992,8 +992,18 @@ static int mmc_sdio_resume(struct mmc_host *host)
->                 }
->         }
->
-> -       if (!err && host->sdio_irqs)
-> -               wake_up_process(host->sdio_irq_thread);
-> +       if (!err && host->sdio_irqs) {
-> +               if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
-> +                       wake_up_process(host->sdio_irq_thread);
-> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
-> +                       mmc_release_host(host);
+Hi Martin,
 
-Why mmc_release_host() and the corresponding mmc_claim_host() below?
-Those shouldn't be needed I think.
+Among the mpt3sas phase2 and phase3 patch set, following are the
+patches which you have completed the review
 
+1. [RESEND][PATCH 1/8][SCSI]mpt3sas: MPI2.5 Rev G (2.5.2) specifications
+2. [RESEND][PATCH 2/8][SCSI]mpt3sas: Clear PFA Status on SGPIO when
+PFA Drive is Removed or Replaced
+3. [RESEND][PATCH 3/8][SCSI]mpt3sas: Bump mpt3sas driver version to 03.100.00.00
+4. [RESEND][PATCH 4/8][SCSI]mpt3sas: MPI2.5 Rev H (2.5.3) specifications
+5. [RESEND][PATCH 5/8][SCSI]mpt3sas: Copyright in driver sources is
+updated for year the 2014
+6. [RESEND][PATCH 6/8][SCSI]mpt3sas: Added OEM branding Strings
+7. [RESEND][PATCH 8/8][SCSI]mpt3sas: Bump mpt3sas driver version to 04.100.00.00
 
-> +                       mmc_host_clk_hold(host);
-> +                       host->ops->enable_sdio_irq(host, 1);
-> +                       mmc_host_clk_release(host);
-> +                       mmc_claim_host(host);
-> +               }
-> +       }
-> +
->         mmc_release_host(host);
+Following below single patch which is remained for review completion
+
+1. [RESEND][PATCH 7/8][SCSI]mpt3sas: Added Reply Descriptor Post Queue
+(RDPQ) Array support
+
+So, Can you please review this patch, so that I can repost this patch
+set once again by appending your Signed-off-by signature.
+
+Regards,
+Sreekanth
+
+On Tue, Jul 15, 2014 at 10:26 PM, Martin K. Petersen
+<martin.petersen@oracle.com> wrote:
+>>>>>> "Sreekanth" == Reddy, Sreekanth <Sreekanth.Reddy@avagotech.com> writes:
 >
->         host->pm_flags &= ~MMC_PM_KEEP_POWER;
-> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
-> index 5cc13c8..696eca4 100644
-> --- a/drivers/mmc/core/sdio_irq.c
-> +++ b/drivers/mmc/core/sdio_irq.c
-> @@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
->                                 host->sdio_irqs--;
->                                 return err;
->                         }
-> -               } else {
-> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->                         mmc_host_clk_hold(host);
->                         host->ops->enable_sdio_irq(host, 1);
->                         mmc_host_clk_release(host);
-> @@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
->                 if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->                         atomic_set(&host->sdio_irq_thread_abort, 1);
->                         kthread_stop(host->sdio_irq_thread);
-> -               } else {
-> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->                         mmc_host_clk_hold(host);
->                         host->ops->enable_sdio_irq(host, 0);
->                         mmc_host_clk_release(host);
-> -- 1.7.1
+> Sreekanth> Bump mpt3sas driver version to 04.100.00.00.
 >
-
-Thanks for working on this!
-
-Kind regards
-Uffe
+> Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+>
+> --
+> Martin K. Petersen      Oracle Linux Engineering
