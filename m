@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131AbaHLTtg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 15:49:36 -0400
-Received: from mail.kernel.org ([198.145.19.201]:58061 "EHLO mail.kernel.org"
+	id S1755192AbaHLTtn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 15:49:43 -0400
+Received: from mail.kernel.org ([198.145.19.201]:58110 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755089AbaHLTtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 15:49:33 -0400
+	id S1755134AbaHLTtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 15:49:41 -0400
 From: Jaegeuk Kim <jaegeuk@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-f2fs-devel@lists.sourceforge.net
 Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-Subject: [PATCH 08/13] f2fs: do checkpoint at f2fs_put_super
-Date: Tue, 12 Aug 2014 12:49:22 -0700
-Message-Id: <1407872967-26423-8-git-send-email-jaegeuk@kernel.org>
+Subject: [PATCH 12/13] f2fs: check s_dirty under cp_mutex
+Date: Tue, 12 Aug 2014 12:49:26 -0700
+Message-Id: <1407872967-26423-12-git-send-email-jaegeuk@kernel.org>
 X-Mailer: git-send-email 1.8.5.2 (Apple Git-48)
 In-Reply-To: <1407872967-26423-1-git-send-email-jaegeuk@kernel.org>
 References: <1407872967-26423-1-git-send-email-jaegeuk@kernel.org>
@@ -20,44 +20,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The generic_shutdown_super calls sync_filesystem, evict_inode, and then
-f2fs_put_super. In f2fs_evict_inode, we remain some dirty inode information
-so we should release them at f2fs_put_super.
-
-But normally, it's more reasonable to set its superblock as dirty when
-evict_inode is called.
+It needs to check s_dirty under cp_mutex, since s_dirty is reset under that
+mutex.
+And previous condition was not correct, since we can omit doing checkpoint
+when checkpoint was done followed by all the node pages were written back.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 ---
- fs/f2fs/inode.c | 1 +
- fs/f2fs/super.c | 2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ fs/f2fs/checkpoint.c | 8 ++++++--
+ fs/f2fs/super.c      | 3 ---
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
-index 2c39999..eeaf5aa 100644
---- a/fs/f2fs/inode.c
-+++ b/fs/f2fs/inode.c
-@@ -303,6 +303,7 @@ no_delete:
- 		add_dirty_inode(sbi, inode->i_ino, APPEND_INO);
- 	if (is_inode_flag_set(F2FS_I(inode), FI_UPDATE_WRITE))
- 		add_dirty_inode(sbi, inode->i_ino, UPDATE_INO);
-+	F2FS_SET_SB_DIRT(sbi);
- out_clear:
- 	clear_inode(inode);
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+index 1161d2a..d074e27 100644
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -952,6 +952,10 @@ void write_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+ 	trace_f2fs_write_checkpoint(sbi->sb, is_umount, "start block_ops");
+ 
+ 	mutex_lock(&sbi->cp_mutex);
++
++	if (!sbi->s_dirty)
++		goto out;
++
+ 	block_operations(sbi);
+ 
+ 	trace_f2fs_write_checkpoint(sbi->sb, is_umount, "finish block_ops");
+@@ -976,9 +980,9 @@ void write_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+ 	do_checkpoint(sbi, is_umount);
+ 
+ 	unblock_operations(sbi);
+-	mutex_unlock(&sbi->cp_mutex);
+-
+ 	stat_inc_cp_count(sbi->stat_info);
++out:
++	mutex_unlock(&sbi->cp_mutex);
+ 	trace_f2fs_write_checkpoint(sbi->sb, is_umount, "finish checkpoint");
  }
+ 
 diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 633315a..60e3554 100644
+index 7e4b631..c4f90cd 100644
 --- a/fs/f2fs/super.c
 +++ b/fs/f2fs/super.c
-@@ -432,7 +432,7 @@ static void f2fs_put_super(struct super_block *sb)
- 	stop_gc_thread(sbi);
+@@ -457,9 +457,6 @@ int f2fs_sync_fs(struct super_block *sb, int sync)
  
- 	/* We don't need to do checkpoint when it's clean */
--	if (sbi->s_dirty && get_pages(sbi, F2FS_DIRTY_NODES))
-+	if (sbi->s_dirty)
- 		write_checkpoint(sbi, true);
+ 	trace_f2fs_sync_fs(sb, sync);
  
- 	iput(sbi->node_inode);
+-	if (!sbi->s_dirty && !get_pages(sbi, F2FS_DIRTY_NODES))
+-		return 0;
+-
+ 	if (sync) {
+ 		mutex_lock(&sbi->gc_mutex);
+ 		write_checkpoint(sbi, false);
 -- 
 1.8.5.2 (Apple Git-48)
 
