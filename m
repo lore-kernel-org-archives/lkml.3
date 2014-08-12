@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaHLGIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 02:08:07 -0400
-Received: from mta-out1.inet.fi ([62.71.2.193]:35647 "EHLO jenni2.inet.fi"
+	id S1752683AbaHLGNH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 02:13:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23805 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444AbaHLGIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 02:08:05 -0400
-Date: Tue, 12 Aug 2014 09:07:45 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Oren Twaig <oren@scalemp.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
-Subject: Re: x86: vmalloc and THP
-Message-ID: <20140812060745.GA7987@node.dhcp.inet.fi>
-References: <53E99F86.5020100@scalemp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E99F86.5020100@scalemp.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	id S1752162AbaHLGNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 02:13:05 -0400
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Mark Salter <msalter@redhat.com>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-efi@vger.kernel.org, rtc-linux@googlegroups.com
+Subject: [PATCH 3/5] efi arm64: do not enter virtual mode in case booting with efi=noruntime or noefi
+Date: Tue, 12 Aug 2014 14:10:20 +0800
+Message-Id: <1407823822-23829-3-git-send-email-dyoung@redhat.com>
+In-Reply-To: <1407823822-23829-1-git-send-email-dyoung@redhat.com>
+References: <1407823822-23829-1-git-send-email-dyoung@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 08:00:54AM +0300, Oren Twaig wrote:
-> <html style="direction: ltr;">
+In case efi runtime disabled via noefi kernel cmdline arm64_enter_virtual_mode
+should error out.
 
-plain/text, please.
+At the same time move early_memunmap(memmap.map, mapsize) to the beginning of
+the function or it will leak early mem.
 
->Hello,
->
->Does memory allocated using vmalloc() will be mapped using huge
->pages either directly or later by THP ? 
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ arch/arm64/kernel/efi.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-No. It's neither aligned properly, nor physically contiguous.
-
->If not, is there any fast way to change this behavior ? Maybe by
->changing the granularity/alignment of such allocations to allow such
->mapping ?
-
-What's the point to use vmalloc() in this case?
-
+diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
+index e72f310..324cdd1 100644
+--- a/arch/arm64/kernel/efi.c
++++ b/arch/arm64/kernel/efi.c
+@@ -386,7 +386,10 @@ static int __init arm64_enter_virtual_mode(void)
+ 	int count = 0;
+ 	unsigned long flags;
+ 
+-	if (!efi_enabled(EFI_BOOT)) {
++	mapsize = memmap.map_end - memmap.map;
++	early_memunmap(memmap.map, mapsize);
++
++	if (!efi_enabled(EFI_BOOT) || efi_runtime_disabled()) {
+ 		pr_info("EFI services will not be available.\n");
+ 		return -1;
+ 	}
+@@ -394,8 +397,6 @@ static int __init arm64_enter_virtual_mode(void)
+ 	pr_info("Remapping and enabling EFI services.\n");
+ 
+ 	/* replace early memmap mapping with permanent mapping */
+-	mapsize = memmap.map_end - memmap.map;
+-	early_memunmap(memmap.map, mapsize);
+ 	memmap.map = (__force void *)ioremap_cache((phys_addr_t)memmap.phys_map,
+ 						   mapsize);
+ 	memmap.map_end = memmap.map + mapsize;
 -- 
- Kirill A. Shutemov
+1.8.3.1
+
