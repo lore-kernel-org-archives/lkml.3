@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379AbaHLOxt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 10:53:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37018 "EHLO
+	id S1753409AbaHLOxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 10:53:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37022 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753050AbaHLOxq (ORCPT
+	with ESMTP id S1753050AbaHLOxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 10:53:46 -0400
-Date: Tue, 12 Aug 2014 07:52:10 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-743cb1ff191f00fee653212bdbcee1e56086d6ce@git.kernel.org>
+	Tue, 12 Aug 2014 10:53:51 -0400
+Date: Tue, 12 Aug 2014 07:52:24 -0700
+From: tip-bot for Rik van Riel <tipbot@zytor.com>
+Message-ID: <tip-caeb178c60f4f93f1b45c0bc056b5cf6d217b67f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de
+        vincent.guittot@linaro.org, tglx@linutronix.de, mikey@neuling.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de
-In-Reply-To: <20140729152631.GW12054@laptop.lan>
-References: <20140729152631.GW12054@laptop.lan>
+        vincent.guittot@linaro.org, tglx@linutronix.de, mikey@neuling.org
+In-Reply-To: <20140729152743.GI3935@laptop>
+References: <20140729152743.GI3935@laptop>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/fair: Make calculate_imbalance()
-  independent
-Git-Commit-ID: 743cb1ff191f00fee653212bdbcee1e56086d6ce
+Subject: [tip:sched/core] sched/fair: Make update_sd_pick_busiest()
+  return 'true' on a busier sd
+Git-Commit-ID: caeb178c60f4f93f1b45c0bc056b5cf6d217b67f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,44 +34,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  743cb1ff191f00fee653212bdbcee1e56086d6ce
-Gitweb:     http://git.kernel.org/tip/743cb1ff191f00fee653212bdbcee1e56086d6ce
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 29 Jul 2014 17:00:21 +0200
+Commit-ID:  caeb178c60f4f93f1b45c0bc056b5cf6d217b67f
+Gitweb:     http://git.kernel.org/tip/caeb178c60f4f93f1b45c0bc056b5cf6d217b67f
+Author:     Rik van Riel <riel@redhat.com>
+AuthorDate: Mon, 28 Jul 2014 14:16:28 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 12 Aug 2014 12:48:18 +0200
+CommitDate: Tue, 12 Aug 2014 12:48:19 +0200
 
-sched/fair: Make calculate_imbalance() independent
+sched/fair: Make update_sd_pick_busiest() return 'true' on a busier sd
 
-Rik noticed that calculate_imbalance() relies on
-update_sd_pick_busiest() to guarantee that busiest->sum_nr_running >
-busiest->group_capacity_factor.
+Currently update_sd_pick_busiest only identifies the busiest sd
+that is either overloaded, or has a group imbalance. When no
+sd is imbalanced or overloaded, the load balancer fails to find
+the busiest domain.
 
-Break this implicit assumption (with the intent of not providing it
-anymore) by having calculat_imbalance() verify it and not rely on
-others.
+This breaks load balancing between domains that are not overloaded,
+in the !SD_ASYM_PACKING case. This patch makes update_sd_pick_busiest
+return true when the busiest sd yet is encountered.
 
-Reported-by: Rik van Riel <riel@redhat.com>
+Groups are ranked in the order overloaded > imbalanced > other,
+with higher ranked groups getting priority even when their load
+is lower. This is necessary due to the possibility of unequal
+capacities and cpumasks between domains within a sched group.
+
+Behaviour for SD_ASYM_PACKING does not seem to match the comment,
+but I have no hardware to test that so I have left the behaviour
+of that code unchanged.
+
+Enum for group classification suggested by Peter Zijlstra.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+[peterz: replaced sg_lb_stats::group_imb with the new enum group_type
+         in an attempt to avoid endless recalculation]
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Acked-by: Vincent Guittot <vincent.guittot@linaro.org>
+Acked-by: Michael Neuling <mikey@neuling.org>
+Cc: ktkhai@parallels.com
+Cc: tim.c.chen@linux.intel.com
+Cc: nicolas.pitre@linaro.org
+Cc: jhladky@redhat.com
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Link: http://lkml.kernel.org/r/20140729152631.GW12054@laptop.lan
+Link: http://lkml.kernel.org/r/20140729152743.GI3935@laptop
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/fair.c | 49 +++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 37 insertions(+), 12 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bfa3c86..e9477e6 100644
+index e9477e6..9437725 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -6248,7 +6248,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+@@ -5559,6 +5559,13 @@ static unsigned long task_h_load(struct task_struct *p)
+ #endif
+ 
+ /********** Helpers for find_busiest_group ************************/
++
++enum group_type {
++	group_other = 0,
++	group_imbalanced,
++	group_overloaded,
++};
++
+ /*
+  * sg_lb_stats - stats of a sched_group required for load_balancing
+  */
+@@ -5572,7 +5579,7 @@ struct sg_lb_stats {
+ 	unsigned int group_capacity_factor;
+ 	unsigned int idle_cpus;
+ 	unsigned int group_weight;
+-	int group_imb; /* Is there an imbalance in the group ? */
++	enum group_type group_type;
+ 	int group_has_free_capacity;
+ #ifdef CONFIG_NUMA_BALANCING
+ 	unsigned int nr_numa_running;
+@@ -5610,6 +5617,8 @@ static inline void init_sd_lb_stats(struct sd_lb_stats *sds)
+ 		.total_capacity = 0UL,
+ 		.busiest_stat = {
+ 			.avg_load = 0UL,
++			.sum_nr_running = 0,
++			.group_type = group_other,
+ 		},
+ 	};
+ }
+@@ -5891,6 +5900,18 @@ static inline int sg_capacity_factor(struct lb_env *env, struct sched_group *gro
+ 	return capacity_factor;
+ }
+ 
++static enum group_type
++group_classify(struct sched_group *group, struct sg_lb_stats *sgs)
++{
++	if (sgs->sum_nr_running > sgs->group_capacity_factor)
++		return group_overloaded;
++
++	if (sg_imbalanced(group))
++		return group_imbalanced;
++
++	return group_other;
++}
++
+ /**
+  * update_sg_lb_stats - Update sched_group's statistics for load balancing.
+  * @env: The load balancing environment.
+@@ -5942,9 +5963,8 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 		sgs->load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
+ 
+ 	sgs->group_weight = group->group_weight;
+-
+-	sgs->group_imb = sg_imbalanced(group);
+ 	sgs->group_capacity_factor = sg_capacity_factor(env, group);
++	sgs->group_type = group_classify(group, sgs);
+ 
+ 	if (sgs->group_capacity_factor > sgs->sum_nr_running)
+ 		sgs->group_has_free_capacity = 1;
+@@ -5968,13 +5988,19 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+ 				   struct sched_group *sg,
+ 				   struct sg_lb_stats *sgs)
+ {
+-	if (sgs->avg_load <= sds->busiest_stat.avg_load)
+-		return false;
++	struct sg_lb_stats *busiest = &sds->busiest_stat;
+ 
+-	if (sgs->sum_nr_running > sgs->group_capacity_factor)
++	if (sgs->group_type > busiest->group_type)
+ 		return true;
+ 
+-	if (sgs->group_imb)
++	if (sgs->group_type < busiest->group_type)
++		return false;
++
++	if (sgs->avg_load <= busiest->avg_load)
++		return false;
++
++	/* This is the busiest node in its class. */
++	if (!(env->sd->flags & SD_ASYM_PACKING))
+ 		return true;
+ 
+ 	/*
+@@ -5982,8 +6008,7 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+ 	 * numbered CPUs in the group, therefore mark all groups
+ 	 * higher than ourself as busy.
+ 	 */
+-	if ((env->sd->flags & SD_ASYM_PACKING) && sgs->sum_nr_running &&
+-	    env->dst_cpu < group_first_cpu(sg)) {
++	if (sgs->sum_nr_running && env->dst_cpu < group_first_cpu(sg)) {
+ 		if (!sds->busiest)
+ 			return true;
+ 
+@@ -6228,7 +6253,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+ 	local = &sds->local_stat;
+ 	busiest = &sds->busiest_stat;
+ 
+-	if (busiest->group_imb) {
++	if (busiest->group_type == group_imbalanced) {
+ 		/*
+ 		 * In the group_imb case we cannot rely on group-wide averages
+ 		 * to ensure cpu-load equilibrium, look at wider averages. XXX
+@@ -6248,7 +6273,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
  		return fix_small_imbalance(env, sds);
  	}
  
--	if (!busiest->group_imb) {
-+	if (busiest->sum_nr_running > busiest->group_capacity_factor) {
+-	if (busiest->sum_nr_running > busiest->group_capacity_factor) {
++	if (busiest->group_type == group_overloaded) {
  		/*
  		 * Don't want to pull so many tasks that a group would go idle.
  		 * Except of course for the group_imb case, since then we might
+@@ -6337,7 +6362,7 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
+ 	 * work because they assume all things are equal, which typically
+ 	 * isn't true due to cpus_allowed constraints and the like.
+ 	 */
+-	if (busiest->group_imb)
++	if (busiest->group_type == group_imbalanced)
+ 		goto force_balance;
+ 
+ 	/* SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
