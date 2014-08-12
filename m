@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214AbaHLA2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 20:28:16 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:63263 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656AbaHLA2O (ORCPT
+	id S1753524AbaHLAel (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 20:34:41 -0400
+Received: from mail-oi0-f44.google.com ([209.85.218.44]:65193 "EHLO
+	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528AbaHLAej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 20:28:14 -0400
+	Mon, 11 Aug 2014 20:34:39 -0400
+X-Greylist: delayed 829 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Aug 2014 20:34:39 EDT
 MIME-Version: 1.0
-In-Reply-To: <20140811105640.GN4856@mwanda>
-References: <20140809053644.GA14630@devel.8.8.4.4>
-	<20140811105640.GN4856@mwanda>
-Date: Tue, 12 Aug 2014 09:28:13 +0900
-Message-ID: <CAHb8M2Dz5iWFcW8WNZkA_ikD0uKJqTuLQtkw4h6+7QCJ-3dL1A@mail.gmail.com>
-Subject: Re: [PATCH 1/7] staging: dgap: remove useless variable
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
-        devel <devel@driverdev.osuosl.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140811131828.GF15312@dhcp22.suse.cz>
+References: <1407545198-9009-1-git-send-email-xiyou.wangcong@gmail.com>
+	<20140811131828.GF15312@dhcp22.suse.cz>
+Date: Mon, 11 Aug 2014 17:34:39 -0700
+Message-ID: <CAM_iQpUFAvNn0--i-t_8TU4tcKQTzmqyP5uNgrOecv30Z=udRQ@mail.gmail.com>
+Subject: Re: [Patch] freezer: check OOM kill signal while being frozen
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Dan
-
-2014-08-11 19:56 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Sat, Aug 09, 2014 at 02:36:44PM +0900, Daeseok Youn wrote:
->> dgap_major_serial_registered and dgap_major_transparent_print_registered
->> could be checked whether a board is initialized.
->> But it doesn't need to check that variables becasue dgap module
->> isn't calling the dgap_cleanup_tty() without initializing
->> for a board completely.
+On Mon, Aug 11, 2014 at 6:18 AM, Michal Hocko <mhocko@suse.cz> wrote:
 >
-> I don't understand.  What about the call to dgap_cleanup_module() in
-> dgap_init_module()?
-I think the call of dgap_cleanup_tty()
-in dgap_cleanup_module() from dgap_init_module() is not reached.
-Because dgap_init_module() is called when driver is loaded, at this
-point of time,
-there are no boards that are initialized.(dgap_numboards is zero)
-
-And the change log of this is needed to modify for clearing message.
-
-Thanks.
-
-regards,
-Daeseok Youn.
+> OK, so the system/memcg is still OOM and a new allocation/charge
+> would trigger killer again, right? Then oom_scan_process_thread sees
+> TIF_MEMDIE frozen task and thaw it so it can go away and die. So this
+> shouldn't be a permanent state. Or am I missing something?
 >
-> regards,
-> dan carpenter
->
+
+Good point!
+
+Reading the code again, I think David's commit (f660daac) doesn't
+work any more, __thaw_task() just checks if it's frozen and then wakes
+it up, but the frozen task, after waking up, will check if it's freezing() and
+continue to freeze itself if so. __thaw_task() can't make freezing() return
+false since it doesn't change any of these conditions, especially
+cgroup_freezing().
+
+This reminds me I should revert that code in oom_killer, checking
+TIF_MEMDIE in __refrigerator() is more correct and clear.
+
+I will update my patch.
+
+Thanks!
