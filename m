@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409AbaHLGzH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 02:55:07 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:53035 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753202AbaHLGzF (ORCPT
+	id S1753007AbaHLG5e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 02:57:34 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:39200 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaHLG5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 02:55:05 -0400
-Date: Tue, 12 Aug 2014 08:55:16 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: David Rientjes <rientjes@google.com>
-Cc: Rob Clark <robdclark@gmail.com>,
-        sanjeev sharma <sanjeevsharmaengg@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drm: Do not use BUG_ON(!spin_is_locked())
-Message-ID: <20140812065516.GI10500@phenom.ffwll.local>
-Mail-Followup-To: David Rientjes <rientjes@google.com>,
-	Rob Clark <robdclark@gmail.com>,
-	sanjeev sharma <sanjeevsharmaengg@gmail.com>,
-	Guenter Roeck <linux@roeck-us.net>,
-	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <1407731491-22446-1-git-send-email-linux@roeck-us.net>
- <alpine.DEB.2.02.1408110439580.15519@chino.kir.corp.google.com>
- <CAGUYZuS=_rFpukssRebxXBccPrJAen15i8Qf3K+1YyF+feShdQ@mail.gmail.com>
- <CAGUYZuSk4u5jyPcrYTjwjXmQRyr0kCEvxkgFfjcyP+ex544CLA@mail.gmail.com>
- <alpine.DEB.2.02.1408111352090.24240@chino.kir.corp.google.com>
- <CAF6AEGuu7cGpudV-G=vGCZrHjEuqTcFHsqnULE771a5UMNEVsw@mail.gmail.com>
- <alpine.DEB.2.02.1408111636370.23479@chino.kir.corp.google.com>
+	Tue, 12 Aug 2014 02:57:33 -0400
+Message-ID: <53E9BAD5.3080201@linaro.org>
+Date: Tue, 12 Aug 2014 15:57:25 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1408111636370.23479@chino.kir.corp.google.com>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Will Deacon <will.deacon@arm.com>
+CC: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Deepak Saxena <dsaxena@linaro.org>, Lee Campbell <leecam@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 3/3] arm64: Add seccomp support
+References: <1406020499-5537-1-git-send-email-takahiro.akashi@linaro.org> <1406020499-5537-4-git-send-email-takahiro.akashi@linaro.org> <53D082E9.8090303@amacapital.net> <53D09C4F.9010104@linaro.org> <CALCETrWTDS7VSyuR5wgGxpu-_YMWVUVmv9ht6t1tCSX=GA46cQ@mail.gmail.com> <53D2255C.9050006@linaro.org> <CAGXu5jJL=zXuSRNomGrB09kqpUhEpkuxDH18JN4NRbWocMw4xg@mail.gmail.com> <53E47DCE.4080902@linaro.org> <20140811092409.GE15344@arm.com>
+In-Reply-To: <20140811092409.GE15344@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 04:38:50PM -0700, David Rientjes wrote:
-> On Mon, 11 Aug 2014, Rob Clark wrote:
-> 
-> > > I'm suggesting that if you don't want to incur the cost of the conditional
-> > > everytime you call a certain function with assert_spin_locked() that you
-> > > could covert these to lockdep_assert_held() so the check is only done when
-> > > lockdep is enabled for debugging.
-> > 
-> > not sure about the nouveau parts, but for the omap and msm hunks, this
-> > code getting called at potentially vblank rate (so maybe once or twice
-> > per ~16ms)..  and lockdep has considerable overhead (for a gpu driver)
-> > so I don't always have it enabled.  So it sounds like for those two at
-> > least assert_spin_locked() is a better option.
-> > 
-> 
-> Unless there's a bug, assert_spin_locked() is just going to incur an 
-> unnecessary cost every time it is called at runtime.  My suggestion was to 
-> limit that check only to debugging kernels that include enabling lockdep 
-> when tracking down problems rather than needlessly evaluating the 
-> conditional every time when there are no bugs.
+Will,
 
-My experience with gpu drivers (i915) has been that hw and the software
-running it is varied enough that almost always it's better to
-unconditionally enable this stuff. I much prefer assert_spin_locked and
-friends over the lockdep versions since enabling full lockdep is not
-something you usually do. Especially not normal users, and we rely upon
-them for testing the old stuff. Furthermore for the modeset code the
-overhead is totally irrelevant since we're doing metric piles of register
-reads and writes in there anyway.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+On 08/11/2014 06:24 PM, Will Deacon wrote:
+> On Fri, Aug 08, 2014 at 08:35:42AM +0100, AKASHI Takahiro wrote:
+>> On 08/06/2014 12:08 AM, Kees Cook wrote:
+>>> On Fri, Jul 25, 2014 at 2:37 AM, AKASHI Takahiro
+>>> <takahiro.akashi@linaro.org> wrote:
+>>>> I found a bug in my current patch (v5). When 32-bit tracer skips a system call,
+>>>> we should not update syscallno from x8 since syscallno is re-written directly
+>>>> via ptrace(PTRACE_SET_SYSCALL).
+>>>
+>>> Ah, yes. Will aarch64 have a PTRACE_SET_SYSCALL option, or is this
+>>> strictly a 32-bit vs 64-bit issue?
+>>
+>> As discussed in a few weeks ago, aarch64 won't support PTRACE_SET_SYSCALL.
+>
+> Well, I don't think anything was set in stone. If you have a compelling
+> reason why adding the new request gives you something over setting w8
+> directly, then we can extend ptrace.
+
+Yeah, I think I may have to change my mind. Looking into __secure_computing(),
+I found the code below:
+
+ >     case SECCOMP_MODE_FILTER:
+ >         case SECCOMP_RET_TRACE:
+ >             ...
+ >             if (syscall_get_nr(current, regs) < 0)
+ >                 goto skip;
+
+This implies that we should modify syscallno *before* __secure_computing() returns.
+
+I assumed, in my next version, we could skip a system call by overwriting syscallno
+with x8 in syscall_trace_enter() after __secure_computing() returns 0, and it actually
+works.
+But we'd better implement PTRACE_SET_SYSCALL to comply with what __secure_computing()
+expects.
+
+-Takahiro AKASHI
+
+
+> Will
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
