@@ -1,88 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaHLJpl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 05:45:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59700 "EHLO mx2.suse.de"
+	id S1754899AbaHLJpx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 05:45:53 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:31719 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751478AbaHLJpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 05:45:39 -0400
-Message-ID: <53E9E23C.6030709@suse.cz>
-Date: Tue, 12 Aug 2014 11:45:32 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/8] mm/isolation: close the two race problems related
- to pageblock isolation
-References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com> <1407309517-3270-8-git-send-email-iamjoonsoo.kim@lge.com> <20140812051745.GC23418@gmail.com>
-In-Reply-To: <20140812051745.GC23418@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751478AbaHLJpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 05:45:50 -0400
+From: Andrey Vagin <avagin@openvz.org>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andrey Vagin <avagin@openvz.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH] tcp: don't use timestamp from repaired skb-s to calculate RTT
+Date: Tue, 12 Aug 2014 13:45:14 +0400
+Message-Id: <1407836714-26813-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2014 07:17 AM, Minchan Kim wrote:
-> On Wed, Aug 06, 2014 at 04:18:33PM +0900, Joonsoo Kim wrote:
->>
->> One solution to this problem is checking pageblock migratetype with
->> holding zone lock in __free_one_page() and I posted it before, but,
->> it didn't get welcome since it needs the hook in zone lock critical
->> section on freepath.
->
-> I didn't review your v1 but IMHO, this patchset is rather complex.
+We don't know right timestamp for repaired skb-s. Wrong RTT estimations
+isn't good, because some congestion modules heavily depends on it.
 
-It is, but the complexity is in the isolation code, and not fast paths, 
-so that's justifiable IMHO.
+This patch adds the TCPCB_REPAIRED flag, which is included in
+TCPCB_RETRANS.
 
-> Normally, we don't like adding more overhead in fast path but we did
-> several time on hotplug/cma, esp so I don't know a few more thing is
-> really hesitant.
+Thanks to Eric for the advice how to fix this issue.
 
-This actually undoes most of the overhead, so I'm all for it. Better 
-than keep doing stuff the same way just because it was done previously.
+This patch fixes the warning:
+[  879.562947] WARNING: CPU: 0 PID: 2825 at net/ipv4/tcp_input.c:3078 tcp_ack+0x11f5/0x1380()
+[  879.567253] CPU: 0 PID: 2825 Comm: socket-tcpbuf-l Not tainted 3.16.0-next-20140811 #1
+[  879.567829] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[  879.568177]  0000000000000000 00000000c532680c ffff880039643d00 ffffffff817aa2d2
+[  879.568776]  0000000000000000 ffff880039643d38 ffffffff8109afbd ffff880039d6ba80
+[  879.569386]  ffff88003a449800 000000002983d6bd 0000000000000000 000000002983d6bc
+[  879.569982] Call Trace:
+[  879.570264]  [<ffffffff817aa2d2>] dump_stack+0x4d/0x66
+[  879.570599]  [<ffffffff8109afbd>] warn_slowpath_common+0x7d/0xa0
+[  879.570935]  [<ffffffff8109b0ea>] warn_slowpath_null+0x1a/0x20
+[  879.571292]  [<ffffffff816d0a05>] tcp_ack+0x11f5/0x1380
+[  879.571614]  [<ffffffff816d10bd>] tcp_rcv_established+0x1ed/0x710
+[  879.571958]  [<ffffffff816dc9da>] tcp_v4_do_rcv+0x10a/0x370
+[  879.572315]  [<ffffffff81657459>] release_sock+0x89/0x1d0
+[  879.572642]  [<ffffffff816c81a0>] do_tcp_setsockopt.isra.36+0x120/0x860
+[  879.573000]  [<ffffffff8110a52e>] ? rcu_read_lock_held+0x6e/0x80
+[  879.573352]  [<ffffffff816c8912>] tcp_setsockopt+0x32/0x40
+[  879.573678]  [<ffffffff81654ac4>] sock_common_setsockopt+0x14/0x20
+[  879.574031]  [<ffffffff816537b0>] SyS_setsockopt+0x80/0xf0
+[  879.574393]  [<ffffffff817b40a9>] system_call_fastpath+0x16/0x1b
+[  879.574730] ---[ end trace a17cbc38eb8c5c00 ]---
 
-> In addition, you proved by this patchset how this
-> isolation code looks ugly and fragile for race problem so I vote
-> adding more overhead in fast path if it can make code really simple.
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ include/net/tcp.h |  4 +++-
+ net/ipv4/tcp.c    | 16 +++++++++-------
+ 2 files changed, 12 insertions(+), 8 deletions(-)
 
-Well, I recommend you to check out the v1 then :) That wasn't really 
-simple, that was even more hooks rechecking migratetypes at various 
-places of the fast paths, when merging buddies etc. This is much better. 
-The complexity is mostly in the isolation code, and the overhead happens 
-only during isolation.
-
-> Vlastimil?
-
-Well, I was the main opponent of v1 and suggested to do v2 like this, so 
-here you go :)
-
-> To Joonsoo,
->
-> you want to send this patchset for stable since review is done?
-> IIRC, you want to fix freepage couting bug and send it to stable but
-> as I see this patchset, no make sense to send to stable. :(
-
-Yeah that's one disadvantage. But I wouldn't like the v1 for stable even 
-more.
-
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index dafa1cb..36f5525 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -705,8 +705,10 @@ struct tcp_skb_cb {
+ #define TCPCB_SACKED_RETRANS	0x02	/* SKB retransmitted		*/
+ #define TCPCB_LOST		0x04	/* SKB is lost			*/
+ #define TCPCB_TAGBITS		0x07	/* All tag bits			*/
++#define TCPCB_REPAIRED		0x10	/* SKB repaired (no skb_mstamp)	*/
+ #define TCPCB_EVER_RETRANS	0x80	/* Ever retransmitted frame	*/
+-#define TCPCB_RETRANS		(TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS)
++#define TCPCB_RETRANS		(TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS| \
++				TCPCB_REPAIRED)
+ 
+ 	__u8		ip_dsfield;	/* IPv4 tos or IPv6 dsfield	*/
+ 	/* 1 byte hole */
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 181b70e..cb5f548 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1188,13 +1188,6 @@ new_segment:
+ 					goto wait_for_memory;
+ 
+ 				/*
+-				 * All packets are restored as if they have
+-				 * already been sent.
+-				 */
+-				if (tp->repair)
+-					TCP_SKB_CB(skb)->when = tcp_time_stamp;
+-
+-				/*
+ 				 * Check whether we can use HW checksum.
+ 				 */
+ 				if (sk->sk_route_caps & NETIF_F_ALL_CSUM)
+@@ -1203,6 +1196,15 @@ new_segment:
+ 				skb_entail(sk, skb);
+ 				copy = size_goal;
+ 				max = size_goal;
++
++				/* All packets are restored as if they have
++				 * already been sent. skb_mstamp isn't set to
++				 * avoid wrong rtt estimation.
++				 */
++				if (tp->repair) {
++					TCP_SKB_CB(skb)->sacked |= TCPCB_REPAIRED;
++					TCP_SKB_CB(skb)->when = tcp_time_stamp;
++				}
+ 			}
+ 
+ 			/* Try to append data to the end of skb. */
+-- 
+1.9.3
 
