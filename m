@@ -1,74 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706AbaHLHJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:09:16 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:64756 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422AbaHLHC6 (ORCPT
+	id S1754759AbaHLHJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:09:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38068 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670AbaHLHJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:02:58 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, <linux-pci@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <arnab.basu@freescale.com>,
-        <x86@kernel.org>, "Arnd Bergmann" <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [RFC PATCH 04/20] MSI: Remove the redundant irq_set_chip_data()
-Date: Tue, 12 Aug 2014 15:25:57 +0800
-Message-ID: <1407828373-24322-5-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
-References: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
+	Tue, 12 Aug 2014 03:09:29 -0400
+Date: Tue, 12 Aug 2014 09:09:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
+        zheng.z.yan@intel.com
+Subject: Re: [PATCH] perf/x86/uncore: export basic memory events for IVT IMC
+ PMU
+Message-ID: <20140812070915.GM9918@twins.programming.kicks-ass.net>
+References: <20140812060031.GA25239@quad>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.175.100.166]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020201.53E9BC13.0088,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 05793fa1820072d5dea2158b15aef7e3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XEzLdEi2UC3eDnpc"
+Content-Disposition: inline
+In-Reply-To: <20140812060031.GA25239@quad>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, pcie-designware, pcie-rcar, pci-tegra drivers
-use irq chip_data to the msi_chip pointer. They already call
-irq_set_chip_data() in their own MSI irq map functions.
-So irq_set_chip_data() in arch_setup_msi_irq() is useless.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+--XEzLdEi2UC3eDnpc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Aug 12, 2014 at 08:00:31AM +0200, Stephane Eranian wrote:
+>  arch/x86/kernel/cpu/perf_event_intel_uncore.c |    1 +
+>  1 file changed, 1 insertion(+)
+>=20
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/ker=
+nel/cpu/perf_event_intel_uncore.c
+> index cfc6f9d..800e087 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> @@ -1391,6 +1391,7 @@ static struct intel_uncore_type ivt_uncore_imc =3D {
+>  	.fixed_ctr_bits	=3D 48,
+>  	.fixed_ctr	=3D SNBEP_MC_CHy_PCI_PMON_FIXED_CTR,
+>  	.fixed_ctl	=3D SNBEP_MC_CHy_PCI_PMON_FIXED_CTL,
+> +	.event_descs	=3D snbep_uncore_imc_events,
+>  	IVT_UNCORE_PCI_COMMON_INIT(),
+>  };
+
+I changed that to the below; seeing how I have the uncore splitup
+patches.
+
+Also, I'm very tempted to do a s/ivt/ivbep/ on that whole thing. We
+really should not mix all these stupid names.
+
 ---
- drivers/pci/msi.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Subject: perf/x86/uncore: export basic memory events for IVT IMC PMU
+=46rom: Stephane Eranian <eranian@google.com>
+Date: Tue, 12 Aug 2014 08:00:31 +0200
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 782b242..242d775 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -41,8 +41,6 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
- 	if (err < 0)
- 		return err;
- 
--	irq_set_chip_data(desc->irq, chip);
--
- 	return 0;
- }
- 
--- 
-1.7.1
+This patch exposes two basic events for Ivytown IMC uncore PMU:
 
+- cas_count_read: number of full-cache line reads to memory controller
+- cas_count_write: number of full-cache line writes to memory controller
+
+Those events use the same encoding as for SNB-EP, so reuse the same
+event table. See specification in:
+
+http://www.intel.com/content/dam/www/public/us/en/documents/manuals/xeon-e5=
+-2600-v2-uncore-manual.pdf
+
+By aggregating all the read and write events from all the memory controllers
+of each processor socket, one can determine the total memory bandwidth util=
+ization.
+
+Cc: zheng.z.yan@intel.com
+Cc: mingo@elte.hu
+Cc: ak@linux.intel.com
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140812060031.GA25239@quad
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
+@@ -1422,6 +1422,7 @@ static struct intel_uncore_type ivt_unco
+ 	.fixed_ctr_bits	=3D 48,
+ 	.fixed_ctr	=3D SNBEP_MC_CHy_PCI_PMON_FIXED_CTR,
+ 	.fixed_ctl	=3D SNBEP_MC_CHy_PCI_PMON_FIXED_CTL,
++	.event_descs	=3D snbep_uncore_imc_events,
+ 	IVT_UNCORE_PCI_COMMON_INIT(),
+ };
+=20
+
+--XEzLdEi2UC3eDnpc
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT6b2bAAoJEHZH4aRLwOS67o4QAInyfvJYEE7/v6QeELTROHRJ
+QAJ/x7LYlgH6RwBeC4XevCCeuSUw7MQ4S8+WWzxL2GrVvhT3/01H/sJc7fSHHbVb
+J2h8RTj72sdqsoaI5zxFCVMGnYOOwnYcz/oarF94nl5/X6KIbssTbU6Hh+XoHF0O
+qnUoeGoguA26PUyLeDrbVlCNcpWjbwa4+OQBuOUmfBYPFDWLbvHA0IZPdLeXbi53
+294O7OmG0KVduFl0zyzn8UVsCOhW4+0svivKdrIBhODNYJU1bohuis7CQq7pKAEc
+fOGCoqX9AVo7967Sk2sQXfq9GaTypFv1eqQPVyH4c5tkGcHhs079HZ10HhL+eGi5
+lEk5ohdRL1gsg1f39ruo4KIaHiuG1GLZuYkON+EEtmOldVVKCph+yg3z8DklKmNE
+6yq0dBoYaOmDyR/liL6NrmITs5zUtKj0DnDzYovTuxujKzpu6Mb3abmBgucBgNve
+Ow33QAOFl4dquDf6qb+CZx3bpToWiK8JBsPrM0LjsOd5pfj/j6rw9eIYnOV1ZTZn
+qH4x5PiFbtMSs+Fm4ke0OtOzqHj5kq8Zkf9gOOgQ9ltm+aEy51JQItfTC83cUtUw
+fHg/MZX9/Xd44mQxLxdxXiqPi1K9ey7xrYwzzm1f80b591pVcdvWzD2Iz4rC3UBE
+tDUa314r7kJDmwJwYr+G
+=9CT1
+-----END PGP SIGNATURE-----
+
+--XEzLdEi2UC3eDnpc--
