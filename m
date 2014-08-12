@@ -1,130 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858AbaHLJaJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 05:30:09 -0400
-Received: from exprod7og101.obsmtp.com ([64.18.2.155]:46063 "EHLO
-	exprod7og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047AbaHLJaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 05:30:07 -0400
-From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-To: martin.petersen@oracle.com, jejb@kernel.org
-Cc: linux-scsi@vger.kernel.org, JBottomley@Parallels.com,
-        Sathya.Prakash@avagotech.com, Nagalakshmi.Nandigama@avagotech.com,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: RE: [PATCH 08/10] [scsi] mpt2sas: Get IOC_FACTS information using handshake protocol only after HBA card gets into READY or Operational state.
-Date: Tue, 12 Aug 2014 14:59:48 +0530
-Message-Id: <1407835788-38001-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-X-Mailer: git-send-email 2.0.2
+	id S1754888AbaHLJbk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 05:31:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26466 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751382AbaHLJbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 05:31:39 -0400
+Message-ID: <53E9DEDB.1080608@redhat.com>
+Date: Tue, 12 Aug 2014 11:31:07 +0200
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>, Jan Beulich <JBeulich@suse.com>
+CC: Andy Lutomirski <luto@amacapital.net>, Kees Cook <keescook@chromium.org>,
+        Will Drewry <wad@chromium.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Oleg Nesterov <oleg@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete "struct
+ pt_regs"
+References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com> <1406904498-21647-4-git-send-email-dvlasenk@redhat.com> <20140801231929.GB26491@localhost.localdomain> <CAK1hOcNXdBwd4KZi1V2dLMtRdusvNLPZwTKwYvnpvz3PRnsM+Q@mail.gmail.com> <20140811004559.GA2656@lerouge> <53E89DA3020000780002B00B@mail.emea.novell.com> <53E8C476.8000800@redhat.com> <53E8EC9F020000780002B383@mail.emea.novell.com> <53E8D905.7030809@zytor.com> <53E8F87B020000780002B41D@mail.emea.novell.com> <53E8DD8D.3060500@zytor.com>
+In-Reply-To: <53E8DD8D.3060500@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver initialization fails if driver tries to send IOC facts request message when the IOC is in reset or in a fault state.
+On 08/11/2014 05:13 PM, H. Peter Anvin wrote:
+> On 08/11/2014 08:08 AM, Jan Beulich wrote:
+>>> No, in *human language*.  What does the DW_CFA_def_cfa_expression
+>>> actually aim to accomplish?  If you don't know the innards of the DWARF
+>>> spec, the whole thing might as well be Hungarian.
+>>
+>> Just like the other DW_CFA_def_cfa_* ones it sets the current
+>> frame address (CFA), just not via one of the pre-canned shortcuts,
+>> but via an expression (in the case here de-referencing the stack
+>> pointer to read the top of stack, and then adding the necessary
+>> offset). So it indeed is similar enough to other .cfi_* annotations we
+>> use without further comments.
+>>
+> 
+> Actually, what you had inside the parenteses there is actually a
+> half-decent comment.  I'm going to pretend the rest of this wasn't posted.
 
-This patch will make sure that
- 1.Driver to send IOC facts request message only if HBA is in operational or ready state.
- 2.If IOC is in fault state, a diagnostic reset would be issued.
- 3.If IOC is in reset state then driver will wait for 10 seconds to exit out of reset state.
-   If the HBA continues to be in reset state, then the HBA wouldn't be claimed by the driver.
+Jan, Pater, does this look correct _and_ human-understandable?
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
----
- drivers/scsi/mpt2sas/mpt2sas_base.c | 65 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 65 insertions(+)
-
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index 018ae10..dadce5c 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -97,6 +97,9 @@ static int dma_mask;
- static int
- _base_get_ioc_facts(struct MPT2SAS_ADAPTER *ioc, int sleep_flag);
- 
-+static int
-+_base_diag_reset(struct MPT2SAS_ADAPTER *ioc, int sleep_flag);
-+
- /**
-  * _scsih_set_fwfault_debug - global setting of ioc->fwfault_debug.
-  *
-@@ -3461,6 +3464,61 @@ _base_get_port_facts(struct MPT2SAS_ADAPTER *ioc, int port, int sleep_flag)
- }
- 
- /**
-+ * _base_wait_for_iocstate - Wait until the card is in READY or OPERATIONAL
-+ * @ioc: per adapter object
-+ * @timeout:
-+ * @sleep_flag: CAN_SLEEP or NO_SLEEP
-+ *
-+ * Returns 0 for success, non-zero for failure.
-+ */
-+static int
-+_base_wait_for_iocstate(struct MPT2SAS_ADAPTER *ioc, int timeout,
-+	int sleep_flag)
-+{
-+	u32 ioc_state;
-+	int rc;
-+
-+	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "%s\n", ioc->name,
-+	    __func__));
-+
-+	if (ioc->pci_error_recovery)
-+		return 0;
-+
-+	ioc_state = mpt2sas_base_get_iocstate(ioc, 0);
-+	dhsprintk(ioc, printk(MPT2SAS_INFO_FMT "%s: ioc_state(0x%08x)\n",
-+	    ioc->name, __func__, ioc_state));
-+
-+	if (((ioc_state & MPI2_IOC_STATE_MASK) == MPI2_IOC_STATE_READY) ||
-+	    (ioc_state & MPI2_IOC_STATE_MASK) == MPI2_IOC_STATE_OPERATIONAL)
-+		return 0;
-+
-+	if (ioc_state & MPI2_DOORBELL_USED) {
-+		dhsprintk(ioc, printk(MPT2SAS_INFO_FMT
-+		    "unexpected doorbell activ!e\n", ioc->name));
-+		goto issue_diag_reset;
-+	}
-+
-+	if ((ioc_state & MPI2_IOC_STATE_MASK) == MPI2_IOC_STATE_FAULT) {
-+		mpt2sas_base_fault_info(ioc, ioc_state &
-+		    MPI2_DOORBELL_DATA_MASK);
-+		goto issue_diag_reset;
-+	}
-+
-+	ioc_state = _base_wait_on_iocstate(ioc, MPI2_IOC_STATE_READY,
-+	    timeout, sleep_flag);
-+	if (ioc_state) {
-+		printk(MPT2SAS_ERR_FMT
-+		    "%s: failed going to ready state (ioc_state=0x%x)\n",
-+		    ioc->name, __func__, ioc_state);
-+		return -EFAULT;
-+	}
-+
-+ issue_diag_reset:
-+	rc = _base_diag_reset(ioc, sleep_flag);
-+	return rc;
-+}
-+
-+/**
-  * _base_get_ioc_facts - obtain ioc facts reply and save in ioc
-  * @ioc: per adapter object
-  * @sleep_flag: CAN_SLEEP or NO_SLEEP
-@@ -3478,6 +3536,13 @@ _base_get_ioc_facts(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
- 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "%s\n", ioc->name,
- 	    __func__));
- 
-+	r = _base_wait_for_iocstate(ioc, 10, sleep_flag);
-+	if (r) {
-+		printk(MPT2SAS_ERR_FMT "%s: failed getting to correct state\n",
-+			ioc->name, __func__);
-+		return r;
-+	}
-+
- 	mpi_reply_sz = sizeof(Mpi2IOCFactsReply_t);
- 	mpi_request_sz = sizeof(Mpi2IOCFactsRequest_t);
- 	memset(&mpi_request, 0, mpi_request_sz);
--- 
-2.0.2
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -652,10 +652,14 @@ END(interrupt)
+        cmovzq PER_CPU_VAR(irq_stack_ptr),%rsp
+        CFI_DEF_CFA_REGISTER    rsi
+        pushq %rsi
++       /*
++        * For debugger:
++        * "CFA (Current Frame Address) is the value on stack + offset"
++        */
+        CFI_ESCAPE      0x0f /* DW_CFA_def_cfa_expression */, 6, \
+-                       0x77 /* DW_OP_breg7 */, 0, \
++                       0x77 /* DW_OP_breg7 (rsp) */, 0, \
+                        0x06 /* DW_OP_deref */, \
+-                       0x08 /* DW_OP_const1u */, SS+8-RBP, \
++                       0x08 /* DW_OP_const1u */, SIZEOF_PTREGS-RBP, \
+                        0x22 /* DW_OP_plus */
+        /* We entered an interrupt context - irqs are off: */
+        TRACE_IRQS_OFF
 
