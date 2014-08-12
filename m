@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558AbaHLCjx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 22:39:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35088 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbaHLCjw (ORCPT
+	id S1754622AbaHLCmn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 22:42:43 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45077 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754362AbaHLCmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 22:39:52 -0400
-Date: Tue, 12 Aug 2014 10:39:11 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Oleg Drokin <green@linuxhacker.ru>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Peng Tao <bergwolf@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lai Siyao <lai.siyao@intel.com>
-Subject: Re: [PATCH] staging/lustre: use rcu_dereference to access rcu
- protected current->real_parent field
-Message-ID: <20140812023911.GA17509@kroah.com>
-References: <20140808034951.GA6626@kroah.com>
- <DFF36154-06AC-4D7E-87F5-259B73CB059B@linuxhacker.ru>
- <20140808044246.GA3084@kroah.com>
- <1FE03450-A256-4A18-85AB-6332A28E3EF5@linuxhacker.ru>
- <20140808053246.GA13588@kroah.com>
- <CA+a=Yy4SqXSe667DkU3KA80tAt5D=KG-9mfccvEwtJzuFr6vBA@mail.gmail.com>
- <20140809140426.GA20995@kroah.com>
- <A562EF9C-0B1E-48B2-BAB5-544C9AAC6DD0@linuxhacker.ru>
- <20140809154742.GA22689@kroah.com>
- <0E60DB89-5757-4841-A416-D12C56413C58@linuxhacker.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0E60DB89-5757-4841-A416-D12C56413C58@linuxhacker.ru>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 11 Aug 2014 22:42:42 -0400
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+To: grant.likely@linaro.org, Rob Herring <rob.herring@calxeda.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, stepanm@codeaurora.org
+Subject: [PATCH] of: Deep-copy names of platform devices
+Date: Mon, 11 Aug 2014 19:42:36 -0700
+Message-Id: <1407811356-24222-1-git-send-email-stepanm@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 09:44:47PM -0400, Oleg Drokin wrote:
-> 
-> On Aug 9, 2014, at 11:47 AM, Greg Kroah-Hartman wrote:
-> 
-> > On Sat, Aug 09, 2014 at 10:34:36AM -0400, Oleg Drokin wrote:
-> >> 
-> >>> Because maybe these stats preceed the introduction of perf and other
-> >>> tracing/debug tools?  I don't know, it's really low down on the list of
-> >>> reasons why lustre can't be merged out of staging at the moment, you all
-> >>> have much bigger issues to address first.
-> >> 
-> >> I wonder what is the prioritized list you have in mind?
-> > 
-> > Do I really have to spell out what is wrong with that codebase that
-> > needs to be fixed up?  It took me 50+ patches for 3.17-rc1 to just fix
-> > up a _portion_ of the include file mess that is in there.  Now is the
-> > first time the code actually _builds_ properly in the kernel tree (i.e.
-> > no magic header file include path modifications in Makefiles preventing
-> > individual files from being built correctly.)
-> 
-> Well, last time we discussed this topic, you said that moving most of lustre proc files
-> into sysfs and other suitable venues is what prevents moving lustre out of the
-> staging tree under fs/
+When we parse the device tree and allocate platform
+devices, the 'name' of the newly-created platform_device
+is set to point to the 'name' field of the 'struct device'
+embedded within the platform_device. This is dangerous,
+because the name of the 'struct device' is dynamically
+allocated. Drivers may call dev_set_name() on the device,
+which will free and reallocate the name of the device,
+leaving the 'name' of the platform_device pointing to the
+now-freed memory.
 
-Yes, that's one of the big things, but the structure of the code itself
-still needs lots of work.  You have wrapper functions and defines that
-are not needed.  You have version-specific checks and still a quite
-complex and unnecessary include directory structure.
+Furthermore, if the dev_set_name() call is made from a
+driver's probe() function and a subsequent request results
+in probe deferral, the dangling 'name' reference may lead
+to the device being re-probed using the wrong driver.
 
-> There well might be include mess, but this is the first time I hear about it, and I have not seen
-> any build breakage or other obviously broken behavior.
+To mitigate these scenarios, we use kstrdup to perform a
+deep copy of the device name when assigning the name of the
+platform_device, so that the platform_device name is
+unaffected by any calls to dev_set_name() that might made
+by drivers to rename the embedded 'struct device'.
 
-The build breakage came about in a thread on this mailing list when we
-had a tool that could build an individual .o file, which I found to
-break on all of the lustre files due to the odd way you were redefining
-the include search path of the .c files.  I unwound all of that to use
-direct paths and now things build properly.  But even then, there are
-way too many .h files and nested mess that is not needed and is the
-result of trying to get this code to build on other platforms a long
-time ago.
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+---
+I suppose creating a 'pdev_set_name' API may seem like
+another possibility, but I feel that dev.name and pdev.name
+have two different meanings. One is used for device/driver
+binding purposes, whereas the other serves a more general
+identification purpose, and is used for things like sysfs.
+Drivers might want to change dev.name while leaving the
+pdev.name alone. I guess yet another possibility would be
+to prohibit calling dev_set_name() on devices created from
+device tree, but a driver does not necessarily know how a
+given platform_device was allocated.
 
-> I am sure there are more things too, that's why I am asking.
-> We are trying to deal with stuff we know about, but it's a bit harder
-> to deal with the stuff we don't know about that does not manifest
-> itself in some clear way.
+ drivers/of/device.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Try getting rid of the typedefs and wrapper functions and #defines for
-function names and coding style issues.  That would be a great first
-step and would then expose what really is left to do.  Right now, it's
-just to hard to see the real issues.
+diff --git a/drivers/of/device.c b/drivers/of/device.c
+index f685e55..fe5f025 100644
+--- a/drivers/of/device.c
++++ b/drivers/of/device.c
+@@ -54,7 +54,7 @@ int of_device_add(struct platform_device *ofdev)
 
-thanks,
+ 	/* name and id have to be set so that the platform bus doesn't get
+ 	 * confused on matching */
+-	ofdev->name = dev_name(&ofdev->dev);
++	ofdev->name = kstrdup(dev_name(&ofdev->dev), GFP_KERNEL);
+ 	ofdev->id = -1;
 
-greg k-h
+ 	/* device_add will assume that this device is on the same node as
+--
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
