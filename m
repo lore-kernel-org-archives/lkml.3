@@ -1,94 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932124AbaHLTcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 15:32:55 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:52988 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754644AbaHLTcx (ORCPT
+	id S1754776AbaHLTfp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 15:35:45 -0400
+Received: from mail-qc0-f193.google.com ([209.85.216.193]:41230 "EHLO
+	mail-qc0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754612AbaHLTfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 15:32:53 -0400
+	Tue, 12 Aug 2014 15:35:43 -0400
+Date: Tue, 12 Aug 2014 15:38:12 -0400
+From: Christopher Barry <christopher.r.barry@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: OT: Open letter to the Linux World
+Message-ID: <20140812153812.2923046a@monolith.infinux.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuygJoH+PBNksTwRHyRObCZixoTDFzmnHroErZHZLaGNbg@mail.gmail.com>
-References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
- <1405657206-12060-11-git-send-email-ast@plumgrid.com> <CALCETrUt1yLXTt5pDZJd0s4s+4dhs0LB7tbJYd6p1+EbdNWw7w@mail.gmail.com>
- <CAMEtUuygJoH+PBNksTwRHyRObCZixoTDFzmnHroErZHZLaGNbg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 12 Aug 2014 12:32:31 -0700
-Message-ID: <CALCETrUDb6kLH_Qp=YMm=m3P_hmEu3dfDTse=ptCsdpO9EEcAQ@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 net-next 10/16] bpf: add eBPF verifier
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 24, 2014 at 12:25 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Thu, Jul 24, 2014 at 11:25 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Thu, Jul 17, 2014 at 9:20 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>> Safety of eBPF programs is statically determined by the verifier, which detects:
->>> - loops
->>> - out of range jumps
->>> - unreachable instructions
->>> - invalid instructions
->>> - uninitialized register access
->>> - uninitialized stack access
->>> - misaligned stack access
->>> - out of range stack access
->>> - invalid calling convention
->>
->> Is there something that documents exactly what conditions an eBPF
->> program must satisfy in order to be considered valid?
->
-> I did a writeup in the past on things that verifiers checks and gave it
-> to internal folks to review. Guys have said that now they understand very
-> well how it works, but in reality it didn't help at all to write valid programs.
-> What worked is 'verification trace' = the instruction by instruction dump
-> of verifier state while it's analyzing the program.
-> I gave few simple examples of it in
-> 'Understanding eBPF verifier messages' section:
-> https://git.kernel.org/cgit/linux/kernel/git/ast/bpf.git/diff/Documentation/networking/filter.txt?id=b22459133b9f52d2176c8c0f8b5eb036478a40c9
-> Every example there is what "program must satisfy to be valid"...
->
-> Therefore I'm addressing two things:
-> 1. how verifier works and what it checks for.
->   that is described in 'eBPF verifier' section of the doc and
->   in 200 lines of comments inside verifier.c
-
-That doc is pretty good.  I'll try to read it carefully soon.  Sorry
-for the huge delay here -- I've been on vacation.
-
---Andy
-
-> 2. how to write valid programs
->  that's more important one, since it's a key to happy users.
->  'verification trace' is the first step. I'm planning to add debug info and
->  user space tool that points out to line in C instead of assembler trace.
->  In other words to bring errors to user as early as possible during
->  compilation process.
->  This is not a concern when programs are written in assembler,
->  since the programs will be much shorter and thought through by
->  the author. However I don't think there will be too many users
->  willing to understand ebpf assembler.
->
-> I suspect you're more concerned about #1 at this point whereas
-> I'm concerned about #2.
 
 
+What is intelligence? Not exactly the spook kind, but rather what is
+the definition of intelligence in humans? This is pretty good:
+http://en.wikipedia.org/wiki/Intelligence#Definitions
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+By most accounts, the self-appointed and arguably too influential
+creators and thinkers of the day around the 'One Linux' idea fit the
+definition of intelligent people - at least in the technical realm.
+
+And their messages are pretty compelling:
+* Simplify cross-distro development.
+* Enable faster boot times.
+* Enable an on-demand, event driven architecture, similar to 'Modern'
+  Operating Systems.
+* Bring order and control to subsystems that have had as many different
+  tools as there were distros.
+
+All seemingly noble goals. All apparently come from a deep desire to
+contribute and make things better.
+
+Almost anyone could argue that these intelligent people thought hard
+about these issues, and put an enormous amount of effort into a
+solution to these problems. Unfortunately, the solution they came up
+with, as you may have guessed by now, is 'systemd'.
+
+While not new, it's grotesque impact has finally reached me and I must
+speak to it publicly. 
+
+So, what is systemd? Well, meet your new God. You may have been praying
+at the alter of simplicity, but your religion is being deprecated. It
+likely already happened without your knowledge during an upgrade of
+your Linux box. systemd is the all knowing, all controlling meta-deity
+that sees all and supervises all. It's the new One Master Process that
+aspires to control everything it can - and it's already doing a lot.
+It's what init would look like if it were a transformer on steroids.
+It's complicated, multi-faceted, opaque, and supremely powerful.
+
+I had heard about systemd a few years back, when upstart and some other
+init replacements I can't remember were showing up on the scene. And
+while it seemed mildly interesting, I was not in favor of using it, nor
+any of them for that matter. init was working just fine for me. init
+was simple and robust. While configuration had it's distro-specific
+differences, it was often these differences that made one pick the
+distro to use in the first place, and to stay with that distro. The
+tools essentially *were* the distro. I just dist-upgraded to Jessie,
+and voila - PID 1 was suddenly systemd. What a clusterfuck.
+
+In a 'One Linux' world, what would distros actually be? Deprecated. No
+longer relevant. Archaic shells of their once proud individualism.
+Basically, they're now just a logo and a default desktop background
+image. Because let's face it, there only needs to be One Modern
+'competitor' to the Windows/Mac ownership of personal computing. A
+unified front to combat the evil empires of Redmond and Cupertino is
+what's needed. The various differences that made up different 'flavors'
+of Linux needed to be corralled and brought into compliance for the war
+to proceed efficiently. Um, what war?
+
+For me, Linux had already won that war way back in 1994 when I started
+using it. It did it without firing a shot or attempting to be just like
+the other OSes. It won it it by not giving a flying fuck about market
+share. It won it by being exactly NOT them. It won it by being simple
+and understandable and configurable to be exactly how *I* wanted it to
+be. It won it by being a collection of simple modular components that
+could be plugged together at will to do real work. It won it by
+adhering to a deeply considered philosophy of the user being in the
+drivers seat, and being free to run the things she wanted to, without
+layers and layers of frameworks wrapping their tendrils into all manor
+of stuff they should not be touching. It won it without the various
+'CrapKit' shit that's begun to insinuate itself into the heart of my
+system of late. It won it without being overly complex and unknowable.
+That kind of opacity was was the core of Windows and Mac, and that's
+exactly what I despise about them, and exactly why I chose to use Linux
+in the first goddamn place. systemd is embracing *all* that I hate about
+Windows and Mac, and doing so in the name of 'modernity' and
+'simplifying' a developer's job.
+
+So why would very smart people who love and use Linux want to create or
+embrace such a creepy 'Master of All' daemon? Ostensibly, it's for the
+reasons they say, as I mentioned at the top. But partially I think it's
+from a lack of experience. Not a lack as in programming hours, but a
+lack as in time on the Planet. Intelligence alone is not a substitute
+for life experience and, yes I'll say it, wisdom. There's no manual for
+wisdom. Implementing systemd by distros is not a wise move for them over
+the long term. It will, in fact, be their ultimate undoing.
+
+Partially it's the larger-than-life egos of the people involved. Has
+anyone actually read what Poettering says about things? Wow. This guy
+is obviously convinced he has all the answers for everyone. Traditional
+ideas about simplicity and freedom are quaint, but have no real place
+in a 'modern' OS. Look, he's just smarter than you, so get over it and
+move aside. He knows what's best, and he has it under control. How old
+is this guy anyway? 12 or so? He's a fucking tool (IMHO).
+
+Partially it's roiling subsurface commercial interests. Look, We can
+make more money selling stuff to Linux users if there were a simpler
+distro agnostic way to do that. Fuck choice, they'll like what they get.
+
+Partially it may well be nefarious and shadowy in nature. With One Ring
+to rule them all, having access to it sure would be sweet for those
+hell-bent on total information awareness. Trust is not real high on my
+list of things to give out these days.
+
+Partially it's a belief that the Linux Community must fight against the
+hegemony of Windows and Mac - as if the existence of Linux depends upon
+the vanquishing of alternatives. Those who think Linux should cater to
+idiots and droolers should go back to their Macs and Windoze boxen, and
+stop trying to 'fix' Linux. It wasn't fucking broken!
+
+Partially - and this is what I cannot abide - it is a blatant disregard
+and disrespect - whether knowingly or not - of the major tenets of
+*NIX. It's a thoughtless discarding of, and a trampling on the values
+that I personally hold to be true and just, and I am not alone here.
+systemd is the exact opposite of what defines *NIX. And I'm not
+blathering on about POSIX compliance either. It's the Philosophy stupid.
+
+systemd is a coup. It is a subversive interloper designed to destroy
+Linux as we know it, foisted upon us by the snarky
+we-know-better-than-you CamelCase crowd. They just don't get it down
+deep where it matters. systemd is not pointing in a direction that we
+should be going. It does not encourage freedom. It does not encourage
+choice. It does not display transparency. It does not embrace
+simplicity. It seizes control and forces you to cede it. It makes
+applications and major system components depend on it, and they cannot
+function without it. It's gaining speed by luring naive or lazy or just
+plain clueless developers into the fold with the promise of making
+their lives easier. Buying into this way of thinking ignores the
+greater dangers that systemd represents.
+
+Debian has always held the line against this kind of thing in the past,
+and has always earned my utmost respect and loyalty for their
+integrity. Debian's decision here was as a hand forced. Debian has made
+a grave and cowardly mistake here, and they need a course correction
+immediately. Incorporating systemd was not an intelligent choice, and
+certainly not one very well considered. Debian must reject systemd and
+its ilk, and restore itself to the values that got Linux to this
+point in history, in no small part *led* by Debian. They must loudly and
+publicly divorce themselves from GNOME, however painful and upsetting
+that may seem in the sort term, and focus on the core values of
+simplicity and freedom. Put systemd and it's cabal in non-free where it
+belongs if you must. Let the user decide if that's what
+they want. Enlightenment is an excellent choice for a default desktop
+that does not have the bloated baggage of GNOME. And to the Debian
+Leaders - after 20 years of my loyalty and evangelism, you really let
+me and all of us down. You need to grow a fucking pair and do the right
+thing here and now.
+
+Kick these fucking carpetbaggers to the curb!
+
+Gnome. The Linux Foundation. freedesktop.org, and others. These are all
+groups with agendas. These are not those who believe in freedom. They
+believe in control and standardization. They believe in sameness. Who
+are these people anyway? Who are these self-appointed keepers of the
+Linux flame? (subliminal malware reference intended). What are their
+true agendas? Who funds these people? Why do they so aggressively want
+to change the core of Linux away from it's true philosophy? Let them go
+off and create their own 'competitor' to Windows and Mac. If they did,
+it would be the same opaque, backdoored, user-tracking bullshit that
+Windows and Mac have become. They DO NOT speak for me, and you should
+not passively allow them to speak for you either.
+
+systemd is a trojan. systemd is a medusa. systemd is Substance D.
+systemd is scary - not just because it's tools suck, or because it's
+a massive fucking hairball - but because architecturally it has way
+too much concentrated power. We all need to collectively expel it from
+our midst because it will own Linux, and by extension us and our
+freedoms. systemd will *be* Linux. Sit idly by and ignore this fact at
+all of our collective peril.
+
+OneLinux == zero-choice
+
+
+--
+Regards,
+Christopher Barry
+
+Random geeky fortune:
+BOFH excuse #202:
+
+kernel panic: write-only-memory (/dev/wom0) capacity exceeded.
