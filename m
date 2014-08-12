@@ -1,155 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938AbaHLJlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 05:41:35 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:23186 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518AbaHLJla (ORCPT
+	id S1755141AbaHLJlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 05:41:42 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58538 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754987AbaHLJlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 05:41:30 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-c9-53e9e1489a21
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Minchan Kim'" <minchan@kernel.org>
-Cc: ngupta@vflare.org, linux-kernel@vger.kernel.org,
-        "'Jerome Marchand'" <jmarchan@redhat.com>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-References: <000001cfb53f$d63b6ea0$82b24be0$@samsung.com>
- <20140812073740.GA9227@bbox>
-In-reply-to: <20140812073740.GA9227@bbox>
-Subject: RE: [PATCH] zram: fix incorrectly stat with failed_reads
-Date: Tue, 12 Aug 2014 17:40:32 +0800
-Message-id: <005201cfb611$97362100$c5a26300$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQF4FQUURvVmlZfToiq37apX9RhKNwG2iExAnG4ot8A=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t9jAV2Phy+DDb7c4rKYs34Nm8WpP9eZ
-	LC7vmsNmsezre3aLDS2z2C3Wfn7M7sDmsXPWXXaPTas62TxOzPjN4vF+31Wg2KfNrB6fN8kF
-	sEVx2aSk5mSWpRbp2yVwZTRc+8NY8E+uomfyY5YGxkviXYycHBICJhLvD9xjh7DFJC7cW8/W
-	xcjFISSwiFGi4+c+RpCEkMAPRon/29NAbDYBFYnlHf+ZQGwRATWJdQdfsIA0MAscYZRo+XuY
-	HaIhQuLykdlARRwcnAKaErO21ICEhQUcJXYeuMEKYrMIqEpsffoMzOYVsJTYN+8+lC0o8WPy
-	PRYQm1lAXWLSvEXMELa8xOY1b5khDlWQ2HH2NSPEDVYS/3bcgaoXl9h45BbLBEahWUhGzUIy
-	ahaSUbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERwtz6R2MK5ssDjEKMDBqMTD
-	O+Pvi2Ah1sSy4srcQ4wSHMxKIryCt18GC/GmJFZWpRblxxeV5qQWH2KU5mBREuc90GodKCSQ
-	nliSmp2aWpBaBJNl4uCUamAs2sbEtqqvPLBQSelhwJaLoYnlG89bLSv2azQ1/MT20T+kdKbk
-	uhkJHTf+fJH7/LDqWeWP43cmsr0SLlt5MCG5Pu2pwf+r2ZznFjuo5qXlF3NtOe5idP3PAYXc
-	qRrZsnfkskzP/9Nj+PQiZ6LCTp/VEe71p1wmWOm9f3OnJObK6Q9/P5SbRacqsRRnJBpqMRcV
-	JwIADz2ZP5ICAAA=
+	Tue, 12 Aug 2014 05:41:39 -0400
+Date: Tue, 12 Aug 2014 11:41:36 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Takashi Iwai <tiwai@suse.de>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] Hibernate: save e820 table to snapshot header for
+ comparison
+Message-ID: <20140812094136.GC3950@amd.pavel.ucw.cz>
+References: <1407751987-21448-1-git-send-email-jlee@suse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407751987-21448-1-git-send-email-jlee@suse.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+Hi!
 
-> -----Original Message-----
-> From: Minchan Kim [mailto:minchan@kernel.org]
-> Sent: Tuesday, August 12, 2014 3:38 PM
-> To: Chao Yu
-> Cc: ngupta@vflare.org; linux-kernel@vger.kernel.org; Jerome Marchand; Sergey Senozhatsky;
-> Andrew Morton
-> Subject: Re: [PATCH] zram: fix incorrectly stat with failed_reads
-> 
-> On Mon, Aug 11, 2014 at 04:39:17PM +0800, Chao Yu wrote:
-> > Since we allocate a temporary buffer in zram_bvec_read to handle partial page
-> > operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
-> > zram: allow partial page operations), our ->failed_reads value may be incorrect
-> > as we do not increase its value when failed to allocate the temporary buffer.
-> >
-> > Let's fix this issue and correct the annotation of failed_reads.
-> 
-> Good catch.
-> Just out of curiosity.
-> 
-> Did you catch it by code review or real workload?
+> [    7.374714] e820: Check memory region: [mem 0x0000000100000000-0x000000187fffffff] usable
+> [    7.378041] PM: Image mismatch: memory map changed
+> [    7.381314] PM: Read 2398272 kbytes in 0.27 seconds (8882.48 MB/s)
+> [    7.385476] PM: Error -1 resuming
+> [    7.388730] PM: Failed to load hibernation image, recovering.
+> [    7.688989] PM: Basic memory bitmaps freed
 
-I found this one by code review.
+Nice!
 
-> 
-> >
-> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > ---
-> >  drivers/block/zram/zram_drv.c | 1 +
-> >  drivers/block/zram/zram_drv.h | 2 +-
-> >  2 files changed, 2 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index dfa4024..bf8ea1b 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -413,6 +413,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
-> >
-> >  	if (!uncmem) {
-> >  		pr_info("Unable to allocate temp memory\n");
-> > +		atomic64_inc(&zram->stats.failed_reads);
-> >  		ret = -ENOMEM;
-> >  		goto out_cleanup;
-> >  	}
-> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > index 5b0afde..e0f725c 100644
-> > --- a/drivers/block/zram/zram_drv.h
-> > +++ b/drivers/block/zram/zram_drv.h
-> > @@ -84,7 +84,7 @@ struct zram_stats {
-> >  	atomic64_t compr_data_size;	/* compressed size of pages stored */
-> >  	atomic64_t num_reads;	/* failed + successful */
-> >  	atomic64_t num_writes;	/* --do-- */
-> > -	atomic64_t failed_reads;	/* should NEVER! happen */
-> > +	atomic64_t failed_reads;	/* can happen when memory is too low */
-> >  	atomic64_t failed_writes;	/* can happen when memory is too low */
-> >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
-> >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
-> > --
-> > 2.0.1.474.g72c7794
-> 
-> How abouting moving failed_reads/writes in zram_bvec_rw?
+> +int save_mem_chk_map(struct mementry *mem_chk_map)
 
-I think this implementation of yours is pretty clean and simple because this one
-hides every error paths inside zram_bvec_{read,write}, so we do not need to
-consider covering the stat code to everywhere of inside.
+I'd prefer _chk_ -> _check_
 
-IMHO, your implementation also fixed the issue in following call chain:
-->zram_bvec_rw
-  ->zram_bvec_write
-    ->zram_decompress_page
-      ->atomic64_inc(failed_reads)    ---at perspective of user, this kind of
-      failure should be regarded as the write one's, because user pay fewer
-      attention to inner error of zram.
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < e820.nr_map; i++) {
+> +		struct e820entry *ei = &e820.map[i];
+> +
+> +		if (i > MEMCHKMAX)
+> +			break;
 
-Please correct me if I'm wrong, and thanks for your review and suggestion. :)
+MEMCHKMAX -> MEM_CHECK_MAX?
 
-Regards,
-Yu
+What happens when there are more entries?
 
-> 
-> int zram_bvec_rw(..)
-> {
->         if (rw == READ) {
->                 atomic64_inc(num_reads);
->                 ret = zram_bvec_read(xxx);
->         } else {
->                 atomic64_inc(&num_writes);
->                 ret = zram_bvec_write(xxx);
->         }
-> 
->         if (unlikely(ret)) {
->                 if (rw == READ)
->                         atomic64_inc(failed_reads);
->                 else
->                         atomic64_inc(failed_writes);
->         }
-> }
-> 
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> --
-> Kind regards,
-> Minchan Kim
+> +bool check_mem_map(int mem_chk_entries, struct mementry *mem_chk_map)
+> +{
+> +	int i;
+> +	bool ret = true;
+> +
+> +	if (mem_chk_entries != e820.nr_map) {
+> +		pr_err("PM: memory check entry number %d:%d\n",
+> +			mem_chk_entries, e820.nr_map);
+> +		ret = false;
+> +		goto Print_map;
+> +	}
 
+I'd change name to something like mem_map_matches() or mem_map_ok(),
+so that it is clear what true/false means.
+
+Can you reduce ammount of gotos?
+
+> +	for (i = 0; i < mem_chk_entries; i++) {
+> +		struct e820entry *ei = &e820.map[i];
+> +
+> +		if (i > MEMCHKMAX)
+> +			break;
+> +
+> +		/* check regions not E820_RAM or E820_RESERVED_KERN */
+> +		if (ei->type != E820_RAM && ei->type != E820_RESERVED_KERN) {
+> +			if (mem_chk_map[i].addr != ei->addr ||
+> +			    mem_chk_map[i].size != ei->size ||
+> +			    mem_chk_map[i].type != ei->type) {
+> +				ret = false;
+> +				goto Print_map;
+> +			}
+> +		}
+
+Why don't you check RAM and RESERVED_KERN, too? If those changed, we
+don't want to resume, either, right?
+
+(Plus, you only check ei->type; you should check mem_chk_map[].type,
+too AFAICT).
+
+Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
