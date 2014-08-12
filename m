@@ -1,93 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963AbaHLWsc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 18:48:32 -0400
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:53059 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaHLWsb (ORCPT
+	id S1752122AbaHLWso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 18:48:44 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:57426 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897AbaHLWsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 18:48:31 -0400
+	Tue, 12 Aug 2014 18:48:41 -0400
+Message-ID: <53EA99C3.90203@gmail.com>
+Date: Wed, 13 Aug 2014 06:48:35 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20140812070915.GM9918@twins.programming.kicks-ass.net>
-References: <20140812060031.GA25239@quad>
-	<20140812070915.GM9918@twins.programming.kicks-ass.net>
-Date: Wed, 13 Aug 2014 00:48:30 +0200
-Message-ID: <CABPqkBSdrv9S+sUG5SB8ksxC3Y6jOd+SuRBA1nbpZ7AKSpqM2w@mail.gmail.com>
-Subject: Re: [PATCH] perf/x86/uncore: export basic memory events for IVT IMC PMU
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>
+CC: akpm@linux-foundation.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jean Delvare <jdelvare@suse.de>, linux@arm.linux.org.uk,
+        catalin.marinas@arm.com, will.deacon@arm.com, msalter@redhat.com,
+        a-jacquiot@ti.com, tony.luck@intel.com, fenghua.yu@intel.com,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
+        linux-ia64@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org
+Subject: [PATCH v2] arch: Kconfig: Let all little endian architectures define
+ CPU_LITTLE_ENDIAN explicitly
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 9:09 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Aug 12, 2014 at 08:00:31AM +0200, Stephane Eranian wrote:
->>  arch/x86/kernel/cpu/perf_event_intel_uncore.c |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> index cfc6f9d..800e087 100644
->> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> @@ -1391,6 +1391,7 @@ static struct intel_uncore_type ivt_uncore_imc = {
->>       .fixed_ctr_bits = 48,
->>       .fixed_ctr      = SNBEP_MC_CHy_PCI_PMON_FIXED_CTR,
->>       .fixed_ctl      = SNBEP_MC_CHy_PCI_PMON_FIXED_CTL,
->> +     .event_descs    = snbep_uncore_imc_events,
->>       IVT_UNCORE_PCI_COMMON_INIT(),
->>  };
->
-> I changed that to the below; seeing how I have the uncore splitup
-> patches.
->
-Looks good to me.
+x86 and ia64 are always little endian. And another architectures may be
+little endian: mips, sh, powerpc, and m32r (may mark CPU_LITTLE_ENDIAN
+explicitly); also arm(64) and c6x (which may be !CPU_BIG_ENDIAN).
 
-> Also, I'm very tempted to do a s/ivt/ivbep/ on that whole thing. We
-> really should not mix all these stupid names.
->
-That's okay with me.
+Some drivers (e.g. some of "drivers/isdn/hisax") may only support little
+endian (CPU_LITTLE_ENDIAN), and some drivers may only support big endian
+(!CPU_LITTLE_ENDIAN).
 
-Thanks.
+So export all little endian architectures within kernel wide, so can let
+Kconfig easier for the modules which only support little endian or only
+for big endian (assume !CPU_LITTLE_ENDIAN is same as CPU_BIG_ENDIAN).
 
-> ---
-> Subject: perf/x86/uncore: export basic memory events for IVT IMC PMU
-> From: Stephane Eranian <eranian@google.com>
-> Date: Tue, 12 Aug 2014 08:00:31 +0200
->
-> This patch exposes two basic events for Ivytown IMC uncore PMU:
->
-> - cas_count_read: number of full-cache line reads to memory controller
-> - cas_count_write: number of full-cache line writes to memory controller
->
-> Those events use the same encoding as for SNB-EP, so reuse the same
-> event table. See specification in:
->
-> http://www.intel.com/content/dam/www/public/us/en/documents/manuals/xeon-e5-2600-v2-uncore-manual.pdf
->
-> By aggregating all the read and write events from all the memory controllers
-> of each processor socket, one can determine the total memory bandwidth utilization.
->
-> Cc: zheng.z.yan@intel.com
-> Cc: mingo@elte.hu
-> Cc: ak@linux.intel.com
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/r/20140812060031.GA25239@quad
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-> @@ -1422,6 +1422,7 @@ static struct intel_uncore_type ivt_unco
->         .fixed_ctr_bits = 48,
->         .fixed_ctr      = SNBEP_MC_CHy_PCI_PMON_FIXED_CTR,
->         .fixed_ctl      = SNBEP_MC_CHy_PCI_PMON_FIXED_CTL,
-> +       .event_descs    = snbep_uncore_imc_events,
->         IVT_UNCORE_PCI_COMMON_INIT(),
->  };
->
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ arch/arm/Kconfig   | 5 +++++
+ arch/arm64/Kconfig | 4 ++++
+ arch/c6x/Kconfig   | 4 ++++
+ arch/ia64/Kconfig  | 3 +++
+ arch/x86/Kconfig   | 3 +++
+ 5 files changed, 19 insertions(+)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index c49a775..0510a5d 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -199,6 +199,11 @@ config NEED_DMA_MAP_STATE
+ config ARCH_SUPPORTS_UPROBES
+ 	def_bool y
+ 
++config CPU_LITTLE_ENDIAN
++	depends on !CPU_BIG_ENDIAN
++	def_bool y
++
++
+ config ARCH_HAS_DMA_SET_COHERENT_MASK
+ 	bool
+ 
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 62b4ae1..290a253 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -129,6 +129,10 @@ config KERNEL_MODE_NEON
+ config FIX_EARLYCON_MEM
+ 	def_bool y
+ 
++config CPU_LITTLE_ENDIAN
++	depends on !CPU_BIG_ENDIAN
++	def_bool y
++
+ source "init/Kconfig"
+ 
+ source "kernel/Kconfig.freezer"
+diff --git a/arch/c6x/Kconfig b/arch/c6x/Kconfig
+index 77ea09b..56a8f53 100644
+--- a/arch/c6x/Kconfig
++++ b/arch/c6x/Kconfig
+@@ -48,6 +48,10 @@ config C6X_BIG_KERNEL
+ 
+ 	  If unsure, say N.
+ 
++config CPU_LITTLE_ENDIAN
++	depends on !CPU_BIG_ENDIAN
++	def_bool y
++
+ source "init/Kconfig"
+ 
+ # Use the generic interrupt handling code in kernel/irq/
+diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+index 64aefb7..fa12d34 100644
+--- a/arch/ia64/Kconfig
++++ b/arch/ia64/Kconfig
+@@ -133,6 +133,9 @@ config AUDIT_ARCH
+ 	bool
+ 	default y
+ 
++config CPU_LITTLE_ENDIAN
++	def_bool y
++
+ menuconfig PARAVIRT_GUEST
+ 	bool "Paravirtualized guest support"
+ 	depends on BROKEN
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 541e7cc..a1b3568 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -270,6 +270,9 @@ config ARCH_SUPPORTS_UPROBES
+ config FIX_EARLYCON_MEM
+ 	def_bool y
+ 
++config CPU_LITTLE_ENDIAN
++	def_bool y
++
+ source "init/Kconfig"
+ source "kernel/Kconfig.freezer"
+ 
+-- 
+1.7.11.7
