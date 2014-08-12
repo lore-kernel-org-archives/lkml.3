@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940AbaHLGoJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 02:44:09 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:41193 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349AbaHLGkt (ORCPT
+	id S1752771AbaHLGwn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 02:52:43 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:64785 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaHLGwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 02:40:49 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 02/13] perf tools: Fix a memory leak in vmlinux_path__init()
-Date: Tue, 12 Aug 2014 15:40:34 +0900
-Message-Id: <1407825645-24586-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1407825645-24586-1-git-send-email-namhyung@kernel.org>
-References: <1407825645-24586-1-git-send-email-namhyung@kernel.org>
+	Tue, 12 Aug 2014 02:52:42 -0400
+From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+To: <dsd@gentoo.org>, <kune@deine-taler.de>
+CC: <linville@tuxdriver.com>, <linux-wireless@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH] zd1211rw: replace ZD_ASSERT with lockdep_assert_held()
+Date: Tue, 12 Aug 2014 12:35:33 +0530
+Message-ID: <1407827133-29493-1-git-send-email-sanjeev_sharma@mentor.com>
+X-Mailer: git-send-email 1.7.11.7
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginalArrivalTime: 12 Aug 2014 06:52:39.0162 (UTC) FILETIME=[01AD4DA0:01CFB5FA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When uname() failed, it should free vmlinux_path.
+on some architecture spin_is_locked() always return false in
+uniprocessor configuration and therefore it would be advise
+to replace with lockdep_assert_held().
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
 ---
- tools/perf/util/symbol.c | 2 +-
+ drivers/net/wireless/zd1211rw/zd_mac.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 581c56836567..009a9d064f11 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1772,7 +1772,7 @@ static int vmlinux_path__init(void)
- 		return 0;
+diff --git a/drivers/net/wireless/zd1211rw/zd_mac.c b/drivers/net/wireless/zd1211rw/zd_mac.c
+index e7af261..72c0bc2 100644
+--- a/drivers/net/wireless/zd1211rw/zd_mac.c
++++ b/drivers/net/wireless/zd1211rw/zd_mac.c
+@@ -235,7 +235,7 @@ void zd_mac_clear(struct zd_mac *mac)
+ {
+ 	flush_workqueue(zd_workqueue);
+ 	zd_chip_clear(&mac->chip);
+-	ZD_ASSERT(!spin_is_locked(&mac->lock));
++	lockdep_assert_held(!spin_is_locked(&mac->lock));
+ 	ZD_MEMCLEAR(mac, sizeof(struct zd_mac));
+ }
  
- 	if (uname(&uts) < 0)
--		return -1;
-+		goto out_fail;
- 
- 	snprintf(bf, sizeof(bf), "/boot/vmlinux-%s", uts.release);
- 	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
 -- 
-2.0.0
+1.7.11.7
 
