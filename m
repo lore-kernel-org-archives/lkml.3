@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779AbaHLOAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 10:00:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51068 "EHLO
+	id S1752721AbaHLOAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 10:00:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51067 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752254AbaHLOAI (ORCPT
+	by vger.kernel.org with ESMTP id S1752240AbaHLOAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Aug 2014 10:00:08 -0400
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: lee.jones@linaro.org
 Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] mfd: arizona: Avoid use of legacy IRQ mapping
-Date: Tue, 12 Aug 2014 14:51:22 +0100
-Message-Id: <1407851483-19207-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/4] mfd: arizona: Propagate irq_wake through to parent IRQ
+Date: Tue, 12 Aug 2014 14:51:21 +0100
+Message-Id: <1407851483-19207-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1407851483-19207-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 References: <1407851483-19207-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
@@ -21,43 +21,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regmap_add_irq_chip is called from arizona_irq_init with the irq_base
-specified as -1 and regmap_add_irq_chip uses if (irq_base) to check if
-it should use legacy IRQ mapping. As such the irq mappings are currently
-added with irq_domain_add_legacy, rather than irq_domain_add_linear.
-This is clearly a typo as there is no reason why this driver can't use
-irq_domain_add_linear.
-
-This patch corrects this by passing the irq_base as zero to
-regmap_add_irq_chip.
+If one of the internal Arizona IRQs is set as a wake source this needs
+to be propogated back to the actual IRQ line that the Arizona device is
+attached to.
 
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/arizona-irq.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/mfd/arizona-irq.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
-index fac00b2..b235e59 100644
+index 71e8f06..fac00b2 100644
 --- a/drivers/mfd/arizona-irq.c
 +++ b/drivers/mfd/arizona-irq.c
-@@ -289,7 +289,7 @@ int arizona_irq_init(struct arizona *arizona)
+@@ -148,6 +148,13 @@ static void arizona_irq_dummy(struct irq_data *data)
+ {
+ }
  
- 	ret = regmap_add_irq_chip(arizona->regmap,
- 				  irq_create_mapping(arizona->virq, 0),
--				  IRQF_ONESHOT, -1, aod,
-+				  IRQF_ONESHOT, 0, aod,
- 				  &arizona->aod_irq_chip);
- 	if (ret != 0) {
- 		dev_err(arizona->dev, "Failed to add AOD IRQs: %d\n", ret);
-@@ -298,7 +298,7 @@ int arizona_irq_init(struct arizona *arizona)
++static int arizona_irq_set_wake(struct irq_data *data, unsigned int on)
++{
++	struct arizona *arizona = irq_data_get_irq_chip_data(data);
++
++	return irq_set_irq_wake(arizona->irq, on);
++}
++
+ static struct irq_chip arizona_irq_chip = {
+ 	.name			= "arizona",
+ 	.irq_disable		= arizona_irq_dummy,
+@@ -155,6 +162,7 @@ static struct irq_chip arizona_irq_chip = {
+ 	.irq_ack		= arizona_irq_dummy,
+ 	.irq_mask		= arizona_irq_dummy,
+ 	.irq_unmask		= arizona_irq_dummy,
++	.irq_set_wake		= arizona_irq_set_wake,
+ };
  
- 	ret = regmap_add_irq_chip(arizona->regmap,
- 				  irq_create_mapping(arizona->virq, 1),
--				  IRQF_ONESHOT, -1, irq,
-+				  IRQF_ONESHOT, 0, irq,
- 				  &arizona->irq_chip);
- 	if (ret != 0) {
- 		dev_err(arizona->dev, "Failed to add main IRQs: %d\n", ret);
+ static int arizona_irq_map(struct irq_domain *h, unsigned int virq,
 -- 
 1.7.2.5
 
