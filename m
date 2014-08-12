@@ -1,98 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788AbaHLTHk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 15:07:40 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:21353 "EHLO
+	id S1754724AbaHLTLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 15:11:51 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23974 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754290AbaHLTHj (ORCPT
+	with ESMTP id S1753866AbaHLTLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 15:07:39 -0400
-Date: Tue, 12 Aug 2014 15:07:26 -0400
+	Tue, 12 Aug 2014 15:11:49 -0400
+Date: Tue, 12 Aug 2014 15:09:47 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Stefan Bader <stefan.bader@canonical.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Xen PV domain regression with KASLR enabled (kernel
- 3.16)
-Message-ID: <20140812190726.GC13996@laptop.dumpdata.com>
-References: <53E4B281.5050302@canonical.com>
- <53E4C5D5.2090103@citrix.com>
- <53E4E042.1070300@canonical.com>
- <CAGXu5jJ+FTqgYpLH5x0VBm9QMND-b0Sze6q6pc=tRe2oFMu5uA@mail.gmail.com>
- <53EA5782.1080301@canonical.com>
- <CAGXu5jJXHd9WqWs+FHQsRZdJNv1n075q7rwm20EwwXBdVgaVsA@mail.gmail.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        linux-pci@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, arnab.basu@freescale.com,
+        x86@kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [RFC PATCH 07/20] x86/MSI: Use msi_chip instead of arch func to
+ configure MSI/MSI-X
+Message-ID: <20140812190947.GD13996@laptop.dumpdata.com>
+References: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
+ <1407828373-24322-8-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJXHd9WqWs+FHQsRZdJNv1n075q7rwm20EwwXBdVgaVsA@mail.gmail.com>
+In-Reply-To: <1407828373-24322-8-git-send-email-wangyijing@huawei.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 11:53:03AM -0700, Kees Cook wrote:
-> On Tue, Aug 12, 2014 at 11:05 AM, Stefan Bader
-> <stefan.bader@canonical.com> wrote:
-> > On 12.08.2014 19:28, Kees Cook wrote:
-> >> On Fri, Aug 8, 2014 at 7:35 AM, Stefan Bader <stefan.bader@canonical.com> wrote:
-> >>> On 08.08.2014 14:43, David Vrabel wrote:
-> >>>> On 08/08/14 12:20, Stefan Bader wrote:
-> >>>>> Unfortunately I have not yet figured out why this happens, but can confirm by
-> >>>>> compiling with or without CONFIG_RANDOMIZE_BASE being set that without KASLR all
-> >>>>> is ok, but with it enabled there are issues (actually a dom0 does not even boot
-> >>>>> as a follow up error).
-> >>>>>
-> >>>>> Details can be seen in [1] but basically this is always some portion of a
-> >>>>> vmalloc allocation failing after hitting a freshly allocated PTE space not being
-> >>>>> PTE_NONE (usually from a module load triggered by systemd-udevd). In the
-> >>>>> non-dom0 case this repeats many times but ends in a guest that allows login. In
-> >>>>> the dom0 case there is a more fatal error at some point causing a crash.
-> >>>>>
-> >>>>> I have not tried this for a normal PV guest but for dom0 it also does not help
-> >>>>> to add "nokaslr" to the kernel command-line.
-> >>>>
-> >>>> Maybe it's overlapping with regions of the virtual address space
-> >>>> reserved for Xen?  What the the VA that fails?
-> >>>>
-> >>>> David
-> >>>>
-> >>> Yeah, there is some code to avoid some regions of memory (like initrd). Maybe
-> >>> missing p2m tables? I probably need to add debugging to find the failing VA (iow
-> >>> not sure whether it might be somewhere in the stacktraces in the report).
-> >>>
-> >>> The kernel-command line does not seem to be looked at. It should put something
-> >>> into dmesg and that never shows up. Also today's random feature is other PV
-> >>> guests crashing after a bit somewhere in the check_for_corruption area...
-> >>
-> >> Right now, the kaslr code just deals with initrd, cmdline, etc. If
-> >> there are other reserved regions that aren't listed in the e820, it'll
-> >> need to locate and skip them.
-> >>
-> >> -Kees
-> >>
-> > Making my little steps towards more understanding I figured out that it isn't
-> > the code that does the relocation. Even with that completely disabled there were
-> > the vmalloc issues. What causes it seems to be the default of the upper limit
-> > and that this changes the split between kernel and modules to 1G+1G instead of
-> > 512M+1.5G. That is the reason why nokaslr has no effect.
-> 
-> Oh! That's very interesting. There must be some assumption in Xen
-> about the kernel VM layout then?
+On Tue, Aug 12, 2014 at 03:26:00PM +0800, Yijing Wang wrote:
+> Introduce a new struct msi_chip apic_msi_chip instead of weak arch
+> functions to configure MSI/MSI-X in x86.
 
-No. I think most of the changes that look at PTE and PMDs are are all
-in arch/x86/xen/mmu.c. I wonder if this is xen_cleanhighmap being
-too aggressive 
+Why not 'x86_msi_ops' (see  arch/x86/kernel/x86_init.c)
 > 
-> -Kees
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+>  arch/x86/include/asm/pci.h     |    1 +
+>  arch/x86/kernel/apic/io_apic.c |   20 ++++++++++++++++----
+>  2 files changed, 17 insertions(+), 4 deletions(-)
 > 
+> diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+> index 0892ea0..878a06d 100644
+> --- a/arch/x86/include/asm/pci.h
+> +++ b/arch/x86/include/asm/pci.h
+> @@ -101,6 +101,7 @@ void native_teardown_msi_irq(unsigned int irq);
+>  void native_restore_msi_irqs(struct pci_dev *dev);
+>  int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+>  		  unsigned int irq_base, unsigned int irq_offset);
+> +extern struct msi_chip *x86_msi_chip;
+>  #else
+>  #define native_setup_msi_irqs		NULL
+>  #define native_teardown_msi_irq		NULL
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 2609dcd..eb8ab7c 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -3077,24 +3077,25 @@ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+>  	return 0;
+>  }
+>  
+> -int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+> +int native_setup_msi_irqs(struct device *dev, int nvec, int type)
+>  {
+>  	struct msi_desc *msidesc;
+>  	unsigned int irq;
+>  	int node, ret;
+> +	struct pci_dev *pdev = to_pci_dev(dev);
+>  
+>  	/* Multiple MSI vectors only supported with interrupt remapping */
+>  	if (type == PCI_CAP_ID_MSI && nvec > 1)
+>  		return 1;
+>  
+> -	node = dev_to_node(&dev->dev);
+> +	node = dev_to_node(dev);
+>  
+> -	list_for_each_entry(msidesc, &dev->msi_list, list) {
+> +	list_for_each_entry(msidesc, &pdev->msi_list, list) {
+>  		irq = irq_alloc_hwirq(node);
+>  		if (!irq)
+>  			return -ENOSPC;
+>  
+> -		ret = setup_msi_irq(dev, msidesc, irq, 0);
+> +		ret = setup_msi_irq(pdev, msidesc, irq, 0);
+>  		if (ret < 0) {
+>  			irq_free_hwirq(irq);
+>  			return ret;
+> @@ -3214,6 +3215,17 @@ int default_setup_hpet_msi(unsigned int irq, unsigned int id)
+>  }
+>  #endif
+>  
+> +struct msi_chip apic_msi_chip = {
+> +	.setup_irqs = native_setup_msi_irqs,
+> +	.teardown_irq = native_teardown_msi_irq,
+> +};
+> +
+> +struct msi_chip *arch_get_match_msi_chip(struct device *dev)
+> +{
+> +	return x86_msi_chip;
+> +}
+> +
+> +struct msi_chip *x86_msi_chip = &apic_msi_chip;
+>  #endif /* CONFIG_PCI_MSI */
+>  /*
+>   * Hypertransport interrupt support
 > -- 
-> Kees Cook
-> Chrome OS Security
+> 1.7.1
 > 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
