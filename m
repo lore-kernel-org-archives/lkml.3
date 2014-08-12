@@ -1,113 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaHLOET (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 10:04:19 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:48072 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733AbaHLOER (ORCPT
+	id S1752628AbaHLOJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 10:09:20 -0400
+Received: from icp-osb-irony-out1.external.iinet.net.au ([203.59.1.210]:54921
+	"EHLO icp-osb-irony-out1.external.iinet.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751800AbaHLOJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 10:04:17 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Tue, 12 Aug 2014 16:02:59 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Wang YanQing <udknight@gmail.com>
-Cc: Johan Hovold <johan@kernel.org>, gregkh@linuxfoundation.org,
-        linus.walleij@linaro.org, jhovold@gmail.com, andi@lisas.de,
-        dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Resend Re: [PATCH v6] usb:serial:pl2303: add GPIOs interface on
- PL2303
-Message-ID: <20140812140259.GA9799@localhost>
-References: <20140729165709.GA3380@udknight>
- <20140804140032.GA25529@localhost>
- <20140804171536.GA2330@udknight>
- <20140805135408.GD25529@localhost>
- <20140807191034.GA6335@udknight>
- <20140808075442.GB14553@localhost>
- <20140808184655.GA20958@udknight>
+	Tue, 12 Aug 2014 10:09:19 -0400
+X-Greylist: delayed 558 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Aug 2014 10:09:18 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AroBANIc6lN8q9bC/2dsb2JhbAANTYNfV65YBp5eh0gBgSeEewEBBCcRQAEQCw0LCRYPCQMCAQIBRQYBDAEFAgEBiEuuC5Z4F4V8iVAHhEwBBIYQjzOITYV5hDWLD4FYWg
+X-IronPort-AV: E=Sophos;i="5.01,849,1399996800"; 
+   d="scan'208";a="241031883"
+Message-ID: <53EA1D4B.5030401@uclinux.org>
+Date: Tue, 12 Aug 2014 23:57:31 +1000
+From: Greg Ungerer <gerg@uclinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140808184655.GA20958@udknight>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        David Howells <dhowells@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] fs/proc/task_nommu.c: copy-and-paste the changes
+ from task_mmu.c
+References: <20140805194627.GA30693@redhat.com> <20140811170008.GA24629@redhat.com>
+In-Reply-To: <20140811170008.GA24629@redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 09, 2014 at 02:46:56AM +0800, Wang YanQing wrote:
-> On Fri, Aug 08, 2014 at 09:54:42AM +0200, Johan Hovold wrote:
-> > On Fri, Aug 08, 2014 at 03:10:34AM +0800, Wang YanQing wrote:
-> > > On Tue, Aug 05, 2014 at 03:54:08PM +0200, Johan Hovold wrote:
-> > > > > > I noticed that setting direction to output and setting the gpio high has
-> > > > > > no effect on the read-back value (i.e. I still read back 0) for my
-> > > > > > pl2303hx (note that my device has no easily accessible gpios so I
-> > > > > > haven't verified the actual state of the output pin).
-> > > > > > 
-> > > > > > What happens on your system? Is the read-back value still 0, even when
-> > > > > > the GPIO output is actually high? Should we return the cached value in
-> > > > > > this case?
-> > > > > 
-> > > > > If i set direction to output, then I could control gpio high and low
-> > > > > by set 1 or 0, and the read-back value is 1 or 0 according to high and
-> > > > > low(I test high and low by oscillscope)
-> > > > > 
-> > > > > I test it with my pl2303hx with only two gpios.
-> > > > >
-> > > > > Could you use usbmon to see whether the traffic is right according
-> > > > > to comment in struct pl2303_gpio?
-> > > > 
-> > > > The traffic appears correct judging from the debug output (which I
-> > > > trust). Output-enable is reflected in register 0x81, but the value
-> > > > isn't.
-> > > > 
-> > > > What is the lsusb -v output for your device?
-> > > 
-> > > Bus 001 Device 005: ID 067b:2303 Prolific Technology, Inc. PL2303 Serial Port.
-> > 
-> > You forgot the verbose flag (-v).
-> Sorry, below is output with -v:
-> Bus 002 Device 004: ID 067b:2303 Prolific Technology, Inc. PL2303 Serial Port
-> Device Descriptor:
->   bLength                18
->   bDescriptorType         1
->   bcdUSB               1.10
->   bDeviceClass            0 (Defined at Interface level)
->   bDeviceSubClass         0 
->   bDeviceProtocol         0 
->   bMaxPacketSize0        64
->   idVendor           0x067b Prolific Technology, Inc.
->   idProduct          0x2303 PL2303 Serial Port
->   bcdDevice            3.00
+Hi Oleg,
 
-You seem to have an HX device, whereas mine is an HXD (rev D) with
-bcdDevice 4.00. That could account for the different behaviour of the
-GPIO state/value register.
+On 12/08/14 03:00, Oleg Nesterov wrote:
+> Greg, could you review? The changes are simple, but I am not familiar
+> with NOMMU and I can't test this.
+>
+> Depends on
+>
+> 	[PATCH v2 3/7] proc: introduce proc_mem_open()
+> 	http://marc.info/?l=linux-kernel&m=140726831328943
+>
+> 	[PATCH v2 4/7] fs/proc/task_mmu.c: shift mm_access() from m_start() to proc_maps_open()
+> 	http://marc.info/?l=linux-kernel&m=140726828328929
+> 	(only because it adds proc_maps_private->mm)
+>
+> I'll also send you mbox with the previous series just in case.
+>
+> Oleg.
+>
+>   fs/proc/task_nommu.c |   65 ++++++++++++++++++++++++++++++--------------------
+>   1 files changed, 39 insertions(+), 26 deletions(-)
 
-How did you figure out which registers to use? Were you sniffing the
-traffic of some driver for some other OS? And does your device only have
-two GPIOs and not four like the HX rev D?
+I don't see any problems. Applied cleanly for me (to a 3.16-rc7 tree), 
+compiled
+cleanly for a non-mmu m68k target, and ran with no problems I could see.
+At least I checked /proc/1/maps and that still came out fine. Is there 
+anything
+else I should check?
 
-<snip>
+I am happy to ack it:
 
-> > > It is strange your device doesn't work, I verify the control method by
-> > > analyze usbmon output from linux host which has VirtualBox running 
-> > > gpio test program, but I don't have right to distribute the gpio test
-> > > program I think, so I can't help you to figure out why it doesn't work 
-> > > for your device.
-> > 
-> > What do you use the gpio test program for? I thought you verified the
-> > gpios with a scope?
-> 
-> Yes, I verified gpios with a scope.
-> 
-> "
-> You must allocate the buffer dynamically as some platforms cannot do
-> DMA to the stack.
-> "
-> Thanks very much for point out it, could you clarify it? 
-> I want to know the reason.
+Acked-by: Greg Ungerer <gerg@uclinux.org>
 
-The memory where the stack resides might not be available for DMA, and
-even if it is, there could still be problems with cache coherency.
+Regards
+Greg
 
-Johan
+
+
