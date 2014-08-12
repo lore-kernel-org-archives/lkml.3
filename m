@@ -1,126 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856AbaHLQ21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 12:28:27 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:56522 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaHLQ2Y (ORCPT
+	id S1754197AbaHLQ2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 12:28:55 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51259 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753449AbaHLQ2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 12:28:24 -0400
-From: Shawn Bohrer <shawn.bohrer@gmail.com>
-To: Roland Dreier <roland@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tomk@rgmadvisors.com,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>
-Subject: [PATCH] ib_umem_release should decrement mm->pinned_vm from ib_umem_get
-Date: Tue, 12 Aug 2014 11:27:35 -0500
-Message-Id: <1407860855-6564-1-git-send-email-shawn.bohrer@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Tue, 12 Aug 2014 12:28:51 -0400
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-pci <linux-pci@vger.kernel.org>
+Cc: linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v9 12/12] PCI: Introduce pci_remap_iospace() for remapping PCI I/O bus resources into CPU space
+Date: Tue, 12 Aug 2014 17:25:25 +0100
+Message-Id: <1407860725-25202-13-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Introduce a default implementation for remapping PCI bus I/O resources
+onto the CPU address space. Architectures with special needs may
+provide their own version, but most should be able to use this one.
 
-In debugging an application that receives -ENOMEM from ib_reg_mr() I
-found that ib_umem_get() can fail because the pinned_vm count has
-wrapped causing it to always be larger than the lock limit even with
-RLIMIT_MEMLOCK set to RLIM_INFINITY.
-
-The wrapping of pinned_vm occurs because the process that calls
-ib_reg_mr() will have its mm->pinned_vm count incremented.  Later a
-different process with a different mm_struct than the one that allocated
-the ib_umem struct ends up releasing it which results in decrementing
-the new processes mm->pinned_vm count past zero and wrapping.
-
-I'm not entirely sure what circumstances cause a different process to
-release the ib_umem than the one that allocated it but the kernel stack
-trace of the freeing process from my situation looks like the following:
-
-Call Trace:
- [<ffffffff814d64b1>] dump_stack+0x19/0x1b
- [<ffffffffa0b522a5>] ib_umem_release+0x1f5/0x200 [ib_core]
- [<ffffffffa0b90681>] mlx4_ib_destroy_qp+0x241/0x440 [mlx4_ib]
- [<ffffffffa0b4d93c>] ib_destroy_qp+0x12c/0x170 [ib_core]
- [<ffffffffa0cc7129>] ib_uverbs_close+0x259/0x4e0 [ib_uverbs]
- [<ffffffff81141cba>] __fput+0xba/0x240
- [<ffffffff81141e4e>] ____fput+0xe/0x10
- [<ffffffff81060894>] task_work_run+0xc4/0xe0
- [<ffffffff810029e5>] do_notify_resume+0x95/0xa0
- [<ffffffff814e3dd0>] int_signal+0x12/0x17
-
-The following patch fixes the issue by storing the mm_struct of the
-process that calls ib_umem_get() so that ib_umem_release and/or
-ib_umem_account() can properly decrement the pinned_vm count of the
-correct mm_struct.
-
-Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Rob Herring <robh+dt@kernel.org>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 ---
- drivers/infiniband/core/umem.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
+ drivers/pci/pci.c   | 33 +++++++++++++++++++++++++++++++++
+ include/linux/pci.h |  3 +++
+ 2 files changed, 36 insertions(+)
 
-diff --git a/drivers/infiniband/core/umem.c b/drivers/infiniband/core/umem.c
-index a3a2e9c..32699024 100644
---- a/drivers/infiniband/core/umem.c
-+++ b/drivers/infiniband/core/umem.c
-@@ -105,6 +105,7 @@ struct ib_umem *ib_umem_get(struct ib_ucontext *context, unsigned long addr,
- 	umem->length    = size;
- 	umem->offset    = addr & ~PAGE_MASK;
- 	umem->page_size = PAGE_SIZE;
-+	umem->mm        = get_task_mm(current);
- 	/*
- 	 * We ask for writable memory if any access flags other than
- 	 * "remote read" are set.  "Local write" and "remote write"
-@@ -198,6 +199,7 @@ out:
- 	if (ret < 0) {
- 		if (need_release)
- 			__ib_umem_release(context->device, umem, 0);
-+		mmput(umem->mm);
- 		kfree(umem);
- 	} else
- 		current->mm->pinned_vm = locked;
-@@ -229,13 +231,11 @@ static void ib_umem_account(struct work_struct *work)
- void ib_umem_release(struct ib_umem *umem)
- {
- 	struct ib_ucontext *context = umem->context;
--	struct mm_struct *mm;
- 	unsigned long diff;
- 
- 	__ib_umem_release(umem->context->device, umem, 1);
- 
--	mm = get_task_mm(current);
--	if (!mm) {
-+	if (!umem->mm) {
- 		kfree(umem);
- 		return;
- 	}
-@@ -251,20 +251,19 @@ void ib_umem_release(struct ib_umem *umem)
- 	 * we defer the vm_locked accounting to the system workqueue.
- 	 */
- 	if (context->closing) {
--		if (!down_write_trylock(&mm->mmap_sem)) {
-+		if (!down_write_trylock(&umem->mm->mmap_sem)) {
- 			INIT_WORK(&umem->work, ib_umem_account);
--			umem->mm   = mm;
- 			umem->diff = diff;
- 
- 			queue_work(ib_wq, &umem->work);
- 			return;
- 		}
- 	} else
--		down_write(&mm->mmap_sem);
-+		down_write(&umem->mm->mmap_sem);
- 
--	current->mm->pinned_vm -= diff;
--	up_write(&mm->mmap_sem);
--	mmput(mm);
-+	umem->mm->pinned_vm -= diff;
-+	up_write(&umem->mm->mmap_sem);
-+	mmput(umem->mm);
- 	kfree(umem);
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 29d1775..76d21b6 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2707,6 +2707,39 @@ int pci_request_regions_exclusive(struct pci_dev *pdev, const char *res_name)
  }
- EXPORT_SYMBOL(ib_umem_release);
+ EXPORT_SYMBOL(pci_request_regions_exclusive);
+ 
++/**
++ *	pci_remap_iospace - Remap the memory mapped I/O space
++ *	@res: Resource describing the I/O space
++ *	@phys_addr: physical address where the range will be mapped.
++ *
++ *	Remap the memory mapped I/O space described by the @res
++ *	into the CPU physical address space. Only architectures
++ *	that have memory mapped IO defined (and hence PCI_IOBASE)
++ *	should call this function.
++ */
++int __weak pci_remap_iospace(const struct resource *res, phys_addr_t phys_addr)
++{
++	int err = -ENODEV;
++
++#ifdef PCI_IOBASE
++	if (!(res->flags & IORESOURCE_IO))
++		return -EINVAL;
++
++	if (res->end > IO_SPACE_LIMIT)
++		return -EINVAL;
++
++	err = ioremap_page_range(res->start + (unsigned long)PCI_IOBASE,
++				res->end + 1 + (unsigned long)PCI_IOBASE,
++				phys_addr, pgprot_device(PAGE_KERNEL));
++#else
++	/* this architecture does not have memory mapped I/O space,
++	   so this function should never be called */
++	WARN_ON(1);
++#endif
++
++	return err;
++}
++
+ static void __pci_set_master(struct pci_dev *dev, bool enable)
+ {
+ 	u16 old_cmd, cmd;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index e1e0d80..988c2f5 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1098,6 +1098,9 @@ int __must_check pci_bus_alloc_resource(struct pci_bus *bus,
+ 						  resource_size_t),
+ 			void *alignf_data);
+ 
++
++int pci_remap_iospace(const struct resource *res, phys_addr_t phys_addr);
++
+ static inline dma_addr_t pci_bus_address(struct pci_dev *pdev, int bar)
+ {
+ 	struct pci_bus_region region;
 -- 
-1.7.7.6
+2.0.4
 
