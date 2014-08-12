@@ -1,120 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759AbaHLHJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:09:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38068 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670AbaHLHJ3 (ORCPT
+	id S1753485AbaHLHNF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:13:05 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:55849 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253AbaHLHNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:09:29 -0400
-Date: Tue, 12 Aug 2014 09:09:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
-        zheng.z.yan@intel.com
-Subject: Re: [PATCH] perf/x86/uncore: export basic memory events for IVT IMC
- PMU
-Message-ID: <20140812070915.GM9918@twins.programming.kicks-ass.net>
-References: <20140812060031.GA25239@quad>
+	Tue, 12 Aug 2014 03:13:04 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 2/8] perf tools: Make __hpp__fmt() receive an additional len argument
+References: <1406785662-5534-1-git-send-email-namhyung@kernel.org>
+	<1406785662-5534-3-git-send-email-namhyung@kernel.org>
+	<20140802133026.GD13375@kernel.org>
+	<87r40nfo36.fsf@sejong.aot.lge.com> <20140811131738.GB3277@kernel.org>
+Date: Tue, 12 Aug 2014 16:13:01 +0900
+In-Reply-To: <20140811131738.GB3277@kernel.org> (Arnaldo Carvalho de Melo's
+	message of "Mon, 11 Aug 2014 10:17:38 -0300")
+Message-ID: <87iolyfaf6.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XEzLdEi2UC3eDnpc"
-Content-Disposition: inline
-In-Reply-To: <20140812060031.GA25239@quad>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arnaldo,
 
---XEzLdEi2UC3eDnpc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 11 Aug 2014 10:17:38 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Aug 11, 2014 at 05:05:33PM +0900, Namhyung Kim escreveu:
+>> Hi Arnaldo,
+>> 
+>> On Sat, 2 Aug 2014 10:30:26 -0300, Arnaldo Carvalho de Melo wrote:
+>> > Em Thu, Jul 31, 2014 at 02:47:36PM +0900, Namhyung Kim escreveu:
+>> >> So that it can properly handle alignment requirements later.  To do
+>> >> that, add percent_color_len_snprintf() fucntion to help coloring of
+>> >> overhead columns.
+>> >
+>> > Can you elaborate on this description? What is not possible to do before
+>> > this patch?
+>> 
+>> This patch is a preparation that moves hard-coded print width out of the
+>> format string so that it can be passed from external settings later.
+>
+> Ok, please add this to the patch description?
 
-On Tue, Aug 12, 2014 at 08:00:31AM +0200, Stephane Eranian wrote:
->  arch/x86/kernel/cpu/perf_event_intel_uncore.c |    1 +
->  1 file changed, 1 insertion(+)
->=20
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/ker=
-nel/cpu/perf_event_intel_uncore.c
-> index cfc6f9d..800e087 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> @@ -1391,6 +1391,7 @@ static struct intel_uncore_type ivt_uncore_imc =3D {
->  	.fixed_ctr_bits	=3D 48,
->  	.fixed_ctr	=3D SNBEP_MC_CHy_PCI_PMON_FIXED_CTR,
->  	.fixed_ctl	=3D SNBEP_MC_CHy_PCI_PMON_FIXED_CTL,
-> +	.event_descs	=3D snbep_uncore_imc_events,
->  	IVT_UNCORE_PCI_COMMON_INIT(),
->  };
+Will do.  Btw, do you want me to resend the series?  It seems your tree
+already merged it..
 
-I changed that to the below; seeing how I have the uncore splitup
-patches.
-
-Also, I'm very tempted to do a s/ivt/ivbep/ on that whole thing. We
-really should not mix all these stupid names.
-
----
-Subject: perf/x86/uncore: export basic memory events for IVT IMC PMU
-=46rom: Stephane Eranian <eranian@google.com>
-Date: Tue, 12 Aug 2014 08:00:31 +0200
-
-This patch exposes two basic events for Ivytown IMC uncore PMU:
-
-- cas_count_read: number of full-cache line reads to memory controller
-- cas_count_write: number of full-cache line writes to memory controller
-
-Those events use the same encoding as for SNB-EP, so reuse the same
-event table. See specification in:
-
-http://www.intel.com/content/dam/www/public/us/en/documents/manuals/xeon-e5=
--2600-v2-uncore-manual.pdf
-
-By aggregating all the read and write events from all the memory controllers
-of each processor socket, one can determine the total memory bandwidth util=
-ization.
-
-Cc: zheng.z.yan@intel.com
-Cc: mingo@elte.hu
-Cc: ak@linux.intel.com
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140812060031.GA25239@quad
----
- arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-@@ -1422,6 +1422,7 @@ static struct intel_uncore_type ivt_unco
- 	.fixed_ctr_bits	=3D 48,
- 	.fixed_ctr	=3D SNBEP_MC_CHy_PCI_PMON_FIXED_CTR,
- 	.fixed_ctl	=3D SNBEP_MC_CHy_PCI_PMON_FIXED_CTL,
-+	.event_descs	=3D snbep_uncore_imc_events,
- 	IVT_UNCORE_PCI_COMMON_INIT(),
- };
-=20
-
---XEzLdEi2UC3eDnpc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT6b2bAAoJEHZH4aRLwOS67o4QAInyfvJYEE7/v6QeELTROHRJ
-QAJ/x7LYlgH6RwBeC4XevCCeuSUw7MQ4S8+WWzxL2GrVvhT3/01H/sJc7fSHHbVb
-J2h8RTj72sdqsoaI5zxFCVMGnYOOwnYcz/oarF94nl5/X6KIbssTbU6Hh+XoHF0O
-qnUoeGoguA26PUyLeDrbVlCNcpWjbwa4+OQBuOUmfBYPFDWLbvHA0IZPdLeXbi53
-294O7OmG0KVduFl0zyzn8UVsCOhW4+0svivKdrIBhODNYJU1bohuis7CQq7pKAEc
-fOGCoqX9AVo7967Sk2sQXfq9GaTypFv1eqQPVyH4c5tkGcHhs079HZ10HhL+eGi5
-lEk5ohdRL1gsg1f39ruo4KIaHiuG1GLZuYkON+EEtmOldVVKCph+yg3z8DklKmNE
-6yq0dBoYaOmDyR/liL6NrmITs5zUtKj0DnDzYovTuxujKzpu6Mb3abmBgucBgNve
-Ow33QAOFl4dquDf6qb+CZx3bpToWiK8JBsPrM0LjsOd5pfj/j6rw9eIYnOV1ZTZn
-qH4x5PiFbtMSs+Fm4ke0OtOzqHj5kq8Zkf9gOOgQ9ltm+aEy51JQItfTC83cUtUw
-fHg/MZX9/Xd44mQxLxdxXiqPi1K9ey7xrYwzzm1f80b591pVcdvWzD2Iz4rC3UBE
-tDUa314r7kJDmwJwYr+G
-=9CT1
------END PGP SIGNATURE-----
-
---XEzLdEi2UC3eDnpc--
+Thanks,
+Namhyung
