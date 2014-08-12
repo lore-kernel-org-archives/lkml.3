@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaHLOzX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 10:55:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37016 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174AbaHLOxo (ORCPT
+	id S1753222AbaHLO60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 10:58:26 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47238 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753100AbaHLO6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 10:53:44 -0400
-Date: Tue, 12 Aug 2014 07:52:39 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-9a5d9ba6a3631d55c358fe1bdbaa162a97471a05@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de
-In-Reply-To: <20140729152705.GX12054@laptop.lan>
-References: <20140729152705.GX12054@laptop.lan>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/fair: Allow calculate_imbalance()
-  to move idle cpus
-Git-Commit-ID: 9a5d9ba6a3631d55c358fe1bdbaa162a97471a05
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 12 Aug 2014 10:58:24 -0400
+Date: Tue, 12 Aug 2014 16:58:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 05/33] perf record: Allow the user to disable time stamps
+Message-ID: <20140812145819.GA7737@gmail.com>
+References: <1407169064-25625-1-git-send-email-acme@kernel.org>
+ <1407169064-25625-6-git-send-email-acme@kernel.org>
+ <20140805060856.GA9453@gmail.com>
+ <20140805133347.GH13375@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140805133347.GH13375@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9a5d9ba6a3631d55c358fe1bdbaa162a97471a05
-Gitweb:     http://git.kernel.org/tip/9a5d9ba6a3631d55c358fe1bdbaa162a97471a05
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 29 Jul 2014 17:15:11 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 12 Aug 2014 12:48:20 +0200
 
-sched/fair: Allow calculate_imbalance() to move idle cpus
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
 
-Allow calculate_imbalance() to 'create' idle cpus in the busiest group
-if there are idle cpus in the local group.
+> Em Tue, Aug 05, 2014 at 08:08:56AM +0200, Ingo Molnar escreveu:
+> > * Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+> > > From: Andi Kleen <ak@linux.intel.com>
+>  
+> > This patch looks dangerous and misleading to me.
+> 
+> I took it more from the angle: hey, it fixes a regression, i.e. 
+> -T/--time somehow became a noop, and also it doesn't change any 
+> default.
+> 
+> It also states that you will get misaccounting, why that would 
+> happen, althought wording could've been better, as mmaps won't be 
+> "missing", i.e. they will be there as this governs just 
+> PERF_SAMPLE_TIME, not perf_event_attr.mmap, so it MMAPs may come 
+> after samples for its maps.
+> 
+> So, I took it.
+> 
+> How should we proceed?
 
-Suggested-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140729152705.GX12054@laptop.lan
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+I'd be fine with applying the patch and fixing the misleading 
+changelog.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9437725..df1ed17 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6273,12 +6273,11 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
- 		return fix_small_imbalance(env, sds);
- 	}
- 
--	if (busiest->group_type == group_overloaded) {
--		/*
--		 * Don't want to pull so many tasks that a group would go idle.
--		 * Except of course for the group_imb case, since then we might
--		 * have to drop below capacity to reach cpu-load equilibrium.
--		 */
-+	/*
-+	 * If there aren't any idle cpus, avoid creating some.
-+	 */
-+	if (busiest->group_type == group_overloaded &&
-+	    local->group_type   == group_overloaded) {
- 		load_above_capacity =
- 			(busiest->sum_nr_running - busiest->group_capacity_factor);
- 
+Thanks,
+
+	Ingo
