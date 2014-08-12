@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099AbaHLABy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 20:01:54 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:61830 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790AbaHLABw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 20:01:52 -0400
-Message-ID: <1407801666.28221.84.camel@chimera>
-Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
-From: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org Wireless" 
-	<linux-wireless@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 11 Aug 2014 17:01:06 -0700
-In-Reply-To: <52896C9C-8560-4CE4-A1FB-C896D766EC87@holtmann.org>
-References: <1407780269.28221.63.camel@chimera>
-	 <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org>
-	 <1407789645.28221.68.camel@chimera>
-	 <37210DB5-2911-4FA3-9299-7701C5003945@holtmann.org>
-	 <1407791075.28221.74.camel@chimera>
-	 <28066DB2-9EA9-4748-9C89-D3FBD3EC51F5@holtmann.org>
-	 <1407798738.28221.81.camel@chimera>
-	 <52896C9C-8560-4CE4-A1FB-C896D766EC87@holtmann.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752021AbaHLALk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 20:11:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:10087 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201AbaHLALj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 20:11:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,845,1400050800"; 
+   d="scan'208";a="467633279"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, x86: Use extended offcore mask on Haswell
+Date: Mon, 11 Aug 2014 17:11:30 -0700
+Message-Id: <1407802290-619-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-11 at 16:56 -0700, Marcel Holtmann wrote:
-> the way I read the nl80211 code is that the NL80211_CMD_NEW_INTERFACE
-> requires a wiphy device to be specified. And that is actually just a
-> number. So I have no idea what the MAC has to here.
-> 
-OpenWrt finds a wiphy by its MAC.
+From: Andi Kleen <ak@linux.intel.com>
 
-> Why does the wiphy need to know the MAC if it is always specified from
-> userspace when actually creating the new netdev interface. Works for
-> P2P devices, so why wouldn't it work for access point and station
-> mode?
-> 
-A MAC can be specified for the netdev, but it is assigned to a wiphy
-identified by its MAC.
+HSW-EP has a larger offcore mask than the client Haswell CPUs.
+It is the same mask as on Sandy/IvyBridge-EP. All of
+Haswell was using the client mask, so some bits were missing.
+
+On the client parts some bits were also missing compared
+to Sandy/IvyBridge, in particular the bits to match on a L4
+cache hit.
+
+The Haswell core in both client and server incarnations
+accepts the same bits (but some are nops), so we can use
+the same mask.
+
+So use the snbep extended mask, which is a superset of the
+client and the server, for all of Haswell.
+
+This allows specifying a number of extra offcore events, like
+for example for HSW-EP.
+
+% perf stat -e cpu/event=0xb7,umask=0x1,offcore_rsp=0x3fffc00100,name=offcore_response_pf_l3_rfo_l3_miss_any_response/ true
+
+which were <not supported> before.
+
+v2: Post correct patch.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 2502d0d..4648a1b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2552,7 +2552,7 @@ __init int intel_pmu_init(void)
+ 
+ 		x86_pmu.event_constraints = intel_hsw_event_constraints;
+ 		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
+-		x86_pmu.extra_regs = intel_snb_extra_regs;
++		x86_pmu.extra_regs = intel_snbep_extra_regs;
+ 		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+ 		/* all extra regs are per-cpu when HT is on */
+ 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
+-- 
+1.9.3
 
