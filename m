@@ -1,70 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432AbaHLW2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 18:28:38 -0400
-Received: from ozlabs.org ([103.22.144.67]:40725 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754630AbaHLW2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 18:28:35 -0400
-Date: Wed, 13 Aug 2014 08:28:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeff Layton <jlayton@primarydata.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 0/5] locks: move most locks_release_private calls
- outside of i_lock
-Message-ID: <20140813082827.1097c3ad@canb.auug.org.au>
-In-Reply-To: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
-References: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/kE9c5iQLQE.k2/XeWc._pcT"; protocol="application/pgp-signature"
+	id S932150AbaHLW2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 18:28:43 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:56833 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630AbaHLW2j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 18:28:39 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: gregkh@linuxfoundation.org
+Cc: tiwai@suse.de, linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v3 1/3] init / kthread: add module_long_probe_init() and module_long_probe_exit()
+Date: Tue, 12 Aug 2014 15:28:25 -0700
+Message-Id: <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/kE9c5iQLQE.k2/XeWc._pcT
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Hi Jeff,
+Tetsuo bisected and found that commit 786235ee "kthread: make
+kthread_create() killable" modified kthread_create() to bail as
+soon as SIGKILL is received. This is causing some issues with
+some drivers and at times boot. Joseph then found that failures
+occur as the systemd-udevd process sends SIGKILL to modprobe if
+probe on a driver takes over 30 seconds. When this happens probe
+will fail on any driver, its why booting on some system will fail
+if the driver happens to be a storage related driver. Some folks
+have suggested fixing this by modifying kthread_create() to not
+leave upon SIGKILL [3], upon review Oleg rejected this change and
+the discussion was punted out to systemd to see if the default
+timeout could be increased from 30 seconds to 120. The opinion of
+the systemd maintainers is that the driver's behavior should
+be fixed [4]. Linus seems to agree [5], however more recently even
+networking drivers have been reported to fail on probe since just
+writing the firmware to a device and kicking it can take easy over
+60 seconds [6]. Benjamim was able to trace the issues recently
+reported on cxgb4 down to the same systemd-udevd 30 second timeout [6].
 
-On Tue, 12 Aug 2014 10:48:08 -0400 Jeff Layton <jlayton@primarydata.com> wr=
-ote:
->
-> Absent any objections, I'll plan to merge these for 3.18.
+This is an alternative solution which enables drivers that are
+known to take long to use kthread_run(), this avoids the 30 second
+timeout and lets us annotate drivers with long init sequences that
+need some love.
 
-This means that this patch set should *not* be in linux-next until after
-(at least) v3.17-rc1 is released ...  This s reinforced by the lack of
-Acked-by, Reviewed-by and Tested-by tags ... (the addition of which would p=
-resumably require the rebase (or rewrite) of a published git tree.)
+[0] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705
+[1] https://bugs.launchpad.net/ubuntu/+source/systemd/+bug/1297248
+[2] http://lists.freedesktop.org/archives/systemd-devel/2014-March/018006.html
+[3] http://thread.gmane.org/gmane.linux.ubuntu.devel.kernel.general/39123
+[4] http://article.gmane.org/gmane.comp.sysutils.systemd.devel/17860
+[5] http://article.gmane.org/gmane.linux.kernel/1671333
+[6] https://bugzilla.novell.com/show_bug.cgi?id=877622
 
-/me suspects that many people do not read his daily release notes :-(
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Tim Gardner <tim.gardner@canonical.com>
+Cc: Pierre Fersing <pierre-fersing@pierref.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Benjamin Poirier <bpoirier@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
+Cc: Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>
+Cc: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+Cc: Abhijit Mahajan <abhijit.mahajan@avagotech.com>
+Cc: Hariprasad S <hariprasad@chelsio.com>
+Cc: Santosh Rastapur <santosh@chelsio.com>
+Cc: MPT-FusionLinux.pdl@avagotech.com
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+---
 
---Sig_/kE9c5iQLQE.k2/XeWc._pcT
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+A few implementation notes:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+1) Two wrappers are used to simply enable the same prototype
+   as expected on modules for module_init()
 
-iQIcBAEBCAAGBQJT6pUQAAoJEMDTa8Ir7ZwVTisQAIxg+9qTRROcI90xF8edNQ/L
-pcpNey/kXd7AFpqvdcPmRjb8wWzZhPhWn7Gz9wQgC6UKQy7UG0T47eeInZvxX8mp
-IgyR7DRhnuW7yTZdyqbOSYX+563ayw3H2BGRPImjZTOt5NL/Xll7FWusN2GI2Ses
-9CfpuQ7umojSZX2lmB/V46FZ4QvvamDlJf7ybpoid+CxVWVy2zKbeQzilCNNneTv
-1fyZGVVVPFfe5y6rN5vFLIMhrCkwPBjg9nSPCFLmTBE+D6541Q7z5wdc8Y1wyVGI
-OMrORVjFV9sQd1qdvA5+dt1vZZzQ/WtYYX5mGUBzpV9uzlHVYxke9esL0bVRdAA1
-o966aVugwQrqU0oc5zBpjf4GGy3/RTtvQgQ0FBnLLJRzUxjXuKiIxSGStP6u6E4I
-9Ntd5dkL7YYzKyWg+59h2giVBZrmQxIlmtiwSf0JJRboynaoDObJQ3i79AbfT2IQ
-9nlOa8TZCiRDUmiBOXXY0jz9jo6AlRZDiWKH961oUCBm6uf+38tr8zbAV6lyzSlS
-rvZ6DQaniMUmHjCvIfbe9TIa9L/muNBjP93GVMMoM2t8RVp+6LEvPOlvbB/oo6AV
-p/2gj1fDVSP5tSVRmFi6xWqf9F7oa0rI1Y1TU4F8frSn9r+y/JiycERJa3esL7Q1
-4dXiD2vYBJT904Tkb3rv
-=GIIv
------END PGP SIGNATURE-----
+2) The new helpers are stuffed under kthread.h since including
+   kthread.h on init.h caused major issues which are not easy
+   to resolve, in fact even including kernel.h in init.h cases
+   some issues. We could have keep this under init.h if we ifef'd
+   on _LINUX_KTHREAD_H as well but this seems a bit cleaner.
 
---Sig_/kE9c5iQLQE.k2/XeWc._pcT--
+ include/linux/kthread.h | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/include/linux/kthread.h b/include/linux/kthread.h
+index 13d5520..2b5555a 100644
+--- a/include/linux/kthread.h
++++ b/include/linux/kthread.h
+@@ -1,6 +1,7 @@
+ #ifndef _LINUX_KTHREAD_H
+ #define _LINUX_KTHREAD_H
+ /* Simple interface for creating and stopping kernel threads without mess. */
++#include <linux/init.h>
+ #include <linux/err.h>
+ #include <linux/sched.h>
+ 
+@@ -128,4 +129,38 @@ bool queue_kthread_work(struct kthread_worker *worker,
+ void flush_kthread_work(struct kthread_work *work);
+ void flush_kthread_worker(struct kthread_worker *worker);
+ 
++#ifndef MODULE
++
++#define module_long_probe_init(x)      __initcall(x);
++#define module_long_probe_exit(x)      __exitcall(x);
++
++#else
++/* To be used by modules which can take over 30 seconds at probe */
++#define module_long_probe_init(initfn)				\
++	static struct task_struct *__init_thread;		\
++	static int _long_probe_##initfn(void *arg)		\
++	{							\
++		return initfn();				\
++	}							\
++	static inline __init int __long_probe_##initfn(void)	\
++	{							\
++		__init_thread = kthread_run(_long_probe_##initfn,\
++					    NULL,		\
++					    #initfn);		\
++		if (IS_ERR(__init_thread))			\
++			return PTR_ERR(__init_thread);		\
++		return 0;					\
++	}							\
++	module_init(__long_probe_##initfn);
++/* To be used by modules that require module_long_probe_init() */
++#define module_long_probe_exit(exitfn)				\
++	static inline void __long_probe_##exitfn(void)		\
++	{							\
++		exitfn();					\
++		if (__init_thread)				\
++			kthread_stop(__init_thread);		\
++	}							\
++	module_exit(__long_probe_##exitfn);
++#endif /* MODULE */
++
+ #endif /* _LINUX_KTHREAD_H */
+-- 
+2.0.3
+
