@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021AbaHLALk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 20:11:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:10087 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751201AbaHLALj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 20:11:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,845,1400050800"; 
-   d="scan'208";a="467633279"
-From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, x86: Use extended offcore mask on Haswell
-Date: Mon, 11 Aug 2014 17:11:30 -0700
-Message-Id: <1407802290-619-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
+	id S1752518AbaHLA1T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 20:27:19 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:47353 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaHLA1S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 20:27:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1408090152240.11855@chino.kir.corp.google.com>
+References: <1407545198-9009-1-git-send-email-xiyou.wangcong@gmail.com>
+	<alpine.DEB.2.02.1408090152240.11855@chino.kir.corp.google.com>
+Date: Mon, 11 Aug 2014 17:20:50 -0700
+Message-ID: <CAM_iQpV71KMJEm_-VY0EPJngM-yNHOVv5niXgy9+7jnWw3=wBQ@mail.gmail.com>
+Subject: Re: [Patch] freezer: check OOM kill signal while being frozen
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Sat, Aug 9, 2014 at 1:55 AM, David Rientjes <rientjes@google.com> wrote:
+> On Fri, 8 Aug 2014, Cong Wang wrote:
+>
+>> diff --git a/kernel/freezer.c b/kernel/freezer.c
+>> index aa6a8aa..c6d189d 100644
+>> --- a/kernel/freezer.c
+>> +++ b/kernel/freezer.c
+>> @@ -68,7 +68,9 @@ bool __refrigerator(bool check_kthr_stop)
+>>               spin_lock_irq(&freezer_lock);
+>>               current->flags |= PF_FROZEN;
+>>               if (!freezing(current) ||
+>> -                 (check_kthr_stop && kthread_should_stop()))
+>> +                 (check_kthr_stop && kthread_should_stop()) ||
+>> +                 (test_tsk_thread_flag(current, TIF_MEMDIE) &&
+>> +                      fatal_signal_pending(current)))
+>>                       current->flags &= ~PF_FROZEN;
+>>               spin_unlock_irq(&freezer_lock);
+>>
+>
+> All threads with TIF_MEMDIE set would have been killed, why is the check
+> for fatal_signal_pending(current) needed?
 
-HSW-EP has a larger offcore mask than the client Haswell CPUs.
-It is the same mask as on Sandy/IvyBridge-EP. All of
-Haswell was using the client mask, so some bits were missing.
+So just checking TIF_MEMDIE is enough, right?
 
-On the client parts some bits were also missing compared
-to Sandy/IvyBridge, in particular the bits to match on a L4
-cache hit.
+>
+> You can also use test_thread_flag(TIF_MEMDIE) instead since you're only
+> concerned with current.
+>
 
-The Haswell core in both client and server incarnations
-accepts the same bits (but some are nops), so we can use
-the same mask.
+OK, will do.
 
-So use the snbep extended mask, which is a superset of the
-client and the server, for all of Haswell.
+> Furthermore, that conditional is getting difficult to read.  Maybe it
+> would help to have a helper function that returns bool that determines
+> whether PF_FROZEN should be cleared?
 
-This allows specifying a number of extra offcore events, like
-for example for HSW-EP.
+Makes sense.
 
-% perf stat -e cpu/event=0xb7,umask=0x1,offcore_rsp=0x3fffc00100,name=offcore_response_pf_l3_rfo_l3_miss_any_response/ true
-
-which were <not supported> before.
-
-v2: Post correct patch.
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 2502d0d..4648a1b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2552,7 +2552,7 @@ __init int intel_pmu_init(void)
- 
- 		x86_pmu.event_constraints = intel_hsw_event_constraints;
- 		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
--		x86_pmu.extra_regs = intel_snb_extra_regs;
-+		x86_pmu.extra_regs = intel_snbep_extra_regs;
- 		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
- 		/* all extra regs are per-cpu when HT is on */
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
--- 
-1.9.3
-
+Thanks.
