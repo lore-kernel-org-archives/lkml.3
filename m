@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168AbaHLTtl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 15:49:41 -0400
-Received: from mail.kernel.org ([198.145.19.201]:58089 "EHLO mail.kernel.org"
+	id S1755215AbaHLTtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 15:49:49 -0400
+Received: from mail.kernel.org ([198.145.19.201]:58146 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755134AbaHLTth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 15:49:37 -0400
+	id S1755134AbaHLTtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 15:49:45 -0400
 From: Jaegeuk Kim <jaegeuk@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-f2fs-devel@lists.sourceforge.net
 Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-Subject: [PATCH 10/13] f2fs: introduce f2fs_cp_error for readability
-Date: Tue, 12 Aug 2014 12:49:24 -0700
-Message-Id: <1407872967-26423-10-git-send-email-jaegeuk@kernel.org>
+Subject: [PATCH 13/13] f2fs: handle EIO not to break fs consistency
+Date: Tue, 12 Aug 2014 12:49:27 -0700
+Message-Id: <1407872967-26423-13-git-send-email-jaegeuk@kernel.org>
 X-Mailer: git-send-email 1.8.5.2 (Apple Git-48)
 In-Reply-To: <1407872967-26423-1-git-send-email-jaegeuk@kernel.org>
 References: <1407872967-26423-1-git-send-email-jaegeuk@kernel.org>
@@ -20,80 +20,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds f2fs_cp_error for readability.
+There are two rules when EIO is occurred.
+1. don't write any checkpoint data to preserve the previous checkpoint
+2. don't lose the cached data/node/meta pages
+
+So, at first, this patch adds set_page_dirty in f2fs_write_end_io's failure.
+Then, writing checkpoint/dentry/node blocks is not allowed.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 ---
- fs/f2fs/checkpoint.c | 4 ++--
- fs/f2fs/f2fs.h       | 5 +++++
- fs/f2fs/gc.c         | 2 +-
- fs/f2fs/super.c      | 2 +-
- 4 files changed, 9 insertions(+), 4 deletions(-)
+ fs/f2fs/checkpoint.c | 47 +++++++++++++++++++++++++++++++++--------------
+ fs/f2fs/data.c       | 10 +++++++++-
+ fs/f2fs/f2fs.h       |  1 +
+ fs/f2fs/node.c       |  2 ++
+ fs/f2fs/super.c      |  3 +++
+ 5 files changed, 48 insertions(+), 15 deletions(-)
 
 diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 7e1c13b..1161d2a 100644
+index d074e27..b365c64 100644
 --- a/fs/f2fs/checkpoint.c
 +++ b/fs/f2fs/checkpoint.c
-@@ -162,7 +162,7 @@ static int f2fs_write_meta_page(struct page *page,
+@@ -160,14 +160,11 @@ static int f2fs_write_meta_page(struct page *page,
  		goto redirty_out;
- 
- 	/* Should not write any meta pages, if any IO error was occurred */
--	if (unlikely(is_set_ckpt_flags(F2FS_CKPT(sbi), CP_ERROR_FLAG)))
-+	if (unlikely(f2fs_cp_error(sbi)))
- 		goto no_write;
+ 	if (wbc->for_reclaim)
+ 		goto redirty_out;
+-
+-	/* Should not write any meta pages, if any IO error was occurred */
+ 	if (unlikely(f2fs_cp_error(sbi)))
+-		goto no_write;
++		goto redirty_out;
  
  	f2fs_wait_on_page_writeback(page, META);
-@@ -934,7 +934,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+ 	write_meta_page(sbi, page);
+-no_write:
+ 	dec_page_count(sbi, F2FS_DIRTY_META);
+ 	unlock_page(page);
+ 	return 0;
+@@ -348,7 +345,7 @@ bool exist_written_data(struct f2fs_sb_info *sbi, nid_t ino, int mode)
+ 	return e ? true : false;
+ }
+ 
+-static void release_dirty_inode(struct f2fs_sb_info *sbi)
++void release_dirty_inode(struct f2fs_sb_info *sbi)
+ {
+ 	struct ino_entry *e, *tmp;
+ 	int i;
+@@ -737,7 +734,7 @@ retry:
+ /*
+  * Freeze all the FS-operations for checkpoint.
+  */
+-static void block_operations(struct f2fs_sb_info *sbi)
++static int block_operations(struct f2fs_sb_info *sbi)
+ {
+ 	struct writeback_control wbc = {
+ 		.sync_mode = WB_SYNC_ALL,
+@@ -745,6 +742,7 @@ static void block_operations(struct f2fs_sb_info *sbi)
+ 		.for_reclaim = 0,
+ 	};
+ 	struct blk_plug plug;
++	int err = 0;
+ 
+ 	blk_start_plug(&plug);
+ 
+@@ -754,6 +752,10 @@ retry_flush_dents:
+ 	if (get_pages(sbi, F2FS_DIRTY_DENTS)) {
+ 		f2fs_unlock_all(sbi);
+ 		sync_dirty_dir_inodes(sbi);
++		if (unlikely(f2fs_cp_error(sbi))) {
++			err = -EIO;
++			goto out;
++		}
+ 		goto retry_flush_dents;
+ 	}
+ 
+@@ -767,9 +769,16 @@ retry_flush_nodes:
+ 	if (get_pages(sbi, F2FS_DIRTY_NODES)) {
+ 		up_write(&sbi->node_write);
+ 		sync_node_pages(sbi, 0, &wbc);
++		if (unlikely(f2fs_cp_error(sbi))) {
++			f2fs_unlock_all(sbi);
++			err = -EIO;
++			goto out;
++		}
+ 		goto retry_flush_nodes;
+ 	}
++out:
+ 	blk_finish_plug(&plug);
++	return err;
+ }
+ 
+ static void unblock_operations(struct f2fs_sb_info *sbi)
+@@ -813,8 +822,11 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+ 	discard_next_dnode(sbi, NEXT_FREE_BLKADDR(sbi, curseg));
+ 
+ 	/* Flush all the NAT/SIT pages */
+-	while (get_pages(sbi, F2FS_DIRTY_META))
++	while (get_pages(sbi, F2FS_DIRTY_META)) {
+ 		sync_meta_pages(sbi, META, LONG_MAX);
++		if (unlikely(f2fs_cp_error(sbi)))
++			return;
++	}
+ 
+ 	next_free_nid(sbi, &last_nid);
+ 
+@@ -931,14 +943,19 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+ 	sbi->last_valid_block_count = sbi->total_valid_block_count;
+ 	sbi->alloc_valid_block_count = 0;
+ 
++	if (unlikely(f2fs_cp_error(sbi)))
++		return;
++
  	/* Here, we only have one bio having CP pack */
  	sync_meta_pages(sbi, META_FLUSH, LONG_MAX);
  
--	if (!is_set_ckpt_flags(ckpt, CP_ERROR_FLAG)) {
-+	if (!f2fs_cp_error(sbi)) {
- 		clear_prefree_segments(sbi);
- 		release_dirty_inode(sbi);
- 		F2FS_RESET_SB_DIRT(sbi);
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index cc5ead1..46ceb88 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -1096,6 +1096,11 @@ static inline int f2fs_readonly(struct super_block *sb)
- 	return sb->s_flags & MS_RDONLY;
+-	if (!f2fs_cp_error(sbi)) {
+-		clear_prefree_segments(sbi);
+-		release_dirty_inode(sbi);
+-		F2FS_RESET_SB_DIRT(sbi);
+-	}
++	release_dirty_inode(sbi);
++
++	if (unlikely(f2fs_cp_error(sbi)))
++		return;
++
++	clear_prefree_segments(sbi);
++	F2FS_RESET_SB_DIRT(sbi);
  }
  
-+static inline bool f2fs_cp_error(struct f2fs_sb_info *sbi)
-+{
-+	return is_set_ckpt_flags(sbi->ckpt, CP_ERROR_FLAG);
-+}
-+
- static inline void f2fs_stop_checkpoint(struct f2fs_sb_info *sbi)
- {
- 	set_ckpt_flags(sbi->ckpt, CP_ERROR_FLAG);
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 87c50c5..e8507b1 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -693,7 +693,7 @@ int f2fs_gc(struct f2fs_sb_info *sbi)
- gc_more:
- 	if (unlikely(!(sbi->sb->s_flags & MS_ACTIVE)))
- 		goto stop;
--	if (unlikely(is_set_ckpt_flags(F2FS_CKPT(sbi), CP_ERROR_FLAG)))
-+	if (unlikely(f2fs_cp_error(sbi)))
- 		goto stop;
+ /*
+@@ -955,8 +972,10 @@ void write_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
  
- 	if (gc_type == BG_GC && has_not_enough_free_secs(sbi, nfree)) {
+ 	if (!sbi->s_dirty)
+ 		goto out;
+-
+-	block_operations(sbi);
++	if (unlikely(f2fs_cp_error(sbi)))
++		goto out;
++	if (block_operations(sbi))
++		goto out;
+ 
+ 	trace_f2fs_write_checkpoint(sbi->sb, is_umount, "finish block_ops");
+ 
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index ac3ccc2..68834e2 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -53,7 +53,7 @@ static void f2fs_write_end_io(struct bio *bio, int err)
+ 		struct page *page = bvec->bv_page;
+ 
+ 		if (unlikely(err)) {
+-			SetPageError(page);
++			set_page_dirty(page);
+ 			set_bit(AS_EIO, &page->mapping->flags);
+ 			f2fs_stop_checkpoint(sbi);
+ 		}
+@@ -836,10 +836,18 @@ write:
+ 
+ 	/* Dentry blocks are controlled by checkpoint */
+ 	if (S_ISDIR(inode->i_mode)) {
++		if (unlikely(f2fs_cp_error(sbi)))
++			goto redirty_out;
+ 		err = do_write_data_page(page, &fio);
+ 		goto done;
+ 	}
+ 
++	if (unlikely(f2fs_cp_error(sbi))) {
++		SetPageError(page);
++		unlock_page(page);
++		return 0;
++	}
++
+ 	if (!wbc->for_reclaim)
+ 		need_balance_fs = true;
+ 	else if (has_not_enough_free_secs(sbi, 0))
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 46ceb88..2d009ae 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -1267,6 +1267,7 @@ int ra_meta_pages(struct f2fs_sb_info *, int, int, int);
+ long sync_meta_pages(struct f2fs_sb_info *, enum page_type, long);
+ void add_dirty_inode(struct f2fs_sb_info *, nid_t, int type);
+ void remove_dirty_inode(struct f2fs_sb_info *, nid_t, int type);
++void release_dirty_inode(struct f2fs_sb_info *);
+ bool exist_written_data(struct f2fs_sb_info *, nid_t, int);
+ int acquire_orphan_inode(struct f2fs_sb_info *);
+ void release_orphan_inode(struct f2fs_sb_info *);
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index 9f126f8..d2f7842 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1215,6 +1215,8 @@ static int f2fs_write_node_page(struct page *page,
+ 
+ 	if (unlikely(sbi->por_doing))
+ 		goto redirty_out;
++	if (unlikely(f2fs_cp_error(sbi)))
++		goto redirty_out;
+ 
+ 	f2fs_wait_on_page_writeback(page, NODE);
+ 
 diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 2856020..7e4b631 100644
+index c4f90cd..c999d67 100644
 --- a/fs/f2fs/super.c
 +++ b/fs/f2fs/super.c
-@@ -812,7 +812,7 @@ static int sanity_check_ckpt(struct f2fs_sb_info *sbi)
- 	if (unlikely(fsmeta >= total))
- 		return 1;
+@@ -435,6 +435,9 @@ static void f2fs_put_super(struct super_block *sb)
+ 	if (sbi->s_dirty)
+ 		write_checkpoint(sbi, true);
  
--	if (unlikely(is_set_ckpt_flags(ckpt, CP_ERROR_FLAG))) {
-+	if (unlikely(f2fs_cp_error(sbi))) {
- 		f2fs_msg(sbi->sb, KERN_ERR, "A bug case: need to run fsck");
- 		return 1;
- 	}
++	/* EIO will skip do checkpoint, so here we need to release this */
++	release_dirty_inode(sbi);
++
+ 	iput(sbi->node_inode);
+ 	iput(sbi->meta_inode);
+ 
 -- 
 1.8.5.2 (Apple Git-48)
 
