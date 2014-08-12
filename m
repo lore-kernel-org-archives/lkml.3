@@ -1,95 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244AbaHLW2w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 18:28:52 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:45869 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932154AbaHLW2t (ORCPT
+	id S1751826AbaHLWhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 18:37:05 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45317 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979AbaHLWhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 18:28:49 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: gregkh@linuxfoundation.org
-Cc: tiwai@suse.de, linux-kernel@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH v3 3/3] mptsas: use module_long_probe_init()
-Date: Tue, 12 Aug 2014 15:28:27 -0700
-Message-Id: <1407882507-325-4-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com>
+	Tue, 12 Aug 2014 18:37:03 -0400
+Message-ID: <53EA970C.9070003@codeaurora.org>
+Date: Tue, 12 Aug 2014 15:37:00 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] irqchip: gic: Allow gic_arch_extn hooks to call into
+ scheduler
+References: <alpine.LFD.2.11.1408041858570.6061@knanqh.ubzr> <1407194837-27190-1-git-send-email-sboyd@codeaurora.org> <53E118EE.5040205@codeaurora.org> <alpine.LFD.2.11.1408051537250.6061@knanqh.ubzr> <53E14B33.9080701@codeaurora.org> <alpine.LFD.2.11.1408052222350.6061@knanqh.ubzr>
+In-Reply-To: <alpine.LFD.2.11.1408052222350.6061@knanqh.ubzr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On 08/05/14 19:34, Nicolas Pitre wrote:
+>
+>> It allows us to synchronize with another CPU that may be inside
+>> gic_raise_softirq(). If the other CPU was in that function then this CPU
+>> would wait until it was done sending the IPI to continue along and
+>> reroute them. If the other CPU was just about to grab the sgi lock then
+>> we would guarantee that the CPU would see the new gic_cpu_map value and
+>> thus any redirection is not necessary.
+> OK I get it now.
+>
+>> I hoped that the commit text explained this.
+> I'm possibly not bright enough to get it the first time.
+>
+>> Honestly it probably isn't a noticeable performance boost either way 
+>> but I think this is the best we can do.
+> Sure, agreed.
+>
+>
+>
 
-Its reported that mptsas can at times take over 30 seconds
-to recognize SCSI storage devices [0], this is done on the
-driver's probe path. Use the the new module_long_probe_init()
-to annotate this driver's probe is broken and require some love,
-but makes the driver operational until that is fixed.
+Ok, so which patch is preferred?
 
-[0] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705
-
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Tim Gardner <tim.gardner@canonical.com>
-Cc: Pierre Fersing <pierre-fersing@pierref.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Benjamin Poirier <bpoirier@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
-Cc: Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>
-Cc: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-Cc: Abhijit Mahajan <abhijit.mahajan@avagotech.com>
-Cc: Hariprasad S <hariprasad@chelsio.com>
-Cc: Santosh Rastapur <santosh@chelsio.com>
-Cc: MPT-FusionLinux.pdl@avagotech.com
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- drivers/message/fusion/mptsas.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-index 0707fa2..c2bb72b 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -43,6 +43,7 @@
- */
- /*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
- 
-+#include <linux/kthread.h>
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/slab.h>
-@@ -5439,5 +5440,5 @@ mptsas_exit(void)
- 	mpt_deregister(mptsasDeviceResetCtx);
- }
- 
--module_init(mptsas_init);
--module_exit(mptsas_exit);
-+module_long_probe_init(mptsas_init);
-+module_long_probe_exit(mptsas_exit);
 -- 
-2.0.3
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
