@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310AbaHLVyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 17:54:00 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:7613 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751931AbaHLVx7 (ORCPT
+	id S1755319AbaHLVzc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 17:55:32 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60496 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431AbaHLVzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 17:53:59 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiwKAFSM6lN5LDJ8/2dsb2JhbABagw1SV65JAQEBAQEBBp5WgWWFawGBFhd3hAQBBTocIxAIAw4KCSUPBSUDIROIQcU4FxiFZIlQB4RMAQSVQ4Z1gViTJ4NuKy8
-Date: Wed, 13 Aug 2014 07:53:44 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [GIT PULL] xfs: updates for 3.17-rc1
-Message-ID: <20140812215344.GY20518@dastard>
-References: <20140812125313.GX20518@dastard>
- <20140812235612.684a9af7@canb.auug.org.au>
+	Tue, 12 Aug 2014 17:55:31 -0400
+Date: Tue, 12 Aug 2014 22:55:15 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20140812215515.GC17528@sirena.org.uk>
+References: <1407807429.8958.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Om/TeAJ7PLqBTUVw"
 Content-Disposition: inline
-In-Reply-To: <20140812235612.684a9af7@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407807429.8958.1.camel@phoenix>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] regulator: Add stub for devm_regulator_get_exclusive
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 11:56:12PM +1000, Stephen Rothwell wrote:
-> Hi Dave,
-> 
-> On Tue, 12 Aug 2014 22:53:13 +1000 Dave Chinner <david@fromorbit.com> wrote:
-> >
-> > FYI, this will be the last pull request I will send you from a tree
-> > on oss.sgi.com. I'm moving everything XFS related over to kernel.org
-> > so future pull requests should come from there.
-> 
-> Please let me know when you have the new tree set up so I can change
-> where I fetch from.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/dgc/linux-xfs.git for-next
+--Om/TeAJ7PLqBTUVw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It should be identical to the xfs tree you are pulling from
-oss.sgi.com.
+On Tue, Aug 12, 2014 at 09:37:09AM +0800, Axel Lin wrote:
+> Fix below build error when !CONFIG_REGULATOR.
+>=20
+>   CC      drivers/gpu/drm/msm/hdmi/hdmi.o
+> drivers/gpu/drm/msm/hdmi/hdmi.c: In function 'hdmi_init':
+> drivers/gpu/drm/msm/hdmi/hdmi.c:126:3: error: implicit declaration of fun=
+ction 'devm_regulator_get_exclusive' [-Werror=3Dimplicit-function-declarati=
+on]
 
-Cheers,
+So, I just looked at that driver - it errors out on probe without the
+regualtor.  Are you sure the fix isn't to add a dependency on the
+regulator API or convert it back to using normal regulator gets (it was
+converted without comment as part of a DT conversion), or indeed to
+using the bulk regulator API.  It looks awfully like the driver is just
+open coding devm_regulator_bulk_get() and friends.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+There is no explanation at all in either the changelog or the code for
+why the driver is asking for exclusive regulators.
+
+--Om/TeAJ7PLqBTUVw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT6o1AAAoJELSic+t+oim9fqAP/i0VChHfWo6prbWXI/gv5mst
+IOPn9S859BJmgJT3rZsnPjMD3MZrOMEv0GqKdiKOdANwT2sLJFHTluBjW197Rsmv
+kz0emxLU10lpyF0jgM+bJBaPvF0e6VP5Te4Pbd/JlsthcwebuwweElxPd36X1aS7
+j/AePhmaNJJUBw5KsvJQk5q9FpGL6SMTSjZYWxGCfg1gn0mt0D0v+qSEbxBSFqBw
+DYOzdpOChFOreabNtD2SbkUK4zuwSZco/LjTlafKWTwtY0YhCJGfs5cqLbhc3ntc
+Zla6BjEE/RAZ+xb5FQQiEdEhew/op6Y6640tQBLbKVwgitrSE1f+KH/8mCDHddbr
++eczr47O7fdzGmy8kFxVSCBIxXSMuzzgGv6WzlzQiK2m2CG5uXao6Ti2te642dPj
+7BTtctbuV/ejBfH7iQs00bTokkEDnij2knlJxgepIrF363R5Gi2q1e5jzTlsE2gf
+OSzBWTcYyMEyggvPLFHlZ2eyWeFxZTx5vfpOujZrAMnEWbpxV3tfUtYyDbVZ5Yuk
+xgP10NNvL7X5xsWIyDSG0l6m4+xyDrw007a/Z14OxyPYdTjyn0HFrnfcWpQa8L3A
+E29v5Xg7um7I5k3Es3OHHPlxpVM+RHbGF37+ha+B+/G8t2+fU88Eo9wuy5nlBR02
+sMVG80eeIRZSL6qyqHS/
+=yEpj
+-----END PGP SIGNATURE-----
+
+--Om/TeAJ7PLqBTUVw--
