@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643AbaHLFz4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 01:55:56 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:61927 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166AbaHLFzx (ORCPT
+	id S1752692AbaHLF4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 01:56:32 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:52079 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752526AbaHLF4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 01:55:53 -0400
-From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
-To: <hdegoede@redhat.com>
-CC: <gregkh@linuxfoundation.org>, <kraxel@redhat.com>,
-        <mdharm-usb@one-eyed-alien.net>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-Subject: [PATCH v2] uas: replace WARN_ON_ONCE() with lockdep_assert_held()
-Date: Tue, 12 Aug 2014 11:38:37 +0530
-Message-ID: <1407823717-17265-1-git-send-email-sanjeev_sharma@mentor.com>
-X-Mailer: git-send-email 1.7.11.7
+	Tue, 12 Aug 2014 01:56:30 -0400
+X-Sasl-enc: ayexdPxFbGEvQQF6PLYRw5qo7Z795DfkCQJdB88yUGGo 1407822989
+Date: Tue, 12 Aug 2014 13:55:48 +0800
+From: Greg KH <greg@kroah.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: stable@vger.kernel.org, Amos Kong <akong@redhat.com>,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [3.16 stable PATCH 1/1] virtio-rng: fix multi-device startup
+Message-ID: <20140812055548.GB12762@kroah.com>
+References: <5ef3aa4ea1932b7655d9db5a0139b8a2922af0db.1407760907.git.amit.shah@redhat.com>
+ <20140811225527.GB10721@kroah.com>
+ <20140812053158.GJ4184@grmbl.mre>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginalArrivalTime: 12 Aug 2014 05:55:52.0155 (UTC) FILETIME=[12F14AB0:01CFB5F2]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140812053158.GJ4184@grmbl.mre>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-spin_is_locked() always return false in uniprocessor configuration and therefore it
-would be advise to replace with lockdep_assert_held().
+On Tue, Aug 12, 2014 at 11:01:58AM +0530, Amit Shah wrote:
+> On (Tue) 12 Aug 2014 [06:55:27], Greg KH wrote:
+> > On Mon, Aug 11, 2014 at 06:11:47PM +0530, Amit Shah wrote:
+> > > This is a 3.16-only patch.  The linux.git fix is
+> > > 5c06273401f2eb7b290cadbae18ee00f8f65e893, which fixes this issue in a
+> > > different way.
+> > 
+> > Why "different"?  Why can't I take that original patch instead?  What is
+> > different in this patch, and why?
+> 
+> The commit referenced moves the hwrng_register() call to the ->scan()
+> callback instead of it being in probe().  This was done to ensure the
+> virtio-rng devices can contribute to the initial system entropy
+> introduced in commit d9e7972619334.
+> 
+> That patch is quite small too, but will need a slight conflict
+> resolution due to the previous two code-shuffling patches, and also
+> the following revert.
+> 
+> However, I decided against the backport of the ->scan() method, since
+> it wasn't designed to solve this regression, it happens to solve it,
+> and it actually introduces new functionality.  I would be happy to
+> provide a backport of the relevant patches, if you think that would be
+> alright.
 
-Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
----
-Changes in v2:
- - replaced WARN_ON_ONCE() with lockdep_assert_held() to
- avoid runtime overhead instead of assert_spin_locked()
+I almost always want "original" patches as it causes less bugs overall,
+and less confusion for everyone involved.  Taking 2-3 patches is just as
+easy as 1 patch, and even easier if I don't have to review it as "hard"
+due to it not differing from what is in Linus's tree.
 
- drivers/usb/storage/uas.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+thanks,
 
-diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
-index 3f42785..05b2d8e 100644
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -154,7 +154,7 @@ static void uas_mark_cmd_dead(struct uas_dev_info *devinfo,
- 	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
- 
- 	uas_log_cmd_state(cmnd, caller);
--	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
-+	lockdep_assert_held(&devinfo->lock);
- 	WARN_ON_ONCE(cmdinfo->state & COMMAND_ABORTED);
- 	cmdinfo->state |= COMMAND_ABORTED;
- 	cmdinfo->state &= ~IS_IN_WORK_LIST;
-@@ -181,7 +181,7 @@ static void uas_add_work(struct uas_cmd_info *cmdinfo)
- 	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
- 	struct uas_dev_info *devinfo = cmnd->device->hostdata;
- 
--	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
-+	lockdep_assert_held(&devinfo->lock);
- 	cmdinfo->state |= IS_IN_WORK_LIST;
- 	schedule_work(&devinfo->work);
- }
-@@ -283,7 +283,7 @@ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller)
- 	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
- 	struct uas_dev_info *devinfo = (void *)cmnd->device->hostdata;
- 
--	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
-+	lockdep_assert_held(&devinfo->lock);
- 	if (cmdinfo->state & (COMMAND_INFLIGHT |
- 			      DATA_IN_URB_INFLIGHT |
- 			      DATA_OUT_URB_INFLIGHT |
-@@ -622,7 +622,7 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
- 	struct urb *urb;
- 	int err;
- 
--	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
-+	lockdep_assert_held(&devinfo->lock);
- 	if (cmdinfo->state & SUBMIT_STATUS_URB) {
- 		urb = uas_submit_sense_urb(cmnd, gfp, cmdinfo->stream);
- 		if (!urb)
--- 
-1.7.11.7
-
+greg k-h
