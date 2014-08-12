@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911AbaHLCDm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 22:03:42 -0400
-Received: from mail-yk0-f171.google.com ([209.85.160.171]:64292 "EHLO
-	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190AbaHLCDk (ORCPT
+	id S1755016AbaHLCD6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 22:03:58 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:45758 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754939AbaHLCD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 22:03:40 -0400
+	Mon, 11 Aug 2014 22:03:56 -0400
 From: Chase Southwood <chase.southwood@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@gmail.com>
-Subject: [PATCH 2/3] staging: comedi: addi_apci_1564: Remove in-driver watchdog support code
-Date: Mon, 11 Aug 2014 21:03:19 -0500
-Message-Id: <b5d20f79b289d7ade9d89c2c8f3e28fafbd686fb.1407804777.git.chase.southwood@gmail.com>
+        Chase Southwood <chase.southwood@gmail.com>,
+        H Hartley Sweeten <hsweeten@visionengraver.com>
+Subject: [PATCH 3/3] staging: comedi: addi_apci_1564: tidy register map defines
+Date: Mon, 11 Aug 2014 21:03:48 -0500
+Message-Id: <e56ba372462c6c4c86787752d85936f610ff2a31.1407804777.git.chase.southwood@gmail.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cover.1407804777.git.chase.southwood@gmail.com>
 References: <cover.1407804777.git.chase.southwood@gmail.com>
@@ -22,145 +23,221 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Starting with commit 1496e5961113 ("staging: comedi: addi_apci_1564: use
-addi_watchdog module to init watchdog subdevice"), this driver uses the
-addi_watchdog module to provide support for the watchdog subdevice.  Any
-remaining watchdog code in-driver can and should be removed.
+This commit performs a final tidying of the register map defines, bringing
+them to a state that is ready for merging into addi_apci_1564.c when the
+time comes.  Actions performed include:
 
-This will also make future work on the timer and counter subdevices easier.
+*Removes the APCI1564_ADDRESS_RANGE macro, which is no longer needed/used.
+*Renames the APCI1564_DIGITAL_OP_{VCC,CC}_INTERRUPT_{ENABLE,DISABLE}
+macros to shorter names which are more consistent with the digital input
+interrupt macros.
+*Fixes a typo in a comment (dev>iobase changed to dev->iobase).
+*Renames the APCI1564_TCW_* macros to APCI1564_COUNTER_* names to more
+accurately reflect that they are only offsets to counter registers (since
+only the counters are offset from dev->iobase).
 
 Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: H Hartley Sweeten <hsweeten@visionengraver.com>
 ---
- .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 54 +++++-----------------
- 1 file changed, 12 insertions(+), 42 deletions(-)
+ .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 70 ++++++++++++----------
+ drivers/staging/comedi/drivers/addi_apci_1564.c    | 19 +++---
+ 2 files changed, 48 insertions(+), 41 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-index 0ce1deb..f8d8cc9 100644
+index f8d8cc9..198c627 100644
 --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
 +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
-@@ -88,9 +88,9 @@
- #define APCI1564_TCW_WARN_TIMEBASE_REG(x)		(0x1c + ((x) * 0x20))
+@@ -21,8 +21,6 @@
+  *
+  */
+ 
+-#define APCI1564_ADDRESS_RANGE				128
+-
+ /* Digital Input IRQ Function Selection */
+ #define APCI1564_DI_INT_OR				(0 << 1)
+ #define APCI1564_DI_INT_AND				(1 << 1)
+@@ -32,10 +30,10 @@
+ #define APCI1564_DI_INT_DISABLE				0xfffffffb
+ 
+ /* Digital Output Interrupt Enable Disable. */
+-#define APCI1564_DIGITAL_OP_VCC_INTERRUPT_ENABLE	0x1
+-#define APCI1564_DIGITAL_OP_VCC_INTERRUPT_DISABLE	0xfffffffe
+-#define APCI1564_DIGITAL_OP_CC_INTERRUPT_ENABLE		0x2
+-#define APCI1564_DIGITAL_OP_CC_INTERRUPT_DISABLE	0xfffffffd
++#define APCI1564_DO_VCC_INT_ENABLE			0x1
++#define APCI1564_DO_VCC_INT_DISABLE			0xfffffffe
++#define APCI1564_DO_CC_INT_ENABLE			0x2
++#define APCI1564_DO_CC_IN_DISABLE			0xfffffffd
+ 
+ /* TIMER COUNTER WATCHDOG DEFINES */
+ #define ADDIDATA_TIMER					0
+@@ -76,16 +74,16 @@
+ #define APCI1564_TIMER_WARN_TIMEBASE_REG		0x64
  
  /*
-- * Configures The Timer, Counter or Watchdog
-+ * Configures The Timer or Counter
-  *
-- * data[0] Configure as: 0 = Timer, 1 = Counter, 2 = Watchdog
-+ * data[0] Configure as: 0 = Timer, 1 = Counter
-  * data[1] 1 = Enable Interrupt, 0 = Disable Interrupt
-  * data[2] Time Unit
-  * data[3] Reload Value
-@@ -107,14 +107,7 @@ static int apci1564_timer_config(struct comedi_device *dev,
- 	unsigned int ul_Command1 = 0;
+- * dev>iobase Register Map
++ * dev->iobase Register Map
+  */
+-#define APCI1564_TCW_REG(x)				(0x00 + ((x) * 0x20))
+-#define APCI1564_TCW_RELOAD_REG(x)			(0x04 + ((x) * 0x20))
+-#define APCI1564_TCW_TIMEBASE_REG(x)			(0x08 + ((x) * 0x20))
+-#define APCI1564_TCW_CTRL_REG(x)			(0x0c + ((x) * 0x20))
+-#define APCI1564_TCW_STATUS_REG(x)			(0x10 + ((x) * 0x20))
+-#define APCI1564_TCW_IRQ_REG(x)				(0x14 + ((x) * 0x20))
+-#define APCI1564_TCW_WARN_TIMEVAL_REG(x)		(0x18 + ((x) * 0x20))
+-#define APCI1564_TCW_WARN_TIMEBASE_REG(x)		(0x1c + ((x) * 0x20))
++#define APCI1564_COUNTER_REG(x)				(0x00 + ((x) * 0x20))
++#define APCI1564_COUNTER_RELOAD_REG(x)			(0x04 + ((x) * 0x20))
++#define APCI1564_COUNTER_TIMEBASE_REG(x)		(0x08 + ((x) * 0x20))
++#define APCI1564_COUNTER_CTRL_REG(x)			(0x0c + ((x) * 0x20))
++#define APCI1564_COUNTER_STATUS_REG(x)			(0x10 + ((x) * 0x20))
++#define APCI1564_COUNTER_IRQ_REG(x)			(0x14 + ((x) * 0x20))
++#define APCI1564_COUNTER_WARN_TIMEVAL_REG(x)		(0x18 + ((x) * 0x20))
++#define APCI1564_COUNTER_WARN_TIMEBASE_REG(x)		(0x1c + ((x) * 0x20))
  
- 	devpriv->tsk_current = current;
--	if (data[0] == ADDIDATA_WATCHDOG) {
--		devpriv->timer_select_mode = ADDIDATA_WATCHDOG;
--
--		/* Disable the watchdog */
--		outl(0x0, devpriv->amcc_iobase + APCI1564_WDOG_CTRL_REG);
--		/* Loading the Reload value */
--		outl(data[3], devpriv->amcc_iobase + APCI1564_WDOG_RELOAD_REG);
--	} else if (data[0] == ADDIDATA_TIMER) {
-+	if (data[0] == ADDIDATA_TIMER) {
- 		/* First Stop The Timer */
- 		ul_Command1 = inl(devpriv->amcc_iobase + APCI1564_TIMER_CTRL_REG);
+ /*
+  * Configures The Timer or Counter
+@@ -121,14 +119,14 @@ static int apci1564_timer_config(struct comedi_device *dev,
+ 			outl(0x0, devpriv->amcc_iobase + APCI1564_DI_IRQ_REG);
+ 			outl(0x0, devpriv->amcc_iobase + APCI1564_DO_IRQ_REG);
+ 			outl(0x0, devpriv->amcc_iobase + APCI1564_WDOG_IRQ_REG);
+-			outl(0x0,
+-			     dev->iobase + APCI1564_TCW_IRQ_REG(APCI1564_COUNTER1));
+-			outl(0x0,
+-			     dev->iobase + APCI1564_TCW_IRQ_REG(APCI1564_COUNTER2));
+-			outl(0x0,
+-			     dev->iobase + APCI1564_TCW_IRQ_REG(APCI1564_COUNTER3));
+-			outl(0x0,
+-			     dev->iobase + APCI1564_TCW_IRQ_REG(APCI1564_COUNTER4));
++			outl(0x0, dev->iobase +
++			    APCI1564_COUNTER_IRQ_REG(APCI1564_COUNTER1));
++			outl(0x0, dev->iobase +
++			    APCI1564_COUNTER_IRQ_REG(APCI1564_COUNTER2));
++			outl(0x0, dev->iobase +
++			    APCI1564_COUNTER_IRQ_REG(APCI1564_COUNTER3));
++			outl(0x0, dev->iobase +
++			    APCI1564_COUNTER_IRQ_REG(APCI1564_COUNTER4));
+ 		} else {
+ 			/* disable Timer interrupt */
+ 			outl(0x0, devpriv->amcc_iobase + APCI1564_TIMER_CTRL_REG);
+@@ -149,13 +147,16 @@ static int apci1564_timer_config(struct comedi_device *dev,
+ 		devpriv->mode_select_register = data[5];
+ 
+ 		/* First Stop The Counter */
+-		ul_Command1 = inl(dev->iobase + APCI1564_TCW_CTRL_REG(data[5] - 1));
++		ul_Command1 = inl(dev->iobase +
++				 APCI1564_COUNTER_CTRL_REG(data[5] - 1));
  		ul_Command1 = ul_Command1 & 0xFFFFF9FEUL;
-@@ -187,14 +180,13 @@ static int apci1564_timer_config(struct comedi_device *dev,
+ 		/* Stop The Timer */
+-		outl(ul_Command1, dev->iobase + APCI1564_TCW_CTRL_REG(data[5] - 1));
++		outl(ul_Command1, dev->iobase +
++					APCI1564_COUNTER_CTRL_REG(data[5] - 1));
+ 
+ 		/* Set the reload value */
+-		outl(data[3], dev->iobase + APCI1564_TCW_RELOAD_REG(data[5] - 1));
++		outl(data[3], dev->iobase +
++					APCI1564_COUNTER_RELOAD_REG(data[5] - 1));
+ 
+ 		/* Set the mode :             */
+ 		/* - Disable the hardware     */
+@@ -168,15 +169,18 @@ static int apci1564_timer_config(struct comedi_device *dev,
+ 		ul_Command1 =
+ 			(ul_Command1 & 0xFFFC19E2UL) | 0x80000UL |
+ 			(unsigned int) ((unsigned int) data[4] << 16UL);
+-		outl(ul_Command1, dev->iobase + APCI1564_TCW_CTRL_REG(data[5] - 1));
++		outl(ul_Command1, dev->iobase +
++					APCI1564_COUNTER_CTRL_REG(data[5] - 1));
+ 
+ 		/*  Enable or Disable Interrupt */
+ 		ul_Command1 = (ul_Command1 & 0xFFFFF9FD) | (data[1] << 1);
+-		outl(ul_Command1, dev->iobase + APCI1564_TCW_CTRL_REG(data[5] - 1));
++		outl(ul_Command1, dev->iobase +
++					APCI1564_COUNTER_CTRL_REG(data[5] - 1));
+ 
+ 		/* Set the Up/Down selection */
+ 		ul_Command1 = (ul_Command1 & 0xFFFBF9FFUL) | (data[6] << 18);
+-		outl(ul_Command1, dev->iobase + APCI1564_TCW_CTRL_REG(data[5] - 1));
++		outl(ul_Command1, dev->iobase +
++					APCI1564_COUNTER_CTRL_REG(data[5] - 1));
  	} else {
  		dev_err(dev->class_dev, "Invalid subdevice.\n");
  	}
--
- 	return insn->n;
- }
- 
- /*
-- * Start / Stop The Selected Timer, Counter or Watchdog
-+ * Start / Stop The Selected Timer or Counter
-  *
-- * data[0] Configure as: 0 = Timer, 1 = Counter, 2 = Watchdog
-+ * data[0] Configure as: 0 = Timer, 1 = Counter
-  * data[1] 0 = Stop, 1 = Start, 2 = Trigger Clear (Only Counter)
-  */
- static int apci1564_timer_write(struct comedi_device *dev,
-@@ -205,23 +197,6 @@ static int apci1564_timer_write(struct comedi_device *dev,
- 	struct apci1564_private *devpriv = dev->private;
- 	unsigned int ul_Command1 = 0;
- 
--	if (devpriv->timer_select_mode == ADDIDATA_WATCHDOG) {
--		switch (data[1]) {
--		case 0:	/* stop the watchdog */
--			/* disable the watchdog */
--			outl(0x0, devpriv->amcc_iobase + APCI1564_WDOG_CTRL_REG);
--			break;
--		case 1:	/* start the watchdog */
--			outl(0x0001, devpriv->amcc_iobase + APCI1564_WDOG_CTRL_REG);
--			break;
--		case 2:	/* Software trigger */
--			outl(0x0201, devpriv->amcc_iobase + APCI1564_WDOG_CTRL_REG);
--			break;
--		default:
--			dev_err(dev->class_dev, "Specified functionality does not exist.\n");
--			return -EINVAL;
--		}
--	}
- 	if (devpriv->timer_select_mode == ADDIDATA_TIMER) {
- 		if (data[1] == 1) {
- 			ul_Command1 = inl(devpriv->amcc_iobase + APCI1564_TIMER_CTRL_REG);
-@@ -236,8 +211,7 @@ static int apci1564_timer_write(struct comedi_device *dev,
- 			ul_Command1 = ul_Command1 & 0xFFFFF9FEUL;
- 			outl(ul_Command1, devpriv->amcc_iobase + APCI1564_TIMER_CTRL_REG);
- 		}
--	}
--	if (devpriv->timer_select_mode == ADDIDATA_COUNTER) {
-+	} else if (devpriv->timer_select_mode == ADDIDATA_COUNTER) {
+@@ -214,7 +218,7 @@ static int apci1564_timer_write(struct comedi_device *dev,
+ 	} else if (devpriv->timer_select_mode == ADDIDATA_COUNTER) {
  		ul_Command1 =
  			inl(dev->iobase +
- 			    APCI1564_TCW_CTRL_REG(devpriv->mode_select_register - 1));
-@@ -254,12 +228,14 @@ static int apci1564_timer_write(struct comedi_device *dev,
+-			    APCI1564_TCW_CTRL_REG(devpriv->mode_select_register - 1));
++			   APCI1564_COUNTER_CTRL_REG(devpriv->mode_select_register - 1));
+ 		if (data[1] == 1) {
+ 			/* Start the Counter subdevice */
+ 			ul_Command1 = (ul_Command1 & 0xFFFFF9FFUL) | 0x1UL;
+@@ -227,7 +231,7 @@ static int apci1564_timer_write(struct comedi_device *dev,
+ 			ul_Command1 = (ul_Command1 & 0xFFFFF9FFUL) | 0x400;
  		}
  		outl(ul_Command1, dev->iobase +
- 		     APCI1564_TCW_CTRL_REG(devpriv->mode_select_register - 1));
-+	} else {
-+		dev_err(dev->class_dev, "Invalid subdevice.\n");
+-		     APCI1564_TCW_CTRL_REG(devpriv->mode_select_register - 1));
++		     APCI1564_COUNTER_CTRL_REG(devpriv->mode_select_register - 1));
+ 	} else {
+ 		dev_err(dev->class_dev, "Invalid subdevice.\n");
  	}
- 	return insn->n;
+@@ -255,10 +259,10 @@ static int apci1564_timer_read(struct comedi_device *dev,
+ 		/*  Read the Counter Actual Value. */
+ 		data[0] =
+ 			inl(dev->iobase +
+-			    APCI1564_TCW_REG(devpriv->mode_select_register - 1));
++			    APCI1564_COUNTER_REG(devpriv->mode_select_register - 1));
+ 		ul_Command1 =
+ 			inl(dev->iobase +
+-			    APCI1564_TCW_STATUS_REG(devpriv->mode_select_register - 1));
++			    APCI1564_COUNTER_STATUS_REG(devpriv->mode_select_register - 1));
+ 
+ 		/* Get the software trigger status */
+ 		data[1] = (unsigned char) ((ul_Command1 >> 1) & 1);
+diff --git a/drivers/staging/comedi/drivers/addi_apci_1564.c b/drivers/staging/comedi/drivers/addi_apci_1564.c
+index 555e0a9..16c02c8 100644
+--- a/drivers/staging/comedi/drivers/addi_apci_1564.c
++++ b/drivers/staging/comedi/drivers/addi_apci_1564.c
+@@ -42,10 +42,10 @@ static int apci1564_reset(struct comedi_device *dev)
+ 	outl(0x0, devpriv->amcc_iobase + APCI1564_TIMER_RELOAD_REG);
+ 
+ 	/* Reset the counter registers */
+-	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER1));
+-	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER2));
+-	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER3));
+-	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER4));
++	outl(0x0, dev->iobase + APCI1564_COUNTER_CTRL_REG(APCI1564_COUNTER1));
++	outl(0x0, dev->iobase + APCI1564_COUNTER_CTRL_REG(APCI1564_COUNTER2));
++	outl(0x0, dev->iobase + APCI1564_COUNTER_CTRL_REG(APCI1564_COUNTER3));
++	outl(0x0, dev->iobase + APCI1564_COUNTER_CTRL_REG(APCI1564_COUNTER4));
+ 
+ 	return 0;
  }
- 
- /*
-- * Read The Selected Timer, Counter or Watchdog
-+ * Read The Selected Timer or Counter
-  */
- static int apci1564_timer_read(struct comedi_device *dev,
- 			       struct comedi_subdevice *s,
-@@ -269,11 +245,7 @@ static int apci1564_timer_read(struct comedi_device *dev,
- 	struct apci1564_private *devpriv = dev->private;
- 	unsigned int ul_Command1 = 0;
- 
--	if (devpriv->timer_select_mode == ADDIDATA_WATCHDOG) {
--		/*  Stores the status of the Watchdog */
--		data[0] = inl(devpriv->amcc_iobase + APCI1564_WDOG_STATUS_REG) & 0x1;
--		data[1] = inl(devpriv->amcc_iobase + APCI1564_WDOG_REG);
--	} else if (devpriv->timer_select_mode == ADDIDATA_TIMER) {
-+	if (devpriv->timer_select_mode == ADDIDATA_TIMER) {
- 		/*  Stores the status of the Timer */
- 		data[0] = inl(devpriv->amcc_iobase + APCI1564_TIMER_STATUS_REG) & 0x1;
- 
-@@ -299,10 +271,8 @@ static int apci1564_timer_read(struct comedi_device *dev,
- 
- 		/* Get the overflow status */
- 		data[4] = (unsigned char) ((ul_Command1 >> 0) & 1);
--	} else if ((devpriv->timer_select_mode != ADDIDATA_TIMER)
--		&& (devpriv->timer_select_mode != ADDIDATA_WATCHDOG)
--		&& (devpriv->timer_select_mode != ADDIDATA_COUNTER)) {
--		dev_err(dev->class_dev, "Invalid Subdevice!\n");
-+	} else {
-+		dev_err(dev->class_dev, "Invalid subdevice.\n");
+@@ -94,17 +94,20 @@ static irqreturn_t apci1564_interrupt(int irq, void *d)
  	}
- 	return insn->n;
- }
+ 
+ 	for (chan = 0; chan < 4; chan++) {
+-		status = inl(dev->iobase + APCI1564_TCW_IRQ_REG(chan));
++		status = inl(dev->iobase + APCI1564_COUNTER_IRQ_REG(chan));
+ 		if (status & 0x01) {
+ 			/*  Disable Counter Interrupt */
+-			ctrl = inl(dev->iobase + APCI1564_TCW_CTRL_REG(chan));
+-			outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(chan));
++			ctrl = inl(dev->iobase +
++				  APCI1564_COUNTER_CTRL_REG(chan));
++			outl(0x0, dev->iobase +
++			    APCI1564_COUNTER_CTRL_REG(chan));
+ 
+ 			/* Send a signal to from kernel to user space */
+ 			send_sig(SIGIO, devpriv->tsk_current, 0);
+ 
+ 			/*  Enable Counter Interrupt */
+-			outl(ctrl, dev->iobase + APCI1564_TCW_CTRL_REG(chan));
++			outl(ctrl, dev->iobase +
++			    APCI1564_COUNTER_CTRL_REG(chan));
+ 		}
+ 	}
+ 
 -- 
 2.0.4
 
