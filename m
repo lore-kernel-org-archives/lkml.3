@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668AbaHLI0W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 04:26:22 -0400
-Received: from mga14.intel.com ([192.55.52.115]:12813 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751118AbaHLI0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 04:26:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="371256492"
-Message-ID: <1407831975.2339.52.camel@rzhang1-toshiba>
-Subject: Re: 3.16-rcX crashes on resume from Suspend-To-RAM
-From: Zhang Rui <rui.zhang@intel.com>
-To: markus@gutschke.com
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Date: Tue, 12 Aug 2014 16:26:15 +0800
-In-Reply-To: <CALGCz1o3_h1AY+7=5KG-5tqb3giUN7eJdymCNeRKg=RkG+g2qw@mail.gmail.com>
-References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
-	 <1407206650.10148.28.camel@rzhang1-toshiba>
-	 <CALGCz1pSpzDVb8sQx=QFKjdR4fi566h42p2nRkFx+RXairbgFQ@mail.gmail.com>
-	 <3611647.fAl6g4h0i8@vostro.rjw.lan>
-	 <CALGCz1rdyqeK8c_Rtmu88umaZA-pV_2_Q7JcY-kFBwg+QRzArA@mail.gmail.com>
-	 <CALGCz1o3_h1AY+7=5KG-5tqb3giUN7eJdymCNeRKg=RkG+g2qw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754737AbaHLI2Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 04:28:16 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49852 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751651AbaHLI2N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 04:28:13 -0400
+Date: Tue, 12 Aug 2014 09:28:11 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Inha Song <ideal.song@samsung.com>
+Cc: broonie@kernel.org, mark.rutland@arm.com, devicetree@vger.kernel.org,
+        alsa-devel@alsa-project.org, sameo@linux.intel.com, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, lgirdwood@gmail.com,
+        cw00.choi@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
+        lee.jones@linaro.org
+Subject: Re: [alsa-devel] [PATCH 1/2] mfd: arizona: Add support for
+	INn_MODE register control
+Message-ID: <20140812082811.GB15833@opensource.wolfsonmicro.com>
+References: <20140809173138.767b97fd@songinha-Samsung-DeskTop-System>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140809173138.767b97fd@songinha-Samsung-DeskTop-System>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-08-09 at 03:14 -0700, Markus Gutschke wrote:
-> I am back and have physical access to the machine now.
+On Sat, Aug 09, 2014 at 05:31:38PM +0900, Inha Song wrote:
+> Some boards need to set the INn_MODE[1:0] register to change
+> the input signal patch. This wlf,inmode property is optional.
+> If present values must be specified by the number of
+> ARIZONA_MAX_INPUT.
 > 
-great!
-
-> I re-ran the test just to be sure, and I can confirm that "platform"
-> does in fact result in a crash.
+> Example:
+>    - wlf,inmode = <2 0 2 0>;	/* IN1, IN3 use DMIC */
 > 
-what about "devices"?
-I mean
-
-# echo devices > /sys/power/pm_test
-
-and see if that triggers the crash.
-
-> Furthermore, I ran the test that Rui asked for. I suspended, resumed,
-> and upon crashing power-cycled the machine ASAP. "dmesg" suggests that
-> the problem is with LNXSYBUS:00 That doesn't tell me much, but
-> hopefully it makes sense to you guys.
+> Signed-off-by: Inha Song <ideal.song@samsung.com>
+> ---
+>  drivers/mfd/arizona-core.c | 4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-[    0.930093]   Magic number: 10:810:122
-[    0.930185] acpi LNXSYBUS:00: hash matches
+> diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+> index 10a0cb9..4b2eb73 100644
+> --- a/drivers/mfd/arizona-core.c
+> +++ b/drivers/mfd/arizona-core.c
+> @@ -560,6 +560,10 @@ static int arizona_of_get_core_pdata(struct arizona *arizona)
+>  			ret);
+>  	}
+>  
+> +	of_property_read_u32_array(arizona->dev->of_node,
+> +					 "wlf,inmode",
+> +					 arizona->pdata.inmode,
+> +					 ARRAY_SIZE(arizona->pdata.inmode));
 
-This looks weird, ACPI will do nothing for LNXSYBUS devices during
-resume.
-Rafael, any thought on this?
+Might be better to allow the device tree to be shorter than the
+array in pdata, should this get expanded on future devices.
 
-thanks,
-rui
-
+Thanks,
+Charles
