@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469AbaHLJxe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 05:53:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62380 "EHLO mga09.intel.com"
+	id S1751590AbaHLKBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 06:01:35 -0400
+Received: from mga01.intel.com ([192.55.52.88]:38274 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751610AbaHLJxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 05:53:32 -0400
+	id S1751299AbaHLKBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 06:01:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,848,1400050800"; 
-   d="scan'208";a="557329992"
-Date: Tue, 12 Aug 2014 12:53:21 +0300
+   d="scan'208";a="575475267"
+Date: Tue, 12 Aug 2014 13:01:11 +0300
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: wsa@the-dreams.de, torvalds@linux-foundation.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] I2C: Make I2C core able to be module when I2C_ACPI is
- selected.
-Message-ID: <20140812095321.GU1657@lahna.fi.intel.com>
-References: <1407740455-21269-1-git-send-email-tianyu.lan@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [RFC] ACPI: Add GPIO-signaled event simulator.
+Message-ID: <20140812100111.GV1657@lahna.fi.intel.com>
+References: <1406217076-17150-1-git-send-email-tomasz.nowicki@linaro.org>
+ <CACRpkdZmKJmaTRBpDrzd7+EhPuFeScr6jEHC8+0z6-4knjFqkA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407740455-21269-1-git-send-email-tianyu.lan@intel.com>
+In-Reply-To: <CACRpkdZmKJmaTRBpDrzd7+EhPuFeScr6jEHC8+0z6-4knjFqkA@mail.gmail.com>
 Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 03:00:55PM +0800, Lan Tianyu wrote:
-> Commit da3c6647(I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI
-> config) adds a new kernel config I2C_ACPI and make I2C core built in
-> when the config is selected. This is wrong because distributions
-> etc generally compile I2C as a module and the commit broken that.
-> This patch is to make I2C core able to be a module when I2C_ACPI is
-> selected. Original issue the commit da3c6647 tried to avoid will
-> be fixed in ACPICA and it's rarely triggered during unloading module. 
+On Fri, Aug 08, 2014 at 02:36:02PM +0200, Linus Walleij wrote:
+> On Thu, Jul 24, 2014 at 5:51 PM, Tomasz Nowicki
+> <tomasz.nowicki@linaro.org> wrote:
 > 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> > GPIO signaled events is quite new thing in Linux kernel.
+> > AFAIK, there are not many board which can take advantage of it.
+> > However, GPIO events are very useful feature during work on ACPI
+> > subsystems.
+> 
+> Overall this seems like a pretty nice debug feature.
+> 
+> > This commit emulates GPIO h/w behaviour and consists on read/write
+> > operation to debugfs file. GPIO device instance is still required in DSDT
+> > table along with _AEI resources and event methods.
+> >
+> > Reading from file provides pin to GPIO device map e.g. :
+> > $ cat /sys/kernel/debug/acpi/gpio_event
+> > GPIO device name: /__SB.GPI0
+> > Available GPIO pin map:
+> > /__SB.GPI0 <-> pin 0x100
+> >
+> > Based on that, user can trigger method corresponding to device pin number:
+> > $ echo "/__SB.GPI0 0x100" > /sys/kernel/debug/acpi/gpio_event
+> 
+> I need input from Rafael and Mika as to whether this is a
+> good interface.
 
-I wonder if we can do
+Maybe it would make sense to move this into drivers/gpio/gpiolib-acpi.c
+and hide it behind some Kconfig entry?
 
-	depends on I2C=y
+Since you already need to have DSDT/SSDT table for this to provide the
+GPIO device, _AEI and the event methods, I would rather make it so that
+acpi_gpiochip_request_interrupt() will add debugfs entry for each GPIO
+it finds in _AEI, like:
 
-here? If I understand it right, then we only build the ACPI_I2C if I2C
-is compiled into the kernel. That way the problem da3c6647 tried to
-solve doens't re-appear.
+/sys/kernel/debug/acpi/events/<GPIO DEVICE>/n
 
-We can later on relax this once ACPICA has been fixed. Thoughts?
+And you could trigger it by writing '1' or something like that to that
+file.
