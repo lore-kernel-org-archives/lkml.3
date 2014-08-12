@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbaHLHhi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:37:38 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:43167 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831AbaHLHhh (ORCPT
+	id S1753992AbaHLHiG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:38:06 -0400
+Received: from smtprelay05.ispgateway.de ([80.67.31.98]:39000 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514AbaHLHiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:37:37 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 12 Aug 2014 16:37:40 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: ngupta@vflare.org, linux-kernel@vger.kernel.org,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] zram: fix incorrectly stat with failed_reads
-Message-ID: <20140812073740.GA9227@bbox>
-References: <000001cfb53f$d63b6ea0$82b24be0$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <000001cfb53f$d63b6ea0$82b24be0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 12 Aug 2014 03:38:04 -0400
+X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Aug 2014 03:38:03 EDT
+From: Christoph Jaeger <cj@linux.com>
+To: pshelar@nicira.com, davem@davemloft.net
+Cc: dev@openvswitch.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Jaeger <cj@linux.com>
+Subject: [PATCH] openvswitch: Fix memory leak in ovs_vport_alloc() error path
+Date: Tue, 12 Aug 2014 09:27:57 +0200
+Message-Id: <1407828477-10287-1-git-send-email-cj@linux.com>
+X-Mailer: git-send-email 1.9.3
+X-Df-Sender: MTg4NDM4Mw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 04:39:17PM +0800, Chao Yu wrote:
-> Since we allocate a temporary buffer in zram_bvec_read to handle partial page
-> operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
-> zram: allow partial page operations), our ->failed_reads value may be incorrect
-> as we do not increase its value when failed to allocate the temporary buffer.
-> 
-> Let's fix this issue and correct the annotation of failed_reads.
+ovs_vport_alloc() bails out without freeing the memory 'vport' points to.
 
-Good catch.
-Just out of curiosity.
+Picked up by Coverity - CID 1230503.
 
-Did you catch it by code review or real workload?
+Fixes: 5cd667b0a4 ("openvswitch: Allow each vport to have an array of 'port_id's.")
+Signed-off-by: Christoph Jaeger <cj@linux.com>
+---
+ net/openvswitch/vport.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> ---
->  drivers/block/zram/zram_drv.c | 1 +
->  drivers/block/zram/zram_drv.h | 2 +-
->  2 files changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index dfa4024..bf8ea1b 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -413,6 +413,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
->  
->  	if (!uncmem) {
->  		pr_info("Unable to allocate temp memory\n");
-> +		atomic64_inc(&zram->stats.failed_reads);
->  		ret = -ENOMEM;
->  		goto out_cleanup;
->  	}
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index 5b0afde..e0f725c 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -84,7 +84,7 @@ struct zram_stats {
->  	atomic64_t compr_data_size;	/* compressed size of pages stored */
->  	atomic64_t num_reads;	/* failed + successful */
->  	atomic64_t num_writes;	/* --do-- */
-> -	atomic64_t failed_reads;	/* should NEVER! happen */
-> +	atomic64_t failed_reads;	/* can happen when memory is too low */
->  	atomic64_t failed_writes;	/* can happen when memory is too low */
->  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
->  	atomic64_t notify_free;	/* no. of swap slot free notifications */
-> -- 
-> 2.0.1.474.g72c7794
-
-How abouting moving failed_reads/writes in zram_bvec_rw?
-
-int zram_bvec_rw(..)
-{
-        if (rw == READ) {
-                atomic64_inc(num_reads);
-                ret = zram_bvec_read(xxx);
-        } else {
-                atomic64_inc(&num_writes);
-                ret = zram_bvec_write(xxx);
-        }
-
-        if (unlikely(ret)) {
-                if (rw == READ)
-                        atomic64_inc(failed_reads);
-                else
-                        atomic64_inc(failed_writes);
-        }
-}
-
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/net/openvswitch/vport.c b/net/openvswitch/vport.c
+index 702fb21..6d8f2ec 100644
+--- a/net/openvswitch/vport.c
++++ b/net/openvswitch/vport.c
+@@ -137,8 +137,10 @@ struct vport *ovs_vport_alloc(int priv_size, const struct vport_ops *ops,
+ 	vport->ops = ops;
+ 	INIT_HLIST_NODE(&vport->dp_hash_node);
+ 
+-	if (ovs_vport_set_upcall_portids(vport, parms->upcall_portids))
++	if (ovs_vport_set_upcall_portids(vport, parms->upcall_portids)) {
++		kfree(vport);
+ 		return ERR_PTR(-EINVAL);
++	}
+ 
+ 	vport->percpu_stats = netdev_alloc_pcpu_stats(struct pcpu_sw_netstats);
+ 	if (!vport->percpu_stats) {
 -- 
-Kind regards,
-Minchan Kim
+1.9.3
+
