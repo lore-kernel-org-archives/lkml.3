@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963AbaHLQVD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 12:21:03 -0400
-Received: from mtaout22.012.net.il ([80.179.55.172]:52915 "EHLO
-	mtaout22.012.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaHLQVA (ORCPT
+	id S1754021AbaHLQVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 12:21:22 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:35440 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812AbaHLQVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 12:21:00 -0400
-Date: Tue, 12 Aug 2014 19:20:52 +0300
-From: Oren Twaig <oren@scalemp.com>
-Subject: Re: x86: vmalloc and THP
-In-reply-to: <20140812060745.GA7987@node.dhcp.inet.fi>
-X-012-Sender: ira_oren@012.net.il
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
-Message-id: <53EA3EE4.6090100@scalemp.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Antivirus: avast! (VPS 140812-0, 08/12/2014), Outbound message
-X-Antivirus-Status: Clean
-References: <53E99F86.5020100@scalemp.com> <20140812060745.GA7987@node.dhcp.inet.fi>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 12 Aug 2014 12:21:20 -0400
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Tue, 12 Aug 2014 12:21:16 -0400
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 0/5] locks: move most locks_release_private calls
+ outside of i_lock
+Message-ID: <20140812122116.5e047c3d@tlielax.poochiereds.net>
+In-Reply-To: <20140812153229.GA15922@infradead.org>
+References: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
+	<20140812153229.GA15922@infradead.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
+On Tue, 12 Aug 2014 08:32:29 -0700
+Christoph Hellwig <hch@infradead.org> wrote:
 
-I saw the thread has developed nicely :), still - wanted to answer your 
-question
-below.
+> Btw, I might be missing something here, but wouldn't it be better
+> to reference count the file_lock structure and grab a reference to
+> it where we currently call (__)locks_copy_lock?
+> 
 
-On 8/12/2014 9:07 AM, Kirill A. Shutemov wrote:
-> On Tue, Aug 12, 2014 at 08:00:54AM +0300, Oren Twaig wrote:
->> <html style="direction: ltr;">
-> plain/text, please.
-Yes - noticed the html, sent again in plain text.
->> If not, is there any fast way to change this behavior ? Maybe by
->> changing the granularity/alignment of such allocations to allow such
->> mapping ?
-> What's the point to use vmalloc() in this case?
-I've noticed that some lock/s are using linear addresses which are
-located at 0xffffc901922b4500 and from what I understand
-from mm.txt (kernel 3.0.101):
-*ffffc90000000000 - ffffe8ffffffffff (=45 bits) vmalloc/ioremap space
+It's not really possible with the way this code works at the moment.
+The problem there is that struct file_lock can represent any of:
 
-*So I'm not sure who/how/why this lock got allocated there, but obviously
-it is using that linear set. No ?
+- a lock request (copied from userland into a kernel structure)
+- a lock record (that lives on the i_flock list)
+- a conflicting lock record (returned by GETLK-type request)
 
->
+In many cases we call (__)locks_copy_lock to copy from one "use-type" of
+struct file_lock to another, and doing that with refcounts makes that a
+bit difficult to manage.
 
+If I were designing this code from scratch, I'd have probably made each
+use-type a distinct structure. Maybe we should do that anyway at
+some point -- I'm not sure.
 
----
-This email is free from viruses and malware because avast! Antivirus protection is active.
-http://www.avast.com
+Now, all that said...I think we will end up needing to do some sort of
+refcounting to fix the leasing code at some point. Currently,
+->setlease operations can't block, which is a significant impediment to
+adding leases to clustered filesystems and the like. It would be nice
+to lift that limitation and that may require making leases be
+refcounted (or maybe RCU-managed).
 
+-- 
+Jeff Layton <jlayton@primarydata.com>
