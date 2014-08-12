@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbaHLQIs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 12:08:48 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:52683 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628AbaHLQIr (ORCPT
+	id S1753307AbaHLQMS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 12:12:18 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:54007 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792AbaHLQMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 12:08:47 -0400
-Date: Tue, 12 Aug 2014 09:08:40 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
- kthread wakeups
-Message-ID: <20140812160840.GD4752@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140808183424.GB13483@grmbl.mre>
- <20140808214347.GH5821@linux.vnet.ibm.com>
- <20140808214648.GA19058@linux.vnet.ibm.com>
- <20140811071308.GA4184@grmbl.mre>
- <20140811162807.GW5821@linux.vnet.ibm.com>
- <20140811194126.GF4184@grmbl.mre>
- <20140811201102.GD5821@linux.vnet.ibm.com>
- <20140811201845.GG4184@grmbl.mre>
- <20140811203421.GE5821@linux.vnet.ibm.com>
- <20140812052726.GH4184@grmbl.mre>
+	Tue, 12 Aug 2014 12:12:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140812052726.GH4184@grmbl.mre>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081216-0928-0000-0000-0000040332A2
+Reply-To: markus@gutschke.com
+In-Reply-To: <1407831975.2339.52.camel@rzhang1-toshiba>
+References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
+ <1407206650.10148.28.camel@rzhang1-toshiba> <CALGCz1pSpzDVb8sQx=QFKjdR4fi566h42p2nRkFx+RXairbgFQ@mail.gmail.com>
+ <3611647.fAl6g4h0i8@vostro.rjw.lan> <CALGCz1rdyqeK8c_Rtmu88umaZA-pV_2_Q7JcY-kFBwg+QRzArA@mail.gmail.com>
+ <CALGCz1o3_h1AY+7=5KG-5tqb3giUN7eJdymCNeRKg=RkG+g2qw@mail.gmail.com> <1407831975.2339.52.camel@rzhang1-toshiba>
+From: Markus Gutschke <markus@gutschke.com>
+Date: Tue, 12 Aug 2014 09:11:55 -0700
+X-Google-Sender-Auth: CTRj_AcLoZxj4uJPmjACTqL8qtU
+Message-ID: <CALGCz1p8=gPBqf6z-YpRzSE=raNJmJw-OKCsLwne3raCr4Y-1g@mail.gmail.com>
+Subject: Re: 3.16-rcX crashes on resume from Suspend-To-RAM
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 10:57:26AM +0530, Amit Shah wrote:
-> On (Mon) 11 Aug 2014 [13:34:21], Paul E. McKenney wrote:
-> > On Tue, Aug 12, 2014 at 01:48:45AM +0530, Amit Shah wrote:
+As I said earlier in this thread, echo'ing "devices" into "pm_test"
+does not result in a crash; but doing so for "platform" does.
 
-[ . . . ]
+Markus
 
-> > > > In addition "sendkey alt-sysrq-t" at the "(qemu)" prompt dumps all tasks'
-> > > > stacks, which would also likely be useful information.
-> > > 
-> > > Nah, this doesn't work -- the guest's totally locked up.  I need a way
-> > > to continuously dump buffers till the lockup happens, I suppose.
-> > 
-> > That is a bit surprising.  Is it possible that the system is OOMing
-> > quickly due to grace periods not proceeding?  If so, maybe giving the
-> > VM more memory would help.
-> 
-> I bumped it up to 1G and then 2G, same result.
-
-OK.  I am then back at making the system dump core.
-
-							Thanx, Paul
-
+On Aug 12, 2014 1:26 AM, "Zhang Rui" <rui.zhang@intel.com> wrote:
+>
+> On Sat, 2014-08-09 at 03:14 -0700, Markus Gutschke wrote:
+> > I am back and have physical access to the machine now.
+> >
+> great!
+>
+> > I re-ran the test just to be sure, and I can confirm that "platform"
+> > does in fact result in a crash.
+> >
+> what about "devices"?
+> I mean
+>
+> # echo devices > /sys/power/pm_test
+>
+> and see if that triggers the crash.
+>
+> > Furthermore, I ran the test that Rui asked for. I suspended, resumed,
+> > and upon crashing power-cycled the machine ASAP. "dmesg" suggests that
+> > the problem is with LNXSYBUS:00 That doesn't tell me much, but
+> > hopefully it makes sense to you guys.
+> >
+> [    0.930093]   Magic number: 10:810:122
+> [    0.930185] acpi LNXSYBUS:00: hash matches
+>
+> This looks weird, ACPI will do nothing for LNXSYBUS devices during
+> resume.
+> Rafael, any thought on this?
+>
+> thanks,
+> rui
+>
