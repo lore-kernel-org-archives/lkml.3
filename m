@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166AbaHLH6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:58:44 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:47892 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162AbaHLH6n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:58:43 -0400
+	id S1754144AbaHLIDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 04:03:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16805 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753386AbaHLIDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 04:03:48 -0400
+Date: Tue, 12 Aug 2014 09:11:16 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: James Smart <james.smart@emulex.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 12/23] lpfc: Use pci_enable_msix_range()
+ instead of pci_enable_msix()
+Message-ID: <20140812081115.GA1674@agordeev.usersys.redhat.com>
+References: <cover.1405533479.git.agordeev@redhat.com>
+ <ea1bf102a3ce0471996e2ddaaa498b088ac791c8.1405533479.git.agordeev@redhat.com>
+ <20140726082227.GF21129@agordeev.usersys.redhat.com>
+ <20140811080148.GG16504@dhcp-27-160.brq.redhat.com>
+ <dfd59266-71ff-4112-8e11-835a08d7a94d@CMEXHTCAS2.ad.emulex.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1407801666.28221.84.camel@chimera>
-Date: Tue, 12 Aug 2014 00:59:14 -0700
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org Wireless" 
-	<linux-wireless@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <70001DBA-E1CE-49D6-9A37-6F7CE31B61E6@holtmann.org>
-References: <1407780269.28221.63.camel@chimera> <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org> <1407789645.28221.68.camel@chimera> <37210DB5-2911-4FA3-9299-7701C5003945@holtmann.org> <1407791075.28221.74.camel@chimera> <28066DB2-9EA9-4748-9C89-D3FBD3EC51F5@holtmann.org> <1407798738.28221.81.camel@chimera> <52896C9C-8560-4CE4-A1FB-C896D766EC87@holtmann.org> <1407801666.28221.84.camel@chimera>
-To: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
-X-Mailer: Apple Mail (2.1878.6)
+Content-Disposition: inline
+In-Reply-To: <dfd59266-71ff-4112-8e11-835a08d7a94d@CMEXHTCAS2.ad.emulex.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Mon, Aug 11, 2014 at 01:14:54PM -0400, James Smart wrote:
+> Alexander,
+> 
+> I haven't looked too deeply, but it's clear it doesn't jive with what we've
+> discussed in the past. Your original patches missed several other similar
+> sections for revision. I had sent a revised set of patches.
+> 
+> I was also unclear as to the merge path the patches were taking, as it was
+> mod'ing areas that have already changed in the scsi misc tree, but the misc
+> tree didn' have the pci mods.  I take it this is heading to Christoph's tree
+> ?  and that it has picked up the pci mods ?
 
->> the way I read the nl80211 code is that the NL80211_CMD_NEW_INTERFACE
->> requires a wiphy device to be specified. And that is actually just a
->> number. So I have no idea what the MAC has to here.
->> 
-> OpenWrt finds a wiphy by its MAC.
+James,
 
-maybe that is the first problem right there. I see that over sysfs you get phy80211/macaddress. However if you do a dump via NL80211_CMD_GET_WIPHY then you do not have the MAC address there.
+I lost the context and not sure what PCI modifications you are referring :(
+I will send a patch that combines your version shortly.
 
->> Why does the wiphy need to know the MAC if it is always specified from
->> userspace when actually creating the new netdev interface. Works for
->> P2P devices, so why wouldn't it work for access point and station
->> mode?
->> 
-> A MAC can be specified for the netdev, but it is assigned to a wiphy
-> identified by its MAC.
+Thanks!
 
-That you find the wiphy device by its MAC address seems to be your problem. As I said, on nl80211 you are using the wiphy unique number and not a MAC address.
+> -- james s
 
-If you want to use some sort of device discovery via sysfs, then use phy80211/index and other attributes to uniquely identify the device. Basing this on the MAC address seems dangerous. Especially since it might be not valid or an identical default for all cards.
-
-Regards
-
-Marcel
-
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
