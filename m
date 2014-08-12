@@ -1,54 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094AbaHLVTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 17:19:09 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33532 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaHLVTG (ORCPT
+	id S1752951AbaHLV0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 17:26:36 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39179 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbaHLV0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 17:19:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407819721-27833-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-References: <1407819721-27833-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-From: David Matlack <dmatlack@google.com>
-Date: Tue, 12 Aug 2014 14:18:45 -0700
-Message-ID: <CALzav=eZyM4_Y6yVoDnTZZUEbbF+T8WR_mSZa3h51FHs1uGBWQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] KVM: fix cache stale memslot info with correct mmio
- generation number
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, avi.kivity@gmail.com, mtosatti@redhat.com,
-        Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 12 Aug 2014 17:26:35 -0400
+Date: Tue, 12 Aug 2014 14:26:34 -0700 (PDT)
+Message-Id: <20140812.142634.745490008512171538.davem@davemloft.net>
+To: cj@linux.com
+Cc: pshelar@nicira.com, dev@openvswitch.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] openvswitch: Fix memory leak in ovs_vport_alloc()
+ error path
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1407828477-10287-1-git-send-email-cj@linux.com>
+References: <1407828477-10287-1-git-send-email-cj@linux.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 12 Aug 2014 14:26:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 10:02 PM, Xiao Guangrong
-<xiaoguangrong@linux.vnet.ibm.com> wrote:
-> @@ -722,9 +719,10 @@ static struct kvm_memslots *install_new_memslots(struct kvm *kvm,
->  {
->         struct kvm_memslots *old_memslots = kvm->memslots;
->
+From: Christoph Jaeger <cj@linux.com>
+Date: Tue, 12 Aug 2014 09:27:57 +0200
 
-I think you want
+> ovs_vport_alloc() bails out without freeing the memory 'vport' points to.
+> 
+> Picked up by Coverity - CID 1230503.
+> 
+> Fixes: 5cd667b0a4 ("openvswitch: Allow each vport to have an array of 'port_id's.")
+> Signed-off-by: Christoph Jaeger <cj@linux.com>
 
-  slots->generation = old_memslots->generation;
-
-here.
-
-On the KVM_MR_DELETE path, install_new_memslots is called twice so this
-patch introduces a short window of time where the generation number
-actually decreases.
-
-> -       update_memslots(slots, new, kvm->memslots->generation);
-> +       update_memslots(slots, new);
->         rcu_assign_pointer(kvm->memslots, slots);
->         synchronize_srcu_expedited(&kvm->srcu);
-> +       slots->generation++;
->
->         kvm_arch_memslots_updated(kvm);
->
-> --
-> 1.8.3.1
->
+Applied, thanks.
