@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825AbaHLTMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 15:12:00 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:58730 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754357AbaHLTLv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 15:11:51 -0400
+	id S1754830AbaHLTOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 15:14:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17580 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753678AbaHLTOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 15:14:41 -0400
+Date: Tue, 12 Aug 2014 21:12:18 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time: drop do_sys_times spinlock
+Message-ID: <20140812191218.GA15210@redhat.com>
+References: <20140812142539.01851e52@annuminas.surriel.com>
 MIME-Version: 1.0
-In-Reply-To: <cover.1406177531.git.luto@amacapital.net>
-References: <cover.1406177531.git.luto@amacapital.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 12 Aug 2014 12:11:29 -0700
-Message-ID: <CALCETrXtLf3ZFtyrbwj29C=t3PcTxRT2AJWZCUHdKC3AYyUVAA@mail.gmail.com>
-Subject: Re: [PATCH v5 0/5] random,x86,kvm: Rework arch RNG seeds and get some
- from kvm
-To: kvm list <kvm@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140812142539.01851e52@annuminas.surriel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 23, 2014 at 9:57 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> This introduces and uses a very simple synchronous mechanism to get
-> /dev/urandom-style bits appropriate for initial KVM PV guest RNG
-> seeding.
+On 08/12, Rik van Riel wrote:
 >
-> It also re-works the way that architectural random data is fed into
-> random.c's pools.  I added a new arch hook called arch_get_rng_seed.
-> The default implementation is more or less the same as the current
-> code, except that random_get_entropy is now called unconditionally.
+> Back in 2009, Spencer Candland pointed out there is a race with
+> do_sys_times, where multiple threads calling do_sys_times can
+> sometimes get decreasing results.
 >
-> x86 gets a custom arch_get_rng_seed.  It will use KVM_GET_RNG_SEED
-> if available, and, if it does anything, it will log the number of
-> bits collected from each available architectural source.  If more
-> paravirt seed sources show up, it will be a natural place to add
-> them.
+> https://lkml.org/lkml/2009/11/3/522
 >
-> I sent the corresponding kvm-unit-tests and qemu changes separately.
+> As a result of that discussion, some of the code in do_sys_times
+> was moved under a spinlock.
+>
+> However, that does not seem to actually make the race go away on
+> larger systems. One obvious remaining race is that after one thread
+> is about to return from do_sys_times, it is preempted by another
+> thread, which also runs do_sys_times, and stores a larger value in
+> the shared variable than what the first thread got.
+>
+> This race is on the kernel/userspace boundary, and not fixable
+> with spinlocks.
 
-What's the status of this series?  I assume that it's too late for at
-least patches 2-5 to make it into 3.17.
+Not sure I understand...
 
---Andy
+Afaics, the problem is that a single thread can observe the decreasing
+(say) sum_exec_runtime if it calls do_sys_times() twice without the lock.
 
->
-> Changes from v4:
->  - Got rid of the RDRAND behavior change.  If this series is accepted,
->    I may resend it separately, but I think it's an unrelated issue.
->  - Fix up the changelog entries -- I misunderstood how the old code
->    worked.
->  - Avoid lots of failed attempts to use KVM_GET_RNG_SEED if it's not
->    available.
->
-> Changes from v3:
->  - Other than KASLR, the guest pieces are completely rewritten.
->    Patches 2-4 have essentially nothing in common with v2.
->
-> Changes from v2:
->  - Bisection fix (patch 2 had a misplaced brace).  The final states is
->    identical to that of v2.
->  - Improve the 0/5 description a little bit.
->
-> Changes from v1:
->  - Split patches 2 and 3
->  - Log all arch sources in init_std_data
->  - Fix the 32-bit kaslr build
->
-> Andy Lutomirski (5):
->   x86,kvm: Add MSR_KVM_GET_RNG_SEED and a matching feature bit
->   random: Add and use arch_get_rng_seed
->   x86,random: Add an x86 implementation of arch_get_rng_seed
->   x86,random,kvm: Use KVM_GET_RNG_SEED in arch_get_rng_seed
->   x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
->
->  Documentation/virtual/kvm/cpuid.txt  |  3 ++
->  arch/x86/Kconfig                     |  4 ++
->  arch/x86/boot/compressed/aslr.c      | 27 +++++++++++++
->  arch/x86/include/asm/archrandom.h    |  6 +++
->  arch/x86/include/asm/kvm_guest.h     |  9 +++++
->  arch/x86/include/asm/processor.h     | 21 ++++++++--
->  arch/x86/include/uapi/asm/kvm_para.h |  2 +
->  arch/x86/kernel/Makefile             |  2 +
->  arch/x86/kernel/archrandom.c         | 74 ++++++++++++++++++++++++++++++++++++
->  arch/x86/kernel/kvm.c                | 10 +++++
->  arch/x86/kvm/cpuid.c                 |  3 +-
->  arch/x86/kvm/x86.c                   |  4 ++
->  drivers/char/random.c                | 14 +++++--
->  include/linux/random.h               | 40 +++++++++++++++++++
->  14 files changed, 212 insertions(+), 7 deletions(-)
->  create mode 100644 arch/x86/kernel/archrandom.c
->
-> --
-> 1.9.3
->
+This is because it can account the exiting sub-thread twice if it races
+with __exit_signal() which increments sig->sum_sched_runtime, but this
+exiting thread can still be visible to thread_group_cputime().
 
+IOW, it is not actually about decreasing, the problem is that the lockless
+thread_group_cputime() can return the wrong result, and the next ys_times()
+can show the right value.
 
+> Back in 2009, in changeset 2b5fe6de5 Oleg Nesterov already found
+> that it should be safe to remove the spinlock.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Yes, it is safe but only in a sense that for_each_thread() is fine lockless.
+So this change was reverted.
+
+Oleg.
+
