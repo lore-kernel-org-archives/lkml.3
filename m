@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336AbaHLTw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 15:52:27 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57992 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754903AbaHLTtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 15:49:20 -0400
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-Subject: [PATCH 03/13] f2fs: fix the initial inode page for recovery
-Date: Tue, 12 Aug 2014 12:49:17 -0700
-Message-Id: <1407872967-26423-3-git-send-email-jaegeuk@kernel.org>
-X-Mailer: git-send-email 1.8.5.2 (Apple Git-48)
-In-Reply-To: <1407872967-26423-1-git-send-email-jaegeuk@kernel.org>
-References: <1407872967-26423-1-git-send-email-jaegeuk@kernel.org>
+	id S1754908AbaHLUAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 16:00:44 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:57226 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637AbaHLUAl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 16:00:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrUDb6kLH_Qp=YMm=m3P_hmEu3dfDTse=ptCsdpO9EEcAQ@mail.gmail.com>
+References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
+	<1405657206-12060-11-git-send-email-ast@plumgrid.com>
+	<CALCETrUt1yLXTt5pDZJd0s4s+4dhs0LB7tbJYd6p1+EbdNWw7w@mail.gmail.com>
+	<CAMEtUuygJoH+PBNksTwRHyRObCZixoTDFzmnHroErZHZLaGNbg@mail.gmail.com>
+	<CALCETrUDb6kLH_Qp=YMm=m3P_hmEu3dfDTse=ptCsdpO9EEcAQ@mail.gmail.com>
+Date: Tue, 12 Aug 2014 13:00:40 -0700
+Message-ID: <CAMEtUuz2DS8Ks0L15K0Jsj_nFjgvDh0TBwb+5pHzrdU+o6co_g@mail.gmail.com>
+Subject: Re: [PATCH RFC v2 net-next 10/16] bpf: add eBPF verifier
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a new inode page is needed for recover_dentry, we should assing i_inline
-as zero.
+On Tue, Aug 12, 2014 at 12:32 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Thu, Jul 24, 2014 at 12:25 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> On Thu, Jul 24, 2014 at 11:25 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Thu, Jul 17, 2014 at 9:20 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>>> Safety of eBPF programs is statically determined by the verifier, which detects:
+>>>> - loops
+>>>> - out of range jumps
+>>>> - unreachable instructions
+>>>> - invalid instructions
+>>>> - uninitialized register access
+>>>> - uninitialized stack access
+>>>> - misaligned stack access
+>>>> - out of range stack access
+>>>> - invalid calling convention
+>>>
+>>> Is there something that documents exactly what conditions an eBPF
+>>> program must satisfy in order to be considered valid?
+>>
+>> I did a writeup in the past on things that verifiers checks and gave it
+>> to internal folks to review. Guys have said that now they understand very
+>> well how it works, but in reality it didn't help at all to write valid programs.
+>> What worked is 'verification trace' = the instruction by instruction dump
+>> of verifier state while it's analyzing the program.
+>> I gave few simple examples of it in
+>> 'Understanding eBPF verifier messages' section:
+>> https://git.kernel.org/cgit/linux/kernel/git/ast/bpf.git/diff/Documentation/networking/filter.txt?id=b22459133b9f52d2176c8c0f8b5eb036478a40c9
+>> Every example there is what "program must satisfy to be valid"...
+>>
+>> Therefore I'm addressing two things:
+>> 1. how verifier works and what it checks for.
+>>   that is described in 'eBPF verifier' section of the doc and
+>>   in 200 lines of comments inside verifier.c
+>
+> That doc is pretty good.  I'll try to read it carefully soon.  Sorry
+> for the huge delay here -- I've been on vacation.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
----
- fs/f2fs/node.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 1f33299..093d799 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1651,6 +1651,7 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
- 	dst->i_blocks = cpu_to_le64(1);
- 	dst->i_links = cpu_to_le32(1);
- 	dst->i_xattr_nid = 0;
-+	dst->i_inline = src->i_inline & F2FS_INLINE_XATTR;
- 
- 	new_ni = old_ni;
- 	new_ni.ino = ino;
-@@ -1659,6 +1660,7 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
- 		WARN_ON(1);
- 	set_node_addr(sbi, &new_ni, NEW_ADDR, false);
- 	inc_valid_inode_count(sbi);
-+	set_page_dirty(ipage);
- 	f2fs_put_page(ipage, 1);
- 	return 0;
- }
--- 
-1.8.5.2 (Apple Git-48)
-
+I've been sitting on v4 for few weeks, since it's a merge window.
+So please hold on a careful review. I'll post v4 later today.
+Mainly I've split the verifier into several patches to make it
+easier to read.
+Thanks!
