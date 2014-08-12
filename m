@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbaHLFzn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 01:55:43 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39142 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166AbaHLFzl (ORCPT
+	id S1752643AbaHLFz4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 01:55:56 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:61927 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaHLFzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 01:55:41 -0400
-Date: Tue, 12 Aug 2014 07:55:27 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        "open list:SCHEDULER" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: Remove ACCESS_ONCE() for jiffies
-Message-ID: <20140812055527.GI9918@twins.programming.kicks-ass.net>
-References: <1407797503-24727-1-git-send-email-bobby.prani@gmail.com>
- <1407797503-24727-3-git-send-email-bobby.prani@gmail.com>
+	Tue, 12 Aug 2014 01:55:53 -0400
+From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+To: <hdegoede@redhat.com>
+CC: <gregkh@linuxfoundation.org>, <kraxel@redhat.com>,
+        <mdharm-usb@one-eyed-alien.net>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH v2] uas: replace WARN_ON_ONCE() with lockdep_assert_held()
+Date: Tue, 12 Aug 2014 11:38:37 +0530
+Message-ID: <1407823717-17265-1-git-send-email-sanjeev_sharma@mentor.com>
+X-Mailer: git-send-email 1.7.11.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C3X1Qu0ows97PIDn"
-Content-Disposition: inline
-In-Reply-To: <1407797503-24727-3-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-OriginalArrivalTime: 12 Aug 2014 05:55:52.0155 (UTC) FILETIME=[12F14AB0:01CFB5F2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+spin_is_locked() always return false in uniprocessor configuration and therefore it
+would be advise to replace with lockdep_assert_held().
 
---C3X1Qu0ows97PIDn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+Changes in v2:
+ - replaced WARN_ON_ONCE() with lockdep_assert_held() to
+ avoid runtime overhead instead of assert_spin_locked()
 
-On Mon, Aug 11, 2014 at 06:51:41PM -0400, Pranith Kumar wrote:
-> jiffies is declared as a volatile variable. Therefore it is not neccessary to
-> use ACCESS_ONCE() while reading it.
+ drivers/usb/storage/uas.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-It also doesn't hurt and it documents intent, so I'm inclined to keep
-it.
+diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
+index 3f42785..05b2d8e 100644
+--- a/drivers/usb/storage/uas.c
++++ b/drivers/usb/storage/uas.c
+@@ -154,7 +154,7 @@ static void uas_mark_cmd_dead(struct uas_dev_info *devinfo,
+ 	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+ 
+ 	uas_log_cmd_state(cmnd, caller);
+-	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
++	lockdep_assert_held(&devinfo->lock);
+ 	WARN_ON_ONCE(cmdinfo->state & COMMAND_ABORTED);
+ 	cmdinfo->state |= COMMAND_ABORTED;
+ 	cmdinfo->state &= ~IS_IN_WORK_LIST;
+@@ -181,7 +181,7 @@ static void uas_add_work(struct uas_cmd_info *cmdinfo)
+ 	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+ 	struct uas_dev_info *devinfo = cmnd->device->hostdata;
+ 
+-	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
++	lockdep_assert_held(&devinfo->lock);
+ 	cmdinfo->state |= IS_IN_WORK_LIST;
+ 	schedule_work(&devinfo->work);
+ }
+@@ -283,7 +283,7 @@ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller)
+ 	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
+ 	struct uas_dev_info *devinfo = (void *)cmnd->device->hostdata;
+ 
+-	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
++	lockdep_assert_held(&devinfo->lock);
+ 	if (cmdinfo->state & (COMMAND_INFLIGHT |
+ 			      DATA_IN_URB_INFLIGHT |
+ 			      DATA_OUT_URB_INFLIGHT |
+@@ -622,7 +622,7 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
+ 	struct urb *urb;
+ 	int err;
+ 
+-	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
++	lockdep_assert_held(&devinfo->lock);
+ 	if (cmdinfo->state & SUBMIT_STATUS_URB) {
+ 		urb = uas_submit_sense_urb(cmnd, gfp, cmdinfo->stream);
+ 		if (!urb)
+-- 
+1.7.11.7
 
---C3X1Qu0ows97PIDn
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT6axPAAoJEHZH4aRLwOS6incQALC7jzLnIxo7sE1bEW3hp2kN
-Zsia46J6vAdYcqMSPPyf1YFoDnfe3E1QuRp+OtBXFAvsVLqKhY5U0KQ2Wv3Q0V8F
-tlbEeHrcIDmIbHCPrnzI4DRC5f8waYoGfLCYJL4GGEdBediDb9qPg4VmE5H+W1a8
-UigtukAb6ZoMm2bHoxiTfnsPH4gryncAh7nNXhzeKLBbIWV5cLcHdSVJhv/1LWmQ
-s7W2+SU2s7y6Yb5T+l16FZFRNFD5wctWXI3f57nM7Z/HBIDYlgrBmLtuVaCM+e2k
-lNwvpdbuMjQ886qZN7LASmLF69RRcvAqoU2oppfb2NKarLRoGeV17DPUpGgH+K2O
-yFpsVN+ayoNv6ljKk2leEV6Mb/m5omfdJQfuaHhQm6nqqCxRqaE0d3XxByYElVbe
-u3SXirc9gGZG7XUpzZNZV8FTYttHOB7eMxwlIRnAkd4ahIE2SWhAP0a25ndizkf7
-wybbTacSiNP3V74uW4NIdQEwPXjw9dcKJdtVrKQLZWyUmLEX/6FQEN5wNn+1IXS7
-sNdH2KaXUNBouYPSzz/MnIwBVS6KfiJXi25wV0Q/PceZ/O2JGKARJXEn9SDHz10i
-QnN/Qs2apa9uGzOusZXEaBybGRjZm5BQhTL1Uof7CfYAJKHKEztDl9uc702mnOIZ
-YPDeH9MOrakZO8LG1wjf
-=SmQn
------END PGP SIGNATURE-----
-
---C3X1Qu0ows97PIDn--
