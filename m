@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465AbaHLGll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 02:41:41 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:41300 "EHLO
+	id S1753427AbaHLGlk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 02:41:40 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:41287 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185AbaHLGkv (ORCPT
+	with ESMTP id S1753182AbaHLGkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Aug 2014 02:40:51 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         David Ahern <dsahern@gmail.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 11/13] perf timechart: Move call to symbol__init() after creating session
-Date: Tue, 12 Aug 2014 15:40:43 +0900
-Message-Id: <1407825645-24586-12-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/13] perf script: Move call to symbol__init() after creating session
+Date: Tue, 12 Aug 2014 15:40:42 +0900
+Message-Id: <1407825645-24586-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1407825645-24586-1-git-send-email-namhyung@kernel.org>
 References: <1407825645-24586-1-git-send-email-namhyung@kernel.org>
@@ -33,31 +33,32 @@ session info before calling symbol__init().
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-timechart.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/builtin-script.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 912e3b5bb22b..df3b1c5ae7b9 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -1607,6 +1607,8 @@ static int __cmd_timechart(struct timechart *tchart, const char *output_name)
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-+	symbol__init();
-+
- 	(void)perf_header__process_sections(&session->header,
- 					    perf_data_file__fd(session->file),
- 					    tchart,
-@@ -1982,8 +1984,6 @@ int cmd_timechart(int argc, const char **argv,
- 		return -1;
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 534172b889c3..7de6ce76fa25 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -1719,8 +1719,6 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		exit(-1);
  	}
  
--	symbol__init();
--
- 	if (argc && !strncmp(argv[0], "rec", 3)) {
- 		argc = parse_options(argc, argv, record_options, record_usage,
- 				     PARSE_OPT_STOP_AT_NON_OPTION);
+-	if (symbol__init() < 0)
+-		return -1;
+ 	if (!script_name)
+ 		setup_pager();
+ 
+@@ -1734,6 +1732,9 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			goto out_delete;
+ 	}
+ 
++	if (symbol__init() < 0)
++		goto out_delete;
++
+ 	script.session = session;
+ 
+ 	if (cpu_list) {
 -- 
 2.0.0
 
