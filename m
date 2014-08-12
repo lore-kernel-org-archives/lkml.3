@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954AbaHLBuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 21:50:00 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:40692 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763AbaHLBt7 (ORCPT
+	id S1753590AbaHLB7K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 21:59:10 -0400
+Received: from mga14.intel.com ([192.55.52.115]:52101 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750959AbaHLB7I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 21:49:59 -0400
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Jeremiah Mahler <jmmahler@gmail.com>,
-        Teodora Baluta <teobaluta@gmail.com>,
-        Andrea Merello <andrea.merello@gmail.com>,
-        Joel Pelaez Jorge <joelpelaez@gmail.com>,
-        Bob Copeland <me@bobcopeland.com>, Joe Perches <joe@perches.com>,
-        Arnd Bergmann <arnd@arndb.de>, Himangi Saraogi <himangi774@gmail.com>
-Subject: [PATCH v2] staging: rtl8192u/ieee80211: Fix sparse ieee80211_debug_init/_exit not declared warning
-Date: Mon, 11 Aug 2014 18:49:25 -0700
-Message-Id: <1407808165-3873-1-git-send-email-jmmahler@gmail.com>
-X-Mailer: git-send-email 2.1.0.rc1
-In-Reply-To: <20140811223206.GB9475@kroah.com>
-References: <20140811223206.GB9475@kroah.com>
+	Mon, 11 Aug 2014 21:59:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="371145496"
+From: "Drokin, Oleg" <oleg.drokin@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
+        "Dilger, Andreas" <andreas.dilger@intel.com>
+Subject: Re: [PATCH] drivers: staging: lustre: fix sparse warnings / delete
+ unused function
+Thread-Topic: [PATCH] drivers: staging: lustre: fix sparse warnings / delete
+ unused function
+Thread-Index: AQHPsyWZlmkhRekHbkOzjFiDAJeH9JvJt92AgAL5FoA=
+Date: Tue, 12 Aug 2014 01:58:45 +0000
+Message-ID: <4F91D9A1-B87D-498F-8089-7008F6BD4F30@intel.com>
+References: <1407515182-24287-1-git-send-email-benedict.boerger@cs.tu-dortmund.de>
+ <20140810043443.GA12200@kroah.com>
+In-Reply-To: <20140810043443.GA12200@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.254.188.74]
+Content-Type: text/plain; charset="Windows-1252"
+Content-ID: <A4934B15A8B37343A55DFC10FD4CB560@intel.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A sparse warning is generated about 'ieee80211_debug_init' and
-'ieee80211_debug_exit' not being declared.
 
-  drivers/staging/rtl8192u/ieee80211/ieee80211_module.c:275:12: warning:
-  symbol 'ieee80211_debug_init' was not declared. Should it be static?
-  drivers/staging/rtl8192u/ieee80211/ieee80211_module.c:297:13: warning:
-  symbol 'ieee80211_debug_exit' was not declared. Should it be static?
+On Aug 10, 2014, at 12:34 AM, Greg KH wrote:
+> Very odd, with this patch applied, I now get a build warning:
+> 
+> drivers/staging/lustre/lnet/lnet/config.c: In function ‘lnet_parse_ip2nets’:
+> drivers/staging/lustre/lnet/lnet/config.c:1193:2: warning: ‘ipaddrs’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>  lnet_ipaddr_free_enumeration(ipaddrs, nip);
+>  ^
 
-These functions are used outside of this file so using static will not
-work.  Fix the warning by declaring the functions in the header file,
-ieee80211.h
+What's even more odd is that the very previous line also uses ipaddrs, yet it does not trigger the warning.
+In any case I believe it's a false positive, since the only way it could remain unitialized is if
+libcfs_ipif_enumerate returned negative value (stored in nif in this function) and we check for it being more than zero
+before getting to that part of code.
 
-Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Teodora Baluta <teobaluta@gmail.com>
-Cc: Andrea Merello <andrea.merello@gmail.com>
-Cc: Joel Pelaez Jorge <joelpelaez@gmail.com>
-Cc: Bob Copeland <me@bobcopeland.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Himangi Saraogi <himangi774@gmail.com>
----
+I'll submit a patch assigning ipaddrs to NULL as a workaround shortly.
 
-Notes:
-    Changes in v2:
-    
-      - remove #ifdef CONFIG_IEEE80211_DEBUG, not needed in header.
-    
-      - remove __init and __exit, not needed in header.
-
- drivers/staging/rtl8192u/ieee80211/ieee80211.h | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211.h b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-index 1040bab..c118551 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-@@ -2485,6 +2485,10 @@ extern int ieee80211_wx_set_freq(struct ieee80211_device *ieee, struct iw_reques
- extern int ieee80211_wx_get_freq(struct ieee80211_device *ieee, struct iw_request_info *a,
- 			     union iwreq_data *wrqu, char *b);
- 
-+/* ieee80211_module.c */
-+extern int ieee80211_debug_init(void);
-+extern void ieee80211_debug_exit(void);
-+
- //extern void ieee80211_wx_sync_scan_wq(struct ieee80211_device *ieee);
- extern void ieee80211_wx_sync_scan_wq(struct work_struct *work);
- 
--- 
-2.1.0.rc1
-
+Bye,
+    Oleg
