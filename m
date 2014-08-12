@@ -1,304 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843AbaHLLIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 07:08:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33141 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220AbaHLLIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 07:08:11 -0400
-Date: Tue, 12 Aug 2014 12:08:06 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: [PATCH] mm: Remove misleading ARCH_USES_NUMA_PROT_NONE
-Message-ID: <20140812110806.GA17467@suse.de>
-References: <53DD5F20.8010507@oracle.com>
- <alpine.LSU.2.11.1408040418500.3406@eggly.anvils>
- <20140805144439.GW10819@suse.de>
- <alpine.LSU.2.11.1408051649330.6591@eggly.anvils>
- <53E17F06.30401@oracle.com>
- <53E989FB.5000904@oracle.com>
- <20140812104758.GE7970@suse.de>
+	id S1751967AbaHLLLK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 07:11:10 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48723 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751274AbaHLLLJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 07:11:09 -0400
+Date: Tue, 12 Aug 2014 12:10:30 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, David Herrmann <dh.herrmann@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 2/2] asm-generic: add memfd_create system call to unistd.h
+Message-ID: <20140812111030.GK29013@arm.com>
+References: <1407764228-7904-1-git-send-email-will.deacon@arm.com>
+ <CANq1E4Q0gDaJ5XGnkoCQsG8xLh1Q-EBErtEVPpeeZgGj+Nr8dQ@mail.gmail.com>
+ <20140811171511.GF8828@arm.com>
+ <201408112057.01177.arnd@arndb.de>
+ <CAMuHMdWZ30ZKO2ddh8whmw5ThrKZC0wsU+rhgoc8fRZni0Zduw@mail.gmail.com>
+ <20140812102734.GG29013@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140812104758.GE7970@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140812102734.GG29013@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARCH_USES_NUMA_PROT_NONE was defined for architectures that implemented
-_PAGE_NUMA using _PROT_NONE. This saved using an additional PTE bit and
-relied on the fact that PROT_NONE vmas were skipped by the NUMA hinting
-fault scanner. This was found to be conceptually confusing with a lot of
-implicit assumptions and it was asked that an alternative be found.
+On Tue, Aug 12, 2014 at 11:27:34AM +0100, Will Deacon wrote:
+> On Mon, Aug 11, 2014 at 08:37:41PM +0100, Geert Uytterhoeven wrote:
+> > On Mon, Aug 11, 2014 at 8:57 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > > On Monday 11 August 2014, Will Deacon wrote:
+> > >> On Mon, Aug 11, 2014 at 05:54:08PM +0100, David Herrmann wrote:
+> > >> > On Mon, Aug 11, 2014 at 3:37 PM, Will Deacon <will.deacon@arm.com> wrote:
+> > >> > > Commit 9183df25fe7b ("shm: add memfd_create() syscall") added a new
+> > >> > > system call (memfd_create) but didn't update the asm-generic unistd
+> > >> > > header.
+> > >> > >
+> > >> > > This patch adds the new system call to the asm-generic version of
+> > >> > > unistd.h so that it can be used by architectures such as arm64.
+> > >> > >
+> > >> > > Cc: Arnd Bergmann <arnd@arndb.de>
+> > >> > > Cc: David Herrmann <dh.herrmann@gmail.com>
+> > >> > > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> > >> >
+> > >> > Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+> > >>
+> > >> Thanks, David.
+> > >>
+> > >> Arnd: shall I take this via the arm64 tree, or do you already have some
+> > >> asm-generic patches queued?
+> > >
+> > > Please take it for arm64, I don't have any other patches queued at the moment
+> > > and am currently on vacation.
+> > 
+> > Thanks, I was just going to look into adding it...
+> > 
+> > BTW, another one sneaked in: kexec_file_load. I say "sneaked", as
+> > scripts/checksyscalls.sh doesn't catch it, due to it being wired up on
+> > amd64 only.
+> 
+> Oh, well spotted!
+> 
+> > Will, you can please add that one, too, while you're at it?
+> 
+> Sure, I'll add an extra patch and repost.
 
-Commit c46a7c81 "x86: define _PAGE_NUMA by reusing software bits on the
-PMD and PTE levels" redefined _PAGE_NUMA on x86 to be one of the swap
-PTE bits and shrunk the maximum possible swap size but it did not go far
-enough. There are no architectures that reuse _PROT_NONE as _PROT_NUMA
-but the relics still exist.
+Hmm, so whilst I can easily wire-up the new syscall, it's pretty useless for
+anybody other than x86 at the moment. There are a bunch of arch helpers:
 
-This patch removes ARCH_USES_NUMA_PROT_NONE and removes some unnecessary
-duplication in powerpc vs the generic implementation by defining the types
-the core NUMA helpers expected to exist from x86 with their ppc64 equivalent.
-This necessitated that a PTE bit mask be created that identified the bits
-that distinguish present from NUMA pte entries but it is expected this
-will only differ between arches based on _PAGE_PROTNONE. The naming for
-the generic helpers was taken from x86 originally but ppc64 has types that
-are equivalent for the purposes of the helper so they are mapped instead
-of duplicating code.
+ arch_kexec_kernel_image_probe
+ arch_kexec_kernel_verify_sig
+ arch_kexec_kernel_image_load
+ arch_kimage_file_post_load_cleanup
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- arch/powerpc/include/asm/pgtable.h    | 57 ++++++++---------------------------
- arch/powerpc/include/asm/pte-common.h |  5 +++
- arch/x86/Kconfig                      |  1 -
- arch/x86/include/asm/pgtable_types.h  | 14 +++++++++
- include/asm-generic/pgtable.h         | 27 ++++++-----------
- init/Kconfig                          | 11 -------
- 6 files changed, 40 insertions(+), 75 deletions(-)
+which are only implemented for x86 (arch/x86/kernel/machine_kexec_64.c),
+even though I don't really see what makes them arch-specific as opposed to
+file format specific.
 
-diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
-index d98c1ec..f60d4ea 100644
---- a/arch/powerpc/include/asm/pgtable.h
-+++ b/arch/powerpc/include/asm/pgtable.h
-@@ -38,10 +38,9 @@ static inline int pte_none(pte_t pte)		{ return (pte_val(pte) & ~_PTE_NONE_MASK)
- static inline pgprot_t pte_pgprot(pte_t pte)	{ return __pgprot(pte_val(pte) & PAGE_PROT_BITS); }
- 
- #ifdef CONFIG_NUMA_BALANCING
--
- static inline int pte_present(pte_t pte)
- {
--	return pte_val(pte) & (_PAGE_PRESENT | _PAGE_NUMA);
-+	return pte_val(pte) & _PAGE_NUMA_MASK;
- }
- 
- #define pte_present_nonuma pte_present_nonuma
-@@ -50,37 +49,6 @@ static inline int pte_present_nonuma(pte_t pte)
- 	return pte_val(pte) & (_PAGE_PRESENT);
- }
- 
--#define pte_numa pte_numa
--static inline int pte_numa(pte_t pte)
--{
--	return (pte_val(pte) &
--		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
--}
--
--#define pte_mknonnuma pte_mknonnuma
--static inline pte_t pte_mknonnuma(pte_t pte)
--{
--	pte_val(pte) &= ~_PAGE_NUMA;
--	pte_val(pte) |=  _PAGE_PRESENT | _PAGE_ACCESSED;
--	return pte;
--}
--
--#define pte_mknuma pte_mknuma
--static inline pte_t pte_mknuma(pte_t pte)
--{
--	/*
--	 * We should not set _PAGE_NUMA on non present ptes. Also clear the
--	 * present bit so that hash_page will return 1 and we collect this
--	 * as numa fault.
--	 */
--	if (pte_present(pte)) {
--		pte_val(pte) |= _PAGE_NUMA;
--		pte_val(pte) &= ~_PAGE_PRESENT;
--	} else
--		VM_BUG_ON(1);
--	return pte;
--}
--
- #define ptep_set_numa ptep_set_numa
- static inline void ptep_set_numa(struct mm_struct *mm, unsigned long addr,
- 				 pte_t *ptep)
-@@ -92,12 +60,6 @@ static inline void ptep_set_numa(struct mm_struct *mm, unsigned long addr,
- 	return;
- }
- 
--#define pmd_numa pmd_numa
--static inline int pmd_numa(pmd_t pmd)
--{
--	return pte_numa(pmd_pte(pmd));
--}
--
- #define pmdp_set_numa pmdp_set_numa
- static inline void pmdp_set_numa(struct mm_struct *mm, unsigned long addr,
- 				 pmd_t *pmdp)
-@@ -109,16 +71,21 @@ static inline void pmdp_set_numa(struct mm_struct *mm, unsigned long addr,
- 	return;
- }
- 
--#define pmd_mknonnuma pmd_mknonnuma
--static inline pmd_t pmd_mknonnuma(pmd_t pmd)
-+/*
-+ * Generic NUMA pte helpers expect pteval_t and pmdval_t types to exist
-+ * which was inherited from x86. For the purposes of powerpc pte_basic_t and
-+ * pmd_t are equivalent
-+ */
-+#define pteval_t pte_basic_t
-+#define pmdval_t pmd_t
-+static inline pteval_t ptenuma_flags(pte_t pte)
- {
--	return pte_pmd(pte_mknonnuma(pmd_pte(pmd)));
-+	return pte_val(pte) & _PAGE_NUMA_MASK;
- }
- 
--#define pmd_mknuma pmd_mknuma
--static inline pmd_t pmd_mknuma(pmd_t pmd)
-+static inline pmdval_t pmdnuma_flags(pmd_t pmd)
- {
--	return pte_pmd(pte_mknuma(pmd_pte(pmd)));
-+	return pmd_val(pmd) & _PAGE_NUMA_MASK;
- }
- 
- # else
-diff --git a/arch/powerpc/include/asm/pte-common.h b/arch/powerpc/include/asm/pte-common.h
-index 8d1569c..e040c35 100644
---- a/arch/powerpc/include/asm/pte-common.h
-+++ b/arch/powerpc/include/asm/pte-common.h
-@@ -98,6 +98,11 @@ extern unsigned long bad_call_to_PMD_PAGE_SIZE(void);
- 			 _PAGE_USER | _PAGE_ACCESSED | \
- 			 _PAGE_RW | _PAGE_HWWRITE | _PAGE_DIRTY | _PAGE_EXEC)
- 
-+#ifdef CONFIG_NUMA_BALANCING
-+/* Mask of bits that distinguish present and numa ptes */
-+#define _PAGE_NUMA_MASK (_PAGE_NUMA|_PAGE_PRESENT)
-+#endif
-+
- /*
-  * We define 2 sets of base prot bits, one for basic pages (ie,
-  * cacheable kernel and user pages) and one for non cacheable
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index d24887b..0a3f32b 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -28,7 +28,6 @@ config X86
- 	select HAVE_UNSTABLE_SCHED_CLOCK
- 	select ARCH_SUPPORTS_NUMA_BALANCING if X86_64
- 	select ARCH_SUPPORTS_INT128 if X86_64
--	select ARCH_WANTS_PROT_NUMA_PROT_NONE
- 	select HAVE_IDE
- 	select HAVE_OPROFILE
- 	select HAVE_PCSPKR_PLATFORM
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index f216963..0f9724c 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -325,6 +325,20 @@ static inline pteval_t pte_flags(pte_t pte)
- 	return native_pte_val(pte) & PTE_FLAGS_MASK;
- }
- 
-+#ifdef CONFIG_NUMA_BALANCING
-+/* Set of bits that distinguishes present, prot_none and numa ptes */
-+#define _PAGE_NUMA_MASK (_PAGE_NUMA|_PAGE_PROTNONE|_PAGE_PRESENT)
-+static inline pteval_t ptenuma_flags(pte_t pte)
-+{
-+	return pte_flags(pte) & _PAGE_NUMA_MASK;
-+}
-+
-+static inline pmdval_t pmdnuma_flags(pmd_t pmd)
-+{
-+	return pmd_flags(pmd) & _PAGE_NUMA_MASK;
-+}
-+#endif /* CONFIG_NUMA_BALANCING */
-+
- #define pgprot_val(x)	((x).pgprot)
- #define __pgprot(x)	((pgprot_t) { (x) } )
- 
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 53b2acc..281870f 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -660,11 +660,12 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
- }
- 
- #ifdef CONFIG_NUMA_BALANCING
--#ifdef CONFIG_ARCH_USES_NUMA_PROT_NONE
- /*
-- * _PAGE_NUMA works identical to _PAGE_PROTNONE (it's actually the
-- * same bit too). It's set only when _PAGE_PRESET is not set and it's
-- * never set if _PAGE_PRESENT is set.
-+ * _PAGE_NUMA distinguishes between an unmapped page table entry, an entry that
-+ * is protected for PROT_NONE and a NUMA hinting fault entry. If the
-+ * architecture defines __PAGE_PROTNONE then it should take that into account
-+ * but those that do not can rely on the fact that the NUMA hinting scanner
-+ * skips inaccessible VMAs.
-  *
-  * pte/pmd_present() returns true if pte/pmd_numa returns true. Page
-  * fault triggers on those regions if pte/pmd_numa returns true
-@@ -673,16 +674,14 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
- #ifndef pte_numa
- static inline int pte_numa(pte_t pte)
- {
--	return (pte_flags(pte) &
--		(_PAGE_NUMA|_PAGE_PROTNONE|_PAGE_PRESENT)) == _PAGE_NUMA;
-+	return ptenuma_flags(pte) == _PAGE_NUMA;
- }
- #endif
- 
- #ifndef pmd_numa
- static inline int pmd_numa(pmd_t pmd)
- {
--	return (pmd_flags(pmd) &
--		(_PAGE_NUMA|_PAGE_PROTNONE|_PAGE_PRESENT)) == _PAGE_NUMA;
-+	return pmdnuma_flags(pmd) == _PAGE_NUMA;
- }
- #endif
- 
-@@ -722,6 +721,8 @@ static inline pte_t pte_mknuma(pte_t pte)
- {
- 	pteval_t val = pte_val(pte);
- 
-+	VM_BUG_ON(!(val & _PAGE_PRESENT));
-+
- 	val &= ~_PAGE_PRESENT;
- 	val |= _PAGE_NUMA;
- 
-@@ -765,16 +766,6 @@ static inline void pmdp_set_numa(struct mm_struct *mm, unsigned long addr,
- }
- #endif
- #else
--extern int pte_numa(pte_t pte);
--extern int pmd_numa(pmd_t pmd);
--extern pte_t pte_mknonnuma(pte_t pte);
--extern pmd_t pmd_mknonnuma(pmd_t pmd);
--extern pte_t pte_mknuma(pte_t pte);
--extern pmd_t pmd_mknuma(pmd_t pmd);
--extern void ptep_set_numa(struct mm_struct *mm, unsigned long addr, pte_t *ptep);
--extern void pmdp_set_numa(struct mm_struct *mm, unsigned long addr, pmd_t *pmdp);
--#endif /* CONFIG_ARCH_USES_NUMA_PROT_NONE */
--#else
- static inline int pmd_numa(pmd_t pmd)
- {
- 	return 0;
-diff --git a/init/Kconfig b/init/Kconfig
-index 9d76b99..60fa415 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -844,17 +844,6 @@ config ARCH_SUPPORTS_INT128
- config ARCH_WANT_NUMA_VARIABLE_LOCALITY
- 	bool
- 
--#
--# For architectures that are willing to define _PAGE_NUMA as _PAGE_PROTNONE
--config ARCH_WANTS_PROT_NUMA_PROT_NONE
--	bool
--
--config ARCH_USES_NUMA_PROT_NONE
--	bool
--	default y
--	depends on ARCH_WANTS_PROT_NUMA_PROT_NONE
--	depends on NUMA_BALANCING
--
- config NUMA_BALANCING_DEFAULT_ENABLED
- 	bool "Automatically enable NUMA aware memory/task placement"
- 	default y
+So this syscall will always fail with -ENOEXEC at the moment. Is it still
+worth wiring it up?
+
+Will
