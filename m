@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbaHLOA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 10:00:56 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51072 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752190AbaHLOAI (ORCPT
+	id S1752875AbaHLOC6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 10:02:58 -0400
+Received: from devoid-pointer.net ([31.31.77.140]:50824 "EHLO
+	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733AbaHLOC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 10:00:08 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] mfd: arizona: Mark additional registers as volatile
-Date: Tue, 12 Aug 2014 14:51:23 +0100
-Message-Id: <1407851483-19207-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1407851483-19207-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1407851483-19207-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Tue, 12 Aug 2014 10:02:57 -0400
+From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "simon@mungewell.org" <simon@mungewell.org>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        edwin@velds.nl, "elias.vds@gmail.com" <elias.vds@gmail.com>,
+        Roland Bosa <rbosa@logitech.com>
+Subject: Re: PATCH hid: Implement mode switching on Logitech gaming wheels accordingly to the documentation
+Date: Tue, 12 Aug 2014 16:02:53 +0200
+Message-ID: <4338127.9nsJWYLUyM@sigyn>
+User-Agent: KMail/4.13.3 (Linux/3.15.0-1-my-rd; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <alpine.LNX.2.00.1408121509550.15220@pobox.suse.cz>
+References: <3335238.KGDcEM6DjH@sigyn> <f86b6b4fbf48ce4cbeb9b537794a4eb8.squirrel@mungewell.org> <alpine.LNX.2.00.1408121509550.15220@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark some additional registers as volatile. The write sequencer control
-registers should not be cached, as we don't ever want their value
-synchronised as this might cause a write sequence to be accidentally
-initiated.
+On Tuesday 12 of August 2014 15:10:12 Jiri Kosina wrote:
+> On Thu, 31 Jul 2014, simon@mungewell.org wrote:
+> > > +#define LG4FF_MSW_MIN 0
+> > > +#define LG4FF_MSW_NATIVE 0	/* Switch device to its native mode (if
+> > > applicable) */
+> > > +#define LG4FF_MSW_DONTSWITCH 1	/* Leave device in its current mode */
+> > > +#define LG4FF_MSW_DFP 2		/* Switch device so that it emulates 
+Driving
+> > > Force Pro (only G25, G27, DFGT) */
+> > > +#define LG4FF_MSW_G25 3		/* Switch device so that it emulates G25 
+(only
+> > > G27) */
+> > > +#define LG4FF_MSW_MAX 3
+> > 
+> > Just to let everyone know I am looking at this patch, and have emailed
+> > Michal some questions on whether it covers all options for control.
+> 
+> Hi guys,
+> 
+> did you reach any kind of conclusion here?
 
-Additionally, the DAC_COMP registers require special preconditions to
-write so there values wouldn't be updated accurately during a register
-sync.
+Hi,
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm5102-tables.c |   11 ++++++++---
- drivers/mfd/wm5110-tables.c |    6 +++---
- 2 files changed, 11 insertions(+), 6 deletions(-)
+Simon mailed me his revised patchset which has the changes broken out into 
+four separate patches and allows to switch "extended compatibility" modes on 
+the fly through sysfs. I looked them over and I they seem fine to me. I 
+suppose he'll submit them for review very soon.
 
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index fb4d4bb..9004488 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -245,9 +245,6 @@ const struct regmap_irq_chip wm5102_irq = {
- static const struct reg_default wm5102_reg_default[] = {
- 	{ 0x00000008, 0x0019 },   /* R8     - Ctrl IF SPI CFG 1 */ 
- 	{ 0x00000009, 0x0001 },   /* R9     - Ctrl IF I2C1 CFG 1 */ 
--	{ 0x00000016, 0x0000 },   /* R22    - Write Sequencer Ctrl 0 */ 
--	{ 0x00000017, 0x0000 },   /* R23    - Write Sequencer Ctrl 1 */ 
--	{ 0x00000018, 0x0000 },   /* R24    - Write Sequencer Ctrl 2 */ 
- 	{ 0x00000020, 0x0000 },   /* R32    - Tone Generator 1 */ 
- 	{ 0x00000021, 0x1000 },   /* R33    - Tone Generator 2 */ 
- 	{ 0x00000022, 0x0000 },   /* R34    - Tone Generator 3 */ 
-@@ -1880,6 +1877,10 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
- 	switch (reg) {
- 	case ARIZONA_SOFTWARE_RESET:
- 	case ARIZONA_DEVICE_REVISION:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_3:
- 	case ARIZONA_OUTPUT_STATUS_1:
- 	case ARIZONA_RAW_OUTPUT_STATUS_1:
- 	case ARIZONA_SLIMBUS_RX_PORT_STATUS:
-@@ -1891,6 +1892,10 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
- 	case ARIZONA_FLL1_NCO_TEST_0:
- 	case ARIZONA_FLL2_NCO_TEST_0:
-+	case ARIZONA_DAC_COMP_1:
-+	case ARIZONA_DAC_COMP_2:
-+	case ARIZONA_DAC_COMP_3:
-+	case ARIZONA_DAC_COMP_4:
- 	case ARIZONA_FX_CTRL2:
- 	case ARIZONA_INTERRUPT_STATUS_1:
- 	case ARIZONA_INTERRUPT_STATUS_2:
-diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
-index 9b98ee5..beae0a3 100644
---- a/drivers/mfd/wm5110-tables.c
-+++ b/drivers/mfd/wm5110-tables.c
-@@ -666,9 +666,6 @@ static const struct reg_default wm5110_reg_default[] = {
- 	{ 0x0000000A, 0x0001 },    /* R10    - Ctrl IF I2C2 CFG 1 */
- 	{ 0x0000000B, 0x0036 },    /* R11    - Ctrl IF I2C1 CFG 2 */
- 	{ 0x0000000C, 0x0036 },    /* R12    - Ctrl IF I2C2 CFG 2 */
--	{ 0x00000016, 0x0000 },    /* R22    - Write Sequencer Ctrl 0 */
--	{ 0x00000017, 0x0000 },    /* R23    - Write Sequencer Ctrl 1 */
--	{ 0x00000018, 0x0000 },    /* R24    - Write Sequencer Ctrl 2 */
- 	{ 0x00000020, 0x0000 },    /* R32    - Tone Generator 1 */
- 	{ 0x00000021, 0x1000 },    /* R33    - Tone Generator 2 */
- 	{ 0x00000022, 0x0000 },    /* R34    - Tone Generator 3 */
-@@ -2815,6 +2812,9 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
- 	switch (reg) {
- 	case ARIZONA_SOFTWARE_RESET:
- 	case ARIZONA_DEVICE_REVISION:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
- 	case ARIZONA_HAPTICS_STATUS:
- 	case ARIZONA_SAMPLE_RATE_1_STATUS:
- 	case ARIZONA_SAMPLE_RATE_2_STATUS:
--- 
-1.7.2.5
-
+Michal
