@@ -1,153 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaHLQZf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 12:25:35 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51433 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938AbaHLQZd (ORCPT
+	id S1753708AbaHLQZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 12:25:46 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46412 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060AbaHLQZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 12:25:33 -0400
-Message-ID: <53EA3FF5.1050709@codeaurora.org>
-Date: Tue, 12 Aug 2014 21:55:25 +0530
-From: Chintan Pandya <cpandya@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	Tue, 12 Aug 2014 12:25:43 -0400
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] ksm: provide support to use deferrable timers
- for scanner thread
-References: <1406793591-26793-2-git-send-email-cpandya@codeaurora.org> <1406793591-26793-3-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408110332350.1500@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1408110332350.1500@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMuHMdWp1iWm9xLqRN0q3hV72bD8jPRLDW74Cm+Gxp3gB76asQ@mail.gmail.com>
+References: <20140806162754.3BCA1660E61@gitolite.kernel.org>
+	<CAMuHMdWp1iWm9xLqRN0q3hV72bD8jPRLDW74Cm+Gxp3gB76asQ@mail.gmail.com>
+Date: Tue, 12 Aug 2014 09:25:43 -0700
+X-Google-Sender-Auth: 8SBtZY7DuYJTIA6z1X9anOX5aJA
+Message-ID: <CAGXu5jLxkhaDU7KtHLLXAbseHXc9nEuj93EYM9JvtWvPLzW=ug@mail.gmail.com>
+Subject: Re: seccomp: add "seccomp" syscall
+From: Kees Cook <keescook@chromium.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
+On Mon, Aug 11, 2014 at 1:07 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Hi Kees,
+>
+> v3.17 is gonna get a lot of new syscalls...
 
+4 so far! :P
+
+>
+> On Wed, Aug 6, 2014 at 6:27 PM, Linux Kernel Mailing List
+> <linux-kernel@vger.kernel.org> wrote:
+>> Gitweb:     http://git.kernel.org/linus/;a=commit;h=48dc92b9fc3926844257316e75ba11eb5c742b2c
+>> Commit:     48dc92b9fc3926844257316e75ba11eb5c742b2c
+>> Parent:     3b23dd12846215eff4afb073366b80c0c4d7543e
+>> Refname:    refs/heads/master
+>> Author:     Kees Cook <keescook@chromium.org>
+>> AuthorDate: Wed Jun 25 16:08:24 2014 -0700
+>> Committer:  Kees Cook <keescook@chromium.org>
+>> CommitDate: Fri Jul 18 12:13:37 2014 -0700
 >>
->> Typically, on our setup we observed, 10% less power consumption with some
->> use-cases in which CPU goes to power collapse frequently.  For example,
->> playing audio while typically CPU remains idle.
+>>     seccomp: add "seccomp" syscall
+>>
+>>     This adds the new "seccomp" syscall with both an "operation" and "flags"
+>>     parameter for future expansion. The third argument is a pointer value,
+>>     used with the SECCOMP_SET_MODE_FILTER operation. Currently, flags must
+>>     be 0. This is functionally equivalent to prctl(PR_SET_SECCOMP, ...).
+>>
+>>     In addition to the TSYNC flag later in this patch series, there is a
+>>     non-zero chance that this syscall could be used for configuring a fixed
+>>     argument area for seccomp-tracer-aware processes to pass syscall arguments
+>>     in the future. Hence, the use of "seccomp" not simply "seccomp_add_filter"
+>>     for this syscall. Additionally, this syscall uses operation, flags,
+>>     and user pointer for arguments because strictly passing arguments via
+>>     a user pointer would mean seccomp itself would be unable to trivially
+>>     filter the seccomp syscall itself.
+>>
+>>     Signed-off-by: Kees Cook <keescook@chromium.org>
+>>     Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+>>     Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 >
-> I'm probably stupid, but I don't quite get your scenario from that
-> description: please would you spell it out a little more clearly for me?
-
-I think I have missed to share some important details here. Scenario 
-here in general is where CPUs stay in Low Power mode and waits for 
-interrupt for long time. One such situation could be what we observed in 
-our testing. In our SoC based platform, Audio decode happens on a 
-separate HW block but during that, use-case demands CPUs to stay in Low 
-Power mode (not completely shut down) if not busy. Classic end-user 
-scenario is Audio playback while user does nothing else on the 
-mobile/watch. At this time, KSM wakes up the CPU at very regular 
-interval and affects the power consumption. Another scenario could be 
-background email sync where also for very long duration, CPU stays in 
-Low Power mode, not busy, not off-line.
-
+> Is this something that I should enable?
 >
-> Are you thinking of two CPUs, one of them running a process busily
-> streaming audio (with no VM_MERGEABLE areas to work on), most other
-> processes sleeping, and ksmd "pinned" to another, otherwise idle CPU?
->
-> I'm very inexperienced in scheduler (and audio) matters, but I'd like
-> to think that the scheduler would migrate ksmd to the mostly busy CPU
-> in that case - or is it actually 100% busy, with no room for ksmd too?
+> As it depends on CONFIG_SECCOMP, it only makes sense on architectures that
+> already support CONFIG_SECCOMP, right?
+> Does it make sense to reserve a syscall slot for it on architectures that
+> don't support it yet?
 
-IMHO waking up the CPU considering busyness of active CPU is probably 
-not scheduler's interest (I am completely naive here so please correct 
-me if I am wrong). So, here I believe that ksmd will get scheduled on 
-active CPU where its timer will expire and not deferred.
+I don't see a good reason to reserve the syscall slot if seccomp
+filter is not already implemented. I've CCed linux-api in case there
+is something I'm not considering, though.
 
->> To enable deferrable timers,
->> $ echo 1>  /sys/kernel/mm/ksm/deferrable_timer
->
-> I do share Andrew's original reservations: I'd much prefer this if we
-> can just go ahead and do the deferrable timer without a new tunable
-> to concern the user, simple though your "deferrable_timer" knob is.
->
-> In an earlier mail, you said "We have observed that KSM does maximum
-> savings when system is idle", as reason why some will prefer a non-
-> deferrable timer.  I am somewhat suspicious of that observation:
-> because KSM waits for a page's checksum to stabilize before it saves
-> it in its "unstable" tree of pages to compare against.  So when the
-> rest of the system goes idle, KSM is briefly more likely to find
-> matches; but that may be a short-lived "success" once the system
-> becomes active again.  So, I'm wondering if your observation just
-> reflects the mechanics of KSM, and is not actually a reason to
-> refrain from using a deferrable timer for everyone.
+FWIW, if someone wants to add it for m68k, the steps to support
+seccomp are listed in the arch/Kconfig for HAVE_ARCH_SECCOMP_FILTER.
 
-Sometimes savings in idle time are not always short-lived. For example, 
-in 512 MB DDR system running android saturates at somewhat around 25 MB 
-of KSM savings. We have observed this saturation achieved quicker when 
-phone is in idle. But I think that doesn't disprove your comment above. 
-So, I would keep deferrable timer as a default. Next patch.
-
->
-> On the other hand, I have a worry about using deferrable timer here.
-> I think I understand the value of a deferrable timer, in doing a job
-> which is bound to a particular cpu (mm/slab.c's cache_reap() gives
-> me a good example of that).  But ksmd is potentially serving every
-> process, every cpu: we would not want it to be deferred indefinitely,
-> if other cpus (running processes with VM_MERGEABLE vmas) are active.
-
-I too consider this as undesirable situation. But I think scheduler 
-won't schedule ksmd on a non-busy idle CPU if we have active CPUs.
-
->
-> Perhaps the likelihood of that scenario is too low; or perhaps it's
-> a reason why we do need to offer your "deferrable_timer" knob.
-
-I didn't thought of this reason for having the knob but I would still 
-prefer to have a knob for some futuristic use-cases. Such as,
-
-(1) When power is not constraint (charging mobile ?), we don't want KSM 
-to use deferrable timers.
-
-(2) We want maximum savings from KSM at the cost of power to get more 
-free memory, even if it is short-lived.
-
-May be above use-cases are not realistic. But providing a knob just 
-enables us to implement some logic in userspace. So, what do you think 
-of keeping the knob but default value is '1' i.e. use deferrable timers ?
-
->
-> Please, I need to understand better before acking this change.
->
-> By the way: perhaps KSM is the right place to start, but please take
-> a look also at THP in mm/huge_memory.c, whose khugepaged was originally
-> modelled on ksmd (but now seems to be using wait_event_freezable_timeout
-> rather than schedule_timeout_interruptible - I've not yet researched the
-> history behind that difference).  I expect it to need the same treatment.
-
-I have no idea of THP so far. But would check it in this perspective. 
-Thanks for the guide.
-
->> +	unsigned long enable;
->> +	int err;
->> +
->> +	err = kstrtoul(buf, 10,&enable);
->> +	if (err<  0)
->> +		return err;
->> +	if (enable>= 1)
->> +		return -EINVAL;
->
-> I haven't studied the patch itself, I'm still worrying about the concept.
-> But this caught my eye just before hitting Send: I don't think we need
-> a tunable which only accepts the value 0 ;)
-
-Okay. I can correct this to accept any non-zero value. Is that okay ?
-
->
->> +	use_deferrable_timer = enable;
+-Kees
 
 -- 
-Chintan Pandya
-
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-member of the Code Aurora Forum, hosted by The Linux Foundation
+Kees Cook
+Chrome OS Security
