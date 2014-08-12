@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603AbaHLPNQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 11:13:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39298 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753563AbaHLPNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 11:13:14 -0400
-Date: Tue, 12 Aug 2014 17:13:09 +0200
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: [GIT PULL] Quota, reiserfs, udf updates for 3.17-rc1 (v2)
-Message-ID: <20140812151309.GD3270@quack.suse.cz>
+	id S1753663AbaHLPNo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 11:13:44 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:48809 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650AbaHLPNm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 11:13:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPDyKFpiHf+urR85iJPqAXxREO+yPrDMcXM4K+BJqq=ur3DZtA@mail.gmail.com>
+References: <3923586.SsVg941346@diego>
+	<CACRpkdaJS0PUDLaCnrhtiuXPf4ccx51uNTqYWVWm47mhOhGEbA@mail.gmail.com>
+	<CAPDyKFpiHf+urR85iJPqAXxREO+yPrDMcXM4K+BJqq=ur3DZtA@mail.gmail.com>
+Date: Tue, 12 Aug 2014 08:13:41 -0700
+X-Google-Sender-Auth: m_Wpj71AvIacZLx11nAxKwXQ2pk
+Message-ID: <CAD=FV=Vewr5QkNEiBEOXA=FdKHKzg0ag5+Cf4KXuXWjcshSq_g@mail.gmail.com>
+Subject: Re: io-domain voltages as regulators?
+From: Doug Anderson <dianders@chromium.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Mark Brown <broonie@kernel.org>, Addy Ke <addy.ke@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
+        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+Hi,
 
-  could you please pull from
+On Mon, Aug 11, 2014 at 5:46 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> On 11 August 2014 09:44, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Mon, Aug 4, 2014 at 12:18 AM, Heiko Stübner <heiko@sntech.de> wrote:
+>>
+>> [Adding Ulf Hansson to this discussion...]
+>>
+>>> Hi Mark, Linus,
+>>>
+>>> I'd like to clarify what the appropriate way to handle pin output voltages is.
+>>> On the Rockchip SoCs the voltage for some groups of pins can be set between
+>>> 3.3V and 1.8V ... like the MMC/SD pins who need this to support UHS mode
+>>> cards.
+>>
+>> This is called "vqmmc" in the mmc/sd subsystem.
+>>
+>> grep for mmc_set_signal_voltage() in drivers/mmc/core/*
+>>
+>> In drivers/mmc/core/core.c, you find:
+>>
+>>  mmc->supply.vqmmc = devm_regulator_get_optional(dev, "vqmmc");
+>>
+>> Which gets the regulator to set the signal voltage, if such
+>> a regulator is specified for the host.
+>>
+>> Very simple and straight-forward, and handled by the MMC core.
+>>
+>>> In [0] when talking about something different, Linus Walleij described a
+>>> similar case as
+>>>
+>>> "I think we need to have a discussion with Mark Brown on how to
+>>> handle this.
+>>> We have previously had the case of MMC/SD level-shifters, where
+>>> a certain setting gives a certain level of signals out, and another setting
+>>> gives another level. Like two discrete levels.
+>>> So we modeled that as a regulator provider inside the pin control
+>>> driver eventually, see sh-pfc/pfc-sh73a0.c"
+>>>
+>>> As this sound like exactly the thing I'm trying to solve, is handling this via
+>>> a regulator the correct general way?
+>>
+>> Ithinkso.
+>
+> Just to confirm, I fully agree with the above said.
+>
+> You may also find a good example in the mmci host driver for how to
+> make use of the vqmmc regulator.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
+Yuvaraj also submitted patches for dw_mmc:
 
-to get scalability improvements for quota, a few reiserfs fixes, and couple
-of misc cleanups (udf, ext2).
+4401241 New          [1/3] mmc: dw_mmc: use mmc_regulator_get_supply
+to handle regulators
+4401261 New          [2/3] mmc: dw_mmc: Dont cut off vqmmc and vmmc
+4401281 New          [3/3] mmc: dw_mmc: Support voltage changes
 
-Top of the tree is 01777836c870. The full shortlog is:
-
-Andy Shevchenko (1):
-      fs/udf: re-use hex_asc_upper_{hi,lo} macros
-
-Chao Yu (1):
-      udf: avoid redundant memcpy when writing data in ICB
-
-Fabian Frederick (2):
-      udf: use linux/uaccess.h
-      fs/quota: kernel-doc warning fixes
-
-Himangi Saraogi (1):
-      fs/ext2/super.c: Drop memory allocation cast
-
-Jan Kara (1):
-      reiserfs: Fix use after free in journal teardown
-
-Jeff Mahoney (1):
-      reiserfs: fix corruption introduced by balance_leaf refactor
-
-Niu Yawei (4):
-      quota: protect Q_GETFMT by dqonoff_mutex
-      quota: avoid unnecessary dqget()/dqput() calls
-      quota: simplify remove_inode_dquot_ref()
-      quota: remove dqptr_sem
-
-The diffstat is
-
- fs/ext2/super.c        |   2 +-
- fs/quota/dquot.c       | 180 ++++++++++++++++++++++---------------------------
- fs/quota/kqid.c        |   2 +-
- fs/quota/netlink.c     |   3 +-
- fs/quota/quota.c       |   6 +-
- fs/reiserfs/do_balan.c | 111 +++++++++++++++++-------------
- fs/reiserfs/journal.c  |  22 ++++--
- fs/reiserfs/lbalance.c |   5 +-
- fs/reiserfs/reiserfs.h |   9 +--
- fs/reiserfs/super.c    |   6 +-
- fs/super.c             |   1 -
- fs/udf/file.c          |  22 +-----
- fs/udf/lowlevel.c      |   2 +-
- fs/udf/super.c         |   2 +-
- fs/udf/symlink.c       |   2 +-
- fs/udf/unicode.c       |   9 ++-
- include/linux/quota.h  |   1 -
- 17 files changed, 189 insertions(+), 196 deletions(-)
-
-							Thanks
-								Honza
-
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+He seems to have dropped these patches on the floor and I had review
+feedback on them, but I think they're in the right direction.
