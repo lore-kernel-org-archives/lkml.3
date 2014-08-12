@@ -1,98 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236AbaHLHQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:16:20 -0400
-Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:12303
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751626AbaHLHQS convert rfc822-to-8bit (ORCPT
+	id S1753403AbaHLHQa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:16:30 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:54767 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026AbaHLHQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:16:18 -0400
-From: Dexuan Cui <decui@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH] Input: serio: make HYPERV_KEYBOARD depend on
- SERIO_I8042=y
-Thread-Topic: [PATCH] Input: serio: make HYPERV_KEYBOARD depend on
- SERIO_I8042=y
-Thread-Index: AQHPtfL80p5QO0TZ/0qF/qigPt99A5vMiCDw
-Date: Tue, 12 Aug 2014 07:15:25 +0000
-Message-ID: <EE124450C0AAF944A40DD71E61F878C9920EAF@SINEX14MBXC417.southpacific.corp.microsoft.com>
-References: <1407814240-4275-1-git-send-email-decui@microsoft.com>
- <20140812032148.GB6867@kroah.com>
- <EE124450C0AAF944A40DD71E61F878C9920A1C@SINEX14MBXC417.southpacific.corp.microsoft.com>
- <20140812060108.GA13231@kroah.com>
-In-Reply-To: <20140812060108.GA13231@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.3.95]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 12 Aug 2014 03:16:24 -0400
+Date: Tue, 12 Aug 2014 08:16:17 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: GyungOh Yoo <gyungoh@gmail.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        grant.likely@linaro.org, sameo@linux.intel.com,
+        =?utf-8?B?7Jyg6rK97Jik?= <jack.yoo@skyworksinc.com>,
+        jason@lakedaemon.net, heiko.stuebner@bqreaders.com,
+        florian.vaussard@epfl.ch, thierry.reding@gmail.com, andrew@lunn.ch,
+        silvio.fricke@gmail.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] Adding Skyworks SKY81452 MFD driver
+Message-ID: <20140812071617.GA9115@lee--X1>
+References: <1407488899-31065-1-git-send-email-jack.yoo@skyworksinc.com>
+ <CADDor3-uhXm2x1Hpy4NT9J2OZ+83D-854GkG8JWz8MYUh0YtwA@mail.gmail.com>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(164054003)(189002)(199003)(51914003)(13464003)(51704005)(95666004)(110136001)(74662001)(19580405001)(81342001)(64706001)(20776003)(80022001)(50466002)(31966008)(79102001)(83072002)(55846006)(106116001)(85806002)(77982001)(106466001)(76176999)(46102001)(16796002)(107046002)(85306004)(50986999)(74502001)(47776003)(93886004)(54356999)(76482001)(6806004)(21056001)(23726002)(4396001)(86362001)(46406003)(97756001)(97736001)(19580395003)(92726001)(92566001)(99396002)(33656002)(83322001)(87936001)(85852003)(81156004)(81542001)(26826002)(2656002)(77096002)(86612001)(84676001)(68736004)(69596002)(44976005);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB241;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 0301360BF5
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=decui@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADDor3-uhXm2x1Hpy4NT9J2OZ+83D-854GkG8JWz8MYUh0YtwA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Greg KH
-> > > What exactly needs to be done to fix this "correctly" that is going to
-> > > take too much work at the moment?
+On Tue, 12 Aug 2014, GyungOh Yoo wrote:
+> Can somebody please review if the code has anything to improve?
+
+- Please don't top post - if you have a comment about the code, make
+your comment below the line(s) you are referring to and cut out all
+surplus quotes, replacing with "[...]".
+
+- This driver was sent on Friday 4 days (1.5 working days) ago -
+please leave at least 2 weeks before 're-sending' your patches - don't
+poke.
+
+- The merge window is currently open - maintainers are usually busy
+sending pull-requests to Linus or taking a few days to have a breather
+after the previous cycle - things will ramp up again in a week or so.
+
+Someone will get round to reviewing your driver in due time.  Please
+be patient.
+
+> On Fri, Aug 8, 2014 at 6:08 PM, Gyungoh Yoo <gyungoh@gmail.com> wrote:
+> 
+> > Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > ---
+> >  Documentation/devicetree/bindings/mfd/sky81452.txt |  24 +++++
+> >  .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+> >  drivers/mfd/Kconfig                                |  12 +++
+> >  drivers/mfd/Makefile                               |   1 +
+> >  drivers/mfd/sky81452.c                             | 113
+> > +++++++++++++++++++++
+> >  include/linux/mfd/sky81452.h                       |  32 ++++++
+> >  6 files changed, 183 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+> >  create mode 100644 drivers/mfd/sky81452.c
+> >  create mode 100644 include/linux/mfd/sky81452.h
 > >
-> > To decouple the dependency between the hyperv-keyboard and i8042
-> > modules, I suppose we probably have to re-implement hyperv-keyboard by
-> > using input_allocate_device(), input_register_device(), and using
-> > input_report_key() to pass the key strokes to the high level.
-> 
-> Yes, that would be the best thing to do, and shouldn't be that hard to
-> create an input driver, it's pretty simple code, right?
-Hi Greg,
-Thanks for the confirmation!
-I didn't use the APIs before. 
-I think I need a couple of days to code, test and debug it while I have many
- things at hand at present. :-(
+> > diff --git a/Documentation/devicetree/bindings/mfd/sky81452.txt
+> > b/Documentation/devicetree/bindings/mfd/sky81452.txt
+> > new file mode 100644
+> > index 0000000..5fb0b4f
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/mfd/sky81452.txt
+> > @@ -0,0 +1,24 @@
+> > +SKY81452 bindings
+> > +
+> > +Required properties:
+> > +- compatible   : Must be "skyworks,sky81452"
+> > +
+> > +Required child nodes:
+> > +- backlight    : container node for backlight following the binding
+> > +               in video/backlight/sky81452-backlight.txt
+> > +- regulator    : container node for regulators following the binding
+> > +               in regulator/sky81452-regulator.txt
+> > +
+> > +Example:
+> > +
+> > +       sky81452@2C {
+> > +               compatible = "skyworks,sky81452";
+> > +
+> > +               backlight {
+> > +                       ...
+> > +               };
+> > +
+> > +               regulator {
+> > +                       ...
+> > +               };
+> > +       };
+> > diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> > b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> > index d415b38..ce76e10 100644
+> > --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> > +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> > @@ -122,6 +122,7 @@ silabs      Silicon Laboratories
+> >  simtek
+> >  sii    Seiko Instruments, Inc.
+> >  sirf   SiRF Technology, Inc.
+> > +skyworks       Skyworks Solutions, Inc.
+> >  smsc   Standard Microsystems Corporation
+> >  snps   Synopsys, Inc.
+> >  spansion       Spansion Inc.
+> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > index de5abf2..acfb2e5 100644
+> > --- a/drivers/mfd/Kconfig
+> > +++ b/drivers/mfd/Kconfig
+> > @@ -626,6 +626,18 @@ config MFD_SM501_GPIO
+> >          lines on the SM501. The platform data is used to supply the
+> >          base number for the first GPIO line to register.
+> >
+> > +config SKY81452
+> > +       tristate "Skyworks Solutions SKY81452"
+> > +       select MFD_CORE
+> > +       select REGMAP_I2C
+> > +       depends on I2C=y
+> > +       help
+> > +         This is the core driver for the Skyworks SKY81452 backlight and
+> > +         voltage regulator device.
+> > +
+> > +         This driver can also be built as a module.  If so, the module
+> > +         will be called sky81452.
+> > +
+> >  config MFD_SMSC
+> >         bool "SMSC ECE1099 series chips"
+> >         depends on I2C=y
+> > diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> > index f001487..191c656 100644
+> > --- a/drivers/mfd/Makefile
+> > +++ b/drivers/mfd/Makefile
+> > @@ -169,6 +169,7 @@ obj-$(CONFIG_MFD_AS3711)    += as3711.o
+> >  obj-$(CONFIG_MFD_AS3722)       += as3722.o
+> >  obj-$(CONFIG_MFD_STW481X)      += stw481x.o
+> >  obj-$(CONFIG_MFD_IPAQ_MICRO)   += ipaq-micro.o
+> > +obj-$(CONFIG_SKY81452)         += sky81452.o
+> >
+> >  intel-soc-pmic-objs            := intel_soc_pmic_core.o
+> > intel_soc_pmic_crc.o
+> >  obj-$(CONFIG_INTEL_SOC_PMIC)   += intel-soc-pmic.o
+> > diff --git a/drivers/mfd/sky81452.c b/drivers/mfd/sky81452.c
+> > new file mode 100644
+> > index 0000000..566912f
+> > --- /dev/null
+> > +++ b/drivers/mfd/sky81452.c
+> > @@ -0,0 +1,113 @@
+> > +/*
+> > + * sky81452.c  SKY81452 MFD driver
+> > + *
+> > + * Copyright 2014 Skyworks Solutions Inc.
+> > + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms of the GNU General Public License as published by the
+> > + * Free Software Foundation; either version 2, or (at your option) any
+> > + * later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful, but
+> > + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> > + * General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License along
+> > + * with this program; if not, see <http://www.gnu.org/licenses/>.
+> > + */
+> > +
+> > +#include <linux/kernel.h>
+> > +#include <linux/module.h>
+> > +#include <linux/init.h>
+> > +#include <linux/err.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/i2c.h>
+> > +#include <linux/regmap.h>
+> > +#include <linux/mfd/core.h>
+> > +#include <linux/mfd/sky81452.h>
+> > +
+> > +static const struct regmap_config sky81452_config = {
+> > +       .reg_bits = 8,
+> > +       .val_bits = 8,
+> > +};
+> > +
+> > +static int sky81452_register_devices(struct device *dev,
+> > +               const struct sky81452_platform_data *pdata)
+> > +{
+> > +       struct mfd_cell cells[] = {
+> > +               {
+> > +                       .name = "sky81452-bl",
+> > +                       .platform_data = pdata->bl_pdata,
+> > +                       .pdata_size = sizeof(*pdata->bl_pdata),
+> > +               },
+> > +               {
+> > +                       .name = "sky81452-regulator",
+> > +                       .platform_data = pdata->regulator_init_data,
+> > +                       .pdata_size = sizeof(*pdata->regulator_init_data),
+> > +               },
+> > +       };
+> > +
+> > +       return mfd_add_devices(dev, -1, cells, ARRAY_SIZE(cells),
+> > +                       NULL, 0, NULL);
+> > +}
+> > +
+> > +static int sky81452_probe(struct i2c_client *client,
+> > +               const struct i2c_device_id *id)
+> > +{
+> > +       struct device *dev = &client->dev;
+> > +       const struct sky81452_platform_data *pdata = dev_get_platdata(dev);
+> > +       struct regmap *map;
+> > +
+> > +       if (!pdata) {
+> > +               pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> > +               if (!pdata)
+> > +                       return -ENOMEM;
+> > +       }
+> > +
+> > +       map = devm_regmap_init_i2c(client, &sky81452_config);
+> > +       if (IS_ERR(map))
+> > +               return PTR_ERR(map);
+> > +
+> > +       i2c_set_clientdata(client, map);
+> > +
+> > +       return sky81452_register_devices(dev, pdata);
+> > +}
+> > +
+> > +static int sky81452_remove(struct i2c_client *client)
+> > +{
+> > +       mfd_remove_devices(&client->dev);
+> > +       return 0;
+> > +}
+> > +
+> > +static const struct i2c_device_id sky81452_ids[] = {
+> > +       { "sky81452", 0 },
+> > +       { }
+> > +};
+> > +MODULE_DEVICE_TABLE(i2c, sky81452_ids);
+> > +
+> > +#ifdef CONFIG_OF
+> > +static const struct of_device_id sky81452_of_match[] = {
+> > +       { .compatible = "skyworks,sky81452", },
+> > +       { }
+> > +};
+> > +MODULE_DEVICE_TABLE(of, sky81452_of_match);
+> > +#endif
+> > +
+> > +static struct i2c_driver sky81452_driver = {
+> > +       .driver = {
+> > +               .name = "sky81452",
+> > +               .of_match_table = of_match_ptr(sky81452_of_match),
+> > +       },
+> > +       .probe = sky81452_probe,
+> > +       .remove = sky81452_remove,
+> > +       .id_table = sky81452_ids,
+> > +};
+> > +
+> > +module_i2c_driver(sky81452_driver);
+> > +
+> > +MODULE_DESCRIPTION("Skyworks SKY81452 MFD driver");
+> > +MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@skyworksinc.com>");
+> > +MODULE_LICENSE("GPL");
+> > +MODULE_VERSION("1.0");
+> > diff --git a/include/linux/mfd/sky81452.h b/include/linux/mfd/sky81452.h
+> > new file mode 100644
+> > index 0000000..8d8ed35
+> > --- /dev/null
+> > +++ b/include/linux/mfd/sky81452.h
+> > @@ -0,0 +1,32 @@
+> > +/*
+> > + * sky81452.h  SKY81452 backlight driver
+> > + *
+> > + * Copyright 2014 Skyworks Solutions Inc.
+> > + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms of the GNU General Public License as published by the
+> > + * Free Software Foundation; either version 2, or (at your option) any
+> > + * later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful, but
+> > + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> > + * General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License along
+> > + * with this program; if not, see <http://www.gnu.org/licenses/>.
+> > + */
+> > +
+> > +#ifndef _SKY81452_H
+> > +#define _SKY81452_H
+> > +
+> > +#include "linux/sky81452-backlight.h"
+> > +#include "linux/regulator/machine.h"
+> > +
+> > +struct sky81452_platform_data {
+> > +       struct sky81452_bl_platform_data *bl_pdata;
+> > +       struct regulator_init_data *regulator_init_data;
+> > +};
+> > +
+> > +#endif
+> >
+> >
 
-> > I'll have to need some time for further investigation and a new
-> > implementation. Before the new code is completely ready, IMHO the
-> > patch can help to avoid a bad user experience like Arch Linux working
-> > as a Generation 2 hyper-v guest.
-> 
-> You are still preventing Arch from working here, as the driver can't be
-> built at all, right?
-The driver can build(compile) fine.
-The issue is: the latest Arch Linux release doesn't have a working (virtual)
-keyboard when it runs as Generation 2 hyper-v guest -- when it runs as
-a "traditional" Generation 1 hyper-v guest, everything works fine.
-I hope this patch can temporarily help Arch users if they find the issue
-and if they can rebuild the kernel.
- 
-> > BTW, looks most of Linux distros (like RHEL, Ubuntu, SUSE) have
-> > CONFIG_SERIO_I8042=y, probably because it's the result of
-> > "make defconfig". So the patch actually doesn't affect these distros.
-> 
-> Or maybe it is beause they use older kernels and like to turn on every
-> single possible option :)
-If these 3 distros had =m, we could have found the issue earlier.
-
-Thanks,
--- Dexuan
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
