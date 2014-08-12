@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116AbaHLTk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 15:40:57 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:39588 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981AbaHLTk4 (ORCPT
+	id S1755143AbaHLTnR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 15:43:17 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:35694 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754907AbaHLTnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 15:40:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <53EA6D24.3000609@codeaurora.org>
-References: <1407867869-5194-1-git-send-email-keescook@chromium.org>
-	<1407867869-5194-6-git-send-email-keescook@chromium.org>
-	<53EA6D24.3000609@codeaurora.org>
-Date: Tue, 12 Aug 2014 12:40:55 -0700
-X-Google-Sender-Auth: YagIn7YISjbTo_HLFNidpLlB0wA
-Message-ID: <CAGXu5jJiGXJQ4Bdu9Mhvj=jCdZ76w6_OOYoCmYEJZ47=HHSptg@mail.gmail.com>
-Subject: Re: [PATCH v3 5/7] arm: kgdb: Handle read-only text / modules
-From: Kees Cook <keescook@chromium.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
-        Liu hua <sdu.liu@huawei.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Doug Anderson <dianders@google.com>, Rabin Vincent <rabin@rab.in>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Mark Salter <msalter@redhat.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 12 Aug 2014 15:43:15 -0400
+From: Manfred Spraul <manfred@colorfullife.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: David Howells <dhowells@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Rik van Riel <riel@redhat.com>, 1vier1@web.de,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: [PATCH] ipc/sem.c: [RFC] memory barrier in sem_lock()
+Date: Tue, 12 Aug 2014 21:43:06 +0200
+Message-Id: <1407872586-2738-1-git-send-email-manfred@colorfullife.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 12:38 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 08/12/14 11:24, Kees Cook wrote:
->> @@ -244,6 +248,32 @@ void kgdb_arch_exit(void)
->>       unregister_die_notifier(&kgdb_notifier);
->>  }
->>
->> +int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
->> +{
->> +     int err;
->> +
->> +     /* patch_text() only supports int-sized breakpoints */
->> +     if (sizeof(int) != BREAK_INSTR_SIZE)
->> +             return -EINVAL;
->
-> Could this be a BUILD_BUG_ON too?
+sem_lock right now contains an smp_mb().
+I think smp_rmb() would be sufficient - and performance of semop() with rmb()
+is up to 10% faster. It would be a pairing of rmb() with spin_unlock().
 
-Ah yes, good call. I'll adjust that.
+The race we must protect against is:
 
-Thanks!
+sem->lock is free
+sma->complex_count = 0
+sma->sem_perm.lock held by thread B
 
--Kees
+thread A:
 
+A: spin_lock(&sem->lock)
+
+			B: sma->complex_count++; (now 1)
+			B: spin_unlock(&sma->sem_perm.lock);
+
+A: spin_is_locked(&sma->sem_perm.lock);
+A: XXXXX which memory barrier is necessary?
+A: if (sma->complex_count == 0)
+
+Thread A must read the increased complex_count value, i.e. the read must
+not be reordered with the read of sem_perm.lock done by spin_is_locked().
+
+But that's it, there are no writes that must be ordered.
+
+---
+ ipc/sem.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ipc/sem.c b/ipc/sem.c
+index 454f6c6..a5c8a77 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -327,7 +327,7 @@ static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
+ 		/* Then check that the global lock is free */
+ 		if (!spin_is_locked(&sma->sem_perm.lock)) {
+ 			/* spin_is_locked() is not a memory barrier */
+-			smp_mb();
++			smp_rmb();
+ 
+ 			/* Now repeat the test of complex_count:
+ 			 * It can't change anymore until we drop sem->lock.
 -- 
-Kees Cook
-Chrome OS Security
+1.9.3
+
