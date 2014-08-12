@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbaHLJn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 05:43:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38682 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440AbaHLJnz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 05:43:55 -0400
-Date: Tue, 12 Aug 2014 11:43:40 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: linux-kernel@vger.kernel.org, pjt@google.com, oleg@redhat.com,
-        rostedt@goodmis.org, umgwanakikbuti@gmail.com, tkhai@yandex.ru,
-        tim.c.chen@linux.intel.com, mingo@kernel.org, nicolas.pitre@linaro.org
-Subject: Re: [PATCH v4 3/6] sched: Teach scheduler to understand
- ONRQ_MIGRATING state
-Message-ID: <20140812094340.GS9918@twins.programming.kicks-ass.net>
-References: <20140806075138.24858.23816.stgit@tkhai>
- <1407312379.8424.38.camel@tkhai>
- <20140812075523.GN9918@twins.programming.kicks-ass.net>
- <1407832463.23412.2.camel@tkhai>
+	id S1751936AbaHLJpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 05:45:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59700 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751478AbaHLJpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 05:45:39 -0400
+Message-ID: <53E9E23C.6030709@suse.cz>
+Date: Tue, 12 Aug 2014 11:45:32 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8rpgEfAtZgdcISZ7"
-Content-Disposition: inline
-In-Reply-To: <1407832463.23412.2.camel@tkhai>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Minchan Kim <minchan@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/8] mm/isolation: close the two race problems related
+ to pageblock isolation
+References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com> <1407309517-3270-8-git-send-email-iamjoonsoo.kim@lge.com> <20140812051745.GC23418@gmail.com>
+In-Reply-To: <20140812051745.GC23418@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/12/2014 07:17 AM, Minchan Kim wrote:
+> On Wed, Aug 06, 2014 at 04:18:33PM +0900, Joonsoo Kim wrote:
+>>
+>> One solution to this problem is checking pageblock migratetype with
+>> holding zone lock in __free_one_page() and I posted it before, but,
+>> it didn't get welcome since it needs the hook in zone lock critical
+>> section on freepath.
+>
+> I didn't review your v1 but IMHO, this patchset is rather complex.
 
---8rpgEfAtZgdcISZ7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It is, but the complexity is in the isolation code, and not fast paths, 
+so that's justifiable IMHO.
 
-On Tue, Aug 12, 2014 at 12:34:23PM +0400, Kirill Tkhai wrote:
-> I don't have objections. Should I resend the series (also with new [4/6] log
-> commentary)?
+> Normally, we don't like adding more overhead in fast path but we did
+> several time on hotplug/cma, esp so I don't know a few more thing is
+> really hesitant.
 
-Nah, I'll keep the patches as I have them now, I'll push them out to the
-queue.git tree somewhat later today so you can have a peek.
+This actually undoes most of the overhead, so I'm all for it. Better 
+than keep doing stuff the same way just because it was done previously.
 
---8rpgEfAtZgdcISZ7
-Content-Type: application/pgp-signature
+> In addition, you proved by this patchset how this
+> isolation code looks ugly and fragile for race problem so I vote
+> adding more overhead in fast path if it can make code really simple.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Well, I recommend you to check out the v1 then :) That wasn't really 
+simple, that was even more hooks rechecking migratetypes at various 
+places of the fast paths, when merging buddies etc. This is much better. 
+The complexity is mostly in the isolation code, and the overhead happens 
+only during isolation.
 
-iQIcBAEBAgAGBQJT6eHMAAoJEHZH4aRLwOS6Jr8P/RR9C7l4SZRnSumXofjFjfhj
-U3NqkOe4X+6QWXa2Z0uUHjRZHUMjliE6Dc4Hmy2XPoWKcSFz5RSO4bLDcOoez8oR
-QfY7zTDv9kjdivawJhLo1tdJj5ILvYYKVOk1luo8ceM/LXrD8/GDbXbOv5eKMnzo
-C12gJeaCwh3MPFx9a2Tvo2AMT4/7NyWvlNtchSstiDX6H659zLsND1f2lhdjJiRx
-56E53t8HWuswiOOrTkCsmPZOfJc79Rcq9BErU+eFmTY20olsAh1Op1GMQLMS8G7s
-MbJEORCwmFPCa7stHc9DrjjshxZaeOt07kdfgfpbRcsm9IVIkzXeEZs05CN/sgti
-oOpSIBVpD0ddWL85F0AzseQNctq8hjSYxDlzK5go5y5eBzv7JF0Ep/QoW5xn0Gk+
-4IriYurzX/KLG4chGGX9yJAAR/AcpzbL4T1AEFbXyTzr4qTl+4kpg1egi2bY3Vu+
-kPAiAArWuFaoYR6wyy7S6Mk+ZLfqji7XLUpPs+oq5l5UUv6ULpxWuJqNQziIqZZs
-qpRKY/0kovyAnyZNCwvt4M1tfMz42t8f6Ca3/HMcasoDTO+AuiqYnggXhGPIZGdW
-/ISQ2/j8adz4IH6QTG7p71a/KOw2a4WuRBde665L7wjYbeH1PFiF6BmdbYwmrKHo
-5+aTLvaGHKiRmk1+wSCD
-=93EH
------END PGP SIGNATURE-----
+> Vlastimil?
 
---8rpgEfAtZgdcISZ7--
+Well, I was the main opponent of v1 and suggested to do v2 like this, so 
+here you go :)
+
+> To Joonsoo,
+>
+> you want to send this patchset for stable since review is done?
+> IIRC, you want to fix freepage couting bug and send it to stable but
+> as I see this patchset, no make sense to send to stable. :(
+
+Yeah that's one disadvantage. But I wouldn't like the v1 for stable even 
+more.
+
+
