@@ -1,92 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534AbaHLRyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 13:54:43 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:43223 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449AbaHLRyl (ORCPT
+	id S1754558AbaHLR5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 13:57:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40521 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462AbaHLR5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 13:54:41 -0400
-Date: Tue, 12 Aug 2014 10:54:35 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Dexuan Cui <decui@microsoft.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH] Input: serio: make HYPERV_KEYBOARD depend on
- SERIO_I8042=y
-Message-ID: <20140812175435.GA22386@core.coreip.homeip.net>
-References: <1407814240-4275-1-git-send-email-decui@microsoft.com>
- <20140812032148.GB6867@kroah.com>
- <EE124450C0AAF944A40DD71E61F878C9920A1C@SINEX14MBXC417.southpacific.corp.microsoft.com>
- <20140812060108.GA13231@kroah.com>
- <EE124450C0AAF944A40DD71E61F878C9920EAF@SINEX14MBXC417.southpacific.corp.microsoft.com>
+	Tue, 12 Aug 2014 13:57:05 -0400
+Message-ID: <53EA556C.6020004@infradead.org>
+Date: Tue, 12 Aug 2014 10:57:00 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <EE124450C0AAF944A40DD71E61F878C9920EAF@SINEX14MBXC417.southpacific.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Juri Lelli <juri.lelli@arm.com>, peterz@infradead.org
+CC: luca.abeni@unitn.it, mingo@redhat.com, henrik@austad.us, raistlin@linux.it,
+        juri.lelli@gmail.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] Documentation/scheduler/sched-deadline.txt: add tests
+ suite appendix
+References: <1407858555-14371-1-git-send-email-juri.lelli@arm.com> <1407858555-14371-5-git-send-email-juri.lelli@arm.com>
+In-Reply-To: <1407858555-14371-5-git-send-email-juri.lelli@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 07:15:25AM +0000, Dexuan Cui wrote:
-> > -----Original Message-----
-> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> > owner@vger.kernel.org] On Behalf Of Greg KH
-> > > > What exactly needs to be done to fix this "correctly" that is going to
-> > > > take too much work at the moment?
-> > >
-> > > To decouple the dependency between the hyperv-keyboard and i8042
-> > > modules, I suppose we probably have to re-implement hyperv-keyboard by
-> > > using input_allocate_device(), input_register_device(), and using
-> > > input_report_key() to pass the key strokes to the high level.
-> > 
-> > Yes, that would be the best thing to do,
-
-Why? The backend still delivers AT keyboard data, so why does it make
-sense to write a new driver instead of making sure you can load
-atkbd/libps2 even without i8042 loaded?
-
-> > and shouldn't be that hard to
-> > create an input driver, it's pretty simple code, right?
-> Hi Greg,
-> Thanks for the confirmation!
-> I didn't use the APIs before. 
-> I think I need a couple of days to code, test and debug it while I have many
->  things at hand at present. :-(
+On 08/12/14 08:49, Juri Lelli wrote:
+> Add an appendix briefly describing tools that can be used to test SCHED_DEADLINE
+> (and the scheduler in general). Links to where source code of the tools is hosted
+> are also provided.
 > 
-> > > I'll have to need some time for further investigation and a new
-> > > implementation. Before the new code is completely ready, IMHO the
-> > > patch can help to avoid a bad user experience like Arch Linux working
-> > > as a Generation 2 hyper-v guest.
-> > 
-> > You are still preventing Arch from working here, as the driver can't be
-> > built at all, right?
-> The driver can build(compile) fine.
-> The issue is: the latest Arch Linux release doesn't have a working (virtual)
-> keyboard when it runs as Generation 2 hyper-v guest -- when it runs as
-> a "traditional" Generation 1 hyper-v guest, everything works fine.
-> I hope this patch can temporarily help Arch users if they find the issue
-> and if they can rebuild the kernel.
+> Signed-off-by: Juri Lelli <juri.lelli@arm.com>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Henrik Austad <henrik@austad.us>
+> Cc: Dario Faggioli <raistlin@linux.it>
+> Cc: Juri Lelli <juri.lelli@gmail.com>
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  Documentation/scheduler/sched-deadline.txt |   52 ++++++++++++++++++++++++++++
+>  1 file changed, 52 insertions(+)
+> 
+> diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
+> index d056034..52eb25f 100644
+> --- a/Documentation/scheduler/sched-deadline.txt
+> +++ b/Documentation/scheduler/sched-deadline.txt
+> @@ -15,6 +15,7 @@ CONTENTS
+>   5. Tasks CPU affinity
+>     5.1 SCHED_DEADLINE and cpusets HOWTO
+>   6. Future plans
+> + A. Test suite
+>  
+>  
+>  0. WARNING
+> @@ -339,3 +340,54 @@ CONTENTS
+>   throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
+>   the preliminary phases of the merge and we really seek feedback that would
+>   help us decide on the direction it should take.
+> +
+> +Appendix A. Test suite
+> +======================
+> +
+> + The SCHED_DEADLINE policy can be easily tested using two applications that
+> + are part of a wider Linux Scheduler validation suite. The suite is
+> + available as a GitHub repository: https://github.com/scheduler-tools.
+> +
+> + The first testing application is called rt-app and can be used to
+> + start multiple threads with specific parameters. rt-app supports
+> + SCHED_{OTHER,FIFO,RR,DEADLINE} scheduling policies and their related
+> + parameters (e.g., niceness, priority, runtime/deadline/period). rt-app
+> + is a valuable tool, as it can be used to synthetically recreate certain
+> + workloads (maybe mimicking real use-cases) and evaluate how the scheduler
+> + behaves under such workloads. In this way, results are easily reproducible.
+> + rt-app is available at: https://github.com/scheduler-tools/rt-app.
+> +
+> + Threads parameters can be specified from command line, with something like
 
-The Arch users can simply select to build i8042 into the kernel as a
-workaround.
+    Thread                              from the
 
-The proper solution is to allow loading libps2 module even if i8042 did
-not find its device. I wish I could simply drop this i8042_lock_chip and
-stuff, but unfortunately i8042 ports are not truly independent. We need
-to figure a way for libps2 to engage locking in i8042 if the driver is
-loaded, otherwise just ignore it.
+> + this:
+> +
+> +  # rt-app -t 100000:10000:d -t 150000:20000:f:10 -D5
+> +
+> + What above creates two threads, first one, scheduled by SCHED_DEADLINE,
 
-Thanks.
+    The above creates two threads. The first one,
+
+> + executes for 10ms every 100ms and second one, scheduled at RT priority 10
+
+                                  and the second one,
+
+> + with SCHED_FIFO, executes for 20ms every 150ms. The configuration runs
+> + for 5 seconds.
+> +
+> + More interestingly, configurations can be described with a json file, that
+
+                                                    drop comma here     ^
+
+> + can be passed as input to rt-app with something like this:
+> +
+> +  # rt-app my_config.json
+> +
+> + The parameters that can be specified with the second method are a superset
+> + of the command line options. Please refer to rt-app documentation for more
+> + details.
+> +
+> + The second testing application is a modification of schedtool, called
+> + schedtool-dl, which can be used to setup SCHED_DEADLINE parameters for a
+> + certain pid/application. schedtool-dl is available at:
+> + https://github.com/scheduler-tools/schedtool-dl.git.
+> +
+> + The usage is straightforward:
+> +
+> +  # schedtool -E -t 10000000:100000000 -e ./my_cpuhog_app
+> +
+> + With this, my_cpuhog_app is put to run inside a SCHED_DEADLINE reservation
+> + of 10ms every 100ms (note that parameters are expressed in microseconds).
+> + You can also use schedtool to create a reservation for an already running
+> + application, given that you know its pid:
+> +
+> +  # schedtool -E -t 10000000:100000000 my_app_pid
+> 
+
 
 -- 
-Dmitry
+~Randy
