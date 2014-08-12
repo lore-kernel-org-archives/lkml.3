@@ -1,161 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaHLLor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 07:44:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33762 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752147AbaHLLod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 07:44:33 -0400
-Date: Tue, 12 Aug 2014 13:44:30 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v2] freezer: check OOM kill while being frozen
-Message-ID: <20140812114430.GA7049@dhcp22.suse.cz>
-References: <1407804835-24763-1-git-send-email-xiyou.wangcong@gmail.com>
+	id S1752704AbaHLLq4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 07:46:56 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:42166 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752584AbaHLLqy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 07:46:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407804835-24763-1-git-send-email-xiyou.wangcong@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5567000.WJnOP5ckul@amdc1032>
+References: <5567000.WJnOP5ckul@amdc1032>
+Date: Tue, 12 Aug 2014 13:46:53 +0200
+Message-ID: <CAPDyKFoZ=z560H2hydWdP22RwzXUWdLzxJF+pzOXjxx8FGc3pQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci-s3c: fix runtime PM handling on
+ sdhci_add_host() failure
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Chris Ball <chris@printf.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 11-08-14 17:53:54, Cong Wang wrote:
-> There is a race condition between OOM killer and freezer when
-> they try to operate on the same process, something like below:
-> 
->         Process A       Process B               Process C
-> trigger page fault
-> then trigger oom
-> B=oom_scan_process_thread()
->                                         cgroup freezer freeze(A, B)
->                         ...
->                         try_to_freeze()
->                         stay in D state
-> oom_kill_process(B)
-> restart page fault
+On 7 August 2014 18:07, Bartlomiej Zolnierkiewicz
+<b.zolnierkie@samsung.com> wrote:
+> Runtime Power Management handling for the sdhci_add_host() failure
+> case in sdhci_s3c_probe() should match the code in sdhci_s3c_remove()
+> (which uses pm_runtime_disable() call which matches the earlier
+> pm_runtime_enable() one).  Fix it.
+>
+> This patch fixes "BUG: spinlock bad magic on CPU#0, swapper/0/1" and
+> "Unbalanced pm_runtime_enable!" warnings.
+>
+> From the kernel log:
 > ...
-> 
-> In this case, process A triggered a page fault in user-space,
-> and the kernel page fault handler triggered OOM, then kernel
-> selected process B as the victim, right before being killed
-> process B was frozen by process C therefore went to D state,
-> then kernel sent SIGKILL but it is already too late as
-> process B will not care about pending signals any more.
-> 
-> David Rientjes tried to fix same issue with commit
-> f660daac474c6f (oom: thaw threads if oom killed thread is
-> frozen before deferring) but it doesn't work any more, because
+> [    1.659631] s3c-sdhci 12530000.sdhci: sdhci_add_host() failed
+> [    1.665096] BUG: spinlock bad magic on CPU#0, swapper/0/1
+> [    1.670433]  lock: 0xea01e484, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
+> [    1.677895] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.16.0-next-20140804-00008-ga59480f-dirty #707
+> [    1.687037] [<c0013ae4>] (unwind_backtrace) from [<c0010d70>] (show_stack+0x10/0x14)
+> [    1.694740] [<c0010d70>] (show_stack) from [<c04050c8>] (dump_stack+0x68/0xb8)
+> [    1.701948] [<c04050c8>] (dump_stack) from [<c0052558>] (do_raw_spin_lock+0x15c/0x1a4)
+> [    1.709848] [<c0052558>] (do_raw_spin_lock) from [<c040a630>] (_raw_spin_lock_irqsave+0x20/0x28)
+> [    1.718619] [<c040a630>] (_raw_spin_lock_irqsave) from [<c030d7d0>] (sdhci_do_set_ios+0x1c/0x5cc)
+> [    1.727464] [<c030d7d0>] (sdhci_do_set_ios) from [<c030ddfc>] (sdhci_runtime_resume_host+0x50/0x104)
+> [    1.736574] [<c030ddfc>] (sdhci_runtime_resume_host) from [<c02462dc>] (pm_generic_runtime_resume+0x2c/0x40)
+> [    1.746383] [<c02462dc>] (pm_generic_runtime_resume) from [<c0247898>] (__rpm_callback+0x34/0x70)
+> [    1.755233] [<c0247898>] (__rpm_callback) from [<c02478fc>] (rpm_callback+0x28/0x88)
+> [    1.762958] [<c02478fc>] (rpm_callback) from [<c02486f0>] (rpm_resume+0x384/0x4ec)
+> [    1.770511] [<c02486f0>] (rpm_resume) from [<c02488b0>] (pm_runtime_forbid+0x58/0x64)
+> [    1.778325] [<c02488b0>] (pm_runtime_forbid) from [<c030ea70>] (sdhci_s3c_probe+0x4a4/0x540)
+> [    1.786749] [<c030ea70>] (sdhci_s3c_probe) from [<c02429cc>] (platform_drv_probe+0x2c/0x5c)
+> [    1.795076] [<c02429cc>] (platform_drv_probe) from [<c02415f0>] (driver_probe_device+0x114/0x234)
+> [    1.803929] [<c02415f0>] (driver_probe_device) from [<c024179c>] (__driver_attach+0x8c/0x90)
+> [    1.812347] [<c024179c>] (__driver_attach) from [<c023ffb4>] (bus_for_each_dev+0x54/0x88)
+> [    1.820506] [<c023ffb4>] (bus_for_each_dev) from [<c0240df8>] (bus_add_driver+0xd8/0x1cc)
+> [    1.828665] [<c0240df8>] (bus_add_driver) from [<c0241db8>] (driver_register+0x78/0xf4)
+> [    1.836652] [<c0241db8>] (driver_register) from [<c00088a4>] (do_one_initcall+0x80/0x1d0)
+> [    1.844816] [<c00088a4>] (do_one_initcall) from [<c059ac94>] (kernel_init_freeable+0x108/0x1d4)
+> [    1.853503] [<c059ac94>] (kernel_init_freeable) from [<c0401300>] (kernel_init+0x8/0xe4)
+> [    1.861568] [<c0401300>] (kernel_init) from [<c000e538>] (ret_from_fork+0x14/0x3c)
+> [    1.869582] platform 12530000.sdhci: Driver s3c-sdhci requests probe deferral
+> ...
+> [    1.997047] s3c-sdhci 12530000.sdhci: Unbalanced pm_runtime_enable!
+> ...
+> [    2.027235] s3c-sdhci 12530000.sdhci: sdhci_add_host() failed
+> [    2.032884] platform 12530000.sdhci: Driver s3c-sdhci requests probe deferral
+> ...
+>
+> Tested on Hardkernel's Exynos4412 based ODROID-U3 board.
+>
+> Fixes: 9f4e8151dbbc ("mmc: sdhci-s3c: Enable runtime power management")
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Jaehoon Chung <jh80.chung@samsung.com>
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Has it stopped working as a result of a3201227f803 (freezer: make
-freezing() test freeze conditions in effect instead of TIF_FREEZE)?
-It removes clear_freeze_flag from __thaw_task and so the OOM victim
-cannot escape from the refrigerator. But there were a lot of changes in
-that area at the time so I might be missing some subtle details.
+Thanks! Applied for fixes.
 
-> __thaw_task() just checks if it's frozen and then wakes it up,
-> but the frozen task, after waking up, will check if freezing()
-> is still true and continue to freeze itself if so. __thaw_task()
-> can't make freezing() return false since it doesn't change any
-> of these conditions, especially cgroup_freezing().
-> 
-> Fix this straightly by checking if the frozen process itself
-> has been killed by OOM killer, so that the frozen process will
-> recover itself and be killed finally.
-
-OK, this should work. I remember Tejun mentioned that he wanted frozen
-tasks to be killable but I have no idea where this went. Maybe we want
-to go with the OOM part now as it fixes a real bug.
-
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-
-I think this should go to stable as well.
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-Two minor notes below:
+Kind regards
+Uffe
 
 > ---
->  kernel/freezer.c | 19 +++++++++++--------
->  mm/oom_kill.c    |  2 --
->  2 files changed, 11 insertions(+), 10 deletions(-)
-> 
-> diff --git a/kernel/freezer.c b/kernel/freezer.c
-> index aa6a8aa..1f90d70 100644
-> --- a/kernel/freezer.c
-> +++ b/kernel/freezer.c
-> @@ -52,6 +52,16 @@ bool freezing_slow_path(struct task_struct *p)
->  }
->  EXPORT_SYMBOL(freezing_slow_path);
->  
-> +static bool i_should_thaw_myself(bool check_kthr_stop)
-
-should_thaw_current?
-
-> +{
-> +	if (!freezing(current) ||
-> +	    (check_kthr_stop && kthread_should_stop()) ||
-> +	    test_thread_flag(TIF_MEMDIE))
-> +		return true;
-> +	else
-> +		return false;
-> +}
+> patch is against next-20140804 branch of linux-next kernel
+>
+>  drivers/mmc/host/sdhci-s3c.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
+> index fa5954a..1e47903 100644
+> --- a/drivers/mmc/host/sdhci-s3c.c
+> +++ b/drivers/mmc/host/sdhci-s3c.c
+> @@ -606,8 +606,6 @@ static int sdhci_s3c_probe(struct platform_device *pdev)
+>         ret = sdhci_add_host(host);
+>         if (ret) {
+>                 dev_err(dev, "sdhci_add_host() failed\n");
+> -               pm_runtime_forbid(&pdev->dev);
+> -               pm_runtime_get_noresume(&pdev->dev);
+>                 goto err_req_regs;
+>         }
+>
+> @@ -618,6 +616,8 @@ static int sdhci_s3c_probe(struct platform_device *pdev)
+>         return 0;
+>
+>   err_req_regs:
+> +       pm_runtime_disable(&pdev->dev);
 > +
->  /* Refrigerator is place where frozen processes are stored :-). */
->  bool __refrigerator(bool check_kthr_stop)
->  {
-> @@ -67,8 +77,7 @@ bool __refrigerator(bool check_kthr_stop)
->  
->  		spin_lock_irq(&freezer_lock);
->  		current->flags |= PF_FROZEN;
-> -		if (!freezing(current) ||
-> -		    (check_kthr_stop && kthread_should_stop()))
-> +		if (i_should_thaw_myself(check_kthr_stop))
->  			current->flags &= ~PF_FROZEN;
->  		spin_unlock_irq(&freezer_lock);
->  
-> @@ -147,12 +156,6 @@ void __thaw_task(struct task_struct *p)
->  {
->  	unsigned long flags;
->  
-> -	/*
-> -	 * Clear freezing and kick @p if FROZEN.  Clearing is guaranteed to
-> -	 * be visible to @p as waking up implies wmb.  Waking up inside
-> -	 * freezer_lock also prevents wakeups from leaking outside
-> -	 * refrigerator.
-> -	 */
-
-This is an unrelated change.
-
->  	spin_lock_irqsave(&freezer_lock, flags);
->  	if (frozen(p))
->  		wake_up_process(p);
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 1e11df8..112c278 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -266,8 +266,6 @@ enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
->  	 * Don't allow any other task to have access to the reserves.
->  	 */
->  	if (test_tsk_thread_flag(task, TIF_MEMDIE)) {
-> -		if (unlikely(frozen(task)))
-> -			__thaw_task(task);
->  		if (!force_kill)
->  			return OOM_SCAN_ABORT;
->  	}
-> -- 
-> 1.8.3.1
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+>   err_no_busclks:
+>         clk_disable_unprepare(sc->clk_io);
+>
+> --
+> 1.8.2.3
+>
+>
