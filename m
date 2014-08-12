@@ -1,308 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171AbaHLQ23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 12:28:29 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54767 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753823AbaHLQ04 (ORCPT
+	id S1753856AbaHLQ21 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 12:28:27 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:56522 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300AbaHLQ2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 12:26:56 -0400
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>
-Cc: linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v9 10/12] OF: PCI: Add support for creating a generic host_bridge from DT
-Date: Tue, 12 Aug 2014 17:25:23 +0100
-Message-Id: <1407860725-25202-11-git-send-email-Liviu.Dudau@arm.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
+	Tue, 12 Aug 2014 12:28:24 -0400
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tomk@rgmadvisors.com,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>
+Subject: [PATCH] ib_umem_release should decrement mm->pinned_vm from ib_umem_get
+Date: Tue, 12 Aug 2014 11:27:35 -0500
+Message-Id: <1407860855-6564-1-git-send-email-shawn.bohrer@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a function to parse the PCI DT ranges and use it to
-create a pci_host_bridge structure together with its associated
-bus. Scan all the child busses and add the devices found.
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
 
-This is the OF equivalent of pci_scan_root_bus() where all the
-resources needed for creating the root bus are discovered from
-information passed in the device tree.
+In debugging an application that receives -ENOMEM from ib_reg_mr() I
+found that ib_umem_get() can fail because the pinned_vm count has
+wrapped causing it to always be larger than the lock limit even with
+RLIMIT_MEMLOCK set to RLIM_INFINITY.
 
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Tanmay Inamdar <tinamdar@apm.com>
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+The wrapping of pinned_vm occurs because the process that calls
+ib_reg_mr() will have its mm->pinned_vm count incremented.  Later a
+different process with a different mm_struct than the one that allocated
+the ib_umem struct ends up releasing it which results in decrementing
+the new processes mm->pinned_vm count past zero and wrapping.
+
+I'm not entirely sure what circumstances cause a different process to
+release the ib_umem than the one that allocated it but the kernel stack
+trace of the freeing process from my situation looks like the following:
+
+Call Trace:
+ [<ffffffff814d64b1>] dump_stack+0x19/0x1b
+ [<ffffffffa0b522a5>] ib_umem_release+0x1f5/0x200 [ib_core]
+ [<ffffffffa0b90681>] mlx4_ib_destroy_qp+0x241/0x440 [mlx4_ib]
+ [<ffffffffa0b4d93c>] ib_destroy_qp+0x12c/0x170 [ib_core]
+ [<ffffffffa0cc7129>] ib_uverbs_close+0x259/0x4e0 [ib_uverbs]
+ [<ffffffff81141cba>] __fput+0xba/0x240
+ [<ffffffff81141e4e>] ____fput+0xe/0x10
+ [<ffffffff81060894>] task_work_run+0xc4/0xe0
+ [<ffffffff810029e5>] do_notify_resume+0x95/0xa0
+ [<ffffffff814e3dd0>] int_signal+0x12/0x17
+
+The following patch fixes the issue by storing the mm_struct of the
+process that calls ib_umem_get() so that ib_umem_release and/or
+ib_umem_account() can properly decrement the pinned_vm count of the
+correct mm_struct.
+
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
 ---
- drivers/of/of_pci.c       | 159 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/pci/host-bridge.c |  15 +++++
- include/linux/of_pci.h    |  13 ++++
- include/linux/pci.h       |   6 ++
- 4 files changed, 193 insertions(+)
+ drivers/infiniband/core/umem.c |   17 ++++++++---------
+ 1 files changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-index a107edb..895b59f 100644
---- a/drivers/of/of_pci.c
-+++ b/drivers/of/of_pci.c
-@@ -1,7 +1,9 @@
- #include <linux/kernel.h>
- #include <linux/export.h>
- #include <linux/of.h>
-+#include <linux/of_address.h>
- #include <linux/of_pci.h>
-+#include <linux/slab.h>
- 
- static inline int __of_pci_pci_compare(struct device_node *node,
- 				       unsigned int data)
-@@ -123,6 +125,163 @@ int of_pci_get_domain_nr(struct device_node *node, bool allocate_if_missing)
- }
- EXPORT_SYMBOL_GPL(of_pci_get_domain_nr);
- 
-+/**
-+ * pci_host_bridge_of_get_ranges - Parse PCI host bridge resources from DT
-+ * @dev: device node of the host bridge having the range property
-+ * @resources: list where the range of resources will be added after DT parsing
-+ * @io_base: pointer to a variable that will contain on return the physical
-+ * address for the start of the I/O range.
-+ *
-+ * It is the callers job to free the @resources list if an error is returned.
-+ *
-+ * This function will parse the "ranges" property of a PCI host bridge device
-+ * node and setup the resource mapping based on its content. It is expected
-+ * that the property conforms with the Power ePAPR document.
-+ *
-+ * Each architecture is then offered the chance of applying their own
-+ * filtering of pci_host_bridge_windows based on their own restrictions by
-+ * calling pcibios_fixup_bridge_ranges(). The filtered list of windows
-+ * can then be used when creating a pci_host_bridge structure.
-+ */
-+static int pci_host_bridge_of_get_ranges(struct device_node *dev,
-+		struct list_head *resources, resource_size_t *io_base)
-+{
-+	struct resource *res;
-+	struct of_pci_range range;
-+	struct of_pci_range_parser parser;
-+	int err;
-+
-+	pr_info("PCI host bridge %s ranges:\n", dev->full_name);
-+
-+	/* Check for ranges property */
-+	err = of_pci_range_parser_init(&parser, dev);
-+	if (err)
-+		return err;
-+
-+	pr_debug("Parsing ranges property...\n");
-+	for_each_of_pci_range(&parser, &range) {
-+		/* Read next ranges element */
-+		pr_info(" %s %#010llx..%#010llx -> %#010llx\n",
-+			((range.flags & IORESOURCE_TYPE_BITS) == IORESOURCE_IO) ? " IO" : "MEM",
-+			range.cpu_addr, range.cpu_addr + range.size - 1,
-+			range.pci_addr);
-+
-+		/*
-+		 * If we failed translation or got a zero-sized region
-+		 * then skip this range
-+		 */
-+		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
-+			continue;
-+
-+		res = kzalloc(sizeof(struct resource), GFP_KERNEL);
-+		if (!res)
-+			return -ENOMEM;
-+
-+		err = of_pci_range_to_resource(&range, dev, res);
-+		if (err) {
-+			kfree(res);
-+			return err;
-+		}
-+
-+		if (resource_type(res) == IORESOURCE_IO) {
-+			if (*io_base)
-+				pr_warn("More than one I/O resource converted. CPU offset for old range lost!\n");
-+			*io_base = range.cpu_addr;
-+		}
-+
-+		pci_add_resource_offset(resources, res,
-+				res->start - range.pci_addr);
-+	}
-+
-+	/* Apply architecture specific fixups for the ranges */
-+	return pcibios_fixup_bridge_ranges(resources);
-+}
-+
-+/**
-+ * of_create_pci_host_bridge - Create a PCI host bridge structure using
-+ * information passed in the DT.
-+ * @parent: device owning this host bridge
-+ * @busno: bus number associated with the bridge root bus.
-+ * @bus_max: maximum number of busses for this bridge.
-+ * @ops: pci_ops associated with the host controller
-+ * @setup: setup function used by host controller driver to prepare the bridge.
-+ * @host_data: opaque data structure used by the host controller.
-+ *
-+ * Returns zero if successful or a negative error value if the call failed.
-+ */
-+int of_create_pci_host_bridge(struct device *parent, unsigned char busno,
-+			unsigned char bus_max, struct pci_ops *ops,
-+			int (*setup)(struct pci_host_bridge *, resource_size_t),
-+			void *host_data)
-+{
-+	int err, max;
-+	struct resource *bus_range;
-+	struct pci_bus *root_bus;
-+	struct pci_host_bridge *bridge = NULL;
-+	resource_size_t io_base = 0;	/* physical address for the start of I/O area */
-+	LIST_HEAD(res);
-+
-+	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
-+	if (!bus_range)
-+		return -ENOMEM;
-+
-+	err = of_pci_parse_bus_range(parent->of_node, bus_range);
-+	if (err) {
-+		bus_range->start = busno;
-+		bus_range->end = bus_max;
-+		bus_range->flags = IORESOURCE_BUS;
-+		dev_info(parent, "No bus range found for %s, using %pR\n",
-+			parent->of_node->full_name, &bus_range);
-+	} else {
-+		if (bus_range->end > bus_range->start + bus_max)
-+			bus_range->end = bus_range->start + bus_max;
-+	}
-+	pci_add_resource(&res, bus_range);
-+
-+	/* now parse the rest of host bridge bus ranges */
-+	err = pci_host_bridge_of_get_ranges(parent->of_node, &res, &io_base);
-+	if (err)
-+		goto err_create;
-+
-+	/* then create the root bus */
-+	root_bus = pci_create_root_bus(parent, busno, ops, host_data, &res);
-+	if (!root_bus) {
-+		err = -ENXIO;
-+		goto err_create;
-+	}
-+
-+	bridge = to_pci_host_bridge(root_bus->bridge);
-+
-+	/* give control to the host controller driver to finish setup */
-+	if (setup) {
-+		err = setup(bridge, io_base);
-+		if (err)
-+			goto err_setup;
-+	}
-+
-+	max = pci_scan_child_bus(root_bus);
-+	pci_bus_update_busn_res_end(root_bus, max);
-+
-+	if (!pci_has_flag(PCI_PROBE_ONLY))
-+		pci_assign_unassigned_bus_resources(root_bus);
-+
-+	pci_bus_add_devices(root_bus);
-+
-+	return 0;
-+
-+err_setup:
-+	pci_remove_bus(root_bus);
-+	put_device(&bridge->dev);
-+	device_unregister(&bridge->dev);
-+	kfree(root_bus);
-+	kfree(bridge);
-+
-+err_create:
-+	pci_free_resource_list(&res);
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(of_create_pci_host_bridge);
-+
- #ifdef CONFIG_PCI_MSI
- 
- static LIST_HEAD(of_pci_msi_chip_list);
-diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-index 0e5f3c9..3b22f93 100644
---- a/drivers/pci/host-bridge.c
-+++ b/drivers/pci/host-bridge.c
-@@ -82,3 +82,18 @@ void pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
- 	res->end = region->end + offset;
- }
- EXPORT_SYMBOL(pcibios_bus_to_resource);
-+
-+/**
-+ * Simple version of the platform specific code for filtering the list
-+ * of resources obtained from the ranges declaration in DT.
-+ *
-+ * Platforms can override this function in order to impose stronger
-+ * constraints onto the list of resources that a host bridge can use.
-+ * The filtered list will then be used to create a root bus and associate
-+ * it with the host bridge.
-+ *
-+ */
-+int __weak pcibios_fixup_bridge_ranges(struct list_head *resources)
-+{
-+	return 0;
-+}
-diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
-index 3a3824c..f58a1cb 100644
---- a/include/linux/of_pci.h
-+++ b/include/linux/of_pci.h
-@@ -16,6 +16,11 @@ int of_pci_get_devfn(struct device_node *np);
- int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
- int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
- int of_pci_get_domain_nr(struct device_node *node, bool allocate_if_missing);
-+int of_create_pci_host_bridge(struct device *parent, unsigned char busno,
-+			unsigned char bus_max, struct pci_ops *ops,
-+			int (*setup)(struct pci_host_bridge *, resource_size_t),
-+			void *host_data);
-+
- #else
- static inline int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq)
+diff --git a/drivers/infiniband/core/umem.c b/drivers/infiniband/core/umem.c
+index a3a2e9c..32699024 100644
+--- a/drivers/infiniband/core/umem.c
++++ b/drivers/infiniband/core/umem.c
+@@ -105,6 +105,7 @@ struct ib_umem *ib_umem_get(struct ib_ucontext *context, unsigned long addr,
+ 	umem->length    = size;
+ 	umem->offset    = addr & ~PAGE_MASK;
+ 	umem->page_size = PAGE_SIZE;
++	umem->mm        = get_task_mm(current);
+ 	/*
+ 	 * We ask for writable memory if any access flags other than
+ 	 * "remote read" are set.  "Local write" and "remote write"
+@@ -198,6 +199,7 @@ out:
+ 	if (ret < 0) {
+ 		if (need_release)
+ 			__ib_umem_release(context->device, umem, 0);
++		mmput(umem->mm);
+ 		kfree(umem);
+ 	} else
+ 		current->mm->pinned_vm = locked;
+@@ -229,13 +231,11 @@ static void ib_umem_account(struct work_struct *work)
+ void ib_umem_release(struct ib_umem *umem)
  {
-@@ -50,6 +55,14 @@ of_pci_get_domain_nr(struct device_node *node, bool allocate_if_missing)
- {
- 	return -1;
- }
-+
-+int of_create_pci_host_bridge(struct device *parent, unsigned char busno,
-+			unsigned char bus_max, struct pci_ops *ops,
-+			int (*setup)(struct pci_host_bridge *, resource_size_t),
-+			void *host_data)
-+{
-+	return -EINVAL;
-+}
- #endif
+ 	struct ib_ucontext *context = umem->context;
+-	struct mm_struct *mm;
+ 	unsigned long diff;
  
- #if defined(CONFIG_OF) && defined(CONFIG_PCI_MSI)
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 1d0e0b5..e1e0d80 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1821,6 +1821,12 @@ static inline struct device_node *pci_bus_to_OF_node(struct pci_bus *bus)
- 	return bus ? bus->dev.of_node : NULL;
- }
+ 	__ib_umem_release(umem->context->device, umem, 1);
  
-+/*
-+ * Used by architecture code to apply any quirks to the list of
-+ * pci_host_bridge resource ranges before they are being used
-+ * by of_create_pci_host_bridge()
-+ */
-+int pcibios_fixup_bridge_ranges(struct list_head *resources);
- #else /* CONFIG_OF */
- static inline void pci_set_of_node(struct pci_dev *dev) { }
- static inline void pci_release_of_node(struct pci_dev *dev) { }
+-	mm = get_task_mm(current);
+-	if (!mm) {
++	if (!umem->mm) {
+ 		kfree(umem);
+ 		return;
+ 	}
+@@ -251,20 +251,19 @@ void ib_umem_release(struct ib_umem *umem)
+ 	 * we defer the vm_locked accounting to the system workqueue.
+ 	 */
+ 	if (context->closing) {
+-		if (!down_write_trylock(&mm->mmap_sem)) {
++		if (!down_write_trylock(&umem->mm->mmap_sem)) {
+ 			INIT_WORK(&umem->work, ib_umem_account);
+-			umem->mm   = mm;
+ 			umem->diff = diff;
+ 
+ 			queue_work(ib_wq, &umem->work);
+ 			return;
+ 		}
+ 	} else
+-		down_write(&mm->mmap_sem);
++		down_write(&umem->mm->mmap_sem);
+ 
+-	current->mm->pinned_vm -= diff;
+-	up_write(&mm->mmap_sem);
+-	mmput(mm);
++	umem->mm->pinned_vm -= diff;
++	up_write(&umem->mm->mmap_sem);
++	mmput(umem->mm);
+ 	kfree(umem);
+ }
+ EXPORT_SYMBOL(ib_umem_release);
 -- 
-2.0.4
+1.7.7.6
 
