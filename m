@@ -1,49 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaHLPEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 11:04:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55107 "EHLO mx1.redhat.com"
+	id S1753180AbaHLPG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 11:06:26 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50663 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752817AbaHLPEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 11:04:48 -0400
-Date: Tue, 12 Aug 2014 11:04:17 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walter <sahne@0x90.at>,
-        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: [PATCH] resource: Fix the case of null pointer access
-Message-ID: <20140812150417.GC16961@redhat.com>
-References: <20140812144655.GB16961@redhat.com>
- <53EA297F.1040107@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53EA297F.1040107@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752687AbaHLPGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 11:06:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,849,1400050800"; 
+   d="scan'208";a="575603130"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 4/4] perf tools: Prefer to use a cpu-wide event for probing CLOEXEC
+Date: Tue, 12 Aug 2014 18:04:31 +0300
+Message-Id: <1407855871-15024-5-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1407855871-15024-1-git-send-email-adrian.hunter@intel.com>
+References: <1407855871-15024-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 04:49:35PM +0200, Richard Weinberger wrote:
-> Am 12.08.2014 16:46, schrieb Vivek Goyal:
-> > Richard and Daniel reported that UML is broken due to changes to resource
-> > traversal functions. Problem is that iomem_resource.child can be null
-> > and new code does not consider that possibility. Old code used a for loop
-> > and that loop will not even execute if p was null.
-> > 
-> > Revert back to for() loop logic and bail out if p is null.
-> > 
-> > I also moved sibling_only check out of resource_lock. There is no
-> > reason to keep it inside the lock.
-> > 
-> > Following is backtrace of the UML crash.
-> 
-> Shall I pickup this patch and route it via my uml tree to Linus?
+When doing a system-wide trace with Intel PT, the jump label
+set up as a result of probing CLOEXEC gets reset while the
+trace is running.  That causes an Intel PT decoding error
+because the object code (obtained from /proc/kcore) does
+not match the running code at that point.  While we can't
+expect there never to be jump label changes, we can avoid
+cases that the perf tool itself creates.
 
-I am fine with that. 
+The problem is avoided by first trying a cpu-wide event
+(pid = -1) for probing the PERF_FLAG_FD_CLOEXEC flag and
+falling back to an event for the current process (pid = 0).
 
-Thanks
-Vivek
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/cloexec.c | 22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
+index 000047c..4945aa5 100644
+--- a/tools/perf/util/cloexec.c
++++ b/tools/perf/util/cloexec.c
+@@ -1,3 +1,4 @@
++#include <sched.h>
+ #include "util.h"
+ #include "../perf.h"
+ #include "cloexec.h"
+@@ -15,10 +16,23 @@ static int perf_flag_probe(void)
+ 	};
+ 	int fd;
+ 	int err;
++	int cpu;
++	pid_t pid = -1;
+ 
+-	/* check cloexec flag */
+-	fd = sys_perf_event_open(&attr, 0, -1, -1,
+-				 PERF_FLAG_FD_CLOEXEC);
++	cpu = sched_getcpu();
++	if (cpu < 0)
++		cpu = 0;
++
++	while (1) {
++		/* check cloexec flag */
++		fd = sys_perf_event_open(&attr, pid, cpu, -1,
++					 PERF_FLAG_FD_CLOEXEC);
++		if (fd < 0 && pid == -1 && errno == EACCES) {
++			pid = 0;
++			continue;
++		}
++		break;
++	}
+ 	err = errno;
+ 
+ 	if (fd >= 0) {
+@@ -31,7 +45,7 @@ static int perf_flag_probe(void)
+ 		  err, strerror(err));
+ 
+ 	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
+-	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
++	fd = sys_perf_event_open(&attr, pid, cpu, -1, 0);
+ 	err = errno;
+ 
+ 	if (WARN_ONCE(fd < 0 && err != EBUSY,
+-- 
+1.8.3.2
+
