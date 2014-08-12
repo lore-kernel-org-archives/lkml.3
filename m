@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299AbaHLP37 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 11:29:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47000 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753056AbaHLP36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 11:29:58 -0400
-Date: Tue, 12 Aug 2014 12:29:53 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 05/33] perf record: Allow the user to disable time stamps
-Message-ID: <20140812152953.GA9820@kernel.org>
-References: <1407169064-25625-1-git-send-email-acme@kernel.org>
- <1407169064-25625-6-git-send-email-acme@kernel.org>
- <20140805060856.GA9453@gmail.com>
- <20140805133347.GH13375@kernel.org>
- <20140812145819.GA7737@gmail.com>
+	id S1753361AbaHLPaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 11:30:46 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:40240 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752669AbaHLPap convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 11:30:45 -0400
+Message-ID: <53EA3320.90908@linaro.org>
+Date: Tue, 12 Aug 2014 08:30:40 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140812145819.GA7737@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        LKML <linux-kernel@vger.kernel.org>, peterz@infradead.org,
+        tglx@linutronix.de, sfr@canb.auug.org.au, linuxppc-dev@ozlabs.org,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [tip:timers/core] timekeeping: Fixup typo in update_vsyscall_old
+ definition
+References: <1406349439-11785-1-git-send-email-john.stultz@linaro.org>	 <tip-953dec21aed4038464fec02f96a2f1b8701a5bce@git.kernel.org> <1407730744.4508.67.camel@pasglop>
+In-Reply-To: <1407730744.4508.67.camel@pasglop>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Aug 12, 2014 at 04:58:19PM +0200, Ingo Molnar escreveu:
-> * Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
-> > Em Tue, Aug 05, 2014 at 08:08:56AM +0200, Ingo Molnar escreveu:
-> > > This patch looks dangerous and misleading to me.
+On 08/10/2014 09:19 PM, Benjamin Herrenschmidt wrote:
+> On Wed, 2014-07-30 at 00:31 -0700, tip-bot for John Stultz wrote:
+>> Commit-ID:  953dec21aed4038464fec02f96a2f1b8701a5bce
+>> Gitweb:     http://git.kernel.org/tip/953dec21aed4038464fec02f96a2f1b8701a5bce
+>> Author:     John Stultz <john.stultz@linaro.org>
+>> AuthorDate: Fri, 25 Jul 2014 21:37:19 -0700
+>> Committer:  Thomas Gleixner <tglx@linutronix.de>
+>> CommitDate: Wed, 30 Jul 2014 09:26:25 +0200
+>>
+>> timekeeping: Fixup typo in update_vsyscall_old definition
+>>
+>> In commit 4a0e637738f0 ("clocksource: Get rid of cycle_last"),
+>> currently in the -tip tree, there was a small typo where cycles_t
+>> was used intstead of cycle_t. This broke ppc64 builds.
+> There's another bug in there... You fix timespec vs. timespec64 for the
+> first argument of update_vsyscall_old but not the second one ...
+> (wall_to_monotonic).
+>
+> Also, in e2dff1ec0 you claim this is "minor", you seem to forget that
+> arch/powerpc also deals with 32-bit kernels which use the same time
+> keeping code, so we have a pretty serious regressions here...
+Yikes. My apologies. I had missed that issue and had forgotten ppc32 has
+the vsyscall support as well.
 
-> > I took it more from the angle: hey, it fixes a regression, i.e. 
-> > -T/--time somehow became a noop, and also it doesn't change any 
-> > default.
+Thanks for pointing it out. I'll send a fix here shortly (though I only
+have the ppc64le toolchain handy, so forgive me if its not quite right).
 
-> > It also states that you will get misaccounting, why that would 
-> > happen, althought wording could've been better, as mmaps won't be 
-> > "missing", i.e. they will be there as this governs just 
-> > PERF_SAMPLE_TIME, not perf_event_attr.mmap, so it MMAPs may come 
-> > after samples for its maps.
 
-> > So, I took it.
+> BTW. Is there some documentation you can point me to to figure out what
+> replace that "_OLD" stuff so we can update to whatever is "new" ?
 
-> > How should we proceed?
+So there's not exactly documentation, but the idea is rather then doing:
 
-> I'd be fine with applying the patch and fixing the misleading 
-> changelog.
+nsecs +  (mult*(now - cycle_last) >>shift);
 
-Done:
+We're preserving the sub-nanosecond precision, and doing:
 
-https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/commit/?h=perf/core&id=8affc2b8c27bfc2d6e70827b746f490b62c44eaa
+(shifted_nsecs + mult*(now-cycle_last)) >> shift
 
-Consider now pulling the perf-core-for-mingo tag there, I updated it
-after updating the changelog for this specific commit, all the
-rest is the same as in the previous pull req.
+This avoids the rounding up 1ns every tick, which we did to avoid errors
+from truncating the precision.
 
-Thanks,
+I think the hard part for ppc, is if I recall, ppc's vsyscall exports
+the xsec unit, which less granular then nanoseconds, so it had its own
+version of the same precision truncation issues. I recall Paul working
+on that, and I thought his solution was to reduce the multiplier by one
+so the inter-tick time was slightly slower, then the tick update would
+catch up causing a slight stair-step, which isn't ideal but is better
+then the inconsistencies that came out of not-handling the precision
+properly. That said, skimming the ppc code, I don't see that logic right
+off, and have a fuzzy memory that maybe that solution was RHEL5 specific
+or something like that.
 
-- Arnaldo
+thanks
+-john
+
+
+
+
+
+
