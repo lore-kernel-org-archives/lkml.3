@@ -1,91 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143AbaHLVjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 17:39:12 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42603 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456AbaHLVjL (ORCPT
+	id S1755161AbaHLVjo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 17:39:44 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:59053 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410AbaHLVjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 17:39:11 -0400
-Message-ID: <53EA897D.8030901@codeaurora.org>
-Date: Tue, 12 Aug 2014 14:39:09 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 12 Aug 2014 17:39:42 -0400
+Date: Tue, 12 Aug 2014 14:39:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+Message-ID: <20140812213936.GA3106@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140808214648.GA19058@linux.vnet.ibm.com>
+ <20140811071308.GA4184@grmbl.mre>
+ <20140811162807.GW5821@linux.vnet.ibm.com>
+ <20140811194126.GF4184@grmbl.mre>
+ <20140811201102.GD5821@linux.vnet.ibm.com>
+ <20140811201845.GG4184@grmbl.mre>
+ <20140811203421.GE5821@linux.vnet.ibm.com>
+ <20140812034531.GA13801@linux.vnet.ibm.com>
+ <20140812053321.GK4184@grmbl.mre>
+ <20140812160621.GC4752@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
-        Liu hua <sdu.liu@huawei.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Doug Anderson <dianders@google.com>, Rabin Vincent <rabin@rab.in>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Mark Salter <msalter@redhat.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 3/7] arm: use fixmap for text patching when text is
- RO
-References: <1407867869-5194-1-git-send-email-keescook@chromium.org> <1407867869-5194-4-git-send-email-keescook@chromium.org>
-In-Reply-To: <1407867869-5194-4-git-send-email-keescook@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140812160621.GC4752@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081221-3532-0000-0000-000003CC4EA0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/14 11:24, Kees Cook wrote:
-> diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
-> index 07314af47733..03dd4e39c833 100644
-> --- a/arch/arm/kernel/patch.c
-> +++ b/arch/arm/kernel/patch.c
-> @@ -13,21 +16,69 @@ struct patch {
->  	unsigned int insn;
->  };
->  
-> -void __kprobes __patch_text(void *addr, unsigned int insn)
-> +static DEFINE_SPINLOCK(patch_lock);
-> +
-> +static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
-> +{
-> +	unsigned int uintaddr = (uintptr_t) addr;
-> +	bool module = !core_kernel_text(uintaddr);
-> +	struct page *page;
-> +
-> +	if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX))
-> +		page = vmalloc_to_page(addr);
-> +	else if (!module && IS_ENABLED(CONFIG_DEBUG_RODATA))
-> +		page = virt_to_page(addr);
-> +	else
-> +		return addr;
-> +
-> +	if (flags)
-> +		spin_lock_irqsave(&patch_lock, *flags);
-> +
-> +	set_fixmap(fixmap, page_to_phys(page));
-> +
-> +	return (void *) (__fix_to_virt(fixmap) + (uintaddr & ~PAGE_MASK));
-> +}
-> +
-> +static void __kprobes patch_unmap(int fixmap, unsigned long *flags)
-> +{
-> +	clear_fixmap(fixmap);
-> +
-> +	if (flags)
-> +		spin_unlock_irqrestore(&patch_lock, *flags);
-> +}
+On Tue, Aug 12, 2014 at 09:06:21AM -0700, Paul E. McKenney wrote:
+> On Tue, Aug 12, 2014 at 11:03:21AM +0530, Amit Shah wrote:
 
-Has the kbuildbot complained about this one yet?
+[ . . . ]
 
-  CHECK  arch/arm/kernel/patch.c
-  arch/arm/kernel/patch.c:47:39: warning: context imbalance in
-'patch_unmap' - unexpected unlock
+> > I know of only virtio-console doing this (via userspace only,
+> > though).
+> 
+> As in userspace within the guest?  That would not work.  The userspace
+> that the qemu is running in might.  There is a way to extract ftrace info
+> from crash dumps, so one approach would be "sendkey alt-sysrq-c", then
+> pull the buffer from the resulting dump.  For all I know, there might also
+> be some script that uses the qemu "x" command to get at the ftrace buffer.
+> 
+> Again, I cannot reproduce this, and I have been through the code several
+> times over the past few days, and am not seeing it.  I could start
+> sending you random diagnostic patches, but it would be much better if
+> we could get the trace data from the failure.
 
-I guess we're going to ignore it.
+Hearing no objections, random patch #1.  The compiler could in theory
+cause trouble without this patch, so there is some possibility that
+it is a fix.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index a2333d07f5d6..1dc72f523c4a 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2043,7 +2043,7 @@ static void wake_nocb_leader(struct rcu_data *rdp, bool force)
+ 	if (!ACCESS_ONCE(rdp_leader->nocb_kthread))
+ 		return;
+ 	if (!ACCESS_ONCE(rdp_leader->nocb_leader_wake) || force) {
+-		/* Prior xchg orders against prior callback enqueue. */
++		/* Prior smp_mb__after_atomic() orders against prior enqueue. */
+ 		ACCESS_ONCE(rdp_leader->nocb_leader_wake) = true;
+ 		wake_up(&rdp_leader->nocb_wq);
+ 	}
+@@ -2072,6 +2072,7 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
+ 	ACCESS_ONCE(*old_rhpp) = rhp;
+ 	atomic_long_add(rhcount, &rdp->nocb_q_count);
+ 	atomic_long_add(rhcount_lazy, &rdp->nocb_q_count_lazy);
++	smp_mb__after_atomic(); /* Store *old_rhpp before _wake test. */
+ 
+ 	/* If we are not being polled and there is a kthread, awaken it ... */
+ 	t = ACCESS_ONCE(rdp->nocb_kthread);
 
