@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465AbaHLRxH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 13:53:07 -0400
-Received: from fieldses.org ([174.143.236.118]:43405 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753451AbaHLRxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 13:53:05 -0400
-Date: Tue, 12 Aug 2014 13:53:03 -0400
-To: Jeff Layton <jeff.layton@primarydata.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, trond.myklebust@primarydata.com
-Subject: Re: [PATCH 0/5] locks: move most locks_release_private calls outside
- of i_lock
-Message-ID: <20140812175303.GD22365@fieldses.org>
-References: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
- <20140812134313.1273dc63@tlielax.poochiereds.net>
+	id S1754534AbaHLRyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 13:54:43 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:43223 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753449AbaHLRyl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 13:54:41 -0400
+Date: Tue, 12 Aug 2014 10:54:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH] Input: serio: make HYPERV_KEYBOARD depend on
+ SERIO_I8042=y
+Message-ID: <20140812175435.GA22386@core.coreip.homeip.net>
+References: <1407814240-4275-1-git-send-email-decui@microsoft.com>
+ <20140812032148.GB6867@kroah.com>
+ <EE124450C0AAF944A40DD71E61F878C9920A1C@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <20140812060108.GA13231@kroah.com>
+ <EE124450C0AAF944A40DD71E61F878C9920EAF@SINEX14MBXC417.southpacific.corp.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140812134313.1273dc63@tlielax.poochiereds.net>
+In-Reply-To: <EE124450C0AAF944A40DD71E61F878C9920EAF@SINEX14MBXC417.southpacific.corp.microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 01:43:13PM -0400, Jeff Layton wrote:
-> On Tue, 12 Aug 2014 10:48:08 -0400
-> Jeff Layton <jlayton@primarydata.com> wrote:
-> 
-> > In the days of yore, the file locking code was primarily protected by
-> > the BKL. That changed in commit 72f98e72551fa (locks: turn lock_flocks
-> > into a spinlock), at which point the code was changed to be protected
-> > by a conventional spinlock (mostly due to a push to finally eliminate
-> > the BKL). Since then, the code has been changed to use the i_lock
-> > instead of a global spinlock, but it's still under a spinlock.
+On Tue, Aug 12, 2014 at 07:15:25AM +0000, Dexuan Cui wrote:
+> > -----Original Message-----
+> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> > owner@vger.kernel.org] On Behalf Of Greg KH
+> > > > What exactly needs to be done to fix this "correctly" that is going to
+> > > > take too much work at the moment?
+> > >
+> > > To decouple the dependency between the hyperv-keyboard and i8042
+> > > modules, I suppose we probably have to re-implement hyperv-keyboard by
+> > > using input_allocate_device(), input_register_device(), and using
+> > > input_report_key() to pass the key strokes to the high level.
 > > 
-> > With that change, several functions now no longer can block when they
-> > originally could. This is a particular problem with the
-> > fl_release_private operation. In NFSv4, that operation is used to kick
-> > off a RELEASE_LOCKOWNER or FREE_STATEID call, and that requires being
-> > able to do an allocation.
-> > 
-> > This was reported by Josh Stone here:
-> > 
-> >     https://bugzilla.redhat.com/show_bug.cgi?id=1089092
-> > 
-> > My initial stab at fixing this involved moving this to a workqueue, but
-> > Trond pointed out the above change was technically a regression with the
-> > way the spinlocking in the file locking code works, and suggested an
-> > alternate approach to fixing it.
-> > 
-> > This set focuses on moving most of the locks_release_private calls
-> > outside of the inode->i_lock. There are still a few that are done
-> > under the i_lock in the lease handling code. Cleaning up the use of
-> > the i_lock in the lease code is a larger project which we'll have to
-> > tackle at some point, but there are some other cleanups that will
-> > need to happen first.
-> > 
-> > Absent any objections, I'll plan to merge these for 3.18.
-> > 
-> 
-> Erm...make that v3.17...
-> 
-> As Trond points out, the fact that we end up doing sleeping allocations
-> under spinlock can allow an unprivileged user to crash a NFSv4 client.
-> So I may see about merging these sooner rather than later after they've
-> had a little soak time in linux-next.
+> > Yes, that would be the best thing to do,
 
-Looks reasonable to me--ACK on the set.
+Why? The backend still delivers AT keyboard data, so why does it make
+sense to write a new driver instead of making sure you can load
+atkbd/libps2 even without i8042 loaded?
 
---b.
+> > and shouldn't be that hard to
+> > create an input driver, it's pretty simple code, right?
+> Hi Greg,
+> Thanks for the confirmation!
+> I didn't use the APIs before. 
+> I think I need a couple of days to code, test and debug it while I have many
+>  things at hand at present. :-(
+> 
+> > > I'll have to need some time for further investigation and a new
+> > > implementation. Before the new code is completely ready, IMHO the
+> > > patch can help to avoid a bad user experience like Arch Linux working
+> > > as a Generation 2 hyper-v guest.
+> > 
+> > You are still preventing Arch from working here, as the driver can't be
+> > built at all, right?
+> The driver can build(compile) fine.
+> The issue is: the latest Arch Linux release doesn't have a working (virtual)
+> keyboard when it runs as Generation 2 hyper-v guest -- when it runs as
+> a "traditional" Generation 1 hyper-v guest, everything works fine.
+> I hope this patch can temporarily help Arch users if they find the issue
+> and if they can rebuild the kernel.
+
+The Arch users can simply select to build i8042 into the kernel as a
+workaround.
+
+The proper solution is to allow loading libps2 module even if i8042 did
+not find its device. I wish I could simply drop this i8042_lock_chip and
+stuff, but unfortunately i8042 ports are not truly independent. We need
+to figure a way for libps2 to engage locking in i8042 if the driver is
+loaded, otherwise just ignore it.
+
+Thanks.
+
+-- 
+Dmitry
