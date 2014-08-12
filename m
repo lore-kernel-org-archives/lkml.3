@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201AbaHLW2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 18:28:47 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:39873 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932154AbaHLW2o (ORCPT
+	id S932244AbaHLW2w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 18:28:52 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:45869 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932154AbaHLW2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 18:28:44 -0400
+	Tue, 12 Aug 2014 18:28:49 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: gregkh@linuxfoundation.org
 Cc: tiwai@suse.de, linux-kernel@vger.kernel.org,
@@ -26,9 +26,9 @@ Cc: tiwai@suse.de, linux-kernel@vger.kernel.org,
         Santosh Rastapur <santosh@chelsio.com>,
         MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v3 2/3] cxgb4: use module_long_probe_init()
-Date: Tue, 12 Aug 2014 15:28:26 -0700
-Message-Id: <1407882507-325-3-git-send-email-mcgrof@do-not-panic.com>
+Subject: [PATCH v3 3/3] mptsas: use module_long_probe_init()
+Date: Tue, 12 Aug 2014 15:28:27 -0700
+Message-Id: <1407882507-325-4-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com>
@@ -38,13 +38,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-cxgb4 probe can take up to over 1 minute when the firmware is
-is written and installed on the device, even after this the device
-driver still does some device probing and can take quite a bit.
-This driver needs fixing but right now it simply wont' work on
-some systems. Use the new module_long_probe_init() to annotate
-this driver's probe is broken and require some love, but makes
-the driver operational until that is fixed.
+Its reported that mptsas can at times take over 30 seconds
+to recognize SCSI storage devices [0], this is done on the
+driver's probe path. Use the the new module_long_probe_init()
+to annotate this driver's probe is broken and require some love,
+but makes the driver operational until that is fixed.
+
+[0] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705
 
 Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
@@ -67,29 +67,29 @@ Cc: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org
 Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c | 5 +++--
+ drivers/message/fusion/mptsas.c | 5 +++--
  1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-index 36ebbda..5d8231d 100644
---- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-@@ -34,6 +34,7 @@
- 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
+index 0707fa2..c2bb72b 100644
+--- a/drivers/message/fusion/mptsas.c
++++ b/drivers/message/fusion/mptsas.c
+@@ -43,6 +43,7 @@
+ */
+ /*=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*/
  
 +#include <linux/kthread.h>
- #include <linux/bitmap.h>
- #include <linux/crc32.h>
- #include <linux/ctype.h>
-@@ -6815,5 +6816,5 @@ static void __exit cxgb4_cleanup_module(void)
- 	destroy_workqueue(workq);
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
+@@ -5439,5 +5440,5 @@ mptsas_exit(void)
+ 	mpt_deregister(mptsasDeviceResetCtx);
  }
  
--module_init(cxgb4_init_module);
--module_exit(cxgb4_cleanup_module);
-+module_long_probe_init(cxgb4_init_module);
-+module_long_probe_exit(cxgb4_cleanup_module);
+-module_init(mptsas_init);
+-module_exit(mptsas_exit);
++module_long_probe_init(mptsas_init);
++module_long_probe_exit(mptsas_exit);
 -- 
 2.0.3
 
