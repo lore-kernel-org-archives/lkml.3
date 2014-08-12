@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731AbaHLJRq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 05:17:46 -0400
-Received: from mail-oi0-f49.google.com ([209.85.218.49]:49472 "EHLO
-	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412AbaHLJRo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 05:17:44 -0400
+	id S1754839AbaHLJSa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 05:18:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27759 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412AbaHLJS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 05:18:28 -0400
+Date: Tue, 12 Aug 2014 11:18:50 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: razya@il.ibm.com, kvm@vger.kernel.org, GLIKSON@il.ibm.com,
+        ERANRA@il.ibm.com, YOSSIKU@il.ibm.com, JOELN@il.ibm.com,
+        abel.gordon@gmail.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] vhost: Add polling mode
+Message-ID: <20140812091850.GD6440@redhat.com>
+References: <1407659404-razya@il.ibm.com>
+ <20140810083035.0CF58380729@moren.haifa.ibm.com>
+ <20140810194559.GA4344@redhat.com>
+ <20140811.124621.576073630604147753.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpo=QrZBmFoWq0hBRBDUbP=AiyTRjnTtJ1R5q_r=dhBO3Og@mail.gmail.com>
-References: <1406250448-470-1-git-send-email-skannan@codeaurora.org>
-	<1406250448-470-4-git-send-email-skannan@codeaurora.org>
-	<3141717.0s1tLjazMZ@vostro.rjw.lan>
-	<CAKohpo=QrZBmFoWq0hBRBDUbP=AiyTRjnTtJ1R5q_r=dhBO3Og@mail.gmail.com>
-Date: Tue, 12 Aug 2014 14:47:43 +0530
-Message-ID: <CAKohpokBE=r0oxF9Y-Cmu2HuLHnwKV4w+kFays=WY8TwD93oFw@mail.gmail.com>
-Subject: Re: [PATCH v4 3/5] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        Todd Poynor <toddpoynor@google.com>,
-        "Srivatsa S . Bhat" <srivatsa@mit.edu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140811.124621.576073630604147753.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 August 2014 16:21, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 1 August 2014 03:26, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> I'm still quite unsure how this is going to work with the real CPU hot-remove
->> that makes the entire sysfs cpu directories go away.  Can you please explain
->> that?
->
-> I have little less knowledge on this kind of hotplugs, can you please enlighten
-> me with some info about this?
->
-> Are we talking about big servers which are actually a combination of multiple
-> motherboards (with SoC's), and any motherboard can be plugged out at
-> run time. Obviously a single kernel would be running for all these motherboards.
->
-> I don't know if we already support that.. Sorry for my lack of
-> knowledge on this..
+On Mon, Aug 11, 2014 at 12:46:21PM -0700, David Miller wrote:
+> From: "Michael S. Tsirkin" <mst@redhat.com>
+> Date: Sun, 10 Aug 2014 21:45:59 +0200
+> 
+> > On Sun, Aug 10, 2014 at 11:30:35AM +0300, Razya Ladelsky wrote:
+>  ...
+> > And, did your tests actually produce 100% load on both host CPUs?
+>  ...
+> 
+> Michael, please do not quote an entire patch just to ask a one line
+> question.
+> 
+> I truly, truly, wish it was simpler in modern email clients to delete
+> the unrelated quoted material because I bet when people do this they
+> are simply being lazy.
+> 
+> Thank you.
 
-Ping!!
+Lazy - mea culpa, though I'm using mutt so it isn't even hard.
+
+The question still stands: the test results are only valid
+if CPU was at 100% in all configurations.
+This is the reason I generally prefer it when people report
+throughput divided by CPU (power would be good too but it still
+isn't easy for people to get that number).
+
+-- 
+MST
+
