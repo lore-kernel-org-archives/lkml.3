@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349AbaHLHDE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:03:04 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:64755 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769AbaHLHC7 (ORCPT
+	id S1753767AbaHLHDU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:03:20 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:51257 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753282AbaHLHDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:02:59 -0400
+	Tue, 12 Aug 2014 03:03:15 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
@@ -26,81 +26,72 @@ CC: <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
         "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
         Chris Metcalf <cmetcalf@tilera.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [RFC PATCH 00/20] Use msi_chip to configure MSI/MSI-X in all platforms
-Date: Tue, 12 Aug 2014 15:25:53 +0800
-Message-ID: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
+Subject: [RFC PATCH 12/20] MIPS/Xlp/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
+Date: Tue, 12 Aug 2014 15:26:05 +0800
+Message-ID: <1407828373-24322-13-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
+References: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.175.100.166]
 X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020208.53E9BC13.007A,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: a20ddb492f2079514eef48072e0ca02b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is mainly to use msi_chip instead of currently weak arch functions
-across all platforms. Also clean up current MSI code and make drivers support
-MSI easier.  
+Introduce a new struct msi_chip xlp_chip instead of weak arch
+functions to configure MSI/MSI-X.
 
-Yijing Wang (20):
-  x86/xen/MSI: Eliminate arch_msix_mask_irq() and arch_msi_mask_irq()
-  MSI: Clean up struct msi_chip argument
-  PCI/MSI: Remove useless bus->msi assignment
-  MSI: Remove the redundant irq_set_chip_data()
-  MSI: Refactor struct msi_chip to become more common
-  PCI/MSI: Introduce arch_get_match_msi_chip() to find the match
-    msi_chip
-  x86/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
-  x86/xen/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
-  irq_remapping/MSI: Use msi_chip instead of arch func to configure
-    MSI/MSI-X
-  x86/MSI: Remove unused MSI weak arch functions
-  MIPS/Octeon/MSI: Use msi_chip instead of arch func to configure
-    MSI/MSI-X
-  MIPS/Xlp/MSI: Use msi_chip instead of arch func to configure
-    MSI/MSI-X
-  MIPS/xlr/MSI: Use msi_chip instead of arch func to configure
-    MSI/MSI-X
-  Powerpc/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
-  s390/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
-  arm/iop13xx/MSI: Use msi_chip instead of arch func to configure
-    MSI/MSI-X
-  IA64/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
-  Sparc/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
-  tile/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
-  PCI/MSI: Clean up unused MSI arch functions
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ arch/mips/pci/msi-xlp.c |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
 
- arch/arm/mach-iop13xx/include/mach/pci.h |    2 +
- arch/arm/mach-iop13xx/iq81340mc.c        |    1 +
- arch/arm/mach-iop13xx/iq81340sc.c        |    1 +
- arch/arm/mach-iop13xx/msi.c              |   14 +++-
- arch/arm/mach-iop13xx/pci.c              |    6 ++
- arch/ia64/kernel/msi_ia64.c              |   18 +++-
- arch/mips/pci/msi-octeon.c               |   45 ++++------
- arch/mips/pci/msi-xlp.c                  |   15 +++-
- arch/mips/pci/pci-xlr.c                  |   19 +++-
- arch/powerpc/kernel/msi.c                |   23 ++++--
- arch/s390/pci/pci.c                      |   16 +++-
- arch/sparc/kernel/pci.c                  |   18 +++-
- arch/tile/kernel/pci_gx.c                |   20 +++-
- arch/x86/include/asm/pci.h               |    4 +-
- arch/x86/include/asm/x86_init.h          |    3 -
- arch/x86/kernel/apic/io_apic.c           |   35 +++++++-
- arch/x86/kernel/x86_init.c               |   34 -------
- arch/x86/pci/xen.c                       |  139 ++++++++++++++++--------------
- drivers/iommu/irq_remapping.c            |   13 ++-
- drivers/irqchip/irq-armada-370-xp.c      |   12 +--
- drivers/pci/host/pci-tegra.c             |    9 ++-
- drivers/pci/host/pcie-designware.c       |    6 +-
- drivers/pci/host/pcie-rcar.c             |    9 ++-
- drivers/pci/msi.c                        |  118 ++++++++++++--------------
- drivers/pci/probe.c                      |    1 -
- include/linux/msi.h                      |   13 ++--
- 26 files changed, 338 insertions(+), 256 deletions(-)
+diff --git a/arch/mips/pci/msi-xlp.c b/arch/mips/pci/msi-xlp.c
+index fa374fe..6c27346 100644
+--- a/arch/mips/pci/msi-xlp.c
++++ b/arch/mips/pci/msi-xlp.c
+@@ -245,7 +245,7 @@ static struct irq_chip xlp_msix_chip = {
+ 	.irq_unmask	= unmask_msi_irq,
+ };
+ 
+-void arch_teardown_msi_irq(unsigned int irq)
++void xlp_teardown_msi_irq(unsigned int irq)
+ {
+ }
+ 
+@@ -452,11 +452,12 @@ static int xlp_setup_msix(uint64_t lnkbase, int node, int link,
+ 	return 0;
+ }
+ 
+-int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
++int xlp_setup_msi_irq(struct device *d, struct msi_desc *desc)
+ {
+ 	struct pci_dev *lnkdev;
+ 	uint64_t lnkbase;
+ 	int node, link, slot;
++	struct pci_dev *dev = to_pci_dev(d);
+ 
+ 	lnkdev = xlp_get_pcie_link(dev);
+ 	if (lnkdev == NULL) {
+@@ -474,6 +475,16 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+ 		return xlp_setup_msi(lnkbase, node, link, desc);
+ }
+ 
++struct msi_chip xlp_chip = {
++	.setup_irq = xlp_setup_msi_irq,
++	.teardown_irq = xlp_teardown_msi_irq,
++};
++
++struct msi_chip *arch_get_match_msi_chip(struct device *dev)
++{
++	return &xlp_chip;
++}
++
+ void __init xlp_init_node_msi_irqs(int node, int link)
+ {
+ 	struct nlm_soc_info *nodep;
+-- 
+1.7.1
 
