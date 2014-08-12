@@ -1,117 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098AbaHLGw7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 02:52:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37985 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaHLGwr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 02:52:47 -0400
-Message-ID: <53E9B9B3.1050504@infradead.org>
-Date: Mon, 11 Aug 2014 23:52:35 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753302AbaHLGyO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 02:54:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64376 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753202AbaHLGyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 02:54:12 -0400
+Date: Tue, 12 Aug 2014 12:23:23 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Greg KH <greg@kroah.com>
+Cc: stable@vger.kernel.org, Amos Kong <akong@redhat.com>,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [3.16 stable PATCH 1/1] virtio-rng: fix multi-device startup
+Message-ID: <20140812065323.GL4184@grmbl.mre>
+References: <5ef3aa4ea1932b7655d9db5a0139b8a2922af0db.1407760907.git.amit.shah@redhat.com>
+ <20140811225527.GB10721@kroah.com>
+ <20140812053158.GJ4184@grmbl.mre>
+ <20140812055548.GB12762@kroah.com>
 MIME-Version: 1.0
-To: Dave Young <dyoung@redhat.com>, Matt Fleming <matt.fleming@intel.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Subject: Re: [PATCH 1/5] efi: move noefi early param code out of x86 arch
- code
-References: <1407823822-23829-1-git-send-email-dyoung@redhat.com>
-In-Reply-To: <1407823822-23829-1-git-send-email-dyoung@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140812055548.GB12762@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/14 23:10, Dave Young wrote:
-> noefi param can be used for arches other than X86 later, thus move it out of
-> x86 platform code.
+On (Tue) 12 Aug 2014 [13:55:48], Greg KH wrote:
+> On Tue, Aug 12, 2014 at 11:01:58AM +0530, Amit Shah wrote:
+> > On (Tue) 12 Aug 2014 [06:55:27], Greg KH wrote:
+> > > On Mon, Aug 11, 2014 at 06:11:47PM +0530, Amit Shah wrote:
+> > > > This is a 3.16-only patch.  The linux.git fix is
+> > > > 5c06273401f2eb7b290cadbae18ee00f8f65e893, which fixes this issue in a
+> > > > different way.
+> > > 
+> > > Why "different"?  Why can't I take that original patch instead?  What is
+> > > different in this patch, and why?
+> > 
+> > The commit referenced moves the hwrng_register() call to the ->scan()
+> > callback instead of it being in probe().  This was done to ensure the
+> > virtio-rng devices can contribute to the initial system entropy
+> > introduced in commit d9e7972619334.
+> > 
+> > That patch is quite small too, but will need a slight conflict
+> > resolution due to the previous two code-shuffling patches, and also
+> > the following revert.
+> > 
+> > However, I decided against the backport of the ->scan() method, since
+> > it wasn't designed to solve this regression, it happens to solve it,
+> > and it actually introduces new functionality.  I would be happy to
+> > provide a backport of the relevant patches, if you think that would be
+> > alright.
 > 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  arch/x86/platform/efi/efi.c | 10 +---------
->  drivers/firmware/efi/efi.c  | 13 +++++++++++++
->  include/linux/efi.h         |  1 +
->  3 files changed, 15 insertions(+), 9 deletions(-)
+> I almost always want "original" patches as it causes less bugs overall,
+> and less confusion for everyone involved.  Taking 2-3 patches is just as
+> easy as 1 patch, and even easier if I don't have to review it as "hard"
+> due to it not differing from what is in Linus's tree.
 
-This line in Documentation/kernel-parameters.txt needs to be updated:
+Thanks; I'll send a backport of the patches, then.
 
-	noefi		[X86] Disable EFI runtime services support.
-
-
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> index 850da94..dd7aaa1 100644
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -70,14 +70,6 @@ static efi_config_table_type_t arch_tables[] __initdata = {
->  
->  u64 efi_setup;		/* efi setup_data physical address */
->  
-> -static bool disable_runtime __initdata = false;
-> -static int __init setup_noefi(char *arg)
-> -{
-> -	disable_runtime = true;
-> -	return 0;
-> -}
-> -early_param("noefi", setup_noefi);
-> -
->  int add_efi_memmap;
->  EXPORT_SYMBOL(add_efi_memmap);
->  
-> @@ -492,7 +484,7 @@ void __init efi_init(void)
->  	if (!efi_runtime_supported())
->  		pr_info("No EFI runtime due to 32/64-bit mismatch with kernel\n");
->  	else {
-> -		if (disable_runtime || efi_runtime_init())
-> +		if (efi_runtime_disabled() || efi_runtime_init())
->  			return;
->  	}
->  	if (efi_memmap_init())
-> diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
-> index 64ecbb5..c8f01a7 100644
-> --- a/drivers/firmware/efi/efi.c
-> +++ b/drivers/firmware/efi/efi.c
-> @@ -41,6 +41,19 @@ struct efi __read_mostly efi = {
->  };
->  EXPORT_SYMBOL(efi);
->  
-> +static bool disable_runtime;
-> +static int __init setup_noefi(char *arg)
-> +{
-> +	disable_runtime = true;
-> +	return 0;
-> +}
-> +early_param("noefi", setup_noefi);
-> +
-> +bool efi_runtime_disabled(void)
-> +{
-> +	return disable_runtime;
-> +}
-> +
->  static struct kobject *efi_kobj;
->  static struct kobject *efivars_kobj;
->  
-> diff --git a/include/linux/efi.h b/include/linux/efi.h
-> index 45cb4ff..06d7c03 100644
-> --- a/include/linux/efi.h
-> +++ b/include/linux/efi.h
-> @@ -1227,4 +1227,5 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
->  				  unsigned long *load_addr,
->  				  unsigned long *load_size);
->  
-> +bool efi_runtime_disabled(void);
->  #endif /* _LINUX_EFI_H */
-> 
-
-
--- 
-~Randy
+		Amit
