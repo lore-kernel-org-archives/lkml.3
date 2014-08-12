@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376AbaHLWC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 18:02:28 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:39436 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345AbaHLWC0 (ORCPT
+	id S1755382AbaHLWDI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 18:03:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50589 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540AbaHLWDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 18:02:26 -0400
-Date: Tue, 12 Aug 2014 15:02:25 -0700 (PDT)
-Message-Id: <20140812.150225.33325749199708788.davem@davemloft.net>
-To: chas@cmf.nrl.navy.mil
-Cc: peterz@infradead.org, fengguang.wu@intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lkp@01.org,
-        linux-atm-general@lists.sourceforge.net
-Subject: Re: [PATCH] atm/svc: Fix blocking in wait loop
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140812081226.0fb0534e@thirdoffive.cmf.nrl.navy.mil>
-References: <20140807172514.GY9918@twins.programming.kicks-ass.net>
-	<20140807172901.GH3588@twins.programming.kicks-ass.net>
-	<20140812081226.0fb0534e@thirdoffive.cmf.nrl.navy.mil>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 12 Aug 2014 18:03:06 -0400
+Date: Tue, 12 Aug 2014 15:03:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: <santosh.shilimkar@ti.com>, <grygorii.strashko@ti.com>,
+        <phacht@linux.vnet.ibm.com>, <yinghai@kernel.org>, <fabf@skynet.be>,
+        <Emilian.Medve@freescale.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] memblock, memhotplug: Fix wrong type in
+ memblock_find_in_range_node().
+Message-Id: <20140812150304.74a7da3f2491f3d8f8a30107@linux-foundation.org>
+In-Reply-To: <1407651123-10994-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1407651123-10994-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 12 Aug 2014 15:02:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-Date: Tue, 12 Aug 2014 08:12:26 -0400
+On Sun, 10 Aug 2014 14:12:03 +0800 Tang Chen <tangchen@cn.fujitsu.com> wrote:
 
-> One should not call blocking primitives inside a wait loop, since both
-> require task_struct::state to sleep, so the inner will destroy the
-> outer state.
+> In memblock_find_in_range_node(), we defeind ret as int. But it shoule
+> be phys_addr_t because it is used to store the return value from
+> __memblock_find_range_bottom_up().
 > 
-> sigd_enq() will possibly sleep for alloc_skb().  Move sigd_enq() before
-> prepare_to_wait() to avoid sleeping while waiting interruptibly.  You do
-> not actually need to call sigd_enq() after the initial prepare_to_wait()
-> because we test the termination condition before calling schedule().
+> The bug has not been triggered because when allocating low memory near
+> the kernel end, the "int ret" won't turn out to be minus. When we started
+> to allocate memory on other nodes, and the "int ret" could be minus.
+> Then the kernel will panic.
 > 
-> Based on suggestions from Peter Zijlstra.
+> A simple way to reproduce this: comment out the following code in numa_init(),
 > 
-> Signed-off-by: Chas Williams <chas@cmf.n4rl.navy.mil>
-> Acked-by: Peter Zijlstra <peterz@infradead.org>
+>         memblock_set_bottom_up(false);
+> 
+> and the kernel won't boot.
 
-Applied.
+Which kernel versions need this fix?
