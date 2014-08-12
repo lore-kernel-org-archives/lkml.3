@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908AbaHLUAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 16:00:44 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:57226 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637AbaHLUAl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 16:00:41 -0400
+	id S1754950AbaHLUCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 16:02:32 -0400
+Received: from seketeli.net ([94.23.218.202]:37947 "EHLO ms.seketeli.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754637AbaHLUCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 16:02:30 -0400
+Date: Tue, 12 Aug 2014 22:02:28 +0200
+From: Apelete Seketeli <apelete@seketeli.net>
+To: Chris Ball <chris@printf.net>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Alex Smith <alex.smith@imgtec.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 2/2] mmc: jz4740: prepare next dma transfer in
+ parallel with current transfer
+Message-ID: <20140812200228.GB23978@tao>
+References: <1405917465-18185-1-git-send-email-apelete@seketeli.net>
+ <1405917465-18185-3-git-send-email-apelete@seketeli.net>
+ <86y4ut60ha.fsf@void.printf.net>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUDb6kLH_Qp=YMm=m3P_hmEu3dfDTse=ptCsdpO9EEcAQ@mail.gmail.com>
-References: <1405657206-12060-1-git-send-email-ast@plumgrid.com>
-	<1405657206-12060-11-git-send-email-ast@plumgrid.com>
-	<CALCETrUt1yLXTt5pDZJd0s4s+4dhs0LB7tbJYd6p1+EbdNWw7w@mail.gmail.com>
-	<CAMEtUuygJoH+PBNksTwRHyRObCZixoTDFzmnHroErZHZLaGNbg@mail.gmail.com>
-	<CALCETrUDb6kLH_Qp=YMm=m3P_hmEu3dfDTse=ptCsdpO9EEcAQ@mail.gmail.com>
-Date: Tue, 12 Aug 2014 13:00:40 -0700
-Message-ID: <CAMEtUuz2DS8Ks0L15K0Jsj_nFjgvDh0TBwb+5pHzrdU+o6co_g@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 net-next 10/16] bpf: add eBPF verifier
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <86y4ut60ha.fsf@void.printf.net>
+X-Operating-System: Debian GNU/Linux 7
+X-URL: http://apelete.seketeli.net
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 12:32 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Thu, Jul 24, 2014 at 12:25 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->> On Thu, Jul 24, 2014 at 11:25 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> On Thu, Jul 17, 2014 at 9:20 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>>> Safety of eBPF programs is statically determined by the verifier, which detects:
->>>> - loops
->>>> - out of range jumps
->>>> - unreachable instructions
->>>> - invalid instructions
->>>> - uninitialized register access
->>>> - uninitialized stack access
->>>> - misaligned stack access
->>>> - out of range stack access
->>>> - invalid calling convention
->>>
->>> Is there something that documents exactly what conditions an eBPF
->>> program must satisfy in order to be considered valid?
->>
->> I did a writeup in the past on things that verifiers checks and gave it
->> to internal folks to review. Guys have said that now they understand very
->> well how it works, but in reality it didn't help at all to write valid programs.
->> What worked is 'verification trace' = the instruction by instruction dump
->> of verifier state while it's analyzing the program.
->> I gave few simple examples of it in
->> 'Understanding eBPF verifier messages' section:
->> https://git.kernel.org/cgit/linux/kernel/git/ast/bpf.git/diff/Documentation/networking/filter.txt?id=b22459133b9f52d2176c8c0f8b5eb036478a40c9
->> Every example there is what "program must satisfy to be valid"...
->>
->> Therefore I'm addressing two things:
->> 1. how verifier works and what it checks for.
->>   that is described in 'eBPF verifier' section of the doc and
->>   in 200 lines of comments inside verifier.c
->
-> That doc is pretty good.  I'll try to read it carefully soon.  Sorry
-> for the huge delay here -- I've been on vacation.
+Hi Chris,
 
-I've been sitting on v4 for few weeks, since it's a merge window.
-So please hold on a careful review. I'll post v4 later today.
-Mainly I've split the verifier into several patches to make it
-easier to read.
-Thanks!
+On Tue, Aug-12-2014 at 07:12:33 PM +0100, Chris Ball wrote:
+> Hi Apelete,
+> 
+> On Mon, Jul 21 2014, Apelete Seketeli wrote:
+> > It should help reduce the impact of DMA preparation overhead on the SD
+> > card performance.
+> 
+> Did you do any benchmarking to check that this is true?  (If so, it'd
+> be good to note what performance change you saw in the commit message.)
+
+I actually did a few quick benchmarks, posted the results in the cover
+letter: https://lkml.org/lkml/2014/7/21/11.
+As you can see the improvement is measurable, although not significant
+with zcat.
+
+Cheers.
+-- 
+        Apelete
