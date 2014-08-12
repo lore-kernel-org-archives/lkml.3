@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379AbaHLQaW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 12:30:22 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54761 "EHLO
+	id S932086AbaHLQau (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 12:30:50 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54752 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753762AbaHLQ0z (ORCPT
+	by vger.kernel.org with ESMTP id S1753521AbaHLQ0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 12:26:55 -0400
+	Tue, 12 Aug 2014 12:26:54 -0400
 From: Liviu Dudau <Liviu.Dudau@arm.com>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
@@ -23,9 +23,9 @@ Cc: linux-arch <linux-arch@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Device Tree ML <devicetree@vger.kernel.org>,
         LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v9 03/12] PCI: Introduce helper functions to deal with PCI I/O ranges.
-Date: Tue, 12 Aug 2014 17:25:16 +0100
-Message-Id: <1407860725-25202-4-git-send-email-Liviu.Dudau@arm.com>
+Subject: [PATCH v9 06/12] ARM: integrator: Correct usage of of_pci_range_to_resource()
+Date: Tue, 12 Aug 2014 17:25:19 +0100
+Message-Id: <1407860725-25202-7-git-send-email-Liviu.Dudau@arm.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
 References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
@@ -33,164 +33,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some architectures do not have a simple view of the PCI I/O space
-and instead use a range of CPU addresses that map to bus addresses.
-For some architectures these ranges will be expressed by OF bindings
-in a device tree file.
+Previously, of_pci_range_to_resource() would return a resource
+that contained physical addresses of the IO space even if the
+IORESOURCE_IO flags mandate a logical port set of values. Now
+that the function has been fixed we need to update the drivers
+that were taking advantage of the old behaviour.
 
-This patch introduces a pci_register_io_range() helper function with
-a generic implementation that can be used by such architectures to
-keep track of the I/O ranges described by the PCI bindings. If the
-PCI_IOBASE macro is not defined that signals lack of support for PCI
-and we return an error.
-
-In order to retrieve the CPU address associated with an I/O port, a
-new helper function pci_pio_to_address() is introduced. This will
-search in the list of ranges registered with pci_register_io_range()
-and return the CPU address that corresponds to the given port.
-
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>
 Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>
 Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 ---
- drivers/of/address.c       | 95 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/of_address.h |  2 +
- 2 files changed, 97 insertions(+)
+ arch/arm/mach-integrator/pci_v3.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index 5edfcb0..4dab700 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -5,6 +5,7 @@
- #include <linux/module.h>
- #include <linux/of_address.h>
- #include <linux/pci_regs.h>
-+#include <linux/slab.h>
- #include <linux/string.h>
- 
- /* Max address size we deal with */
-@@ -601,12 +602,106 @@ const __be32 *of_get_address(struct device_node *dev, int index, u64 *size,
- }
- EXPORT_SYMBOL(of_get_address);
- 
-+#ifdef PCI_IOBASE
-+struct io_range {
-+	struct list_head list;
-+	phys_addr_t start;
-+	resource_size_t size;
-+};
-+
-+static LIST_HEAD(io_range_list);
-+static DEFINE_SPINLOCK(io_range_lock);
-+#endif
-+
-+/*
-+ * Record the PCI IO range (expressed as CPU physical address + size).
-+ * Return a negative value if an error has occured, zero otherwise
-+ */
-+int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
-+{
-+#ifdef PCI_IOBASE
-+	struct io_range *range;
-+	resource_size_t allocated_size = 0;
-+
-+	/* check if the range hasn't been previously recorded */
-+	spin_lock(&io_range_lock);
-+	list_for_each_entry(range, &io_range_list, list) {
-+		if (addr >= range->start && addr + size <= range->start + size)
-+			return 0;
-+		allocated_size += range->size;
-+	}
-+	spin_unlock(&io_range_lock);
-+
-+	/* range not registed yet, check for available space */
-+	if (allocated_size + size - 1 > IO_SPACE_LIMIT) {
-+		/* if it's too big check if 64K space can be reserved */
-+		if (allocated_size + SZ_64K - 1 > IO_SPACE_LIMIT)
-+			return -E2BIG;
-+
-+		size = SZ_64K;
-+		pr_warn("Requested IO range too big, new size set to 64K\n");
-+	}
-+
-+	/* add the range to the list */
-+	range = kzalloc(sizeof(*range), GFP_KERNEL);
-+	if (!range)
-+		return -ENOMEM;
-+
-+	range->start = addr;
-+	range->size = size;
-+
-+	list_add_tail(&range->list, &io_range_list);
-+#endif
-+
-+	return 0;
-+}
-+
-+phys_addr_t pci_pio_to_address(unsigned long pio)
-+{
-+	phys_addr_t address = (phys_addr_t)OF_BAD_ADDR;
-+
-+#ifdef PCI_IOBASE
-+	struct io_range *range;
-+	resource_size_t allocated_size = 0;
-+
-+	if (pio > IO_SPACE_LIMIT)
-+		return address;
-+
-+	spin_lock(&io_range_lock);
-+	list_for_each_entry(range, &io_range_list, list) {
-+		if (pio >= allocated_size && pio < allocated_size + range->size) {
-+			address = range->start + pio - allocated_size;
-+			break;
-+		}
-+		allocated_size += range->size;
-+	}
-+	spin_unlock(&io_range_lock);
-+#endif
-+
-+	return address;
-+}
-+
- unsigned long __weak pci_address_to_pio(phys_addr_t address)
+diff --git a/arch/arm/mach-integrator/pci_v3.c b/arch/arm/mach-integrator/pci_v3.c
+index 05e1f73..193b7f8 100644
+--- a/arch/arm/mach-integrator/pci_v3.c
++++ b/arch/arm/mach-integrator/pci_v3.c
+@@ -660,6 +660,7 @@ static void __init pci_v3_preinit(void)
  {
-+#ifdef PCI_IOBASE
-+	struct io_range *res;
-+	resource_size_t offset = 0;
-+
-+	list_for_each_entry(res, &io_range_list, list) {
-+		if (address >= res->start &&
-+			address < res->start + res->size) {
-+			return res->start - address + offset;
-+		}
-+		offset += res->size;
-+	}
-+
-+	return (unsigned long)-1;
-+#else
- 	if (address > IO_SPACE_LIMIT)
- 		return (unsigned long)-1;
+ 	unsigned long flags;
+ 	unsigned int temp;
++	phys_addr_t io_address = pci_pio_to_address(io_mem.start);
  
- 	return (unsigned long) address;
-+#endif
+ 	pcibios_min_mem = 0x00100000;
+ 
+@@ -701,7 +702,7 @@ static void __init pci_v3_preinit(void)
+ 	/*
+ 	 * Setup window 2 - PCI IO
+ 	 */
+-	v3_writel(V3_LB_BASE2, v3_addr_to_lb_base2(io_mem.start) |
++	v3_writel(V3_LB_BASE2, v3_addr_to_lb_base2(io_address) |
+ 			V3_LB_BASE_ENABLE);
+ 	v3_writew(V3_LB_MAP2, v3_addr_to_lb_map2(0));
+ 
+@@ -742,6 +743,7 @@ static void __init pci_v3_preinit(void)
+ static void __init pci_v3_postinit(void)
+ {
+ 	unsigned int pci_cmd;
++	phys_addr_t io_address = pci_pio_to_address(io_mem.start);
+ 
+ 	pci_cmd = PCI_COMMAND_MEMORY |
+ 		  PCI_COMMAND_MASTER | PCI_COMMAND_INVALIDATE;
+@@ -758,7 +760,7 @@ static void __init pci_v3_postinit(void)
+ 		       "interrupt: %d\n", ret);
+ #endif
+ 
+-	register_isa_ports(non_mem.start, io_mem.start, 0);
++	register_isa_ports(non_mem.start, io_address, 0);
  }
  
- static int __of_address_to_resource(struct device_node *dev,
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index c13b878..28e6836 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -55,7 +55,9 @@ extern void __iomem *of_iomap(struct device_node *device, int index);
- extern const __be32 *of_get_address(struct device_node *dev, int index,
- 			   u64 *size, unsigned int *flags);
+ /*
+@@ -867,33 +869,33 @@ static int __init pci_v3_probe(struct platform_device *pdev)
  
-+extern int pci_register_io_range(phys_addr_t addr, resource_size_t size);
- extern unsigned long pci_address_to_pio(phys_addr_t addr);
-+extern phys_addr_t pci_pio_to_address(unsigned long pio);
+ 	for_each_of_pci_range(&parser, &range) {
+ 		if (!range.flags) {
+-			of_pci_range_to_resource(&range, np, &conf_mem);
++			ret = of_pci_range_to_resource(&range, np, &conf_mem);
+ 			conf_mem.name = "PCIv3 config";
+ 		}
+ 		if (range.flags & IORESOURCE_IO) {
+-			of_pci_range_to_resource(&range, np, &io_mem);
++			ret = of_pci_range_to_resource(&range, np, &io_mem);
++			dev_info(&pdev->dev, "IO PCI range converted\n");
+ 			io_mem.name = "PCIv3 I/O";
+ 		}
+ 		if ((range.flags & IORESOURCE_MEM) &&
+ 			!(range.flags & IORESOURCE_PREFETCH)) {
+ 			non_mem_pci = range.pci_addr;
+ 			non_mem_pci_sz = range.size;
+-			of_pci_range_to_resource(&range, np, &non_mem);
++			ret = of_pci_range_to_resource(&range, np, &non_mem);
+ 			non_mem.name = "PCIv3 non-prefetched mem";
+ 		}
+ 		if ((range.flags & IORESOURCE_MEM) &&
+ 			(range.flags & IORESOURCE_PREFETCH)) {
+ 			pre_mem_pci = range.pci_addr;
+ 			pre_mem_pci_sz = range.size;
+-			of_pci_range_to_resource(&range, np, &pre_mem);
++			ret = of_pci_range_to_resource(&range, np, &pre_mem);
+ 			pre_mem.name = "PCIv3 prefetched mem";
+ 		}
+-	}
  
- extern int of_pci_range_parser_init(struct of_pci_range_parser *parser,
- 			struct device_node *node);
+-	if (!conf_mem.start || !io_mem.start ||
+-	    !non_mem.start || !pre_mem.start) {
+-		dev_err(&pdev->dev, "missing ranges in device node\n");
+-		return -EINVAL;
++		if (ret < 0) {
++			dev_err(&pdev->dev, "missing ranges in device node\n");
++			return -EINVAL;
++		}
+ 	}
+ 
+ 	pci_v3.map_irq = of_irq_parse_and_map_pci;
 -- 
 2.0.4
 
