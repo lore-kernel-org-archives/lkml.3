@@ -1,125 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972AbaHLKsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 06:48:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60886 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751365AbaHLKsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 06:48:02 -0400
-Date: Tue, 12 Aug 2014 11:47:58 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: [PATCH] x86,mm: fix pte_special versus pte_numa
-Message-ID: <20140812104758.GE7970@suse.de>
-References: <53DD5F20.8010507@oracle.com>
- <alpine.LSU.2.11.1408040418500.3406@eggly.anvils>
- <20140805144439.GW10819@suse.de>
- <alpine.LSU.2.11.1408051649330.6591@eggly.anvils>
- <53E17F06.30401@oracle.com>
- <53E989FB.5000904@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <53E989FB.5000904@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751819AbaHLK5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 06:57:11 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:53599 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714AbaHLK5J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 06:57:09 -0400
+From: Ionut Alexa <ionut.m.alexa@gmail.com>
+To: eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org, Ionut Alexa <ionut.m.alexa@gmail.com>
+Subject: [PATCH] kernel:audit Fixed some coding style errors and warnings.
+Date: Tue, 12 Aug 2014 13:59:08 +0300
+Message-Id: <1407841148-9198-1-git-send-email-ionut.m.alexa@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin has shown oopses on ffffea0003480048 and ffffea0003480008
-at mm/memory.c:1132, running Trinity on different 3.16-rc-next kernels:
-where zap_pte_range() checks page->mapping to see if PageAnon(page).
+Fixed coding style errors and warning. Changed 'printk_ratelimit' to
+pr_<level>_ratelimited. Changed 'simple_strtol' to 'kstrtol'.
 
-Those addresses fit struct pages for pfns d2001 and d2000, and in each
-dump a register or a stack slot showed d2001730 or d2000730: pte flags
-0x730 are PCD ACCESSED PROTNONE SPECIAL IOMAP; and Sasha's e820 map has
-a hole between cfffffff and 100000000, which would need special access.
-
-Commit c46a7c817e66 ("x86: define _PAGE_NUMA by reusing software bits on
-the PMD and PTE levels") has broken vm_normal_page(): a PROTNONE SPECIAL
-pte no longer passes the pte_special() test, so zap_pte_range() goes on
-to try to access a non-existent struct page.
-
-Fix this by refining pte_special() (SPECIAL with PRESENT or PROTNONE)
-to complement pte_numa() (SPECIAL with neither PRESENT nor PROTNONE).
-A hint that this was a problem was that c46a7c817e66 added pte_numa()
-test to vm_normal_page(), and moved its is_zero_pfn() test from slow to
-fast path: This was papering over a pte_special() snag when the zero page
-was encountered during zap. This patch reverts vm_normal_page() to how it
-was before, relying on pte_special().
-
-It still appears that this patch may be incomplete: aren't there other
-places which need to be handling PROTNONE along with PRESENT?  For example,
-pte_mknuma() clears _PAGE_PRESENT and sets _PAGE_NUMA, but on a PROT_NONE
-area, that would make it pte_special(). This is side-stepped by the fact
-that NUMA hinting faults skipped PROT_NONE VMAs and there are no grounds
-where a NUMA hinting fault on a PROT_NONE VMA would be interesting.
-
-Fixes: c46a7c817e66 ("x86: define _PAGE_NUMA by reusing software bits on the PMD and PTE levels")
-Reported-and-tested-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: stable@vger.kernel.org [3.16]
+Signed-off-by: Ionut Alexa <ionut.m.alexa@gmail.com>
 ---
- arch/x86/include/asm/pgtable.h | 9 +++++++--
- mm/memory.c                    | 7 +++----
- 2 files changed, 10 insertions(+), 6 deletions(-)
+ kernel/audit.c |   63 ++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 38 insertions(+), 25 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 0ec0560..aa97a07 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -131,8 +131,13 @@ static inline int pte_exec(pte_t pte)
+diff --git a/kernel/audit.c b/kernel/audit.c
+index ba2ff5a..69ec6bd 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -55,6 +55,7 @@
+ #include <linux/syscalls.h>
  
- static inline int pte_special(pte_t pte)
+ #include <linux/audit.h>
++#include <linux/ratelimit.h>
+ 
+ #include <net/sock.h>
+ #include <net/netlink.h>
+@@ -80,10 +81,10 @@ static int	audit_initialized;
+ #define AUDIT_ON	1
+ #define AUDIT_LOCKED	2
+ u32		audit_enabled;
+-u32		audit_ever_enabled;
+-
+ EXPORT_SYMBOL_GPL(audit_enabled);
+ 
++u32		audit_ever_enabled;
++
+ /* Default state when kernel boots without any parameters. */
+ static u32	audit_default;
+ 
+@@ -108,7 +109,7 @@ static u32	audit_rate_limit;
+ static u32	audit_backlog_limit = 64;
+ #define AUDIT_BACKLOG_WAIT_TIME (60 * HZ)
+ static u32	audit_backlog_wait_time = AUDIT_BACKLOG_WAIT_TIME;
+-static u32	audit_backlog_wait_overflow = 0;
++static u32	audit_backlog_wait_overflow;
+ 
+ /* The identity of the user shutting down the audit system. */
+ kuid_t		audit_sig_uid = INVALID_UID;
+@@ -190,6 +191,7 @@ static void audit_set_portid(struct audit_buffer *ab, __u32 portid)
  {
--	return (pte_flags(pte) & (_PAGE_PRESENT|_PAGE_SPECIAL)) ==
--				 (_PAGE_PRESENT|_PAGE_SPECIAL);
-+	/*
-+	 * See CONFIG_NUMA_BALANCING pte_numa in include/asm-generic/pgtable.h.
-+	 * On x86 we have _PAGE_BIT_NUMA == _PAGE_BIT_GLOBAL+1 ==
-+	 * __PAGE_BIT_SOFTW1 == _PAGE_BIT_SPECIAL.
-+	 */
-+	return (pte_flags(pte) & _PAGE_SPECIAL) &&
-+		(pte_flags(pte) & (_PAGE_PRESENT|_PAGE_PROTNONE));
+ 	if (ab) {
+ 		struct nlmsghdr *nlh = nlmsg_hdr(ab->skb);
++
+ 		nlh->nlmsg_pid = portid;
+ 	}
+ }
+@@ -200,8 +202,7 @@ void audit_panic(const char *message)
+ 	case AUDIT_FAIL_SILENT:
+ 		break;
+ 	case AUDIT_FAIL_PRINTK:
+-		if (printk_ratelimit())
+-			pr_err("%s\n", message);
++		pr_err_ratelimited("%s\n", message);
+ 		break;
+ 	case AUDIT_FAIL_PANIC:
+ 		/* test audit_pid since printk is always losey, why bother? */
+@@ -213,15 +214,16 @@ void audit_panic(const char *message)
+ 
+ static inline int audit_rate_check(void)
+ {
+-	static unsigned long	last_check = 0;
+-	static int		messages   = 0;
++	static unsigned long	last_check;
++	static int		messages;
+ 	static DEFINE_SPINLOCK(lock);
+ 	unsigned long		flags;
+ 	unsigned long		now;
+ 	unsigned long		elapsed;
+ 	int			retval	   = 0;
+ 
+-	if (!audit_rate_limit) return 1;
++	if (!audit_rate_limit)
++		return 1;
+ 
+ 	spin_lock_irqsave(&lock, flags);
+ 	if (++messages < audit_rate_limit) {
+@@ -250,7 +252,7 @@ static inline int audit_rate_check(void)
+ */
+ void audit_log_lost(const char *message)
+ {
+-	static unsigned long	last_msg = 0;
++	static unsigned long	last_msg;
+ 	static DEFINE_SPINLOCK(lock);
+ 	unsigned long		flags;
+ 	unsigned long		now;
+@@ -271,8 +273,7 @@ void audit_log_lost(const char *message)
+ 	}
+ 
+ 	if (print) {
+-		if (printk_ratelimit())
+-			pr_warn("audit_lost=%u audit_rate_limit=%u audit_backlog_limit=%u\n",
++		pr_warn_ratelimited("audit_lost=%u audit_rate_limit=%u audit_backlog_limit=%u\n",
+ 				atomic_read(&audit_lost),
+ 				audit_rate_limit,
+ 				audit_backlog_limit);
+@@ -344,6 +345,7 @@ static int audit_set_backlog_wait_time(u32 timeout)
+ static int audit_set_enabled(u32 state)
+ {
+ 	int rc;
++
+ 	if (state < AUDIT_OFF || state > AUDIT_LOCKED)
+ 		return -EINVAL;
+ 
+@@ -393,8 +395,9 @@ static void audit_printk_skb(struct sk_buff *skb)
+ 	char *data = nlmsg_data(nlh);
+ 
+ 	if (nlh->nlmsg_type != AUDIT_EOE) {
+-		if (printk_ratelimit())
+-			pr_notice("type=%d %s\n", nlh->nlmsg_type, data);
++		if (__printk_ratelimit(__func__))
++			pr_notice_ratelimited("type=%d %s\n", nlh->nlmsg_type,
++						data);
+ 		else
+ 			audit_log_lost("printk limit exceeded");
+ 	}
+@@ -672,7 +675,7 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
+ 	case AUDIT_MAKE_EQUIV:
+ 		/* Only support auditd and auditctl in initial pid namespace
+ 		 * for now. */
+-		if ((task_active_pid_ns(current) != &init_pid_ns))
++		if (task_active_pid_ns(current) != &init_pid_ns)
+ 			return -EPERM;
+ 
+ 		if (!netlink_capable(skb, CAP_AUDIT_CONTROL))
+@@ -834,6 +837,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	switch (msg_type) {
+ 	case AUDIT_GET: {
+ 		struct audit_status	s;
++
+ 		memset(&s, 0, sizeof(s));
+ 		s.enabled		= audit_enabled;
+ 		s.failure		= audit_failure;
+@@ -849,6 +853,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	}
+ 	case AUDIT_SET: {
+ 		struct audit_status	s;
++
+ 		memset(&s, 0, sizeof(s));
+ 		/* guard against past and future API changes */
+ 		memcpy(&s, data, min_t(size_t, sizeof(s), nlmsg_len(nlh)));
+@@ -1141,6 +1146,7 @@ static void __net_exit audit_net_exit(struct net *net)
+ {
+ 	struct audit_net *aunet = net_generic(net, audit_net_id);
+ 	struct sock *sock = aunet->nlsk;
++
+ 	if (sock == audit_sock) {
+ 		audit_pid = 0;
+ 		audit_sock = NULL;
+@@ -1183,12 +1189,15 @@ static int __init audit_init(void)
+ 
+ 	return 0;
+ }
+-__initcall(audit_init);
++device_initcall(audit_init);
+ 
+ /* Process kernel command-line parameter at boot time.  audit=0 or audit=1. */
+ static int __init audit_enable(char *str)
+ {
+-	audit_default = !!simple_strtol(str, NULL, 0);
++	int rc = kstrtol(str, 0, (long *)&audit_default);
++
++	if (rc)
++		return rc;
+ 	if (!audit_default)
+ 		audit_initialized = AUDIT_DISABLED;
+ 
+@@ -1239,7 +1248,7 @@ static void audit_buffer_free(struct audit_buffer *ab)
+ 	spin_unlock_irqrestore(&audit_freelist_lock, flags);
  }
  
- static inline unsigned long pte_pfn(pte_t pte)
-diff --git a/mm/memory.c b/mm/memory.c
-index 8b44f76..0a21f3d 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -751,7 +751,7 @@ struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
- 	unsigned long pfn = pte_pfn(pte);
+-static struct audit_buffer * audit_buffer_alloc(struct audit_context *ctx,
++static struct audit_buffer *audit_buffer_alloc(struct audit_context *ctx,
+ 						gfp_t gfp_mask, int type)
+ {
+ 	unsigned long flags;
+@@ -1302,7 +1311,7 @@ err:
+ unsigned int audit_serial(void)
+ {
+ 	static DEFINE_SPINLOCK(serial_lock);
+-	static unsigned int serial = 0;
++	static unsigned int serial;
  
- 	if (HAVE_PTE_SPECIAL) {
--		if (likely(!pte_special(pte) || pte_numa(pte)))
-+		if (likely(!pte_special(pte)))
- 			goto check_pfn;
- 		if (vma->vm_flags & (VM_PFNMAP | VM_MIXEDMAP))
- 			return NULL;
-@@ -777,15 +777,14 @@ struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
+ 	unsigned long flags;
+ 	unsigned int ret;
+@@ -1331,6 +1340,7 @@ static inline void audit_get_stamp(struct audit_context *ctx,
+ static long wait_for_auditd(long sleep_time)
+ {
+ 	DECLARE_WAITQUEUE(wait, current);
++
+ 	set_current_state(TASK_UNINTERRUPTIBLE);
+ 	add_wait_queue_exclusive(&audit_backlog_wait, &wait);
+ 
+@@ -1394,8 +1404,8 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+ 					continue;
+ 			}
  		}
- 	}
+-		if (audit_rate_check() && printk_ratelimit())
+-			pr_warn("audit_backlog=%d > audit_backlog_limit=%d\n",
++		if (audit_rate_check())
++			pr_warn_ratelimited("audit_backlog=%d > audit_backlog_limit=%d\n",
+ 				skb_queue_len(&audit_skb_queue),
+ 				audit_backlog_limit);
+ 		audit_log_lost("backlog limit exceeded");
+@@ -1418,6 +1428,7 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+ 			 t.tv_sec, t.tv_nsec/1000000, serial);
+ 	return ab;
+ }
++EXPORT_SYMBOL(audit_log_start);
  
-+	if (is_zero_pfn(pfn))
-+		return NULL;
- check_pfn:
- 	if (unlikely(pfn > highest_memmap_pfn)) {
- 		print_bad_pte(vma, addr, pte, NULL);
- 		return NULL;
- 	}
+ /**
+  * audit_expand - expand skb in the audit buffer
+@@ -1505,6 +1516,7 @@ void audit_log_format(struct audit_buffer *ab, const char *fmt, ...)
+ 	audit_log_vformat(ab, fmt, args);
+ 	va_end(args);
+ }
++EXPORT_SYMBOL(audit_log_format);
  
--	if (is_zero_pfn(pfn))
--		return NULL;
--
- 	/*
- 	 * NOTE! We still have PageReserved() pages in the page tables.
- 	 * eg. VDSO mappings can cause them to exist.
+ /**
+  * audit_log_hex - convert a buffer to hex and append it to the audit skb
+@@ -1586,6 +1598,7 @@ void audit_log_n_string(struct audit_buffer *ab, const char *string,
+ int audit_string_contains_control(const char *string, size_t len)
+ {
+ 	const unsigned char *p;
++
+ 	for (p = string; p < (const unsigned char *)string + len; p++) {
+ 		if (*p == '"' || *p < 0x21 || *p > 0x7e)
+ 			return 1;
+@@ -1749,6 +1762,7 @@ void audit_log_name(struct audit_context *context, struct audit_names *n,
+ 		    struct path *path, int record_num, int *call_panic)
+ {
+ 	struct audit_buffer *ab;
++
+ 	ab = audit_log_start(context, GFP_KERNEL, AUDIT_PATH);
+ 	if (!ab)
+ 		return;
+@@ -1794,6 +1808,7 @@ void audit_log_name(struct audit_context *context, struct audit_names *n,
+ 	if (n->osid != 0) {
+ 		char *ctx = NULL;
+ 		u32 len;
++
+ 		if (security_secid_to_secctx(
+ 			n->osid, &ctx, &len)) {
+ 			audit_log_format(ab, " osid=%u", n->osid);
+@@ -1807,7 +1822,7 @@ void audit_log_name(struct audit_context *context, struct audit_names *n,
+ 
+ 	/* log the audit_names record type */
+ 	audit_log_format(ab, " nametype=");
+-	switch(n->type) {
++	switch (n->type) {
+ 	case AUDIT_TYPE_NORMAL:
+ 		audit_log_format(ab, "NORMAL");
+ 		break;
+@@ -1982,6 +1997,7 @@ void audit_log_end(struct audit_buffer *ab)
+ 	}
+ 	audit_buffer_free(ab);
+ }
++EXPORT_SYMBOL(audit_log_end);
+ 
+ /**
+  * audit_log - Log an audit record
+@@ -2009,6 +2025,7 @@ void audit_log(struct audit_context *ctx, gfp_t gfp_mask, int type,
+ 		audit_log_end(ab);
+ 	}
+ }
++EXPORT_SYMBOL(audit_log);
+ 
+ #ifdef CONFIG_SECURITY
+ /**
+@@ -2036,7 +2053,3 @@ void audit_log_secctx(struct audit_buffer *ab, u32 secid)
+ EXPORT_SYMBOL(audit_log_secctx);
+ #endif
+ 
+-EXPORT_SYMBOL(audit_log_start);
+-EXPORT_SYMBOL(audit_log_end);
+-EXPORT_SYMBOL(audit_log_format);
+-EXPORT_SYMBOL(audit_log);
+-- 
+1.7.10.4
+
