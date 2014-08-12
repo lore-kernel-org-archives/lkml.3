@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076AbaHLHDd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:03:33 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:42415 "EHLO
+	id S1754321AbaHLHEo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:04:44 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:42454 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794AbaHLHD0 (ORCPT
+	with ESMTP id S1753813AbaHLHD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:03:26 -0400
+	Tue, 12 Aug 2014 03:03:29 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
@@ -26,9 +26,9 @@ CC: <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
         "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
         Chris Metcalf <cmetcalf@tilera.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [RFC PATCH 17/20] IA64/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
-Date: Tue, 12 Aug 2014 15:26:10 +0800
-Message-ID: <1407828373-24322-18-git-send-email-wangyijing@huawei.com>
+Subject: [RFC PATCH 18/20] Sparc/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
+Date: Tue, 12 Aug 2014 15:26:11 +0800
+Message-ID: <1407828373-24322-19-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
 References: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
@@ -40,55 +40,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a new struct msi_chip ia64_msi_chip instead of weak arch
+Introduce a new struct msi_chip sparc_msi_chip instead of weak arch
 functions to configure MSI/MSI-X.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/ia64/kernel/msi_ia64.c |   18 ++++++++++++++----
+ arch/sparc/kernel/pci.c |   18 ++++++++++++++----
  1 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
-index c430f91..6e527c4 100644
---- a/arch/ia64/kernel/msi_ia64.c
-+++ b/arch/ia64/kernel/msi_ia64.c
-@@ -112,15 +112,15 @@ static struct irq_chip ia64_msi_chip = {
- };
+diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
+index 857ad77..9eabd22 100644
+--- a/arch/sparc/kernel/pci.c
++++ b/arch/sparc/kernel/pci.c
+@@ -839,18 +839,18 @@ int pci_domain_nr(struct pci_bus *pbus)
+ EXPORT_SYMBOL(pci_domain_nr);
  
- 
+ #ifdef CONFIG_PCI_MSI
 -int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
-+static int arch_ia64_setup_msi_irq(struct device *dev, struct msi_desc *desc)
++int sparc_setup_msi_irq(struct device *dev, struct msi_desc *desc)
  {
- 	if (platform_setup_msi_irq)
--		return platform_setup_msi_irq(pdev, desc);
-+		return platform_setup_msi_irq(to_pci_dev(dev), desc);
+-	struct pci_pbm_info *pbm = pdev->dev.archdata.host_controller;
++	struct pci_pbm_info *pbm = dev->archdata.host_controller;
+ 	unsigned int irq;
  
--	return ia64_setup_msi_irq(pdev, desc);
-+	return ia64_setup_msi_irq(to_pci_dev(dev), desc);
+ 	if (!pbm->setup_msi_irq)
+ 		return -EINVAL;
+ 
+-	return pbm->setup_msi_irq(&irq, pdev, desc);
++	return pbm->setup_msi_irq(&irq, to_pci_dev(dev), desc);
  }
  
 -void arch_teardown_msi_irq(unsigned int irq)
-+static void arch_ia64_teardown_msi_irq(unsigned int irq)
++void sparc_teardown_msi_irq(unsigned int irq)
  {
- 	if (platform_teardown_msi_irq)
- 		return platform_teardown_msi_irq(irq);
-@@ -128,6 +128,16 @@ void arch_teardown_msi_irq(unsigned int irq)
- 	return ia64_teardown_msi_irq(irq);
+ 	struct msi_desc *entry = irq_get_msi_desc(irq);
+ 	struct pci_dev *pdev = entry->dev;
+@@ -859,6 +859,16 @@ void arch_teardown_msi_irq(unsigned int irq)
+ 	if (pbm->teardown_msi_irq)
+ 		pbm->teardown_msi_irq(irq, pdev);
  }
- 
-+static struct msi_chip chip = {
-+	.setup_irq = arch_ia64_setup_msi_irq,
-+	.teardown_irq = arch_ia64_teardown_msi_irq,
++
++struct msi_chip sparc_msi_chip = {
++	.setup_irq = sparc_setup_msi_irq,
++	.teardown_irq = sparc_teardown_msi_irq,
 +};
 +
 +struct msi_chip *arch_get_match_msi_chip(struct device *dev)
 +{
-+	return &chip;
++	return &sparc_msi_chip;
 +}
-+
- #ifdef CONFIG_INTEL_IOMMU
- #ifdef CONFIG_SMP
- static int dmar_msi_set_affinity(struct irq_data *data,
+ #endif /* !(CONFIG_PCI_MSI) */
+ 
+ static void ali_sound_dma_hack(struct pci_dev *pdev, int set_bit)
 -- 
 1.7.1
 
