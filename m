@@ -1,63 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737AbaHLI2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 04:28:16 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49852 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751651AbaHLI2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 04:28:13 -0400
-Date: Tue, 12 Aug 2014 09:28:11 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Inha Song <ideal.song@samsung.com>
-Cc: broonie@kernel.org, mark.rutland@arm.com, devicetree@vger.kernel.org,
-        alsa-devel@alsa-project.org, sameo@linux.intel.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org, lgirdwood@gmail.com,
-        cw00.choi@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
-        lee.jones@linaro.org
-Subject: Re: [alsa-devel] [PATCH 1/2] mfd: arizona: Add support for
-	INn_MODE register control
-Message-ID: <20140812082811.GB15833@opensource.wolfsonmicro.com>
-References: <20140809173138.767b97fd@songinha-Samsung-DeskTop-System>
+	id S1754755AbaHLIad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 04:30:33 -0400
+Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:13078
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751939AbaHLIa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 04:30:27 -0400
+From: Dexuan Cui <decui@microsoft.com>
+To: Tom Gundersen <teg@jklm.no>
+CC: Greg KH <gregkh@linuxfoundation.org>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Shao <huishao@microsoft.com>,
+        "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>,
+        "David Miller" <davem@davemloft.net>,
+        Stephen Hemminger <stephen@networkplumber.org>
+Subject: RE: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+Thread-Topic: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+Thread-Index: AQHPspA/W9GLuVF6+E2lxD+S7UVRVpvF95oQgAAV/QCAAC25AIAAfa+AgAP4svCAAIwDAIABYeHg
+Date: Tue, 12 Aug 2014 08:29:43 +0000
+Message-ID: <EE124450C0AAF944A40DD71E61F878C9921258@SINEX14MBXC417.southpacific.corp.microsoft.com>
+References: <DC7803B42427924284F2D5252E076A3B4476A479@SINEX14MBXC416.southpacific.corp.microsoft.com>
+ <53CCD6F2.6020909@nod.at> <20140721091851.GA28171@aepfle.de>
+ <20140721.143225.2040366896972949930.davem@davemloft.net>
+ <CAFLxGvyfy1UkxN6_-c_ST7f8n7DvqYsCPKChWmt9CerWb0dh7g@mail.gmail.com>
+ <EE124450C0AAF944A40DD71E61F878C99149D0@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <20140808033220.GB10503@kroah.com>
+ <EE124450C0AAF944A40DD71E61F878C991569A@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <20140808134549.GD4427@kroah.com>
+ <EE124450C0AAF944A40DD71E61F878C991B653@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <CAG-2HqVE8Qk0pcW+36f44RkE-Kbp+qPqRT+vgg-v35W52bsKgg@mail.gmail.com>
+In-Reply-To: <CAG-2HqVE8Qk0pcW+36f44RkE-Kbp+qPqRT+vgg-v35W52bsKgg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.3.95]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140809173138.767b97fd@songinha-Samsung-DeskTop-System>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(51704005)(189002)(199003)(164054003)(86612001)(81542001)(76482001)(77096002)(93886004)(81342001)(85306004)(106466001)(55846006)(79102001)(86362001)(81156004)(21056001)(74502001)(23676002)(83072002)(31966008)(74662001)(87936001)(20776003)(106116001)(97736001)(80022001)(68736004)(64706001)(4396001)(92726001)(2656002)(92566001)(99396002)(47776003)(44976005)(76176999)(16796002)(6806004)(83322001)(85806002)(46102001)(95666004)(77982001)(33656002)(50466002)(69596002)(54356999)(110136001)(26826002)(107046002)(85852003)(84676001)(50986999);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB592;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 0301360BF5
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=decui@microsoft.com; 
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7C8UeeT012601
 
-On Sat, Aug 09, 2014 at 05:31:38PM +0900, Inha Song wrote:
-> Some boards need to set the INn_MODE[1:0] register to change
-> the input signal patch. This wlf,inmode property is optional.
-> If present values must be specified by the number of
-> ARIZONA_MAX_INPUT.
-> 
-> Example:
->    - wlf,inmode = <2 0 2 0>;	/* IN1, IN3 use DMIC */
-> 
-> Signed-off-by: Inha Song <ideal.song@samsung.com>
-> ---
->  drivers/mfd/arizona-core.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-> index 10a0cb9..4b2eb73 100644
-> --- a/drivers/mfd/arizona-core.c
-> +++ b/drivers/mfd/arizona-core.c
-> @@ -560,6 +560,10 @@ static int arizona_of_get_core_pdata(struct arizona *arizona)
->  			ret);
->  	}
->  
-> +	of_property_read_u32_array(arizona->dev->of_node,
-> +					 "wlf,inmode",
-> +					 arizona->pdata.inmode,
-> +					 ARRAY_SIZE(arizona->pdata.inmode));
+> From: Tom Gundersen
+> > Unluckily this logic doesn't work because the user-space daemons
+> > like ifplugd, usually don't renew the DHCP immediately as long as they
+> > receive a link-down message: they usually wait for some seconds and if
+> > they find the link becomes up soon, they won't trigger renew operations.
+> > (I guess this behavior can be somewhat reasonable: maybe the daemons
+> > try to not trigger DHCP renew on temporary link instability)
+> >
+> networkd does not suffer from this problem, and in ifplugd it can be
+I didn't have time to check the code of networkd, but I think it does have the
+same behavior.
+e.g., on a bare metal host with Ubuntu 14.04, when I plug the RJ45 cable out
+of the network card and then plug the cable back into the network card
+quickly -- in ~3 seconds, networkd doesn't trigger DHCP renew request: in
+/var/log/syslog, we see
+Aug 12 11:07:07 decui-lin NetworkManager[828]: <info> (eth0): carrier now OFF (device state 100, deferring action for 4 seconds)
+Aug 12 11:07:07 decui-lin kernel: [  246.975453] e1000e: eth0 NIC Link is Down
+Aug 12 11:07:10 decui-lin NetworkManager[828]: <info> (eth0): carrier now ON (device state 100)
+Aug 12 11:07:10 decui-lin kernel: [  250.028533] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
 
-Might be better to allow the device tree to be shorter than the
-array in pdata, should this get expanded on future devices.
+It looks there is a delay of 4s.
+I'm going to find out if there is a configurable parameter for this.
+
+> disabled. Most other network drivers will send
+> IFF_LOWER_DOWN/IFF_LOWER_UP upon suspend/resume so if you were to
+> do the same you will not work any worse than the others. What would be
+suspend/resume(ACPI S3?) is different  as this is usually > 4 seconds?  :-)
+
+> nice, as mentioned by Dan and Lennart, would be to send an additional
+> explicit event such as "resumed from suspend" or "L3 may be wrong".
+Sorry, I neglected to reply this.
+IMHO even if we add the new event, we still need lots of efforts to
+make the various userland daemons(ifplugd, networkd, etc) to use the
+new event.
+And looks we're the first user of this new event. I'm not sure if this issue
+here can convince the network subsystem maintainers such a new event
+is a must.
+
+> That should be a generic thing though, to fix all such issues in one
+> go.
+I agree, though this requires we update all the userland daemons...
+ 
+> > I'm not sure our attempt to "fix" the daemons can be easily accepted.
+> > BTW, by CPUID, an application has a reliable way to determine  if it's
+> > running on hyper-v on not. Maybe we can "fix" the behavior of the
+> > daemons when they run on hyper-v?
+> > BTW2, according to my limited experience, I doubt other VMMs can
+> > handle this auto-DHCP-renew-in-guest issue properly.
+> 
+> To the extent this is a problem, it is a generic one, so we should not
+> need any hyper-v specific logic in userspace.
+OK, I understood.
+ 
+> > That was why Yue's patch wanted to add a SLEEP(10s) between the
+> > link-down and link-up events and hoped this could be an acceptable
+> > fix(while it turned out not, obviously), though we admit it's not so good
+> > to add such a magic number "10s" in a kernel driver.
+> >
+> > Please point it out if I missed or misunderstand something.
+> >
+> > Now I understand it's not good to pass the event to the udev daemon,
+> > and it's not good to use a SLEEP(10s) in the kernel space(even if it's in a
+> > "work" task here).
+> 
+> Please just expose to userspace what is happening (link lost/gained,
+> resumed from suspend/...), and let us sort out how to react to that.
+> If you put assumptions about what kind of timeouts (long-dead)
+> userspace uses into your drivers you'll just create a mess.
+OK, I got it now.
+So I think I'm supposed to send out a netif_carrier_off()/on() patch,
+and I'd better do this after I verify the daemons can work with
+proper parameters specified.
+
+> > Please let me know if it's the correct direction to fix the user-space
+> > daemons (ifplugd, systemd-networkd, etc).
+> > If you think this is viable and we should do this, I'll submit a
+> > netif_carrier_off/on patch first and will start to work with the
+> > projects of ifplugd, systemd-networkd and many OSVs to make the
+> > while thing work eventually.
+> 
+> Have you actually checked that carrier_off/on does not work on
+> anything but ifplugd? It would surprise me...
+I can confirm carrier_off/on with 0 delay between the off and on
+doesn't work for ifplugd and networkd.
 
 Thanks,
-Charles
+-- Dexuan
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
