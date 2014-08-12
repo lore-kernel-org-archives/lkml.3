@@ -1,25 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaHLLoT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 07:44:19 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:59460 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521AbaHLLoI (ORCPT
+	id S1752612AbaHLLoe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 07:44:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50437 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751565AbaHLLoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 07:44:08 -0400
-MIME-Version: 1.0
-Date: Tue, 12 Aug 2014 14:44:06 +0300
-Message-ID: <CACVxJT9vq=uAvB9pVpACp-V_2Q7nRpp2QdA1C3azKx+x4BXe5g@mail.gmail.com>
-Subject: Re: [PATCH] kernel:audit Fixed some coding style errors and warnings.
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: ionut.m.alexa@gmail.com
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 12 Aug 2014 07:44:32 -0400
+From: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+To: broonie@kernel.org, lgirdwood@gmail.com
+Cc: perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [PATCH] gpiolib: wm8994: Fix irq offset for gpio_to_irq
+Date: Tue, 12 Aug 2014 12:44:20 +0100
+Message-Id: <1407843860-4957-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> - audit_default = !!simple_strtol(str, NULL, 0);
-> + int rc = kstrtol(str, 0, (long *)&audit_default);
+Earlier code was using the gpio offset as is to get the irq.
+For wm8994 driver the gpio related irq's starts from a fixed
+offset as fixed by this patch.
 
-obviously broken
+Signed-off-by: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+---
+ drivers/gpio/gpio-wm8994.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpio/gpio-wm8994.c b/drivers/gpio/gpio-wm8994.c
+index d93b6b5..dec47c2 100644
+--- a/drivers/gpio/gpio-wm8994.c
++++ b/drivers/gpio/gpio-wm8994.c
+@@ -113,7 +113,8 @@ static int wm8994_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ 	struct wm8994_gpio *wm8994_gpio = to_wm8994_gpio(chip);
+ 	struct wm8994 *wm8994 = wm8994_gpio->wm8994;
+ 
+-	return regmap_irq_get_virq(wm8994->irq_data, offset);
++	return regmap_irq_get_virq(wm8994->irq_data,
++			WM8994_IRQ_GPIO(offset + 1));
+ }
+ 
+ 
+-- 
+1.7.9.5
+
