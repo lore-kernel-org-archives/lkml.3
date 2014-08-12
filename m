@@ -1,112 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537AbaHLFey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 01:34:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32693 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750916AbaHLFex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 01:34:53 -0400
-Date: Tue, 12 Aug 2014 11:03:21 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
- kthread wakeups
-Message-ID: <20140812053321.GK4184@grmbl.mre>
-References: <20140808183424.GB13483@grmbl.mre>
- <20140808214347.GH5821@linux.vnet.ibm.com>
- <20140808214648.GA19058@linux.vnet.ibm.com>
- <20140811071308.GA4184@grmbl.mre>
- <20140811162807.GW5821@linux.vnet.ibm.com>
- <20140811194126.GF4184@grmbl.mre>
- <20140811201102.GD5821@linux.vnet.ibm.com>
- <20140811201845.GG4184@grmbl.mre>
- <20140811203421.GE5821@linux.vnet.ibm.com>
- <20140812034531.GA13801@linux.vnet.ibm.com>
+	id S1752108AbaHLFvP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 01:51:15 -0400
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:64923 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736AbaHLFvO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 01:51:14 -0400
+X-Greylist: delayed 333 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Aug 2014 01:51:14 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140812034531.GA13801@linux.vnet.ibm.com>
+In-Reply-To: <1407802290-619-1-git-send-email-andi@firstfloor.org>
+References: <1407802290-619-1-git-send-email-andi@firstfloor.org>
+Date: Tue, 12 Aug 2014 07:45:41 +0200
+Message-ID: <CABPqkBSJEtH8tL7DM_fWAMgWL6X9oOnJTGF1rwxxBQ8dQK13sQ@mail.gmail.com>
+Subject: Re: [PATCH] perf, x86: Use extended offcore mask on Haswell
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Mon) 11 Aug 2014 [20:45:31], Paul E. McKenney wrote:
-> On Mon, Aug 11, 2014 at 01:34:21PM -0700, Paul E. McKenney wrote:
-> > On Tue, Aug 12, 2014 at 01:48:45AM +0530, Amit Shah wrote:
-> > > On (Mon) 11 Aug 2014 [13:11:02], Paul E. McKenney wrote:
-> > > > On Tue, Aug 12, 2014 at 01:11:26AM +0530, Amit Shah wrote:
-> > > > > On (Mon) 11 Aug 2014 [09:28:07], Paul E. McKenney wrote:
-> > > > > > On Mon, Aug 11, 2014 at 12:43:08PM +0530, Amit Shah wrote:
-> > > > > > > On (Fri) 08 Aug 2014 [14:46:48], Paul E. McKenney wrote:
-> > > > > > > > On Fri, Aug 08, 2014 at 02:43:47PM -0700, Paul E. McKenney wrote:
-> > > > > > > > > On Sat, Aug 09, 2014 at 12:04:24AM +0530, Amit Shah wrote:
-> > > > > > > > > > On (Fri) 08 Aug 2014 [11:18:35], Paul E. McKenney wrote:
-> > > > > > > > > 
-> > > > > > > > > [ . . . ]
-> > > > > > > > > 
-> > > > > > > > > > > Hmmm... What happens if you boot a7d7a143d0b4cb1914705884ca5c25e322dba693
-> > > > > > > > > > > with the kernel parameter "acpi=off"?
-> > > > > > > > > > 
-> > > > > > > > > > That doesn't change anything - still hangs.
-> > > > > > > > > > 
-> > > > > > > > > > I intend to look at this more on Monday, though - turning in for
-> > > > > > > > > > today.  In the meantime, if there's anything else you'd like me to
-> > > > > > > > > > try, please let me know.
-> > > > > > > > > 
-> > > > > > > > > OK, given that I still cannot reproduce it, I do need your help with
-> > > > > > > > > the diagnostics.  And so what sorts of diagnostics work for you in
-> > > > > > > > > the hung state?  Are you able to dump ftrace buffers?
-> > > > > > > > > 
-> > > > > > > > > If you are able to dump ftrace buffers, please enable rcu:rcu_nocb_wake
-> > > > > > > > > and send me the resulting trace.
-> > > > > > > > 
-> > > > > > > > And another random kernel boot parameter to try is rcu_nocb_poll.
-> > > > > > > 
-> > > > > > > Right, this gets the boot going again:
-> > > > > > 
-> > > > > > OK, that likely indicates a lost wakeup.  The event tracing enabled by
-> > > > > > "rcu:rcu_nocb_wake" should help track those down.  Last time, it was qemu
-> > > > > > losing the wakeups, but maybe it is RCU this time.  ;-)
-> > > > > 
-> > > > > The guest goes dead pretty early; is there a trick to enabling and
-> > > > > getting these traces out of the guest that I don't know of that
-> > > > > doesn't involve being booted into userspace?  I can perhaps try
-> > > > > getting the trace output out from a virtio-serial channel; but even
-> > > > > that driver isn't probed yet when the lockup happens.
-> > > > 
-> > > > First boot with the kernel parameter "trace_event=rcu:rcu_nocb_wake".
-> > > > Then when the system hangs, do "sendkey alt-sysrq-z" at the "(qemu)"
-> > > > prompt to dump the ftrace buffer.  This hopefully dumps the trace buffer
-> > > > to dmesg.
-> > > > 
-> > > > In addition "sendkey alt-sysrq-t" at the "(qemu)" prompt dumps all tasks'
-> > > > stacks, which would also likely be useful information.
-> > > 
-> > > Nah, this doesn't work -- the guest's totally locked up.  I need a way
-> > > to continuously dump buffers till the lockup happens, I suppose.
-> > 
-> > That is a bit surprising.  Is it possible that the system is OOMing
-> > quickly due to grace periods not proceeding?  If so, maybe giving the
-> > VM more memory would help.
-> 
-> Oh, and it is necessary to build the kernel with CONFIG_RCU_TRACE=y
-> for the rcu_nocb_wake trace events to be enabled in the first place.
-> I am assuming that your kernel was built with CONFIG_MAGIC_SYSRQ=y.
+On Tue, Aug 12, 2014 at 2:11 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> HSW-EP has a larger offcore mask than the client Haswell CPUs.
+> It is the same mask as on Sandy/IvyBridge-EP. All of
+> Haswell was using the client mask, so some bits were missing.
+>
+> On the client parts some bits were also missing compared
+> to Sandy/IvyBridge, in particular the bits to match on a L4
+> cache hit.
+>
+> The Haswell core in both client and server incarnations
+> accepts the same bits (but some are nops), so we can use
+> the same mask.
+>
+> So use the snbep extended mask, which is a superset of the
+> client and the server, for all of Haswell.
+>
+> This allows specifying a number of extra offcore events, like
+> for example for HSW-EP.
+>
+> % perf stat -e cpu/event=0xb7,umask=0x1,offcore_rsp=0x3fffc00100,name=offcore_response_pf_l3_rfo_l3_miss_any_response/ true
+>
+> which were <not supported> before.
+>
+I tested this on my HSW desktop including the bits only defined for
+servers and everything is fine.
+It does simplify the code,though desktop parts always come first, so
+there will always be patching.
+Also if this works on HSW/HSX, I wonder if we could not simplify the
+same code for IVB/IVT and SNB/SNBEP.
 
-Yes, it is :-)  I checked the rcu_nocb_poll cmdline option does indeed
-dump all the ftrace buffers to dmesg.
+Reviewed-by: Stephane Eranian <eranian@google.com>
 
-> If all of that is in place and no joy, is it possible to extract the
-> ftrace buffer from the running/hung guest?  It should be in there
-> somewhere!  ;-)
-
-I know of only virtio-console doing this (via userspace only,
-though).
-
-		Amit
+> v2: Post correct patch.
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index 2502d0d..4648a1b 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -2552,7 +2552,7 @@ __init int intel_pmu_init(void)
+>
+>                 x86_pmu.event_constraints = intel_hsw_event_constraints;
+>                 x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
+> -               x86_pmu.extra_regs = intel_snb_extra_regs;
+> +               x86_pmu.extra_regs = intel_snbep_extra_regs;
+>                 x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+>                 /* all extra regs are per-cpu when HT is on */
+>                 x86_pmu.er_flags |= ERF_HAS_RSP_1;
+> --
+> 1.9.3
+>
