@@ -1,29 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319AbaHLVzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 17:55:32 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60496 "EHLO
+	id S1755330AbaHLV4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 17:56:24 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60502 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaHLVzb (ORCPT
+	with ESMTP id S1753269AbaHLV4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 17:55:31 -0400
-Date: Tue, 12 Aug 2014 22:55:15 +0100
+	Tue, 12 Aug 2014 17:56:23 -0400
+Date: Tue, 12 Aug 2014 22:56:07 +0100
 From: Mark Brown <broonie@kernel.org>
 To: Axel Lin <axel.lin@ingics.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140812215515.GC17528@sirena.org.uk>
-References: <1407807429.8958.1.camel@phoenix>
+Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Marcus Folkesson <marcus.folkesson@gmail.com>,
+        Marek Vasut <marek.vasut@gmail.com>
+Message-ID: <20140812215607.GD17528@sirena.org.uk>
+References: <1407807670.8958.3.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Om/TeAJ7PLqBTUVw"
+	protocol="application/pgp-signature"; boundary="VbHJDalP8mx/Yvoe"
 Content-Disposition: inline
-In-Reply-To: <1407807429.8958.1.camel@phoenix>
+In-Reply-To: <1407807670.8958.3.camel@phoenix>
 X-Cookie: 98% lean.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] regulator: Add stub for devm_regulator_get_exclusive
+Subject: Re: [PATCH] regulator: tps65023: Remove duplicate test for
+ I2C_FUNC_SMBUS_BYTE_DATA functionality
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,50 +34,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Om/TeAJ7PLqBTUVw
+--VbHJDalP8mx/Yvoe
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Aug 12, 2014 at 09:37:09AM +0800, Axel Lin wrote:
-> Fix below build error when !CONFIG_REGULATOR.
->=20
->   CC      drivers/gpu/drm/msm/hdmi/hdmi.o
-> drivers/gpu/drm/msm/hdmi/hdmi.c: In function 'hdmi_init':
-> drivers/gpu/drm/msm/hdmi/hdmi.c:126:3: error: implicit declaration of fun=
-ction 'devm_regulator_get_exclusive' [-Werror=3Dimplicit-function-declarati=
-on]
+On Tue, Aug 12, 2014 at 09:41:10AM +0800, Axel Lin wrote:
+> Since commit b42261078a91 ("regmap: i2c: fallback to SMBus if the adapter
+> does not support standard I2C"), regmap-i2c will check the
+> I2C_FUNC_SMBUS_[BYTE|WORD]_DATA functionality based on the regmap_config
+> setting if the adapter does not support standard I2C.
 
-So, I just looked at that driver - it errors out on probe without the
-regualtor.  Are you sure the fix isn't to add a dependency on the
-regulator API or convert it back to using normal regulator gets (it was
-converted without comment as part of a DT conversion), or indeed to
-using the bulk regulator API.  It looks awfully like the driver is just
-open coding devm_regulator_bulk_get() and friends.
+Applied, thanks.
 
-There is no explanation at all in either the changelog or the code for
-why the driver is asking for exclusive regulators.
-
---Om/TeAJ7PLqBTUVw
+--VbHJDalP8mx/Yvoe
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJT6o1AAAoJELSic+t+oim9fqAP/i0VChHfWo6prbWXI/gv5mst
-IOPn9S859BJmgJT3rZsnPjMD3MZrOMEv0GqKdiKOdANwT2sLJFHTluBjW197Rsmv
-kz0emxLU10lpyF0jgM+bJBaPvF0e6VP5Te4Pbd/JlsthcwebuwweElxPd36X1aS7
-j/AePhmaNJJUBw5KsvJQk5q9FpGL6SMTSjZYWxGCfg1gn0mt0D0v+qSEbxBSFqBw
-DYOzdpOChFOreabNtD2SbkUK4zuwSZco/LjTlafKWTwtY0YhCJGfs5cqLbhc3ntc
-Zla6BjEE/RAZ+xb5FQQiEdEhew/op6Y6640tQBLbKVwgitrSE1f+KH/8mCDHddbr
-+eczr47O7fdzGmy8kFxVSCBIxXSMuzzgGv6WzlzQiK2m2CG5uXao6Ti2te642dPj
-7BTtctbuV/ejBfH7iQs00bTokkEDnij2knlJxgepIrF363R5Gi2q1e5jzTlsE2gf
-OSzBWTcYyMEyggvPLFHlZ2eyWeFxZTx5vfpOujZrAMnEWbpxV3tfUtYyDbVZ5Yuk
-xgP10NNvL7X5xsWIyDSG0l6m4+xyDrw007a/Z14OxyPYdTjyn0HFrnfcWpQa8L3A
-E29v5Xg7um7I5k3Es3OHHPlxpVM+RHbGF37+ha+B+/G8t2+fU88Eo9wuy5nlBR02
-sMVG80eeIRZSL6qyqHS/
-=yEpj
+iQIcBAEBAgAGBQJT6o10AAoJELSic+t+oim9IhwP/RUUYiuyL6QD/qq2QyHuaYaG
+iFRH+34Pg/XxO1Eqxs8wN9L9HBOhuiPhImQSetTeKz1tr3/dfGUDzBqtT4Vaj3Nz
+OFfEApo9rsHUzg4LM5qANOjT0HAdj4+ukmp1BiPtJbhiYjYikh0KMaXVqPg5qBGP
+AS78EpHiKOGzXHkvUFXsW7VA/wUfpDhNeB4qITuisCEp7IPfMO3ja9+vspOCeix6
+mBXToEFiaG+4qGgvttbbCD7S8B0YCucSzWBPA055qvfzbna4tnu9hN6ZGkRNeQA5
+JUo+6vqw0ygYUk8825MGW4rgbeyibRk6pVpEoicz6wRCdmpgQGNYJvdCFKlBLPeo
+0a3ohJrCbkv8BUfXF/eTsik6X/uftd0Whep/BOxd96oucZ8GrclW1OQZqibeOz/o
+1UD//askZx4MEs4+oJJ2px9vzKs4MmpLAfEWUuFIZjnbYfR9m5RTSIBEeXz2uVnO
+Ygz9/UNDBMOtOafdjCrcheSM9+eUXnSOQRlobbTwzfQraOD5r3jOhe9cGiiDGhyA
+dV6NuVhQ846ZzvOieBA6dB+t3YPzCRQmtc2an1kE4UGPYTGw9QcIHCl5eqOpo/pV
+HLeaS9Udo//ByoMtkh7ZsAlKpqZEZY+JqVpZm+YQvFVHc0f6Hc9Ld2kJ811XqJpE
+bZ/KLvlMdMBCBtcq0EKu
+=NSQS
 -----END PGP SIGNATURE-----
 
---Om/TeAJ7PLqBTUVw--
+--VbHJDalP8mx/Yvoe--
