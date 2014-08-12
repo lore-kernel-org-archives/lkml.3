@@ -1,52 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992AbaHLHiG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:38:06 -0400
-Received: from smtprelay05.ispgateway.de ([80.67.31.98]:39000 "EHLO
-	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514AbaHLHiE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:38:04 -0400
-X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Aug 2014 03:38:03 EDT
-From: Christoph Jaeger <cj@linux.com>
-To: pshelar@nicira.com, davem@davemloft.net
-Cc: dev@openvswitch.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Jaeger <cj@linux.com>
-Subject: [PATCH] openvswitch: Fix memory leak in ovs_vport_alloc() error path
-Date: Tue, 12 Aug 2014 09:27:57 +0200
-Message-Id: <1407828477-10287-1-git-send-email-cj@linux.com>
-X-Mailer: git-send-email 1.9.3
-X-Df-Sender: MTg4NDM4Mw==
+	id S1753844AbaHLHkw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:40:52 -0400
+Received: from mga14.intel.com ([192.55.52.115]:46549 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751387AbaHLHkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 03:40:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,847,1400050800"; 
+   d="scan'208";a="575425253"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        toshi.kani@hp.com, imammedo@redhat.com, bp@alien8.de,
+        tianyu.lan@intel.com
+Cc: mingo@kernel.org, prarit@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCH V2] X86/CPU: Avoid 100ms sleep for cpu offline  during S3
+Date: Tue, 12 Aug 2014 15:31:06 +0800
+Message-Id: <1407828667-14316-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1407142742-29202-1-git-send-email-tianyu.lan@intel.com>
+References: <1407142742-29202-1-git-send-email-tianyu.lan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ovs_vport_alloc() bails out without freeing the memory 'vport' points to.
+With some bad kernel configures, cpu offline consumes more than 100ms
+during S3. This because native_cpu_die() would fall into 100ms
+sleep when cpu idle loop thread marked cpu state to DEAD slower. It's
+timing related issue. What native_cpu_die() does is that poll cpu
+state and wait for 100ms if cpu state hasn't been marked to DEAD.
+The 100ms sleep doesn't make sense. To avoid such long sleep, this
+patch is to add struct completion to each cpu, wait for the completion
+in the native_cpu_die() and wakeup the completion when the cpu state is
+marked to DEAD.
 
-Picked up by Coverity - CID 1230503.
+Tested on the Intel Xeon server with 48 cores, Ivbridge and Haswell laptops.
+the times of cpu offline on these machines are reduced from more than 100ms
+to less than 5ms. The system suspend time reduces 2.3s on the servers.
 
-Fixes: 5cd667b0a4 ("openvswitch: Allow each vport to have an array of 'port_id's.")
-Signed-off-by: Christoph Jaeger <cj@linux.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 ---
- net/openvswitch/vport.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Change since V1:
+	Remove redundant empty line and correct some code styple issues.
 
-diff --git a/net/openvswitch/vport.c b/net/openvswitch/vport.c
-index 702fb21..6d8f2ec 100644
---- a/net/openvswitch/vport.c
-+++ b/net/openvswitch/vport.c
-@@ -137,8 +137,10 @@ struct vport *ovs_vport_alloc(int priv_size, const struct vport_ops *ops,
- 	vport->ops = ops;
- 	INIT_HLIST_NODE(&vport->dp_hash_node);
+ arch/x86/kernel/smpboot.c | 23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index edf80bb..bc65e42 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -102,6 +102,8 @@ DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
+ DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
+ EXPORT_PER_CPU_SYMBOL(cpu_info);
  
--	if (ovs_vport_set_upcall_portids(vport, parms->upcall_portids))
-+	if (ovs_vport_set_upcall_portids(vport, parms->upcall_portids)) {
-+		kfree(vport);
- 		return ERR_PTR(-EINVAL);
-+	}
++DEFINE_PER_CPU(struct completion, die_complete);
++
+ atomic_t init_deasserted;
  
- 	vport->percpu_stats = netdev_alloc_pcpu_stats(struct pcpu_sw_netstats);
- 	if (!vport->percpu_stats) {
+ /*
+@@ -1331,7 +1333,7 @@ int native_cpu_disable(void)
+ 		return ret;
+ 
+ 	clear_local_APIC();
+-
++	init_completion(&per_cpu(die_complete, smp_processor_id()));
+ 	cpu_disable_common();
+ 	return 0;
+ }
+@@ -1339,18 +1341,14 @@ int native_cpu_disable(void)
+ void native_cpu_die(unsigned int cpu)
+ {
+ 	/* We don't do anything here: idle task is faking death itself. */
+-	unsigned int i;
++	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
+ 
+-	for (i = 0; i < 10; i++) {
+-		/* They ack this in play_dead by setting CPU_DEAD */
+-		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
+-			if (system_state == SYSTEM_RUNNING)
+-				pr_info("CPU %u is now offline\n", cpu);
+-			return;
+-		}
+-		msleep(100);
+-	}
+-	pr_err("CPU %u didn't die...\n", cpu);
++	/* They ack this in play_dead by setting CPU_DEAD */
++	if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
++		if (system_state == SYSTEM_RUNNING)
++			pr_info("CPU %u is now offline\n", cpu);
++	} else
++		pr_err("CPU %u didn't die...\n", cpu);
+ }
+ 
+ void play_dead_common(void)
+@@ -1362,6 +1360,7 @@ void play_dead_common(void)
+ 	mb();
+ 	/* Ack it */
+ 	__this_cpu_write(cpu_state, CPU_DEAD);
++	complete(&per_cpu(die_complete, smp_processor_id()));
+ 
+ 	/*
+ 	 * With physical CPU hotplug, we should halt the cpu
 -- 
-1.9.3
+1.8.4.rc0.1.g8f6a3e5.dirty
 
