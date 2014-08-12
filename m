@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739AbaHLA5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 20:57:25 -0400
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:51355 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848AbaHLA5Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 20:57:24 -0400
+	id S1753979AbaHLBAa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 21:00:30 -0400
+Received: from ozlabs.org ([103.22.144.67]:48087 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752777AbaHLBA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Aug 2014 21:00:29 -0400
+Date: Tue, 12 Aug 2014 10:59:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 11
+Message-ID: <20140812105953.3284db9c@canb.auug.org.au>
+In-Reply-To: <20140811170510.GA19750@roeck-us.net>
+References: <20140811155213.0aa083ce@canb.auug.org.au>
+	<20140811170510.GA19750@roeck-us.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1407794456.12335.3.camel@oc1318858833.ibm.com>
-References: <1405708449.11800.2.camel@oc1318858833.ibm.com>
-	<1407794456.12335.3.camel@oc1318858833.ibm.com>
-Date: Mon, 11 Aug 2014 17:57:23 -0700
-Message-ID: <CAADnVQKbYheiRF_fmUnUUfSQgxUupY5vrjcjwimwwy-gnGhz2w@mail.gmail.com>
-Subject: Re: [PATCH] Made bpf_internal_load_pointer_neg_helper static: fixes
- Sparse warning
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Benjamin Lee <leeben@linux.vnet.ibm.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dany@us.ibm.com, dany4madden@gmail.com, benjamin.fik.lee@gmail.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/.wJEsV6HEAhi8cU/nLI=w2C"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 3:00 PM, Benjamin Lee <leeben@linux.vnet.ibm.com> wrote:
-> I wanted to know what the current status of my patch is since my
-> internship will be ending this Friday and I want to know before then. if
-> there are any problems with it I can fix them before Thursday. Thank you
-> in advance.
+--Sig_/.wJEsV6HEAhi8cU/nLI=w2C
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-using scripts/get_maintainer.pl for cc list would have helped to
-receive response sooner.
+Hi Guenter,
 
-> On Fri, 2014-07-18 at 11:34 -0700, Benjamin Lee wrote:
->> This patch fixes the following Sparse warning:
->>
->> net/core/filter.c:52:6: warning: symbol
->> 'bpf_internal_load_pointer_neg_helper' was not declared. Should it be
->> static?
->>
->> I declared bpf_internal_load_pointer_neg_helper as static because it
->> is not referenced elsewhere in the kernel. The patched kernel boots
+On Mon, 11 Aug 2014 10:05:10 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
+>
+> New build failures:
+>=20
+> Building arm:s5pv210_defconfig ... failed
+> --------------
+> Error log:
+> arch/arm/mach-s5pv210/pm.c:150:12: error: 'suspend_valid_only_mem' undecl=
+ared
+> here (not in a function)
+> make[1]: *** [arch/arm/mach-s5pv210/pm.o] Error 1
+>=20
+> Building arm:pxa910_defconfig ... failed
+> --------------
+> Error log:
+> arch/arm/mach-mmp/pm-pxa910.c: In function 'pxa910_pm_valid':
+> arch/arm/mach-mmp/pm-pxa910.c:243:65: error: expected ')' before ';' token
+> arch/arm/mach-mmp/pm-pxa910.c:244:1: error: expected ';' before '}' token
+> make[1]: *** [arch/arm/mach-mmp/pm-pxa910.o] Error 1
 
-the patch is incorrect, since this function is called out of assembler.
-Try 'git grep bpf_internal_load_pointer_neg_helper'
+The patch that caused this has been removed from linux-next.
 
->> and runs OK. I verified that the section of code is actually being
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-your kernel likely compiled ok, because you don't have
-CONFIG_BPF_JIT=y in your .config
-For this reason doing 'make allmodconfig' is recommended.
+--Sig_/.wJEsV6HEAhi8cU/nLI=w2C
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
->> compiled by temporarily placing a #pragma message inside the function.
->> I also verified that the function is being called by temporarily
->> inserting a call to panic.
->>
->> I am a high school student trying to become familiar with the open
->> source process and the Linux kernel, so your guidance is appreciated.
->>
->> Signed-off-by Benjamin Lee <leeben@linux.vnet.ibm.com>
->> Reviewed-by: Dany Madden <danymadden@us.ibm.com>
->> Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
->>
->> ---
->>   net/core/filter.c |    3 ++-
->>   1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/net/core/filter.c b/net/core/filter.c
->> index 735fad8..068442a 100644
->> --- a/net/core/filter.c
->> +++ b/net/core/filter.c
->> @@ -70,7 +70,8 @@
->>    *
->>    * Exported for the bpf jit load helper.
->>    */
->> -void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb, int k, unsigned int size)
->> +static void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb,
->> +                                                 int k, unsigned int
->> size)
->>   {
->>         u8 *ptr = NULL;
->>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT6WcqAAoJEMDTa8Ir7ZwVTaMQAJKceZ2bmPB+4yG074HOr/Bd
+SYJldv6ZRrr4FovigDAIRQQQ2vKgMcPPY9eLZuM6z2eWKmw/8nMdQIpLGs54DHC0
+VrHgSa/djvFAJmXxnssqcqzWgtbl0rIzRGnDGl6Tdmj/AMjdMjPhjYaH05HgqcqO
+xLoM9sDyHUU12BCmagy5Y+PGZQc5Ka6SWkhdIz/8uECCCaWKPoHpE1ltaWllkXZ9
+YiQItoRI/Uo1mzZziyrXS5svKQ17i6WwLC9h9/iBmGyZIskJ9FVBAhG6mc3YJZDS
+bs0YexmQtxmQsff+5SuJqdRz4ICjZcUjsjwGkDcMcXRA7aVXknKpiqpjMQ7iv2nh
+HZOGldFapTH0cs14oRpZLS3F6/S1FXu4WJ/atVTCzgYKWruMeA/4lh/HIn1mOt7g
+61z3kSLA0ReepqxsFY2A+KbQo5eXuWp4MHZN1YoyP/ip/qxF+I9hZLYkFehz56gp
+dQOaM05WUFYTurhYy47HXhWB3FjnXVvfGAIqcG5HdId7xTom2Fm2hLlJWKwiBz86
+nHEqjGgJrciaX7guHwwydAa+IeZXYzako5G+rDPVPXqz/fWQWUS4m4XBRpza31F1
+oxBeDD7f4C+Hpjy5ETZ71FTZcA9E5++mBS1FpU2+e+DLbC9K9Hd2Yh2dDKe6hrrQ
+Wb8qZBxFhHuVNC5aspxF
+=dqcl
+-----END PGP SIGNATURE-----
+
+--Sig_/.wJEsV6HEAhi8cU/nLI=w2C--
