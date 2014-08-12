@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806AbaHLAsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 20:48:38 -0400
-Received: from webmail.mimp.gob.pe ([181.177.225.184]:52645 "EHLO
-	zimbra.mimp.gob.pe" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751203AbaHLAsg convert rfc822-to-8bit (ORCPT
+	id S1753890AbaHLAvl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 20:51:41 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57862 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751512AbaHLAvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 20:48:36 -0400
-X-Greylist: delayed 2126 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Aug 2014 20:48:35 EDT
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 11 Aug 2014 20:51:40 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>, Lee Jones <lee.jones@linaro.org>
+Subject: Re: linux-next: build failure after merge of the pm tree
+Date: Tue, 12 Aug 2014 03:10:28 +0200
+Message-ID: <2030987.QX9qPAsCsv@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140811115726.0bcf3b66@canb.auug.org.au>
+References: <20140811115726.0bcf3b66@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: E-mail Account Warning !!!
-To: Recipients <info@upgrade.org>
-From: Account Upgrade <info@upgrade.org>
-Date: Tue, 12 Aug 2014 05:14:25 +0530
-Message-Id: <20140811234225.BF74B16095ED@zimbra.mimp.gob.pe>
-X-MIMP-MailScanner: Found to be clean, Found to be clean
-X-MIMP-MailScanner-SpamCheck: no es spam, SpamAssassin (almacenado,
-	puntaje=-1, requerido 5, autolearn=disabled, ALL_TRUSTED -1.00), no es spam, SpamAssassin (almacenado,
-	puntaje=-1, requerido 5, autolearn=disabled, ALL_TRUSTED -1.00)
-X-MIMP-MailScanner-Information: Please contact the ISP for more information
-X-MIMP-MailScanner-ID: 925DC160969C.A022F
-X-MIMP-MailScanner-From: info@upgrade.org
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-E-mail Account Warning !!!
+On Monday, August 11, 2014 11:57:26 AM Stephen Rothwell wrote:
+> 
+> --Sig_/+JDUwDarNoGtzkfUjWIyaKJ
+> Content-Type: text/plain; charset=US-ASCII
+> Content-Transfer-Encoding: quoted-printable
+> 
+> Hi Rafael,
+> 
+> After merging the pm tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> drivers/mfd/sec-core.c: In function 'sec_pmic_suspend':
+> drivers/mfd/sec-core.c:438:29: error: 'PM_SUSPEND_MEM' undeclared (first us=
+> e in this function)
+>    regulator_suspend_prepare(PM_SUSPEND_MEM);
+>                              ^
+> 
+> Caused by commit bb3274b6442d ("PM / sleep: Rename symbols, functions
+> and variables related to sleep") interacting with commit b7cde7078d23
+> ("mfd: sec-core: Prepare regulators for suspend state to reduce
+> power-consumption") from Linus' tree.
 
-This mail is from Administrator; we wish to bring to your notice the Condition of your email account.
-We have just noticed that you have exceeded your email Database limit of 500 MB quota and your email IP is causing conflict because it is been accessed in different server location. You need to Upgrade and expand your email quota limit before you can continue to use your email. Provide details or click the link below :
+I dropped that commit from linux-next, sorry for the breakage.
 
-Update your email quota limit to 2.6 GB, use the below web link:
-      http://srvpt.webs.com/
+Rafael
 
-Failure to do this will result to email deactivation within 24hours
-Thank you for your understanding.
-
-Copyright 2014 Help Desk
-Email Upgrade
