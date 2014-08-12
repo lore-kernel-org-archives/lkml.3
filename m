@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbaHLW7T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 18:59:19 -0400
-Received: from ozlabs.org ([103.22.144.67]:39751 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764AbaHLW7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 18:59:18 -0400
-Date: Wed, 13 Aug 2014 08:59:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Chinner <david@fromorbit.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [GIT PULL] xfs: updates for 3.17-rc1
-Message-ID: <20140813085911.53e5fbd5@canb.auug.org.au>
-In-Reply-To: <20140812215344.GY20518@dastard>
-References: <20140812125313.GX20518@dastard>
-	<20140812235612.684a9af7@canb.auug.org.au>
-	<20140812215344.GY20518@dastard>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1752424AbaHLXAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 19:00:05 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:25025 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192AbaHLXAC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 19:00:02 -0400
+Message-Id: <201408122259.s7CMx6Bm042549@www262.sakura.ne.jp>
+Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init() and module_long_probe_exit()
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: "\"\\\"Luis R. Rodriguez\\\"\"" <mcgrof@do-not-panic.com>
+Cc: tiwai@suse.de, linux-kernel@vger.kernel.org,
+        "\"\\\"Luis R. Rodriguez\\\"\"" <mcgrof@suse.com>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org, gregkh@linuxfoundation.org
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/1YyK36QbUd5rdgnKeGq9nH6"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 13 Aug 2014 07:59:06 +0900
+References: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com> <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com>
+In-Reply-To: <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/1YyK36QbUd5rdgnKeGq9nH6
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Luis R. Rodriguez wrote:
+> Tetsuo bisected and found that commit 786235ee \"kthread: make
+> kthread_create() killable\" modified kthread_create() to bail as
+> soon as SIGKILL is received.
 
-Hi Dave,
+I just wrote commit 786235ee. It is not Tetsuo who bisected it.
 
-On Wed, 13 Aug 2014 07:53:44 +1000 Dave Chinner <david@fromorbit.com> wrote:
->
-> On Tue, Aug 12, 2014 at 11:56:12PM +1000, Stephen Rothwell wrote:
-> >=20
-> > On Tue, 12 Aug 2014 22:53:13 +1000 Dave Chinner <david@fromorbit.com> w=
-rote:
-> > >
-> > > FYI, this will be the last pull request I will send you from a tree
-> > > on oss.sgi.com. I'm moving everything XFS related over to kernel.org
-> > > so future pull requests should come from there.
-> >=20
-> > Please let me know when you have the new tree set up so I can change
-> > where I fetch from.
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/dgc/linux-xfs.git for-next
+> @@ -128,4 +129,38 @@ bool queue_kthread_work(struct kthread_worker *worker,
+> void flush_kthread_work(struct kthread_work *work);
+> void flush_kthread_worker(struct kthread_worker *worker);
+> 
+> +#ifndef MODULE
+> +
+> +#define module_long_probe_init(x)      __initcall(x);
+> +#define module_long_probe_exit(x)      __exitcall(x);
+> +
+> +#else
+> +/* To be used by modules which can take over 30 seconds at probe */
+> +#define module_long_probe_init(initfn)                    \\
+> +     static struct task_struct *__init_thread;          \\
+> +     static int _long_probe_##initfn(void *arg)          \\
+> +     {                                   \\
+> +          return initfn();                    \\
+> +     }                                   \\
+> +     static inline __init int __long_probe_##initfn(void)     \\
+> +     {                                   \\
+> +          __init_thread = kthread_run(_long_probe_##initfn,\\
+> +                             NULL,          \\
+> +                             #initfn);          \\
+> +          if (IS_ERR(__init_thread))               \\
+> +               return PTR_ERR(__init_thread);          \\
+> +          return 0;                         \\
+> +     }                                   \\
+> +     module_init(__long_probe_##initfn);
+> +/* To be used by modules that require module_long_probe_init() */
+> +#define module_long_probe_exit(exitfn)                    \\
+> +     static inline void __long_probe_##exitfn(void)          \\
+> +     {                                   \\
+> +          exitfn();                         \\
 
-OK, I have switched starting today.
+exitfn() must not be called if initfn() failed or has not
+completed yet. You need a bool variable for indicating that
+we are ready to call exitfn().
 
-> It should be identical to the xfs tree you are pulling from
-> oss.sgi.com.
+Also, subsequent userspace operations may fail if
+we return to userspace before initfn() completes
+(e.g. device nodes are not created yet).
 
-Yep, it is.
+> +          if (__init_thread)                    \\
+> +               kthread_stop(__init_thread);          \\
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+We can\'t use kthread_stop() here because we have to
+wait for initfn() to succeed before exitfn() is called.
 
---Sig_/1YyK36QbUd5rdgnKeGq9nH6
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT6pxEAAoJEMDTa8Ir7ZwVAgYQAIc2j31HcOScP1IyQxqPxGTc
-ZhM/fjZplQVmi6aWu1QTNhVSsaxp3pAXMfFp2NgY8YqRBV4TqGeeAmhpajScoBA/
-eB39G8lBliESfghGuz3hHTFFVJ0qgZPTJi1l/zf+BCwTZ/P8klKzoRKWPJQC+Sag
-drx6s4/C/UinjLg9QkD3bPE+KRWhh+GFaoaIOl82xYQlDsHNCkBl5ofFp8UDJecg
-Hu8zyVKVrFqYpT7tvVCf3YB5cFxu2rCeH3FjF+cX/K1eu1pV8iqq+HHmZks2Jni5
-4hTMCluWrO1TVL0kfwBJRveoSUHK0gt0ZIq+RVH/TtH9fzsl8VW9wY29sr8SdDga
-8Hs2wcLL5WFnomeInxL0Ouzm7FnMkVZi088K0tVnQGpIaLG0jBoAo1j1j3NMuqro
-1iP+ehG8WrT/kGYIJhLwD+9DH/gzIDlrS8Q6DKiPLQL2w0pWhxFyhv5TqN+0QmCG
-yfkTe9PnmPzo+CTDiuYYR8lM/WtUw4UeMf4rxooUs5ygPApl7epl5UeuHwt8Mnjd
-PDCEZSHWYYfGFfyXH941bZOw3inlHJpNTptpjfZpZz8gnwaJPDx0GLa7eFLGXtOM
-mHlkXZosCFlBvzC0ialekR5nQUh9xMN6ScFUrzhHAMyreKCEhfdbXYy+MmGtHS3c
-WO5McYkEr2aw9c3K04yB
-=uxmt
------END PGP SIGNATURE-----
-
---Sig_/1YyK36QbUd5rdgnKeGq9nH6--
+> +     }                                   \\
+> +     module_exit(__long_probe_##exitfn);
+> +#endif /* MODULE */
+> +
+> #endif /* _LINUX_KTHREAD_H */
