@@ -1,262 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656AbaHLSz3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 14:55:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26609 "EHLO mx1.redhat.com"
+	id S1754713AbaHLSzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 14:55:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20506 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753866AbaHLSz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 14:55:28 -0400
-Date: Tue, 12 Aug 2014 14:55:20 -0400
+	id S1754667AbaHLSzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 14:55:45 -0400
+Date: Tue, 12 Aug 2014 14:55:34 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Hugh Dickins <hughd@google.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH v2 1/3] mm/hugetlb: take refcount under page table lock
- in follow_huge_pmd()
-Message-ID: <20140812185520.GA8975@nhori.bos.redhat.com>
+Subject: Re: [PATCH v2 2/3] mm/hugetlb: use get_page_unless_zero() in
+ hugetlb_fault()
+Message-ID: <20140812185534.GB8975@nhori.bos.redhat.com>
 References: <1406914663-8631-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <alpine.LSU.2.11.1408091600040.15311@eggly.anvils>
+ <1406914663-8631-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.LSU.2.11.1408091601590.15311@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1408091600040.15311@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1408091601590.15311@eggly.anvils>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 09, 2014 at 04:01:39PM -0700, Hugh Dickins wrote:
+On Sat, Aug 09, 2014 at 04:11:06PM -0700, Hugh Dickins wrote:
 > On Fri, 1 Aug 2014, Naoya Horiguchi wrote:
-...
-> > diff --git mmotm-2014-07-22-15-58.orig/mm/gup.c mmotm-2014-07-22-15-58/mm/gup.c
-> > index 91d044b1600d..e4bd59efe686 100644
-> > --- mmotm-2014-07-22-15-58.orig/mm/gup.c
-> > +++ mmotm-2014-07-22-15-58/mm/gup.c
-> > @@ -174,21 +174,8 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
-> >  	pmd = pmd_offset(pud, address);
-> >  	if (pmd_none(*pmd))
-> >  		return no_page_table(vma, flags);
-> > -	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
-> > -		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
-> > -		if (flags & FOLL_GET) {
-> > -			/*
-> > -			 * Refcount on tail pages are not well-defined and
-> > -			 * shouldn't be taken. The caller should handle a NULL
-> > -			 * return when trying to follow tail pages.
-> > -			 */
-> > -			if (PageHead(page))
-> > -				get_page(page);
-> > -			else
-> > -				page = NULL;
-> > -		}
-> > -		return page;
-> > -	}
-> > +	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB)
-> > +		return follow_huge_pmd_lock(vma, address, pmd, flags);
 > 
-> Yes, that's good (except I don't like the _lock name).
+> > After fixing locking in follow_page(FOLL_GET) for hugepages, I start to
+> > observe the BUG of "get_page() on refcount 0 page" in hugetlb_fault() in
+> > the same test.
+> > 
+> > I'm not exactly sure about how this race is triggered, but hugetlb_fault()
+> > calls pte_page() and get_page() outside page table lock, so it's not safe.
+> > This patch checks the refcount of the gotten page, and aborts the page fault
+> > if the refcount is 0, expecting to retry.
+> > 
 > 
-> >  	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
-> >  		return no_page_table(vma, flags);
-> >  	if (pmd_trans_huge(*pmd)) {
-> > diff --git mmotm-2014-07-22-15-58.orig/mm/hugetlb.c mmotm-2014-07-22-15-58/mm/hugetlb.c
-> > index 7263c770e9b3..4437896cd6ed 100644
-> > --- mmotm-2014-07-22-15-58.orig/mm/hugetlb.c
-> > +++ mmotm-2014-07-22-15-58/mm/hugetlb.c
-> > @@ -3687,6 +3687,33 @@ follow_huge_pud(struct mm_struct *mm, unsigned long address,
-> >  
-> >  #endif /* CONFIG_ARCH_WANT_GENERAL_HUGETLB */
-> >  
-> > +struct page *follow_huge_pmd_lock(struct vm_area_struct *vma,
-> > +				unsigned long address, pmd_t *pmd, int flags)
-> > +{
-> > +	struct page *page;
-> > +	spinlock_t *ptl;
-> > +
-> > +	if (flags & FOLL_GET)
-> > +		ptl = huge_pte_lock(hstate_vma(vma), vma->vm_mm, (pte_t *)pmd);
-> > +
+> Fixes: 66aebce747ea ("hugetlb: fix race condition in hugetlb_fault()")
 > 
-> But this is not good enough, I'm afraid.
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Cc: <stable@vger.kernel.org>  # [3.12+]
 > 
-> > +	page = follow_huge_pmd(vma->vm_mm, address, pmd, flags & FOLL_WRITE);
-> > +
-> > +	if (flags & FOLL_GET) {
-> > +		/*
-> > +		 * Refcount on tail pages are not well-defined and
-> > +		 * shouldn't be taken. The caller should handle a NULL
-> > +		 * return when trying to follow tail pages.
-> > +		 */
-> > +		if (PageHead(page))
-> > +			get_page(page);
-> > +		else
-> > +			page = NULL;
-> > +		spin_unlock(ptl);
-> > +	}
-> > +
-> > +	return page;
-> > +}
-> > +
-> >  #ifdef CONFIG_MEMORY_FAILURE
-> >  
-> >  /* Should be called in hugetlb_lock */
-> > -- 
-> > 1.9.3
 > 
-> Thanks a lot for remembering this, but it's not enough, I think.
+> I disagree with your 3.12+ annotation there: you may have hit the issue
+> in testing your hugepage migration work, but it's older than that: the
+> problematic get_page() was introduced in 3.4, and has been backported
+> to 3.2-stable: so 3.2+.
 
-Thank you very much for detailed comments.
+Right, thanks.
 
-> It is an improvement over the current code (except for the annoying new
-> level, and its confusing name follow_huge_pmd_lock); but I don't want to
-> keep on coming back, repeatedly sending new corrections to four or more
-> releases of -stable.  Please let's get it right and be done with it.
+> I was suspicious of this patch at first, then on the point of giving it
+> an Ack, and then realized that I had been right to be suspicious of it.
 > 
-> I see two problems with the above, but perhaps I'm mistaken.
+> You're not the first the get the sequence wrong here; and it won't be
+> surprising if there are other instances of subtle get_page_unless_zero()
+> misuse elsewhere in the tree (I dare not look!  someone else please do).
 > 
-> One is hugetlb_vmtruncate(): follow_huge_pmd_lock() is only called
-> when we have observed pmd_huge(*pmd), fine, but how can we assume
-> that pmd_huge(*pmd) still after getting the necessary huge_pte_lock?
-> Truncation could have changed that *pmd to none, and then pte_page()
-> will supply an incorrect (but non-NULL) address.
-
-OK, this race window is still open, so double-checking inside
-huge_pte_lock() should be necessary.
-
-> (I observe the follow_huge_pmd()s all doing an "if (page)" after
-> their pte_page(), but when I checked at the time of the original
-> follow_huge_addr() problem, I could not find any architecture with
-> a pte_page() returning NULL for an invalid entry - pte_page() is
-> a simple blind translation in every architecture, I believe, but
-> please check.)
-
-I agree that no implementation of pte_page() has invalid entry check.
-They essentially do (base address + pfn calculated by pte_val), so
-never return null for any regular input.
-
-> Two is x86-32 PAE (and perhaps some other architectures), in which
-> the pmd entry spans two machine words, loaded independently.  It's a
-> very narrow race window, but we cannot safely access the whole *pmd
-> without locking: we might pick up two mismatched halves.  Take a look
-> at pte_unmap_same() in mm/memory.c, it's handling that issue on ptes.
-
-OK, so ...
-
-> So, if I follow my distaste for the intermediate follow_huge_pmd_lock
-> level (and in patch 4/3 you are already changing all the declarations,
-> so no need to be deterred by that task), I think what we need is:
+> It's not the use of get_page_unless_zero() itself that is wrong, it's
+> the unjustified confidence in it: what's wrong is the lock_page() after.
 > 
-> struct page *
-> follow_huge_pmd(struct vm_area_struct *vma, unsigned long address,
-> 		pmd_t *pmd, unsigned int flags)
-> {
-> 	struct page *page;
-> 	spinlock_t *ptl;
+> As you have found, and acknowledged with get_page_unless_zero(), is
+> that the page here may be stale, it might be already freed, it might
+> be already reused.  If reused, then its page_count will no longer be 0,
+> but the new user expects to have sole ownership of the page.  The new
+> owner might be using __set_page_locked() (or one of the other nonatomic
+> flags operations), or "if (!trylock_page(newpage)) BUG()" like
+> migration's move_to_new_page().
 > 
-> 	ptl = huge_pte_lock(hstate_vma(vma), vma->vm_mm, (pte_t *)pmd);
-> 
-> 	if (!pmd_huge(*pmd)) {
+> We are dealing with a recently-hugetlb page here: that might make the
+> race I'm describing even less likely than with usual order:0 pages,
+> but I don't think it eliminates it.
 
-.. I guess that checking pte_same() is better than pmd_huge(), because
-it also covers your 2nd concern above?
+I agree.
 
-> 		page = NULL;
-> 		goto out;
-> 	}
-> 
-> 	page = pte_page(*(pte_t *)pmd) + ((address & ~PMD_MASK) >> PAGE_SHIFT);
-> 
-> 	if (flags & FOLL_GET) {
-> 		/*
-> 		 * Refcount on tail pages are not well-defined and
-> 		 * shouldn't be taken. The caller should handle a NULL
-> 		 * return when trying to follow tail pages.
-> 		 */
-> 		if (PageHead(page))
-> 			get_page(page);
-> 		else
-> 			page = NULL;
-> 	}
-> out:
-> 	spin_unlock(ptl);
-> 	return page;
-> }
-> 
-> Yes, there are many !FOLL_GET cases which could use an ACCESS_ONCE(*pmd)
-> and avoid taking the lock; but follow_page_pte() is content to take its
-> lock in all cases, so I don't see any need to avoid it in this much less
-> common case.
+> What to do instead?  The first answer that occurs to me is to move the
+> the pte_page,get_page down after the pte_same check inside the spin_lock,
+> and only then do trylock_page(), backing out to wait_on_page_locked and
+> retry or refault if not.
 
-OK.
+I think that should work.
+According to the lock ordering commented in mm/rmap.c, page lock is prior
+to page table lock, so we can't take page lock inside page table lock.
+But with trylock_page() we check if the page lock is taken or not, so
+we can avoid deadlock.
 
-> And it looks to me as if this follow_huge_pmd() would be good for every
-> hugetlb architecture (but I may especially be wrong on that, having
-> compiled it for none but x86_64).  On some architectures, the ones which
-> currently present just a stub follow_huge_pmd(), the optimizer should
-> eliminate everything after the !pmd_huge test, and we won't be calling
-> it on those anyway.  On mips s390 and tile, I think the above represents
-> what they're currently doing, despite some saying HPAGE_MASK in place of
-> PMD_MASK, and having that funny "if (page)" condition after pte_page().
+> Though if doing that, it might be more sensible only to trylock_page
+> before dropping ptl inside hugetlb_cow().  That would be a bigger,
+> maybe harder to backport, rearrangement.
 
-Yes, I think that we can replace all arch-dependent follow_huge_pmd()
-with the above one.
-Then we need check hugepage_migration_supported() on move_pages() side.
-
-> Please check carefully: I think the above follow_huge_pmd() can sit in
-> mm/hugetlb.c, for use on all architectures; and the variants be deleted;
-> and I think that would be an improvement.
-
-Yes, I'll try this.
-
-> I'm not sure what should happen to follow_huge_pud() if we go this way.
-> There's a good argument for adapting it in exactly the same way, but
-> that may not appeal to those wanting to remove the never used argument.
-> 
-> And, please, let's go just a little further, while we are having to
-> think of these issues.  Isn't what we're doing here much the same as
-> we need to do to follow_huge_addr(), to fix the May 28th issues which
-> led you to disable hugetlb migration on all but x86_64?
-
-Currently follow_huge_addr() ignores FOLL_GET, so just fixing locking
-problem as this patch do is not enough for follow_huge_addr().
-But when we reenable hugepage migration for example on powerpc, we will
-need consider exactly the same problem.
-
-> I'm not arguing to re-enable hugetlb migration on those architectures
-> which you cannot test, no, you did the right thing to leave that to
-> them.  But could we please update follow_huge_addr() (in a separate
-> patch) to make it consistent with this follow_huge_pmd(), so that at
-> least you can tell maintainers that you believe it is working now?
-
-OK, I'll do it. What we can do is to take page table lock for pte_page,
-and to remove unnecessary "if (page)" check, I think.
-
-> Uh oh.  I thought I had finished writing about this patch, but just
-> realized more.  Above you can see that I've faithfully copied your
-> "Refcount on tail pages are not well-defined" comment and !PageHead
-> NULL.  But that's nonsense, isn't it?  Refcount on tail pages is and
-> must be well-defined, and that's been handled in follow_hugetlb_page()
-> for, well, at least ten years.
-
-Ah, this "it's not well-defined" was completely wrong. I'll remove it.
-
-> 
-> But note the "Some archs" comment in follow_hugetlb_page(): I have
-> not followed it up, and it may prove to be irrelevant here; but it
-> suggests that in general some additional care might be needed for
-> the get_page()s - or perhaps they should now be get_page_folls()?
-
-Yes, it's get_page_folls() now, and it internally pins tail pages by
-incrementing page->_mapcount, so using get_page_unless_zero() in
-follow_huge_pmd_lock() might be better (to skip tails naturally.)
+Yes, the patch will be somewhat complicated for stable, and we can't
+avoid that.
 
 Thanks,
 Naoya Horiguchi
-
-> I guess the "not well-defined" comment was your guess as to why I had
-> put in the BUG_ON(flags & FOLL_GET)s: no, they were because nobody
-> required huge FOLL_GET at that time, and that case lacked the locking
-> which you are now supplying.
-
