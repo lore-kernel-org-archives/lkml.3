@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526AbaHLSZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 14:25:59 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:54530 "EHLO smtp.outflux.net"
+	id S1754578AbaHLS0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 14:26:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45312 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754383AbaHLSZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 14:25:56 -0400
-From: Kees Cook <keescook@chromium.org>
+	id S1753417AbaHLS0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 14:26:14 -0400
+Date: Tue, 12 Aug 2014 14:25:39 -0400
+From: Rik van Riel <riel@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Rabin Vincent <rabin@rab.in>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Mark Salter <msalter@redhat.com>, Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 2/7] arm: fixmap: implement __set_fixmap()
-Date: Tue, 12 Aug 2014 11:24:24 -0700
-Message-Id: <1407867869-5194-3-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407867869-5194-1-git-send-email-keescook@chromium.org>
-References: <1407867869-5194-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: [PATCH RFC] time: drop do_sys_times spinlock
+Message-ID: <20140812142539.01851e52@annuminas.surriel.com>
+Organization: Red Hat, Inc.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is used from set_fixmap() and clear_fixmap() via asm-generic/fixmap.h.
-Also makes sure that the fixmap allocation fits into the expected range.
+Back in 2009, Spencer Candland pointed out there is a race with
+do_sys_times, where multiple threads calling do_sys_times can
+sometimes get decreasing results.
 
-Based on patch by Rabin Vincent.
+https://lkml.org/lkml/2009/11/3/522
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Rabin Vincent <rabin@rab.in>
+As a result of that discussion, some of the code in do_sys_times
+was moved under a spinlock.
+
+However, that does not seem to actually make the race go away on
+larger systems. One obvious remaining race is that after one thread
+is about to return from do_sys_times, it is preempted by another
+thread, which also runs do_sys_times, and stores a larger value in
+the shared variable than what the first thread got.
+
+This race is on the kernel/userspace boundary, and not fixable
+with spinlocks.
+
+Removing the spinlock from do_sys_times does not seem to result
+in an increase in the number of times a decreasing utime is
+observed when running the test case. In fact, on the 80 CPU test
+system that I tried, I saw a small decrease, from an average
+14.8 to 6.5 instances of backwards utime running the test case.
+
+Back in 2009, in changeset 2b5fe6de5 Oleg Nesterov already found
+that it should be safe to remove the spinlock.  I believe this is
+true, because it appears that nobody changes another task's ->sighand
+pointer, except at fork time and exit time, during which the task
+cannot be in do_sys_times.
+
+This is subtle enough to warrant documenting.
+
+The increased scalability of removing the spinlock should help
+things like databases and middleware that measure the resource
+use of every query processed.
+
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Frank Mayhar <fmayhar@google.com>
+Cc: Frederic Weisbecker <fweisbec@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sanjay Rao <srao@redhat.com>
+Cc: Larry Woodman <lwoodman@redhat.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- arch/arm/include/asm/fixmap.h |  2 ++
- arch/arm/mm/mmu.c             | 19 +++++++++++++++++++
- 2 files changed, 21 insertions(+)
+ kernel/sys.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-index a7add6f9315d..48935cc5004f 100644
---- a/arch/arm/include/asm/fixmap.h
-+++ b/arch/arm/include/asm/fixmap.h
-@@ -14,6 +14,8 @@ enum fixed_addresses {
- 	__end_of_fixed_addresses
- };
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 66a751e..cb81ce4 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -862,11 +862,15 @@ void do_sys_times(struct tms *tms)
+ {
+ 	cputime_t tgutime, tgstime, cutime, cstime;
  
-+void __set_fixmap(enum fixed_addresses idx, phys_addr_t phys, pgprot_t prot);
-+
- #include <asm-generic/fixmap.h>
- 
- #endif
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index 7fa0966cd15f..48ba2b1d7d8e 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -22,6 +22,7 @@
- #include <asm/cputype.h>
- #include <asm/sections.h>
- #include <asm/cachetype.h>
-+#include <asm/fixmap.h>
- #include <asm/sections.h>
- #include <asm/setup.h>
- #include <asm/smp_plat.h>
-@@ -392,6 +393,24 @@ SET_MEMORY_FN(rw, pte_set_rw)
- SET_MEMORY_FN(x, pte_set_x)
- SET_MEMORY_FN(nx, pte_set_nx)
- 
-+void __set_fixmap(enum fixed_addresses idx, phys_addr_t phys, pgprot_t prot)
-+{
-+	unsigned long vaddr = __fix_to_virt(idx);
-+	pte_t *pte = pte_offset_kernel(pmd_off_k(FIXADDR_START), vaddr);
-+
-+	/* Make sure fixmap region does not exceed available allocation. */
-+	BUILD_BUG_ON(FIXADDR_START + (__end_of_fixed_addresses * PAGE_SIZE) >
-+		     FIXADDR_END);
-+	BUG_ON(idx >= __end_of_fixed_addresses);
-+
-+	if (pgprot_val(prot))
-+		set_pte_at(NULL, vaddr, pte,
-+			pfn_pte(phys >> PAGE_SHIFT, prot));
-+	else
-+		pte_clear(NULL, vaddr, pte);
-+	flush_tlb_kernel_range(vaddr, vaddr + PAGE_SIZE);
-+}
-+
- /*
-  * Adjust the PMD section entries according to the CPU in use.
-  */
--- 
-1.9.1
-
+-	spin_lock_irq(&current->sighand->siglock);
++	/*
++	 * sys_times gets away with not locking &current->sighand->siglock
++	 * because most of the time only the current process gets to change
++	 * its own sighand pointer. The exception is exit, which changes
++	 * the sighand pointer of an exiting process.
++	 */
+ 	thread_group_cputime_adjusted(current, &tgutime, &tgstime);
+ 	cutime = current->signal->cutime;
+ 	cstime = current->signal->cstime;
+-	spin_unlock_irq(&current->sighand->siglock);
+ 	tms->tms_utime = cputime_to_clock_t(tgutime);
+ 	tms->tms_stime = cputime_to_clock_t(tgstime);
+ 	tms->tms_cutime = cputime_to_clock_t(cutime);
