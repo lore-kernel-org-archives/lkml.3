@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235AbaHLSo1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 14:44:27 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:42671 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808AbaHLSoZ (ORCPT
+	id S1754179AbaHLStl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 14:49:41 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:38363 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019AbaHLStj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 14:44:25 -0400
-Date: Tue, 12 Aug 2014 12:44:21 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Benoit Taine <benoit.taine@lip6.fr>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 0/1] Replace DEFINE_PCI_DEVICE_TABLE macro use
-Message-ID: <20140812184421.GA5516@google.com>
-References: <1407506163-8371-1-git-send-email-benoit.taine@lip6.fr>
+	Tue, 12 Aug 2014 14:49:39 -0400
+Message-ID: <53EA61B9.2070805@collabora.co.uk>
+Date: Tue, 12 Aug 2014 20:49:29 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407506163-8371-1-git-send-email-benoit.taine@lip6.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@kernel.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] ARM: dts: Add tps65090 FETs constraints
+References: <1407861868-20097-1-git-send-email-javier.martinez@collabora.co.uk> <1407861868-20097-7-git-send-email-javier.martinez@collabora.co.uk> <20140812172552.GU17528@sirena.org.uk>
+In-Reply-To: <20140812172552.GU17528@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 03:56:02PM +0200, Benoit Taine wrote:
-> We should prefer `const struct pci_device_id` over
-> `DEFINE_PCI_DEVICE_TABLE` to meet kernel coding style guidelines.
-> This issue was reported by checkpatch.
+On 08/12/2014 07:25 PM, Mark Brown wrote:
 > 
-> A simplified version of the semantic patch that makes this change is as
-> follows (http://coccinelle.lip6.fr/):
+>>  		tps65090_fet1: fet1 {
+>> +			regulator-min-microvolt = <5000000>;
+>> +			regulator-max-microvolt = <17000000>;
+>>  		};
 > 
-> // <smpl>
+> No, this is completely broken and exactly the sort of thing that makes
+> doing generic device .dtsi a bad idea.  We have absolutely no idea if
+> these voltage ranges are suitable for use on a given board using the
+> device, these are the design limits for the device but tell us nothing
+> about the system they are deployed in.
 > 
-> @@
-> identifier i;
-> declarer name DEFINE_PCI_DEVICE_TABLE;
-> initializer z;
-> @@
-> 
-> - DEFINE_PCI_DEVICE_TABLE(i)
-> + const struct pci_device_id i[]
-> = z;
-> 
-> // </smpl>
-> 
-> I previously sent parts of this patch to check wether or not it was
-> worth sending, and Bjorn answered:
-> > Benoit, how about if you wait until about half-way through the merge
-> > window after v3.16 releases, generate an up-to-date single patch, and
-> > post that?  Then we can try to get it in before v3.17-rc1 to minimize
-> > merge hassles.
-> 
-> So here it is, based on linux-next on 2014-08-07.
 
-Applied to my for-linus branch for v3.17, thanks!
+Thanks for the explanation. I did the refactoring because I saw that there are
+.dtsi files for other PMICs already (twl4030, twl6030, tps65*) but now you also
+explained that those are broken as well.
 
-Bjorn
+So, is adding these voltages ranges (the design limits) in the Peach Pit DTS
+file directly an acceptable solution? Basically what my previous patch [0] did.
+
+That matches what is in the board schematic so I assume that it's safe to use
+these voltage ranges for that machine. If so I'll drop this series and repost
+that patch fixing the typo error and commit message pointed by Doug that were
+already addressed in $subject.
+
+Best regards,
+Javier
+
+[0]: https://lkml.org/lkml/2014/8/11/204
