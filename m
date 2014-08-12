@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215AbaHLBlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 21:41:21 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:33725 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116AbaHLBlU (ORCPT
+	id S1753699AbaHLBpD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 21:45:03 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:34237 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750763AbaHLBpB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 21:41:20 -0400
-Message-ID: <1407807670.8958.3.camel@phoenix>
-Subject: [PATCH] regulator: tps65023: Remove duplicate test for
- I2C_FUNC_SMBUS_BYTE_DATA functionality
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Marcus Folkesson <marcus.folkesson@gmail.com>,
-        Marek Vasut <marek.vasut@gmail.com>
-Date: Tue, 12 Aug 2014 09:41:10 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 11 Aug 2014 21:45:01 -0400
+Subject: Re: [PATCH] staging/lustre: use rcu_dereference to access rcu protected current->real_parent field
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Oleg Drokin <green@linuxhacker.ru>
+In-Reply-To: <20140809154742.GA22689@kroah.com>
+Date: Mon, 11 Aug 2014 21:44:47 -0400
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Peng Tao <bergwolf@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lai Siyao <lai.siyao@intel.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0E60DB89-5757-4841-A416-D12C56413C58@linuxhacker.ru>
+References: <20140806214216.GA16530@kroah.com> <CAGDhxoe4+jU=vCDedMC4VXfuNMmqP3-E1Lu3LLStbFLbd=BRSA@mail.gmail.com> <20140808034951.GA6626@kroah.com> <DFF36154-06AC-4D7E-87F5-259B73CB059B@linuxhacker.ru> <20140808044246.GA3084@kroah.com> <1FE03450-A256-4A18-85AB-6332A28E3EF5@linuxhacker.ru> <20140808053246.GA13588@kroah.com> <CA+a=Yy4SqXSe667DkU3KA80tAt5D=KG-9mfccvEwtJzuFr6vBA@mail.gmail.com> <20140809140426.GA20995@kroah.com> <A562EF9C-0B1E-48B2-BAB5-544C9AAC6DD0@linuxhacker.ru> <20140809154742.GA22689@kroah.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit b42261078a91 ("regmap: i2c: fallback to SMBus if the adapter
-does not support standard I2C"), regmap-i2c will check the
-I2C_FUNC_SMBUS_[BYTE|WORD]_DATA functionality based on the regmap_config
-setting if the adapter does not support standard I2C.
 
-So remove the I2C_FUNC_SMBUS_BYTE_DATA functionality check in the driver code.
+On Aug 9, 2014, at 11:47 AM, Greg Kroah-Hartman wrote:
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/tps65023-regulator.c | 3 ---
- 1 file changed, 3 deletions(-)
+> On Sat, Aug 09, 2014 at 10:34:36AM -0400, Oleg Drokin wrote:
+>> 
+>>> Because maybe these stats preceed the introduction of perf and other
+>>> tracing/debug tools?  I don't know, it's really low down on the list of
+>>> reasons why lustre can't be merged out of staging at the moment, you all
+>>> have much bigger issues to address first.
+>> 
+>> I wonder what is the prioritized list you have in mind?
+> 
+> Do I really have to spell out what is wrong with that codebase that
+> needs to be fixed up?  It took me 50+ patches for 3.17-rc1 to just fix
+> up a _portion_ of the include file mess that is in there.  Now is the
+> first time the code actually _builds_ properly in the kernel tree (i.e.
+> no magic header file include path modifications in Makefiles preventing
+> individual files from being built correctly.)
 
-diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index 3ef67a8..7380af8 100644
---- a/drivers/regulator/tps65023-regulator.c
-+++ b/drivers/regulator/tps65023-regulator.c
-@@ -211,9 +211,6 @@ static int tps_65023_probe(struct i2c_client *client,
- 	int i;
- 	int error;
- 
--	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
--		return -EIO;
--
- 	/**
- 	 * init_data points to array of regulator_init structures
- 	 * coming from the board-evm file.
--- 
-1.9.1
+Well, last time we discussed this topic, you said that moving most of lustre proc files
+into sysfs and other suitable venues is what prevents moving lustre out of the
+staging tree under fs/
 
+There well might be include mess, but this is the first time I hear about it, and I have not seen
+any build breakage or other obviously broken behavior.
+I am sure there are more things too, that's why I am asking.
+We are trying to deal with stuff we know about, but it's a bit harder to deal with the stuff we don't know about
+that does not manifest itself in some clear way.
 
-
+Bye,
+    Oleg
