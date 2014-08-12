@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaHLIVu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 04:21:50 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:65111 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaHLIVs (ORCPT
+	id S1754504AbaHLIV5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 04:21:57 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:42368 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753636AbaHLIVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 04:21:48 -0400
-From: Ionut Alexa <ionut.m.alexa@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Ionut Alexa <ionut.m.alexa@gmail.com>
-Subject: [PATCH] kernel:async Fixed coding style issues.
-Date: Tue, 12 Aug 2014 11:23:41 +0300
-Message-Id: <1407831821-16078-1-git-send-email-ionut.m.alexa@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 12 Aug 2014 04:21:53 -0400
+Date: Tue, 12 Aug 2014 10:21:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: linux-kernel@vger.kernel.org, pjt@google.com, oleg@redhat.com,
+        rostedt@goodmis.org, umgwanakikbuti@gmail.com, tkhai@yandex.ru,
+        tim.c.chen@linux.intel.com, mingo@kernel.org, nicolas.pitre@linaro.org
+Subject: Re: [PATCH v4 4/6] sched: Remove double_rq_lock() from
+ __migrate_task()
+Message-ID: <20140812082120.GO9918@twins.programming.kicks-ass.net>
+References: <20140806075138.24858.23816.stgit@tkhai>
+ <1407312387.8424.40.camel@tkhai>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IR8qaqqzop2UneN1"
+Content-Disposition: inline
+In-Reply-To: <1407312387.8424.40.camel@tkhai>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style errors and warning in kernel/async.c
 
-Signed-off-by: Ionut Alexa <ionut.m.alexa@gmail.com>
----
- kernel/async.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+--IR8qaqqzop2UneN1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/kernel/async.c b/kernel/async.c
-index 61f023c..4c3773c 100644
---- a/kernel/async.c
-+++ b/kernel/async.c
-@@ -115,7 +115,7 @@ static void async_run_entry_fn(struct work_struct *work)
- 
- 	/* 1) run (and print duration) */
- 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
--		printk(KERN_DEBUG "calling  %lli_%pF @ %i\n",
-+		pr_debug("calling  %lli_%pF @ %i\n",
- 			(long long)entry->cookie,
- 			entry->func, task_pid_nr(current));
- 		calltime = ktime_get();
-@@ -124,7 +124,7 @@ static void async_run_entry_fn(struct work_struct *work)
- 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
- 		rettime = ktime_get();
- 		delta = ktime_sub(rettime, calltime);
--		printk(KERN_DEBUG "initcall %lli_%pF returned 0 after %lld usecs\n",
-+		pr_debug("initcall %lli_%pF returned 0 after %lld usecs\n",
- 			(long long)entry->cookie,
- 			entry->func,
- 			(long long)ktime_to_ns(delta) >> 10);
-@@ -285,7 +285,7 @@ void async_synchronize_cookie_domain(async_cookie_t cookie, struct async_domain
- 	ktime_t uninitialized_var(starttime), delta, endtime;
- 
- 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
--		printk(KERN_DEBUG "async_waiting @ %i\n", task_pid_nr(current));
-+		pr_debug("async_waiting @ %i\n", task_pid_nr(current));
- 		starttime = ktime_get();
- 	}
- 
-@@ -295,7 +295,7 @@ void async_synchronize_cookie_domain(async_cookie_t cookie, struct async_domain
- 		endtime = ktime_get();
- 		delta = ktime_sub(endtime, starttime);
- 
--		printk(KERN_DEBUG "async_continuing @ %i after %lli usec\n",
-+		pr_debug("async_continuing @ %i after %lli usec\n",
- 			task_pid_nr(current),
- 			(long long)ktime_to_ns(delta) >> 10);
- 	}
--- 
-1.7.10.4
+On Wed, Aug 06, 2014 at 12:06:27PM +0400, Kirill Tkhai wrote:
+>=20
+> Let's use ONRQ_MIGRATING instead.
 
+I feel there should be a little more in the changelog; how about
+something like:
+
+Avoid double_rq_lock() and use ONRQ_MIGRATING for __migrate_task(). The
+advantage is (obviously) not holding two 'rq->lock's at the same time
+and thereby increasing parallelism.
+
+The important point to note is that because we acquire dst->lock
+immediately after releasing src->lock the potential wait time of
+task_rq_lock() callers on ONRQ_MIGRATING is not longer than it would
+have been in the double rq lock scenario.
+
+> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+
+--IR8qaqqzop2UneN1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT6c6AAAoJEHZH4aRLwOS6jFsP/2W3LxrR2mIBdFsynUcgq/z2
+BnxYKnirWVTGAN3H79PQ3lVihgzx4rNSbZ/N2jbQoePuAnnQtU2L0/Oh5OxpwyGa
+i2OY42rYKp9Q6gxyC8Y06MBDSpNwHkAaBrQEj/16z7zJzMVEgBzj4MSwAgi4X5UJ
+sqEHRKRUSMF6+ML1F+rRXjtgSYvDcN6oq1ciC/8EafTgYo2sLlYFQxJGVUQ0lNM0
+UZbdJNwofhpVCNPCd3zp8paL2HGl7hcExWgO+z+Z35N8R9Xd8N6F6SdIBGWhGY2a
+7xaqlvPXQokT5FZeGeDtoFb8YWZivKVX4tHPrCa1ramACczEorQeRPj/XVRquAq9
+D+PUQ2bZQhk0GL1m6fmK6be3gAxlBe1RX+79FDeBpD4olnvns5RsBuVvl4G9Em0Z
+QuDQzLZ3Bi+fvMb21QEneS6SpWKJgiOY98yzzoWtueV/O5CjPVjmdoMGftkPmfES
+nNgFgJOJCnkfZVF3cfhnP//Fca9HN1l1nNt6Ym+xAwAebTp9beEYxrMBpprWEpmJ
+U0ZI8AJv2ioACHtV6J3+t7WqAb4OUc+Zs3tFOlM3hGfTRD7y95Mk4ckuvYPSu9r5
+/3ZnKeEBkzqxxjQCCU8hDilNFYbd77e+H5FiOCF334hL7IKdhVZzcYxbWWubYfWi
+A3cFhRXyVByEgcWakiHD
+=320P
+-----END PGP SIGNATURE-----
+
+--IR8qaqqzop2UneN1--
