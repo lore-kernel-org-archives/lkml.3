@@ -1,97 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaHLIv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 04:51:56 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:52494 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769AbaHLIvx (ORCPT
+	id S1752604AbaHLI6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 04:58:07 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:55723 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769AbaHLI6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 04:51:53 -0400
+	Tue, 12 Aug 2014 04:58:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <53E93FF1.1010809@codeaurora.org>
-References: <1406250448-470-1-git-send-email-skannan@codeaurora.org>
-	<1406250448-470-4-git-send-email-skannan@codeaurora.org>
-	<CAKohpom-+At=YjEkZH-mn8OP1ATDBzuLw7mTPaUnG+1qvJ8FTA@mail.gmail.com>
-	<53E93FF1.1010809@codeaurora.org>
-Date: Tue, 12 Aug 2014 14:21:53 +0530
-Message-ID: <CAKohpokZjAu5E1=m8LRMb=Z87qV1pdLbwZd7gc-462EuJRU4pg@mail.gmail.com>
-Subject: Re: [PATCH v4 3/5] cpufreq: Don't destroy/realloc policy/sysfs on hotplug/suspend
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: "Rafael J . Wysocki" <rjw@rjwysocki.net>,
-        Todd Poynor <toddpoynor@google.com>,
-        "Srivatsa S . Bhat" <srivatsa@mit.edu>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+In-Reply-To: <CAPDyKFruZxUtzUKM+PvsK-_qqcE4OcCaKSkRJ2_01y7TuQMGkA@mail.gmail.com>
+References: <1406298233-27876-1-git-send-email-pawel.moll@arm.com>
+	<1406298233-27876-3-git-send-email-pawel.moll@arm.com>
+	<1407515785.31897.28.camel@hornet>
+	<CAPDyKFoLU6pnJFmKe7CB0q-hKfwv4uCPSr0cE4aoYMvfhjMteQ@mail.gmail.com>
+	<1407748550.3680.10.camel@hornet>
+	<CAPDyKFruZxUtzUKM+PvsK-_qqcE4OcCaKSkRJ2_01y7TuQMGkA@mail.gmail.com>
+Date: Tue, 12 Aug 2014 10:58:02 +0200
+Message-ID: <CAPDyKFrb9OSbhHtn=wgbs9Yky1t453rdNBJVgGA62vER-65dYw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] mmc: sdhci-pltfm: Do not use parent as the host's device
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Chris Ball <chris@printf.net>, Anton Vorontsov <anton@enomsg.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "paul@pwsan.com" <paul@pwsan.com>, Arnd Bergmann <arnd@arndb.de>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 August 2014 03:43, Saravana Kannan <skannan@codeaurora.org> wrote:
-> On 08/07/2014 03:48 AM, Viresh Kumar wrote:
-
->>> @@ -1369,24 +1354,15 @@ static int __cpufreq_remove_dev_prepare(struct
->>> device *dev,
->>>                  }
->>>          }
+On 11 August 2014 11:32, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> On 11 August 2014 11:15, Pawel Moll <pawel.moll@arm.com> wrote:
+>> On Mon, 2014-08-11 at 10:07 +0100, Ulf Hansson wrote:
+>>> On 8 August 2014 18:36, Pawel Moll <pawel.moll@arm.com> wrote:
+>>> > On Fri, 2014-07-25 at 15:23 +0100, Pawel Moll wrote:
+>>> >> The code selecting a device for the sdhci host has been
+>>> >> continuously tweaked (4b711cb13843f5082e82970dd1e8031383134a65
+>>> >> "mmc: sdhci-pltfm: Add structure for host-specific data" and
+>>> >> a4d2177f00a5252d825236c5124bc1e9918bdb41 "mmc: sdhci-pltfm: dt
+>>> >> device does not pass parent to sdhci_alloc_host") while there
+>>> >> does not seem to be any reason to use platform device's parent
+>>> >> in the first place.
+>>> >>
+>>> >> The comment saying "Some PCI-based MFD need the parent here"
+>>> >> seem to refer to Timberdale FPGA driver (the only MFD driver
+>>> >> registering SDHCI cell, drivers/mfd/timberdale.c) but again,
+>>> >> the only situation when parent device matter is runtime PM,
+>>> >> which is not implemented for Timberdale.
+>>> >>
+>>> >> Cc: Chris Ball <chris@printf.net>
+>>> >> Cc: Anton Vorontsov <anton@enomsg.org>
+>>> >> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+>>> >> Cc: linux-mmc@vger.kernel.org
+>>> >> Cc: linuxppc-dev@lists.ozlabs.org
+>>> >> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+>>> >> ---
+>>> >>
+>>> >> This patch is a part of effort to remove references to platform_bus
+>>> >> and make it static.
+>>> >>
+>>> >> Chris, Anton, Ulf - could you please advise if the assumptions
+>>> >> above are correct or if I'm completely wrong? Do you know what
+>>> >> where the real reasons to use parent originally? The PCI comment
+>>> >> seems like a red herring to me...
+>>> >
+>>> > Can I take the silence as a suggestion that the change looks ok-ish for
+>>> > you?
 >>>
->>> -       if (!cpufreq_driver->setpolicy)
->>> -               strncpy(per_cpu(cpufreq_cpu_governor, cpu),
->>> -                       policy->governor->name, CPUFREQ_NAME_LEN);
->>> -
->>
->>
->> Why? Probably I did mention this earlier as well?
->
->
-> This code is saving the governor name here to restore it when the policy is
-> created again after suspend/resume or hotplug of all CPUs. Since we no
-> longer throw away the policy struct, there's no point in doing this.
->
-> I should remove this per cpu variable though. Will do it in v5.
-
-Hmm, makes sense. So probably keep this code in this patch and get rid
-of all uses of 'cpufreq_cpu_governor' in a separate patch.
-
->>> +       if (cpus > 1) {
->>> +               if (cpu == policy->cpu) {
->>> +                       new_cpu = cpumask_any_but(policy->cpus, cpu);
->>> +                       if (new_cpu >= 0)
->>
->>
->> Can this ever be false?
->
->
-> If this is the last CPU going down.
-
-Can that be true? Its present in (cpus > 1) block :)
-
->>>   static int cpufreq_remove_dev(struct device *dev, struct
->>> subsys_interface *sif)
->>>   {
->>>          unsigned int cpu = dev->id;
->>> -       int ret;
->>> -
->>> -       if (cpu_is_offline(cpu))
->>> -               return 0;
->>> +       int ret = 0;
+>>> Sorry for the delay. I suppose this make sense, but I really don't
+>>> know for sure.
 >>>
->>> -       ret = __cpufreq_remove_dev_prepare(dev, sif);
->>> +       if (cpu_online(cpu))
->>> +               ret = __cpufreq_remove_dev_prepare(dev, sif);
+>>> I guess we need some testing in linux-next, to get some confidence.
 >>
->>
->> Why do you need a change here?
+>> Would you take it into -next then? Unless I'm completely wrong there
+>> should be no impact on any in-tree driver...
 >
->
-> Since we no longer do remove_dev_finish during hotplug, we can't just short
-> circuit the entire function. We have to finish the remove when the CPU is
-> hot-removed or when the cpufreq driver is unregistered.
+> I will take it; though I think it's best to queue it for 3.18 to get
+> some more testing.
 
-I think this is tricky and we must have a clear comment here..
-I missed this on my initial reviews..
+This patch causes a compiler warning, could you please fix it.
+
+Kind regards
+Uffe
