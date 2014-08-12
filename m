@@ -1,115 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaHLLeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 07:34:13 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:59456 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850AbaHLLeK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 07:34:10 -0400
-Date: Tue, 12 Aug 2014 20:33:00 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Chao Yu <chao2.yu@samsung.com>, ngupta@vflare.org,
-        linux-kernel@vger.kernel.org, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] zram: fix incorrectly stat with failed_reads
-Message-ID: <20140812113300.GA943@swordfish>
-References: <000001cfb53f$d63b6ea0$82b24be0$@samsung.com>
- <20140812073740.GA9227@bbox>
+	id S1752381AbaHLLg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 07:36:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751928AbaHLLgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 07:36:55 -0400
+Message-ID: <53E9FC39.1030700@redhat.com>
+Date: Tue, 12 Aug 2014 07:36:25 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140812073740.GA9227@bbox>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lan Tianyu <tianyu.lan@intel.com>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        toshi.kani@hp.com, imammedo@redhat.com, bp@alien8.de, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] X86/CPU: Avoid 100ms sleep for cpu offline  during
+ S3
+References: <1407142742-29202-1-git-send-email-tianyu.lan@intel.com> <1407828667-14316-1-git-send-email-tianyu.lan@intel.com>
+In-Reply-To: <1407828667-14316-1-git-send-email-tianyu.lan@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (08/12/14 16:37), Minchan Kim wrote:
-> On Mon, Aug 11, 2014 at 04:39:17PM +0800, Chao Yu wrote:
-> > Since we allocate a temporary buffer in zram_bvec_read to handle partial page
-> > operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
-> > zram: allow partial page operations), our ->failed_reads value may be incorrect
-> > as we do not increase its value when failed to allocate the temporary buffer.
-> > 
-> > Let's fix this issue and correct the annotation of failed_reads.
-> 
-> Good catch.
-> Just out of curiosity.
-> 
-> Did you catch it by code review or real workload?
-> 
-> > 
-> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > ---
-> >  drivers/block/zram/zram_drv.c | 1 +
-> >  drivers/block/zram/zram_drv.h | 2 +-
-> >  2 files changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index dfa4024..bf8ea1b 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -413,6 +413,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
-> >  
-> >  	if (!uncmem) {
-> >  		pr_info("Unable to allocate temp memory\n");
-> > +		atomic64_inc(&zram->stats.failed_reads);
-> >  		ret = -ENOMEM;
-> >  		goto out_cleanup;
-> >  	}
-> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > index 5b0afde..e0f725c 100644
-> > --- a/drivers/block/zram/zram_drv.h
-> > +++ b/drivers/block/zram/zram_drv.h
-> > @@ -84,7 +84,7 @@ struct zram_stats {
-> >  	atomic64_t compr_data_size;	/* compressed size of pages stored */
-> >  	atomic64_t num_reads;	/* failed + successful */
-> >  	atomic64_t num_writes;	/* --do-- */
-> > -	atomic64_t failed_reads;	/* should NEVER! happen */
-> > +	atomic64_t failed_reads;	/* can happen when memory is too low */
-> >  	atomic64_t failed_writes;	/* can happen when memory is too low */
-> >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
-> >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
-> > -- 
-> > 2.0.1.474.g72c7794
-> 
-> How abouting moving failed_reads/writes in zram_bvec_rw?
-> 
-> int zram_bvec_rw(..)
-> {
->         if (rw == READ) {
->                 atomic64_inc(num_reads);
->                 ret = zram_bvec_read(xxx);
->         } else {
->                 atomic64_inc(&num_writes);
->                 ret = zram_bvec_write(xxx);
->         }
-> 
->         if (unlikely(ret)) {
->                 if (rw == READ)
->                         atomic64_inc(failed_reads);
->                 else
->                         atomic64_inc(failed_writes);
->         }
-> }
-> 
 
-looks good. these stats were supposed to be here.
 
-	-ss
-
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+On 08/12/2014 03:31 AM, Lan Tianyu wrote:
+> With some bad kernel configures, cpu offline consumes more than 100ms
+> during S3. This because native_cpu_die() would fall into 100ms
+> sleep when cpu idle loop thread marked cpu state to DEAD slower. It's
+> timing related issue. What native_cpu_die() does is that poll cpu
+> state and wait for 100ms if cpu state hasn't been marked to DEAD.
+> The 100ms sleep doesn't make sense. To avoid such long sleep, this
+> patch is to add struct completion to each cpu, wait for the completion
+> in the native_cpu_die() and wakeup the completion when the cpu state is
+> marked to DEAD.
 > 
-> -- 
-> Kind regards,
-> Minchan Kim
+> Tested on the Intel Xeon server with 48 cores, Ivbridge and Haswell laptops.
+> the times of cpu offline on these machines are reduced from more than 100ms
+> to less than 5ms. The system suspend time reduces 2.3s on the servers.
+> 
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+
+Tested across a few systems of various sizes and configurations (multi-socket,
+single-socket, no hyper threading, etc.).  No issues seen.
+
+Tested-by: Prarit Bhargava <prarit@redhat.com>
+
+P.
+
+> ---
+> Change since V1:
+> 	Remove redundant empty line and correct some code styple issues.
+> 
+>  arch/x86/kernel/smpboot.c | 23 +++++++++++------------
+>  1 file changed, 11 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index edf80bb..bc65e42 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -102,6 +102,8 @@ DEFINE_PER_CPU_READ_MOSTLY(cpumask_var_t, cpu_llc_shared_map);
+>  DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
+>  EXPORT_PER_CPU_SYMBOL(cpu_info);
+>  
+> +DEFINE_PER_CPU(struct completion, die_complete);
+> +
+>  atomic_t init_deasserted;
+>  
+>  /*
+> @@ -1331,7 +1333,7 @@ int native_cpu_disable(void)
+>  		return ret;
+>  
+>  	clear_local_APIC();
+> -
+> +	init_completion(&per_cpu(die_complete, smp_processor_id()));
+>  	cpu_disable_common();
+>  	return 0;
+>  }
+> @@ -1339,18 +1341,14 @@ int native_cpu_disable(void)
+>  void native_cpu_die(unsigned int cpu)
+>  {
+>  	/* We don't do anything here: idle task is faking death itself. */
+> -	unsigned int i;
+> +	wait_for_completion_timeout(&per_cpu(die_complete, cpu), HZ);
+>  
+> -	for (i = 0; i < 10; i++) {
+> -		/* They ack this in play_dead by setting CPU_DEAD */
+> -		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
+> -			if (system_state == SYSTEM_RUNNING)
+> -				pr_info("CPU %u is now offline\n", cpu);
+> -			return;
+> -		}
+> -		msleep(100);
+> -	}
+> -	pr_err("CPU %u didn't die...\n", cpu);
+> +	/* They ack this in play_dead by setting CPU_DEAD */
+> +	if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
+> +		if (system_state == SYSTEM_RUNNING)
+> +			pr_info("CPU %u is now offline\n", cpu);
+> +	} else
+> +		pr_err("CPU %u didn't die...\n", cpu);
+>  }
+>  
+>  void play_dead_common(void)
+> @@ -1362,6 +1360,7 @@ void play_dead_common(void)
+>  	mb();
+>  	/* Ack it */
+>  	__this_cpu_write(cpu_state, CPU_DEAD);
+> +	complete(&per_cpu(die_complete, smp_processor_id()));
+>  
+>  	/*
+>  	 * With physical CPU hotplug, we should halt the cpu
 > 
