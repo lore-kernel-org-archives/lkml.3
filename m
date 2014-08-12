@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023AbaHLTji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 15:39:38 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:41767 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992AbaHLTjf (ORCPT
+	id S1755116AbaHLTk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 15:40:57 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:39588 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754981AbaHLTk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 15:39:35 -0400
-Date: Wed, 13 Aug 2014 01:09:29 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] rtlwifi: btcoexist: adjust double test
-Message-ID: <20140812193929.GA4233@himangi-Dell>
+	Tue, 12 Aug 2014 15:40:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53EA6D24.3000609@codeaurora.org>
+References: <1407867869-5194-1-git-send-email-keescook@chromium.org>
+	<1407867869-5194-6-git-send-email-keescook@chromium.org>
+	<53EA6D24.3000609@codeaurora.org>
+Date: Tue, 12 Aug 2014 12:40:55 -0700
+X-Google-Sender-Auth: YagIn7YISjbTo_HLFNidpLlB0wA
+Message-ID: <CAGXu5jJiGXJQ4Bdu9Mhvj=jCdZ76w6_OOYoCmYEJZ47=HHSptg@mail.gmail.com>
+Subject: Re: [PATCH v3 5/7] arm: kgdb: Handle read-only text / modules
+From: Kees Cook <keescook@chromium.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
+        Liu hua <sdu.liu@huawei.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Doug Anderson <dianders@google.com>, Rabin Vincent <rabin@rab.in>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Mark Salter <msalter@redhat.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rewrite a duplicated test to test the correct value
+On Tue, Aug 12, 2014 at 12:38 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 08/12/14 11:24, Kees Cook wrote:
+>> @@ -244,6 +248,32 @@ void kgdb_arch_exit(void)
+>>       unregister_die_notifier(&kgdb_notifier);
+>>  }
+>>
+>> +int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
+>> +{
+>> +     int err;
+>> +
+>> +     /* patch_text() only supports int-sized breakpoints */
+>> +     if (sizeof(int) != BREAK_INSTR_SIZE)
+>> +             return -EINVAL;
+>
+> Could this be a BUILD_BUG_ON too?
 
-The Coccinelle semantic patch that finds this problem is:
+Ah yes, good call. I'll adjust that.
 
-// <smpl>
-@@
-expression E;
-@@
+Thanks!
 
-(
-* E
-  || ... || E
-|
-* E
-  && ... && E
-)
-// </smpl>
+-Kees
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
----
-In file drivers/staging/rtl8192ee/btcoexist/halbtcoutsrc.c, there is a
-similar function that tests for WIRELESS_MODE_G and WIRELESS_MODE_B.
-I have not tested the code, so you am not sure whether it is the
-correct solution.
-
- drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.c b/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.c
-index 33da3df..d4bd550 100644
---- a/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.c
-+++ b/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.c
-@@ -101,7 +101,7 @@ static bool halbtc_legacy(struct rtl_priv *adapter)
- 
- 	bool is_legacy = false;
- 
--	if ((mac->mode == WIRELESS_MODE_B) || (mac->mode == WIRELESS_MODE_B))
-+	if ((mac->mode == WIRELESS_MODE_B) || (mac->mode == WIRELESS_MODE_G))
- 		is_legacy = true;
- 
- 	return is_legacy;
 -- 
-1.9.1
-
+Kees Cook
+Chrome OS Security
