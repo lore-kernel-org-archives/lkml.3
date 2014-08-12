@@ -1,61 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaHLOaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 10:30:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38521 "EHLO mx2.suse.de"
+	id S1752926AbaHLObN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 10:31:13 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46273 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393AbaHLOaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 10:30:22 -0400
-Date: Tue, 12 Aug 2014 16:30:20 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Simon Wood <simon@mungewell.org>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID:hid-logitech: Prevent possibility of infinite loop
- when using /sys interface
-In-Reply-To: <1407379951-7038-1-git-send-email-simon@mungewell.org>
-Message-ID: <alpine.LNX.2.00.1408121630000.15220@pobox.suse.cz>
-References: <1407379951-7038-1-git-send-email-simon@mungewell.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752393AbaHLObL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 10:31:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,849,1400050800"; 
+   d="scan'208";a="575586943"
+Date: Tue, 12 Aug 2014 22:30:25 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [sched] 143e1e28cb4: +17.9% aim7.jobs-per-min, -9.7%
+ hackbench.throughput
+Message-ID: <20140812143025.GA12963@localhost>
+References: <20140810044127.GB11810@localhost>
+ <20140810075915.GR9918@twins.programming.kicks-ass.net>
+ <20140810105413.GA29451@localhost>
+ <20140811133352.GC9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140811133352.GC9918@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Aug 2014, Simon Wood wrote:
-
-> If the device data is not accessible for some reason, returning 0 will cause the call to be
-> continuously called again as none of the string has been 'consumed'.
-
-Hi Simon,
-
-this patch is missing signoff.
-
-> ---
->  drivers/hid/hid-lg4ff.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+On Mon, Aug 11, 2014 at 03:33:52PM +0200, Peter Zijlstra wrote:
+> On Sun, Aug 10, 2014 at 06:54:13PM +0800, Fengguang Wu wrote:
+> > This view may be easier to read, by grouping the metrics by test case.
+> > 
+> > test case: brickland1/aim7/6000-page_test
 > 
-> diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
-> index cc2bd20..7835717 100644
-> --- a/drivers/hid/hid-lg4ff.c
-> +++ b/drivers/hid/hid-lg4ff.c
-> @@ -451,13 +451,13 @@ static ssize_t lg4ff_range_store(struct device *dev, struct device_attribute *at
->  	drv_data = hid_get_drvdata(hid);
->  	if (!drv_data) {
->  		hid_err(hid, "Private driver data not found!\n");
-> -		return 0;
-> +		return -EINVAL;
->  	}
->  
->  	entry = drv_data->device_props;
->  	if (!entry) {
->  		hid_err(hid, "Device properties not found!\n");
-> -		return 0;
-> +		return -EINVAL;
->  	}
->  
->  	if (range == 0)
+> OK, I have a similar system to the brickland thing (slightly different
+> configuration, but should be close enough).
+> 
+> Now; do you have a description of each test-case someplace?
 
--- 
-Jiri Kosina
-SUSE Labs
+You can find our aim7 test script here:
+
+        git clone git://git.kernel.org/pub/scm/linux/kernel/git/wfg/lkp-tests
+        cd lkp-tests
+        vi tests/aim7
+
+More test scripts are available there:
+
+        vi tests/hackbench
+        vi tests/netperf
+        ...
+
+> In particular, it might be good to have a small annotation to show
+> which direction is better.
+
+The directions are listed in these files as positive/negative numbers:
+
+        vi metric/index-*
+
+For examples:
+
+% head -3 metric/index-*
+==> metric/index-latency.yaml <==
+dbench.max_latency: -0.1
+fileio.request_latency_95%_ms: -0.2
+oltp.request_latency_95%_ms: -0.2
+
+==> metric/index-perf.yaml <==
+aim7.jobs-per-min: 1
+dbench.throughput-MB/sec: 1
+ebizzy.throughput: 1
+
+==> metric/index-power.yaml <==
+turbostat.Pkg_W: -1
+turbostat.RAM_W: -1
+turbostat.%c0: -0.1
+
+==> metric/index-size.yaml <==
+kernel-size.text: -1
+kernel-size.data: -1
+kernel-size.bss: -1
+
+They are not the comprehensive list, but reasonably complete to list
+the most important ones.
+
+> >     128529 ± 1%     +17.9%     151594 ± 0%  TOTAL aim7.jobs-per-min
+> 
+> jobs per minute, + is better, so no worries there.
+> 
+> >     582269 ±14%     -55.6%     258617 ±16%  TOTAL softirqs.SCHED
+> >     993654 ± 2%     -19.9%     795962 ± 3%  TOTAL softirqs.RCU
+> >   15865125 ± 1%     -15.0%   13485882 ± 1%  TOTAL softirqs.TIMER
+> 
+> >   59366697 ± 3%     -46.1%   32017187 ± 7%  TOTAL cpuidle.C1-IVT.time
+> >      54543 ±11%     -37.2%      34252 ±16%  TOTAL cpuidle.C1-IVT.usage
+> >      19542 ± 9%     -38.3%      12057 ± 4%  TOTAL cpuidle.C1E-IVT.usage
+> >   49527464 ± 6%     -32.4%   33488833 ± 4%  TOTAL cpuidle.C1E-IVT.time
+> >      76064 ± 3%     -32.2%      51572 ± 6%  TOTAL cpuidle.C6-IVT.usage
+> 
+> Less idle time; might be good, if the work is cpubound, might be bad if
+> not; hard to say.
+> 
+> >       2.82 ± 3%     +21.9%       3.43 ± 4%  TOTAL turbostat.%pc2
+> >       4.40 ± 2%     +22.0%       5.37 ± 4%  TOTAL turbostat.%c6
+> >      15.75 ± 1%      -3.4%      15.21 ± 0%  TOTAL turbostat.RAM_W
+> 
+> >    3150464 ± 2%     -24.2%    2387551 ± 3%  TOTAL time.voluntary_context_switches
+> 
+> Typically less ctxsw is better..
+> 
+> >        281 ± 1%     -15.1%        238 ± 0%  TOTAL time.elapsed_time
+> >      29294 ± 1%     -14.3%      25093 ± 0%  TOTAL time.system_time
+> 
+> Less time spend (on presumably the same work) is better
+> 
+> >    4529818 ± 1%      -8.8%    4129398 ± 1%  TOTAL time.involuntary_context_switches
+> 
+> Less preemptions, also generally better
+> 
+> >      10655 ± 0%      +1.4%      10802 ± 0%  TOTAL time.percent_of_cpu_this_job_got
+> 
+> Seem an improvement; not sure.
+> 
+> Many more stats.. but from the above it looks like its an overall 'win';
+> or am I reading the thing wrong?
+
+I'd agree with your interpretations, too.
+
+In case you want to make sure the exact meaning of the above values:
+they are generated by scripts in stats/* and stats/hackbench would be
+a good example to read.
+
+Thanks,
+Fengguang
