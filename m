@@ -1,57 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaHLLOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 07:14:12 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51597 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751455AbaHLLOK (ORCPT
+	id S1752005AbaHLLRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 07:17:47 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:62155 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506AbaHLLRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 07:14:10 -0400
-Date: Tue, 12 Aug 2014 13:14:07 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Rob Clark <robdclark@gmail.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/2] drm: rework flip-work framework
-Message-ID: <20140812131407.069635e8@bbrezillon>
-In-Reply-To: <1405173968-23869-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1405173968-23869-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 12 Aug 2014 07:17:44 -0400
+Message-ID: <53E9F679.8060302@huawei.com>
+Date: Tue, 12 Aug 2014 19:11:53 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-mips@linux-mips.org>, <linux-ia64@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <sparclinux@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        "Joerg Roedel" <joro@8bytes.org>, <x86@kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <xen-devel@lists.xenproject.org>, <arnab.basu@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <marc.zyngier@arm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Tony Luck <tony.luck@intel.com>, <linux-kernel@vger.kernel.org>,
+        <iommu@lists.linux-foundation.org>, Wuyun <wuyun.wu@huawei.com>,
+        <linuxppc-dev@lists.ozlabs.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [Xen-devel] [RFC PATCH 01/20] x86/xen/MSI: Eliminate arch_msix_mask_irq()
+ and arch_msi_mask_irq()
+References: <1407828373-24322-1-git-send-email-wangyijing@huawei.com> <1407828373-24322-2-git-send-email-wangyijing@huawei.com> <53E9D9DD.3060901@citrix.com>
+In-Reply-To: <53E9D9DD.3060901@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sat, 12 Jul 2014 16:06:06 +0200
-Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
-
-> Hello,
+On 2014/8/12 17:09, David Vrabel wrote:
+> On 12/08/14 08:25, Yijing Wang wrote:
+>> Commit 0e4ccb150 added two __weak arch functions arch_msix_mask_irq()
+>> and arch_msi_mask_irq() to fix a bug found when running xen in x86.
+>> Introduced these two funcntions make MSI code complex. This patch
+>> reverted commit 0e4ccb150 and add #ifdef for x86 msi_chip to fix this
+>> bug for simplicity. Also this is preparation for using struct
+>> msi_chip instead of weak arch MSI functions in all platforms.
+> [...]
+>>  static struct irq_chip msi_chip = {
+>>  	.name			= "PCI-MSI",
+>> +#ifdef CONFIG_XEN
+>> +	.irq_unmask		= nop_unmask_msi_irq,
+>> +	.irq_mask		= nop_mask_msi_irq,
+>> +#else
+>>  	.irq_unmask		= unmask_msi_irq,
+>>  	.irq_mask		= mask_msi_irq,
+>> +#endif
 > 
-> This patch series reworks the flip-work framework to make it safe when
-> calling drm_flip_work_queue from atomic contexts.
+> No.  CONFIG_XEN kernels can run on Xen and bare metal so this must be a
+> runtime option.
+
+Hi David, that's my mistake, what about export struct irq_chip msi_chip, then
+change the msi_chip->irq_mask/irq_unmask() in xen init functions.
+
+
+Eg.
+
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 19b0eba..bb6af00 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -43,6 +43,10 @@ static inline void generic_apic_probe(void)
+ }
+ #endif
+
++#ifdef CONFIG_PCI_MSI
++extern struct irq_chip msi_chip;
++#endif
++
+ #ifdef CONFIG_X86_LOCAL_APIC
+[...]
++
++#ifdef CONFIG_PCI_MSI
++void xen_nop_msi_mask(struct irq_data *data)
+ {
+-       return 0;
+ }
+ #endif
+
+@@ -424,8 +423,8 @@ int __init pci_xen_init(void)
+        x86_msi.setup_msi_irqs = xen_setup_msi_irqs;
+        x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
+        x86_msi.teardown_msi_irqs = xen_teardown_msi_irqs;
+-       x86_msi.msi_mask_irq = xen_nop_msi_mask_irq;
+-       x86_msi.msix_mask_irq = xen_nop_msix_mask_irq;
++       msi_chip.irq_mask = xen_nop_msi_mask;
++       msi_chip.irq_unmask = xen_nop_msi_mask;
+ #endif
+        return 0;
+ }
+@@ -505,8 +504,8 @@ int __init pci_xen_initial_domain(void)
+        x86_msi.setup_msi_irqs = xen_initdom_setup_msi_irqs;
+        x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
+        x86_msi.restore_msi_irqs = xen_initdom_restore_msi_irqs;
+-       x86_msi.msi_mask_irq = xen_nop_msi_mask_irq;
+-       x86_msi.msix_mask_irq = xen_nop_msix_mask_irq;
++       msi_chip.irq_mask = xen_nop_msi_mask;
++       msi_chip.irq_unmask = xen_nop_msi_mask;
+ #endif
+        xen_setup_acpi_sci();
+
+
 > 
-> The 2nd patch of this series is optional, as it only reworks
-> drm_flip_work_init prototype to remove unneeded size argument and
-> return code (this function cannot fail anymore).
-
-
-Atmel HLCDC driver now depends on this series and I'd like to get as
-much thing as possible for HLCDC support in 3.18 (if the driver can't
-make it for 3.18, at least the dependencies could).
-
-David, Rob (and other DRM/KMS developers) do you have any concern you
-would like addressed in this patch series ?
-
-Best Regards,
-
-Boris
+> David
+> 
+> .
+> 
 
 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Thanks!
+Yijing
+
