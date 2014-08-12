@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518AbaHLA1T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 20:27:19 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:47353 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaHLA1S (ORCPT
+	id S1753214AbaHLA2Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 20:28:16 -0400
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:63263 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656AbaHLA2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 20:27:18 -0400
+	Mon, 11 Aug 2014 20:28:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1408090152240.11855@chino.kir.corp.google.com>
-References: <1407545198-9009-1-git-send-email-xiyou.wangcong@gmail.com>
-	<alpine.DEB.2.02.1408090152240.11855@chino.kir.corp.google.com>
-Date: Mon, 11 Aug 2014 17:20:50 -0700
-Message-ID: <CAM_iQpV71KMJEm_-VY0EPJngM-yNHOVv5niXgy9+7jnWw3=wBQ@mail.gmail.com>
-Subject: Re: [Patch] freezer: check OOM kill signal while being frozen
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20140811105640.GN4856@mwanda>
+References: <20140809053644.GA14630@devel.8.8.4.4>
+	<20140811105640.GN4856@mwanda>
+Date: Tue, 12 Aug 2014 09:28:13 +0900
+Message-ID: <CAHb8M2Dz5iWFcW8WNZkA_ikD0uKJqTuLQtkw4h6+7QCJ-3dL1A@mail.gmail.com>
+Subject: Re: [PATCH 1/7] staging: dgap: remove useless variable
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
+        devel <devel@driverdev.osuosl.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 9, 2014 at 1:55 AM, David Rientjes <rientjes@google.com> wrote:
-> On Fri, 8 Aug 2014, Cong Wang wrote:
+Hi, Dan
+
+2014-08-11 19:56 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Sat, Aug 09, 2014 at 02:36:44PM +0900, Daeseok Youn wrote:
+>> dgap_major_serial_registered and dgap_major_transparent_print_registered
+>> could be checked whether a board is initialized.
+>> But it doesn't need to check that variables becasue dgap module
+>> isn't calling the dgap_cleanup_tty() without initializing
+>> for a board completely.
 >
->> diff --git a/kernel/freezer.c b/kernel/freezer.c
->> index aa6a8aa..c6d189d 100644
->> --- a/kernel/freezer.c
->> +++ b/kernel/freezer.c
->> @@ -68,7 +68,9 @@ bool __refrigerator(bool check_kthr_stop)
->>               spin_lock_irq(&freezer_lock);
->>               current->flags |= PF_FROZEN;
->>               if (!freezing(current) ||
->> -                 (check_kthr_stop && kthread_should_stop()))
->> +                 (check_kthr_stop && kthread_should_stop()) ||
->> +                 (test_tsk_thread_flag(current, TIF_MEMDIE) &&
->> +                      fatal_signal_pending(current)))
->>                       current->flags &= ~PF_FROZEN;
->>               spin_unlock_irq(&freezer_lock);
->>
->
-> All threads with TIF_MEMDIE set would have been killed, why is the check
-> for fatal_signal_pending(current) needed?
+> I don't understand.  What about the call to dgap_cleanup_module() in
+> dgap_init_module()?
+I think the call of dgap_cleanup_tty()
+in dgap_cleanup_module() from dgap_init_module() is not reached.
+Because dgap_init_module() is called when driver is loaded, at this
+point of time,
+there are no boards that are initialized.(dgap_numboards is zero)
 
-So just checking TIF_MEMDIE is enough, right?
-
->
-> You can also use test_thread_flag(TIF_MEMDIE) instead since you're only
-> concerned with current.
->
-
-OK, will do.
-
-> Furthermore, that conditional is getting difficult to read.  Maybe it
-> would help to have a helper function that returns bool that determines
-> whether PF_FROZEN should be cleared?
-
-Makes sense.
+And the change log of this is needed to modify for clearing message.
 
 Thanks.
+
+regards,
+Daeseok Youn.
+>
+> regards,
+> dan carpenter
+>
