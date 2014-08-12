@@ -1,33 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaHLPcb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 11:32:31 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58985 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981AbaHLPca (ORCPT
+	id S1753226AbaHLPn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 11:43:57 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:34690 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752852AbaHLPn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 11:32:30 -0400
-Date: Tue, 12 Aug 2014 08:32:29 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jeff Layton <jlayton@primarydata.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 0/5] locks: move most locks_release_private calls outside
- of i_lock
-Message-ID: <20140812153229.GA15922@infradead.org>
-References: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
+	Tue, 12 Aug 2014 11:43:56 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hugetlb_cgroup: use lockdep_assert_held rather than spin_is_locked
+In-Reply-To: <1407849830-22500-1-git-send-email-mhocko@suse.cz>
+References: <1407849830-22500-1-git-send-email-mhocko@suse.cz>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Tue, 12 Aug 2014 21:13:39 +0530
+Message-ID: <87r40l67dg.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081215-3864-0000-0000-0000008E4B23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw, I might be missing something here, but wouldn't it be better
-to reference count the file_lock structure and grab a reference to
-it where we currently call (__)locks_copy_lock?
+Michal Hocko <mhocko@suse.cz> writes:
+
+> spin_lock may be an empty struct for !SMP configurations and so
+> arch_spin_is_locked may return unconditional 0 and trigger the VM_BUG_ON
+> even when the lock is held.
+>
+> Replace spin_is_locked by lockdep_assert_held. We will not BUG anymore
+> but it is questionable whether crashing makes a lot of sense in the
+> uncharge path. Uncharge happens after the last page reference was
+> released so nobody should touch the page and the function doesn't update
+> any shared state except for res counter which uses synchronization of
+> its own.
+
+We do update the hugepage's hugetlb cgroup details. But as you mentioned,
+this should not be an issue because we are in hugepage free.
+
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/hugetlb_cgroup.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> index 9aae6f47433f..9edf189a5ef3 100644
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -217,7 +217,7 @@ void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
+>
+>  	if (hugetlb_cgroup_disabled())
+>  		return;
+> -	VM_BUG_ON(!spin_is_locked(&hugetlb_lock));
+> +	lockdep_assert_held(&hugetlb_lock);
+>  	h_cg = hugetlb_cgroup_from_page(page);
+>  	if (unlikely(!h_cg))
+>  		return;
+> -- 
+> 2.1.0.rc1
 
