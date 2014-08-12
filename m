@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537AbaHLNoB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 09:44:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37173 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751904AbaHLNoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 09:44:00 -0400
-From: jgross@suse.com
-To: xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
-        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH] Make bind_interdomain_evtchn_to_irq() public
-Date: Tue, 12 Aug 2014 15:43:44 +0200
-Message-Id: <1407851024-18936-1-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 1.8.4.5
+	id S1752685AbaHLNrz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 09:47:55 -0400
+Received: from [14.17.44.34] ([14.17.44.34]:41665 "EHLO smtpbg339.qq.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751810AbaHLNry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 09:47:54 -0400
+X-QQ-GoodBg: 0
+X-QQ-SSF: 0010000000B000F0
+X-QQ-BUSINESS-ORIGIN: 2
+X-Originating-IP: 49.75.173.2
+X-QQ-STYLE: 
+X-QQ-mid: bizmail38t1407850866t4853563
+From: "=?utf-8?B?6ZmI5Y2O5omN?=" <chenhc@lemote.com>
+To: "=?utf-8?B?d2VpeWpfbGs=?=" <weiyj_lk@163.com>,
+        "=?utf-8?B?UmFsZiBCYWVjaGxl?=" <ralf@linux-mips.org>
+Cc: "=?utf-8?B?V2VpIFlvbmdqdW4=?=" <yongjun_wei@trendmicro.com.cn>,
+        "=?utf-8?B?bGludXgtbWlwcw==?=" <linux-mips@linux-mips.org>,
+        "=?utf-8?B?bGludXgta2VybmVs?=" <linux-kernel@vger.kernel.org>
+Subject: Re:[PATCH -next] MIPS: Remove duplicated include from numa.c
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="utf-8"
+Date: Tue, 12 Aug 2014 21:41:06 +0800
+X-Priority: 3
+Message-ID: <tencent_21B4C02448BEE43D0A470063@qq.com>
+X-QQ-MIME: TCMime 1.0 by Tencent
+X-Mailer: QQMail 2.x
+X-QQ-Mailer: QQMail 2.x
+References: <1407846382-29951-1-git-send-email-weiyj_lk@163.com>
+In-Reply-To: <1407846382-29951-1-git-send-email-weiyj_lk@163.com>
+X-QQ-ReplyHash: 3719488126
+X-QQ-SENDSIZE: 520
+X-QQ-Bgrelay: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7CDm09C013970
 
-From: Juergen Gross <jgross@suse.com>
+Reviewed-off-by: Huacai Chen <chenhc@lemote.com>
+ 
+------------------ Original ------------------
+From:  "weiyj_lk"<weiyj_lk@163.com>;
+Date:  Tue, Aug 12, 2014 08:26 PM
+To:  "Ralf Baechle"<ralf@linux-mips.org>; "Huacai Chen"<chenhc@lemote.com>; 
+Cc:  "Wei Yongjun"<yongjun_wei@trendmicro.com.cn>; "linux-mips"<linux-mips@linux-mips.org>; "linux-kernel"<linux-kernel@vger.kernel.org>; 
+Subject:  [PATCH -next] MIPS: Remove duplicated include from numa.c
 
-bind_interdomain_evtchn_to_irq() is currently a private function. It is used
-only by bind_interdomain_evtchn_to_irqhandler() to register an irq-handler for
-an event channel.
+ 
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-By making it public it is possible to use e.g. threaded interrupts with
-interdomain event channels.
+Remove duplicated include.
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/xen/events/events_base.c | 5 +++--
- include/xen/events.h             | 2 ++
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ arch/mips/loongson/loongson-3/numa.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-index c919d3d..0230aff 100644
---- a/drivers/xen/events/events_base.c
-+++ b/drivers/xen/events/events_base.c
-@@ -900,8 +900,8 @@ static int bind_ipi_to_irq(unsigned int ipi, unsigned int cpu)
- 	return irq;
- }
- 
--static int bind_interdomain_evtchn_to_irq(unsigned int remote_domain,
--					  unsigned int remote_port)
-+int bind_interdomain_evtchn_to_irq(unsigned int remote_domain,
-+				   unsigned int remote_port)
- {
- 	struct evtchn_bind_interdomain bind_interdomain;
- 	int err;
-@@ -914,6 +914,7 @@ static int bind_interdomain_evtchn_to_irq(unsigned int remote_domain,
- 
- 	return err ? : bind_evtchn_to_irq(bind_interdomain.local_port);
- }
-+EXPORT_SYMBOL_GPL(bind_interdomain_evtchn_to_irq);
- 
- static int find_virq(unsigned int virq, unsigned int cpu)
- {
-diff --git a/include/xen/events.h b/include/xen/events.h
-index 8bee7a7..5321cd9 100644
---- a/include/xen/events.h
-+++ b/include/xen/events.h
-@@ -28,6 +28,8 @@ int bind_ipi_to_irqhandler(enum ipi_vector ipi,
- 			   unsigned long irqflags,
- 			   const char *devname,
- 			   void *dev_id);
-+int bind_interdomain_evtchn_to_irq(unsigned int remote_domain,
-+				   unsigned int remote_port);
- int bind_interdomain_evtchn_to_irqhandler(unsigned int remote_domain,
- 					  unsigned int remote_port,
- 					  irq_handler_t handler,
--- 
-1.8.4.5
-
+diff --git a/arch/mips/loongson/loongson-3/numa.c b/arch/mips/loongson/loongson-3/numa.c
+index ca025a6..37ed184 100644
+--- a/arch/mips/loongson/loongson-3/numa.c
++++ b/arch/mips/loongson/loongson-3/numa.c
+@@ -24,8 +24,6 @@
+ #include <asm/page.h>
+ #include <asm/pgalloc.h>
+ #include <asm/sections.h>
+-#include <linux/bootmem.h>
+-#include <linux/init.h>
+ #include <linux/irq.h>
+ #include <asm/bootinfo.h>
+ #include <asm/mc146818-time.h>ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
