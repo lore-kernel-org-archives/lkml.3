@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663AbaHLH3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:29:46 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:45258 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaHLH3o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:29:44 -0400
-From: Manfred Spraul <manfred@colorfullife.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Rafael Aquini <aquini@redhat.com>, Rik van Riel <riel@redhat.com>,
-        1vier1@web.de, Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH 0/3] ipc: Further updates to sysv/mqueue limits
-Date: Tue, 12 Aug 2014 09:29:14 +0200
-Message-Id: <1407828557-31995-1-git-send-email-manfred@colorfullife.com>
-X-Mailer: git-send-email 1.9.3
+	id S1753866AbaHLHaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:30:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46111 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753727AbaHLHaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 03:30:17 -0400
+Date: Tue, 12 Aug 2014 09:29:47 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC 00/20] perf: Finish sampling commands when events are closed
+Message-ID: <20140812072947.GA1128@krava.brq.redhat.com>
+References: <1407747014-18394-1-git-send-email-jolsa@kernel.org>
+ <20140811201249.GA4148@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140811201249.GA4148@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Mon, Aug 11, 2014 at 05:12:49PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Aug 11, 2014 at 10:49:54AM +0200, Jiri Olsa escreveu:
+> > hi,
+> > adding support to quit sampling commands:
+> >   record,top,trace,kvm stat live
+> > 
+> > when all the monitored events are closed, like following perf
+> > command will now exit when monitored process (pid 1234) exits:
+> > 
+> >   $ perf record -p 1234
+> > 
+> > I added independent poller object to handle basic polling
+> > tasks. I had to factor some parts, so sending this as RFC,
+> 
+> Why? I'm trying to figure out why this poller class is needed, just from
+> reading the changelog entries, no luck so far.
 
-I got some positive and no negative feedback on my patches, thus:
-Could you add the patches to -mm and push them towards Linus?
+multiple reasons.. at the moment:
+  - have a way to get FD state notification -> callback triggers for FD
+    and we can figure when we are out of monitored events or notify there
+    was error/hup on event
 
-0001-ipc-msg-increase-MSGMNI-remove-scaling.patch
-	- increase MSGMNI to 32000
-	- as a bonus, this removes around 300 lines
+  - to be able to gather/register more kinds of FDs under one
+    poll instance, so we could poll together on standard input
+    or other kind of notify event with perf events within a
+    single poll call
 
-0002-ipc-sem.c-increase-SEMMSL-SEMMNI-SEMOPM.patch
-	- increase all limits
-	- update the documentation, it was stale
+for future:
+  - there's another feature for record to watch hotplug CPUs
+    and open/close perf event for it when CPU is added/removed
+    we need to watch/poll inotify events for that
 
-   Note: Redhat/Oracle recommend values that exceed what I would recommend
-   as safe upper limits.
- 
-https://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/5/html/Tuning_and_Optimizing_Red_Hat_Enterprise_Linux_for_Oracle_9i_and_10g_Databases/sect-Oracle_9i_and_10g_Tuning_Guide-Setting_Semaphores-An_Example_of_Semaphore_Settings.html 
+  - when having multiple threads for record command we'll need to split
+    evlist events into more polling instances, so each thread could
+    poll independently
 
-   Unfortunately I didn't get any replies, thus I don't know how to proceed.
+also I think the poller class just encapsulates the polling
+processing and reduces the evlist complexity
 
-   One option would be to switch from kmalloc to ipc_alloc, then the risk of
-   failing due to memory fragmentation would be resolved.
-
-0003-ipc-namespace-copy-settings-from-parent-namespace.patch
-	Change the namespace code so that a new namespace inherits the values
-	from it's parent instead of the boot time defaults.
-
-	Serge Hallyn and Michael Kerrisk also consider the new approach as better.
-	One thing that is a bit surprising is that clone(CLONE_NEWIPC)k
-
-I've tested the changes both with unshare -i and with my own test apps.
-Unfortunately I didn't manage to get lxc to run on my busybox test setup :-(
-
---
-	Manfred
+jirka
