@@ -1,51 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233AbaHLNKR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 09:10:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36084 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417AbaHLNKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 09:10:15 -0400
-Date: Tue, 12 Aug 2014 15:10:12 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "simon@mungewell.org" <simon@mungewell.org>
-cc: =?ISO-8859-15?Q?=22Michal_Mal=FD=22?= 
-	<madcatxster@devoid-pointer.net>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        edwin@velds.nl, "elias.vds@gmail.com" <elias.vds@gmail.com>,
-        Roland Bosa <rbosa@logitech.com>
-Subject: Re: PATCH hid: Implement mode switching on Logitech gaming wheels
- accordingly to the documentation
-In-Reply-To: <f86b6b4fbf48ce4cbeb9b537794a4eb8.squirrel@mungewell.org>
-Message-ID: <alpine.LNX.2.00.1408121509550.15220@pobox.suse.cz>
-References: <3335238.KGDcEM6DjH@sigyn> <f86b6b4fbf48ce4cbeb9b537794a4eb8.squirrel@mungewell.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752612AbaHLNOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 09:14:46 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:63443 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354AbaHLNOp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 09:14:45 -0400
+Message-ID: <1407849283.10122.70.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] tcp: don't use timestamp from repaired skb-s to
+ calculate RTT
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Vagin <avagin@parallels.com>
+Cc: Andrey Vagin <avagin@openvz.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Tue, 12 Aug 2014 06:14:43 -0700
+In-Reply-To: <20140812123320.GA27421@paralelels.com>
+References: <1407836714-26813-1-git-send-email-avagin@openvz.org>
+	 <1407845701.10122.60.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140812123320.GA27421@paralelels.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jul 2014, simon@mungewell.org wrote:
-
-> > +#define LG4FF_MSW_MIN 0
-> > +#define LG4FF_MSW_NATIVE 0	/* Switch device to its native mode (if
-> > applicable) */
-> > +#define LG4FF_MSW_DONTSWITCH 1	/* Leave device in its current mode */
-> > +#define LG4FF_MSW_DFP 2		/* Switch device so that it emulates Driving
-> > Force Pro (only G25, G27, DFGT) */
-> > +#define LG4FF_MSW_G25 3		/* Switch device so that it emulates G25 (only
-> > G27) */
-> > +#define LG4FF_MSW_MAX 3
+On Tue, 2014-08-12 at 16:33 +0400, Andrew Vagin wrote:
+> On Tue, Aug 12, 2014 at 05:15:01AM -0700, Eric Dumazet wrote:
+> > On Tue, 2014-08-12 at 13:45 +0400, Andrey Vagin wrote:
+> > > We don't know right timestamp for repaired skb-s. Wrong RTT estimations
+> > > isn't good, because some congestion modules heavily depends on it.
+> > > 
+> > > This patch adds the TCPCB_REPAIRED flag, which is included in
+> > > TCPCB_RETRANS.
+> > 
+> > ...
+> > 
+> > > +
+> > > +				/* All packets are restored as if they have
+> > > +				 * already been sent. skb_mstamp isn't set to
+> > > +				 * avoid wrong rtt estimation.
+> > > +				 */
+> > > +				if (tp->repair) {
+> > > +					TCP_SKB_CB(skb)->sacked |= TCPCB_REPAIRED;
+> > > +					TCP_SKB_CB(skb)->when = tcp_time_stamp;
+> > > +				}
+> > >  			}
+> > >  
+> > >  			/* Try to append data to the end of skb. */
+> > 
+> > 
+> > Are you sure TCP_SKB_CB(skb)->when needs to be set ?
 > 
-> Just to let everyone know I am looking at this patch, and have emailed
-> Michal some questions on whether it covers all options for control.
+> It's used in tcp_rearm_rto() for calculating a retransmit timeout.
+> ...
+> 	const u32 rto_time_stamp = TCP_SKB_CB(skb)->when + rto;
+> 	s32 delta = (s32)(rto_time_stamp - tcp_time_stamp);
+> ...
+> 
+> "when" is used as a start point, so I think it's acceptable here.
+> 
+> I will add a comment. Thanks.
 
-Hi guys,
+tcp_rearm_rto() does the following :
 
-did you reach any kind of conclusion here?
 
--- 
-Jiri Kosina
-SUSE Labs
+        if (!tp->packets_out) {
+                inet_csk_clear_xmit_timer(sk, ICSK_TIME_RETRANS);
+        } else {
+                u32 rto = inet_csk(sk)->icsk_rto;
+                /* Offset the time elapsed after installing regular RTO */
+                if (icsk->icsk_pending == ICSK_TIME_EARLY_RETRANS ||
+                    icsk->icsk_pending == ICSK_TIME_LOSS_PROBE) {
+                        struct sk_buff *skb = tcp_write_queue_head(sk);
+                        const u32 rto_time_stamp = TCP_SKB_CB(skb)->when + rto;
+
+This means that : at least one packet was transmitted (packets_out is not 0)
+
+Since we timestamp all packets we transmit (look at tcp_transmit_skb() callers, all doing :
+
+TCP_SKB_CB(skb)->when = tcp_time_stamp; 
+
+Then, write queue head was timestamped properly at the time packet was sent,
+not at the time tcp repair code reinjected skbs into the write queue.
+
+
+
+
