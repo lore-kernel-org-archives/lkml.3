@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699AbaHLBpD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 21:45:03 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:34237 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750763AbaHLBpB convert rfc822-to-8bit (ORCPT
+	id S1753954AbaHLBuA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 21:50:00 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:40692 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763AbaHLBt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 21:45:01 -0400
-Subject: Re: [PATCH] staging/lustre: use rcu_dereference to access rcu protected current->real_parent field
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Oleg Drokin <green@linuxhacker.ru>
-In-Reply-To: <20140809154742.GA22689@kroah.com>
-Date: Mon, 11 Aug 2014 21:44:47 -0400
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Peng Tao <bergwolf@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lai Siyao <lai.siyao@intel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <0E60DB89-5757-4841-A416-D12C56413C58@linuxhacker.ru>
-References: <20140806214216.GA16530@kroah.com> <CAGDhxoe4+jU=vCDedMC4VXfuNMmqP3-E1Lu3LLStbFLbd=BRSA@mail.gmail.com> <20140808034951.GA6626@kroah.com> <DFF36154-06AC-4D7E-87F5-259B73CB059B@linuxhacker.ru> <20140808044246.GA3084@kroah.com> <1FE03450-A256-4A18-85AB-6332A28E3EF5@linuxhacker.ru> <20140808053246.GA13588@kroah.com> <CA+a=Yy4SqXSe667DkU3KA80tAt5D=KG-9mfccvEwtJzuFr6vBA@mail.gmail.com> <20140809140426.GA20995@kroah.com> <A562EF9C-0B1E-48B2-BAB5-544C9AAC6DD0@linuxhacker.ru> <20140809154742.GA22689@kroah.com>
+	Mon, 11 Aug 2014 21:49:59 -0400
+From: Jeremiah Mahler <jmmahler@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1283)
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Jeremiah Mahler <jmmahler@gmail.com>,
+        Teodora Baluta <teobaluta@gmail.com>,
+        Andrea Merello <andrea.merello@gmail.com>,
+        Joel Pelaez Jorge <joelpelaez@gmail.com>,
+        Bob Copeland <me@bobcopeland.com>, Joe Perches <joe@perches.com>,
+        Arnd Bergmann <arnd@arndb.de>, Himangi Saraogi <himangi774@gmail.com>
+Subject: [PATCH v2] staging: rtl8192u/ieee80211: Fix sparse ieee80211_debug_init/_exit not declared warning
+Date: Mon, 11 Aug 2014 18:49:25 -0700
+Message-Id: <1407808165-3873-1-git-send-email-jmmahler@gmail.com>
+X-Mailer: git-send-email 2.1.0.rc1
+In-Reply-To: <20140811223206.GB9475@kroah.com>
+References: <20140811223206.GB9475@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A sparse warning is generated about 'ieee80211_debug_init' and
+'ieee80211_debug_exit' not being declared.
 
-On Aug 9, 2014, at 11:47 AM, Greg Kroah-Hartman wrote:
+  drivers/staging/rtl8192u/ieee80211/ieee80211_module.c:275:12: warning:
+  symbol 'ieee80211_debug_init' was not declared. Should it be static?
+  drivers/staging/rtl8192u/ieee80211/ieee80211_module.c:297:13: warning:
+  symbol 'ieee80211_debug_exit' was not declared. Should it be static?
 
-> On Sat, Aug 09, 2014 at 10:34:36AM -0400, Oleg Drokin wrote:
->> 
->>> Because maybe these stats preceed the introduction of perf and other
->>> tracing/debug tools?  I don't know, it's really low down on the list of
->>> reasons why lustre can't be merged out of staging at the moment, you all
->>> have much bigger issues to address first.
->> 
->> I wonder what is the prioritized list you have in mind?
-> 
-> Do I really have to spell out what is wrong with that codebase that
-> needs to be fixed up?  It took me 50+ patches for 3.17-rc1 to just fix
-> up a _portion_ of the include file mess that is in there.  Now is the
-> first time the code actually _builds_ properly in the kernel tree (i.e.
-> no magic header file include path modifications in Makefiles preventing
-> individual files from being built correctly.)
+These functions are used outside of this file so using static will not
+work.  Fix the warning by declaring the functions in the header file,
+ieee80211.h
 
-Well, last time we discussed this topic, you said that moving most of lustre proc files
-into sysfs and other suitable venues is what prevents moving lustre out of the
-staging tree under fs/
+Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Teodora Baluta <teobaluta@gmail.com>
+Cc: Andrea Merello <andrea.merello@gmail.com>
+Cc: Joel Pelaez Jorge <joelpelaez@gmail.com>
+Cc: Bob Copeland <me@bobcopeland.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Himangi Saraogi <himangi774@gmail.com>
+---
 
-There well might be include mess, but this is the first time I hear about it, and I have not seen
-any build breakage or other obviously broken behavior.
-I am sure there are more things too, that's why I am asking.
-We are trying to deal with stuff we know about, but it's a bit harder to deal with the stuff we don't know about
-that does not manifest itself in some clear way.
+Notes:
+    Changes in v2:
+    
+      - remove #ifdef CONFIG_IEEE80211_DEBUG, not needed in header.
+    
+      - remove __init and __exit, not needed in header.
 
-Bye,
-    Oleg
+ drivers/staging/rtl8192u/ieee80211/ieee80211.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211.h b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
+index 1040bab..c118551 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211.h
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
+@@ -2485,6 +2485,10 @@ extern int ieee80211_wx_set_freq(struct ieee80211_device *ieee, struct iw_reques
+ extern int ieee80211_wx_get_freq(struct ieee80211_device *ieee, struct iw_request_info *a,
+ 			     union iwreq_data *wrqu, char *b);
+ 
++/* ieee80211_module.c */
++extern int ieee80211_debug_init(void);
++extern void ieee80211_debug_exit(void);
++
+ //extern void ieee80211_wx_sync_scan_wq(struct ieee80211_device *ieee);
+ extern void ieee80211_wx_sync_scan_wq(struct work_struct *work);
+ 
+-- 
+2.1.0.rc1
+
