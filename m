@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaHLFa5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 01:30:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7272 "EHLO mx1.redhat.com"
+	id S1752234AbaHLFbC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 01:31:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12677 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752081AbaHLFaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 01:30:55 -0400
+	id S1752193AbaHLFa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 01:30:59 -0400
 From: Baoquan He <bhe@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: ebiederm@xmission.com, vgoyal@redhat.com, hpa@zytor.com,
         akpm@linux-foundation.org, Baoquan He <bhe@redhat.com>
-Subject: [PATCH 1/2] take the segment adding out of locate_mem_hole functions
-Date: Tue, 12 Aug 2014 13:29:27 +0800
-Message-Id: <1407821368-2358-1-git-send-email-bhe@redhat.com>
+Subject: [PATCH 2/2] check if crashk_res_low exists when exclude it from crash mem ranges
+Date: Tue, 12 Aug 2014 13:29:28 +0800
+Message-Id: <1407821368-2358-2-git-send-email-bhe@redhat.com>
+In-Reply-To: <1407821368-2358-1-git-send-email-bhe@redhat.com>
+References: <1407821368-2358-1-git-send-email-bhe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In locate_mem_hole functions, a memory hole is located and added as
-kexec_segment. But from the name of locate_mem_hole, it should only
-take responsibility of searching a available memory hole to contain
-data of a specified size.
+Add a check if crashk_res_low exists just like GART region does. If
+crashk_res_low doesn't exist, calling exclude_mem_range is unnecessary.
 
-So in this patch add a new field 'mem' into kexec_buf, then take that
-kexec segment adding code out of locate_mem_hole_top_down and
-locate_mem_hole_bottom_up. This make clear of the functionality of
-locate_mem_hole just like it declars to do. And by this
-locate_mem_hole_callback chould be used later if anyone want to locate
-a memory hole for other use.
+Meanwhile, since crashk_res_low has been initialized at definition, it's
+safe just use "if (crashk_low_res.end)" to check if it's exist. And this
+can make it consistent with other places of check.
 
 Signed-off-by: Baoquan He <bhe@redhat.com>
 ---
- include/linux/kexec.h | 1 +
- kernel/kexec.c        | 9 +++++----
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ arch/x86/kernel/crash.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-index 4b2a0e1..9d957b7 100644
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -178,6 +178,7 @@ struct kexec_buf {
- 	struct kimage *image;
- 	char *buffer;
- 	unsigned long bufsz;
-+	unsigned long mem;
- 	unsigned long memsz;
- 	unsigned long buf_align;
- 	unsigned long buf_min;
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 0b49a0a..586444e 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -2054,8 +2054,7 @@ static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
- 	} while (1);
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index 0553a34..c9e83f9 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -238,7 +238,7 @@ static void fill_up_crash_elf_data(struct crash_elf_data *ced,
+ 	ced->max_nr_ranges++;
  
- 	/* If we are here, we found a suitable memory range */
--	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
--			    kbuf->memsz);
-+	kbuf->mem = temp_start;
+ 	/* If crashk_low_res is not 0, another range split possible */
+-	if (crashk_low_res.end != 0)
++	if (crashk_low_res.end)
+ 		ced->max_nr_ranges++;
+ }
  
- 	/* Success, stop navigating through remaining System RAM ranges */
- 	return 1;
-@@ -2089,8 +2088,7 @@ static int locate_mem_hole_bottom_up(unsigned long start, unsigned long end,
- 	} while (1);
+@@ -336,9 +336,11 @@ static int elf_header_exclude_ranges(struct crash_elf_data *ced,
+ 	if (ret)
+ 		return ret;
  
- 	/* If we are here, we found a suitable memory range */
--	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
--			    kbuf->memsz);
-+	kbuf->mem = temp_start;
+-	ret = exclude_mem_range(cmem, crashk_low_res.start, crashk_low_res.end);
+-	if (ret)
+-		return ret;
++	if (crashk_low_res.end) {
++		ret = exclude_mem_range(cmem, crashk_low_res.start, crashk_low_res.end);
++		if (ret)
++			return ret;
++	}
  
- 	/* Success, stop navigating through remaining System RAM ranges */
- 	return 1;
-@@ -2176,6 +2174,9 @@ int kexec_add_buffer(struct kimage *image, char *buffer, unsigned long bufsz,
- 		return -EADDRNOTAVAIL;
- 	}
- 
-+	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, kbuf->mem,
-+			    kbuf->memsz);
-+
- 	/* Found a suitable memory range */
- 	ksegment = &image->segment[image->nr_segments - 1];
- 	*load_addr = ksegment->mem;
+ 	/* Exclude GART region */
+ 	if (ced->gart_end) {
 -- 
 1.8.5.3
 
