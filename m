@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301AbaHLF7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 01:59:49 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:52168 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422AbaHLF7s (ORCPT
+	id S1752552AbaHLGBu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 02:01:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36558 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979AbaHLGBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 01:59:48 -0400
-Date: Tue, 12 Aug 2014 08:00:31 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com,
-        zheng.z.yan@intel.com
-Subject: [PATCH] perf/x86/uncore: export basic memory events for IVT IMC PMU
-Message-ID: <20140812060031.GA25239@quad>
+	Tue, 12 Aug 2014 02:01:49 -0400
+Date: Tue, 12 Aug 2014 14:01:08 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH] Input: serio: make HYPERV_KEYBOARD depend on
+ SERIO_I8042=y
+Message-ID: <20140812060108.GA13231@kroah.com>
+References: <1407814240-4275-1-git-send-email-decui@microsoft.com>
+ <20140812032148.GB6867@kroah.com>
+ <EE124450C0AAF944A40DD71E61F878C9920A1C@SINEX14MBXC417.southpacific.corp.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <EE124450C0AAF944A40DD71E61F878C9920A1C@SINEX14MBXC417.southpacific.corp.microsoft.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 12, 2014 at 05:51:28AM +0000, Dexuan Cui wrote:
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Decoupling the dependency between hyperv_keyboard and i8042 needs
+> > > non-trivial efforts and is hence a long term goal.
+> > >
+> > > For now, let's make the dependency explicit so people can beware of this.
+> >
+> > You didn't make anyone "aware" of this, you just prevented people from
+> > being able to select the module unless they build the driver into the
+> > kernel, which isn't very nice.
+> 
+> Yes, exactly.
+> 
+> > What exactly needs to be done to fix this "correctly" that is going to
+> > take too much work at the moment?
+> Hi Greg,
+> The current implementation of hyperv-keyboard.c borrows
+> serio_interrupt() to pass the key strokes to the high level component.
+> serio_interrupt() actually depends on atkbd.c and i8042.c, so this doesn't
+> work for a Generation 2 hyper-v guest because no i8042 keyboard controller
+> is emulated: http://technet.microsoft.com/en-us/library/dn282285.aspx
+> 
+> To decouple the dependency between the hyperv-keyboard and i8042
+> modules, I suppose we probably have to re-implement hyperv-keyboard by
+> using input_allocate_device(), input_register_device(), and using
+> input_report_key() to pass the key strokes to the high level.
 
-This patch exposes two basic events for Ivytown IMC uncore PMU:
+Yes, that would be the best thing to do, and shouldn't be that hard to
+create an input driver, it's pretty simple code, right?
 
-- cas_count_read: number of full-cache line reads to memory controller
-- cas_count_write: number of full-cache line writes to memory controller
+> I'll have to need some time for further investigation and a new
+> implementation. Before the new code is completely ready, IMHO the
+> patch can help to avoid a bad user experience like Arch Linux working
+> as a Generation 2 hyper-v guest.
 
-Those events use the same encoding as for SNB-EP, so reuse the same
-event table. See specification in:
+You are still preventing Arch from working here, as the driver can't be
+built at all, right?
 
-http://www.intel.com/content/dam/www/public/us/en/documents/manuals/xeon-e5-2600-v2-uncore-manual.pdf
+> BTW, looks most of Linux distros (like RHEL, Ubuntu, SUSE) have
+> CONFIG_SERIO_I8042=y, probably because it's the result of
+> "make defconfig". So the patch actually doesn't affect these distros.
 
-By aggregating all the read and write events from all the memory controllers
-of each processor socket, one can determine the total memory bandwidth utilization.
+Or maybe it is beause they use older kernels and like to turn on every
+single possible option :)
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    1 +
- 1 file changed, 1 insertion(+)
+thanks,
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index cfc6f9d..800e087 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -1391,6 +1391,7 @@ static struct intel_uncore_type ivt_uncore_imc = {
- 	.fixed_ctr_bits	= 48,
- 	.fixed_ctr	= SNBEP_MC_CHy_PCI_PMON_FIXED_CTR,
- 	.fixed_ctl	= SNBEP_MC_CHy_PCI_PMON_FIXED_CTL,
-+	.event_descs	= snbep_uncore_imc_events,
- 	IVT_UNCORE_PCI_COMMON_INIT(),
- };
- 
--- 
-1.7.9.5
-
+greg k-h
