@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaHLOAJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 10:00:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51067 "EHLO
+	id S1752858AbaHLOA4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 10:00:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51072 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752240AbaHLOAI (ORCPT
+	by vger.kernel.org with ESMTP id S1752190AbaHLOAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Aug 2014 10:00:08 -0400
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: lee.jones@linaro.org
 Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] mfd: arizona: Propagate irq_wake through to parent IRQ
-Date: Tue, 12 Aug 2014 14:51:21 +0100
-Message-Id: <1407851483-19207-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 4/4] mfd: arizona: Mark additional registers as volatile
+Date: Tue, 12 Aug 2014 14:51:23 +0100
+Message-Id: <1407851483-19207-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1407851483-19207-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 References: <1407851483-19207-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
@@ -21,41 +21,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If one of the internal Arizona IRQs is set as a wake source this needs
-to be propogated back to the actual IRQ line that the Arizona device is
-attached to.
+Mark some additional registers as volatile. The write sequencer control
+registers should not be cached, as we don't ever want their value
+synchronised as this might cause a write sequence to be accidentally
+initiated.
+
+Additionally, the DAC_COMP registers require special preconditions to
+write so there values wouldn't be updated accurately during a register
+sync.
 
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/arizona-irq.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ drivers/mfd/wm5102-tables.c |   11 ++++++++---
+ drivers/mfd/wm5110-tables.c |    6 +++---
+ 2 files changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
-index 71e8f06..fac00b2 100644
---- a/drivers/mfd/arizona-irq.c
-+++ b/drivers/mfd/arizona-irq.c
-@@ -148,6 +148,13 @@ static void arizona_irq_dummy(struct irq_data *data)
- {
- }
- 
-+static int arizona_irq_set_wake(struct irq_data *data, unsigned int on)
-+{
-+	struct arizona *arizona = irq_data_get_irq_chip_data(data);
-+
-+	return irq_set_irq_wake(arizona->irq, on);
-+}
-+
- static struct irq_chip arizona_irq_chip = {
- 	.name			= "arizona",
- 	.irq_disable		= arizona_irq_dummy,
-@@ -155,6 +162,7 @@ static struct irq_chip arizona_irq_chip = {
- 	.irq_ack		= arizona_irq_dummy,
- 	.irq_mask		= arizona_irq_dummy,
- 	.irq_unmask		= arizona_irq_dummy,
-+	.irq_set_wake		= arizona_irq_set_wake,
- };
- 
- static int arizona_irq_map(struct irq_domain *h, unsigned int virq,
+diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
+index fb4d4bb..9004488 100644
+--- a/drivers/mfd/wm5102-tables.c
++++ b/drivers/mfd/wm5102-tables.c
+@@ -245,9 +245,6 @@ const struct regmap_irq_chip wm5102_irq = {
+ static const struct reg_default wm5102_reg_default[] = {
+ 	{ 0x00000008, 0x0019 },   /* R8     - Ctrl IF SPI CFG 1 */ 
+ 	{ 0x00000009, 0x0001 },   /* R9     - Ctrl IF I2C1 CFG 1 */ 
+-	{ 0x00000016, 0x0000 },   /* R22    - Write Sequencer Ctrl 0 */ 
+-	{ 0x00000017, 0x0000 },   /* R23    - Write Sequencer Ctrl 1 */ 
+-	{ 0x00000018, 0x0000 },   /* R24    - Write Sequencer Ctrl 2 */ 
+ 	{ 0x00000020, 0x0000 },   /* R32    - Tone Generator 1 */ 
+ 	{ 0x00000021, 0x1000 },   /* R33    - Tone Generator 2 */ 
+ 	{ 0x00000022, 0x0000 },   /* R34    - Tone Generator 3 */ 
+@@ -1880,6 +1877,10 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
+ 	switch (reg) {
+ 	case ARIZONA_SOFTWARE_RESET:
+ 	case ARIZONA_DEVICE_REVISION:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_3:
+ 	case ARIZONA_OUTPUT_STATUS_1:
+ 	case ARIZONA_RAW_OUTPUT_STATUS_1:
+ 	case ARIZONA_SLIMBUS_RX_PORT_STATUS:
+@@ -1891,6 +1892,10 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
+ 	case ARIZONA_FLL1_NCO_TEST_0:
+ 	case ARIZONA_FLL2_NCO_TEST_0:
++	case ARIZONA_DAC_COMP_1:
++	case ARIZONA_DAC_COMP_2:
++	case ARIZONA_DAC_COMP_3:
++	case ARIZONA_DAC_COMP_4:
+ 	case ARIZONA_FX_CTRL2:
+ 	case ARIZONA_INTERRUPT_STATUS_1:
+ 	case ARIZONA_INTERRUPT_STATUS_2:
+diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
+index 9b98ee5..beae0a3 100644
+--- a/drivers/mfd/wm5110-tables.c
++++ b/drivers/mfd/wm5110-tables.c
+@@ -666,9 +666,6 @@ static const struct reg_default wm5110_reg_default[] = {
+ 	{ 0x0000000A, 0x0001 },    /* R10    - Ctrl IF I2C2 CFG 1 */
+ 	{ 0x0000000B, 0x0036 },    /* R11    - Ctrl IF I2C1 CFG 2 */
+ 	{ 0x0000000C, 0x0036 },    /* R12    - Ctrl IF I2C2 CFG 2 */
+-	{ 0x00000016, 0x0000 },    /* R22    - Write Sequencer Ctrl 0 */
+-	{ 0x00000017, 0x0000 },    /* R23    - Write Sequencer Ctrl 1 */
+-	{ 0x00000018, 0x0000 },    /* R24    - Write Sequencer Ctrl 2 */
+ 	{ 0x00000020, 0x0000 },    /* R32    - Tone Generator 1 */
+ 	{ 0x00000021, 0x1000 },    /* R33    - Tone Generator 2 */
+ 	{ 0x00000022, 0x0000 },    /* R34    - Tone Generator 3 */
+@@ -2815,6 +2812,9 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
+ 	switch (reg) {
+ 	case ARIZONA_SOFTWARE_RESET:
+ 	case ARIZONA_DEVICE_REVISION:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
+ 	case ARIZONA_HAPTICS_STATUS:
+ 	case ARIZONA_SAMPLE_RATE_1_STATUS:
+ 	case ARIZONA_SAMPLE_RATE_2_STATUS:
 -- 
 1.7.2.5
 
