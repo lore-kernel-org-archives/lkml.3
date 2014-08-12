@@ -1,92 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663AbaHLPNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 11:13:44 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:48809 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650AbaHLPNm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 11:13:42 -0400
+	id S1753126AbaHLPXJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 11:23:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:11995 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752687AbaHLPXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 11:23:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,849,1400050800"; 
+   d="asc'?scan'208";a="575611602"
+Date: Tue, 12 Aug 2014 20:40:14 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>, lgirdwood@gmail.com,
+        tiwai@suse.de, alsa-devel@alsa-project.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH v3] ASOC: dapm: add code to configure dai
+ link parameters
+Message-ID: <20140812151014.GF13288@intel.com>
+References: <1407341786-14990-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+ <20140807141604.GJ8181@intel.com>
+ <20140807171324.GM17528@sirena.org.uk>
+ <20140811062429.GC13288@intel.com>
+ <20140811121912.GY17528@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFpiHf+urR85iJPqAXxREO+yPrDMcXM4K+BJqq=ur3DZtA@mail.gmail.com>
-References: <3923586.SsVg941346@diego>
-	<CACRpkdaJS0PUDLaCnrhtiuXPf4ccx51uNTqYWVWm47mhOhGEbA@mail.gmail.com>
-	<CAPDyKFpiHf+urR85iJPqAXxREO+yPrDMcXM4K+BJqq=ur3DZtA@mail.gmail.com>
-Date: Tue, 12 Aug 2014 08:13:41 -0700
-X-Google-Sender-Auth: m_Wpj71AvIacZLx11nAxKwXQ2pk
-Message-ID: <CAD=FV=Vewr5QkNEiBEOXA=FdKHKzg0ag5+Cf4KXuXWjcshSq_g@mail.gmail.com>
-Subject: Re: io-domain voltages as regulators?
-From: Doug Anderson <dianders@chromium.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Mark Brown <broonie@kernel.org>, Addy Ke <addy.ke@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yuvaraj Kumar <yuvaraj.cd@gmail.com>,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="adJ1OR3c6QgCpb/j"
+Content-Disposition: inline
+In-Reply-To: <20140811121912.GY17528@sirena.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Mon, Aug 11, 2014 at 5:46 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 11 August 2014 09:44, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Mon, Aug 4, 2014 at 12:18 AM, Heiko Stübner <heiko@sntech.de> wrote:
->>
->> [Adding Ulf Hansson to this discussion...]
->>
->>> Hi Mark, Linus,
->>>
->>> I'd like to clarify what the appropriate way to handle pin output voltages is.
->>> On the Rockchip SoCs the voltage for some groups of pins can be set between
->>> 3.3V and 1.8V ... like the MMC/SD pins who need this to support UHS mode
->>> cards.
->>
->> This is called "vqmmc" in the mmc/sd subsystem.
->>
->> grep for mmc_set_signal_voltage() in drivers/mmc/core/*
->>
->> In drivers/mmc/core/core.c, you find:
->>
->>  mmc->supply.vqmmc = devm_regulator_get_optional(dev, "vqmmc");
->>
->> Which gets the regulator to set the signal voltage, if such
->> a regulator is specified for the host.
->>
->> Very simple and straight-forward, and handled by the MMC core.
->>
->>> In [0] when talking about something different, Linus Walleij described a
->>> similar case as
->>>
->>> "I think we need to have a discussion with Mark Brown on how to
->>> handle this.
->>> We have previously had the case of MMC/SD level-shifters, where
->>> a certain setting gives a certain level of signals out, and another setting
->>> gives another level. Like two discrete levels.
->>> So we modeled that as a regulator provider inside the pin control
->>> driver eventually, see sh-pfc/pfc-sh73a0.c"
->>>
->>> As this sound like exactly the thing I'm trying to solve, is handling this via
->>> a regulator the correct general way?
->>
->> Ithinkso.
->
-> Just to confirm, I fully agree with the above said.
->
-> You may also find a good example in the mmci host driver for how to
-> make use of the vqmmc regulator.
+--adJ1OR3c6QgCpb/j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yuvaraj also submitted patches for dw_mmc:
+On Mon, Aug 11, 2014 at 01:19:12PM +0100, Mark Brown wrote:
+> On Mon, Aug 11, 2014 at 11:54:29AM +0530, Vinod Koul wrote:
+> > On Thu, Aug 07, 2014 at 06:13:24PM +0100, Mark Brown wrote:
+> > > On Thu, Aug 07, 2014 at 07:46:05PM +0530, Vinod Koul wrote:
+>=20
+> > > > I was thinking about this as well a while back, wont it make sense =
+to let
+> > > > machine driver expose meaningful controls for this. Just like we ha=
+ve fixup
+> > > > for back-ends, we can add fixups for codec-codec links and let mach=
+ine tell
+> > > > you the parameters to configure.
+>=20
+> > > This is supposed to be pretty much the same thing (not looked at the
+> > > patch yet) - the machine driver passes in a list of possible settings
+> > > and then a control gets generated allowing the user to pick one.
+>=20
+> > Yes but this is bit different from the current way of using fixups for =
+BEs.
+> > So it would be bit incosistent. For pcms it would be only fixups and for
+> > loops it would be machine controls
+>=20
+> That doesn't mean it's the best way to go in the end though - long term
+> I expect to see us move away from that to something more data driven and
+> DAPM integrated.  Requiring drivers to open code things rather than
+> factoring out the code doesn't seem like the right way forwards.
+Okay if that is the direction then this sound good to me.
 
-4401241 New          [1/3] mmc: dw_mmc: use mmc_regulator_get_supply
-to handle regulators
-4401261 New          [2/3] mmc: dw_mmc: Dont cut off vqmmc and vmmc
-4401281 New          [3/3] mmc: dw_mmc: Support voltage changes
+Only one last nitpick on how do we set different format value apart from
+sample rate, bits etc here. We have devices talking on same port and each o=
+ne is
+different format(one use i2s, one uses tdm ...), so how do we handle that p=
+art?
 
-He seems to have dropped these patches on the floor and I had review
-feedback on them, but I think they're in the right direction.
+Thanks
+--=20
+~Vinod
+
+--adJ1OR3c6QgCpb/j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT6i5WAAoJEHwUBw8lI4NHAWsP/j3ydOPQ3XwGowejZTAM52aM
+3CKrTg7m4VJ49iRU3AVI4eBfbsiM1V63XqFyNVGH76JO1QvvVAfvyajshBS096Ww
+Mxpc+5k81f0dktw+/WZer28oV+aVUPmgAitnfJb4UsAzDXfqB1/yEYfIcxBPv3Ro
+GJNTBbw4VvWIF1UShdV004GXwbnxGmsgqQfSo26Ss+UBbRHnil09woR5x0tU9wum
+o+/pP3aWz4vV/793Nf5p1ul02pAzV8VvLbM5izdhcW+amTeXfKlmbk5Jmjde6GSN
+zl0nmw0TOvIupKPJHYnZCzoZbYP7XU2+iY+NSg5kVKMlZZpAASSSyV6KwcOQKL6j
+wUN90Y9KV+67nPzZFZsyydQJMFT5Z7aOfCdbIx3BXMfJ5rvG6wb4sYhF/+rcK3FR
+OintusMzZBpzE6gF92otx3vA9mfIYd6MPlg7vrkXkvnFLUHQfR7NdUfRpbMqzTJx
+ydbxYifPbEzixE0pN7wX+N9wvGsAMUzXjPPqViKXMoJucGB8rx8Vp3mWuIZSuEJ0
+iXIoUj02H/6XorjqqZ3/QEa6uyqeRO3X2p0wL21z6hTYLZpkULTKVXNAtwZaBHPZ
+AOdMsUbUFQcM41ptdbt3yUW5LiuWer8Y/0ud5Jh+JlZkpkJh+tSShtno6dk/Vi88
+s/vavcApeUYGCPXgIozO
+=Dk81
+-----END PGP SIGNATURE-----
+
+--adJ1OR3c6QgCpb/j--
