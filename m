@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaHLOJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 10:09:20 -0400
-Received: from icp-osb-irony-out1.external.iinet.net.au ([203.59.1.210]:54921
-	"EHLO icp-osb-irony-out1.external.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751800AbaHLOJT (ORCPT
+	id S1752780AbaHLOMa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 10:12:30 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:46260 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282AbaHLOM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 10:09:19 -0400
-X-Greylist: delayed 558 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Aug 2014 10:09:18 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AroBANIc6lN8q9bC/2dsb2JhbAANTYNfV65YBp5eh0gBgSeEewEBBCcRQAEQCw0LCRYPCQMCAQIBRQYBDAEFAgEBiEuuC5Z4F4V8iVAHhEwBBIYQjzOITYV5hDWLD4FYWg
-X-IronPort-AV: E=Sophos;i="5.01,849,1399996800"; 
-   d="scan'208";a="241031883"
-Message-ID: <53EA1D4B.5030401@uclinux.org>
-Date: Tue, 12 Aug 2014 23:57:31 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] fs/proc/task_nommu.c: copy-and-paste the changes
- from task_mmu.c
-References: <20140805194627.GA30693@redhat.com> <20140811170008.GA24629@redhat.com>
-In-Reply-To: <20140811170008.GA24629@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Aug 2014 10:12:29 -0400
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        grant.likely@linaro.org, matthias.bgg@gmail.com, alan@linux.intel.com,
+        varkabhadram@gmail.com, tklauser@distanz.ch, heiko@sntech.de,
+        yingjoe.chen@gmail.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: [PATCH v4 0/2] tty: serial: Add mediatek UART driver
+Date: Tue, 12 Aug 2014 16:12:15 +0200
+Message-Id: <1407852737-17265-1-git-send-email-matthias.bgg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
+This patch set adds support for the UART found in Mediatek SoCs.
+The chip is a changed version of a 8250 controller.
+Especially it introduces a new register called highspeed. The value
+in this register has to be set depending on the baudrate. The value
+in the register influences the way the divisor has to be calculated.
 
-On 12/08/14 03:00, Oleg Nesterov wrote:
-> Greg, could you review? The changes are simple, but I am not familiar
-> with NOMMU and I can't test this.
->
-> Depends on
->
-> 	[PATCH v2 3/7] proc: introduce proc_mem_open()
-> 	http://marc.info/?l=linux-kernel&m=140726831328943
->
-> 	[PATCH v2 4/7] fs/proc/task_mmu.c: shift mm_access() from m_start() to proc_maps_open()
-> 	http://marc.info/?l=linux-kernel&m=140726828328929
-> 	(only because it adds proc_maps_private->mm)
->
-> I'll also send you mbox with the previous series just in case.
->
-> Oleg.
->
->   fs/proc/task_nommu.c |   65 ++++++++++++++++++++++++++++++--------------------
->   1 files changed, 39 insertions(+), 26 deletions(-)
+The patch series is build against v3.16-rc1 and tested on mt6589. Should
+work as well on mt6577 and mt6582.
 
-I don't see any problems. Applied cleanly for me (to a 3.16-rc7 tree), 
-compiled
-cleanly for a non-mmu m68k target, and ran with no problems I could see.
-At least I checked /proc/1/maps and that still came out fine. Is there 
-anything
-else I should check?
+Thanks,
+Matthias
 
-I am happy to ack it:
+Changes for v4:
+- delete owner in platform driver instance
+- pass plattform_device to mtk8250_probe_of
+- reorganise probe function to error out early
+- Fix DTS documentation
 
-Acked-by: Greg Ungerer <gerg@uclinux.org>
+Changes for v3:
+- use dev_warn instead of pr_warn
+- use 8250_core function to update termios
 
-Regards
-Greg
+Changes for v2:
+- drop 8250_core capability extension for the chip
+- encapsulate set_termios in the driver method
 
+---
 
+Matthias Brugger (2):
+  tty: serial: 8250: Add Mediatek UART driver
+  DTS: serial: Add bindings documention for the Mediatek UARTs
+
+ .../devicetree/bindings/serial/mtk-uart.txt        |   20 ++
+ drivers/tty/serial/8250/8250_mtk.c                 |  294 ++++++++++++++++++++
+ drivers/tty/serial/8250/Kconfig                    |    7 +
+ drivers/tty/serial/8250/Makefile                   |    1 +
+ 4 files changed, 322 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/serial/mtk-uart.txt
+ create mode 100644 drivers/tty/serial/8250/8250_mtk.c
+
+-- 
+1.7.9.5
 
