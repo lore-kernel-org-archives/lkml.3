@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250AbaHLXrl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 19:47:41 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:35554 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265AbaHLXrk (ORCPT
+	id S1752052AbaHLX6F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 19:58:05 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:41225 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaHLX6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 19:47:40 -0400
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Tue, 12 Aug 2014 19:47:36 -0400
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 0/5] locks: move most locks_release_private calls
- outside of i_lock
-Message-ID: <20140812194736.3184fce4@tlielax.poochiereds.net>
-In-Reply-To: <20140813082827.1097c3ad@canb.auug.org.au>
-References: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
-	<20140813082827.1097c3ad@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Tue, 12 Aug 2014 19:58:03 -0400
+Date: Tue, 12 Aug 2014 16:57:56 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: Re: [PATCH tip/core/rcu 0/16] RCU-tasks implementation
+Message-ID: <20140812235756.GA22698@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140811224840.GA25594@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/kxYLXrXQl0u7I2tdLiDGKVx"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140811224840.GA25594@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081223-3532-0000-0000-000003CCCFD7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/kxYLXrXQl0u7I2tdLiDGKVx
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Aug 11, 2014 at 03:48:40PM -0700, Paul E. McKenney wrote:
+> Hello!
+> 
+> This series provides v5 of a prototype of an RCU-tasks implementation,
+> which has been requested to assist with tramopoline removal.  This flavor
+> of RCU is task-based rather than CPU-based, and has voluntary context
+> switch, usermode execution, and the idle loops as its only quiescent
+> states.  This selection of quiescent states ensures that at the end
+> of a grace period, there will no longer be any tasks depending on a
+> trampoline that was removed before the beginning of that grace period.
+> This works because such trampolines do not contain function calls,
+> do not contain voluntary context switches, do not switch to usermode,
+> and do not switch to idle.
 
-On Wed, 13 Aug 2014 08:28:27 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+[ . . . ]
 
-> Hi Jeff,
->=20
-> On Tue, 12 Aug 2014 10:48:08 -0400 Jeff Layton <jlayton@primarydata.com> =
-wrote:
-> >
-> > Absent any objections, I'll plan to merge these for 3.18.
->=20
-> This means that this patch set should *not* be in linux-next until after
-> (at least) v3.17-rc1 is released ...  This s reinforced by the lack of
-> Acked-by, Reviewed-by and Tested-by tags ... (the addition of which would=
- presumably require the rebase (or rewrite) of a published git tree.)
->=20
+> o	There are probably still bugs.
 
-It would, but I sent a later reply that revised that statement.
+And there probably are, but this version passes 10-hour rcutorture tests
+in a few configurations, so getting reasonably robust.
 
-Trond pointed out that this problem can cause a user-triggerable oops,
-so we may have to merge it for 3.17 after all. With that in mind, I
-added these to my linux-next branch and will probably send a pull
-request before the window closes (assuming that there are no glaring
-problems with it).
+							Thanx, Paul
 
-While we're on the subject, we probably ought to rename my tree in your
-"Trees" file from "file-private-locks" to "file-locks" or something.
-File private locks (aka OFD locks) got merged in v3.15, but I have been
-collecting patches that touch fs/locks.c
-
-> /me suspects that many people do not read his daily release notes :-(
-
-Guilty as charged. I'll try to keep up in the future.
-
-Thanks,
---=20
-Jeff Layton <jlayton@primarydata.com>
-
---Sig_/kxYLXrXQl0u7I2tdLiDGKVx
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT6qeYAAoJEAAOaEEZVoIVJWwP/2IOnANkv4Ay2E/QHApA+Guw
-jft1AXNRN/ymISGt+qMV0r1DSN5vReV6YlsqYHrDS3W2UHrx1jpSLqd5uRb4Ozou
-MnHKj96Sd1ci0Iav2puzPti3Rusm2zxH8Rfxct0XJjhswwYsB6dFAtcFSUQbF9+R
-HjyWYxI2A7JDFFMgD81CjMm0/OcM68YEIhNrJFcI3pHe8vilhVKmr5kv1/h6Zxzc
-1fs2K0RxC6sxuEXqgMN7npX/jdgXMzWrF8YAAXrHtA3bhc1N1mk6LgU3jNGDtp1c
-ORSXYAXAEfDKr5FIsSxrKdAm92SN5jQKlBEP2EtDUUmmR4bDZ+2TpY5xDMetRdRv
-auois8k1HtP4Z+TeFDJJIyL+IJCdg9ZQREe829KiXsa1SlqxF/sRre1RakpDBWur
-wHJVXaUrCbuelUZ7LJb3ogoaHkTD5Xrz4IudzgiRTPt2Fe7tcN6SJ6R9h00k3rFo
-5QyI8uLZM52TyUvyVvB1syy2r7SJCul5d8Rzh/jSENER4tNh46tUXijWnWhduTN7
-EvTgJaVNq/Q0uqSVOzQWfBcC76lUCNGml8OvSVBLmCzMxbY2MxAnSWPZs/yAt85m
-KxOMiojPGLDOyWrnSonkopU6Cyr7WEJlVZyzhHWHUGx9j5CBUpAZqUD7c8OSF8q8
-rbiTkW1IrdCfbArw1xyu
-=Ccvm
------END PGP SIGNATURE-----
-
---Sig_/kxYLXrXQl0u7I2tdLiDGKVx--
