@@ -1,71 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279AbaHLHAO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:00:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38012 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178AbaHLHAM (ORCPT
+	id S1752929AbaHLHDC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:03:02 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:64736 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699AbaHLHC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:00:12 -0400
-Date: Tue, 12 Aug 2014 08:59:58 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Weston Andros Adamson <dros@primarydata.com>
-Cc: Nick Krause <xerofoify@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        linux-nfs list <linux-nfs@vger.kernel.org>,
-        Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [nfs] BUG: sleeping function called from invalid context at
- include/linux/wait.h:976
-Message-ID: <20140812065958.GL9918@twins.programming.kicks-ass.net>
-References: <20140805140307.GB5593@localhost>
- <DBF9CA04-ACDF-47AC-9FA6-57DD202D2AC1@primarydata.com>
- <CAPDOMVibdcRRdqGRsK4kq+cdh3yBjBU4XB7JjTfyOMFk+jYyvA@mail.gmail.com>
- <7EA40233-6820-4F0E-A2B7-687DC01BDD78@primarydata.com>
+	Tue, 12 Aug 2014 03:02:57 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, <linux-pci@vger.kernel.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <arnab.basu@freescale.com>,
+        <x86@kernel.org>, "Arnd Bergmann" <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
+        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [RFC PATCH 07/20] x86/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
+Date: Tue, 12 Aug 2014 15:26:00 +0800
+Message-ID: <1407828373-24322-8-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
+References: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mCRau3CSwZDVtMjk"
-Content-Disposition: inline
-In-Reply-To: <7EA40233-6820-4F0E-A2B7-687DC01BDD78@primarydata.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-Originating-IP: [10.175.100.166]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020204.53E9BC13.0082,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: 29901a774a85544d3193390c049337ac
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Introduce a new struct msi_chip apic_msi_chip instead of weak arch
+functions to configure MSI/MSI-X in x86.
 
---mCRau3CSwZDVtMjk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ arch/x86/include/asm/pci.h     |    1 +
+ arch/x86/kernel/apic/io_apic.c |   20 ++++++++++++++++----
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
-On Mon, Aug 11, 2014 at 10:52:38PM -0400, Weston Andros Adamson wrote:
-> Weston Andros Adamson (5):
->  nfs: change nfs_page_group_lock argument
->  nfs: fix nonblocking calls to nfs_page_group_lock
->  nfs: use blocking page_group_lock in add_request
->  nfs: fix error handling in lock_and_join_requests
->  nfs: don't sleep with inode lock in lock_and_join_requests
+diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+index 0892ea0..878a06d 100644
+--- a/arch/x86/include/asm/pci.h
++++ b/arch/x86/include/asm/pci.h
+@@ -101,6 +101,7 @@ void native_teardown_msi_irq(unsigned int irq);
+ void native_restore_msi_irqs(struct pci_dev *dev);
+ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+ 		  unsigned int irq_base, unsigned int irq_offset);
++extern struct msi_chip *x86_msi_chip;
+ #else
+ #define native_setup_msi_irqs		NULL
+ #define native_teardown_msi_irq		NULL
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 2609dcd..eb8ab7c 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3077,24 +3077,25 @@ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+ 	return 0;
+ }
+ 
+-int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++int native_setup_msi_irqs(struct device *dev, int nvec, int type)
+ {
+ 	struct msi_desc *msidesc;
+ 	unsigned int irq;
+ 	int node, ret;
++	struct pci_dev *pdev = to_pci_dev(dev);
+ 
+ 	/* Multiple MSI vectors only supported with interrupt remapping */
+ 	if (type == PCI_CAP_ID_MSI && nvec > 1)
+ 		return 1;
+ 
+-	node = dev_to_node(&dev->dev);
++	node = dev_to_node(dev);
+ 
+-	list_for_each_entry(msidesc, &dev->msi_list, list) {
++	list_for_each_entry(msidesc, &pdev->msi_list, list) {
+ 		irq = irq_alloc_hwirq(node);
+ 		if (!irq)
+ 			return -ENOSPC;
+ 
+-		ret = setup_msi_irq(dev, msidesc, irq, 0);
++		ret = setup_msi_irq(pdev, msidesc, irq, 0);
+ 		if (ret < 0) {
+ 			irq_free_hwirq(irq);
+ 			return ret;
+@@ -3214,6 +3215,17 @@ int default_setup_hpet_msi(unsigned int irq, unsigned int id)
+ }
+ #endif
+ 
++struct msi_chip apic_msi_chip = {
++	.setup_irqs = native_setup_msi_irqs,
++	.teardown_irq = native_teardown_msi_irq,
++};
++
++struct msi_chip *arch_get_match_msi_chip(struct device *dev)
++{
++	return x86_msi_chip;
++}
++
++struct msi_chip *x86_msi_chip = &apic_msi_chip;
+ #endif /* CONFIG_PCI_MSI */
+ /*
+  * Hypertransport interrupt support
+-- 
+1.7.1
 
-Thanks for taking care of that!
-
---mCRau3CSwZDVtMjk
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT6btuAAoJEHZH4aRLwOS6VXIP/AqO8xRL7NO7NVavywjpPV4Q
-uM0ummIaAtYI/iUK+pZ8DPnKCC6ZgIWqCqlaHeld4ABMCD9hKRtD42CFiz901nxp
-lckzLMsRyAPeYFfRovLwjRxrwBFwKwupdCHBK0+Jr6ifwvromya5bx19AgO1++0X
-Nx2L7qH8KFN6ZNC0uxdvLrbwOdiWdQB2ozCv/7EFtE+OBJXLzfAFluJXpDtB0cH7
-OAsrguSl++onebXfFe5zDpFjzShp5hPr5JdIPT3RKQ8SkOT3ESqPUieYeaEpnSwJ
-soTUrpLGCewj4eYjPQ5I3TNGdpYS885FOZsBj5+oIH2U/ScuvnT2+qzqxvbwOefs
-fp1/giMWHTme0RDLCWQcOPbXvuQEbhCF5SgSElP5NJc0kYGpsY1zEhx4LFjZ4H4U
-SQLpUYuDTBayQ5LzUuz352+nnvJlwScbuuKeGIjEd78K8lDP94JD1UqAJqap4kqO
-bH0Uy6HQ3vcU0I5wkGX1hjgi0dI4hG7E/4NJmvOAIlN8oLSyFj20jdQSQBdZsNZ8
-GMLFPRHFJISrAKn9MmLiSZG2oujhSowmCWWjyJNm/bAa7/9lfmU4YEkgrgUm7sPf
-DCZBkDLqP3VAN76vPHiJ+xXJxOmSOs6eyCTzQEk4fii8IG0foSNcVvOwsBii9TOr
-Ru/r05AOPa6FODQU+3xL
-=oKFG
------END PGP SIGNATURE-----
-
---mCRau3CSwZDVtMjk--
