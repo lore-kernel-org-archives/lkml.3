@@ -1,172 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904AbaHLHDY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:03:24 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:51375 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512AbaHLHDU (ORCPT
+	id S1754505AbaHLHFl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:05:41 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:57256 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726AbaHLHFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:03:20 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, <linux-pci@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <arnab.basu@freescale.com>,
-        <x86@kernel.org>, "Arnd Bergmann" <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [RFC PATCH 11/20] MIPS/Octeon/MSI: Use msi_chip instead of arch func to configure MSI/MSI-X
-Date: Tue, 12 Aug 2014 15:26:04 +0800
-Message-ID: <1407828373-24322-12-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
-References: <1407828373-24322-1-git-send-email-wangyijing@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.175.100.166]
-X-CFilter-Loop: Reflected
+	Tue, 12 Aug 2014 03:05:36 -0400
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Jeremiah Mahler <jmmahler@gmail.com>,
+        Joel Pelaez Jorge <joelpelaez@gmail.com>,
+        Andrea Merello <andrea.merello@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Joe Perches <joe@perches.com>, Himangi Saraogi <himangi774@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Ana Rey <anarey@gmail.com>, Chaitanya Hazarey <c@24.io>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Teodora Baluta <teobaluta@gmail.com>
+Subject: [PATCH v3] staging: rtl8192u/ieee80211: Fix sparse ieee80211_debug_init/_exit not declared warning
+Date: Tue, 12 Aug 2014 00:03:44 -0700
+Message-Id: <1407827024-14746-1-git-send-email-jmmahler@gmail.com>
+X-Mailer: git-send-email 2.1.0.rc1
+In-Reply-To: <20140812041733.GA7613@hudson.localdomain>
+References: <20140812041733.GA7613@hudson.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a new struct msi_chip octeon_msi_chip instead of weak arch
-functions to configure MSI/MSI-X.
+A sparse warning is generated about 'ieee80211_debug_init' and
+'ieee80211_debug_exit' not being declared.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+  drivers/staging/rtl8192u/ieee80211/ieee80211_module.c:275:12: warning:
+  symbol 'ieee80211_debug_init' was not declared. Should it be static?
+  drivers/staging/rtl8192u/ieee80211/ieee80211_module.c:297:13: warning:
+  symbol 'ieee80211_debug_exit' was not declared. Should it be static?
+
+These functions are used outside of this file so using static will not
+work.  The prototypes are given in r8192U_core.c but sparse nonetheless
+still gives a warning.  Fix the sparse warning by moving these
+prototypes from r8192U_core.c to ieee80211.h.
+
+Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Joel Pelaez Jorge <joelpelaez@gmail.com>
+Cc: Andrea Merello <andrea.merello@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Himangi Saraogi <himangi774@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Cc: Ana Rey <anarey@gmail.com>
+Cc: Chaitanya Hazarey <c@24.io>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Teodora Baluta <teobaluta@gmail.com>
 ---
- arch/mips/pci/msi-octeon.c |   45 ++++++++++++++++++-------------------------
- 1 files changed, 19 insertions(+), 26 deletions(-)
 
-diff --git a/arch/mips/pci/msi-octeon.c b/arch/mips/pci/msi-octeon.c
-index ab0c5d1..8098066 100644
---- a/arch/mips/pci/msi-octeon.c
-+++ b/arch/mips/pci/msi-octeon.c
-@@ -57,7 +57,7 @@ static int msi_irq_size;
-  *
-  * Returns 0 on success.
-  */
--int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
-+int octeon_setup_msi_irq(struct device *dev, struct msi_desc *desc)
- {
- 	struct msi_msg msg;
- 	u16 control;
-@@ -73,7 +73,7 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
- 	 * wants.  Most devices only want 1, which will give
- 	 * configured_private_bits and request_private_bits equal 0.
- 	 */
--	pci_read_config_word(dev, desc->msi_attrib.pos + PCI_MSI_FLAGS,
-+	pci_read_config_word(to_pci_dev(dev), desc->msi_attrib.pos + PCI_MSI_FLAGS,
- 			     &control);
+Notes:
+    Changes in v2:
+    
+      - remove #ifdef CONFIG_IEEE80211_DEBUG, not needed in header.
+    
+      - removed __init and __exit, not needed in header.
+    
+    Changes in v3:
+    
+      - remove the duplicate prototypes from r892U_core.c
+    
+      - (prototypes moved from r8192U_core.c to ieee80211.h)
+
+ drivers/staging/rtl8192u/ieee80211/ieee80211.h | 4 ++++
+ drivers/staging/rtl8192u/r8192U_core.c         | 2 --
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211.h b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
+index 1040bab..c118551 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211.h
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
+@@ -2485,6 +2485,10 @@ extern int ieee80211_wx_set_freq(struct ieee80211_device *ieee, struct iw_reques
+ extern int ieee80211_wx_get_freq(struct ieee80211_device *ieee, struct iw_request_info *a,
+ 			     union iwreq_data *wrqu, char *b);
  
- 	/*
-@@ -176,7 +176,7 @@ msi_irq_allocated:
- 	/* Update the number of IRQs the device has available to it */
- 	control &= ~PCI_MSI_FLAGS_QSIZE;
- 	control |= request_private_bits << 4;
--	pci_write_config_word(dev, desc->msi_attrib.pos + PCI_MSI_FLAGS,
-+	pci_write_config_word(to_pci_dev(dev), desc->msi_attrib.pos + PCI_MSI_FLAGS,
- 			      control);
- 
- 	irq_set_msi_desc(irq, desc);
-@@ -184,32 +184,14 @@ msi_irq_allocated:
- 	return 0;
- }
- 
--int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-+int octeon_check_msi_device(struct device *dev, int nvec, int type)
- {
--	struct msi_desc *entry;
--	int ret;
--
- 	/*
- 	 * MSI-X is not supported.
- 	 */
- 	if (type == PCI_CAP_ID_MSIX)
- 		return -EINVAL;
- 
--	/*
--	 * If an architecture wants to support multiple MSI, it needs to
--	 * override arch_setup_msi_irqs()
--	 */
--	if (type == PCI_CAP_ID_MSI && nvec > 1)
--		return 1;
--
--	list_for_each_entry(entry, &dev->msi_list, list) {
--		ret = arch_setup_msi_irq(dev, entry);
--		if (ret < 0)
--			return ret;
--		if (ret > 0)
--			return -ENOSPC;
--	}
--
- 	return 0;
- }
- 
-@@ -219,7 +201,7 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-  *
-  * @irq:    The devices first irq number. There may be multple in sequence.
-  */
--void arch_teardown_msi_irq(unsigned int irq)
-+void octeon_teardown_msi_irq(unsigned int irq)
- {
- 	int number_irqs;
- 	u64 bitmask;
-@@ -229,7 +211,7 @@ void arch_teardown_msi_irq(unsigned int irq)
- 	if ((irq < OCTEON_IRQ_MSI_BIT0)
- 		|| (irq > msi_irq_size + OCTEON_IRQ_MSI_BIT0))
- 		panic("arch_teardown_msi_irq: Attempted to teardown illegal "
--		      "MSI interrupt (%d)", irq);
-+			"MSI interrupt (%d)", irq);
- 
- 	irq -= OCTEON_IRQ_MSI_BIT0;
- 	index = irq / 64;
-@@ -242,7 +224,7 @@ void arch_teardown_msi_irq(unsigned int irq)
- 	 */
- 	number_irqs = 0;
- 	while ((irq0 + number_irqs < 64) &&
--	       (msi_multiple_irq_bitmask[index]
-+		(msi_multiple_irq_bitmask[index]
- 		& (1ull << (irq0 + number_irqs))))
- 		number_irqs++;
- 	number_irqs++;
-@@ -252,7 +234,7 @@ void arch_teardown_msi_irq(unsigned int irq)
- 	bitmask <<= irq0;
- 	if ((msi_free_irq_bitmask[index] & bitmask) != bitmask)
- 		panic("arch_teardown_msi_irq: Attempted to teardown MSI "
--		      "interrupt (%d) not in use", irq);
-+			"interrupt (%d) not in use", irq);
- 
- 	/* Checks are done, update the in use bitmask */
- 	spin_lock(&msi_free_irq_bitmask_lock);
-@@ -261,6 +243,17 @@ void arch_teardown_msi_irq(unsigned int irq)
- 	spin_unlock(&msi_free_irq_bitmask_lock);
- }
- 
-+struct msi_chip octeon_msi_chip = {
-+	.setup_irq = octeon_setup_msi_irq,
-+	.teardown_irq = octeon_teardown_msi_irq,
-+	.check_device = octeon_check_msi_device,
-+};
++/* ieee80211_module.c */
++extern int ieee80211_debug_init(void);
++extern void ieee80211_debug_exit(void);
 +
-+struct msi_chip *arch_get_match_msi_chip(struct device *dev)
-+{
-+	return &octeon_msi_chip;
-+}
-+
- static DEFINE_RAW_SPINLOCK(octeon_irq_msi_lock);
+ //extern void ieee80211_wx_sync_scan_wq(struct ieee80211_device *ieee);
+ extern void ieee80211_wx_sync_scan_wq(struct work_struct *work);
  
- static u64 msi_rcv_reg[4];
+diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+index 7640386..ee27bb3 100644
+--- a/drivers/staging/rtl8192u/r8192U_core.c
++++ b/drivers/staging/rtl8192u/r8192U_core.c
+@@ -5277,8 +5277,6 @@ static void rtl8192_usb_disconnect(struct usb_interface *intf)
+ }
+ 
+ /* fun with the built-in ieee80211 stack... */
+-extern int ieee80211_debug_init(void);
+-extern void ieee80211_debug_exit(void);
+ extern int ieee80211_crypto_init(void);
+ extern void ieee80211_crypto_deinit(void);
+ extern int ieee80211_crypto_tkip_init(void);
 -- 
-1.7.1
+2.1.0.rc1
 
