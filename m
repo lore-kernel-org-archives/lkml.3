@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377AbaHLM2y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 08:28:54 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:63997 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaHLM2x (ORCPT
+	id S1752393AbaHLMd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 08:33:26 -0400
+Received: from relay.parallels.com ([195.214.232.42]:51231 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301AbaHLMdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 08:28:53 -0400
-Message-ID: <1407846532.10122.66.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: x86: vmalloc and THP
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Oren Twaig <oren@scalemp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
-Date: Tue, 12 Aug 2014 05:28:52 -0700
-In-Reply-To: <20140812060745.GA7987@node.dhcp.inet.fi>
-References: <53E99F86.5020100@scalemp.com>
-	 <20140812060745.GA7987@node.dhcp.inet.fi>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 12 Aug 2014 08:33:25 -0400
+Date: Tue, 12 Aug 2014 16:33:20 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Andrey Vagin <avagin@openvz.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] tcp: don't use timestamp from repaired skb-s to
+ calculate RTT
+Message-ID: <20140812123320.GA27421@paralelels.com>
+References: <1407836714-26813-1-git-send-email-avagin@openvz.org>
+ <1407845701.10122.60.camel@edumazet-glaptop2.roam.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="koi8-r"
+Content-Disposition: inline
+In-Reply-To: <1407845701.10122.60.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-08-12 at 09:07 +0300, Kirill A. Shutemov wrote:
-> On Tue, Aug 12, 2014 at 08:00:54AM +0300, Oren Twaig wrote:
-
-> >Does memory allocated using vmalloc() will be mapped using huge
-> >pages either directly or later by THP ? 
+On Tue, Aug 12, 2014 at 05:15:01AM -0700, Eric Dumazet wrote:
+> On Tue, 2014-08-12 at 13:45 +0400, Andrey Vagin wrote:
+> > We don't know right timestamp for repaired skb-s. Wrong RTT estimations
+> > isn't good, because some congestion modules heavily depends on it.
+> > 
+> > This patch adds the TCPCB_REPAIRED flag, which is included in
+> > TCPCB_RETRANS.
 > 
-> No. It's neither aligned properly, nor physically contiguous.
+> ...
 > 
-> >If not, is there any fast way to change this behavior ? Maybe by
-> >changing the granularity/alignment of such allocations to allow such
-> >mapping ?
+> > +
+> > +				/* All packets are restored as if they have
+> > +				 * already been sent. skb_mstamp isn't set to
+> > +				 * avoid wrong rtt estimation.
+> > +				 */
+> > +				if (tp->repair) {
+> > +					TCP_SKB_CB(skb)->sacked |= TCPCB_REPAIRED;
+> > +					TCP_SKB_CB(skb)->when = tcp_time_stamp;
+> > +				}
+> >  			}
+> >  
+> >  			/* Try to append data to the end of skb. */
 > 
-> What's the point to use vmalloc() in this case?
+> 
+> Are you sure TCP_SKB_CB(skb)->when needs to be set ?
 
-Look at various large hashes we have in the system, all using
-vmalloc() :
+It's used in tcp_rearm_rto() for calculating a retransmit timeout.
+...
+	const u32 rto_time_stamp = TCP_SKB_CB(skb)->when + rto;
+	s32 delta = (s32)(rto_time_stamp - tcp_time_stamp);
+...
 
-[    0.006856] Dentry cache hash table entries: 16777216 (order: 15, 134217728 bytes)
-[    0.033130] Inode-cache hash table entries: 8388608 (order: 14, 67108864 bytes)
-[    1.197621] TCP established hash table entries: 524288 (order: 11, 8388608 bytes)
+"when" is used as a start point, so I think it's acceptable here.
 
-I would imagine a performance difference if we were using hugepages.
+I will add a comment. Thanks.
 
+> 
+> It should not anymore.
+> 
+> If yes, I believe a comment would help a lot here.
+> 
+> Also, please include this tag to ease stable backports (3.15+) :
+> 
+> Fixes: 431a91242d8d ("tcp: timestamp SYN+DATA messages")
+> Fixes: 740b0f1841f6 ("tcp: switch rtt estimations to usec resolution")
 
-
+Thanks,
+Andrew
