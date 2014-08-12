@@ -1,45 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaHLMQX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 08:16:23 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:32890 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaHLMQV (ORCPT
+	id S1752195AbaHLMQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 08:16:33 -0400
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:33372 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851AbaHLMQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 08:16:21 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: perex@perex.cz, tiwai@suse.de
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] sound: pci: es1968: use pci_device_id
-Date: Tue, 12 Aug 2014 17:45:40 +0530
-Message-Id: <1407845740-3524-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 12 Aug 2014 08:16:31 -0400
+Date: Tue, 12 Aug 2014 08:12:26 -0400
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        linux-atm-general@lists.sourceforge.net, davem@davemloft.net
+Subject: [PATCH] atm/svc: Fix blocking in wait loop
+Message-ID: <20140812081226.0fb0534e@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <20140807172901.GH3588@twins.programming.kicks-ass.net>
+References: <20140805214624.GA9973@localhost>
+	<20140807151741.GP19379@twins.programming.kicks-ass.net>
+	<20140807125948.2b7f1472@thirdoffive.cmf.nrl.navy.mil>
+	<20140807172514.GY9918@twins.programming.kicks-ass.net>
+	<20140807172901.GH3588@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-NRLCMF-Spam-Score: () hits=-0.001
+X-NRLCMF-Virus-Scanned: No virus found
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uses the struct pci_device_id instead of the depreciated macro DEFINE_PCI_DEVICE_TABLE.
+One should not call blocking primitives inside a wait loop, since both
+require task_struct::state to sleep, so the inner will destroy the
+outer state.
 
+sigd_enq() will possibly sleep for alloc_skb().  Move sigd_enq() before
+prepare_to_wait() to avoid sleeping while waiting interruptibly.  You do
+not actually need to call sigd_enq() after the initial prepare_to_wait()
+because we test the termination condition before calling schedule().
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+Based on suggestions from Peter Zijlstra.
+
+Signed-off-by: Chas Williams <chas@cmf.n4rl.navy.mil>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
 ---
- sound/pci/es1968.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/atm/svc.c | 60 +++++++++++++++++++++++++++++++----------------------------
+ 1 file changed, 32 insertions(+), 28 deletions(-)
 
-diff --git a/sound/pci/es1968.c b/sound/pci/es1968.c
-index 5bb1cf6..a9956a7 100644
---- a/sound/pci/es1968.c
-+++ b/sound/pci/es1968.c
-@@ -570,7 +570,7 @@ struct es1968 {
+diff --git a/net/atm/svc.c b/net/atm/svc.c
+index d8e5d0c2..1ba23f5 100644
+--- a/net/atm/svc.c
++++ b/net/atm/svc.c
+@@ -50,12 +50,12 @@ static void svc_disconnect(struct atm_vcc *vcc)
  
- static irqreturn_t snd_es1968_interrupt(int irq, void *dev_id);
+ 	pr_debug("%p\n", vcc);
+ 	if (test_bit(ATM_VF_REGIS, &vcc->flags)) {
+-		prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
+ 		sigd_enq(vcc, as_close, NULL, NULL, NULL);
+-		while (!test_bit(ATM_VF_RELEASED, &vcc->flags) && sigd) {
++		for (;;) {
++			prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
++			if (test_bit(ATM_VF_RELEASED, &vcc->flags) || !sigd)
++				break;
+ 			schedule();
+-			prepare_to_wait(sk_sleep(sk), &wait,
+-					TASK_UNINTERRUPTIBLE);
+ 		}
+ 		finish_wait(sk_sleep(sk), &wait);
+ 	}
+@@ -126,11 +126,12 @@ static int svc_bind(struct socket *sock, struct sockaddr *sockaddr,
+ 	}
+ 	vcc->local = *addr;
+ 	set_bit(ATM_VF_WAITING, &vcc->flags);
+-	prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
+ 	sigd_enq(vcc, as_bind, NULL, NULL, &vcc->local);
+-	while (test_bit(ATM_VF_WAITING, &vcc->flags) && sigd) {
+-		schedule();
++	for (;;) {
+ 		prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
++		if (!test_bit(ATM_VF_WAITING, &vcc->flags) || !sigd)
++			break;
++		schedule();
+ 	}
+ 	finish_wait(sk_sleep(sk), &wait);
+ 	clear_bit(ATM_VF_REGIS, &vcc->flags); /* doesn't count */
+@@ -202,15 +203,14 @@ static int svc_connect(struct socket *sock, struct sockaddr *sockaddr,
+ 		}
+ 		vcc->remote = *addr;
+ 		set_bit(ATM_VF_WAITING, &vcc->flags);
+-		prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
+ 		sigd_enq(vcc, as_connect, NULL, NULL, &vcc->remote);
+ 		if (flags & O_NONBLOCK) {
+-			finish_wait(sk_sleep(sk), &wait);
+ 			sock->state = SS_CONNECTING;
+ 			error = -EINPROGRESS;
+ 			goto out;
+ 		}
+ 		error = 0;
++		prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
+ 		while (test_bit(ATM_VF_WAITING, &vcc->flags) && sigd) {
+ 			schedule();
+ 			if (!signal_pending(current)) {
+@@ -297,11 +297,12 @@ static int svc_listen(struct socket *sock, int backlog)
+ 		goto out;
+ 	}
+ 	set_bit(ATM_VF_WAITING, &vcc->flags);
+-	prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
+ 	sigd_enq(vcc, as_listen, NULL, NULL, &vcc->local);
+-	while (test_bit(ATM_VF_WAITING, &vcc->flags) && sigd) {
+-		schedule();
++	for (;;) {
+ 		prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
++		if (!test_bit(ATM_VF_WAITING, &vcc->flags) || !sigd)
++			break;
++		schedule();
+ 	}
+ 	finish_wait(sk_sleep(sk), &wait);
+ 	if (!sigd) {
+@@ -387,15 +388,15 @@ static int svc_accept(struct socket *sock, struct socket *newsock, int flags)
+ 		}
+ 		/* wait should be short, so we ignore the non-blocking flag */
+ 		set_bit(ATM_VF_WAITING, &new_vcc->flags);
+-		prepare_to_wait(sk_sleep(sk_atm(new_vcc)), &wait,
+-				TASK_UNINTERRUPTIBLE);
+ 		sigd_enq(new_vcc, as_accept, old_vcc, NULL, NULL);
+-		while (test_bit(ATM_VF_WAITING, &new_vcc->flags) && sigd) {
++		for (;;) {
++			prepare_to_wait(sk_sleep(sk_atm(new_vcc)), &wait,
++					TASK_UNINTERRUPTIBLE);
++			if (!test_bit(ATM_VF_WAITING, &new_vcc->flags) || !sigd)
++				break;
+ 			release_sock(sk);
+ 			schedule();
+ 			lock_sock(sk);
+-			prepare_to_wait(sk_sleep(sk_atm(new_vcc)), &wait,
+-					TASK_UNINTERRUPTIBLE);
+ 		}
+ 		finish_wait(sk_sleep(sk_atm(new_vcc)), &wait);
+ 		if (!sigd) {
+@@ -433,12 +434,14 @@ int svc_change_qos(struct atm_vcc *vcc, struct atm_qos *qos)
+ 	DEFINE_WAIT(wait);
  
--static DEFINE_PCI_DEVICE_TABLE(snd_es1968_ids) = {
-+static const struct pci_device_id snd_es1968_ids[] = {
- 	/* Maestro 1 */
-         { 0x1285, 0x0100, PCI_ANY_ID, PCI_ANY_ID, PCI_CLASS_MULTIMEDIA_AUDIO << 8, 0xffff00, TYPE_MAESTRO },
- 	/* Maestro 2 */
+ 	set_bit(ATM_VF_WAITING, &vcc->flags);
+-	prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
+ 	sigd_enq2(vcc, as_modify, NULL, NULL, &vcc->local, qos, 0);
+-	while (test_bit(ATM_VF_WAITING, &vcc->flags) &&
+-	       !test_bit(ATM_VF_RELEASED, &vcc->flags) && sigd) {
+-		schedule();
++	for (;;) {
+ 		prepare_to_wait(sk_sleep(sk), &wait, TASK_UNINTERRUPTIBLE);
++		if (!test_bit(ATM_VF_WAITING, &vcc->flags) ||
++		    test_bit(ATM_VF_RELEASED, &vcc->flags) || !sigd) {
++			break;
++		}
++		schedule();
+ 	}
+ 	finish_wait(sk_sleep(sk), &wait);
+ 	if (!sigd)
+@@ -529,18 +532,18 @@ static int svc_addparty(struct socket *sock, struct sockaddr *sockaddr,
+ 
+ 	lock_sock(sk);
+ 	set_bit(ATM_VF_WAITING, &vcc->flags);
+-	prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
+ 	sigd_enq(vcc, as_addparty, NULL, NULL,
+ 		 (struct sockaddr_atmsvc *) sockaddr);
+ 	if (flags & O_NONBLOCK) {
+-		finish_wait(sk_sleep(sk), &wait);
+ 		error = -EINPROGRESS;
+ 		goto out;
+ 	}
+ 	pr_debug("added wait queue\n");
+-	while (test_bit(ATM_VF_WAITING, &vcc->flags) && sigd) {
+-		schedule();
++	for (;;) {
+ 		prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
++		if (!test_bit(ATM_VF_WAITING, &vcc->flags) || !sigd)
++			break;
++		schedule();
+ 	}
+ 	finish_wait(sk_sleep(sk), &wait);
+ 	error = xchg(&sk->sk_err_soft, 0);
+@@ -558,11 +561,12 @@ static int svc_dropparty(struct socket *sock, int ep_ref)
+ 
+ 	lock_sock(sk);
+ 	set_bit(ATM_VF_WAITING, &vcc->flags);
+-	prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
+ 	sigd_enq2(vcc, as_dropparty, NULL, NULL, NULL, NULL, ep_ref);
+-	while (test_bit(ATM_VF_WAITING, &vcc->flags) && sigd) {
+-		schedule();
++	for (;;) {
+ 		prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
++		if (!test_bit(ATM_VF_WAITING, &vcc->flags) || !sigd)
++			break;
++		schedule();
+ 	}
+ 	finish_wait(sk_sleep(sk), &wait);
+ 	if (!sigd) {
 -- 
-1.8.1.2
+1.9.3
 
