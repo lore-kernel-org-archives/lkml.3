@@ -1,98 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219AbaHLVrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 17:47:40 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:57472 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196AbaHLVri (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 17:47:38 -0400
+	id S1755273AbaHLVxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 17:53:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46878 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753195AbaHLVxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 17:53:19 -0400
+Date: Wed, 13 Aug 2014 05:53:14 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/2] take the segment adding out of locate_mem_hole
+ functions
+Message-ID: <20140812215314.GA1700@dhcp-17-102.nay.redhat.com>
+References: <1407821368-2358-1-git-send-email-bhe@redhat.com>
+ <20140812210045.GG16961@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <53EA897D.8030901@codeaurora.org>
-References: <1407867869-5194-1-git-send-email-keescook@chromium.org>
-	<1407867869-5194-4-git-send-email-keescook@chromium.org>
-	<53EA897D.8030901@codeaurora.org>
-Date: Tue, 12 Aug 2014 14:47:37 -0700
-X-Google-Sender-Auth: lZJvwZL18I1EVDLofhWGORapXGg
-Message-ID: <CAGXu5j+TPBs9h9YvVDt=g4WFykHgzcde9Ujuef=cRQAou8hZoA@mail.gmail.com>
-Subject: Re: [PATCH v3 3/7] arm: use fixmap for text patching when text is RO
-From: Kees Cook <keescook@chromium.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
-        Liu hua <sdu.liu@huawei.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Doug Anderson <dianders@google.com>, Rabin Vincent <rabin@rab.in>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Mark Salter <msalter@redhat.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140812210045.GG16961@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 2:39 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 08/12/14 11:24, Kees Cook wrote:
->> diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
->> index 07314af47733..03dd4e39c833 100644
->> --- a/arch/arm/kernel/patch.c
->> +++ b/arch/arm/kernel/patch.c
->> @@ -13,21 +16,69 @@ struct patch {
->>       unsigned int insn;
->>  };
->>
->> -void __kprobes __patch_text(void *addr, unsigned int insn)
->> +static DEFINE_SPINLOCK(patch_lock);
->> +
->> +static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
->> +{
->> +     unsigned int uintaddr = (uintptr_t) addr;
->> +     bool module = !core_kernel_text(uintaddr);
->> +     struct page *page;
->> +
->> +     if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX))
->> +             page = vmalloc_to_page(addr);
->> +     else if (!module && IS_ENABLED(CONFIG_DEBUG_RODATA))
->> +             page = virt_to_page(addr);
->> +     else
->> +             return addr;
->> +
->> +     if (flags)
->> +             spin_lock_irqsave(&patch_lock, *flags);
->> +
->> +     set_fixmap(fixmap, page_to_phys(page));
->> +
->> +     return (void *) (__fix_to_virt(fixmap) + (uintaddr & ~PAGE_MASK));
->> +}
->> +
->> +static void __kprobes patch_unmap(int fixmap, unsigned long *flags)
->> +{
->> +     clear_fixmap(fixmap);
->> +
->> +     if (flags)
->> +             spin_unlock_irqrestore(&patch_lock, *flags);
->> +}
->
-> Has the kbuildbot complained about this one yet?
->
->   CHECK  arch/arm/kernel/patch.c
->   arch/arm/kernel/patch.c:47:39: warning: context imbalance in
-> 'patch_unmap' - unexpected unlock
->
-> I guess we're going to ignore it.
+On 08/12/14 at 05:00pm, Vivek Goyal wrote:
+> On Tue, Aug 12, 2014 at 01:29:27PM +0800, Baoquan He wrote:
+> > In locate_mem_hole functions, a memory hole is located and added as
+> > kexec_segment. But from the name of locate_mem_hole, it should only
+> > take responsibility of searching a available memory hole to contain
+> > data of a specified size.
+> > 
+> > So in this patch add a new field 'mem' into kexec_buf, then take that
+> > kexec segment adding code out of locate_mem_hole_top_down and
+> > locate_mem_hole_bottom_up. This make clear of the functionality of
+> > locate_mem_hole just like it declars to do. And by this
+> > locate_mem_hole_callback chould be used later if anyone want to locate
+> > a memory hole for other use.
+> > 
+> > Signed-off-by: Baoquan He <bhe@redhat.com>
+> > ---
+> >  include/linux/kexec.h | 1 +
+> >  kernel/kexec.c        | 9 +++++----
+> >  2 files changed, 6 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+> > index 4b2a0e1..9d957b7 100644
+> > --- a/include/linux/kexec.h
+> > +++ b/include/linux/kexec.h
+> > @@ -178,6 +178,7 @@ struct kexec_buf {
+> >  	struct kimage *image;
+> >  	char *buffer;
+> >  	unsigned long bufsz;
+> > +	unsigned long mem;
+> >  	unsigned long memsz;
+> >  	unsigned long buf_align;
+> >  	unsigned long buf_min;
+> > diff --git a/kernel/kexec.c b/kernel/kexec.c
+> > index 0b49a0a..586444e 100644
+> > --- a/kernel/kexec.c
+> > +++ b/kernel/kexec.c
+> > @@ -2054,8 +2054,7 @@ static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
+> >  	} while (1);
+> >  
+> >  	/* If we are here, we found a suitable memory range */
+> > -	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start, > -			    kbuf->memsz);
+> > +	kbuf->mem = temp_start;
+> >  
+> >  	/* Success, stop navigating through remaining System RAM ranges */
+> >  	return 1;
+> > @@ -2089,8 +2088,7 @@ static int locate_mem_hole_bottom_up(unsigned long start, unsigned long end,
+> >  	} while (1);
+> >  
+> >  	/* If we are here, we found a suitable memory range */
+> > -	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
+> > -			    kbuf->memsz);
+> > +	kbuf->mem = temp_start;
+> >  
+> >  	/* Success, stop navigating through remaining System RAM ranges */
+> >  	return 1;
+> > @@ -2176,6 +2174,9 @@ int kexec_add_buffer(struct kimage *image, char *buffer, unsigned long bufsz,
+> >  		return -EADDRNOTAVAIL;
+> >  	}
+> >  
+> > +	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, kbuf->mem,
+> > +			    kbuf->memsz);
+> > +
+> 
+> I think let us open code this function then. That way we have to
+> retreive ksegment pointer once and it is easy to read.
+> 
+>   	/* Found a suitable memory range */
+> 	ksegment = &image->segment[image->nr_segments];
+>         ksegment->kbuf = kbuf->buffer;
+>         ksegment->bufsz = kbuf->bufsz;
+>         ksegment->mem = kbuf->mem;
+>         ksegment->memsz = kbuf->memsz;
+>         image->nr_segments++;
+> 	*load_addr = ksegment->mem;
 
-No, nothing yet from buildbot, let me do a sparse run -- I think we
-can just add annotation and we'll be okay.
+Yes, it's good to me.
 
--Kees
+> 
+> >  	/* Found a suitable memory range */
+> >  	ksegment = &image->segment[image->nr_segments - 1];
+> >  	*load_addr = ksegment->mem;
+> 
+> If possible, can you hold on to your cleanup patches for a bit. I want
+> to post some patches to introduce a config option for new syscall and
+> they will need to go in sooner. You can rebase your patches on top of
+> that.
 
--- 
-Kees Cook
-Chrome OS Security
+Sure, I can wait. Thanks for telling.
+
+> 
+> Thanks
+> Vivek
