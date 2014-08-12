@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaHLGoL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 02:44:11 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:41194 "EHLO
+	id S1753940AbaHLGoJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 02:44:09 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:41193 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423AbaHLGkt (ORCPT
+	with ESMTP id S1752349AbaHLGkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Aug 2014 02:40:49 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         David Ahern <dsahern@gmail.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 03/13] perf annotate: Move session handling out of __cmd_annotate()
-Date: Tue, 12 Aug 2014 15:40:35 +0900
-Message-Id: <1407825645-24586-4-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 02/13] perf tools: Fix a memory leak in vmlinux_path__init()
+Date: Tue, 12 Aug 2014 15:40:34 +0900
+Message-Id: <1407825645-24586-3-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1407825645-24586-1-git-send-email-namhyung@kernel.org>
 References: <1407825645-24586-1-git-send-email-namhyung@kernel.org>
@@ -28,182 +28,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a preparation of fixing dso__load_kernel_sym().  It needs a
-session info before calling symbol__init().
+When uname() failed, it should free vmlinux_path.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-annotate.c | 75 +++++++++++++++++++++++--------------------
- 1 file changed, 40 insertions(+), 35 deletions(-)
+ tools/perf/util/symbol.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 952b5ece6740..c0464dc38057 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -36,7 +36,8 @@
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 581c56836567..009a9d064f11 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1772,7 +1772,7 @@ static int vmlinux_path__init(void)
+ 		return 0;
  
- struct perf_annotate {
- 	struct perf_tool tool;
--	bool	   force, use_tui, use_stdio, use_gtk;
-+	struct perf_session *session;
-+	bool	   use_tui, use_stdio, use_gtk;
- 	bool	   full_paths;
- 	bool	   print_line;
- 	bool	   skip_missing;
-@@ -188,18 +189,9 @@ find_next:
- static int __cmd_annotate(struct perf_annotate *ann)
- {
- 	int ret;
--	struct perf_session *session;
-+	struct perf_session *session = ann->session;
- 	struct perf_evsel *pos;
- 	u64 total_nr_samples;
--	struct perf_data_file file = {
--		.path  = input_name,
--		.mode  = PERF_DATA_MODE_READ,
--		.force = ann->force,
--	};
--
--	session = perf_session__new(&file, false, &ann->tool);
--	if (session == NULL)
--		return -ENOMEM;
- 
- 	machines__set_symbol_filter(&session->machines, symbol__annotate_init);
- 
-@@ -207,22 +199,22 @@ static int __cmd_annotate(struct perf_annotate *ann)
- 		ret = perf_session__cpu_bitmap(session, ann->cpu_list,
- 					       ann->cpu_bitmap);
- 		if (ret)
--			goto out_delete;
-+			goto out;
- 	}
- 
- 	if (!objdump_path) {
- 		ret = perf_session_env__lookup_objdump(&session->header.env);
- 		if (ret)
--			goto out_delete;
-+			goto out;
- 	}
- 
- 	ret = perf_session__process_events(session, &ann->tool);
- 	if (ret)
--		goto out_delete;
-+		goto out;
- 
- 	if (dump_trace) {
- 		perf_session__fprintf_nr_events(session, stdout);
--		goto out_delete;
-+		goto out;
- 	}
- 
- 	if (verbose > 3)
-@@ -250,8 +242,8 @@ static int __cmd_annotate(struct perf_annotate *ann)
- 	}
- 
- 	if (total_nr_samples == 0) {
--		ui__error("The %s file has no samples!\n", file.path);
--		goto out_delete;
-+		ui__error("The %s file has no samples!\n", session->file->path);
-+		goto out;
- 	}
- 
- 	if (use_browser == 2) {
-@@ -261,24 +253,12 @@ static int __cmd_annotate(struct perf_annotate *ann)
- 					 "perf_gtk__show_annotations");
- 		if (show_annotations == NULL) {
- 			ui__error("GTK browser not found!\n");
--			goto out_delete;
-+			goto out;
- 		}
- 		show_annotations();
- 	}
- 
--out_delete:
--	/*
--	 * Speed up the exit process, for large files this can
--	 * take quite a while.
--	 *
--	 * XXX Enable this when using valgrind or if we ever
--	 * librarize this command.
--	 *
--	 * Also experiment with obstacks to see how much speed
--	 * up we'll get here.
--	 *
--	 * perf_session__delete(session);
--	 */
-+out:
- 	return ret;
- }
- 
-@@ -301,6 +281,10 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.ordering_requires_timestamps = true,
- 		},
- 	};
-+	struct perf_data_file file = {
-+		.path  = input_name,
-+		.mode  = PERF_DATA_MODE_READ,
-+	};
- 	const struct option options[] = {
- 	OPT_STRING('i', "input", &input_name, "file",
- 		    "input file name"),
-@@ -308,7 +292,7 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   "only consider symbols in these dsos"),
- 	OPT_STRING('s', "symbol", &annotate.sym_hist_filter, "symbol",
- 		    "symbol to annotate"),
--	OPT_BOOLEAN('f', "force", &annotate.force, "don't complain, do it"),
-+	OPT_BOOLEAN('f', "force", &file.force, "don't complain, do it"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show symbol address, etc)"),
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
-@@ -341,6 +325,7 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "Show event group information together"),
- 	OPT_END()
- 	};
-+	int ret;
- 
- 	argc = parse_options(argc, argv, options, annotate_usage, 0);
- 
-@@ -353,11 +338,16 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	setup_browser(true);
- 
-+	annotate.session = perf_session__new(&file, false, &annotate.tool);
-+	if (annotate.session == NULL)
-+		return -ENOMEM;
-+
- 	symbol_conf.priv_size = sizeof(struct annotation);
- 	symbol_conf.try_vmlinux_path = true;
- 
--	if (symbol__init() < 0)
+ 	if (uname(&uts) < 0)
 -		return -1;
-+	ret = symbol__init();
-+	if (ret < 0)
-+		goto out_delete;
++		goto out_fail;
  
- 	if (setup_sorting() < 0)
- 		usage_with_options(annotate_usage, options);
-@@ -373,5 +363,20 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 		annotate.sym_hist_filter = argv[0];
- 	}
- 
--	return __cmd_annotate(&annotate);
-+	ret = __cmd_annotate(&annotate);
-+
-+out_delete:
-+	/*
-+	 * Speed up the exit process, for large files this can
-+	 * take quite a while.
-+	 *
-+	 * XXX Enable this when using valgrind or if we ever
-+	 * librarize this command.
-+	 *
-+	 * Also experiment with obstacks to see how much speed
-+	 * up we'll get here.
-+	 *
-+	 * perf_session__delete(session);
-+	 */
-+	return ret;
- }
+ 	snprintf(bf, sizeof(bf), "/boot/vmlinux-%s", uts.release);
+ 	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
 -- 
 2.0.0
 
