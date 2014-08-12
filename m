@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302AbaHLGyO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 02:54:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753202AbaHLGyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 02:54:12 -0400
-Date: Tue, 12 Aug 2014 12:23:23 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: stable@vger.kernel.org, Amos Kong <akong@redhat.com>,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [3.16 stable PATCH 1/1] virtio-rng: fix multi-device startup
-Message-ID: <20140812065323.GL4184@grmbl.mre>
-References: <5ef3aa4ea1932b7655d9db5a0139b8a2922af0db.1407760907.git.amit.shah@redhat.com>
- <20140811225527.GB10721@kroah.com>
- <20140812053158.GJ4184@grmbl.mre>
- <20140812055548.GB12762@kroah.com>
+	id S1753409AbaHLGzH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 02:55:07 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:53035 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202AbaHLGzF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 02:55:05 -0400
+Date: Tue, 12 Aug 2014 08:55:16 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: David Rientjes <rientjes@google.com>
+Cc: Rob Clark <robdclark@gmail.com>,
+        sanjeev sharma <sanjeevsharmaengg@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drm: Do not use BUG_ON(!spin_is_locked())
+Message-ID: <20140812065516.GI10500@phenom.ffwll.local>
+Mail-Followup-To: David Rientjes <rientjes@google.com>,
+	Rob Clark <robdclark@gmail.com>,
+	sanjeev sharma <sanjeevsharmaengg@gmail.com>,
+	Guenter Roeck <linux@roeck-us.net>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <1407731491-22446-1-git-send-email-linux@roeck-us.net>
+ <alpine.DEB.2.02.1408110439580.15519@chino.kir.corp.google.com>
+ <CAGUYZuS=_rFpukssRebxXBccPrJAen15i8Qf3K+1YyF+feShdQ@mail.gmail.com>
+ <CAGUYZuSk4u5jyPcrYTjwjXmQRyr0kCEvxkgFfjcyP+ex544CLA@mail.gmail.com>
+ <alpine.DEB.2.02.1408111352090.24240@chino.kir.corp.google.com>
+ <CAF6AEGuu7cGpudV-G=vGCZrHjEuqTcFHsqnULE771a5UMNEVsw@mail.gmail.com>
+ <alpine.DEB.2.02.1408111636370.23479@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140812055548.GB12762@kroah.com>
+In-Reply-To: <alpine.DEB.2.02.1408111636370.23479@chino.kir.corp.google.com>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Tue) 12 Aug 2014 [13:55:48], Greg KH wrote:
-> On Tue, Aug 12, 2014 at 11:01:58AM +0530, Amit Shah wrote:
-> > On (Tue) 12 Aug 2014 [06:55:27], Greg KH wrote:
-> > > On Mon, Aug 11, 2014 at 06:11:47PM +0530, Amit Shah wrote:
-> > > > This is a 3.16-only patch.  The linux.git fix is
-> > > > 5c06273401f2eb7b290cadbae18ee00f8f65e893, which fixes this issue in a
-> > > > different way.
-> > > 
-> > > Why "different"?  Why can't I take that original patch instead?  What is
-> > > different in this patch, and why?
-> > 
-> > The commit referenced moves the hwrng_register() call to the ->scan()
-> > callback instead of it being in probe().  This was done to ensure the
-> > virtio-rng devices can contribute to the initial system entropy
-> > introduced in commit d9e7972619334.
-> > 
-> > That patch is quite small too, but will need a slight conflict
-> > resolution due to the previous two code-shuffling patches, and also
-> > the following revert.
-> > 
-> > However, I decided against the backport of the ->scan() method, since
-> > it wasn't designed to solve this regression, it happens to solve it,
-> > and it actually introduces new functionality.  I would be happy to
-> > provide a backport of the relevant patches, if you think that would be
-> > alright.
+On Mon, Aug 11, 2014 at 04:38:50PM -0700, David Rientjes wrote:
+> On Mon, 11 Aug 2014, Rob Clark wrote:
 > 
-> I almost always want "original" patches as it causes less bugs overall,
-> and less confusion for everyone involved.  Taking 2-3 patches is just as
-> easy as 1 patch, and even easier if I don't have to review it as "hard"
-> due to it not differing from what is in Linus's tree.
+> > > I'm suggesting that if you don't want to incur the cost of the conditional
+> > > everytime you call a certain function with assert_spin_locked() that you
+> > > could covert these to lockdep_assert_held() so the check is only done when
+> > > lockdep is enabled for debugging.
+> > 
+> > not sure about the nouveau parts, but for the omap and msm hunks, this
+> > code getting called at potentially vblank rate (so maybe once or twice
+> > per ~16ms)..  and lockdep has considerable overhead (for a gpu driver)
+> > so I don't always have it enabled.  So it sounds like for those two at
+> > least assert_spin_locked() is a better option.
+> > 
+> 
+> Unless there's a bug, assert_spin_locked() is just going to incur an 
+> unnecessary cost every time it is called at runtime.  My suggestion was to 
+> limit that check only to debugging kernels that include enabling lockdep 
+> when tracking down problems rather than needlessly evaluating the 
+> conditional every time when there are no bugs.
 
-Thanks; I'll send a backport of the patches, then.
-
-		Amit
+My experience with gpu drivers (i915) has been that hw and the software
+running it is varied enough that almost always it's better to
+unconditionally enable this stuff. I much prefer assert_spin_locked and
+friends over the lockdep versions since enabling full lockdep is not
+something you usually do. Especially not normal users, and we rely upon
+them for testing the old stuff. Furthermore for the modeset code the
+overhead is totally irrelevant since we're doing metric piles of register
+reads and writes in there anyway.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
