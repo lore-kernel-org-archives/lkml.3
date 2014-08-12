@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100AbaHLW2f (ORCPT <rfc822;w@1wt.eu>);
+	id S1755432AbaHLW2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 18:28:38 -0400
+Received: from ozlabs.org ([103.22.144.67]:40725 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754630AbaHLW2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Aug 2014 18:28:35 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:43115 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009AbaHLW2d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 18:28:33 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: gregkh@linuxfoundation.org
-Cc: tiwai@suse.de, linux-kernel@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [PATCH v3 0/3] module loading: add module_long_probe_init()
-Date: Tue, 12 Aug 2014 15:28:24 -0700
-Message-Id: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
+Date: Wed, 13 Aug 2014 08:28:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeff Layton <jlayton@primarydata.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 0/5] locks: move most locks_release_private calls
+ outside of i_lock
+Message-ID: <20140813082827.1097c3ad@canb.auug.org.au>
+In-Reply-To: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
+References: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/kE9c5iQLQE.k2/XeWc._pcT"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+--Sig_/kE9c5iQLQE.k2/XeWc._pcT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-systemd-udevd will cause a driver to fail to load if it doesn't load
-within the set default timeout, right now 30 seconds. Although we now
-have a way to increase the timeout at run time we need a way to both
-annotate drivers that need fixing and a way to enable drivers's whose
-probe takes long time while they are fixed. Using deferred probe works
-but it was recently agreed that we'd instead use kthreads for drivers
-that have long probes.
+Hi Jeff,
 
-Luis R. Rodriguez (3):
-  init / kthread: add module_long_probe_init() and
-    module_long_probe_exit()
-  cxgb4: use module_long_probe_init()
-  mptsas: use module_long_probe_init()
+On Tue, 12 Aug 2014 10:48:08 -0400 Jeff Layton <jlayton@primarydata.com> wr=
+ote:
+>
+> Absent any objections, I'll plan to merge these for 3.18.
 
- drivers/message/fusion/mptsas.c                 |  5 ++--
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c |  5 ++--
- include/linux/kthread.h                         | 35 +++++++++++++++++++++++++
- 3 files changed, 41 insertions(+), 4 deletions(-)
+This means that this patch set should *not* be in linux-next until after
+(at least) v3.17-rc1 is released ...  This s reinforced by the lack of
+Acked-by, Reviewed-by and Tested-by tags ... (the addition of which would p=
+resumably require the rebase (or rewrite) of a published git tree.)
 
--- 
-2.0.3
+/me suspects that many people do not read his daily release notes :-(
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/kE9c5iQLQE.k2/XeWc._pcT
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT6pUQAAoJEMDTa8Ir7ZwVTisQAIxg+9qTRROcI90xF8edNQ/L
+pcpNey/kXd7AFpqvdcPmRjb8wWzZhPhWn7Gz9wQgC6UKQy7UG0T47eeInZvxX8mp
+IgyR7DRhnuW7yTZdyqbOSYX+563ayw3H2BGRPImjZTOt5NL/Xll7FWusN2GI2Ses
+9CfpuQ7umojSZX2lmB/V46FZ4QvvamDlJf7ybpoid+CxVWVy2zKbeQzilCNNneTv
+1fyZGVVVPFfe5y6rN5vFLIMhrCkwPBjg9nSPCFLmTBE+D6541Q7z5wdc8Y1wyVGI
+OMrORVjFV9sQd1qdvA5+dt1vZZzQ/WtYYX5mGUBzpV9uzlHVYxke9esL0bVRdAA1
+o966aVugwQrqU0oc5zBpjf4GGy3/RTtvQgQ0FBnLLJRzUxjXuKiIxSGStP6u6E4I
+9Ntd5dkL7YYzKyWg+59h2giVBZrmQxIlmtiwSf0JJRboynaoDObJQ3i79AbfT2IQ
+9nlOa8TZCiRDUmiBOXXY0jz9jo6AlRZDiWKH961oUCBm6uf+38tr8zbAV6lyzSlS
+rvZ6DQaniMUmHjCvIfbe9TIa9L/muNBjP93GVMMoM2t8RVp+6LEvPOlvbB/oo6AV
+p/2gj1fDVSP5tSVRmFi6xWqf9F7oa0rI1Y1TU4F8frSn9r+y/JiycERJa3esL7Q1
+4dXiD2vYBJT904Tkb3rv
+=GIIv
+-----END PGP SIGNATURE-----
+
+--Sig_/kE9c5iQLQE.k2/XeWc._pcT--
