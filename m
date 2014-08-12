@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaHLOtl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 10:49:41 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753299AbaHLOti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 10:49:38 -0400
-Message-ID: <53EA297F.1040107@nod.at>
-Date: Tue, 12 Aug 2014 16:49:35 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Daniel Walter <sahne@0x90.at>,
-        =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>,
-        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: [PATCH] resource: Fix the case of null pointer access
-References: <20140812144655.GB16961@redhat.com>
-In-Reply-To: <20140812144655.GB16961@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753367AbaHLOt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 10:49:58 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:58579 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075AbaHLOsV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 10:48:21 -0400
+From: Jeff Layton <jlayton@primarydata.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: [PATCH 1/5] locks: don't call locks_release_private from locks_copy_lock
+Date: Tue, 12 Aug 2014 10:48:09 -0400
+Message-Id: <1407854893-2698-2-git-send-email-jlayton@primarydata.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
+References: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.08.2014 16:46, schrieb Vivek Goyal:
-> Richard and Daniel reported that UML is broken due to changes to resource
-> traversal functions. Problem is that iomem_resource.child can be null
-> and new code does not consider that possibility. Old code used a for loop
-> and that loop will not even execute if p was null.
-> 
-> Revert back to for() loop logic and bail out if p is null.
-> 
-> I also moved sibling_only check out of resource_lock. There is no
-> reason to keep it inside the lock.
-> 
-> Following is backtrace of the UML crash.
+All callers of locks_copy_lock pass in a brand new file_lock struct, so
+there's no need to calls locks_release_private on it. Replace that with
+a warning that fires in the event that we receive a target lock that
+doesn't look like it's properly initialized.
 
-Shall I pickup this patch and route it via my uml tree to Linus?
+Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+---
+ fs/locks.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks,
-//richard
+diff --git a/fs/locks.c b/fs/locks.c
+index 356667a434c1..2c2d4f5022a7 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -285,7 +285,8 @@ EXPORT_SYMBOL(__locks_copy_lock);
+ 
+ void locks_copy_lock(struct file_lock *new, struct file_lock *fl)
+ {
+-	locks_release_private(new);
++	/* "new" must be a freshly-initialized lock */
++	WARN_ON_ONCE(new->fl_ops);
+ 
+ 	__locks_copy_lock(new, fl);
+ 	new->fl_file = fl->fl_file;
+-- 
+1.9.3
+
