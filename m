@@ -1,123 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbaHLLq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 07:46:56 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:42166 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584AbaHLLqy (ORCPT
+	id S1752734AbaHLLtM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 07:49:12 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59702 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787AbaHLLtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 07:46:54 -0400
+	Tue, 12 Aug 2014 07:49:10 -0400
+Date: Tue, 12 Aug 2014 12:48:49 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Message-ID: <20140812114849.GN17528@sirena.org.uk>
+References: <1407843829-4908-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <5567000.WJnOP5ckul@amdc1032>
-References: <5567000.WJnOP5ckul@amdc1032>
-Date: Tue, 12 Aug 2014 13:46:53 +0200
-Message-ID: <CAPDyKFoZ=z560H2hydWdP22RwzXUWdLzxJF+pzOXjxx8FGc3pQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: sdhci-s3c: fix runtime PM handling on
- sdhci_add_host() failure
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Chris Ball <chris@printf.net>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GI3Lgxc05n+zHXcf"
+Content-Disposition: inline
+In-Reply-To: <1407843829-4908-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: wm8994: register irq handler for mic1 detect
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 August 2014 18:07, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
-> Runtime Power Management handling for the sdhci_add_host() failure
-> case in sdhci_s3c_probe() should match the code in sdhci_s3c_remove()
-> (which uses pm_runtime_disable() call which matches the earlier
-> pm_runtime_enable() one).  Fix it.
->
-> This patch fixes "BUG: spinlock bad magic on CPU#0, swapper/0/1" and
-> "Unbalanced pm_runtime_enable!" warnings.
->
-> From the kernel log:
-> ...
-> [    1.659631] s3c-sdhci 12530000.sdhci: sdhci_add_host() failed
-> [    1.665096] BUG: spinlock bad magic on CPU#0, swapper/0/1
-> [    1.670433]  lock: 0xea01e484, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
-> [    1.677895] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.16.0-next-20140804-00008-ga59480f-dirty #707
-> [    1.687037] [<c0013ae4>] (unwind_backtrace) from [<c0010d70>] (show_stack+0x10/0x14)
-> [    1.694740] [<c0010d70>] (show_stack) from [<c04050c8>] (dump_stack+0x68/0xb8)
-> [    1.701948] [<c04050c8>] (dump_stack) from [<c0052558>] (do_raw_spin_lock+0x15c/0x1a4)
-> [    1.709848] [<c0052558>] (do_raw_spin_lock) from [<c040a630>] (_raw_spin_lock_irqsave+0x20/0x28)
-> [    1.718619] [<c040a630>] (_raw_spin_lock_irqsave) from [<c030d7d0>] (sdhci_do_set_ios+0x1c/0x5cc)
-> [    1.727464] [<c030d7d0>] (sdhci_do_set_ios) from [<c030ddfc>] (sdhci_runtime_resume_host+0x50/0x104)
-> [    1.736574] [<c030ddfc>] (sdhci_runtime_resume_host) from [<c02462dc>] (pm_generic_runtime_resume+0x2c/0x40)
-> [    1.746383] [<c02462dc>] (pm_generic_runtime_resume) from [<c0247898>] (__rpm_callback+0x34/0x70)
-> [    1.755233] [<c0247898>] (__rpm_callback) from [<c02478fc>] (rpm_callback+0x28/0x88)
-> [    1.762958] [<c02478fc>] (rpm_callback) from [<c02486f0>] (rpm_resume+0x384/0x4ec)
-> [    1.770511] [<c02486f0>] (rpm_resume) from [<c02488b0>] (pm_runtime_forbid+0x58/0x64)
-> [    1.778325] [<c02488b0>] (pm_runtime_forbid) from [<c030ea70>] (sdhci_s3c_probe+0x4a4/0x540)
-> [    1.786749] [<c030ea70>] (sdhci_s3c_probe) from [<c02429cc>] (platform_drv_probe+0x2c/0x5c)
-> [    1.795076] [<c02429cc>] (platform_drv_probe) from [<c02415f0>] (driver_probe_device+0x114/0x234)
-> [    1.803929] [<c02415f0>] (driver_probe_device) from [<c024179c>] (__driver_attach+0x8c/0x90)
-> [    1.812347] [<c024179c>] (__driver_attach) from [<c023ffb4>] (bus_for_each_dev+0x54/0x88)
-> [    1.820506] [<c023ffb4>] (bus_for_each_dev) from [<c0240df8>] (bus_add_driver+0xd8/0x1cc)
-> [    1.828665] [<c0240df8>] (bus_add_driver) from [<c0241db8>] (driver_register+0x78/0xf4)
-> [    1.836652] [<c0241db8>] (driver_register) from [<c00088a4>] (do_one_initcall+0x80/0x1d0)
-> [    1.844816] [<c00088a4>] (do_one_initcall) from [<c059ac94>] (kernel_init_freeable+0x108/0x1d4)
-> [    1.853503] [<c059ac94>] (kernel_init_freeable) from [<c0401300>] (kernel_init+0x8/0xe4)
-> [    1.861568] [<c0401300>] (kernel_init) from [<c000e538>] (ret_from_fork+0x14/0x3c)
-> [    1.869582] platform 12530000.sdhci: Driver s3c-sdhci requests probe deferral
-> ...
-> [    1.997047] s3c-sdhci 12530000.sdhci: Unbalanced pm_runtime_enable!
-> ...
-> [    2.027235] s3c-sdhci 12530000.sdhci: sdhci_add_host() failed
-> [    2.032884] platform 12530000.sdhci: Driver s3c-sdhci requests probe deferral
-> ...
->
-> Tested on Hardkernel's Exynos4412 based ODROID-U3 board.
->
-> Fixes: 9f4e8151dbbc ("mmc: sdhci-s3c: Enable runtime power management")
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Jaehoon Chung <jh80.chung@samsung.com>
-> Cc: Ben Dooks <ben-linux@fluff.org>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Thanks! Applied for fixes.
+--GI3Lgxc05n+zHXcf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Kind regards
-Uffe
+On Tue, Aug 12, 2014 at 12:43:49PM +0100, Nikesh Oswal wrote:
 
-> ---
-> patch is against next-20140804 branch of linux-next kernel
->
->  drivers/mmc/host/sdhci-s3c.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
-> index fa5954a..1e47903 100644
-> --- a/drivers/mmc/host/sdhci-s3c.c
-> +++ b/drivers/mmc/host/sdhci-s3c.c
-> @@ -606,8 +606,6 @@ static int sdhci_s3c_probe(struct platform_device *pdev)
->         ret = sdhci_add_host(host);
->         if (ret) {
->                 dev_err(dev, "sdhci_add_host() failed\n");
-> -               pm_runtime_forbid(&pdev->dev);
-> -               pm_runtime_get_noresume(&pdev->dev);
->                 goto err_req_regs;
->         }
->
-> @@ -618,6 +616,8 @@ static int sdhci_s3c_probe(struct platform_device *pdev)
->         return 0;
->
->   err_req_regs:
-> +       pm_runtime_disable(&pdev->dev);
-> +
->   err_no_busclks:
->         clk_disable_unprepare(sc->clk_io);
->
-> --
-> 1.8.2.3
->
->
+> --- a/sound/soc/codecs/wm8994.c
+> +++ b/sound/soc/codecs/wm8994.c
+> @@ -4099,6 +4099,15 @@ static int wm8994_codec_probe(struct snd_soc_codec *codec)
+>  				dev_warn(codec->dev,
+>  					 "Failed to request Mic1 detect IRQ: %d\n",
+>  					 ret);
+> +		} else {
+> +			ret = wm8994_request_irq(wm8994->wm8994,
+> +					WM8994_IRQ_MIC1_DET,
+> +					wm8994_mic_irq, "Mic 1 detect",
+> +					wm8994);
+> +			if (ret != 0)
+> +				dev_warn(codec->dev,
+> +				"Failed to request Mic1 detect IRQ: %d\n",
+> +				ret);
+
+This need a better changelog and possibly some editing of the code to
+make it clearer.  According to the above diff we're in the else case for
+an if statement where the true path also requests the same interrupt (or
+at least something with the same text reported in the error message).
+
+--GI3Lgxc05n+zHXcf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT6f8eAAoJELSic+t+oim9HL8QAI+tLB4Eli/RmtQsAPyVkxD6
+fF8mAuykUnJIE3ALY79dbEPpghx1CR+y+sSc5DLMmdnpLh1GEYRABySZ0bFjeJxR
+/ZuDvh3NtNE/C3/3NZBNrqIGmDH19f0i3OzElsVZUL10NWS7OdgJ+l6r+adxd6fk
+d9Ka50Pv6ajK9EKukH7/qiAN0sm4pMq1gV2IbLRx5TCVaprQZNH6f2NjQm8I1r+M
+YD/HmyDbn3A12Cj1GZ8vpUddMKZxa489Vwrsdp5zVHwrSy6lNYOVaKPAlhx8wT7l
+j0J4S+sbeI5kOI8ir38xcV50qDfCMKAH1/c2A/yA93RG7WHjfozoraSt9t57Hgrt
+2QSAZN9Gu1G5TmxmCs5w1NMiJs434RIsUnI5QXtsSBQZNQbkA7ld25Ia5+0OsMrY
+5GdMAEe1bSm20aooiFIxFL4MpikyargWEzPSzUxXi61hS4O3cBE6YsSjzbfTqR7U
+Nzv+oS7g/boyWI9isTlSJKOErJAcJrRMug2tLzNZazYOii92oMwodWse71aACljN
+ehpwLfwNWfShNu1lI2SFY+ymUOEvCp9Ge2lMBvk9j1JqqvbYKoczlS0v7pBj3TTS
+K9LukEYRUCF/P5HPJTa0Oe6PTiMTTaAeUjzVlqyPZGXdPgRsxyu/ewF1FaLbul7K
+uoTr1CdSRhu3W+mrOm3n
+=AiIY
+-----END PGP SIGNATURE-----
+
+--GI3Lgxc05n+zHXcf--
