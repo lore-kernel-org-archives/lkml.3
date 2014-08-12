@@ -1,106 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921AbaHLJEQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 05:04:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49595 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753368AbaHLJEP (ORCPT
+	id S1753990AbaHLJFW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 05:05:22 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45777 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751415AbaHLJFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 05:04:15 -0400
-Date: Tue, 12 Aug 2014 11:03:57 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: linux-kernel@vger.kernel.org, pjt@google.com, oleg@redhat.com,
-        rostedt@goodmis.org, umgwanakikbuti@gmail.com, tkhai@yandex.ru,
-        tim.c.chen@linux.intel.com, mingo@kernel.org, nicolas.pitre@linaro.org
-Subject: Re: [PATCH v4 5/6] sched/fair: Remove double_lock_balance() from
- active_load_balance_cpu_stop()
-Message-ID: <20140812090357.GP9918@twins.programming.kicks-ass.net>
-References: <20140806075138.24858.23816.stgit@tkhai>
- <1407312416.8424.47.camel@tkhai>
+	Tue, 12 Aug 2014 05:05:20 -0400
+Date: Tue, 12 Aug 2014 10:04:23 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Wang Nan <wangnan0@huawei.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "anil.s.keshavamurthy@intel.com" <anil.s.keshavamurthy@intel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peifeiyue@huawei.com" <peifeiyue@huawei.com>,
+        "lizefan@huawei.com" <lizefan@huawei.com>
+Subject: Re: [PATCH v3] kprobes: arm: enable OPTPROBES for ARM 32
+Message-ID: <20140812090423.GC29013@arm.com>
+References: <1407550339-34805-1-git-send-email-wangnan0@huawei.com>
+ <20140811134832.GD15853@arm.com>
+ <53E96FFF.8030101@hitachi.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1FYnk8XtmuXxTUQY"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407312416.8424.47.camel@tkhai>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <53E96FFF.8030101@hitachi.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 12, 2014 at 02:38:07AM +0100, Masami Hiramatsu wrote:
+> (2014/08/11 22:48), Will Deacon wrote:
+> > On Sat, Aug 09, 2014 at 03:12:19AM +0100, Wang Nan wrote:
+> >> This patch introduce kprobeopt for ARM 32.
+> >>
+> >> Limitations:
+> >>  - Currently only kernel compiled with ARM ISA is supported.
+> >>
+> >>  - Offset between probe point and optinsn slot must not larger than
+> >>    32MiB. Masami Hiramatsu suggests replacing 2 words, it will make
+> >>    things complex. Futher patch can make such optimization.
+> >>
+> >> Kprobe opt on ARM is relatively simpler than kprobe opt on x86 because
+> >> ARM instruction is always 4 bytes aligned and 4 bytes long. This patch
+> >> replace probed instruction by a 'b', branch to trampoline code and then
+> >> calls optimized_callback(). optimized_callback() calls opt_pre_handler()
+> >> to execute kprobe handler. It also emulate/simulate replaced instruction.
+> > 
+> > Could you briefly describe the optimisation please?
+> 
+> On arm32, optimization means "replacing a breakpoint with a branch".
 
---1FYnk8XtmuXxTUQY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+What do you mean by breakpoint in this case?
+KPROBE_ARM_BREAKPOINT_INSTRUCTION an friends are actually undefined
+instructions, and the architecture doesn't provide atomicity guarantees
+when overwriting those in a live instruction stream.
 
-On Wed, Aug 06, 2014 at 12:06:56PM +0400, Kirill Tkhai wrote:
->=20
-> Bad situation:
->=20
-> double_lock_balance() drops busiest_rq lock. The busiest_rq is *busiest*,
-> and a lot of tasks and context switches there. We are dropping the lock
-> and waiting for it again.
->=20
-> Let's just detach the task and once finally unlock it!
+That means that if you overwrite one of these `breakpoint' instructions with
+a branch, you can't guarantee that another core will see either the
+breakpoint of the branch -- it could see a combination of both.
 
-that wants rewording, much like the previous one I did.
+> Of course simple branch instruction doesn't memorize the source(probe)
+> address, optprobe makes a trampoline code for each probe point and
+> each trampoline stores "struct kprobe" of that probe point.
+> 
+> At first, the kprobe puts a breakpoint into the probe site, and builds
+> a trampoline. After a while, it starts optimizing the probe site by
+> replacing the breakpoint with a branch.
+> 
+> > I'm not familiar with
+> > kprobes internals, but if you're trying to patch an arbitrary instruction
+> > with a branch then that's not guaranteed to be atomic by the ARM
+> > architecture.
+> 
+> Hmm, I'm not sure about arm32 too. Would you mean patch_text() can't
+> replace an instruction atomically? Or only the breakpoint is special?
+> (for cache?)
+> optprobe always swaps branch and breakpoint, isn't that safe?
 
->=20
-> Warning: this admits unlocked using of can_migrate_task(), throttled_lb_p=
-air(),
-> and task_hot(). I've added lockdep asserts to point on this.
+No, it's not safe. The ARM ARM is pretty clear about this (see section
+3.5.4. "Concurrent modification and execution of instructions"). Note that
+there is a special-purpose BKPT instruction designed for this case, but I
+think this tends to get used by hardware debuggers and having the
+instruction in the kernel can hamper debugging efforts.
 
-That doesn't make sense; see below.
+> > We can, however, patch branches with other branches.
+> > 
+> > Anyway, minor comments in-line:
+> > 
+> >> +/* Caller must ensure addr & 3 == 0 */
+> >> +static int can_optimize(unsigned long paddr)
+> >> +{
+> >> +	return 1;
+> >> +}
+> > 
+> > Why not check the paddr alignment here, rather than have a comment?
+> 
+> Actually, we don't need to care about that. The alignment is already
+> checked before calling this function (at arch_prepare_kprobe() in
+> arch/arm/kernel/kprobes.c).
+> 
+> > 
+> >> +/* Free optimized instruction slot */
+> >> +static void
+> >> +__arch_remove_optimized_kprobe(struct optimized_kprobe *op, int dirty)
+> >> +{
+> >> +	if (op->optinsn.insn) {
+> >> +		free_optinsn_slot(op->optinsn.insn, dirty);
+> >> +		op->optinsn.insn = NULL;
+> >> +	}
+> >> +}
+> >> +
+> >> +extern void kprobe_handler(struct pt_regs *regs);
+> >> +
+> >> +static void
+> >> +optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
+> >> +{
+> >> +	unsigned long flags;
+> >> +	struct kprobe *p = &op->kp;
+> >> +	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+> >> +
+> >> +	/* Save skipped registers */
+> >> +	regs->ARM_pc = (unsigned long)op->kp.addr;
+> >> +	regs->ARM_ORIG_r0 = ~0UL;
+> > 
+> > Why are you writing ORIG_r0?
+> 
+> In x86, optimization(breakpoint to jump) is transparently done, thus
+> we have to mimic all registers as the breakpoint exception. And in x86
+> int3(which is the breakpoint) exception sets -1 to orig_ax.
 
-> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-> ---
->  kernel/sched/fair.c |   55 +++++++++++++++++++++++++++++++++++----------=
-------
->  1 file changed, 38 insertions(+), 17 deletions(-)
->=20
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index d54b72c..cfeafb1 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3297,6 +3297,8 @@ static inline int throttled_hierarchy(struct cfs_rq=
- *cfs_rq)
->   * Ensure that neither of the group entities corresponding to src_cpu or
->   * dest_cpu are members of a throttled hierarchy when performing group
->   * load-balance operations.
-> + *
-> + * Note: RQs may be unlocked.
->   */
->  static inline int throttled_lb_pair(struct task_group *tg,
->  				    int src_cpu, int dest_cpu)
+Ok, we do the same thing on ARM when we take an exception.
 
-I'm not immediately seeing this; this function is only ever called from
-can_migrate_task(); and there you assert that we must be holding src_rq.
+> >> +	/* Copy arch-dep-instance from template */
+> >> +	memcpy(buf, &optprobe_template_entry, TMPL_END_IDX);
+> >> +
+> >> +	/* Set probe information */
+> >> +	val = (unsigned long)op;
+> >> +	memcpy(buf + TMPL_VAL_IDX, &val, sizeof(val));
+> >> +
+> >> +	/* Set probe function call */
+> >> +	val = (unsigned long)optimized_callback;
+> >> +	memcpy(buf + TMPL_CALL_IDX, &val, sizeof(val));
+> > 
+> > Ok, so this is updating the `offset' portion of a b instruction, right? What
+> > if memcpy does that byte-by-byte?
+> 
+> No, as you can see a indirect call "blx r2" in optprobe_template_entry(
+> inline asm), this sets .data bytes at optprobe_template_call which is loaded
+> to r2 register. :-)
+> So all the 4bytes are used for storing the address.
 
-And at this point src_rq is the only relevant rq, since that is the one
-the task is still on.
+Ah, ok, that makes sense. So we copy the offset into the .data word,
+synchronise the caches and only then run the new code. I was wondering
+about concurrent execution by another core, but it doesn't look like that
+can happen.
 
-so let me remove this comment.
-
---1FYnk8XtmuXxTUQY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT6dh9AAoJEHZH4aRLwOS611gP/3hE78oOhDG1Cvf1oYWnaXcR
-ELUWhvO7KPnBZdbInBRzX0hoyxEpMMtmz2lTRHYLTE88EjxHNzTeDpxPSuKYF1na
-l/xErXg7sX4c3PWl8hOGeCo0PFMHGWbouN/Ggigb2QYxZ5rz7wHw5Dzff0N3YLHQ
-yl9J/rR4qI6VAxzqZ7Qdnz2JACKLvhqtfcFpzNi76N5sd/Ki/UwFJiWilqHp0XbY
-wqd5VJ/nu9LA3GK0b+7PVTViatklKAb5bYlrB19Qp0GjuQPLO/O7Twg3oE4rHico
-cejm8Z7wQSk70OnLRsdCsrQV1fikd813enlGzmaqTGsMJQATlvKx64yCOf3kTn7h
-OsZ80NxTjrThAyHrdzLerBCj24xLQrfL5zQwj3hLFA5G9hE65S5Kt4GTyg22EKsK
-MgAiOpm3miPZZiu2xXEGMqIA1SI9yzeRfLUicI6WXTebfQks/iDuj3ySf88+lF5j
-c9dbChcaB7+6ll8uf8un5vLepoOtvkFwwj9PI+8xXwBHhmLhrLnCza0S6hpnyHi8
-2mg21/1n/7lDUr6G2STAlvY5iMJmyCzED8zYLQJAdwykDNmIqjt+AuAMhi7WyWYr
-M3iTx5tovlSpupfO7imImDVZtDo7HNEUDt3L0/Ifv1h1VBTRVZEzeim/1cf5OWhC
-/7rwfCMkOUwCRAYLBD9g
-=qf/d
------END PGP SIGNATURE-----
-
---1FYnk8XtmuXxTUQY--
+Will
