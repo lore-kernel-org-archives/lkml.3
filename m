@@ -1,128 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503AbaHLOyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 10:54:41 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:63670 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093AbaHLOyj (ORCPT
+	id S1753357AbaHLOzX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 10:55:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37016 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753174AbaHLOxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 10:54:39 -0400
+	Tue, 12 Aug 2014 10:53:44 -0400
+Date: Tue, 12 Aug 2014 07:52:39 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-9a5d9ba6a3631d55c358fe1bdbaa162a97471a05@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
+        vincent.guittot@linaro.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
+        vincent.guittot@linaro.org, tglx@linutronix.de
+In-Reply-To: <20140729152705.GX12054@laptop.lan>
+References: <20140729152705.GX12054@laptop.lan>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/fair: Allow calculate_imbalance()
+  to move idle cpus
+Git-Commit-ID: 9a5d9ba6a3631d55c358fe1bdbaa162a97471a05
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1407836714-26813-1-git-send-email-avagin@openvz.org>
-References: <1407836714-26813-1-git-send-email-avagin@openvz.org>
-From: Yuchung Cheng <ycheng@google.com>
-Date: Tue, 12 Aug 2014 07:53:57 -0700
-Message-ID: <CAK6E8=c7VEJViP_KeqCBo_dePL-wh8J5+nu=YGrrPq2GKtmBBQ@mail.gmail.com>
-Subject: Re: [PATCH] tcp: don't use timestamp from repaired skb-s to calculate RTT
-To: Andrey Vagin <avagin@openvz.org>
-Cc: netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 2:45 AM, Andrey Vagin <avagin@openvz.org> wrote:
-> We don't know right timestamp for repaired skb-s. Wrong RTT estimations
-> isn't good, because some congestion modules heavily depends on it.
->
-> This patch adds the TCPCB_REPAIRED flag, which is included in
-> TCPCB_RETRANS.
->
-> Thanks to Eric for the advice how to fix this issue.
->
-> This patch fixes the warning:
-> [  879.562947] WARNING: CPU: 0 PID: 2825 at net/ipv4/tcp_input.c:3078 tcp_ack+0x11f5/0x1380()
-> [  879.567253] CPU: 0 PID: 2825 Comm: socket-tcpbuf-l Not tainted 3.16.0-next-20140811 #1
-> [  879.567829] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [  879.568177]  0000000000000000 00000000c532680c ffff880039643d00 ffffffff817aa2d2
-> [  879.568776]  0000000000000000 ffff880039643d38 ffffffff8109afbd ffff880039d6ba80
-> [  879.569386]  ffff88003a449800 000000002983d6bd 0000000000000000 000000002983d6bc
-> [  879.569982] Call Trace:
-> [  879.570264]  [<ffffffff817aa2d2>] dump_stack+0x4d/0x66
-> [  879.570599]  [<ffffffff8109afbd>] warn_slowpath_common+0x7d/0xa0
-> [  879.570935]  [<ffffffff8109b0ea>] warn_slowpath_null+0x1a/0x20
-> [  879.571292]  [<ffffffff816d0a05>] tcp_ack+0x11f5/0x1380
-> [  879.571614]  [<ffffffff816d10bd>] tcp_rcv_established+0x1ed/0x710
-> [  879.571958]  [<ffffffff816dc9da>] tcp_v4_do_rcv+0x10a/0x370
-> [  879.572315]  [<ffffffff81657459>] release_sock+0x89/0x1d0
-> [  879.572642]  [<ffffffff816c81a0>] do_tcp_setsockopt.isra.36+0x120/0x860
-> [  879.573000]  [<ffffffff8110a52e>] ? rcu_read_lock_held+0x6e/0x80
-> [  879.573352]  [<ffffffff816c8912>] tcp_setsockopt+0x32/0x40
-> [  879.573678]  [<ffffffff81654ac4>] sock_common_setsockopt+0x14/0x20
-> [  879.574031]  [<ffffffff816537b0>] SyS_setsockopt+0x80/0xf0
-> [  879.574393]  [<ffffffff817b40a9>] system_call_fastpath+0x16/0x1b
-> [  879.574730] ---[ end trace a17cbc38eb8c5c00 ]---
->
-> Cc: Eric Dumazet <edumazet@google.com>
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
-> ---
->  include/net/tcp.h |  4 +++-
->  net/ipv4/tcp.c    | 16 +++++++++-------
->  2 files changed, 12 insertions(+), 8 deletions(-)
->
-> diff --git a/include/net/tcp.h b/include/net/tcp.h
-> index dafa1cb..36f5525 100644
-> --- a/include/net/tcp.h
-> +++ b/include/net/tcp.h
-> @@ -705,8 +705,10 @@ struct tcp_skb_cb {
->  #define TCPCB_SACKED_RETRANS   0x02    /* SKB retransmitted            */
->  #define TCPCB_LOST             0x04    /* SKB is lost                  */
->  #define TCPCB_TAGBITS          0x07    /* All tag bits                 */
-> +#define TCPCB_REPAIRED         0x10    /* SKB repaired (no skb_mstamp) */
->  #define TCPCB_EVER_RETRANS     0x80    /* Ever retransmitted frame     */
-> -#define TCPCB_RETRANS          (TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS)
-> +#define TCPCB_RETRANS          (TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS| \
-> +                               TCPCB_REPAIRED)
->
->         __u8            ip_dsfield;     /* IPv4 tos or IPv6 dsfield     */
->         /* 1 byte hole */
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index 181b70e..cb5f548 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -1188,13 +1188,6 @@ new_segment:
->                                         goto wait_for_memory;
->
->                                 /*
-> -                                * All packets are restored as if they have
-> -                                * already been sent.
-> -                                */
-> -                               if (tp->repair)
-> -                                       TCP_SKB_CB(skb)->when = tcp_time_stamp;
-> -
-> -                               /*
->                                  * Check whether we can use HW checksum.
->                                  */
->                                 if (sk->sk_route_caps & NETIF_F_ALL_CSUM)
-> @@ -1203,6 +1196,15 @@ new_segment:
->                                 skb_entail(sk, skb);
->                                 copy = size_goal;
->                                 max = size_goal;
-> +
-> +                               /* All packets are restored as if they have
-> +                                * already been sent. skb_mstamp isn't set to
-> +                                * avoid wrong rtt estimation.
-> +                                */
-> +                               if (tp->repair) {
-> +                                       TCP_SKB_CB(skb)->sacked |= TCPCB_REPAIRED;
-> +                                       TCP_SKB_CB(skb)->when = tcp_time_stamp;
-But this still allow RTT samples from TCP timestamp options even if
-the packet is marked retransmitted/repaired in tcp_ack_update_rtt()?
+Commit-ID:  9a5d9ba6a3631d55c358fe1bdbaa162a97471a05
+Gitweb:     http://git.kernel.org/tip/9a5d9ba6a3631d55c358fe1bdbaa162a97471a05
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Tue, 29 Jul 2014 17:15:11 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 12 Aug 2014 12:48:20 +0200
 
-> +                               }
->                         }
->
->                         /* Try to append data to the end of skb. */
-> --
-> 1.9.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+sched/fair: Allow calculate_imbalance() to move idle cpus
+
+Allow calculate_imbalance() to 'create' idle cpus in the busiest group
+if there are idle cpus in the local group.
+
+Suggested-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20140729152705.GX12054@laptop.lan
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/fair.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9437725..df1ed17 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6273,12 +6273,11 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+ 		return fix_small_imbalance(env, sds);
+ 	}
+ 
+-	if (busiest->group_type == group_overloaded) {
+-		/*
+-		 * Don't want to pull so many tasks that a group would go idle.
+-		 * Except of course for the group_imb case, since then we might
+-		 * have to drop below capacity to reach cpu-load equilibrium.
+-		 */
++	/*
++	 * If there aren't any idle cpus, avoid creating some.
++	 */
++	if (busiest->group_type == group_overloaded &&
++	    local->group_type   == group_overloaded) {
+ 		load_above_capacity =
+ 			(busiest->sum_nr_running - busiest->group_capacity_factor);
+ 
