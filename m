@@ -1,118 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521AbaHLPua (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 11:50:30 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:53031 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaHLPts (ORCPT
+	id S1753678AbaHLPwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 11:52:47 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:37069 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753066AbaHLPwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 11:49:48 -0400
-From: Juri Lelli <juri.lelli@arm.com>
-To: peterz@infradead.org
-Cc: luca.abeni@unitn.it, rdunlap@infradead.org, mingo@redhat.com,
-        henrik@austad.us, raistlin@linux.it, juri.lelli@gmail.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Juri Lelli <juri.lelli@arm.com>
-Subject: [PATCH 4/4] Documentation/scheduler/sched-deadline.txt: add tests suite appendix
-Date: Tue, 12 Aug 2014 16:49:15 +0100
-Message-Id: <1407858555-14371-5-git-send-email-juri.lelli@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1407858555-14371-1-git-send-email-juri.lelli@arm.com>
-References: <1407858555-14371-1-git-send-email-juri.lelli@arm.com>
-X-OriginalArrivalTime: 12 Aug 2014 15:49:44.0095 (UTC) FILETIME=[093BDAF0:01CFB645]
-X-MC-Unique: 114081216494702001
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 12 Aug 2014 11:52:46 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH] timekeeping: Another fix to the VSYSCALL_OLD update_vsyscall
+Date: Tue, 12 Aug 2014 08:52:29 -0700
+Message-Id: <1407858749-15422-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s7CFp3gc014553
 
-Add an appendix briefly describing tools that can be used to test SCHED_DEADLINE
-(and the scheduler in general). Links to where source code of the tools is hosted
-are also provided.
+Benjamin Herrenschmidt pointed out that I firuther missed
+modifying update_vsyscall after the wall_to_mono value was
+changed to a timespec64. This causes issues on powerpc32,
+which expects a 32bit timespec.
 
-Signed-off-by: Juri Lelli <juri.lelli@arm.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+This patch fixes the problem my properly converting from
+a timespec64 to a timespec before passing the value on to
+the arch-specific vsyscall logic.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Henrik Austad <henrik@austad.us>
-Cc: Dario Faggioli <raistlin@linux.it>
-Cc: Juri Lelli <juri.lelli@gmail.com>
-Cc: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- Documentation/scheduler/sched-deadline.txt |   52 ++++++++++++++++++++++++++++
- 1 file changed, 52 insertions(+)
+ kernel/time/timekeeping.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
-index d056034..52eb25f 100644
---- a/Documentation/scheduler/sched-deadline.txt
-+++ b/Documentation/scheduler/sched-deadline.txt
-@@ -15,6 +15,7 @@ CONTENTS
-  5. Tasks CPU affinity
-    5.1 SCHED_DEADLINE and cpusets HOWTO
-  6. Future plans
-+ A. Test suite
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index f36b028..fb4a9c2 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -338,10 +338,11 @@ EXPORT_SYMBOL_GPL(ktime_get_mono_fast_ns);
  
+ static inline void update_vsyscall(struct timekeeper *tk)
+ {
+-	struct timespec xt;
++	struct timespec xt, wm;
  
- 0. WARNING
-@@ -339,3 +340,54 @@ CONTENTS
-  throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
-  the preliminary phases of the merge and we really seek feedback that would
-  help us decide on the direction it should take.
-+
-+Appendix A. Test suite
-+======================
-+
-+ The SCHED_DEADLINE policy can be easily tested using two applications that
-+ are part of a wider Linux Scheduler validation suite. The suite is
-+ available as a GitHub repository: https://github.com/scheduler-tools.
-+
-+ The first testing application is called rt-app and can be used to
-+ start multiple threads with specific parameters. rt-app supports
-+ SCHED_{OTHER,FIFO,RR,DEADLINE} scheduling policies and their related
-+ parameters (e.g., niceness, priority, runtime/deadline/period). rt-app
-+ is a valuable tool, as it can be used to synthetically recreate certain
-+ workloads (maybe mimicking real use-cases) and evaluate how the scheduler
-+ behaves under such workloads. In this way, results are easily reproducible.
-+ rt-app is available at: https://github.com/scheduler-tools/rt-app.
-+
-+ Threads parameters can be specified from command line, with something like
-+ this:
-+
-+  # rt-app -t 100000:10000:d -t 150000:20000:f:10 -D5
-+
-+ What above creates two threads, first one, scheduled by SCHED_DEADLINE,
-+ executes for 10ms every 100ms and second one, scheduled at RT priority 10
-+ with SCHED_FIFO, executes for 20ms every 150ms. The configuration runs
-+ for 5 seconds.
-+
-+ More interestingly, configurations can be described with a json file, that
-+ can be passed as input to rt-app with something like this:
-+
-+  # rt-app my_config.json
-+
-+ The parameters that can be specified with the second method are a superset
-+ of the command line options. Please refer to rt-app documentation for more
-+ details.
-+
-+ The second testing application is a modification of schedtool, called
-+ schedtool-dl, which can be used to setup SCHED_DEADLINE parameters for a
-+ certain pid/application. schedtool-dl is available at:
-+ https://github.com/scheduler-tools/schedtool-dl.git.
-+
-+ The usage is straightforward:
-+
-+  # schedtool -E -t 10000000:100000000 -e ./my_cpuhog_app
-+
-+ With this, my_cpuhog_app is put to run inside a SCHED_DEADLINE reservation
-+ of 10ms every 100ms (note that parameters are expressed in microseconds).
-+ You can also use schedtool to create a reservation for an already running
-+ application, given that you know its pid:
-+
-+  # schedtool -E -t 10000000:100000000 my_app_pid
+ 	xt = timespec64_to_timespec(tk_xtime(tk));
+-	update_vsyscall_old(&xt, &tk->wall_to_monotonic, tk->tkr.clock, tk->tkr.mult,
++	wm = timespec64_to_timespec(tk->wall_to_monotonic);
++	update_vsyscall_old(&xt, &wm, tk->tkr.clock, tk->tkr.mult,
+ 			    tk->tkr.cycle_last);
+ }
+ 
 -- 
-1.7.9.5
-
+1.9.1
 
