@@ -1,82 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471AbaHLUz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 16:55:28 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:53883 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197AbaHLUz1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 16:55:27 -0400
-Date: Tue, 12 Aug 2014 22:55:24 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, acme@kernel.org, mingo@kernel.org,
-        peterz@infradead.org
-Subject: Re: Implement lbr-as-callgraph v9
-Message-ID: <20140812205524.GF4120@two.firstfloor.org>
-References: <1406827029-7991-1-git-send-email-andi@firstfloor.org>
- <20140812135017.GB13247@krava.brq.redhat.com>
+	id S1754707AbaHLVAv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 17:00:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54613 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751884AbaHLVAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 17:00:50 -0400
+Date: Tue, 12 Aug 2014 17:00:45 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Baoquan He <bhe@redhat.com>
+Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/2] take the segment adding out of locate_mem_hole
+ functions
+Message-ID: <20140812210045.GG16961@redhat.com>
+References: <1407821368-2358-1-git-send-email-bhe@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140812135017.GB13247@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1407821368-2358-1-git-send-email-bhe@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 03:50:17PM +0200, Jiri Olsa wrote:
-> On Thu, Jul 31, 2014 at 10:17:00AM -0700, Andi Kleen wrote:
+On Tue, Aug 12, 2014 at 01:29:27PM +0800, Baoquan He wrote:
+> In locate_mem_hole functions, a memory hole is located and added as
+> kexec_segment. But from the name of locate_mem_hole, it should only
+> take responsibility of searching a available memory hole to contain
+> data of a specified size.
 > 
-> SNIP
+> So in this patch add a new field 'mem' into kexec_buf, then take that
+> kexec segment adding code out of locate_mem_hole_top_down and
+> locate_mem_hole_bottom_up. This make clear of the functionality of
+> locate_mem_hole just like it declars to do. And by this
+> locate_mem_hole_callback chould be used later if anyone want to locate
+> a memory hole for other use.
 > 
-> > v5:
-> > - Rename functions
-> > - Fix gtk build problem
-> > - Fix crash without -g
-> > - Improve error messages
-> > - Improve srcline display in various ways
-> > v6:
-> > - Port to latest perf/core
-> > v7:
-> > - Really port to latest perf/core
-> > v8:
-> > - Rebased on 3.16-rc1
-> > v9: 
-> > - Forward ported to latest tip/perf/core
-> > 
-> > Example output:
-> > 
-> >     % perf record -b -g ./tsrc/tcall
+> Signed-off-by: Baoquan He <bhe@redhat.com>
+> ---
+>  include/linux/kexec.h | 1 +
+>  kernel/kexec.c        | 9 +++++----
+>  2 files changed, 6 insertions(+), 4 deletions(-)
 > 
-> Why do we need the '-g' in here.. '-b' should be enough right?
-> I saw u fill the rest of the backtrace with callchain
-> data (if needed), but thats not necessary right?
+> diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+> index 4b2a0e1..9d957b7 100644
+> --- a/include/linux/kexec.h
+> +++ b/include/linux/kexec.h
+> @@ -178,6 +178,7 @@ struct kexec_buf {
+>  	struct kimage *image;
+>  	char *buffer;
+>  	unsigned long bufsz;
+> +	unsigned long mem;
+>  	unsigned long memsz;
+>  	unsigned long buf_align;
+>  	unsigned long buf_min;
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 0b49a0a..586444e 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -2054,8 +2054,7 @@ static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
+>  	} while (1);
+>  
+>  	/* If we are here, we found a suitable memory range */
+> -	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start, > -			    kbuf->memsz);
+> +	kbuf->mem = temp_start;
+>  
+>  	/* Success, stop navigating through remaining System RAM ranges */
+>  	return 1;
+> @@ -2089,8 +2088,7 @@ static int locate_mem_hole_bottom_up(unsigned long start, unsigned long end,
+>  	} while (1);
+>  
+>  	/* If we are here, we found a suitable memory range */
+> -	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, temp_start,
+> -			    kbuf->memsz);
+> +	kbuf->mem = temp_start;
+>  
+>  	/* Success, stop navigating through remaining System RAM ranges */
+>  	return 1;
+> @@ -2176,6 +2174,9 @@ int kexec_add_buffer(struct kimage *image, char *buffer, unsigned long bufsz,
+>  		return -EADDRNOTAVAIL;
+>  	}
+>  
+> +	__kexec_add_segment(image, kbuf->buffer, kbuf->bufsz, kbuf->mem,
+> +			    kbuf->memsz);
+> +
 
-Right now the callgraph processing needs -g to enable itself.
-I didn't try to fix it so far because we likely use -g in these
-situations where --branch-history is useful.
+I think let us open code this function then. That way we have to
+retreive ksegment pointer once and it is easy to read.
 
-If you think it's important it could be fixed I think.
+  	/* Found a suitable memory range */
+	ksegment = &image->segment[image->nr_segments];
+        ksegment->kbuf = kbuf->buffer;
+        ksegment->bufsz = kbuf->bufsz;
+        ksegment->mem = kbuf->mem;
+        ksegment->memsz = kbuf->memsz;
+        image->nr_segments++;
+	*load_addr = ksegment->mem;
 
-> 
-> 
-> >     [ perf record: Woken up 1 times to write data ]
-> >     [ perf record: Captured and wrote 0.044 MB perf.data (~1923 samples) ]
-> >     % perf report --branch-history
-> 
-> When I captured data like you above and run pure 'perf report'
-> I did not get callchains displayed at all.
-> 
-> Also using 'perf report --branch-history' enables filename:line
-> suffix for callchain regardless of using '-b' for data capture
+>  	/* Found a suitable memory range */
+>  	ksegment = &image->segment[image->nr_segments - 1];
+>  	*load_addr = ksegment->mem;
 
-That's fine isn't it? If the user specifies that option
-they should have used -b.
+If possible, can you hold on to your cleanup patches for a bit. I want
+to post some patches to introduce a config option for new syscall and
+they will need to go in sooner. You can rebase your patches on top of
+that.
 
-Or do you mean it should only do it for branch entries?
-Right now the callgraph code doesn't distinguish between branch
-entry and callgraph entry, so it can't know. 
-
--Andi
+Thanks
+Vivek
