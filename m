@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856AbaHLJUZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 05:20:25 -0400
-Received: from 8bytes.org ([81.169.241.247]:58887 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457AbaHLJUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 05:20:22 -0400
-Date: Tue, 12 Aug 2014 11:20:19 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: iommu@lists.linux-foundation.org, kvm@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        ddutile <ddutile@redhat.com>, Jerome Glisse <j.glisse@gmail.com>
-Subject: LPC IOMMU and VFIO MicroConference - Call for Participation
-Message-ID: <20140812092019.GY9809@8bytes.org>
+	id S1754894AbaHLJVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 05:21:00 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:45834 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551AbaHLJU6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 05:20:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <x49a97apxf6.fsf@segfault.boston.devel.redhat.com>
+References: <x49a97apxf6.fsf@segfault.boston.devel.redhat.com>
+Date: Tue, 12 Aug 2014 11:20:56 +0200
+X-Google-Sender-Auth: UT8uf2LKpuI06r5sbdE53HNsOEM
+Message-ID: <CAMuHMdWRsxFt+J0JufFtbUGFJeCncD99K6J538QJzhrxfHPXrg@mail.gmail.com>
+Subject: Re: [patch] skd: add build dependency on HARDIRQ
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@fb.com>, Akhil.Bhansali@hgst.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LPC IOMMU and VFIO MicroConference - Call for Participation
-===========================================================
+Hi Jeff,
 
-We are pleased to announce that this year there will be the first IOMMU
-and VFIO MicroConference held at Linux Plumbers Conference in
-Düsseldorf. An initial request for support of this micro conference
-generated, among others, the following possible topic ideas:
+On Mon, Aug 11, 2014 at 10:46 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> This driver won't build on architectures without generic hardirq
+> support.
+>
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+>
+> diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+> index 014a1cf..f3a5300 100644
+> --- a/drivers/block/Kconfig
+> +++ b/drivers/block/Kconfig
+> @@ -325,6 +325,7 @@ config BLK_DEV_SKD
+>         tristate "STEC S1120 Block Driver"
+>         depends on PCI
+>         depends on 64BIT
+> +       depends on GENERIC_HARDIRQS
+>         ---help---
+>         Saying Y or M here will enable support for the
+>         STEC, Inc. S1120 PCIe SSD.
 
-	* Improving generic IOMMU code and move code out of drivers
-	* IOMMU device error handling
-	* IOMMU Power Management
-	* Virtualizing IOMMUs
-	* Interface between IOMMUs an memory management
+Which kernel version does this apply to?
 
-More suggested topics can be found at the wiki page of the micro
-conference:
+GENERIC_HARDIRQS was removed in
+commit 0244ad004a54e39308d495fee0a2e637f8b5c317
+Author: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Date:   Fri Aug 30 09:39:53 2013 +0200
 
-	http://wiki.linuxplumbersconf.org/2014:iommu_microconference
+    Remove GENERIC_HARDIRQ config option
 
-We now ask for formal proposals for these discussions along with any
-other topics or problems that need to be discussed in this area.
+    After the last architecture switched to generic hard irqs the config
+    options HAVE_GENERIC_HARDIRQS & GENERIC_HARDIRQS and the related code
+    for !CONFIG_GENERIC_HARDIRQS can be removed.
 
-The format of the micro conference will be roughly half-hour slots for
-each topic, where the discussion lead gives a short introduction to the
-problem and maybe sketches possible solutions. The rest of the slot is
-open for discussions so that we come to an agreement how to move
-forward.
+    Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-Please submit your formal proposal on the Linux Plumbers website (OpenID
-login required) until August 31st at:
+after it became supported by all architectures.
 
-	http://www.linuxplumbersconf.org/2014/how-to-submit-microconference-discussions-topics/
+Gr{oetje,eeting}s,
 
-Hope to see you in Düsseldorf!
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-	Joerg Roedel and Alex Williamson
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
