@@ -1,277 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073AbaHLQWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 12:22:07 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:48039 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214AbaHLQWF (ORCPT
+	id S1753745AbaHLQWd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 12:22:33 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:26865 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214AbaHLQWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 12:22:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1405917465-18185-3-git-send-email-apelete@seketeli.net>
-References: <1405917465-18185-1-git-send-email-apelete@seketeli.net>
-	<1405917465-18185-3-git-send-email-apelete@seketeli.net>
-Date: Tue, 12 Aug 2014 18:22:04 +0200
-Message-ID: <CAPDyKFo4q+YWDgezZPqAHet0sBPE5WvnZzm00MHdf-+jZAY93Q@mail.gmail.com>
-Subject: Re: [PATCH v6 2/2] mmc: jz4740: prepare next dma transfer in parallel
- with current transfer
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Apelete Seketeli <apelete@seketeli.net>
-Cc: Chris Ball <chris@printf.net>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Alex Smith <alex.smith@imgtec.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 12 Aug 2014 12:22:31 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-7c-53ea3f45ced7
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Hans de Goede <hdegoede@redhat.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ata: remove deprecated struct ahci_platform_data
+Date: Tue, 12 Aug 2014 18:22:27 +0200
+Message-id: <4376282.p3rdI3v8uT@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t9jAV1X+1fBBnvnSlm8OT6dyeLYjkdM
+	Fpd3zWGz+LX8KKMDi8emVZ1sHu/3XWXz+LxJLoA5issmJTUnsyy1SN8ugStj9/+pbAXNKhUH
+	et6wNTA+le1i5OCQEDCR2PlQsouRE8gUk7hwbz1bFyMXh5DAIkaJhbcvMkI4LUwS05p3soBU
+	sQlYSUxsX8UIYosIyEpcmfYQzGYWSJJo61vFCjJUWMBR4uabeJAwi4CqROeeOUwgNq+ApsTz
+	n12sILaogKfEju0r2SDighI/Jt9jgRgjL7Fv/1RWCFtLYv3O40wTGPlmISmbhaRsFpKyBYzM
+	qxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCA/CZ1A7GlQ0WhxgFOBiVeHgreF8FC7EmlhVX
+	5h5ilOBgVhLhXawHFOJNSaysSi3Kjy8qzUktPsQozcGiJM57oNU6UEggPbEkNTs1tSC1CCbL
+	xMEp1cA4l3mx2EOmDzGX/ObmVkx+9/cp24H8vTvvzec4vDRyV6qSypbjbi+ff3yyp/XIwZIg
+	I2WFYp8liTk83oIPauZM8vvobxo/xeu3Ucobp/+azMyf1MNTVeaUnXun8Drx6P/4Hady1zsE
+	bgqMueTbYyaTtO9jRQyP2OVSm47VL49YNYl5HZn/OuCvEktxRqKhFnNRcSIAIuT7/jwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 July 2014 06:37, Apelete Seketeli <apelete@seketeli.net> wrote:
-> Make use of the MMC asynchronous request capability to prepare the
-> next DMA transfer request in parallel with the current transfer.
-> This is done by adding pre-request and post-request callbacks that are
-> used by the MMC framework during an active data transfer.
->
-> It should help reduce the impact of DMA preparation overhead on the SD
-> card performance.
->
-> Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
+The last user of the deprecated struct ahci_platform_data has been
+cleaned up recently (SPEAr1340 got a proper PHY driver).
 
-Thanks! Queued for 3.18.
+Cc: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+---
+ drivers/ata/ahci_platform.c    | 18 +-----------------
+ drivers/ata/libahci_platform.c | 23 -----------------------
+ include/linux/ahci_platform.h  | 13 -------------
+ 3 files changed, 1 insertion(+), 53 deletions(-)
 
-Kind regards
-Uffe
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index f61ddb9..06f1d59 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -32,7 +32,6 @@ static const struct ata_port_info ahci_port_info = {
+ static int ahci_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+-	struct ahci_platform_data *pdata = dev_get_platdata(dev);
+ 	struct ahci_host_priv *hpriv;
+ 	int rc;
+ 
+@@ -44,29 +43,14 @@ static int ahci_probe(struct platform_device *pdev)
+ 	if (rc)
+ 		return rc;
+ 
+-	/*
+-	 * Some platforms might need to prepare for mmio region access,
+-	 * which could be done in the following init call. So, the mmio
+-	 * region shouldn't be accessed before init (if provided) has
+-	 * returned successfully.
+-	 */
+-	if (pdata && pdata->init) {
+-		rc = pdata->init(dev, hpriv->mmio);
+-		if (rc)
+-			goto disable_resources;
+-	}
+-
+ 	if (of_device_is_compatible(dev->of_node, "hisilicon,hisi-ahci"))
+ 		hpriv->flags |= AHCI_HFLAG_NO_FBS | AHCI_HFLAG_NO_NCQ;
+ 
+ 	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info);
+ 	if (rc)
+-		goto pdata_exit;
++		goto disable_resources;
+ 
+ 	return 0;
+-pdata_exit:
+-	if (pdata && pdata->exit)
+-		pdata->exit(dev);
+ disable_resources:
+ 	ahci_platform_disable_resources(hpriv);
+ 	return rc;
+diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
+index 5b92c29..c0510de 100644
+--- a/drivers/ata/libahci_platform.c
++++ b/drivers/ata/libahci_platform.c
+@@ -502,13 +502,8 @@ EXPORT_SYMBOL_GPL(ahci_platform_init_host);
+ 
+ static void ahci_host_stop(struct ata_host *host)
+ {
+-	struct device *dev = host->dev;
+-	struct ahci_platform_data *pdata = dev_get_platdata(dev);
+ 	struct ahci_host_priv *hpriv = host->private_data;
+ 
+-	if (pdata && pdata->exit)
+-		pdata->exit(dev);
+-
+ 	ahci_platform_disable_resources(hpriv);
+ }
+ 
+@@ -592,7 +587,6 @@ EXPORT_SYMBOL_GPL(ahci_platform_resume_host);
+  */
+ int ahci_platform_suspend(struct device *dev)
+ {
+-	struct ahci_platform_data *pdata = dev_get_platdata(dev);
+ 	struct ata_host *host = dev_get_drvdata(dev);
+ 	struct ahci_host_priv *hpriv = host->private_data;
+ 	int rc;
+@@ -601,19 +595,9 @@ int ahci_platform_suspend(struct device *dev)
+ 	if (rc)
+ 		return rc;
+ 
+-	if (pdata && pdata->suspend) {
+-		rc = pdata->suspend(dev);
+-		if (rc)
+-			goto resume_host;
+-	}
+-
+ 	ahci_platform_disable_resources(hpriv);
+ 
+ 	return 0;
+-
+-resume_host:
+-	ahci_platform_resume_host(dev);
+-	return rc;
+ }
+ EXPORT_SYMBOL_GPL(ahci_platform_suspend);
+ 
+@@ -629,7 +613,6 @@ EXPORT_SYMBOL_GPL(ahci_platform_suspend);
+  */
+ int ahci_platform_resume(struct device *dev)
+ {
+-	struct ahci_platform_data *pdata = dev_get_platdata(dev);
+ 	struct ata_host *host = dev_get_drvdata(dev);
+ 	struct ahci_host_priv *hpriv = host->private_data;
+ 	int rc;
+@@ -638,12 +621,6 @@ int ahci_platform_resume(struct device *dev)
+ 	if (rc)
+ 		return rc;
+ 
+-	if (pdata && pdata->resume) {
+-		rc = pdata->resume(dev);
+-		if (rc)
+-			goto disable_resources;
+-	}
+-
+ 	rc = ahci_platform_resume_host(dev);
+ 	if (rc)
+ 		goto disable_resources;
+diff --git a/include/linux/ahci_platform.h b/include/linux/ahci_platform.h
+index 09a947e..642d6ae 100644
+--- a/include/linux/ahci_platform.h
++++ b/include/linux/ahci_platform.h
+@@ -22,19 +22,6 @@ struct ata_port_info;
+ struct ahci_host_priv;
+ struct platform_device;
+ 
+-/*
+- * Note ahci_platform_data is deprecated, it is only kept around for use
+- * by the old da850 and spear13xx ahci code.
+- * New drivers should instead declare their own platform_driver struct, and
+- * use ahci_platform* functions in their own probe, suspend and resume methods.
+- */
+-struct ahci_platform_data {
+-	int (*init)(struct device *dev, void __iomem *addr);
+-	void (*exit)(struct device *dev);
+-	int (*suspend)(struct device *dev);
+-	int (*resume)(struct device *dev);
+-};
+-
+ int ahci_platform_enable_clks(struct ahci_host_priv *hpriv);
+ void ahci_platform_disable_clks(struct ahci_host_priv *hpriv);
+ int ahci_platform_enable_resources(struct ahci_host_priv *hpriv);
+-- 
+1.8.2.3
 
 
-> ---
->  drivers/mmc/host/jz4740_mmc.c |  138 ++++++++++++++++++++++++++++++++++-------
->  1 file changed, 116 insertions(+), 22 deletions(-)
->
-> diff --git a/drivers/mmc/host/jz4740_mmc.c b/drivers/mmc/host/jz4740_mmc.c
-> index 049b133..14738cd 100644
-> --- a/drivers/mmc/host/jz4740_mmc.c
-> +++ b/drivers/mmc/host/jz4740_mmc.c
-> @@ -114,6 +114,11 @@ enum jz4740_mmc_state {
->         JZ4740_MMC_STATE_DONE,
->  };
->
-> +struct jz4740_mmc_host_next {
-> +       int sg_len;
-> +       s32 cookie;
-> +};
-> +
->  struct jz4740_mmc_host {
->         struct mmc_host *mmc;
->         struct platform_device *pdev;
-> @@ -143,6 +148,7 @@ struct jz4740_mmc_host {
->         /* DMA support */
->         struct dma_chan *dma_rx;
->         struct dma_chan *dma_tx;
-> +       struct jz4740_mmc_host_next next_data;
->         bool use_dma;
->         int sg_len;
->
-> @@ -184,6 +190,9 @@ static int jz4740_mmc_acquire_dma_channels(struct jz4740_mmc_host *host)
->                 goto free_master_write;
->         }
->
-> +       /* Initialize DMA pre request cookie */
-> +       host->next_data.cookie = 1;
-> +
->         return 0;
->
->  free_master_write:
-> @@ -196,23 +205,72 @@ static inline int jz4740_mmc_get_dma_dir(struct mmc_data *data)
->         return (data->flags & MMC_DATA_READ) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
->  }
->
-> +static inline struct dma_chan *jz4740_mmc_get_dma_chan(struct jz4740_mmc_host *host,
-> +                                                      struct mmc_data *data)
-> +{
-> +       return (data->flags & MMC_DATA_READ) ? host->dma_rx : host->dma_tx;
-> +}
-> +
->  static void jz4740_mmc_dma_unmap(struct jz4740_mmc_host *host,
->                                  struct mmc_data *data)
->  {
-> -       struct dma_chan *chan;
-> +       struct dma_chan *chan = jz4740_mmc_get_dma_chan(host, data);
->         enum dma_data_direction dir = jz4740_mmc_get_dma_dir(data);
->
-> -       if (dir == DMA_TO_DEVICE)
-> -               chan = host->dma_tx;
-> -       else
-> -               chan = host->dma_rx;
-> -
->         dma_unmap_sg(chan->device->dev, data->sg, data->sg_len, dir);
->  }
->
-> +/* Prepares DMA data for current/next transfer, returns non-zero on failure */
-> +static int jz4740_mmc_prepare_dma_data(struct jz4740_mmc_host *host,
-> +                                      struct mmc_data *data,
-> +                                      struct jz4740_mmc_host_next *next,
-> +                                      struct dma_chan *chan)
-> +{
-> +       struct jz4740_mmc_host_next *next_data = &host->next_data;
-> +       enum dma_data_direction dir = jz4740_mmc_get_dma_dir(data);
-> +       int sg_len;
-> +
-> +       if (!next && data->host_cookie &&
-> +           data->host_cookie != host->next_data.cookie) {
-> +               dev_warn(mmc_dev(host->mmc),
-> +                        "[%s] invalid cookie: data->host_cookie %d host->next_data.cookie %d\n",
-> +                        __func__,
-> +                        data->host_cookie,
-> +                        host->next_data.cookie);
-> +               data->host_cookie = 0;
-> +       }
-> +
-> +       /* Check if next job is already prepared */
-> +       if (next || data->host_cookie != host->next_data.cookie) {
-> +               sg_len = dma_map_sg(chan->device->dev,
-> +                                   data->sg,
-> +                                   data->sg_len,
-> +                                   dir);
-> +
-> +       } else {
-> +               sg_len = next_data->sg_len;
-> +               next_data->sg_len = 0;
-> +       }
-> +
-> +       if (sg_len <= 0) {
-> +               dev_err(mmc_dev(host->mmc),
-> +                       "Failed to map scatterlist for DMA operation\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       if (next) {
-> +               next->sg_len = sg_len;
-> +               data->host_cookie = ++next->cookie < 0 ? 1 : next->cookie;
-> +       } else
-> +               host->sg_len = sg_len;
-> +
-> +       return 0;
-> +}
-> +
->  static int jz4740_mmc_start_dma_transfer(struct jz4740_mmc_host *host,
->                                          struct mmc_data *data)
->  {
-> +       int ret;
->         struct dma_chan *chan;
->         struct dma_async_tx_descriptor *desc;
->         struct dma_slave_config conf = {
-> @@ -221,9 +279,8 @@ static int jz4740_mmc_start_dma_transfer(struct jz4740_mmc_host *host,
->                 .src_maxburst = JZ4740_MMC_FIFO_HALF_SIZE,
->                 .dst_maxburst = JZ4740_MMC_FIFO_HALF_SIZE,
->         };
-> -       enum dma_data_direction dir = jz4740_mmc_get_dma_dir(data);
->
-> -       if (dir == DMA_TO_DEVICE) {
-> +       if (data->flags & MMC_DATA_WRITE) {
->                 conf.direction = DMA_MEM_TO_DEV;
->                 conf.dst_addr = host->mem_res->start + JZ_REG_MMC_TXFIFO;
->                 conf.slave_id = JZ4740_DMA_TYPE_MMC_TRANSMIT;
-> @@ -235,16 +292,9 @@ static int jz4740_mmc_start_dma_transfer(struct jz4740_mmc_host *host,
->                 chan = host->dma_rx;
->         }
->
-> -       host->sg_len = dma_map_sg(chan->device->dev,
-> -                                 data->sg,
-> -                                 data->sg_len,
-> -                                 dir);
-> -
-> -       if (host->sg_len == 0) {
-> -               dev_err(mmc_dev(host->mmc),
-> -                       "Failed to map scatterlist for DMA operation\n");
-> -               return -EINVAL;
-> -       }
-> +       ret = jz4740_mmc_prepare_dma_data(host, data, NULL, chan);
-> +       if (ret)
-> +               return ret;
->
->         dmaengine_slave_config(chan, &conf);
->         desc = dmaengine_prep_slave_sg(chan,
-> @@ -269,6 +319,43 @@ dma_unmap:
->         return -ENOMEM;
->  }
->
-> +static void jz4740_mmc_pre_request(struct mmc_host *mmc,
-> +                                  struct mmc_request *mrq,
-> +                                  bool is_first_req)
-> +{
-> +       struct jz4740_mmc_host *host = mmc_priv(mmc);
-> +       struct mmc_data *data = mrq->data;
-> +       struct jz4740_mmc_host_next *next_data = &host->next_data;
-> +
-> +       BUG_ON(data->host_cookie);
-> +
-> +       if (host->use_dma) {
-> +               struct dma_chan *chan = jz4740_mmc_get_dma_chan(host, data);
-> +
-> +               if (jz4740_mmc_prepare_dma_data(host, data, next_data, chan))
-> +                       data->host_cookie = 0;
-> +       }
-> +}
-> +
-> +static void jz4740_mmc_post_request(struct mmc_host *mmc,
-> +                                   struct mmc_request *mrq,
-> +                                   int err)
-> +{
-> +       struct jz4740_mmc_host *host = mmc_priv(mmc);
-> +       struct mmc_data *data = mrq->data;
-> +
-> +       if (host->use_dma && data->host_cookie) {
-> +               jz4740_mmc_dma_unmap(host, data);
-> +               data->host_cookie = 0;
-> +       }
-> +
-> +       if (err) {
-> +               struct dma_chan *chan = jz4740_mmc_get_dma_chan(host, data);
-> +
-> +               dmaengine_terminate_all(chan);
-> +       }
-> +}
-> +
->  /*----------------------------------------------------------------------------*/
->
->  static void jz4740_mmc_set_irq_enabled(struct jz4740_mmc_host *host,
-> @@ -627,14 +714,19 @@ static irqreturn_t jz_mmc_irq_worker(int irq, void *devid)
->
->         case JZ4740_MMC_STATE_TRANSFER_DATA:
->                 if (host->use_dma) {
-> -                       /* Use DMA if enabled, data transfer direction was
-> -                        * defined  before in jz_mmc_prepare_data_transfer().
-> +                       /* Use DMA if enabled.
-> +                        * Data transfer direction is defined later by
-> +                        * relying on data flags in
-> +                        * jz4740_mmc_prepare_dma_data() and
-> +                        * jz4740_mmc_start_dma_transfer().
->                          */
->                         timeout = jz4740_mmc_start_dma_transfer(host, data);
->                         data->bytes_xfered = data->blocks * data->blksz;
->                 } else if (data->flags & MMC_DATA_READ)
-> -                       /* If DMA is not enabled, rely on data flags
-> -                        * to establish data transfer direction.
-> +                       /* Use PIO if DMA is not enabled.
-> +                        * Data transfer direction was defined before
-> +                        * by relying on data flags in
-> +                        * jz_mmc_prepare_data_transfer().
->                          */
->                         timeout = jz4740_mmc_read_data(host, data);
->                 else
-> @@ -809,6 +901,8 @@ static void jz4740_mmc_enable_sdio_irq(struct mmc_host *mmc, int enable)
->
->  static const struct mmc_host_ops jz4740_mmc_ops = {
->         .request        = jz4740_mmc_request,
-> +       .pre_req        = jz4740_mmc_pre_request,
-> +       .post_req       = jz4740_mmc_post_request,
->         .set_ios        = jz4740_mmc_set_ios,
->         .get_ro         = mmc_gpio_get_ro,
->         .get_cd         = mmc_gpio_get_cd,
-> --
-> 1.7.10.4
->
