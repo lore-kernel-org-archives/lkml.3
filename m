@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556AbaHLPub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 11:50:31 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:52962 "EHLO
+	id S1753521AbaHLPua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 11:50:30 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:53031 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258AbaHLPts convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753300AbaHLPts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Aug 2014 11:49:48 -0400
 From: Juri Lelli <juri.lelli@arm.com>
@@ -13,31 +13,25 @@ Cc: luca.abeni@unitn.it, rdunlap@infradead.org, mingo@redhat.com,
         henrik@austad.us, raistlin@linux.it, juri.lelli@gmail.com,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Juri Lelli <juri.lelli@arm.com>
-Subject: =?UTF-8?q?=5BPATCH=203/4=5D=20Documentation/scheduler/sched-deadline=2Etxt=3A=20improve=20and=20clarify=20AC=20bits?=
-Date: Tue, 12 Aug 2014 16:49:14 +0100
-Message-Id: <1407858555-14371-4-git-send-email-juri.lelli@arm.com>
+Subject: [PATCH 4/4] Documentation/scheduler/sched-deadline.txt: add tests suite appendix
+Date: Tue, 12 Aug 2014 16:49:15 +0100
+Message-Id: <1407858555-14371-5-git-send-email-juri.lelli@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1407858555-14371-1-git-send-email-juri.lelli@arm.com>
 References: <1407858555-14371-1-git-send-email-juri.lelli@arm.com>
-MIME-Version: 1.0
-X-OriginalArrivalTime: 12 Aug 2014 15:49:43.0548 (UTC) FILETIME=[08E863C0:01CFB645]
-X-MC-Unique: 114081216494622801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 12 Aug 2014 15:49:44.0095 (UTC) FILETIME=[093BDAF0:01CFB645]
+X-MC-Unique: 114081216494702001
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s7CFp3gc014553
 
-From: Luca Abeni <luca.abeni@unitn.it>
+Add an appendix briefly describing tools that can be used to test SCHED_DEADLINE
+(and the scheduler in general). Links to where source code of the tools is hosted
+are also provided.
 
-Admission control is of key importance for SCHED_DEADLINE, since it guarantees
-system schedulability (or tells us something about the degree of guarantees
-we can provide to the user).
-
-This patch improves and clarifies bits and pieces regarding AC, both for UP
-and SMP systems.
-
-Signed-off-by: Luca Abeni <luca.abeni@unitn.it>
 Signed-off-by: Juri Lelli <juri.lelli@arm.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -48,134 +42,76 @@ Cc: Juri Lelli <juri.lelli@gmail.com>
 Cc: linux-doc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- Documentation/scheduler/sched-deadline.txt |   87 +++++++++++++++++++++++-----
- 1 file changed, 73 insertions(+), 14 deletions(-)
+ Documentation/scheduler/sched-deadline.txt |   52 ++++++++++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
 
 diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
-index 4acba51..d056034 100644
+index d056034..52eb25f 100644
 --- a/Documentation/scheduler/sched-deadline.txt
 +++ b/Documentation/scheduler/sched-deadline.txt
-@@ -38,16 +38,17 @@ CONTENTS
- ==================
+@@ -15,6 +15,7 @@ CONTENTS
+  5. Tasks CPU affinity
+    5.1 SCHED_DEADLINE and cpusets HOWTO
+  6. Future plans
++ A. Test suite
  
-  SCHED_DEADLINE uses three parameters, named "runtime", "period", and
-- "deadline" to schedule tasks. A SCHED_DEADLINE task is guaranteed to receive
-+ "deadline" to schedule tasks. A SCHED_DEADLINE task should receive
-  "runtime" microseconds of execution time every "period" microseconds, and
-  these "runtime" microseconds are available within "deadline" microseconds
-  from the beginning of the period.  In order to implement this behaviour,
-  every time the task wakes up, the scheduler computes a "scheduling deadline"
-  consistent with the guarantee (using the CBS[2,3] algorithm). Tasks are then
-  scheduled using EDF[1] on these scheduling deadlines (the task with the
-- closest scheduling deadline is selected for execution). Notice that this
-- guaranteed is respected if a proper "admission control" strategy (see Section
-- "4. Bandwidth management") is used.
-+ closest scheduling deadline is selected for execution). Notice that the
-+ task actually receives "runtime" time units within "deadline" if a proper
-+ "admission control" strategy (see Section "4. Bandwidth management") is used
-+ (clearly, if the system is overloaded this guarantee cannot be respected).
  
-  Summing up, the CBS[2,3] algorithms assigns scheduling deadlines to tasks so
-  that each task runs for at most its runtime every period, avoiding any
-@@ -134,6 +135,48 @@ CONTENTS
-  A real-time task can be periodic with period P if r_{j+1} = r_j + P, or
-  sporadic with minimum inter-arrival time P is r_{j+1} >= r_j + P. Finally,
-  d_j = r_j + D, where D is the task's relative deadline.
-+ The utilisation of a real-time task is defined as the ratio between its
-+ wcet and its period (or minimum inter-arrival time), and represents
-+ the fraction of CPU time needed to execute the task.
+ 0. WARNING
+@@ -339,3 +340,54 @@ CONTENTS
+  throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
+  the preliminary phases of the merge and we really seek feedback that would
+  help us decide on the direction it should take.
 +
-+ If the total utilisation sum_i(WCET_i/P_i) (sum of the utilisations
-+ WCET_i/P_i of all the tasks in the system - notice that when considering
-+ multiple tasks, the parameters of the i-th one are indicated with the "_i"
-+ suffix) is larger than M (with M equal to the number of CPUs), then the
-+ system will surely not be able to respect all of the deadlines, and no
-+ execution time is guaranteed for non real-time tasks, which risk to be
-+ starved by real-time tasks.
-+ If, instead, the total utilisation is smaller than M, then non real-time
-+ tasks will not be starved and the system might be able to respect all the
-+ deadlines.
-+ As a matter of fact, in this case it is possible to provide an upper bound
-+ for the tardiness (defined as the maximum between 0 and the difference
-+ between the finishing time of a job and its absolute deadline).
-+ More precisely, it can be proved that using a global EDF scheduler the
-+ maximum tardiness of each task is smaller or equal than
-+	((M − 1) · WCET_max − WCET_min)/(M − (M − 2) · U_max) + WCET_max
-+ where WCET_max = max_i{WCET_i} is the maximum WCET, WCET_min=min_i{WCET_i}
-+ is the minimum WCET, and U_max = max_i{WCET_i/P_i} is the maximum utilisation.
++Appendix A. Test suite
++======================
 +
-+ If M=1 (uniprocessor system), or in case of partitioned scheduling (each
-+ real-time task is statically assigned to one and only one CPU), then it is
-+ possible to formally check if all the deadlines are respected.
-+ If D_i = P_i for all tasks, then EDF is able to respect all the deadlines
-+ of all the tasks executing on a CPU if and only if the total utilisation
-+ of the tasks running on such a CPU is smaller or equal than 1.
-+ If D_i != P_i for some task, then it is possible to define the density of
-+ a task as C_i/min{D_i,T_i}, and EDF is able to respect all of the deadlines
-+ of all the tasks running on a CPU if the sum sum_i C_i/min{D_i,T_i} of the
-+ densities of the tasks running on such a CPU is smaller or equal than 1
-+ (notice that this condition is only sufficient, and not necessary).
++ The SCHED_DEADLINE policy can be easily tested using two applications that
++ are part of a wider Linux Scheduler validation suite. The suite is
++ available as a GitHub repository: https://github.com/scheduler-tools.
 +
-+ On multiprocessor systems with global EDF scheduling (non partitioned
-+ systems), a sufficient test for schedulability can not be based on the
-+ utilisations (it can be shown that task sets with utilisations slightly
-+ larger than 1 can miss deadlines regardless of the number of CPUs M).
-+ However, as previously stated enforcing that the total utilisation is smaller
-+ than M is enough to guarantee that non real-time tasks are not starved and
-+ the real-time tasks tardiness has an upper bound.
- 
-  SCHED_DEADLINE can be used to schedule real-time tasks guaranteeing that
-  the jobs' deadlines of a task are respected. In order to do this, a task
-@@ -163,14 +206,22 @@ CONTENTS
- 4. Bandwidth management
- =======================
- 
-- In order for the -deadline scheduling to be effective and useful, it is
-- important to have some method to keep the allocation of the available CPU
-- bandwidth to the tasks under control. This is usually called "admission
-- control" and if it is not performed at all, no guarantee can be given on
-- the actual scheduling of the -deadline tasks.
--
-- The interface used to control the fraction of CPU bandwidth that can be
-- allocated to -deadline tasks is similar to the one already used for -rt
-+ As previously mentioned, in order for the -deadline scheduling to be
-+ effective and useful (that is, to be able to provide "runtime" time units
-+ within "deadline), it is important to have some method to keep the allocation
-+ of the available fractions of CPU time to the various tasks under control.
-+ This is usually called "admission control" and if it is not performed, then
-+ no guarantee can be given on the actual scheduling of the -deadline tasks.
++ The first testing application is called rt-app and can be used to
++ start multiple threads with specific parameters. rt-app supports
++ SCHED_{OTHER,FIFO,RR,DEADLINE} scheduling policies and their related
++ parameters (e.g., niceness, priority, runtime/deadline/period). rt-app
++ is a valuable tool, as it can be used to synthetically recreate certain
++ workloads (maybe mimicking real use-cases) and evaluate how the scheduler
++ behaves under such workloads. In this way, results are easily reproducible.
++ rt-app is available at: https://github.com/scheduler-tools/rt-app.
 +
-+ As already stated in Section 3, a necessary condition to be respected to
-+ correctly schedule a set of real-time tasks is that the total utilisation
-+ is smaller than M. When talking about -deadline tasks, this requires to
-+ impose that the sum of the ratio between runtime and period for all tasks
-+ is smaller than M. Notice that the ratio runtime/period is equivalent to
-+ the utilisation of a "traditional" real-time task, and is also often
-+ referred as "bandwidth".
-+ The interface used to control the CPU bandwidth that can be allocated
-+ to -deadline tasks is similar to the one already used for -rt
-  tasks with real-time group scheduling (a.k.a. RT-throttling - see
-  Documentation/scheduler/sched-rt-group.txt), and is based on readable/
-  writable control files located in procfs (for system wide settings).
-@@ -232,8 +283,16 @@ CONTENTS
-  950000. With rt_period equal to 1000000, by default, it means that -deadline
-  tasks can use at most 95%, multiplied by the number of CPUs that compose the
-  root_domain, for each root_domain.
--
-- A -deadline task cannot fork.
-+ This means that non -deadline tasks will receive at least 5% of the CPU time,
-+ and that -deadline tasks will receive their runtime with a guaranteed
-+ worst-case delay respect to the "deadline" parameter. If "deadline" = "period"
-+ and the cpuset mechanism is used to implement partitioned scheduling (see
-+ Section 5), then this simple setting of the bandwidth management is able to
-+ deterministically guarantee that -deadline tasks will receive their runtime
-+ in a period.
++ Threads parameters can be specified from command line, with something like
++ this:
 +
-+ Finally, notice that in order not to jeopardize this admission control a
-+ -deadline task cannot fork.
- 
- 5. Tasks CPU affinity
- =====================
++  # rt-app -t 100000:10000:d -t 150000:20000:f:10 -D5
++
++ What above creates two threads, first one, scheduled by SCHED_DEADLINE,
++ executes for 10ms every 100ms and second one, scheduled at RT priority 10
++ with SCHED_FIFO, executes for 20ms every 150ms. The configuration runs
++ for 5 seconds.
++
++ More interestingly, configurations can be described with a json file, that
++ can be passed as input to rt-app with something like this:
++
++  # rt-app my_config.json
++
++ The parameters that can be specified with the second method are a superset
++ of the command line options. Please refer to rt-app documentation for more
++ details.
++
++ The second testing application is a modification of schedtool, called
++ schedtool-dl, which can be used to setup SCHED_DEADLINE parameters for a
++ certain pid/application. schedtool-dl is available at:
++ https://github.com/scheduler-tools/schedtool-dl.git.
++
++ The usage is straightforward:
++
++  # schedtool -E -t 10000000:100000000 -e ./my_cpuhog_app
++
++ With this, my_cpuhog_app is put to run inside a SCHED_DEADLINE reservation
++ of 10ms every 100ms (note that parameters are expressed in microseconds).
++ You can also use schedtool to create a reservation for an already running
++ application, given that you know its pid:
++
++  # schedtool -E -t 10000000:100000000 my_app_pid
 -- 
 1.7.9.5
 
