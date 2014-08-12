@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550AbaHLHdh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:33:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17040 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751981AbaHLHdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:33:36 -0400
-Date: Tue, 12 Aug 2014 09:33:20 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC 00/20] perf: Finish sampling commands when events are closed
-Message-ID: <20140812073319.GB1128@krava.brq.redhat.com>
-References: <1407747014-18394-1-git-send-email-jolsa@kernel.org>
- <20140811201249.GA4148@kernel.org>
- <20140811202812.GB4148@kernel.org>
+	id S1753824AbaHLHhi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:37:38 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:43167 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831AbaHLHhh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 03:37:37 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 12 Aug 2014 16:37:40 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: ngupta@vflare.org, linux-kernel@vger.kernel.org,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] zram: fix incorrectly stat with failed_reads
+Message-ID: <20140812073740.GA9227@bbox>
+References: <000001cfb53f$d63b6ea0$82b24be0$@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140811202812.GB4148@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <000001cfb53f$d63b6ea0$82b24be0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 05:28:12PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Aug 11, 2014 at 05:12:49PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > Em Mon, Aug 11, 2014 at 10:49:54AM +0200, Jiri Olsa escreveu:
-> > > hi,
-> > > adding support to quit sampling commands:
-> > >   record,top,trace,kvm stat live
-> > > 
-> > > when all the monitored events are closed, like following perf
-> > > command will now exit when monitored process (pid 1234) exits:
-> > > 
-> > >   $ perf record -p 1234
-> > > 
-> > > I added independent poller object to handle basic polling
-> > > tasks. I had to factor some parts, so sending this as RFC,
-> > 
-> > Why? I'm trying to figure out why this poller class is needed, just from
-> > reading the changelog entries, no luck so far.
+On Mon, Aug 11, 2014 at 04:39:17PM +0800, Chao Yu wrote:
+> Since we allocate a temporary buffer in zram_bvec_read to handle partial page
+> operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
+> zram: allow partial page operations), our ->failed_reads value may be incorrect
+> as we do not increase its value when failed to allocate the temporary buffer.
 > 
-> So this is all about accounting for when all events are closed? I.e. as
-> we receive the ERR and HUP we go on closing the entries in the pollfd?
-> Then, when none are closed, then we exit, is that the case?
-> 
-> Why not just mark them -1 and decrement evlist->nr_open_fds (new field)?
-> 
-> struct pollfds {
-> 	struct pollfd *pollfds;
-> 	int    nr_fds;
-> 	int    nr_open_fds;
-> };
-> 
-> Don't use callbacks and then that poller_item doesn't need to exist :-\
+> Let's fix this issue and correct the annotation of failed_reads.
 
-I think callbacks are convenient when having different kind
-of events combined in polling, as described in my reply to
-your first email
+Good catch.
+Just out of curiosity.
+
+Did you catch it by code review or real workload?
 
 > 
-> I'll try to cook a patch with those ideas later today, if for anything,
-> to validate your patches :-)
+> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> ---
+>  drivers/block/zram/zram_drv.c | 1 +
+>  drivers/block/zram/zram_drv.h | 2 +-
+>  2 files changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index dfa4024..bf8ea1b 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -413,6 +413,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+>  
+>  	if (!uncmem) {
+>  		pr_info("Unable to allocate temp memory\n");
+> +		atomic64_inc(&zram->stats.failed_reads);
+>  		ret = -ENOMEM;
+>  		goto out_cleanup;
+>  	}
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index 5b0afde..e0f725c 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -84,7 +84,7 @@ struct zram_stats {
+>  	atomic64_t compr_data_size;	/* compressed size of pages stored */
+>  	atomic64_t num_reads;	/* failed + successful */
+>  	atomic64_t num_writes;	/* --do-- */
+> -	atomic64_t failed_reads;	/* should NEVER! happen */
+> +	atomic64_t failed_reads;	/* can happen when memory is too low */
+>  	atomic64_t failed_writes;	/* can happen when memory is too low */
+>  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+>  	atomic64_t notify_free;	/* no. of swap slot free notifications */
+> -- 
+> 2.0.1.474.g72c7794
 
-ok ;-) thanks
+How abouting moving failed_reads/writes in zram_bvec_rw?
 
-jirka
+int zram_bvec_rw(..)
+{
+        if (rw == READ) {
+                atomic64_inc(num_reads);
+                ret = zram_bvec_read(xxx);
+        } else {
+                atomic64_inc(&num_writes);
+                ret = zram_bvec_write(xxx);
+        }
+
+        if (unlikely(ret)) {
+                if (rw == READ)
+                        atomic64_inc(failed_reads);
+                else
+                        atomic64_inc(failed_writes);
+        }
+}
+
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Kind regards,
+Minchan Kim
