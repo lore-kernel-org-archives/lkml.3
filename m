@@ -1,143 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220AbaHLBNW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 21:13:22 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:50350 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaHLBNV (ORCPT
+	id S1751981AbaHLBTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 21:19:42 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:40722 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaHLBTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 21:13:21 -0400
-From: Sadasivan Shaiju <sshaiju@mvista.com>
-References: <ad46c9518e35397c8f4d281a3f88d129@mail.gmail.com> <20140811224925.GE30401@n2100.arm.linux.org.uk>
-In-Reply-To: <20140811224925.GE30401@n2100.arm.linux.org.uk>
+	Mon, 11 Aug 2014 21:19:41 -0400
+Date: Tue, 12 Aug 2014 01:24:09 +0000
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org, tglx@linutronix.de,
+        cody@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/8] mm/page_alloc: fix pcp high, batch management
+Message-ID: <20140812012408.GA23418@gmail.com>
+References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1407309517-3270-3-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQIMrSjqJ+zE6DRXcig0zB+0d2N4vgMrJTSymzjdNxA=
-Date: Mon, 11 Aug 2014 18:12:35 -0700
-Message-ID: <dfaec2915a403865125b1e06c35386f9@mail.gmail.com>
-Subject: RE: PATCH -RCU locking on last_VFP_context[cpu] in vfp_notifier [2.6.32]
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>, Catalin.Marinas@arm.com
-Cc: linux-kernel@vger.kernel.org, shaiju_sada@yahoo.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407309517-3270-3-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi  Russell,
+Hey Joonsoo,
 
-Thanks  for  looking  into  the  issue.
+On Wed, Aug 06, 2014 at 04:18:28PM +0900, Joonsoo Kim wrote:
+> per cpu pages structure, aka pcp, has high and batch values to control
+> how many pages we perform caching. This values could be updated
+> asynchronously and updater should ensure that this doesn't make any
+> problem. For this purpose, pageset_update() is implemented and do some
+> memory synchronization. But, it turns out to be wrong when I implemented
+> new feature using this. There is no corresponding smp_rmb() in read-side
+> so that it can't guarantee anything. Without correct updating, system
+> could hang in free_pcppages_bulk() due to larger batch value than high.
+> To properly update this values, we need to synchronization primitives on
+> read-side, but, it hurts allocator's fastpath.
+> 
+> There is another choice for synchronization, that is, sending IPI. This
+> is somewhat expensive, but, this is really rare case so I guess it has
+> no problem here. However, reducing IPI is very helpful here. Current
+> logic handles each CPU's pcp update one by one. To reduce sending IPI,
+> we need to re-ogranize the code to handle all CPU's pcp update at one go.
+> This patch implement these requirements.
 
-This  issue  came  up  when  I  was  doing  econa (ARM)  board bringup
-for Montavista (cavium) .
-Following  was  the  bug  description .
+Let's add right reviewer for the patch.
+Cced Cody and Thomas.
 
-  Using cge60-econa-cns3420-2.6.32_110928_1104937 the kernel failed to
-boot with
-the following error:
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  mm/page_alloc.c |  139 ++++++++++++++++++++++++++++++++-----------------------
+>  1 file changed, 80 insertions(+), 59 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index b99643d4..44672dc 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -3797,7 +3797,7 @@ static void build_zonelist_cache(pg_data_t *pgdat)
+>   * not check if the processor is online before following the pageset pointer.
+>   * Other parts of the kernel may not check if the zone is available.
+>   */
+> -static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch);
+> +static void setup_pageset(struct per_cpu_pageset __percpu *pcp);
+>  static DEFINE_PER_CPU(struct per_cpu_pageset, boot_pageset);
+>  static void setup_zone_pageset(struct zone *zone);
+>  
+> @@ -3843,9 +3843,9 @@ static int __build_all_zonelists(void *data)
+>  	 * needs the percpu allocator in order to allocate its pagesets
+>  	 * (a chicken-egg dilemma).
+>  	 */
+> -	for_each_possible_cpu(cpu) {
+> -		setup_pageset(&per_cpu(boot_pageset, cpu), 0);
+> +	setup_pageset(&boot_pageset);
+>  
+> +	for_each_possible_cpu(cpu) {
+>  #ifdef CONFIG_HAVE_MEMORYLESS_NODES
+>  		/*
+>  		 * We now know the "local memory node" for each node--
+> @@ -4227,24 +4227,59 @@ static int zone_batchsize(struct zone *zone)
+>   * outside of boot time (or some other assurance that no concurrent updaters
+>   * exist).
+>   */
+> -static void pageset_update(struct per_cpu_pages *pcp, unsigned long high,
+> -		unsigned long batch)
+> +static void pageset_update(struct zone *zone, int high, int batch)
+>  {
+> -       /* start with a fail safe value for batch */
+> -	pcp->batch = 1;
+> -	smp_wmb();
+> +	int cpu;
+> +	struct per_cpu_pages *pcp;
+> +
+> +	/* start with a fail safe value for batch */
+> +	for_each_possible_cpu(cpu) {
+> +		pcp = &per_cpu_ptr(zone->pageset, cpu)->pcp;
+> +		pcp->batch = 1;
+> +	}
+> +	kick_all_cpus_sync();
+> +
+> +	/* Update high, then batch, in order */
+> +	for_each_possible_cpu(cpu) {
+> +		pcp = &per_cpu_ptr(zone->pageset, cpu)->pcp;
+> +		pcp->high = high;
+> +	}
+> +	kick_all_cpus_sync();
+>  
+> -       /* Update high, then batch, in order */
+> -	pcp->high = high;
+> -	smp_wmb();
+> +	for_each_possible_cpu(cpu) {
+> +		pcp = &per_cpu_ptr(zone->pageset, cpu)->pcp;
+> +		pcp->batch = batch;
+> +	}
+> +}
+> +
+> +/*
+> + * pageset_get_values_by_high() gets the high water mark for
+> + * hot per_cpu_pagelist to the value high for the pageset p.
+> + */
+> +static void pageset_get_values_by_high(int input_high,
+> +				int *output_high, int *output_batch)
 
-Internal error: Oops: 817 [#1] from cpu 1 PREEMPT SMP
-last sysfs file: /sys/devices/virtual/bdi/0:19/uevent
-Modules linked in: hmac ctr deflate
-CPU: 1    Tainted: G        W   (2.6.32.46.cge #1)
-PC is at vfp_notifier+0x48/0xbc
-LR is at vfp_notifier+0x44/0xbc
-pc : []    lr : []    psr: 60000013
-sp : aeee1d30  ip : aeee1d50  fp : aeee1d4c
-r10: af8d6460  r9 : ffffffff  r8 : af88c000
-r7 : a05ba584  r6 : af88c000  r5 : 00000001  r4 : 40000000
-r3 : 00000000  r2 : 00000000  r1 : 40000000  r0 : aeee0230
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 00c5787d  Table: 2eeec00a  DAC: 00000017
-Process grep (pid: 1710, stack limit = 0xaeee0270)
-Stack:  from cpu 1 (0xaeee1d30 to 0xaeee2000)
+You don't use output_high so we could make it as follows,
+
+int pageset_batch(int high);
+
+> +{
+> +	*output_batch = max(1, input_high / 4);
+> +	if ((input_high / 4) > (PAGE_SHIFT * 8))
+> +		*output_batch = PAGE_SHIFT * 8;
+> +}
+>  
+> -	pcp->batch = batch;
+> +/* a companion to pageset_get_values_by_high() */
+> +static void pageset_get_values_by_batch(int input_batch,
+> +				int *output_high, int *output_batch)
+> +{
+> +	*output_high = 6 * input_batch;
+> +	*output_batch = max(1, 1 * input_batch);
+>  }
+>  
+> -/* a companion to pageset_set_high() */
+> -static void pageset_set_batch(struct per_cpu_pageset *p, unsigned long batch)
+> +static void pageset_get_values(struct zone *zone, int *high, int *batch)
+>  {
+> -	pageset_update(&p->pcp, 6 * batch, max(1UL, 1 * batch));
+> +	if (percpu_pagelist_fraction) {
+> +		pageset_get_values_by_high(
+> +			(zone->managed_pages / percpu_pagelist_fraction),
+> +			high, batch);
+> +	} else
+> +		pageset_get_values_by_batch(zone_batchsize(zone), high, batch);
+>  }
+>  
+>  static void pageset_init(struct per_cpu_pageset *p)
+> @@ -4260,51 +4295,38 @@ static void pageset_init(struct per_cpu_pageset *p)
+>  		INIT_LIST_HEAD(&pcp->lists[migratetype]);
+>  }
+>  
+> -static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+> +/* Use this only in boot time, because it doesn't do any synchronization */
+> +static void setup_pageset(struct per_cpu_pageset __percpu *pcp)
+
+If we can use it with only boot_pages in boot time, let's make it more clear.
+
+static void boot_setup_pageset(void)
+{
+	boot_pageset;
+	XXX;
+}
 
 
-During  the  bring up  I  used  to  intract  with   Catalin Marinas(
-Catalin.Marinas@arm.com)from  ARM  .  He  is  copied on the email .
-Catalin  has  pointed   out  the  following  patch  to  me ,  which
-solved  my problem .  I  just  want  to make  sure  the patch  goes to
-mainline kernel.
-
-> The  following  patch  provided  by  you  solves  my  problem .  thanks
-.
->
-> http://article.gmane.org/gmane.linux.ports.arm.kernel/56631
-
-Great.
-
---
-Catalin
-
-
-
-Regards,
-Shaiju.
-
-
------Original Message-----
-From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
-Sent: Monday, August 11, 2014 3:49 PM
-To: Sadasivan Shaiju
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: PATCH -RCU locking on last_VFP_context[cpu] in vfp_notifier
-[2.6.32]
-
-On Mon, Aug 11, 2014 at 03:24:18PM -0700, Sadasivan Shaiju wrote:
-> Hi ,
->
-> I  work for Montavista (Cavium Inc) as  a  Technical  Lead .  I want
-> to push some  of the kernel  patches to  rt community (2.6.32 kernel
-> 2.6.33 rt patch)  , so  that  It  will  go  to  the  main line These
-> patches  are reviewed  and approved  by  our system Architect.  I
-> request  you to include  in the main line .  These  issues  were
-> reported  during econa board bringup at montavista.
->
-> Problem Description:
-> Using cge60-econa-cns3420-2.6.32, the kernel failed to boot with the
-> following
-> error:
->
-> Internal error: Oops: 817 [#1] from cpu 1 PREEMPT SMP last sysfs file:
-> /sys/devices/virtual/bdi/0:19/uevent
-> Modules linked in: hmac ctr deflate
-> CPU: 1    Tainted: G        W   (2.6.32.46.cge #1)
-> PC is at vfp_notifier+0x48/0xbc
-> LR is at vfp_notifier+0x44/0xbc
-> pc : []    lr : []    psr: 60000013
-> sp : aeee1d30  ip : aeee1d50  fp : aeee1d4c
-> r10: af8d6460  r9 : ffffffff  r8 : af88c000
-> r7 : a05ba584  r6 : af88c000  r5 : 00000001  r4 : 40000000
-> r3 : 00000000  r2 : 00000000  r1 : 40000000  r0 : aeee0230
-> Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> Control: 00c5787d  Table: 2eeec00a  DAC: 00000017 Process grep (pid:
-> 1710, stack limit = 0xaeee0270)
-> Stack:  from cpu 1 (0xaeee1d30 to 0xaeee2000)
->
-> Root Cause:
-> On the SMP architecture, last_VFP_context[cpu] becomes NULL because it
-> gets released on a different CPU.
->
-> How Solved:
-> Fixed by exiting the thread instead of releasing the thread in the
-> vfp_notifier.
->
-> I  request you  to include  the above patch to  the main line kernel .
-> If any questions  please contact me  at  sshaiju@mvista.com
-> (shaiju_sada@yahoo.com)
-
-This is totally insufficient for fixing a bug in a complex piece of code.
-
-You fail to explain exactly _how_ the bug arises.  You say
-"last_VFP_context[cpu] becomes NULL because it gets released on a
-different CPU" - how does that happen?
-
-The only places that last_VFP_context[cpu] is set to NULL is within a cpu
-= get_cpu()..put_cpu() region, which by definition *must* be running on
-the CPU specified by 'cpu'.
-
-Without a proper diagnosis showing exactly what the race is which causes
-the above oops, there's nothing I can do.  Sorry.
-
---
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+}
+>  {
+> -	pageset_init(p);
+> -	pageset_set_batch(p, batch);
+> -}
+> -
+> -/*
+> - * pageset_set_high() sets the high water mark for hot per_cpu_pagelist
+> - * to the value high for the pageset p.
+> - */
+> -static void pageset_set_high(struct per_cpu_pageset *p,
+> -				unsigned long high)
+> -{
+> -	unsigned long batch = max(1UL, high / 4);
+> -	if ((high / 4) > (PAGE_SHIFT * 8))
+> -		batch = PAGE_SHIFT * 8;
+> -
+> -	pageset_update(&p->pcp, high, batch);
+> -}
+> -
+> -static void pageset_set_high_and_batch(struct zone *zone,
+> -				       struct per_cpu_pageset *pcp)
+> -{
+> -	if (percpu_pagelist_fraction)
+> -		pageset_set_high(pcp,
+> -			(zone->managed_pages /
+> -				percpu_pagelist_fraction));
+> -	else
+> -		pageset_set_batch(pcp, zone_batchsize(zone));
+> -}
+> +	int cpu;
+> +	int high, batch;
+> +	struct per_cpu_pageset *p;
+>  
+> -static void __meminit zone_pageset_init(struct zone *zone, int cpu)
+> -{
+> -	struct per_cpu_pageset *pcp = per_cpu_ptr(zone->pageset, cpu);
+> +	pageset_get_values_by_batch(0, &high, &batch);
+>  
+> -	pageset_init(pcp);
+> -	pageset_set_high_and_batch(zone, pcp);
+> +	for_each_possible_cpu(cpu) {
+> +		p = per_cpu_ptr(pcp, cpu);
+> +		pageset_init(p);
+> +		p->pcp.high = high;
+> +		p->pcp.batch = batch;
+> +	}
+>  }
+>  
+>  static void __meminit setup_zone_pageset(struct zone *zone)
+>  {
+>  	int cpu;
+> +	int high, batch;
+> +	struct per_cpu_pageset *p;
+> +
+> +	pageset_get_values(zone, &high, &batch);
+> +
+>  	zone->pageset = alloc_percpu(struct per_cpu_pageset);
+> -	for_each_possible_cpu(cpu)
+> -		zone_pageset_init(zone, cpu);
+> +	for_each_possible_cpu(cpu) {
+> +		p = per_cpu_ptr(zone->pageset, cpu);
+> +		pageset_init(p);
+> +		p->pcp.high = high;
+> +		p->pcp.batch = batch;
+> +	}
+>  }
+>  
+>  /*
+> @@ -5925,11 +5947,10 @@ int percpu_pagelist_fraction_sysctl_handler(struct ctl_table *table, int write,
+>  		goto out;
+>  
+>  	for_each_populated_zone(zone) {
+> -		unsigned int cpu;
+> +		int high, batch;
+>  
+> -		for_each_possible_cpu(cpu)
+> -			pageset_set_high_and_batch(zone,
+> -					per_cpu_ptr(zone->pageset, cpu));
+> +		pageset_get_values(zone, &high, &batch);
+> +		pageset_update(zone, high, batch);
+>  	}
+>  out:
+>  	mutex_unlock(&pcp_batch_high_lock);
+> @@ -6452,11 +6473,11 @@ void free_contig_range(unsigned long pfn, unsigned nr_pages)
+>   */
+>  void __meminit zone_pcp_update(struct zone *zone)
+>  {
+> -	unsigned cpu;
+> +	int high, batch;
+> +
+>  	mutex_lock(&pcp_batch_high_lock);
+> -	for_each_possible_cpu(cpu)
+> -		pageset_set_high_and_batch(zone,
+> -				per_cpu_ptr(zone->pageset, cpu));
+> +	pageset_get_values(zone, &high, &batch);
+> +	pageset_update(zone, high, batch);
+>  	mutex_unlock(&pcp_batch_high_lock);
+>  }
+>  #endif
+> -- 
+> 1.7.9.5
+> 
