@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677AbaHLJuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 05:50:06 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:51823 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaHLJuF convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
-	Tue, 12 Aug 2014 05:50:05 -0400
-Message-Id: <53E9FF6A020000780002B7B7@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.0 
-Date: Tue, 12 Aug 2014 10:50:02 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Denys Vlasenko" <dvlasenk@redhat.com>
-Cc: "Andy Lutomirski" <luto@amacapital.net>,
-        "Kees Cook" <keescook@chromium.org>, "Will Drewry" <wad@chromium.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Denys Vlasenko" <vda.linux@googlemail.com>, "X86 ML" <x86@kernel.org>,
-        "Alexei Starovoitov" <ast@plumgrid.com>,
-        "Oleg Nesterov" <oleg@redhat.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 4/5] x86: entry_64.S: always allocate complete
- "struct pt_regs"
-References: <1406904498-21647-1-git-send-email-dvlasenk@redhat.com>
- <1406904498-21647-4-git-send-email-dvlasenk@redhat.com>
- <20140801231929.GB26491@localhost.localdomain>
- <CAK1hOcNXdBwd4KZi1V2dLMtRdusvNLPZwTKwYvnpvz3PRnsM+Q@mail.gmail.com>
- <20140811004559.GA2656@lerouge>
- <53E89DA3020000780002B00B@mail.emea.novell.com>
- <53E8C476.8000800@redhat.com>
- <53E8EC9F020000780002B383@mail.emea.novell.com>
- <53E8D905.7030809@zytor.com>
- <53E8F87B020000780002B41D@mail.emea.novell.com>
- <53E8DD8D.3060500@zytor.com> <53E9DEDB.1080608@redhat.com>
-In-Reply-To: <53E9DEDB.1080608@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752187AbaHLJvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 05:51:16 -0400
+Received: from exprod7og101.obsmtp.com ([64.18.2.155]:52670 "EHLO
+	exprod7og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731AbaHLJvO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 05:51:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <1407836262.3141.16.camel@joe-AO725>
+References: <1407835482-37919-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+	<1407836262.3141.16.camel@joe-AO725>
+Date: Tue, 12 Aug 2014 15:21:13 +0530
+Message-ID: <CAK=zhgrvTVoy8zvu21U00NQV53LSiK8HRMTFAarRHJLXqRJRiw@mail.gmail.com>
+Subject: Re: [RESEND][PATCH 07/10][SCSI]mpt2sas: Added Reply Descriptor Post
+ Queue (RDPQ) Array support
+From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+To: Joe Perches <joe@perches.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, jejb@kernel.org,
+        linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Sathya Prakash <Sathya.Prakash@avagotech.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@avagotech.com>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 12.08.14 at 11:31, <dvlasenk@redhat.com> wrote:
-> Jan, Pater, does this look correct _and_ human-understandable?
-> 
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -652,10 +652,14 @@ END(interrupt)
->         cmovzq PER_CPU_VAR(irq_stack_ptr),%rsp
->         CFI_DEF_CFA_REGISTER    rsi
->         pushq %rsi
-> +       /*
-> +        * For debugger:
-> +        * "CFA (Current Frame Address) is the value on stack + offset"
-> +        */
->         CFI_ESCAPE      0x0f /* DW_CFA_def_cfa_expression */, 6, \
-> -                       0x77 /* DW_OP_breg7 */, 0, \
-> +                       0x77 /* DW_OP_breg7 (rsp) */, 0, \
+On Tue, Aug 12, 2014 at 3:07 PM, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2014-08-12 at 14:54 +0530, Sreekanth Reddy wrote:
+>> So, the proposal is to allocate memory independently for each
+>> Reply Queue and pass down all of the addresses to the firmware.
+>> Then the firmware will just take each address and program the value
+>> into the correct register.
+>
+> trivial note:
+>
+>> diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+> []
+>> @@ -1179,17 +1184,22 @@ static int
+>>  _base_config_dma_addressing(struct MPT2SAS_ADAPTER *ioc, struct pci_dev *pdev)
+>>  {
+>>       struct sysinfo s;
+>> -     char *desc = NULL;
+>> +     u64 consistent_dma_mask;
+>> +
+>> +     if (dma_mask)
+>> +             consistent_dma_mask = DMA_BIT_MASK(64);
+>> +     else
+>> +             consistent_dma_mask = DMA_BIT_MASK(32);
+>>
+>>       if (sizeof(dma_addr_t) > 4) {
+>>               const uint64_t required_mask =
+>>                   dma_get_required_mask(&pdev->dev);
+>>               if ((required_mask > DMA_BIT_MASK(32)) && !pci_set_dma_mask(pdev,
+>>                   DMA_BIT_MASK(64)) && !pci_set_consistent_dma_mask(pdev,
+>> -                 DMA_BIT_MASK(64))) {
+>> +                 consistent_dma_mask)) {
+>
+> This would be easier to read if the embedded functions
+> within the if were on separate lines like:
 
-I'm fine with the changes above.
+Accepted. next time onwards I will take care of this.
 
->                         0x06 /* DW_OP_deref */, \
-> -                       0x08 /* DW_OP_const1u */, SS+8-RBP, \
-> +                       0x08 /* DW_OP_const1u */, SIZEOF_PTREGS-RBP, \
-
-But I'd rather not see this one alone changed - either change all
-similar uses of SS, or leave the one here alone.
-
-Jan
-
+>
+>                 if ((required_mask > DMA_BIT_MASK(32)) &&
+>                     !pci_set_dma_mask(pdev, DMA_BIT_MASK(64)) &&
+>                     !pci_set_consistent_dma_mask(pdev, consistent_dma_mask)) {
+>
+>
