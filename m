@@ -1,50 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825AbaHLCDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Aug 2014 22:03:11 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:34387 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753121AbaHLCDJ convert rfc822-to-8bit (ORCPT
+	id S1754874AbaHLCDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Aug 2014 22:03:22 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:42776 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190AbaHLCDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 22:03:09 -0400
-Subject: Re: [PATCH] drivers: staging: lustre: fix sparse warnings / delete unused function
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=windows-1252
-From: Oleg Drokin <green@linuxhacker.ru>
-In-Reply-To: <4F91D9A1-B87D-498F-8089-7008F6BD4F30@intel.com>
-Date: Mon, 11 Aug 2014 22:02:54 -0400
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Benedict Boerger <benedict.boerger@cs.tu-dortmund.de>,
-        <linux-kernel@vger.kernel.org>, <devel@driverdev.osuosl.org>,
-        <andreas.dilger@intel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1A7F74DC-3922-4626-BDDF-E8E6C90C221C@linuxhacker.ru>
-References: <1407515182-24287-1-git-send-email-benedict.boerger@cs.tu-dortmund.de> <20140810043443.GA12200@kroah.com> <4F91D9A1-B87D-498F-8089-7008F6BD4F30@intel.com>
-To: Oleg Drokin <oleg.drokin@intel.com>
-X-Mailer: Apple Mail (2.1283)
+	Mon, 11 Aug 2014 22:03:10 -0400
+From: Chase Southwood <chase.southwood@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chase Southwood <chase.southwood@gmail.com>
+Subject: [PATCH 1/3] staging: comedi: addi_apci_1564: remove apci1564_do_config
+Date: Mon, 11 Aug 2014 21:02:58 -0500
+Message-Id: <cdecb54bd9e8f66ded9c05e3a45efd9defa71dda.1407804777.git.chase.southwood@gmail.com>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <cover.1407804777.git.chase.southwood@gmail.com>
+References: <cover.1407804777.git.chase.southwood@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The DO config function served the purpose of configuring the diagnostic
+interrupts for the board.  As the driver currently does not support
+diagnostic interrupts, the digital output subdevice does not need an
+insn_config operation and this function can be safely removed.
 
-On Aug 11, 2014, at 9:58 PM, Oleg Drokin wrote:
+Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+---
+ .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 34 ----------------------
+ drivers/staging/comedi/drivers/addi_apci_1564.c    |  1 -
+ 2 files changed, 35 deletions(-)
 
-> 
-> On Aug 10, 2014, at 12:34 AM, Greg KH wrote:
->> Very odd, with this patch applied, I now get a build warning:
->> 
->> drivers/staging/lustre/lnet/lnet/config.c: In function ‘lnet_parse_ip2nets’:
->> drivers/staging/lustre/lnet/lnet/config.c:1193:2: warning: ‘ipaddrs’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->> lnet_ipaddr_free_enumeration(ipaddrs, nip);
->> ^
-> 
-> What's even more odd is that the very previous line also uses ipaddrs, yet it does not trigger the warning.
-> In any case I believe it's a false positive, since the only way it could remain unitialized is if
-> libcfs_ipif_enumerate returned negative value (stored in nif in this function) and we check for it being more than zero
-> before getting to that part of code.
-> 
-> I'll submit a patch assigning ipaddrs to NULL as a workaround shortly.
-
-Err, looking at the wrong function there, it's lnet_ipaddr_enumerate that returns negative if ipaddrs was not changed.
-Anyway still false positive.
+diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+index 8a613ae..0ce1deb 100644
+--- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
++++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+@@ -88,40 +88,6 @@
+ #define APCI1564_TCW_WARN_TIMEBASE_REG(x)		(0x1c + ((x) * 0x20))
+ 
+ /*
+- * Configures The Digital Output Subdevice.
+- *
+- * data[1] 0 = Disable VCC Interrupt, 1 = Enable VCC Interrupt
+- * data[2] 0 = Disable CC Interrupt, 1 = Enable CC Interrupt
+- */
+-static int apci1564_do_config(struct comedi_device *dev,
+-			      struct comedi_subdevice *s,
+-			      struct comedi_insn *insn,
+-			      unsigned int *data)
+-{
+-	struct apci1564_private *devpriv = dev->private;
+-	unsigned int ul_Command = 0;
+-
+-	if ((data[0] != 0) && (data[0] != 1)) {
+-		dev_err(dev->class_dev, "Data should be 1 or 0\n");
+-		return -EINVAL;
+-	}
+-
+-	if (data[1] == 1)
+-		ul_Command = ul_Command | 0x1;
+-	else
+-		ul_Command = ul_Command & 0xFFFFFFFE;
+-
+-	if (data[2] == 1)
+-		ul_Command = ul_Command | 0x2;
+-	else
+-		ul_Command = ul_Command & 0xFFFFFFFD;
+-
+-	outl(ul_Command, devpriv->amcc_iobase + APCI1564_DO_INT_CTRL_REG);
+-	devpriv->tsk_current = current;
+-	return insn->n;
+-}
+-
+-/*
+  * Configures The Timer, Counter or Watchdog
+  *
+  * data[0] Configure as: 0 = Timer, 1 = Counter, 2 = Watchdog
+diff --git a/drivers/staging/comedi/drivers/addi_apci_1564.c b/drivers/staging/comedi/drivers/addi_apci_1564.c
+index 543cb07..555e0a9 100644
+--- a/drivers/staging/comedi/drivers/addi_apci_1564.c
++++ b/drivers/staging/comedi/drivers/addi_apci_1564.c
+@@ -388,7 +388,6 @@ static int apci1564_auto_attach(struct comedi_device *dev,
+ 	s->n_chan = 32;
+ 	s->maxdata = 1;
+ 	s->range_table = &range_digital;
+-	s->insn_config = apci1564_do_config;
+ 	s->insn_bits = apci1564_do_insn_bits;
+ 
+ 	/* Change-Of-State (COS) interrupt subdevice */
+-- 
+2.0.4
 
