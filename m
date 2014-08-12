@@ -1,438 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665AbaHLFIq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 01:08:46 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36209 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799AbaHLFIo (ORCPT
+	id S1751939AbaHLFNP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 01:13:15 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:57787 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbaHLFNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 01:08:44 -0400
-From: Wang Nan <wangnan0@huawei.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>, <ananth@in.ibm.com>,
-        <anil.s.keshavamurthy@intel.com>, <davem@davemloft.net>,
-        Will Deacon <will.deacon@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: <peifeiyue@huawei.com>, <lizefan@huawei.com>, <wangnan0@huawei.com>
-Subject: [PATCH v4] kprobes: arm: enable OPTPROBES for ARM 32
-Date: Tue, 12 Aug 2014 12:56:28 +0800
-Message-ID: <1407819388-52145-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
+	Tue, 12 Aug 2014 01:13:14 -0400
+Date: Tue, 12 Aug 2014 05:17:45 +0000
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/8] mm/isolation: close the two race problems related
+ to pageblock isolation
+Message-ID: <20140812051745.GC23418@gmail.com>
+References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1407309517-3270-8-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407309517-3270-8-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduce kprobeopt for ARM 32.
+On Wed, Aug 06, 2014 at 04:18:33PM +0900, Joonsoo Kim wrote:
+> We got migratetype of the freeing page without holding the zone lock so
+> it could be racy. There are two cases of this race.
+> 
+> 1. pages are added to isolate buddy list after restoring original
+> migratetype.
+> 2. pages are added to normal buddy list while pageblock is isolated.
+> 
+> If case 1 happens, we can't allocate freepages on isolate buddy list
+> until next pageblock isolation occurs.
+> In case of 2, pages could be merged with pages on isolate buddy list and
+> located on normal buddy list. This makes freepage counting incorrect
+> and break the property of pageblock isolation.
+> 
+> One solution to this problem is checking pageblock migratetype with
+> holding zone lock in __free_one_page() and I posted it before, but,
+> it didn't get welcome since it needs the hook in zone lock critical
+> section on freepath.
 
-Limitations:
- - Currently only kernel compiled with ARM ISA is supported.
+I didn't review your v1 but IMHO, this patchset is rather complex.
+Normally, we don't like adding more overhead in fast path but we did
+several time on hotplug/cma, esp so I don't know a few more thing is
+really hesitant. In addition, you proved by this patchset how this
+isolation code looks ugly and fragile for race problem so I vote
+adding more overhead in fast path if it can make code really simple.
 
- - Offset between probe point and optinsn slot must not larger than
-   32MiB. Masami Hiramatsu suggests replacing 2 words, it will make
-   things complex. Futher patch can make such optimization.
+Vlastimil?
 
-Kprobe opt on ARM is relatively simpler than kprobe opt on x86 because
-ARM instruction is always 4 bytes aligned and 4 bytes long. This patch
-replace probed instruction by a 'b', branch to trampoline code and then
-calls optimized_callback(). optimized_callback() calls opt_pre_handler()
-to execute kprobe handler. It also emulate/simulate replaced instruction.
+To Joonsoo,
 
-When unregistering kprobe, the deferred manner of unoptimizer may leave
-branch instruction before optimizer is called. Different from x86_64,
-which only copy the probed insn after optprobe_template_end and
-reexecute them, this patch call singlestep to emulate/simulate the insn
-directly. Futher patch can optimize this behavior.
+you want to send this patchset for stable since review is done?
+IIRC, you want to fix freepage couting bug and send it to stable but
+as I see this patchset, no make sense to send to stable. :(
 
-v1 -> v2:
+> 
+> This is another solution to this problem and impose most overhead on
+> pageblock isolation logic. Following is how this solution works.
+> 
+> 1. Extends irq disabled period on freepath to call
+> get_pfnblock_migratetype() with irq disabled. With this, we can be
+> sure that future freed pages will see modified pageblock migratetype
+> after certain synchronization point so we don't need to hold the zone
+> lock to get correct pageblock migratetype. Although it extends irq
+> disabled period on freepath, I guess it is marginal and better than
+> adding the hook in zone lock critical section.
 
- - Improvement: if replaced instruction is conditional, generate a
-   conditional branch instruction for it;
+Agreed.
 
- - Introduces RELATIVEJUMP_OPCODES due to ARM kprobe_opcode_t is 4
-   bytes;
+> 
+> 2. #1 requires IPI for synchronization and we can't hold the zone lock
+> during processing IPI. In this time, some pages could be moved from buddy
+> list to pcp list on page allocation path and later it could be moved again
+> from pcp list to buddy list. In this time, this page would be on isolate
+> pageblock, so, the hook is required on free_pcppages_bulk() to prevent
+> misplacement. To remove this possibility, disabling and draining pcp
+> list is needed during isolation. It guaratees that there is no page on pcp
+> list on all cpus while isolation, so misplacement problem can't happen.
+> 
+> Note that this doesn't fix freepage counting problem. To fix it,
+> we need more logic. Following patches will do it.
 
- - Removes size field in struct arch_optimized_insn;
+I hope to revise description in next spin. It's very hard to parse for
+stupid me.
 
- - Use arm_gen_branch() to generate branch instruction;
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  mm/internal.h       |    2 ++
+>  mm/page_alloc.c     |   27 ++++++++++++++++++++-------
+>  mm/page_isolation.c |   45 +++++++++++++++++++++++++++++++++------------
+>  3 files changed, 55 insertions(+), 19 deletions(-)
+> 
+> diff --git a/mm/internal.h b/mm/internal.h
+> index a1b651b..81b8884 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -108,6 +108,8 @@ extern pmd_t *mm_find_pmd(struct mm_struct *mm, unsigned long address);
+>  /*
+>   * in mm/page_alloc.c
+>   */
+> +extern void zone_pcp_disable(struct zone *zone);
+> +extern void zone_pcp_enable(struct zone *zone);
 
- - Remove all recover logic: ARM doesn't use tail buffer, no need
-   recover replaced instructions like x86;
+Nit: Some of pcp functions has prefix zone but others don't.
+Which is better? If function has param zone as first argument,
+I think it's clear unless the function don't have prefix zone.
 
- - Remove incorrect CONFIG_THUMB checking;
+>  extern void __free_pages_bootmem(struct page *page, unsigned int order);
+>  extern void prep_compound_page(struct page *page, unsigned long order);
+>  #ifdef CONFIG_MEMORY_FAILURE
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 3e1e344..4517b1d 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -726,11 +726,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+>  			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+>  			__free_one_page(page, page_to_pfn(page), zone, 0, mt);
+>  			trace_mm_page_pcpu_drain(page, 0, mt);
+> -			if (likely(!is_migrate_isolate_page(page))) {
+> -				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
+> -				if (is_migrate_cma(mt))
+> -					__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
+> -			}
+> +			__mod_zone_freepage_state(zone, 1, mt);
+>  		} while (--to_free && --batch_free && !list_empty(list));
+>  	}
+>  	spin_unlock(&zone->lock);
+> @@ -789,8 +785,8 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+>  	if (!free_pages_prepare(page, order))
+>  		return;
+>  
+> -	migratetype = get_pfnblock_migratetype(page, pfn);
+>  	local_irq_save(flags);
+> +	migratetype = get_pfnblock_migratetype(page, pfn);
 
- - can_optimize() always returns true if address is well aligned;
+Could you add some comment about page-isolated locking rule in somewhere?
+I think it's valuable to add it in code rather than description.
 
- - Improve optimized_callback: using opt_pre_handler();
+In addition, as your description, get_pfnblock_migratetype should be
+protected by irq_disabled. Then, it would be better to add a comment or
+VM_BUG_ON check with irq_disabled in get_pfnblock_migratetype but I think
+get_pfnblock_migratetype might be called for other purpose in future.
+In that case, it's not necessary to disable irq so we could introduce
+"get_freeing_page_migratetype" with irq disabled check and use it.
 
- - Bugfix: correct range checking code and improve comments;
+Question. soft_offline_page doesn't have any lock
+for get_pageblock_migratetype. Is it okay?
 
- - Fix commit message.
+>  	__count_vm_events(PGFREE, 1 << order);
+>  	set_freepage_migratetype(page, migratetype);
+>  	free_one_page(page_zone(page), page, pfn, order, migratetype);
+> @@ -1410,9 +1406,9 @@ void free_hot_cold_page(struct page *page, bool cold)
+>  	if (!free_pages_prepare(page, 0))
+>  		return;
+>  
+> +	local_irq_save(flags);
+>  	migratetype = get_pfnblock_migratetype(page, pfn);
+>  	set_freepage_migratetype(page, migratetype);
+> -	local_irq_save(flags);
+>  	__count_vm_event(PGFREE);
+>  
+>  	/*
+> @@ -6469,6 +6465,23 @@ void free_contig_range(unsigned long pfn, unsigned nr_pages)
+>  }
+>  #endif
+>  
+> +#ifdef CONFIG_MEMORY_ISOLATION
+> +void zone_pcp_disable(struct zone *zone)
+> +{
+> +	mutex_lock(&pcp_batch_high_lock);
+> +	pageset_update(zone, 1, 1);
+> +}
+> +
+> +void zone_pcp_enable(struct zone *zone)
+> +{
+> +	int high, batch;
+> +
+> +	pageset_get_values(zone, &high, &batch);
+> +	pageset_update(zone, high, batch);
+> +	mutex_unlock(&pcp_batch_high_lock);
+> +}
+> +#endif
 
-v2 -> v3:
+Nit:
+It is used for only page_isolation.c so how about moving to page_isolation.c?
 
- - Rename RELATIVEJUMP_OPCODES to MAX_COPIED_INSNS;
+> +
+>  #ifdef CONFIG_MEMORY_HOTPLUG
+>  /*
+>   * The zone indicated has a new number of managed_pages; batch sizes and percpu
+> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> index 3100f98..439158d 100644
+> --- a/mm/page_isolation.c
+> +++ b/mm/page_isolation.c
+> @@ -16,9 +16,10 @@ int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages)
+>  	struct memory_isolate_notify arg;
+>  	int notifier_ret;
+>  	int ret = -EBUSY;
+> +	unsigned long nr_pages;
+> +	int migratetype;
+>  
+>  	zone = page_zone(page);
+> -
 
- - Remove unneeded checking:
-      arch_check_optimized_kprobe(), can_optimize();
+Unnecessary change.
 
- - Add missing flush_icache_range() in arch_prepare_optimized_kprobe();
+>  	spin_lock_irqsave(&zone->lock, flags);
+>  
+>  	pfn = page_to_pfn(page);
+> @@ -55,20 +56,32 @@ int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages)
+>  	 */
+>  
+>  out:
+> -	if (!ret) {
+> -		unsigned long nr_pages;
+> -		int migratetype = get_pageblock_migratetype(page);
+> +	if (ret) {
+> +		spin_unlock_irqrestore(&zone->lock, flags);
+> +		return ret;
+> +	}
+>  
+> -		set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+> -		nr_pages = move_freepages_block(zone, page, MIGRATE_ISOLATE);
+> +	migratetype = get_pageblock_migratetype(page);
+> +	set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+> +	spin_unlock_irqrestore(&zone->lock, flags);
+>  
+> -		__mod_zone_freepage_state(zone, -nr_pages, migratetype);
+> -	}
+> +	zone_pcp_disable(zone);
 
- - Remove unneeded 'return;'.
+You pcp disable/enable per pageblock so that overhead would be severe.
+I believe your remaining patches will solve it. Anyway, let's add "
+XXX: should save pcp disable/enable" and you could remove the comment
+when your further patches handles it so reviewer could be happy with
+fact which author already know the problem and someone could solve
+the issue even though your furhter patches might reject.
 
-v3 -> v4:
-
- - Use __mem_to_opcode_arm() to translate copied_insn to ensure it
-   works in big endian kernel;
-
- - Replace 'nop' placeholder in trampoline code template with
-   '.long 0' to avoid confusion: reader may regard 'nop' as an
-   instruction, but it is value in fact.
-
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
----
- arch/arm/Kconfig               |   1 +
- arch/arm/include/asm/kprobes.h |  26 +++++
- arch/arm/kernel/Makefile       |   3 +-
- arch/arm/kernel/kprobes-opt.c  | 255 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 284 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/kernel/kprobes-opt.c
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 290f02ee..2106918 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -57,6 +57,7 @@ config ARM
- 	select HAVE_MEMBLOCK
- 	select HAVE_MOD_ARCH_SPECIFIC if ARM_UNWIND
- 	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
-+	select HAVE_OPTPROBES if (!THUMB2_KERNEL)
- 	select HAVE_PERF_EVENTS
- 	select HAVE_PERF_REGS
- 	select HAVE_PERF_USER_STACK_DUMP
-diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
-index 49fa0df..a05297f 100644
---- a/arch/arm/include/asm/kprobes.h
-+++ b/arch/arm/include/asm/kprobes.h
-@@ -51,5 +51,31 @@ int kprobe_fault_handler(struct pt_regs *regs, unsigned int fsr);
- int kprobe_exceptions_notify(struct notifier_block *self,
- 			     unsigned long val, void *data);
- 
-+/* optinsn template addresses */
-+extern __visible kprobe_opcode_t optprobe_template_entry;
-+extern __visible kprobe_opcode_t optprobe_template_val;
-+extern __visible kprobe_opcode_t optprobe_template_call;
-+extern __visible kprobe_opcode_t optprobe_template_end;
-+
-+#define MAX_OPTIMIZED_LENGTH	(4)
-+#define MAX_OPTINSN_SIZE				\
-+	(((unsigned long)&optprobe_template_end -	\
-+	  (unsigned long)&optprobe_template_entry))
-+#define RELATIVEJUMP_SIZE	(4)
-+
-+struct arch_optimized_insn {
-+	/*
-+	 * copy of the original instructions.
-+	 * Different from x86, ARM kprobe_opcode_t is u32.
-+	 */
-+#define MAX_COPIED_INSN	((RELATIVEJUMP_SIZE) / sizeof(kprobe_opcode_t))
-+	kprobe_opcode_t copied_insn[MAX_COPIED_INSN];
-+	/* detour code buffer */
-+	kprobe_opcode_t *insn;
-+	/*
-+	 *  we always copies one instruction on arm32,
-+	 *  size always be 4, so no size field.
-+	 */
-+};
- 
- #endif /* _ARM_KPROBES_H */
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 38ddd9f..6a38ec1 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -52,11 +52,12 @@ obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o insn.o
- obj-$(CONFIG_JUMP_LABEL)	+= jump_label.o insn.o patch.o
- obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
- obj-$(CONFIG_UPROBES)		+= probes.o probes-arm.o uprobes.o uprobes-arm.o
--obj-$(CONFIG_KPROBES)		+= probes.o kprobes.o kprobes-common.o patch.o
-+obj-$(CONFIG_KPROBES)		+= probes.o kprobes.o kprobes-common.o patch.o insn.o
- ifdef CONFIG_THUMB2_KERNEL
- obj-$(CONFIG_KPROBES)		+= kprobes-thumb.o probes-thumb.o
- else
- obj-$(CONFIG_KPROBES)		+= kprobes-arm.o probes-arm.o
-+obj-$(CONFIG_OPTPROBES)		+= kprobes-opt.o
- endif
- obj-$(CONFIG_ARM_KPROBES_TEST)	+= test-kprobes.o
- test-kprobes-objs		:= kprobes-test.o
-diff --git a/arch/arm/kernel/kprobes-opt.c b/arch/arm/kernel/kprobes-opt.c
-new file mode 100644
-index 0000000..52330fb
---- /dev/null
-+++ b/arch/arm/kernel/kprobes-opt.c
-@@ -0,0 +1,255 @@
-+/*
-+ *  Kernel Probes Jump Optimization (Optprobes)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2002, 2004
-+ * Copyright (C) Hitachi Ltd., 2012
-+ * Copyright (C) Huawei Inc., 2014
-+ */
-+
-+#include <linux/kprobes.h>
-+#include <linux/jump_label.h>
-+#include <asm/kprobes.h>
-+#include <asm/cacheflush.h>
-+/* for arm_gen_branch */
-+#include "insn.h"
-+/* for patch_text */
-+#include "patch.h"
-+
-+asm (
-+			".global optprobe_template_entry\n"
-+			"optprobe_template_entry:\n"
-+			"	sub	sp, sp, #80\n"
-+			"	stmia	sp, {r0 - r14} \n"
-+			"	add	r3, sp, #80\n"
-+			"	str	r3, [sp, #52]\n"
-+			"	mrs	r4, cpsr\n"
-+			"	str	r4, [sp, #64]\n"
-+			"	mov	r1, sp\n"
-+			"	ldr	r0, 1f\n"
-+			"	ldr	r2, 2f\n"
-+			"	blx	r2\n"
-+			"	ldr	r1, [sp, #64]\n"
-+			"	msr	cpsr_fs, r1\n"
-+			"	ldmia	sp, {r0 - r15}\n"
-+			".global optprobe_template_val\n"
-+			"optprobe_template_val:\n"
-+			"1:	.long 0\n"
-+			".global optprobe_template_call\n"
-+			"optprobe_template_call:\n"
-+			"2:	.long 0\n"
-+			".global optprobe_template_end\n"
-+			"optprobe_template_end:\n");
-+
-+#define TMPL_VAL_IDX \
-+	((long)&optprobe_template_val - (long)&optprobe_template_entry)
-+#define TMPL_CALL_IDX \
-+	((long)&optprobe_template_call - (long)&optprobe_template_entry)
-+#define TMPL_END_IDX \
-+	((long)&optprobe_template_end - (long)&optprobe_template_entry)
-+
-+/*
-+ * ARM can always optimize an instruction when using ARM ISA.
-+ */
-+int arch_prepared_optinsn(struct arch_optimized_insn *optinsn)
-+{
-+	return 1;
-+}
-+
-+/*
-+ * In ARM ISA, kprobe opt always replace one instruction (4 bytes
-+ * aligned and 4 bytes long). It is impossiable to encounter another
-+ * kprobe in the address range. So always return 0.
-+ */
-+int arch_check_optimized_kprobe(struct optimized_kprobe *op)
-+{
-+	return 0;
-+}
-+
-+/* Caller must ensure addr & 3 == 0 */
-+static int can_optimize(unsigned long paddr)
-+{
-+	return 1;
-+}
-+
-+/* Free optimized instruction slot */
-+static void
-+__arch_remove_optimized_kprobe(struct optimized_kprobe *op, int dirty)
-+{
-+	if (op->optinsn.insn) {
-+		free_optinsn_slot(op->optinsn.insn, dirty);
-+		op->optinsn.insn = NULL;
-+	}
-+}
-+
-+extern void kprobe_handler(struct pt_regs *regs);
-+
-+static void
-+optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
-+{
-+	unsigned long flags;
-+	struct kprobe *p = &op->kp;
-+	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-+
-+	/* Save skipped registers */
-+	regs->ARM_pc = (unsigned long)op->kp.addr;
-+	regs->ARM_ORIG_r0 = ~0UL;
-+
-+	local_irq_save(flags);
-+
-+	if (kprobe_running()) {
-+		kprobes_inc_nmissed_count(&op->kp);
-+	} else {
-+		__this_cpu_write(current_kprobe, &op->kp);
-+		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
-+		opt_pre_handler(&op->kp, regs);
-+		__this_cpu_write(current_kprobe, NULL);
-+	}
-+
-+	/* In each case, we must singlestep the replaced instruction. */
-+	op->kp.ainsn.insn_singlestep(p->opcode, &p->ainsn, regs);
-+
-+	local_irq_restore(flags);
-+}
-+
-+int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
-+{
-+	u8 *buf;
-+	unsigned long rel_chk;
-+	unsigned long val;
-+
-+	if (!can_optimize((unsigned long)op->kp.addr))
-+		return -EILSEQ;
-+
-+	op->optinsn.insn = get_optinsn_slot();
-+	if (!op->optinsn.insn)
-+		return -ENOMEM;
-+
-+	/*
-+	 * Verify if the address gap is in 32MiB range, because this uses
-+	 * a relative jump.
-+	 *
-+	 * kprobe opt use a 'b' instruction to branch to optinsn.insn.
-+	 * According to ARM manual, branch instruction is:
-+	 *
-+	 *   31  28 27           24 23             0
-+	 *  +------+---+---+---+---+----------------+
-+	 *  | cond | 1 | 0 | 1 | 0 |      imm24     |
-+	 *  +------+---+---+---+---+----------------+
-+	 *
-+	 * imm24 is a signed 24 bits integer. The real branch offset is computed
-+	 * by: imm32 = SignExtend(imm24:'00', 32);
-+	 *
-+	 * So the maximum forward branch should be:
-+	 *   (0x007fffff << 2) = 0x01fffffc =  0x1fffffc
-+	 * The maximum backword branch should be:
-+	 *   (0xff800000 << 2) = 0xfe000000 = -0x2000000
-+	 *
-+	 * We can simply check (rel & 0xfe000003):
-+	 *  if rel is positive, (rel & 0xfe000000) shoule be 0
-+	 *  if rel is negitive, (rel & 0xfe000000) should be 0xfe000000
-+	 *  the last '3' is used for alignment checking.
-+	 */
-+	rel_chk = (unsigned long)((long)op->optinsn.insn -
-+			(long)op->kp.addr + 8) & 0xfe000003;
-+
-+	if ((rel_chk != 0) && (rel_chk != 0xfe000000)) {
-+		__arch_remove_optimized_kprobe(op, 0);
-+		return -ERANGE;
-+	}
-+
-+	buf = (u8 *)op->optinsn.insn;
-+
-+	/* Copy arch-dep-instance from template */
-+	memcpy(buf, &optprobe_template_entry, TMPL_END_IDX);
-+
-+	/* Set probe information */
-+	val = (unsigned long)op;
-+	memcpy(buf + TMPL_VAL_IDX, &val, sizeof(val));
-+
-+	/* Set probe function call */
-+	val = (unsigned long)optimized_callback;
-+	memcpy(buf + TMPL_CALL_IDX, &val, sizeof(val));
-+
-+	flush_icache_range((unsigned long)buf,
-+			   (unsigned long)buf + TMPL_END_IDX);
-+	return 0;
-+}
-+
-+void arch_optimize_kprobes(struct list_head *oplist)
-+{
-+	struct optimized_kprobe *op, *tmp;
-+
-+	list_for_each_entry_safe(op, tmp, oplist, list) {
-+		unsigned long insn;
-+		WARN_ON(kprobe_disabled(&op->kp));
-+
-+		/*
-+		 * Backup instructions which will be replaced
-+		 * by jump address
-+		 */
-+		memcpy(op->optinsn.copied_insn, op->kp.addr,
-+				RELATIVEJUMP_SIZE);
-+
-+		insn = arm_gen_branch((unsigned long)op->kp.addr,
-+				(unsigned long)op->optinsn.insn);
-+		BUG_ON(insn == 0);
-+
-+		/*
-+		 * Make it a conditional branch if replaced insn
-+		 * is consitional
-+		 */
-+		insn = (__mem_to_opcode_arm(
-+			  op->optinsn.copied_insn[0]) & 0xf0000000) |
-+			(insn & 0x0fffffff);
-+
-+		patch_text(op->kp.addr, insn);
-+
-+		list_del_init(&op->list);
-+	}
-+}
-+
-+void arch_unoptimize_kprobe(struct optimized_kprobe *op)
-+{
-+	arch_arm_kprobe(&op->kp);
-+}
-+
-+/*
-+ * Recover original instructions and breakpoints from relative jumps.
-+ * Caller must call with locking kprobe_mutex.
-+ */
-+void arch_unoptimize_kprobes(struct list_head *oplist,
-+ 			    struct list_head *done_list)
-+{
-+	struct optimized_kprobe *op, *tmp;
-+
-+	list_for_each_entry_safe(op, tmp, oplist, list) {
-+		arch_unoptimize_kprobe(op);
-+		list_move(&op->list, done_list);
-+	}
-+}
-+
-+int arch_within_optimized_kprobe(struct optimized_kprobe *op,
-+ 				unsigned long addr)
-+{
-+	return ((unsigned long)op->kp.addr <= addr &&
-+		(unsigned long)op->kp.addr + RELATIVEJUMP_SIZE > addr);
-+}
-+
-+void arch_remove_optimized_kprobe(struct optimized_kprobe *op)
-+{
-+	__arch_remove_optimized_kprobe(op, 1);
-+}
--- 
-1.8.4
-
+> +
+> +	/*
+> +	 * After this point, freed pages will see MIGRATE_ISOLATE as
+> +	 * their pageblock migratetype on all cpus. And pcp list has
+> +	 * no free page.
+> +	 */
+> +	on_each_cpu(drain_local_pages, NULL, 1);
+>  
+> +	spin_lock_irqsave(&zone->lock, flags);
+> +	nr_pages = move_freepages_block(zone, page, MIGRATE_ISOLATE);
+> +	__mod_zone_freepage_state(zone, -nr_pages, migratetype);
+>  	spin_unlock_irqrestore(&zone->lock, flags);
+> -	if (!ret)
+> -		drain_all_pages();
+> -	return ret;
+> +
+> +	zone_pcp_enable(zone);
+> +
+> +	return 0;
+>  }
+>  
+>  void unset_migratetype_isolate(struct page *page, unsigned migratetype)
+> @@ -80,9 +93,17 @@ void unset_migratetype_isolate(struct page *page, unsigned migratetype)
+>  	spin_lock_irqsave(&zone->lock, flags);
+>  	if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
+>  		goto out;
+> +
+> +	set_pageblock_migratetype(page, migratetype);
+> +	spin_unlock_irqrestore(&zone->lock, flags);
+> +
+> +	/* Freed pages will see original migratetype after this point */
+> +	kick_all_cpus_sync();
+> +
+> +	spin_lock_irqsave(&zone->lock, flags);
+>  	nr_pages = move_freepages_block(zone, page, migratetype);
+>  	__mod_zone_freepage_state(zone, nr_pages, migratetype);
+> -	set_pageblock_migratetype(page, migratetype);
+> +
+>  out:
+>  	spin_unlock_irqrestore(&zone->lock, flags);
+>  }
+> -- 
+> 1.7.9.5
+> 
