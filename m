@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637AbaHLHzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 03:55:54 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60571 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753469AbaHLHzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 03:55:53 -0400
-Date: Tue, 12 Aug 2014 09:55:41 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        toshi.kani@hp.com, imammedo@redhat.com, mingo@kernel.org,
-        prarit@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] X86/CPU: Avoid 100ms sleep for cpu offline  during S3
-Message-ID: <20140812075541.GB32061@pd.tnic>
-References: <1407142742-29202-1-git-send-email-tianyu.lan@intel.com>
- <1407828667-14316-1-git-send-email-tianyu.lan@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1407828667-14316-1-git-send-email-tianyu.lan@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754166AbaHLH6o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 03:58:44 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:47892 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162AbaHLH6n convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 03:58:43 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] allow setting wiphy.perm_addr after driver probe
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1407801666.28221.84.camel@chimera>
+Date: Tue, 12 Aug 2014 00:59:14 -0700
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <70001DBA-E1CE-49D6-9A37-6F7CE31B61E6@holtmann.org>
+References: <1407780269.28221.63.camel@chimera> <54DF22CF-59D7-4633-A625-896F58C26A64@holtmann.org> <1407789645.28221.68.camel@chimera> <37210DB5-2911-4FA3-9299-7701C5003945@holtmann.org> <1407791075.28221.74.camel@chimera> <28066DB2-9EA9-4748-9C89-D3FBD3EC51F5@holtmann.org> <1407798738.28221.81.camel@chimera> <52896C9C-8560-4CE4-A1FB-C896D766EC87@holtmann.org> <1407801666.28221.84.camel@chimera>
+To: Daniel Gimpelevich <daniel@gimpelevich.san-francisco.ca.us>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 03:31:06PM +0800, Lan Tianyu wrote:
-> With some bad kernel configures, cpu offline consumes more than 100ms
-> during S3. This because native_cpu_die() would fall into 100ms
-> sleep when cpu idle loop thread marked cpu state to DEAD slower. It's
-> timing related issue. What native_cpu_die() does is that poll cpu
-> state and wait for 100ms if cpu state hasn't been marked to DEAD.
-> The 100ms sleep doesn't make sense. To avoid such long sleep, this
-> patch is to add struct completion to each cpu, wait for the completion
-> in the native_cpu_die() and wakeup the completion when the cpu state is
-> marked to DEAD.
-> 
-> Tested on the Intel Xeon server with 48 cores, Ivbridge and Haswell laptops.
+Hi Daniel,
 
-... and on an AMD laptop.
+>> the way I read the nl80211 code is that the NL80211_CMD_NEW_INTERFACE
+>> requires a wiphy device to be specified. And that is actually just a
+>> number. So I have no idea what the MAC has to here.
+>> 
+> OpenWrt finds a wiphy by its MAC.
 
-> the times of cpu offline on these machines are reduced from more than 100ms
-> to less than 5ms. The system suspend time reduces 2.3s on the servers.
-> 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+maybe that is the first problem right there. I see that over sysfs you get phy80211/macaddress. However if you do a dump via NL80211_CMD_GET_WIPHY then you do not have the MAC address there.
 
-Acked-by: Borislav Petkov <bp@suse.de>
+>> Why does the wiphy need to know the MAC if it is always specified from
+>> userspace when actually creating the new netdev interface. Works for
+>> P2P devices, so why wouldn't it work for access point and station
+>> mode?
+>> 
+> A MAC can be specified for the netdev, but it is assigned to a wiphy
+> identified by its MAC.
 
--- 
-Regards/Gruss,
-    Boris.
+That you find the wiphy device by its MAC address seems to be your problem. As I said, on nl80211 you are using the wiphy unique number and not a MAC address.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+If you want to use some sort of device discovery via sysfs, then use phy80211/index and other attributes to uniquely identify the device. Basing this on the MAC address seems dangerous. Especially since it might be not valid or an identical default for all cards.
+
+Regards
+
+Marcel
+
