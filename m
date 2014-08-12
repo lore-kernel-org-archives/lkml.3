@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614AbaHLRm2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 13:42:28 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:60314 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493AbaHLRm1 (ORCPT
+	id S1754235AbaHLRnR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 13:43:17 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:41628 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753929AbaHLRnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 13:42:27 -0400
-Date: Tue, 12 Aug 2014 23:12:11 +0530
-From: Srikrishan Malik <srikrishanmalik@gmail.com>
-To: "Drokin, Oleg" <oleg.drokin@intel.com>
-Cc: "<greg@kroah.com>" <greg@kroah.com>,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        "<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 08/13] staging: lustre: fix multi line strings
-Message-ID: <20140812174211.GA27354@mordor>
-Mail-Followup-To: Srikrishan Malik <srikrishanmalik@gmail.com>,
-	"Drokin, Oleg" <oleg.drokin@intel.com>,
-	"<greg@kroah.com>" <greg@kroah.com>,
-	"Dilger, Andreas" <andreas.dilger@intel.com>,
-	"<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
-	"<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>
-References: <1407781659-728-1-git-send-email-srikrishanmalik@gmail.com>
- <1407781659-728-8-git-send-email-srikrishanmalik@gmail.com>
- <FBE0C2BE-D82B-40E6-93B2-929E66130883@intel.com>
+	Tue, 12 Aug 2014 13:43:15 -0400
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Tue, 12 Aug 2014 13:43:13 -0400
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        trond.myklebust@primarydata.com
+Subject: Re: [PATCH 0/5] locks: move most locks_release_private calls
+ outside of i_lock
+Message-ID: <20140812134313.1273dc63@tlielax.poochiereds.net>
+In-Reply-To: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
+References: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <FBE0C2BE-D82B-40E6-93B2-929E66130883@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 02:17:07AM +0000, Drokin, Oleg wrote:
-> 
-> On Aug 11, 2014, at 2:27 PM, Srikrishan Malik wrote:
-> 
-> > Fixes the following checkpatch warning:
-> > 
-> > WARNING: quoted string split across lines
-> 
-> > diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-> > index 57d903156917..6c691a4763b5 100644
-> > --- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
-> > +++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-> > @@ -2055,8 +2055,8 @@ static int mdc_hsm_copytool_send(int len, void *val)
-> > 		return -EPROTO;
-> > 	}
-> > 
-> > -	CDEBUG(D_HSM, " Received message mg=%x t=%d m=%d l=%d actions=%d "
-> > -	       "on %s\n",
-> > +	CDEBUG(D_HSM,
-> > +	       " Received message mg=%x t=%d m=%d l=%d actions=%d on %s\n",
-> > 	       lh->kuc_magic, lh->kuc_transport, lh->kuc_msgtype,
-> > 	       lh->kuc_msglen, hal->hal_count, hal->hal_fsname);
-> 
-> I imagine we can drop the leading space here as well.
+On Tue, 12 Aug 2014 10:48:08 -0400
+Jeff Layton <jlayton@primarydata.com> wrote:
 
-ok, I will resend this patch including the suggested change.
-I was not sure if we can do this in single patch.
+> In the days of yore, the file locking code was primarily protected by
+> the BKL. That changed in commit 72f98e72551fa (locks: turn lock_flocks
+> into a spinlock), at which point the code was changed to be protected
+> by a conventional spinlock (mostly due to a push to finally eliminate
+> the BKL). Since then, the code has been changed to use the i_lock
+> instead of a global spinlock, but it's still under a spinlock.
+> 
+> With that change, several functions now no longer can block when they
+> originally could. This is a particular problem with the
+> fl_release_private operation. In NFSv4, that operation is used to kick
+> off a RELEASE_LOCKOWNER or FREE_STATEID call, and that requires being
+> able to do an allocation.
+> 
+> This was reported by Josh Stone here:
+> 
+>     https://bugzilla.redhat.com/show_bug.cgi?id=1089092
+> 
+> My initial stab at fixing this involved moving this to a workqueue, but
+> Trond pointed out the above change was technically a regression with the
+> way the spinlocking in the file locking code works, and suggested an
+> alternate approach to fixing it.
+> 
+> This set focuses on moving most of the locks_release_private calls
+> outside of the inode->i_lock. There are still a few that are done
+> under the i_lock in the lease handling code. Cleaning up the use of
+> the i_lock in the lease code is a larger project which we'll have to
+> tackle at some point, but there are some other cleanups that will
+> need to happen first.
+> 
+> Absent any objections, I'll plan to merge these for 3.18.
+> 
 
-> 
-> Thanks.
-> 
-> Bye,
->     Oleg
+Erm...make that v3.17...
+
+As Trond points out, the fact that we end up doing sleeping allocations
+under spinlock can allow an unprivileged user to crash a NFSv4 client.
+So I may see about merging these sooner rather than later after they've
+had a little soak time in linux-next.
+
+-- 
+Jeff Layton <jlayton@primarydata.com>
