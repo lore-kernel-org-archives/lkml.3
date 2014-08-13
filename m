@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaHMIMD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:12:03 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:61155 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264AbaHMIL5 (ORCPT
+	id S1752452AbaHMIMc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:12:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43152 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052AbaHMIM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:11:57 -0400
-Message-ID: <53EB1EE0.20002@gmail.com>
-Date: Wed, 13 Aug 2014 16:16:32 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 13 Aug 2014 04:12:29 -0400
+Date: Wed, 13 Aug 2014 10:12:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v5 tip/core/rcu 15/16] rcu: Make RCU-tasks wait for idle
+ tasks
+Message-ID: <20140813081215.GB9918@twins.programming.kicks-ass.net>
+References: <20140811224840.GA25594@linux.vnet.ibm.com>
+ <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1407797345-28227-15-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <jdelvare@suse.de>, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Mark Salter <msalter@redhat.com>,
-        "a-jacquiot@ti.com" <a-jacquiot@ti.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-c6x-dev@linux-c6x.org,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH v2] arch: Kconfig: Let all little endian architectures
- define CPU_LITTLE_ENDIAN explicitly
-References: <53EA99C3.90203@gmail.com> <CAMuHMdV_2b-A+eE--cXEFA68=72HK6mqx8+TCXRMVkyhESLYxQ@mail.gmail.com>
-In-Reply-To: <CAMuHMdV_2b-A+eE--cXEFA68=72HK6mqx8+TCXRMVkyhESLYxQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aObkNgyNMtBQZ80/"
+Content-Disposition: inline
+In-Reply-To: <1407797345-28227-15-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 8/13/14 16:03, Geert Uytterhoeven wrote:
-> CC kbuild
-> 
-> On Wed, Aug 13, 2014 at 12:48 AM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
->> index c49a775..0510a5d 100644
->> --- a/arch/arm/Kconfig
->> +++ b/arch/arm/Kconfig
->> @@ -199,6 +199,11 @@ config NEED_DMA_MAP_STATE
->>  config ARCH_SUPPORTS_UPROBES
->>         def_bool y
->>
->> +config CPU_LITTLE_ENDIAN
->> +       depends on !CPU_BIG_ENDIAN
->> +       def_bool y
->> +
->> +
->>  config ARCH_HAS_DMA_SET_COHERENT_MASK
->>         bool
-> 
-> As this is a common symbol, and replicated for all affected architectures,
-> I'm wondering if we should have the "config CPU_LITTLE_ENDIAN" in
-> common Kconfig code instead, and make the individual architectures do a
-> "select CPU_LITTLE_ENDIAN"?
-> 
+--aObkNgyNMtBQZ80/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That sounds a good idea to me.
+On Mon, Aug 11, 2014 at 03:49:04PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+>=20
+> Because idle-task code may need to be patched, RCU-tasks need to wait
+> for idle tasks to schedule.  This commit therefore detects this case
+> via context switch.  Block CPU hotplug during this time to avoid sending
+> IPIs to offline CPUs.
+>=20
+> Note that checking for changes in the dyntick-idle counters is tempting,
+> but wrong.  The reason that it is wrong is that a interrupt or NMI can
+> increment these counters without necessarily allowing the idle tasks to
+> make any forward progress.
 
-> Also we could have "config CPU_BIG_ENDIAN", too, and error out
-> if none or both are selected (can Kconfig error out?).
-> 
+I'm going to NAK this.. with that rcu_idle patch I send there's
+typically only a single idle function thats out of bounds and if its
+more it can be made that with a bit of tlc to the cpuidle driver in
+question.
 
-It is a good idea to me, welcome any members ideas, especially Kbuild
-members' ideas, suggestions or completions.
+This needs _FAR_ more justification than a maybe and a want.
 
+--aObkNgyNMtBQZ80/
+Content-Type: application/pgp-signature
 
-Thanks.
--- 
-Chen Gang
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Open, share, and attitude like air, water, and life which God blessed
+iQIcBAEBAgAGBQJT6x3fAAoJEHZH4aRLwOS6YH4QAJXyxCbJY+mYDmTj/v6pFWKI
+5syBZ0kG/fqCGw5ZAlwUYCcb2dlGmU9K2p52bwtX8RdTbKvA5qWdxhhs0oFoqWc4
+DPo8fiP9MDeKMIDzPrx5YdmYORcSpC1LM/2CgBIaOLaJUn/49Cd4S+CHsqDJvT4o
+EqzgV7ROKijSmG+rKb1imdJynlH5fWCgyemyBIiGou0OLKh4zPB7TwiPBaYjmvbT
+dVWy5YXPJjSBHpWLJoKj/Gmv7dCoNoi5CBH0pawSHlNcvBhrdJgL5C3unXMW6r1o
+jppzZQkBhW0/9HWMa7DYlZfiIzCukHsEJznqr5BtUkVwDuAVQ7XookXYkEkjY4BC
+U8IBvGe39jYisGOHOcVgie4JqEhPB8W0H0dx6B6LNjX/yeRl0PyNBKb6CJvOKTz0
+fz3Be2OjcdwnGWZFinRN3qKGxfZFNKsNC/zUM/JkGwoTlf0iuHhWIQinM47eX9B9
+k8VdeXvg5TejXRBYcOClZ73MUWb0GtlkBD6oDCwIBjvcuGnIYM29lJyAGQcym35i
+mffrKRLJDDhm2XF8VRglsoCWOI5lbXlzvYjDbnoVrFdb+WF08ie+cCpW9B+sfGWZ
+Jcw+B7XiQbw9wAahd72OZXY9I2AplYHR0xP+hyiMUCPGBz3ssnLNSS4mPI6ijKik
+QqLR5H7hBZV5kEvrg+GC
+=zxKp
+-----END PGP SIGNATURE-----
+
+--aObkNgyNMtBQZ80/--
