@@ -1,186 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693AbaHMCKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 22:10:45 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:51396 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069AbaHMCKn (ORCPT
+	id S1753797AbaHMCQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 22:16:59 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:62468 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567AbaHMCQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 22:10:43 -0400
-Date: Tue, 12 Aug 2014 22:10:40 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3] irqchip: gic: Allow gic_arch_extn hooks to call into
- scheduler
-In-Reply-To: <1407891264-4826-1-git-send-email-sboyd@codeaurora.org>
-Message-ID: <alpine.LFD.2.11.1408122205060.6061@knanqh.ubzr>
-References: <1407891264-4826-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 12 Aug 2014 22:16:58 -0400
+Date: Tue, 12 Aug 2014 22:17:07 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Mario Kleiner <mario.kleiner.de@gmail.com>
+Cc: Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, kamal@canonical.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@redhat.com>, ben@decadent.org.uk,
+        m.szyprowski@samsung.com
+Subject: Re: CONFIG_DMA_CMA causes ttm performance problems/hangs.
+Message-ID: <20140813021706.GC3001@gmail.com>
+References: <53E5B41B.3030009@vmware.com>
+ <60bd3db2-4919-40c4-a4ff-1b7b043cadfc@email.android.com>
+ <53E628FE.10808@vmware.com>
+ <53E6E2CE.8070005@gmail.com>
+ <53E75192.3070003@vmware.com>
+ <53E7B39D.2060900@gmail.com>
+ <53E896C9.5010501@vmware.com>
+ <20140811151712.GA3541@gmail.com>
+ <53EAC461.2060503@daenzer.net>
+ <53EAC79F.4050705@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53EAC79F.4050705@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Aug 2014, Stephen Boyd wrote:
+On Wed, Aug 13, 2014 at 04:04:15AM +0200, Mario Kleiner wrote:
+> On 08/13/2014 03:50 AM, Michel Dänzer wrote:
+> >On 12.08.2014 00:17, Jerome Glisse wrote:
+> >>On Mon, Aug 11, 2014 at 12:11:21PM +0200, Thomas Hellstrom wrote:
+> >>>On 08/10/2014 08:02 PM, Mario Kleiner wrote:
+> >>>>On 08/10/2014 01:03 PM, Thomas Hellstrom wrote:
+> >>>>>On 08/10/2014 05:11 AM, Mario Kleiner wrote:
+> >>>>>>The other problem is that probably TTM does not reuse pages from the
+> >>>>>>DMA pool. If i trace the __ttm_dma_alloc_page
+> >>>>>><https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__ttm_dma_alloc_page&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=7898522bba274e4dcc332735fbcf0c96e48918f60c2ee8e9a3e9c73ab3487bd0>
+> >>>>>>and
+> >>>>>>__ttm_dma_free_page
+> >>>>>><https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__ttm_dma_alloc_page&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=7898522bba274e4dcc332735fbcf0c96e48918f60c2ee8e9a3e9c73ab3487bd0>
+> >>>>>>calls for
+> >>>>>>those single page allocs/frees, then over a 20 second interval of
+> >>>>>>tracing and switching tabs in firefox, scrolling things around etc. i
+> >>>>>>find about as many alloc's as i find free's, e.g., 1607 allocs vs.
+> >>>>>>1648 frees.
+> >>>>>This is because historically the pools have been designed to keep only
+> >>>>>pages with nonstandard caching attributes since changing page caching
+> >>>>>attributes have been very slow but the kernel page allocators have been
+> >>>>>reasonably fast.
+> >>>>>
+> >>>>>/Thomas
+> >>>>Ok. A bit more ftraceing showed my hang problem case goes through the
+> >>>>"if (is_cached)" paths, so the pool doesn't recycle anything and i see
+> >>>>it bouncing up and down by 4 pages all the time.
+> >>>>
+> >>>>But for the non-cached case, which i don't hit with my problem, could
+> >>>>one of you look at line 954...
+> >>>>
+> >>>>https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/source/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c%23L954&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=e15c51805d429ee6d8960d6b88035e9811a1cdbfbf13168eec2fbb2214b99c60
+> >>>>
+> >>>>
+> >>>>... and tell me why that unconditional npages = count; assignment
+> >>>>makes sense? It seems to essentially disable all recycling for the dma
+> >>>>pool whenever the pool isn't filled up to/beyond its maximum with free
+> >>>>pages? When the pool is filled up, lots of stuff is recycled, but when
+> >>>>it is already somewhat below capacity, it gets "punished" by not
+> >>>>getting refilled? I'd just like to understand the logic behind that line.
+> >>>>
+> >>>>thanks,
+> >>>>-mario
+> >>>I'll happily forward that question to Konrad who wrote the code (or it
+> >>>may even stem from the ordinary page pool code which IIRC has Dave
+> >>>Airlie / Jerome Glisse as authors)
+> >>This is effectively bogus code, i now wonder how it came to stay alive.
+> >>Attached patch will fix that.
+> >I haven't tested Mario's scenario specifically, but it survived piglit
+> >and the UE4 Effects Cave Demo (for which 1GB of VRAM isn't enough, so
+> >some BOs ended up in GTT instead with write-combined CPU mappings) on
+> >radeonsi without any noticeable issues.
+> >
+> >Tested-by: Michel Dänzer <michel.daenzer@amd.com>
+> >
+> >
+> 
+> I haven't tested the patch yet. For the original bug it won't help directly,
+> because the super-slow allocations which cause the desktop stall are
+> tt_cached allocations, so they go through the if (is_cached) code path which
+> isn't improved by Jerome's patch. is_cached always releases memory
+> immediately, so the tt_cached pool just bounces up and down between 4 and 7
+> pages. So this was an independent issue. The slow allocations i noticed were
+> mostly caused by exa allocating new gem bo's, i don't know which path is
+> taken by 3d graphics?
+> 
+> However, the fixed ttm path could indirectly solve the DMA_CMA stalls by
+> completely killing CMA for its intended purpose. Typical CMA sizes are
+> probably around < 100 MB (kernel default is 16 MB, Ubuntu config is 64 MB),
+> and the limit for the page pool seems to be more like 50% of all system RAM?
+> Iow. if the ttm dma pool is allowed to grow that big with recycled pages, it
+> probably will almost completely monopolize the whole CMA memory after a
+> short amount of time. ttm won't suffer stalls if it essentially doesn't
+> interact with CMA anymore after a warmup period, but actual clients which
+> really need CMA (ie., hardware without scatter-gather dma etc.) will be
+> starved of what they need as far as my limited understanding of the CMA
+> goes.
 
-> Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
-> 2012-04-12) introduced an acquisition of the irq_controller_lock
-> in gic_raise_softirq() which can lead to a spinlock recursion if
-> the gic_arch_extn hooks call into the scheduler (via complete()
-> or wake_up(), etc.). This happens because gic_arch_extn hooks are
-> normally called with the irq_controller_lock held and calling
-> into the scheduler may cause us to call smp_send_reschedule()
-> which will grab the irq_controller_lock again. Here's an example
-> from a vendor kernel (note that the gic_arch_extn hook code here
-> isn't actually in mainline):
-> 
-> BUG: spinlock recursion on CPU#0, swapper/0/1
->  lock: irq_controller_lock+0x0/0x18, .magic: dead4ead, .owner: sw
-> er_cpu: 0
-> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.10-00430-g3d433c4e
-> 
-> Call trace:
-> [<ffffffc000087e1c>] dump_backtrace+0x0/0x140
-> [<ffffffc000087f6c>] show_stack+0x10/0x1c
-> [<ffffffc00064732c>] dump_stack+0x74/0xc4
-> [<ffffffc0006446c0>] spin_dump+0x78/0x88
-> [<ffffffc0006446f4>] spin_bug+0x24/0x34
-> [<ffffffc0000d47d0>] do_raw_spin_lock+0x58/0x148
-> [<ffffffc00064d398>] _raw_spin_lock_irqsave+0x24/0x38
-> [<ffffffc0002c9d7c>] gic_raise_softirq+0x2c/0xbc
-> [<ffffffc00008daa4>] smp_send_reschedule+0x34/0x40
-> [<ffffffc0000c1e94>] try_to_wake_up+0x224/0x288
-> [<ffffffc0000c1f4c>] default_wake_function+0xc/0x18
-> [<ffffffc0000ceef0>] __wake_up_common+0x50/0x8c
-> [<ffffffc0000cef3c>] __wake_up_locked+0x10/0x1c
-> [<ffffffc0000cf734>] complete+0x3c/0x5c
-> [<ffffffc0002f0e78>] msm_mpm_enable_irq_exclusive+0x1b8/0x1c8
-> [<ffffffc0002f0f58>] __msm_mpm_enable_irq+0x4c/0x7c
-> [<ffffffc0002f0f94>] msm_mpm_enable_irq+0xc/0x18
-> [<ffffffc0002c9bb0>] gic_unmask_irq+0x40/0x7c
-> [<ffffffc0000de5f4>] irq_enable+0x2c/0x48
-> [<ffffffc0000de65c>] irq_startup+0x4c/0x74
-> [<ffffffc0000dd2fc>] __setup_irq+0x264/0x3f0
-> [<ffffffc0000dd5e0>] request_threaded_irq+0xcc/0x11c
-> [<ffffffc0000df254>] devm_request_threaded_irq+0x68/0xb4
-> [<ffffffc000471520>] msm_iommu_ctx_probe+0x124/0x2d4
-> [<ffffffc000337374>] platform_drv_probe+0x20/0x54
-> [<ffffffc00033598c>] driver_probe_device+0x158/0x340
-> [<ffffffc000335c20>] __driver_attach+0x60/0x90
-> [<ffffffc000333c9c>] bus_for_each_dev+0x6c/0x8c
-> [<ffffffc000335304>] driver_attach+0x1c/0x28
-> [<ffffffc000334f14>] bus_add_driver+0x120/0x204
-> [<ffffffc0003362e4>] driver_register+0xbc/0x10c
-> [<ffffffc000337348>] __platform_driver_register+0x5c/0x68
-> [<ffffffc00094c478>] msm_iommu_driver_init+0x54/0x7c
-> [<ffffffc0000813ec>] do_one_initcall+0xa4/0x130
-> [<ffffffc00091d928>] kernel_init_freeable+0x138/0x1dc
-> [<ffffffc000642578>] kernel_init+0xc/0xd4
-> 
-> We really just want to synchronize the sending of an SGI with the
-> update of the gic_cpu_map[], so introduce a new SGI lock that we
-> can use to synchronize the two code paths. Three main events are
-> happening that we have to consider:
-> 
->   1. We're updating the gic_cpu_mask to point to an incoming CPU
-> 
->   2. We're (potentially) sending an SGI to the outgoing CPU
-> 
->   3. We're redirecting any pending SGIs for the outgoing CPU to the
->      incoming CPU.
-> 
-> Events 1 and 3 are already ordered within the same CPU by means
-> of program order and use of I/O accessors. Events 1 and 2 don't
-> need to be ordered, but events 2 and 3 do because any SGIs for
-> the outgoing CPU need to be pending before we can redirect them.
-> Synchronize by acquiring a new lock around event 2 and before
-> event 3. Use smp_mb__after_unlock_lock() before event 3 to ensure
-> that event 1 is seen before event 3 on other CPUs that may be
-> executing event 2. We put this all behind the b.L switcher config
-> option so that if we're not using this feature we don't have to
-> acquire any locks at all in the IPI path.
-> 
-> Cc: Nicolas Pitre <nico@linaro.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/irqchip/irq-gic.c | 25 ++++++++++++++++++++++---
->  1 file changed, 22 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 7c131cf7cc13..c1dc65209899 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -81,6 +81,11 @@ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
->  #define NR_GIC_CPU_IF 8
->  static u8 gic_cpu_map[NR_GIC_CPU_IF] __read_mostly;
->  
-> +#ifdef CONFIG_BL_SWITCHER
-> +/* Synchronize switching CPU interface and sending SGIs */
-> +static DEFINE_RAW_SPINLOCK(gic_sgi_lock);
+Yes currently we allow the pool to be way too big, given that pool was probably
+never really use we most likely never had much of an issue. So i would hold on
+applying my patch until more proper limit are in place. My thinking was to go
+for something like 32/64M at most and less then that if < 256M total ram. I also
+think that we should lower the pool size on first call to shrink and only increase
+it again after some timeout since last call to shrink so that when shrink is call
+we minimize our pool size at least for a time. Will put together couple patches
+for doing that.
 
-What about ...
-
-#define sgi_map_lock(flags) raw_spin_lock_irqsave(&gic_sgi_lock, flags)
-#define sgi_map_unlock(flags) raw_spin_unlock_irqrestore(&gic_sgi_lock, 
-flags)
-#else sgi_map_lock(flags) (void)(flags)
-#define sgi_map_unlock(flags) (void)(flags)
-
-That would avoid some #ifdefs in the main code.
-
-> +#endif
-> +
->  /*
->   * Supported arch specific GIC irq extension.
->   * Default make them NULL.
-> @@ -656,9 +661,12 @@ static void __init gic_pm_init(struct gic_chip_data *gic)
->  static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  {
->  	int cpu;
-> -	unsigned long flags, map = 0;
-> +	unsigned long map = 0;
-> +#ifdef CONFIG_BL_SWITCHER
-> +	unsigned long flags;
->  
-> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-> +	raw_spin_lock_irqsave(&gic_sgi_lock, flags);
-> +#endif
->  
->  	/* Convert our logical CPU mask into a physical one. */
->  	for_each_cpu(cpu, mask)
-> @@ -673,7 +681,9 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	/* this always happens on GIC0 */
->  	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
->  
-> -	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-> +#ifdef CONFIG_BL_SWITCHER
-> +	raw_spin_unlock_irqrestore(&gic_sgi_lock, flags);
-> +#endif
->  }
->  #endif
->  
-> @@ -764,6 +774,15 @@ void gic_migrate_target(unsigned int new_cpu_id)
->  
->  	raw_spin_unlock(&irq_controller_lock);
->  
-> +	raw_spin_lock(&gic_sgi_lock);
-> +	/*
-> +	 * Ensure that the gic_cpu_map update above is seen in
-> +	 * gic_raise_softirq() before we redirect any pending SGIs that
-> +	 * may have been raised for the outgoing CPU (cur_cpu_id)
-> +	 */
-> +	smp_mb__after_unlock_lock();
-> +	raw_spin_unlock(&gic_sgi_lock);
-> +
->  	/*
->  	 * Now let's migrate and clear any potential SGIs that might be
->  	 * pending for us (cur_cpu_id).  Since GIC_DIST_SGI_PENDING_SET
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
 > 
+> So fwiw probably the fix to ttm will increase the urgency for the CMA people
+> to come up with a fix/optimization for the allocator. Unless it doesn't
+> matter if most desktop systems have CMA disabled by default, and ttm is
+> mostly used by desktop graphics drivers (nouveau, radeon, vmgfx)? I only
+> stumbled over the problem because the Ubuntu 3.16 mainline testing kernels
+> are compiled with CMA on.
+> 
+
+Enabling cma on x86 is proof of brain damage that said the dma allocator should
+not use the cma area for single page allocation.
+
+> -mario
 > 
