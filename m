@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557AbaHMHsL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 03:48:11 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.106]:36865 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751468AbaHMHsJ (ORCPT
+	id S1751673AbaHMHsa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 03:48:30 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.161]:40680 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751510AbaHMHs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:48:09 -0400
+	Wed, 13 Aug 2014 03:48:28 -0400
 X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-13.tower-194.messagelabs.com!1407916085!21344593!1
+X-Msg-Ref: server-10.tower-39.messagelabs.com!1407916104!20700761!1
 X-Originating-IP: [80.255.6.145]
 X-StarScan-Received: 
 X-StarScan-Version: 6.11.3; banners=-,-,-
 X-VirusChecked: Checked
 X-PGP-Universal: processed;
-	by keys.men.de on Wed, 13 Aug 2014 09:48:05 +0200
-Date: Wed, 13 Aug 2014 10:39:59 +0200
+	by keys.men.de on Wed, 13 Aug 2014 09:48:24 +0200
+Date: Wed, 13 Aug 2014 10:40:17 +0200
 From: Andreas Werner <andreas.werner@men.de>
 To: <linux-kernel@vger.kernel.org>
 CC: <andreas.werner@men.de>, <sameo@linux.intel.com>, <lee.jones@linaro.org>,
@@ -23,9 +23,9 @@ CC: <andreas.werner@men.de>, <sameo@linux.intel.com>, <lee.jones@linaro.org>,
         <cooloney@gmail.com>, <rpurdie@rpsys.net>,
         <linux-leds@vger.kernel.org>, <jdelvare@suse.de>, <linux@roeck-us.net>,
         <lm-sensors@lm-sensors.org>
-Subject: [PATCH v4 2/4] drivers/watchdog/menf21bmc_wdt: introduce MEN
- 14F021P00 BMC Watchdog driver
-Message-ID: <af461d35d8e7e6300fd3bd2cb4e94f78d5445132.1407918792.git.andreas.werner@men.de>
+Subject: [PATCH v4 3/4] drivers/leds/leds-menf21bmc: introduce MEN 14F021P00
+ BMC LED driver
+Message-ID: <b3c6bc75345ba821572b22e05432960f7867bdbb.1407918792.git.andreas.werner@men.de>
 References: <cover.1407918792.git.andreas.werner@men.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
@@ -37,52 +37,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added driver to support the 14F021P00 BMC Watchdog.
-The BMC is a Board Management Controller including watchdog functionality.
+Added driver to support the 14F021P00 BMC LEDs.
+The BMC is a Board Management Controller including four LEDs which
+can be switched on and off.
 
 Signed-off-by: Andreas Werner <andreas.werner@men.de>
 ---
- drivers/watchdog/Kconfig         |   7 ++
- drivers/watchdog/Makefile        |   1 +
- drivers/watchdog/menf21bmc_wdt.c | 203 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 211 insertions(+)
- create mode 100644 drivers/watchdog/menf21bmc_wdt.c
+ drivers/leds/Kconfig          |   6 ++
+ drivers/leds/Makefile         |   1 +
+ drivers/leds/leds-menf21bmc.c | 131 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 138 insertions(+)
+ create mode 100644 drivers/leds/leds-menf21bmc.c
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 76dd541..f96431d 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -95,6 +95,13 @@ config GPIO_WATCHDOG
- 	  If you say yes here you get support for watchdog device
- 	  controlled through GPIO-line.
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index 27cf0cd..d38ff3f 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -458,6 +458,12 @@ config LEDS_OT200
+ 	  This option enables support for the LEDs on the Bachmann OT200.
+ 	  Say Y to enable LEDs on the Bachmann OT200.
  
-+config MENF21BMC_WATCHDOG
-+	tristate "MEN 14F021P00 BMC Watchdog"
-+	depends on MFD_MENF21BMC
-+	select WATCHDOG_CORE
++config LEDS_MENF21BMC
++	tristate "LED support for the MEN 14F021P00 BMC"
++	depends on LEDS_CLASS && MFD_MENF21BMC
 +	help
-+	  Say Y here to include support for the MEN 14F021P00 BMC Watchdog.
++	  Say Y here to include support for the MEN 14F021P00 BMC LEDs.
 +
- config WM831X_WATCHDOG
- 	tristate "WM831x watchdog"
- 	depends on MFD_WM831X
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index 468c320..de17014 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -178,3 +178,4 @@ obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
- obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
- obj-$(CONFIG_MAX63XX_WATCHDOG) += max63xx_wdt.o
- obj-$(CONFIG_SOFT_WATCHDOG) += softdog.o
-+obj-$(CONFIG_MENF21BMC_WATCHDOG) += menf21bmc_wdt.o
-diff --git a/drivers/watchdog/menf21bmc_wdt.c b/drivers/watchdog/menf21bmc_wdt.c
+ comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
+ 
+ config LEDS_BLINKM
+diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+index 3c03666..cadc433 100644
+--- a/drivers/leds/Makefile
++++ b/drivers/leds/Makefile
+@@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)		+= leds-max8997.o
+ obj-$(CONFIG_LEDS_LM355x)		+= leds-lm355x.o
+ obj-$(CONFIG_LEDS_BLINKM)		+= leds-blinkm.o
+ obj-$(CONFIG_LEDS_VERSATILE)		+= leds-versatile.o
++obj-$(CONFIG_LEDS_MENF21BMC)		+= leds-menf21bmc.o
+ 
+ # LED SPI Drivers
+ obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
+diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
 new file mode 100644
-index 0000000..604824d
+index 0000000..4621f72
 --- /dev/null
-+++ b/drivers/watchdog/menf21bmc_wdt.c
-@@ -0,0 +1,203 @@
++++ b/drivers/leds/leds-menf21bmc.c
+@@ -0,0 +1,131 @@
 +/*
-+ *  MEN 14F021P00 Board Management Controller (BMC) Watchdog Driver.
++ *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
++ *
++ *  This is the core LED driver of the MEN 14F021P00 BMC.
++ *  There are four LEDs available which can be switched on and off.
++ *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
 + *
 + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
 + *
@@ -92,198 +99,122 @@ index 0000000..604824d
 + *  option) any later version.
 + */
 +
-+#include <linux/kernel.h>
-+#include <linux/device.h>
 +#include <linux/module.h>
-+#include <linux/watchdog.h>
++#include <linux/kernel.h>
 +#include <linux/platform_device.h>
++#include <linux/leds.h>
 +#include <linux/i2c.h>
 +
-+#define DEVNAME "menf21bmc_wdt"
++#define BMC_CMD_LED_GET_SET	0xA0
++#define BMC_BIT_LED_STATUS	BIT(0)
++#define BMC_BIT_LED_HOTSWAP	BIT(1)
++#define BMC_BIT_LED_USER1	BIT(2)
++#define BMC_BIT_LED_USER2	BIT(3)
 +
-+#define BMC_CMD_WD_ON		0x11
-+#define BMC_CMD_WD_OFF		0x12
-+#define BMC_CMD_WD_TRIG		0x13
-+#define BMC_CMD_WD_TIME		0x14
-+#define BMC_CMD_WD_STATE	0x17
-+#define BMC_WD_OFF_VAL		0x69
-+#define BMC_CMD_RST_RSN		0x92
-+
-+#define BMC_WD_TIMEOUT_MIN	1	/* in sec */
-+#define BMC_WD_TIMEOUT_MAX	6553	/* in sec */
-+
-+static bool nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, bool, 0);
-+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-+				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-+
-+struct menf21bmc_wdt {
-+	struct watchdog_device wdt;
++struct menf21bmc_led {
++	struct led_classdev cdev;
++	u8 led_bit;
++	const char *name;
 +	struct i2c_client *i2c_client;
 +};
 +
-+static int menf21bmc_wdt_set_bootstatus(struct menf21bmc_wdt *data)
++static struct menf21bmc_led leds[] = {
++	{
++		.name = "menf21bmc:led_status",
++		.led_bit = BMC_BIT_LED_STATUS,
++	},
++	{
++		.name = "menf21bmc:led_hotswap",
++		.led_bit = BMC_BIT_LED_HOTSWAP,
++	},
++	{
++		.name = "menf21bmc:led_user1",
++		.led_bit = BMC_BIT_LED_USER1,
++	},
++	{
++		.name = "menf21bmc:led_user2",
++		.led_bit = BMC_BIT_LED_USER2,
++	}
++};
++
++static DEFINE_MUTEX(led_lock);
++
++static void
++menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
 +{
-+	int rst_rsn;
++	int led_val;
++	struct menf21bmc_led *led = container_of(led_cdev,
++					struct menf21bmc_led, cdev);
 +
-+	rst_rsn = i2c_smbus_read_byte_data(data->i2c_client, BMC_CMD_RST_RSN);
-+	if (rst_rsn < 0)
-+		return rst_rsn;
++	mutex_lock(&led_lock);
++	led_val = i2c_smbus_read_byte_data(led->i2c_client,
++						BMC_CMD_LED_GET_SET);
++	if (led_val < 0)
++		goto err_out;
 +
-+	if (rst_rsn == 0x02)
-+		data->wdt.bootstatus |= WDIOF_CARDRESET;
-+	else if (rst_rsn == 0x05)
-+		data->wdt.bootstatus |= WDIOF_EXTERN1;
-+	else if (rst_rsn == 0x06)
-+		data->wdt.bootstatus |= WDIOF_EXTERN2;
-+	else if (rst_rsn == 0x0A)
-+		data->wdt.bootstatus |= WDIOF_POWERUNDER;
++	if (value == LED_OFF)
++		led_val &= ~led->led_bit;
++	else
++		led_val |= led->led_bit;
 +
-+	return 0;
++	i2c_smbus_write_byte_data(led->i2c_client,
++					BMC_CMD_LED_GET_SET, led_val);
++err_out:
++	mutex_unlock(&led_lock);
 +}
 +
-+static int menf21bmc_wdt_start(struct watchdog_device *wdt)
++static int menf21bmc_led_probe(struct platform_device *pdev)
 +{
-+	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-+
-+	return i2c_smbus_write_byte(drv_data->i2c_client, BMC_CMD_WD_ON);
-+}
-+
-+static int menf21bmc_wdt_stop(struct watchdog_device *wdt)
-+{
-+	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-+
-+	return i2c_smbus_write_byte_data(drv_data->i2c_client,
-+					BMC_CMD_WD_OFF, BMC_WD_OFF_VAL);
-+}
-+
-+static int
-+menf21bmc_wdt_settimeout(struct watchdog_device *wdt, unsigned int timeout)
-+{
++	int i;
 +	int ret;
-+	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-+
-+	/*
-+	 *  BMC Watchdog does have a resolution of 100ms.
-+	 *  Watchdog API defines the timeout in seconds, so we have to
-+	 *  multiply the value.
-+	 */
-+	ret = i2c_smbus_write_word_data(drv_data->i2c_client,
-+						BMC_CMD_WD_TIME, timeout * 10);
-+	if (ret < 0)
-+		return ret;
-+
-+	wdt->timeout = timeout;
-+
-+	return 0;
-+}
-+
-+static int menf21bmc_wdt_ping(struct watchdog_device *wdt)
-+{
-+	struct menf21bmc_wdt *drv_data = watchdog_get_drvdata(wdt);
-+
-+	return i2c_smbus_write_byte(drv_data->i2c_client, BMC_CMD_WD_TRIG);
-+}
-+
-+static const struct watchdog_info menf21bmc_wdt_info = {
-+	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
-+	.identity = DEVNAME,
-+};
-+
-+static const struct watchdog_ops menf21bmc_wdt_ops = {
-+	.owner		= THIS_MODULE,
-+	.start		= menf21bmc_wdt_start,
-+	.stop		= menf21bmc_wdt_stop,
-+	.ping		= menf21bmc_wdt_ping,
-+	.set_timeout	= menf21bmc_wdt_settimeout,
-+};
-+
-+static int menf21bmc_wdt_probe(struct platform_device *pdev)
-+{
-+	int ret, bmc_timeout;
-+	struct menf21bmc_wdt *drv_data;
 +	struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
 +
-+	drv_data = devm_kzalloc(&pdev->dev,
-+				sizeof(struct menf21bmc_wdt), GFP_KERNEL);
-+	if (!drv_data)
-+		return -ENOMEM;
-+
-+	drv_data->wdt.ops = &menf21bmc_wdt_ops;
-+	drv_data->wdt.info = &menf21bmc_wdt_info;
-+	drv_data->wdt.min_timeout = BMC_WD_TIMEOUT_MIN;
-+	drv_data->wdt.max_timeout = BMC_WD_TIMEOUT_MAX;
-+	drv_data->i2c_client = i2c_client;
-+
-+	/*
-+	 * Get the current wdt timeout value from the BMC because
-+	 * the BMC will save the value set before if the system restarts.
-+	 */
-+	bmc_timeout = i2c_smbus_read_word_data(drv_data->i2c_client,
-+							BMC_CMD_WD_TIME);
-+	if (bmc_timeout < 0) {
-+		dev_err(&pdev->dev, "failed to get current WDT timeout\n");
-+		return bmc_timeout;
++	for (i = 0; i < ARRAY_SIZE(leds); i++) {
++		leds[i].cdev.name = leds[i].name;
++		leds[i].cdev.brightness_set = menf21bmc_led_set;
++		leds[i].i2c_client = i2c_client;
++		ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
++		if (ret < 0)
++			goto err_free_leds;
 +	}
++	dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
 +
-+	watchdog_init_timeout(&drv_data->wdt, bmc_timeout / 10, &pdev->dev);
-+	watchdog_set_nowayout(&drv_data->wdt, nowayout);
-+	watchdog_set_drvdata(&drv_data->wdt, drv_data);
-+	platform_set_drvdata(pdev, drv_data);
++	return 0;
 +
-+	ret = menf21bmc_wdt_set_bootstatus(drv_data);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to set Watchdog bootstatus\n");
-+		return ret;
-+	}
++err_free_leds:
++	dev_err(&pdev->dev, "failed to register LED device\n");
 +
-+	ret = watchdog_register_device(&drv_data->wdt);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to register Watchdog device\n");
-+		return ret;
-+	}
++	for (i = i - 1; i >= 0; i--)
++		led_classdev_unregister(&leds[i].cdev);
 +
-+	dev_info(&pdev->dev, "MEN 14F021P00 BMC Watchdog device enabled\n");
++	return ret;
++}
++
++static int menf21bmc_led_remove(struct platform_device *pdev)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(leds); i++)
++		led_classdev_unregister(&leds[i].cdev);
 +
 +	return 0;
 +}
 +
-+static int menf21bmc_wdt_remove(struct platform_device *pdev)
-+{
-+	struct menf21bmc_wdt *drv_data = platform_get_drvdata(pdev);
-+
-+	dev_warn(&pdev->dev,
-+		"Unregister MEN 14F021P00 BMC Watchdog device, board may reset\n");
-+
-+	watchdog_unregister_device(&drv_data->wdt);
-+
-+	return 0;
-+}
-+
-+static void menf21bmc_wdt_shutdown(struct platform_device *pdev)
-+{
-+	struct menf21bmc_wdt *drv_data = platform_get_drvdata(pdev);
-+
-+	i2c_smbus_write_word_data(drv_data->i2c_client,
-+					BMC_CMD_WD_OFF, BMC_WD_OFF_VAL);
-+}
-+
-+static struct  platform_driver menf21bmc_wdt = {
++static struct platform_driver menf21bmc_led = {
++	.probe		= menf21bmc_led_probe,
++	.remove		= menf21bmc_led_remove,
 +	.driver		= {
-+		.owner = THIS_MODULE,
-+		.name	= DEVNAME,
++		.name		= "menf21bmc_led",
++		.owner		= THIS_MODULE,
 +	},
-+	.probe		= menf21bmc_wdt_probe,
-+	.remove		= menf21bmc_wdt_remove,
-+	.shutdown	= menf21bmc_wdt_shutdown,
 +};
 +
-+module_platform_driver(menf21bmc_wdt);
++module_platform_driver(menf21bmc_led);
 +
-+MODULE_DESCRIPTION("MEN 14F021P00 BMC Watchdog driver");
 +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
++MODULE_DESCRIPTION("MEN 14F021P00 BMC led driver");
 +MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:menf21bmc_wdt");
++MODULE_ALIAS("platform:menf21bmc_led");
 -- 
 2.0.4
 
