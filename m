@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaHMH6u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 03:58:50 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:51867 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203AbaHMH6r (ORCPT
+	id S1752675AbaHMIAq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:00:46 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:38445 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242AbaHMH6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:58:47 -0400
+	Wed, 13 Aug 2014 03:58:49 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -20,9 +20,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v4 net-next 21/26] samples: bpf: example of tracing filters with eBPF
-Date: Wed, 13 Aug 2014 00:57:32 -0700
-Message-Id: <1407916658-8731-22-git-send-email-ast@plumgrid.com>
+Subject: [PATCH RFC v4 net-next 22/26] bpf: llvm backend
+Date: Wed, 13 Aug 2014 00:57:33 -0700
+Message-Id: <1407916658-8731-23-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
 References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
@@ -30,171 +30,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-simple packet drop monitor:
-- in-kernel eBPF program attaches to kfree_skb() event and records number
-  of packet drops at given location
-- userspace iterates over the map every second and prints stats
+llvm backend that generated eBPF and emits either
+binary ELF or human readable eBPF assembler
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- samples/bpf/Makefile  |    3 +-
- samples/bpf/dropmon.c |  131 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 133 insertions(+), 1 deletion(-)
- create mode 100644 samples/bpf/dropmon.c
 
-diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
-index 63c65e5faf58..caf1ab93b37c 100644
---- a/samples/bpf/Makefile
-+++ b/samples/bpf/Makefile
-@@ -2,9 +2,10 @@
- obj- := dummy.o
- 
- # List of programs to build
--hostprogs-y := sock_example
-+hostprogs-y := sock_example dropmon
- 
- sock_example-objs := sock_example.o libbpf.o
-+dropmon-objs := dropmon.o libbpf.o
- 
- # Tell kbuild to always build the programs
- always := $(hostprogs-y)
-diff --git a/samples/bpf/dropmon.c b/samples/bpf/dropmon.c
-new file mode 100644
-index 000000000000..475a075bf38a
---- /dev/null
-+++ b/samples/bpf/dropmon.c
-@@ -0,0 +1,131 @@
-+/* simple packet drop monitor:
-+ * - in-kernel eBPF program attaches to kfree_skb() event and records number
-+ *   of packet drops at given location
-+ * - userspace iterates over the map every second and prints stats
-+ */
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <asm-generic/socket.h>
-+#include <linux/netlink.h>
-+#include <net/ethernet.h>
-+#include <net/if.h>
-+#include <linux/sockios.h>
-+#include <linux/if_packet.h>
-+#include <linux/bpf.h>
-+#include <errno.h>
-+#include <sys/socket.h>
-+#include <sys/ioctl.h>
-+#include <linux/unistd.h>
-+#include <string.h>
-+#include <linux/filter.h>
-+#include <stdlib.h>
-+#include <arpa/inet.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include <stdbool.h>
-+#include "libbpf.h"
-+
-+#define TRACEPOINT "/sys/kernel/debug/tracing/events/skb/kfree_skb/"
-+
-+static int write_to_file(const char *file, const char *str, bool keep_open)
-+{
-+	int fd, err;
-+
-+	fd = open(file, O_WRONLY);
-+	err = write(fd, str, strlen(str));
-+	(void) err;
-+
-+	if (keep_open) {
-+		return fd;
-+	} else {
-+		close(fd);
-+		return -1;
-+	}
-+}
-+
-+static int dropmon(void)
-+{
-+	/* the following eBPF program is equivalent to C:
-+	 * void filter(struct bpf_context *ctx)
-+	 * {
-+	 *   long loc = ctx->arg2;
-+	 *   long init_val = 1;
-+	 *   void *value;
-+	 *
-+	 *   value = bpf_map_lookup_elem(MAP_ID, &loc);
-+	 *   if (value) {
-+	 *      (*(long *) value) += 1;
-+	 *   } else {
-+	 *      bpf_map_update_elem(MAP_ID, &loc, &init_val);
-+	 *   }
-+	 * }
-+	 */
-+	static struct bpf_insn prog[] = {
-+		BPF_LDX_MEM(BPF_DW, BPF_REG_2, BPF_REG_1, 8), /* r2 = *(u64 *)(r1 + 8) */
-+		BPF_STX_MEM(BPF_DW, BPF_REG_10, BPF_REG_2, -8), /* *(u64 *)(fp - 8) = r2 */
-+		BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
-+		BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8), /* r2 = fp - 8 */
-+		BPF_LD_MAP_FD(BPF_REG_1, 0),
-+		BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
-+		BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 3),
-+		BPF_MOV64_IMM(BPF_REG_1, 1), /* r1 = 1 */
-+		BPF_RAW_INSN(BPF_STX | BPF_XADD | BPF_DW, BPF_REG_0, BPF_REG_1, 0, 0), /* xadd r0 += r1 */
-+		BPF_EXIT_INSN(),
-+		BPF_ST_MEM(BPF_DW, BPF_REG_10, -16, 1), /* *(u64 *)(fp - 16) = 1 */
-+		BPF_MOV64_REG(BPF_REG_3, BPF_REG_10),
-+		BPF_ALU64_IMM(BPF_ADD, BPF_REG_3, -16), /* r3 = fp - 16 */
-+		BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
-+		BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8), /* r2 = fp - 8 */
-+		BPF_LD_MAP_FD(BPF_REG_1, 0),
-+		BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_update_elem),
-+		BPF_EXIT_INSN(),
-+	};
-+
-+	long long key, next_key, value = 0;
-+	int prog_fd, map_fd, i;
-+	char fmt[32];
-+
-+	map_fd = bpf_create_map(BPF_MAP_TYPE_HASH, sizeof(key), sizeof(value), 1024);
-+	if (map_fd < 0) {
-+		printf("failed to create map '%s'\n", strerror(errno));
-+		goto cleanup;
-+	}
-+
-+	prog[4].imm = map_fd;
-+	prog[16].imm = map_fd;
-+
-+	prog_fd = bpf_prog_load(BPF_PROG_TYPE_TRACING_FILTER, prog,
-+				sizeof(prog), "GPL");
-+	if (prog_fd < 0) {
-+		printf("failed to load prog '%s'\n", strerror(errno));
-+		return -1;
-+	}
-+
-+	sprintf(fmt, "bpf_%d", prog_fd);
-+
-+	write_to_file(TRACEPOINT "filter", fmt, true);
-+
-+	for (i = 0; i < 10; i++) {
-+		key = 0;
-+		while (bpf_get_next_key(map_fd, &key, &next_key) == 0) {
-+			bpf_lookup_elem(map_fd, &next_key, &value);
-+			printf("location 0x%llx count %lld\n", next_key, value);
-+			key = next_key;
-+		}
-+		if (key)
-+			printf("\n");
-+		sleep(1);
-+	}
-+
-+cleanup:
-+	/* maps, programs, tracepoint filters will auto cleanup on process exit */
-+
-+	return 0;
-+}
-+
-+int main(void)
-+{
-+	dropmon();
-+	return 0;
-+}
+the body of the patch is removed to prevent spam.
+I doubt too many falks are interested in reading llvm diffs on lkml.
+The backend is available in the tree:
+https://git.kernel.org/cgit/linux/kernel/git/ast/bpf.git/commit/?id=4afc9f0b5890c0020a7d70c42bd4f0fa55d33cb0
+
+ tools/bpf/llvm/.gitignore                          |   54 ++
+ tools/bpf/llvm/LICENSE.TXT                         |   70 ++
+ tools/bpf/llvm/Makefile.rules                      |  641 ++++++++++++++++++
+ tools/bpf/llvm/README.txt                          |   23 +
+ tools/bpf/llvm/bld/Makefile                        |   27 +
+ tools/bpf/llvm/bld/Makefile.common                 |   14 +
+ tools/bpf/llvm/bld/Makefile.config                 |  124 ++++
+ .../llvm/bld/include/llvm/Config/AsmParsers.def    |    8 +
+ .../llvm/bld/include/llvm/Config/AsmPrinters.def   |    9 +
+ .../llvm/bld/include/llvm/Config/Disassemblers.def |    8 +
+ tools/bpf/llvm/bld/include/llvm/Config/Targets.def |    9 +
+ .../bpf/llvm/bld/include/llvm/Support/DataTypes.h  |   96 +++
+ tools/bpf/llvm/bld/lib/Makefile                    |   11 +
+ .../llvm/bld/lib/Target/BPF/InstPrinter/Makefile   |   10 +
+ .../llvm/bld/lib/Target/BPF/MCTargetDesc/Makefile  |   11 +
+ tools/bpf/llvm/bld/lib/Target/BPF/Makefile         |   17 +
+ .../llvm/bld/lib/Target/BPF/TargetInfo/Makefile    |   10 +
+ tools/bpf/llvm/bld/lib/Target/Makefile             |   11 +
+ tools/bpf/llvm/bld/tools/Makefile                  |   12 +
+ tools/bpf/llvm/bld/tools/llc/Makefile              |   15 +
+ tools/bpf/llvm/lib/Target/BPF/BPF.h                |   28 +
+ tools/bpf/llvm/lib/Target/BPF/BPF.td               |   29 +
+ tools/bpf/llvm/lib/Target/BPF/BPFAsmPrinter.cpp    |  100 +++
+ tools/bpf/llvm/lib/Target/BPF/BPFCallingConv.td    |   24 +
+ tools/bpf/llvm/lib/Target/BPF/BPFFrameLowering.cpp |   36 ++
+ tools/bpf/llvm/lib/Target/BPF/BPFFrameLowering.h   |   35 +
+ tools/bpf/llvm/lib/Target/BPF/BPFISelDAGToDAG.cpp  |  182 ++++++
+ tools/bpf/llvm/lib/Target/BPF/BPFISelLowering.cpp  |  683 ++++++++++++++++++++
+ tools/bpf/llvm/lib/Target/BPF/BPFISelLowering.h    |  105 +++
+ tools/bpf/llvm/lib/Target/BPF/BPFInstrFormats.td   |   29 +
+ tools/bpf/llvm/lib/Target/BPF/BPFInstrInfo.cpp     |  162 +++++
+ tools/bpf/llvm/lib/Target/BPF/BPFInstrInfo.h       |   53 ++
+ tools/bpf/llvm/lib/Target/BPF/BPFInstrInfo.td      |  498 ++++++++++++++
+ tools/bpf/llvm/lib/Target/BPF/BPFMCInstLower.cpp   |   77 +++
+ tools/bpf/llvm/lib/Target/BPF/BPFMCInstLower.h     |   40 ++
+ tools/bpf/llvm/lib/Target/BPF/BPFRegisterInfo.cpp  |  122 ++++
+ tools/bpf/llvm/lib/Target/BPF/BPFRegisterInfo.h    |   65 ++
+ tools/bpf/llvm/lib/Target/BPF/BPFRegisterInfo.td   |   39 ++
+ tools/bpf/llvm/lib/Target/BPF/BPFSubtarget.cpp     |   23 +
+ tools/bpf/llvm/lib/Target/BPF/BPFSubtarget.h       |   33 +
+ tools/bpf/llvm/lib/Target/BPF/BPFTargetMachine.cpp |   66 ++
+ tools/bpf/llvm/lib/Target/BPF/BPFTargetMachine.h   |   69 ++
+ .../lib/Target/BPF/InstPrinter/BPFInstPrinter.cpp  |   81 +++
+ .../lib/Target/BPF/InstPrinter/BPFInstPrinter.h    |   34 +
+ .../lib/Target/BPF/MCTargetDesc/BPFAsmBackend.cpp  |   89 +++
+ .../llvm/lib/Target/BPF/MCTargetDesc/BPFBaseInfo.h |   33 +
+ .../Target/BPF/MCTargetDesc/BPFELFObjectWriter.cpp |   56 ++
+ .../lib/Target/BPF/MCTargetDesc/BPFMCAsmInfo.h     |   34 +
+ .../Target/BPF/MCTargetDesc/BPFMCCodeEmitter.cpp   |  167 +++++
+ .../Target/BPF/MCTargetDesc/BPFMCTargetDesc.cpp    |  115 ++++
+ .../lib/Target/BPF/MCTargetDesc/BPFMCTargetDesc.h  |   56 ++
+ .../lib/Target/BPF/TargetInfo/BPFTargetInfo.cpp    |   13 +
+ tools/bpf/llvm/tools/llc/llc.cpp                   |  381 +++++++++++
+ 53 files changed, 4737 insertions(+)
+ create mode 100644 tools/bpf/llvm/.gitignore
+ create mode 100644 tools/bpf/llvm/LICENSE.TXT
+ create mode 100644 tools/bpf/llvm/Makefile.rules
+ create mode 100644 tools/bpf/llvm/README.txt
+ create mode 100644 tools/bpf/llvm/bld/Makefile
+ create mode 100644 tools/bpf/llvm/bld/Makefile.common
+ create mode 100644 tools/bpf/llvm/bld/Makefile.config
+ create mode 100644 tools/bpf/llvm/bld/include/llvm/Config/AsmParsers.def
+ create mode 100644 tools/bpf/llvm/bld/include/llvm/Config/AsmPrinters.def
+ create mode 100644 tools/bpf/llvm/bld/include/llvm/Config/Disassemblers.def
+ create mode 100644 tools/bpf/llvm/bld/include/llvm/Config/Targets.def
+ create mode 100644 tools/bpf/llvm/bld/include/llvm/Support/DataTypes.h
+ create mode 100644 tools/bpf/llvm/bld/lib/Makefile
+ create mode 100644 tools/bpf/llvm/bld/lib/Target/BPF/InstPrinter/Makefile
+ create mode 100644 tools/bpf/llvm/bld/lib/Target/BPF/MCTargetDesc/Makefile
+ create mode 100644 tools/bpf/llvm/bld/lib/Target/BPF/Makefile
+ create mode 100644 tools/bpf/llvm/bld/lib/Target/BPF/TargetInfo/Makefile
+ create mode 100644 tools/bpf/llvm/bld/lib/Target/Makefile
+ create mode 100644 tools/bpf/llvm/bld/tools/Makefile
+ create mode 100644 tools/bpf/llvm/bld/tools/llc/Makefile
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPF.h
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPF.td
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFAsmPrinter.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFCallingConv.td
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFFrameLowering.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFFrameLowering.h
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFISelDAGToDAG.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFISelLowering.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFISelLowering.h
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFInstrFormats.td
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFInstrInfo.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFInstrInfo.h
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFInstrInfo.td
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFMCInstLower.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFMCInstLower.h
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFRegisterInfo.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFRegisterInfo.h
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFRegisterInfo.td
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFSubtarget.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFSubtarget.h
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFTargetMachine.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/BPFTargetMachine.h
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/InstPrinter/BPFInstPrinter.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/InstPrinter/BPFInstPrinter.h
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFAsmBackend.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFBaseInfo.h
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFELFObjectWriter.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFMCAsmInfo.h
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFMCCodeEmitter.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFMCTargetDesc.cpp
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/MCTargetDesc/BPFMCTargetDesc.h
+ create mode 100644 tools/bpf/llvm/lib/Target/BPF/TargetInfo/BPFTargetInfo.cpp
+ create mode 100644 tools/bpf/llvm/tools/llc/llc.cpp
 -- 
 1.7.9.5
 
