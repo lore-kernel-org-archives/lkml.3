@@ -1,46 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaHMNPG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 09:15:06 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19860 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751AbaHMNPF (ORCPT
+	id S1752874AbaHMNQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 09:16:14 -0400
+Received: from mail-yk0-f174.google.com ([209.85.160.174]:57160 "EHLO
+	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652AbaHMNQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 09:15:05 -0400
-Date: Wed, 13 Aug 2014 16:15:05 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Phong Tran <tranmanphong@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        swetland@google.com, linux-kernel@vger.kernel.org, ccross@android.com,
-        joe@perches.com, akpm@linux-foundation.org
-Subject: Re: [Patch V2 1/3] staging: android: ion: ion_dummy_driver.c Fix
- coding style
-Message-ID: <20140813131505.GV4856@mwanda>
-References: <1407860250-9779-1-git-send-email-tranmanphong@gmail.com>
- <1407935380-9324-1-git-send-email-tranmanphong@gmail.com>
+	Wed, 13 Aug 2014 09:16:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407935380-9324-1-git-send-email-tranmanphong@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Originating-IP: [195.159.206.158]
+In-Reply-To: <EE124450C0AAF944A40DD71E61F878C9921258@SINEX14MBXC417.southpacific.corp.microsoft.com>
+References: <DC7803B42427924284F2D5252E076A3B4476A479@SINEX14MBXC416.southpacific.corp.microsoft.com>
+ <53CCD6F2.6020909@nod.at> <20140721091851.GA28171@aepfle.de>
+ <20140721.143225.2040366896972949930.davem@davemloft.net> <CAFLxGvyfy1UkxN6_-c_ST7f8n7DvqYsCPKChWmt9CerWb0dh7g@mail.gmail.com>
+ <EE124450C0AAF944A40DD71E61F878C99149D0@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <20140808033220.GB10503@kroah.com> <EE124450C0AAF944A40DD71E61F878C991569A@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <20140808134549.GD4427@kroah.com> <EE124450C0AAF944A40DD71E61F878C991B653@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <CAG-2HqVE8Qk0pcW+36f44RkE-Kbp+qPqRT+vgg-v35W52bsKgg@mail.gmail.com> <EE124450C0AAF944A40DD71E61F878C9921258@SINEX14MBXC417.southpacific.corp.microsoft.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Wed, 13 Aug 2014 15:15:50 +0200
+Message-ID: <CAG-2HqWZtOk=mnsaAh5-zpWG-fv=Omq43GV9dMKHNfr1xEFQTw@mail.gmail.com>
+Subject: Re: [PATCH] Hyperv: Trigger DHCP renew after host hibernation
+To: Dexuan Cui <decui@microsoft.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Shao <huishao@microsoft.com>,
+        "Yue Zhang (OSTC DEV)" <yuezha@microsoft.com>,
+        David Miller <davem@davemloft.net>,
+        Stephen Hemminger <stephen@networkplumber.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 08:09:38PM +0700, Phong Tran wrote:
-> This patch fix checkpatch.pl warning
-> - Replace kzalloc() by kcalloc()
-> Tested by compilation.
-> 
+On Tue, Aug 12, 2014 at 10:29 AM, Dexuan Cui <decui@microsoft.com> wrote:
+>> From: Tom Gundersen
+>> > Unluckily this logic doesn't work because the user-space daemons
+>> > like ifplugd, usually don't renew the DHCP immediately as long as they
+>> > receive a link-down message: they usually wait for some seconds and if
+>> > they find the link becomes up soon, they won't trigger renew operations.
+>> > (I guess this behavior can be somewhat reasonable: maybe the daemons
+>> > try to not trigger DHCP renew on temporary link instability)
+>> >
+>> networkd does not suffer from this problem, and in ifplugd it can be
+> I didn't have time to check the code of networkd, but I think it does have the
+> same behavior.
+> e.g., on a bare metal host with Ubuntu 14.04, when I plug the RJ45 cable out
+> of the network card and then plug the cable back into the network card
+> quickly -- in ~3 seconds, networkd doesn't trigger DHCP renew request: in
+> /var/log/syslog, we see
+> Aug 12 11:07:07 decui-lin NetworkManager[828]: <info> (eth0): carrier now OFF (device state 100, deferring action for 4 seconds)
+> Aug 12 11:07:07 decui-lin kernel: [  246.975453] e1000e: eth0 NIC Link is Down
+> Aug 12 11:07:10 decui-lin NetworkManager[828]: <info> (eth0): carrier now ON (device state 100)
+> Aug 12 11:07:10 decui-lin kernel: [  250.028533] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
+>
+> It looks there is a delay of 4s.
+> I'm going to find out if there is a configurable parameter for this.
 
-The patches look ok, but can you resend with better subject lines?
-kzalloc() -> kcalloc().
-add blank.
-remove returns.
+Just to avoid any confusion: you are referring to "networkd" (and so
+did my comments), but the above logs are from "NetworkManager".
 
-Something like that.
+>> disabled. Most other network drivers will send
+>> IFF_LOWER_DOWN/IFF_LOWER_UP upon suspend/resume so if you were to
+>> do the same you will not work any worse than the others. What would be
+> suspend/resume(ACPI S3?) is different  as this is usually > 4 seconds?  :-)
 
-regards,
-dan carpenter
+Sure, but that's clearly not something we should rely on.
 
+>> nice, as mentioned by Dan and Lennart, would be to send an additional
+>> explicit event such as "resumed from suspend" or "L3 may be wrong".
+> Sorry, I neglected to reply this.
+> IMHO even if we add the new event, we still need lots of efforts to
+> make the various userland daemons(ifplugd, networkd, etc) to use the
+> new event.
+> And looks we're the first user of this new event. I'm not sure if this issue
+> here can convince the network subsystem maintainers such a new event
+> is a must.
+>
+>> That should be a generic thing though, to fix all such issues in one
+>> go.
+> I agree, though this requires we update all the userland daemons...
+>
+>> > I'm not sure our attempt to "fix" the daemons can be easily accepted.
+>> > BTW, by CPUID, an application has a reliable way to determine  if it's
+>> > running on hyper-v on not. Maybe we can "fix" the behavior of the
+>> > daemons when they run on hyper-v?
+>> > BTW2, according to my limited experience, I doubt other VMMs can
+>> > handle this auto-DHCP-renew-in-guest issue properly.
+>>
+>> To the extent this is a problem, it is a generic one, so we should not
+>> need any hyper-v specific logic in userspace.
+> OK, I understood.
+>
+>> > That was why Yue's patch wanted to add a SLEEP(10s) between the
+>> > link-down and link-up events and hoped this could be an acceptable
+>> > fix(while it turned out not, obviously), though we admit it's not so good
+>> > to add such a magic number "10s" in a kernel driver.
+>> >
+>> > Please point it out if I missed or misunderstand something.
+>> >
+>> > Now I understand it's not good to pass the event to the udev daemon,
+>> > and it's not good to use a SLEEP(10s) in the kernel space(even if it's in a
+>> > "work" task here).
+>>
+>> Please just expose to userspace what is happening (link lost/gained,
+>> resumed from suspend/...), and let us sort out how to react to that.
+>> If you put assumptions about what kind of timeouts (long-dead)
+>> userspace uses into your drivers you'll just create a mess.
+> OK, I got it now.
+> So I think I'm supposed to send out a netif_carrier_off()/on() patch,
+> and I'd better do this after I verify the daemons can work with
+> proper parameters specified.
+>
+>> > Please let me know if it's the correct direction to fix the user-space
+>> > daemons (ifplugd, systemd-networkd, etc).
+>> > If you think this is viable and we should do this, I'll submit a
+>> > netif_carrier_off/on patch first and will start to work with the
+>> > projects of ifplugd, systemd-networkd and many OSVs to make the
+>> > while thing work eventually.
+>>
+>> Have you actually checked that carrier_off/on does not work on
+>> anything but ifplugd? It would surprise me...
+> I can confirm carrier_off/on with 0 delay between the off and on
+> doesn't work for ifplugd and networkd.
+>
+> Thanks,
+> -- Dexuan
