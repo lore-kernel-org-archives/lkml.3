@@ -1,76 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaHMKit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 06:38:49 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33151 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835AbaHMKis (ORCPT
+	id S1752465AbaHMKmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 06:42:04 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:4324 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaHMKmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 06:38:48 -0400
-Date: Wed, 13 Aug 2014 11:38:36 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: lee.jones@linaro.org, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Message-ID: <20140813103836.GJ17528@sirena.org.uk>
-References: <1407921833-7818-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Wed, 13 Aug 2014 06:42:01 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 13 Aug 2014 03:28:44 -0700
+Message-ID: <53EB40F0.4000300@nvidia.com>
+Date: Wed, 13 Aug 2014 13:41:52 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T480zUvqkH9MG8CR"
-Content-Disposition: inline
-In-Reply-To: <1407921833-7818-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2 RESEND] mfd: wm5102: Mark register write sequencer
- control 3 readable
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Thermal reset support in PMC
+References: <1407226380-747-1-git-send-email-mperttunen@nvidia.com> <20140813080744.GD7735@ulmo> <53EB1DF5.301@nvidia.com> <53EB250D.5070207@nvidia.com> <20140813085728.GF7735@ulmo> <53EB3556.9010504@nvidia.com> <20140813103613.GA7624@ulmo>
+In-Reply-To: <20140813103613.GA7624@ulmo>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---T480zUvqkH9MG8CR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Aug 13, 2014 at 10:23:52AM +0100, Charles Keepax wrote:
-> From: Mark Brown <broonie@linaro.org>
->=20
-> During init the core checks if the wm5102 has finished starting by reading
-> register 0x19 and looking at the value. This read always fails since this
-> is not a readable register, mark it as being one. While we're at it provi=
-de
-> a constant for the register name (as supplied by Charles Keepax).
->=20
-> Signed-off-by: Mark Brown <broonie@linaro.org>
-> ---
+On 13/08/14 13:36, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+>
+> On Wed, Aug 13, 2014 at 12:52:22PM +0300, Mikko Perttunen wrote:
+>> On 13/08/14 11:57, Thierry Reding wrote:
+>>>> Old Signed by an unknown key
+>>>
+>>> On Wed, Aug 13, 2014 at 11:42:53AM +0300, Mikko Perttunen wrote:
+>>>>
+>>>>
+>>>> On 13/08/14 11:12, Mikko Perttunen wrote:
+>>>>> On 13/08/14 11:07, Thierry Reding wrote:
+>>>>>>> Old Signed by an unknown key
+>>>>>>
+>>>>>> On Tue, Aug 05, 2014 at 11:12:57AM +0300, Mikko Perttunen wrote:
+>>>>>>> Hi,
+>>>>>>>
+>>>>>>> this series adds support for hardware-triggered thermal reset to the PMC
+>>>>>>> driver. Namely, it adds device tree properties for specifying the I2C
+>>>>>>> command to be sent when thermtrip is triggered. It is to be noted
+>>>>>>> that thermtrip won't be ever triggered without a soctherm driver to
+>>>>>>> calibrate the sensors, but I'll follow up with that patch.
+>>>>>>>
+>>>>>>> pmc.c required some juggling around to make the match data usable in
+>>>>>>> probe, since I didn't want to put the code into the initcall either, since
+>>>>>>> the soctherm driver won't be initialized by that point anyway.
+>>>>>>>
+>>>>>>> Series tested on Jetson-TK1. Should work on Tegra30 and Tegra114 too.
+>>>>>>
+>>>>>> Can you describe the procedure used to test this? We currently have a
+>>>>>> bunch of features in Tegra that some people have tested at some point
+>>>>>> during development but the test procedures never got documented. That
+>>>>>> means whenever we want to test something we need to go and reinvent a
+>>>>>> bunch of tests after the fact.
+>>>>>>
+>>>>>> So what I'd like to start doing is collect tests (preferably in some
+>>>>>> scripted way) so that they can be kept in a repository that people can
+>>>>>> easily clone and run on devices.
+>>>>>>
+>>>>>> Could you provide something like that for thermtrip?
+>>>>>
+>>>>> Sure. I'll see if I can make a just a test script or if a local patch is
+>>>>> needed to test. Btw, I also have a pretty nice test script for EMC
+>>>>> ready, and I agree that such a repository would be very nice.
+>>>>
+>>>> Here is a test program. It it works, the device with immediately shut down.
+>>>>
+>>>> https://gist.github.com/cyndis/66126c9c176b5f94a76f
+>>>
+>>> Is there a way to set the trip temperature without going through
+>>> /dev/mem? I'd expect the device to have a sysfs interface of some
+>>> sort.
+>>
+>> The thermtrip "device" isn't currently exposed in any way. If it were
+>> exposed, I suppose it would be exposed as thermal zone devices, each with
+>> one trip point. Even then, the thermal framework doesn't really support this
+>> properly; none of the trip point types really apply to this kind of trip
+>> point, and x86 systems don't expose their trips either.
+>
+> Okay. The reason why I asked is because I'm not sure yet that having C
+> programs in the test suite would be good, so having something that's
+> easily scriptable would be preferred.
 
-If you're resending my patch you need to add your own signoff.
+I agree. Looks like Python's stdlib has mmap support, so maybe we could 
+use that.
 
---T480zUvqkH9MG8CR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>
+>> Anyway, since debugging is pretty much the only use case for modifying
+>> the trip temperature, I thought adding the tz_devices would be a bit
+>> overkill.
+>
+> An alternative could be a file in debugfs.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+True, though there's the "don't expose dangerous stuff in debugfs" 
+argument against that. I don't really have problem with it, though.
+Although in this case I think the script approach would be good enough.
 
-iQIcBAEBAgAGBQJT60ApAAoJELSic+t+oim95woP/2gmHqY7gxzbtmpkOGulN1Qg
-pZ7CL7BWlKJ8zHSKD6hVi/lNB2XM2nkL7eLitXwiu4qDmoy3ZEplKiN8SkUVpB2p
-L/niRMuC+zd9xdxZ8ins+iXEdXkUt6o7v3tHJF8Hao2vlyaRzhiyO2Fg0klEvHiz
-8X7hsbzCUyHDilPVe/iuwAB19BtysZBsGABmPIUbucRy4z45LFN4KqA+2o+BszL/
-i/UGy/zQFEcw4IjYcwutqLf4dG0L+5kZX9HxSGxSjy+BL8KTSxbCv/ZqOI1RvPbv
-IcpPZM2izbHSATWF4PBukDoVZEZ6XdPjhWmJzprYc/EcKHSjv2NBQ+jXHMqHeZNR
-Y3QrVA3JKXDrDuiQz9CtWE+E7pntYPXhAqszp4fPlgaR/bzUIhHbAsGJS8dPl/rm
-zicH4NpJjjkTyRzyAX4fA2MDFmkw000kMZqkrhcbRZyEKa6wrDNLXD8BuTUD48DX
-AH7IGYO6nWg9/2UKedrZGwWHgbHgiEwQ4//wSx58TbsNWCIX6eoSH7k2vf1hxMg8
-mwHERcwCt7Fvdmk+LFJsBI6UqRxTCIpNQ0cO6y1DvWqz8jUl0Q7v/xpFm43Y8If1
-QgHpmJBXkWsQI3FAEHsvATnsnzqk3ptHvGiNSMWwfw9aOJf9wRX1JH71aJVOxmQE
-rVWA332mc/nV0Rjps0x5
-=qkMt
------END PGP SIGNATURE-----
-
---T480zUvqkH9MG8CR--
+>
+> Thierry
+>
+> * Unknown Key
+> * 0x7F3EB3A1
+>
