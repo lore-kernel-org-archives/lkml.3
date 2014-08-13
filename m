@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaHMJSy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:18:54 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:55454 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343AbaHMJSw (ORCPT
+	id S1752206AbaHMJTM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:19:12 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:43610 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751722AbaHMJTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:18:52 -0400
-Date: Wed, 13 Aug 2014 14:48:47 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: enjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] powerpc/pseries: Drop unnecessary continue
-Message-ID: <20140813091847.GA3078@himangi-Dell>
+	Wed, 13 Aug 2014 05:19:11 -0400
+Date: Wed, 13 Aug 2014 10:18:37 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "ksummit-discuss@lists.linuxfoundation.org" 
+	<ksummit-discuss@lists.linuxfoundation.org>,
+        "Joseph S. Myers" <joseph@codesourcery.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-discuss] (Resend) 2038 Kernel Summit Discussion Fodder
+Message-ID: <20140813091837.GA18495@arm.com>
+References: <53EAAC95.7080301@linaro.org>
+ <20140813013342.GB6783@cloud>
+ <CALCETrVP64FSJWyHHbm0R-2qTzN1Q5PwXh4k9+qjg1Q8bSud2w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALCETrVP64FSJWyHHbm0R-2qTzN1Q5PwXh4k9+qjg1Q8bSud2w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Continue is not needed at the bottom of a loop.
+On Wed, Aug 13, 2014 at 02:37:11AM +0100, Andy Lutomirski wrote:
+> On Tue, Aug 12, 2014 at 6:33 PM,  <josh@joshtriplett.org> wrote:
+> > On Tue, Aug 12, 2014 at 05:08:53PM -0700, John Stultz wrote:
+> >> A more aggressive version of the previous proposal is what I’m calling the
+> >> “New Virtual-Architecture” approach, basically extending the versioning
+> >> control from the linker down into the kernel as well.  It would be adding a
+> >> new “virtual-architecture” to the kernel, not entirely unlike how x32 is
+> >> supported on x86_64 systems.  We would create entirely new ABI and
+> >> architecture name in the kernel (think something like “armllt” or
+> >> “i386llt”). We would preserve compatibility for legacy applications via
+> >> personalities, similar mechanism as the compat_ interface used to support
+> >> 32bit applications on 64bit kernels. In this case, we wouldn’t introduce
+> >> new 64 bit syscalls in the kernel, as the existing interfaces would just be
+> >> typed correctly for our new virtual architecture, but we would have
+> >> duplicate syscall interfaces via the compat interfaces. The extra
+> >> complexity would also be that we would have to support new 32bit compat
+> >> environment on 64bit systems. Userspace would be completely rebuilt to
+> >> support the new -llt architecture, and compatibility for legacy
+> >> applications would be done via the same multiarch packaging as is done now
+> >> for running 32bit applications on 64bit systems.
+> >
+> > I wonder: could we make this new architecture effectively use the
+> > signatures of the 64-bit syscalls (similar to x32), just with a 32-bit
+> > calling convention?
+> 
+> Doesn't x32 do the reverse?  It invokes *compat* syscalls using a
+> 64-bit calling convention.
 
-The Coccinelle semantic patch implementing this change is:
+Not entirely. It uses 64-bit syscalls primarily with compat only when
+sharing structures containing pointers. We are working on something
+similar for arm64 (called the ILP32 ABI).
 
-@@
-@@
-
-for (...;...;...) {
-  ...
-  if (...) {
-    ...
--   continue;
-  }
-}
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
-Not compile tested.
- arch/powerpc/platforms/pseries/cmm.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/arch/powerpc/platforms/pseries/cmm.c b/arch/powerpc/platforms/pseries/cmm.c
-index 2d8bf15..fc44ad0 100644
---- a/arch/powerpc/platforms/pseries/cmm.c
-+++ b/arch/powerpc/platforms/pseries/cmm.c
-@@ -555,7 +555,6 @@ static int cmm_mem_going_offline(void *arg)
- 				pa_last = pa_last->next;
- 				free_page((unsigned long)cmm_page_list);
- 				cmm_page_list = pa_last;
--				continue;
- 			}
- 		}
- 		pa_curr = pa_curr->next;
 -- 
-1.9.1
-
+Catalin
