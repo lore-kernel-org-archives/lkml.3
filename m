@@ -1,122 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242AbaHMLGS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 07:06:18 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:49254 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700AbaHMLFb (ORCPT
+	id S1751765AbaHMLIr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 07:08:47 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54347 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750757AbaHMLIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 07:05:31 -0400
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
-        iommu@lists.linux-foundation.org
-Cc: tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        kvm@vger.kernel.org, christoffer.dall@linaro.org, will.deacon@arm.com,
-        kim.phillips@freescale.com, stuart.yoder@freescale.com,
-        eric.auger@linaro.org, marc.zyngier@arm.com,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 2/4] VFIO: PLATFORM: DEVTREE: Return available property names
-Date: Wed, 13 Aug 2014 13:02:17 +0200
-Message-Id: <1407927740-14993-3-git-send-email-a.motakis@virtualopensystems.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1407927740-14993-1-git-send-email-a.motakis@virtualopensystems.com>
-References: <1407927740-14993-1-git-send-email-a.motakis@virtualopensystems.com>
+	Wed, 13 Aug 2014 07:08:46 -0400
+Date: Wed, 13 Aug 2014 12:08:44 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+Cc: broonie@kernel.org, lgirdwood@gmail.com, tiwai@suse.de,
+        alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, perex@perex.cz
+Subject: Re: [PATCH] ASoC: wm_hubs: Fix DC Servo readback
+Message-ID: <20140813110844.GF15833@opensource.wolfsonmicro.com>
+References: <1407926840-8576-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407926840-8576-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For various reasons, the available properties of the platform device
-node in the device tree node should be referred to by the property name.
-Passing type = VFIO_DEVTREE_PROP_NAMES to VFIO_DEVICE_GET_DEVTREE_INFO,
-returns a list of strings with the available properties that the VFIO
-user can access.
+On Wed, Aug 13, 2014 at 11:47:20AM +0100, Nikesh Oswal wrote:
+> wm_hubs is a common driver code shared by WM8958, WM1811, WM8944
+> and WM8993 all these codecs have the DC Servo Values either in register
+> 57h or 59h. Current code was reading register 58h for WM8958 and WM8994
+> revisions 2 and 3 but looking at the data sheet the DC Servo Values are
+> stored in register 57h for these codecs. This patch fixes it by reading
+> the correct register for DC Servo
+> 
+> Signed-off-by: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+> ---
+>  sound/soc/codecs/wm_hubs.c |    3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/sound/soc/codecs/wm_hubs.c b/sound/soc/codecs/wm_hubs.c
+> index 916817f..95c5d71 100644
+> --- a/sound/soc/codecs/wm_hubs.c
+> +++ b/sound/soc/codecs/wm_hubs.c
+> @@ -210,9 +210,6 @@ static int wm_hubs_read_dc_servo(struct snd_soc_codec *codec,
+>  	case 2:
+>  		dcs_reg = WM8994_DC_SERVO_4E;
+>  		break;
+> -	case 1:
+> -		dcs_reg = WM8994_DC_SERVO_READBACK;
+> -		break;
+>  	default:
+>  		dcs_reg = WM8993_DC_SERVO_3;
+>  		break;
+> -- 
 
-Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
----
- drivers/vfio/platform/devtree.c | 68 ++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 67 insertions(+), 1 deletion(-)
+This doesn't look right, firstly if it is the same register for
+all versions then surely we should change the code that sets
+dcs_readback_mode rather than setting that to different values
+but treating them the same. Although obviously if nothing still
+uses this case we could remove it as well.
 
-diff --git a/drivers/vfio/platform/devtree.c b/drivers/vfio/platform/devtree.c
-index 91cab88..b8fd4138 100644
---- a/drivers/vfio/platform/devtree.c
-+++ b/drivers/vfio/platform/devtree.c
-@@ -20,8 +20,74 @@ bool vfio_platform_has_devtree(struct vfio_platform_device *vdev)
- 	return !!vdev->of_node;
- }
- 
-+static int devtree_get_prop_names(struct device_node *np, void __user *datap,
-+				  unsigned long datasz, int *lenp)
-+{
-+	struct property *prop;
-+	int len = 0, sz;
-+	int ret = 0;
-+
-+	for_each_property_of_node(np, prop) {
-+		sz = strlen(prop->name) + 1;
-+
-+		if (datasz < sz) {
-+			ret = -EAGAIN;
-+			break;
-+		}
-+
-+		if (copy_to_user(datap, prop->name, sz))
-+			return -EFAULT;
-+
-+		datap += sz;
-+		datasz -= sz;
-+		len += sz;
-+	}
-+
-+	/* if overflow occurs, calculate remaining length */
-+	while (prop) {
-+		len += strlen(prop->name) + 1;
-+		prop = prop->next;
-+	}
-+
-+	/* we expose the full_name in addition to the usual properties */
-+	len += sz = strlen("full_name") + 1;
-+	if (datasz < sz) {
-+		ret = -EAGAIN;
-+	} else if (copy_to_user(datap, "full_name", sz))
-+		return -EFAULT;
-+
-+	*lenp = len;
-+
-+	return ret;
-+}
-+
- long vfio_platform_devtree_ioctl(struct vfio_platform_device *vdev,
- 				 unsigned long arg)
- {
--	return -EINVAL; /* not implemented yet */
-+	struct vfio_devtree_info info;
-+	unsigned long minsz = offsetofend(struct vfio_devtree_info, length);
-+	void __user *datap = (void __user *) arg + minsz;
-+	unsigned long int datasz;
-+	int ret = -EINVAL;
-+
-+	if (!vfio_platform_has_devtree(vdev))
-+		return -EINVAL;
-+
-+	if (copy_from_user(&info, (void __user *)arg, minsz))
-+		return -EFAULT;
-+
-+	if (info.argsz < minsz)
-+		return -EINVAL;
-+
-+	datasz = info.argsz - minsz;
-+
-+	if (info.type == VFIO_DEVTREE_PROP_NAMES) {
-+		ret = devtree_get_prop_names(vdev->of_node, datap, datasz,
-+								&info.length);
-+	}
-+
-+	if (copy_to_user((void __user *)arg, &info, minsz))
-+		ret = -EFAULT;
-+
-+	return ret;
- }
--- 
-1.8.3.2
+Also I think the situation is more complex for example on version
+4.4 of the datasheet for wm8994 the WR_VAL fields appear to be in
+register 59h. Which is not consistent with this.
 
+Thanks,
+Charles
