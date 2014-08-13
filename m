@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaHML4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 07:56:34 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:46981 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaHML4c (ORCPT
+	id S1752819AbaHML45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 07:56:57 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:60624 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526AbaHML44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 07:56:32 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Michael Ellerman <mpe@ellerman.id.au>, kvm-ppc@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] PC, KVM, CMA: Fix regression caused by wrong get_order() use
-In-Reply-To: <1407903739-7064-1-git-send-email-aik@ozlabs.ru>
-References: <1407903739-7064-1-git-send-email-aik@ozlabs.ru>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Wed, 13 Aug 2014 17:26:13 +0530
-Message-ID: <87mwb861sy.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081311-3568-0000-0000-00000011DBDF
+	Wed, 13 Aug 2014 07:56:56 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
+        linux-i2c@vger.kernel.org
+Subject: [PATCH 1/2] i2c: cadence: Remove .owner field for driver
+Date: Wed, 13 Aug 2014 13:56:51 +0200
+Message-Id: <c076984af7e65c433fdfd3a3b0f8d20da2c18013.1407931005.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-19932-1407931012-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey Kardashevskiy <aik@ozlabs.ru> writes:
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-> fc95ca7284bc54953165cba76c3228bd2cdb9591 claims that there is no
-> functional change but this is not true as it calls get_order() (which
-> takes bytes) where it should have called ilog2() and the kernel stops
-> on VM_BUG_ON().
->
-> This replaces get_order() with ilog2().
+--=_mimegpg-monstr-desktop-19932-1407931012-0001
 
-Should we round it up ? ie, ilog2(kvm_rma_pages - 1) + 1 ?
+There is no need to init .owner field.
 
->
-> Suggested-by: Paul Mackerras <paulus@samba.org>
-> Cc: Alexander Graf <agraf@suse.de>
-> Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: <stable@vger.kernel.org>
+Based on the patch from Peter Griffin <peter.griffin@linaro.org>
+"mmc: remove .owner field for drivers using module_platform_driver"
 
-Why stable ? We merged it this merge window.
+This patch removes the superflous .owner field for drivers which
+use the module_platform_driver API, as this is overriden in
+platform_driver_register anyway."
 
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> ---
->  arch/powerpc/kvm/book3s_hv_builtin.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/powerpc/kvm/book3s_hv_builtin.c b/arch/powerpc/kvm/book3s_hv_builtin.c
-> index 329d7fd..bfe9f01 100644
-> --- a/arch/powerpc/kvm/book3s_hv_builtin.c
-> +++ b/arch/powerpc/kvm/book3s_hv_builtin.c
-> @@ -101,7 +101,7 @@ struct kvm_rma_info *kvm_alloc_rma()
->  	ri = kmalloc(sizeof(struct kvm_rma_info), GFP_KERNEL);
->  	if (!ri)
->  		return NULL;
-> -	page = cma_alloc(kvm_cma, kvm_rma_pages, get_order(kvm_rma_pages));
-> +	page = cma_alloc(kvm_cma, kvm_rma_pages, ilog2(kvm_rma_pages));
->  	if (!page)
->  		goto err_out;
->  	atomic_set(&ri->use_count, 1);
-> @@ -135,12 +135,12 @@ struct page *kvm_alloc_hpt(unsigned long nr_pages)
->  {
->  	unsigned long align_pages = HPT_ALIGN_PAGES;
->
-> -	VM_BUG_ON(get_order(nr_pages) < KVM_CMA_CHUNK_ORDER - PAGE_SHIFT);
-> +	VM_BUG_ON(ilog2(nr_pages) < KVM_CMA_CHUNK_ORDER - PAGE_SHIFT);
->
->  	/* Old CPUs require HPT aligned on a multiple of its size */
->  	if (!cpu_has_feature(CPU_FTR_ARCH_206))
->  		align_pages = nr_pages;
-> -	return cma_alloc(kvm_cma, nr_pages, get_order(align_pages));
-> +	return cma_alloc(kvm_cma, nr_pages, ilog2(align_pages));
->  }
->  EXPORT_SYMBOL_GPL(kvm_alloc_hpt);
->
-> -- 
-> 2.0.0
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
 
+ drivers/i2c/busses/i2c-cadence.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/i2c/busses/i2c-cadence.c b/drivers/i2c/busses/i2c-cadence.c
+index 63f3f03ecc9b..04d0a7e449ef 100644
+--- a/drivers/i2c/busses/i2c-cadence.c
++++ b/drivers/i2c/busses/i2c-cadence.c
+@@ -890,7 +890,6 @@ MODULE_DEVICE_TABLE(of, cdns_i2c_of_match);
+ static struct platform_driver cdns_i2c_drv = {
+ 	.driver = {
+ 		.name  = DRIVER_NAME,
+-		.owner = THIS_MODULE,
+ 		.of_match_table = cdns_i2c_of_match,
+ 		.pm = &cdns_i2c_dev_pm_ops,
+ 	},
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-19932-1407931012-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlPrUoQACgkQykllyylKDCH4WgCffYU/i71NVwj5bLRMwKTeu9VN
+2KkAnA6/mOpjX0ks8U1P2vSUD+quPV4j
+=YrGZ
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-19932-1407931012-0001--
