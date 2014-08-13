@@ -1,108 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224AbaHMCCn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 22:02:43 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:18417 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787AbaHMCCm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 22:02:42 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-8f-53eac73ee6dc
-From: Chao Yu <chao2.yu@samsung.com>
-To: minchan@kernel.org
-Cc: ngupta@vflare.org, linux-kernel@vger.kernel.org,
-        "'Jerome Marchand'" <jmarchan@redhat.com>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: [PATCH v2] zram: fix incorrectly stat with failed_reads
-Date: Wed, 13 Aug 2014 10:01:45 +0800
-Message-id: <009001cfb69a$a8470840$f8d518c0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac+2lVbnDu0zflRtTGWlaMj1gTdWhg==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t9jAV2746+CDW7/krKYs34Nm8WpP9eZ
-	LC7vmsNmsezre3aLDS2z2C3Wfn7M7sDmsXPWXXaPTas62TxOzPjN4vF+31Wg2KfNrB6fN8kF
-	sEVx2aSk5mSWpRbp2yVwZXw7wVKwT7ji9MGp7A2MfQJdjJwcEgImEtt/3WGCsMUkLtxbz9bF
-	yMUhJLCIUWJ7wwVGCOcHo8T3WVcZQarYBFQklnf8B+sQAep4/OUHO0gRs8ARRomWv4fZQRLC
-	Ag4SWw8uACtiEVCV6G6cAmbzClhKPPt1iA3CFpT4MfkeC4jNLKAlsX7ncSYIW15i85q3zBAn
-	KUjsOPuaEWKZnsTy3kdQNeISG4/cYpnAKDALyahZSEbNQjJqFpKWBYwsqxhFUwuSC4qT0nMN
-	9YoTc4tL89L1kvNzNzGCw/+Z1A7GlQ0WhxgFOBiVeHgreF8FC7EmlhVX5h5ilOBgVhLhddgC
-	FOJNSaysSi3Kjy8qzUktPsQozcGiJM57oNU6UEggPbEkNTs1tSC1CCbLxMEp1cCooivIHHX0
-	wVTriRP3fl/fcOgu665XF9+mOTcGeGarnXf+NCMwYyKvgUXTSqP5l71EXuzUP9bplrTWL+LI
-	5sv3Z0yYEBPy5cGqFT3rZx5c0nGJm7/6wiv5VRzilYdkp3JoZUxU96zJ/fy7/ZWcUplrU4c9
-	s+yq07qyOidXcj5Xy9j/MktmjvxMJZbijERDLeai4kQAbhWoH3sCAAA=
+	id S1754412AbaHMCDp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 22:03:45 -0400
+Received: from sauhun.de ([89.238.76.85]:58046 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752862AbaHMCDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 22:03:44 -0400
+Date: Tue, 12 Aug 2014 21:03:07 -0500
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Lan Tianyu <tianyu.lan@intel.com>, torvalds@linux-foundation.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] I2C: Make I2C core able to be module when I2C_ACPI is
+ selected.
+Message-ID: <20140813020250.GA2853@katana>
+References: <1407740455-21269-1-git-send-email-tianyu.lan@intel.com>
+ <20140812095321.GU1657@lahna.fi.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cNdxnHkX5QqsyA0e"
+Content-Disposition: inline
+In-Reply-To: <20140812095321.GU1657@lahna.fi.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we allocate a temporary buffer in zram_bvec_read to handle partial page
-operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
-zram: allow partial page operations), our ->failed_reads value may be incorrect
-as we do not increase its value when failed to allocate the temporary buffer.
 
-Let's fix this issue and correct the annotation of failed_reads.
+--cNdxnHkX5QqsyA0e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- v2: clean codes of failed_{reads,writes} stat pointed out by Minchan Kim, and
-this cleanup also fix incorrectly stat when fail in zram_decompress_page.
+On Tue, Aug 12, 2014 at 12:53:21PM +0300, Mika Westerberg wrote:
+> On Mon, Aug 11, 2014 at 03:00:55PM +0800, Lan Tianyu wrote:
+> > Commit da3c6647(I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI
+> > config) adds a new kernel config I2C_ACPI and make I2C core built in
+> > when the config is selected. This is wrong because distributions
+> > etc generally compile I2C as a module and the commit broken that.
+> > This patch is to make I2C core able to be a module when I2C_ACPI is
+> > selected. Original issue the commit da3c6647 tried to avoid will
+> > be fixed in ACPICA and it's rarely triggered during unloading module.=
+=20
+> >=20
+> > Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>=20
+> I wonder if we can do
+>=20
+> 	depends on I2C=3Dy
+>=20
+> here? If I understand it right, then we only build the ACPI_I2C if I2C
+> is compiled into the kernel. That way the problem da3c6647 tried to
+> solve doens't re-appear.
+>=20
+> We can later on relax this once ACPICA has been fixed. Thoughts?
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- drivers/block/zram/zram_drv.c | 10 +++++++---
- drivers/block/zram/zram_drv.h |  2 +-
- 2 files changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index dfa4024..d00831c 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -378,7 +378,6 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
- 	/* Should NEVER happen. Return bio error if it does. */
- 	if (unlikely(ret)) {
- 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
--		atomic64_inc(&zram->stats.failed_reads);
- 		return ret;
- 	}
- 
-@@ -547,8 +546,6 @@ out:
- 		zcomp_strm_release(zram->comp, zstrm);
- 	if (is_partial_io(bvec))
- 		kfree(uncmem);
--	if (ret)
--		atomic64_inc(&zram->stats.failed_writes);
- 	return ret;
- }
- 
-@@ -566,6 +563,13 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		ret = zram_bvec_write(zram, bvec, index, offset);
- 	}
- 
-+	if (unlikely(ret)) {
-+		if (rw == READ)
-+			atomic64_inc(&zram->stats.failed_reads);
-+		else
-+			atomic64_inc(&zram->stats.failed_writes);
-+	}
-+
- 	return ret;
- }
- 
-diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-index 5b0afde..e0f725c 100644
---- a/drivers/block/zram/zram_drv.h
-+++ b/drivers/block/zram/zram_drv.h
-@@ -84,7 +84,7 @@ struct zram_stats {
- 	atomic64_t compr_data_size;	/* compressed size of pages stored */
- 	atomic64_t num_reads;	/* failed + successful */
- 	atomic64_t num_writes;	/* --do-- */
--	atomic64_t failed_reads;	/* should NEVER! happen */
-+	atomic64_t failed_reads;	/* can happen when memory is too low */
- 	atomic64_t failed_writes;	/* can happen when memory is too low */
- 	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
- 	atomic64_t notify_free;	/* no. of swap slot free notifications */
--- 
-2.0.1.474.g72c7794
+I had the same idea yet my travel to Chicago interrupted thinking about
+it further. Once I get rid of my jetlag, I'll have a closer look. Unless
+you already came up with the perfect solution until then, of course ;)
 
 
+--cNdxnHkX5QqsyA0e
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT6sdKAAoJEBQN5MwUoCm2viUP/iE7LDDK53fdD+K1QXtQqfgh
+qOwuE7SMMDfd3LEx59xT89qersLFIFQkxOY7V2gWywDo7yHspyzDl7mSWVFVFplp
+JlZyTuswGE+QieDFKMLTccmtQJNBN+o1UXadk+QRy0NmEQ0sJbKjl0YZdPhcdDrx
++qGscfxizoeMcOTBwYo9O7V8CcoAIVZLdroF/SHi0FZnpZNqokDvrpbFJeTi4iPc
+V4OZYIoc507JqZPIWxl8gSckh0yBw03DAsG68ejuhuLE1wMj2ZY1G1VkCHd880ED
+giQrMt4Ia9+vLNtMfslGg7bSdxuFr9oBO9CxneteCQeiKAvuoPiuSiq+Y64GgjJm
+3vXOqT08/v00wYikWq7431uDgo9dpx5SobfnyhbYuQUYJ0oaQiQFEe2NnrNxE2wM
+S0+jFPZZ0kcD5JHnIbu85KWXlDiOuMjq/6l0quiMBVHW7uuAcVEKE/eOvzePtX7V
+BKsn5Qti0bFfJhBVNGCcp2QZdhz+4KkaVMuNMiuly8Y6SW3HMABjuHel7EKxDmda
+Yzle17bgRiR9mV+cLZxYsG7ME0P56gxme4Dz+7ieX2banci4qqDCHCdGCzwMhcKN
+Oh2gghHPn7KNHvHf/jG6btajqvoKH8nbdvjx2HLR86bdoKzXJLWxJIC/7mx7XlcY
+3mVc8MNsPYkryxfTE+2y
+=thib
+-----END PGP SIGNATURE-----
+
+--cNdxnHkX5QqsyA0e--
