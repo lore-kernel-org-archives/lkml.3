@@ -1,101 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652AbaHMRia (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:38:30 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:49230 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbaHMRi2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 13:38:28 -0400
-Date: Wed, 13 Aug 2014 13:38:24 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Kees Cook <keescook@chromium.org>
-cc: linux-kernel@vger.kernel.org, Rob Herring <robh@kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Mark Salter <msalter@redhat.com>,
-        Rabin Vincent <rabin@rab.in>, Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v4 0/8] arm: support CONFIG_RODATA
-In-Reply-To: <1407949593-16121-1-git-send-email-keescook@chromium.org>
-Message-ID: <alpine.LFD.2.11.1408131337360.1133@knanqh.ubzr>
-References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1753813AbaHMRk0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 13:40:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54735 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753372AbaHMRkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 13:40:24 -0400
+Message-ID: <53EBA2EC.3030306@redhat.com>
+Date: Wed, 13 Aug 2014 19:39:56 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit immediate"
+ eBPF instruction
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com> <1407916658-8731-2-git-send-email-ast@plumgrid.com> <53EB2D31.8090204@redhat.com> <CAMEtUuzo6xQkhg+y0h_WEArVZi9cxVoGAcTBDcwMXza+eQGBTw@mail.gmail.com>
+In-Reply-To: <CAMEtUuzo6xQkhg+y0h_WEArVZi9cxVoGAcTBDcwMXza+eQGBTw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Aug 2014, Kees Cook wrote:
+On 08/13/2014 07:34 PM, Alexei Starovoitov wrote:
+> On Wed, Aug 13, 2014 at 2:17 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+>> On 08/13/2014 09:57 AM, Alexei Starovoitov wrote:
+>>>
+>>> add BPF_LD_IMM64 instruction to load 64-bit immediate value into register.
+>>> All previous instructions were 8-byte. This is first 16-byte instruction.
+>>> Two consecutive 'struct bpf_insn' blocks are interpreted as single
+>>> instruction:
+>>> insn[0/1].code = BPF_LD | BPF_DW | BPF_IMM
+>>> insn[0/1].dst_reg = destination register
+>>> insn[0].imm = lower 32-bit
+>>> insn[1].imm = upper 32-bit
+>>>
+>>> Classic BPF has similar instruction: BPF_LD | BPF_W | BPF_IMM
+>>> which loads 32-bit immediate value into a register.
+>>>
+>>> x64 JITs it as single 'movabsq %rax, imm64'
+>>> arm64 may JIT as sequence of four 'movk x0, #imm16, lsl #shift' insn
+>>>
+>>> Note that old eBPF programs are binary compatible with new interpreter.
+>>>
+>>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+>>
+>>
+>> For follow-ups on this series, can you put the actual motivation
+>> for this change from the cover letter into this commit log as it
+>> otherwise doesn't say anything clearly why it is needed. Code and
+>> test case looks good to me.
+>
+> ok. As you saw the full explanation is long, so I opted for 'it_does_this'
+> commit log. In the next rev will add more reasons to this log. Sure.
 
-> This is a series of patches to support CONFIG_RODATA on ARM, so that
-> the kernel text is RO, and non-text sections default to NX. To support
-> on-the-fly kernel text patching (via ftrace, kprobes, etc), fixmap
-> support has been finalized based on several versions of various patches
-> that are floating around on the mailing list. This series attempts to
-> include the least intrusive version, so that others can build on it for
-> future fixmap work.
-> 
-> The series has been heavily tested, and appears to be working correctly:
-> 
-> With CONFIG_ARM_PTDUMP, expected page table permissions are seen in
-> /sys/kernel/debug/kernel_page_tables.
-> 
-> Using CONFIG_LKDTM, the kernel now correctly detects bad accesses for
-> for the following lkdtm tests via /sys/kernel/debug/provoke-crash/DIRECT:
->         EXEC_DATA
->         WRITE_RO
->         WRITE_KERN
-> 
-> ftrace works:
->         CONFIG_FTRACE_STARTUP_TEST passes
->         Enabling tracing works:
->                 echo function > /sys/kernel/debug/tracing/current_tracer
-> 
-> kprobes works:
->         CONFIG_ARM_KPROBES_TEST passes
-> 
-> kexec works:
->         kexec will load and start a new kernel
-> 
-> Built with and without CONFIG_HIGHMEM, CONFIG_HIGHMEM_DEBUG, and
-> CONFIG_NR_CPUS=32.
-> 
-> Thanks to everyone who has been testing this series and working on its
-> various pieces!
-
-For the whole series:
-
-Acked-by: Nicolas Pitre <nico@linaro.org>
-
-
-
-> 
-> -Kees
-> 
-> v4:
-> - expanded fixmap to 3MB to support 32 CPUs (robh)
-> - corrected pmd-finding via vaddr instead of FIXMAP_START (robh)
-> - switched structure size test to BUILD_BUG_ON (sboyd)
-> - added locking annotations to keep sparse happy (sboyd)
-> - adding missing "static" declarations noticed by sparse
-> - reorganized fixmap portion of patches
-> 
-> v3:
-> - more cleanups in switch to generic fixmap (lauraa, robh)
-> - fixed kexec merge hunk glitch (will.deacon)
-> - added tested-by tags where appropriate from v2 testing
-> 
-> v2:
-> - fix typo in kexec merge (buildbot)
-> - flip index order for highmem pte access (lauraa)
-> - added kgdb updates (dianders)
-> 
-> 
+Great, thanks.
