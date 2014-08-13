@@ -1,82 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaHMPvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:51:52 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33574 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279AbaHMPvu (ORCPT
+	id S1753434AbaHMPyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:54:50 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:44178 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255AbaHMPyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:51:50 -0400
-Date: Wed, 13 Aug 2014 16:51:22 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140813155122.GX17528@sirena.org.uk>
-References: <1407861868-20097-1-git-send-email-javier.martinez@collabora.co.uk>
- <1407861868-20097-7-git-send-email-javier.martinez@collabora.co.uk>
- <20140812172552.GU17528@sirena.org.uk>
- <53EA61B9.2070805@collabora.co.uk>
- <20140812212757.GY17528@sirena.org.uk>
- <53EB4CA0.3010006@collabora.co.uk>
- <20140813122910.GQ17528@sirena.org.uk>
- <53EB6954.3040207@collabora.co.uk>
+	Wed, 13 Aug 2014 11:54:49 -0400
+Message-ID: <53EB8A41.4010909@hitachi.com>
+Date: Thu, 14 Aug 2014 00:54:41 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Mj/0swo4/Fjabs+K"
-Content-Disposition: inline
-In-Reply-To: <53EB6954.3040207@collabora.co.uk>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 6/6] ARM: dts: Add tps65090 FETs constraints
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/3] ftrace: Add a ftrace test collection
+References: <20140805024544.23693.66601.stgit@kbuild-fedora.novalocal> <20140805173752.1de5f1c2@gandalf.local.home> <8738d0euyv.fsf@sejong.aot.lge.com>
+In-Reply-To: <8738d0euyv.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2014/08/13 15:59), Namhyung Kim wrote:
+> Hi Steve and Masami,
+> 
+> On Tue, 5 Aug 2014 17:37:52 -0400, Steven Rostedt wrote:
+>> Hi Masami,
+>>
+>> This looks great. I'm a bit busy at the moment (just came back from
+>> vacation, and digging myself out of the hole that left me). But I
+>> definitely want this in. I have a bunch of tests too, that I can put on
+>> top of this. My tests are rather hacky, and hard code a lot of stuff in
+>> them, but they do test a bunch of features of ftrace. It shouldn't be
+>> too hard to include them here.
+>>
+>>
+>> On Tue, 05 Aug 2014 02:45:44 +0000
+>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>>
+>>> Hi,
+>>>
+>>> I'd like to introduce a collection of testcases for ftrace to
+>>> avoid regressions.
+>>>
+>>> For a long time, we've tried to stabilize and extend ftrace
+>>> tracing infrastructure. This small test framework is a kind of
+>>> stabilizing work for ftrace. For the first step, this series
+>>> just introduces a few basic testcases. However, it is easy to
+>>> add additional tests. I'd like to ask you, ftrace developers,
+>>> to add tests for your features to ensure it will not be broken
+>>> by future works.
+>>>
+>>> ftracetest is a tiny bash script so that anyone can easily
+>>> understand what it does. I think it is better to share and
+>>> discuss this tests before growing it.
+>>>
+>>>  - Is it enough to support bash script? (of course you can
+>>>    invoke other commands from the script)
+> 
+> Btw, does it use any bash-specific feature?
 
---Mj/0swo4/Fjabs+K
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Not much ("function" keyword is possible bashism). I usually
+use bash and sometimes unintentionally use bash-specific features :)
+Anyway, I guess bash is enough common now and sometimes its extensions
+are good for short scripting.
 
-On Wed, Aug 13, 2014 at 03:34:12PM +0200, Javier Martinez Canillas wrote:
+>>>  - What's the good naming method of testcases?
+> 
+> I'm okay with the ftracetest, but tracing-test may be an option. :)
 
-> Indeed. I'll change mmc_regulator_get_ocrmask() in MMC core then to use
-> regulator_can_change_voltage() to detect if the regulator is a fixed one
-> and call regulator_get_voltage() instead of list_voltage() in that case.
+Ah, as you said, I meant its extensions *.tc.  :)
 
-> Do you agree that this is the correct solution?
+>>>  - Is any dependency check required?
+> 
+> I think we need to start from no/minimum external dependency.
+> 
+> 
+>>>
+>>> BTW, I decided to put this under tools/testing/ftrace instead
+>>> of tools/testing/selftests/, because all tests requires root
+>>> privilege. It will be one of discussion points. Anyway,
+>>> it is easy to integrate this to the selftests.
+>>
+>> I agree. I think having its own directory is a good idea. Lets see what
+>> other people think. When I get time, I'll see if I can start a branch
+>> that pulls this in and start adding my own tests on top of it.
+> 
+> I also agree to have a separate directory and it's not a selftest :)
+> 
+> Steve, I think you already have a lot of testcases that I want to add,
+> I'll take a look if you setup the branch and try to add my own if
+> needed.
 
-I would just fall back to get_voltage() if there are no voltages listed,
-that seems more robust.
+Great! That's so helpful for us :)
 
---Mj/0swo4/Fjabs+K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thank you,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-iQIcBAEBAgAGBQJT64l2AAoJELSic+t+oim9tDIP/1+BkXGMNhigfK+dKTq25hr/
-esf41/ND4jsM5betOXL17OGEX4wxDgXEOLn9r+rr1GtPjHvQOx9NHfM3g76wo0R4
-UJTqGw4OFuYBHDcrgb8+RRgN4HX4BPd14BKnHoXZTnMlgNsx+XqRw2O0rcHPEvTF
-vupSwukxS6IADZASiOLEwjhX5Xr/Fa8qtL5UVf2vSqVAbrchKHD1HH6CJQkg2/g5
-C11pYokfG22ug0qa1Mw48q+Yo9i8nzDj3qorUXbdO/aPBpc4EO1AayKvqDJCFnKY
-K+FB5JC908uJU+c3xDqQTL3qbwvhmJuCKAMghVjz13vRuDFQmZaKtCwhrG7IYWMs
-dH33/CsdB/0vr/XoXF+XtSBq3j4uQrseKKl0NvWL7mVzGzKTznqybYPQjae9Hjn1
-QiEIYOnfA8NDpJR1bVv2DfGFAYF3mGfsWO77HVZ3BMeWMKjLdv4Jn/7hl2HX8MgO
-HEFdaJgLLaIize+3wwlWzEkn7yXTx0Ws5LglLF6Us/tQ7GU8w3HeYLC46flEo3GD
-SMlTqoEOWtjeOgQgtXul/BRy7SSSP3rJd84aBzCM9uBibLfljvVMDMo9EpraKS9p
-09qRx2PLNKDC6phzYaQQ4hBZOgbbJwgzgw38T2AOqQE0hev8XRO1ikjEm9xMF5Je
-8td6xkSibUsiwUgrkGkW
-=7UIM
------END PGP SIGNATURE-----
 
---Mj/0swo4/Fjabs+K--
