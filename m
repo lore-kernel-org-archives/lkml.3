@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025AbaHMH63 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 03:58:29 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:60311 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885AbaHMH6T (ORCPT
+	id S1751835AbaHMH6N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 03:58:13 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:35155 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776AbaHMH6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:58:19 -0400
+	Wed, 13 Aug 2014 03:58:09 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -20,9 +20,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v4 net-next 10/26] bpf: verifier (add ability to receive verification log)
-Date: Wed, 13 Aug 2014 00:57:21 -0700
-Message-Id: <1407916658-8731-11-git-send-email-ast@plumgrid.com>
+Subject: [PATCH RFC v4 net-next 06/26] bpf: add hashtable type of BPF maps
+Date: Wed, 13 Aug 2014 00:57:17 -0700
+Message-Id: <1407916658-8731-7-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
 References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
@@ -30,301 +30,414 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add optional attributes for BPF_PROG_LOAD syscall:
-  BPF_PROG_LOG_LEVEL,     /* verbosity level of eBPF verifier */
-  BPF_PROG_LOG_BUF,       /* user supplied buffer */
-  BPF_PROG_LOG_SIZE,      /* size of user buffer */
-
-In such case the verifier will return its verification log in the user
-supplied buffer which can be used by humans to analyze why verifier
-rejected given program
+add new map type: BPF_MAP_TYPE_HASH
+and its simple (not auto resizeable) hash table implementation
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- include/uapi/linux/bpf.h |    4 +
- kernel/bpf/syscall.c     |    3 +
- kernel/bpf/verifier.c    |  236 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 243 insertions(+)
+ include/uapi/linux/bpf.h |    1 +
+ kernel/bpf/Makefile      |    2 +-
+ kernel/bpf/hashtab.c     |  372 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 374 insertions(+), 1 deletion(-)
+ create mode 100644 kernel/bpf/hashtab.c
 
 diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-index aa09ba084ebc..72bed3950bf1 100644
+index 804dd8b2ca19..828e873fa435 100644
 --- a/include/uapi/linux/bpf.h
 +++ b/include/uapi/linux/bpf.h
-@@ -372,6 +372,10 @@ enum bpf_prog_attributes {
- 	BPF_PROG_UNSPEC,
- 	BPF_PROG_TEXT,		/* array of eBPF instructions */
- 	BPF_PROG_LICENSE,	/* license string */
-+	/* optional program attributes */
-+	BPF_PROG_LOG_LEVEL,	/* verbosity level of eBPF verifier */
-+	BPF_PROG_LOG_BUF,	/* user supplied buffer */
-+	BPF_PROG_LOG_SIZE,	/* size of user buffer */
- 	__BPF_PROG_ATTR_MAX,
- };
- #define BPF_PROG_ATTR_MAX (__BPF_PROG_ATTR_MAX - 1)
-diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
-index a3581646ee11..60cb760cb423 100644
---- a/kernel/bpf/syscall.c
-+++ b/kernel/bpf/syscall.c
-@@ -443,6 +443,9 @@ struct bpf_prog *bpf_prog_get(u32 ufd)
- static const struct nla_policy prog_policy[BPF_PROG_ATTR_MAX + 1] = {
- 	[BPF_PROG_TEXT]      = { .type = NLA_BINARY },
- 	[BPF_PROG_LICENSE]   = { .type = NLA_NUL_STRING },
-+	[BPF_PROG_LOG_LEVEL] = { .type = NLA_U32 },
-+	[BPF_PROG_LOG_BUF]   = { .len = sizeof(void *) },
-+	[BPF_PROG_LOG_SIZE]  = { .type = NLA_U32 },
+@@ -358,6 +358,7 @@ enum bpf_map_attributes {
+ 
+ enum bpf_map_type {
+ 	BPF_MAP_TYPE_UNSPEC,
++	BPF_MAP_TYPE_HASH,
  };
  
- static int bpf_prog_load(enum bpf_prog_type type, struct nlattr __user *uattr,
-diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
-index cf8a0131cd91..27b34e1c8fbf 100644
---- a/kernel/bpf/verifier.c
-+++ b/kernel/bpf/verifier.c
-@@ -143,9 +143,245 @@
-  * load/store to bpf_context are checked against known fields
-  */
- 
-+/* single container for all structs
-+ * one verifier_env per bpf_check() call
+ #endif /* _UAPI__LINUX_BPF_H__ */
+diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
+index e9f7334ed07a..558e12712ebc 100644
+--- a/kernel/bpf/Makefile
++++ b/kernel/bpf/Makefile
+@@ -1 +1 @@
+-obj-y := core.o syscall.o
++obj-y := core.o syscall.o hashtab.o
+diff --git a/kernel/bpf/hashtab.c b/kernel/bpf/hashtab.c
+new file mode 100644
+index 000000000000..bc8d32f0f720
+--- /dev/null
++++ b/kernel/bpf/hashtab.c
+@@ -0,0 +1,372 @@
++/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of version 2 of the GNU General Public
++ * License as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
 + */
-+struct verifier_env {
++#include <linux/bpf.h>
++#include <net/netlink.h>
++#include <linux/jhash.h>
++
++struct bpf_htab {
++	struct bpf_map map;
++	struct hlist_head *buckets;
++	struct kmem_cache *elem_cache;
++	spinlock_t lock;
++	u32 count; /* number of elements in this hashtable */
++	u32 n_buckets; /* number of hash buckets */
++	u32 elem_size; /* size of each element in bytes */
 +};
 +
-+/* verbose verifier prints what it's seeing
-+ * bpf_check() is called under lock, so no race to access these global vars
-+ */
-+static u32 log_level, log_size, log_len;
-+static void *log_buf;
++/* each htab element is struct htab_elem + key + value */
++struct htab_elem {
++	struct hlist_node hash_node;
++	struct rcu_head rcu;
++	struct bpf_htab *htab;
++	u32 hash;
++	u32 pad;
++	char key[0];
++};
 +
-+static DEFINE_MUTEX(bpf_verifier_lock);
-+
-+/* log_level controls verbosity level of eBPF verifier.
-+ * verbose() is used to dump the verification trace to the log, so the user
-+ * can figure out what's wrong with the program
-+ */
-+static void verbose(const char *fmt, ...)
++#define HASH_MAX_BUCKETS 1024
++#define BPF_MAP_MAX_KEY_SIZE 256
++static struct bpf_map *htab_map_alloc(struct nlattr *attr[BPF_MAP_ATTR_MAX + 1])
 +{
-+	va_list args;
++	struct bpf_htab *htab;
++	int err, i;
 +
-+	if (log_level == 0 || log_len >= log_size - 1)
-+		return;
++	htab = kzalloc(sizeof(*htab), GFP_USER);
++	if (!htab)
++		return ERR_PTR(-ENOMEM);
 +
-+	va_start(args, fmt);
-+	log_len += vscnprintf(log_buf + log_len, log_size - log_len, fmt, args);
-+	va_end(args);
++	/* look for mandatory map attributes */
++	err = -EINVAL;
++	if (!attr[BPF_MAP_KEY_SIZE])
++		goto free_htab;
++	htab->map.key_size = nla_get_u32(attr[BPF_MAP_KEY_SIZE]);
++
++	if (!attr[BPF_MAP_VALUE_SIZE])
++		goto free_htab;
++	htab->map.value_size = nla_get_u32(attr[BPF_MAP_VALUE_SIZE]);
++
++	if (!attr[BPF_MAP_MAX_ENTRIES])
++		goto free_htab;
++	htab->map.max_entries = nla_get_u32(attr[BPF_MAP_MAX_ENTRIES]);
++
++	htab->n_buckets = (htab->map.max_entries <= HASH_MAX_BUCKETS) ?
++			  htab->map.max_entries : HASH_MAX_BUCKETS;
++
++	/* hash table size must be power of 2 */
++	if ((htab->n_buckets & (htab->n_buckets - 1)) != 0)
++		goto free_htab;
++
++	err = -E2BIG;
++	if (htab->map.key_size > BPF_MAP_MAX_KEY_SIZE)
++		goto free_htab;
++
++	err = -ENOMEM;
++	htab->buckets = kmalloc_array(htab->n_buckets,
++				      sizeof(struct hlist_head), GFP_USER);
++
++	if (!htab->buckets)
++		goto free_htab;
++
++	for (i = 0; i < htab->n_buckets; i++)
++		INIT_HLIST_HEAD(&htab->buckets[i]);
++
++	spin_lock_init(&htab->lock);
++	htab->count = 0;
++
++	htab->elem_size = sizeof(struct htab_elem) +
++			  round_up(htab->map.key_size, 8) +
++			  htab->map.value_size;
++
++	htab->elem_cache = kmem_cache_create("bpf_htab", htab->elem_size, 0, 0,
++					     NULL);
++	if (!htab->elem_cache)
++		goto free_buckets;
++
++	return &htab->map;
++
++free_buckets:
++	kfree(htab->buckets);
++free_htab:
++	kfree(htab);
++	return ERR_PTR(err);
 +}
 +
-+static const char *const bpf_class_string[] = {
-+	[BPF_LD]    = "ld",
-+	[BPF_LDX]   = "ldx",
-+	[BPF_ST]    = "st",
-+	[BPF_STX]   = "stx",
-+	[BPF_ALU]   = "alu",
-+	[BPF_JMP]   = "jmp",
-+	[BPF_RET]   = "BUG",
-+	[BPF_ALU64] = "alu64",
-+};
-+
-+static const char *const bpf_alu_string[] = {
-+	[BPF_ADD >> 4]  = "+=",
-+	[BPF_SUB >> 4]  = "-=",
-+	[BPF_MUL >> 4]  = "*=",
-+	[BPF_DIV >> 4]  = "/=",
-+	[BPF_OR  >> 4]  = "|=",
-+	[BPF_AND >> 4]  = "&=",
-+	[BPF_LSH >> 4]  = "<<=",
-+	[BPF_RSH >> 4]  = ">>=",
-+	[BPF_NEG >> 4]  = "neg",
-+	[BPF_MOD >> 4]  = "%=",
-+	[BPF_XOR >> 4]  = "^=",
-+	[BPF_MOV >> 4]  = "=",
-+	[BPF_ARSH >> 4] = "s>>=",
-+	[BPF_END >> 4]  = "endian",
-+};
-+
-+static const char *const bpf_ldst_string[] = {
-+	[BPF_W >> 3]  = "u32",
-+	[BPF_H >> 3]  = "u16",
-+	[BPF_B >> 3]  = "u8",
-+	[BPF_DW >> 3] = "u64",
-+};
-+
-+static const char *const bpf_jmp_string[] = {
-+	[BPF_JA >> 4]   = "jmp",
-+	[BPF_JEQ >> 4]  = "==",
-+	[BPF_JGT >> 4]  = ">",
-+	[BPF_JGE >> 4]  = ">=",
-+	[BPF_JSET >> 4] = "&",
-+	[BPF_JNE >> 4]  = "!=",
-+	[BPF_JSGT >> 4] = "s>",
-+	[BPF_JSGE >> 4] = "s>=",
-+	[BPF_CALL >> 4] = "call",
-+	[BPF_EXIT >> 4] = "exit",
-+};
-+
-+static void print_bpf_insn(struct bpf_insn *insn)
++static inline u32 htab_map_hash(const void *key, u32 key_len)
 +{
-+	u8 class = BPF_CLASS(insn->code);
++	return jhash(key, key_len, 0);
++}
 +
-+	if (class == BPF_ALU || class == BPF_ALU64) {
-+		if (BPF_SRC(insn->code) == BPF_X)
-+			verbose("(%02x) %sr%d %s %sr%d\n",
-+				insn->code, class == BPF_ALU ? "(u32) " : "",
-+				insn->dst_reg,
-+				bpf_alu_string[BPF_OP(insn->code) >> 4],
-+				class == BPF_ALU ? "(u32) " : "",
-+				insn->src_reg);
-+		else
-+			verbose("(%02x) %sr%d %s %s%d\n",
-+				insn->code, class == BPF_ALU ? "(u32) " : "",
-+				insn->dst_reg,
-+				bpf_alu_string[BPF_OP(insn->code) >> 4],
-+				class == BPF_ALU ? "(u32) " : "",
-+				insn->imm);
-+	} else if (class == BPF_STX) {
-+		if (BPF_MODE(insn->code) == BPF_MEM)
-+			verbose("(%02x) *(%s *)(r%d %+d) = r%d\n",
-+				insn->code,
-+				bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
-+				insn->dst_reg,
-+				insn->off, insn->src_reg);
-+		else if (BPF_MODE(insn->code) == BPF_XADD)
-+			verbose("(%02x) lock *(%s *)(r%d %+d) += r%d\n",
-+				insn->code,
-+				bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
-+				insn->dst_reg, insn->off,
-+				insn->src_reg);
-+		else
-+			verbose("BUG_%02x\n", insn->code);
-+	} else if (class == BPF_ST) {
-+		if (BPF_MODE(insn->code) != BPF_MEM) {
-+			verbose("BUG_st_%02x\n", insn->code);
-+			return;
-+		}
-+		verbose("(%02x) *(%s *)(r%d %+d) = %d\n",
-+			insn->code,
-+			bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
-+			insn->dst_reg,
-+			insn->off, insn->imm);
-+	} else if (class == BPF_LDX) {
-+		if (BPF_MODE(insn->code) != BPF_MEM) {
-+			verbose("BUG_ldx_%02x\n", insn->code);
-+			return;
-+		}
-+		verbose("(%02x) r%d = *(%s *)(r%d %+d)\n",
-+			insn->code, insn->dst_reg,
-+			bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
-+			insn->src_reg, insn->off);
-+	} else if (class == BPF_LD) {
-+		if (BPF_MODE(insn->code) == BPF_ABS) {
-+			verbose("(%02x) r0 = *(%s *)skb[%d]\n",
-+				insn->code,
-+				bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
-+				insn->imm);
-+		} else if (BPF_MODE(insn->code) == BPF_IND) {
-+			verbose("(%02x) r0 = *(%s *)skb[r%d + %d]\n",
-+				insn->code,
-+				bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
-+				insn->src_reg, insn->imm);
-+		} else if (BPF_MODE(insn->code) == BPF_IMM) {
-+			verbose("(%02x) r%d = 0x%x\n",
-+				insn->code, insn->dst_reg, insn->imm);
-+		} else {
-+			verbose("BUG_ld_%02x\n", insn->code);
-+			return;
-+		}
-+	} else if (class == BPF_JMP) {
-+		u8 opcode = BPF_OP(insn->code);
++static inline struct hlist_head *select_bucket(struct bpf_htab *htab, u32 hash)
++{
++	return &htab->buckets[hash & (htab->n_buckets - 1)];
++}
 +
-+		if (opcode == BPF_CALL) {
-+			verbose("(%02x) call %d\n", insn->code, insn->imm);
-+		} else if (insn->code == (BPF_JMP | BPF_JA)) {
-+			verbose("(%02x) goto pc%+d\n",
-+				insn->code, insn->off);
-+		} else if (insn->code == (BPF_JMP | BPF_EXIT)) {
-+			verbose("(%02x) exit\n", insn->code);
-+		} else if (BPF_SRC(insn->code) == BPF_X) {
-+			verbose("(%02x) if r%d %s r%d goto pc%+d\n",
-+				insn->code, insn->dst_reg,
-+				bpf_jmp_string[BPF_OP(insn->code) >> 4],
-+				insn->src_reg, insn->off);
-+		} else {
-+			verbose("(%02x) if r%d %s 0x%x goto pc%+d\n",
-+				insn->code, insn->dst_reg,
-+				bpf_jmp_string[BPF_OP(insn->code) >> 4],
-+				insn->imm, insn->off);
-+		}
-+	} else {
-+		verbose("(%02x) %s\n", insn->code, bpf_class_string[class]);
++static struct htab_elem *lookup_elem_raw(struct hlist_head *head, u32 hash,
++					 void *key, u32 key_size)
++{
++	struct htab_elem *l;
++
++	hlist_for_each_entry_rcu(l, head, hash_node) {
++		if (l->hash == hash && !memcmp(&l->key, key, key_size))
++			return l;
 +	}
++	return NULL;
 +}
 +
- int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
- {
-+	void __user *log_ubuf = NULL;
-+	struct verifier_env *env;
- 	int ret = -EINVAL;
- 
-+	if (prog->len <= 0 || prog->len > BPF_MAXINSNS)
-+		return -E2BIG;
++/* Must be called with rcu_read_lock. */
++static void *htab_map_lookup_elem(struct bpf_map *map, void *key)
++{
++	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
++	struct hlist_head *head;
++	struct htab_elem *l;
++	u32 hash, key_size;
 +
-+	/* 'struct verifier_env' can be global, but since it's not small,
-+	 * allocate/free it every time bpf_check() is called
-+	 */
-+	env = kzalloc(sizeof(struct verifier_env), GFP_KERNEL);
-+	if (!env)
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	key_size = map->key_size;
++
++	hash = htab_map_hash(key, key_size);
++
++	head = select_bucket(htab, hash);
++
++	l = lookup_elem_raw(head, hash, key, key_size);
++
++	if (l)
++		return l->key + round_up(map->key_size, 8);
++	else
++		return NULL;
++}
++
++/* Must be called with rcu_read_lock. */
++static int htab_map_get_next_key(struct bpf_map *map, void *key, void *next_key)
++{
++	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
++	struct hlist_head *head;
++	struct htab_elem *l, *next_l;
++	u32 hash, key_size;
++	int i;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	key_size = map->key_size;
++
++	hash = htab_map_hash(key, key_size);
++
++	head = select_bucket(htab, hash);
++
++	/* lookup the key */
++	l = lookup_elem_raw(head, hash, key, key_size);
++
++	if (!l) {
++		i = 0;
++		goto find_first_elem;
++	}
++
++	/* key was found, get next key in the same bucket */
++	next_l = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu(&l->hash_node)),
++				  struct htab_elem, hash_node);
++
++	if (next_l) {
++		/* if next elem in this hash list is non-zero, just return it */
++		memcpy(next_key, next_l->key, key_size);
++		return 0;
++	} else {
++		/* no more elements in this hash list, go to the next bucket */
++		i = hash & (htab->n_buckets - 1);
++		i++;
++	}
++
++find_first_elem:
++	/* iterate over buckets */
++	for (; i < htab->n_buckets; i++) {
++		head = select_bucket(htab, i);
++
++		/* pick first element in the bucket */
++		next_l = hlist_entry_safe(rcu_dereference_raw(hlist_first_rcu(head)),
++					  struct htab_elem, hash_node);
++		if (next_l) {
++			/* if it's not empty, just return it */
++			memcpy(next_key, next_l->key, key_size);
++			return 0;
++		}
++	}
++
++	/* itereated over all buckets and all elements */
++	return -ENOENT;
++}
++
++static struct htab_elem *htab_alloc_elem(struct bpf_htab *htab)
++{
++	void *l;
++
++	l = kmem_cache_alloc(htab->elem_cache, GFP_ATOMIC);
++	if (!l)
++		return ERR_PTR(-ENOMEM);
++	return l;
++}
++
++static void free_htab_elem_rcu(struct rcu_head *rcu)
++{
++	struct htab_elem *l = container_of(rcu, struct htab_elem, rcu);
++
++	kmem_cache_free(l->htab->elem_cache, l);
++}
++
++static void release_htab_elem(struct bpf_htab *htab, struct htab_elem *l)
++{
++	l->htab = htab;
++	call_rcu(&l->rcu, free_htab_elem_rcu);
++}
++
++/* Must be called with rcu_read_lock. */
++static int htab_map_update_elem(struct bpf_map *map, void *key, void *value)
++{
++	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
++	struct htab_elem *l_new, *l_old;
++	struct hlist_head *head;
++	unsigned long flags;
++	u32 key_size;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	l_new = htab_alloc_elem(htab);
++	if (IS_ERR(l_new))
 +		return -ENOMEM;
 +
-+	/* grab the mutex to protect few globals used by verifier */
-+	mutex_lock(&bpf_verifier_lock);
++	key_size = map->key_size;
 +
-+	if (tb[BPF_PROG_LOG_LEVEL] && tb[BPF_PROG_LOG_BUF] &&
-+	    tb[BPF_PROG_LOG_SIZE]) {
-+		/* user requested verbose verifier output
-+		 * and supplied buffer to store the verification trace
++	memcpy(l_new->key, key, key_size);
++	memcpy(l_new->key + round_up(key_size, 8), value, map->value_size);
++
++	l_new->hash = htab_map_hash(l_new->key, key_size);
++
++	/* bpf_map_update_elem() can be called in_irq() as well, so
++	 * spin_lock() or spin_lock_bh() cannot be used
++	 */
++	spin_lock_irqsave(&htab->lock, flags);
++
++	head = select_bucket(htab, l_new->hash);
++
++	l_old = lookup_elem_raw(head, l_new->hash, key, key_size);
++
++	if (!l_old && unlikely(htab->count >= map->max_entries)) {
++		/* if elem with this 'key' doesn't exist and we've reached
++		 * max_entries limit, fail insertion of new elem
 +		 */
-+		log_level = nla_get_u32(tb[BPF_PROG_LOG_LEVEL]);
-+		log_ubuf = *(void __user **) nla_data(tb[BPF_PROG_LOG_BUF]);
-+		log_size = nla_get_u32(tb[BPF_PROG_LOG_SIZE]);
-+		log_len = 0;
++		spin_unlock_irqrestore(&htab->lock, flags);
++		kmem_cache_free(htab->elem_cache, l_new);
++		return -EFBIG;
++	}
 +
-+		ret = -EINVAL;
-+		/* log_* values have to be sane */
-+		if (log_size < 128 || log_size > UINT_MAX >> 8 ||
-+		    log_level == 0 || log_ubuf == NULL)
-+			goto free_env;
-+
-+		ret = -ENOMEM;
-+		log_buf = vmalloc(log_size);
-+		if (!log_buf)
-+			goto free_env;
++	/* add new element to the head of the list, so that concurrent
++	 * search will find it before old elem
++	 */
++	hlist_add_head_rcu(&l_new->hash_node, head);
++	if (l_old) {
++		hlist_del_rcu(&l_old->hash_node);
++		release_htab_elem(htab, l_old);
 +	} else {
-+		log_level = 0;
++		htab->count++;
++	}
++	spin_unlock_irqrestore(&htab->lock, flags);
++
++	return 0;
++}
++
++/* Must be called with rcu_read_lock. */
++static int htab_map_delete_elem(struct bpf_map *map, void *key)
++{
++	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
++	struct hlist_head *head;
++	struct htab_elem *l;
++	unsigned long flags;
++	u32 hash, key_size;
++	int ret = -ESRCH;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	key_size = map->key_size;
++
++	hash = htab_map_hash(key, key_size);
++
++	spin_lock_irqsave(&htab->lock, flags);
++
++	head = select_bucket(htab, hash);
++
++	l = lookup_elem_raw(head, hash, key, key_size);
++
++	if (l) {
++		hlist_del_rcu(&l->hash_node);
++		htab->count--;
++		release_htab_elem(htab, l);
++		ret = 0;
 +	}
 +
-+	/* ret = do_check(env); */
++	spin_unlock_irqrestore(&htab->lock, flags);
++	return ret;
++}
 +
-+	if (log_level && log_len >= log_size - 1) {
-+		BUG_ON(log_len >= log_size);
-+		/* verifier log exceeded user supplied buffer */
-+		ret = -ENOSPC;
-+		/* fall through to return what was recorded */
++static void delete_all_elements(struct bpf_htab *htab)
++{
++	int i;
++
++	for (i = 0; i < htab->n_buckets; i++) {
++		struct hlist_head *head = select_bucket(htab, i);
++		struct hlist_node *n;
++		struct htab_elem *l;
++
++		hlist_for_each_entry_safe(l, n, head, hash_node) {
++			hlist_del_rcu(&l->hash_node);
++			htab->count--;
++			kmem_cache_free(htab->elem_cache, l);
++		}
 +	}
++}
 +
-+	/* copy verifier log back to user space including trailing zero */
-+	if (log_level && copy_to_user(log_ubuf, log_buf, log_len + 1) != 0) {
-+		ret = -EFAULT;
-+		goto free_log_buf;
-+	}
++/* called when map->refcnt goes to zero */
++static void htab_map_free(struct bpf_map *map)
++{
++	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
 +
++	/* wait for all outstanding updates to complete */
++	synchronize_rcu();
 +
-+free_log_buf:
-+	if (log_level)
-+		vfree(log_buf);
-+free_env:
-+	kfree(env);
-+	mutex_unlock(&bpf_verifier_lock);
- 	return ret;
- }
++	/* kmem_cache_free all htab elements */
++	delete_all_elements(htab);
++
++	/* and destroy cache, which might sleep */
++	kmem_cache_destroy(htab->elem_cache);
++
++	kfree(htab->buckets);
++	kfree(htab);
++}
++
++static struct bpf_map_ops htab_ops = {
++	.map_alloc = htab_map_alloc,
++	.map_free = htab_map_free,
++	.map_get_next_key = htab_map_get_next_key,
++	.map_lookup_elem = htab_map_lookup_elem,
++	.map_update_elem = htab_map_update_elem,
++	.map_delete_elem = htab_map_delete_elem,
++};
++
++static struct bpf_map_type_list tl = {
++	.ops = &htab_ops,
++	.type = BPF_MAP_TYPE_HASH,
++};
++
++static int __init register_htab_map(void)
++{
++	bpf_register_map_type(&tl);
++	return 0;
++}
++late_initcall(register_htab_map);
 -- 
 1.7.9.5
 
