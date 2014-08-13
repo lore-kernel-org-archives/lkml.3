@@ -1,252 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaHMICE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:02:04 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:42881 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157AbaHMH6o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:58:44 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v4 net-next 20/26] samples: bpf: example of stateful socket filtering
-Date: Wed, 13 Aug 2014 00:57:31 -0700
-Message-Id: <1407916658-8731-21-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+	id S1752807AbaHMICP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:02:15 -0400
+Received: from natalenko.name ([78.47.77.148]:35174 "EHLO natalenko.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752157AbaHMICH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 04:02:07 -0400
+DMARC-Filter: OpenDMARC Filter v1.2.0 natalenko.name DC339AB81
+Authentication-Results: mail.natalenko.name; dmarc=none header.from=natalenko.name
+From: Oleksandr Natalenko <oleksandr@natalenko.name>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: viresh.kumar@linaro.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: Fwd: [BUG] oops in cpufreq driver with AMD Kaveri CPU
+Date: Wed, 13 Aug 2014 11:02:03 +0300
+Message-ID: <2046251.2jAlA4AtII@spock>
+User-Agent: KMail/4.13.3 (Linux/3.15.0-pf5; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <53EAA5BB.2010207@amd.com>
+References: <4708675.eITUXPv8Ih@spock> <CAOjmkp8h19de3bYaLpqmXxEynKi--gHBf6MxXuuNoDzZXw=O8Q@mail.gmail.com> <53EAA5BB.2010207@amd.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this socket filter example does:
+On Tuesday 12 August 2014 18:39:39 Aravind Gopalakrishnan wrote:
+> (btw, this is a 'Kabini' processor and not a
+> 'Kaveri')
 
-- creates a hashtable in kernel with key 4 bytes and value 8 bytes
+Right, sorry.
 
-- populates map[6] = 0; map[17] = 0;  // 6 - tcp_proto, 17 - udp_proto
+> (I think you mentioned you were able to reproduce on 3.16. So assuming
+> -rc will be affected too)
 
-- loads eBPF program:
-  r0 = skb[14 + 9]; // load one byte of ip->proto
-  *(u32*)(fp - 4) = r0;
-  value = bpf_map_lookup_elem(map_fd, fp - 4);
-  if (value)
-       (*(u64*)value) += 1;
+At least, 3.16-rc7 was affected too.
 
-- attaches this program to eth0 raw socket
+> Are you noticing this BUG when you are running any particular load?
+> I could help debug effort or test patches to fix issue(whenever
+> necessary) if I have some way to reproduce this..
 
-- every second user space reads map[6] and map[17] to see how many
-  TCP and UDP packets were seen on eth0
+Well, there's no particular workload type. The machine in question is my home 
+router with x2go session, torrents, i2p and tor. And the most difficult is to 
+wait for the hang to occur, as it happens ~1 time per 24 hours or so (could be 
+much sooner or a little bit later).
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- samples/bpf/.gitignore     |    1 +
- samples/bpf/Makefile       |   12 ++++
- samples/bpf/sock_example.c |  158 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 171 insertions(+)
- create mode 100644 samples/bpf/.gitignore
- create mode 100644 samples/bpf/Makefile
- create mode 100644 samples/bpf/sock_example.c
+Also, I've noticed that there's no need to load CPU intentionally with some 
+test scripts to trigger this bug as CPU frequencies are jumping constantly:
 
-diff --git a/samples/bpf/.gitignore b/samples/bpf/.gitignore
-new file mode 100644
-index 000000000000..5465c6e92a00
---- /dev/null
-+++ b/samples/bpf/.gitignore
-@@ -0,0 +1 @@
-+sock_example
-diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
-new file mode 100644
-index 000000000000..63c65e5faf58
---- /dev/null
-+++ b/samples/bpf/Makefile
-@@ -0,0 +1,12 @@
-+# kbuild trick to avoid linker error. Can be omitted if a module is built.
-+obj- := dummy.o
-+
-+# List of programs to build
-+hostprogs-y := sock_example
-+
-+sock_example-objs := sock_example.o libbpf.o
-+
-+# Tell kbuild to always build the programs
-+always := $(hostprogs-y)
-+
-+HOSTCFLAGS += -I$(objtree)/usr/include
-diff --git a/samples/bpf/sock_example.c b/samples/bpf/sock_example.c
-new file mode 100644
-index 000000000000..a577ee64de5b
---- /dev/null
-+++ b/samples/bpf/sock_example.c
-@@ -0,0 +1,158 @@
-+/* eBPF example program:
-+ * - creates a hashtable in kernel with key 4 bytes and value 8 bytes
-+ *
-+ * - populates map[6] = 0; map[17] = 0;  // 6 - tcp_proto, 17 - udp_proto
-+ *
-+ * - loads eBPF program:
-+ *   r0 = skb[14 + 9]; // load one byte of ip->proto
-+ *   *(u32*)(fp - 4) = r0;
-+ *   value = bpf_map_lookup_elem(map_id, fp - 4);
-+ *   if (value)
-+ *        (*(u64*)value) += 1;
-+ *
-+ * - attaches this program to eth0 raw socket
-+ *
-+ * - every second user space reads map[6] and map[17] to see how many
-+ *   TCP and UDP packets were seen on eth0
-+ */
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <asm-generic/socket.h>
-+#include <linux/netlink.h>
-+#include <net/ethernet.h>
-+#include <net/if.h>
-+#include <linux/sockios.h>
-+#include <linux/if_packet.h>
-+#include <linux/bpf.h>
-+#include <errno.h>
-+#include <sys/socket.h>
-+#include <sys/ioctl.h>
-+#include <linux/unistd.h>
-+#include <string.h>
-+#include <linux/filter.h>
-+#include <stdlib.h>
-+#include <arpa/inet.h>
-+#include "libbpf.h"
-+
-+static int open_raw_sock(const char *name)
-+{
-+	struct sockaddr_ll sll;
-+	struct packet_mreq mr;
-+	struct ifreq ifr;
-+	int sock;
-+
-+	sock = socket(PF_PACKET, SOCK_RAW | SOCK_NONBLOCK | SOCK_CLOEXEC, htons(ETH_P_ALL));
-+	if (sock < 0) {
-+		printf("cannot open socket!\n");
-+		return -1;
-+	}
-+
-+	memset(&ifr, 0, sizeof(ifr));
-+	strncpy((char *)ifr.ifr_name, name, IFNAMSIZ);
-+	if (ioctl(sock, SIOCGIFINDEX, &ifr) < 0) {
-+		printf("ioctl: %s\n", strerror(errno));
-+		close(sock);
-+		return -1;
-+	}
-+
-+	memset(&sll, 0, sizeof(sll));
-+	sll.sll_family = AF_PACKET;
-+	sll.sll_ifindex = ifr.ifr_ifindex;
-+	sll.sll_protocol = htons(ETH_P_ALL);
-+	if (bind(sock, (struct sockaddr *)&sll, sizeof(sll)) < 0) {
-+		printf("bind: %s\n", strerror(errno));
-+		close(sock);
-+		return -1;
-+	}
-+
-+	memset(&mr, 0, sizeof(mr));
-+	mr.mr_ifindex = ifr.ifr_ifindex;
-+	mr.mr_type = PACKET_MR_PROMISC;
-+	if (setsockopt(sock, SOL_PACKET, PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr)) < 0) {
-+		printf("set_promisc: %s\n", strerror(errno));
-+		close(sock);
-+		return -1;
-+	}
-+	return sock;
-+}
-+
-+static int test_sock(void)
-+{
-+	static struct bpf_insn prog[] = {
-+		BPF_MOV64_REG(BPF_REG_6, BPF_REG_1),
-+		BPF_LD_ABS(BPF_B, 14 + 9 /* R0 = ip->proto */),
-+		BPF_STX_MEM(BPF_W, BPF_REG_10, BPF_REG_0, -4), /* *(u32 *)(fp - 4) = r0 */
-+		BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
-+		BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -4), /* r2 = fp - 4 */
-+		BPF_LD_MAP_FD(BPF_REG_1, 0),
-+		BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
-+		BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 2),
-+		BPF_MOV64_IMM(BPF_REG_1, 1), /* r1 = 1 */
-+		BPF_RAW_INSN(BPF_STX | BPF_XADD | BPF_DW, BPF_REG_0, BPF_REG_1, 0, 0), /* xadd r0 += r1 */
-+		BPF_MOV64_IMM(BPF_REG_0, 0), /* r0 = 0 */
-+		BPF_EXIT_INSN(),
-+	};
-+	int sock = -1, map_fd, prog_fd, i, key;
-+	long long value = 0, tcp_cnt, udp_cnt;
-+
-+	map_fd = bpf_create_map(BPF_MAP_TYPE_HASH, sizeof(key), sizeof(value), 2);
-+	if (map_fd < 0) {
-+		printf("failed to create map '%s'\n", strerror(errno));
-+		/* must have been left from previous aborted run, delete it */
-+		goto cleanup;
-+	}
-+
-+	key = 6; /* tcp */
-+	if (bpf_update_elem(map_fd, &key, &value) < 0) {
-+		printf("update err key=%d\n", key);
-+		goto cleanup;
-+	}
-+
-+	key = 17; /* udp */
-+	if (bpf_update_elem(map_fd, &key, &value) < 0) {
-+		printf("update err key=%d\n", key);
-+		goto cleanup;
-+	}
-+
-+	prog[5].imm = map_fd;
-+
-+	prog_fd = bpf_prog_load(BPF_PROG_TYPE_SOCKET_FILTER, prog, sizeof(prog),
-+				"GPL");
-+	if (prog_fd < 0) {
-+		printf("failed to load prog '%s'\n", strerror(errno));
-+		goto cleanup;
-+	}
-+
-+	sock = open_raw_sock("eth0");
-+
-+	if (setsockopt(sock, SOL_SOCKET, SO_ATTACH_FILTER_EBPF, &prog_fd, sizeof(prog_fd)) < 0) {
-+		printf("setsockopt %d\n", errno);
-+		goto cleanup;
-+	}
-+
-+	for (i = 0; i < 10; i++) {
-+		key = 6;
-+		if (bpf_lookup_elem(map_fd, &key, &tcp_cnt) < 0) {
-+			printf("lookup err\n");
-+			break;
-+		}
-+		key = 17;
-+		if (bpf_lookup_elem(map_fd, &key, &udp_cnt) < 0) {
-+			printf("lookup err\n");
-+			break;
-+		}
-+		printf("TCP %lld UDP %lld packets\n", tcp_cnt, udp_cnt);
-+		sleep(1);
-+	}
-+
-+cleanup:
-+	/* maps, programs, raw sockets will auto cleanup on process exit */
-+
-+	return 0;
-+}
-+
-+int main(void)
-+{
-+	test_sock();
-+	return 0;
-+}
+===
+pf@defiant:~$ cat 
+/sys/devices/system/cpu/cpu{0,1,2,3}/cpufreq/stats/trans_table 
+   From  :    To
+         :   1600000   1400000   1200000   1000000    800000 
+  1600000:         0     21936     14210      9997     61789 
+  1400000:     12195         0      2149      1026     20635 
+  1200000:     10557       881         0      1631     21333 
+  1000000:     10292      1021      1596         0     25018 
+   800000:     74888     12167     16447     25273         0 
+   From  :    To
+         :   1600000   1400000   1200000   1000000    800000 
+  1600000:         0     23610     14510      9827     61768 
+  1400000:     13856         0      2445      1086     20849 
+  1200000:     10925       885         0      1773     21581 
+  1000000:     10206      1037      1683         0     24775 
+   800000:     74727     12704     16526     25015         0 
+   From  :    To
+         :   1600000   1400000   1200000   1000000    800000 
+  1600000:         0     26721     15016     10040     61981 
+  1400000:     16249         0      2902      1150     21444 
+  1200000:     11811       958         0      1939     23065 
+  1000000:     11310      1159      1958         0     26525 
+   800000:     74387     12907     17897     27823         0 
+   From  :    To
+         :   1600000   1400000   1200000   1000000    800000 
+  1600000:         0     27715     13060     10143     62328 
+  1400000:     18215         0      3379      1881     24753 
+  1200000:     12920      1459         0      3529     27835 
+  1000000:     13193      1915      3372         0     39240 
+   800000:     68917     17139     25932     42167         0
+===
+
 -- 
-1.7.9.5
-
+Oleksandr post-factum Natalenko, MSc
+pf-kernel community
+https://natalenko.name/
