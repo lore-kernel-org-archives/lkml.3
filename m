@@ -1,134 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554AbaHMS1d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 14:27:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58778 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750913AbaHMS1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 14:27:32 -0400
-Message-ID: <53EBADB1.2020403@redhat.com>
-Date: Wed, 13 Aug 2014 14:25:53 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753418AbaHMSdx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 14:33:53 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:58475 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667AbaHMSdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 14:33:51 -0400
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time: drop do_sys_times spinlock
-References: <20140812142539.01851e52@annuminas.surriel.com> <20140812191218.GA15210@redhat.com> <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com>
-In-Reply-To: <20140813180807.GA8098@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140813182219.GE6437@thunk.org>
+References: <cover.1406177531.git.luto@amacapital.net> <CALCETrXtLf3ZFtyrbwj29C=t3PcTxRT2AJWZCUHdKC3AYyUVAA@mail.gmail.com>
+ <20140812191723.GI12871@thunk.org> <CALCETrVmviT=upxHfPfmLy2aUOKdCuCbNg9WZQcx6f=8T8vv=g@mail.gmail.com>
+ <53EB1859.6030800@zytor.com> <20140813143209.GD6437@thunk.org>
+ <CALCETrUQ8yRmmN1kbdCy99ae2+-Xp4caOBgrXvaQhCCUi=i0zg@mail.gmail.com>
+ <53EBA435.3020207@zytor.com> <20140813182219.GE6437@thunk.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 13 Aug 2014 11:33:29 -0700
+Message-ID: <CALCETrVTsyq4u+G2Td7Gmi6pa6c1ePgavqN31mjo9_E5=7bGCg@mail.gmail.com>
+Subject: Re: [PATCH v5 0/5] random,x86,kvm: Rework arch RNG seeds and get some
+ from kvm
+To: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>, kvm list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2014 02:08 PM, Oleg Nesterov wrote:
-> On 08/13, Rik van Riel wrote:
+On Wed, Aug 13, 2014 at 11:22 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Wed, Aug 13, 2014 at 10:45:25AM -0700, H. Peter Anvin wrote:
+>> On 08/13/2014 09:13 AM, Andy Lutomirski wrote:
+>> >
+>> > Sounds good to me.
+>> >
+>> > FWIW, I'd like to see a second use added in random.c: I think that we
+>> > should do this, or even all of init_std_data, on resume from suspend
+>> > and especially on resume from hibernate / kexec.
+>> >
 >>
->> On Wed, 13 Aug 2014 19:22:30 +0200
->> Oleg Nesterov <oleg@redhat.com> wrote:
->>
->>> On 08/12, Rik van Riel wrote:
->>>>
->>>> Any other ideas?
->>>
->>> To simplify, lets suppose that we only need sum_exec_runtime.
->>>
->>> Perhaps we can do something like this
->>
->> That would probably work, indeed.
-> 
-> OK, perhaps I'll try to make a patch tomorrow for review.
-> 
->> However, it turns out that a seqcount doesn't look too badly either.
-> 
-> Well, I disagree. This is more complex, and this adds yet another lock
-> which only protects the stats...
+>> Yes, we should.  We also need to make it possible to do this after
+>> cloning a VM.
+>
+> Agreed.  Can you send a patch?
+>
+> I can carry the commits to add arch_random_init() the generic version,
+> and the patch to call it after suspend/resume.  I'll do this at the
+> very head of the random tree, and make sure it gets pushed to Linus
+> early during the next merge window.
+>
+> Does that sound like a plan?  Or does someone want to suggest
+> something different?  I'm flexible...
 
-The other lock is what can tell us that there is a writer active
-NOW, which may be useful when it comes to guaranteeing forward
-progress for readers when there are lots of threads exiting...
+OK.  Here's a proposal.  I'll split the series into two parts.  The
+first part will be the arch_random_init generic change and code to
+call it after suspend/resume (once I figure out the right callback).
+I'll send that to you.
 
->> --- a/include/linux/sched.h
->> +++ b/include/linux/sched.h
->> @@ -461,6 +461,7 @@ struct sighand_struct {
->>  	atomic_t		count;
->>  	struct k_sigaction	action[_NSIG];
->>  	spinlock_t		siglock;
->> +	seqcount_t		stats_seq; /* write nests inside spinlock */
-> 
-> No, no, at least it should go to signal_struct. Unlike ->sighand, ->signal
-> is stable as long as task_struct can't go away.
+The second part will be the KVM and x86 code, which will look just
+like this version (v5) except for the rename.  If needed, hpa and I
+can hash the details we need at KS.
 
-I can move it to signal_struct, no problem.
+As for doing arch_random_init after clone/migration, I think we'll
+need another KVM extension for that, since, AFAIK, we don't actually
+get notified that we were cloned or migrated.  That will be
+nontrivial.  Maybe we can figure that out at KS, too.
 
->>  void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
->>  {
->>  	struct signal_struct *sig = tsk->signal;
->> +	struct sighand_struct *sighand;
->>  	cputime_t utime, stime;
->>  	struct task_struct *t;
->> -
->> -	times->utime = sig->utime;
->> -	times->stime = sig->stime;
->> -	times->sum_exec_runtime = sig->sum_sched_runtime;
->> +	int seq;
->>  
->>  	rcu_read_lock();
->> -	/* make sure we can trust tsk->thread_group list */
->> -	if (!likely(pid_alive(tsk)))
->> +	sighand = rcu_dereference(tsk->sighand);
->> +	if (unlikely(!sighand))
->>  		goto out;
->>  
->> -	t = tsk;
->>  	do {
->> -		task_cputime(t, &utime, &stime);
->> -		times->utime += utime;
->> -		times->stime += stime;
->> -		times->sum_exec_runtime += task_sched_runtime(t);
->> -	} while_each_thread(tsk, t);
->> +		seq = read_seqcount_begin(&sighand->stats_seq);
->> +		times->utime = sig->utime;
->> +		times->stime = sig->stime;
->> +		times->sum_exec_runtime = sig->sum_sched_runtime;
->> +
->> +		/* make sure we can trust tsk->thread_group list */
->> +		if (!likely(pid_alive(tsk)))
->> +			goto out;
-> 
-> Whatever we do, we should convert thread_group_cputime() to use
-> for_each_thread() first().
+--Andy
 
-What is the advantage of for_each_thread over while_each_thread,
-besides getting rid of that t = tsk line?
+>
+>                                                 - Ted
 
->> @@ -781,14 +781,14 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
->>  		cpu_clock_sample(timer->it_clock, p, &now);
->>  	} else {
->>  		struct sighand_struct *sighand;
->> -		unsigned long flags;
->>
->>  		/*
->>  		 * Protect against sighand release/switch in exit/exec and
->>  		 * also make timer sampling safe if it ends up calling
->>  		 * thread_group_cputime().
->>  		 */
->> -		sighand = lock_task_sighand(p, &flags);
->> +		rcu_read_lock();
->> +		sighand = rcu_dereference(p->sighand);
-> 
-> This looks unneeded at first glance.
 
-You are right. This change should be made to posix_cpu_clock_get_task
-and not posix_cpu_timer_get. I think this is where I got distracted
-by the way the sighand struct was RCU freed.
 
-Sigh...
-
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
