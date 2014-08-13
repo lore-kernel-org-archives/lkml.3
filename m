@@ -1,358 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604AbaHMIOw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:14:52 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:34170 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684AbaHMH6G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:58:06 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v4 net-next 05/26] bpf: add lookup/update/delete/iterate methods to BPF maps
-Date: Wed, 13 Aug 2014 00:57:16 -0700
-Message-Id: <1407916658-8731-6-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+	id S1752455AbaHMIOu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:14:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31299 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751944AbaHMIOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 04:14:46 -0400
+Date: Wed, 13 Aug 2014 16:13:47 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Mark Salter <msalter@redhat.com>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-efi@vger.kernel.org, rtc-linux@googlegroups.com
+Subject: Re: [PATCH 2/5] efi: add kernel param efi=noruntime
+Message-ID: <20140813081347.GA3977@darkstar.nay.redhat.com>
+References: <1407823822-23829-1-git-send-email-dyoung@redhat.com>
+ <1407823822-23829-2-git-send-email-dyoung@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407823822-23829-2-git-send-email-dyoung@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'maps' is a generic storage of different types for sharing data between kernel
-and userspace.
+On 08/12/14 at 02:10pm, Dave Young wrote:
+> noefi kernel param means actually disabling efi runtime, Per suggestion from
+> Leif Lindholm efi=noruntime should be better. But since noefi is already used
+> in X86 thus just adding another param efi=noruntime for same purpose.
+> 
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  Documentation/kernel-parameters.txt |  4 +++-
+>  arch/x86/platform/efi/efi.c         | 12 ------------
+>  drivers/firmware/efi/efi.c          | 22 ++++++++++++++++++++++
+>  3 files changed, 25 insertions(+), 13 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index a8eb6af..09d8c54 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -992,11 +992,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			Format: {"off" | "on" | "skip[mbr]"}
+>  
+>  	efi=		[EFI]
+> -			Format: { "old_map" }
+> +			Format: { "old_map" | "noruntime" }
+>  			old_map [X86-64]: switch to the old ioremap-based EFI
+>  			runtime services mapping. 32-bit still uses this one by
+>  			default.
+>  
+> +			noruntime : disable EFI runtime services support
+> +
+>  	efi_no_storage_paranoia [EFI; X86]
+>  			Using this parameter you can use more than 50% of
+>  			your efi variable storage. Use this parameter only if
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> index dd7aaa1..eae91be 100644
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -929,15 +929,3 @@ u64 efi_mem_attributes(unsigned long phys_addr)
+>  	}
+>  	return 0;
+>  }
+> -
+> -static int __init parse_efi_cmdline(char *str)
+> -{
+> -	if (*str == '=')
+> -		str++;
+> -
+> -	if (!strncmp(str, "old_map", 7))
+> -		set_bit(EFI_OLD_MEMMAP, &efi.flags);
+> -
+> -	return 0;
+> -}
+> -early_param("efi", parse_efi_cmdline);
+> diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
+> index c8f01a7..f3ec3f2 100644
+> --- a/drivers/firmware/efi/efi.c
+> +++ b/drivers/firmware/efi/efi.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/of_fdt.h>
+>  #include <linux/io.h>
+>  #include <linux/platform_device.h>
+> +#include <asm/efi.h>
+>  
+>  struct efi __read_mostly efi = {
+>  	.mps        = EFI_INVALID_TABLE_ADDR,
+> @@ -54,6 +55,27 @@ bool efi_runtime_disabled(void)
+>  	return disable_runtime;
+>  }
+>  
+> +static int __init parse_efi_cmdline(char *str)
+> +{
+> +	if (*str == '=')
+> +		str++;
+> +
+> +#ifdef CONFIG_X86
+> +	if (!strncmp(str, "old_map", 7)) {
+> +		set_bit(EFI_OLD_MEMMAP, &efi.flags);
+> +		goto out;
+> +	}
+> +#endif
+> +	if (!strncmp(str, "noruntime", 9)) {
+> +		disable_runtime = true;
+> +		goto out;
+> +	}
+> +
 
-The maps are accessed from user space via BPF syscall, which has commands:
+For sharing functions I moved old_map here, but rethinking about it maybe
+it's better to keep it in arch code.
 
-- create a map with given type and attributes
-  fd = bpf_map_create(map_type, struct nlattr *attr, int len)
-  returns fd or negative error
+Matt, I see you have some code for libstub option parsing, I will rebase
+on your efi/next and I'm thinking to add a generic function for parsing
+params like below (for old_map, but libstub can not use it):
 
-- lookup key in a given map referenced by fd
-  err = bpf_map_lookup_elem(int fd, void *key, void *value)
-  returns zero and stores found elem into value or negative error
-
-- create or update key/value pair in a given map
-  err = bpf_map_update_elem(int fd, void *key, void *value)
-  returns zero or negative error
-
-- find and delete element by key in a given map
-  err = bpf_map_delete_elem(int fd, void *key)
-
-- iterate map elements (based on input key return next_key)
-  err = bpf_map_get_next_key(int fd, void *key, void *next_key)
-
-- close(fd) deletes the map
-
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- include/linux/bpf.h      |    8 ++
- include/uapi/linux/bpf.h |   25 ++++++
- kernel/bpf/syscall.c     |  198 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 231 insertions(+)
-
-diff --git a/include/linux/bpf.h b/include/linux/bpf.h
-index 607ca53fe2af..fd1ac4b5ba8b 100644
---- a/include/linux/bpf.h
-+++ b/include/linux/bpf.h
-@@ -9,6 +9,7 @@
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index c90d3cd..c73a7df5 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -932,26 +932,8 @@ u64 efi_mem_attributes(unsigned long phys_addr)
  
- #include <uapi/linux/bpf.h>
- #include <linux/workqueue.h>
-+#include <linux/file.h>
+ static int __init parse_efi_cmdline(char *str)
+ {
+-	if (*str == '=')
+-		str++;
+-
+-	while (*str) {
+-		if (!strncmp(str, "old_map", 7)) {
+-			set_bit(EFI_OLD_MEMMAP, &efi.flags);
+-			str += strlen("old_map");
+-		}
+-
+-		/*
+-		 * Skip any options we don't understand. Presumably
+-		 * they apply to the EFI boot stub.
+-		 */
+-		while (*str && *str != ',')
+-			str++;
+-
+-		/* If we hit a delimiter, skip it */
+-		if (*str == ',')
+-			str++;
+-	}
++	if (parse_option_str(str, "old_map"))
++		set_bit(EFI_OLD_MEMMAP, &efi.flags);
  
- struct bpf_map;
- struct nlattr;
-@@ -18,6 +19,12 @@ struct bpf_map_ops {
- 	/* funcs callable from userspace (via syscall) */
- 	struct bpf_map *(*map_alloc)(struct nlattr *attrs[BPF_MAP_ATTR_MAX + 1]);
- 	void (*map_free)(struct bpf_map *);
-+	int (*map_get_next_key)(struct bpf_map *map, void *key, void *next_key);
-+
-+	/* funcs callable from userspace and from eBPF programs */
-+	void *(*map_lookup_elem)(struct bpf_map *map, void *key);
-+	int (*map_update_elem)(struct bpf_map *map, void *key, void *value);
-+	int (*map_delete_elem)(struct bpf_map *map, void *key);
- };
- 
- struct bpf_map {
-@@ -38,5 +45,6 @@ struct bpf_map_type_list {
- 
- void bpf_register_map_type(struct bpf_map_type_list *tl);
- void bpf_map_put(struct bpf_map *map);
-+struct bpf_map *bpf_map_get(struct fd f);
- 
- #endif /* _LINUX_BPF_H */
-diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-index 88b703d59b8c..804dd8b2ca19 100644
---- a/include/uapi/linux/bpf.h
-+++ b/include/uapi/linux/bpf.h
-@@ -319,6 +319,31 @@ enum bpf_cmd {
- 	 * map is deleted when fd is closed
- 	 */
- 	BPF_MAP_CREATE,
-+
-+	/* lookup key in a given map
-+	 * err = bpf_map_lookup_elem(int fd, void *key, void *value)
-+	 * returns zero and stores found elem into value
-+	 * or negative error
-+	 */
-+	BPF_MAP_LOOKUP_ELEM,
-+
-+	/* create or update key/value pair in a given map
-+	 * err = bpf_map_update_elem(int fd, void *key, void *value)
-+	 * returns zero or negative error
-+	 */
-+	BPF_MAP_UPDATE_ELEM,
-+
-+	/* find and delete elem by key in a given map
-+	 * err = bpf_map_delete_elem(int fd, void *key)
-+	 * returns zero or negative error
-+	 */
-+	BPF_MAP_DELETE_ELEM,
-+
-+	/* lookup key in a given map and return next key
-+	 * err = bpf_map_get_elem(int fd, void *key, void *next_key)
-+	 * returns zero and stores next key or negative error
-+	 */
-+	BPF_MAP_GET_NEXT_KEY,
- };
- 
- enum bpf_map_attributes {
-diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
-index 04cdf7948f8f..45e100ece1b7 100644
---- a/kernel/bpf/syscall.c
-+++ b/kernel/bpf/syscall.c
-@@ -13,6 +13,7 @@
- #include <linux/syscalls.h>
- #include <net/netlink.h>
- #include <linux/anon_inodes.h>
-+#include <linux/file.h>
- 
- static LIST_HEAD(bpf_map_types);
- 
-@@ -131,6 +132,189 @@ free_attr:
- 	return err;
+ 	return 0;
  }
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 4c52907..d612718 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -407,6 +407,7 @@ int vsscanf(const char *, const char *, va_list);
+ extern int get_option(char **str, int *pint);
+ extern char *get_options(const char *str, int nints, int *ints);
+ extern unsigned long long memparse(const char *ptr, char **retptr);
++extern bool parse_option_str(const char *str, const char *option);
  
-+/* if error is returned, fd is released.
-+ * On success caller should complete fd access with matching fdput()
+ extern int core_kernel_text(unsigned long addr);
+ extern int core_kernel_data(unsigned long addr);
+diff --git a/lib/cmdline.c b/lib/cmdline.c
+index d4932f7..f384125 100644
+--- a/lib/cmdline.c
++++ b/lib/cmdline.c
+@@ -155,3 +155,32 @@ unsigned long long memparse(const char *ptr, char **retptr)
+ 	return ret;
+ }
+ EXPORT_SYMBOL(memparse);
++
++/**
++ *	parse_option_str - Parse a string and check an option is set or not 
++ *	@str: String to be parsed
++ *	@option: the option name
++ *
++ *	This function parses a string containing a comma-separated
++ *	list of strings like a=b,c.
++ *
++ *	Return true if there's such option in the string, or return false.
 + */
-+struct bpf_map *bpf_map_get(struct fd f)
+++bool parse_option_str(const char *str, const char *option)
 +{
-+	struct bpf_map *map;
++	while (*str) {
++		if (!strncmp(str, option, strlen(option))) {
++			str += strlen(option);
++			if (!*str || *str == ',')
++				return true;
++		}
 +
-+	if (!f.file)
-+		return ERR_PTR(-EBADF);
++		while (*str && *str != ',')
++			str++;
 +
-+	if (f.file->f_op != &bpf_map_fops) {
-+		fdput(f);
-+		return ERR_PTR(-EINVAL);
++		if (*str == ',')
++			str++;
 +	}
 +
-+	map = f.file->private_data;
-+
-+	return map;
++	return false;
 +}
-+
-+static int map_lookup_elem(int ufd, void __user *ukey, void __user *uvalue)
-+{
-+	struct fd f = fdget(ufd);
-+	struct bpf_map *map;
-+	void *key, *value;
-+	int err;
-+
-+	map = bpf_map_get(f);
-+	if (IS_ERR(map))
-+		return PTR_ERR(map);
-+
-+	err = -ENOMEM;
-+	key = kmalloc(map->key_size, GFP_USER);
-+	if (!key)
-+		goto err_put;
-+
-+	err = -EFAULT;
-+	if (copy_from_user(key, ukey, map->key_size) != 0)
-+		goto free_key;
-+
-+	err = -ESRCH;
-+	rcu_read_lock();
-+	value = map->ops->map_lookup_elem(map, key);
-+	if (!value)
-+		goto err_unlock;
-+
-+	err = -EFAULT;
-+	if (copy_to_user(uvalue, value, map->value_size) != 0)
-+		goto err_unlock;
-+
-+	err = 0;
-+
-+err_unlock:
-+	rcu_read_unlock();
-+free_key:
-+	kfree(key);
-+err_put:
-+	fdput(f);
-+	return err;
-+}
-+
-+static int map_update_elem(int ufd, void __user *ukey, void __user *uvalue)
-+{
-+	struct fd f = fdget(ufd);
-+	struct bpf_map *map;
-+	void *key, *value;
-+	int err;
-+
-+	map = bpf_map_get(f);
-+	if (IS_ERR(map))
-+		return PTR_ERR(map);
-+
-+	err = -ENOMEM;
-+	key = kmalloc(map->key_size, GFP_USER);
-+	if (!key)
-+		goto err_put;
-+
-+	err = -EFAULT;
-+	if (copy_from_user(key, ukey, map->key_size) != 0)
-+		goto free_key;
-+
-+	err = -ENOMEM;
-+	value = kmalloc(map->value_size, GFP_USER);
-+	if (!value)
-+		goto free_key;
-+
-+	err = -EFAULT;
-+	if (copy_from_user(value, uvalue, map->value_size) != 0)
-+		goto free_value;
-+
-+	/* eBPF program that use maps are running under rcu_read_lock(),
-+	 * therefore all map accessors rely on this fact, so do the same here
-+	 */
-+	rcu_read_lock();
-+	err = map->ops->map_update_elem(map, key, value);
-+	rcu_read_unlock();
-+
-+free_value:
-+	kfree(value);
-+free_key:
-+	kfree(key);
-+err_put:
-+	fdput(f);
-+	return err;
-+}
-+
-+static int map_delete_elem(int ufd, void __user *ukey)
-+{
-+	struct fd f = fdget(ufd);
-+	struct bpf_map *map;
-+	void *key;
-+	int err;
-+
-+	map = bpf_map_get(f);
-+	if (IS_ERR(map))
-+		return PTR_ERR(map);
-+
-+	err = -ENOMEM;
-+	key = kmalloc(map->key_size, GFP_USER);
-+	if (!key)
-+		goto err_put;
-+
-+	err = -EFAULT;
-+	if (copy_from_user(key, ukey, map->key_size) != 0)
-+		goto free_key;
-+
-+	rcu_read_lock();
-+	err = map->ops->map_delete_elem(map, key);
-+	rcu_read_unlock();
-+
-+free_key:
-+	kfree(key);
-+err_put:
-+	fdput(f);
-+	return err;
-+}
-+
-+static int map_get_next_key(int ufd, void __user *ukey, void __user *unext_key)
-+{
-+	struct fd f = fdget(ufd);
-+	struct bpf_map *map;
-+	void *key, *next_key;
-+	int err;
-+
-+	map = bpf_map_get(f);
-+	if (IS_ERR(map))
-+		return PTR_ERR(map);
-+
-+	err = -ENOMEM;
-+	key = kmalloc(map->key_size, GFP_USER);
-+	if (!key)
-+		goto err_put;
-+
-+	err = -EFAULT;
-+	if (copy_from_user(key, ukey, map->key_size) != 0)
-+		goto free_key;
-+
-+	err = -ENOMEM;
-+	next_key = kmalloc(map->key_size, GFP_USER);
-+	if (!next_key)
-+		goto free_key;
-+
-+	rcu_read_lock();
-+	err = map->ops->map_get_next_key(map, key, next_key);
-+	rcu_read_unlock();
-+	if (err)
-+		goto free_next_key;
-+
-+	err = -EFAULT;
-+	if (copy_to_user(unext_key, next_key, map->key_size) != 0)
-+		goto free_next_key;
-+
-+	err = 0;
-+
-+free_next_key:
-+	kfree(next_key);
-+free_key:
-+	kfree(key);
-+err_put:
-+	fdput(f);
-+	return err;
-+}
-+
- SYSCALL_DEFINE5(bpf, int, cmd, unsigned long, arg2, unsigned long, arg3,
- 		unsigned long, arg4, unsigned long, arg5)
- {
-@@ -150,6 +334,20 @@ SYSCALL_DEFINE5(bpf, int, cmd, unsigned long, arg2, unsigned long, arg3,
- 	case BPF_MAP_CREATE:
- 		return map_create((enum bpf_map_type) arg2,
- 				  (struct nlattr __user *) arg3, (int) arg4);
-+	case BPF_MAP_LOOKUP_ELEM:
-+		return map_lookup_elem((int) arg2, (void __user *) arg3,
-+				       (void __user *) arg4);
-+	case BPF_MAP_UPDATE_ELEM:
-+		return map_update_elem((int) arg2, (void __user *) arg3,
-+				       (void __user *) arg4);
-+	case BPF_MAP_DELETE_ELEM:
-+		if (arg4 != 0)
-+			return -EINVAL;
-+		return map_delete_elem((int) arg2, (void __user *) arg3);
-+
-+	case BPF_MAP_GET_NEXT_KEY:
-+		return map_get_next_key((int) arg2, (void __user *) arg3,
-+					(void __user *) arg4);
- 	default:
- 		return -EINVAL;
- 	}
--- 
-1.7.9.5
-
