@@ -1,123 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175AbaHMWWR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 18:22:17 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:49383 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704AbaHMWWP (ORCPT
+	id S1753310AbaHMWWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 18:22:32 -0400
+Received: from mail-yk0-f172.google.com ([209.85.160.172]:43852 "EHLO
+	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866AbaHMWWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 18:22:15 -0400
-Date: Wed, 13 Aug 2014 15:22:12 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Marc Carino <marc.ceeeee@gmail.com>, kernel-janitors@vger.kernel.org,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        bcm-kernel-feedback-list@broadcom.com, linux-kernel@vger.kernel.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 11/14] ARM: brcmstb: delete unneeded test before
- of_node_put
-Message-ID: <20140813222212.GB18411@ld-irv-0074>
-References: <1407492475-26283-11-git-send-email-Julia.Lawall@lip6.fr>
+	Wed, 13 Aug 2014 18:22:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407492475-26283-11-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407951153-918-1-git-send-email-abrestic@chromium.org>
+References: <1407951153-918-1-git-send-email-abrestic@chromium.org>
+From: Alim Akhtar <alim.akhtar@gmail.com>
+Date: Thu, 14 Aug 2014 03:51:43 +0530
+Message-ID: <CAGOxZ51_cr_j5vWrNO_ZnfAQsvt8zfEjQZC2f-nWv4w9b5R1kQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Remove architecture dependency
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
+Hi Andrew,
 
-On Fri, Aug 08, 2014 at 12:07:52PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Simplify the error path to avoid calling of_node_put when it is not needed.
-> 
-> The semantic patch that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression e;
-> @@
-> 
-> -if (e)
->    of_node_put(e);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
+On Wed, Aug 13, 2014 at 11:02 PM, Andrew Bresticker
+<abrestic@chromium.org> wrote:
+> The dw_mmc host may also be present on non-ARC/ARM SoCs (e.g. MIPS)
+> and the driver itself does not appear to depend on any particular
+> architecture(s).
+>
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 > ---
->  arch/arm/mach-bcm/platsmp-brcmstb.c |   14 ++++++--------
+>  drivers/mmc/host/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+> index a565254..15b110a 100644
+> --- a/drivers/mmc/host/Kconfig
+> +++ b/drivers/mmc/host/Kconfig
+> @@ -563,7 +563,6 @@ config SDH_BFIN_MISSING_CMD_PULLUP_WORKAROUND
+>
+>  config MMC_DW
+>         tristate "Synopsys DesignWare Memory Card Interface"
+> -       depends on ARC || ARM
 
-This file is being dropped temporarily, for rework/resubmission at a
-later time:
+I am not sure if just removing _depends_ is good vs adding another
+architecture(s) dependency here.
+There are n number of places in Kconfig where this _depends_ runs up
+to well over 10 entries.
+What about config like MMC_DW_EXYNOS and MMC_DW_K3 which depends on
+MMC_DW? Is it ok to expose them as well for architectures which might
+not contains these variants?
 
-  https://lkml.org/lkml/2014/8/13/617
+One way I found this useful, one need not worry about finding MMC_DW
+in there arch default menu-config, this will just appear, go and
+select it.
 
-But thanks for the patch. I'll take it into account in the future. A few
-comments below.
+Lets see what others think about this.
 
->  1 file changed, 6 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/arm/mach-bcm/platsmp-brcmstb.c b/arch/arm/mach-bcm/platsmp-brcmstb.c
-> index af780e9..c515ea1 100644
-> --- a/arch/arm/mach-bcm/platsmp-brcmstb.c
-> +++ b/arch/arm/mach-bcm/platsmp-brcmstb.c
-> @@ -227,7 +227,7 @@ static int __init setup_hifcpubiuctrl_regs(struct device_node *np)
->  	if (!syscon_np) {
->  		pr_err("can't find phandle %s\n", name);
->  		rc = -EINVAL;
-> -		goto cleanup;
-> +		goto out;
->  	}
->  
->  	cpubiuctrl_block = of_iomap(syscon_np, 0);
-> @@ -256,9 +256,8 @@ static int __init setup_hifcpubiuctrl_regs(struct device_node *np)
->  	}
->  
->  cleanup:
-> -	if (syscon_np)
-> -		of_node_put(syscon_np);
-> -
-> +	of_node_put(syscon_np);
-> +out:
+>         help
+>           This selects support for the Synopsys DesignWare Mobile Storage IP
+>           block, this provides host support for SD and MMC interfaces, in both
+> --
+> 2.1.0.rc2.206.gedb03e5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Is there a good reason for this new label? I thought part of the point
-of this semantic patch is that the previous line (of_node_put()) is a
-no-op for NULL arguments.
 
->  	return rc;
->  }
->  
-> @@ -274,7 +273,7 @@ static int __init setup_hifcont_regs(struct device_node *np)
->  	if (!syscon_np) {
->  		pr_err("can't find phandle %s\n", name);
->  		rc = -EINVAL;
-> -		goto cleanup;
-> +		goto out;
->  	}
->  
->  	hif_cont_block = of_iomap(syscon_np, 0);
-> @@ -288,9 +287,8 @@ static int __init setup_hifcont_regs(struct device_node *np)
->  	hif_cont_reg = 0;
->  
->  cleanup:
-> -	if (syscon_np)
-> -		of_node_put(syscon_np);
-> -
-> +	of_node_put(syscon_np);
-> +out:
 
-Ditto.
-
->  	return rc;
->  }
->  
-> 
-
-Brian
+-- 
+Regards,
+Alim
