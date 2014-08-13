@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaHMQOH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 12:14:07 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:38031 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175AbaHMQOF (ORCPT
+	id S1753538AbaHMQOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 12:14:17 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:51928 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175AbaHMQOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 12:14:05 -0400
+	Wed, 13 Aug 2014 12:14:14 -0400
+Date: Wed, 13 Aug 2014 09:14:11 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Nick Dyer <nick.dyer@itdev.co.uk>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-input@vger.kernel.org,
+        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: atmel_mxt_ts - fix a few issues reported by
+ Coverity
+Message-ID: <20140813161410.GA14682@core.coreip.homeip.net>
+References: <20140811180307.GA25677@core.coreip.homeip.net>
+ <53EA431F.6020908@itdev.co.uk>
+ <53EA43A4.2070301@wwwdotorg.org>
+ <53EA8260.4020306@itdev.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140813143209.GD6437@thunk.org>
-References: <cover.1406177531.git.luto@amacapital.net> <CALCETrXtLf3ZFtyrbwj29C=t3PcTxRT2AJWZCUHdKC3AYyUVAA@mail.gmail.com>
- <20140812191723.GI12871@thunk.org> <CALCETrVmviT=upxHfPfmLy2aUOKdCuCbNg9WZQcx6f=8T8vv=g@mail.gmail.com>
- <53EB1859.6030800@zytor.com> <20140813143209.GD6437@thunk.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 13 Aug 2014 09:13:42 -0700
-Message-ID: <CALCETrUQ8yRmmN1kbdCy99ae2+-Xp4caOBgrXvaQhCCUi=i0zg@mail.gmail.com>
-Subject: Re: [PATCH v5 0/5] random,x86,kvm: Rework arch RNG seeds and get some
- from kvm
-To: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53EA8260.4020306@itdev.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 7:32 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Wed, Aug 13, 2014 at 12:48:41AM -0700, H. Peter Anvin wrote:
->> The proposed arch_get_rng_seed() is not really what it claims to be; it
->> most definitely does not produce seed-grade randomness, instead it seems
->> to be an arch function for best-effort initialization of the entropy
->> pools -- which is fine, it is just something quite different.
->
-> Without getting into an argument about which definition of "seed" is
-> correct --- it's certainly confusing and different form the RDSEED
-> usage of the word "seed".
->
-> Do we expect that anyone else besides arch_get_rnd_seed() would
-> actually want to use it?
+On Tue, Aug 12, 2014 at 10:08:48PM +0100, Nick Dyer wrote:
+> On 12/08/14 17:41, Stephen Warren wrote:
+> >> I've reviewed these changes and they look correct to me. Apologies that
+> >> they slipped through, most of it is bad merging on my part I think.
+> >>
+> >> Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+> > 
+> > Don't you mean Acked-by or Reviewed-by?
+> 
+> You are right, Acked-by is probably more appropriate in this case.
 
-If you mean random.c instead of arch_get_rnd_seed, then I don't expect
-there to be other users.  Aside from the "best-effort" bit causing
-this to be basically useless on old bare metal, the interface is
-really awkward for anything other than the use in random.c.
+OK, I put you as "asked-by" then.
 
-> I'd argue no; we want the rest of the kernel
-> to either use get_random_bytes() or prandom_u32().  Given that, maybe
-> we should just call it arch_random_init(), and expect that the only
-> user of this interface would be drivers/char/random.c?
+Thanks.
 
-Sounds good to me.
-
-FWIW, I'd like to see a second use added in random.c: I think that we
-should do this, or even all of init_std_data, on resume from suspend
-and especially on resume from hibernate / kexec.
-
---Andy
+-- 
+Dmitry
