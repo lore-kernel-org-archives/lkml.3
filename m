@@ -1,92 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444AbaHMBuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 21:50:40 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:41061 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752465AbaHMBuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 21:50:39 -0400
-Message-ID: <53EAC461.2060503@daenzer.net>
-Date: Wed, 13 Aug 2014 10:50:25 +0900
-From: =?windows-1252?Q?Michel_D=E4nzer?= <michel@daenzer.net>
-User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1753612AbaHMCAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 22:00:44 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:63386 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752849AbaHMCAn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 22:00:43 -0400
 MIME-Version: 1.0
-To: Jerome Glisse <j.glisse@gmail.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, kamal@canonical.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@redhat.com>, ben@decadent.org.uk,
-        m.szyprowski@samsung.com
-Subject: Re: CONFIG_DMA_CMA causes ttm performance problems/hangs.
-References: <53E50C1B.9080507@gmail.com> <53E5B41B.3030009@vmware.com> <60bd3db2-4919-40c4-a4ff-1b7b043cadfc@email.android.com> <53E628FE.10808@vmware.com> <53E6E2CE.8070005@gmail.com> <53E75192.3070003@vmware.com> <53E7B39D.2060900@gmail.com> <53E896C9.5010501@vmware.com> <20140811151712.GA3541@gmail.com>
-In-Reply-To: <20140811151712.GA3541@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAEJHKkV+DztXiJtPc41m=f1vJG26AoWGd+dinCQhJ77bVY=D0Q@mail.gmail.com>
+References: <CAEJHKkV+DztXiJtPc41m=f1vJG26AoWGd+dinCQhJ77bVY=D0Q@mail.gmail.com>
+Date: Wed, 13 Aug 2014 02:00:42 +0000
+Message-ID: <CAEJHKkVFsw+TUMUU6bHi=+295gNdFpY-ukCs-AyvMNKFAxuoBA@mail.gmail.com>
+Subject: tvtuner pixelview B1000
+From: basteon <basteon@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.08.2014 00:17, Jerome Glisse wrote:
-> On Mon, Aug 11, 2014 at 12:11:21PM +0200, Thomas Hellstrom wrote:
->> On 08/10/2014 08:02 PM, Mario Kleiner wrote:
->>> On 08/10/2014 01:03 PM, Thomas Hellstrom wrote:
->>>> On 08/10/2014 05:11 AM, Mario Kleiner wrote:
->>>>>
->>>>> The other problem is that probably TTM does not reuse pages from the
->>>>> DMA pool. If i trace the __ttm_dma_alloc_page
->>>>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__ttm_dma_alloc_page&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=7898522bba274e4dcc332735fbcf0c96e48918f60c2ee8e9a3e9c73ab3487bd0>
->>>>> and
->>>>> __ttm_dma_free_page
->>>>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__ttm_dma_alloc_page&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=7898522bba274e4dcc332735fbcf0c96e48918f60c2ee8e9a3e9c73ab3487bd0>
->>>>> calls for
->>>>> those single page allocs/frees, then over a 20 second interval of
->>>>> tracing and switching tabs in firefox, scrolling things around etc. i
->>>>> find about as many alloc's as i find free's, e.g., 1607 allocs vs.
->>>>> 1648 frees.
->>>> This is because historically the pools have been designed to keep only
->>>> pages with nonstandard caching attributes since changing page caching
->>>> attributes have been very slow but the kernel page allocators have been
->>>> reasonably fast.
->>>>
->>>> /Thomas
->>>
->>> Ok. A bit more ftraceing showed my hang problem case goes through the
->>> "if (is_cached)" paths, so the pool doesn't recycle anything and i see
->>> it bouncing up and down by 4 pages all the time.
->>>
->>> But for the non-cached case, which i don't hit with my problem, could
->>> one of you look at line 954...
->>>
->>> https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/source/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c%23L954&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=e15c51805d429ee6d8960d6b88035e9811a1cdbfbf13168eec2fbb2214b99c60
->>>
->>>
->>> ... and tell me why that unconditional npages = count; assignment
->>> makes sense? It seems to essentially disable all recycling for the dma
->>> pool whenever the pool isn't filled up to/beyond its maximum with free
->>> pages? When the pool is filled up, lots of stuff is recycled, but when
->>> it is already somewhat below capacity, it gets "punished" by not
->>> getting refilled? I'd just like to understand the logic behind that line.
->>>
->>> thanks,
->>> -mario
->>
->> I'll happily forward that question to Konrad who wrote the code (or it
->> may even stem from the ordinary page pool code which IIRC has Dave
->> Airlie / Jerome Glisse as authors)
-> 
-> This is effectively bogus code, i now wonder how it came to stay alive.
-> Attached patch will fix that.
+hello.
 
-I haven't tested Mario's scenario specifically, but it survived piglit
-and the UE4 Effects Cave Demo (for which 1GB of VRAM isn't enough, so
-some BOs ended up in GTT instead with write-combined CPU mappings) on
-radeonsi without any noticeable issues.
+I have pixelview B1000 card and this card won't work with assigned
+modules cx8800, cx8802.
 
-Tested-by: Michel Dänzer <michel.daenzer@amd.com>
+May be I'm use wrong modules or cardid prefix:
+1554:4952, board: PixelView [card=3...
 
+# /usr/bin/tvtime-scanner
+Reading configuration from /etc/tvtime/tvtime.xml
+Scanning using TV standard NTSC.
+Scanning from  44.00 MHz to 958.00 MHz.
+MHz:  - No signal
 
--- 
-Earthling Michel Dänzer            |                  http://www.amd.com
-Libre software enthusiast          |                Mesa and X developer
+===============================
+01:06.0 Multimedia video controller: Conexant Systems, Inc.
+CX23880/1/2/3 PCI Video and Audio Decoder (rev 05)
+	Subsystem: PROLINK Microsystems Corp Device 4952
+	Flags: bus master, medium devsel, latency 32, IRQ 10
+	Memory at fd000000 (32-bit, non-prefetchable) [size=16M]
+	Capabilities: [44] Vital Product Data
+	Capabilities: [4c] Power Management version 2
+	Kernel modules: cx8800
+
+01:06.1 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3
+PCI Video and Audio Decoder [Audio Port] (rev 05)
+	Subsystem: PROLINK Microsystems Corp Device 4952
+	Flags: bus master, medium devsel, latency 32, IRQ 10
+	Memory at fc000000 (32-bit, non-prefetchable) [size=16M]
+	Capabilities: [4c] Power Management version 2
+	Kernel modules: cx88-alsa
+
+01:06.2 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3
+PCI Video and Audio Decoder [MPEG Port] (rev 05)
+	Subsystem: PROLINK Microsystems Corp Device 4952
+	Flags: bus master, medium devsel, latency 32, IRQ 10
+	Memory at fb000000 (32-bit, non-prefetchable) [size=16M]
+	Capabilities: [4c] Power Management version 2
+	Kernel modules: cx8802
+
+===============================
+[18334.495349] Linux video capture interface: v2.00
+[18334.603004] IR NEC protocol handler initialized
+[18334.614074] cx88/2: cx2388x MPEG-TS Driver Manager version 0.0.8 loaded
+[18334.618258] cx88[0]: subsystem: 1554:4952, board: PixelView
+[card=3,autodetected], frontend(s): 0
+[18334.618263] cx88[0]: TV tuner type 5, Radio tuner type -1
+[18334.628915] IR RC5(x) protocol handler initialized
+[18334.660809] IR RC6 protocol handler initialized
+[18334.687047] IR JVC protocol handler initialized
+[18334.714899] IR Sony protocol handler initialized
+[18334.754031] lirc_dev: IR Remote Control driver registered, major 252
+[18334.764669] IR LIRC bridge handler initialized
+[18334.850358] cx88[0]/2: cx2388x 8802 Driver Manager
+[18343.108212] cx88/0: cx2388x v4l2 driver version 0.0.8 loaded
+[18343.108317] cx8800 0000:01:06.0: PCI INT A -> GSI 20 (level, low) -> IRQ 20
+[18343.112467] cx88[0]: subsystem: 1554:4952, board: PixelView
+[card=3,autodetected], frontend(s): 0
+[18343.112473] cx88[0]: TV tuner type 5, Radio tuner type -1
+[18343.312410] cx88[0]/0: found at 0000:01:06.0, rev: 5, irq: 20,
+latency: 32, mmio: 0xfd000000
+[18343.316831] cx88[0]/0: registered device video0 [v4l2]
+[18343.326623] cx88[0]/0: registered device vbi0
+[18343.333136] cx88[0]/0: registered device radio0
