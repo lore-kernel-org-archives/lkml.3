@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaHMPaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:30:30 -0400
-Received: from rrzmta1.uni-regensburg.de ([194.94.155.51]:40674 "EHLO
-	rrzmta1.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168AbaHMPa0 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:1:1>);
-	Wed, 13 Aug 2014 11:30:26 -0400
-X-Greylist: delayed 484 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Aug 2014 11:30:26 EDT
-Message-Id: <53EB9EC9020000A100016A4D@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Wed, 13 Aug 2014 17:22:17 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: <linux-kernel@vger.kernel.org>
-Subject: Some problems with HP DL380 G8 BIOS and SLES11 SP3
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753326AbaHMPbc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:31:32 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:44617 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833AbaHMPba (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 11:31:30 -0400
+Date: Wed, 13 Aug 2014 08:31:29 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call into
+ scheduler
+Message-ID: <20140813153129.GH32301@codeaurora.org>
+References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
+ <20140813142257.GK30401@n2100.arm.linux.org.uk>
+ <20140813145526.GF32301@codeaurora.org>
+ <20140813150540.GL30401@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140813150540.GL30401@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On 08/13, Russell King - ARM Linux wrote:
+> On Wed, Aug 13, 2014 at 07:55:26AM -0700, Stephen Boyd wrote:
+> > On 08/13, Russell King - ARM Linux wrote:
+> > > On Wed, Aug 13, 2014 at 06:57:18AM -0700, Stephen Boyd wrote:
+> > > > Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
+> > > > 2012-04-12) introduced an acquisition of the irq_controller_lock
+> > > > in gic_raise_softirq() which can lead to a spinlock recursion if
+> > > > the gic_arch_extn hooks call into the scheduler (via complete()
+> > > > or wake_up(), etc.). This happens because gic_arch_extn hooks are
+> > > > normally called with the irq_controller_lock held and calling
+> > > > into the scheduler may cause us to call smp_send_reschedule()
+> > > > which will grab the irq_controller_lock again. Here's an example
+> > > > from a vendor kernel (note that the gic_arch_extn hook code here
+> > > > isn't actually in mainline):
+> > > 
+> > > Here's a question: why would you want to call into the scheduler from
+> > > the gic_arch_extn code?
+> > 
+> > In this case we want to send a message to another processor when
+> > an interrupt is enabled that's only a wakeup interrupt in certain
+> > low power states. It's done sort of indirectly, but basically we
+> > block that low power state from being entered so we can ensure
+> > that the interrupt wakes us up from a lighter version of suspend.
+> 
+> No, that's not the correct answer for the question I asked.  I did not
+> ask "why would you want to call into the IRQ code from the scheduler".
+> I asked "why would you want to call into the scheduler from the
+> gic_arch_extn code?"
+> 
+> That's a completely different question.  Let me rephrase to try and get
+> an answer to my question: Why are you calling complete() or wake_up()
+> from the gic_arch_extn code?
 
-Running the current SLES11 SP3 kernel on a HP DL380 G8 server, there are some kernel messages that indicate a bug either in the kernel or in the HP BIOS. Maybe someone can explain, so I can try to get it fixed whatever party broke it...
+That's the answer. I guess you think "another processor" means
+some other CPU running linux? That isn't the case. We aren't
+calling into the IRQ code from the scheduler. The IRQ code is
+calling the gic_arch_extn code which is calling into the
+scheduler. Let me try to clarify. The path from the stacktrace I
+posted is:
 
-Linux kernel is "3.0.101-0.35-default (geeko@buildhost) (gcc version 4.3.4 [gcc-4_3-branch revision 152973]" (latest).
-HP server is "HP ProLiant DL380p Gen8, BIOS P70 02/10/2014" (latest)
+ request_irq()
+  irq_enable()
+   gic_unmask_irq()
+    msm_mpm_enable_irq()
+     ...
+     complete()
 
-During ACPI init I see:
-[...]
-Reserving 128MB of memory at 752MB for crashkernel (System RAM: 132095MB)
-ACPI: RSDP 00000000000f4f00 00024 (v02 HP    )
-ACPI: XSDT 00000000bddaed00 000D4 (v01 HP     ProLiant 00000002   322? 0000162E)
-ACPI: FACP 00000000bddaee40 000F4 (v03 HP     ProLiant 00000002   322? 0000162E)
-ACPI Warning: Invalid length for Pm1aControlBlock: 32, using default 16 (2011041
-3/tbfadt-611)
-ACPI Warning: Invalid length for Pm2ControlBlock: 32, using default 8 (20110413/
-tbfadt-611)
-ACPI: DSDT 00000000bddaef40 026DC (v01 HP         DSDT 00000001 INTL 20030228)
-ACPI: FACS 00000000bddac140 00040
-ACPI: SPCR 00000000bddac180 00050 (v01 HP     SPCRRBSU 00000001   322? 0000162E)
-ACPI: MCFG 00000000bddac200 0003C (v01 HP     ProLiant 00000001      00000000)
-[...]
+In this case a driver is requesting an interrupt that is wakeup
+capable even in the lowest power state, so we wakeup a thread
+that's sitting around waiting on that completion to notify the
+non-linux running remote processor that we can go into the lowest
+power state. We can only communicate with the other processor via
+sleeping APIs. Another way to do it would be to schedule a work
+but we would get into the same situation as this because
+scheduling works may call into the scheduler too.
 
-HPET id 0 under DRHD base 0xf4ffe000
-BIOS requests to not use x2apic
-Use 'intremap=no_x2apic_optout' to override BIOS request
-Enabled IRQ remapping in xapic mode
-x2apic not enabled, IRQ remapping is in xapic mode
-Switched APIC routing to physical flat.
-..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-CPU0: Intel(R) Xeon(R) CPU E5-2630 v2 @ 2.60GHz stepping 04
-Performance Events: PEBS fmt1+, 16-deep LBR, IvyBridge events, Broken BIOS detec
-ted, complain to your hardware vendor.
-[Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 38d is 330)
-Intel PMU driver.
-... version:                3
-... bit width:              48
-... generic registers:      4
-... value mask:             0000ffffffffffff
-... max period:             000000007fffffff
-... fixed-purpose events:   3
-... event mask:             000000070000000f
-NMI watchdog enabled, takes one hw-pmu counter.
-Booting Node   0, Processors  #1
-[...]
-
- pci0000:00: Requesting ACPI _OSC control (0x1d)
- pci0000:00: ACPI _OSC request failed (AE_SUPPORT), returned control mask: 0x00
-ACPI _OSC control for PCIe not granted, disabling ASPM
-[...]
-
- pci0000:20: Requesting ACPI _OSC control (0x1d)
- pci0000:20: ACPI _OSC request failed (AE_SUPPORT), returned control mask: 0x00
-ACPI _OSC control for PCIe not granted, disabling ASPM
-[...]
-
-Regards,
-Ulrich
-P.S. Please CC: me, as I'm not on LKML...
-
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
