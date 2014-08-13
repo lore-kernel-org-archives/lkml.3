@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923AbaHMLbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 07:31:51 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:38803 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbaHMLbu (ORCPT
+	id S1751987AbaHMLeM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 07:34:12 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:39865 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835AbaHMLeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 07:31:50 -0400
-Message-ID: <53EB4CA0.3010006@collabora.co.uk>
-Date: Wed, 13 Aug 2014 13:31:44 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Wed, 13 Aug 2014 07:34:11 -0400
+Date: Wed, 13 Aug 2014 20:32:57 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Chao Yu <chao2.yu@samsung.com>, minchan@kernel.org, ngupta@vflare.org,
+        linux-kernel@vger.kernel.org,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
+Message-ID: <20140813113257.GA948@swordfish>
+References: <009001cfb69a$a8470840$f8d518c0$@samsung.com>
+ <53EB2271.1080002@redhat.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] ARM: dts: Add tps65090 FETs constraints
-References: <1407861868-20097-1-git-send-email-javier.martinez@collabora.co.uk> <1407861868-20097-7-git-send-email-javier.martinez@collabora.co.uk> <20140812172552.GU17528@sirena.org.uk> <53EA61B9.2070805@collabora.co.uk> <20140812212757.GY17528@sirena.org.uk>
-In-Reply-To: <20140812212757.GY17528@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53EB2271.1080002@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
-
-On 08/12/2014 11:27 PM, Mark Brown wrote:
-> On Tue, Aug 12, 2014 at 08:49:29PM +0200, Javier Martinez Canillas wrote:
+On (08/13/14 10:31), Jerome Marchand wrote:
+> Date: Wed, 13 Aug 2014 10:31:45 +0200
+> From: Jerome Marchand <jmarchan@redhat.com>
+> To: Chao Yu <chao2.yu@samsung.com>, minchan@kernel.org
+> CC: ngupta@vflare.org, linux-kernel@vger.kernel.org, 'Sergey Senozhatsky'
+>  <sergey.senozhatsky@gmail.com>, 'Andrew Morton'
+>  <akpm@linux-foundation.org>
+> Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
+> User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+>  Thunderbird/24.6.0
 > 
->> So, is adding these voltages ranges (the design limits) in the Peach Pit DTS
->> file directly an acceptable solution? Basically what my previous patch [0] did.
+> On 08/13/2014 04:01 AM, Chao Yu wrote:
+> > Since we allocate a temporary buffer in zram_bvec_read to handle partial page
+> > operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
+> > zram: allow partial page operations), our ->failed_reads value may be incorrect
+> > as we do not increase its value when failed to allocate the temporary buffer.
+> > 
+> > Let's fix this issue and correct the annotation of failed_reads.
+> > 
+> >  v2: clean codes of failed_{reads,writes} stat pointed out by Minchan Kim, and
+> > this cleanup also fix incorrectly stat when fail in zram_decompress_page.
+> > 
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 > 
->> That matches what is in the board schematic so I assume that it's safe to use
->> these voltage ranges for that machine. If so I'll drop this series and repost
->> that patch fixing the typo error and commit message pointed by Doug that were
->> already addressed in $subject.
+> Acked-by: Jerome Marchand <jmarchan@redhat.com>
+
+Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+	-ss
+
+> > ---
+> >  drivers/block/zram/zram_drv.c | 10 +++++++---
+> >  drivers/block/zram/zram_drv.h |  2 +-
+> >  2 files changed, 8 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index dfa4024..d00831c 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -378,7 +378,6 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+> >  	/* Should NEVER happen. Return bio error if it does. */
+> >  	if (unlikely(ret)) {
+> >  		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
+> > -		atomic64_inc(&zram->stats.failed_reads);
+> >  		return ret;
+> >  	}
+> >  
+> > @@ -547,8 +546,6 @@ out:
+> >  		zcomp_strm_release(zram->comp, zstrm);
+> >  	if (is_partial_io(bvec))
+> >  		kfree(uncmem);
+> > -	if (ret)
+> > -		atomic64_inc(&zram->stats.failed_writes);
+> >  	return ret;
+> >  }
+> >  
+> > @@ -566,6 +563,13 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+> >  		ret = zram_bvec_write(zram, bvec, index, offset);
+> >  	}
+> >  
+> > +	if (unlikely(ret)) {
+> > +		if (rw == READ)
+> > +			atomic64_inc(&zram->stats.failed_reads);
+> > +		else
+> > +			atomic64_inc(&zram->stats.failed_writes);
+> > +	}
+> > +
+> >  	return ret;
+> >  }
+> >  
+> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > index 5b0afde..e0f725c 100644
+> > --- a/drivers/block/zram/zram_drv.h
+> > +++ b/drivers/block/zram/zram_drv.h
+> > @@ -84,7 +84,7 @@ struct zram_stats {
+> >  	atomic64_t compr_data_size;	/* compressed size of pages stored */
+> >  	atomic64_t num_reads;	/* failed + successful */
+> >  	atomic64_t num_writes;	/* --do-- */
+> > -	atomic64_t failed_reads;	/* should NEVER! happen */
+> > +	atomic64_t failed_reads;	/* can happen when memory is too low */
+> >  	atomic64_t failed_writes;	/* can happen when memory is too low */
+> >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+> >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
+> > 
 > 
-> Well, I think the question is if you understand where those numbers come
-> from and if they make sense.  I've not seen the schematic for the board
-> so I can't comment but it is quite unusual to see ranges listed for so
-> many supplies, for things like SD it's obviously normal but things like
-> video_mid are a bit more surprising.  Does anything actually vary those
-> voltages?
 > 
 
-You are right, in fact even the voltage for the SD supply (tps65090 fet4) does
-not change but still their constraints have to be defined, since it is used as a
-vmmc-supply and the series "Adding UHS support for dw_mmc driver" [0] calls
-mmc_regulator_get_ocrmask()/mmc_regulator_set_ocr() for mmc->supply.vmmc.
 
-For fixed regulators (like fet4), mmc_regulator_set_ocr() just skips varying the
-regulator voltage but still expects to be able to obtain its voltage.
-
-Since the FET is just a switch and doesn't have an output voltage, the regulator
-core gets its parent supply voltage but regulator_list_voltge() [1] checks that
-the obtained parent voltage is between the child regulator constraints.
-
-So in this particular case it makes sense to compare that the parent voltage is
-between the (design limits) voltage ranges for the FET but I agree that it may
-not make sense on other boards.
-
-Since I needed to add the ranges for fet4 I (wrongly) thought that it would make
-sense to add the ranges for all the other FETs in case other boards had a
-similar need. But now I understand your concerns about this series so I'll drop
-it and just post a patch that adds to the Peach Pit and Pi DTS, the constraints
-for the fet4 used as vmmc-supply instead of pretending that it's a common setup.
-
-> The change where you fix up the supply mappings still makes sense of
-> course.
->
-
-Good to know, again thanks a lot for your feedback and explanations.
-
-Best regards,
-Javier
-
-[0]: http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/265657.html
-[1]:
-https://git.kernel.org/cgit/linux/kernel/git/broonie/regulator.git/tree/drivers/regulator/core.c?h=for-next#n2209
