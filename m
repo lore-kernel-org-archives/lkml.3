@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaHMPvf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:51:35 -0400
-Received: from fieldses.org ([174.143.236.118]:37417 "EHLO fieldses.org"
+	id S1753357AbaHMPvi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:51:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46268 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751557AbaHMPvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:51:33 -0400
-Date: Wed, 13 Aug 2014 11:51:31 -0400
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jeff Layton <jlayton@primarydata.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 0/5] locks: move most locks_release_private calls outside
- of i_lock
-Message-ID: <20140813155131.GA5169@fieldses.org>
-References: <1407854893-2698-1-git-send-email-jlayton@primarydata.com>
- <20140813082827.1097c3ad@canb.auug.org.au>
+	id S1753304AbaHMPvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 11:51:36 -0400
+Date: Wed, 13 Aug 2014 11:50:00 -0400
+From: Rik van Riel <riel@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, peterz@infradead.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com
+Subject: [PATCH] fix sighand use after free
+Message-ID: <20140813115000.73da6136@cuia.bos.redhat.com>
+Organization: Red Hat, Inc
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140813082827.1097c3ad@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 08:28:27AM +1000, Stephen Rothwell wrote:
-> This s reinforced by the lack of Acked-by, Reviewed-by and Tested-by
-> tags ... (the addition of which would presumably require the rebase
-> (or rewrite) of a published git tree.)
+Subject: fix sighand use after free
 
-By the way, I reshuffled my branches recently so the one you pull has
-incoming patches that I think are mature enough to be worth testing but
-haven't finished review yet.
+__lock_task_sighand carefully takes the rcu_read_lock, gets
+tsk->sighand with rcu_dereference, and verifies that the task
+is still using the sighand_struct after taking the spinlock.
 
-That was partly Jeff's request, as he wanted his patches to get some
-exposure while waiting for review.
+This works much better if the sighand struct is actually rcu
+freed.
 
-It also means I can fold in some minor fixes instead of piling up fixes
-for nits found by the kbuild robot.  (But maybe that unfairly denies it
-some credit, I don't know.)
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ kernel/fork.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Anyway that means that branch is getting rewritten, say, weekly, as
-opposed to never (or maybe for once-in-a-year level screwups).
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 1380d8a..754a7c6 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1017,7 +1017,7 @@ void __cleanup_sighand(struct sighand_struct *sighand)
+ {
+ 	if (atomic_dec_and_test(&sighand->count)) {
+ 		signalfd_cleanup(sighand);
+-		kmem_cache_free(sighand_cachep, sighand);
++		rcu_free(sighand_cachep, sighand);
+ 	}
+ }
+ 
 
-Am I doing it wrong?
-
---b.
