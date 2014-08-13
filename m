@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaHML74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 07:59:56 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:40437 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561AbaHML7x (ORCPT
+	id S1752107AbaHMMBG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 08:01:06 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:33323 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaHMMBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 07:59:53 -0400
+	Wed, 13 Aug 2014 08:01:03 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: Jens Axboe <axboe@fb.com>
-Subject: [PATCH] block: systemace: Remove .owner field for driver
-Date: Wed, 13 Aug 2014 13:59:50 +0200
-Message-Id: <0002a277537c569a56559cf4277fb4cd56687969.1407931183.git.michal.simek@xilinx.com>
+Cc: Jonathan Cameron <jic23@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>, linux-iio@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] iio: adc: xilinx: Remove .owner field for driver
+Date: Wed, 13 Aug 2014 14:00:59 +0200
+Message-Id: <32522124850adfda5c6cb8a7759d0e3a63893c1e.1407931250.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-20664-1407931190-0001";
+    boundary="=_mimegpg-monstr-desktop-20897-1407931259-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,7 +29,7 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-20664-1407931190-0001
+--=_mimegpg-monstr-desktop-20897-1407931259-0001
 
 There is no need to init .owner field.
 
@@ -41,35 +43,35 @@ platform_driver_register anyway."
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
 
- drivers/block/xsysace.c | 1 -
+ drivers/iio/adc/xilinx-xadc-core.c | 1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
-index ab3ea62e5dfc..c4328d9d9981 100644
---- a/drivers/block/xsysace.c
-+++ b/drivers/block/xsysace.c
-@@ -1203,7 +1203,6 @@ static struct platform_driver ace_platform_driver = {
- 	.probe = ace_probe,
- 	.remove = ace_remove,
+diff --git a/drivers/iio/adc/xilinx-xadc-core.c b/drivers/iio/adc/xilinx-xadc-core.c
+index fd2745c62943..92541a80b041 100644
+--- a/drivers/iio/adc/xilinx-xadc-core.c
++++ b/drivers/iio/adc/xilinx-xadc-core.c
+@@ -1322,7 +1322,6 @@ static struct platform_driver xadc_driver = {
+ 	.remove = xadc_remove,
  	.driver = {
+ 		.name = "xadc",
 -		.owner = THIS_MODULE,
- 		.name = "xsysace",
- 		.of_match_table = ace_of_match,
+ 		.of_match_table = xadc_of_match_table,
  	},
+ };
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-20664-1407931190-0001
+--=_mimegpg-monstr-desktop-20897-1407931259-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlPrUzYACgkQykllyylKDCG9RwCfa2mJOz2r2qVR6fCplnS9I0Dr
-WLQAoIeB4kmz9Gt4vUPl3yBGRFrwqrx9
-=6wcx
+iEYEABECAAYFAlPrU3sACgkQykllyylKDCEIGACfcbsSTD+c9C2fS97b+98ozBgo
+a+QAn3vtUNbvXIatTNkseAOjThunRf/1
+=WAD4
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-20664-1407931190-0001--
+--=_mimegpg-monstr-desktop-20897-1407931259-0001--
