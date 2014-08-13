@@ -1,295 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158AbaHMPY5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:24:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45103 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429AbaHMPY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:24:56 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: ebiederm@xmission.com, hpa@zytor.com, sruffell@digium.com,
-        kexec@lists.infradead.org, Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 1/2] kexec: Create a new config option CONFIG_KEXEC_FILE for new syscall
-Date: Wed, 13 Aug 2014 10:42:59 -0400
-Message-Id: <1407940980-7100-2-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1407940980-7100-1-git-send-email-vgoyal@redhat.com>
-References: <1407940980-7100-1-git-send-email-vgoyal@redhat.com>
+	id S1753232AbaHMPZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:25:08 -0400
+Received: from relay.variantweb.net ([104.131.199.242]:53344 "EHLO
+	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751429AbaHMPZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 11:25:06 -0400
+Date: Wed, 13 Aug 2014 10:25:02 -0500
+From: Seth Jennings <sjennings@variantweb.net>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [RFC 2/3] zsmalloc/zram: add zs_get_max_size_bytes and use it in
+ zram
+Message-ID: <20140813152502.GB2768@cerebellum.variantweb.net>
+References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
+ <1407225723-23754-3-git-send-email-minchan@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407225723-23754-3-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently new system call kexec_file_load() and all the associated code
-compiles if CONFIG_KEXEC=y. But new syscall also compiles purgatory code
-which currently uses gcc option -mcmodel=large. This option seems to be
-available only gcc 4.4 onwards.
+On Tue, Aug 05, 2014 at 05:02:02PM +0900, Minchan Kim wrote:
+> Normally, zram user can get maximum memory zsmalloc consumed via
+> polling mem_used_total with sysfs in userspace.
+> 
+> But it has a critical problem because user can miss peak memory
+> usage during update interval so that gap between them could be
+> huge when memory pressure is really heavy.
+> 
+> This patch adds new API zs_get_max_size_bytes in zsmalloc so
+> user(ex, zram) doesn't need to poll in short interval to get
+> exact value.
+> 
+> User can just see max memory usage once his test workload is
+> done. It's pretty handy and accurate.
+> 
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  Documentation/blockdev/zram.txt |  1 +
+>  drivers/block/zram/zram_drv.c   | 17 +++++++++++++++++
+>  include/linux/zsmalloc.h        |  1 +
+>  mm/zsmalloc.c                   | 20 ++++++++++++++++++++
+>  4 files changed, 39 insertions(+)
+> 
+> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+> index 0595c3f56ccf..d24534bee763 100644
+> --- a/Documentation/blockdev/zram.txt
+> +++ b/Documentation/blockdev/zram.txt
+> @@ -95,6 +95,7 @@ size of the disk when not in use so a huge zram is wasteful.
+>  		orig_data_size
+>  		compr_data_size
+>  		mem_used_total
+> +		mem_used_max
+>  
+>  7) Deactivate:
+>  	swapoff /dev/zram0
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 36e54be402df..a4d637b4db7d 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -109,6 +109,21 @@ static ssize_t mem_used_total_show(struct device *dev,
+>  	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
+>  }
+>  
+> +static ssize_t mem_used_max_show(struct device *dev,
+> +		struct device_attribute *attr, char *buf)
+> +{
+> +	u64 val = 0;
+> +	struct zram *zram = dev_to_zram(dev);
+> +	struct zram_meta *meta = zram->meta;
+> +
+> +	down_read(&zram->init_lock);
+> +	if (init_done(zram))
+> +		val = zs_get_max_size_bytes(meta->mem_pool);
+> +	up_read(&zram->init_lock);
+> +
+> +	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
+> +}
+> +
+>  static ssize_t max_comp_streams_show(struct device *dev,
+>  		struct device_attribute *attr, char *buf)
+>  {
+> @@ -838,6 +853,7 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+>  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+>  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+>  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+> +static DEVICE_ATTR(mem_used_max, S_IRUGO, mem_used_max_show, NULL);
+>  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+>  		max_comp_streams_show, max_comp_streams_store);
+>  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
+> @@ -866,6 +882,7 @@ static struct attribute *zram_disk_attrs[] = {
+>  	&dev_attr_orig_data_size.attr,
+>  	&dev_attr_compr_data_size.attr,
+>  	&dev_attr_mem_used_total.attr,
+> +	&dev_attr_mem_used_max.attr,
+>  	&dev_attr_max_comp_streams.attr,
+>  	&dev_attr_comp_algorithm.attr,
+>  	NULL,
+> diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
+> index e44d634e7fb7..fb087ca06a88 100644
+> --- a/include/linux/zsmalloc.h
+> +++ b/include/linux/zsmalloc.h
+> @@ -47,5 +47,6 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+>  void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
+>  
+>  u64 zs_get_total_size_bytes(struct zs_pool *pool);
+> +u64 zs_get_max_size_bytes(struct zs_pool *pool);
+>  
+>  #endif
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index a6089bd26621..3b5be076268a 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -219,6 +219,7 @@ struct zs_pool {
+>  
+>  	gfp_t flags;	/* allocation flags used when growing pool */
+>  	unsigned long pages_allocated;
+> +	unsigned long max_pages_allocated;
 
-Hiding new functionality behind a new config option will not break
-existing users of old gcc. Those who wish to enable new functionality
-will require new gcc. Having said that, I am trying to figure out how
-can I move away from using -mcmodel=large but that can take a while.
+Same here with atomic.
 
-I think there are other advantages of introducing this new config
-option. As this option will be enabled only on x86_64, other arches
-don't have to compile generic kexec code which will never be used.
-This new code selects CRYPTO=y and CRYPTO_SHA256=y. And all other
-arches had to do this for CONFIG_KEXEC. Now with introduction
-of new config option, we can remove crypto dependency from other
-arches.
+Seth
 
-Now CONFIG_KEXEC_FILE is available only on x86_64. So whereever I
-had CONFIG_X86_64 defined, I got rid of that.
-
-For CONFIG_KEXEC_FILE, instead of doing select CRYPTO=y, I changed
-it to "depends on CRYPTO=y". This should be safer as "select" is
-not recursive.
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- arch/x86/Kbuild                    |  4 +---
- arch/x86/Kconfig                   | 18 ++++++++++++++----
- arch/x86/Makefile                  |  5 +----
- arch/x86/kernel/Makefile           |  2 +-
- arch/x86/kernel/crash.c            |  6 ++----
- arch/x86/kernel/machine_kexec_64.c | 11 +++++++++++
- arch/x86/purgatory/Makefile        |  5 +----
- kernel/kexec.c                     | 11 +++++++++++
- 8 files changed, 42 insertions(+), 20 deletions(-)
-
-diff --git a/arch/x86/Kbuild b/arch/x86/Kbuild
-index 61b6d51..3942f74 100644
---- a/arch/x86/Kbuild
-+++ b/arch/x86/Kbuild
-@@ -17,6 +17,4 @@ obj-$(CONFIG_IA32_EMULATION) += ia32/
- obj-y += platform/
- obj-y += net/
- 
--ifeq ($(CONFIG_X86_64),y)
--obj-$(CONFIG_KEXEC) += purgatory/
--endif
-+obj-$(CONFIG_KEXEC_FILE) += purgatory/
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 4aafd32..a4bb9d0 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1582,9 +1582,6 @@ source kernel/Kconfig.hz
- 
- config KEXEC
- 	bool "kexec system call"
--	select BUILD_BIN2C
--	select CRYPTO
--	select CRYPTO_SHA256
- 	---help---
- 	  kexec is a system call that implements the ability to shutdown your
- 	  current kernel, and to start another kernel.  It is like a reboot
-@@ -1599,9 +1596,22 @@ config KEXEC
- 	  interface is strongly in flux, so no good recommendation can be
- 	  made.
- 
-+config KEXEC_FILE
-+	bool "kexec file based system call"
-+	select BUILD_BIN2C
-+	depends on KEXEC
-+	depends on X86_64
-+	depends on CRYPTO=y
-+	depends on CRYPTO_SHA256=y
-+	---help---
-+	  This is new version of kexec system call. This system call is
-+	  file based and takes file descriptors as system call argument
-+	  for kernel and initramfs as opposed to list of segments as
-+	  accepted by previous system call.
-+
- config KEXEC_VERIFY_SIG
- 	bool "Verify kernel signature during kexec_file_load() syscall"
--	depends on KEXEC
-+	depends on KEXEC_FILE
- 	---help---
- 	  This option makes kernel signature verification mandatory for
- 	  kexec_file_load() syscall. If kernel is signature can not be
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index c1aa368..c96bcec 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -184,11 +184,8 @@ archheaders:
- 	$(Q)$(MAKE) $(build)=arch/x86/syscalls all
- 
- archprepare:
--ifeq ($(CONFIG_KEXEC),y)
--# Build only for 64bit. No loaders for 32bit yet.
-- ifeq ($(CONFIG_X86_64),y)
-+ifeq ($(CONFIG_KEXEC_FILE),y)
- 	$(Q)$(MAKE) $(build)=arch/x86/purgatory arch/x86/purgatory/kexec-purgatory.c
-- endif
- endif
- 
- ###
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index b5ea75c..ada2e2d 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -71,6 +71,7 @@ obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
- obj-$(CONFIG_X86_TSC)		+= trace_clock.o
- obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
- obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
-+obj-$(CONFIG_KEXEC_FILE)	+= kexec-bzimage64.o
- obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
- obj-y				+= kprobes/
- obj-$(CONFIG_MODULES)		+= module.o
-@@ -118,5 +119,4 @@ ifeq ($(CONFIG_X86_64),y)
- 
- 	obj-$(CONFIG_PCI_MMCONFIG)	+= mmconf-fam10h_64.o
- 	obj-y				+= vsmp_64.o
--	obj-$(CONFIG_KEXEC)		+= kexec-bzimage64.o
- endif
-diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-index 0553a34..a618fcd 100644
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -182,8 +182,7 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
- 	crash_save_cpu(regs, safe_smp_processor_id());
- }
- 
--#ifdef CONFIG_X86_64
--
-+#ifdef CONFIG_KEXEC_FILE
- static int get_nr_ram_ranges_callback(unsigned long start_pfn,
- 				unsigned long nr_pfn, void *arg)
- {
-@@ -696,5 +695,4 @@ int crash_load_segments(struct kimage *image)
- 
- 	return ret;
- }
--
--#endif /* CONFIG_X86_64 */
-+#endif /* CONFIG_KEXEC_FILE */
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index 8b04018..4859810 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -25,9 +25,11 @@
- #include <asm/debugreg.h>
- #include <asm/kexec-bzimage64.h>
- 
-+#ifdef CONFIG_KEXEC_FILE
- static struct kexec_file_ops *kexec_file_loaders[] = {
- 		&kexec_bzImage64_ops,
- };
-+#endif
- 
- static void free_transition_pgtable(struct kimage *image)
- {
-@@ -178,6 +180,7 @@ static void load_segments(void)
- 		);
- }
- 
-+#ifdef CONFIG_KEXEC_FILE
- /* Update purgatory as needed after various image segments have been prepared */
- static int arch_update_purgatory(struct kimage *image)
- {
-@@ -209,6 +212,12 @@ static int arch_update_purgatory(struct kimage *image)
- 
- 	return ret;
- }
-+#else /* !CONFIG_KEXEC_FILE */
-+static inline int arch_update_purgatory(struct kimage *image)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_KEXEC_FILE */
- 
- int machine_kexec_prepare(struct kimage *image)
- {
-@@ -329,6 +338,7 @@ void arch_crash_save_vmcoreinfo(void)
- 
- /* arch-dependent functionality related to kexec file-based syscall */
- 
-+#ifdef CONFIG_KEXEC_FILE
- int arch_kexec_kernel_image_probe(struct kimage *image, void *buf,
- 				  unsigned long buf_len)
- {
-@@ -522,3 +532,4 @@ overflow:
- 	       (int)ELF64_R_TYPE(rel[i].r_info), value);
- 	return -ENOEXEC;
- }
-+#endif /* CONFIG_KEXEC_FILE */
-diff --git a/arch/x86/purgatory/Makefile b/arch/x86/purgatory/Makefile
-index 7fde9ee..c4ae06e 100644
---- a/arch/x86/purgatory/Makefile
-+++ b/arch/x86/purgatory/Makefile
-@@ -24,7 +24,4 @@ $(obj)/kexec-purgatory.c: $(obj)/purgatory.ro FORCE
- 	$(call if_changed,bin2c)
- 
- 
--# No loaders for 32bits yet.
--ifeq ($(CONFIG_X86_64),y)
-- obj-$(CONFIG_KEXEC)		+= kexec-purgatory.o
--endif
-+obj-$(CONFIG_KEXEC_FILE)	+= kexec-purgatory.o
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 0b49a0a..2bee072 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -64,7 +64,9 @@ bool kexec_in_progress = false;
- char __weak kexec_purgatory[0];
- size_t __weak kexec_purgatory_size = 0;
- 
-+#ifdef CONFIG_KEXEC_FILE
- static int kexec_calculate_store_digests(struct kimage *image);
-+#endif
- 
- /* Location of the reserved area for the crash kernel */
- struct resource crashk_res = {
-@@ -341,6 +343,7 @@ out_free_image:
- 	return ret;
- }
- 
-+#ifdef CONFIG_KEXEC_FILE
- static int copy_file_from_fd(int fd, void **buf, unsigned long *buf_len)
- {
- 	struct fd f = fdget(fd);
-@@ -612,6 +615,9 @@ out_free_image:
- 	kfree(image);
- 	return ret;
- }
-+#else /* CONFIG_KEXEC_FILE */
-+static inline void kimage_file_post_load_cleanup(struct kimage *image) { }
-+#endif /* CONFIG_KEXEC_FILE */
- 
- static int kimage_is_destination_range(struct kimage *image,
- 					unsigned long start,
-@@ -1375,6 +1381,7 @@ COMPAT_SYSCALL_DEFINE4(kexec_load, compat_ulong_t, entry,
- }
- #endif
- 
-+#ifdef CONFIG_KEXEC_FILE
- SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
- 		unsigned long, cmdline_len, const char __user *, cmdline_ptr,
- 		unsigned long, flags)
-@@ -1451,6 +1458,8 @@ out:
- 	return ret;
- }
- 
-+#endif /* CONFIG_KEXEC_FILE */
-+
- void crash_kexec(struct pt_regs *regs)
- {
- 	/* Take the kexec_mutex here to prevent sys_kexec_load
-@@ -2006,6 +2015,7 @@ static int __init crash_save_vmcoreinfo_init(void)
- 
- subsys_initcall(crash_save_vmcoreinfo_init);
- 
-+#ifdef CONFIG_KEXEC_FILE
- static int __kexec_add_segment(struct kimage *image, char *buf,
- 			       unsigned long bufsz, unsigned long mem,
- 			       unsigned long memsz)
-@@ -2682,6 +2692,7 @@ int kexec_purgatory_get_set_symbol(struct kimage *image, const char *name,
- 
- 	return 0;
- }
-+#endif /* CONFIG_KEXEC_FILE */
- 
- /*
-  * Move into place and start executing a preloaded standalone
--- 
-1.9.0
-
+>  };
+>  
+>  /*
+> @@ -946,6 +947,8 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+>  		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
+>  		spin_lock(&pool->stat_lock);
+>  		pool->pages_allocated += class->pages_per_zspage;
+> +		if (pool->max_pages_allocated < pool->pages_allocated)
+> +			pool->max_pages_allocated = pool->pages_allocated;
+>  		spin_unlock(&pool->stat_lock);
+>  		spin_lock(&class->lock);
+>  	}
+> @@ -1101,6 +1104,9 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+>  }
+>  EXPORT_SYMBOL_GPL(zs_unmap_object);
+>  
+> +/*
+> + * Reports current memory usage consumed by zs_malloc
+> + */
+>  u64 zs_get_total_size_bytes(struct zs_pool *pool)
+>  {
+>  	u64 npages;
+> @@ -1112,6 +1118,20 @@ u64 zs_get_total_size_bytes(struct zs_pool *pool)
+>  }
+>  EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
+>  
+> +/*
+> + * Reports maximum memory usage zs_malloc have consumed
+> + */
+> +u64 zs_get_max_size_bytes(struct zs_pool *pool)
+> +{
+> +	u64 npages;
+> +
+> +	spin_lock(&pool->stat_lock);
+> +	npages = pool->max_pages_allocated;
+> +	spin_unlock(&pool->stat_lock);
+> +	return npages << PAGE_SHIFT;
+> +}
+> +EXPORT_SYMBOL_GPL(zs_get_max_size_bytes);
+> +
+>  module_init(zs_init);
+>  module_exit(zs_exit);
+>  
+> -- 
+> 2.0.0
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
