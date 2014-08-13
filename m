@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181AbaHMQDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 12:03:00 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:54948 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaHMQC7 (ORCPT
+	id S1753297AbaHMQGA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 12:06:00 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:24118 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145AbaHMQF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 12:02:59 -0400
-Message-ID: <53EB8C2C.9030709@hitachi.com>
-Date: Thu, 14 Aug 2014 01:02:52 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>, Naohiro Aota <naota@elisp.net>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] [BUGFIX] perf probe: Fix --list option to show events
- only with uprobe events
-References: <20140813005055.24360.73553.stgit@kbuild-fedora.novalocal> <87r40ldkv8.fsf@sejong.aot.lge.com> <53EB746E.1020904@hitachi.com> <20140813144801.GA2718@kernel.org>
-In-Reply-To: <20140813144801.GA2718@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Aug 2014 12:05:59 -0400
+Date: Wed, 13 Aug 2014 11:04:54 -0500
+From: scameron@beardog.cce.hp.com
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, iss_storagedev@hp.com,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
+        scameron@beardog.cce.hp.com
+Subject: Re: [PATCH v2 RESEND 08/23] hpsa: Fallback to MSI rather than to INTx if MSI-X failed
+Message-ID: <20140813160454.GA19666@beardog.cce.hp.com>
+References: <cover.1405533479.git.agordeev@redhat.com> <3ca64c251518a2db8810534b4e63ec696bcfeefd.1405533479.git.agordeev@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3ca64c251518a2db8810534b4e63ec696bcfeefd.1405533479.git.agordeev@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/13 23:48), Arnaldo Carvalho de Melo wrote:
-> Em Wed, Aug 13, 2014 at 11:21:34PM +0900, Masami Hiramatsu escreveu:
->> (2014/08/13 14:22), Namhyung Kim wrote:
->>> On Wed, 13 Aug 2014 00:50:55 +0000, Masami Hiramatsu wrote:
->>>> +	if (kp_fd < 0 && up_fd < 0) {
->>>> +		/* Both kprobes and uprobes are disabled, warn it. */
->>>> +		if (kp_fd == -ENOTSUP && up_fd == -ENOTSUP)
->>>> +			pr_warning("Debugfs is not mounted.\n");
->>>> +		else if (kp_fd == -ENOENT && up_fd == -ENOENT)
->>>> +			pr_warning("Please rebuild kernel with "
->>>> +				   "CONFIG_KPROBE_EVENTS or/and "
->>>> +				   "CONFIG_UPROBE_EVENTS.\n");
->>>> +		else
->>>> +			pr_warning("Failed to open kprobe events: %s.\n" \
->>>> +				   "Failed to open uprobe events: %s.\n",
->>>> +				   strerror(-kp_fd), strerror(-up_fd));
->>>
->>> It seems the second strerror() might overwrite the message of the
->>> first.  You'd better using strerror_r() IMHO.
+On Wed, Jul 16, 2014 at 08:05:12PM +0200, Alexander Gordeev wrote:
+> Currently the driver falls back to INTx mode when MSI-X
+> initialization failed. This is a suboptimal behaviour
+> for chips that also support MSI. This update changes that
+> behaviour and falls back to MSI mode in case MSI-X mode
+> initialization failed.
 > 
-> Well spotted!
->  
->> Oops, right, it must use the same buffer...
->> But instead of using strerror_r, we can call pr_warning twice. Or should we
->> better replace all strerror to strerror_r in perf? (it should be another series)
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+> Cc: iss_storagedev@hp.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/scsi/hpsa.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
-> Well, don't introduce new strerror() uses, we have threads in perf
-> already and if both try to use strerror() for different reasons, say the
-> UI to print something to the user and some logging/debugging thread do
-> it to the disk, we may race.
+> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> index 31184b3..648dec2 100644
+> --- a/drivers/scsi/hpsa.c
+> +++ b/drivers/scsi/hpsa.c
+> @@ -6177,7 +6177,6 @@ static void hpsa_interrupt_mode(struct ctlr_info *h)
+>  			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n",
+>  			       err);
+>  			h->msix_vector = 0;
+> -			goto default_int_mode;
+>  		}
+>  	}
+>  	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSI)) {
+> -- 
+> 1.7.7.6
 
-OK, I'll use strerror_r() in next version.
+Ack.
 
-> So, in this case, please use strerror_r() and if you feel like
-> contributing the changes to any other place where strerror() is still
-> used, you are welcome to do so at a later patch :)
+Sorry for the slow reply, this got lost in the tornadic maelstrom
+I call my inbox.
 
-Yeah, I'll do that. :)
+I also tested this with a Smart Array P420, P420i, and P430 in
+the system by ifdef'ing out the code for MSI-X and setting
+h->msix_vector = 0, to force it down the MSI path, and that all
+appears to work. 
 
-Thank you!
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+-- steve
 
