@@ -1,69 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813AbaHMRk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:40:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54735 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372AbaHMRkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 13:40:24 -0400
-Message-ID: <53EBA2EC.3030306@redhat.com>
-Date: Wed, 13 Aug 2014 19:39:56 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	id S1753848AbaHMRlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 13:41:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51379 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753350AbaHMRlC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 13:41:02 -0400
+Date: Wed, 13 Aug 2014 19:40:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit immediate"
- eBPF instruction
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com> <1407916658-8731-2-git-send-email-ast@plumgrid.com> <53EB2D31.8090204@redhat.com> <CAMEtUuzo6xQkhg+y0h_WEArVZi9cxVoGAcTBDcwMXza+eQGBTw@mail.gmail.com>
-In-Reply-To: <CAMEtUuzo6xQkhg+y0h_WEArVZi9cxVoGAcTBDcwMXza+eQGBTw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time: drop do_sys_times spinlock
+Message-ID: <20140813174048.GV9918@twins.programming.kicks-ass.net>
+References: <20140812142539.01851e52@annuminas.surriel.com>
+ <20140812191218.GA15210@redhat.com>
+ <53EA94DD.5040900@redhat.com>
+ <20140813172230.GA6296@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JifNnQum/cg2Woy5"
+Content-Disposition: inline
+In-Reply-To: <20140813172230.GA6296@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2014 07:34 PM, Alexei Starovoitov wrote:
-> On Wed, Aug 13, 2014 at 2:17 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
->> On 08/13/2014 09:57 AM, Alexei Starovoitov wrote:
->>>
->>> add BPF_LD_IMM64 instruction to load 64-bit immediate value into register.
->>> All previous instructions were 8-byte. This is first 16-byte instruction.
->>> Two consecutive 'struct bpf_insn' blocks are interpreted as single
->>> instruction:
->>> insn[0/1].code = BPF_LD | BPF_DW | BPF_IMM
->>> insn[0/1].dst_reg = destination register
->>> insn[0].imm = lower 32-bit
->>> insn[1].imm = upper 32-bit
->>>
->>> Classic BPF has similar instruction: BPF_LD | BPF_W | BPF_IMM
->>> which loads 32-bit immediate value into a register.
->>>
->>> x64 JITs it as single 'movabsq %rax, imm64'
->>> arm64 may JIT as sequence of four 'movk x0, #imm16, lsl #shift' insn
->>>
->>> Note that old eBPF programs are binary compatible with new interpreter.
->>>
->>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
->>
->>
->> For follow-ups on this series, can you put the actual motivation
->> for this change from the cover letter into this commit log as it
->> otherwise doesn't say anything clearly why it is needed. Code and
->> test case looks good to me.
->
-> ok. As you saw the full explanation is long, so I opted for 'it_does_this'
-> commit log. In the next rev will add more reasons to this log. Sure.
 
-Great, thanks.
+--JifNnQum/cg2Woy5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Aug 13, 2014 at 07:22:30PM +0200, Oleg Nesterov wrote:
+> On 08/12, Rik van Riel wrote:
+> >
+> > Any other ideas?
+>=20
+> To simplify, lets suppose that we only need sum_exec_runtime.
+>=20
+> Perhaps we can do something like this
+>=20
+> 	u64 thread_group_sched_runtime(void)
+> 	{
+> 		struct task_struct *tsk =3D current;
+> 		spinlock_t *siglock =3D &tsk->sighand->siglock; /* stable */
+> 		struct task_struct *t;
+> 		u64 x1, x2;
+>=20
+> 	retry:
+> 		x1 =3D tsk->signal->sum_sched_runtime;
+> 		rmb();
+> 		spin_unlock_wait(siglock);
+> 		rmb();
+>=20
+> 		x2 =3D 0;
+> 		rcu_read_lock();
+> 		for_each_thread(tsk, t)
+> 			x2 +=3D task_sched_runtime(t);
+> 		rcu_read_unlock();
+>=20
+> 		rmb();
+> 		spin_unlock_wait(siglock);
+> 		rmb();
+>=20
+> 		if (x1 !=3D tsk->signal->sum_sched_runtime)
+> 			goto retry;
+>=20
+> 		return x1 + x2;
+> 	}
+>=20
+> ?
+>=20
+> We do not care if for_each_thread() misses the new thread, we can pretend
+> thread_group_sched_runtime() was called before clone.
+>=20
+> We do not care if a thread with sum_sched_runtime =3D=3D 0 exits, obvious=
+ly.
+>=20
+> Otherwise "x1 !=3D tsk->signal->sum_sched_runtime" should tell us that we
+> raced with __exit_signal().
+
+So the problem with the above is the lack of fwd progress; if there's
+enough clone()/exit() happening in the thread group (and the more CPUs
+the more possible), we'll keep repeating.
+
+
+
+
+--JifNnQum/cg2Woy5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT66MfAAoJEHZH4aRLwOS6DRgP/09D31xCxGkn2XAjBuU6EHGl
+xUf0UbhAnouQvnzJw46WUZdWinfrltD6VATfId4yIBifI2y9ulNFlbWt1IGcy5JA
+cA7213HCq8QoiHBU4mAON0TiXdLo1mVD3BiXoamJKQQXVEaLVxc6WyDqgFxkhbvC
+B03ma/qQguyvt6XNxi36dx7Jq5LQarJuwTeQtw14fbAUZSrTpJVkIGcvR8K3/YMC
+KD8iCC0ESIHBOIboo9T50+48EbihQXO1rv3Mnkx1gb8vbzG5/tslHegqDFfgmKX5
+lmCJKuQb7oVsgos3BqGUN35zVSxGfAc1+iPrSmRsopuTKAITyZH9omKPaLeejhdR
+pTU0VHKINVTWeIeLiBlbkvP5PvtxQOOF2+GaycVnvbrD8TdGHn9Uj+6PFCSSliRh
+Ota7F0q65OFExbAvsPqqaKLgKv8YmLpWbft63wPlHNhsVWgOBTuJVILjvbnuBMyr
++END46X1LUhdneYXJXlibAX/QAmXcQZYZ+dAIQTyh4Lx5Tdhq1BQvBWhZUIBlsmy
+WJi4joZiFHeJNllG5K/Yyi/7L3OFjSLio9vnpUJn+NvgvtSLf0wFWzzMF1ydBR3w
+S3YUoEfhiA7tBgGKSwDhfoqRn2qlfAY09ibJCnmqcL4N+thCe68396fdNnSqqhpp
+TYVV25Tr8v380/J0sOnq
+=5gs7
+-----END PGP SIGNATURE-----
+
+--JifNnQum/cg2Woy5--
