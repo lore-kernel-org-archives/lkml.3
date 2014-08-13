@@ -1,104 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbaHMQ6b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 12:58:31 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:45396 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530AbaHMQ61 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 12:58:27 -0400
-Message-ID: <53EB9932.8010203@adfin.com>
-Date: Wed, 13 Aug 2014 12:58:26 -0400
-From: Milosz Tanski <milosz@adfin.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753588AbaHMQ6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 12:58:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2135 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753561AbaHMQ6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 12:58:41 -0400
+Date: Wed, 13 Aug 2014 18:05:24 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: scameron@beardog.cce.hp.com
+Cc: linux-kernel@vger.kernel.org, iss_storagedev@hp.com,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 08/23] hpsa: Fallback to MSI rather than to
+ INTx if MSI-X failed
+Message-ID: <20140813170523.GA2542@agordeev.usersys.redhat.com>
+References: <cover.1405533479.git.agordeev@redhat.com>
+ <3ca64c251518a2db8810534b4e63ec696bcfeefd.1405533479.git.agordeev@redhat.com>
+ <20140813160454.GA19666@beardog.cce.hp.com>
 MIME-Version: 1.0
-To: linux-cachefs@redhat.com
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3/3] FS-Cache: refcount becomes corrupt under vma pressure.
-References: <cover.1407948737.git.milosz@adfin.com>
-In-Reply-To: <cover.1407948737.git.milosz@adfin.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140813160454.GA19666@beardog.cce.hp.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In rare cases under heavy VMA pressure the ref count for a fscache cookie
-becomes corrupt. In this case we decrement ref count even if we fail before
-incrementing the refcount.
+On Wed, Aug 13, 2014 at 11:04:54AM -0500, scameron@beardog.cce.hp.com wrote:
+> On Wed, Jul 16, 2014 at 08:05:12PM +0200, Alexander Gordeev wrote:
+> > Currently the driver falls back to INTx mode when MSI-X
+> > initialization failed. This is a suboptimal behaviour
+> > for chips that also support MSI. This update changes that
+> > behaviour and falls back to MSI mode in case MSI-X mode
+> > initialization failed.
+> > 
+> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> > Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+> > Cc: iss_storagedev@hp.com
+> > Cc: linux-scsi@vger.kernel.org
+> > Cc: linux-pci@vger.kernel.org
+> > ---
+> >  drivers/scsi/hpsa.c |    1 -
+> >  1 files changed, 0 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> > index 31184b3..648dec2 100644
+> > --- a/drivers/scsi/hpsa.c
+> > +++ b/drivers/scsi/hpsa.c
+> > @@ -6177,7 +6177,6 @@ static void hpsa_interrupt_mode(struct ctlr_info *h)
+> >  			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n",
+> >  			       err);
+> >  			h->msix_vector = 0;
+> > -			goto default_int_mode;
+> >  		}
+> >  	}
+> >  	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSI)) {
+> > -- 
+> > 1.7.7.6
+> 
+> Ack.
+> 
+> Sorry for the slow reply, this got lost in the tornadic maelstrom
+> I call my inbox.
+> 
+> I also tested this with a Smart Array P420, P420i, and P430 in
+> the system by ifdef'ing out the code for MSI-X and setting
+> h->msix_vector = 0, to force it down the MSI path, and that all
+> appears to work. 
 
-FS-Cache: Assertion failed bnode-eca5f9c6/syslog
-0 > 0 is false
-------------[ cut here ]------------
-kernel BUG at fs/fscache/cookie.c:519!
-invalid opcode: 0000 [#1] SMP
-Call Trace:
-[<ffffffffa01ba060>] __fscache_relinquish_cookie+0x50/0x220 [fscache]
-[<ffffffffa02d64ce>] ceph_fscache_unregister_inode_cookie+0x3e/0x50 [ceph]
-[<ffffffffa02ae1d3>] ceph_destroy_inode+0x33/0x200 [ceph]
-[<ffffffff811cf67e>] ? __fsnotify_inode_delete+0xe/0x10
-[<ffffffff811a9e0c>] destroy_inode+0x3c/0x70
-[<ffffffff811a9f51>] evict+0x111/0x180
-[<ffffffff811aa763>] iput+0x103/0x190
-[<ffffffff811a5de8>] __dentry_kill+0x1c8/0x220
-[<ffffffff811a5f31>] shrink_dentry_list+0xf1/0x250
-[<ffffffff811a762c>] prune_dcache_sb+0x4c/0x60
-[<ffffffff811930af>] super_cache_scan+0xff/0x170
-[<ffffffff8113d7a0>] shrink_slab_node+0x140/0x2c0
-[<ffffffff8113f2da>] shrink_slab+0x8a/0x130
-[<ffffffff81142572>] balance_pgdat+0x3e2/0x5d0
-[<ffffffff811428ca>] kswapd+0x16a/0x4a0
-[<ffffffff810a43f0>] ? __wake_up_sync+0x20/0x20
-[<ffffffff81142760>] ? balance_pgdat+0x5d0/0x5d0
-[<ffffffff81083e09>] kthread+0xc9/0xe0
-[<ffffffff81010000>] ? ftrace_raw_event_xen_mmu_release_ptpage+0x70/0x90
-[<ffffffff81083d40>] ? flush_kthread_worker+0xb0/0xb0
-[<ffffffff8159f63c>] ret_from_fork+0x7c/0xb0
-[<ffffffff81083d40>] ? flush_kthread_worker+0xb0/0xb0
-RIP [<ffffffffa01b984b>] __fscache_disable_cookie+0x1db/0x210 [fscache]
-RSP <ffff8803bc85f9b8>
----[ end trace 254d0d7c74a01f25 ]---
+Thank you, Steve!
+If your Ack apply to 08/23 or to 09/23 as well?
 
-Signed-off-by: Milosz Tanski <milosz@adfin.com>
----
- fs/fscache/page.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+> -- steve
+> 
 
-diff --git a/fs/fscache/page.c b/fs/fscache/page.c
-index 4911f2cf..fdfe996 100644
---- a/fs/fscache/page.c
-+++ b/fs/fscache/page.c
-@@ -199,7 +199,7 @@ int __fscache_attr_changed(struct fscache_cookie *cookie)
- {
- 	struct fscache_operation *op;
- 	struct fscache_object *object;
--	bool wake_cookie;
-+	bool wake_cookie = false;
- 
- 	_enter("%p", cookie);
- 
-@@ -229,15 +229,16 @@ int __fscache_attr_changed(struct fscache_cookie *cookie)
- 
- 	__fscache_use_cookie(cookie);
- 	if (fscache_submit_exclusive_op(object, op) < 0)
--		goto nobufs;
-+		goto nobufs_dec;
- 	spin_unlock(&cookie->lock);
- 	fscache_stat(&fscache_n_attr_changed_ok);
- 	fscache_put_operation(op);
- 	_leave(" = 0");
- 	return 0;
- 
--nobufs:
-+nobufs_dec:
- 	wake_cookie = __fscache_unuse_cookie(cookie);
-+nobufs:
- 	spin_unlock(&cookie->lock);
- 	kfree(op);
- 	if (wake_cookie)
 -- 
-1.7.9.5
-
-
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
