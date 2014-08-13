@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313AbaHMPEc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:04:32 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:37212 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaHMPEa (ORCPT
+	id S1753149AbaHMPFx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:05:53 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49177 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751965AbaHMPFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:04:30 -0400
+	Wed, 13 Aug 2014 11:05:51 -0400
+Date: Wed, 13 Aug 2014 16:05:40 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call
+	into scheduler
+Message-ID: <20140813150540.GL30401@n2100.arm.linux.org.uk>
+References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org> <20140813142257.GK30401@n2100.arm.linux.org.uk> <20140813145526.GF32301@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=XCSTzX04M1TDCf9p4QqZrNsStTKG5s7uYbJNaAKmtkuw@mail.gmail.com>
-References: <1400623670-2657-1-git-send-email-dianders@chromium.org>
-	<001601cf74d4$3547a410$9fd6ec30$%jun@samsung.com>
-	<CAD=FV=XCSTzX04M1TDCf9p4QqZrNsStTKG5s7uYbJNaAKmtkuw@mail.gmail.com>
-Date: Wed, 13 Aug 2014 17:04:28 +0200
-Message-ID: <CAPDyKFpEEevF8z+RRqftUVXa6VGdbAiL82wam2AmuoRBBvAxnA@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: dw_mmc: Make sure we don't get stuck when we get
- an error
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Grant Grundler <grundler@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, sunil joshi <joshi@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        Chris Ball <chris@printf.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140813145526.GF32301@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 August 2014 15:38, Doug Anderson <dianders@chromium.org> wrote:
-> Hi,
->
-> On Wed, May 21, 2014 at 2:08 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
->> On Wed, May 21, 2014, Doug Anderson wrote:
->>> If we happened to get a data error at just the wrong time the dw_mmc
->>> driver could get into a state where it would never complete its
->>> request.  That would leave the caller just hanging there.
->>>
->>> We fix this two ways and both of the two fixes on their own appear to
->>> fix the problems we've seen:
->>>
->>> 1. Fix a race in the tasklet where the interrupt setting the data
->>>    error happens _just after_ we check for it, then we get a
->>>    EVENT_XFER_COMPLETE.  We fix this by repeating a bit of code.
->>> 2. Fix it so that if we detect that we've got an error in the "data
->>>    busy" state and we're not going to do anything else we end the
->>>    request and unblock anyone waiting.
->>>
->>> Signed-off-by: Doug Anderson <dianders@chromium.org>
->>> Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
->>
->> It will be applied after "mmc: dw_mmc: change to use recommended reset procedure"
->>
->> Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
->>
->> Thanks,
->> Seungwon Jeon
->
-> I saw that Ulf applied "mmc: dw_mmc: change to use recommended reset
-> procedure".  Could we apply this one now, too?  Do you want me to
-> repost?
+On Wed, Aug 13, 2014 at 07:55:26AM -0700, Stephen Boyd wrote:
+> On 08/13, Russell King - ARM Linux wrote:
+> > On Wed, Aug 13, 2014 at 06:57:18AM -0700, Stephen Boyd wrote:
+> > > Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
+> > > 2012-04-12) introduced an acquisition of the irq_controller_lock
+> > > in gic_raise_softirq() which can lead to a spinlock recursion if
+> > > the gic_arch_extn hooks call into the scheduler (via complete()
+> > > or wake_up(), etc.). This happens because gic_arch_extn hooks are
+> > > normally called with the irq_controller_lock held and calling
+> > > into the scheduler may cause us to call smp_send_reschedule()
+> > > which will grab the irq_controller_lock again. Here's an example
+> > > from a vendor kernel (note that the gic_arch_extn hook code here
+> > > isn't actually in mainline):
+> > 
+> > Here's a question: why would you want to call into the scheduler from
+> > the gic_arch_extn code?
+> 
+> In this case we want to send a message to another processor when
+> an interrupt is enabled that's only a wakeup interrupt in certain
+> low power states. It's done sort of indirectly, but basically we
+> block that low power state from being entered so we can ensure
+> that the interrupt wakes us up from a lighter version of suspend.
 
-Please repost and rebase if needed.
+No, that's not the correct answer for the question I asked.  I did not
+ask "why would you want to call into the IRQ code from the scheduler".
+I asked "why would you want to call into the scheduler from the
+gic_arch_extn code?"
 
-Kind regards
-Uffe
->
-> -Doug
+That's a completely different question.  Let me rephrase to try and get
+an answer to my question: Why are you calling complete() or wake_up()
+from the gic_arch_extn code?
+
+> > static int __disable_irq_nosync(unsigned int irq)
+> > {
+> >         unsigned long flags;
+> >         struct irq_desc *desc = irq_get_desc_buslock(irq, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
+> 
+> We got the lock here.
+
+Yes, Daniel pointed that out, which makes this fine of course.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
