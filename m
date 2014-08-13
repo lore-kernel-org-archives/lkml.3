@@ -1,97 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200AbaHMJ6Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:58:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63165 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751097AbaHMJ6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:58:24 -0400
-Message-ID: <53EB36BA.7050302@redhat.com>
-Date: Wed, 13 Aug 2014 05:58:18 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1752239AbaHMJ7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:59:16 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:34538 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835AbaHMJ7O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 05:59:14 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Christopher Barry <christopher.r.barry@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: OT: Open letter to the Linux World
+Date: Wed, 13 Aug 2014 11:59:12 +0200
+Message-ID: <4028452.uZ6nVZcbsE@merkaba>
+User-Agent: KMail/4.15 pre (Linux/3.16.0-tp520-fixcompwrite+; KDE/4.13.3; x86_64; git-411eff3; 2014-08-11)
+In-Reply-To: <20140813095213.GG9918@twins.programming.kicks-ass.net>
+References: <20140812153812.2923046a@monolith.infinux.org> <2838655.H5W5zNkR37@merkaba> <20140813095213.GG9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
- to be held for duration of changing governors [v2]
-References: <53DB6B81.6050400@redhat.com> <53DBCBE8.6010809@codeaurora.org> <53DBE764.8050109@redhat.com> <53DBEC27.7050803@codeaurora.org> <CAKohpombG3Gj4mbm02vPNnAxzaRvQP7rb=iQ14dCFH4_+71H3w@mail.gmail.com> <53E0B657.4070007@redhat.com> <CAKohponxBdYEgY2oYuzmdaqfSRS8Uq8bZOzcb1QDmKO-z5ZBFQ@mail.gmail.com> <53E1556B.5070304@codeaurora.org> <CAKohpoky1-hj7cwnKc58svh8Z1Yas1=q4uJEK8mWcb56uqAcng@mail.gmail.com> <53E1FEE5.80305@redhat.com> <20140806150831.GB32301@codeaurora.org> <CAKohponBRn9mwpPMinsjqpHe3wTFj6aNpYk5gZaWDKht3bd5NQ@mail.gmail.com> <53E35122.3040806@redhat.com> <CAKohpokLsqMMxMwh_p+kUL=He9-8cSws6onG6DCBNBVzz1=5TA@mail.gmail.com> <CAKohpokebTdX-Ssdc4N+b09tZ35qkckiErypc0c0Nbe7v+Y5uQ@mail.gmail.com> <53E9FBA4.2080609@redhat.com> <CAKohponqFj5jSpvYbMD5d5zgCJAjCYkNg=_L+BKeMEDmBEWbyg@mail.gmail.com>
-In-Reply-To: <CAKohponqFj5jSpvYbMD5d5zgCJAjCYkNg=_L+BKeMEDmBEWbyg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="nextPart1810843.NS9zAstnXP"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--nextPart1810843.NS9zAstnXP
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="utf-8"
 
-On 08/13/2014 03:39 AM, Viresh Kumar wrote:
-> On 12 August 2014 17:03, Prarit Bhargava <prarit@redhat.com> wrote:
->> Okay, this is what I have and I can reproduce this *easily* 100% of the time.
->>
->> I've used your above config options and have enabled LOCKDEP.
->>
->> In order to restore the locking, I've applied the following patch to the cpufreq
->> core (sorry for the cut-and-paste):
->>
->> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->> index d9fdedd..dfda238 100644
->> --- a/drivers/cpufreq/cpufreq.c
->> +++ b/drivers/cpufreq/cpufreq.c
->> @@ -2192,9 +2192,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *polic
->>         /* end old governor */
->>         if (old_gov) {
->>                 __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
->> -               up_write(&policy->rwsem);
->>                 __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
->> -               down_write(&policy->rwsem);
->>         }
->>
->>         /* start new governor */
->> @@ -2203,9 +2201,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *polic
->>                 if (!__cpufreq_governor(policy, CPUFREQ_GOV_START))
->>                         goto out;
->>
->> -               up_write(&policy->rwsem);
->>                 __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
->> -               down_write(&policy->rwsem);
->>         }
->>
->>         /* new governor failed, so re-start old one */
->>
->>
->> I've modified the acpi-cpufreq driver to include (sorry for the cut-and-paste)
->>
->> diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
->> index b0c18ed..97653c3 100644
->> --- a/drivers/cpufreq/acpi-cpufreq.c
->> +++ b/drivers/cpufreq/acpi-cpufreq.c
->> @@ -884,6 +884,9 @@ static struct freq_attr *acpi_cpufreq_attr[] = {
->>  };
->>
->>  static struct cpufreq_driver acpi_cpufreq_driver = {
->> +       .flags                  = CPUFREQ_STICKY |
->> +                                       CPUFREQ_HAVE_GOVERNOR_PER_POLICY |
->> +                                       CPUFREQ_NEED_INITIAL_FREQ_CHECK,
->>         .verify         = cpufreq_generic_frequency_table_verify,
->>         .target_index   = acpi_cpufreq_target,
->>         .bios_limit     = acpi_processor_get_bios_limit,
->>
->> I do a
->>
->> cat /sys/devices/system/cpu/cpu2/cpufreq/conservative/*
->> echo ondemand > /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor
->>
->> and then I immediately see the stack trace.
-> 
-> What's your system configuration? How many clusters/cpus/etc..
+Am Mittwoch, 13. August 2014, 11:52:13 schrieb Peter Zijlstra:
+> On Wed, Aug 13, 2014 at 11:37:28AM +0200, Martin Steigerwald wrote:
+> > That all said: I believe that any feedback like this is best served=
+ on
+> > systemd-devel mailing list =E2=80=93 maybe in an attempt to express=
+ it in a
+> > somewhat polite, yet also direct way. Instead of on LKML, debian-us=
+er,
+> > debian-devel and you name it what other mailinglists. Cause that wo=
+uld
+> > increase the chance of upstream noticing it.
+>=20
+> I think most people have given up on talking to them entirely. I
+> certainly have. And yes, its a popular subject for bitchin' about. An=
+d I
+> realize that bitchin' won't fix thing at all, but we all need to vent=
 
-Anywhere from 2-4 sockets, 8 - 240 cpus (depending on # of sockets), x86 arch.
+> our frustration somewhere.
 
-P.
-> 
+I understand and symphatize with that.
+
+I have given up on giving feedback to PulseAudio upstream as well for n=
+ow. I=20
+just try to avoid it, but now Skype required skype 4.3. I don=C2=B4t us=
+e Skype at=20
+the moment, but I support a close family member who does, and well=E2=80=
+=A6 I hope it=20
+will just work. Or its Google Hangout or at some point a free as in fre=
+edom=20
+*and* easy alternative I am not yet aware of.
+
+I read systemd-devel and I think there are quite sane discussions, but =
+I=20
+believe if I bring up general feedback to systemd or question certain t=
+hings=20
+about it=E2=80=A6 well=E2=80=A6 I feel reluctant about it at least.
+
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+--nextPart1810843.NS9zAstnXP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iEYEABECAAYFAlPrNvAACgkQmRvqrKWZhMcUrACfQewildRwwNWWlymyhM2KsvUL
+oHYAoJVzicsNJ4708hwEnS06VG0WnZQW
+=hJ7b
+-----END PGP SIGNATURE-----
+
+--nextPart1810843.NS9zAstnXP--
+
