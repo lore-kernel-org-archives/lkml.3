@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241AbaHMBEe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 21:04:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39175 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752867AbaHMBEc (ORCPT
+	id S1752985AbaHMBLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 21:11:47 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:53138 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607AbaHMBLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 21:04:32 -0400
-Date: Wed, 13 Aug 2014 09:03:55 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: "\"\\\"Luis R. Rodriguez\\\"\"" <mcgrof@do-not-panic.com>, tiwai@suse.de,
-        linux-kernel@vger.kernel.org,
-        "\"\\\"Luis R. Rodriguez\\\"\"" <mcgrof@suse.com>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init() and
- module_long_probe_exit()
-Message-ID: <20140813010355.GA27894@kroah.com>
-References: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com>
- <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com>
- <201408122259.s7CMx6Bm042549@www262.sakura.ne.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201408122259.s7CMx6Bm042549@www262.sakura.ne.jp>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 12 Aug 2014 21:11:46 -0400
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] arm64: smp: Update the topology masks before calling CPU_STARTING notifiers
+Date: Tue, 12 Aug 2014 18:11:09 -0700
+Message-Id: <1407892269-28650-1-git-send-email-rvaswani@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 07:59:06AM +0900, Tetsuo Handa wrote:
-> Luis R. Rodriguez wrote:
-> > Tetsuo bisected and found that commit 786235ee \"kthread: make
-> > kthread_create() killable\" modified kthread_create() to bail as
-> > soon as SIGKILL is received.
-> 
-> I just wrote commit 786235ee. It is not Tetsuo who bisected it.
-> 
-> > @@ -128,4 +129,38 @@ bool queue_kthread_work(struct kthread_worker *worker,
-> > void flush_kthread_work(struct kthread_work *work);
-> > void flush_kthread_worker(struct kthread_worker *worker);
-> > 
-> > +#ifndef MODULE
-> > +
-> > +#define module_long_probe_init(x)      __initcall(x);
-> > +#define module_long_probe_exit(x)      __exitcall(x);
-> > +
-> > +#else
-> > +/* To be used by modules which can take over 30 seconds at probe */
-> > +#define module_long_probe_init(initfn)                    \\
-> > +     static struct task_struct *__init_thread;          \\
-> > +     static int _long_probe_##initfn(void *arg)          \\
-> > +     {                                   \\
-> > +          return initfn();                    \\
-> > +     }                                   \\
-> > +     static inline __init int __long_probe_##initfn(void)     \\
-> > +     {                                   \\
-> > +          __init_thread = kthread_run(_long_probe_##initfn,\\
-> > +                             NULL,          \\
-> > +                             #initfn);          \\
-> > +          if (IS_ERR(__init_thread))               \\
-> > +               return PTR_ERR(__init_thread);          \\
-> > +          return 0;                         \\
-> > +     }                                   \\
-> > +     module_init(__long_probe_##initfn);
-> > +/* To be used by modules that require module_long_probe_init() */
-> > +#define module_long_probe_exit(exitfn)                    \\
-> > +     static inline void __long_probe_##exitfn(void)          \\
-> > +     {                                   \\
-> > +          exitfn();                         \\
-> 
-> exitfn() must not be called if initfn() failed or has not
-> completed yet. You need a bool variable for indicating that
-> we are ready to call exitfn().
-> 
-> Also, subsequent userspace operations may fail if
-> we return to userspace before initfn() completes
-> (e.g. device nodes are not created yet).
+Currently, the CPU_STARTING notifiers would observe an incorrect sibling
+mask since the notifier chain is called before the topology masks are updated
+for the new cpu.
+Update the topology masks before calling the notifier chain to fix this
+problem.
 
-I doubt that this will be a problem, as device nodes are usually created
-_after_ module_init() returns.
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+---
+ arch/arm/kernel/smp.c   | 4 ++--
+ arch/arm64/kernel/smp.c | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-But the cleanup issues are real on error paths.  Given that these
-drivers will need "work" anyway, I don't think it's really a big deal.
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 7c4fada..0e2237c 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -363,12 +363,12 @@ asmlinkage void secondary_start_kernel(void)
+ 	if (smp_ops.smp_secondary_init)
+ 		smp_ops.smp_secondary_init(cpu);
+ 
++	smp_store_cpu_info(cpu);
++
+ 	notify_cpu_starting(cpu);
+ 
+ 	calibrate_delay();
+ 
+-	smp_store_cpu_info(cpu);
+-
+ 	/*
+ 	 * OK, now it's safe to let the boot CPU continue.  Wait for
+ 	 * the CPU migration code to notice that the CPU is online
+diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+index 3e2f5eb..4ae78fe 100644
+--- a/arch/arm64/kernel/smp.c
++++ b/arch/arm64/kernel/smp.c
+@@ -163,10 +163,10 @@ asmlinkage void secondary_start_kernel(void)
+ 	/*
+ 	 * Enable GIC and timers.
+ 	 */
+-	notify_cpu_starting(cpu);
+-
+ 	smp_store_cpu_info(cpu);
+ 
++	notify_cpu_starting(cpu);
++
+ 	/*
+ 	 * OK, now it's safe to let the boot CPU continue.  Wait for
+ 	 * the CPU migration code to notice that the CPU is online
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-thanks,
-
-greg k-h
