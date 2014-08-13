@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596AbaHMTqO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 15:46:14 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46644 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaHMTqM (ORCPT
+	id S1752705AbaHMTr1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 15:47:27 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:63269 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405AbaHMTr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 15:46:12 -0400
-Date: Wed, 13 Aug 2014 12:46:11 -0700 (PDT)
-Message-Id: <20140813.124611.767426770013677.davem@davemloft.net>
-To: mroos@linux.ee
-Cc: aaro.koskinen@iki.fi, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hughd@google.com,
-        cat.schulze@alice-dsl.net
-Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.SOC.1.00.1408131327250.18696@math.ut.ee>
-References: <alpine.SOC.1.00.1407310101550.2065@math.ut.ee>
-	<20140730.150722.861254999466992321.davem@davemloft.net>
-	<alpine.SOC.1.00.1408131327250.18696@math.ut.ee>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 13 Aug 2014 12:46:12 -0700 (PDT)
+	Wed, 13 Aug 2014 15:47:26 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH] timekeeping: Another fix to the VSYSCALL_OLD update_vsyscall
+Date: Wed, 13 Aug 2014 12:47:14 -0700
+Message-Id: <1407959234-27989-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Meelis Roos <mroos@linux.ee>
-Date: Wed, 13 Aug 2014 14:44:42 +0300 (EEST)
+Linus,
+  Thomas is currently on vacation, but reviewed it and 
+wanted me to send this fix on to you directly.
 
-> Did not test current git more.
+thanks
+-john
 
-Current git fails to boot without this fix which I posted the other
-day:
+Benjamin Herrenschmidt pointed out that I further missed
+modifying update_vsyscall after the wall_to_mono value was
+changed to a timespec64. This causes issues on powerpc32,
+which expects a 32bit timespec.
 
-====================
-[PATCH 1/2] sparc64: Do not disable interrupts in nmi_cpu_busy()
+This patch fixes the problem by properly converting from
+a timespec64 to a timespec before passing the value on to
+the arch-specific vsyscall logic.
 
-nmi_cpu_busy() is a SMP function call that just makes sure that all of the
-cpus are spinning using cpu cycles while the NMI test runs.
-
-It does not need to disable IRQs because we just care about NMIs executing
-which will even with 'normal' IRQs disabled.
-
-It is not legal to enable hard IRQs in a SMP cross call, in fact this bug
-triggers the BUG check in irq_work_run_list():
-
-	BUG_ON(!irqs_disabled());
-
-Because now irq_work_run() is invoked from the tail of
-generic_smp_call_function_single_interrupt().
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- arch/sparc/kernel/nmi.c | 1 -
- 1 file changed, 1 deletion(-)
+ kernel/time/timekeeping.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/arch/sparc/kernel/nmi.c b/arch/sparc/kernel/nmi.c
-index 3370945..5b1151d 100644
---- a/arch/sparc/kernel/nmi.c
-+++ b/arch/sparc/kernel/nmi.c
-@@ -130,7 +130,6 @@ static inline unsigned int get_nmi_count(int cpu)
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index f36b028..fb4a9c2 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -338,10 +338,11 @@ EXPORT_SYMBOL_GPL(ktime_get_mono_fast_ns);
  
- static __init void nmi_cpu_busy(void *data)
+ static inline void update_vsyscall(struct timekeeper *tk)
  {
--	local_irq_enable_in_hardirq();
- 	while (endflag == 0)
- 		mb();
+-	struct timespec xt;
++	struct timespec xt, wm;
+ 
+ 	xt = timespec64_to_timespec(tk_xtime(tk));
+-	update_vsyscall_old(&xt, &tk->wall_to_monotonic, tk->tkr.clock, tk->tkr.mult,
++	wm = timespec64_to_timespec(tk->wall_to_monotonic);
++	update_vsyscall_old(&xt, &wm, tk->tkr.clock, tk->tkr.mult,
+ 			    tk->tkr.cycle_last);
  }
+ 
 -- 
-1.7.11.7
+1.9.1
 
