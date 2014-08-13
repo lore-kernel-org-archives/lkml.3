@@ -1,41 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698AbaHMJnq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:43:46 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:47283 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272AbaHMJnp (ORCPT
+	id S1751839AbaHMJpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:45:15 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41479 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968AbaHMJpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:43:45 -0400
-Date: Wed, 13 Aug 2014 11:43:40 +0200
-From: Janek Kozicki <janek.listy.mailowe@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: 3.16 crashes on resume from Suspend-To-disk
-Message-ID: <20140813114340.147b59e1@absurd>
-In-Reply-To: <140743930.1Lg0eFFrXs@vostro.rjw.lan>
-References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
-	<20140805115834.5e5e76f0@absurd>
-	<20140805190709.2b19c10a@absurd>
-	<140743930.1Lg0eFFrXs@vostro.rjw.lan>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Wed, 13 Aug 2014 05:45:12 -0400
+Message-ID: <53EB339E.4030604@linaro.org>
+Date: Wed, 13 Aug 2014 10:45:02 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH RFC 5/5] mmc: mmci: move ST specific sdio setup under
+ a condition
+References: <1407844950-8072-1-git-send-email-srinivas.kandadgatla@linaro.org>	<1407845127-8448-1-git-send-email-srinivas.kandadgatla@linaro.org> <CACRpkdY-rhuqMgY7ZRB8YEi+AiNMV_SLbSGJy7Nw+ytyjQXMnA@mail.gmail.com>
+In-Reply-To: <CACRpkdY-rhuqMgY7ZRB8YEi+AiNMV_SLbSGJy7Nw+ytyjQXMnA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki said:     (by the date of Wed, 06 Aug 2014 01:15 +0200)
+Thankyou Linus for the feedback.
 
-> Why don't you file a bug at bugzilla.kernel.org against hibernation/suspend and
-> put that information into it?
+On 13/08/14 09:58, Linus Walleij wrote:
+> On Tue, Aug 12, 2014 at 2:05 PM, Srinivas Kandagatla
+> <srinivas.kandagatla@linaro.org> wrote:
+>
+>> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>>
+>> This patch moves ST specific sdio setup under a vendor id condition,
+>> this will ensure that the ST specfic setup is not done on other vendor
+>> like Qualcomm.
+>>
+>> Originally the issue was detected while testing WLAN ath6kl on IFC6410
+>> board with APQ8064 SOC.
+>>
+>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>
+> So instead of again checking hw_designer (I think that's a bit
+> messy) and instead of having the flag bool sdio from patch
+> 1, why not introduce 2 flags in vendor_data:
+>
+> bool st_sdio;
+> bool qcom_sdio;
 
-I just did: https://bugzilla.kernel.org/show_bug.cgi?id=82291
+Thats good idea,
 
-I hope you can help me with that, if there's any more debugging to do please let me know.
+If we rename the existing sdio flag to st_sdio, then we can get rid of 
+the first patch too. As there is no specific sdio logic required for qcom.
 
-best regards
-Janek Kozicki
+I will send the change in next version.
+
+thanks
+srini
+>
+>> +++ b/drivers/mmc/host/mmci.c
+>> @@ -828,7 +828,8 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+>>                           * otherwise the transfer will not start. The threshold
+>>                           * depends on the rate of MCLK.
+>>                           */
+>> -                       if (data->flags & MMC_DATA_WRITE &&
+>> +                       if (host->hw_designer == AMBA_VENDOR_ST &&
+>> +                           data->flags & MMC_DATA_WRITE &&
+>
+> And this becomes just
+>
+> if (variant->st_sdio)...
+>
+>>                              (host->size < 8 ||
+>>                               (host->size <= 8 && host->mclk > 50000000)))
+>>                                  clk = host->clk_reg & ~variant->clkreg_enable;
+>
+> Yours,
+> Linus Walleij
+>
