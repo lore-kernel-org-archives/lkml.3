@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaHMVho (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 17:37:44 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:60351 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877AbaHMVhn (ORCPT
+	id S1754089AbaHMVi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 17:38:27 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:57202 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754066AbaHMViZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 17:37:43 -0400
+	Wed, 13 Aug 2014 17:38:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <53EA4357.5020602@infradead.org>
-References: <1407769416-13818-1-git-send-email-bobby.prani@gmail.com>
- <alpine.DEB.2.11.1408111222340.14298@gentwo.org> <53EA4357.5020602@infradead.org>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Wed, 13 Aug 2014 17:37:10 -0400
-Message-ID: <CAJhHMCDRp1OF_EpmT2ut9HVTu40EoF0WXbxkhm8OqWUY5tov0Q@mail.gmail.com>
-Subject: Re: [PATCH 1/1] doc: this_cpu_ops.txt: Update description of this_cpu_ops
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Christoph Lameter <cl@linux.com>,
-        "open list:DOCUMENTATION <linux-doc@vger.kernel.org>, open list" 
-	<linux-kernel@vger.kernel.org>
+In-Reply-To: <53EBD848.1060203@zytor.com>
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+	<1407916658-8731-2-git-send-email-ast@plumgrid.com>
+	<CALCETrXzZVxMGUgDPOKwN0DPLvupU=ew1z6D4U-jHg+RoyZyLg@mail.gmail.com>
+	<CAMEtUuxog0w-XkYMHM=Zto_gejy8x5agxohAWOs1zPEtXTr0Sw@mail.gmail.com>
+	<CALCETrXfp+7FmEzAoLiqzqY73NBzt8JsD40hzvhT3=gr-Scp=g@mail.gmail.com>
+	<CAMEtUuwx6Y4qxyz4TGK9=M2BH-dXnPsm+JrusqbyjzK20yUv6A@mail.gmail.com>
+	<CALCETrVDrbD3goYmZsUdmEhVfaNxovyghCz6y+_q5+G+rVwtWg@mail.gmail.com>
+	<53EBD6D5.3050706@zytor.com>
+	<CALCETrUghSd-Z3+z_MUierWHQnA_dDOQcJ++EKryUeGTh5LbbA@mail.gmail.com>
+	<53EBD848.1060203@zytor.com>
+Date: Wed, 13 Aug 2014 14:38:23 -0700
+Message-ID: <CAMEtUuwO028MV8TQXQew1SOQjUvSbQ_bazAqorGRxojXXYXEnA@mail.gmail.com>
+Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit
+ immediate" eBPF instruction
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 12:39 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 08/11/14 10:22, Christoph Lameter wrote:
->> On Mon, 11 Aug 2014, Pranith Kumar wrote:
+On Wed, Aug 13, 2014 at 2:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 08/13/2014 02:23 PM, Andy Lutomirski wrote:
+>> On Wed, Aug 13, 2014 at 2:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> One thing about this that may be a serious concern: allowing the user to
+>>> control 8 contiguous bytes of kernel memory may be a security hazard.
 >>
->>> Update the description for per cpu operations to clarify use cases
->>> of this_cpu operations and add considerations for remote access.
+>> I'm confused.  What kind of memory?  I can control a lot more than 8
+>> bytes of stack very easily.
 >>
->> Looks fine.
+>> Or are you concerned about 8 contiguous bytes of *executable* memory?
+>>
 >
-> Applied.  Thanks.
->
+> Yes.  Useful for some kinds of ROP custom gadgets.
 
-Hi Randy, I just saw that this commit has been applied with the
-Changelog as the subject. Is it too late to correct that? The subject
-should be:
-
-"doc: this_cpu_ops.txt: Update description of this_cpu_ops"
-
--- 
-Pranith
+I don't get it. What is ROP ?
+What is the concern about 8 bytes ?
