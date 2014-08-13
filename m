@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590AbaHMWtz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 18:49:55 -0400
-Received: from mail.kernel.org ([198.145.19.201]:55185 "EHLO mail.kernel.org"
+	id S1754123AbaHMWuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 18:50:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:55329 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753810AbaHMWtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 18:49:53 -0400
+	id S1751973AbaHMWuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 18:50:10 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 17/41] perf buildid-cache: Move session handling into cmd_buildid_cache()
-Date: Wed, 13 Aug 2014 19:48:03 -0300
-Message-Id: <1407970107-24540-18-git-send-email-acme@kernel.org>
+Subject: [PATCH 21/41] perf lock: Move call to symbol__init() after creating session
+Date: Wed, 13 Aug 2014 19:48:07 -0300
+Message-Id: <1407970107-24540-22-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1407970107-24540-1-git-send-email-acme@kernel.org>
 References: <1407970107-24540-1-git-send-email-acme@kernel.org>
@@ -30,8 +30,8 @@ From: Namhyung Kim <namhyung@kernel.org>
 This is a preparation of fixing dso__load_kernel_sym().  It needs a
 session info before calling symbol__init().
 
-Acked-by: Jiri Olsa <jolsa@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -40,88 +40,33 @@ Cc: Minchan Kim <minchan@kernel.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1407825645-24586-5-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1407825645-24586-9-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-buildid-cache.c | 35 +++++++++++++++++++++--------------
- 1 file changed, 21 insertions(+), 14 deletions(-)
+ tools/perf/builtin-lock.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-buildid-cache.c b/tools/perf/builtin-buildid-cache.c
-index 2a2c78f80876..d91bfa6632e8 100644
---- a/tools/perf/builtin-buildid-cache.c
-+++ b/tools/perf/builtin-buildid-cache.c
-@@ -246,20 +246,9 @@ static bool dso__missing_buildid_cache(struct dso *dso, int parm __maybe_unused)
- 	return true;
- }
- 
--static int build_id_cache__fprintf_missing(const char *filename, bool force, FILE *fp)
-+static int build_id_cache__fprintf_missing(struct perf_session *session, FILE *fp)
- {
--	struct perf_data_file file = {
--		.path  = filename,
--		.mode  = PERF_DATA_MODE_READ,
--		.force = force,
--	};
--	struct perf_session *session = perf_session__new(&file, false, NULL);
--	if (session == NULL)
--		return -1;
--
- 	perf_session__fprintf_dsos_buildid(session, fp, dso__missing_buildid_cache, 0);
--	perf_session__delete(session);
--
- 	return 0;
- }
- 
-@@ -303,6 +292,11 @@ int cmd_buildid_cache(int argc, const char **argv,
- 		   *update_name_list_str = NULL,
- 		   *kcore_filename;
- 
-+	struct perf_data_file file = {
-+		.mode  = PERF_DATA_MODE_READ,
-+	};
-+	struct perf_session *session = NULL;
-+
- 	const struct option buildid_cache_options[] = {
- 	OPT_STRING('a', "add", &add_name_list_str,
- 		   "file list", "file(s) to add"),
-@@ -326,8 +320,17 @@ int cmd_buildid_cache(int argc, const char **argv,
- 	argc = parse_options(argc, argv, buildid_cache_options,
- 			     buildid_cache_usage, 0);
- 
-+	if (missing_filename) {
-+		file.path = missing_filename;
-+		file.force = force;
-+
-+		session = perf_session__new(&file, false, NULL);
-+		if (session == NULL)
-+			return -1;
-+	}
-+
- 	if (symbol__init() < 0)
--		return -1;
-+		goto out;
- 
- 	setup_pager();
- 
-@@ -370,7 +373,7 @@ int cmd_buildid_cache(int argc, const char **argv,
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index c8122d323621..d73580b39908 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -865,6 +865,8 @@ static int __cmd_report(bool display_info)
+ 		return -ENOMEM;
  	}
  
- 	if (missing_filename)
--		ret = build_id_cache__fprintf_missing(missing_filename, force, stdout);
-+		ret = build_id_cache__fprintf_missing(session, stdout);
- 
- 	if (update_name_list_str) {
- 		list = strlist__new(true, update_name_list_str);
-@@ -394,5 +397,9 @@ int cmd_buildid_cache(int argc, const char **argv,
- 	    build_id_cache__add_kcore(kcore_filename, debugdir, force))
- 		pr_warning("Couldn't add %s\n", kcore_filename);
- 
-+out:
-+	if (session)
-+		perf_session__delete(session);
++	symbol__init();
 +
- 	return ret;
- }
+ 	if (!perf_session__has_traces(session, "lock record"))
+ 		goto out_delete;
+ 
+@@ -974,7 +976,6 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	unsigned int i;
+ 	int rc = 0;
+ 
+-	symbol__init();
+ 	for (i = 0; i < LOCKHASH_SIZE; i++)
+ 		INIT_LIST_HEAD(lockhash_table + i);
+ 
 -- 
 1.9.3
 
