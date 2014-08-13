@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100AbaHMUbs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 16:31:48 -0400
-Received: from ozlabs.org ([103.22.144.67]:55980 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429AbaHMUbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 16:31:47 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Cc: hpa@linux.intel.com, Amos Kong <akong@redhat.com>,
-        ricardo.neri-calderon@linux.intel.com, tytso@mit.edu,
-        Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH] virtio: rng: add derating factor for use by hwrng core
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 14 Aug 2014 04:39:07 +0930
-Message-ID: <87zjf88awc.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753921AbaHMUd2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 16:33:28 -0400
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:52847 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751866AbaHMUd1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 16:33:27 -0400
+To: jacob.jun.pan@linux.intel.com, rafael.j.wysocki@intel.com
+Cc: durgadoss.r@intel.com, srivatsa.bhat@linux.vnet.ibm.com,
+        srinivas.pandruvada@linux.intel.com, linux-kernel@vger.kernel.org
+From: Jason Baron <jbaron@akamai.com>
+Subject: [PATCH] powercap/rapl: add support for cpu model 0x3f
+Message-Id: <20140813203326.957F58004E@prod-mail-relay07.akamai.com>
+Date: Wed, 13 Aug 2014 20:33:26 +0000 (GMT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The khwrngd thread is started when a hwrng device of sufficient
-quality is registered.  The virtio-rng device is backed by the
-hypervisor, and we trust the hypervisor to provide real entropy.
+I've confirmed that monitoring the package power usage as well
+as setting power limits appear to be working as expected. However,
+I do see in the logs:
 
-A malicious hypervisor is a scenario that's irrelevant -- such a setup
-is bound to cause all sorts of badness, and a compromised hwrng is not
-the biggest threat.
+[    5.082632] intel_rapl: RAPL domain core detection failed
+[    5.088370] intel_rapl: RAPL domain uncore detection failed
 
-Given this, we are certain the quality of randomness we receive is
-perfectly trustworthy.  Hence, we use 100% for the factor, indicating
-maximum confidence in the source.
+So I'm not sure if the h/w simply doesn't support that, or if the
+driver could be improved here. In any case, adding the 0x3f makes
+the driver useful for me. Tested aginst cpu:
 
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Intel(R) Xeon(R) CPU E5-2650 v3 @ 2.30GHz
+
+Signed-off-by: Jason Baron <jbaron@akamai.com>
 ---
-Pretty small and contained patch; would be great if it is picked up for
-3.17.
-
-v2: re-word commit msg
-
-[Agreed, re-sending to Linus with SOB before jumping on plane]
----
- drivers/char/hw_random/virtio-rng.c | 1 +
+ drivers/powercap/intel_rapl.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/char/hw_random/virtio-rng.c
-b/drivers/char/hw_random/virtio-rng.c
-index 0027137..2e3139e 100644
---- a/drivers/char/hw_random/virtio-rng.c
-+++ b/drivers/char/hw_random/virtio-rng.c
-@@ -116,6 +116,7 @@ static int probe_common(struct virtio_device *vdev)
-		.cleanup = virtio_cleanup,
-		.priv = (unsigned long)vi,
-		.name = vi->name,
-+		.quality = 1000,
-	};
-	vdev->priv = vi;
+diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
+index b1cda6f..a362dcc 100644
+--- a/drivers/powercap/intel_rapl.c
++++ b/drivers/powercap/intel_rapl.c
+@@ -953,6 +953,7 @@ static const struct x86_cpu_id rapl_ids[] = {
+ 	{ X86_VENDOR_INTEL, 6, 0x3a},/* Ivy Bridge */
+ 	{ X86_VENDOR_INTEL, 6, 0x3c},/* Haswell */
+ 	{ X86_VENDOR_INTEL, 6, 0x3d},/* Broadwell */
++	{ X86_VENDOR_INTEL, 6, 0x3f},/* Haswell */
+ 	{ X86_VENDOR_INTEL, 6, 0x45},/* Haswell ULT */
+ 	/* TODO: Add more CPU IDs after testing */
+ 	{}
+-- 
+1.8.2.rc2
 
