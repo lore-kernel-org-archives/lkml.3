@@ -1,112 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434AbaHMPyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:54:50 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:44178 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbaHMPyt (ORCPT
+	id S1752916AbaHMP4v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:56:51 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:34415 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaHMP4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:54:49 -0400
-Message-ID: <53EB8A41.4010909@hitachi.com>
-Date: Thu, 14 Aug 2014 00:54:41 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 13 Aug 2014 11:56:48 -0400
+Date: Wed, 13 Aug 2014 08:56:44 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Dexuan Cui <decui@microsoft.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH] Input: serio: make HYPERV_KEYBOARD depend on
+ SERIO_I8042=y
+Message-ID: <20140813155644.GA6940@core.coreip.homeip.net>
+References: <1407814240-4275-1-git-send-email-decui@microsoft.com>
+ <20140812032148.GB6867@kroah.com>
+ <EE124450C0AAF944A40DD71E61F878C9920A1C@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <20140812060108.GA13231@kroah.com>
+ <EE124450C0AAF944A40DD71E61F878C9920EAF@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <20140812175435.GA22386@core.coreip.homeip.net>
+ <EE124450C0AAF944A40DD71E61F878C9925D21@SINEX14MBXC417.southpacific.corp.microsoft.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/3] ftrace: Add a ftrace test collection
-References: <20140805024544.23693.66601.stgit@kbuild-fedora.novalocal> <20140805173752.1de5f1c2@gandalf.local.home> <8738d0euyv.fsf@sejong.aot.lge.com>
-In-Reply-To: <8738d0euyv.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <EE124450C0AAF944A40DD71E61F878C9925D21@SINEX14MBXC417.southpacific.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/13 15:59), Namhyung Kim wrote:
-> Hi Steve and Masami,
+On Wed, Aug 13, 2014 at 05:24:35AM +0000, Dexuan Cui wrote:
+> > -----Original Message-----
+> > From: Dmitry Torokhov
+> > Sent: Wednesday, August 13, 2014 1:55 AM
+> > > > > To decouple the dependency between the hyperv-keyboard and i8042
+> > > > > modules, I suppose we probably have to re-implement hyperv-
+> > keyboard by
+> > > > > using input_allocate_device(), input_register_device(), and using
+> > > > > input_report_key() to pass the key strokes to the high level.
+> > > >
+> > > > Yes, that would be the best thing to do,
+> > 
+> > Why? The backend still delivers AT keyboard data, so why does it make
+> > sense to write a new driver instead of making sure you can load
+> > atkbd/libps2 even without i8042 loaded?
 > 
-> On Tue, 5 Aug 2014 17:37:52 -0400, Steven Rostedt wrote:
->> Hi Masami,
->>
->> This looks great. I'm a bit busy at the moment (just came back from
->> vacation, and digging myself out of the hole that left me). But I
->> definitely want this in. I have a bunch of tests too, that I can put on
->> top of this. My tests are rather hacky, and hard code a lot of stuff in
->> them, but they do test a bunch of features of ftrace. It shouldn't be
->> too hard to include them here.
->>
->>
->> On Tue, 05 Aug 2014 02:45:44 +0000
->> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>
->>> Hi,
->>>
->>> I'd like to introduce a collection of testcases for ftrace to
->>> avoid regressions.
->>>
->>> For a long time, we've tried to stabilize and extend ftrace
->>> tracing infrastructure. This small test framework is a kind of
->>> stabilizing work for ftrace. For the first step, this series
->>> just introduces a few basic testcases. However, it is easy to
->>> add additional tests. I'd like to ask you, ftrace developers,
->>> to add tests for your features to ensure it will not be broken
->>> by future works.
->>>
->>> ftracetest is a tiny bash script so that anyone can easily
->>> understand what it does. I think it is better to share and
->>> discuss this tests before growing it.
->>>
->>>  - Is it enough to support bash script? (of course you can
->>>    invoke other commands from the script)
+> Hi Dmitry,
+> Thanks for pointing this out!
+> I didn't realize input_report_key() can't accept AT keyboard scan codes.
 > 
-> Btw, does it use any bash-specific feature?
+> > > The issue is: the latest Arch Linux release doesn't have a working (virtual)
+> > > keyboard when it runs as Generation 2 hyper-v guest -- when it runs as
+> > > a "traditional" Generation 1 hyper-v guest, everything works fine.
+> > > I hope this patch can temporarily help Arch users if they find the issue
+> > > and if they can rebuild the kernel.
+> > 
+> > The Arch users can simply select to build i8042 into the kernel as a
+> > workaround.
+> I agree.
+> 
+> > The proper solution is to allow loading libps2 module even if i8042 did
+> > not find its device. I wish I could simply drop this i8042_lock_chip and
+> > stuff, but unfortunately i8042 ports are not truly independent. We need
+> > to figure a way for libps2 to engage locking in i8042 if the driver is
+> > loaded, otherwise just ignore it.
+> > 
+> > Dmitry
+> Yeah, this seems the right solution.
+> 
+> How about this:
+> in libps2.c let's add  and export a function pointer
+> i8042_lock_chip_if_port_owner: it is used to replace the current 
+> 	if (i8042_check_port_owner(ps2dev->serio))
+> 		i8042_lock_chip();
+> The function pointer has a default value NULL, and in i8042.c: i8042_init()
+> we set the function pointer if an i8042 device is found?
 
-Not much ("function" keyword is possible bashism). I usually
-use bash and sometimes unintentionally use bash-specific features :)
-Anyway, I guess bash is enough common now and sometimes its extensions
-are good for short scripting.
+Hmm, that would make i8042 depend on libps2, which might be OK, but how
+do you deal with the locking here? I.e. what happens if you unload i8042
+right when we go through this sequence?
 
->>>  - What's the good naming method of testcases?
-> 
-> I'm okay with the ftracetest, but tracing-test may be an option. :)
+Maybe we need to split i8042_lock_chip() and friends into a separate
+module that always loads, even if i8042 is not present.
 
-Ah, as you said, I meant its extensions *.tc.  :)
-
->>>  - Is any dependency check required?
-> 
-> I think we need to start from no/minimum external dependency.
-> 
-> 
->>>
->>> BTW, I decided to put this under tools/testing/ftrace instead
->>> of tools/testing/selftests/, because all tests requires root
->>> privilege. It will be one of discussion points. Anyway,
->>> it is easy to integrate this to the selftests.
->>
->> I agree. I think having its own directory is a good idea. Lets see what
->> other people think. When I get time, I'll see if I can start a branch
->> that pulls this in and start adding my own tests on top of it.
-> 
-> I also agree to have a separate directory and it's not a selftest :)
-> 
-> Steve, I think you already have a lot of testcases that I want to add,
-> I'll take a look if you setup the branch and try to add my own if
-> needed.
-
-Great! That's so helpful for us :)
-
-Thank you,
+Thanks.
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Dmitry
