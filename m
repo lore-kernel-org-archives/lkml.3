@@ -1,84 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599AbaHMRGv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:06:51 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:41800 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418AbaHMRGs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 13:06:48 -0400
-Date: Wed, 13 Aug 2014 10:06:45 -0700
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Himangi Saraogi <himangi774@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] net/udp_offload: Drop unnecessary continue
-Message-ID: <20140813170644.GA13556@its-macbook-pro.westell.com>
-References: <20140813091605.GA2947@himangi-Dell>
- <1407941291.6804.7.camel@edumazet-glaptop2.roam.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407941291.6804.7.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753758AbaHMRHk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 13:07:40 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:36525 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753483AbaHMRHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 13:07:34 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Doug Anderson <dianders@chromium.org>,
+        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Rabin Vincent <rabin@rab.in>, Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org
+Subject: [PATCH v4 6/8] arm: kgdb: Handle read-only text / modules
+Date: Wed, 13 Aug 2014 10:06:31 -0700
+Message-Id: <1407949593-16121-7-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407949593-16121-1-git-send-email-keescook@chromium.org>
+References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 07:48:11AM -0700, Eric Dumazet wrote:
-> On Wed, 2014-08-13 at 14:46 +0530, Himangi Saraogi wrote:
-> > Continue is not needed at the bottom of a loop.
-> > 
-> > The Coccinelle semantic patch implementing this change is:
-> > 
-> > @@
-> > @@
-> > 
-> > for (...;...;...) {
-> >   ...
-> >   if (...) {
-> >     ...
-> > -   continue;
-> >   }
-> > }
-> > 
-> > Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> > Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> > ---
-> >  net/ipv4/udp_offload.c | 4 +---
-> >  1 file changed, 1 insertion(+), 3 deletions(-)
-> > 
-> > diff --git a/net/ipv4/udp_offload.c b/net/ipv4/udp_offload.c
-> > index 59035bc..62d5b9b 100644
-> > --- a/net/ipv4/udp_offload.c
-> > +++ b/net/ipv4/udp_offload.c
-> > @@ -269,10 +269,8 @@ unflush:
-> >  			continue;
-> >  
-> >  		uh2 = (struct udphdr   *)(p->data + off);
-> > -		if ((*(u32 *)&uh->source != *(u32 *)&uh2->source)) {
-> > +		if ((*(u32 *)&uh->source != *(u32 *)&uh2->source))
-> >  			NAPI_GRO_CB(p)->same_flow = 0;
-> > -			continue;
-> > -		}
-> >  	}
-> >  
-> >  	skb_gro_pull(skb, sizeof(struct udphdr)); /* pull encapsulating udp header */
-> 
-> 
-> Please do not do that.
-> 
-> If we add another check later, we'll miss that the 'continue;' needs to
-> be put back.
-> 
-> GRO stack is quite difficult to maintain, I prefer we keep this as is
-> for consistency and code readability.
+From: Doug Anderson <dianders@chromium.org>
 
-+1
-this code as-is is definitely more readable
+Handle the case where someone has set the text segment of the kernel
+as read-only by using the newly introduced "patch" mechanism.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+[kees: switched structure size check to BUILD_BUG_ON (sboyd)]
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/arm/kernel/Makefile |  2 +-
+ arch/arm/kernel/kgdb.c   | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 38ddd9f83d0e..70b730766330 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -67,7 +67,7 @@ test-kprobes-objs		+= kprobes-test-arm.o
+ endif
+ obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
+ obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
+-obj-$(CONFIG_KGDB)		+= kgdb.o
++obj-$(CONFIG_KGDB)		+= kgdb.o patch.o
+ obj-$(CONFIG_ARM_UNWIND)	+= unwind.o
+ obj-$(CONFIG_HAVE_TCM)		+= tcm.o
+ obj-$(CONFIG_OF)		+= devtree.o
+diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
+index a74b53c1b7df..07db2f8a1b45 100644
+--- a/arch/arm/kernel/kgdb.c
++++ b/arch/arm/kernel/kgdb.c
+@@ -12,8 +12,12 @@
+ #include <linux/irq.h>
+ #include <linux/kdebug.h>
+ #include <linux/kgdb.h>
++#include <linux/uaccess.h>
++
+ #include <asm/traps.h>
+ 
++#include "patch.h"
++
+ struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] =
+ {
+ 	{ "r0", 4, offsetof(struct pt_regs, ARM_r0)},
+@@ -244,6 +248,31 @@ void kgdb_arch_exit(void)
+ 	unregister_die_notifier(&kgdb_notifier);
+ }
+ 
++int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
++{
++	int err;
++
++	/* patch_text() only supports int-sized breakpoints */
++	BUILD_BUG_ON(sizeof(int) != BREAK_INSTR_SIZE);
++
++	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
++				BREAK_INSTR_SIZE);
++	if (err)
++		return err;
++
++	patch_text((void *)bpt->bpt_addr,
++		   *(unsigned int *)arch_kgdb_ops.gdb_bpt_instr);
++
++	return err;
++}
++
++int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
++{
++	patch_text((void *)bpt->bpt_addr, *(unsigned int *)bpt->saved_instr);
++
++	return 0;
++}
++
+ /*
+  * Register our undef instruction hooks with ARM undef core.
+  * We regsiter a hook specifically looking for the KGB break inst
+-- 
+1.9.1
 
