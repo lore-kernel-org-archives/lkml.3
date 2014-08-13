@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236AbaHMP5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:57:19 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:59108 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753127AbaHMP5R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:57:17 -0400
-Date: Wed, 13 Aug 2014 17:57:12 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        mingo@elte.hu, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: lib: turn CONFIG_STACKTRACE into an actual option.
-Message-ID: <20140813155712.GA24282@gmail.com>
-References: <20140714192416.GA30293@redhat.com>
- <20140813150357.GA12025@redhat.com>
+	id S1753318AbaHMQA0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 12:00:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18950 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752852AbaHMQAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 12:00:25 -0400
+Date: Wed, 13 Aug 2014 17:58:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH] fix sighand use after free
+Message-ID: <20140813155802.GA2695@redhat.com>
+References: <20140813115000.73da6136@cuia.bos.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140813150357.GA12025@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140813115000.73da6136@cuia.bos.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/13, Rik van Riel wrote:
+>
+> Subject: fix sighand use after free
+>
+> __lock_task_sighand carefully takes the rcu_read_lock, gets
+> tsk->sighand with rcu_dereference, and verifies that the task
+> is still using the sighand_struct after taking the spinlock.
+>
+> This works much better if the sighand struct is actually rcu
+> freed.
 
-* Dave Jones <davej@redhat.com> wrote:
+I promise, I'll send the doc patch soon ;)
 
-> I was puzzled why /proc/$$/stack had disappeared, until I figured out
-> I had disabled the last debug option that did a 'select STACKTRACE'.
-> This patch makes the option show up at config time, so it can be
-> enabled without enabling any of the more heavyweight debug options.
-> 
-> Signed-off-by: Dave Jones <davej@redhat.com>
-> 
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 7a638aa3545b..96c64beac12a 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -1008,8 +1008,13 @@ config TRACE_IRQFLAGS
->  	  either tracing or lock debugging.
->  
->  config STACKTRACE
-> -	bool
-> +	bool "Stack backtrace support"
->  	depends on STACKTRACE_SUPPORT
-> +	help
-> +	  This option causes the kernel to create a /proc/pid/stack for
-> +	  every process, showing its current stack trace.
-> +	  It is also used by various kernel debugging features that require
-> +	  stack trace generation.
->  
->  config DEBUG_KOBJECT
->  	bool "kobject debugging"
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1017,7 +1017,7 @@ void __cleanup_sighand(struct sighand_struct *sighand)
+>  {
+>  	if (atomic_dec_and_test(&sighand->count)) {
+>  		signalfd_cleanup(sighand);
+> -		kmem_cache_free(sighand_cachep, sighand);
+> +		rcu_free(sighand_cachep, sighand);
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+Please note that sighand_cachep is SLAB_DESTROY_BY_RCU.
 
-Thanks,
+Hmm. and what is rcu_free() ?
 
-	Ingo
+Oleg.
+
