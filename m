@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751091AbaHME4Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 00:56:25 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:17040 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750765AbaHME4X (ORCPT
+	id S1750939AbaHMFIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 01:08:18 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:54773 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaHMFIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 00:56:23 -0400
-X-IronPort-AV: E=Sophos;i="5.04,318,1406563200"; 
-   d="scan'208";a="34547254"
-Message-ID: <53EAF01C.3090404@cn.fujitsu.com>
-Date: Wed, 13 Aug 2014 12:57:00 +0800
-From: tangchen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Wed, 13 Aug 2014 01:08:17 -0400
+Date: Wed, 13 Aug 2014 07:08:12 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 05/33] perf record: Allow the user to disable time stamps
+Message-ID: <20140813050812.GA19464@gmail.com>
+References: <1407169064-25625-1-git-send-email-acme@kernel.org>
+ <1407169064-25625-6-git-send-email-acme@kernel.org>
+ <20140805060856.GA9453@gmail.com>
+ <20140805133347.GH13375@kernel.org>
+ <20140812145819.GA7737@gmail.com>
+ <20140812152953.GA9820@kernel.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <santosh.shilimkar@ti.com>, <grygorii.strashko@ti.com>,
-        <phacht@linux.vnet.ibm.com>, <yinghai@kernel.org>, <fabf@skynet.be>,
-        <Emilian.Medve@freescale.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] memblock, memhotplug: Fix wrong type in memblock_find_in_range_node().
-References: <1407651123-10994-1-git-send-email-tangchen@cn.fujitsu.com> <20140812150304.74a7da3f2491f3d8f8a30107@linux-foundation.org>
-In-Reply-To: <20140812150304.74a7da3f2491f3d8f8a30107@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140812152953.GA9820@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 08/13/2014 06:03 AM, Andrew Morton wrote:
-> On Sun, 10 Aug 2014 14:12:03 +0800 Tang Chen <tangchen@cn.fujitsu.com> wrote:
->
->> In memblock_find_in_range_node(), we defeind ret as int. But it shoule
->> be phys_addr_t because it is used to store the return value from
->> __memblock_find_range_bottom_up().
->>
->> The bug has not been triggered because when allocating low memory near
->> the kernel end, the "int ret" won't turn out to be minus. When we started
->> to allocate memory on other nodes, and the "int ret" could be minus.
->> Then the kernel will panic.
->>
->> A simple way to reproduce this: comment out the following code in numa_init(),
->>
->>          memblock_set_bottom_up(false);
->>
->> and the kernel won't boot.
-> Which kernel versions need this fix?
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
 
-This bug has been in the kernel since v3.13-rc1.
+> Em Tue, Aug 12, 2014 at 04:58:19PM +0200, Ingo Molnar escreveu:
+> > * Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+> > > Em Tue, Aug 05, 2014 at 08:08:56AM +0200, Ingo Molnar escreveu:
+> > > > This patch looks dangerous and misleading to me.
+> 
+> > > I took it more from the angle: hey, it fixes a regression, i.e. 
+> > > -T/--time somehow became a noop, and also it doesn't change any 
+> > > default.
+> 
+> > > It also states that you will get misaccounting, why that would 
+> > > happen, althought wording could've been better, as mmaps won't be 
+> > > "missing", i.e. they will be there as this governs just 
+> > > PERF_SAMPLE_TIME, not perf_event_attr.mmap, so it MMAPs may come 
+> > > after samples for its maps.
+> 
+> > > So, I took it.
+> 
+> > > How should we proceed?
+> 
+> > I'd be fine with applying the patch and fixing the misleading 
+> > changelog.
+> 
+> Done:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/commit/?h=perf/core&id=8affc2b8c27bfc2d6e70827b746f490b62c44eaa
+> 
+> Consider now pulling the perf-core-for-mingo tag there, I updated it
+> after updating the changelog for this specific commit, all the
+> rest is the same as in the previous pull req.
 
-Thanks.
+Pulled into tip:perf/core, thanks a lot Arnaldo!
+
+	Ingo
