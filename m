@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584AbaHMRNL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:13:11 -0400
-Received: from mail-db3hn0250.outbound.protection.outlook.com ([157.55.234.250]:46080
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752929AbaHMRNK convert rfc822-to-8bit (ORCPT
+	id S1753483AbaHMRR2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 13:17:28 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:34545 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752852AbaHMRR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 13:13:10 -0400
-X-Greylist: delayed 1810 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Aug 2014 13:13:10 EDT
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: CONGRATULATIONS
-To: Recipients <winner15@bingowins.onmicrosoft.com>
-From: BINGO <winner15@bingowins.onmicrosoft.com>
-Date: Wed, 13 Aug 2014 18:42:53 +0200
-Reply-To: <bingo_nor@aim.com>
-Message-ID: <49b8b90e-0a91-4478-a7b3-b0b978f25b21@DB3PR01MB107.eurprd01.prod.exchangelabs.com>
-X-Originating-IP: [85.95.61.70]
-X-ClientProxiedBy: DB4PR02CA0039.eurprd02.prod.outlook.com (10.242.174.167) To
- DB3PR01MB107.eurprd01.prod.exchangelabs.com (10.141.2.24)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0302D4F392
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(6009001)(189002)(199003)(74316001)(89136004)(53806999)(92726001)(76482001)(77096002)(83072002)(77982001)(86902001)(85852003)(66066001)(229853001)(107046002)(64872006)(53256004)(86632001)(64706001)(101416001)(80022001)(50466002)(85306004)(21056001)(1496007)(107886001)(86362001)(95666004)(79102001)(42186005)(558084003)(83322001)(221733001)(86442001)(74502001)(33646002)(81342001)(106356001)(50986999)(23756003)(105586002)(46102001)(110136001)(81542001)(20776003)(31696002)(47776003)(99396002)(43066003)(4396001)(87976001)(102836001)(54356999)(74662001)(58004003);DIR:OUT;SFP:1501;SCL:9;SRVR:DB3PR01MB107;H:PC3.lan;FPR:;MLV:spm;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: bingowins.onmicrosoft.com
+	Wed, 13 Aug 2014 13:17:26 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] bluetooth/btuart_cs: Remove typedef btuart_info_t
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20140813092139.GA3189@himangi-Dell>
+Date: Wed, 13 Aug 2014 10:18:01 -0700
+Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Content-Transfer-Encoding: 7bit
+Message-Id: <845CA98D-39F0-4F2F-8ADF-7DBE1D7BA4ED@holtmann.org>
+References: <20140813092139.GA3189@himangi-Dell>
+To: Himangi Saraogi <himangi774@gmail.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Winner,
+Hi Himangi,
 
-Your email address attached to ticket number 5-26-27-30-39-45 WON 850,000.00 EUROS in the BINGOLOTTO INTERNATIONAL. Get back to us for claim.
+> The Linux kernel coding style guidelines suggest not using typedefs
+> for structure types. This patch gets rid of the typedef for
+> btuart_info_t. Also, the name of the struct is changed to drop the _t,
+> to make the name look less typedef-like.
+> 
+> The following Coccinelle semantic patch detects the case:
+> 
+> @tn@
+> identifier i;
+> type td;
+> @@
+> 
+> -typedef
+> struct i { ... }
+> -td
+> ;
+> 
+> @@
+> type tn.td;
+> identifier tn.i;
+> @@
+> 
+> -td
+> + struct i
+> 
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> ---
+> drivers/bluetooth/btuart_cs.c | 27 ++++++++++++++-------------
+> 1 file changed, 14 insertions(+), 13 deletions(-)
 
-Congratulations once again.
+patch has been applied to bluetooth-next tree.
 
-Yours Faithfully,
+Regards
 
-Mr. Dag. 
-(Chairman BingoLotto)
+Marcel
+
