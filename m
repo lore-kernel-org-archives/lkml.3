@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaHMQVF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 12:21:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46923 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705AbaHMQVD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 12:21:03 -0400
-Message-ID: <53EB9066.3060208@linutronix.de>
-Date: Wed, 13 Aug 2014 18:20:54 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1753395AbaHMQVg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 12:21:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32241 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753127AbaHMQVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 12:21:35 -0400
+Date: Wed, 13 Aug 2014 18:19:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH] fix sighand use after free
+Message-ID: <20140813161909.GA3479@redhat.com>
+References: <20140813115000.73da6136@cuia.bos.redhat.com> <20140813155802.GA2695@redhat.com> <53EB8DAC.1040605@redhat.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 5/5] tty: serial: Add 8250-core based omap driver
-References: <1405521903-5877-1-git-send-email-bigeasy@linutronix.de> <1405521903-5877-6-git-send-email-bigeasy@linutronix.de> <20140717070859.GD18374@atomide.com> <20140717074219.GA29193@linutronix.de> <20140717081232.GH18374@atomide.com> <53C7A01C.50107@linutronix.de> <20140718062456.GJ18374@atomide.com> <20140721093528.GS18374@atomide.com>
-In-Reply-To: <20140721093528.GS18374@atomide.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53EB8DAC.1040605@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2014 11:35 AM, Tony Lindgren wrote:
+On 08/13, Rik van Riel wrote:
+>
+> On 08/13/2014 11:58 AM, Oleg Nesterov wrote:
+> > On 08/13, Rik van Riel wrote:
+> >>
+> >> @@ -1017,7 +1017,7 @@ void __cleanup_sighand(struct sighand_struct *sighand)
+> >>  {
+> >>  	if (atomic_dec_and_test(&sighand->count)) {
+> >>  		signalfd_cleanup(sighand);
+> >> -		kmem_cache_free(sighand_cachep, sighand);
+> >> +		rcu_free(sighand_cachep, sighand);
+> >
+> > Please note that sighand_cachep is SLAB_DESTROY_BY_RCU.
+>
+> SLAB_DESTROY_BY_RCU means that the slab page is not given
+> back to the system until after the RCU grace period has
+> expired.
+>
+> However, the objects inside the slab can still be reused
+> immediately!
 
-> Looks like the following is needed to avoid the error, no idea why..
-> But this is what we also do in omap-serial.c. It may be needed in
-> other places too?
+Yes. This is fine. This memory won't be returned to system before rcu
+gp pass, and this memory is still "struct sighand_struct" with the
+properly initialized ->siglock (note the sighand_ctor()).
 
-Yes, there was a third one on shutdown.
+> In the case of the sighand struct, we have this possible race:
+>
+>      thread A       thread B              thread C
+>
+>                     gets task A->sighand
+>      kmem_cache_free sighand
+>                                           re-alloc sighand
+>                     spin_lock sighand
+>                                           spin_lock_init sighand
+                                            ^^^^^^^^^^^^^^^^^^^^^^
+see below,
 
-> Also, no luck yet on runtime PM. If the console is enabled omap won't
-> idle, and if no serial console is enabled, it just hangs. Will try
-> to debug this part further, it may be also related to the above.
+>                     spin_unlock sighand
+>
+> Now task C has a sighand which can never be locked.
 
-My beaglebone xm won't do idle:
+No, please see above. And that is why lock_task_sighand() (which in
+turn needs the comment and cleanup, I already have a patch) re-checks
+task-sighand with ->siglock.
 
-| omap3_pm_off_mode_enable: Core OFF disabled due to errata i583
+> > Hmm. and what is rcu_free() ?
+>
+> Ugh, that should have been kfree_rcu of course, with
+> appropriate rcu space in the struct.
 
-but it would if it could, right? That means that I can't test the wake
-via UART on this one?
+kfree_rcu() can't work in this case, __rcu_reclaim() does kfree() but
+we need kmem_cache_free().
 
-So I will try to fix the tx-pm, fold patches and then prepare another
-batch.
-And I could verify that DMA works on that omap3 :)
+Oleg.
 
-> Regards,
-> 
-> Tony
-
-Sebastian
