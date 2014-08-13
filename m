@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbaHMIYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:24:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52039 "EHLO
+	id S1752380AbaHMIYx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:24:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52050 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244AbaHMIYe (ORCPT
+	with ESMTP id S1752104AbaHMIYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:24:34 -0400
-Date: Wed, 13 Aug 2014 01:23:40 -0700
-From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-36bbb2f2988a29cdc3f8e0c93478795934553454@git.kernel.org>
+	Wed, 13 Aug 2014 04:24:49 -0400
+Date: Wed, 13 Aug 2014 01:23:54 -0700
+From: tip-bot for Sebastian Andrzej Siewior <tipbot@zytor.com>
+Message-ID: <tip-e708d7ad80737496870fd0b6794704d063fb0cdc@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, ak@linux.intel.com, acme@kernel.org,
-        tglx@linutronix.de
+        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
+        tglx@linutronix.de, bigeasy@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, ak@linux.intel.com, tglx@linutronix.de,
-        acme@kernel.org
-In-Reply-To: <1406840722-25416-1-git-send-email-andi@firstfloor.org>
-References: <1406840722-25416-1-git-send-email-andi@firstfloor.org>
+        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
+        tglx@linutronix.de, bigeasy@linutronix.de
+In-Reply-To: <1407159068-1478-1-git-send-email-bigeasy@linutronix.de>
+References: <1407159068-1478-1-git-send-email-bigeasy@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Use extended offcore mask on Haswell
-Git-Commit-ID: 36bbb2f2988a29cdc3f8e0c93478795934553454
+Subject: [tip:perf/core] perf: Do poll_wait()
+  before checking condition in perf_poll()
+Git-Commit-ID: e708d7ad80737496870fd0b6794704d063fb0cdc
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,57 +34,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  36bbb2f2988a29cdc3f8e0c93478795934553454
-Gitweb:     http://git.kernel.org/tip/36bbb2f2988a29cdc3f8e0c93478795934553454
-Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Thu, 31 Jul 2014 14:05:22 -0700
+Commit-ID:  e708d7ad80737496870fd0b6794704d063fb0cdc
+Gitweb:     http://git.kernel.org/tip/e708d7ad80737496870fd0b6794704d063fb0cdc
+Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+AuthorDate: Mon, 4 Aug 2014 15:31:08 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 13 Aug 2014 07:51:10 +0200
+CommitDate: Wed, 13 Aug 2014 07:51:11 +0200
 
-perf/x86: Use extended offcore mask on Haswell
+perf: Do poll_wait() before checking condition in perf_poll()
 
-HSW-EP has a larger offcore mask than the client Haswell CPUs.
-It is the same mask as on Sandy/IvyBridge-EP. All of
-Haswell was using the client mask, so some bits were missing.
+One should first enqueue to the waitqueue and then check for the
+condition. If the condition gets true after mutex_unlock() but before
+poll_wait() then we lose it and would have wait for another wakeup.
 
-On the client parts some bits were also missing compared
-to Sandy/IvyBridge, in particular the bits to match on a L4
-cache hit.
+This has been like this since v2.6.31-rc1 commit c7138f37f9 ("perf_counter:
+fix perf_poll()"). Before that it was slightly worse. I guess we get enough
+wakeups so if we miss here one it doesn't really matter. It is still a
+bad example.
 
-The Haswell core in both client and server incarnations
-accepts the same bits (but some are nops), so we can use
-the same mask.
-
-So use the snbep extended mask, which is a superset of the
-client and the server, for all of Haswell.
-
-This allows specifying a number of extra offcore events, like
-for example for HSW-EP.
-
-% perf stat -e cpu/event=0xb7,umask=0x1,offcore_rsp=0x3fffc00100,name=offcore_response_pf_l3_rfo_l3_miss_any_response/ true
-
-which were <not supported> before.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: eranian@google.com
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1407159068-1478-1-git-send-email-bigeasy@linutronix.de
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Link: http://lkml.kernel.org/r/1406840722-25416-1-git-send-email-andi@firstfloor.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/events/core.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 38d1f6d..89bc750 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2553,7 +2553,7 @@ __init int intel_pmu_init(void)
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index a254605..2d7363a 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3629,6 +3629,7 @@ static unsigned int perf_poll(struct file *file, poll_table *wait)
+ 	struct ring_buffer *rb;
+ 	unsigned int events = POLL_HUP;
  
- 		x86_pmu.event_constraints = intel_hsw_event_constraints;
- 		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
--		x86_pmu.extra_regs = intel_snb_extra_regs;
-+		x86_pmu.extra_regs = intel_snbep_extra_regs;
- 		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
- 		/* all extra regs are per-cpu when HT is on */
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
++	poll_wait(file, &event->waitq, wait);
+ 	/*
+ 	 * Pin the event->rb by taking event->mmap_mutex; otherwise
+ 	 * perf_event_set_output() can swizzle our rb and make us miss wakeups.
+@@ -3638,9 +3639,6 @@ static unsigned int perf_poll(struct file *file, poll_table *wait)
+ 	if (rb)
+ 		events = atomic_xchg(&rb->poll, 0);
+ 	mutex_unlock(&event->mmap_mutex);
+-
+-	poll_wait(file, &event->waitq, wait);
+-
+ 	return events;
+ }
+ 
