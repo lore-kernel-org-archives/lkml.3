@@ -1,232 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223AbaHMH6r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 03:58:47 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:40623 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128AbaHMH6m (ORCPT
+	id S1752698AbaHMIBN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:01:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43054 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307AbaHMIBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:58:42 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v4 net-next 19/26] samples: bpf: add mini eBPF library to manipulate maps and programs
-Date: Wed, 13 Aug 2014 00:57:30 -0700
-Message-Id: <1407916658-8731-20-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+	Wed, 13 Aug 2014 04:01:11 -0400
+Date: Wed, 13 Aug 2014 10:00:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] perf, x86: Add Broadwell core support
+Message-ID: <20140813080059.GZ9918@twins.programming.kicks-ass.net>
+References: <1407894315-15928-1-git-send-email-andi@firstfloor.org>
+ <1407894315-15928-2-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="itZeKTbdDcsshnDN"
+Content-Disposition: inline
+In-Reply-To: <1407894315-15928-2-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the library includes a trivial set of BPF syscall wrappers:
 
-int bpf_create_map(int key_size, int value_size, int max_entries);
+--itZeKTbdDcsshnDN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-int bpf_update_elem(int fd, void *key, void *value);
+On Tue, Aug 12, 2014 at 06:45:14PM -0700, Andi Kleen wrote:
+> +	case 61: /* Broadwell */
+> +	case 71:
+> +	case 79:
 
-int bpf_lookup_elem(int fd, void *key, void *value);
+Same deal; please put a descriptive comment per model number.
 
-int bpf_delete_elem(int fd, void *key);
+https://git.kernel.org/cgit/linux/kernel/git/peterz/queue.git/commit/?h=perf/core&id=a42c1bf50d297fcb96a3c71b0fdc2da6dbe47030
 
-int bpf_get_next_key(int fd, void *key, void *next_key);
+--itZeKTbdDcsshnDN
+Content-Type: application/pgp-signature
 
-int bpf_prog_load(enum bpf_prog_type prog_type,
-		  const struct sock_filter_int *insns, int insn_len,
-		  const char *license);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-bpf_prog_load() stores verifier log into global bpf_log_buf[] array
+iQIcBAEBAgAGBQJT6xs7AAoJEHZH4aRLwOS6IhoP/0wQowzJl1btCeoYZ7CpC081
+tsSNKqi4i2Am/Bmi8wdKi7oaPpqpgIs1hTUdY+LyeRe1K+ISMXxHyJNU/2+BRKRm
+Q0/xJC9opOfPOGbAeOxsjAd2JnzhGBSaJ5bWO68U4oaf8iCp9NbNogb5s4qDHXy/
+kmhlsVul6ZbFwN3XfYzR+bbpg21UDMGPuKrIbsWjNQgH7EV3976ChGcZUvee/rEW
+ZPvH6931m7w+nxvWbrV2GesCPBizUU0hHgkqFY20i0dUjJTik5vhSpFSLGwZy1jx
+gB/Nd2NXZ4LHdTWZiIy9hO0DNxxd9NWnGGfmtCIbqHP+ZF1i/Eu2/4hkeyaFVXVx
+drv6xcIlczGTMZTt2JytPzLkjO73y1p62YgZrLOqwi9U08+kuSF0yuTmJsswOyTP
+ECg/MojTyYgxKNxkXxxvlfpEtft+i1ItI7w7Zw1XjMxQM97Y9IZBpQwxu+AtliKJ
+te4r281cFdhZVOW2dnkXPoH9D5noau6UqvuPqQHPpT0pdsv32tbq8YSrsxq8uCQU
+mg+P3CyeuxBemq4bOWieKJi6InaRHvqVAPGxXLT1O7GAfWw1eeHNvJkDtl2WvWdl
+rAkaapz/tnVfoxVm2Jed3mQWZvVMJkGp7IEsPTEiT5HLoeqizajIbMZARG7Sn70M
+FsTWTrSbqhU+BSfJtNBW
+=DUgF
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- samples/bpf/libbpf.c |  138 ++++++++++++++++++++++++++++++++++++++++++++++++++
- samples/bpf/libbpf.h |   21 ++++++++
- 2 files changed, 159 insertions(+)
- create mode 100644 samples/bpf/libbpf.c
- create mode 100644 samples/bpf/libbpf.h
-
-diff --git a/samples/bpf/libbpf.c b/samples/bpf/libbpf.c
-new file mode 100644
-index 000000000000..81396dab5caa
---- /dev/null
-+++ b/samples/bpf/libbpf.c
-@@ -0,0 +1,138 @@
-+/* eBPF mini library */
-+#include <stdlib.h>
-+#include <stdio.h>
-+#include <linux/unistd.h>
-+#include <unistd.h>
-+#include <string.h>
-+#include <linux/netlink.h>
-+#include <linux/bpf.h>
-+#include <errno.h>
-+#include "libbpf.h"
-+
-+struct nlattr_u32 {
-+	__u16 nla_len;
-+	__u16 nla_type;
-+	__u32 val;
-+};
-+
-+int bpf_create_map(enum bpf_map_type map_type, int key_size, int value_size,
-+		   int max_entries)
-+{
-+	struct nlattr_u32 attr[] = {
-+		{
-+			.nla_len = sizeof(struct nlattr_u32),
-+			.nla_type = BPF_MAP_KEY_SIZE,
-+			.val = key_size,
-+		},
-+		{
-+			.nla_len = sizeof(struct nlattr_u32),
-+			.nla_type = BPF_MAP_VALUE_SIZE,
-+			.val = value_size,
-+		},
-+		{
-+			.nla_len = sizeof(struct nlattr_u32),
-+			.nla_type = BPF_MAP_MAX_ENTRIES,
-+			.val = max_entries,
-+		},
-+	};
-+
-+	return syscall(__NR_bpf, BPF_MAP_CREATE, map_type, attr, sizeof(attr), 0);
-+}
-+
-+
-+int bpf_update_elem(int fd, void *key, void *value)
-+{
-+	return syscall(__NR_bpf, BPF_MAP_UPDATE_ELEM, fd, key, value, 0);
-+}
-+
-+int bpf_lookup_elem(int fd, void *key, void *value)
-+{
-+	return syscall(__NR_bpf, BPF_MAP_LOOKUP_ELEM, fd, key, value, 0);
-+}
-+
-+int bpf_delete_elem(int fd, void *key)
-+{
-+	return syscall(__NR_bpf, BPF_MAP_DELETE_ELEM, fd, key, 0, 0);
-+}
-+
-+int bpf_get_next_key(int fd, void *key, void *next_key)
-+{
-+	return syscall(__NR_bpf, BPF_MAP_GET_NEXT_KEY, fd, key, next_key, 0);
-+}
-+
-+#define ROUND_UP(x, n) (((x) + (n) - 1u) & ~((n) - 1u))
-+
-+char bpf_log_buf[LOG_BUF_SIZE];
-+
-+int bpf_prog_load(enum bpf_prog_type prog_type,
-+		  const struct bpf_insn *insns, int prog_len,
-+		  const char *license)
-+{
-+	int nlattr_size, license_len, err;
-+	void *nlattr, *ptr;
-+	char *log_buf = bpf_log_buf;
-+	int log_size = LOG_BUF_SIZE;
-+	int log_level = 1;
-+
-+	log_buf[0] = 0;
-+
-+	license_len = strlen(license) + 1;
-+	nlattr_size = sizeof(struct nlattr) + prog_len + sizeof(struct nlattr) +
-+		ROUND_UP(license_len, 4) +
-+		sizeof(struct nlattr) + sizeof(log_level) +
-+		sizeof(struct nlattr) + sizeof(log_buf) +
-+		sizeof(struct nlattr) + sizeof(log_size);
-+
-+	ptr = nlattr = malloc(nlattr_size);
-+	if (!ptr) {
-+		errno = ENOMEM;
-+		return -1;
-+	}
-+
-+	*(struct nlattr *) ptr = (struct nlattr) {
-+		.nla_len = prog_len + sizeof(struct nlattr),
-+		.nla_type = BPF_PROG_TEXT,
-+	};
-+	ptr += sizeof(struct nlattr);
-+
-+	memcpy(ptr, insns, prog_len);
-+	ptr += prog_len;
-+
-+	*(struct nlattr *) ptr = (struct nlattr) {
-+		.nla_len = ROUND_UP(license_len, 4) + sizeof(struct nlattr),
-+		.nla_type = BPF_PROG_LICENSE,
-+	};
-+	ptr += sizeof(struct nlattr);
-+
-+	memcpy(ptr, license, license_len);
-+	ptr += ROUND_UP(license_len, 4);
-+
-+	*(struct nlattr *) ptr = (struct nlattr) {
-+		.nla_len = sizeof(log_level) + sizeof(struct nlattr),
-+		.nla_type = BPF_PROG_LOG_LEVEL,
-+	};
-+	ptr += sizeof(struct nlattr);
-+	memcpy(ptr, &log_level, sizeof(log_level));
-+	ptr += sizeof(log_level);
-+
-+	*(struct nlattr *) ptr = (struct nlattr) {
-+		.nla_len = sizeof(log_buf) + sizeof(struct nlattr),
-+		.nla_type = BPF_PROG_LOG_BUF,
-+	};
-+	ptr += sizeof(struct nlattr);
-+	memcpy(ptr, &log_buf, sizeof(log_buf));
-+	ptr += sizeof(log_buf);
-+
-+	*(struct nlattr *) ptr = (struct nlattr) {
-+		.nla_len = sizeof(log_size) + sizeof(struct nlattr),
-+		.nla_type = BPF_PROG_LOG_SIZE,
-+	};
-+	ptr += sizeof(struct nlattr);
-+	memcpy(ptr, &log_size, sizeof(log_size));
-+	ptr += sizeof(log_size);
-+
-+	err = syscall(__NR_bpf, BPF_PROG_LOAD, prog_type, nlattr, nlattr_size, 0);
-+
-+	free(nlattr);
-+	return err;
-+}
-diff --git a/samples/bpf/libbpf.h b/samples/bpf/libbpf.h
-new file mode 100644
-index 000000000000..b19e39794291
---- /dev/null
-+++ b/samples/bpf/libbpf.h
-@@ -0,0 +1,21 @@
-+/* eBPF mini library */
-+#ifndef __LIBBPF_H
-+#define __LIBBPF_H
-+
-+struct bpf_insn;
-+
-+int bpf_create_map(enum bpf_map_type map_type, int key_size, int value_size,
-+		   int max_entries);
-+int bpf_update_elem(int fd, void *key, void *value);
-+int bpf_lookup_elem(int fd, void *key, void *value);
-+int bpf_delete_elem(int fd, void *key);
-+int bpf_get_next_key(int fd, void *key, void *next_key);
-+
-+int bpf_prog_load(enum bpf_prog_type prog_type,
-+		  const struct bpf_insn *insns, int insn_len,
-+		  const char *license);
-+
-+#define LOG_BUF_SIZE 8192
-+extern char bpf_log_buf[LOG_BUF_SIZE];
-+
-+#endif
--- 
-1.7.9.5
-
+--itZeKTbdDcsshnDN--
