@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbaHMRR2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:17:28 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:34545 "EHLO
+	id S1753568AbaHMRRf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 13:17:35 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:34641 "EHLO
 	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852AbaHMRR0 (ORCPT
+	with ESMTP id S1752852AbaHMRRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 13:17:26 -0400
+	Wed, 13 Aug 2014 13:17:32 -0400
 Content-Type: text/plain; charset=us-ascii
 Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] bluetooth/btuart_cs: Remove typedef btuart_info_t
+Subject: Re: [PATCH] drivers/bluetooth: Remove typedef bt3c_info_t
 From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20140813092139.GA3189@himangi-Dell>
-Date: Wed, 13 Aug 2014 10:18:01 -0700
+In-Reply-To: <20140813091956.GA3117@himangi-Dell>
+Date: Wed, 13 Aug 2014 10:18:04 -0700
 Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
         Johan Hedberg <johan.hedberg@gmail.com>,
         linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
         Julia Lawall <julia.lawall@lip6.fr>
 Content-Transfer-Encoding: 7bit
-Message-Id: <845CA98D-39F0-4F2F-8ADF-7DBE1D7BA4ED@holtmann.org>
-References: <20140813092139.GA3189@himangi-Dell>
+Message-Id: <8A57A222-D7F1-4D54-99CE-E801A39D3D24@holtmann.org>
+References: <20140813091956.GA3117@himangi-Dell>
 To: Himangi Saraogi <himangi774@gmail.com>
 X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,7 +30,7 @@ Hi Himangi,
 
 > The Linux kernel coding style guidelines suggest not using typedefs
 > for structure types. This patch gets rid of the typedef for
-> btuart_info_t. Also, the name of the struct is changed to drop the _t,
+> bt3c_info_t. Also, the name of the struct is changed to drop the _t,
 > to make the name look less typedef-like.
 > 
 > The following Coccinelle semantic patch detects the case:
@@ -56,7 +56,7 @@ Hi Himangi,
 > Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 > Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 > ---
-> drivers/bluetooth/btuart_cs.c | 27 ++++++++++++++-------------
+> drivers/bluetooth/bt3c_cs.c | 27 ++++++++++++++-------------
 > 1 file changed, 14 insertions(+), 13 deletions(-)
 
 patch has been applied to bluetooth-next tree.
