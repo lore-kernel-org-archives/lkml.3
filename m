@@ -1,145 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421AbaHMPgU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:36:20 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:45552 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753175AbaHMPgN (ORCPT
+	id S1753516AbaHMPhK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:37:10 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:43056 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557AbaHMPhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:36:13 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH 4/5] ARM: DT: STi: STiH407: Add DT node for MiPHY28lp
-Date: Wed, 13 Aug 2014 17:34:34 +0200
-Message-Id: <1407944075-8093-5-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407944075-8093-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1407944075-8093-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-13_05:2014-08-13,2014-08-13,1970-01-01 signatures=0
+	Wed, 13 Aug 2014 11:37:08 -0400
+From: rbasukala <basukalaramesh@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, rbasukala <basukalaramesh@gmail.com>
+Subject: [PATCH] Staging: bmc: fix coding style warning
+Date: Wed, 13 Aug 2014 11:36:59 -0400
+Message-Id: <1407944219-14614-1-git-send-email-basukalaramesh@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MiPHY28lp is a Generic PHY which can serve various SATA, PCIe or
-USB3 devices. The two first ports can be use for either; both SATA, both
-PCIe or one of each in any configuration.
-The Third port is only for USB3.
+This a a patch to the vendorspecificextn.c that fixes coding style warning found by checkpatch.pl script. I am submitting this patch as required by Eudyptula Challenge.
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Signed-off-by: Ramesh Basukala <basukalaramesh@gmail.com>
 ---
- arch/arm/boot/dts/stih407-b2120.dts | 11 +++++++
- arch/arm/boot/dts/stih407.dtsi      | 65 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 76 insertions(+)
+ drivers/staging/bcm/vendorspecificextn.c |   19 +++++++++++--------
+ 1 files changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/boot/dts/stih407-b2120.dts b/arch/arm/boot/dts/stih407-b2120.dts
-index fe69f92..d0837fb 100644
---- a/arch/arm/boot/dts/stih407-b2120.dts
-+++ b/arch/arm/boot/dts/stih407-b2120.dts
-@@ -74,5 +74,16 @@
- 			st,i2c-min-scl-pulse-width-us = <0>;
- 			st,i2c-min-sda-pulse-width-us = <5>;
- 		};
-+
-+		miphy28lp_phy: miphy28lp@9b22000 {
-+
-+			phy_port0: port@9b22000 {
-+				st,osc-rdy;
-+			};
-+
-+			phy_port1: port@9b2a000 {
-+				st,osc-force-ext;
-+			};
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
-index d2f1aaa..5ad8b33 100644
---- a/arch/arm/boot/dts/stih407.dtsi
-+++ b/arch/arm/boot/dts/stih407.dtsi
-@@ -275,5 +275,70 @@
+diff --git a/drivers/staging/bcm/vendorspecificextn.c b/drivers/staging/bcm/vendorspecificextn.c
+index 2c57a16..1d9bef6 100644
+--- a/drivers/staging/bcm/vendorspecificextn.c
++++ b/drivers/staging/bcm/vendorspecificextn.c
+@@ -11,7 +11,8 @@
+  *		STATUS_SUCCESS/STATUS_FAILURE
+  *
+  */
+-INT vendorextnGetSectionInfo(PVOID  pContext, struct bcm_flash2x_vendor_info *pVendorInfo)
++INT vendorextnGetSectionInfo(PVOID  pContext,
++			struct bcm_flash2x_vendor_info *pVendorInfo)
+ {
+ 	return STATUS_FAILURE;
+ }
+@@ -61,7 +62,8 @@ INT vendorextnExit(struct bcm_mini_adapter *Adapter)
+  *		arg	-input parameter sent by vendor
+  *
+  * Returns:
+- *		CONTINUE_COMMON_PATH in case it is not meant to be processed by vendor ioctls
++ *		CONTINUE_COMMON_PATH in case it is not meant to be processed
++ *		by vendor ioctls
+  *		STATUS_SUCCESS/STATUS_FAILURE as per the IOCTL return value
+  */
  
- 			status = "disabled";
- 		};
-+
-+		miphy28lp_phy: miphy28lp@9b22000 {
-+			compatible = "st,miphy28lp-phy";
-+			st,syscfg = <&syscfg_core>;
-+			#address-cells	= <1>;
-+			#size-cells	= <1>;
-+			ranges;
-+
-+			phy_port0: port@9b22000 {
-+				reg = <0x9b22000 0xff>,
-+				      <0x9b09000 0xff>,
-+				      <0x9b04000 0xff>,
-+				      <0x114 0x4>, /* sysctrl MiPHY cntrl */
-+				      <0x818 0x4>, /* sysctrl MiPHY status*/
-+				      <0xe0  0x4>, /* sysctrl PCIe */
-+				      <0xec  0x4>; /* sysctrl SATA */
-+				reg-names = "sata-up",
-+					    "pcie-up",
-+					    "pipew",
-+					    "miphy-ctrl-glue",
-+					    "miphy-status-glue",
-+					    "pcie-glue",
-+					    "sata-glue";
-+				#phy-cells = <1>;
-+
-+				reset-names = "miphy-sw-rst";
-+				resets = <&softreset STIH407_MIPHY0_SOFTRESET>;
-+			};
-+
-+			phy_port1: port@9b2a000 {
-+				reg = <0x9b2a000 0xff>,
-+				      <0x9b19000 0xff>,
-+				      <0x9b14000 0xff>,
-+				      <0x118 0x4>,
-+				      <0x81c 0x4>,
-+				      <0xe4  0x4>,
-+				      <0xf0  0x4>;
-+				reg-names = "sata-up",
-+					    "pcie-up",
-+					    "pipew",
-+					    "miphy-ctrl-glue",
-+					    "miphy-status-glue",
-+					    "pcie-glue",
-+					    "sata-glue";
-+				#phy-cells = <1>;
-+
-+				reset-names = "miphy-sw-rst";
-+				resets = <&softreset STIH407_MIPHY1_SOFTRESET>;
-+			};
-+
-+			phy_port2: port@8f95000 {
-+				reg = <0x8f95000 0xff>,
-+				      <0x8f90000 0xff>,
-+				      <0x11c 0x4>,
-+				      <0x820 0x4>;
-+				reg-names = "pipew",
-+				    "usb3-up",
-+				    "miphy-ctrl-glue",
-+				    "miphy-status-glue";
-+				#phy-cells = <1>;
-+
-+				reset-names = "miphy-sw-rst";
-+				resets = <&softreset STIH407_MIPHY2_SOFTRESET>;
-+			};
-+		};
- 	};
- };
+@@ -88,8 +90,8 @@ INT vendorextnIoctl(struct bcm_mini_adapter *Adapter, UINT cmd, ULONG arg)
+  *		STATUS_SUCCESS/STATUS_FAILURE
+  */
+ 
+-INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
+-			UINT offset, UINT numOfBytes)
++INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer,
++	enum bcm_flash2x_section_val SectionVal, UINT offset, UINT numOfBytes)
+ {
+ 	return STATUS_FAILURE;
+ }
+@@ -112,8 +114,9 @@ INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_sect
+  * Returns:
+  *		STATUS_SUCCESS/STATUS_FAILURE
+  */
+-INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
+-			UINT offset, UINT numOfBytes, bool bVerify)
++INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer,
++	enum bcm_flash2x_section_val SectionVal, UINT offset,
++	UINT numOfBytes, bool bVerify)
+ {
+ 	return STATUS_FAILURE;
+ }
+@@ -135,8 +138,8 @@ INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_sec
+  * Returns:
+  *		STATUS_SUCCESS/STATUS_FAILURE
+  */
+-INT vendorextnWriteSectionWithoutErase(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
+-			UINT offset, UINT numOfBytes)
++INT vendorextnWriteSectionWithoutErase(PVOID  pContext, PUCHAR pBuffer,
++	enum bcm_flash2x_section_val SectionVal, UINT offset, UINT numOfBytes)
+ {
+ 	return STATUS_FAILURE;
+ }
 -- 
-1.9.1
+1.7.1
 
