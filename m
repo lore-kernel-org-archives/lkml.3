@@ -1,134 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518AbaHMIcG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:32:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368AbaHMIcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:32:04 -0400
-Message-ID: <53EB2271.1080002@redhat.com>
-Date: Wed, 13 Aug 2014 10:31:45 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751589AbaHMIdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:33:45 -0400
+Received: from cluster-d.mailcontrol.com ([85.115.60.190]:51997 "EHLO
+	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145AbaHMIdn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 04:33:43 -0400
+X-PGP-Universal: processed;
+	by shaapppus01.asia.root.pri on Wed, 13 Aug 2014 16:33:05 +0800
+From: Rongjun Ying <rongjun.ying@csr.com>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Barry Song <baohua@kernel.org>, Arnd Bergmann <arnd@arndb.de>
+CC: <alsa-devel@alsa-project.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <Workgroup.linux@csr.com>,
+        Rongjun Ying <rongjun.ying@csr.com>
+Subject: [PATCH 1/1] ASoC: sirf: usp: Add bitclock inversion support
+Date: Wed, 13 Aug 2014 16:31:40 +0800
+Message-ID: <1407918700-23972-1-git-send-email-rongjun.ying@csr.com>
+X-Mailer: git-send-email 2.0.4
 MIME-Version: 1.0
-To: Chao Yu <chao2.yu@samsung.com>, minchan@kernel.org
-CC: ngupta@vflare.org, linux-kernel@vger.kernel.org,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
-References: <009001cfb69a$a8470840$f8d518c0$@samsung.com>
-In-Reply-To: <009001cfb69a$a8470840$f8d518c0$@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="XKvbmKNatH66kcgbGqdclrm0ju1we9sP3"
+X-Originating-IP: [10.125.12.180]
+X-CFilter-Loop: Reflected
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---XKvbmKNatH66kcgbGqdclrm0ju1we9sP3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
+---
+ sound/soc/sirf/sirf-usp.c | 24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
-On 08/13/2014 04:01 AM, Chao Yu wrote:
-> Since we allocate a temporary buffer in zram_bvec_read to handle partia=
-l page
-> operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Sta=
-ging:
-> zram: allow partial page operations), our ->failed_reads value may be i=
-ncorrect
-> as we do not increase its value when failed to allocate the temporary b=
-uffer.
->=20
-> Let's fix this issue and correct the annotation of failed_reads.
->=20
->  v2: clean codes of failed_{reads,writes} stat pointed out by Minchan K=
-im, and
-> this cleanup also fix incorrectly stat when fail in zram_decompress_pag=
-e.
->=20
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-
-> ---
->  drivers/block/zram/zram_drv.c | 10 +++++++---
->  drivers/block/zram/zram_drv.h |  2 +-
->  2 files changed, 8 insertions(+), 4 deletions(-)
->=20
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_dr=
-v.c
-> index dfa4024..d00831c 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -378,7 +378,6 @@ static int zram_decompress_page(struct zram *zram, =
-char *mem, u32 index)
->  	/* Should NEVER happen. Return bio error if it does. */
->  	if (unlikely(ret)) {
->  		pr_err("Decompression failed! err=3D%d, page=3D%u\n", ret, index);
-> -		atomic64_inc(&zram->stats.failed_reads);
->  		return ret;
->  	}
-> =20
-> @@ -547,8 +546,6 @@ out:
->  		zcomp_strm_release(zram->comp, zstrm);
->  	if (is_partial_io(bvec))
->  		kfree(uncmem);
-> -	if (ret)
-> -		atomic64_inc(&zram->stats.failed_writes);
->  	return ret;
->  }
-> =20
-> @@ -566,6 +563,13 @@ static int zram_bvec_rw(struct zram *zram, struct =
-bio_vec *bvec, u32 index,
->  		ret =3D zram_bvec_write(zram, bvec, index, offset);
->  	}
-> =20
-> +	if (unlikely(ret)) {
-> +		if (rw =3D=3D READ)
-> +			atomic64_inc(&zram->stats.failed_reads);
-> +		else
-> +			atomic64_inc(&zram->stats.failed_writes);
-> +	}
-> +
->  	return ret;
->  }
-> =20
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_dr=
-v.h
-> index 5b0afde..e0f725c 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -84,7 +84,7 @@ struct zram_stats {
->  	atomic64_t compr_data_size;	/* compressed size of pages stored */
->  	atomic64_t num_reads;	/* failed + successful */
->  	atomic64_t num_writes;	/* --do-- */
-> -	atomic64_t failed_reads;	/* should NEVER! happen */
-> +	atomic64_t failed_reads;	/* can happen when memory is too low */
->  	atomic64_t failed_writes;	/* can happen when memory is too low */
->  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
->  	atomic64_t notify_free;	/* no. of swap slot free notifications */
->=20
+diff --git a/sound/soc/sirf/sirf-usp.c b/sound/soc/sirf/sirf-usp.c
+index 3a73037..186dc7f 100644
+--- a/sound/soc/sirf/sirf-usp.c
++++ b/sound/soc/sirf/sirf-usp.c
+@@ -100,6 +100,16 @@ static int sirf_usp_pcm_set_dai_fmt(struct snd_soc_dai *dai,
+ 		return -EINVAL;
+ 	}
+ 
++	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
++	case SND_SOC_DAIFMT_NB_NF:
++		break;
++	case SND_SOC_DAIFMT_IB_NF:
++		usp->daifmt_format |= (fmt & SND_SOC_DAIFMT_INV_MASK);
++		break;
++	default:
++		return -EINVAL;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -177,7 +187,7 @@ static int sirf_usp_pcm_hw_params(struct snd_pcm_substream *substream,
+ 
+ 	shifter_len = data_len;
+ 
+-	switch (usp->daifmt_format) {
++	switch (usp->daifmt_format & SND_SOC_DAIFMT_FORMAT_MASK) {
+ 	case SND_SOC_DAIFMT_I2S:
+ 		regmap_update_bits(usp->regmap, USP_RX_FRAME_CTRL,
+ 			USP_I2S_SYNC_CHG, USP_I2S_SYNC_CHG);
+@@ -193,6 +203,18 @@ static int sirf_usp_pcm_hw_params(struct snd_pcm_substream *substream,
+ 		return -EINVAL;
+ 	}
+ 
++	switch (usp->daifmt_format & SND_SOC_DAIFMT_INV_MASK) {
++	case SND_SOC_DAIFMT_NB_NF:
++		break;
++	case SND_SOC_DAIFMT_IB_NF:
++		regmap_update_bits(usp->regmap, USP_MODE1,
++			USP_RXD_ACT_EDGE_FALLING | USP_TXD_ACT_EDGE_FALLING,
++			USP_RXD_ACT_EDGE_FALLING);
++		break;
++	default:
++		return -EINVAL;
++	}
++
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+ 		regmap_update_bits(usp->regmap, USP_TX_FRAME_CTRL,
+ 			USP_TXC_DATA_LEN_MASK | USP_TXC_FRAME_LEN_MASK
+-- 
+2.0.4
 
 
 
---XKvbmKNatH66kcgbGqdclrm0ju1we9sP3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBAgAGBQJT6yJxAAoJEHTzHJCtsuoCPv8H/35+Th3G3iiOSAD9c4dqBJE0
-tLRTQnFE0RBUlk/r266FQrxF6gtU2je+TZhlk8Uvcg5VS6/M8QVd0KUFkxy4EyDk
-8od9DnTe5xMPtR0uHjAqynDYjcYClMXAdbfmtc5GURQzc4lKo9tc7ZOrUVUibD0e
-mOKQ74AKTd/Jx2rrTq1EbdcyJkR1yzRD06P3rHJF1yCsSQ/Em/n2R8gsS8K331Kp
-8dA2kyMAryY0hxqVtSWmMjyROxRA4l+ZpcRB0wH8rGQp9aa4Sam5ZVuXHNAX6b63
-Mn+Vt9WpCDvp8nl5xVZNtTLufQwXHV6+d4OhdetQ6xKYGUjj2takdYaM4yIQo9s=
-=NHM/
------END PGP SIGNATURE-----
-
---XKvbmKNatH66kcgbGqdclrm0ju1we9sP3--
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Keep up to date with CSR on our technical blog, www.csr.com/blog, CSR people blog, www.csr.com/people, YouTube, www.youtube.com/user/CSRplc, Facebook, www.facebook.com/pages/CSR/191038434253534, or follow us on Twitter at www.twitter.com/CSR_plc.
+New for 2014, you can now access the wide range of products powered by aptX at www.aptx.com.
