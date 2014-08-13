@@ -1,206 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455AbaHMIOu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:14:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31299 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944AbaHMIOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:14:46 -0400
-Date: Wed, 13 Aug 2014 16:13:47 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Matt Fleming <matt.fleming@intel.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Mark Salter <msalter@redhat.com>, Randy Dunlap <rdunlap@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-efi@vger.kernel.org, rtc-linux@googlegroups.com
-Subject: Re: [PATCH 2/5] efi: add kernel param efi=noruntime
-Message-ID: <20140813081347.GA3977@darkstar.nay.redhat.com>
-References: <1407823822-23829-1-git-send-email-dyoung@redhat.com>
- <1407823822-23829-2-git-send-email-dyoung@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407823822-23829-2-git-send-email-dyoung@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752648AbaHMIQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:16:08 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:56796 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718AbaHMH6D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 03:58:03 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC v4 net-next 04/26] bpf: enable bpf syscall on x64
+Date: Wed, 13 Aug 2014 00:57:15 -0700
+Message-Id: <1407916658-8731-5-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/14 at 02:10pm, Dave Young wrote:
-> noefi kernel param means actually disabling efi runtime, Per suggestion from
-> Leif Lindholm efi=noruntime should be better. But since noefi is already used
-> in X86 thus just adding another param efi=noruntime for same purpose.
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  Documentation/kernel-parameters.txt |  4 +++-
->  arch/x86/platform/efi/efi.c         | 12 ------------
->  drivers/firmware/efi/efi.c          | 22 ++++++++++++++++++++++
->  3 files changed, 25 insertions(+), 13 deletions(-)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index a8eb6af..09d8c54 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -992,11 +992,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			Format: {"off" | "on" | "skip[mbr]"}
->  
->  	efi=		[EFI]
-> -			Format: { "old_map" }
-> +			Format: { "old_map" | "noruntime" }
->  			old_map [X86-64]: switch to the old ioremap-based EFI
->  			runtime services mapping. 32-bit still uses this one by
->  			default.
->  
-> +			noruntime : disable EFI runtime services support
-> +
->  	efi_no_storage_paranoia [EFI; X86]
->  			Using this parameter you can use more than 50% of
->  			your efi variable storage. Use this parameter only if
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> index dd7aaa1..eae91be 100644
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -929,15 +929,3 @@ u64 efi_mem_attributes(unsigned long phys_addr)
->  	}
->  	return 0;
->  }
-> -
-> -static int __init parse_efi_cmdline(char *str)
-> -{
-> -	if (*str == '=')
-> -		str++;
-> -
-> -	if (!strncmp(str, "old_map", 7))
-> -		set_bit(EFI_OLD_MEMMAP, &efi.flags);
-> -
-> -	return 0;
-> -}
-> -early_param("efi", parse_efi_cmdline);
-> diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
-> index c8f01a7..f3ec3f2 100644
-> --- a/drivers/firmware/efi/efi.c
-> +++ b/drivers/firmware/efi/efi.c
-> @@ -24,6 +24,7 @@
->  #include <linux/of_fdt.h>
->  #include <linux/io.h>
->  #include <linux/platform_device.h>
-> +#include <asm/efi.h>
->  
->  struct efi __read_mostly efi = {
->  	.mps        = EFI_INVALID_TABLE_ADDR,
-> @@ -54,6 +55,27 @@ bool efi_runtime_disabled(void)
->  	return disable_runtime;
->  }
->  
-> +static int __init parse_efi_cmdline(char *str)
-> +{
-> +	if (*str == '=')
-> +		str++;
-> +
-> +#ifdef CONFIG_X86
-> +	if (!strncmp(str, "old_map", 7)) {
-> +		set_bit(EFI_OLD_MEMMAP, &efi.flags);
-> +		goto out;
-> +	}
-> +#endif
-> +	if (!strncmp(str, "noruntime", 9)) {
-> +		disable_runtime = true;
-> +		goto out;
-> +	}
-> +
+done as separate commit to ease conflict resolution
 
-For sharing functions I moved old_map here, but rethinking about it maybe
-it's better to keep it in arch code.
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ arch/x86/syscalls/syscall_64.tbl  |    1 +
+ include/linux/syscalls.h          |    3 ++-
+ include/uapi/asm-generic/unistd.h |    4 +++-
+ kernel/sys_ni.c                   |    3 +++
+ 4 files changed, 9 insertions(+), 2 deletions(-)
 
-Matt, I see you have some code for libstub option parsing, I will rebase
-on your efi/next and I'm thinking to add a generic function for parsing
-params like below (for old_map, but libstub can not use it):
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index 252c804bb1aa..1416e32f20f1 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -325,6 +325,7 @@
+ 316	common	renameat2		sys_renameat2
+ 317	common	seccomp			sys_seccomp
+ 318	common	getrandom		sys_getrandom
++319	common	bpf			sys_bpf
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 701daff5d899..cc2e197e0875 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -870,5 +870,6 @@ asmlinkage long sys_seccomp(unsigned int op, unsigned int flags,
+ 			    const char __user *uargs);
+ asmlinkage long sys_getrandom(char __user *buf, size_t count,
+ 			      unsigned int flags);
+-
++asmlinkage long sys_bpf(int cmd, unsigned long arg2, unsigned long arg3,
++			unsigned long arg4, unsigned long arg5);
+ #endif
+diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
+index f1afd607f043..3b625b281804 100644
+--- a/include/uapi/asm-generic/unistd.h
++++ b/include/uapi/asm-generic/unistd.h
+@@ -703,9 +703,11 @@ __SYSCALL(__NR_renameat2, sys_renameat2)
+ __SYSCALL(__NR_seccomp, sys_seccomp)
+ #define __NR_getrandom 278
+ __SYSCALL(__NR_getrandom, sys_getrandom)
++#define __NR_bpf 279
++__SYSCALL(__NR_bpf, sys_bpf)
+ 
+ #undef __NR_syscalls
+-#define __NR_syscalls 279
++#define __NR_syscalls 280
+ 
+ /*
+  * All syscalls below here should go away really,
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index 2904a2105914..d67ab4e618f7 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -216,3 +216,6 @@ cond_syscall(sys_kcmp);
+ 
+ /* operate on Secure Computing state */
+ cond_syscall(sys_seccomp);
++
++/* access BPF programs and maps */
++cond_syscall(sys_bpf);
+-- 
+1.7.9.5
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index c90d3cd..c73a7df5 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -932,26 +932,8 @@ u64 efi_mem_attributes(unsigned long phys_addr)
- 
- static int __init parse_efi_cmdline(char *str)
- {
--	if (*str == '=')
--		str++;
--
--	while (*str) {
--		if (!strncmp(str, "old_map", 7)) {
--			set_bit(EFI_OLD_MEMMAP, &efi.flags);
--			str += strlen("old_map");
--		}
--
--		/*
--		 * Skip any options we don't understand. Presumably
--		 * they apply to the EFI boot stub.
--		 */
--		while (*str && *str != ',')
--			str++;
--
--		/* If we hit a delimiter, skip it */
--		if (*str == ',')
--			str++;
--	}
-+	if (parse_option_str(str, "old_map"))
-+		set_bit(EFI_OLD_MEMMAP, &efi.flags);
- 
- 	return 0;
- }
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 4c52907..d612718 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -407,6 +407,7 @@ int vsscanf(const char *, const char *, va_list);
- extern int get_option(char **str, int *pint);
- extern char *get_options(const char *str, int nints, int *ints);
- extern unsigned long long memparse(const char *ptr, char **retptr);
-+extern bool parse_option_str(const char *str, const char *option);
- 
- extern int core_kernel_text(unsigned long addr);
- extern int core_kernel_data(unsigned long addr);
-diff --git a/lib/cmdline.c b/lib/cmdline.c
-index d4932f7..f384125 100644
---- a/lib/cmdline.c
-+++ b/lib/cmdline.c
-@@ -155,3 +155,32 @@ unsigned long long memparse(const char *ptr, char **retptr)
- 	return ret;
- }
- EXPORT_SYMBOL(memparse);
-+
-+/**
-+ *	parse_option_str - Parse a string and check an option is set or not 
-+ *	@str: String to be parsed
-+ *	@option: the option name
-+ *
-+ *	This function parses a string containing a comma-separated
-+ *	list of strings like a=b,c.
-+ *
-+ *	Return true if there's such option in the string, or return false.
-+ */
-++bool parse_option_str(const char *str, const char *option)
-+{
-+	while (*str) {
-+		if (!strncmp(str, option, strlen(option))) {
-+			str += strlen(option);
-+			if (!*str || *str == ',')
-+				return true;
-+		}
-+
-+		while (*str && *str != ',')
-+			str++;
-+
-+		if (*str == ',')
-+			str++;
-+	}
-+
-+	return false;
-+}
