@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaHMTlA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 15:41:00 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:62426 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaHMTk7 (ORCPT
+	id S1752596AbaHMTqO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 15:46:14 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46644 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaHMTqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 15:40:59 -0400
-Date: Wed, 13 Aug 2014 12:40:47 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Gregory Fong <gregory.0xf0@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, Matt Porter <mporter@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Marc Carino <marc.ceeeee@gmail.com>,
-        Kevin Cernekee <cernekee@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: drop ISAR0 workaround for B15
-Message-ID: <20140813194047.GA18411@ld-irv-0074>
-References: <1407797053-12544-1-git-send-email-gregory.0xf0@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407797053-12544-1-git-send-email-gregory.0xf0@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Aug 2014 15:46:12 -0400
+Date: Wed, 13 Aug 2014 12:46:11 -0700 (PDT)
+Message-Id: <20140813.124611.767426770013677.davem@davemloft.net>
+To: mroos@linux.ee
+Cc: aaro.koskinen@iki.fi, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hughd@google.com,
+        cat.schulze@alice-dsl.net
+Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.SOC.1.00.1408131327250.18696@math.ut.ee>
+References: <alpine.SOC.1.00.1407310101550.2065@math.ut.ee>
+	<20140730.150722.861254999466992321.davem@davemloft.net>
+	<alpine.SOC.1.00.1408131327250.18696@math.ut.ee>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 13 Aug 2014 12:46:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Brahma-B15's ISAR0 correcty advertises UDIV/SDIV support in both ARM
-and Thumb2 modes (CPUID_EXT_ISAR0=02101110), so we don't need to
-manually apply this hwcap.
+From: Meelis Roos <mroos@linux.ee>
+Date: Wed, 13 Aug 2014 14:44:42 +0300 (EEST)
 
-The code in question actually predates the following commit, which made
-our hwcaps unnecessary:
+> Did not test current git more.
 
-    commit 8164f7af88d9ad3a757bd14f634b23997ee77f6b
-    Author: Stephen Boyd <sboyd@codeaurora.org>
-    Date:   Mon Mar 18 19:44:15 2013 +0100
+Current git fails to boot without this fix which I posted the other
+day:
 
-        ARM: 7680/1: Detect support for SDIV/UDIV from ISAR0 register
+====================
+[PATCH 1/2] sparc64: Do not disable interrupts in nmi_cpu_busy()
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
+nmi_cpu_busy() is a SMP function call that just makes sure that all of the
+cpus are spinning using cpu cycles while the NMI test runs.
+
+It does not need to disable IRQs because we just care about NMIs executing
+which will even with 'normal' IRQs disabled.
+
+It is not legal to enable hard IRQs in a SMP cross call, in fact this bug
+triggers the BUG check in irq_work_run_list():
+
+	BUG_ON(!irqs_disabled());
+
+Because now irq_work_run() is invoked from the tail of
+generic_smp_call_function_single_interrupt().
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
-Supersedes Gregory's previous patch.
+ arch/sparc/kernel/nmi.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-This addresses some very old review comments from Mark and Will:
-
-  http://lists.infradead.org/pipermail/linux-arm-kernel/2014-January/225895.html
-  http://lists.infradead.org/pipermail/linux-arm-kernel/2014-January/227916.html
-
- arch/arm/mm/proc-v7.S | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-index b5d67db20897..b3a947863ac7 100644
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -570,7 +570,7 @@ __v7_ca15mp_proc_info:
- __v7_b15mp_proc_info:
- 	.long	0x420f00f0
- 	.long	0xff0ffff0
--	__v7_proc __v7_b15mp_setup, hwcaps = HWCAP_IDIV
-+	__v7_proc __v7_b15mp_setup
- 	.size	__v7_b15mp_proc_info, . - __v7_b15mp_proc_info
+diff --git a/arch/sparc/kernel/nmi.c b/arch/sparc/kernel/nmi.c
+index 3370945..5b1151d 100644
+--- a/arch/sparc/kernel/nmi.c
++++ b/arch/sparc/kernel/nmi.c
+@@ -130,7 +130,6 @@ static inline unsigned int get_nmi_count(int cpu)
  
- 	/*
+ static __init void nmi_cpu_busy(void *data)
+ {
+-	local_irq_enable_in_hardirq();
+ 	while (endflag == 0)
+ 		mb();
+ }
 -- 
-1.9.1
+1.7.11.7
+
