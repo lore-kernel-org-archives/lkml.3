@@ -1,164 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698AbaHMN5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 09:57:25 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39774 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbaHMN5Y (ORCPT
+	id S1752863AbaHMOAR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:00:17 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:62160 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557AbaHMOAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 09:57:24 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>
-Subject: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call into scheduler
-Date: Wed, 13 Aug 2014 06:57:18 -0700
-Message-Id: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
+	Wed, 13 Aug 2014 10:00:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <1407225723-23754-2-git-send-email-minchan@kernel.org>
+References: <1407225723-23754-1-git-send-email-minchan@kernel.org> <1407225723-23754-2-git-send-email-minchan@kernel.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Wed, 13 Aug 2014 09:59:52 -0400
+X-Google-Sender-Auth: d1Z9A0uQG0fxEB4WfTQyv20Ws0Y
+Message-ID: <CALZtONDmvLDtceVW9AyiDwdSHQzPbay36JEts8iuZ4nvykWfeA@mail.gmail.com>
+Subject: Re: [RFC 1/3] zsmalloc: move pages_allocated to zs_pool
+To: Minchan Kim <minchan@kernel.org>
+Cc: Linux-MM <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
-2012-04-12) introduced an acquisition of the irq_controller_lock
-in gic_raise_softirq() which can lead to a spinlock recursion if
-the gic_arch_extn hooks call into the scheduler (via complete()
-or wake_up(), etc.). This happens because gic_arch_extn hooks are
-normally called with the irq_controller_lock held and calling
-into the scheduler may cause us to call smp_send_reschedule()
-which will grab the irq_controller_lock again. Here's an example
-from a vendor kernel (note that the gic_arch_extn hook code here
-isn't actually in mainline):
+On Tue, Aug 5, 2014 at 4:02 AM, Minchan Kim <minchan@kernel.org> wrote:
+> Pages_allocated has counted in size_class structure and when user
+> want to see total_size_bytes, it gathers all of value from each
+> size_class to report the sum.
+>
+> It's not bad if user don't see the value often but if user start
+> to see the value frequently, it would be not a good deal for
+> performance POV.
+>
+> This patch moves the variable from size_class to zs_pool so it would
+> reduce memory footprint (from [255 * 8byte] to [sizeof(atomic_t)])
+> but it adds new locking overhead but it wouldn't be severe because
+> it's not a hot path in zs_malloc(ie, it is called only when new
+> zspage is created, not a object).
 
-BUG: spinlock recursion on CPU#0, swapper/0/1
- lock: irq_controller_lock+0x0/0x18, .magic: dead4ead, .owner: sw
-er_cpu: 0
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.10-00430-g3d433c4e
+Would using an atomic64_t without locking be simpler?
 
-Call trace:
-[<ffffffc000087e1c>] dump_backtrace+0x0/0x140
-[<ffffffc000087f6c>] show_stack+0x10/0x1c
-[<ffffffc00064732c>] dump_stack+0x74/0xc4
-[<ffffffc0006446c0>] spin_dump+0x78/0x88
-[<ffffffc0006446f4>] spin_bug+0x24/0x34
-[<ffffffc0000d47d0>] do_raw_spin_lock+0x58/0x148
-[<ffffffc00064d398>] _raw_spin_lock_irqsave+0x24/0x38
-[<ffffffc0002c9d7c>] gic_raise_softirq+0x2c/0xbc
-[<ffffffc00008daa4>] smp_send_reschedule+0x34/0x40
-[<ffffffc0000c1e94>] try_to_wake_up+0x224/0x288
-[<ffffffc0000c1f4c>] default_wake_function+0xc/0x18
-[<ffffffc0000ceef0>] __wake_up_common+0x50/0x8c
-[<ffffffc0000cef3c>] __wake_up_locked+0x10/0x1c
-[<ffffffc0000cf734>] complete+0x3c/0x5c
-[<ffffffc0002f0e78>] msm_mpm_enable_irq_exclusive+0x1b8/0x1c8
-[<ffffffc0002f0f58>] __msm_mpm_enable_irq+0x4c/0x7c
-[<ffffffc0002f0f94>] msm_mpm_enable_irq+0xc/0x18
-[<ffffffc0002c9bb0>] gic_unmask_irq+0x40/0x7c
-[<ffffffc0000de5f4>] irq_enable+0x2c/0x48
-[<ffffffc0000de65c>] irq_startup+0x4c/0x74
-[<ffffffc0000dd2fc>] __setup_irq+0x264/0x3f0
-[<ffffffc0000dd5e0>] request_threaded_irq+0xcc/0x11c
-[<ffffffc0000df254>] devm_request_threaded_irq+0x68/0xb4
-[<ffffffc000471520>] msm_iommu_ctx_probe+0x124/0x2d4
-[<ffffffc000337374>] platform_drv_probe+0x20/0x54
-[<ffffffc00033598c>] driver_probe_device+0x158/0x340
-[<ffffffc000335c20>] __driver_attach+0x60/0x90
-[<ffffffc000333c9c>] bus_for_each_dev+0x6c/0x8c
-[<ffffffc000335304>] driver_attach+0x1c/0x28
-[<ffffffc000334f14>] bus_add_driver+0x120/0x204
-[<ffffffc0003362e4>] driver_register+0xbc/0x10c
-[<ffffffc000337348>] __platform_driver_register+0x5c/0x68
-[<ffffffc00094c478>] msm_iommu_driver_init+0x54/0x7c
-[<ffffffc0000813ec>] do_one_initcall+0xa4/0x130
-[<ffffffc00091d928>] kernel_init_freeable+0x138/0x1dc
-[<ffffffc000642578>] kernel_init+0xc/0xd4
-
-We really just want to synchronize the sending of an SGI with the
-update of the gic_cpu_map[], so introduce a new SGI lock that we
-can use to synchronize the two code paths. Three main events are
-happening that we have to consider:
-
-	1. We're updating the gic_cpu_mask to point to an
-	incoming CPU
-
-	2. We're (potentially) sending an SGI to the outgoing CPU
-
-	3. We're redirecting any pending SGIs for the outgoing
-	CPU to the incoming CPU.
-
-Events 1 and 3 are already ordered within the same CPU by means
-of program order and use of I/O accessors. Events 1 and 2 don't
-need to be ordered, but events 2 and 3 do because any SGIs for
-the outgoing CPU need to be pending before we can redirect them.
-Synchronize by acquiring a new lock around event 2 and before
-event 3. Use smp_mb__after_unlock_lock() before event 3 to ensure
-that event 1 is seen before event 3 on other CPUs that may be
-executing event 2. We put this all behind the b.L switcher config
-option so that if we're not using this feature we don't have to
-acquire any locks at all in the IPI path.
-
-Cc: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/irqchip/irq-gic.c | 23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 7c131cf7cc13..b9e669cb1c1e 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -81,6 +81,16 @@ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
- #define NR_GIC_CPU_IF 8
- static u8 gic_cpu_map[NR_GIC_CPU_IF] __read_mostly;
- 
-+#ifdef CONFIG_BL_SWITCHER
-+/* Synchronize switching CPU interface and sending SGIs */
-+static DEFINE_RAW_SPINLOCK(gic_sgi_lock);
-+#define sgi_map_lock(flags) raw_spin_lock_irqsave(&gic_sgi_lock, flags)
-+#define sgi_map_unlock(flags) raw_spin_unlock_irqrestore(&gic_sgi_lock, flags)
-+#else
-+#define sgi_map_lock(flags) (void)(flags)
-+#define sgi_map_unlock(flags) (void)(flags)
-+#endif
-+
- /*
-  * Supported arch specific GIC irq extension.
-  * Default make them NULL.
-@@ -658,7 +668,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	int cpu;
- 	unsigned long flags, map = 0;
- 
--	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-+	sgi_map_lock(flags);
- 
- 	/* Convert our logical CPU mask into a physical one. */
- 	for_each_cpu(cpu, mask)
-@@ -673,7 +683,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	/* this always happens on GIC0 */
- 	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
- 
--	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-+	sgi_map_unlock(flags);
- }
- #endif
- 
-@@ -764,6 +774,15 @@ void gic_migrate_target(unsigned int new_cpu_id)
- 
- 	raw_spin_unlock(&irq_controller_lock);
- 
-+	raw_spin_lock(&gic_sgi_lock);
-+	/*
-+	 * Ensure that the gic_cpu_map update above is seen in
-+	 * gic_raise_softirq() before we redirect any pending SGIs that
-+	 * may have been raised for the outgoing CPU (cur_cpu_id)
-+	 */
-+	smp_mb__after_unlock_lock();
-+	raw_spin_unlock(&gic_sgi_lock);
-+
- 	/*
- 	 * Now let's migrate and clear any potential SGIs that might be
- 	 * pending for us (cur_cpu_id).  Since GIC_DIST_SGI_PENDING_SET
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  mm/zsmalloc.c | 30 ++++++++++++++++--------------
+>  1 file changed, 16 insertions(+), 14 deletions(-)
+>
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index fe78189624cf..a6089bd26621 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -198,9 +198,6 @@ struct size_class {
+>
+>         spinlock_t lock;
+>
+> -       /* stats */
+> -       u64 pages_allocated;
+> -
+>         struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
+>  };
+>
+> @@ -216,9 +213,12 @@ struct link_free {
+>  };
+>
+>  struct zs_pool {
+> +       spinlock_t stat_lock;
+> +
+>         struct size_class size_class[ZS_SIZE_CLASSES];
+>
+>         gfp_t flags;    /* allocation flags used when growing pool */
+> +       unsigned long pages_allocated;
+>  };
+>
+>  /*
+> @@ -882,6 +882,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+>
+>         }
+>
+> +       spin_lock_init(&pool->stat_lock);
+>         pool->flags = flags;
+>
+>         return pool;
+> @@ -943,8 +944,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+>                         return 0;
+>
+>                 set_zspage_mapping(first_page, class->index, ZS_EMPTY);
+> +               spin_lock(&pool->stat_lock);
+> +               pool->pages_allocated += class->pages_per_zspage;
+> +               spin_unlock(&pool->stat_lock);
+>                 spin_lock(&class->lock);
+> -               class->pages_allocated += class->pages_per_zspage;
+>         }
+>
+>         obj = (unsigned long)first_page->freelist;
+> @@ -997,14 +1000,14 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+>
+>         first_page->inuse--;
+>         fullness = fix_fullness_group(pool, first_page);
+> -
+> -       if (fullness == ZS_EMPTY)
+> -               class->pages_allocated -= class->pages_per_zspage;
+> -
+>         spin_unlock(&class->lock);
+>
+> -       if (fullness == ZS_EMPTY)
+> +       if (fullness == ZS_EMPTY) {
+> +               spin_lock(&pool->stat_lock);
+> +               pool->pages_allocated -= class->pages_per_zspage;
+> +               spin_unlock(&pool->stat_lock);
+>                 free_zspage(first_page);
+> +       }
+>  }
+>  EXPORT_SYMBOL_GPL(zs_free);
+>
+> @@ -1100,12 +1103,11 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
+>
+>  u64 zs_get_total_size_bytes(struct zs_pool *pool)
+>  {
+> -       int i;
+> -       u64 npages = 0;
+> -
+> -       for (i = 0; i < ZS_SIZE_CLASSES; i++)
+> -               npages += pool->size_class[i].pages_allocated;
+> +       u64 npages;
+>
+> +       spin_lock(&pool->stat_lock);
+> +       npages = pool->pages_allocated;
+> +       spin_unlock(&pool->stat_lock);
+>         return npages << PAGE_SHIFT;
+>  }
+>  EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
+> --
+> 2.0.0
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
