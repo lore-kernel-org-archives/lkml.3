@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538AbaHMQOR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 12:14:17 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:51928 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175AbaHMQOO (ORCPT
+	id S1753422AbaHMQQG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 12:16:06 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57360 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749AbaHMQQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 12:14:14 -0400
-Date: Wed, 13 Aug 2014 09:14:11 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Nick Dyer <nick.dyer@itdev.co.uk>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-input@vger.kernel.org,
-        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
-        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: atmel_mxt_ts - fix a few issues reported by
- Coverity
-Message-ID: <20140813161410.GA14682@core.coreip.homeip.net>
-References: <20140811180307.GA25677@core.coreip.homeip.net>
- <53EA431F.6020908@itdev.co.uk>
- <53EA43A4.2070301@wwwdotorg.org>
- <53EA8260.4020306@itdev.co.uk>
+	Wed, 13 Aug 2014 12:16:03 -0400
+Message-ID: <53EB8F50.7090505@wwwdotorg.org>
+Date: Wed, 13 Aug 2014 10:16:16 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53EA8260.4020306@itdev.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>
+CC: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] ARM: dts: Add tps65090 FETs constraints
+References: <1407861868-20097-1-git-send-email-javier.martinez@collabora.co.uk> <1407861868-20097-7-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1407861868-20097-7-git-send-email-javier.martinez@collabora.co.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 10:08:48PM +0100, Nick Dyer wrote:
-> On 12/08/14 17:41, Stephen Warren wrote:
-> >> I've reviewed these changes and they look correct to me. Apologies that
-> >> they slipped through, most of it is bad merging on my part I think.
-> >>
-> >> Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
-> > 
-> > Don't you mean Acked-by or Reviewed-by?
-> 
-> You are right, Acked-by is probably more appropriate in this case.
+On 08/12/2014 10:44 AM, Javier Martinez Canillas wrote:
+> The tps65090 PMU data manual [0] has a table that list the
+> "Recommended operating conditions" for each regulator. Add
+> the information about the FET constraints to its dtsi file.
+>
+> [0]: http://www.ti.com/lit/ds/symlink/tps65090.pdf
 
-OK, I put you as "asked-by" then.
+I'm worried that this file represents the limits of the PMIC itself, 
+whereas the DT should be representing the limits of the circuits that 
+the various PMIC regulators are attached to on the board.
 
-Thanks.
+For example:
 
--- 
-Dmitry
+> diff --git a/arch/arm/boot/dts/tps65090.dtsi b/arch/arm/boot/dts/tps65090.dtsi
+
+>   		tps65090_fet3: fet3 {
+> +			regulator-min-microvolt = <3000000>;
+> +			regulator-max-microvolt = <5500000>;
+>   		};
+
+I guess that on some boards, this output rail might be attached to 
+devices that must run at 3.3V exactly, and on other boards it might be 
+attached to devices that must run at 5V exactly. The DT for those two 
+boards should each have regulator-{min,max}-microvolt set to the same 
+value, which describes the board requirements.
+
+It feels dangerous/misleading to define the PMIC range by default. It 
+might lead people to think that since the property already has a defined 
+value, they don't need to think about what the correct value for their 
+board is, and hence not change the value in their board file.
