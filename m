@@ -1,112 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbaHMI5f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:57:35 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:57703 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaHMI5c (ORCPT
+	id S1751865AbaHMI5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:57:53 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43590 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429AbaHMI5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:57:32 -0400
-Date: Wed, 13 Aug 2014 10:57:29 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Thermal reset support in PMC
-Message-ID: <20140813085728.GF7735@ulmo>
-References: <1407226380-747-1-git-send-email-mperttunen@nvidia.com>
- <20140813080744.GD7735@ulmo>
- <53EB1DF5.301@nvidia.com>
- <53EB250D.5070207@nvidia.com>
+	Wed, 13 Aug 2014 04:57:51 -0400
+Date: Wed, 13 Aug 2014 10:57:35 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH] perf/x86/uncore: modularize Intel uncore driver
+Message-ID: <20140813085735.GE9918@twins.programming.kicks-ass.net>
+References: <1407919754-10421-1-git-send-email-zheng.z.yan@intel.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="27ZtN5FSuKKSZcBU"
+	protocol="application/pgp-signature"; boundary="+O5NQwgs0eeb9wf2"
 Content-Disposition: inline
-In-Reply-To: <53EB250D.5070207@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1407919754-10421-1-git-send-email-zheng.z.yan@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---27ZtN5FSuKKSZcBU
+--+O5NQwgs0eeb9wf2
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Aug 13, 2014 at 11:42:53AM +0300, Mikko Perttunen wrote:
+On Wed, Aug 13, 2014 at 04:49:14PM +0800, Yan, Zheng wrote:
+> This patch adds support for building Intel uncore driver as module.
+> It adds clean-up code and config option for the Intel uncore driver.
 >=20
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> ---
+>  arch/x86/kernel/cpu/Makefile                  |  6 ++--
+>  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 48 +++++++++++++++++++++=
++++---
+>  init/Kconfig                                  | 15 +++++++++
+>  3 files changed, 63 insertions(+), 6 deletions(-)
 >=20
-> On 13/08/14 11:12, Mikko Perttunen wrote:
-> >On 13/08/14 11:07, Thierry Reding wrote:
-> >>* PGP Signed by an unknown key
-> >>
-> >>On Tue, Aug 05, 2014 at 11:12:57AM +0300, Mikko Perttunen wrote:
-> >>>Hi,
-> >>>
-> >>>this series adds support for hardware-triggered thermal reset to the P=
-MC
-> >>>driver. Namely, it adds device tree properties for specifying the I2C
-> >>>command to be sent when thermtrip is triggered. It is to be noted
-> >>>that thermtrip won't be ever triggered without a soctherm driver to
-> >>>calibrate the sensors, but I'll follow up with that patch.
-> >>>
-> >>>pmc.c required some juggling around to make the match data usable in
-> >>>probe, since I didn't want to put the code into the initcall either, s=
-ince
-> >>>the soctherm driver won't be initialized by that point anyway.
-> >>>
-> >>>Series tested on Jetson-TK1. Should work on Tegra30 and Tegra114 too.
-> >>
-> >>Can you describe the procedure used to test this? We currently have a
-> >>bunch of features in Tegra that some people have tested at some point
-> >>during development but the test procedures never got documented. That
-> >>means whenever we want to test something we need to go and reinvent a
-> >>bunch of tests after the fact.
-> >>
-> >>So what I'd like to start doing is collect tests (preferably in some
-> >>scripted way) so that they can be kept in a repository that people can
-> >>easily clone and run on devices.
-> >>
-> >>Could you provide something like that for thermtrip?
-> >
-> >Sure. I'll see if I can make a just a test script or if a local patch is
-> >needed to test. Btw, I also have a pretty nice test script for EMC
-> >ready, and I agree that such a repository would be very nice.
->=20
-> Here is a test program. It it works, the device with immediately shut dow=
-n.
->=20
-> https://gist.github.com/cyndis/66126c9c176b5f94a76f
+> diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+> index 7e1fd4e..2ef37fb 100644
+> --- a/arch/x86/kernel/cpu/Makefile
+> +++ b/arch/x86/kernel/cpu/Makefile
+> @@ -36,9 +36,11 @@ obj-$(CONFIG_CPU_SUP_AMD)		+=3D perf_event_amd_iommu.o
+>  endif
+>  obj-$(CONFIG_CPU_SUP_INTEL)		+=3D perf_event_p6.o perf_event_knc.o perf_=
+event_p4.o
+>  obj-$(CONFIG_CPU_SUP_INTEL)		+=3D perf_event_intel_lbr.o perf_event_inte=
+l_ds.o perf_event_intel.o
+> -obj-$(CONFIG_CPU_SUP_INTEL)		+=3D perf_event_intel_uncore.o perf_event_i=
+ntel_uncore_snb.o
+> -obj-$(CONFIG_CPU_SUP_INTEL)		+=3D perf_event_intel_uncore_snbep.o perf_e=
+vent_intel_uncore_nhmex.o
+>  obj-$(CONFIG_CPU_SUP_INTEL)		+=3D perf_event_intel_rapl.o
+> +
+> +obj-$(CONFIG_PERF_X86_INTEL_UNCORE)	+=3D perf_x86_intel_uncore.o
+> +perf_x86_intel_uncore-y			+=3D perf_event_intel_uncore.o perf_event_inte=
+l_uncore_snb.o
+> +perf_x86_intel_uncore-y			+=3D perf_event_intel_uncore_snbep.o perf_even=
+t_intel_uncore_nhmex.o
+>  endif
 
-Is there a way to set the trip temperature without going through
-/dev/mem? I'd expect the device to have a sysfs interface of some
-sort.
+Does it make sense to split it into 3 (or maybe 4) modules?
 
-Thierry
-
---27ZtN5FSuKKSZcBU
+--+O5NQwgs0eeb9wf2
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJT6yh4AAoJEN0jrNd/PrOhPy0QAIZoTCfTGGbdc/8u8eRIX6h9
-Ow9DihnbKM/x/PVZlNt2lg78LP3abY8tELRtRLnWAt78TKrH/UGbsUL9VDZ88/bm
-FCitUu7tP1hubFKGlQT6xIQbV2pfC0S9yjqCwDgaYG9wNjfvvrKMpb4nnH9bbe9b
-e1xs20YsAd0jBq6oM/eFbP9Q6n2nidoBqKBNKAJFsr0NfImvcjXsxTv45WJLil7z
-6S9H7Ix7jn7gg1s3FR9jONqE1jUm9v/VnifhMkCrImPzAa2R0dcrC0d4KcBReMKO
-l4aVz+582gaeoB/AFXj+u6ZJKoWmNP9W5i2m+JwHMYD6LzRLNcCp6po4pGa73mnV
-ywCeqCs2neiDxUFKOkZSEbOCTSLb9wgSC7poZGDGhKTXRyGYceN5oQ6BcBYs0P7t
-DM2k9u7joaClRoSABnXe9s/PKWReeECZ2HQkYPNJV2CyjXcLE+qEjck6h2pUxEx9
-G9ylJXtRs6LlRReqHc123+Sup82opm+H/ThiImedbmP1ETWBkqOOXgQ3704CF7ck
-lXLVGnT9hIP8I1gTGW+UpjffvZP9/XYESD9r82J4my7fTc0rLY0iFbZxGUvI0irL
-gX6s5nOnvmTQNnKDcRPtyYLashs9jQswI0sZNR9s9rXJT0icRyloqFfGD0N0PPkX
-momUHkmbdD6eoFFgMsWm
-=EfLR
+iQIcBAEBAgAGBQJT6yh/AAoJEHZH4aRLwOS6PDMP/34s7eqgI4tPqBWryWow/qeM
+nMaXxwZNAMy7+GAHIwEYOFCOlxUPg6uG3n71YhTievj7Luqbv88XrI/sYOCeYbu0
+k+mnpAXkFSHNoQirPtxy+cs0Pucv4Bngt+SXrfqdUUWZh7IlfyQl8rGRrqrc/sng
+VZ/KW5bgfBBWrhn/adIf64ToZgvac6mPvzfJV2JMfbiNx4HlO0dnbxlQMg+sFo4z
+nVF7jP3MvI71wc4/5a/KqEdX7Mv+sFd0v0FGjLAPf31GbeJn9+Ebv9hHKu6phJS8
+W0EbVehr39XQQelyQ2kIUweK+juONHdfu3iTUVU20IegbTWqQZtABJHTjhxQGj1T
+ci3fM1ZHxeQvDV0efJNYo1FPJYMmYjBlKTr0oSoXZVLvJNUmCyBJd4Vkcn4IqyN0
+UEEoYyq5K51psHKJvadxAFYXlccAQN7z46FJ48IJ9iY+0C+Vw5Tn6XAng5dMxrH+
+dZicVnP9rvw6+x6pSuvmifo0x+SOuNcPyNTKD/7n9X1fsmWrW4zwjPdLSRJ3eEqb
+6KDOO2XPNaGAGMCHON5lPpSnQz4H8V7GLLAulDoQ4vYiLINblWCJ8JDDXUqryjKg
+P9qKceJO1F0tQz4qozgjVKVDZG73gAcEWad3i46sFZ3jAjytdcWS9IsgQYYzlQ/d
+ZHO2PnFANEfxtMi44n05
+=1sWv
 -----END PGP SIGNATURE-----
 
---27ZtN5FSuKKSZcBU--
+--+O5NQwgs0eeb9wf2--
