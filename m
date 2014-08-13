@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaHMT2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 15:28:04 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:35513 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852AbaHMT2B (ORCPT
+	id S1752042AbaHMTlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 15:41:00 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:62426 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaHMTk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 15:28:01 -0400
-Date: Wed, 13 Aug 2014 14:27:08 -0500
-From: scameron@beardog.cce.hp.com
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, iss_storagedev@hp.com,
-        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
-        scameron@beardog.cce.hp.com
-Subject: Re: [PATCH v2 RESEND 10/23] hpsa: Use pci_enable_msix_range() instead of pci_enable_msix()
-Message-ID: <20140813192708.GD19666@beardog.cce.hp.com>
-References: <cover.1397461652.git.agordeev@redhat.com> <6e17ab33b0ddbe49f72bf0d9c5fd3019acf6d6ca.1397461652.git.agordeev@redhat.com>
-Mime-Version: 1.0
+	Wed, 13 Aug 2014 15:40:59 -0400
+Date: Wed, 13 Aug 2014 12:40:47 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Gregory Fong <gregory.0xf0@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Matt Porter <mporter@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Marc Carino <marc.ceeeee@gmail.com>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM: drop ISAR0 workaround for B15
+Message-ID: <20140813194047.GA18411@ld-irv-0074>
+References: <1407797053-12544-1-git-send-email-gregory.0xf0@gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6e17ab33b0ddbe49f72bf0d9c5fd3019acf6d6ca.1397461652.git.agordeev@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1407797053-12544-1-git-send-email-gregory.0xf0@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 10:05:34AM +0200, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
-> 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-> Cc: iss_storagedev@hp.com
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/scsi/hpsa.c |   29 +++++++++++++----------------
->  1 files changed, 13 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> index 3284edb..36bb1e4 100644
-> --- a/drivers/scsi/hpsa.c
-> +++ b/drivers/scsi/hpsa.c
-> @@ -6144,26 +6144,23 @@ static void hpsa_interrupt_mode(struct ctlr_info *h)
->  		goto default_int_mode;
->  	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSIX)) {
->  		dev_info(&h->pdev->dev, "MSIX\n");
-> -		h->msix_vector = MAX_REPLY_QUEUES;
-> -		err = pci_enable_msix(h->pdev, hpsa_msix_entries,
-> -				      h->msix_vector);
-> -		if (err > 0) {
-> +		err = pci_enable_msix_range(h->pdev, hpsa_msix_entries,
-> +					    1, MAX_REPLY_QUEUES);
-> +		if (err < 0) {
-> +			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n", err);
-> +			h->msix_vector = 0;
-> +			goto single_msi_mode;
-> +		} else if (err < MAX_REPLY_QUEUES) {
->  			dev_warn(&h->pdev->dev, "only %d MSI-X vectors "
->  			       "available\n", err);
-> -			h->msix_vector = err;
-> -			err = pci_enable_msix(h->pdev, hpsa_msix_entries,
-> -					      h->msix_vector);
-> -		}
-> -		if (!err) {
-> -			for (i = 0; i < h->msix_vector; i++)
-> -				h->intr[i] = hpsa_msix_entries[i].vector;
-> -			return;
-> -		} else {
-> -			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n",
-> -			       err);
-> -			h->msix_vector = 0;
->  		}
-> +
-> +		h->msix_vector = err;
-> +		for (i = 0; i < h->msix_vector; i++)
-> +			h->intr[i] = hpsa_msix_entries[i].vector;
-> +		return;
->  	}
-> +single_msi_mode:
->  	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSI)) {
->  		dev_info(&h->pdev->dev, "MSI\n");
->  		if (!pci_enable_msi(h->pdev))
-> -- 
-> 1.7.7.6
+The Brahma-B15's ISAR0 correcty advertises UDIV/SDIV support in both ARM
+and Thumb2 modes (CPUID_EXT_ISAR0=02101110), so we don't need to
+manually apply this hwcap.
 
-Ack.
+The code in question actually predates the following commit, which made
+our hwcaps unnecessary:
 
--- steve
+    commit 8164f7af88d9ad3a757bd14f634b23997ee77f6b
+    Author: Stephen Boyd <sboyd@codeaurora.org>
+    Date:   Mon Mar 18 19:44:15 2013 +0100
 
+        ARM: 7680/1: Detect support for SDIV/UDIV from ISAR0 register
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+---
+Supersedes Gregory's previous patch.
+
+This addresses some very old review comments from Mark and Will:
+
+  http://lists.infradead.org/pipermail/linux-arm-kernel/2014-January/225895.html
+  http://lists.infradead.org/pipermail/linux-arm-kernel/2014-January/227916.html
+
+ arch/arm/mm/proc-v7.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+index b5d67db20897..b3a947863ac7 100644
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -570,7 +570,7 @@ __v7_ca15mp_proc_info:
+ __v7_b15mp_proc_info:
+ 	.long	0x420f00f0
+ 	.long	0xff0ffff0
+-	__v7_proc __v7_b15mp_setup, hwcaps = HWCAP_IDIV
++	__v7_proc __v7_b15mp_setup
+ 	.size	__v7_b15mp_proc_info, . - __v7_b15mp_proc_info
+ 
+ 	/*
+-- 
+1.9.1
