@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279AbaHMFSe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 01:18:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45079 "EHLO
+	id S1752334AbaHMFSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 01:18:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45095 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231AbaHMFS3 (ORCPT
+	with ESMTP id S1751916AbaHMFSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 01:18:29 -0400
-Date: Tue, 12 Aug 2014 22:17:16 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-63914aca8f7e7a75d0ee027af7b1755c69cc1e2c@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        peterz@infradead.org, ydroneaud@opteya.com, namhyung@gmail.com,
-        wcohen@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
-        dsahern@gmail.com, tglx@linutronix.de
+	Wed, 13 Aug 2014 01:18:44 -0400
+Date: Tue, 12 Aug 2014 22:18:25 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-e0d66c74b09f5103eef441a98b68056c4dae4cac@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        jolsa@kernel.org, peterz@infradead.org, ydroneaud@opteya.com,
-        namhyung@gmail.com, wcohen@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1406908014-8312-1-git-send-email-jolsa@kernel.org>
-References: <1406908014-8312-1-git-send-email-jolsa@kernel.org>
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        tglx@linutronix.de
+In-Reply-To: <1406785662-5534-4-git-send-email-namhyung@kernel.org>
+References: <1406785662-5534-4-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Show better error message in case we fail to open counters due to EBUSY error
-Git-Commit-ID: 63914aca8f7e7a75d0ee027af7b1755c69cc1e2c
+Subject: [tip:perf/core] perf tools: Save column length in perf_hpp_fmt
+Git-Commit-ID: e0d66c74b09f5103eef441a98b68056c4dae4cac
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,151 +35,323 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  63914aca8f7e7a75d0ee027af7b1755c69cc1e2c
-Gitweb:     http://git.kernel.org/tip/63914aca8f7e7a75d0ee027af7b1755c69cc1e2c
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Fri, 1 Aug 2014 17:46:54 +0200
+Commit-ID:  e0d66c74b09f5103eef441a98b68056c4dae4cac
+Gitweb:     http://git.kernel.org/tip/e0d66c74b09f5103eef441a98b68056c4dae4cac
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Thu, 31 Jul 2014 14:47:37 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 12 Aug 2014 12:03:02 -0300
+CommitDate: Tue, 12 Aug 2014 12:03:05 -0300
 
-perf tools: Show better error message in case we fail to open counters due to EBUSY error
+perf tools: Save column length in perf_hpp_fmt
 
-Showing better error message in case we fail to open counters due to the
-EBUSY error. If we detect oprofile daemon process running, we now
-display following message for EBUSY error:
+Save column length in the hpp format and pass it to print functions.
+This is a preparation for users to control column width in the output.
 
-  $ perf record ls
-  Error:
-  The PMU counters are busy/taken by another profiler.
-  We found oprofile daemon running, please stop it and try again.
-
-In case oprofiled was not detected the current error message stays:
-
-  $ perf record ls
-  Error:
-  The sys_perf_event_open() syscall returned with 16 (Device or resource busy) for event (cycles).
-  /bin/dmesg may provide additional information.
-  No CONFIG_PERF_EVENTS=y kernel support configured?
-
-Also changing PERF_FLAG_FD_CLOEXEC detection code not to display error
-in case of EBUSY error, as it currently does:
-
-  $ perf record ls
-  Error:
-  perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error 16 (Device or resource busy)
-  perf_event_open(..., 0) failed unexpectedly with error 16 (Device or resource busy)
-  The PMU counters are busy/taken by another profiler.
-  We found oprofile daemon running, please stop it and try again.
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: William Cohen <wcohen@redhat.com>
-Cc: Yann Droneaud <ydroneaud@opteya.com>
-Link: http://lkml.kernel.org/r/1406908014-8312-1-git-send-email-jolsa@kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1406785662-5534-4-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/cloexec.c |  4 ++--
- tools/perf/util/evsel.c   |  6 ++++++
- tools/perf/util/util.c    | 36 ++++++++++++++++++++++++++++++++++++
- tools/perf/util/util.h    |  1 +
- 4 files changed, 45 insertions(+), 2 deletions(-)
+ tools/perf/ui/browsers/hists.c |   2 +-
+ tools/perf/ui/hist.c           | 135 +++++++++++++++++++++++++++--------------
+ tools/perf/util/hist.h         |   2 +
+ tools/perf/util/sort.c         |   3 +-
+ 4 files changed, 94 insertions(+), 48 deletions(-)
 
-diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
-index c5d05ec..dede0c3 100644
---- a/tools/perf/util/cloexec.c
-+++ b/tools/perf/util/cloexec.c
-@@ -25,7 +25,7 @@ static int perf_flag_probe(void)
- 		return 1;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 02507ba..c1d8d39 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -849,7 +849,7 @@ static int hists__scnprintf_headers(char *buf, size_t size, struct hists *hists)
+ 		if (perf_hpp__should_skip(fmt))
+ 			continue;
+ 
+-		/* We need to add the length of the columns header. */
++		/* We need to ensure length of the columns header. */
+ 		perf_hpp__reset_width(fmt, hists);
+ 
+ 		ret = fmt->header(fmt, &dummy_hpp, hists_to_evsel(hists));
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index c6cffbd..e28ca97 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -110,7 +110,7 @@ int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
+ {
+ 	if (!symbol_conf.cumulate_callchain) {
+ 		return snprintf(hpp->buf, hpp->size, "%*s",
+-				fmt_percent ? 8 : 12, "N/A");
++				fmt_percent ? len + 2 : len + 1, "N/A");
  	}
  
--	WARN_ONCE(err != EINVAL,
-+	WARN_ONCE(err != EINVAL && err != EBUSY,
- 		  "perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error %d (%s)\n",
- 		  err, strerror(err));
+ 	return __hpp__fmt(hpp, he, get_field, fmt, len, print_fn, fmt_percent);
+@@ -190,32 +190,31 @@ static int __hpp__sort_acc(struct hist_entry *a, struct hist_entry *b,
+ 	return ret;
+ }
  
-@@ -33,7 +33,7 @@ static int perf_flag_probe(void)
- 	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
- 	err = errno;
+-#define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
+-static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
+-			       struct perf_hpp *hpp,			\
+-			       struct perf_evsel *evsel)		\
+-{									\
+-	int len = _min_width;						\
+-									\
+-	if (symbol_conf.event_group)					\
+-		len = max(len, evsel->nr_members * _unit_width);	\
+-									\
+-	return scnprintf(hpp->buf, hpp->size, "%*s", len, _str);	\
+-}
+-
+-#define __HPP_WIDTH_FN(_type, _min_width, _unit_width) 			\
+-static int hpp__width_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
++#define __HPP_WIDTH_FN(_type, _str)					\
++static int hpp__width_##_type(struct perf_hpp_fmt *fmt,			\
+ 			      struct perf_hpp *hpp __maybe_unused,	\
+ 			      struct perf_evsel *evsel)			\
+ {									\
+-	int len = _min_width;						\
++	int len = fmt->len;						\
+ 									\
+ 	if (symbol_conf.event_group)					\
+-		len = max(len, evsel->nr_members * _unit_width);	\
++		len = max(len, evsel->nr_members * len);		\
++									\
++	if (len < (int)strlen(_str))					\
++		len = strlen(_str);					\
+ 									\
+ 	return len;							\
+ }
  
--	if (WARN_ONCE(fd < 0,
-+	if (WARN_ONCE(fd < 0 && err != EBUSY,
- 		      "perf_event_open(..., 0) failed unexpectedly with error %d (%s)\n",
- 		      err, strerror(err)))
- 		return -1;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 92e5235..0c8919d 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -2039,6 +2039,12 @@ int perf_evsel__open_strerror(struct perf_evsel *evsel, struct target *target,
- 	"No APIC? If so then you can boot the kernel with the \"lapic\" boot parameter to force-enable it.");
- #endif
- 		break;
-+	case EBUSY:
-+		if (find_process("oprofiled"))
-+			return scnprintf(msg, size,
-+	"The PMU counters are busy/taken by another profiler.\n"
-+	"We found oprofile daemon running, please stop it and try again.");
-+		break;
- 	default:
- 		break;
++#define __HPP_HEADER_FN(_type, _str) 					\
++static int hpp__header_##_type(struct perf_hpp_fmt *fmt,		\
++			       struct perf_hpp *hpp,			\
++			       struct perf_evsel *evsel)		\
++{									\
++	int len = hpp__width_##_type(fmt, hpp, evsel);			\
++	return scnprintf(hpp->buf, hpp->size, "%*s", len, _str);	\
++}
++
+ static int hpp_color_scnprintf(struct perf_hpp *hpp, const char *fmt, ...)
+ {
+ 	va_list args;
+@@ -251,18 +250,19 @@ static u64 he_get_##_field(struct hist_entry *he)				\
+ 	return he->stat._field;							\
+ }										\
+ 										\
+-static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
++static int hpp__color_##_type(struct perf_hpp_fmt *fmt,				\
+ 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+-	return __hpp__fmt(hpp, he, he_get_##_field, " %*.2f%%",	6,		\
++	int len = fmt->len - 2;	/* 2 for a space and a % sign */		\
++	return __hpp__fmt(hpp, he, he_get_##_field, " %*.2f%%",	len,		\
+ 			  hpp_color_scnprintf, true);				\
+ }
+ 
+ #define __HPP_ENTRY_PERCENT_FN(_type, _field)					\
+-static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
++static int hpp__entry_##_type(struct perf_hpp_fmt *fmt,				\
+ 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+-	int len = symbol_conf.field_sep ? 1 : 6;				\
++	int len = symbol_conf.field_sep ? 1 : fmt->len - 2;			\
+ 	return __hpp__fmt(hpp, he, he_get_##_field, " %*.2f%%",	len,		\
+ 			  hpp_entry_scnprintf, true);				\
+ }
+@@ -279,18 +279,19 @@ static u64 he_get_acc_##_field(struct hist_entry *he)				\
+ 	return he->stat_acc->_field;						\
+ }										\
+ 										\
+-static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
++static int hpp__color_##_type(struct perf_hpp_fmt *fmt,				\
+ 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+-	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %*.2f%%",	6, 	\
++	int len = fmt->len - 2;	/* 2 for a space and a % sign */		\
++	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %*.2f%%",	len, 	\
+ 			      hpp_color_scnprintf, true);			\
+ }
+ 
+ #define __HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
+-static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
++static int hpp__entry_##_type(struct perf_hpp_fmt *fmt,				\
+ 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+-	int len = symbol_conf.field_sep ? 1 : 6;				\
++	int len = symbol_conf.field_sep ? 1 : fmt->len - 2;			\
+ 	return __hpp__fmt_acc(hpp, he, he_get_##_field, " %*.2f%%", len,	\
+ 			      hpp_entry_scnprintf, true);			\
+ }
+@@ -307,10 +308,10 @@ static u64 he_get_raw_##_field(struct hist_entry *he)				\
+ 	return he->stat._field;							\
+ }										\
+ 										\
+-static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
++static int hpp__entry_##_type(struct perf_hpp_fmt *fmt,				\
+ 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
+ {										\
+-	int len = symbol_conf.field_sep ? 1 : 11;				\
++	int len = symbol_conf.field_sep ? 1 : fmt->len - 1;			\
+ 	return __hpp__fmt(hpp, he, he_get_raw_##_field, " %*"PRIu64, len, 	\
+ 			  hpp_entry_scnprintf, false);				\
+ }
+@@ -322,37 +323,38 @@ static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
+ }
+ 
+ 
+-#define HPP_PERCENT_FNS(_type, _str, _field, _min_width, _unit_width)	\
+-__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
+-__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
++#define HPP_PERCENT_FNS(_type, _str, _field)				\
++__HPP_WIDTH_FN(_type, _str)						\
++__HPP_HEADER_FN(_type, _str)						\
+ __HPP_COLOR_PERCENT_FN(_type, _field)					\
+ __HPP_ENTRY_PERCENT_FN(_type, _field)					\
+ __HPP_SORT_FN(_type, _field)
+ 
+-#define HPP_PERCENT_ACC_FNS(_type, _str, _field, _min_width, _unit_width)\
+-__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
+-__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
++#define HPP_PERCENT_ACC_FNS(_type, _str, _field)			\
++__HPP_WIDTH_FN(_type, _str)						\
++__HPP_HEADER_FN(_type, _str)						\
+ __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
+ __HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
+ __HPP_SORT_ACC_FN(_type, _field)
+ 
+-#define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
+-__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
+-__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
++#define HPP_RAW_FNS(_type, _str, _field)				\
++__HPP_WIDTH_FN(_type, _str)						\
++__HPP_HEADER_FN(_type, _str)						\
+ __HPP_ENTRY_RAW_FN(_type, _field)					\
+ __HPP_SORT_RAW_FN(_type, _field)
+ 
+-__HPP_HEADER_FN(overhead_self, "Self", 8, 8)
++__HPP_WIDTH_FN(overhead_self, "Self")
++__HPP_HEADER_FN(overhead_self, "Self")
+ 
+-HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
+-HPP_PERCENT_FNS(overhead_sys, "sys", period_sys, 8, 8)
+-HPP_PERCENT_FNS(overhead_us, "usr", period_us, 8, 8)
+-HPP_PERCENT_FNS(overhead_guest_sys, "guest sys", period_guest_sys, 9, 8)
+-HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
+-HPP_PERCENT_ACC_FNS(overhead_acc, "Children", period, 8, 8)
++HPP_PERCENT_FNS(overhead, "Overhead", period)
++HPP_PERCENT_FNS(overhead_sys, "sys", period_sys)
++HPP_PERCENT_FNS(overhead_us, "usr", period_us)
++HPP_PERCENT_FNS(overhead_guest_sys, "guest sys", period_guest_sys)
++HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us)
++HPP_PERCENT_ACC_FNS(overhead_acc, "Children", period)
+ 
+-HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
+-HPP_RAW_FNS(period, "Period", period, 12, 12)
++HPP_RAW_FNS(samples, "Samples", nr_events)
++HPP_RAW_FNS(period, "Period", period)
+ 
+ static int64_t hpp__nop_cmp(struct hist_entry *a __maybe_unused,
+ 			    struct hist_entry *b __maybe_unused)
+@@ -453,6 +455,8 @@ void perf_hpp__init(void)
+ 
+ 		perf_hpp__format[PERF_HPP__OVERHEAD].header =
+ 						hpp__header_overhead_self;
++		perf_hpp__format[PERF_HPP__OVERHEAD].width =
++						hpp__width_overhead_self;
  	}
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index e52e746..b82a93c 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -536,3 +536,39 @@ void mem_bswap_64(void *src, int byte_size)
- 		++m;
- 	}
+ 
+ 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
+@@ -519,6 +523,7 @@ void perf_hpp__cancel_cumulate(void)
+ 
+ 	perf_hpp__column_disable(PERF_HPP__OVERHEAD_ACC);
+ 	perf_hpp__format[PERF_HPP__OVERHEAD].header = hpp__header_overhead;
++	perf_hpp__format[PERF_HPP__OVERHEAD].width = hpp__width_overhead;
+ }
+ 
+ void perf_hpp__setup_output_field(void)
+@@ -623,3 +628,41 @@ unsigned int hists__sort_list_width(struct hists *hists)
+ 
+ 	return ret;
  }
 +
-+bool find_process(const char *name)
++void perf_hpp__reset_width(struct perf_hpp_fmt *fmt, struct hists *hists)
 +{
-+	size_t len = strlen(name);
-+	DIR *dir;
-+	struct dirent *d;
-+	int ret = -1;
++	int idx;
 +
-+	dir = opendir(procfs__mountpoint());
-+	if (!dir)
-+		return -1;
++	if (perf_hpp__is_sort_entry(fmt))
++		return perf_hpp__reset_sort_width(fmt, hists);
 +
-+	/* Walk through the directory. */
-+	while (ret && (d = readdir(dir)) != NULL) {
-+		char path[PATH_MAX];
-+		char *data;
-+		size_t size;
-+
-+		if ((d->d_type != DT_DIR) ||
-+		     !strcmp(".", d->d_name) ||
-+		     !strcmp("..", d->d_name))
-+			continue;
-+
-+		scnprintf(path, sizeof(path), "%s/%s/comm",
-+			  procfs__mountpoint(), d->d_name);
-+
-+		if (filename__read_str(path, &data, &size))
-+			continue;
-+
-+		ret = strncmp(name, data, len);
-+		free(data);
++	for (idx = 0; idx < PERF_HPP__MAX_INDEX; idx++) {
++		if (fmt == &perf_hpp__format[idx])
++			break;
 +	}
 +
-+	closedir(dir);
-+	return ret ? false : true;
++	if (idx == PERF_HPP__MAX_INDEX)
++		return;
++
++	switch (idx) {
++	case PERF_HPP__OVERHEAD:
++	case PERF_HPP__OVERHEAD_SYS:
++	case PERF_HPP__OVERHEAD_US:
++	case PERF_HPP__OVERHEAD_ACC:
++		fmt->len = 8;
++		break;
++
++	case PERF_HPP__OVERHEAD_GUEST_SYS:
++	case PERF_HPP__OVERHEAD_GUEST_US:
++		fmt->len = 9;
++		break;
++
++	case PERF_HPP__SAMPLES:
++	case PERF_HPP__PERIOD:
++		fmt->len = 12;
++		break;
++
++	default:
++		break;
++	}
 +}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 38af775..03a1ea2 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -346,4 +346,5 @@ void mem_bswap_64(void *src, int byte_size);
- void mem_bswap_32(void *src, int byte_size);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 13d074d..a7ae890 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -207,6 +207,7 @@ struct perf_hpp_fmt {
+ 	struct list_head list;
+ 	struct list_head sort_list;
+ 	bool elide;
++	int len;
+ };
  
- const char *get_filename_for_perf_kvm(void);
-+bool find_process(const char *name);
- #endif /* GIT_COMPAT_UTIL_H */
+ extern struct list_head perf_hpp__list;
+@@ -261,6 +262,7 @@ static inline bool perf_hpp__should_skip(struct perf_hpp_fmt *format)
+ }
+ 
+ void perf_hpp__reset_width(struct perf_hpp_fmt *fmt, struct hists *hists);
++void perf_hpp__reset_sort_width(struct perf_hpp_fmt *fmt, struct hists *hists);
+ 
+ typedef u64 (*hpp_field_fn)(struct hist_entry *he);
+ typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index eda9ee8..a7f8a7b 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1194,7 +1194,7 @@ bool perf_hpp__same_sort_entry(struct perf_hpp_fmt *a, struct perf_hpp_fmt *b)
+ 	return hse_a->se == hse_b->se;
+ }
+ 
+-void perf_hpp__reset_width(struct perf_hpp_fmt *fmt, struct hists *hists)
++void perf_hpp__reset_sort_width(struct perf_hpp_fmt *fmt, struct hists *hists)
+ {
+ 	struct hpp_sort_entry *hse;
+ 
+@@ -1265,6 +1265,7 @@ __sort_dimension__alloc_hpp(struct sort_dimension *sd)
+ 	INIT_LIST_HEAD(&hse->hpp.list);
+ 	INIT_LIST_HEAD(&hse->hpp.sort_list);
+ 	hse->hpp.elide = false;
++	hse->hpp.len = 0;
+ 
+ 	return hse;
+ }
