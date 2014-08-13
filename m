@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398AbaHMFTE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 01:19:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45082 "EHLO
+	id S1752537AbaHMFTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 01:19:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45113 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457AbaHMFSb (ORCPT
+	with ESMTP id S1751583AbaHMFTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 01:18:31 -0400
-Date: Tue, 12 Aug 2014 22:18:12 -0700
+	Wed, 13 Aug 2014 01:19:08 -0400
+Date: Tue, 12 Aug 2014 22:18:52 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-d675107ce6fa988102851e0b0ef06e46c8aa7ac6@git.kernel.org>
+Message-ID: <tip-cf59002fdebc9c00ee29233e65bc39dd69e0eaf6@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
@@ -18,12 +18,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
         tglx@linutronix.de
-In-Reply-To: <1406785662-5534-3-git-send-email-namhyung@kernel.org>
-References: <1406785662-5534-3-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1406785662-5534-6-git-send-email-namhyung@kernel.org>
+References: <1406785662-5534-6-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Make __hpp__fmt()
-  receive an additional len argument
-Git-Commit-ID: d675107ce6fa988102851e0b0ef06e46c8aa7ac6
+Subject: [tip:perf/core] perf top: Add -w option for setting column width
+Git-Commit-ID: cf59002fdebc9c00ee29233e65bc39dd69e0eaf6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,18 +35,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d675107ce6fa988102851e0b0ef06e46c8aa7ac6
-Gitweb:     http://git.kernel.org/tip/d675107ce6fa988102851e0b0ef06e46c8aa7ac6
+Commit-ID:  cf59002fdebc9c00ee29233e65bc39dd69e0eaf6
+Gitweb:     http://git.kernel.org/tip/cf59002fdebc9c00ee29233e65bc39dd69e0eaf6
 Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Thu, 31 Jul 2014 14:47:36 +0900
+AuthorDate: Thu, 31 Jul 2014 14:47:39 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 12 Aug 2014 12:03:05 -0300
+CommitDate: Tue, 12 Aug 2014 12:03:06 -0300
 
-perf tools: Make __hpp__fmt() receive an additional len argument
+perf top: Add -w option for setting column width
 
-So that it can properly handle alignment requirements later.  To do
-that, add percent_color_len_snprintf() fucntion to help coloring of
-overhead columns.
+Add -w/--column-widths option like perf report does so that users are
+able to see symbols even with some very long C++ library/functions.
+
+It can be a list separated by comma for each column.
+
+  $ perf top -w 0,20,30
+
+The value of 0 means there's no limit.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -55,312 +59,55 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1406785662-5534-3-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1406785662-5534-6-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/hists.c | 14 ++++++++------
- tools/perf/ui/gtk/hists.c      |  8 +++++---
- tools/perf/ui/hist.c           | 43 +++++++++++++++++++++---------------------
- tools/perf/util/color.c        | 16 ++++++++++++++++
- tools/perf/util/color.h        |  1 +
- tools/perf/util/hist.h         |  4 ++--
- 6 files changed, 54 insertions(+), 32 deletions(-)
+ tools/perf/Documentation/perf-report.txt | 2 +-
+ tools/perf/Documentation/perf-top.txt    | 6 ++++++
+ tools/perf/builtin-top.c                 | 3 +++
+ 3 files changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index a94b11fc..02507ba 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -653,17 +653,18 @@ struct hpp_arg {
- static int __hpp__slsmg_color_printf(struct perf_hpp *hpp, const char *fmt, ...)
- {
- 	struct hpp_arg *arg = hpp->ptr;
--	int ret;
-+	int ret, len;
- 	va_list args;
- 	double percent;
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index d2b59af..d561e02 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -147,7 +147,7 @@ OPTIONS
+ -w::
+ --column-widths=<width[,width...]>::
+ 	Force each column width to the provided list, for large terminal
+-	readability.
++	readability.  0 means no limit (default behavior).
  
- 	va_start(args, fmt);
-+	len = va_arg(args, int);
- 	percent = va_arg(args, double);
- 	va_end(args);
+ -t::
+ --field-separator=::
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 180ae02..28fdee3 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -193,6 +193,12 @@ Default is to monitor all CPUS.
+ 	sum of shown entries will be always 100%. "absolute" means it retains
+ 	the original value before and after the filter is applied.
  
- 	ui_browser__set_percent_color(arg->b, percent, arg->current_entry);
- 
--	ret = scnprintf(hpp->buf, hpp->size, fmt, percent);
-+	ret = scnprintf(hpp->buf, hpp->size, fmt, len, percent);
- 	slsmg_printf("%s", hpp->buf);
- 
- 	advance_hpp(hpp, ret);
-@@ -681,7 +682,7 @@ hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
- 				struct perf_hpp *hpp,			\
- 				struct hist_entry *he)			\
- {									\
--	return __hpp__fmt(hpp, he, __hpp_get_##_field, " %6.2f%%",	\
-+	return __hpp__fmt(hpp, he, __hpp_get_##_field, " %*.2f%%", 6,	\
- 			  __hpp__slsmg_color_printf, true);		\
- }
- 
-@@ -697,13 +698,14 @@ hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
- 				struct hist_entry *he)			\
- {									\
- 	if (!symbol_conf.cumulate_callchain) {				\
--		int ret = scnprintf(hpp->buf, hpp->size, "%8s", "N/A");	\
-+		int ret = scnprintf(hpp->buf, hpp->size,		\
-+				    "%*s", 8, "N/A");			\
- 		slsmg_printf("%s", hpp->buf);				\
- 									\
- 		return ret;						\
- 	}								\
--	return __hpp__fmt(hpp, he, __hpp_get_acc_##_field, " %6.2f%%",	\
--			  __hpp__slsmg_color_printf, true);		\
-+	return __hpp__fmt(hpp, he, __hpp_get_acc_##_field, " %*.2f%%",	\
-+			  6, __hpp__slsmg_color_printf, true);	\
- }
- 
- __HPP_COLOR_PERCENT_FN(overhead, period)
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 6ca60e4..91f6cd7 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -11,6 +11,7 @@
- static int __percent_color_snprintf(struct perf_hpp *hpp, const char *fmt, ...)
- {
- 	int ret = 0;
-+	int len;
- 	va_list args;
- 	double percent;
- 	const char *markup;
-@@ -18,6 +19,7 @@ static int __percent_color_snprintf(struct perf_hpp *hpp, const char *fmt, ...)
- 	size_t size = hpp->size;
- 
- 	va_start(args, fmt);
-+	len = va_arg(args, int);
- 	percent = va_arg(args, double);
- 	va_end(args);
- 
-@@ -25,7 +27,7 @@ static int __percent_color_snprintf(struct perf_hpp *hpp, const char *fmt, ...)
- 	if (markup)
- 		ret += scnprintf(buf, size, markup);
- 
--	ret += scnprintf(buf + ret, size - ret, fmt, percent);
-+	ret += scnprintf(buf + ret, size - ret, fmt, len, percent);
- 
- 	if (markup)
- 		ret += scnprintf(buf + ret, size - ret, "</span>");
-@@ -43,7 +45,7 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
- 				       struct perf_hpp *hpp,			\
- 				       struct hist_entry *he)			\
- {										\
--	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
-+	return __hpp__fmt(hpp, he, he_get_##_field, " %*.2f%%", 6,		\
- 			  __percent_color_snprintf, true);			\
- }
- 
-@@ -57,7 +59,7 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
- 				       struct perf_hpp *hpp,			\
- 				       struct hist_entry *he)			\
- {										\
--	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
-+	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %*.2f%%", 6, 	\
- 			      __percent_color_snprintf, true);			\
- }
- 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 498adb2..c6cffbd 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -16,7 +16,7 @@
- })
- 
- int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
--	       hpp_field_fn get_field, const char *fmt,
-+	       hpp_field_fn get_field, const char *fmt, int len,
- 	       hpp_snprint_fn print_fn, bool fmt_percent)
- {
- 	int ret;
-@@ -32,9 +32,9 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 		if (total)
- 			percent = 100.0 * get_field(he) / total;
- 
--		ret = hpp__call_print_fn(hpp, print_fn, fmt, percent);
-+		ret = hpp__call_print_fn(hpp, print_fn, fmt, len, percent);
- 	} else
--		ret = hpp__call_print_fn(hpp, print_fn, fmt, get_field(he));
-+		ret = hpp__call_print_fn(hpp, print_fn, fmt, len, get_field(he));
- 
- 	if (perf_evsel__is_group_event(evsel)) {
- 		int prev_idx, idx_delta;
-@@ -60,19 +60,19 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 				 */
- 				if (fmt_percent) {
- 					ret += hpp__call_print_fn(hpp, print_fn,
--								  fmt, 0.0);
-+								  fmt, len, 0.0);
- 				} else {
- 					ret += hpp__call_print_fn(hpp, print_fn,
--								  fmt, 0ULL);
-+								  fmt, len, 0ULL);
- 				}
- 			}
- 
- 			if (fmt_percent) {
--				ret += hpp__call_print_fn(hpp, print_fn, fmt,
-+				ret += hpp__call_print_fn(hpp, print_fn, fmt, len,
- 							  100.0 * period / total);
- 			} else {
- 				ret += hpp__call_print_fn(hpp, print_fn, fmt,
--							  period);
-+							  len, period);
- 			}
- 
- 			prev_idx = perf_evsel__group_idx(evsel);
-@@ -86,10 +86,10 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 			 */
- 			if (fmt_percent) {
- 				ret += hpp__call_print_fn(hpp, print_fn,
--							  fmt, 0.0);
-+							  fmt, len, 0.0);
- 			} else {
- 				ret += hpp__call_print_fn(hpp, print_fn,
--							  fmt, 0ULL);
-+							  fmt, len, 0ULL);
- 			}
- 		}
- 	}
-@@ -105,7 +105,7 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- }
- 
- int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
--		   hpp_field_fn get_field, const char *fmt,
-+		   hpp_field_fn get_field, const char *fmt, int len,
- 		   hpp_snprint_fn print_fn, bool fmt_percent)
- {
- 	if (!symbol_conf.cumulate_callchain) {
-@@ -113,7 +113,7 @@ int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
- 				fmt_percent ? 8 : 12, "N/A");
- 	}
- 
--	return __hpp__fmt(hpp, he, get_field, fmt, print_fn, fmt_percent);
-+	return __hpp__fmt(hpp, he, get_field, fmt, len, print_fn, fmt_percent);
- }
- 
- static int field_cmp(u64 field_a, u64 field_b)
-@@ -221,11 +221,12 @@ static int hpp_color_scnprintf(struct perf_hpp *hpp, const char *fmt, ...)
- 	va_list args;
- 	ssize_t ssize = hpp->size;
- 	double percent;
--	int ret;
-+	int ret, len;
- 
- 	va_start(args, fmt);
-+	len = va_arg(args, int);
- 	percent = va_arg(args, double);
--	ret = value_color_snprintf(hpp->buf, hpp->size, fmt, percent);
-+	ret = percent_color_len_snprintf(hpp->buf, hpp->size, fmt, len, percent);
- 	va_end(args);
- 
- 	return (ret >= ssize) ? (ssize - 1) : ret;
-@@ -253,7 +254,7 @@ static u64 he_get_##_field(struct hist_entry *he)				\
- static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
--	return __hpp__fmt(hpp, he, he_get_##_field, " %6.2f%%",			\
-+	return __hpp__fmt(hpp, he, he_get_##_field, " %*.2f%%",	6,		\
- 			  hpp_color_scnprintf, true);				\
- }
- 
-@@ -261,8 +262,8 @@ static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
- static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
--	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
--	return __hpp__fmt(hpp, he, he_get_##_field, fmt,			\
-+	int len = symbol_conf.field_sep ? 1 : 6;				\
-+	return __hpp__fmt(hpp, he, he_get_##_field, " %*.2f%%",	len,		\
- 			  hpp_entry_scnprintf, true);				\
- }
- 
-@@ -281,7 +282,7 @@ static u64 he_get_acc_##_field(struct hist_entry *he)				\
- static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
--	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
-+	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %*.2f%%",	6, 	\
- 			      hpp_color_scnprintf, true);			\
- }
- 
-@@ -289,8 +290,8 @@ static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
- static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
--	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
--	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, fmt,		\
-+	int len = symbol_conf.field_sep ? 1 : 6;				\
-+	return __hpp__fmt_acc(hpp, he, he_get_##_field, " %*.2f%%", len,	\
- 			      hpp_entry_scnprintf, true);			\
- }
- 
-@@ -309,8 +310,8 @@ static u64 he_get_raw_##_field(struct hist_entry *he)				\
- static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
--	const char *fmt = symbol_conf.field_sep ? " %"PRIu64 : " %11"PRIu64;	\
--	return __hpp__fmt(hpp, he, he_get_raw_##_field, fmt,			\
-+	int len = symbol_conf.field_sep ? 1 : 11;				\
-+	return __hpp__fmt(hpp, he, he_get_raw_##_field, " %*"PRIu64, len, 	\
- 			  hpp_entry_scnprintf, false);				\
- }
- 
-diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
-index 87b8672..f465418 100644
---- a/tools/perf/util/color.c
-+++ b/tools/perf/util/color.c
-@@ -335,3 +335,19 @@ int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...)
- 	va_end(args);
- 	return value_color_snprintf(bf, size, fmt, percent);
- }
++-w::
++--column-widths=<width[,width...]>::
++	Force each column width to the provided list, for large terminal
++	readability.  0 means no limit (default behavior).
 +
-+int percent_color_len_snprintf(char *bf, size_t size, const char *fmt, ...)
-+{
-+	va_list args;
-+	int len;
-+	double percent;
-+	const char *color;
 +
-+	va_start(args, fmt);
-+	len = va_arg(args, int);
-+	percent = va_arg(args, double);
-+	va_end(args);
-+
-+	color = get_percent_color(percent);
-+	return color_snprintf(bf, size, color, fmt, len, percent);
-+}
-diff --git a/tools/perf/util/color.h b/tools/perf/util/color.h
-index 7ff30a6..0a594b8 100644
---- a/tools/perf/util/color.h
-+++ b/tools/perf/util/color.h
-@@ -41,6 +41,7 @@ int color_fprintf_ln(FILE *fp, const char *color, const char *fmt, ...);
- int color_fwrite_lines(FILE *fp, const char *color, size_t count, const char *buf);
- int value_color_snprintf(char *bf, size_t size, const char *fmt, double value);
- int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...);
-+int percent_color_len_snprintf(char *bf, size_t size, const char *fmt, ...);
- int percent_color_fprintf(FILE *fp, const char *fmt, double percent);
- const char *get_percent_color(double percent);
+ INTERACTIVE PROMPTING KEYS
+ --------------------------
  
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 742f49a..13d074d 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -267,10 +267,10 @@ typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
- typedef int (*hpp_snprint_fn)(struct perf_hpp *hpp, const char *fmt, ...);
- 
- int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
--	       hpp_field_fn get_field, const char *fmt,
-+	       hpp_field_fn get_field, const char *fmt, int len,
- 	       hpp_snprint_fn print_fn, bool fmt_percent);
- int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
--		   hpp_field_fn get_field, const char *fmt,
-+		   hpp_field_fn get_field, const char *fmt, int len,
- 		   hpp_snprint_fn print_fn, bool fmt_percent);
- 
- static inline void advance_hpp(struct perf_hpp *hpp, int inc)
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 377971d..bde216b 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1131,6 +1131,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		     "Don't show entries under that percent", parse_percent_limit),
+ 	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
+ 		     "How to display percentage of filtered entries", parse_filter_percentage),
++	OPT_STRING('w', "column-widths", &symbol_conf.col_width_list_str,
++		   "width[,width...]",
++		   "don't try to adjust column width, use these fixed values"),
+ 	OPT_END()
+ 	};
+ 	const char * const top_usage[] = {
