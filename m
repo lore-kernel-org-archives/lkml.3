@@ -1,147 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256AbaHMOuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:50:22 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:61071 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaHMOuU (ORCPT
+	id S1753121AbaHMOwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:52:04 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:38708 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749AbaHMOwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:50:20 -0400
-Date: Wed, 13 Aug 2014 23:49:09 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Chao Yu <chao2.yu@samsung.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
-Message-ID: <20140813144909.GC1091@swordfish>
-References: <009001cfb69a$a8470840$f8d518c0$@samsung.com>
- <53EB2271.1080002@redhat.com>
- <20140813113257.GA948@swordfish>
- <20140813144304.GB1091@swordfish>
+	Wed, 13 Aug 2014 10:52:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140813144304.GB1091@swordfish>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140813141413.GA1091@swordfish>
+References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
+ <1407225723-23754-2-git-send-email-minchan@kernel.org> <CALZtONDmvLDtceVW9AyiDwdSHQzPbay36JEts8iuZ4nvykWfeA@mail.gmail.com>
+ <20140813141413.GA1091@swordfish>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Wed, 13 Aug 2014 10:51:40 -0400
+X-Google-Sender-Auth: 7h5Ms4qS-Qn4opyevRL_14mC7-M
+Message-ID: <CALZtONDgYRUwrsN_G7pds2QY6QTOr8G8jAHa6Zta2XDhDHV8_A@mail.gmail.com>
+Subject: Re: [RFC 1/3] zsmalloc: move pages_allocated to zs_pool
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (08/13/14 23:43), Sergey Senozhatsky wrote:
-> Hello,
-> 
-> On (08/13/14 20:32), Sergey Senozhatsky wrote:
-> > On (08/13/14 10:31), Jerome Marchand wrote:
-> > > Date: Wed, 13 Aug 2014 10:31:45 +0200
-> > > From: Jerome Marchand <jmarchan@redhat.com>
-> > > To: Chao Yu <chao2.yu@samsung.com>, minchan@kernel.org
-> > > CC: ngupta@vflare.org, linux-kernel@vger.kernel.org, 'Sergey Senozhatsky'
-> > >  <sergey.senozhatsky@gmail.com>, 'Andrew Morton'
-> > >  <akpm@linux-foundation.org>
-> > > Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
-> > > User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
-> > >  Thunderbird/24.6.0
-> > > 
-> > > On 08/13/2014 04:01 AM, Chao Yu wrote:
-> > > > Since we allocate a temporary buffer in zram_bvec_read to handle partial page
-> > > > operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
-> > > > zram: allow partial page operations), our ->failed_reads value may be incorrect
-> > > > as we do not increase its value when failed to allocate the temporary buffer.
-> > > > 
-> > > > Let's fix this issue and correct the annotation of failed_reads.
-> > > > 
-> > > >  v2: clean codes of failed_{reads,writes} stat pointed out by Minchan Kim, and
-> > > > this cleanup also fix incorrectly stat when fail in zram_decompress_page.
-> > > > 
-> > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > 
-> > > Acked-by: Jerome Marchand <jmarchan@redhat.com>
-> > 
-> > Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > 
-> > 	-ss
-> > 
-> > > > ---
-> > > >  drivers/block/zram/zram_drv.c | 10 +++++++---
-> > > >  drivers/block/zram/zram_drv.h |  2 +-
-> > > >  2 files changed, 8 insertions(+), 4 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > > > index dfa4024..d00831c 100644
-> > > > --- a/drivers/block/zram/zram_drv.c
-> > > > +++ b/drivers/block/zram/zram_drv.c
-> > > > @@ -378,7 +378,6 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
-> > > >  	/* Should NEVER happen. Return bio error if it does. */
-> > > >  	if (unlikely(ret)) {
-> > > >  		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
-> > > > -		atomic64_inc(&zram->stats.failed_reads);
-> > > >  		return ret;
-> > > >  	}
-> > > >  
-> > > > @@ -547,8 +546,6 @@ out:
-> > > >  		zcomp_strm_release(zram->comp, zstrm);
-> > > >  	if (is_partial_io(bvec))
-> > > >  		kfree(uncmem);
-> > > > -	if (ret)
-> > > > -		atomic64_inc(&zram->stats.failed_writes);
-> > > >  	return ret;
-> > > >  }
-> > > >  
-> > > > @@ -566,6 +563,13 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-> > > >  		ret = zram_bvec_write(zram, bvec, index, offset);
-> > > >  	}
-> > > >  
-> > > > +	if (unlikely(ret)) {
-> > > > +		if (rw == READ)
-> > > > +			atomic64_inc(&zram->stats.failed_reads);
-> > > > +		else
-> > > > +			atomic64_inc(&zram->stats.failed_writes);
-> > > > +	}
-> > > > +
-> > > >  	return ret;
-> > > >  }
-> > > >  
-> > > > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > > > index 5b0afde..e0f725c 100644
-> > > > --- a/drivers/block/zram/zram_drv.h
-> > > > +++ b/drivers/block/zram/zram_drv.h
-> > > > @@ -84,7 +84,7 @@ struct zram_stats {
-> > > >  	atomic64_t compr_data_size;	/* compressed size of pages stored */
-> > > >  	atomic64_t num_reads;	/* failed + successful */
-> > > >  	atomic64_t num_writes;	/* --do-- */
-> > > > -	atomic64_t failed_reads;	/* should NEVER! happen */
-> > > > +	atomic64_t failed_reads;	/* can happen when memory is too low */
-> 
-> 
-> this grabbed my attention.
-> 
-> 	"failed_writes; /* can happen when memory is too low */"
-> 
-> theoretically, we can have a misbehaving compression algorithm. so the
-> question is -- should we fail write() if compression has failed for any
-> other reason, rather than -ENOMEM? alternatively, we can store uncompressed
-> user mem, just the same way we do for `badly' compressed buffers, set a
-> FAILED_COMPRESSION flag (so we will not leak kernel memory on read() if we
-> failed to compress is_partial_io() bv_page), and on read() copy it out as is,
-> just as we do for `badly' compessed pages.
-> 
+On Wed, Aug 13, 2014 at 10:14 AM, Sergey Senozhatsky
+<sergey.senozhatsky@gmail.com> wrote:
+> On (08/13/14 09:59), Dan Streetman wrote:
+>> On Tue, Aug 5, 2014 at 4:02 AM, Minchan Kim <minchan@kernel.org> wrote:
+>> > Pages_allocated has counted in size_class structure and when user
+>> > want to see total_size_bytes, it gathers all of value from each
+>> > size_class to report the sum.
+>> >
+>> > It's not bad if user don't see the value often but if user start
+>> > to see the value frequently, it would be not a good deal for
+>> > performance POV.
+>> >
+>> > This patch moves the variable from size_class to zs_pool so it would
+>> > reduce memory footprint (from [255 * 8byte] to [sizeof(atomic_t)])
+>> > but it adds new locking overhead but it wouldn't be severe because
+>> > it's not a hot path in zs_malloc(ie, it is called only when new
+>> > zspage is created, not a object).
+>>
+>> Would using an atomic64_t without locking be simpler?
+>
+> it would be racy.
 
-though this will surely complicate both write() and read() paths,
-but still.
+oh.  atomic operations aren't smp safe?  is that because other
+processors might use a stale value, and barriers must be added?  I
+guess I don't quite understand the value of atomic then. :-/
 
-	-ss
-
-> so, what do you think? /* I can take a look on it */
-> 
-> 	-ss
-> 
-> > > >  	atomic64_t failed_writes;	/* can happen when memory is too low */
-> > > >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
-> > > >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
-> > > > 
-> > > 
-> > > 
-> > 
-> > 
-> 
+>
+>         -ss
+>
+>>
+>> >
+>> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+>> > ---
+>> >  mm/zsmalloc.c | 30 ++++++++++++++++--------------
+>> >  1 file changed, 16 insertions(+), 14 deletions(-)
+>> >
+>> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+>> > index fe78189624cf..a6089bd26621 100644
+>> > --- a/mm/zsmalloc.c
+>> > +++ b/mm/zsmalloc.c
+>> > @@ -198,9 +198,6 @@ struct size_class {
+>> >
+>> >         spinlock_t lock;
+>> >
+>> > -       /* stats */
+>> > -       u64 pages_allocated;
+>> > -
+>> >         struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
+>> >  };
+>> >
+>> > @@ -216,9 +213,12 @@ struct link_free {
+>> >  };
+>> >
+>> >  struct zs_pool {
+>> > +       spinlock_t stat_lock;
+>> > +
+>> >         struct size_class size_class[ZS_SIZE_CLASSES];
+>> >
+>> >         gfp_t flags;    /* allocation flags used when growing pool */
+>> > +       unsigned long pages_allocated;
+>> >  };
+>> >
+>> >  /*
+>> > @@ -882,6 +882,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+>> >
+>> >         }
+>> >
+>> > +       spin_lock_init(&pool->stat_lock);
+>> >         pool->flags = flags;
+>> >
+>> >         return pool;
+>> > @@ -943,8 +944,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+>> >                         return 0;
+>> >
+>> >                 set_zspage_mapping(first_page, class->index, ZS_EMPTY);
+>> > +               spin_lock(&pool->stat_lock);
+>> > +               pool->pages_allocated += class->pages_per_zspage;
+>> > +               spin_unlock(&pool->stat_lock);
+>> >                 spin_lock(&class->lock);
+>> > -               class->pages_allocated += class->pages_per_zspage;
+>> >         }
+>> >
+>> >         obj = (unsigned long)first_page->freelist;
+>> > @@ -997,14 +1000,14 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+>> >
+>> >         first_page->inuse--;
+>> >         fullness = fix_fullness_group(pool, first_page);
+>> > -
+>> > -       if (fullness == ZS_EMPTY)
+>> > -               class->pages_allocated -= class->pages_per_zspage;
+>> > -
+>> >         spin_unlock(&class->lock);
+>> >
+>> > -       if (fullness == ZS_EMPTY)
+>> > +       if (fullness == ZS_EMPTY) {
+>> > +               spin_lock(&pool->stat_lock);
+>> > +               pool->pages_allocated -= class->pages_per_zspage;
+>> > +               spin_unlock(&pool->stat_lock);
+>> >                 free_zspage(first_page);
+>> > +       }
+>> >  }
+>> >  EXPORT_SYMBOL_GPL(zs_free);
+>> >
+>> > @@ -1100,12 +1103,11 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
+>> >
+>> >  u64 zs_get_total_size_bytes(struct zs_pool *pool)
+>> >  {
+>> > -       int i;
+>> > -       u64 npages = 0;
+>> > -
+>> > -       for (i = 0; i < ZS_SIZE_CLASSES; i++)
+>> > -               npages += pool->size_class[i].pages_allocated;
+>> > +       u64 npages;
+>> >
+>> > +       spin_lock(&pool->stat_lock);
+>> > +       npages = pool->pages_allocated;
+>> > +       spin_unlock(&pool->stat_lock);
+>> >         return npages << PAGE_SHIFT;
+>> >  }
+>> >  EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
+>> > --
+>> > 2.0.0
+>> >
+>> > --
+>> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> > the body to majordomo@kvack.org.  For more info on Linux MM,
+>> > see: http://www.linux-mm.org/ .
+>> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
