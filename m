@@ -1,48 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843AbaHMJhH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:37:07 -0400
-Received: from unicorn.mansr.com ([81.2.72.234]:54886 "EHLO unicorn.mansr.com"
+	id S1751471AbaHMJnX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:43:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57304 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750751AbaHMJhG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:37:06 -0400
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Christopher Barry <christopher.r.barry@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: OT: Open letter to the Linux World
-References: <20140812153812.2923046a@monolith.infinux.org>
-	<20140812202129.GA20344@home.goodmis.org>
-	<yw1xr40l2whi.fsf@unicorn.mansr.com>
-	<20140813082756.GB2923@twins.programming.kicks-ass.net>
-	<yw1xmwb83fo5.fsf@unicorn.mansr.com>
-	<20140813093118.GF9918@twins.programming.kicks-ass.net>
-Date: Wed, 13 Aug 2014 10:37:03 +0100
-In-Reply-To: <20140813093118.GF9918@twins.programming.kicks-ass.net> (Peter
-	Zijlstra's message of "Wed, 13 Aug 2014 11:31:18 +0200")
-Message-ID: <yw1xiolw3f40.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1750751AbaHMJnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 05:43:22 -0400
+Message-ID: <53EB3337.3030809@suse.com>
+Date: Wed, 13 Aug 2014 11:43:19 +0200
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
+        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] Make bind_interdomain_evtchn_to_irq() public
+References: <1407851024-18936-1-git-send-email-jgross@suse.com> <53EB3014.8090008@citrix.com>
+In-Reply-To: <53EB3014.8090008@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
-
-> On Wed, Aug 13, 2014 at 10:24:58AM +0100, Måns Rullgård wrote:
->> Beware, even Gentoo will pull in systemd, if in a dormant state, unless
->> you are very careful.
+On 08/13/2014 11:29 AM, David Vrabel wrote:
+> On 12/08/14 14:43, jgross@suse.com wrote:
+>> From: Juergen Gross <jgross@suse.com>
+>>
+>> bind_interdomain_evtchn_to_irq() is currently a private function. It is used
+>> only by bind_interdomain_evtchn_to_irqhandler() to register an irq-handler for
+>> an event channel.
+>>
+>> By making it public it is possible to use e.g. threaded interrupts with
+>> interdomain event channels.
 >
-> Right so I've not tried yet (busy see), but I meant to remove all the
-> *Kit and other nonsense from the USE flags.
+> Can you give an example of using this?  Maybe we want a
+> bind_interdomain_evtchn_to_threaded_irqhandler() instead? Or add a flags
+> field to the existing function.
 
-The safest way to avoid it by adding it to package.mask, then adjust USE
-flags until nothing conflicts.  I do the same with dbus for good measure.
+Instead of
 
--- 
-Måns Rullgård
-mans@mansr.com
+static int scsiback_schedule(void *data)
+{
+        struct vscsibk_info *info = (struct vscsibk_info *)data;
+
+        while (!kthread_should_stop()) {
+                wait_event_interruptible(info->wq,
+                        info->waiting_reqs || kthread_should_stop());
+
+                info->waiting_reqs = 0;
+                smp_mb();       /* waiting_reqs used by other thread */
+
+                switch (scsiback_do_cmd_fn(info)) {
+                case 1:
+                        info->waiting_reqs = 1;
+                default:
+                        break;
+                }
+                cond_resched();
+        }
+        return 0;
+}
+
+static void scsiback_notify_work(struct vscsibk_info *info)
+{
+        info->waiting_reqs = 1;
+        wake_up(&info->wq);
+}
+
+static irqreturn_t scsiback_intr(int irq, void *dev_id)
+{
+        scsiback_notify_work((struct vscsibk_info *)dev_id);
+        return IRQ_HANDLED;
+}
+
+static int scsiback_init_sring(struct vscsibk_info *info, grant_ref_t 
+ring_ref,
+                        evtchn_port_t evtchn)
+{
+...
+        bind_interdomain_evtchn_to_irqhandler(
+                        info->domid, evtchn,
+                        scsiback_intr, 0, "vscsiif-backend", info);
+
+...
+        info->kthread = kthread_run(scsiback_schedule, info, name);
+...
+}
+
+
+I only need the following:
+
+static irqreturn_t scsiback_irq_fn(int irq, void *dev_id)
+{
+         struct vscsibk_info *info = dev_id;
+
+         while (scsiback_do_cmd_fn(info))
+                 cond_resched();
+
+         return IRQ_HANDLED;
+}
+
+static int scsiback_init_sring(struct vscsibk_info *info, grant_ref_t 
+ring_ref,
+                         evtchn_port_t evtchn)
+{
+...
+         irq = bind_interdomain_evtchn_to_irq(info->domid, evtchn);
+         request_threaded_irq(irq, NULL, scsiback_irq_fn,
+                              IRQF_ONESHOT, "vscsiif-backend", info)
+...
+}
+
+
+So yes, it could be done via a flag, too.
+
+Juergen
