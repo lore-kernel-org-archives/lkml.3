@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411AbaHMQIs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 12:08:48 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:62869 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaHMQIq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 12:08:46 -0400
+	id S1753288AbaHMQKw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 12:10:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63102 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751145AbaHMQKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 12:10:51 -0400
+Message-ID: <53EB8DAC.1040605@redhat.com>
+Date: Wed, 13 Aug 2014 12:09:16 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1407916658-8731-2-git-send-email-ast@plumgrid.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com> <1407916658-8731-2-git-send-email-ast@plumgrid.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 13 Aug 2014 09:08:24 -0700
-Message-ID: <CALCETrXzZVxMGUgDPOKwN0DPLvupU=ew1z6D4U-jHg+RoyZyLg@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit
- immediate" eBPF instruction
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH] fix sighand use after free
+References: <20140813115000.73da6136@cuia.bos.redhat.com> <20140813155802.GA2695@redhat.com>
+In-Reply-To: <20140813155802.GA2695@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 12:57 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> add BPF_LD_IMM64 instruction to load 64-bit immediate value into register.
-> All previous instructions were 8-byte. This is first 16-byte instruction.
-> Two consecutive 'struct bpf_insn' blocks are interpreted as single instruction:
-> insn[0/1].code = BPF_LD | BPF_DW | BPF_IMM
-> insn[0/1].dst_reg = destination register
-> insn[0].imm = lower 32-bit
-> insn[1].imm = upper 32-bit
+On 08/13/2014 11:58 AM, Oleg Nesterov wrote:
+> On 08/13, Rik van Riel wrote:
+>>
+>> Subject: fix sighand use after free
+>>
+>> __lock_task_sighand carefully takes the rcu_read_lock, gets
+>> tsk->sighand with rcu_dereference, and verifies that the task
+>> is still using the sighand_struct after taking the spinlock.
+>>
+>> This works much better if the sighand struct is actually rcu
+>> freed.
+> 
+> I promise, I'll send the doc patch soon ;)
+> 
+>> --- a/kernel/fork.c
+>> +++ b/kernel/fork.c
+>> @@ -1017,7 +1017,7 @@ void __cleanup_sighand(struct sighand_struct *sighand)
+>>  {
+>>  	if (atomic_dec_and_test(&sighand->count)) {
+>>  		signalfd_cleanup(sighand);
+>> -		kmem_cache_free(sighand_cachep, sighand);
+>> +		rcu_free(sighand_cachep, sighand);
+> 
+> Please note that sighand_cachep is SLAB_DESTROY_BY_RCU.
 
-This might be unnecessarily difficult for fancy static analysis tools
-to reason about.  Would it make sense to assign two different codes
-for this?  For example, insn[0].code = code_for_load_low,
-insns[1].code = code_for_load_high, along with a verifier check that
-they come in matched pairs and that code_for_load_high isn't a jump
-target?
+SLAB_DESTROY_BY_RCU means that the slab page is not given
+back to the system until after the RCU grace period has
+expired.
 
-(Something else that I find confusing about eBPF: the instruction
-mnemonics are very strange.  Have you considered giving them real
-names?  For example, load.imm.low instead of BPF_LD | BPF_DW | BPF_IMM
-is easier to read and pronounce.)
+However, the objects inside the slab can still be reused
+immediately!
 
---Andy
+In the case of the sighand struct, we have this possible race:
+
+     thread A       thread B              thread C
+
+                    gets task A->sighand
+     kmem_cache_free sighand
+                                          re-alloc sighand
+                    spin_lock sighand
+                                          spin_lock_init sighand
+                    spin_unlock sighand
+
+Now task C has a sighand which can never be locked.
+
+> Hmm. and what is rcu_free() ?
+
+Ugh, that should have been kfree_rcu of course, with
+appropriate rcu space in the struct.
+
+Now I wonder why my test compile succeeded...
+
