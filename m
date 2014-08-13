@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947AbaHMVIE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 17:08:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50679 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109AbaHMVIC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 17:08:02 -0400
-Date: Wed, 13 Aug 2014 14:08:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Robert Richter <rric@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, aswin@hp.com
-Subject: Re: [PATCH] mm: introduce for_each_vma helpers
-Message-Id: <20140813140800.df0310a05e5fad6ed6b55886@linux-foundation.org>
-In-Reply-To: <1407887208.2695.9.camel@buesod1.americas.hpqcorp.net>
-References: <1407865523.2633.3.camel@buesod1.americas.hpqcorp.net>
-	<20140812215213.GB17497@node.dhcp.inet.fi>
-	<1407887208.2695.9.camel@buesod1.americas.hpqcorp.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753698AbaHMVM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 17:12:26 -0400
+Received: from mga03.intel.com ([143.182.124.21]:61633 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751529AbaHMVMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 17:12:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,857,1400050800"; 
+   d="scan'208";a="468442830"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
+        mingo@kernel.org, peterz@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, tools: Add PERF_PID
+Date: Wed, 13 Aug 2014 14:12:17 -0700
+Message-Id: <1407964337-23952-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Aug 2014 16:46:48 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> On Wed, 2014-08-13 at 00:52 +0300, Kirill A. Shutemov wrote:
-> > On Tue, Aug 12, 2014 at 10:45:23AM -0700, Davidlohr Bueso wrote:
-> > > The most common way of iterating through the list of vmas, is via:
-> > >     for (vma = mm->mmap; vma; vma = vma->vm_next)
-> > > 
-> > > This patch replaces this logic with a new for_each_vma(vma) helper,
-> > > which 1) encapsulates this logic, and 2) make it easier to read.
-> > 
-> > Why does it need to be encapsulated?
-> > Do you have problem with reading plain for()?
-> > 
-> > Your for_each_vma(vma) assumes "mm" from the scope. This can be confusing
-> > for reader: whether it uses "mm" from the scope or "current->mm". This
-> > will lead to very hard to find bug one day.
-> 
-> I think its fairly obvious to see where the mm is coming from -- the
-> helpers *do not* necessarily use current, it uses whatever mm was
-> already there in the first place. I have not changed anything related to
-> this from the callers. 
+It's currently difficult to filter out perf itself using a filter.
+This can give cascading effects during IO tracing when the IO
+perf does itself causes more trace output.
 
-It is a bit of a hand-grenade for those (rare) situations where code is
-dealing with other-tasks-mm.  It's simple enough to add an `mm' arg?
+The best way to filter is to use the pid. But it's difficult to get the pid
+of perf without using hacks.
 
-> The only related change I can think of, is for some callers that do:
-> 
-> for (vma = current->mm->mmap; vma != NULL; vma = vma->vm_next)
-> 
-> So we just add a local mm from current->mm and replace the for() with
-> for_each_vma(). I don't see anything particularly ambiguous with that.
+Add a PERF_PID meta variable to the perf filter that contains the current pid.
 
-Adding a local to support a macro which secretly uses that local is
-pretty nasty.
+With this patch the following works
 
+% perf record -e syscalls:sys_enter_write -a --filter 'common_pid != PERF_PID' ...
 
-Overall, I'm not really sure that
+This won't work for more complex perf pipe lines with multiple processes,
+but at least solves the problem nicely for a single perf.
 
--	for (vma = mm->mmap; vma; vma = vma->vm_next) {
-+	for_each_vma(mm, vma) {
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-record.txt | 2 +-
+ tools/perf/util/parse-events.c           | 9 +++++++++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-is much of an improvement.  I'll wait to see what others think...
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index d460049..b6c5e51 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -41,7 +41,7 @@ OPTIONS
+           'mem:0x1000:rw'.
+ 
+ --filter=<filter>::
+-        Event filter.
++        Event filter. PERF_PID represents the perf pid.
+ 
+ -a::
+ --all-cpus::
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 1e15df1..90ed63f 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -967,6 +967,7 @@ int parse_filter(const struct option *opt, const char *str,
+ {
+ 	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
+ 	struct perf_evsel *last = NULL;
++	char *pid;
+ 
+ 	if (evlist->nr_entries > 0)
+ 		last = perf_evlist__last(evlist);
+@@ -983,6 +984,14 @@ int parse_filter(const struct option *opt, const char *str,
+ 		return -1;
+ 	}
+ 
++	/* Assume a pid has not more than 8 characters */
++	pid = strstr(last->filter, "PERF_PID");
++	if (pid) {
++		char buf[9];
++		snprintf(buf, 9, "%08d", getpid());
++		memcpy(pid, buf, 8);
++	}
++	fprintf(stderr, "filter |%s|\n", last->filter);
+ 	return 0;
+ }
+ 
+-- 
+1.9.3
+
