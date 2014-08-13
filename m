@@ -1,143 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863AbaHMOAR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:00:17 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:62160 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557AbaHMOAP (ORCPT
+	id S1752899AbaHMOCQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:02:16 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:62991 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090AbaHMOCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:00:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407225723-23754-2-git-send-email-minchan@kernel.org>
-References: <1407225723-23754-1-git-send-email-minchan@kernel.org> <1407225723-23754-2-git-send-email-minchan@kernel.org>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Wed, 13 Aug 2014 09:59:52 -0400
-X-Google-Sender-Auth: d1Z9A0uQG0fxEB4WfTQyv20Ws0Y
-Message-ID: <CALZtONDmvLDtceVW9AyiDwdSHQzPbay36JEts8iuZ4nvykWfeA@mail.gmail.com>
-Subject: Re: [RFC 1/3] zsmalloc: move pages_allocated to zs_pool
-To: Minchan Kim <minchan@kernel.org>
-Cc: Linux-MM <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 13 Aug 2014 10:02:15 -0400
+From: Srikrishan Malik <srikrishanmalik@gmail.com>
+To: greg@kroah.com, andreas.dilger@intel.com, oleg.drokin@intel.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Srikrishan Malik <srikrishanmalik@gmail.com>
+Subject: [PATCH v3 08/13]] staging: lustre: fix multi line strings
+Date: Wed, 13 Aug 2014 19:31:16 +0530
+Message-Id: <1407938481-29498-1-git-send-email-srikrishanmalik@gmail.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1407781659-728-8-git-send-email-srikrishanmalik@gmail.com>
+References: <1407781659-728-8-git-send-email-srikrishanmalik@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 5, 2014 at 4:02 AM, Minchan Kim <minchan@kernel.org> wrote:
-> Pages_allocated has counted in size_class structure and when user
-> want to see total_size_bytes, it gathers all of value from each
-> size_class to report the sum.
->
-> It's not bad if user don't see the value often but if user start
-> to see the value frequently, it would be not a good deal for
-> performance POV.
->
-> This patch moves the variable from size_class to zs_pool so it would
-> reduce memory footprint (from [255 * 8byte] to [sizeof(atomic_t)])
-> but it adds new locking overhead but it wouldn't be severe because
-> it's not a hot path in zs_malloc(ie, it is called only when new
-> zspage is created, not a object).
+Fixes the following checkpatch warning:
 
-Would using an atomic64_t without locking be simpler?
+WARNING: quoted string split across lines
 
->
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  mm/zsmalloc.c | 30 ++++++++++++++++--------------
->  1 file changed, 16 insertions(+), 14 deletions(-)
->
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index fe78189624cf..a6089bd26621 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -198,9 +198,6 @@ struct size_class {
->
->         spinlock_t lock;
->
-> -       /* stats */
-> -       u64 pages_allocated;
-> -
->         struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
->  };
->
-> @@ -216,9 +213,12 @@ struct link_free {
->  };
->
->  struct zs_pool {
-> +       spinlock_t stat_lock;
-> +
->         struct size_class size_class[ZS_SIZE_CLASSES];
->
->         gfp_t flags;    /* allocation flags used when growing pool */
-> +       unsigned long pages_allocated;
->  };
->
->  /*
-> @@ -882,6 +882,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
->
->         }
->
-> +       spin_lock_init(&pool->stat_lock);
->         pool->flags = flags;
->
->         return pool;
-> @@ -943,8 +944,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
->                         return 0;
->
->                 set_zspage_mapping(first_page, class->index, ZS_EMPTY);
-> +               spin_lock(&pool->stat_lock);
-> +               pool->pages_allocated += class->pages_per_zspage;
-> +               spin_unlock(&pool->stat_lock);
->                 spin_lock(&class->lock);
-> -               class->pages_allocated += class->pages_per_zspage;
->         }
->
->         obj = (unsigned long)first_page->freelist;
-> @@ -997,14 +1000,14 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
->
->         first_page->inuse--;
->         fullness = fix_fullness_group(pool, first_page);
-> -
-> -       if (fullness == ZS_EMPTY)
-> -               class->pages_allocated -= class->pages_per_zspage;
-> -
->         spin_unlock(&class->lock);
->
-> -       if (fullness == ZS_EMPTY)
-> +       if (fullness == ZS_EMPTY) {
-> +               spin_lock(&pool->stat_lock);
-> +               pool->pages_allocated -= class->pages_per_zspage;
-> +               spin_unlock(&pool->stat_lock);
->                 free_zspage(first_page);
-> +       }
->  }
->  EXPORT_SYMBOL_GPL(zs_free);
->
-> @@ -1100,12 +1103,11 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
->
->  u64 zs_get_total_size_bytes(struct zs_pool *pool)
->  {
-> -       int i;
-> -       u64 npages = 0;
-> -
-> -       for (i = 0; i < ZS_SIZE_CLASSES; i++)
-> -               npages += pool->size_class[i].pages_allocated;
-> +       u64 npages;
->
-> +       spin_lock(&pool->stat_lock);
-> +       npages = pool->pages_allocated;
-> +       spin_unlock(&pool->stat_lock);
->         return npages << PAGE_SHIFT;
->  }
->  EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
-> --
-> 2.0.0
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: Srikrishan Malik <srikrishanmalik@gmail.com>
+---
+Changes in v3: Removed leading space from debug message.
+
+ drivers/staging/lustre/lustre/mdc/mdc_locks.c   |  9 +++----
+ drivers/staging/lustre/lustre/mdc/mdc_reint.c   |  3 +--
+ drivers/staging/lustre/lustre/mdc/mdc_request.c | 36 ++++++++++++-------------
+ 3 files changed, 23 insertions(+), 25 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
+index 4d837d61be65..7f724e3c3f06 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
+@@ -136,11 +136,10 @@ int mdc_set_lock_data(struct obd_export *exp, __u64 *lockh, void *data,
+ 		struct inode *old_inode = lock->l_resource->lr_lvb_inode;
+ 
+ 		LASSERTF(old_inode->i_state & I_FREEING,
+-			 "Found existing inode %p/%lu/%u state %lu in lock: "
+-			 "setting data to %p/%lu/%u\n", old_inode,
+-			 old_inode->i_ino, old_inode->i_generation,
+-			 old_inode->i_state,
+-			 new_inode, new_inode->i_ino, new_inode->i_generation);
++			 "Found existing inode %p/%lu/%u state %lu in lock: setting data to %p/%lu/%u\n",
++			 old_inode, old_inode->i_ino, old_inode->i_generation,
++			 old_inode->i_state, new_inode, new_inode->i_ino,
++			 new_inode->i_generation);
+ 	}
+ 	lock->l_resource->lr_lvb_inode = new_inode;
+ 	if (bits)
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_reint.c b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
+index b8c0f482b76f..46800335ca7d 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_reint.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_reint.c
+@@ -158,8 +158,7 @@ int mdc_setattr(struct obd_export *exp, struct md_op_data *op_data,
+ 
+ 		*mod = obd_mod_alloc();
+ 		if (*mod == NULL) {
+-			DEBUG_REQ(D_ERROR, req, "Can't allocate "
+-				  "md_open_data");
++			DEBUG_REQ(D_ERROR, req, "Can't allocate md_open_data");
+ 		} else {
+ 			req->rq_replay = 1;
+ 			req->rq_cb_data = *mod;
+diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
+index 57d903156917..1dfe90e7418f 100644
+--- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
++++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
+@@ -517,14 +517,14 @@ int mdc_get_lustre_md(struct obd_export *exp, struct ptlrpc_request *req,
+ 		struct lov_mds_md *lmm;
+ 
+ 		if (!S_ISREG(md->body->mode)) {
+-			CDEBUG(D_INFO, "OBD_MD_FLEASIZE set, should be a "
+-			       "regular file, but is not\n");
++			CDEBUG(D_INFO,
++			       "OBD_MD_FLEASIZE set, should be a regular file, but is not\n");
+ 			GOTO(out, rc = -EPROTO);
+ 		}
+ 
+ 		if (md->body->eadatasize == 0) {
+-			CDEBUG(D_INFO, "OBD_MD_FLEASIZE set, "
+-			       "but eadatasize 0\n");
++			CDEBUG(D_INFO,
++			       "OBD_MD_FLEASIZE set, but eadatasize 0\n");
+ 			GOTO(out, rc = -EPROTO);
+ 		}
+ 		lmmsize = md->body->eadatasize;
+@@ -537,8 +537,8 @@ int mdc_get_lustre_md(struct obd_export *exp, struct ptlrpc_request *req,
+ 			GOTO(out, rc);
+ 
+ 		if (rc < sizeof(*md->lsm)) {
+-			CDEBUG(D_INFO, "lsm size too small: "
+-			       "rc < sizeof (*md->lsm) (%d < %d)\n",
++			CDEBUG(D_INFO,
++			       "lsm size too small: rc < sizeof (*md->lsm) (%d < %d)\n",
+ 			       rc, (int)sizeof(*md->lsm));
+ 			GOTO(out, rc = -EPROTO);
+ 		}
+@@ -548,14 +548,14 @@ int mdc_get_lustre_md(struct obd_export *exp, struct ptlrpc_request *req,
+ 		struct lov_mds_md *lmv;
+ 
+ 		if (!S_ISDIR(md->body->mode)) {
+-			CDEBUG(D_INFO, "OBD_MD_FLDIREA set, should be a "
+-			       "directory, but is not\n");
++			CDEBUG(D_INFO,
++			       "OBD_MD_FLDIREA set, should be a directory, but is not\n");
+ 			GOTO(out, rc = -EPROTO);
+ 		}
+ 
+ 		if (md->body->eadatasize == 0) {
+-			CDEBUG(D_INFO, "OBD_MD_FLDIREA is set, "
+-			       "but eadatasize 0\n");
++			CDEBUG(D_INFO,
++			       "OBD_MD_FLDIREA is set, but eadatasize 0\n");
+ 			return -EPROTO;
+ 		}
+ 		if (md->body->valid & OBD_MD_MEA) {
+@@ -571,8 +571,8 @@ int mdc_get_lustre_md(struct obd_export *exp, struct ptlrpc_request *req,
+ 				GOTO(out, rc);
+ 
+ 			if (rc < sizeof(*md->mea)) {
+-				CDEBUG(D_INFO, "size too small:  "
+-				       "rc < sizeof(*md->mea) (%d < %d)\n",
++				CDEBUG(D_INFO,
++				       "size too small: rc < sizeof(*md->mea) (%d < %d)\n",
+ 					rc, (int)sizeof(*md->mea));
+ 				GOTO(out, rc = -EPROTO);
+ 			}
+@@ -778,8 +778,8 @@ int mdc_set_open_replay_data(struct obd_export *exp,
+ 	rec->cr_old_handle.cookie = body->handle.cookie;
+ 	open_req->rq_replay_cb = mdc_replay_open;
+ 	if (!fid_is_sane(&body->fid1)) {
+-		DEBUG_REQ(D_ERROR, open_req, "Saving replay request with "
+-			  "insane fid");
++		DEBUG_REQ(D_ERROR, open_req,
++			  "Saving replay request with insane fid");
+ 		LBUG();
+ 	}
+ 
+@@ -928,8 +928,8 @@ int mdc_close(struct obd_export *exp, struct md_op_data *op_data,
+ 
+ 		rc = lustre_msg_get_status(req->rq_repmsg);
+ 		if (lustre_msg_get_type(req->rq_repmsg) == PTL_RPC_MSG_ERR) {
+-			DEBUG_REQ(D_ERROR, req, "type == PTL_RPC_MSG_ERR, err "
+-				  "= %d", rc);
++			DEBUG_REQ(D_ERROR, req,
++				  "type == PTL_RPC_MSG_ERR, err = %d", rc);
+ 			if (rc > 0)
+ 				rc = -rc;
+ 		}
+@@ -2055,8 +2055,8 @@ static int mdc_hsm_copytool_send(int len, void *val)
+ 		return -EPROTO;
+ 	}
+ 
+-	CDEBUG(D_HSM, " Received message mg=%x t=%d m=%d l=%d actions=%d "
+-	       "on %s\n",
++	CDEBUG(D_HSM,
++	       "Received message mg=%x t=%d m=%d l=%d actions=%d on %s\n",
+ 	       lh->kuc_magic, lh->kuc_transport, lh->kuc_msgtype,
+ 	       lh->kuc_msglen, hal->hal_count, hal->hal_fsname);
+ 
+-- 
+1.9.3
+
