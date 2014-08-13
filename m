@@ -1,154 +1,506 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaHMKWA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 06:22:00 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:41755 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408AbaHMKV6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 06:21:58 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-5f-53eb3c2bdd1f
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-References: <1407872967-26423-1-git-send-email-jaegeuk@kernel.org>
- <1407872967-26423-6-git-send-email-jaegeuk@kernel.org>
-In-reply-to: <1407872967-26423-6-git-send-email-jaegeuk@kernel.org>
-Subject: RE: [f2fs-dev] [PATCH 06/13] f2fs: fix to recover inline_xattr/data
- and	blocks
-Date: Wed, 13 Aug 2014 18:20:44 +0800
-Message-id: <009e01cfb6e0$58a98d30$09fca790$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQG4wP7f0RrIWMfJUczB9r86/XcZWwH+9LHfm+xGjuA=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jQV1tm9fBBt9+Sls8WT+L2eLSIneL
-	PXtPslhc3jWHzYHFY9OqTjaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAlfG+dyFzwVq5ig2z
-	ljE3MH6S6GLk5JAQMJGY+KebCcIWk7hwbz1bFyMXh5DAdEaJQ00LWCGcH4wSLTeXMINUsQmo
-	SCzv+A/WISKgJtG7bwqYzSyQKTGh/wU7iC0kUC2xsW0imM0p4Cyx69gtsBphgUiJfbvnAdkc
-	HCwCqhLrnoSBhHkFLCV2tX1ghbAFJX5MvscCMVJLYv3O41Dj5SU2r3nLDHGogsSOs68ZIU6w
-	klh5eCpUjbjExiO3WCYwCs1CMmoWklGzkIyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS9
-	5PzcTYzgwH8mtYNxZYPFIUYBDkYlHt4K3lfBQqyJZcWVuYcYJTiYlUR41xi9DhbiTUmsrEot
-	yo8vKs1JLT7EKM3BoiTOe6DVOlBIID2xJDU7NbUgtQgmy8TBKdXAuHLDkY1tq+e9/dXL+3dX
-	ScbV7RYOYsVq70J8fayl1YSdfklGcQZv63M7X2hbeSDrsanXOZ0b6+Ts36SdvzP1t5aU+Gr/
-	TTf6kj0u7j518rLzZm3zE71zI2/ccO7/t9G8LzFhoqLRxsXrqueIfz/Q8cfIJEW6aIvAtvdf
-	z/yRfaHSseBnlGx4jhJLcUaioRZzUXEiAHo17Tl4AgAA
+	id S1751934AbaHMK1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 06:27:25 -0400
+Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:15760
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751317AbaHMK1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 06:27:23 -0400
+From: Yuan Yao <yao.yuan@freescale.com>
+To: <wsa@the-dreams.de>, <marex@denx.de>
+CC: <LW@KARO-electronics.de>, <mark.rutland@arm.com>,
+        <fugang.duan@freescale.com>, <shawn.guo@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-i2c@vger.kernel.org>
+Subject: [PATCH v7 1/2] i2c: imx: add DMA support for freescale i2c driver
+Date: Wed, 13 Aug 2014 17:37:55 +0800
+Message-ID: <1407922676-31438-2-git-send-email-yao.yuan@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(31966008)(81542001)(85306004)(74502001)(74662001)(21056001)(95666004)(50466002)(33646002)(44976005)(86362001)(19580395003)(105606002)(106466001)(6806004)(48376002)(62966002)(102836001)(80022001)(47776003)(107046002)(99396002)(77982001)(87286001)(50226001)(97736001)(87936001)(89996001)(26826002)(88136002)(4396001)(79102001)(68736004)(84676001)(92726001)(76482001)(50986999)(19580405001)(83072002)(83322001)(36756003)(64706001)(104016003)(229853001)(93916002)(20776003)(104166001)(92566001)(46102001)(77156001)(85852003)(81342001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB373;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
+X-Forefront-PRVS: 0302D4F392
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=yao.yuan@freescale.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> Sent: Wednesday, August 13, 2014 3:49 AM
-> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net
-> Cc: Jaegeuk Kim
-> Subject: [f2fs-dev] [PATCH 06/13] f2fs: fix to recover inline_xattr/data and blocks
-> 
-> This patch fixes not to skip xattr recovery and inline xattr/data recovery
-> order.
-> 
-> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+Add dma support for i2c. This function depend on DMA driver.
+You can turn on it by write both the dmas and dma-name properties in dts node.
+DMA is optional, even DMA request unsuccessfully, i2c can also work well.
 
-Reviewed-by: Chao Yu <chao2.yu@samsung.com>
+Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
+---
+ drivers/i2c/busses/i2c-imx.c | 351 +++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 341 insertions(+), 10 deletions(-)
 
-> ---
->  fs/f2fs/f2fs.h     |  2 +-
->  fs/f2fs/node.c     |  9 +--------
->  fs/f2fs/recovery.c | 13 +++++++++----
->  3 files changed, 11 insertions(+), 13 deletions(-)
-> 
-> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> index 2e4aa3a..cc5ead1 100644
-> --- a/fs/f2fs/f2fs.h
-> +++ b/fs/f2fs/f2fs.h
-> @@ -1205,7 +1205,7 @@ void alloc_nid_failed(struct f2fs_sb_info *, nid_t);
->  void recover_node_page(struct f2fs_sb_info *, struct page *,
->  		struct f2fs_summary *, struct node_info *, block_t);
->  void recover_inline_xattr(struct inode *, struct page *);
-> -bool recover_xattr_data(struct inode *, struct page *, block_t);
-> +void recover_xattr_data(struct inode *, struct page *, block_t);
->  int recover_inode_page(struct f2fs_sb_info *, struct page *);
->  int restore_node_summary(struct f2fs_sb_info *, unsigned int,
->  				struct f2fs_summary_block *);
-> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> index 151045f..c80e3d5 100644
-> --- a/fs/f2fs/node.c
-> +++ b/fs/f2fs/node.c
-> @@ -1557,9 +1557,6 @@ void recover_inline_xattr(struct inode *inode, struct page *page)
->  	struct page *ipage;
->  	struct f2fs_inode *ri;
-> 
-> -	if (!IS_INODE(page))
-> -		return;
-> -
->  	ipage = get_node_page(sbi, inode->i_ino);
->  	f2fs_bug_on(IS_ERR(ipage));
-> 
-> @@ -1580,16 +1577,13 @@ update_inode:
->  	f2fs_put_page(ipage, 1);
->  }
-> 
-> -bool recover_xattr_data(struct inode *inode, struct page *page, block_t blkaddr)
-> +void recover_xattr_data(struct inode *inode, struct page *page, block_t blkaddr)
->  {
->  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
->  	nid_t prev_xnid = F2FS_I(inode)->i_xattr_nid;
->  	nid_t new_xnid = nid_of_node(page);
->  	struct node_info ni;
-> 
-> -	if (!f2fs_has_xattr_block(ofs_of_node(page)))
-> -		return false;
-> -
->  	/* 1: invalidate the previous xattr nid */
->  	if (!prev_xnid)
->  		goto recover_xnid;
-> @@ -1617,7 +1611,6 @@ recover_xnid:
->  	set_node_addr(sbi, &ni, blkaddr, false);
-> 
->  	update_inode_page(inode);
-> -	return true;
->  }
-> 
->  int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
-> diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-> index cfb2aa9..d7b67b8 100644
-> --- a/fs/f2fs/recovery.c
-> +++ b/fs/f2fs/recovery.c
-> @@ -302,14 +302,19 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
->  	struct node_info ni;
->  	int err = 0, recovered = 0;
-> 
-> -	recover_inline_xattr(inode, page);
-> -
-> -	if (recover_inline_data(inode, page))
-> +	/* step 1: recover xattr */
-> +	if (IS_INODE(page)) {
-> +		recover_inline_xattr(inode, page);
-> +	} else if (f2fs_has_xattr_block(ofs_of_node(page))) {
-> +		recover_xattr_data(inode, page, blkaddr);
->  		goto out;
-> +	}
-> 
-> -	if (recover_xattr_data(inode, page, blkaddr))
-> +	/* step 2: recover inline data */
-> +	if (recover_inline_data(inode, page))
->  		goto out;
-> 
-> +	/* step 3: recover data indices */
->  	start = start_bidx_of_node(ofs_of_node(page), fi);
->  	end = start + ADDRS_PER_PAGE(page, fi);
-> 
-> --
-> 1.8.5.2 (Apple Git-48)
-> 
-> 
-> ------------------------------------------------------------------------------
-> _______________________________________________
-> Linux-f2fs-devel mailing list
-> Linux-f2fs-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
+index aa8bc14..a09bf8c 100644
+--- a/drivers/i2c/busses/i2c-imx.c
++++ b/drivers/i2c/busses/i2c-imx.c
+@@ -37,22 +37,27 @@
+ /** Includes *******************************************************************
+ *******************************************************************************/
+ 
+-#include <linux/init.h>
+-#include <linux/kernel.h>
+-#include <linux/module.h>
++#include <linux/clk.h>
++#include <linux/completion.h>
++#include <linux/delay.h>
++#include <linux/dma-mapping.h>
++#include <linux/dmaengine.h>
++#include <linux/dmapool.h>
+ #include <linux/errno.h>
+ #include <linux/err.h>
+ #include <linux/interrupt.h>
+-#include <linux/delay.h>
+ #include <linux/i2c.h>
++#include <linux/init.h>
+ #include <linux/io.h>
+-#include <linux/sched.h>
+-#include <linux/platform_device.h>
+-#include <linux/clk.h>
+-#include <linux/slab.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
++#include <linux/of_dma.h>
+ #include <linux/platform_data/i2c-imx.h>
++#include <linux/platform_device.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
+ 
+ /** Defines ********************************************************************
+ *******************************************************************************/
+@@ -63,6 +68,12 @@
+ /* Default value */
+ #define IMX_I2C_BIT_RATE	100000	/* 100kHz */
+ 
++/* Enable DMA if transfer byte size is bigger than this threshold.
++ * As the hardware request, it must bigger than 4.
++ */
++#define IMX_I2C_DMA_THRESHOLD	16
++#define IMX_I2C_DMA_TIMEOUT	1000
++
+ /* IMX I2C registers:
+  * the I2C register offset is different between SoCs,
+  * to provid support for all these chips, split the
+@@ -88,6 +99,7 @@
+ #define I2SR_IBB	0x20
+ #define I2SR_IAAS	0x40
+ #define I2SR_ICF	0x80
++#define I2CR_DMAEN	0x02
+ #define I2CR_RSTA	0x04
+ #define I2CR_TXAK	0x08
+ #define I2CR_MTX	0x10
+@@ -174,6 +186,17 @@ struct imx_i2c_hwdata {
+ 	unsigned		i2cr_ien_opcode;
+ };
+ 
++struct imx_i2c_dma {
++	struct dma_chan		*chan_tx;
++	struct dma_chan		*chan_rx;
++	struct dma_chan		*chan_using;
++	struct completion	cmd_complete;
++	dma_addr_t		dma_buf;
++	unsigned int		dma_len;
++	unsigned int		dma_transfer_dir;
++	unsigned int		dma_data_dir;
++};
++
+ struct imx_i2c_struct {
+ 	struct i2c_adapter	adapter;
+ 	struct clk		*clk;
+@@ -186,6 +209,8 @@ struct imx_i2c_struct {
+ 	unsigned int		cur_clk;
+ 	unsigned int		bitrate;
+ 	const struct imx_i2c_hwdata	*hwdata;
++
++	struct imx_i2c_dma	*dma;
+ };
+ 
+ static const struct imx_i2c_hwdata imx1_i2c_hwdata  = {
+@@ -256,6 +281,132 @@ static inline unsigned char imx_i2c_read_reg(struct imx_i2c_struct *i2c_imx,
+ 	return readb(i2c_imx->base + (reg << i2c_imx->hwdata->regshift));
+ }
+ 
++/* Functions for DMA support */
++static int i2c_imx_dma_request(struct imx_i2c_struct *i2c_imx,
++						dma_addr_t phy_addr)
++{
++	struct imx_i2c_dma *dma;
++	struct dma_slave_config dma_sconfig;
++	struct device *dev = &i2c_imx->adapter.dev;
++	int ret;
++
++	dma = devm_kzalloc(dev, sizeof(struct imx_i2c_dma), GFP_KERNEL);
++	if (!dma)
++		return -ENOMEM;
++
++	dma->chan_tx = dma_request_slave_channel(dev, "tx");
++	if (!dma->chan_tx) {
++		dev_dbg(dev, "can't request DMA tx channel\n");
++		ret = -ENODEV;
++		goto fail_al;
++	}
++
++	dma_sconfig.dst_addr = phy_addr +
++				(IMX_I2C_I2DR << i2c_imx->hwdata->regshift);
++	dma_sconfig.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
++	dma_sconfig.dst_maxburst = 1;
++	dma_sconfig.direction = DMA_MEM_TO_DEV;
++	ret = dmaengine_slave_config(dma->chan_tx, &dma_sconfig);
++	if (ret < 0) {
++		dev_dbg(dev, "can't configure tx channel\n");
++		goto fail_tx;
++	}
++
++	dma->chan_rx = dma_request_slave_channel(dev, "rx");
++	if (!dma->chan_rx) {
++		dev_dbg(dev, "can't request DMA rx channel\n");
++		ret = -ENODEV;
++		goto fail_tx;
++	}
++
++	dma_sconfig.src_addr = phy_addr +
++				(IMX_I2C_I2DR << i2c_imx->hwdata->regshift);
++	dma_sconfig.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
++	dma_sconfig.src_maxburst = 1;
++	dma_sconfig.direction = DMA_DEV_TO_MEM;
++	ret = dmaengine_slave_config(dma->chan_rx, &dma_sconfig);
++	if (ret < 0) {
++		dev_dbg(dev, "can't configure rx channel\n");
++		goto fail_rx;
++	}
++
++	i2c_imx->dma = dma;
++	init_completion(&dma->cmd_complete);
++	dev_info(dev, "using %s (tx) and %s (rx) for DMA transfers\n",
++		dma_chan_name(dma->chan_tx), dma_chan_name(dma->chan_rx));
++
++	return 0;
++
++fail_rx:
++	dma_release_channel(dma->chan_rx);
++fail_tx:
++	dma_release_channel(dma->chan_tx);
++fail_al:
++	devm_kfree(dev, dma);
++	dev_info(dev, "can't use DMA\n");
++
++	return ret;
++}
++
++static void i2c_imx_dma_callback(void *arg)
++{
++	struct imx_i2c_struct *i2c_imx = (struct imx_i2c_struct *)arg;
++	struct imx_i2c_dma *dma = i2c_imx->dma;
++
++	dma_unmap_single(dma->chan_using->device->dev, dma->dma_buf,
++			dma->dma_len, dma->dma_data_dir);
++	complete(&dma->cmd_complete);
++}
++
++static int i2c_imx_dma_xfer(struct imx_i2c_struct *i2c_imx,
++					struct i2c_msg *msgs)
++{
++	struct imx_i2c_dma *dma = i2c_imx->dma;
++	struct dma_async_tx_descriptor *txdesc;
++	struct device *dev = &i2c_imx->adapter.dev;
++	struct device *chan_dev = dma->chan_using->device->dev;
++
++	dma->dma_buf = dma_map_single(chan_dev, msgs->buf,
++					dma->dma_len, dma->dma_data_dir);
++	if (dma_mapping_error(chan_dev, dma->dma_buf)) {
++		dev_err(dev, "DMA mapping failed\n");
++		return -EINVAL;
++	}
++
++	txdesc = dmaengine_prep_slave_single(dma->chan_using, dma->dma_buf,
++					dma->dma_len, dma->dma_transfer_dir,
++					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
++	if (!txdesc) {
++		dev_err(dev, "Not able to get desc for DMA xfer\n");
++		dma_unmap_single(chan_dev, dma->dma_buf,
++					dma->dma_len, dma->dma_data_dir);
++		return -EINVAL;
++	}
++
++	txdesc->callback = i2c_imx_dma_callback;
++	txdesc->callback_param = i2c_imx;
++	dmaengine_submit(txdesc);
++	dma_async_issue_pending(dma->chan_using);
++
++	return 0;
++}
++
++static void i2c_imx_dma_free(struct imx_i2c_struct *i2c_imx)
++{
++	struct imx_i2c_dma *dma = i2c_imx->dma;
++
++	dma->dma_buf = 0;
++	dma->dma_len = 0;
++
++	dma_release_channel(dma->chan_tx);
++	dma->chan_tx = NULL;
++
++	dma_release_channel(dma->chan_rx);
++	dma->chan_rx = NULL;
++
++	dma->chan_using = NULL;
++}
++
+ /** Functions for IMX I2C adapter driver ***************************************
+ *******************************************************************************/
+ 
+@@ -379,6 +530,7 @@ static int i2c_imx_start(struct imx_i2c_struct *i2c_imx)
+ 	i2c_imx->stopped = 0;
+ 
+ 	temp |= I2CR_IIEN | I2CR_MTX | I2CR_TXAK;
++	temp &= ~I2CR_DMAEN;
+ 	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
+ 	return result;
+ }
+@@ -432,6 +584,170 @@ static irqreturn_t i2c_imx_isr(int irq, void *dev_id)
+ 	return IRQ_NONE;
+ }
+ 
++static int i2c_imx_dma_write(struct imx_i2c_struct *i2c_imx,
++					struct i2c_msg *msgs)
++{
++	int result;
++	unsigned int temp = 0;
++	unsigned long orig_jiffies = jiffies;
++	struct imx_i2c_dma *dma = i2c_imx->dma;
++	struct device *dev = &i2c_imx->adapter.dev;
++
++	dev_dbg(dev, "<%s> write slave address: addr=0x%x\n",
++		__func__, msgs->addr << 1);
++
++	reinit_completion(&i2c_imx->dma->cmd_complete);
++	dma->chan_using = dma->chan_tx;
++	dma->dma_transfer_dir = DMA_MEM_TO_DEV;
++	dma->dma_data_dir = DMA_TO_DEVICE;
++	dma->dma_len = msgs->len - 1;
++	result = i2c_imx_dma_xfer(i2c_imx, msgs);
++	if (result)
++		return result;
++
++	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
++	temp |= I2CR_DMAEN;
++	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
++
++	/*
++	 * Write slave address.
++	 * The first byte muse be transmitted by the CPU.
++	 */
++	imx_i2c_write_reg(msgs->addr << 1, i2c_imx, IMX_I2C_I2DR);
++	result = wait_for_completion_interruptible_timeout(
++				&i2c_imx->dma->cmd_complete,
++				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT));
++	if (result <= 0) {
++		dmaengine_terminate_all(dma->chan_using);
++		if (result)
++			return result;
++		else
++			return -ETIMEDOUT;
++	}
++
++	/* Waiting for Transfer complete. */
++	while (1) {
++		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
++		if (temp & I2SR_ICF)
++			break;
++		if (time_after(jiffies, orig_jiffies +
++				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT))) {
++			dev_dbg(&i2c_imx->adapter.dev, "<%s> Timeout\n",
++				__func__);
++			return -ETIMEDOUT;
++		}
++		schedule();
++	}
++
++	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
++	temp &= ~I2CR_DMAEN;
++	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
++
++	/* The last data byte must be transferred by the CPU. */
++	imx_i2c_write_reg(msgs->buf[msgs->len-1],
++				i2c_imx, IMX_I2C_I2DR);
++	result = i2c_imx_trx_complete(i2c_imx);
++	if (result)
++		return result;
++
++	result = i2c_imx_acked(i2c_imx);
++	if (result)
++		return result;
++
++	return 0;
++}
++
++static int i2c_imx_dma_read(struct imx_i2c_struct *i2c_imx,
++			struct i2c_msg *msgs, bool is_lastmsg)
++{
++	int result;
++	unsigned int temp;
++	unsigned long orig_jiffies;
++	struct imx_i2c_dma *dma = i2c_imx->dma;
++	struct device *dev = &i2c_imx->adapter.dev;
++
++	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
++	temp |= I2CR_DMAEN;
++	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
++
++	reinit_completion(&i2c_imx->dma->cmd_complete);
++	dma->chan_using = dma->chan_rx;
++	dma->dma_transfer_dir = DMA_DEV_TO_MEM;
++	dma->dma_data_dir = DMA_FROM_DEVICE;
++	/* The last two data bytes must be transferred by the CPU. */
++	dma->dma_len = msgs->len - 2;
++	result = i2c_imx_dma_xfer(i2c_imx, msgs);
++	if (result)
++		return result;
++
++	result = wait_for_completion_interruptible_timeout(
++				&i2c_imx->dma->cmd_complete,
++				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT));
++	if (result <= 0) {
++		dmaengine_terminate_all(dma->chan_using);
++		if (result)
++			return result;
++		else
++			return -ETIMEDOUT;
++	}
++
++	/* waiting for Transfer complete. */
++	while (1) {
++		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
++		if (temp & I2SR_ICF)
++			break;
++		if (time_after(jiffies, orig_jiffies +
++				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT))) {
++			dev_dbg(&i2c_imx->adapter.dev, "<%s> Timeout\n",
++				__func__);
++			return -ETIMEDOUT;
++		}
++		schedule();
++	}
++
++	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
++	temp &= ~I2CR_DMAEN;
++	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
++
++	/* read n-1 byte data */
++	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
++	temp |= I2CR_TXAK;
++	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
++
++	msgs->buf[msgs->len-2] = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
++	/* read n byte data */
++	result = i2c_imx_trx_complete(i2c_imx);
++	if (result)
++		return result;
++
++	if (is_lastmsg) {
++		/*
++		 * It must generate STOP before read I2DR to prevent
++		 * controller from generating another clock cycle
++		 */
++		dev_dbg(dev, "<%s> clear MSTA\n", __func__);
++		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
++		temp &= ~(I2CR_MSTA | I2CR_MTX);
++		imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
++		i2c_imx_bus_busy(i2c_imx, 0);
++		i2c_imx->stopped = 1;
++	} else {
++		/*
++		 * For i2c master receiver repeat restart operation like:
++		 * read -> repeat MSTA -> read/write
++		 * The controller must set MTX before read the last byte in
++		 * the first read operation, otherwise the first read cost
++		 * one extra clock cycle.
++		 */
++		temp = readb(i2c_imx->base + IMX_I2C_I2CR);
++		temp |= I2CR_MTX;
++		writeb(temp, i2c_imx->base + IMX_I2C_I2CR);
++	}
++	msgs->buf[msgs->len-1] = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
++
++	return 0;
++}
++
+ static int i2c_imx_write(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
+ {
+ 	int i, result;
+@@ -501,6 +817,9 @@ static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs, bo
+ 
+ 	dev_dbg(&i2c_imx->adapter.dev, "<%s> read data\n", __func__);
+ 
++	if (i2c_imx->dma && msgs->len >= IMX_I2C_DMA_THRESHOLD && !block_data)
++		return i2c_imx_dma_read(i2c_imx, msgs, is_lastmsg);
++
+ 	/* read data */
+ 	for (i = 0; i < msgs->len; i++) {
+ 		u8 len = 0;
+@@ -615,8 +934,12 @@ static int i2c_imx_xfer(struct i2c_adapter *adapter,
+ #endif
+ 		if (msgs[i].flags & I2C_M_RD)
+ 			result = i2c_imx_read(i2c_imx, &msgs[i], is_lastmsg);
+-		else
+-			result = i2c_imx_write(i2c_imx, &msgs[i]);
++		else {
++			if (i2c_imx->dma && msgs[i].len >= IMX_I2C_DMA_THRESHOLD)
++				result = i2c_imx_dma_write(i2c_imx, &msgs[i]);
++			else
++				result = i2c_imx_write(i2c_imx, &msgs[i]);
++		}
+ 		if (result)
+ 			goto fail0;
+ 	}
+@@ -651,6 +974,7 @@ static int i2c_imx_probe(struct platform_device *pdev)
+ 	struct imxi2c_platform_data *pdata = dev_get_platdata(&pdev->dev);
+ 	void __iomem *base;
+ 	int irq, ret;
++	dma_addr_t phy_addr;
+ 
+ 	dev_dbg(&pdev->dev, "<%s>\n", __func__);
+ 
+@@ -661,6 +985,7 @@ static int i2c_imx_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	phy_addr = (dma_addr_t)res->start;
+ 	base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(base))
+ 		return PTR_ERR(base);
+@@ -743,6 +1068,9 @@ static int i2c_imx_probe(struct platform_device *pdev)
+ 		i2c_imx->adapter.name);
+ 	dev_info(&i2c_imx->adapter.dev, "IMX I2C adapter registered\n");
+ 
++	/* Init DMA config if support*/
++	i2c_imx_dma_request(i2c_imx, phy_addr);
++
+ 	return 0;   /* Return OK */
+ }
+ 
+@@ -754,6 +1082,9 @@ static int i2c_imx_remove(struct platform_device *pdev)
+ 	dev_dbg(&i2c_imx->adapter.dev, "adapter removed\n");
+ 	i2c_del_adapter(&i2c_imx->adapter);
+ 
++	if (i2c_imx->dma)
++		i2c_imx_dma_free(i2c_imx);
++
+ 	/* setup chip registers to defaults */
+ 	imx_i2c_write_reg(0, i2c_imx, IMX_I2C_IADR);
+ 	imx_i2c_write_reg(0, i2c_imx, IMX_I2C_IFDR);
+-- 
+1.8.4
 
