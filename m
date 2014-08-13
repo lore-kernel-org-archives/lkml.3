@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648AbaHMRJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:09:27 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:35254 "EHLO smtp.outflux.net"
+	id S1753915AbaHMRJi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 13:09:38 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:33704 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753069AbaHMRJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 13:09:25 -0400
+	id S1753894AbaHMRJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 13:09:36 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
+Cc: Kees Cook <keescook@chromium.org>, Rob Herring <robh@kernel.org>,
+        Laura Abbott <lauraa@codeaurora.org>,
         Leif Lindholm <leif.lindholm@linaro.org>,
         Stephen Boyd <sboyd@codeaurora.org>, Mark Salter <msalter@redhat.com>,
         Rabin Vincent <rabin@rab.in>, Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
         Nicolas Pitre <nicolas.pitre@linaro.org>,
         Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
         Jason Wessel <jason.wessel@windriver.com>,
@@ -21,9 +21,9 @@ Cc: Kees Cook <keescook@chromium.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org
-Subject: [PATCH v4 5/8] ARM: kexec: Make .text R/W in machine_kexec
-Date: Wed, 13 Aug 2014 10:06:30 -0700
-Message-Id: <1407949593-16121-6-git-send-email-keescook@chromium.org>
+Subject: [PATCH v4 7/8] ARM: mm: allow non-text sections to be non-executable
+Date: Wed, 13 Aug 2014 10:06:32 -0700
+Message-Id: <1407949593-16121-8-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407949593-16121-1-git-send-email-keescook@chromium.org>
 References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
@@ -32,63 +32,252 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikolay Borisov <Nikolay.Borisov@arm.com>
+Adds CONFIG_ARM_KERNMEM_PERMS to separate the kernel memory regions
+into section-sized areas that can have different permisions. Performs
+the NX permission changes during free_initmem, so that init memory can be
+reclaimed.
 
-With the introduction of Kees Cook's patch to make the kernel .text
-read-only the existing method by which kexec works got broken since it
-directly pokes some values in the template code, which resides in the
-.text section.
+This uses section size instead of PMD size to reduce memory lost to
+padding on non-LPAE systems.
 
-The current patch changes the way those values are inserted so that poking
-.text section occurs only in machine_kexec (e.g when we are about to nuke
-the old kernel and are beyond the point of return). This allows to use
-set_kernel_text_rw() to directly patch the values in the .text section.
+Based on work by Brad Spengler, Larry Bassel, and Laura Abbott.
 
-I had already sent a patch which achieved this but it was significantly
-more complicated, so this is a cleaner/straight-forward approach.
-
-Signed-off-by: Nikolay Borisov <Nikolay.Borisov@arm.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-[kees: collapsed kexec_boot_atags (will.daecon)]
-[kees: for bisectability, moved set_kernel_text_rw() to RODATA patch]
 Signed-off-by: Kees Cook <keescook@chromium.org>
+Tested-by: Laura Abbott <lauraa@codeaurora.org>
 ---
- arch/arm/kernel/machine_kexec.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/kernel/vmlinux.lds.S |  17 +++++++
+ arch/arm/mm/Kconfig           |   9 ++++
+ arch/arm/mm/init.c            | 106 ++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mm/mmu.c             |  13 +++++-
+ 4 files changed, 144 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/machine_kexec.c b/arch/arm/kernel/machine_kexec.c
-index 8cf0996aa1a8..8f75250cbe30 100644
---- a/arch/arm/kernel/machine_kexec.c
-+++ b/arch/arm/kernel/machine_kexec.c
-@@ -29,6 +29,7 @@ extern unsigned long kexec_boot_atags;
- 
- static atomic_t waiting_for_crash_ipi;
- 
-+static unsigned long dt_mem;
- /*
-  * Provide a dummy crash_notes definition while crash dump arrives to arm.
-  * This prevents breakage of crash_notes attribute in kernel/ksysfs.c.
-@@ -64,7 +65,7 @@ int machine_kexec_prepare(struct kimage *image)
- 			return err;
- 
- 		if (be32_to_cpu(header) == OF_DT_HEADER)
--			kexec_boot_atags = current_segment->mem;
-+			dt_mem = current_segment->mem;
+diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+index 6f57cb94367f..a3d07ca2bbb4 100644
+--- a/arch/arm/kernel/vmlinux.lds.S
++++ b/arch/arm/kernel/vmlinux.lds.S
+@@ -8,6 +8,9 @@
+ #include <asm/thread_info.h>
+ #include <asm/memory.h>
+ #include <asm/page.h>
++#ifdef CONFIG_ARM_KERNMEM_PERMS
++#include <asm/pgtable.h>
++#endif
+ 	
+ #define PROC_INFO							\
+ 	. = ALIGN(4);							\
+@@ -90,6 +93,11 @@ SECTIONS
+ 		_text = .;
+ 		HEAD_TEXT
  	}
- 	return 0;
- }
-@@ -166,9 +167,8 @@ void machine_kexec(struct kimage *image)
- 	kexec_start_address = image->start;
- 	kexec_indirection_page = page_list;
- 	kexec_mach_type = machine_arch_type;
--	if (!kexec_boot_atags)
--		kexec_boot_atags = image->start - KEXEC_ARM_ZIMAGE_OFFSET + KEXEC_ARM_ATAGS_OFFSET;
--
-+	kexec_boot_atags = dt_mem ?: image->start - KEXEC_ARM_ZIMAGE_OFFSET
-+				     + KEXEC_ARM_ATAGS_OFFSET;
++
++#ifdef CONFIG_ARM_KERNMEM_PERMS
++	. = ALIGN(1<<SECTION_SHIFT);
++#endif
++
+ 	.text : {			/* Real text segment		*/
+ 		_stext = .;		/* Text and read-only data	*/
+ 			__exception_text_start = .;
+@@ -145,7 +153,11 @@ SECTIONS
+ 	_etext = .;			/* End of text and rodata section */
  
- 	/* copy our kernel relocation code to the control code page */
- 	reboot_entry = fncpy(reboot_code_buffer,
+ #ifndef CONFIG_XIP_KERNEL
++# ifdef CONFIG_ARM_KERNMEM_PERMS
++	. = ALIGN(1<<SECTION_SHIFT);
++# else
+ 	. = ALIGN(PAGE_SIZE);
++# endif
+ 	__init_begin = .;
+ #endif
+ 	/*
+@@ -220,7 +232,12 @@ SECTIONS
+ 	. = PAGE_OFFSET + TEXT_OFFSET;
+ #else
+ 	__init_end = .;
++
++#ifdef CONFIG_ARM_KERNMEM_PERMS
++	. = ALIGN(1<<SECTION_SHIFT);
++#else
+ 	. = ALIGN(THREAD_SIZE);
++#endif
+ 	__data_loc = .;
+ #endif
+ 
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index ae69809a9e47..7a0756df91a2 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -1008,3 +1008,12 @@ config ARCH_SUPPORTS_BIG_ENDIAN
+ 	help
+ 	  This option specifies the architecture can support big endian
+ 	  operation.
++
++config ARM_KERNMEM_PERMS
++	bool "Restrict kernel memory permissions"
++	help
++	  If this is set, kernel memory other than kernel text (and rodata)
++	  will be made non-executable. The tradeoff is that each region is
++	  padded to section-size (1MiB) boundaries (because their permissions
++	  are different and splitting the 1M pages into 4K ones causes TLB
++	  performance problems), wasting memory.
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index ad82c05bfc3a..ccf392ef40d4 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -32,6 +32,11 @@
+ #include <asm/tlb.h>
+ #include <asm/fixmap.h>
+ 
++#ifdef CONFIG_ARM_KERNMEM_PERMS
++#include <asm/system_info.h>
++#include <asm/cp15.h>
++#endif
++
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ 
+@@ -615,11 +620,112 @@ void __init mem_init(void)
+ 	}
+ }
+ 
++#ifdef CONFIG_ARM_KERNMEM_PERMS
++struct section_perm {
++	unsigned long start;
++	unsigned long end;
++	pmdval_t mask;
++	pmdval_t prot;
++};
++
++struct section_perm nx_perms[] = {
++	/* Make pages tables, etc before _stext RW (set NX). */
++	{
++		.start	= PAGE_OFFSET,
++		.end	= (unsigned long)_stext,
++		.mask	= ~PMD_SECT_XN,
++		.prot	= PMD_SECT_XN,
++	},
++	/* Make init RW (set NX). */
++	{
++		.start	= (unsigned long)__init_begin,
++		.end	= (unsigned long)_sdata,
++		.mask	= ~PMD_SECT_XN,
++		.prot	= PMD_SECT_XN,
++	},
++};
++
++/*
++ * Updates section permissions only for the current mm (sections are
++ * copied into each mm). During startup, this is the init_mm.
++ */
++static inline void section_update(unsigned long addr, pmdval_t mask,
++				  pmdval_t prot)
++{
++	struct mm_struct *mm;
++	pmd_t *pmd;
++
++	mm = current->active_mm;
++	pmd = pmd_offset(pud_offset(pgd_offset(mm, addr), addr), addr);
++
++#ifdef CONFIG_ARM_LPAE
++	pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
++#else
++	if (addr & SECTION_SIZE)
++		pmd[1] = __pmd((pmd_val(pmd[1]) & mask) | prot);
++	else
++		pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
++#endif
++	flush_pmd_entry(pmd);
++	local_flush_tlb_kernel_range(addr, addr + SECTION_SIZE);
++}
++
++/* Make sure extended page tables are in use. */
++static inline bool arch_has_strict_perms(void)
++{
++	unsigned int cr;
++
++	if (cpu_architecture() < CPU_ARCH_ARMv6)
++		return false;
++
++	cr = get_cr();
++	if (!(cr & CR_XP))
++		return false;
++
++	return true;
++}
++
++#define set_section_perms(perms, field)	{				\
++	size_t i;							\
++	unsigned long addr;						\
++									\
++	if (!arch_has_strict_perms())					\
++		return;							\
++									\
++	for (i = 0; i < ARRAY_SIZE(perms); i++) {			\
++		if (!IS_ALIGNED(perms[i].start, SECTION_SIZE) ||	\
++		    !IS_ALIGNED(perms[i].end, SECTION_SIZE)) {		\
++			pr_err("BUG: section %lx-%lx not aligned to %lx\n", \
++				perms[i].start, perms[i].end,		\
++				SECTION_SIZE);				\
++			continue;					\
++		}							\
++									\
++		for (addr = perms[i].start;				\
++		     addr < perms[i].end;				\
++		     addr += SECTION_SIZE)				\
++			section_update(addr, perms[i].mask,		\
++				       perms[i].field);			\
++	}								\
++}
++
++static inline void fix_kernmem_perms(void)
++{
++	set_section_perms(nx_perms, prot);
++}
++#else
++static inline void fix_kernmem_perms(void) { }
++#endif /* CONFIG_ARM_KERNMEM_PERMS */
++
+ void free_initmem(void)
+ {
+ #ifdef CONFIG_HAVE_TCM
+ 	extern char __tcm_start, __tcm_end;
++#endif
++
++	fix_kernmem_perms();
+ 
++#ifdef CONFIG_HAVE_TCM
+ 	poison_init_mem(&__tcm_start, &__tcm_end - &__tcm_start);
+ 	free_reserved_area(&__tcm_start, &__tcm_end, -1, "TCM link");
+ #endif
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 94eecb913f15..c9227bf59b45 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -1368,13 +1368,24 @@ static void __init map_lowmem(void)
+ 		if (start >= end)
+ 			break;
+ 
+-		if (end < kernel_x_start || start >= kernel_x_end) {
++		if (end < kernel_x_start) {
+ 			map.pfn = __phys_to_pfn(start);
+ 			map.virtual = __phys_to_virt(start);
+ 			map.length = end - start;
+ 			map.type = MT_MEMORY_RWX;
+ 
+ 			create_mapping(&map);
++		} else if (start >= kernel_x_end) {
++			map.pfn = __phys_to_pfn(start);
++			map.virtual = __phys_to_virt(start);
++			map.length = end - start;
++#ifdef CONFIG_ARM_KERNMEM_PERMS
++			map.type = MT_MEMORY_RW;
++#else
++			map.type = MT_MEMORY_RWX;
++#endif
++
++			create_mapping(&map);
+ 		} else {
+ 			/* This better cover the entire kernel */
+ 			if (start < kernel_x_start) {
 -- 
 1.9.1
 
