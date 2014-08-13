@@ -1,30 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975AbaHMVl6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 17:41:58 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:44088 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351AbaHMVl4 (ORCPT
+	id S1754029AbaHMVnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 17:43:37 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:43501 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050AbaHMVnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 17:41:56 -0400
+	Wed, 13 Aug 2014 17:43:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <53EBD848.1060203@zytor.com>
+In-Reply-To: <CALCETrVUPofE2w2t-_iwcTim8kbdcx93yW==+CwoqVqsaNnXHg@mail.gmail.com>
 References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
- <1407916658-8731-2-git-send-email-ast@plumgrid.com> <CALCETrXzZVxMGUgDPOKwN0DPLvupU=ew1z6D4U-jHg+RoyZyLg@mail.gmail.com>
- <CAMEtUuxog0w-XkYMHM=Zto_gejy8x5agxohAWOs1zPEtXTr0Sw@mail.gmail.com>
- <CALCETrXfp+7FmEzAoLiqzqY73NBzt8JsD40hzvhT3=gr-Scp=g@mail.gmail.com>
- <CAMEtUuwx6Y4qxyz4TGK9=M2BH-dXnPsm+JrusqbyjzK20yUv6A@mail.gmail.com>
- <CALCETrVDrbD3goYmZsUdmEhVfaNxovyghCz6y+_q5+G+rVwtWg@mail.gmail.com>
- <53EBD6D5.3050706@zytor.com> <CALCETrUghSd-Z3+z_MUierWHQnA_dDOQcJ++EKryUeGTh5LbbA@mail.gmail.com>
- <53EBD848.1060203@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 13 Aug 2014 14:41:33 -0700
-Message-ID: <CALCETrVUPofE2w2t-_iwcTim8kbdcx93yW==+CwoqVqsaNnXHg@mail.gmail.com>
+	<1407916658-8731-2-git-send-email-ast@plumgrid.com>
+	<CALCETrXzZVxMGUgDPOKwN0DPLvupU=ew1z6D4U-jHg+RoyZyLg@mail.gmail.com>
+	<CAMEtUuxog0w-XkYMHM=Zto_gejy8x5agxohAWOs1zPEtXTr0Sw@mail.gmail.com>
+	<CALCETrXfp+7FmEzAoLiqzqY73NBzt8JsD40hzvhT3=gr-Scp=g@mail.gmail.com>
+	<CAMEtUuwx6Y4qxyz4TGK9=M2BH-dXnPsm+JrusqbyjzK20yUv6A@mail.gmail.com>
+	<CALCETrVDrbD3goYmZsUdmEhVfaNxovyghCz6y+_q5+G+rVwtWg@mail.gmail.com>
+	<53EBD6D5.3050706@zytor.com>
+	<CALCETrUghSd-Z3+z_MUierWHQnA_dDOQcJ++EKryUeGTh5LbbA@mail.gmail.com>
+	<53EBD848.1060203@zytor.com>
+	<CALCETrVUPofE2w2t-_iwcTim8kbdcx93yW==+CwoqVqsaNnXHg@mail.gmail.com>
+Date: Wed, 13 Aug 2014 14:43:34 -0700
+Message-ID: <CAMEtUuxhYQ0R=1C9h9yVZFP5PxyS8dqB_KBs7QxJ9EHMJHo3vQ@mail.gmail.com>
 Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit
  immediate" eBPF instruction
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Alexei Starovoitov <ast@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>,
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S. Miller" <davem@davemloft.net>,
         Ingo Molnar <mingo@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>,
@@ -41,29 +43,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 2:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 08/13/2014 02:23 PM, Andy Lutomirski wrote:
->> On Wed, Aug 13, 2014 at 2:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> One thing about this that may be a serious concern: allowing the user to
->>> control 8 contiguous bytes of kernel memory may be a security hazard.
->>
->> I'm confused.  What kind of memory?  I can control a lot more than 8
->> bytes of stack very easily.
->>
->> Or are you concerned about 8 contiguous bytes of *executable* memory?
->>
+On Wed, Aug 13, 2014 at 2:41 PM, Andy Lutomirski <luto@amacapital.net> wrote:
 >
-> Yes.  Useful for some kinds of ROP custom gadgets.
+> I think this is moot on non-SMEP machines.  And I'm not entirely
+> convinced that it's worth worrying about in general, especially if we
+> take some care to randomize the location of the JIT mapping.
 
-Hmm.
-
-I think this is moot on non-SMEP machines.  And I'm not entirely
-convinced that it's worth worrying about in general, especially if we
-take some care to randomize the location of the JIT mapping.
-
-But yes, gadgets like jumps relative to gs or something along those
-lines could make for interesting ROP tools.  But someone will probably
-figure out how to turn JIT output into a NOP slide + ROP gadget
-regardless, at least on x86.
-
---Andy
+JIT start address is already randomized...
