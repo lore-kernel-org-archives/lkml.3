@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471AbaHMFTN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 01:19:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45114 "EHLO
+	id S1751776AbaHMFUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 01:20:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45169 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408AbaHMFTI (ORCPT
+	with ESMTP id S1751428AbaHMFUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 01:19:08 -0400
-Date: Tue, 12 Aug 2014 22:18:38 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-5b5916696051b88e63f3726cc3db44bf9561bad9@git.kernel.org>
+	Wed, 13 Aug 2014 01:20:07 -0400
+Date: Tue, 12 Aug 2014 22:19:45 -0700
+From: tip-bot for Thomas Ilsche <tipbot@zytor.com>
+Message-ID: <tip-d6a947fb6cdff3a19db93895c746f70b5903a965@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        namhyung@kernel.org, jolsa@redhat.com, thomas.ilsche@tu-dresden.de,
         tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        namhyung@kernel.org, thomas.ilsche@tu-dresden.de, jolsa@redhat.com,
         tglx@linutronix.de
-In-Reply-To: <1406785662-5534-5-git-send-email-namhyung@kernel.org>
-References: <1406785662-5534-5-git-send-email-namhyung@kernel.org>
+In-Reply-To: <53DF8493.6070206@tu-dresden.de>
+References: <53DF8493.6070206@tu-dresden.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report: Honor column width setting
-Git-Commit-ID: 5b5916696051b88e63f3726cc3db44bf9561bad9
+Subject: [tip:perf/core] perf tools: Default to python version 2
+Git-Commit-ID: d6a947fb6cdff3a19db93895c746f70b5903a965
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,472 +35,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5b5916696051b88e63f3726cc3db44bf9561bad9
-Gitweb:     http://git.kernel.org/tip/5b5916696051b88e63f3726cc3db44bf9561bad9
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Thu, 31 Jul 2014 14:47:38 +0900
+Commit-ID:  d6a947fb6cdff3a19db93895c746f70b5903a965
+Gitweb:     http://git.kernel.org/tip/d6a947fb6cdff3a19db93895c746f70b5903a965
+Author:     Thomas Ilsche <thomas.ilsche@tu-dresden.de>
+AuthorDate: Mon, 4 Aug 2014 15:03:15 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 12 Aug 2014 12:03:06 -0300
+CommitDate: Tue, 12 Aug 2014 12:03:08 -0300
 
-perf report: Honor column width setting
+perf tools: Default to python version 2
 
-Set column width and do not change it if user gives -w/--column-widths
-option.  It'll truncate longer symbols than the width if exists.
+According to PEP 394 recommendation [1], it's more portable to use
+python2 rather than plain python to refer python binary version 2.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Since there're distros using python3 by default like Arch, and we don't
+support python3 (yet), it'd be better using python2 explicitly.
+
+But older versions (prior to 2.7) seem not to provide python2 but just
+python.  Given that it's only old version, try python2 first and then
+fallback to python.  It'll ensure that it always points to python 2.x.
+
+I tested (compiles and perf script runs) with the combinations:
+
+1) python  -> python2.x, python-config  -> python2.x-config
+   python2 N/A,          python2-config N/A
+
+2) python  -> python3.x, python-config  -> python3.x-config
+   python2 -> python2.x, python2-config -> python2.x-config
+
+3) python  -> python2.x, python-config  -> python2.x-config
+   python2 -> python2.x, python2-config -> python2.x-config
+
+4) python  -> python2.x, python-config  -> python2.x-config
+   python2 -> python2.x, python2-config N/A
+
+Based on / replaces the patch 2/2 by Namhyung Kim.
+
+[1] https://www.python.org/dev/peps/pep-0394
+
+Based-on-patch-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1406785662-5534-5-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/53DF8493.6070206@tu-dresden.de
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/hists.c | 18 +++++----
- tools/perf/ui/gtk/hists.c      | 10 ++---
- tools/perf/ui/hist.c           | 84 +++++++++++++++++++++++++++++-------------
- tools/perf/ui/stdio/hist.c     |  4 +-
- tools/perf/util/hist.h         | 14 ++++---
- tools/perf/util/sort.c         | 49 +++++++++++++++---------
- 6 files changed, 116 insertions(+), 63 deletions(-)
+ tools/perf/config/Makefile | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index c1d8d39..e07d4e8 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -678,12 +678,12 @@ static u64 __hpp_get_##_field(struct hist_entry *he)			\
- }									\
- 									\
- static int								\
--hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
-+hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt,		\
- 				struct perf_hpp *hpp,			\
- 				struct hist_entry *he)			\
- {									\
--	return __hpp__fmt(hpp, he, __hpp_get_##_field, " %*.2f%%", 6,	\
--			  __hpp__slsmg_color_printf, true);		\
-+	return hpp__fmt(fmt, hpp, he, __hpp_get_##_field, " %*.2f%%",	\
-+			__hpp__slsmg_color_printf, true);		\
- }
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index e05d8f9..75d4c23 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -121,10 +121,16 @@ ifdef PARSER_DEBUG
+ endif
  
- #define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)			\
-@@ -693,19 +693,20 @@ static u64 __hpp_get_acc_##_field(struct hist_entry *he)		\
- }									\
- 									\
- static int								\
--hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,\
-+hist_browser__hpp_color_##_type(struct perf_hpp_fmt *fmt,		\
- 				struct perf_hpp *hpp,			\
- 				struct hist_entry *he)			\
- {									\
- 	if (!symbol_conf.cumulate_callchain) {				\
-+		int len = fmt->user_len ?: fmt->len;			\
- 		int ret = scnprintf(hpp->buf, hpp->size,		\
--				    "%*s", 8, "N/A");			\
-+				    "%*s", len, "N/A");			\
- 		slsmg_printf("%s", hpp->buf);				\
- 									\
- 		return ret;						\
- 	}								\
--	return __hpp__fmt(hpp, he, __hpp_get_acc_##_field, " %*.2f%%",	\
--			  6, __hpp__slsmg_color_printf, true);	\
-+	return hpp__fmt(fmt, hpp, he, __hpp_get_acc_##_field,		\
-+			" %*.2f%%", __hpp__slsmg_color_printf, true);	\
- }
+ ifndef NO_LIBPYTHON
+-  override PYTHON := \
+-    $(call get-executable-or-default,PYTHON,python)
++  # Try different combinations to accommodate systems that only have
++  # python[2][-config] in weird combinations but always preferring
++  # python2 and python2-config as per pep-0394. If we catch a
++  # python[-config] in version 3, the version check will kill it.
++  PYTHON2 := $(if $(call get-executable,python2),python2,python)
++  override PYTHON := $(call get-executable-or-default,PYTHON,$(PYTHON2))
++  PYTHON2_CONFIG := \
++    $(if $(call get-executable,$(PYTHON)-config),$(PYTHON)-config,python-config)
+   override PYTHON_CONFIG := \
+-    $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
++    $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON2_CONFIG))
  
- __HPP_COLOR_PERCENT_FN(overhead, period)
-@@ -1549,6 +1550,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+   PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
  
- 	memset(options, 0, sizeof(options));
- 
-+	if (symbol_conf.col_width_list_str)
-+		perf_hpp__set_user_width(symbol_conf.col_width_list_str);
-+
- 	while (1) {
- 		const struct thread *thread = NULL;
- 		const struct dso *dso = NULL;
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 91f6cd7..897b2e1 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -41,12 +41,12 @@ static u64 he_get_##_field(struct hist_entry *he)				\
- 	return he->stat._field;							\
- }										\
- 										\
--static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
-+static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt,		\
- 				       struct perf_hpp *hpp,			\
- 				       struct hist_entry *he)			\
- {										\
--	return __hpp__fmt(hpp, he, he_get_##_field, " %*.2f%%", 6,		\
--			  __percent_color_snprintf, true);			\
-+	return hpp__fmt(fmt, hpp, he, he_get_##_field, " %*.2f%%",		\
-+			__percent_color_snprintf, true);			\
- }
- 
- #define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-@@ -59,8 +59,8 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
- 				       struct perf_hpp *hpp,			\
- 				       struct hist_entry *he)			\
- {										\
--	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %*.2f%%", 6, 	\
--			      __percent_color_snprintf, true);			\
-+	return hpp__fmt_acc(fmt, hpp, he, he_get_acc_##_field, " %*.2f%%", 	\
-+			    __percent_color_snprintf, true);			\
- }
- 
- __HPP_COLOR_PERCENT_FN(overhead, period)
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index e28ca97..b2d60a9 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -15,9 +15,9 @@
- 	__ret;							\
- })
- 
--int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
--	       hpp_field_fn get_field, const char *fmt, int len,
--	       hpp_snprint_fn print_fn, bool fmt_percent)
-+static int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
-+		      hpp_field_fn get_field, const char *fmt, int len,
-+		      hpp_snprint_fn print_fn, bool fmt_percent)
- {
- 	int ret;
- 	struct hists *hists = he->hists;
-@@ -104,16 +104,35 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	return ret;
- }
- 
--int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
--		   hpp_field_fn get_field, const char *fmt, int len,
--		   hpp_snprint_fn print_fn, bool fmt_percent)
-+int hpp__fmt(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+	     struct hist_entry *he, hpp_field_fn get_field,
-+	     const char *fmtstr, hpp_snprint_fn print_fn, bool fmt_percent)
-+{
-+	int len = fmt->user_len ?: fmt->len;
-+
-+	if (symbol_conf.field_sep) {
-+		return __hpp__fmt(hpp, he, get_field, fmtstr, 1,
-+				  print_fn, fmt_percent);
-+	}
-+
-+	if (fmt_percent)
-+		len -= 2; /* 2 for a space and a % sign */
-+	else
-+		len -= 1;
-+
-+	return  __hpp__fmt(hpp, he, get_field, fmtstr, len, print_fn, fmt_percent);
-+}
-+
-+int hpp__fmt_acc(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+		 struct hist_entry *he, hpp_field_fn get_field,
-+		 const char *fmtstr, hpp_snprint_fn print_fn, bool fmt_percent)
- {
- 	if (!symbol_conf.cumulate_callchain) {
--		return snprintf(hpp->buf, hpp->size, "%*s",
--				fmt_percent ? len + 2 : len + 1, "N/A");
-+		int len = fmt->user_len ?: fmt->len;
-+		return snprintf(hpp->buf, hpp->size, " %*s", len - 1, "N/A");
- 	}
- 
--	return __hpp__fmt(hpp, he, get_field, fmt, len, print_fn, fmt_percent);
-+	return hpp__fmt(fmt, hpp, he, get_field, fmtstr, print_fn, fmt_percent);
- }
- 
- static int field_cmp(u64 field_a, u64 field_b)
-@@ -195,10 +214,10 @@ static int hpp__width_##_type(struct perf_hpp_fmt *fmt,			\
- 			      struct perf_hpp *hpp __maybe_unused,	\
- 			      struct perf_evsel *evsel)			\
- {									\
--	int len = fmt->len;						\
-+	int len = fmt->user_len ?: fmt->len;				\
- 									\
- 	if (symbol_conf.event_group)					\
--		len = max(len, evsel->nr_members * len);		\
-+		len = max(len, evsel->nr_members * fmt->len);		\
- 									\
- 	if (len < (int)strlen(_str))					\
- 		len = strlen(_str);					\
-@@ -253,18 +272,16 @@ static u64 he_get_##_field(struct hist_entry *he)				\
- static int hpp__color_##_type(struct perf_hpp_fmt *fmt,				\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
--	int len = fmt->len - 2;	/* 2 for a space and a % sign */		\
--	return __hpp__fmt(hpp, he, he_get_##_field, " %*.2f%%",	len,		\
--			  hpp_color_scnprintf, true);				\
-+	return hpp__fmt(fmt, hpp, he, he_get_##_field, " %*.2f%%",		\
-+			hpp_color_scnprintf, true);				\
- }
- 
- #define __HPP_ENTRY_PERCENT_FN(_type, _field)					\
- static int hpp__entry_##_type(struct perf_hpp_fmt *fmt,				\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
--	int len = symbol_conf.field_sep ? 1 : fmt->len - 2;			\
--	return __hpp__fmt(hpp, he, he_get_##_field, " %*.2f%%",	len,		\
--			  hpp_entry_scnprintf, true);				\
-+	return hpp__fmt(fmt, hpp, he, he_get_##_field, " %*.2f%%",		\
-+			hpp_entry_scnprintf, true);				\
- }
- 
- #define __HPP_SORT_FN(_type, _field)						\
-@@ -282,18 +299,16 @@ static u64 he_get_acc_##_field(struct hist_entry *he)				\
- static int hpp__color_##_type(struct perf_hpp_fmt *fmt,				\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
--	int len = fmt->len - 2;	/* 2 for a space and a % sign */		\
--	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %*.2f%%",	len, 	\
--			      hpp_color_scnprintf, true);			\
-+	return hpp__fmt_acc(fmt, hpp, he, he_get_acc_##_field, " %*.2f%%", 	\
-+			    hpp_color_scnprintf, true);				\
- }
- 
- #define __HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
- static int hpp__entry_##_type(struct perf_hpp_fmt *fmt,				\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
--	int len = symbol_conf.field_sep ? 1 : fmt->len - 2;			\
--	return __hpp__fmt_acc(hpp, he, he_get_##_field, " %*.2f%%", len,	\
--			      hpp_entry_scnprintf, true);			\
-+	return hpp__fmt_acc(fmt, hpp, he, he_get_##_field, " %*.2f%%",		\
-+			    hpp_entry_scnprintf, true);				\
- }
- 
- #define __HPP_SORT_ACC_FN(_type, _field)					\
-@@ -311,9 +326,8 @@ static u64 he_get_raw_##_field(struct hist_entry *he)				\
- static int hpp__entry_##_type(struct perf_hpp_fmt *fmt,				\
- 			      struct perf_hpp *hpp, struct hist_entry *he) 	\
- {										\
--	int len = symbol_conf.field_sep ? 1 : fmt->len - 1;			\
--	return __hpp__fmt(hpp, he, he_get_raw_##_field, " %*"PRIu64, len, 	\
--			  hpp_entry_scnprintf, false);				\
-+	return hpp__fmt(fmt, hpp, he, he_get_raw_##_field, " %*"PRIu64, 	\
-+			hpp_entry_scnprintf, false);				\
- }
- 
- #define __HPP_SORT_RAW_FN(_type, _field)					\
-@@ -666,3 +680,21 @@ void perf_hpp__reset_width(struct perf_hpp_fmt *fmt, struct hists *hists)
- 		break;
- 	}
- }
-+
-+void perf_hpp__set_user_width(const char *width_list_str)
-+{
-+	struct perf_hpp_fmt *fmt;
-+	const char *ptr = width_list_str;
-+
-+	perf_hpp__for_each_format(fmt) {
-+		char *p;
-+
-+		int len = strtol(ptr, &p, 10);
-+		fmt->user_len = len;
-+
-+		if (*p == ',')
-+			ptr = p + 1;
-+		else
-+			break;
-+	}
-+}
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 40af0ac..15b451a 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -395,10 +395,12 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 
- 	init_rem_hits();
- 
--
- 	perf_hpp__for_each_format(fmt)
- 		perf_hpp__reset_width(fmt, hists);
- 
-+	if (symbol_conf.col_width_list_str)
-+		perf_hpp__set_user_width(symbol_conf.col_width_list_str);
-+
- 	if (!show_header)
- 		goto print_entries;
- 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index a7ae890..2e70003 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -208,6 +208,7 @@ struct perf_hpp_fmt {
- 	struct list_head sort_list;
- 	bool elide;
- 	int len;
-+	int user_len;
- };
- 
- extern struct list_head perf_hpp__list;
-@@ -263,17 +264,18 @@ static inline bool perf_hpp__should_skip(struct perf_hpp_fmt *format)
- 
- void perf_hpp__reset_width(struct perf_hpp_fmt *fmt, struct hists *hists);
- void perf_hpp__reset_sort_width(struct perf_hpp_fmt *fmt, struct hists *hists);
-+void perf_hpp__set_user_width(const char *width_list_str);
- 
- typedef u64 (*hpp_field_fn)(struct hist_entry *he);
- typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
- typedef int (*hpp_snprint_fn)(struct perf_hpp *hpp, const char *fmt, ...);
- 
--int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
--	       hpp_field_fn get_field, const char *fmt, int len,
--	       hpp_snprint_fn print_fn, bool fmt_percent);
--int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
--		   hpp_field_fn get_field, const char *fmt, int len,
--		   hpp_snprint_fn print_fn, bool fmt_percent);
-+int hpp__fmt(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+	     struct hist_entry *he, hpp_field_fn get_field,
-+	     const char *fmtstr, hpp_snprint_fn print_fn, bool fmt_percent);
-+int hpp__fmt_acc(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+		 struct hist_entry *he, hpp_field_fn get_field,
-+		 const char *fmtstr, hpp_snprint_fn print_fn, bool fmt_percent);
- 
- static inline void advance_hpp(struct perf_hpp *hpp, int inc)
- {
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index a7f8a7b..153b380 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -70,8 +70,10 @@ static int hist_entry__thread_snprintf(struct hist_entry *he, char *bf,
- 				       size_t size, unsigned int width)
- {
- 	const char *comm = thread__comm_str(he->thread);
--	return repsep_snprintf(bf, size, "%5d:%-*s", he->thread->tid,
--			       width - 6, comm ?: "");
-+
-+	width = max(7U, width) - 6;
-+	return repsep_snprintf(bf, size, "%5d:%-*.*s", he->thread->tid,
-+			       width, width, comm ?: "");
- }
- 
- struct sort_entry sort_thread = {
-@@ -106,7 +108,7 @@ sort__comm_sort(struct hist_entry *left, struct hist_entry *right)
- static int hist_entry__comm_snprintf(struct hist_entry *he, char *bf,
- 				     size_t size, unsigned int width)
- {
--	return repsep_snprintf(bf, size, "%-*s", width, comm__str(he->comm));
-+	return repsep_snprintf(bf, size, "%-*.*s", width, width, comm__str(he->comm));
- }
- 
- struct sort_entry sort_comm = {
-@@ -152,10 +154,10 @@ static int _hist_entry__dso_snprintf(struct map *map, char *bf,
- 	if (map && map->dso) {
- 		const char *dso_name = !verbose ? map->dso->short_name :
- 			map->dso->long_name;
--		return repsep_snprintf(bf, size, "%-*s", width, dso_name);
-+		return repsep_snprintf(bf, size, "%-*.*s", width, width, dso_name);
- 	}
- 
--	return repsep_snprintf(bf, size, "%-*s", width, "[unknown]");
-+	return repsep_snprintf(bf, size, "%-*.*s", width, width, "[unknown]");
- }
- 
- static int hist_entry__dso_snprintf(struct hist_entry *he, char *bf,
-@@ -257,7 +259,10 @@ static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
- 				       width - ret, "");
- 	}
- 
--	return ret;
-+	if (ret > width)
-+		bf[width] = '\0';
-+
-+	return width;
- }
- 
- static int hist_entry__sym_snprintf(struct hist_entry *he, char *bf,
-@@ -302,10 +307,9 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- }
- 
- static int hist_entry__srcline_snprintf(struct hist_entry *he, char *bf,
--					size_t size,
--					unsigned int width __maybe_unused)
-+					size_t size, unsigned int width)
- {
--	return repsep_snprintf(bf, size, "%-s", he->srcline);
-+	return repsep_snprintf(bf, size, "%*.*-s", width, width, he->srcline);
- }
- 
- struct sort_entry sort_srcline = {
-@@ -332,7 +336,7 @@ sort__parent_cmp(struct hist_entry *left, struct hist_entry *right)
- static int hist_entry__parent_snprintf(struct hist_entry *he, char *bf,
- 				       size_t size, unsigned int width)
- {
--	return repsep_snprintf(bf, size, "%-*s", width,
-+	return repsep_snprintf(bf, size, "%-*.*s", width, width,
- 			      he->parent ? he->parent->name : "[other]");
- }
- 
-@@ -354,7 +358,7 @@ sort__cpu_cmp(struct hist_entry *left, struct hist_entry *right)
- static int hist_entry__cpu_snprintf(struct hist_entry *he, char *bf,
- 				    size_t size, unsigned int width)
- {
--	return repsep_snprintf(bf, size, "%*d", width, he->cpu);
-+	return repsep_snprintf(bf, size, "%*.*d", width, width, he->cpu);
- }
- 
- struct sort_entry sort_cpu = {
-@@ -484,7 +488,7 @@ static int hist_entry__mispredict_snprintf(struct hist_entry *he, char *bf,
- 	else if (he->branch_info->flags.mispred)
- 		out = "Y";
- 
--	return repsep_snprintf(bf, size, "%-*s", width, out);
-+	return repsep_snprintf(bf, size, "%-*.*s", width, width, out);
- }
- 
- /* --sort daddr_sym */
-@@ -1210,12 +1214,14 @@ static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
- 			      struct perf_evsel *evsel)
- {
- 	struct hpp_sort_entry *hse;
--	size_t len;
-+	size_t len = fmt->user_len;
- 
- 	hse = container_of(fmt, struct hpp_sort_entry, hpp);
--	len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
- 
--	return scnprintf(hpp->buf, hpp->size, "%-*s", len, hse->se->se_header);
-+	if (!len)
-+		len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
-+
-+	return scnprintf(hpp->buf, hpp->size, "%-*.*s", len, len, hse->se->se_header);
- }
- 
- static int __sort__hpp_width(struct perf_hpp_fmt *fmt,
-@@ -1223,20 +1229,26 @@ static int __sort__hpp_width(struct perf_hpp_fmt *fmt,
- 			     struct perf_evsel *evsel)
- {
- 	struct hpp_sort_entry *hse;
-+	size_t len = fmt->user_len;
- 
- 	hse = container_of(fmt, struct hpp_sort_entry, hpp);
- 
--	return hists__col_len(&evsel->hists, hse->se->se_width_idx);
-+	if (!len)
-+		len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
-+
-+	return len;
- }
- 
- static int __sort__hpp_entry(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
- 			     struct hist_entry *he)
- {
- 	struct hpp_sort_entry *hse;
--	size_t len;
-+	size_t len = fmt->user_len;
- 
- 	hse = container_of(fmt, struct hpp_sort_entry, hpp);
--	len = hists__col_len(he->hists, hse->se->se_width_idx);
-+
-+	if (!len)
-+		len = hists__col_len(he->hists, hse->se->se_width_idx);
- 
- 	return hse->se->se_snprintf(he, hpp->buf, hpp->size, len);
- }
-@@ -1266,6 +1278,7 @@ __sort_dimension__alloc_hpp(struct sort_dimension *sd)
- 	INIT_LIST_HEAD(&hse->hpp.sort_list);
- 	hse->hpp.elide = false;
- 	hse->hpp.len = 0;
-+	hse->hpp.user_len = 0;
- 
- 	return hse;
- }
