@@ -1,69 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750880AbaHMEED (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 00:04:03 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:44667 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaHMEEB convert rfc822-to-8bit (ORCPT
+	id S1750846AbaHMEKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 00:10:49 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:25726 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaHMEKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 00:04:01 -0400
-Message-ID: <53EAE3AD.9040203@linaro.org>
-Date: Tue, 12 Aug 2014 21:03:57 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 13 Aug 2014 00:10:48 -0400
+Message-ID: <53EAE534.8030303@huawei.com>
+Date: Wed, 13 Aug 2014 12:10:28 +0800
+From: Zhang Zhen <zhenzhang.zhang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: ksummit-discuss@lists.linuxfoundation.org,
-        "Joseph S. Myers" <joseph@codesourcery.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-discuss] 2038 Kernel Summit Discussion Fodder
-References: <CALAqxLUcfaJnxdmkn6mucepNk3QaCQdcSPLRjjeKsk_OTp=uLA@mail.gmail.com> <1407895613.3017.138.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1407895613.3017.138.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        David Rientjes <rientjes@google.com>, <toshi.kani@hp.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <n-horiguchi@ah.jp.nec.com>
+CC: <wangnan0@huawei.com>, <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: [PATCH v2] memory-hotplug: add sysfs zones_online_to attribute
+References: <1407902811-4873-1-git-send-email-zhenzhang.zhang@huawei.com>
+In-Reply-To: <1407902811-4873-1-git-send-email-zhenzhang.zhang@huawei.com>
+X-Forwarded-Message-Id: <1407902811-4873-1-git-send-email-zhenzhang.zhang@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.77]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2014 07:06 PM, Ben Hutchings wrote:
-> On Tue, 2014-08-12 at 17:01 -0700, John Stultz wrote:
-> [...]
->> The downsides here are many. The distros will probably hate this idea,
-> I certainly hate the idea of adding another 32-bit port to Debian.
-> I think that it's OK for traditional distros to say 'just upgrade to
-> 64bit' while you solve the problem for 32-bit embedded systems where
-> there's probably little demand for supporting multiple ABIs at once.
+Currently memory-hotplug has two limits:
+1. If the memory block is in ZONE_NORMAL, you can change it to
+ZONE_MOVABLE, but this memory block must be adjacent to ZONE_MOVABLE.
+2. If the memory block is in ZONE_MOVABLE, you can change it to
+ZONE_NORMAL, but this memory block must be adjacent to ZONE_NORMAL.
 
-So I don't necessarily disagree, but if the rule really is "we don't
-break userspace" we will need a solution that at least allows for
-multiple ABIs from the kernel side, and we can then let distros chose if
-they want to handle both or not.  Even in the embedded world, as usage
-grows with things like Android, we're starting to see more strict needs
-for ABI/platform stability (see the ARMv8 SWP discussion from last
-month).  Fancy android based dashboard infotainment systems probably
-want to both be 2038 safe and run today's unsafe applications (hoping
-that they get upgraded eventually).
+With this patch, we can easy to know a memory block can be onlined to
+which zone, and don't need to know the above two limits.
+
+Updated the related Documentation.
+
+Change v1 -> v2:
+- optimize the implementation following Dave Hansen's suggestion
+
+Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
+---
+ Documentation/ABI/testing/sysfs-devices-memory |  8 ++++
+ Documentation/memory-hotplug.txt               |  4 +-
+ drivers/base/memory.c                          | 62 ++++++++++++++++++++++++++
+ include/linux/memory_hotplug.h                 |  1 +
+ mm/memory_hotplug.c                            |  2 +-
+ 5 files changed, 75 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-devices-memory b/Documentation/ABI/testing/sysfs-devices-memory
+index 7405de2..2b2a1d7 100644
+--- a/Documentation/ABI/testing/sysfs-devices-memory
++++ b/Documentation/ABI/testing/sysfs-devices-memory
+@@ -61,6 +61,14 @@ Users:		hotplug memory remove tools
+ 		http://www.ibm.com/developerworks/wikis/display/LinuxP/powerpc-utils
 
 
->
->>  as it requires rebuilding the world, and maintaining another legacy
->> architecture support. I’m also not completely sure how robust
->> multi-arch packaging is in the face of having to handle 3-4
->> architectures on one system.
-> dpkg multiarch covers this just fine, while I believe RPM is limited to
-> biarch.
->
->> On the kernel side, it also adds more complexity, where we have to add
->> even more complex compat support for 64bit systems to handle all the
->> various 32bit applications possible.
-> [...]
->
-> Didn't we need to do this already to support x32?  Have compat ioctls
-> involving time been botched?
-I'm not sure exactly what you mean here, but yea, its very much like
-supporting something like x32, but its one more to the list and has to
-be supported on both 32 and 64 architectures.
++What:           /sys/devices/system/memory/memoryX/zones_online_to
++Date:           July 2014
++Contact:	Zhang Zhen <zhenzhang.zhang@huawei.com>
++Description:
++		The file /sys/devices/system/memory/memoryX/zones_online_to
++		is read-only and is designed to show which zone this memory block can
++		be onlined to.
++
+ What:		/sys/devices/system/memoryX/nodeY
+ Date:		October 2009
+ Contact:	Linux Memory Management list <linux-mm@kvack.org>
+diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
+index 45134dc..5b34e33 100644
+--- a/Documentation/memory-hotplug.txt
++++ b/Documentation/memory-hotplug.txt
+@@ -155,6 +155,7 @@ Under each memory block, you can see 4 files:
+ /sys/devices/system/memory/memoryXXX/phys_device
+ /sys/devices/system/memory/memoryXXX/state
+ /sys/devices/system/memory/memoryXXX/removable
++/sys/devices/system/memory/memoryXXX/zones_online_to
 
-thanks
--john
+ 'phys_index'      : read-only and contains memory block id, same as XXX.
+ 'state'           : read-write
+@@ -170,6 +171,8 @@ Under each memory block, you can see 4 files:
+                     block is removable and a value of 0 indicates that
+                     it is not removable. A memory block is removable only if
+                     every section in the block is removable.
++'zones_online_to' : read-only: designed to show which zone this memory block
++		    can be onlined to.
+
+ NOTE:
+   These directories/files appear after physical memory hotplug phase.
+@@ -408,7 +411,6 @@ node if necessary.
+   - allowing memory hot-add to ZONE_MOVABLE. maybe we need some switch like
+     sysctl or new control file.
+   - showing memory block and physical device relationship.
+-  - showing memory block is under ZONE_MOVABLE or not
+   - test and make it better memory offlining.
+   - support HugeTLB page migration and offlining.
+   - memmap removing at memory offline.
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index a2e13e2..b5d693f 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -373,10 +373,71 @@ static ssize_t show_phys_device(struct device *dev,
+ 	return sprintf(buf, "%d\n", mem->phys_device);
+ }
+
++static int __zones_online_to(unsigned long end_pfn,
++				struct page *first_page, unsigned long nr_pages)
++{
++	struct zone *zone_next;
++
++	/*The mem block is the last block of memory.*/
++	if (!pfn_valid(end_pfn + 1))
++		return 1;
++	zone_next = page_zone(first_page + nr_pages);
++	if (zone_idx(zone_next) == ZONE_MOVABLE)
++		return 1;
++	return 0;
++}
++
++static ssize_t show_zones_online_to(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct memory_block *mem = to_memory_block(dev);
++	unsigned long start_pfn, end_pfn;
++	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
++	struct page *first_page;
++	struct zone *zone, *zone_prev;
++
++	start_pfn = section_nr_to_pfn(mem->start_section_nr);
++	end_pfn = start_pfn + nr_pages;
++	first_page = pfn_to_page(start_pfn);
++
++	/*The block contains more than one zone can not be offlined.*/
++	if (!test_pages_in_a_zone(start_pfn, end_pfn))
++		return sprintf(buf, "none\n");
++
++	zone = page_zone(first_page);
++
++#ifdef CONFIG_HIGHMEM
++	if (zone_idx(zone) == ZONE_HIGHMEM) {
++		if (__zones_online_to(end_pfn, first_page, nr_pages))
++			return sprintf(buf, "%s %s\n",
++					zone->name, (zone + 1)->name);
++	}
++#else
++	if (zone_idx(zone) == ZONE_NORMAL) {
++		if (__zones_online_to(end_pfn, first_page, nr_pages))
++			return sprintf(buf, "%s %s\n",
++					zone->name, (zone + 1)->name);
++	}
++#endif
++
++	if (zone_idx(zone) == ZONE_MOVABLE) {
++		if (!pfn_valid(start_pfn - nr_pages))
++			return sprintf(buf, "%s %s\n",
++						zone->name, (zone - 1)->name);
++		zone_prev = page_zone(first_page - nr_pages);
++		if (zone_idx(zone_prev) != ZONE_MOVABLE)
++			return sprintf(buf, "%s %s\n",
++						zone->name, (zone - 1)->name);
++	}
++
++	return sprintf(buf, "%s\n", zone->name);
++}
++
+ static DEVICE_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
+ static DEVICE_ATTR(state, 0644, show_mem_state, store_mem_state);
+ static DEVICE_ATTR(phys_device, 0444, show_phys_device, NULL);
+ static DEVICE_ATTR(removable, 0444, show_mem_removable, NULL);
++static DEVICE_ATTR(zones_online_to, 0444, show_zones_online_to, NULL);
+
+ /*
+  * Block size attribute stuff
+@@ -523,6 +584,7 @@ static struct attribute *memory_memblk_attrs[] = {
+ 	&dev_attr_state.attr,
+ 	&dev_attr_phys_device.attr,
+ 	&dev_attr_removable.attr,
++	&dev_attr_zones_online_to.attr,
+ 	NULL
+ };
+
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index d9524c4..8f1a419 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -84,6 +84,7 @@ extern int zone_grow_waitqueues(struct zone *zone, unsigned long nr_pages);
+ extern int add_one_highpage(struct page *page, int pfn, int bad_ppro);
+ /* VM interface that may be used by firmware interface */
+ extern int online_pages(unsigned long, unsigned long, int);
++extern int test_pages_in_a_zone(unsigned long, unsigned long);
+ extern void __offline_isolated_pages(unsigned long, unsigned long);
+
+ typedef void (*online_page_callback_t)(struct page *page);
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 2ff8c23..29d8693 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1307,7 +1307,7 @@ int is_mem_section_removable(unsigned long start_pfn, unsigned long nr_pages)
+ /*
+  * Confirm all pages in a range [start, end) is belongs to the same zone.
+  */
+-static int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
++int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
+ {
+ 	unsigned long pfn;
+ 	struct zone *zone = NULL;
+-- 
+1.8.1.2
+
+
+.
+
+
+
 
