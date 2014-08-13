@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaHMKKK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 06:10:10 -0400
-Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:11061
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751530AbaHMKKH convert rfc822-to-8bit (ORCPT
+	id S1751826AbaHMKR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 06:17:58 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:31160 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbaHMKR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 06:10:07 -0400
-From: Peter Chan <peter.chan@freescale.com>
-To: Mark Brown <broonie@kernel.org>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "tiwai@suse.de" <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@opensource.wolfsonmicro.com" 
-	<patches@opensource.wolfsonmicro.com>,
-        "shengjiu.wang@freescale.com" <shengjiu.wang@freescale.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        Nicolin Chen <nicoleotsuka@gmail.com>,
-        "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
-        "rf@opensource.wolfsonmicro.com" <rf@opensource.wolfsonmicro.com>
-Subject: RE: [alsa-devel] [PATCH] ASoC: wm8962: Correct the bit offset to
- enable mono speaker output
-Thread-Topic: [alsa-devel] [PATCH] ASoC: wm8962: Correct the bit offset to
- enable mono speaker output
-Thread-Index: AQHPtniApJTszbxsakmAu2awz0JIaJvOTKrQ
-Date: Wed, 13 Aug 2014 10:10:02 +0000
-Message-ID: <c26b64bd035e49a7a145a0ac81b01f8e@DM2PR03MB384.namprd03.prod.outlook.com>
-References: <1407412549-14983-1-git-send-email-nicoleotsuka@gmail.com>
- <20140807165836.GL17528@sirena.org.uk> <20140808082043.GB6333@MrMyself>
- <39712b9fd56546f8a943d605230a2f18@BL2PR03MB371.namprd03.prod.outlook.com>
- <20140811131949.GA28085@opensource.wolfsonmicro.com>
- <20140812082416.GA15833@opensource.wolfsonmicro.com>
- <20140812215742.GE17528@sirena.org.uk>
-In-Reply-To: <20140812215742.GE17528@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.170.1]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 0302D4F392
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(51704005)(199003)(13464003)(189002)(24454002)(80022001)(83322001)(92566001)(86362001)(74662001)(54356999)(20776003)(19580395003)(66066001)(83072002)(64706001)(108616004)(76576001)(2656002)(19580405001)(74502001)(21056001)(4396001)(46102001)(76482001)(85852003)(106116001)(33646002)(77982001)(79102001)(106356001)(93886004)(107046002)(85306004)(99396002)(31966008)(101416001)(50986999)(76176999)(74316001)(105586002)(99286002)(81342001)(87936001)(95666004)(81542001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB448;H:DM2PR03MB384.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Wed, 13 Aug 2014 06:17:56 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-02-53eb3b4e5f20
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <1407872967-26423-1-git-send-email-jaegeuk@kernel.org>
+ <1407872967-26423-3-git-send-email-jaegeuk@kernel.org>
+In-reply-to: <1407872967-26423-3-git-send-email-jaegeuk@kernel.org>
+Subject: RE: [f2fs-dev] [PATCH 03/13] f2fs: fix the initial inode page for
+	recovery
+Date: Wed, 13 Aug 2014 18:17:01 +0800
+Message-id: <009b01cfb6df$d4ba5fe0$7e2f1fa0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQG4wP7f0RrIWMfJUczB9r86/XcZWwIUzzNFm+uWykA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t9jAV0/69fBBhN+iFg8WT+L2eLSIneL
+	PXtPslhc3jWHzYHFY9OqTjaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAlfH6/x2mgus8FX07
+	H7E2MJ7k6mLk5JAQMJH4fuMrE4QtJnHh3nq2LkYuDiGBRYwSV7fuZYVwfjBKPF61FayKTUBF
+	YnnHfzBbREBNonffFDCbWSBTYkL/C3YQW0igWmLCsqlgNqeAs8TG1bcYQWxhgVCJdfchtrEI
+	qEpsvjODFcTmFbCUuLvhGjOELSjxY/I9FoiZWhLrdx6Hmi8vsXnNW2aISxUkdpx9zQhxg5XE
+	/d/9bBA14hIbj9ximcAoNAvJqFlIRs1CMmoWkpYFjCyrGEVTC5ILipPScw31ihNzi0vz0vWS
+	83M3MYJD/5nUDsaVDRaHGAU4GJV4eCt4XwULsSaWFVfmHmKU4GBWEuFdY/Q6WIg3JbGyKrUo
+	P76oNCe1+BCjNAeLkjjvgVbrQCGB9MSS1OzU1ILUIpgsEwenVAOjyO+LgarFhq/3XRDcf0lV
+	pyt5U9vLOf69n7cx73hW+3Wm1NTHzF0+N3qK1XT5eTudVj41Yde5GXBy3rfAZ7n3d7w+cTwg
+	uizTcOYXv3/7Gi96zp0jXmJb0dPepz15yh5u/23P5B8d/LduqvRTrYcrcsSe9uaJuTvosv1e
+	NWWTlvV2vdKsTqGbSizFGYmGWsxFxYkAyXWrSHkCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I found that in mono speaker mode, only the left channel is enable. The SPKOUTR_PGA_ENA bit remains 0 in this case. Thus when SPKOUTR_ENA is set, poor sound quality results.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> Sent: Wednesday, August 13, 2014 3:49 AM
+> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Cc: Jaegeuk Kim
+> Subject: [f2fs-dev] [PATCH 03/13] f2fs: fix the initial inode page for recovery
+> 
+> If a new inode page is needed for recover_dentry, we should assing i_inline
+> as zero.
+> 
+> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 
------Original Message-----
-From: Mark Brown [mailto:broonie@kernel.org] 
-Sent: Wednesday, August 13, 2014 5:58 AM
-To: Charles Keepax
-Cc: CHAN Peter-B18700; alsa-devel@alsa-project.org; tiwai@suse.de; linux-kernel@vger.kernel.org; patches@opensource.wolfsonmicro.com; Wang Shengjiu-B02247; lgirdwood@gmail.com; Nicolin Chen; Chen Guangyu-B42378; rf@opensource.wolfsonmicro.com
-Subject: Re: [alsa-devel] [PATCH] ASoC: wm8962: Correct the bit offset to enable mono speaker output
+Reviewed-by: Chao Yu <chao2.yu@samsung.com>
 
-On Tue, Aug 12, 2014 at 09:24:16AM +0100, Charles Keepax wrote:
-> On Mon, Aug 11, 2014 at 02:19:49PM +0100, Charles Keepax wrote:
+> ---
+>  fs/f2fs/node.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> index 1f33299..093d799 100644
+> --- a/fs/f2fs/node.c
+> +++ b/fs/f2fs/node.c
+> @@ -1651,6 +1651,7 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
+>  	dst->i_blocks = cpu_to_le64(1);
+>  	dst->i_links = cpu_to_le32(1);
+>  	dst->i_xattr_nid = 0;
+> +	dst->i_inline = src->i_inline & F2FS_INLINE_XATTR;
+> 
+>  	new_ni = old_ni;
+>  	new_ni.ino = ino;
+> @@ -1659,6 +1660,7 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
+>  		WARN_ON(1);
+>  	set_node_addr(sbi, &new_ni, NEW_ADDR, false);
+>  	inc_valid_inode_count(sbi);
+> +	set_page_dirty(ipage);
+>  	f2fs_put_page(ipage, 1);
+>  	return 0;
+>  }
+> --
+> 1.8.5.2 (Apple Git-48)
+> 
+> 
+> ------------------------------------------------------------------------------
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
-> > From the wording of "tie both outputs together" in the datasheet I 
-> > would assume that means both should be fed the same audio? Was this 
-> > done? I will try to give the hardware guys here a shout and see if I 
-> > can get some clarification on mono mode on this device.
-
-> I have had a word with the hardware team here and both channels do 
-> need to be enabled but audio should only be fed to the left channel. 
-> So the driver definitely needs updated for the mono case, but I am 
-> unclear as to what is causing your poor audio quality issue.
-
-Overdriving the speaker perhaps?
