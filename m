@@ -1,84 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaHMIH6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:07:58 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:64531 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211AbaHMIHt (ORCPT
+	id S1752471AbaHMIIy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:08:54 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:54001 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031AbaHMH6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:07:49 -0400
-Date: Wed, 13 Aug 2014 10:07:45 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: swarren@wwwdotorg.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 0/3] Thermal reset support in PMC
-Message-ID: <20140813080744.GD7735@ulmo>
-References: <1407226380-747-1-git-send-email-mperttunen@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EY/WZ/HvNxOox07X"
-Content-Disposition: inline
-In-Reply-To: <1407226380-747-1-git-send-email-mperttunen@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 13 Aug 2014 03:58:31 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC v4 net-next 15/26] bpf: allow eBPF programs to use maps
+Date: Wed, 13 Aug 2014 00:57:26 -0700
+Message-Id: <1407916658-8731-16-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+expose bpf_map_lookup_elem(), bpf_map_update_elem(), bpf_map_delete_elem()
+map accessors to eBPF programs
 
---EY/WZ/HvNxOox07X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ include/linux/bpf.h      |    5 ++++
+ include/uapi/linux/bpf.h |    3 ++
+ kernel/bpf/syscall.c     |   68 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 76 insertions(+)
 
-On Tue, Aug 05, 2014 at 11:12:57AM +0300, Mikko Perttunen wrote:
-> Hi,
->=20
-> this series adds support for hardware-triggered thermal reset to the PMC
-> driver. Namely, it adds device tree properties for specifying the I2C
-> command to be sent when thermtrip is triggered. It is to be noted
-> that thermtrip won't be ever triggered without a soctherm driver to
-> calibrate the sensors, but I'll follow up with that patch.
->=20
-> pmc.c required some juggling around to make the match data usable in
-> probe, since I didn't want to put the code into the initcall either, since
-> the soctherm driver won't be initialized by that point anyway.
->=20
-> Series tested on Jetson-TK1. Should work on Tegra30 and Tegra114 too.
+diff --git a/include/linux/bpf.h b/include/linux/bpf.h
+index 4d99c62c6cea..e811e294b59a 100644
+--- a/include/linux/bpf.h
++++ b/include/linux/bpf.h
+@@ -132,4 +132,9 @@ struct bpf_prog *bpf_prog_get(u32 ufd);
+ /* verify correctness of eBPF program */
+ int bpf_check(struct bpf_prog *fp, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1]);
+ 
++/* in-kernel helper functions called from eBPF programs */
++u64 bpf_map_lookup_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5);
++u64 bpf_map_update_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5);
++u64 bpf_map_delete_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5);
++
+ #endif /* _LINUX_BPF_H */
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index 7e025ba49b70..c18ac0c1e3e5 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -403,6 +403,9 @@ enum bpf_prog_type {
+  */
+ enum bpf_func_id {
+ 	BPF_FUNC_unspec,
++	BPF_FUNC_map_lookup_elem, /* void *map_lookup_elem(&map, &key) */
++	BPF_FUNC_map_update_elem, /* int map_update_elem(&map, &key, &value) */
++	BPF_FUNC_map_delete_elem, /* int map_delete_elem(&map, &key) */
+ 	__BPF_FUNC_MAX_ID,
+ };
+ 
+diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
+index 60cb760cb423..009fe8c77a0b 100644
+--- a/kernel/bpf/syscall.c
++++ b/kernel/bpf/syscall.c
+@@ -588,3 +588,71 @@ SYSCALL_DEFINE5(bpf, int, cmd, unsigned long, arg2, unsigned long, arg3,
+ 		return -EINVAL;
+ 	}
+ }
++
++/* called from eBPF program under rcu lock
++ *
++ * if kernel subsystem is allowing eBPF programs to call this function,
++ * inside its own verifier_ops->get_func_proto() callback it should return
++ * (struct bpf_func_proto) {
++ *    .ret_type = RET_PTR_TO_MAP_VALUE_OR_NULL,
++ *    .arg1_type = ARG_CONST_MAP_PTR,
++ *    .arg2_type = ARG_PTR_TO_MAP_KEY,
++ * }
++ * so that eBPF verifier properly checks the arguments
++ */
++u64 bpf_map_lookup_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
++{
++	struct bpf_map *map = (struct bpf_map *) (unsigned long) r1;
++	void *key = (void *) (unsigned long) r2;
++	void *value;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	value = map->ops->map_lookup_elem(map, key);
++
++	return (unsigned long) value;
++}
++
++/* called from eBPF program under rcu lock
++ *
++ * if kernel subsystem is allowing eBPF programs to call this function,
++ * inside its own verifier_ops->get_func_proto() callback it should return
++ * (struct bpf_func_proto) {
++ *    .ret_type = RET_INTEGER,
++ *    .arg1_type = ARG_CONST_MAP_PTR,
++ *    .arg2_type = ARG_PTR_TO_MAP_KEY,
++ *    .arg3_type = ARG_PTR_TO_MAP_VALUE,
++ * }
++ * so that eBPF verifier properly checks the arguments
++ */
++u64 bpf_map_update_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
++{
++	struct bpf_map *map = (struct bpf_map *) (unsigned long) r1;
++	void *key = (void *) (unsigned long) r2;
++	void *value = (void *) (unsigned long) r3;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	return map->ops->map_update_elem(map, key, value);
++}
++
++/* called from eBPF program under rcu lock
++ *
++ * if kernel subsystem is allowing eBPF programs to call this function,
++ * inside its own verifier_ops->get_func_proto() callback it should return
++ * (struct bpf_func_proto) {
++ *    .ret_type = RET_INTEGER,
++ *    .arg1_type = ARG_CONST_MAP_PTR,
++ *    .arg2_type = ARG_PTR_TO_MAP_KEY,
++ * }
++ * so that eBPF verifier properly checks the arguments
++ */
++u64 bpf_map_delete_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
++{
++	struct bpf_map *map = (struct bpf_map *) (unsigned long) r1;
++	void *key = (void *) (unsigned long) r2;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	return map->ops->map_delete_elem(map, key);
++}
+-- 
+1.7.9.5
 
-Can you describe the procedure used to test this? We currently have a
-bunch of features in Tegra that some people have tested at some point
-during development but the test procedures never got documented. That
-means whenever we want to test something we need to go and reinvent a
-bunch of tests after the fact.
-
-So what I'd like to start doing is collect tests (preferably in some
-scripted way) so that they can be kept in a repository that people can
-easily clone and run on devices.
-
-Could you provide something like that for thermtrip?
-
-Thierry
-
---EY/WZ/HvNxOox07X
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT6xzQAAoJEN0jrNd/PrOhGlMP/RDY3Q6BSFROV0YugQfbLzzI
-njMk/o+n9NfNbFOvXNtzwNe3saKVCotTaxaDdAMJel2EbKPJF9KlThoc3P0rIEgI
-O35ESQqInarG81I7Q1zeJqWwP+szSOP2e2BCgcj5tOW2MRm8wdaKJyJQWtHSYHzq
-B0quaw0rIn2//kMzUq/hB+bPDQsrZ6VinQ2h+HRoC6y9qqFklI13Ulsbo2aYYOeF
-ul4D7KbF3uyzvlWLWXwEzS01MWhKLyAUY0LcSMMLV42JTsqzxFnIpfnlRVM1u0Fz
-9zLc0QIC1KNyt980YbRRV4UWpOxeHVozZdt+lEZCupGJuZ2KeJ5y7egx4jCTfJdU
-vf2xydVUt5ASYiv2VwgAq+G0qczWzGEdpPvHnze7NE0zpBs96vUOmE9VWlUNmA7K
-ANCGsdOAOZPWQc+4mOvcWk4K39fzvKlEeVAqIx99f89gGp5pklmR8LQQVK3bjOiw
-FsF2tqh2HbLiXSQZU6HhIW4Infyqj0BAHDRiITbSYtJfmXl9L2zSZjh4ebHW0Etl
-Zbdn69QJJI8pph3/llhOGtZGvyQPdsxkXTunnR+n+U7f9LWj1NJjRfCY4ibMhn6i
-6Zec+ELmfDLcVWlfU28bWaJZZGdOqzCbNjA1TiE4f7Cw30PHdLJWVf7ex8BuJWG9
-2V0Lx2FyTrGJ+cMjpomN
-=PJrc
------END PGP SIGNATURE-----
-
---EY/WZ/HvNxOox07X--
