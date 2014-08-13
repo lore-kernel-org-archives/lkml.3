@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169AbaHMBqk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 21:46:40 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:54866 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053AbaHMBqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 21:46:38 -0400
-Message-ID: <53EAC37C.4020203@codeaurora.org>
-Date: Tue, 12 Aug 2014 18:46:36 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1753444AbaHMBuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 21:50:40 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:41061 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752465AbaHMBuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 21:50:39 -0400
+Message-ID: <53EAC461.2060503@daenzer.net>
+Date: Wed, 13 Aug 2014 10:50:25 +0900
+From: =?windows-1252?Q?Michel_D=E4nzer?= <michel@daenzer.net>
+User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-CC: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] of: Deep-copy names of platform devices
-References: <1407891444-7311-1-git-send-email-stepanm@codeaurora.org>
-In-Reply-To: <1407891444-7311-1-git-send-email-stepanm@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Jerome Glisse <j.glisse@gmail.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, kamal@canonical.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@redhat.com>, ben@decadent.org.uk,
+        m.szyprowski@samsung.com
+Subject: Re: CONFIG_DMA_CMA causes ttm performance problems/hangs.
+References: <53E50C1B.9080507@gmail.com> <53E5B41B.3030009@vmware.com> <60bd3db2-4919-40c4-a4ff-1b7b043cadfc@email.android.com> <53E628FE.10808@vmware.com> <53E6E2CE.8070005@gmail.com> <53E75192.3070003@vmware.com> <53E7B39D.2060900@gmail.com> <53E896C9.5010501@vmware.com> <20140811151712.GA3541@gmail.com>
+In-Reply-To: <20140811151712.GA3541@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/14 17:57, Stepan Moskovchenko wrote:
-> diff --git a/drivers/of/device.c b/drivers/of/device.c
-> index f685e55..3e116f6 100644
-> --- a/drivers/of/device.c
-> +++ b/drivers/of/device.c
-> @@ -54,7 +54,7 @@ int of_device_add(struct platform_device *ofdev)
->
->  	/* name and id have to be set so that the platform bus doesn't get
->  	 * confused on matching */
-> -	ofdev->name = dev_name(&ofdev->dev);
-> +	ofdev->name = kstrdup(dev_name(&ofdev->dev), GFP_KERNEL);
->  	ofdev->id = -1;
->
->  	/* device_add will assume that this device is on the same node as
-> @@ -76,6 +76,7 @@ EXPORT_SYMBOL(of_device_register);
->  void of_device_unregister(struct platform_device *ofdev)
->  {
->  	device_unregister(&ofdev->dev);
-> +	kfree(ofdev->name);
+On 12.08.2014 00:17, Jerome Glisse wrote:
+> On Mon, Aug 11, 2014 at 12:11:21PM +0200, Thomas Hellstrom wrote:
+>> On 08/10/2014 08:02 PM, Mario Kleiner wrote:
+>>> On 08/10/2014 01:03 PM, Thomas Hellstrom wrote:
+>>>> On 08/10/2014 05:11 AM, Mario Kleiner wrote:
+>>>>>
+>>>>> The other problem is that probably TTM does not reuse pages from the
+>>>>> DMA pool. If i trace the __ttm_dma_alloc_page
+>>>>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__ttm_dma_alloc_page&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=7898522bba274e4dcc332735fbcf0c96e48918f60c2ee8e9a3e9c73ab3487bd0>
+>>>>> and
+>>>>> __ttm_dma_free_page
+>>>>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__ttm_dma_alloc_page&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=7898522bba274e4dcc332735fbcf0c96e48918f60c2ee8e9a3e9c73ab3487bd0>
+>>>>> calls for
+>>>>> those single page allocs/frees, then over a 20 second interval of
+>>>>> tracing and switching tabs in firefox, scrolling things around etc. i
+>>>>> find about as many alloc's as i find free's, e.g., 1607 allocs vs.
+>>>>> 1648 frees.
+>>>> This is because historically the pools have been designed to keep only
+>>>> pages with nonstandard caching attributes since changing page caching
+>>>> attributes have been very slow but the kernel page allocators have been
+>>>> reasonably fast.
+>>>>
+>>>> /Thomas
+>>>
+>>> Ok. A bit more ftraceing showed my hang problem case goes through the
+>>> "if (is_cached)" paths, so the pool doesn't recycle anything and i see
+>>> it bouncing up and down by 4 pages all the time.
+>>>
+>>> But for the non-cached case, which i don't hit with my problem, could
+>>> one of you look at line 954...
+>>>
+>>> https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/source/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c%23L954&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=e15c51805d429ee6d8960d6b88035e9811a1cdbfbf13168eec2fbb2214b99c60
+>>>
+>>>
+>>> ... and tell me why that unconditional npages = count; assignment
+>>> makes sense? It seems to essentially disable all recycling for the dma
+>>> pool whenever the pool isn't filled up to/beyond its maximum with free
+>>> pages? When the pool is filled up, lots of stuff is recycled, but when
+>>> it is already somewhat below capacity, it gets "punished" by not
+>>> getting refilled? I'd just like to understand the logic behind that line.
+>>>
+>>> thanks,
+>>> -mario
+>>
+>> I'll happily forward that question to Konrad who wrote the code (or it
+>> may even stem from the ordinary page pool code which IIRC has Dave
+>> Airlie / Jerome Glisse as authors)
+> 
+> This is effectively bogus code, i now wonder how it came to stay alive.
+> Attached patch will fix that.
 
-This probably ought to be swapped because we don't know if ofdev isn't
-pointing to freed memory after device_unregister().
+I haven't tested Mario's scenario specifically, but it survived piglit
+and the UE4 Effects Cave Demo (for which 1GB of VRAM isn't enough, so
+some BOs ended up in GTT instead with write-combined CPU mappings) on
+radeonsi without any noticeable issues.
+
+Tested-by: Michel Dänzer <michel.daenzer@amd.com>
+
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Earthling Michel Dänzer            |                  http://www.amd.com
+Libre software enthusiast          |                Mesa and X developer
