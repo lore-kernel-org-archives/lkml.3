@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978AbaHMOCZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:02:25 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:37512 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917AbaHMOCW (ORCPT
+	id S1752809AbaHMOHU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:07:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44679 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652AbaHMOHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:02:22 -0400
-Date: Wed, 13 Aug 2014 15:02:19 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Mantas =?utf-8?Q?Mikul=C4=97nas?= <grawity@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org
-Subject: Re: Loading initrd above 4G causes freeze on boot
-Message-ID: <20140813140219.GP15082@console-pimps.org>
-References: <53E62EEF.9040801@gmail.com>
- <CAE9FiQVXkojPnTr4EQE7h2YhWqa5VBYRSCadB0B1qDL+eGY8jg@mail.gmail.com>
- <20140809192302.GJ15082@console-pimps.org>
- <CAPWNY8X+pRf4GuYAzKj-co0fkLMY0KNw+wB4KA8eaJ0QbE4MnA@mail.gmail.com>
- <CAE9FiQVDURMvgVd55-onMDejCZT+OZ2vrr92wx8FJMKRNSX_GA@mail.gmail.com>
- <CAPWNY8WvyAt5oT3cJ53A07tbfZctE9Y-m5f2Nucgc3hVvCgdjQ@mail.gmail.com>
+	Wed, 13 Aug 2014 10:07:18 -0400
+Date: Wed, 13 Aug 2014 16:07:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: Re: [PATCH v5 tip/core/rcu 15/16] rcu: Make RCU-tasks wait for idle
+ tasks
+Message-ID: <20140813140705.GO9918@twins.programming.kicks-ass.net>
+References: <20140811224840.GA25594@linux.vnet.ibm.com>
+ <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1407797345-28227-15-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140813081215.GB9918@twins.programming.kicks-ass.net>
+ <20140813124818.GQ4752@linux.vnet.ibm.com>
+ <20140813134025.GN9918@twins.programming.kicks-ass.net>
+ <20140813095132.56d288f2@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zvbl/8tVKAFcMeVq"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPWNY8WvyAt5oT3cJ53A07tbfZctE9Y-m5f2Nucgc3hVvCgdjQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140813095132.56d288f2@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Aug, at 09:43:32PM, Mantas Mikulėnas wrote:
-> On Sun, Aug 10, 2014 at 8:55 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > On Sat, Aug 9, 2014 at 3:45 PM, Mantas Mikulėnas <grawity@gmail.com> wrote:
-> >> On Sat, Aug 9, 2014 at 10:23 PM, Matt Fleming <matt@console-pimps.org> wrote:
-> >> [However... Whether it's five chunks, four (after making the initrd
-> >> smaller), or just one (with your efi=nochunk), I noticed that it
-> >> *always* hangs during the *last* read, and the allocated memory always
-> >> ends at roughly the same address (0x137fffXXX). I wonder if it's
-> >> selecting a memory location already in use, or something like that...]
-> >>
-> >> (The laptop is Asus K52JT, AMI firmware v206, no updates available.)
-> >
-> > wonder if  efi_file_read return with wrong chunksize.
-> >
-> > Can you try attached patch ?
-> 
-> Thanks, but it didn't change anything.
-> 
-> (I tried adding some efi_printk's, and as far as I can see,
-> efi_file_read *doesn't* return at all.)
 
-Could you send you revert Yinghai's commit locally and send the dmesg
-from a successful boot? I'm wondering what other regions are around the
-0x137fffxxx area.
+--zvbl/8tVKAFcMeVq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-One other thing to attempt would be to progressively try higher and
-higher max memory addresses to read into to see if we can correlate your
-hang with a particular region, i.e. this code,
+On Wed, Aug 13, 2014 at 09:51:32AM -0400, Steven Rostedt wrote:
+
+> I still need to look at the patches, but if this is just for the idle
+> case, then we don't need it. The idle case can be solved with a simple
+> sched_on_each_cpu(). I need a way to solve waiting for processes to
+> finish from a preemption point.
+>=20
+> That's all I want, and if we can remove the "idle" case and document it
+> well that it's not covered and a sched_on_each_cpu() may be needed,
+> then I'm fine with that.
+>=20
+> 	sched_on_each_cpu(dummy_op);
+> 	call_rcu_tasks(free_tramp);
+
+Sure, but why not dtrt and push rcu_idle hooks all the way down into the
+idle drivers if and where appropriate?
+
+There isn't _that_ much idle driver code. Also, some stuff should be
+cleaned up; we're already calling stop_critical_timings() in the generic
+idle code, and then calling it again in the cpuidle drivers.
 
 
-	if (hdr->xloadflags & XLF_CAN_BE_LOADED_ABOVE_4G)
-		initrd_addr_max = -1UL;
-	else
-		initrd_addr_max = hdr->initrd_addr_max;
 
-	status = efi_parse_options(cmdline_ptr);
-	if (status != EFI_SUCCESS)
-		goto fail2;
+--zvbl/8tVKAFcMeVq
+Content-Type: application/pgp-signature
 
-	status = handle_cmdline_files(sys_table, image,
-				      (char *)(unsigned long)hdr->cmd_line_ptr,
-				      "initrd=", initrd_addr_max,
-				      &ramdisk_addr, &ramdisk_size);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJT63EJAAoJEHZH4aRLwOS6sTcQAK4N7zGLEdN1WowgESfGdnko
+LWBVt9pqWNfRcb2VFtP3lj0eWClUsuVNLQWwLIc2LcWepmy3CE8Bg8hmGTSXNFMR
+z3ii0C6TiwX3PzakKseMuE62lK3n5oHLMIZmg92NrPL4BSrutFR1/11kIhN83fpE
+GFL3/frC0M28V2Qfe0BQovqmQsA/942A4ABKyGo8FOCk4LoJj+gPzgUtQsgc696t
+XLg1zvTsxP7O5qGt7CGJjrdkykwr2troWjVGZOkLYcczLNLVqxChZK7rmT+Sezp1
+DfDqfAb0U07HutVYHwE9loTPfnqeAbxEPz5/Cwd5+Y2qsWSHLYFkxHqflVeCgKwP
+Zdz0BinHqBl7Wy4qXaTHP7uxERPOLZSUpymdDk/sOQ9wPG+y2O73GmW7EobdrZ1Y
+NabQaZHym/BPZyF1jgZP+YRbgNYzVD2a0sv5GFGeI/2LkwRIsgWfn3P97AOfE0ay
+4p7ykOERWmae02gtV9Vjy0i3RUjEbrtq+jvzs/EoJ6GzNkAIVUkphf17ZU2jVA/6
+WxPU9gZm8LPy3o1LoP1LTuP3Wgu5YV1+geqsqvyFVqGEc2xdpyE/D9So2HM82uGL
+s2R+cEmBZzNQRJolcYx9zHLScir+fqmqfc0xKvK6mAWCNvyhZ9//8gMV2ZF0alAn
+rIKunSJ9/RGtNK71PLeo
+=gzwU
+-----END PGP SIGNATURE-----
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+--zvbl/8tVKAFcMeVq--
