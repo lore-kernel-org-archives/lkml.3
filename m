@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581AbaHMRLX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:11:23 -0400
-Received: from mail-yk0-f179.google.com ([209.85.160.179]:43600 "EHLO
-	mail-yk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518AbaHMRLW (ORCPT
+	id S1753584AbaHMRNL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 13:13:11 -0400
+Received: from mail-db3hn0250.outbound.protection.outlook.com ([157.55.234.250]:46080
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752929AbaHMRNK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 13:11:22 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] jiffies_64: Use the same data section attribute
-Date: Wed, 13 Aug 2014 13:11:41 -0400
-Message-Id: <1407949903-32517-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 13 Aug 2014 13:13:10 -0400
+X-Greylist: delayed 1810 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Aug 2014 13:13:10 EDT
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: CONGRATULATIONS
+To: Recipients <winner15@bingowins.onmicrosoft.com>
+From: BINGO <winner15@bingowins.onmicrosoft.com>
+Date: Wed, 13 Aug 2014 18:42:53 +0200
+Reply-To: <bingo_nor@aim.com>
+Message-ID: <49b8b90e-0a91-4478-a7b3-b0b978f25b21@DB3PR01MB107.eurprd01.prod.exchangelabs.com>
+X-Originating-IP: [85.95.61.70]
+X-ClientProxiedBy: DB4PR02CA0039.eurprd02.prod.outlook.com (10.242.174.167) To
+ DB3PR01MB107.eurprd01.prod.exchangelabs.com (10.141.2.24)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0302D4F392
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(6009001)(189002)(199003)(74316001)(89136004)(53806999)(92726001)(76482001)(77096002)(83072002)(77982001)(86902001)(85852003)(66066001)(229853001)(107046002)(64872006)(53256004)(86632001)(64706001)(101416001)(80022001)(50466002)(85306004)(21056001)(1496007)(107886001)(86362001)(95666004)(79102001)(42186005)(558084003)(83322001)(221733001)(86442001)(74502001)(33646002)(81342001)(106356001)(50986999)(23756003)(105586002)(46102001)(110136001)(81542001)(20776003)(31696002)(47776003)(99396002)(43066003)(4396001)(87976001)(102836001)(54356999)(74662001)(58004003);DIR:OUT;SFP:1501;SCL:9;SRVR:DB3PR01MB107;H:PC3.lan;FPR:;MLV:spm;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: bingowins.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jiffies_64 is defined with different section attribute. This commit changes the
-extern definition to be the same as the actual definition.
+Dear Winner,
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- include/linux/jiffies.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Your email address attached to ticket number 5-26-27-30-39-45 WON 850,000.00 EUROS in the BINGOLOTTO INTERNATIONAL. Get back to us for claim.
 
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index 1f44466..ec84da22 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -73,7 +73,7 @@ extern int register_refined_jiffies(long clock_tick_rate);
-  * without sampling the sequence number in jiffies_lock.
-  * get_jiffies_64() will do this for you as appropriate.
-  */
--extern u64 __jiffy_data jiffies_64;
-+extern u64 jiffies_64 __cacheline_aligned_in_smp;
- extern unsigned long volatile __jiffy_data jiffies;
- 
- #if (BITS_PER_LONG < 64)
--- 
-1.9.1
+Congratulations once again.
 
+Yours Faithfully,
+
+Mr. Dag. 
+(Chairman BingoLotto)
