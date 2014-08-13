@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaHMTEr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 15:04:47 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33833 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaHMTEp (ORCPT
+	id S1752001AbaHMTLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 15:11:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43293 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341AbaHMTLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 15:04:45 -0400
-Date: Wed, 13 Aug 2014 20:04:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Gyungoh Yoo <gyungoh@gmail.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140813190423.GI17528@sirena.org.uk>
-References: <1407489022-31130-1-git-send-email-jack.yoo@skyworksinc.com>
+	Wed, 13 Aug 2014 15:11:18 -0400
+Message-ID: <53EBB851.9070505@canonical.com>
+Date: Wed, 13 Aug 2014 15:11:13 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pAAyu2TyRXCvU+QI"
-Content-Disposition: inline
-In-Reply-To: <1407489022-31130-1-git-send-email-jack.yoo@skyworksinc.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/3] Adding Skyworks SKY81452 regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Julius Werner <jwerner@chromium.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Dustin Kirkland <dustin.kirkland@canonical.com>
+Subject: Re: [REVERT][v3.16-rc7][STABLE] usb: xhci: Prefer endpoint context
+ dequeue pointer over stopped_trb
+References: <53D947F3.6010301@canonical.com> <CAODwPW-tf0D70v5La1z+-jo5rgKFW_Q2fMCZGWZkf0DnyTUuTA@mail.gmail.com> <53D9B664.4020401@canonical.com>
+In-Reply-To: <53D9B664.4020401@canonical.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/30/2014 11:22 PM, Joseph Salisbury wrote:
+> On 07/30/2014 06:42 PM, Julius Werner wrote:
+>> Hi Joseph,
+>>
+>>> Julius, I was hoping to get your feedback, since you are the patch
+>>> author.  Do you think gathering any additional data will help diagnose
+>>> this issue, or would it be best to continue with this revert request?
+>> As I understand it, this crash will disappear with Mathias' new rework
+>> for finding the cycle state bit in
+>> http://www.spinics.net/lists/linux-usb/msg111259.html , so a revert
+>> should not be necessary.
+> Hi Julius / Mathias,
+>
+> I was able to built a test kernel with the patch against 3.16-rc7. 
+> However, the patch would not compile against the 3.13.y stable tree(I'll
+> debug why further).  Is there plans for a version of the patch that will
+> work with stable kernels?
+>
+> Thanks,
+>
+> Joe
+>
+>
+>
+Just curious if there is an update on a version of the patch that will
+build against the stable kernels?  If not, I can dig deeper to find the
+build failure.
 
---pAAyu2TyRXCvU+QI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks,
 
-On Fri, Aug 08, 2014 at 06:10:22PM +0900, Gyungoh Yoo wrote:
-> Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-
-Applied, thanks.  Please use subject lines matching the style for the
-subsystem you are submitting against.
-
---pAAyu2TyRXCvU+QI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT67a0AAoJELSic+t+oim9WmoP/i5RlkYLqmyLAfhAWTr781Be
-9DvTwefoHzEkwxuSYfPbJ8lUHHoGP+Bq9nJXt/P+q4HR5UIOC4zMF7GGFyOOes7Q
-JZVOnY7Hdn0+NMARPVbJn/LLitI0PWlsi3NVppHGwbAVq+2OBU+VJQXLan3vOK7d
-yTk7Nvdq7pnLUyWGj8ICASzg3brAKpOgpglvbf5vhjfKn13XiEacCNSrxPiKOWlF
-UPAHwrY6V7yVOWTfWhhtzVfql6/HHZfq8VRM/GYwk2pEQ2O78ZvJE+H5ViyR90Z2
-FuJwTsw6y+H19gvw9D+EFsbBblET7F8wai0JsSGCZduoWgu8xISefA1RE7VS1iHM
-Ww+qYmqRHOLdqLvefU3ZosjNLfjiEI+oN5aKmhBWQvRiXCMgGlGHZA7dcOcwheBJ
-25Kjjbfe79kLERpvafERMfkl92u9o3JJLzESSFwvlt9EPli2CnhMsGx+LCuXqRcV
-8sIePJh6zSHfnn5ah1ZanAPW0bcISLX/2KftUWPBEFnkqO/f8WG1WK0c979fKWUK
-YFRkvh6QM+qZ4iG98BzO7ng4kXy8UnLl0dw4x97hhgLuclBRpt62M+xFUlygLqBb
-+0P840vLWPMyVMqnTHSfg7kPWzY+gDMswhRKU7322WJasRx3IFrZ+oEbPuim/Awc
-HTx+MfJ5BULzhN/6FIkI
-=fiw2
------END PGP SIGNATURE-----
-
---pAAyu2TyRXCvU+QI--
+Joe
