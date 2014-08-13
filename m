@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295AbaHMK1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 06:27:42 -0400
-Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:59973
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751980AbaHMK11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 06:27:27 -0400
-From: Yuan Yao <yao.yuan@freescale.com>
-To: <wsa@the-dreams.de>, <marex@denx.de>
-CC: <LW@KARO-electronics.de>, <mark.rutland@arm.com>,
-        <fugang.duan@freescale.com>, <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-i2c@vger.kernel.org>
-Subject: [PATCH v7 2/2] Documentation:add DMA support for freescale i2c driver
-Date: Wed, 13 Aug 2014 17:37:56 +0800
-Message-ID: <1407922676-31438-3-git-send-email-yao.yuan@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1407922676-31438-2-git-send-email-yao.yuan@freescale.com>
-References: <1407922676-31438-2-git-send-email-yao.yuan@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(31966008)(81542001)(85306004)(74502001)(74662001)(21056001)(95666004)(50466002)(33646002)(44976005)(86362001)(19580395003)(105606002)(106466001)(6806004)(48376002)(62966002)(76176999)(102836001)(80022001)(47776003)(107046002)(99396002)(77982001)(87286001)(50226001)(97736001)(87936001)(89996001)(26826002)(88136002)(4396001)(79102001)(68736004)(84676001)(92726001)(76482001)(50986999)(19580405001)(83072002)(83322001)(36756003)(64706001)(104016003)(229853001)(93916002)(20776003)(104166001)(92566001)(46102001)(77156001)(85852003)(81342001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB373;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
-X-Forefront-PRVS: 0302D4F392
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=yao.yuan@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
-X-OriginatorOrg: freescale.com
+	id S1752520AbaHMK3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 06:29:06 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:36251 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaHMK3C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 06:29:02 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Sam Ravnborg <sam@ravnborg.org>,
+        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
+        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, x86@kernel.org,
+        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 0/8] asm-generic/io.h overhaul
+Date: Wed, 13 Aug 2014 12:28:50 +0200
+Message-Id: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add i2c dts node properties for eDMA support, them depend on the eDMA driver.
+From: Thierry Reding <treding@nvidia.com>
 
-Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
----
- Documentation/devicetree/bindings/i2c/i2c-imx.txt | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+Hi,
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-imx.txt b/Documentation/devicetree/bindings/i2c/i2c-imx.txt
-index 4a8513e..52d37fd 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-imx.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-imx.txt
-@@ -11,6 +11,8 @@ Required properties:
- Optional properties:
- - clock-frequency : Constains desired I2C/HS-I2C bus clock frequency in Hz.
-   The absence of the propoerty indicates the default frequency 100 kHz.
-+- dmas: A list of two dma specifiers, one for each entry in dma-names.
-+- dma-names: should contain "tx" and "rx".
- 
- Examples:
- 
-@@ -26,3 +28,12 @@ i2c@70038000 { /* HS-I2C on i.MX51 */
- 	interrupts = <64>;
- 	clock-frequency = <400000>;
- };
-+
-+i2c0: i2c@40066000 { /* i2c0 on vf610 */
-+	compatible = "fsl,vf610-i2c";
-+	reg = <0x40066000 0x1000>;
-+	interrupts =<0 71 0x04>;
-+	dmas = <&edma0 0 50>,
-+		<&edma0 0 51>;
-+	dma-names = "rx","tx";
-+};
+Here is the fourth version of a series that started out as an attempt to
+provide string versions of the read*() and write*() accessors to more
+architectures so that drivers can use them portably. The series has
+since evolved into a more general cleanup of asm-generic/io.h and the
+functions defined therein.
+
+Patch 1 is trivial and removes a redundant redefinition of PCI_IOBASE
+from the asm/io.h header on ARC. Patches 2 and 3 remove unnecessary
+volatile keywoards from some functions, which is a prerequisite to clean
+up some of the functions in subsequent patches.
+
+The xlate_dev_{kmem,mem}_ptr() functions are used to map memory when the
+/dev/mem device is accessed. Patches 4 and 5 use more consistent data
+types for these functions, which will get a "standard" prototype in the
+asm-generic/io.h header in a subsequent patch.
+
+Patch 6 is the bulk of this series. It implements the string variants of
+the read*() and write*() accessors and cleans up various other parts of
+the asm-generic/io.h header file. Macros are converted to static inline
+functions for better type checking. Overriding generic implementations
+in architectures is handled more consistently.
+
+Patches 7 and 8, finally, make use of the asm-generic/io.h header on the
+32-bit and 64-bit ARM architectures.
+
+This is compile- and runtime-tested on 32-bit and 64-bit ARM and compile
+tested on IA64, Microblaze, s390, SPARC, x86 and Xtensa. For ARC,
+Blackfin, Metag, OpenRISC, Score and Unicore32 which also use
+asm-generic/io.h I couldn't find or build a cross-compiler that would
+run on my system. But by code inspection they shouldn't break with this
+patch.
+
+To ensure bisectability I built multi_v7_defconfig on 32-bit ARM and the
+defconfig for 64-bit ARM, IA64, Microblaze, s390, SPARC, x86 and Xtensa
+after each commit and verified that the series does not introduce any
+build errors or warnings.
+
+Provided there are no objections to the patches there's still the matter
+of how to merge them. Patch 6 depends on patches 1-5 to avoid warnings
+and/or errors during the build. Patches 7 and 8 depend on patch 6. In my
+opinion it doesn't make much sense to split them up, so I guess we'll
+need a volunteer to take them all into one tree. Ideally that tree would
+feed into linux-next so that we can get as much build and test-coverage
+as possible during the 3.17 release cycle so that these patches can go
+into 3.18.
+
+Arnd, I'm opportunistically sending this To: you in the hopes that you
+can take it into your asm-generic tree which seems like the best fit for
+this.
+
+Thierry
+
+Thierry Reding (8):
+  ARC: Remove redundant PCI_IOBASE declaration
+  serial: sunzilog: Remove unnecessary volatile keyword
+  sparc: Remove unnecessary volatile usage
+  [IA64] Change xlate_dev_{kmem,mem}_ptr() prototypes
+  /dev/mem: Use more consistent data types
+  asm-generic/io.h: Implement generic {read,write}s*()
+  ARM: Use include/asm-generic/io.h
+  arm64: Use include/asm-generic/io.h
+
+ arch/arc/include/asm/io.h       |   2 -
+ arch/arm/include/asm/io.h       |  75 ++---
+ arch/arm/include/asm/memory.h   |   2 +
+ arch/arm64/Kconfig              |   1 -
+ arch/arm64/include/asm/io.h     | 122 ++-----
+ arch/arm64/include/asm/memory.h |   2 +
+ arch/ia64/include/asm/uaccess.h |  16 +-
+ arch/s390/include/asm/io.h      |   5 +-
+ arch/s390/mm/maccess.c          |   4 +-
+ arch/sparc/include/asm/io_32.h  |  18 +-
+ arch/x86/include/asm/io.h       |   4 +-
+ arch/x86/mm/ioremap.c           |   4 +-
+ drivers/char/mem.c              |  13 +-
+ drivers/tty/serial/sunzilog.h   |   8 +-
+ include/asm-generic/io.h        | 683 ++++++++++++++++++++++++++++++++--------
+ 15 files changed, 647 insertions(+), 312 deletions(-)
+
 -- 
-1.8.4
+2.0.4
 
