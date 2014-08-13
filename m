@@ -1,137 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109AbaHMLAj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 07:00:39 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:2703 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171AbaHMLAi (ORCPT
+	id S1751665AbaHMLFa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 07:05:30 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:37884 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145AbaHMLF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 07:00:38 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 13 Aug 2014 03:46:14 -0700
-Message-ID: <53EB44F4.6090808@nvidia.com>
-Date: Wed, 13 Aug 2014 13:59:00 +0300
-From: Mikko Perttunen <mperttunen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Thermal reset support in PMC
-References: <1407226380-747-1-git-send-email-mperttunen@nvidia.com> <20140813080744.GD7735@ulmo> <53EB1DF5.301@nvidia.com> <53EB250D.5070207@nvidia.com> <20140813085728.GF7735@ulmo> <53EB3556.9010504@nvidia.com> <20140813103613.GA7624@ulmo> <53EB40F0.4000300@nvidia.com> <20140813105354.GA4843@ulmo>
-In-Reply-To: <20140813105354.GA4843@ulmo>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Aug 2014 07:05:27 -0400
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
+        iommu@lists.linux-foundation.org
+Cc: tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        kvm@vger.kernel.org, christoffer.dall@linaro.org, will.deacon@arm.com,
+        kim.phillips@freescale.com, stuart.yoder@freescale.com,
+        eric.auger@linaro.org, marc.zyngier@arm.com,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Rob Herring <robh@kernel.org>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        linux-kernel@vger.kernel.org (open list),
+        linux-api@vger.kernel.org (open list:ABI/API)
+Subject: [PATCH 1/4] VFIO: PLATFORM: Add device tree info API and skeleton
+Date: Wed, 13 Aug 2014 13:02:16 +0200
+Message-Id: <1407927740-14993-2-git-send-email-a.motakis@virtualopensystems.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1407927740-14993-1-git-send-email-a.motakis@virtualopensystems.com>
+References: <1407927740-14993-1-git-send-email-a.motakis@virtualopensystems.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch introduced the API to return device tree info about
+a PLATFORM device (if described by a device tree) and the skeleton
+of the implementation for VFIO_PLATFORM. Information about any device
+node bound by VFIO_PLATFORM should be queried via the introduced ioctl
+VFIO_DEVICE_GET_DEVTREE_INFO.
 
+Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+---
+ drivers/vfio/platform/Makefile                |  2 +-
+ drivers/vfio/platform/devtree.c               | 27 ++++++++++++++++++++++
+ drivers/vfio/platform/vfio_platform.c         | 11 +++++++++
+ drivers/vfio/platform/vfio_platform_private.h |  7 ++++++
+ include/uapi/linux/vfio.h                     | 32 ++++++++++++++++++++++++---
+ 5 files changed, 75 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/vfio/platform/devtree.c
 
-On 13/08/14 13:53, Thierry Reding wrote:
-> * PGP Signed by an unknown key
->
-> On Wed, Aug 13, 2014 at 01:41:52PM +0300, Mikko Perttunen wrote:
->>
->>
->> On 13/08/14 13:36, Thierry Reding wrote:
->>>> Old Signed by an unknown key
->>>
->>> On Wed, Aug 13, 2014 at 12:52:22PM +0300, Mikko Perttunen wrote:
->>>> On 13/08/14 11:57, Thierry Reding wrote:
->>>>>> Old Signed by an unknown key
->>>>>
->>>>> On Wed, Aug 13, 2014 at 11:42:53AM +0300, Mikko Perttunen wrote:
->>>>>>
->>>>>>
->>>>>> On 13/08/14 11:12, Mikko Perttunen wrote:
->>>>>>> On 13/08/14 11:07, Thierry Reding wrote:
->>>>>>>>> Old Signed by an unknown key
->>>>>>>>
->>>>>>>> On Tue, Aug 05, 2014 at 11:12:57AM +0300, Mikko Perttunen wrote:
->>>>>>>>> Hi,
->>>>>>>>>
->>>>>>>>> this series adds support for hardware-triggered thermal reset to the PMC
->>>>>>>>> driver. Namely, it adds device tree properties for specifying the I2C
->>>>>>>>> command to be sent when thermtrip is triggered. It is to be noted
->>>>>>>>> that thermtrip won't be ever triggered without a soctherm driver to
->>>>>>>>> calibrate the sensors, but I'll follow up with that patch.
->>>>>>>>>
->>>>>>>>> pmc.c required some juggling around to make the match data usable in
->>>>>>>>> probe, since I didn't want to put the code into the initcall either, since
->>>>>>>>> the soctherm driver won't be initialized by that point anyway.
->>>>>>>>>
->>>>>>>>> Series tested on Jetson-TK1. Should work on Tegra30 and Tegra114 too.
->>>>>>>>
->>>>>>>> Can you describe the procedure used to test this? We currently have a
->>>>>>>> bunch of features in Tegra that some people have tested at some point
->>>>>>>> during development but the test procedures never got documented. That
->>>>>>>> means whenever we want to test something we need to go and reinvent a
->>>>>>>> bunch of tests after the fact.
->>>>>>>>
->>>>>>>> So what I'd like to start doing is collect tests (preferably in some
->>>>>>>> scripted way) so that they can be kept in a repository that people can
->>>>>>>> easily clone and run on devices.
->>>>>>>>
->>>>>>>> Could you provide something like that for thermtrip?
->>>>>>>
->>>>>>> Sure. I'll see if I can make a just a test script or if a local patch is
->>>>>>> needed to test. Btw, I also have a pretty nice test script for EMC
->>>>>>> ready, and I agree that such a repository would be very nice.
->>>>>>
->>>>>> Here is a test program. It it works, the device with immediately shut down.
->>>>>>
->>>>>> https://gist.github.com/cyndis/66126c9c176b5f94a76f
->>>>>
->>>>> Is there a way to set the trip temperature without going through
->>>>> /dev/mem? I'd expect the device to have a sysfs interface of some
->>>>> sort.
->>>>
->>>> The thermtrip "device" isn't currently exposed in any way. If it were
->>>> exposed, I suppose it would be exposed as thermal zone devices, each with
->>>> one trip point. Even then, the thermal framework doesn't really support this
->>>> properly; none of the trip point types really apply to this kind of trip
->>>> point, and x86 systems don't expose their trips either.
->>>
->>> Okay. The reason why I asked is because I'm not sure yet that having C
->>> programs in the test suite would be good, so having something that's
->>> easily scriptable would be preferred.
->>
->> I agree. Looks like Python's stdlib has mmap support, so maybe we could use
->> that.
->
-> Yes, possibly. It still means that somebody needs to have some kind of
-> advanced scripting available to test this. While having a testsuite is
-> useful, it would still be nice to occasionally be able to test things
-> with just simple shell commands.
->
->>>> Anyway, since debugging is pretty much the only use case for modifying
->>>> the trip temperature, I thought adding the tz_devices would be a bit
->>>> overkill.
->>>
->>> An alternative could be a file in debugfs.
->>
->> True, though there's the "don't expose dangerous stuff in debugfs" argument
->> against that. I don't really have problem with it, though.
->> Although in this case I think the script approach would be good enough.
->
-> I've said this before and I don't think "dangerous stuff in debugfs" is
-> a valid argument. You need superuser privileges to access debugfs, and
-> if you have such privileges you can do pretty much what you want (run
-> the test program you posted for example).
+diff --git a/drivers/vfio/platform/Makefile b/drivers/vfio/platform/Makefile
+index 2c53327..4313fd7 100644
+--- a/drivers/vfio/platform/Makefile
++++ b/drivers/vfio/platform/Makefile
+@@ -1,4 +1,4 @@
+ 
+-vfio-platform-y := vfio_platform.o vfio_platform_irq.o
++vfio-platform-y := vfio_platform.o vfio_platform_irq.o devtree.o
+ 
+ obj-$(CONFIG_VFIO_PLATFORM) += vfio-platform.o
+diff --git a/drivers/vfio/platform/devtree.c b/drivers/vfio/platform/devtree.c
+new file mode 100644
+index 0000000..91cab88
+--- /dev/null
++++ b/drivers/vfio/platform/devtree.c
+@@ -0,0 +1,27 @@
++#include <linux/slab.h>
++#include <linux/vfio.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include "vfio_platform_private.h"
++
++void vfio_platform_devtree_get(struct vfio_platform_device *vdev)
++{
++	vdev->of_node = of_node_get(vdev->pdev->dev.of_node);
++}
++
++void vfio_platform_devtree_put(struct vfio_platform_device *vdev)
++{
++	of_node_put(vdev->of_node);
++	vdev->of_node = NULL;
++}
++
++bool vfio_platform_has_devtree(struct vfio_platform_device *vdev)
++{
++	return !!vdev->of_node;
++}
++
++long vfio_platform_devtree_ioctl(struct vfio_platform_device *vdev,
++				 unsigned long arg)
++{
++	return -EINVAL; /* not implemented yet */
++}
+diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
+index f4c06c6..e6fe05a 100644
+--- a/drivers/vfio/platform/vfio_platform.c
++++ b/drivers/vfio/platform/vfio_platform.c
+@@ -26,6 +26,7 @@
+ #include <linux/vfio.h>
+ #include <linux/io.h>
+ #include <linux/platform_device.h>
++#include <linux/of.h>
+ #include <linux/irq.h>
+ 
+ #include "vfio_platform_private.h"
+@@ -66,6 +67,9 @@ static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
+ 
+ 	vdev->num_regions = cnt;
+ 
++	/* get device tree node for info if available */
++	vfio_platform_devtree_get(vdev);
++
+ 	return 0;
+ err:
+ 	kfree(vdev->region);
+@@ -74,6 +78,7 @@ err:
+ 
+ static void vfio_platform_regions_cleanup(struct vfio_platform_device *vdev)
+ {
++	vfio_platform_devtree_put(vdev);
+ 	vdev->num_regions = 0;
+ 	kfree(vdev->region);
+ }
+@@ -132,6 +137,9 @@ static long vfio_platform_ioctl(void *device_data,
+ 			return -EINVAL;
+ 
+ 		info.flags = VFIO_DEVICE_FLAGS_PLATFORM;
++		if (vfio_platform_has_devtree(vdev))
++			info.flags |= VFIO_DEVICE_FLAGS_DEVTREE;
++
+ 		info.num_regions = vdev->num_regions;
+ 		info.num_irqs = vdev->num_irqs;
+ 
+@@ -210,6 +218,9 @@ static long vfio_platform_ioctl(void *device_data,
+ 
+ 		return ret;
+ 
++	} else if (cmd == VFIO_DEVICE_GET_DEVTREE_INFO) {
++		return vfio_platform_devtree_ioctl(vdev, arg);
++
+ 	} else if (cmd == VFIO_DEVICE_RESET)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
+index 86a9201..1c42ba0 100644
+--- a/drivers/vfio/platform/vfio_platform_private.h
++++ b/drivers/vfio/platform/vfio_platform_private.h
+@@ -49,6 +49,7 @@ struct vfio_platform_device {
+ 	u32				num_regions;
+ 	struct vfio_platform_irq	*irq;
+ 	u32				num_irqs;
++	struct device_node		*of_node;
+ };
+ 
+ extern int vfio_platform_irq_init(struct vfio_platform_device *vdev);
+@@ -59,4 +60,10 @@ extern int vfio_platform_set_irqs_ioctl(struct vfio_platform_device *vdev,
+ 			uint32_t flags, unsigned index, unsigned start,
+ 			unsigned count, void *data);
+ 
++/* device tree info support in devtree.c */
++extern void vfio_platform_devtree_get(struct vfio_platform_device *vdev);
++extern void vfio_platform_devtree_put(struct vfio_platform_device *vdev);
++extern bool vfio_platform_has_devtree(struct vfio_platform_device *vdev);
++extern long vfio_platform_devtree_ioctl(struct vfio_platform_device *vdev,
++					unsigned long arg);
+ #endif /* VFIO_PLATFORM_PRIVATE_H */
+diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+index d381107..60f66ec 100644
+--- a/include/uapi/linux/vfio.h
++++ b/include/uapi/linux/vfio.h
+@@ -153,15 +153,41 @@ struct vfio_group_status {
+ struct vfio_device_info {
+ 	__u32	argsz;
+ 	__u32	flags;
+-#define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
+-#define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
+-#define VFIO_DEVICE_FLAGS_PLATFORM (1 << 2)	/* vfio-platform device */
++#define VFIO_DEVICE_FLAGS_RESET		(1 << 0) /* Device supports reset */
++#define VFIO_DEVICE_FLAGS_PCI		(1 << 1) /* vfio-pci device */
++#define VFIO_DEVICE_FLAGS_PLATFORM	(1 << 2) /* vfio-platform device */
++#define VFIO_DEVICE_FLAGS_DEVTREE	(1 << 3) /* device tree metadata */
+ 	__u32	num_regions;	/* Max region index + 1 */
+ 	__u32	num_irqs;	/* Max IRQ index + 1 */
+ };
+ #define VFIO_DEVICE_GET_INFO		_IO(VFIO_TYPE, VFIO_BASE + 7)
+ 
+ /**
++ * VFIO_DEVICE_GET_DEVTREE_INFO - _IOR(VFIO_TYPE, VFIO_BASE + 16,
++ *						struct vfio_devtree_info)
++ *
++ * Retrieve information from the device's device tree, if available.
++ * Caller will initialize data[] with a single string with the requested
++ * devicetree property name, and type depending on whether a array of strings
++ * or an array of u32 values is expected. On success, data[] will be extended
++ * with the requested information, either as an array of u32, or with a list
++ * of strings sepparated by the NULL terminating character.
++ * Return: 0 on success, -errno on failure.
++ */
++struct vfio_devtree_info {
++	__u32	argsz;
++	__u32	type;
++#define VFIO_DEVTREE_PROP_NAMES		0
++#define VFIO_DEVTREE_ARR_TYPE_STRING	1
++#define VFIO_DEVTREE_ARR_TYPE_U8	2
++#define VFIO_DEVTREE_ARR_TYPE_U16	3
++#define VFIO_DEVTREE_ARR_TYPE_U32	4
++	__u32	length;
++	__u8	data[];
++};
++#define VFIO_DEVICE_GET_DEVTREE_INFO	_IO(VFIO_TYPE, VFIO_BASE + 17)
++
++/**
+  * VFIO_DEVICE_GET_REGION_INFO - _IOWR(VFIO_TYPE, VFIO_BASE + 8,
+  *				       struct vfio_region_info)
+  *
+-- 
+1.8.3.2
 
-I agree with you completely. I guess I can add a debugfs entry to the 
-soctherm driver, probably in a separate patch once the original series 
-is in. It is then up to the thermal maintainers whether they agree with 
-us or not.
-
->
-> Thierry
->
-> * Unknown Key
-> * 0x7F3EB3A1
->
