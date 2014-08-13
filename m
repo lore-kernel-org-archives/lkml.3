@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322AbaHMWut (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 18:50:49 -0400
-Received: from mail.kernel.org ([198.145.19.201]:55471 "EHLO mail.kernel.org"
+	id S1754393AbaHMWu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 18:50:58 -0400
+Received: from mail.kernel.org ([198.145.19.201]:55560 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754282AbaHMWun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 18:50:43 -0400
+	id S1754348AbaHMWu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 18:50:56 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 29/41] perf top: Fix -z option behavior
-Date: Wed, 13 Aug 2014 19:48:15 -0300
-Message-Id: <1407970107-24540-30-git-send-email-acme@kernel.org>
+Subject: [PATCH 32/41] perf symbols: Fix missing label symbols
+Date: Wed, 13 Aug 2014 19:48:18 -0300
+Message-Id: <1407970107-24540-33-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1407970107-24540-1-git-send-email-acme@kernel.org>
 References: <1407970107-24540-1-git-send-email-acme@kernel.org>
@@ -24,123 +25,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-The current -z option does almost nothing.  It doesn't zero the existing
-samples so that we can see profiles of exited process after last
-refresh.  It seems it only affects annotation.
+Label symbols are missing because elf_sec__is_a() fails to find the
+section because the section strings do not match the section headers
+because the sections headers are from the 'runtime' object and the
+sections strings are from the 'symbol source' object.
 
-This patch clears existing entries before processing if -z option is
-given.  For this original decaying logic also moved before processing.
+Fix by getting the section strings from the 'runtime' object so that
+they match the section headers.
 
-Reported-by: Stephane Eranian <eranian@google.com>
-Tested-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1407831366-28892-1-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1406786474-9306-4-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c | 23 +++++++++++++++++------
- tools/perf/util/hist.c   | 22 ++++++++++++++++++++++
- tools/perf/util/hist.h   |  1 +
- 3 files changed, 40 insertions(+), 6 deletions(-)
+ tools/perf/util/symbol-elf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 4b0e15c2b2a8..87a6615a40fa 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -276,11 +276,17 @@ static void perf_top__print_sym_table(struct perf_top *top)
- 		return;
- 	}
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index ec5ec1c9d9b5..9fb5e9e9f161 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -736,7 +736,7 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 	if (symstrs == NULL)
+ 		goto out_elf_end;
  
-+	if (top->zero) {
-+		hists__delete_entries(&top->sym_evsel->hists);
-+	} else {
-+		hists__decay_entries(&top->sym_evsel->hists,
-+				     top->hide_user_symbols,
-+				     top->hide_kernel_symbols);
-+	}
-+
- 	hists__collapse_resort(&top->sym_evsel->hists, NULL);
- 	hists__output_resort(&top->sym_evsel->hists);
--	hists__decay_entries(&top->sym_evsel->hists,
--			     top->hide_user_symbols,
--			     top->hide_kernel_symbols);
-+
- 	hists__output_recalc_col_len(&top->sym_evsel->hists,
- 				     top->print_entries - printed);
- 	putchar('\n');
-@@ -542,11 +548,16 @@ static void perf_top__sort_new_samples(void *arg)
- 	if (t->evlist->selected != NULL)
- 		t->sym_evsel = t->evlist->selected;
+-	sec_strndx = elf_getscn(elf, ehdr.e_shstrndx);
++	sec_strndx = elf_getscn(runtime_ss->elf, runtime_ss->ehdr.e_shstrndx);
+ 	if (sec_strndx == NULL)
+ 		goto out_elf_end;
  
-+	if (t->zero) {
-+		hists__delete_entries(&t->sym_evsel->hists);
-+	} else {
-+		hists__decay_entries(&t->sym_evsel->hists,
-+				     t->hide_user_symbols,
-+				     t->hide_kernel_symbols);
-+	}
-+
- 	hists__collapse_resort(&t->sym_evsel->hists, NULL);
- 	hists__output_resort(&t->sym_evsel->hists);
--	hists__decay_entries(&t->sym_evsel->hists,
--			     t->hide_user_symbols,
--			     t->hide_kernel_symbols);
- }
- 
- static void *display_thread_tui(void *arg)
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 30df6187ee02..86569fa3651d 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -277,6 +277,28 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
- 	}
- }
- 
-+void hists__delete_entries(struct hists *hists)
-+{
-+	struct rb_node *next = rb_first(&hists->entries);
-+	struct hist_entry *n;
-+
-+	while (next) {
-+		n = rb_entry(next, struct hist_entry, rb_node);
-+		next = rb_next(&n->rb_node);
-+
-+		rb_erase(&n->rb_node, &hists->entries);
-+
-+		if (sort__need_collapse)
-+			rb_erase(&n->rb_node_in, &hists->entries_collapsed);
-+
-+		--hists->nr_entries;
-+		if (!n->filtered)
-+			--hists->nr_non_filtered_entries;
-+
-+		hist_entry__free(n);
-+	}
-+}
-+
- /*
-  * histogram, sorted on item, collects periods
-  */
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 95405a8fbd95..8c9c70e18cbb 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -152,6 +152,7 @@ void hists__output_resort(struct hists *hists);
- void hists__collapse_resort(struct hists *hists, struct ui_progress *prog);
- 
- void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel);
-+void hists__delete_entries(struct hists *hists);
- void hists__output_recalc_col_len(struct hists *hists, int max_rows);
- 
- u64 hists__total_period(struct hists *hists);
 -- 
 1.9.3
 
