@@ -1,77 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887AbaHMJbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:31:37 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59848 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815AbaHMJbg (ORCPT
+	id S1752137AbaHMJcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:32:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53880 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751923AbaHMJcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:31:36 -0400
-Date: Wed, 13 Aug 2014 11:31:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Christopher Barry <christopher.r.barry@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: OT: Open letter to the Linux World
-Message-ID: <20140813093118.GF9918@twins.programming.kicks-ass.net>
-References: <20140812153812.2923046a@monolith.infinux.org>
- <20140812202129.GA20344@home.goodmis.org>
- <yw1xr40l2whi.fsf@unicorn.mansr.com>
- <20140813082756.GB2923@twins.programming.kicks-ass.net>
- <yw1xmwb83fo5.fsf@unicorn.mansr.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EYgyrsPzPB+8KyD+"
-Content-Disposition: inline
-In-Reply-To: <yw1xmwb83fo5.fsf@unicorn.mansr.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 13 Aug 2014 05:32:33 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, broonie@kernel.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] mfd: arizona: Mark additional registers as volatile
+Date: Wed, 13 Aug 2014 10:23:53 +0100
+Message-Id: <1407921833-7818-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1407921833-7818-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1407921833-7818-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mark some additional registers as volatile. The write sequencer control
+registers should not be cached, as we don't ever want their value
+synchronised as this might cause a write sequence to be accidentally
+initiated.
 
---EYgyrsPzPB+8KyD+
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Additionally, the DAC_COMP registers require special preconditions to
+write so there values wouldn't be updated accurately during a register
+sync.
 
-On Wed, Aug 13, 2014 at 10:24:58AM +0100, M=E5ns Rullg=E5rd wrote:
-> Beware, even Gentoo will pull in systemd, if in a dormant state, unless
-> you are very careful.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm5102-tables.c |   11 ++++++++---
+ drivers/mfd/wm5110-tables.c |    6 +++---
+ 2 files changed, 11 insertions(+), 6 deletions(-)
 
-Right so I've not tried yet (busy see), but I meant to remove all the
-*Kit and other nonsense from the USE flags.
+diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
+index c18d527..191f224 100644
+--- a/drivers/mfd/wm5102-tables.c
++++ b/drivers/mfd/wm5102-tables.c
+@@ -245,9 +245,6 @@ const struct regmap_irq_chip wm5102_irq = {
+ static const struct reg_default wm5102_reg_default[] = {
+ 	{ 0x00000008, 0x0019 },   /* R8     - Ctrl IF SPI CFG 1 */ 
+ 	{ 0x00000009, 0x0001 },   /* R9     - Ctrl IF I2C1 CFG 1 */ 
+-	{ 0x00000016, 0x0000 },   /* R22    - Write Sequencer Ctrl 0 */ 
+-	{ 0x00000017, 0x0000 },   /* R23    - Write Sequencer Ctrl 1 */ 
+-	{ 0x00000018, 0x0000 },   /* R24    - Write Sequencer Ctrl 2 */ 
+ 	{ 0x00000020, 0x0000 },   /* R32    - Tone Generator 1 */ 
+ 	{ 0x00000021, 0x1000 },   /* R33    - Tone Generator 2 */ 
+ 	{ 0x00000022, 0x0000 },   /* R34    - Tone Generator 3 */ 
+@@ -1881,6 +1878,10 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
+ 	switch (reg) {
+ 	case ARIZONA_SOFTWARE_RESET:
+ 	case ARIZONA_DEVICE_REVISION:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_3:
+ 	case ARIZONA_OUTPUT_STATUS_1:
+ 	case ARIZONA_RAW_OUTPUT_STATUS_1:
+ 	case ARIZONA_SLIMBUS_RX_PORT_STATUS:
+@@ -1892,6 +1893,10 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
+ 	case ARIZONA_FLL1_NCO_TEST_0:
+ 	case ARIZONA_FLL2_NCO_TEST_0:
++	case ARIZONA_DAC_COMP_1:
++	case ARIZONA_DAC_COMP_2:
++	case ARIZONA_DAC_COMP_3:
++	case ARIZONA_DAC_COMP_4:
+ 	case ARIZONA_FX_CTRL2:
+ 	case ARIZONA_INTERRUPT_STATUS_1:
+ 	case ARIZONA_INTERRUPT_STATUS_2:
+diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
+index 9b98ee5..beae0a3 100644
+--- a/drivers/mfd/wm5110-tables.c
++++ b/drivers/mfd/wm5110-tables.c
+@@ -666,9 +666,6 @@ static const struct reg_default wm5110_reg_default[] = {
+ 	{ 0x0000000A, 0x0001 },    /* R10    - Ctrl IF I2C2 CFG 1 */
+ 	{ 0x0000000B, 0x0036 },    /* R11    - Ctrl IF I2C1 CFG 2 */
+ 	{ 0x0000000C, 0x0036 },    /* R12    - Ctrl IF I2C2 CFG 2 */
+-	{ 0x00000016, 0x0000 },    /* R22    - Write Sequencer Ctrl 0 */
+-	{ 0x00000017, 0x0000 },    /* R23    - Write Sequencer Ctrl 1 */
+-	{ 0x00000018, 0x0000 },    /* R24    - Write Sequencer Ctrl 2 */
+ 	{ 0x00000020, 0x0000 },    /* R32    - Tone Generator 1 */
+ 	{ 0x00000021, 0x1000 },    /* R33    - Tone Generator 2 */
+ 	{ 0x00000022, 0x0000 },    /* R34    - Tone Generator 3 */
+@@ -2815,6 +2812,9 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
+ 	switch (reg) {
+ 	case ARIZONA_SOFTWARE_RESET:
+ 	case ARIZONA_DEVICE_REVISION:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
++	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
+ 	case ARIZONA_HAPTICS_STATUS:
+ 	case ARIZONA_SAMPLE_RATE_1_STATUS:
+ 	case ARIZONA_SAMPLE_RATE_2_STATUS:
+-- 
+1.7.2.5
 
-I don't need GNOME so that shouldn't pull it in either.
-
-And from what I understood they have their own udev fork.
-
-And I suppose its OpenBSD to the rescue:
-
-  http://www.openbsdfoundation.org/gsoc2014.html#systemd
-
-which is of course entirely ironic.
-
---EYgyrsPzPB+8KyD+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT6zBmAAoJEHZH4aRLwOS6oIIP/0taoBcUctWtlBjDLusa9A5r
-l47rx18fS4XQY3h13l7Az18mY2G270VZQahLhsYjWiNSPXrYp/GK1rUygyR+HwNQ
-35/+Dy2fSer49vTkxijRJ4IUUng9gfjb8N9HMXeTNpFkreYiBOE4lPjO+Lj4vM2Y
-pH+GyVB2ZaCgxRxUPiJYDcuMtcPpooXJwduboODKhBJ17f/Xz82r3AYDSbnhiWq9
-LSMUUZAWrfaQij2A9bIw5smMHPs1+XXTZAy2IDuj50UIMVy81hITWQtvLKXdSqIy
-p54PavaJK8iAs+3zOaZYxLwXae/BzlhKdhlSg0ax1Lf/7zym8ydtvFpPgcFW6F0x
-BE8MWnuQibL1+trVQ6gLi+x274v12RAlN++NWJqenb/mtpNpQKy7elUdK/TcquIJ
-SJNKqolUQ7cLLksNVq7kNG3/66pOkdGnn3eua+FEy3e2TFXuh5sisGBgJtQcb/X9
-j1dooIALPfdVFvkZJricFdw76HiLxx6LGuXtru9V9j9uN95K36vLp1Hr7nN56ffn
-7qEz43VCwPu0LdVyCKySjUDbYQBRxbTdZGGjQAbGqHpcpWx5OeuU+YFr97t01k76
-1hTCi8Ldah5rnve9+KjOdxf2cT6XkkH5K+zWtz+e8d8K/2gox180wDdknyUv1Ivm
-fNOOPYd5hILK/YdZGJfC
-=vC8+
------END PGP SIGNATURE-----
-
---EYgyrsPzPB+8KyD+--
