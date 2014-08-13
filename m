@@ -1,139 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620AbaHMRXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:23:46 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:58045 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaHMRXo (ORCPT
+	id S1753723AbaHMRYY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 13:24:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45632 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbaHMRYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 13:23:44 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, tytso@mit.edu
-References: <87y4z8uzqw.fsf_-_@x220.int.ebiederm.org>
-	<87ppkhc4pp.fsf@x220.int.ebiederm.org>
-	<87ha5r3emw.fsf_-_@x220.int.ebiederm.org>
-	<20140417202237.GA18016@ZenIV.linux.org.uk>
-	<87tx9rwsz4.fsf@x220.int.ebiederm.org>
-	<20140417221203.GC18016@ZenIV.linux.org.uk>
-	<20140420054108.GQ18016@ZenIV.linux.org.uk>
-	<20140511164530.GB18016@ZenIV.linux.org.uk>
-	<20140809093412.GA23108@ZenIV.linux.org.uk>
-	<87ha1ic8rd.fsf@x220.int.ebiederm.org>
-	<20140813131831.GY18016@ZenIV.linux.org.uk>
-Date: Wed, 13 Aug 2014 10:18:59 -0700
-In-Reply-To: <20140813131831.GY18016@ZenIV.linux.org.uk> (Al Viro's message of
-	"Wed, 13 Aug 2014 14:18:31 +0100")
-Message-ID: <87sil0z4sc.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 13 Aug 2014 13:24:23 -0400
+Date: Wed, 13 Aug 2014 19:24:07 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com, rafael@kernel.org
+Subject: Re: [PATCH v5 tip/core/rcu 15/16] rcu: Make RCU-tasks wait for idle
+ tasks
+Message-ID: <20140813172407.GM3588@twins.programming.kicks-ass.net>
+References: <20140811224840.GA25594@linux.vnet.ibm.com>
+ <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1407797345-28227-15-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140813081215.GB9918@twins.programming.kicks-ass.net>
+ <20140813124818.GQ4752@linux.vnet.ibm.com>
+ <20140813134025.GN9918@twins.programming.kicks-ass.net>
+ <20140813141217.GU4752@linux.vnet.ibm.com>
+ <20140813144219.GQ9918@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18//K73k4UhIVqpZ9B+pDN9LeT/RwmAv7g=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2871]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  1.0 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Al Viro <viro@ZenIV.linux.org.uk>
-X-Spam-Relay-Country: 
-Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GN/IAAAoV4GJoJGS"
+Content-Disposition: inline
+In-Reply-To: <20140813144219.GQ9918@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> writes:
 
-> On Tue, Aug 12, 2014 at 03:17:10AM -0700, Eric W. Biederman wrote:
->> I have rebased my changes against vfs.git#for-eric and my changes work
->> just fine on top of the base you have built.  The changes are avaiable
->> in user-namespace.git#vfs-detach-mounts10 so you just be able to just
->> pull the changes in.
->> 
->> Reading your pile #1 pull request to Linus it sounds like you are
->> planning to suck all of this into the vfs tree.
->
-> I am.  Questions:
-> 	* is there any reason why we need list instead of hlist for
-> per-mountpoint list of mounts?  Looks like hlist would do just as
-> well, and it's a bit less noise
+--GN/IAAAoV4GJoJGS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I can't think of a reason we can't use a hlist_head in for m_list in
-struct mountpoint.
+On Wed, Aug 13, 2014 at 04:42:19PM +0200, Peter Zijlstra wrote:
+> Auditing all idle functions will be somewhat of a pain, but its entirely
+> doable. Looking at this stuff, it appears we can clean it up massively;
+> see how the generic cpuidle code already has the broadcast logic in, so
+> we can remove that from the drivers by setting the right flags.
+>=20
+> We can similarly pull out the leave_mm() call by adding a
+> CPUIDLE_FLAG_TLB_FLUSH. At which point all we'd need to do is mark the
+> intel_idle (and all other cpuidle_state::enter functions with __notrace.
 
-Hmm.  I do use list_add_tail in mnt_set_mountpoint but other than good
-hygiene that does not seem for any particular reason because
-__detach_mounts processes all of the list entries.  So going from newest
-to oldest or oldest to newest shouldn't matter.
+This removes the broadcast stuff from intel_idle.c; processor_idle.c hurts
+my brain, but something similar should be possible.
 
-We do need it to be a doubly linked list so umount_tree and detach_mount
-remain constant time operations.  But both list and hlist satisfy that
-requirement.
+---
+ drivers/idle/intel_idle.c | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-So as far as I can tell the only reason I used a list is because every
-list through the mounts at the time I added the code was a list and
-later it has not been important enough to matter.
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index 4d140bbbe100..6613d4ee60ce 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -508,11 +508,8 @@ static int intel_idle(struct cpuidle_device *dev,
+ 	unsigned long ecx =3D 1; /* break on interrupt flag */
+ 	struct cpuidle_state *state =3D &drv->states[index];
+ 	unsigned long eax =3D flg2MWAIT(state->flags);
+-	unsigned int cstate;
+ 	int cpu =3D smp_processor_id();
+=20
+-	cstate =3D (((eax) >> MWAIT_SUBSTATE_SIZE) & MWAIT_CSTATE_MASK) + 1;
+-
+ 	/*
+ 	 * leave_mm() to avoid costly and often unnecessary wakeups
+ 	 * for flushing the user TLB's associated with the active mm.
+@@ -520,14 +517,8 @@ static int intel_idle(struct cpuidle_device *dev,
+ 	if (state->flags & CPUIDLE_FLAG_TLB_FLUSHED)
+ 		leave_mm(cpu);
+=20
+-	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+-		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+-
+ 	mwait_idle_with_hints(eax, ecx);
+=20
+-	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+-		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
+-
+ 	return index;
+ }
+=20
+@@ -670,6 +661,7 @@ static int __init intel_idle_probe(void)
+ {
+ 	unsigned int eax, ebx, ecx;
+ 	const struct x86_cpu_id *id;
++	int i;
+=20
+ 	if (max_cstate =3D=3D 0) {
+ 		pr_debug(PREFIX "disabled\n");
+@@ -705,6 +697,15 @@ static int __init intel_idle_probe(void)
+ 	else
+ 		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
+=20
++	for (i =3D 0; cpuidle_state_table[i].enter; i++) {
++		struct cpuidle_state *state =3D &cpuidle_state_table[i];
++		int cstate =3D ((flg2MWAIT(state->flags) >> MWAIT_SUBSTATE_SIZE) &=20
++				MWAIT_CSTATE_MASK) + 1;
++
++		if (!(lapic_timer_reliable_states & (1 << cstate)))
++			state->flags |=3D CPUIDLE_FLAG_TIMER_STOP;
++	}
++
+ 	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
+ 		" model 0x%X\n", boot_cpu_data.x86_model);
+=20
 
-> 	* __d_unalias() change looks rather odd.  What we do there
-> is _not_ "avoid leaking mounts", it's "don't get a bunch of existing
-> mounts suddenly relocate".  What's up with that one?
+--GN/IAAAoV4GJoJGS
+Content-Type: application/pgp-signature
 
-The change to __d_unalias is semantically the same as the change
-vfs_rename with the d_mountpoint tests going away.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-The user space visible behavior change is to allow rename in one mount
-namespace even if there is a mount on that directory in another mount
-namespace.  In the case of __d_unalias the mount namespace the rename
-happened in is on a remote computer or otherwise not part of the vfs.
+iQIcBAEBAgAGBQJT6582AAoJEHZH4aRLwOS6n74QAIzMrbTgNbn81md5M0Mijz2F
++ZTh/y4Ex1wekZW2K+g2pvNF9D0LwxypPNb085CSXXzlXYfWtdxQebWYIUEO3Ac5
+PmKNBPXkuI6YH0/psQkay4tvOBFk/IZOu9puMmx2vczJxHWElOErnOe9lUUc2K6V
+7EDMmU7vNZrhsHnHzJqna5yaLoiznxZ849+9eVug+XWMSLEhbm+5vGUH3a4udcS+
+zQJGtKwCUHmJ9sRAOmU1CmdWrVmbA8WLT5cQw3yGoHMPZybl+JcgLskGh6ifEqpt
+d/VPR+utmCudhYNwWhELqn8YKf5P0F6e+IGOUyNS4WlHSLZvZa0EnSdS4GVP7K/U
+z8ijJ7f3/YsEbVvt9lOWyWE7tlxRobHQnUyAeMubFsAzVBc/rwWAMUQBmnFxO6BF
+6qviyd/KdRDUutscWjV9AKA0q3WMmHotqbFbjphfghlH6B11fiAFa8Wr7x/DxR13
+tC9wj3L0H1lUYDfoX+5QvKtiRSib6Xeq1muzrhmhJbjcAoksZ+GZymtt2NB0skOC
+7lJFJWIKmuI5GDauiJtIXnIs1kZbJSC9a2tlBScBQB1JALc0vhXLdLf9ZU0PgfZQ
+JlVsNbO3v2CEYWRlIdUK6euJw8CHo440QLrk/eAaXtLD6OkJzCTOWlZRSdR0yHrl
+Exzc+t1cfSVxZVhOrUg2
+=Znus
+-----END PGP SIGNATURE-----
 
-Allowing renames and unlinks in one mount namespace even when there is a
-mount point in another mount namespace is important to avoid breaking
-unix semantics and to prevent unprivileged users from causing unlink or
-rename of more privileged users in other mount namespaces to fail by
-placing mounts on the more privileged users files and directories.
-
-"avoid leaking mounts" is simply what had to be implemented so that
-we could support arbitrary unlinks.
-
->From an implementation standpoint allowing the rename means that
-filesystems no longer have to be concerned with a vfs cache that is out
-of sync with the actual filesystem.
-
-I agree that mount points moving is a weird semantic, but it is not a
-particularly new semantic.  We already allow this in 3.16 and before if
-we rename the parent directory of a mount point.
-
-When we discussed what to do with renames of mounts in the review of the
-patch no examples could be found where we actually cared (it appears no
-one is silly enough to put a mount point where someone else could rename
-it), and the alternative of keeping some kind of overlay mount structure
-so we could keep a mount in the same place even after the underlying
-mountpoint was renamed was decided to be more trouble than it was worth.
-
-All of the mechanisms for avoiding trouble when a mount point is renamed
-already exist and fusermount already uses them.
-
-I truly hope the due dilligence of research and public discussion
-(i.e. https://lwn.net/Articles/570338/) and retaining the existing
-semantics in a single mount namespace of what we are doing with
-renames is sufficient to avoid breaking some weird usespace application.
-Breaking peoples applications sucks.
-
-Eric
+--GN/IAAAoV4GJoJGS--
