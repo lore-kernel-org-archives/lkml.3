@@ -1,87 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404AbaHMInA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:43:00 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:14416 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaHMIm5 (ORCPT
+	id S1751494AbaHMIo0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:44:26 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41002 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750751AbaHMIoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:42:57 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 13 Aug 2014 01:33:44 -0700
-Message-ID: <53EB250D.5070207@nvidia.com>
-Date: Wed, 13 Aug 2014 11:42:53 +0300
-From: Mikko Perttunen <mperttunen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Thermal reset support in PMC
-References: <1407226380-747-1-git-send-email-mperttunen@nvidia.com> <20140813080744.GD7735@ulmo> <53EB1DF5.301@nvidia.com>
-In-Reply-To: <53EB1DF5.301@nvidia.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Wed, 13 Aug 2014 04:44:22 -0400
+Message-ID: <1407919331.5835.8.camel@weser.hi.pengutronix.de>
+Subject: Re: CONFIG_DMA_CMA causes ttm performance problems/hangs.
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Mario Kleiner <mario.kleiner.de@gmail.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, kamal@canonical.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@redhat.com>, ben@decadent.org.uk,
+        Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        m.szyprowski@samsung.com
+Date: Wed, 13 Aug 2014 10:42:11 +0200
+In-Reply-To: <20140813021706.GC3001@gmail.com>
+References: <53E5B41B.3030009@vmware.com>
+	 <60bd3db2-4919-40c4-a4ff-1b7b043cadfc@email.android.com>
+	 <53E628FE.10808@vmware.com> <53E6E2CE.8070005@gmail.com>
+	 <53E75192.3070003@vmware.com> <53E7B39D.2060900@gmail.com>
+	 <53E896C9.5010501@vmware.com> <20140811151712.GA3541@gmail.com>
+	 <53EAC461.2060503@daenzer.net> <53EAC79F.4050705@gmail.com>
+	 <20140813021706.GC3001@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Dienstag, den 12.08.2014, 22:17 -0400 schrieb Jerome Glisse:
+[...]
+> > I haven't tested the patch yet. For the original bug it won't help directly,
+> > because the super-slow allocations which cause the desktop stall are
+> > tt_cached allocations, so they go through the if (is_cached) code path which
+> > isn't improved by Jerome's patch. is_cached always releases memory
+> > immediately, so the tt_cached pool just bounces up and down between 4 and 7
+> > pages. So this was an independent issue. The slow allocations i noticed were
+> > mostly caused by exa allocating new gem bo's, i don't know which path is
+> > taken by 3d graphics?
+> > 
+> > However, the fixed ttm path could indirectly solve the DMA_CMA stalls by
+> > completely killing CMA for its intended purpose. Typical CMA sizes are
+> > probably around < 100 MB (kernel default is 16 MB, Ubuntu config is 64 MB),
+> > and the limit for the page pool seems to be more like 50% of all system RAM?
+> > Iow. if the ttm dma pool is allowed to grow that big with recycled pages, it
+> > probably will almost completely monopolize the whole CMA memory after a
+> > short amount of time. ttm won't suffer stalls if it essentially doesn't
+> > interact with CMA anymore after a warmup period, but actual clients which
+> > really need CMA (ie., hardware without scatter-gather dma etc.) will be
+> > starved of what they need as far as my limited understanding of the CMA
+> > goes.
+> 
+> Yes currently we allow the pool to be way too big, given that pool was probably
+> never really use we most likely never had much of an issue. So i would hold on
+> applying my patch until more proper limit are in place. My thinking was to go
+> for something like 32/64M at most and less then that if < 256M total ram. I also
+> think that we should lower the pool size on first call to shrink and only increase
+> it again after some timeout since last call to shrink so that when shrink is call
+> we minimize our pool size at least for a time. Will put together couple patches
+> for doing that.
+> 
+> > 
+> > So fwiw probably the fix to ttm will increase the urgency for the CMA people
+> > to come up with a fix/optimization for the allocator. Unless it doesn't
+> > matter if most desktop systems have CMA disabled by default, and ttm is
+> > mostly used by desktop graphics drivers (nouveau, radeon, vmgfx)? I only
+> > stumbled over the problem because the Ubuntu 3.16 mainline testing kernels
+> > are compiled with CMA on.
+> > 
+> 
+> Enabling cma on x86 is proof of brain damage that said the dma allocator should
+> not use the cma area for single page allocation.
+> 
+Harsh words.
 
+Yes, allocating pages unconditionally from CMA if it is enabled is an
+artifact of CMAs ARM heritage. While it seems completely backwards to
+allocate single pages from CMA on x86, on ARM the CMA pool is the only
+way to get lowmem pages on which you are allowed to change the caching
+state.
 
-On 13/08/14 11:12, Mikko Perttunen wrote:
-> On 13/08/14 11:07, Thierry Reding wrote:
->> * PGP Signed by an unknown key
->>
->> On Tue, Aug 05, 2014 at 11:12:57AM +0300, Mikko Perttunen wrote:
->>> Hi,
->>>
->>> this series adds support for hardware-triggered thermal reset to the PMC
->>> driver. Namely, it adds device tree properties for specifying the I2C
->>> command to be sent when thermtrip is triggered. It is to be noted
->>> that thermtrip won't be ever triggered without a soctherm driver to
->>> calibrate the sensors, but I'll follow up with that patch.
->>>
->>> pmc.c required some juggling around to make the match data usable in
->>> probe, since I didn't want to put the code into the initcall either, since
->>> the soctherm driver won't be initialized by that point anyway.
->>>
->>> Series tested on Jetson-TK1. Should work on Tegra30 and Tegra114 too.
->>
->> Can you describe the procedure used to test this? We currently have a
->> bunch of features in Tegra that some people have tested at some point
->> during development but the test procedures never got documented. That
->> means whenever we want to test something we need to go and reinvent a
->> bunch of tests after the fact.
->>
->> So what I'd like to start doing is collect tests (preferably in some
->> scripted way) so that they can be kept in a repository that people can
->> easily clone and run on devices.
->>
->> Could you provide something like that for thermtrip?
->
-> Sure. I'll see if I can make a just a test script or if a local patch is
-> needed to test. Btw, I also have a pretty nice test script for EMC
-> ready, and I agree that such a repository would be very nice.
+So the obvious fix is to avoid CMA for order 0 allocations on x86. I can
+cook a patch for this.
 
-Here is a test program. It it works, the device with immediately shut down.
+Regards,
+Lucas 
+-- 
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
 
-https://gist.github.com/cyndis/66126c9c176b5f94a76f
-
->
->>
->> Thierry
->>
->> * Unknown Key
->> * 0x7F3EB3A1
->>
->
-> Cheers, Mikko
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
