@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669AbaHMRwi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:52:38 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54393 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913AbaHMRwh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 13:52:37 -0400
-Message-ID: <53EBA5E3.4060104@infradead.org>
-Date: Wed, 13 Aug 2014 10:52:35 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753844AbaHMRxf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 13:53:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6256 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753485AbaHMRxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 13:53:33 -0400
+Date: Wed, 13 Aug 2014 19:51:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: gregkh@linuxfoundation.org, tiwai@suse.de, linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init()
+	and module_long_probe_exit()
+Message-ID: <20140813175101.GA7156@redhat.com>
+References: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com> <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com>
 MIME-Version: 1.0
-To: Jim Davis <jim.epost@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-CC: linux-media <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Holger Waechtler <holger@convergence.de>,
-        Oliver Endriss <o.endriss@gmx.de>
-Subject: [PATCH] media: ttpci: build av7110_ir.c only when allowed by CONFIG_INPUT_EVDEV
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+On 08/12, Luis R. Rodriguez wrote:
+>
+> +/* To be used by modules which can take over 30 seconds at probe */
 
-Fix build when CONFIG_INPUT_EVDEV=m and DVB_AV7110=y.
-Only build av7110_ir.c when CONFIG_INPUT_EVDEV is compatible with
-CONFIG_DVB_AV7110.
+Probably the comment should explain that this hack should only be
+used if the driver is buggy and is wating for "real fix".
 
-Fixes these build errors:
+> +#define module_long_probe_init(initfn)				\
+> +	static struct task_struct *__init_thread;		\
+> +	static int _long_probe_##initfn(void *arg)		\
+> +	{							\
+> +		return initfn();				\
+> +	}							\
+> +	static inline __init int __long_probe_##initfn(void)	\
+> +	{							\
+> +		__init_thread = kthread_run(_long_probe_##initfn,\
+> +					    NULL,		\
+> +					    #initfn);		\
+> +		if (IS_ERR(__init_thread))			\
+> +			return PTR_ERR(__init_thread);		\
+> +		return 0;					\
+> +	}							\
+> +	module_init(__long_probe_##initfn);
+> +/* To be used by modules that require module_long_probe_init() */
+> +#define module_long_probe_exit(exitfn)				\
+> +	static inline void __long_probe_##exitfn(void)		\
+> +	{							\
+> +		exitfn();					\
+> +		if (__init_thread)				\
+> +			kthread_stop(__init_thread);		\
+> +	}							\
 
-drivers/built-in.o: In function `input_sync':
-av7110_ir.c:(.text+0x1223ac): undefined reference to `input_event'
-drivers/built-in.o: In function `av7110_emit_key':
-av7110_ir.c:(.text+0x12247c): undefined reference to `input_event'
-av7110_ir.c:(.text+0x122495): undefined reference to `input_event'
-av7110_ir.c:(.text+0x122569): undefined reference to `input_event'
-av7110_ir.c:(.text+0x1225a7): undefined reference to `input_event'
-drivers/built-in.o:av7110_ir.c:(.text+0x122629): more undefined
-references to `input_event' follow
-drivers/built-in.o: In function `av7110_ir_init':
-(.text+0x1227e4): undefined reference to `input_allocate_device'
-drivers/built-in.o: In function `av7110_ir_init':
-(.text+0x12298f): undefined reference to `input_register_device'
-drivers/built-in.o: In function `av7110_ir_init':
-(.text+0x12299e): undefined reference to `input_free_device'
-drivers/built-in.o: In function `av7110_ir_exit':
-(.text+0x122a94): undefined reference to `input_unregister_device'
+exitfn() should be called after kthread_stop(), and only if initfn()
+returns 0. So it should probably do
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Reported-by: Jim Davis <jim.epost@gmail.com>
-Cc: Holger Waechtler <holger@convergence.de>
-Cc: Oliver Endriss <o.endriss@gmx.de>
----
- drivers/media/pci/ttpci/Kconfig  |    4 ++++
- drivers/media/pci/ttpci/Makefile |    2 +-
- 2 files changed, 5 insertions(+), 1 deletion(-)
+	int err = kthread_stop(__init_thread);
+	if (!err)
+		exitfn();
 
-Index: linux-next-20140813/drivers/media/pci/ttpci/Kconfig
-===================================================================
---- linux-next-20140813.orig/drivers/media/pci/ttpci/Kconfig
-+++ linux-next-20140813/drivers/media/pci/ttpci/Kconfig
-@@ -1,8 +1,12 @@
-+config DVB_AV7110_IR
-+	bool
-+
- config DVB_AV7110
- 	tristate "AV7110 cards"
- 	depends on DVB_CORE && PCI && I2C
- 	select TTPCI_EEPROM
- 	select VIDEO_SAA7146_VV
-+	select DVB_AV7110_IR if INPUT_EVDEV=y || INPUT_EVDEV=DVB_AV7110
- 	depends on VIDEO_DEV	# dependencies of VIDEO_SAA7146_VV
- 	select DVB_VES1820 if MEDIA_SUBDRV_AUTOSELECT
- 	select DVB_VES1X93 if MEDIA_SUBDRV_AUTOSELECT
-Index: linux-next-20140813/drivers/media/pci/ttpci/Makefile
-===================================================================
---- linux-next-20140813.orig/drivers/media/pci/ttpci/Makefile
-+++ linux-next-20140813/drivers/media/pci/ttpci/Makefile
-@@ -5,7 +5,7 @@
- 
- dvb-ttpci-objs := av7110_hw.o av7110_v4l.o av7110_av.o av7110_ca.o av7110.o av7110_ipack.o
- 
--ifdef CONFIG_INPUT_EVDEV
-+ifdef CONFIG_DVB_AV7110_IR
- dvb-ttpci-objs += av7110_ir.o
- endif
- 
+But there is an additional complication, you can't use __init_thread
+without get_task_struct(), so  __long_probe_##initfn() can't use
+kthread_run(). It needs kthread_create() + get_task_struct() + wakeup.
+
+Oleg.
+
