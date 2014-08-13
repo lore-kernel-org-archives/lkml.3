@@ -1,90 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744AbaHMIVC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:21:02 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:56457 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaHMIU7 (ORCPT
+	id S1751890AbaHMIWQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:22:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51934 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776AbaHMIWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:20:59 -0400
-X-Original-SENDERIP: 10.177.222.172
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Wed, 13 Aug 2014 17:20:57 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/8] mm/page_alloc: correct to clear guard attribute
- in DEBUG_PAGEALLOC
-Message-ID: <20140813082057.GD30451@js1304-P5Q-DELUXE>
-References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1407309517-3270-5-git-send-email-iamjoonsoo.kim@lge.com>
- <20140812014523.GB23418@gmail.com>
+	Wed, 13 Aug 2014 04:22:13 -0400
+Date: Wed, 13 Aug 2014 01:21:34 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-oo3xclxdoy8s7ubssn929vaj@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de, acme@kernel.org
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86/intel: Update Intel models
+Git-Commit-ID: 0f7c29ce90c4d20c23de5657e1e2c2eabf51d69a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140812014523.GB23418@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 01:45:23AM +0000, Minchan Kim wrote:
-> On Wed, Aug 06, 2014 at 04:18:30PM +0900, Joonsoo Kim wrote:
-> > In __free_one_page(), we check the buddy page if it is guard page.
-> > And, if so, we should clear guard attribute on the buddy page. But,
-> > currently, we clear original page's order rather than buddy one's.
-> > This doesn't have any problem, because resetting buddy's order
-> > is useless and the original page's order is re-assigned soon.
-> > But, it is better to correct code.
-> > 
-> > Additionally, I change (set/clear)_page_guard_flag() to
-> > (set/clear)_page_guard() and makes these functions do all works
-> > needed for guard page. This may make code more understandable.
-> > 
-> > One more thing, I did in this patch, is that fixing freepage accounting.
-> > If we clear guard page and link it onto isolate buddy list, we should
-> > not increase freepage count.
-> 
-> You are saying just "shouldn't do that" but don't say "why" and "result"
-> I know the reason but as you know, I'm one of the person who is rather
-> familiar with this part but I guess others should spend some time to get.
-> Kind detail description is never to look down on person. :)
+Commit-ID:  0f7c29ce90c4d20c23de5657e1e2c2eabf51d69a
+Gitweb:     http://git.kernel.org/tip/0f7c29ce90c4d20c23de5657e1e2c2eabf51d69a
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Wed, 30 Jul 2014 12:08:56 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 13 Aug 2014 07:51:02 +0200
 
-Hmm. In fact, the reason is already mentioned in cover letter, but,
-it is better to write it here.
+perf/x86/intel: Update Intel models
 
-Will do.
+The model number descriptions got a bit messy, clean them up.
 
-> > 
-> 
-> Nice catch, Joonsoo! But what make me worry is is this patch makes 3 thing
-> all at once.
-> 
-> 1. fix - no candidate for stable
-> 2. clean up
-> 3. fix - candidate for stable.
-> 
-> Could you separate 3 and (1,2) in next spin?
-> 
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-oo3xclxdoy8s7ubssn929vaj@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 51 +++++++++++++++++-----------------
+ 1 file changed, 26 insertions(+), 25 deletions(-)
 
-Okay!
-
-Thanks.
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 2502d0d..38d1f6d 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2367,15 +2367,15 @@ __init int intel_pmu_init(void)
+ 	 * Install the hw-cache-events table:
+ 	 */
+ 	switch (boot_cpu_data.x86_model) {
+-	case 14: /* 65 nm core solo/duo, "Yonah" */
++	case 14: /* 65nm Core "Yonah" */
+ 		pr_cont("Core events, ");
+ 		break;
+ 
+-	case 15: /* original 65 nm celeron/pentium/core2/xeon, "Merom"/"Conroe" */
++	case 15: /* 65nm Core2 "Merom"          */
+ 		x86_add_quirk(intel_clovertown_quirk);
+-	case 22: /* single-core 65 nm celeron/core2solo "Merom-L"/"Conroe-L" */
+-	case 23: /* current 45 nm celeron/core2/xeon "Penryn"/"Wolfdale" */
+-	case 29: /* six-core 45 nm xeon "Dunnington" */
++	case 22: /* 65nm Core2 "Merom-L"        */
++	case 23: /* 45nm Core2 "Penryn"         */
++	case 29: /* 45nm Core2 "Dunnington (MP) */
+ 		memcpy(hw_cache_event_ids, core2_hw_cache_event_ids,
+ 		       sizeof(hw_cache_event_ids));
+ 
+@@ -2386,9 +2386,9 @@ __init int intel_pmu_init(void)
+ 		pr_cont("Core2 events, ");
+ 		break;
+ 
+-	case 26: /* 45 nm nehalem, "Bloomfield" */
+-	case 30: /* 45 nm nehalem, "Lynnfield" */
+-	case 46: /* 45 nm nehalem-ex, "Beckton" */
++	case 30: /* 45nm Nehalem    */
++	case 26: /* 45nm Nehalem-EP */
++	case 46: /* 45nm Nehalem-EX */
+ 		memcpy(hw_cache_event_ids, nehalem_hw_cache_event_ids,
+ 		       sizeof(hw_cache_event_ids));
+ 		memcpy(hw_cache_extra_regs, nehalem_hw_cache_extra_regs,
+@@ -2415,11 +2415,11 @@ __init int intel_pmu_init(void)
+ 		pr_cont("Nehalem events, ");
+ 		break;
+ 
+-	case 28: /* Atom */
+-	case 38: /* Lincroft */
+-	case 39: /* Penwell */
+-	case 53: /* Cloverview */
+-	case 54: /* Cedarview */
++	case 28: /* 45nm Atom "Pineview"   */
++	case 38: /* 45nm Atom "Lincroft"   */
++	case 39: /* 32nm Atom "Penwell"    */
++	case 53: /* 32nm Atom "Cloverview" */
++	case 54: /* 32nm Atom "Cedarview"  */
+ 		memcpy(hw_cache_event_ids, atom_hw_cache_event_ids,
+ 		       sizeof(hw_cache_event_ids));
+ 
+@@ -2430,8 +2430,8 @@ __init int intel_pmu_init(void)
+ 		pr_cont("Atom events, ");
+ 		break;
+ 
+-	case 55: /* Atom 22nm "Silvermont" */
+-	case 77: /* Avoton "Silvermont" */
++	case 55: /* 22nm Atom "Silvermont"                */
++	case 77: /* 22nm Atom "Silvermont Avoton/Rangely" */
+ 		memcpy(hw_cache_event_ids, slm_hw_cache_event_ids,
+ 			sizeof(hw_cache_event_ids));
+ 		memcpy(hw_cache_extra_regs, slm_hw_cache_extra_regs,
+@@ -2446,9 +2446,9 @@ __init int intel_pmu_init(void)
+ 		pr_cont("Silvermont events, ");
+ 		break;
+ 
+-	case 37: /* 32 nm nehalem, "Clarkdale" */
+-	case 44: /* 32 nm nehalem, "Gulftown" */
+-	case 47: /* 32 nm Xeon E7 */
++	case 37: /* 32nm Westmere    */
++	case 44: /* 32nm Westmere-EP */
++	case 47: /* 32nm Westmere-EX */
+ 		memcpy(hw_cache_event_ids, westmere_hw_cache_event_ids,
+ 		       sizeof(hw_cache_event_ids));
+ 		memcpy(hw_cache_extra_regs, nehalem_hw_cache_extra_regs,
+@@ -2474,8 +2474,8 @@ __init int intel_pmu_init(void)
+ 		pr_cont("Westmere events, ");
+ 		break;
+ 
+-	case 42: /* SandyBridge */
+-	case 45: /* SandyBridge, "Romely-EP" */
++	case 42: /* 32nm SandyBridge         */
++	case 45: /* 32nm SandyBridge-E/EN/EP */
+ 		x86_add_quirk(intel_sandybridge_quirk);
+ 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+ 		       sizeof(hw_cache_event_ids));
+@@ -2506,8 +2506,9 @@ __init int intel_pmu_init(void)
+ 
+ 		pr_cont("SandyBridge events, ");
+ 		break;
+-	case 58: /* IvyBridge */
+-	case 62: /* IvyBridge EP */
++
++	case 58: /* 22nm IvyBridge       */
++	case 62: /* 22nm IvyBridge-EP/EX */
+ 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
+ 		       sizeof(hw_cache_event_ids));
+ 		/* dTLB-load-misses on IVB is different than SNB */
+@@ -2539,11 +2540,11 @@ __init int intel_pmu_init(void)
+ 		break;
+ 
+ 
+-	case 60: /* Haswell Client */
+-	case 70:
+-	case 71:
++	case 60: /* 22nm Haswell */
+ 	case 63:
+ 	case 69:
++	case 70:
++	case 71:
+ 		x86_pmu.late_ack = true;
+ 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids, sizeof(hw_cache_event_ids));
+ 		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
