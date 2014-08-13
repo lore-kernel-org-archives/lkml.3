@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979AbaHMWPv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 18:15:51 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:42032 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529AbaHMWPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 18:15:50 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, mark.rutland@arm.com,
-        devicetree@vger.kernel.org, linux@arm.linux.org.uk, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, linux-kernel@vger.kernel.org,
-        robh+dt@kernel.org, galak@codeaurora.org
-Subject: Re: [PATCH v4 0/2] Add eMMC and SD card support for rk3288-evb
-Date: Thu, 14 Aug 2014 00:15:19 +0200
-Message-ID: <1896828.oB75TXBbSp@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1407885674-16469-1-git-send-email-dianders@chromium.org>
-References: <1407885674-16469-1-git-send-email-dianders@chromium.org>
+	id S1754069AbaHMWQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 18:16:27 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:37382 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707AbaHMWQZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 18:16:25 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [2620:0:1000:157d:ddbc:4bf2:aaa:f418]
+In-Reply-To: <CAN8TOE8w5bUT5byHiJrYr8AzaZ+EADzE+aoH6f2x2tFc1+1eQw@mail.gmail.com>
+References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
+	<1405976886-27807-4-git-send-email-computersforpeace@gmail.com>
+	<20140802083040.GY30282@n2100.arm.linux.org.uk>
+	<20140804165627.GT3711@ld-irv-0074>
+	<CAN8TOE8w5bUT5byHiJrYr8AzaZ+EADzE+aoH6f2x2tFc1+1eQw@mail.gmail.com>
+Date: Wed, 13 Aug 2014 15:16:24 -0700
+Message-ID: <CAOesGMh5wX5eaCmPvXQs4fmNQsD+370P=O8PSdH2oMHKL_neDQ@mail.gmail.com>
+Subject: Re: [PATCH v8 03/11] ARM: brcmstb: add debug UART for earlyprintk support
+From: Olof Johansson <olof@lixom.net>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Matt Porter <mporter@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Gregory Fong <gregory.0xf0@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Marc Carino <marc.ceeeee@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 12. August 2014, 16:21:12 schrieb Doug Anderson:
-> This series adds basic eMMC and SD card support for the rk3288-evb
-> board based on Addy's dw_mmc patch.
+On Wed, Aug 13, 2014 at 3:11 PM, Brian Norris
+<computersforpeace@gmail.com> wrote:
+> Ping (Olof or Matt?)
+>
+> On Mon, Aug 4, 2014 at 9:56 AM, Brian Norris
+> <computersforpeace@gmail.com> wrote:
+>> On Sat, Aug 02, 2014 at 09:30:40AM +0100, Russell King wrote:
+>>> On Mon, Jul 21, 2014 at 02:07:58PM -0700, Brian Norris wrote:
+>>> > From: Marc Carino <marc.ceeeee@gmail.com>
+>>> >
+>>> > Add the UART definitions needed to support earlyprintk on brcmstb machines.
+>>> >
+>>> > Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
+>>> > Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+>>> > Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+>>>
+>>> I noticed that you sent this to the patch system.  I asked Olof last
+>>> night whether he had anything in arm-soc touching Kconfig.debug, and
+>>> he does (a number of other platforms have updated it.)  This means
+>>> that if I apply it to my tree, it may conflict, so I'm reluctant to
+>>> take it.
+>>
+>> OK... Matt told me that such patches go through you. So which is it?
+>> Should all Kconfig.debug patches go through the arm-soc route?
+>
+> How should this get in? Should I rebase/resend through Matt and
+> arm-soc? Or can you pick this up as-is?
 
-I've added both patches to the general dts branch for 3.18.
-Currently as WIP and temporarily on github [0] until we reach -rc1.
+Kconfig.debug is something that we usually merge new platforms for
+through arm-soc. The main exception has been release cycles when
+Russell has been doing major surgery on the file (one of those was a
+few releases ago), where we've backed off to avoid conflicts.
+
+That's been the assumed arrangement from our side at least, we haven't
+had anything more formal than that.
+
+So, go ahead and send it through us -- if we end up having a cycle
+where we can't apply it we can send it over to Russell for you.
 
 
-Heiko
-
-
-[0] https://github.com/mmind/linux-rockchip/tree/wip/v3.18-next/dts
-
-> 
-> Note that we don't have regulators specified yet (no regulator driver
-> for rk808-based board).  We also don't yet support UHS modes or MMC
-> DDR50 (which require regulator support plus dw_mmc driver support for
-> tuning).  Those features can come later.
-> 
-> Changes in v4:
-> - Add status="disabled".
-> - Squash patch #1 and #4 since Jaehoon's patch landed.
-> - Squashed patches #2 and #3 since Jaehoon's patch landed.
-> 
-> Changes in v3:
-> - Removed DDR50 mode since it needs tuning, which isn't there yet.
-> 
-> Changes in v2:
-> - Refer to the new title of Jaehoon's patch
-> - New patchwork link for Addy's patch
-> - Squashed in the DDR50 mode since Addy spun his patch.
-> 
-> Doug Anderson (2):
->   ARM: dts: Add emmc and sdmmc to the rk3288 device tree
->   ARM: dts: Enable emmc and sdmmc on the rk3288-evb boards
-> 
->  arch/arm/boot/dts/rk3288-evb.dtsi | 24 ++++++++++++++++++++++++
->  arch/arm/boot/dts/rk3288.dtsi     | 20 ++++++++++++++++++++
->  2 files changed, 44 insertions(+)
-
+-Olof
