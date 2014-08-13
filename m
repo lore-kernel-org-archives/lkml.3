@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973AbaHMKcV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 06:32:21 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:50907 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090AbaHMKcT (ORCPT
+	id S1752745AbaHMKdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 06:33:19 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:35771 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528AbaHMKdQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 06:32:19 -0400
+	Wed, 13 Aug 2014 06:33:16 -0400
+Date: Wed, 13 Aug 2014 11:33:11 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v9 12/12] PCI: Introduce pci_remap_iospace() for
+ remapping PCI I/O bus resources into CPU space
+Message-ID: <20140813103311.GQ25761@e106497-lin.cambridge.arm.com>
+References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
+ <1407860725-25202-13-git-send-email-Liviu.Dudau@arm.com>
+ <20140813100118.GC18495@arm.com>
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <20140603114827.3188.35705.stgit@localhost.localdomain>
-References: <20140603114827.3188.35705.stgit@localhost.localdomain>
-Date: Wed, 13 Aug 2014 12:32:18 +0200
-Message-ID: <CAJfpegsee+n14g6JoLOxq5DKy_9cptWR200W1aH3vr65wjZjqQ@mail.gmail.com>
-Subject: Re: [PATCH] fuse: do not evict dirty inodes
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140813100118.GC18495@arm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 13 Aug 2014 10:33:12.0375 (UTC) FILETIME=[FBB31C70:01CFB6E1]
+X-MC-Unique: 114081311331305701
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 3, 2014 at 1:49 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
-> Commit 1e18bda8 added .write_inode method to the fuse super_operations. This
-> allowed fuse to use the kernel infrastructure for writing out dirty metadata
-> (mtime and ctime for now). However, given that .drop_inode was not redefined
-> from the legacy generic_delete_inode(), on umount(2) generic_shutdown_super()
-> led to the eviction of all inodes disregarding their state.
->
-> The patch removes .drop_inode definition from the fuse super_operations. This
-> works because now iput_final() calls generic_drop_inode() and returns w/o
-> evicting inode. This, in turn, allows generic_shutdown_super() to write dirty
-> inodes by calling sync_filesystem().
->
-> Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
-> ---
->  fs/fuse/inode.c |    1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-> index 754dcf2..ee017be 100644
-> --- a/fs/fuse/inode.c
-> +++ b/fs/fuse/inode.c
-> @@ -791,7 +791,6 @@ static const struct super_operations fuse_super_operations = {
->         .destroy_inode  = fuse_destroy_inode,
->         .evict_inode    = fuse_evict_inode,
->         .write_inode    = fuse_write_inode,
-> -       .drop_inode     = generic_delete_inode,
->         .remount_fs     = fuse_remount_fs,
->         .put_super      = fuse_put_super,
->         .umount_begin   = fuse_umount_begin,
->
+On Wed, Aug 13, 2014 at 11:01:18AM +0100, Catalin Marinas wrote:
+> On Tue, Aug 12, 2014 at 05:25:25PM +0100, Liviu Dudau wrote:
+> > Introduce a default implementation for remapping PCI bus I/O resources
+> > onto the CPU address space. Architectures with special needs may
+> > provide their own version, but most should be able to use this one.
+> > 
+> > Cc: Bjorn Helgaas <bhelgaas@google.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Rob Herring <robh+dt@kernel.org>
+> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> 
+> I guess you could have added the generic pgprot_device definition to
+> this patch and the arm64 specific one in the separate arm64 PCIe support
+> (and one less patch in total). But not a big issue either way.
 
-(Sorry about the late answer)
+I went by the established history on that file, where a new interface gets
+introduced together with its use. I guess it makes backing out the change
+much easier?
 
-Big problem with this is that I don't want to make umount(2) and
-sync(2) wait on userspace filesystem.  Generally this would make
-umount() hang if a fuse daemon was stuck for any reason.
+Best regards,
+Liviu
 
-But is this really necessary?
+> 
+> -- 
+> Catalin
 
-We are talking about just regular files: mtime is only updated by
-write(2) and friends. ctime is updated by write(2) as well as some
-other ops.  For write, we can sync the times on FLUSH (close), for
-other ops we could flush the ctime synchronously.  E.g. unlink would
-trigger UNLINK and SETATTR.
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
-Long term, much better solution would be to add a timestamp to
-fuse_in_header which would remove the duplicate requests and then we
-could also extend the kernel caching of timestamps from just regular
-files to everything, which would make the protocol conceptually
-simpler.
-
-Thanks,
-Miklos
