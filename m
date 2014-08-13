@@ -1,51 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaHMOSl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:18:41 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:45428 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaHMOSj (ORCPT
+	id S1752894AbaHMOVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:21:39 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:46135 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506AbaHMOVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:18:39 -0400
-Date: Wed, 13 Aug 2014 15:18:36 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Matt Fleming <matt.fleming@intel.com>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] firmware: Do not use WARN_ON(!spin_is_locked())
-Message-ID: <20140813141836.GQ15082@console-pimps.org>
-References: <1407729253-31341-1-git-send-email-linux@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407729253-31341-1-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 13 Aug 2014 10:21:38 -0400
+Content-Type: multipart/signed; boundary="Apple-Mail=_316B1F83-C7E5-4EE4-BA0F-487C9E3BC87B"; protocol="application/pgp-signature"; micalg=pgp-sha512
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] KVM: x86: Avoid emulating instructions on #UD mistakenly
+From: Nadav Amit <nadav.amit@gmail.com>
+In-Reply-To: <1407937813-1461-1-git-send-email-namit@cs.technion.ac.il>
+Date: Wed, 13 Aug 2014 17:21:29 +0300
+Cc: gleb@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>, KVM <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nadav Amit <namit@cs.technion.ac.il>
+Message-Id: <B8075446-5721-4D41-99A1-19B729691F42@gmail.com>
+References: <1407937813-1461-1-git-send-email-namit@cs.technion.ac.il>
+To: Paolo Bonzini <pbonzini@redhat.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Aug, at 08:54:13PM, Guenter Roeck wrote:
-> spin_is_locked() always returns false for uniprocessor configurations,
-> so do not use WARN_ON with it. WARN_ON_SMP() exists for that very
-> purpose and must be used instead.
- 
-Good catch, though I worry that WARN_ON_SMP() doesn't seem to be a very
-common pattern,
 
-arch/x86/pci/i386.c:	WARN_ON_SMP(!spin_is_locked(&pcibios_fwaddrmap_lock));
-drivers/gpu/drm/drm_irq.c:	WARN_ON_SMP(!spin_is_locked(&dev->event_lock));
-include/asm-generic/bug.h: * WARN_ON_SMP() is for cases that the warning is either
-include/asm-generic/bug.h: *	WARN_ON_SMP(!zoot->bar);
-include/asm-generic/bug.h: * For CONFIG_SMP, WARN_ON_SMP() should act the same as WARN_ON(),
-include/asm-generic/bug.h: * if (WARN_ON_SMP(x)) returns true only when CONFIG_SMP is set
-include/asm-generic/bug.h:# define WARN_ON_SMP(x)			WARN_ON(x)
-include/asm-generic/bug.h: * Use of ({0;}) because WARN_ON_SMP(x) may be used either as
-include/asm-generic/bug.h:# define WARN_ON_SMP(x)			({0;})
-kernel/futex.c:	if (WARN_ON_SMP(!q->lock_ptr || !spin_is_locked(q->lock_ptr))
+--Apple-Mail=_316B1F83-C7E5-4EE4-BA0F-487C9E3BC87B
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=windows-1252
 
-and people must want to do this kind of checking all the time.
+Correction: the word =93never=94 in the message is too harsh.
+Nonetheless, there is a regression bug. I encountered it with =93wrfsbase=94=
+ instruction.
 
-How about lockdep_assert_held()? That seems to be much more popular.
+Nadav
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+On Aug 13, 2014, at 4:50 PM, Nadav Amit <namit@cs.technion.ac.il> wrote:
+
+> Commit d40a6898e5 mistakenly caused instructions which are not marked =
+as
+> EmulateOnUD to be emulated upon #UD exception. The commit caused the =
+check of
+> whether the instruction flags include EmulateOnUD to never be =
+evaluated. As a
+> result instructions whose emulation is broken may be emulated.  This =
+fix moves
+> the evaluation of EmulateOnUD so it would be evaluated.
+>=20
+> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+> ---
+> arch/x86/kvm/emulate.c | 6 +++---
+> 1 file changed, 3 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index 56657b0..37a83b2 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -4394,6 +4394,9 @@ done_prefixes:
+>=20
+>  	ctxt->execute =3D opcode.u.execute;
+>=20
+> +	if (!(ctxt->d & EmulateOnUD) && ctxt->ud)
+> +		return EMULATION_FAILED;
+> +
+>  	if (unlikely(ctxt->d &
+>  		     =
+(NotImpl|EmulateOnUD|Stack|Op3264|Sse|Mmx|Intercept|CheckPerm))) {
+>  		/*
+> @@ -4406,9 +4409,6 @@ done_prefixes:
+>  		if (ctxt->d & NotImpl)
+>  			return EMULATION_FAILED;
+>=20
+> -		if (!(ctxt->d & EmulateOnUD) && ctxt->ud)
+> -			return EMULATION_FAILED;
+> -
+>  		if (mode =3D=3D X86EMUL_MODE_PROT64 && (ctxt->d & =
+Stack))
+>  			ctxt->op_bytes =3D 8;
+>=20
+> --=20
+> 1.9.1
+>=20
+
+
+--Apple-Mail=_316B1F83-C7E5-4EE4-BA0F-487C9E3BC87B
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename=signature.asc
+Content-Type: application/pgp-signature;
+	name=signature.asc
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - http://gpgtools.org
+
+iQEcBAEBCgAGBQJT63RpAAoJEHlOP0Zr1lTYWa0H/jJIjGEJvdDN6rSeq01W95it
+SoWEaPGpgPnrbG3v1s6IXhxV0jEvh28inZWgYm9rpvf1IyNfQjE51TRlUAnAEuZX
+CRnkiHW/3OE4oiSZeh67t7exmryJcKxeMXB0veOAMUSJtblAnF/0dw2ZwRC5acAX
+G3HqXexF2Bzix8TVHDMy3uSJgSCMlOaNZxjSlk3edikJ11FaxAPVT2wDaRdxsL8b
+MKrSH2BVtdshmhQz4v6H9oOyyE7N9NPaDbNCBjrG7i/+QXqCN1k/Uyo89fnMhPum
+sDt2RH0+aQx7nEJmaAc+3B2+5xAAAgzUVr/ZSfTwwkYGLEqpi4U+gi+Fvr/0QVw=
+=Hf5H
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_316B1F83-C7E5-4EE4-BA0F-487C9E3BC87B--
