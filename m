@@ -1,168 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065AbaHMK6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 06:58:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53386 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaHMK6J (ORCPT
+	id S1752109AbaHMLAj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 07:00:39 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:2703 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171AbaHMLAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 06:58:09 -0400
-Date: Wed, 13 Aug 2014 03:57:11 -0700
-From: tip-bot for Waiman Long <tipbot@zytor.com>
-Message-ID: <tip-ae17ea0ec7d8fa64fbb773a52b2df5ba4766bcb8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
-        Waiman.Long@hp.com, tglx@linutronix.de, fengguang.wu@intel.com,
-        scott.norton@hp.com, maarten.lankhorst@canonical.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
-        Waiman.Long@hp.com, tglx@linutronix.de, scott.norton@hp.com,
-        fengguang.wu@intel.com, maarten.lankhorst@canonical.com
-In-Reply-To: <1407345722-61615-3-git-send-email-Waiman.Long@hp.com>
-References: <1407345722-61615-3-git-send-email-Waiman.Long@hp.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] locking/selftest: Support queued rwlock
-Git-Commit-ID: ae17ea0ec7d8fa64fbb773a52b2df5ba4766bcb8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 13 Aug 2014 07:00:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 13 Aug 2014 03:46:14 -0700
+Message-ID: <53EB44F4.6090808@nvidia.com>
+Date: Wed, 13 Aug 2014 13:59:00 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Thermal reset support in PMC
+References: <1407226380-747-1-git-send-email-mperttunen@nvidia.com> <20140813080744.GD7735@ulmo> <53EB1DF5.301@nvidia.com> <53EB250D.5070207@nvidia.com> <20140813085728.GF7735@ulmo> <53EB3556.9010504@nvidia.com> <20140813103613.GA7624@ulmo> <53EB40F0.4000300@nvidia.com> <20140813105354.GA4843@ulmo>
+In-Reply-To: <20140813105354.GA4843@ulmo>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ae17ea0ec7d8fa64fbb773a52b2df5ba4766bcb8
-Gitweb:     http://git.kernel.org/tip/ae17ea0ec7d8fa64fbb773a52b2df5ba4766bcb8
-Author:     Waiman Long <Waiman.Long@hp.com>
-AuthorDate: Wed, 6 Aug 2014 13:22:02 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 13 Aug 2014 10:33:35 +0200
 
-locking/selftest: Support queued rwlock
 
-The queued rwlock does not support the use of recursive read-lock in
-the process context. With changes in the lockdep code to check and
-disallow recursive read-lock, it is also necessary for the locking
-selftest to be updated to change the process context recursive read
-locking results from SUCCESS to FAILURE for rwlock.
+On 13/08/14 13:53, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+>
+> On Wed, Aug 13, 2014 at 01:41:52PM +0300, Mikko Perttunen wrote:
+>>
+>>
+>> On 13/08/14 13:36, Thierry Reding wrote:
+>>>> Old Signed by an unknown key
+>>>
+>>> On Wed, Aug 13, 2014 at 12:52:22PM +0300, Mikko Perttunen wrote:
+>>>> On 13/08/14 11:57, Thierry Reding wrote:
+>>>>>> Old Signed by an unknown key
+>>>>>
+>>>>> On Wed, Aug 13, 2014 at 11:42:53AM +0300, Mikko Perttunen wrote:
+>>>>>>
+>>>>>>
+>>>>>> On 13/08/14 11:12, Mikko Perttunen wrote:
+>>>>>>> On 13/08/14 11:07, Thierry Reding wrote:
+>>>>>>>>> Old Signed by an unknown key
+>>>>>>>>
+>>>>>>>> On Tue, Aug 05, 2014 at 11:12:57AM +0300, Mikko Perttunen wrote:
+>>>>>>>>> Hi,
+>>>>>>>>>
+>>>>>>>>> this series adds support for hardware-triggered thermal reset to the PMC
+>>>>>>>>> driver. Namely, it adds device tree properties for specifying the I2C
+>>>>>>>>> command to be sent when thermtrip is triggered. It is to be noted
+>>>>>>>>> that thermtrip won't be ever triggered without a soctherm driver to
+>>>>>>>>> calibrate the sensors, but I'll follow up with that patch.
+>>>>>>>>>
+>>>>>>>>> pmc.c required some juggling around to make the match data usable in
+>>>>>>>>> probe, since I didn't want to put the code into the initcall either, since
+>>>>>>>>> the soctherm driver won't be initialized by that point anyway.
+>>>>>>>>>
+>>>>>>>>> Series tested on Jetson-TK1. Should work on Tegra30 and Tegra114 too.
+>>>>>>>>
+>>>>>>>> Can you describe the procedure used to test this? We currently have a
+>>>>>>>> bunch of features in Tegra that some people have tested at some point
+>>>>>>>> during development but the test procedures never got documented. That
+>>>>>>>> means whenever we want to test something we need to go and reinvent a
+>>>>>>>> bunch of tests after the fact.
+>>>>>>>>
+>>>>>>>> So what I'd like to start doing is collect tests (preferably in some
+>>>>>>>> scripted way) so that they can be kept in a repository that people can
+>>>>>>>> easily clone and run on devices.
+>>>>>>>>
+>>>>>>>> Could you provide something like that for thermtrip?
+>>>>>>>
+>>>>>>> Sure. I'll see if I can make a just a test script or if a local patch is
+>>>>>>> needed to test. Btw, I also have a pretty nice test script for EMC
+>>>>>>> ready, and I agree that such a repository would be very nice.
+>>>>>>
+>>>>>> Here is a test program. It it works, the device with immediately shut down.
+>>>>>>
+>>>>>> https://gist.github.com/cyndis/66126c9c176b5f94a76f
+>>>>>
+>>>>> Is there a way to set the trip temperature without going through
+>>>>> /dev/mem? I'd expect the device to have a sysfs interface of some
+>>>>> sort.
+>>>>
+>>>> The thermtrip "device" isn't currently exposed in any way. If it were
+>>>> exposed, I suppose it would be exposed as thermal zone devices, each with
+>>>> one trip point. Even then, the thermal framework doesn't really support this
+>>>> properly; none of the trip point types really apply to this kind of trip
+>>>> point, and x86 systems don't expose their trips either.
+>>>
+>>> Okay. The reason why I asked is because I'm not sure yet that having C
+>>> programs in the test suite would be good, so having something that's
+>>> easily scriptable would be preferred.
+>>
+>> I agree. Looks like Python's stdlib has mmap support, so maybe we could use
+>> that.
+>
+> Yes, possibly. It still means that somebody needs to have some kind of
+> advanced scripting available to test this. While having a testsuite is
+> useful, it would still be nice to occasionally be able to test things
+> with just simple shell commands.
+>
+>>>> Anyway, since debugging is pretty much the only use case for modifying
+>>>> the trip temperature, I thought adding the tz_devices would be a bit
+>>>> overkill.
+>>>
+>>> An alternative could be a file in debugfs.
+>>
+>> True, though there's the "don't expose dangerous stuff in debugfs" argument
+>> against that. I don't really have problem with it, though.
+>> Although in this case I think the script approach would be good enough.
+>
+> I've said this before and I don't think "dangerous stuff in debugfs" is
+> a valid argument. You need superuser privileges to access debugfs, and
+> if you have such privileges you can do pretty much what you want (run
+> the test program you posted for example).
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Scott J Norton <scott.norton@hp.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1407345722-61615-3-git-send-email-Waiman.Long@hp.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- lib/locking-selftest.c | 56 +++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 49 insertions(+), 7 deletions(-)
+I agree with you completely. I guess I can add a debugfs entry to the 
+soctherm driver, probably in a separate patch once the original series 
+is in. It is then up to the thermal maintainers whether they agree with 
+us or not.
 
-diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
-index 872a15a..62af709 100644
---- a/lib/locking-selftest.c
-+++ b/lib/locking-selftest.c
-@@ -267,19 +267,46 @@ GENERATE_TESTCASE(AA_rsem)
- #undef E
- 
- /*
-- * Special-case for read-locking, they are
-- * allowed to recurse on the same lock class:
-+ * Special-case for read-locking, they are not allowed to
-+ * recurse on the same lock class except under interrupt context:
-  */
- static void rlock_AA1(void)
- {
- 	RL(X1);
--	RL(X1); // this one should NOT fail
-+	RL(X1); // this one should fail
- }
- 
- static void rlock_AA1B(void)
- {
- 	RL(X1);
--	RL(X2); // this one should NOT fail
-+	RL(X2); // this one should fail
-+}
-+
-+static void rlock_AHA1(void)
-+{
-+	RL(X1);
-+	HARDIRQ_ENTER();
-+	RL(X1);	// this one should NOT fail
-+	HARDIRQ_EXIT();
-+}
-+
-+static void rlock_AHA1B(void)
-+{
-+	RL(X1);
-+	HARDIRQ_ENTER();
-+	RL(X2);	// this one should NOT fail
-+	HARDIRQ_EXIT();
-+}
-+
-+static void rlock_ASAHA1(void)
-+{
-+	RL(X1);
-+	SOFTIRQ_ENTER();
-+	RL(X1);	// this one should NOT fail
-+	HARDIRQ_ENTER();
-+	RL(X1);	// this one should NOT fail
-+	HARDIRQ_EXIT();
-+	SOFTIRQ_EXIT();
- }
- 
- static void rsem_AA1(void)
-@@ -1069,7 +1096,7 @@ static inline void print_testname(const char *testname)
- 	print_testname(desc);					\
- 	dotest(name##_spin, FAILURE, LOCKTYPE_SPIN);		\
- 	dotest(name##_wlock, FAILURE, LOCKTYPE_RWLOCK);		\
--	dotest(name##_rlock, SUCCESS, LOCKTYPE_RWLOCK);		\
-+	dotest(name##_rlock, FAILURE, LOCKTYPE_RWLOCK);		\
- 	dotest(name##_mutex, FAILURE, LOCKTYPE_MUTEX);		\
- 	dotest(name##_wsem, FAILURE, LOCKTYPE_RWSEM);		\
- 	dotest(name##_rsem, FAILURE, LOCKTYPE_RWSEM);		\
-@@ -1830,14 +1857,14 @@ void locking_selftest(void)
- 	printk("  --------------------------------------------------------------------------\n");
- 	print_testname("recursive read-lock");
- 	printk("             |");
--	dotest(rlock_AA1, SUCCESS, LOCKTYPE_RWLOCK);
-+	dotest(rlock_AA1, FAILURE, LOCKTYPE_RWLOCK);
- 	printk("             |");
- 	dotest(rsem_AA1, FAILURE, LOCKTYPE_RWSEM);
- 	printk("\n");
- 
- 	print_testname("recursive read-lock #2");
- 	printk("             |");
--	dotest(rlock_AA1B, SUCCESS, LOCKTYPE_RWLOCK);
-+	dotest(rlock_AA1B, FAILURE, LOCKTYPE_RWLOCK);
- 	printk("             |");
- 	dotest(rsem_AA1B, FAILURE, LOCKTYPE_RWSEM);
- 	printk("\n");
-@@ -1856,6 +1883,21 @@ void locking_selftest(void)
- 	dotest(rsem_AA3, FAILURE, LOCKTYPE_RWSEM);
- 	printk("\n");
- 
-+	print_testname("recursive rlock with interrupt");
-+	printk("             |");
-+	dotest(rlock_AHA1, SUCCESS, LOCKTYPE_RWLOCK);
-+	printk("\n");
-+
-+	print_testname("recursive rlock with interrupt #2");
-+	printk("             |");
-+	dotest(rlock_AHA1B, SUCCESS, LOCKTYPE_RWLOCK);
-+	printk("\n");
-+
-+	print_testname("recursive rlock with interrupt #3");
-+	printk("             |");
-+	dotest(rlock_ASAHA1, SUCCESS, LOCKTYPE_RWLOCK);
-+	printk("\n");
-+
- 	printk("  --------------------------------------------------------------------------\n");
- 
- 	/*
+>
+> Thierry
+>
+> * Unknown Key
+> * 0x7F3EB3A1
+>
