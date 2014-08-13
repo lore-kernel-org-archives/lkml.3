@@ -1,144 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338AbaHMPfZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:35:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64159 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751145AbaHMPfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:35:24 -0400
-Date: Wed, 13 Aug 2014 12:35:02 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: Re: mm: compaction: buffer overflow in isolate_migratepages_range
-Message-ID: <20140813153501.GE21041@optiplex.redhat.com>
-References: <53E6CEAA.9020105@oracle.com>
- <CAPAsAGxcC0+V1ZzR3LL=ASx=KXifPbw_cyvHCBBJT4mZ1grg+Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPAsAGxcC0+V1ZzR3LL=ASx=KXifPbw_cyvHCBBJT4mZ1grg+Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753471AbaHMPgX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:36:23 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:45554 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753181AbaHMPgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 11:36:13 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        alexandre torgue <alexandre.torgue@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: [PATCH 1/5] phy: miphy28lp: Add Device Tree bindings for the MiPHY28lp
+Date: Wed, 13 Aug 2014 17:34:31 +0200
+Message-Id: <1407944075-8093-2-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407944075-8093-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1407944075-8093-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-13_05:2014-08-13,2014-08-13,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 10, 2014 at 12:49:47PM +0400, Andrey Ryabinin wrote:
-> 2014-08-10 5:45 GMT+04:00 Sasha Levin <sasha.levin@oracle.com>:
-> > Hi all,
-> >
-> > While fuzzing with trinity inside a KVM tools guest running the latest -next
-> > kernel with the KASAN patchset, I've stumbled on the following spew:
-> >
-> >
-> > [ 3837.070452] ==================================================================
-> > [ 3837.073101] AddressSanitizer: buffer overflow in isolate_migratepages_range+0x85f/0xd90 at addr ffff88051b70eb49
-> > [ 3837.076310] page:ffffea00146dc380 count:0 mapcount:0 mapping:          (null) index:0x0
-> > [ 3837.079876] page flags: 0xafffff80008000(tail)
-> > [ 3837.114592] page dumped because: kasan error
-> > [ 3837.115897] CPU: 4 PID: 29613 Comm: trinity-c467 Not tainted 3.16.0-next-20140808-sasha-00051-gf368221 #1051
-> > [ 3837.118024]  00000000000000fc 0000000000000000 ffffea00146dc380 ffff8801f326f718
-> > [ 3837.119837]  ffffffff97e0d344 ffff8801f326f7e8 ffff8801f326f7d8 ffffffff9342d5bc
-> > [ 3837.121708]  ffffea00085163c0 0000000000000000 ffff8801f326f8e0 ffffffff93fe02fb
-> > [ 3837.123704] Call Trace:
-> > [ 3837.124272] dump_stack (lib/dump_stack.c:52)
-> > [ 3837.125166] kasan_report_error (mm/kasan/report.c:98 mm/kasan/report.c:166)
-> > [ 3837.126128] ? trace_hardirqs_on_thunk (arch/x86/lib/thunk_64.S:33)
-> > [ 3837.127462] ? retint_restore_args (arch/x86/kernel/entry_64.S:828)
-> > [ 3837.128753] __asan_load8 (mm/kasan/kasan.c:364)
-> > [ 3837.129914] ? isolate_migratepages_range (./arch/x86/include/asm/bitops.h:311 include/linux/pagemap.h:70 include/linux/balloon_compaction.h:131 include/linux/balloon_compaction.h:156 mm/compaction.c:596)
-> > [ 3837.131613] isolate_migratepages_range (./arch/x86/include/asm/bitops.h:311 include/linux/pagemap.h:70 include/linux/balloon_compaction.h:131 include/linux/balloon_compaction.h:156 mm/compaction.c:596)
-> > [ 3837.132838] compact_zone (mm/compaction.c:877 mm/compaction.c:1044)
-> > [ 3837.133818] compact_zone_order (mm/compaction.c:1106)
-> > [ 3837.134982] try_to_compact_pages (mm/compaction.c:1161)
-> > [ 3837.135970] __alloc_pages_direct_compact (mm/page_alloc.c:2313)
-> > [ 3837.137217] ? next_zones_zonelist (mm/mmzone.c:72)
-> > [ 3837.138861] __alloc_pages_nodemask (mm/page_alloc.c:2640 mm/page_alloc.c:2806)
-> > [ 3837.139897] ? check_chain_key (kernel/locking/lockdep.c:2190)
-> > [ 3837.141220] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-> > [ 3837.142434] alloc_pages_vma (mm/mempolicy.c:2046)
-> > [ 3837.143479] ? do_huge_pmd_wp_page (mm/huge_memory.c:774 mm/huge_memory.c:1123)
-> > [ 3837.144663] do_huge_pmd_wp_page (mm/huge_memory.c:774 mm/huge_memory.c:1123)
-> > [ 3837.145653] handle_mm_fault (mm/memory.c:3312 mm/memory.c:3370)
-> > [ 3837.146717] ? vmacache_find (mm/vmacache.c:100 (discriminator 1))
-> > [ 3837.147404] ? find_vma (mm/mmap.c:2024)
-> > [ 3837.147982] __do_page_fault (arch/x86/mm/fault.c:1231)
-> > [ 3837.148613] ? context_tracking_user_exit (kernel/context_tracking.c:184)
-> > [ 3837.149388] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-> > [ 3837.150212] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2641 (discriminator 8))
-> > [ 3837.150977] ? trace_hardirqs_off (kernel/locking/lockdep.c:2647)
-> > [ 3837.151686] trace_do_page_fault (arch/x86/mm/fault.c:1314 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1315)
-> > [ 3837.152870] do_async_page_fault (arch/x86/kernel/kvm.c:279)
-> > [ 3837.153886] async_page_fault (arch/x86/kernel/entry_64.S:1313)
-> > [ 3837.155293] Read of size 8 by thread T29613:
-> > [ 3837.156058] Memory state around the buggy address:
-> > [ 3837.156885]  ffff88051b70e880: 00 00 00 00 00 00 00 fc fc fc fc fc fc fc fc fc
-> > [ 3837.158141]  ffff88051b70e900: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-> > [ 3837.159492]  ffff88051b70e980: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-> > [ 3837.160863]  ffff88051b70ea00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 3837.162165]  ffff88051b70ea80: 00 00 00 00 00 00 00 fc fc fc fc fc fc fc fc fc
-> > [ 3837.163552] >ffff88051b70eb00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-> > [ 3837.164866]                                               ^
-> > [ 3837.165914]  ffff88051b70eb80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-> > [ 3837.167317]  ffff88051b70ec00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> > [ 3837.168616]  ffff88051b70ec80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> > [ 3837.169898]  ffff88051b70ed00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> > [ 3837.171298]  ffff88051b70ed80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> > [ 3837.172611] ==================================================================
-> >
-> >
-> > Thanks,
-> > Sasha
+The MiPHY28lp is a Generic PHY which can serve various SATA or PCIe
+or USB3 devices.
 
-Nice pick from the sanitizer bits!
+Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
+Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+---
+ .../devicetree/bindings/phy/phy-miphy28lp.txt      | 126 +++++++++++++++++++++
+ 1 file changed, 126 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
 
-> 
-> Bad access happens when we read page->mapping->flags in mapping_ballon().
-> Address of page->mapping->flags here is ffff88051b70eb49, so the
-> lowest bit is set,
-> which means that the lowest bit is also set in page->mapping pointer.
-> So page->mapping is a pointer to anon_vma, not to address_space.
->
+diff --git a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+new file mode 100644
+index 0000000..6e57bd5
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+@@ -0,0 +1,126 @@
++STMicroelectronics STi MIPHY28LP PHY binding
++============================================
++
++This binding describes a miphy device that is used to control PHY hardware
++for SATA, PCIe or USB3.
++
++Required properties (controller (parent) node):
++- compatible	: Should be "st,miphy28lp-phy"
++- st,syscfg     : Should be a phandle of the system configuration register group
++		  which contain the SATA, PCIe or USB3 mode setting bits
++
++Required nodes	:  A sub-node is required for each channel the controller
++		   provides. Address range information including the usual
++		   'reg' and 'reg-names' properties are used inside these
++		   nodes to describe the controller's topology. These nodes
++		   are translated by the driver's .xlate() function.
++
++Required properties (port (child) node):
++- #phy-cells	: Should be 1 (See second example)
++		  Cell after port phandle is device type from:
++			- MIPHY_TYPE_SATA
++			- MIPHY_TYPE_PCI
++			- MIPHY_TYPE_USB3
++- reg		: Address and length of the register set for the device
++- reg-names	: The names of the register addresses corresponding to the registers
++		  filled in "reg". Is can also contain the offset of the system configuration
++		  registers used as glue-logic to setup the device for SATA/PCIe or USB3
++		  devices.
++- resets	: phandle to the parent reset controller.
++- reset-names	: Associated name must be "miphy-sw-rst".
++
++Optional properties (port (child) node):
++- st,osc-rdy		: to check the MIPHY0_OSC_RDY status in the glue-logic. This
++			  is not available in all the MiPHY. For example, for STiH407, only the
++			  MiPHY0 has this bit.
++- st,osc-force-ext	: to select the external oscillator. This can change from
++			  different MiPHY inside the same SoC.
++- st,sata_gen		: to select which SATA_SPDMODE has to be set in the SATA system config
++			  register.
++- st,px_rx_pol_inv	: to invert polarity of RXn/RXp (respectively negative line and positive
++			  line).
++
++example:
++
++		miphy28lp_phy: miphy28lp@9b22000 {
++			compatible = "st,miphy28lp-phy";
++			st,syscfg = <&syscfg_core>;
++			#address-cells	= <1>;
++			#size-cells	= <1>;
++			ranges;
++
++			phy_port0: port@9b22000 {
++				reg = <0x9b22000 0xff>,
++				      <0x9b09000 0xff>,
++				      <0x9b04000 0xff>,
++				      <0x114 0x4>, /* sysctrl MiPHY cntrl */
++				      <0x818 0x4>, /* sysctrl MiPHY status*/
++				      <0xe0  0x4>, /* sysctrl PCIe */
++				      <0xec  0x4>; /* sysctrl SATA */
++				reg-names = "sata-up",
++					    "pcie-up",
++					    "pipew",
++					    "miphy-ctrl-glue",
++					    "miphy-status-glue",
++					    "pcie-glue",
++					    "sata-glue";
++				#phy-cells = <1>;
++				st,osc-rdy;
++				reset-names = "miphy-sw-rst";
++				resets = <&softreset STIH407_MIPHY0_SOFTRESET>;
++			};
++
++			phy_port1: port@9b2a000 {
++				reg = <0x9b2a000 0xff>,
++				      <0x9b19000 0xff>,
++				      <0x9b14000 0xff>,
++				      <0x118 0x4>,
++				      <0x81c 0x4>,
++				      <0xe4  0x4>,
++				      <0xf0  0x4>;
++				reg-names = "sata-up",
++					    "pcie-up",
++					    "pipew",
++					    "miphy-ctrl-glue",
++					    "miphy-status-glue",
++					    "pcie-glue",
++					    "sata-glue";
++				#phy-cells = <1>;
++				st,osc-force-ext;
++				reset-names = "miphy-sw-rst";
++				resets = <&softreset STIH407_MIPHY1_SOFTRESET>;
++			};
++
++			phy_port2: port@8f95000 {
++				reg = <0x8f95000 0xff>,
++				      <0x8f90000 0xff>,
++				      <0x11c 0x4>,
++				      <0x820 0x4>;
++				reg-names = "pipew",
++				    "usb3-up",
++				    "miphy-ctrl-glue",
++				    "miphy-status-glue";
++				#phy-cells = <1>;
++				reset-names = "miphy-sw-rst";
++				resets = <&softreset STIH407_MIPHY2_SOFTRESET>;
++			};
++		};
++
++
++Specifying phy control of devices
++=================================
++
++Device nodes should specify the configuration required in their "phys"
++property, containing a phandle to the miphy device node and an index
++specifying which configuration to use, as described in phy-bindings.txt.
++
++example:
++		sata0: sata@9b20000  {
++			...
++			phys		= <&phy_port0 MIPHY_TYPE_SATA>;
++			...
++		};
++
++Macro definitions for the supported miphy configuration can be found in:
++
++include/dt-bindings/phy/phy-miphy28lp.h
+-- 
+1.9.1
 
-Yeah, it happens because I failed to anticipate a race window opening where
-balloon_page_movable() can stumble across an anon page being released --
-somewhere in the midway of __page_cache_release() & free_pages_prepare() 
-down on the put_page() codepath -- while isolate_migratepages_range() performs
-its loop in the (lru) unlocked case.
-
-Although harmless, IMO, as we only go for the isolation step if we hold the
-lru lock (and the check is re-done under lock safety) this is an
-annoying thing we have to get rid of to not defeat the purpose of having
-the kasan in place.
-
- 
-> I guess this could be fixed with something like following (completely
-> untested) patch:
->
-Despite not having it tested, as well: yes, I belive this should be the way 
-to sort out that warning, for the aforementioned unlocked iteration case of
-isolate_migratepages_range(). 
- 
-> --- a/include/linux/balloon_compaction.h
-> +++ b/include/linux/balloon_compaction.h
-> @@ -127,7 +127,7 @@ static inline bool page_flags_cleared(struct page *page)
->   */
->  static inline bool __is_movable_balloon_page(struct page *page)
->  {
-> -       struct address_space *mapping = page->mapping;
-> +       struct address_space *mapping = page_mapping(page);
->         return mapping_balloon(mapping);
->  }
-> 
-
-Please, keep me in the loop if things don't settle properly.
-
-Cheers,
--- Rafael
