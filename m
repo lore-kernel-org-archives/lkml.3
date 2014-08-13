@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612AbaHMCAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 22:00:44 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:63386 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849AbaHMCAn (ORCPT
+	id S1753890AbaHMCAt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 22:00:49 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:44627 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753655AbaHMCAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 22:00:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAEJHKkV+DztXiJtPc41m=f1vJG26AoWGd+dinCQhJ77bVY=D0Q@mail.gmail.com>
-References: <CAEJHKkV+DztXiJtPc41m=f1vJG26AoWGd+dinCQhJ77bVY=D0Q@mail.gmail.com>
-Date: Wed, 13 Aug 2014 02:00:42 +0000
-Message-ID: <CAEJHKkVFsw+TUMUU6bHi=+295gNdFpY-ukCs-AyvMNKFAxuoBA@mail.gmail.com>
-Subject: tvtuner pixelview B1000
-From: basteon <basteon@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Aug 2014 22:00:46 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-6d-53eac6c6d7c7
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Minchan Kim'" <minchan@kernel.org>
+Cc: ngupta@vflare.org, linux-kernel@vger.kernel.org,
+        "'Jerome Marchand'" <jmarchan@redhat.com>,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+References: <000001cfb53f$d63b6ea0$82b24be0$@samsung.com>
+ <20140812073740.GA9227@bbox>
+In-reply-to: <20140812073740.GA9227@bbox>
+Subject: RE: [PATCH] zram: fix incorrectly stat with failed_reads
+Date: Wed, 13 Aug 2014 09:59:17 +0800
+Message-id: <008f01cfb69a$60a5c850$21f158f0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQF4FQUURvVmlZfToiq37apX9RhKNwG2iExAnG9SahA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t9jAd1jx14FG7x6KWgxZ/0aNotTf64z
+	WVzeNYfNYtnX9+wWG1pmsVus/fyY3YHNY+esu+wem1Z1snmcmPGbxeP9vqtAsU+bWT0+b5IL
+	YIvisklJzcksSy3St0vgyli09ylrwSS+ijMndrM2MM7g6mLk5JAQMJGYffsoO4QtJnHh3nq2
+	LkYuDiGBRYwSC5/+ZYZwfjBKNE94wgZSxSagIrG84z8TiC0ioCax7uALFpAiZoEjjBItfw+D
+	jRISiJC4fGQ2UBEHB6eApsSsLTUgYWEBR4mdB26wgoRZBFQlFp/PBjF5BSwlfs6oBangFRCU
+	+DH5HguIzSygLjFp3iJmCFteYvOat8wQdypI7Dj7mhHiAiuJ5/d+MELUiEtsPHKLZQKj0Cwk
+	o2YhGTULyahZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOlWdSOxhXNlgcYhTg
+	YFTi4a3gfRUsxJpYVlyZe4hRgoNZSYTXYQtQiDclsbIqtSg/vqg0J7X4EKM0B4uSOO+BVutA
+	IYH0xJLU7NTUgtQimCwTB6dUA+PCFvYnnRey91bdaPIQ2qW3XZr1giLD8SOS7xRNP5TuteZ6
+	93eDQ3nnYUf9adGpIqFvVn6suHDZwTBEr8/sQfsx/52rr6nm1CSwKwWrMdWLbHmn/z2urU/y
+	/e7NDjYn9q97x8F+OF1546qKPP7Qd8lyzOcTHbIK99g7Lp7/s+TyoRzBLQ+m3VBiKc5INNRi
+	LipOBABvVSy9kQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hello.
+Hi Minchan,
 
-I have pixelview B1000 card and this card won't work with assigned
-modules cx8800, cx8802.
+> -----Original Message-----
+> From: Minchan Kim [mailto:minchan@kernel.org]
+> Sent: Tuesday, August 12, 2014 3:38 PM
+> To: Chao Yu
+> Cc: ngupta@vflare.org; linux-kernel@vger.kernel.org; Jerome Marchand; Sergey Senozhatsky;
+> Andrew Morton
+> Subject: Re: [PATCH] zram: fix incorrectly stat with failed_reads
+> 
+> On Mon, Aug 11, 2014 at 04:39:17PM +0800, Chao Yu wrote:
+> > Since we allocate a temporary buffer in zram_bvec_read to handle partial page
+> > operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
+> > zram: allow partial page operations), our ->failed_reads value may be incorrect
+> > as we do not increase its value when failed to allocate the temporary buffer.
+> >
+> > Let's fix this issue and correct the annotation of failed_reads.
 
-May be I'm use wrong modules or cardid prefix:
-1554:4952, board: PixelView [card=3...
+[snip]
 
-# /usr/bin/tvtime-scanner
-Reading configuration from /etc/tvtime/tvtime.xml
-Scanning using TV standard NTSC.
-Scanning from  44.00 MHz to 958.00 MHz.
-MHz:  - No signal
+> How abouting moving failed_reads/writes in zram_bvec_rw?
+> 
+> int zram_bvec_rw(..)
+> {
+>         if (rw == READ) {
+>                 atomic64_inc(num_reads);
+>                 ret = zram_bvec_read(xxx);
+>         } else {
+>                 atomic64_inc(&num_writes);
+>                 ret = zram_bvec_write(xxx);
+>         }
+> 
+>         if (unlikely(ret)) {
+>                 if (rw == READ)
+>                         atomic64_inc(failed_reads);
+>                 else
+>                         atomic64_inc(failed_writes);
+>         }
+> }
 
-===============================
-01:06.0 Multimedia video controller: Conexant Systems, Inc.
-CX23880/1/2/3 PCI Video and Audio Decoder (rev 05)
-	Subsystem: PROLINK Microsystems Corp Device 4952
-	Flags: bus master, medium devsel, latency 32, IRQ 10
-	Memory at fd000000 (32-bit, non-prefetchable) [size=16M]
-	Capabilities: [44] Vital Product Data
-	Capabilities: [4c] Power Management version 2
-	Kernel modules: cx8800
+I will send a v2 patch base on above codes of yours, please help to review the
+following new patch.
 
-01:06.1 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3
-PCI Video and Audio Decoder [Audio Port] (rev 05)
-	Subsystem: PROLINK Microsystems Corp Device 4952
-	Flags: bus master, medium devsel, latency 32, IRQ 10
-	Memory at fc000000 (32-bit, non-prefetchable) [size=16M]
-	Capabilities: [4c] Power Management version 2
-	Kernel modules: cx88-alsa
+> 
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> --
+> Kind regards,
+> Minchan Kim
 
-01:06.2 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3
-PCI Video and Audio Decoder [MPEG Port] (rev 05)
-	Subsystem: PROLINK Microsystems Corp Device 4952
-	Flags: bus master, medium devsel, latency 32, IRQ 10
-	Memory at fb000000 (32-bit, non-prefetchable) [size=16M]
-	Capabilities: [4c] Power Management version 2
-	Kernel modules: cx8802
-
-===============================
-[18334.495349] Linux video capture interface: v2.00
-[18334.603004] IR NEC protocol handler initialized
-[18334.614074] cx88/2: cx2388x MPEG-TS Driver Manager version 0.0.8 loaded
-[18334.618258] cx88[0]: subsystem: 1554:4952, board: PixelView
-[card=3,autodetected], frontend(s): 0
-[18334.618263] cx88[0]: TV tuner type 5, Radio tuner type -1
-[18334.628915] IR RC5(x) protocol handler initialized
-[18334.660809] IR RC6 protocol handler initialized
-[18334.687047] IR JVC protocol handler initialized
-[18334.714899] IR Sony protocol handler initialized
-[18334.754031] lirc_dev: IR Remote Control driver registered, major 252
-[18334.764669] IR LIRC bridge handler initialized
-[18334.850358] cx88[0]/2: cx2388x 8802 Driver Manager
-[18343.108212] cx88/0: cx2388x v4l2 driver version 0.0.8 loaded
-[18343.108317] cx8800 0000:01:06.0: PCI INT A -> GSI 20 (level, low) -> IRQ 20
-[18343.112467] cx88[0]: subsystem: 1554:4952, board: PixelView
-[card=3,autodetected], frontend(s): 0
-[18343.112473] cx88[0]: TV tuner type 5, Radio tuner type -1
-[18343.312410] cx88[0]/0: found at 0000:01:06.0, rev: 5, irq: 20,
-latency: 32, mmio: 0xfd000000
-[18343.316831] cx88[0]/0: registered device video0 [v4l2]
-[18343.326623] cx88[0]/0: registered device vbi0
-[18343.333136] cx88[0]/0: registered device radio0
