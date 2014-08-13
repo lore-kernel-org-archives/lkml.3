@@ -1,159 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbaHMOwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:52:04 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:38708 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaHMOwC (ORCPT
+	id S1753136AbaHMOxz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:53:55 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:43505 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557AbaHMOxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:52:02 -0400
+	Wed, 13 Aug 2014 10:53:53 -0400
+Message-ID: <53EB7BF7.1080702@linaro.org>
+Date: Wed, 13 Aug 2014 15:53:43 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <20140813141413.GA1091@swordfish>
-References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
- <1407225723-23754-2-git-send-email-minchan@kernel.org> <CALZtONDmvLDtceVW9AyiDwdSHQzPbay36JEts8iuZ4nvykWfeA@mail.gmail.com>
- <20140813141413.GA1091@swordfish>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Wed, 13 Aug 2014 10:51:40 -0400
-X-Google-Sender-Auth: 7h5Ms4qS-Qn4opyevRL_14mC7-M
-Message-ID: <CALZtONDgYRUwrsN_G7pds2QY6QTOr8G8jAHa6Zta2XDhDHV8_A@mail.gmail.com>
-Subject: Re: [RFC 1/3] zsmalloc: move pages_allocated to zs_pool
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Content-Type: text/plain; charset=UTF-8
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Jason Cooper <jason@lakedaemon.net>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call into
+ scheduler
+References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org> <20140813142257.GK30401@n2100.arm.linux.org.uk>
+In-Reply-To: <20140813142257.GK30401@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 10:14 AM, Sergey Senozhatsky
-<sergey.senozhatsky@gmail.com> wrote:
-> On (08/13/14 09:59), Dan Streetman wrote:
->> On Tue, Aug 5, 2014 at 4:02 AM, Minchan Kim <minchan@kernel.org> wrote:
->> > Pages_allocated has counted in size_class structure and when user
->> > want to see total_size_bytes, it gathers all of value from each
->> > size_class to report the sum.
->> >
->> > It's not bad if user don't see the value often but if user start
->> > to see the value frequently, it would be not a good deal for
->> > performance POV.
->> >
->> > This patch moves the variable from size_class to zs_pool so it would
->> > reduce memory footprint (from [255 * 8byte] to [sizeof(atomic_t)])
->> > but it adds new locking overhead but it wouldn't be severe because
->> > it's not a hot path in zs_malloc(ie, it is called only when new
->> > zspage is created, not a object).
->>
->> Would using an atomic64_t without locking be simpler?
->
-> it would be racy.
+On 13/08/14 15:22, Russell King - ARM Linux wrote:
+> On Wed, Aug 13, 2014 at 06:57:18AM -0700, Stephen Boyd wrote:
+>> Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
+>> 2012-04-12) introduced an acquisition of the irq_controller_lock
+>> in gic_raise_softirq() which can lead to a spinlock recursion if
+>> the gic_arch_extn hooks call into the scheduler (via complete()
+>> or wake_up(), etc.). This happens because gic_arch_extn hooks are
+>> normally called with the irq_controller_lock held and calling
+>> into the scheduler may cause us to call smp_send_reschedule()
+>> which will grab the irq_controller_lock again. Here's an example
+>> from a vendor kernel (note that the gic_arch_extn hook code here
+>> isn't actually in mainline):
+> 
+> Here's a question: why would you want to call into the scheduler from
+> the gic_arch_extn code?
+> 
+> Oh.  My.  God.  Thomas, what have you done to the generic IRQ layer?
+> This is /totally/ unsafe:
+> 
+> void disable_irq(unsigned int irq)
+> {
+>         if (!__disable_irq_nosync(irq))
+>                 synchronize_irq(irq);
+> }
+> 
+> static int __disable_irq_nosync(unsigned int irq)
+> {
+>         unsigned long flags;
+>         struct irq_desc *desc = irq_get_desc_buslock(irq, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
 
-oh.  atomic operations aren't smp safe?  is that because other
-processors might use a stale value, and barriers must be added?  I
-guess I don't quite understand the value of atomic then. :-/
+irq_get_desc_buslock() results in us owning the descriptor's lock
+(raw_spinlock_t).
 
->
->         -ss
->
->>
->> >
->> > Signed-off-by: Minchan Kim <minchan@kernel.org>
->> > ---
->> >  mm/zsmalloc.c | 30 ++++++++++++++++--------------
->> >  1 file changed, 16 insertions(+), 14 deletions(-)
->> >
->> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
->> > index fe78189624cf..a6089bd26621 100644
->> > --- a/mm/zsmalloc.c
->> > +++ b/mm/zsmalloc.c
->> > @@ -198,9 +198,6 @@ struct size_class {
->> >
->> >         spinlock_t lock;
->> >
->> > -       /* stats */
->> > -       u64 pages_allocated;
->> > -
->> >         struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
->> >  };
->> >
->> > @@ -216,9 +213,12 @@ struct link_free {
->> >  };
->> >
->> >  struct zs_pool {
->> > +       spinlock_t stat_lock;
->> > +
->> >         struct size_class size_class[ZS_SIZE_CLASSES];
->> >
->> >         gfp_t flags;    /* allocation flags used when growing pool */
->> > +       unsigned long pages_allocated;
->> >  };
->> >
->> >  /*
->> > @@ -882,6 +882,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
->> >
->> >         }
->> >
->> > +       spin_lock_init(&pool->stat_lock);
->> >         pool->flags = flags;
->> >
->> >         return pool;
->> > @@ -943,8 +944,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
->> >                         return 0;
->> >
->> >                 set_zspage_mapping(first_page, class->index, ZS_EMPTY);
->> > +               spin_lock(&pool->stat_lock);
->> > +               pool->pages_allocated += class->pages_per_zspage;
->> > +               spin_unlock(&pool->stat_lock);
->> >                 spin_lock(&class->lock);
->> > -               class->pages_allocated += class->pages_per_zspage;
->> >         }
->> >
->> >         obj = (unsigned long)first_page->freelist;
->> > @@ -997,14 +1000,14 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
->> >
->> >         first_page->inuse--;
->> >         fullness = fix_fullness_group(pool, first_page);
->> > -
->> > -       if (fullness == ZS_EMPTY)
->> > -               class->pages_allocated -= class->pages_per_zspage;
->> > -
->> >         spin_unlock(&class->lock);
->> >
->> > -       if (fullness == ZS_EMPTY)
->> > +       if (fullness == ZS_EMPTY) {
->> > +               spin_lock(&pool->stat_lock);
->> > +               pool->pages_allocated -= class->pages_per_zspage;
->> > +               spin_unlock(&pool->stat_lock);
->> >                 free_zspage(first_page);
->> > +       }
->> >  }
->> >  EXPORT_SYMBOL_GPL(zs_free);
->> >
->> > @@ -1100,12 +1103,11 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
->> >
->> >  u64 zs_get_total_size_bytes(struct zs_pool *pool)
->> >  {
->> > -       int i;
->> > -       u64 npages = 0;
->> > -
->> > -       for (i = 0; i < ZS_SIZE_CLASSES; i++)
->> > -               npages += pool->size_class[i].pages_allocated;
->> > +       u64 npages;
->> >
->> > +       spin_lock(&pool->stat_lock);
->> > +       npages = pool->pages_allocated;
->> > +       spin_unlock(&pool->stat_lock);
->> >         return npages << PAGE_SHIFT;
->> >  }
->> >  EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
->> > --
->> > 2.0.0
->> >
->> > --
->> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> > the body to majordomo@kvack.org.  For more info on Linux MM,
->> > see: http://www.linux-mm.org/ .
->> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>
+> 
+>         if (!desc)
+>                 return -EINVAL;
+>         __disable_irq(desc, irq, false);
+>         irq_put_desc_busunlock(desc, flags);
+>         return 0;
+> }
+> 
+> void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
+> {
+>         if (suspend) {
+>                 if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND))
+>                         return;
+>                 desc->istate |= IRQS_SUSPENDED;
+>         }
+> 
+>         if (!desc->depth++)
+>                 irq_disable(desc);
+> }
+> 
+> You realise that disable_irq() and enable_irq() can be called by
+> concurrently by different drivers for the /same/ interrupt.  For
+> starters, that post-increment there is completely unprotected against
+> races.  Secondly, the above is completely racy against a concurrent
+> enable_irq() - what if we're in disable_irq(), we've incremented
+> depth, but have yet to call irq_disable().  The count now has a
+> value of 1.
+> 
+> We then preempt, and run another thread which calls enable_irq()
+> on it.  This results in the depth being decremented, and the IRQ
+> is now enabled.
+
+We shouldn't get that far due to the spinlock taken during the disable.
+
+
+> We resume the original thread, and continue to call irq_disable(),
+> resulting in the interrupt being disabled.
+> 
+> That's not nice (the right answer is that it's strictly an unbalanced
+> enable_irq(), but that's no excuse here.)
+> 
+
