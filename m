@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412AbaHMCDp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 22:03:45 -0400
-Received: from sauhun.de ([89.238.76.85]:58046 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862AbaHMCDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 22:03:44 -0400
-Date: Tue, 12 Aug 2014 21:03:07 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Lan Tianyu <tianyu.lan@intel.com>, torvalds@linux-foundation.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] I2C: Make I2C core able to be module when I2C_ACPI is
- selected.
-Message-ID: <20140813020250.GA2853@katana>
-References: <1407740455-21269-1-git-send-email-tianyu.lan@intel.com>
- <20140812095321.GU1657@lahna.fi.intel.com>
+	id S1754550AbaHMCEV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 22:04:21 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:36959 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753540AbaHMCET (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Aug 2014 22:04:19 -0400
+Message-ID: <53EAC79F.4050705@gmail.com>
+Date: Wed, 13 Aug 2014 04:04:15 +0200
+From: Mario Kleiner <mario.kleiner.de@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cNdxnHkX5QqsyA0e"
-Content-Disposition: inline
-In-Reply-To: <20140812095321.GU1657@lahna.fi.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?windows-1252?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
+        Jerome Glisse <j.glisse@gmail.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, kamal@canonical.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@redhat.com>, ben@decadent.org.uk,
+        m.szyprowski@samsung.com
+Subject: Re: CONFIG_DMA_CMA causes ttm performance problems/hangs.
+References: <53E50C1B.9080507@gmail.com> <53E5B41B.3030009@vmware.com> <60bd3db2-4919-40c4-a4ff-1b7b043cadfc@email.android.com> <53E628FE.10808@vmware.com> <53E6E2CE.8070005@gmail.com> <53E75192.3070003@vmware.com> <53E7B39D.2060900@gmail.com> <53E896C9.5010501@vmware.com> <20140811151712.GA3541@gmail.com> <53EAC461.2060503@daenzer.net>
+In-Reply-To: <53EAC461.2060503@daenzer.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/13/2014 03:50 AM, Michel Dänzer wrote:
+> On 12.08.2014 00:17, Jerome Glisse wrote:
+>> On Mon, Aug 11, 2014 at 12:11:21PM +0200, Thomas Hellstrom wrote:
+>>> On 08/10/2014 08:02 PM, Mario Kleiner wrote:
+>>>> On 08/10/2014 01:03 PM, Thomas Hellstrom wrote:
+>>>>> On 08/10/2014 05:11 AM, Mario Kleiner wrote:
+>>>>>> The other problem is that probably TTM does not reuse pages from the
+>>>>>> DMA pool. If i trace the __ttm_dma_alloc_page
+>>>>>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__ttm_dma_alloc_page&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=7898522bba274e4dcc332735fbcf0c96e48918f60c2ee8e9a3e9c73ab3487bd0>
+>>>>>> and
+>>>>>> __ttm_dma_free_page
+>>>>>> <https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/ident?i%3D__ttm_dma_alloc_page&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=7898522bba274e4dcc332735fbcf0c96e48918f60c2ee8e9a3e9c73ab3487bd0>
+>>>>>> calls for
+>>>>>> those single page allocs/frees, then over a 20 second interval of
+>>>>>> tracing and switching tabs in firefox, scrolling things around etc. i
+>>>>>> find about as many alloc's as i find free's, e.g., 1607 allocs vs.
+>>>>>> 1648 frees.
+>>>>> This is because historically the pools have been designed to keep only
+>>>>> pages with nonstandard caching attributes since changing page caching
+>>>>> attributes have been very slow but the kernel page allocators have been
+>>>>> reasonably fast.
+>>>>>
+>>>>> /Thomas
+>>>> Ok. A bit more ftraceing showed my hang problem case goes through the
+>>>> "if (is_cached)" paths, so the pool doesn't recycle anything and i see
+>>>> it bouncing up and down by 4 pages all the time.
+>>>>
+>>>> But for the non-cached case, which i don't hit with my problem, could
+>>>> one of you look at line 954...
+>>>>
+>>>> https://urldefense.proofpoint.com/v1/url?u=http://lxr.free-electrons.com/source/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c%23L954&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=l5Ago9ekmVFZ3c4M6eauqrJWGwjf6fTb%2BP3CxbBFkVM%3D%0A&m=QQSN6uVpEiw6RuWLAfK%2FKWBFV5HspJUfDh4Y2mUz%2FH4%3D%0A&s=e15c51805d429ee6d8960d6b88035e9811a1cdbfbf13168eec2fbb2214b99c60
+>>>>
+>>>>
+>>>> ... and tell me why that unconditional npages = count; assignment
+>>>> makes sense? It seems to essentially disable all recycling for the dma
+>>>> pool whenever the pool isn't filled up to/beyond its maximum with free
+>>>> pages? When the pool is filled up, lots of stuff is recycled, but when
+>>>> it is already somewhat below capacity, it gets "punished" by not
+>>>> getting refilled? I'd just like to understand the logic behind that line.
+>>>>
+>>>> thanks,
+>>>> -mario
+>>> I'll happily forward that question to Konrad who wrote the code (or it
+>>> may even stem from the ordinary page pool code which IIRC has Dave
+>>> Airlie / Jerome Glisse as authors)
+>> This is effectively bogus code, i now wonder how it came to stay alive.
+>> Attached patch will fix that.
+> I haven't tested Mario's scenario specifically, but it survived piglit
+> and the UE4 Effects Cave Demo (for which 1GB of VRAM isn't enough, so
+> some BOs ended up in GTT instead with write-combined CPU mappings) on
+> radeonsi without any noticeable issues.
+>
+> Tested-by: Michel Dänzer <michel.daenzer@amd.com>
+>
+>
 
---cNdxnHkX5QqsyA0e
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I haven't tested the patch yet. For the original bug it won't help 
+directly, because the super-slow allocations which cause the desktop 
+stall are tt_cached allocations, so they go through the if (is_cached) 
+code path which isn't improved by Jerome's patch. is_cached always 
+releases memory immediately, so the tt_cached pool just bounces up and 
+down between 4 and 7 pages. So this was an independent issue. The slow 
+allocations i noticed were mostly caused by exa allocating new gem bo's, 
+i don't know which path is taken by 3d graphics?
 
-On Tue, Aug 12, 2014 at 12:53:21PM +0300, Mika Westerberg wrote:
-> On Mon, Aug 11, 2014 at 03:00:55PM +0800, Lan Tianyu wrote:
-> > Commit da3c6647(I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI
-> > config) adds a new kernel config I2C_ACPI and make I2C core built in
-> > when the config is selected. This is wrong because distributions
-> > etc generally compile I2C as a module and the commit broken that.
-> > This patch is to make I2C core able to be a module when I2C_ACPI is
-> > selected. Original issue the commit da3c6647 tried to avoid will
-> > be fixed in ACPICA and it's rarely triggered during unloading module.=
-=20
-> >=20
-> > Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
->=20
-> I wonder if we can do
->=20
-> 	depends on I2C=3Dy
->=20
-> here? If I understand it right, then we only build the ACPI_I2C if I2C
-> is compiled into the kernel. That way the problem da3c6647 tried to
-> solve doens't re-appear.
->=20
-> We can later on relax this once ACPICA has been fixed. Thoughts?
+However, the fixed ttm path could indirectly solve the DMA_CMA stalls by 
+completely killing CMA for its intended purpose. Typical CMA sizes are 
+probably around < 100 MB (kernel default is 16 MB, Ubuntu config is 64 
+MB), and the limit for the page pool seems to be more like 50% of all 
+system RAM? Iow. if the ttm dma pool is allowed to grow that big with 
+recycled pages, it probably will almost completely monopolize the whole 
+CMA memory after a short amount of time. ttm won't suffer stalls if it 
+essentially doesn't interact with CMA anymore after a warmup period, but 
+actual clients which really need CMA (ie., hardware without 
+scatter-gather dma etc.) will be starved of what they need as far as my 
+limited understanding of the CMA goes.
 
-I had the same idea yet my travel to Chicago interrupted thinking about
-it further. Once I get rid of my jetlag, I'll have a closer look. Unless
-you already came up with the perfect solution until then, of course ;)
+So fwiw probably the fix to ttm will increase the urgency for the CMA 
+people to come up with a fix/optimization for the allocator. Unless it 
+doesn't matter if most desktop systems have CMA disabled by default, and 
+ttm is mostly used by desktop graphics drivers (nouveau, radeon, vmgfx)? 
+I only stumbled over the problem because the Ubuntu 3.16 mainline 
+testing kernels are compiled with CMA on.
 
+-mario
 
---cNdxnHkX5QqsyA0e
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT6sdKAAoJEBQN5MwUoCm2viUP/iE7LDDK53fdD+K1QXtQqfgh
-qOwuE7SMMDfd3LEx59xT89qersLFIFQkxOY7V2gWywDo7yHspyzDl7mSWVFVFplp
-JlZyTuswGE+QieDFKMLTccmtQJNBN+o1UXadk+QRy0NmEQ0sJbKjl0YZdPhcdDrx
-+qGscfxizoeMcOTBwYo9O7V8CcoAIVZLdroF/SHi0FZnpZNqokDvrpbFJeTi4iPc
-V4OZYIoc507JqZPIWxl8gSckh0yBw03DAsG68ejuhuLE1wMj2ZY1G1VkCHd880ED
-giQrMt4Ia9+vLNtMfslGg7bSdxuFr9oBO9CxneteCQeiKAvuoPiuSiq+Y64GgjJm
-3vXOqT08/v00wYikWq7431uDgo9dpx5SobfnyhbYuQUYJ0oaQiQFEe2NnrNxE2wM
-S0+jFPZZ0kcD5JHnIbu85KWXlDiOuMjq/6l0quiMBVHW7uuAcVEKE/eOvzePtX7V
-BKsn5Qti0bFfJhBVNGCcp2QZdhz+4KkaVMuNMiuly8Y6SW3HMABjuHel7EKxDmda
-Yzle17bgRiR9mV+cLZxYsG7ME0P56gxme4Dz+7ieX2banci4qqDCHCdGCzwMhcKN
-Oh2gghHPn7KNHvHf/jG6btajqvoKH8nbdvjx2HLR86bdoKzXJLWxJIC/7mx7XlcY
-3mVc8MNsPYkryxfTE+2y
-=thib
------END PGP SIGNATURE-----
-
---cNdxnHkX5QqsyA0e--
