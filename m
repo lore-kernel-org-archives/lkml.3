@@ -1,112 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbaHMLy2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 07:54:28 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:53784 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751AbaHMLy0 (ORCPT
+	id S1752789AbaHMLzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 07:55:00 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:28262 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaHMLy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 07:54:26 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: Anirudha Sarangi <anirudh@xilinx.com>, John Linn <John.Linn@xilinx.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>,
-        Joe Perches <joe@perches.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Ricardo Ribalda <ricardo.ribalda@gmail.com>,
-        Libo Chen <libo.chen@huawei.com>,
-        Srikanth Thokala <sthokal@xilinx.com>,
-        Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] net: xilinx: Remove .owner field for driver
-Date: Wed, 13 Aug 2014 13:54:22 +0200
-Message-Id: <a63aa03f310bb32779833fc905579458a34be6ce.1407930852.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-19377-1407930862-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Wed, 13 Aug 2014 07:54:58 -0400
+X-AuditID: cbfee68e-b7fab6d000004d4a-9f-53eb52108073
+Date: Wed, 13 Aug 2014 20:54:56 +0900
+From: Inha Song <ideal.song@samsung.com>
+To: broonie@kernel.org
+Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, lee.jones@linaro.org,
+        ckeepax@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
+        sameo@linux.intel.com, devicetree@vger.kernel.org,
+        galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
+        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
+        cw00.choi@samsung.com
+Subject: [alsa-devel] [PATCH v2 2/2] mfd: arizona: Update DT binding to support
+ INn_MODE init_data
+Message-id: <20140813205456.636abc68@songinha-Samsung-DeskTop-System>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsWyRsSkSFcg6HWwwYTzBhZXLh5ispj68Amb
+	xb8pN9gtrn95zmox/8g5Vov+NwtZLc69Wslocf/rUUaLb1c6mCwu75rDZrH0+kUmi+Vv/7NZ
+	TJi+lsWide8RdovT3awO/B4bPjexeayZt4bR43JfL5PHzll32T1WLv/C5rFpVSebx51re9g8
+	5p0M9Hg58TebR9+WVYwenzfJBXBHcdmkpOZklqUW6dslcGVs3CZSMJ+74sWrduYGxumcXYyc
+	HBICJhLbXu5jhrDFJC7cW8/WxcjFISSwlFFi+ooHrDBFT/ffY4VITGeU+PvqKBNIQkign0li
+	wj+3LkYODhYBVYm9LWEgYTYBDYnvnzeDDRUBGnp7TiczSC+zwE8mieYVT8ASwgIpErM+HAKb
+	wyvgKnFr6ndGiGU2Eqt3rmOGiAtK/Jh8jwXEZhbQkti8rYkVwpaX2LzmLdTVMzkkvv3SBrFZ
+	BAQkvk0+xAJyj4SArMSmA1AlkhIHV9xgmcAoMgvJ1FlIps5CMnUBI/MqRtHUguSC4qT0IiO9
+	4sTc4tK8dL3k/NxNjMBYPv3vWd8OxpsHrA8xJgOtnMgsJZqcD0wFeSXxhsZmRhamJqbGRuaW
+	ZqQJK4nzLnqYFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBcX7tBbXe9StPPYto/rPaJuNa
+	vdQ5Xabwlc9+GDNv0mdkua114Tprt4Cz1vstsSLsVT/Vdz/Wm/zn5s2gk8pPM8q9p7ivDVxs
+	sN7L/dLtxR4S/5KXbJ26+EJL0+0DnWeb7xWttsz+dc86VfL5nO6iLR4vejs0Z4lN2Gm3+Ont
+	RPHKjMlK6luCWpVYijMSDbWYi4oTAUUQpDn7AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jQV2BoNfBBs9aNCyuXDzEZDH14RM2
+	i39TbrBbXP/ynNVi/pFzrBb9bxayWpx7tZLR4v7Xo4wW3650MFlc3jWHzWLp9YtMFsvf/mez
+	mDB9LYtF694j7Banu1kd+D02fG5i81gzbw2jx+W+XiaPnbPusnusXP6FzWPTqk42jzvX9rB5
+	zDsZ6PFy4m82j74tqxg9Pm+SC+COamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0
+	MFdSyEvMTbVVcvEJ0HXLzAH6RUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpI
+	WMOYsXGbSMF87ooXr9qZGxinc3YxcnJICJhIPN1/jxXCFpO4cG89WxcjF4eQwHRGib+vjjKB
+	JIQE+pkkJvxz62Lk4GARUJXY2xIGEmYT0JD4/nkzM4gtAtR7e04nM0gvs8BPJonmFU/AEsIC
+	KRKzPhwCm8Mr4Cpxa+p3RohlNhKrd65jhogLSvyYfI8FxGYW0JLYvK2JFcKWl9i85i3zBEa+
+	WUjKZiEpm4WkbAEj8ypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4FTxTHoH46oGi0OMAhyM
+	Sjy8O1xfBQuxJpYVV+YeYpTgYFYS4T1s8zpYiDclsbIqtSg/vqg0J7X4EKMp0NcTmaVEk/OB
+	aSyvJN7Q2MTMyNLI3NDCyNhcSZz3YKt1oJBAemJJanZqakFqEUwfEwenVANj18rJeqXHgzRS
+	/HektfzNqizjPmS+MWdZ7FnRNW+CTu5PYjrN4Ls7uOqBVeZublblR+WXjNVyMjdt2BLt6cEX
+	67f60AeFS/ukj+XdffQ/okklTz7CWH1x6IcfS9nMMr7uaL59Sfac/rfJ5v/+nN0gstSs6BXf
+	szVdy0I7ZIS/cL5fGhMnWLZKiaU4I9FQi7moOBEAB830ECsDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+This patch update DT binding to support INn_MODE init_data. Each
+input signal path can be configurated either as a Analogue or
+Digital using the INn_MODE registers.
 
---=_mimegpg-monstr-desktop-19377-1407930862-0001
-
-There is no need to init .owner field.
-
-Based on the patch from Peter Griffin <peter.griffin@linaro.org>
-"mmc: remove .owner field for drivers using module_platform_driver"
-
-This patch removes the superflous .owner field for drivers which
-use the module_platform_driver API, as this is overriden in
-platform_driver_register anyway."
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Signed-off-by: Inha Song <ideal.song@samsung.com>
 ---
+ Documentation/devicetree/bindings/mfd/arizona.txt | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
- drivers/net/ethernet/xilinx/ll_temac_main.c       | 1 -
- drivers/net/ethernet/xilinx/xilinx_axienet_main.c | 1 -
- drivers/net/ethernet/xilinx/xilinx_emaclite.c     | 1 -
- 3 files changed, 3 deletions(-)
+diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+index 5c7e723..b8c131e 100644
+--- a/Documentation/devicetree/bindings/mfd/arizona.txt
++++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+@@ -42,6 +42,14 @@ Optional properties:
+     the chip default will be used.  If present exactly five values must
+     be specified.
+ 
++  - wlf,inmode : A list of INn_MODE register values, where n is the number
++    of input signal. Each input signal path can be configurated either as a
++    Analogue or Digital using the INn_MODE registers. If absent, INn_MODE
++    registers set to 0 by default. If present, values must be specified less
++    than or equal to the number of input singal. If values less than the
++    number of input signal, elements that has not been specifed are set to 0
++    by default.
++
+   - DCVDD-supply, MICVDD-supply : Power supplies, only need to be specified if
+     they are being externally supplied. As covered in
+     Documentation/devicetree/bindings/regulator/regulator.txt
+-- 
+2.0.0.390.gcb682f8
 
-diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
-index 8a6e5c2d6f95..b58442fd15fa 100644
---- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -1171,7 +1171,6 @@ static struct platform_driver temac_of_driver = {
- 	.probe = temac_of_probe,
- 	.remove = temac_of_remove,
- 	.driver = {
--		.owner = THIS_MODULE,
- 		.name = "xilinx_temac",
- 		.of_match_table = temac_of_match,
- 	},
-diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-index 7b0a73556264..30f133046914 100644
---- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-@@ -1646,7 +1646,6 @@ static struct platform_driver axienet_of_driver = {
- 	.probe = axienet_of_probe,
- 	.remove = axienet_of_remove,
- 	.driver = {
--		 .owner = THIS_MODULE,
- 		 .name = "xilinx_axienet",
- 		 .of_match_table = axienet_of_match,
- 	},
-diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-index 782bb9373cd8..28dbbdc393eb 100644
---- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-@@ -1245,7 +1245,6 @@ MODULE_DEVICE_TABLE(of, xemaclite_of_match);
- static struct platform_driver xemaclite_of_driver = {
- 	.driver = {
- 		.name = DRIVER_NAME,
--		.owner = THIS_MODULE,
- 		.of_match_table = xemaclite_of_match,
- 	},
- 	.probe		= xemaclite_of_probe,
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-19377-1407930862-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlPrUe4ACgkQykllyylKDCGzIACfehH8GwB6Hi7bxfrvTjG/NtJW
-c0sAnAxlo7X8nmHkfvEGt1DmZurqghR7
-=r+cZ
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-19377-1407930862-0001--
