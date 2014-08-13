@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789AbaHMLzA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 07:55:00 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:28262 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaHMLy6 (ORCPT
+	id S1752550AbaHML4e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 07:56:34 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:46981 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaHML4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 07:54:58 -0400
-X-AuditID: cbfee68e-b7fab6d000004d4a-9f-53eb52108073
-Date: Wed, 13 Aug 2014 20:54:56 +0900
-From: Inha Song <ideal.song@samsung.com>
-To: broonie@kernel.org
-Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org, lee.jones@linaro.org,
-        ckeepax@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
-        sameo@linux.intel.com, devicetree@vger.kernel.org,
-        galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
-        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
-        cw00.choi@samsung.com
-Subject: [alsa-devel] [PATCH v2 2/2] mfd: arizona: Update DT binding to support
- INn_MODE init_data
-Message-id: <20140813205456.636abc68@songinha-Samsung-DeskTop-System>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsWyRsSkSFcg6HWwwYTzBhZXLh5ispj68Amb
-	xb8pN9gtrn95zmox/8g5Vov+NwtZLc69Wslocf/rUUaLb1c6mCwu75rDZrH0+kUmi+Vv/7NZ
-	TJi+lsWide8RdovT3awO/B4bPjexeayZt4bR43JfL5PHzll32T1WLv/C5rFpVSebx51re9g8
-	5p0M9Hg58TebR9+WVYwenzfJBXBHcdmkpOZklqUW6dslcGVs3CZSMJ+74sWrduYGxumcXYyc
-	HBICJhLbXu5jhrDFJC7cW8/WxcjFISSwlFFi+ooHrDBFT/ffY4VITGeU+PvqKBNIQkign0li
-	wj+3LkYODhYBVYm9LWEgYTYBDYnvnzeDDRUBGnp7TiczSC+zwE8mieYVT8ASwgIpErM+HAKb
-	wyvgKnFr6ndGiGU2Eqt3rmOGiAtK/Jh8jwXEZhbQkti8rYkVwpaX2LzmLdTVMzkkvv3SBrFZ
-	BAQkvk0+xAJyj4SArMSmA1AlkhIHV9xgmcAoMgvJ1FlIps5CMnUBI/MqRtHUguSC4qT0IiO9
-	4sTc4tK8dL3k/NxNjMBYPv3vWd8OxpsHrA8xJgOtnMgsJZqcD0wFeSXxhsZmRhamJqbGRuaW
-	ZqQJK4nzLnqYFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBcX7tBbXe9StPPYto/rPaJuNa
-	vdQ5Xabwlc9+GDNv0mdkua114Tprt4Cz1vstsSLsVT/Vdz/Wm/zn5s2gk8pPM8q9p7ivDVxs
-	sN7L/dLtxR4S/5KXbJ26+EJL0+0DnWeb7xWttsz+dc86VfL5nO6iLR4vejs0Z4lN2Gm3+Ont
-	RPHKjMlK6luCWpVYijMSDbWYi4oTAUUQpDn7AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jQV2BoNfBBs9aNCyuXDzEZDH14RM2
-	i39TbrBbXP/ynNVi/pFzrBb9bxayWpx7tZLR4v7Xo4wW3650MFlc3jWHzWLp9YtMFsvf/mez
-	mDB9LYtF694j7Banu1kd+D02fG5i81gzbw2jx+W+XiaPnbPusnusXP6FzWPTqk42jzvX9rB5
-	zDsZ6PFy4m82j74tqxg9Pm+SC+COamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0
-	MFdSyEvMTbVVcvEJ0HXLzAH6RUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpI
-	WMOYsXGbSMF87ooXr9qZGxinc3YxcnJICJhIPN1/jxXCFpO4cG89WxcjF4eQwHRGib+vjjKB
-	JIQE+pkkJvxz62Lk4GARUJXY2xIGEmYT0JD4/nkzM4gtAtR7e04nM0gvs8BPJonmFU/AEsIC
-	KRKzPhwCm8Mr4Cpxa+p3RohlNhKrd65jhogLSvyYfI8FxGYW0JLYvK2JFcKWl9i85i3zBEa+
-	WUjKZiEpm4WkbAEj8ypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4FTxTHoH46oGi0OMAhyM
-	Sjy8O1xfBQuxJpYVV+YeYpTgYFYS4T1s8zpYiDclsbIqtSg/vqg0J7X4EKMp0NcTmaVEk/OB
-	aSyvJN7Q2MTMyNLI3NDCyNhcSZz3YKt1oJBAemJJanZqakFqEUwfEwenVANj18rJeqXHgzRS
-	/HektfzNqizjPmS+MWdZ7FnRNW+CTu5PYjrN4Ls7uOqBVeZublblR+WXjNVyMjdt2BLt6cEX
-	67f60AeFS/ukj+XdffQ/okklTz7CWH1x6IcfS9nMMr7uaL59Sfac/rfJ5v/+nN0gstSs6BXf
-	szVdy0I7ZIS/cL5fGhMnWLZKiaU4I9FQi7moOBEAB830ECsDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 13 Aug 2014 07:56:32 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Michael Ellerman <mpe@ellerman.id.au>, kvm-ppc@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] PC, KVM, CMA: Fix regression caused by wrong get_order() use
+In-Reply-To: <1407903739-7064-1-git-send-email-aik@ozlabs.ru>
+References: <1407903739-7064-1-git-send-email-aik@ozlabs.ru>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Wed, 13 Aug 2014 17:26:13 +0530
+Message-ID: <87mwb861sy.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081311-3568-0000-0000-00000011DBDF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch update DT binding to support INn_MODE init_data. Each
-input signal path can be configurated either as a Analogue or
-Digital using the INn_MODE registers.
+Alexey Kardashevskiy <aik@ozlabs.ru> writes:
 
-Signed-off-by: Inha Song <ideal.song@samsung.com>
----
- Documentation/devicetree/bindings/mfd/arizona.txt | 8 ++++++++
- 1 file changed, 8 insertions(+)
+> fc95ca7284bc54953165cba76c3228bd2cdb9591 claims that there is no
+> functional change but this is not true as it calls get_order() (which
+> takes bytes) where it should have called ilog2() and the kernel stops
+> on VM_BUG_ON().
+>
+> This replaces get_order() with ilog2().
 
-diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
-index 5c7e723..b8c131e 100644
---- a/Documentation/devicetree/bindings/mfd/arizona.txt
-+++ b/Documentation/devicetree/bindings/mfd/arizona.txt
-@@ -42,6 +42,14 @@ Optional properties:
-     the chip default will be used.  If present exactly five values must
-     be specified.
- 
-+  - wlf,inmode : A list of INn_MODE register values, where n is the number
-+    of input signal. Each input signal path can be configurated either as a
-+    Analogue or Digital using the INn_MODE registers. If absent, INn_MODE
-+    registers set to 0 by default. If present, values must be specified less
-+    than or equal to the number of input singal. If values less than the
-+    number of input signal, elements that has not been specifed are set to 0
-+    by default.
-+
-   - DCVDD-supply, MICVDD-supply : Power supplies, only need to be specified if
-     they are being externally supplied. As covered in
-     Documentation/devicetree/bindings/regulator/regulator.txt
--- 
-2.0.0.390.gcb682f8
+Should we round it up ? ie, ilog2(kvm_rma_pages - 1) + 1 ?
+
+>
+> Suggested-by: Paul Mackerras <paulus@samba.org>
+> Cc: Alexander Graf <agraf@suse.de>
+> Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: <stable@vger.kernel.org>
+
+Why stable ? We merged it this merge window.
+
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> ---
+>  arch/powerpc/kvm/book3s_hv_builtin.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/powerpc/kvm/book3s_hv_builtin.c b/arch/powerpc/kvm/book3s_hv_builtin.c
+> index 329d7fd..bfe9f01 100644
+> --- a/arch/powerpc/kvm/book3s_hv_builtin.c
+> +++ b/arch/powerpc/kvm/book3s_hv_builtin.c
+> @@ -101,7 +101,7 @@ struct kvm_rma_info *kvm_alloc_rma()
+>  	ri = kmalloc(sizeof(struct kvm_rma_info), GFP_KERNEL);
+>  	if (!ri)
+>  		return NULL;
+> -	page = cma_alloc(kvm_cma, kvm_rma_pages, get_order(kvm_rma_pages));
+> +	page = cma_alloc(kvm_cma, kvm_rma_pages, ilog2(kvm_rma_pages));
+>  	if (!page)
+>  		goto err_out;
+>  	atomic_set(&ri->use_count, 1);
+> @@ -135,12 +135,12 @@ struct page *kvm_alloc_hpt(unsigned long nr_pages)
+>  {
+>  	unsigned long align_pages = HPT_ALIGN_PAGES;
+>
+> -	VM_BUG_ON(get_order(nr_pages) < KVM_CMA_CHUNK_ORDER - PAGE_SHIFT);
+> +	VM_BUG_ON(ilog2(nr_pages) < KVM_CMA_CHUNK_ORDER - PAGE_SHIFT);
+>
+>  	/* Old CPUs require HPT aligned on a multiple of its size */
+>  	if (!cpu_has_feature(CPU_FTR_ARCH_206))
+>  		align_pages = nr_pages;
+> -	return cma_alloc(kvm_cma, nr_pages, get_order(align_pages));
+> +	return cma_alloc(kvm_cma, nr_pages, ilog2(align_pages));
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_alloc_hpt);
+>
+> -- 
+> 2.0.0
 
