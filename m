@@ -1,80 +1,492 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636AbaHMK4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 06:56:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43970 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968AbaHMK4d (ORCPT
+	id S1752686AbaHMK4k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 06:56:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53303 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646AbaHMK4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 06:56:33 -0400
-Date: Wed, 13 Aug 2014 12:56:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v5 tip/core/rcu 14/16] rcu: Remove redundant
- preempt_disable() from rcu_note_voluntary_context_switch()
-Message-ID: <20140813105618.GI9918@twins.programming.kicks-ass.net>
-References: <20140811224840.GA25594@linux.vnet.ibm.com>
- <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1407797345-28227-14-git-send-email-paulmck@linux.vnet.ibm.com>
+	Wed, 13 Aug 2014 06:56:37 -0400
+Date: Wed, 13 Aug 2014 03:55:31 -0700
+From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
+Message-ID: <tip-76916515d9d84e6552ee5e218e0ed566ad75e600@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, jason.low2@hp.com,
+        tglx@linutronix.de, davidlohr@hp.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, jason.low2@hp.com,
+        tglx@linutronix.de, davidlohr@hp.com
+In-Reply-To: <1406752916-3341-4-git-send-email-davidlohr@hp.com>
+References: <1406752916-3341-4-git-send-email-davidlohr@hp.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:locking/core] locking/mutexes:
+  Refactor optimistic spinning code
+Git-Commit-ID: 76916515d9d84e6552ee5e218e0ed566ad75e600
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eZF+V2/LE/RsbcQg"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1407797345-28227-14-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  76916515d9d84e6552ee5e218e0ed566ad75e600
+Gitweb:     http://git.kernel.org/tip/76916515d9d84e6552ee5e218e0ed566ad75e600
+Author:     Davidlohr Bueso <davidlohr@hp.com>
+AuthorDate: Wed, 30 Jul 2014 13:41:53 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 13 Aug 2014 10:32:01 +0200
 
---eZF+V2/LE/RsbcQg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+locking/mutexes: Refactor optimistic spinning code
 
-On Mon, Aug 11, 2014 at 03:49:03PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->=20
-> In theory, synchronize_sched() requires a read-side critical section to
-> order against.  In practice, preemption can be thought of as being
-> disabled across every machine instruction.  So this commit removes
-> the redundant preempt_disable() from rcu_note_voluntary_context_switch().
+When we fail to acquire the mutex in the fastpath, we end up calling
+__mutex_lock_common(). A *lot* goes on in this function. Move out the
+optimistic spinning code into mutex_optimistic_spin() and simplify
+the former a bit. Furthermore, this is similar to what we have in
+rwsems. No logical changes.
 
->  #define rcu_note_voluntary_context_switch(t) \
->  	do { \
-> -		preempt_disable(); /* Exclude synchronize_sched(); */ \
->  		if (ACCESS_ONCE((t)->rcu_tasks_holdout)) \
->  			ACCESS_ONCE((t)->rcu_tasks_holdout) =3D 0; \
-> -		preempt_enable(); \
->  	} while (0)
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Acked-by: Jason Low <jason.low2@hp.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: aswin@hp.com
+Cc: mingo@kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1406752916-3341-4-git-send-email-davidlohr@hp.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/locking/mutex.c | 396 ++++++++++++++++++++++++++-----------------------
+ 1 file changed, 214 insertions(+), 182 deletions(-)
 
-But that's more than 1 instruction.
-
---eZF+V2/LE/RsbcQg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT60RSAAoJEHZH4aRLwOS6nzUP/2peiAl/BMbdCsyLACULCQWD
-qftZFkci4j3vdwncLFJabQKO58Xl/NemN/xW96pPTmGaMdY5sXy+z2XDfwW9drrD
-iJJ2lkZp5+EXzGdvLJ/fdgynJV/PCgGHtoqUtLIPe4KhBjZXjVPdtRJf54ji9mgI
-uae8VlhWpRe6gHeqVELOyiD3dQFic2CTxc4I0tP8PSiOWEwO5jyMgjxMItLGdC6s
-XJcHgQatN6Tt10/ERQJRIe3IK81BZwG441s28LRo+sSe/CUJ1vujvrO3g/8Vckzg
-H1gzwp0eWTxidDY7pGdR/+BEyhEOb2c6cMljJ8L64N5qD44gewxM6T7P0jUC/uI4
-tXEGB9q/gzmk1n7KR3IkfLAvLBRIMUIb6UGKDCmhfzTXUHLEcAl6Qu8WLocrv80H
-g1wu543yyfdnvVPKo9hHTpWV3w/EOd2JHgekwRzTaCOoQOWZ2jJqr+bO5cbUHay9
-JwGPHoI9HrMoBFc2mLp3WsWBrhczkjo82W8t5CQpMwcmmLzeyk1l7Jb9qEHa8AlO
-foGYPogr+qraqjM/Kv03pkuIQ/HmZ1q5huI34IttCW++2CLg7lco46dhQWOn7hIR
-9x78VyaYw7zBwsPwFQW+zF+CEoozN7KLZIbYW9NfpOks04NtxZUpQMN4dY5/pEol
-VKByrJ9D1zKq1ns8Go4A
-=w+kF
------END PGP SIGNATURE-----
-
---eZF+V2/LE/RsbcQg--
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index 93bec48..0d8b6ed 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -106,6 +106,92 @@ void __sched mutex_lock(struct mutex *lock)
+ EXPORT_SYMBOL(mutex_lock);
+ #endif
+ 
++static __always_inline void ww_mutex_lock_acquired(struct ww_mutex *ww,
++						   struct ww_acquire_ctx *ww_ctx)
++{
++#ifdef CONFIG_DEBUG_MUTEXES
++	/*
++	 * If this WARN_ON triggers, you used ww_mutex_lock to acquire,
++	 * but released with a normal mutex_unlock in this call.
++	 *
++	 * This should never happen, always use ww_mutex_unlock.
++	 */
++	DEBUG_LOCKS_WARN_ON(ww->ctx);
++
++	/*
++	 * Not quite done after calling ww_acquire_done() ?
++	 */
++	DEBUG_LOCKS_WARN_ON(ww_ctx->done_acquire);
++
++	if (ww_ctx->contending_lock) {
++		/*
++		 * After -EDEADLK you tried to
++		 * acquire a different ww_mutex? Bad!
++		 */
++		DEBUG_LOCKS_WARN_ON(ww_ctx->contending_lock != ww);
++
++		/*
++		 * You called ww_mutex_lock after receiving -EDEADLK,
++		 * but 'forgot' to unlock everything else first?
++		 */
++		DEBUG_LOCKS_WARN_ON(ww_ctx->acquired > 0);
++		ww_ctx->contending_lock = NULL;
++	}
++
++	/*
++	 * Naughty, using a different class will lead to undefined behavior!
++	 */
++	DEBUG_LOCKS_WARN_ON(ww_ctx->ww_class != ww->ww_class);
++#endif
++	ww_ctx->acquired++;
++}
++
++/*
++ * after acquiring lock with fastpath or when we lost out in contested
++ * slowpath, set ctx and wake up any waiters so they can recheck.
++ *
++ * This function is never called when CONFIG_DEBUG_LOCK_ALLOC is set,
++ * as the fastpath and opportunistic spinning are disabled in that case.
++ */
++static __always_inline void
++ww_mutex_set_context_fastpath(struct ww_mutex *lock,
++			       struct ww_acquire_ctx *ctx)
++{
++	unsigned long flags;
++	struct mutex_waiter *cur;
++
++	ww_mutex_lock_acquired(lock, ctx);
++
++	lock->ctx = ctx;
++
++	/*
++	 * The lock->ctx update should be visible on all cores before
++	 * the atomic read is done, otherwise contended waiters might be
++	 * missed. The contended waiters will either see ww_ctx == NULL
++	 * and keep spinning, or it will acquire wait_lock, add itself
++	 * to waiter list and sleep.
++	 */
++	smp_mb(); /* ^^^ */
++
++	/*
++	 * Check if lock is contended, if not there is nobody to wake up
++	 */
++	if (likely(atomic_read(&lock->base.count) == 0))
++		return;
++
++	/*
++	 * Uh oh, we raced in fastpath, wake up everyone in this case,
++	 * so they can see the new lock->ctx.
++	 */
++	spin_lock_mutex(&lock->base.wait_lock, flags);
++	list_for_each_entry(cur, &lock->base.wait_list, list) {
++		debug_mutex_wake_waiter(&lock->base, cur);
++		wake_up_process(cur->task);
++	}
++	spin_unlock_mutex(&lock->base.wait_lock, flags);
++}
++
++
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+ /*
+  * In order to avoid a stampede of mutex spinners from acquiring the mutex
+@@ -180,6 +266,129 @@ static inline int mutex_can_spin_on_owner(struct mutex *lock)
+ 	 */
+ 	return retval;
+ }
++
++/*
++ * Atomically try to take the lock when it is available
++ */
++static inline bool mutex_try_to_acquire(struct mutex *lock)
++{
++	return !mutex_is_locked(lock) &&
++		(atomic_cmpxchg(&lock->count, 1, 0) == 1);
++}
++
++/*
++ * Optimistic spinning.
++ *
++ * We try to spin for acquisition when we find that the lock owner
++ * is currently running on a (different) CPU and while we don't
++ * need to reschedule. The rationale is that if the lock owner is
++ * running, it is likely to release the lock soon.
++ *
++ * Since this needs the lock owner, and this mutex implementation
++ * doesn't track the owner atomically in the lock field, we need to
++ * track it non-atomically.
++ *
++ * We can't do this for DEBUG_MUTEXES because that relies on wait_lock
++ * to serialize everything.
++ *
++ * The mutex spinners are queued up using MCS lock so that only one
++ * spinner can compete for the mutex. However, if mutex spinning isn't
++ * going to happen, there is no point in going through the lock/unlock
++ * overhead.
++ *
++ * Returns true when the lock was taken, otherwise false, indicating
++ * that we need to jump to the slowpath and sleep.
++ */
++static bool mutex_optimistic_spin(struct mutex *lock,
++				  struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
++{
++	struct task_struct *task = current;
++
++	if (!mutex_can_spin_on_owner(lock))
++		goto done;
++
++	if (!osq_lock(&lock->osq))
++		goto done;
++
++	while (true) {
++		struct task_struct *owner;
++
++		if (use_ww_ctx && ww_ctx->acquired > 0) {
++			struct ww_mutex *ww;
++
++			ww = container_of(lock, struct ww_mutex, base);
++			/*
++			 * If ww->ctx is set the contents are undefined, only
++			 * by acquiring wait_lock there is a guarantee that
++			 * they are not invalid when reading.
++			 *
++			 * As such, when deadlock detection needs to be
++			 * performed the optimistic spinning cannot be done.
++			 */
++			if (ACCESS_ONCE(ww->ctx))
++				break;
++		}
++
++		/*
++		 * If there's an owner, wait for it to either
++		 * release the lock or go to sleep.
++		 */
++		owner = ACCESS_ONCE(lock->owner);
++		if (owner && !mutex_spin_on_owner(lock, owner))
++			break;
++
++		/* Try to acquire the mutex if it is unlocked. */
++		if (mutex_try_to_acquire(lock)) {
++			lock_acquired(&lock->dep_map, ip);
++
++			if (use_ww_ctx) {
++				struct ww_mutex *ww;
++				ww = container_of(lock, struct ww_mutex, base);
++
++				ww_mutex_set_context_fastpath(ww, ww_ctx);
++			}
++
++			mutex_set_owner(lock);
++			osq_unlock(&lock->osq);
++			return true;
++		}
++
++		/*
++		 * When there's no owner, we might have preempted between the
++		 * owner acquiring the lock and setting the owner field. If
++		 * we're an RT task that will live-lock because we won't let
++		 * the owner complete.
++		 */
++		if (!owner && (need_resched() || rt_task(task)))
++			break;
++
++		/*
++		 * The cpu_relax() call is a compiler barrier which forces
++		 * everything in this loop to be re-loaded. We don't need
++		 * memory barriers as we'll eventually observe the right
++		 * values at the cost of a few extra spins.
++		 */
++		cpu_relax_lowlatency();
++	}
++
++	osq_unlock(&lock->osq);
++done:
++	/*
++	 * If we fell out of the spin path because of need_resched(),
++	 * reschedule now, before we try-lock the mutex. This avoids getting
++	 * scheduled out right after we obtained the mutex.
++	 */
++	if (need_resched())
++		schedule_preempt_disabled();
++
++	return false;
++}
++#else
++static bool mutex_optimistic_spin(struct mutex *lock,
++				  struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
++{
++	return false;
++}
+ #endif
+ 
+ __visible __used noinline
+@@ -277,91 +486,6 @@ __mutex_lock_check_stamp(struct mutex *lock, struct ww_acquire_ctx *ctx)
+ 	return 0;
+ }
+ 
+-static __always_inline void ww_mutex_lock_acquired(struct ww_mutex *ww,
+-						   struct ww_acquire_ctx *ww_ctx)
+-{
+-#ifdef CONFIG_DEBUG_MUTEXES
+-	/*
+-	 * If this WARN_ON triggers, you used ww_mutex_lock to acquire,
+-	 * but released with a normal mutex_unlock in this call.
+-	 *
+-	 * This should never happen, always use ww_mutex_unlock.
+-	 */
+-	DEBUG_LOCKS_WARN_ON(ww->ctx);
+-
+-	/*
+-	 * Not quite done after calling ww_acquire_done() ?
+-	 */
+-	DEBUG_LOCKS_WARN_ON(ww_ctx->done_acquire);
+-
+-	if (ww_ctx->contending_lock) {
+-		/*
+-		 * After -EDEADLK you tried to
+-		 * acquire a different ww_mutex? Bad!
+-		 */
+-		DEBUG_LOCKS_WARN_ON(ww_ctx->contending_lock != ww);
+-
+-		/*
+-		 * You called ww_mutex_lock after receiving -EDEADLK,
+-		 * but 'forgot' to unlock everything else first?
+-		 */
+-		DEBUG_LOCKS_WARN_ON(ww_ctx->acquired > 0);
+-		ww_ctx->contending_lock = NULL;
+-	}
+-
+-	/*
+-	 * Naughty, using a different class will lead to undefined behavior!
+-	 */
+-	DEBUG_LOCKS_WARN_ON(ww_ctx->ww_class != ww->ww_class);
+-#endif
+-	ww_ctx->acquired++;
+-}
+-
+-/*
+- * after acquiring lock with fastpath or when we lost out in contested
+- * slowpath, set ctx and wake up any waiters so they can recheck.
+- *
+- * This function is never called when CONFIG_DEBUG_LOCK_ALLOC is set,
+- * as the fastpath and opportunistic spinning are disabled in that case.
+- */
+-static __always_inline void
+-ww_mutex_set_context_fastpath(struct ww_mutex *lock,
+-			       struct ww_acquire_ctx *ctx)
+-{
+-	unsigned long flags;
+-	struct mutex_waiter *cur;
+-
+-	ww_mutex_lock_acquired(lock, ctx);
+-
+-	lock->ctx = ctx;
+-
+-	/*
+-	 * The lock->ctx update should be visible on all cores before
+-	 * the atomic read is done, otherwise contended waiters might be
+-	 * missed. The contended waiters will either see ww_ctx == NULL
+-	 * and keep spinning, or it will acquire wait_lock, add itself
+-	 * to waiter list and sleep.
+-	 */
+-	smp_mb(); /* ^^^ */
+-
+-	/*
+-	 * Check if lock is contended, if not there is nobody to wake up
+-	 */
+-	if (likely(atomic_read(&lock->base.count) == 0))
+-		return;
+-
+-	/*
+-	 * Uh oh, we raced in fastpath, wake up everyone in this case,
+-	 * so they can see the new lock->ctx.
+-	 */
+-	spin_lock_mutex(&lock->base.wait_lock, flags);
+-	list_for_each_entry(cur, &lock->base.wait_list, list) {
+-		debug_mutex_wake_waiter(&lock->base, cur);
+-		wake_up_process(cur->task);
+-	}
+-	spin_unlock_mutex(&lock->base.wait_lock, flags);
+-}
+-
+ /*
+  * Lock a mutex (possibly interruptible), slowpath:
+  */
+@@ -378,104 +502,12 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 	preempt_disable();
+ 	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
+ 
+-#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-	/*
+-	 * Optimistic spinning.
+-	 *
+-	 * We try to spin for acquisition when we find that the lock owner
+-	 * is currently running on a (different) CPU and while we don't
+-	 * need to reschedule. The rationale is that if the lock owner is
+-	 * running, it is likely to release the lock soon.
+-	 *
+-	 * Since this needs the lock owner, and this mutex implementation
+-	 * doesn't track the owner atomically in the lock field, we need to
+-	 * track it non-atomically.
+-	 *
+-	 * We can't do this for DEBUG_MUTEXES because that relies on wait_lock
+-	 * to serialize everything.
+-	 *
+-	 * The mutex spinners are queued up using MCS lock so that only one
+-	 * spinner can compete for the mutex. However, if mutex spinning isn't
+-	 * going to happen, there is no point in going through the lock/unlock
+-	 * overhead.
+-	 */
+-	if (!mutex_can_spin_on_owner(lock))
+-		goto slowpath;
+-
+-	if (!osq_lock(&lock->osq))
+-		goto slowpath;
+-
+-	for (;;) {
+-		struct task_struct *owner;
+-
+-		if (use_ww_ctx && ww_ctx->acquired > 0) {
+-			struct ww_mutex *ww;
+-
+-			ww = container_of(lock, struct ww_mutex, base);
+-			/*
+-			 * If ww->ctx is set the contents are undefined, only
+-			 * by acquiring wait_lock there is a guarantee that
+-			 * they are not invalid when reading.
+-			 *
+-			 * As such, when deadlock detection needs to be
+-			 * performed the optimistic spinning cannot be done.
+-			 */
+-			if (ACCESS_ONCE(ww->ctx))
+-				break;
+-		}
+-
+-		/*
+-		 * If there's an owner, wait for it to either
+-		 * release the lock or go to sleep.
+-		 */
+-		owner = ACCESS_ONCE(lock->owner);
+-		if (owner && !mutex_spin_on_owner(lock, owner))
+-			break;
+-
+-		/* Try to acquire the mutex if it is unlocked. */
+-		if (!mutex_is_locked(lock) &&
+-		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
+-			lock_acquired(&lock->dep_map, ip);
+-			if (use_ww_ctx) {
+-				struct ww_mutex *ww;
+-				ww = container_of(lock, struct ww_mutex, base);
+-
+-				ww_mutex_set_context_fastpath(ww, ww_ctx);
+-			}
+-
+-			mutex_set_owner(lock);
+-			osq_unlock(&lock->osq);
+-			preempt_enable();
+-			return 0;
+-		}
+-
+-		/*
+-		 * When there's no owner, we might have preempted between the
+-		 * owner acquiring the lock and setting the owner field. If
+-		 * we're an RT task that will live-lock because we won't let
+-		 * the owner complete.
+-		 */
+-		if (!owner && (need_resched() || rt_task(task)))
+-			break;
+-
+-		/*
+-		 * The cpu_relax() call is a compiler barrier which forces
+-		 * everything in this loop to be re-loaded. We don't need
+-		 * memory barriers as we'll eventually observe the right
+-		 * values at the cost of a few extra spins.
+-		 */
+-		cpu_relax_lowlatency();
++	if (mutex_optimistic_spin(lock, ww_ctx, use_ww_ctx)) {
++		/* got the lock, yay! */
++		preempt_enable();
++		return 0;
+ 	}
+-	osq_unlock(&lock->osq);
+-slowpath:
+-	/*
+-	 * If we fell out of the spin path because of need_resched(),
+-	 * reschedule now, before we try-lock the mutex. This avoids getting
+-	 * scheduled out right after we obtained the mutex.
+-	 */
+-	if (need_resched())
+-		schedule_preempt_disabled();
+-#endif
++
+ 	spin_lock_mutex(&lock->wait_lock, flags);
+ 
+ 	/*
