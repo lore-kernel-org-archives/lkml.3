@@ -1,103 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479AbaHMHjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 03:39:18 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:48616 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaHMHjQ (ORCPT
+	id S1751543AbaHMHj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 03:39:58 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62622 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405AbaHMHj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:39:16 -0400
+	Wed, 13 Aug 2014 03:39:56 -0400
+Message-ID: <53EB1752.9010601@gmail.com>
+Date: Wed, 13 Aug 2014 15:44:18 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <53E9FBA4.2080609@redhat.com>
-References: <53DB6B81.6050400@redhat.com>
-	<53DBCBE8.6010809@codeaurora.org>
-	<53DBE764.8050109@redhat.com>
-	<53DBEC27.7050803@codeaurora.org>
-	<CAKohpombG3Gj4mbm02vPNnAxzaRvQP7rb=iQ14dCFH4_+71H3w@mail.gmail.com>
-	<53E0B657.4070007@redhat.com>
-	<CAKohponxBdYEgY2oYuzmdaqfSRS8Uq8bZOzcb1QDmKO-z5ZBFQ@mail.gmail.com>
-	<53E1556B.5070304@codeaurora.org>
-	<CAKohpoky1-hj7cwnKc58svh8Z1Yas1=q4uJEK8mWcb56uqAcng@mail.gmail.com>
-	<53E1FEE5.80305@redhat.com>
-	<20140806150831.GB32301@codeaurora.org>
-	<CAKohponBRn9mwpPMinsjqpHe3wTFj6aNpYk5gZaWDKht3bd5NQ@mail.gmail.com>
-	<53E35122.3040806@redhat.com>
-	<CAKohpokLsqMMxMwh_p+kUL=He9-8cSws6onG6DCBNBVzz1=5TA@mail.gmail.com>
-	<CAKohpokebTdX-Ssdc4N+b09tZ35qkckiErypc0c0Nbe7v+Y5uQ@mail.gmail.com>
-	<53E9FBA4.2080609@redhat.com>
-Date: Wed, 13 Aug 2014 13:09:15 +0530
-Message-ID: <CAKohponqFj5jSpvYbMD5d5zgCJAjCYkNg=_L+BKeMEDmBEWbyg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem to
- be held for duration of changing governors [v2]
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lenny Szubowicz <lszubowi@redhat.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "H. Peter Anvin" <hpa@zytor.com>, Sam Ravnborg <sam@ravnborg.org>
+CC: Arnd Bergmann <arnd@arndb.de>, akpm@linux-foundation.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jean Delvare <jdelvare@suse.de>, linux@arm.linux.org.uk,
+        catalin.marinas@arm.com, will.deacon@arm.com, msalter@redhat.com,
+        a-jacquiot@ti.com, tony.luck@intel.com, fenghua.yu@intel.com,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
+        linux-ia64@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH v2] arch: Kconfig: Let all little endian architectures
+ define CPU_LITTLE_ENDIAN explicitly
+References: <53EA99C3.90203@gmail.com> <20140813050809.GB30459@ravnborg.org> <53EAF85E.3000208@gmail.com> <53EB0AF6.6060208@zytor.com>
+In-Reply-To: <53EB0AF6.6060208@zytor.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 August 2014 17:03, Prarit Bhargava <prarit@redhat.com> wrote:
-> Okay, this is what I have and I can reproduce this *easily* 100% of the time.
->
-> I've used your above config options and have enabled LOCKDEP.
->
-> In order to restore the locking, I've applied the following patch to the cpufreq
-> core (sorry for the cut-and-paste):
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index d9fdedd..dfda238 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -2192,9 +2192,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *polic
->         /* end old governor */
->         if (old_gov) {
->                 __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
-> -               up_write(&policy->rwsem);
->                 __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
-> -               down_write(&policy->rwsem);
->         }
->
->         /* start new governor */
-> @@ -2203,9 +2201,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *polic
->                 if (!__cpufreq_governor(policy, CPUFREQ_GOV_START))
->                         goto out;
->
-> -               up_write(&policy->rwsem);
->                 __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
-> -               down_write(&policy->rwsem);
->         }
->
->         /* new governor failed, so re-start old one */
->
->
-> I've modified the acpi-cpufreq driver to include (sorry for the cut-and-paste)
->
-> diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-> index b0c18ed..97653c3 100644
-> --- a/drivers/cpufreq/acpi-cpufreq.c
-> +++ b/drivers/cpufreq/acpi-cpufreq.c
-> @@ -884,6 +884,9 @@ static struct freq_attr *acpi_cpufreq_attr[] = {
->  };
->
->  static struct cpufreq_driver acpi_cpufreq_driver = {
-> +       .flags                  = CPUFREQ_STICKY |
-> +                                       CPUFREQ_HAVE_GOVERNOR_PER_POLICY |
-> +                                       CPUFREQ_NEED_INITIAL_FREQ_CHECK,
->         .verify         = cpufreq_generic_frequency_table_verify,
->         .target_index   = acpi_cpufreq_target,
->         .bios_limit     = acpi_processor_get_bios_limit,
->
-> I do a
->
-> cat /sys/devices/system/cpu/cpu2/cpufreq/conservative/*
-> echo ondemand > /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor
->
-> and then I immediately see the stack trace.
 
-What's your system configuration? How many clusters/cpus/etc..
+
+On 8/13/14 14:51, H. Peter Anvin wrote:
+> On 08/12/2014 10:32 PM, Chen Gang wrote:
+>>
+>> Yeah, we need.
+>>
+>>> The solution you suggest assumes that an arch is either little or big endian.
+>>> But we cannot ignore the hybriads that can do both.
+>>>
+>>
+>> For the architectures which can do both, for me, they are: sh, powerpc,
+>> m32r, and mips (may mark CPU_LITTLE_ENDIAN), also are: arm/arm64, and
+>> c6x (may mark !CPU_BIG_ENDIAN).
+>>
+>> For the architectures which only support little endian: x86, and ia64.
+>>
+>> The left, I assumes they are big endian (no any 'ENDIAN' can be found
+>> in their Kconfig files). In my memory, except related with Intel, all
+>> are (or support) big endian.
+>>
+> 
+> I'm quite certain that is wrong.  From memory, for example, I believe
+> CRIS is littleendian, and sure enough:
+> 
+> : tazenda 103 ; less arch/cris/include/uapi/asm/byteorder.h
+> #ifndef _CRIS_BYTEORDER_H
+> #define _CRIS_BYTEORDER_H
+> 
+> #include <linux/byteorder/little_endian.h>
+> 
+> #endif
+> 
+
+OK, what you said sounds reasonable to me. After search "endian" in
+"./arch", xtensa also can be support both big endian or little endian.
+
+> As far as I know, endianism is always a compile-time option on Linux, so
+> we should be able to relatively easily define the architecture so that
+> we either have hardwired littleendian, bigendian, or prompt.
+> 
+
+Yeah, but that may break building and re-config manually. So it is still
+necessary to check little endian or big endian during configuration time
+("make *config").
+
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
