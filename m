@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155AbaHMOXM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:23:12 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49150 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751518AbaHMOXL (ORCPT
+	id S1752782AbaHMO1x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:27:53 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:64632 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518AbaHMO1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:23:11 -0400
-Date: Wed, 13 Aug 2014 15:22:57 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>, linux-arm-msm@vger.kernel.org,
+	Wed, 13 Aug 2014 10:27:52 -0400
+Date: Wed, 13 Aug 2014 15:27:48 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Mark Salter <msalter@redhat.com>, Randy Dunlap <rdunlap@infradead.org>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call
-	into scheduler
-Message-ID: <20140813142257.GK30401@n2100.arm.linux.org.uk>
-References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
+        linux-efi@vger.kernel.org, rtc-linux@googlegroups.com
+Subject: Re: [PATCH 4/5] efi x86: clear EFI_RUNTIME_SERVICES bit in case
+ failures other than SetVirtualAddressMap
+Message-ID: <20140813142748.GS15082@console-pimps.org>
+References: <1407823822-23829-1-git-send-email-dyoung@redhat.com>
+ <1407823822-23829-4-git-send-email-dyoung@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1407823822-23829-4-git-send-email-dyoung@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 06:57:18AM -0700, Stephen Boyd wrote:
-> Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
-> 2012-04-12) introduced an acquisition of the irq_controller_lock
-> in gic_raise_softirq() which can lead to a spinlock recursion if
-> the gic_arch_extn hooks call into the scheduler (via complete()
-> or wake_up(), etc.). This happens because gic_arch_extn hooks are
-> normally called with the irq_controller_lock held and calling
-> into the scheduler may cause us to call smp_send_reschedule()
-> which will grab the irq_controller_lock again. Here's an example
-> from a vendor kernel (note that the gic_arch_extn hook code here
-> isn't actually in mainline):
+On Tue, 12 Aug, at 02:10:21PM, Dave Young wrote:
+> If enter virtual mode failed due to some reason other than the efi call
+> the EFI_RUNTIME_SERVICES bit in efi.flags should be cleared thus users
+> of efi runtime services can check the bit and handle the case instead of
+> assume efi runtime is ok.
+> 
+> Per Matt, if efi call SetVirtualAddressMap fails we will be not sure it's safe
+> to make any assumptions about the state of the system. so kernel panics instead
+> of clears EFI_RUNTIME_SERVICES bit.
+> 
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  arch/x86/platform/efi/efi.c | 10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
 
-Here's a question: why would you want to call into the scheduler from
-the gic_arch_extn code?
+[...]
 
-Oh.  My.  God.  Thomas, what have you done to the generic IRQ layer?
-This is /totally/ unsafe:
+> @@ -882,8 +886,10 @@ static void __init __efi_enter_virtual_mode(void)
+>  
+>  void __init efi_enter_virtual_mode(void)
+>  {
+> -	if (efi_enabled(EFI_PARAVIRT))
+> +	if (efi_enabled(EFI_PARAVIRT)) {
+> +		clear_bit(EFI_RUNTIME_SERVICES, &efi.flags);
+>  		return;
+> +	}
 
-void disable_irq(unsigned int irq)
-{
-        if (!__disable_irq_nosync(irq))
-                synchronize_irq(irq);
-}
-
-static int __disable_irq_nosync(unsigned int irq)
-{
-        unsigned long flags;
-        struct irq_desc *desc = irq_get_desc_buslock(irq, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
-
-        if (!desc)
-                return -EINVAL;
-        __disable_irq(desc, irq, false);
-        irq_put_desc_busunlock(desc, flags);
-        return 0;
-}
-
-void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
-{
-        if (suspend) {
-                if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND))
-                        return;
-                desc->istate |= IRQS_SUSPENDED;
-        }
-
-        if (!desc->depth++)
-                irq_disable(desc);
-}
-
-You realise that disable_irq() and enable_irq() can be called by
-concurrently by different drivers for the /same/ interrupt.  For
-starters, that post-increment there is completely unprotected against
-races.  Secondly, the above is completely racy against a concurrent
-enable_irq() - what if we're in disable_irq(), we've incremented
-depth, but have yet to call irq_disable().  The count now has a
-value of 1.
-
-We then preempt, and run another thread which calls enable_irq()
-on it.  This results in the depth being decremented, and the IRQ
-is now enabled.
-
-We resume the original thread, and continue to call irq_disable(),
-resulting in the interrupt being disabled.
-
-That's not nice (the right answer is that it's strictly an unbalanced
-enable_irq(), but that's no excuse here.)
+The EFI_PARAVIRT folks purposely do not set this bit, so there should be
+no reason to clear it here.
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Matt Fleming, Intel Open Source Technology Center
