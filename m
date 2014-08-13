@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543AbaHMSA2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 14:00:28 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:57976 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516AbaHMSA0 (ORCPT
+	id S1753569AbaHMSEJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 14:04:09 -0400
+Received: from mail-pd0-f196.google.com ([209.85.192.196]:48782 "EHLO
+	mail-pd0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516AbaHMSEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 14:00:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrVDJHOu7AFZqeGppxXykRhdG8qwwifpXcXVVr=argwoiQ@mail.gmail.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-	<063D6719AE5E284EB5DD2968C1650D6D174760F3@AcuExch.aculab.com>
-	<CAMEtUuyULyzVb1nkJn_Tj_aKjokcBQaw_EnWBdDvtvf9iV7uXA@mail.gmail.com>
-	<CALCETrVDJHOu7AFZqeGppxXykRhdG8qwwifpXcXVVr=argwoiQ@mail.gmail.com>
-Date: Wed, 13 Aug 2014 11:00:24 -0700
-Message-ID: <CAMEtUuxxEvQWHKTrTDazd3RaeYC1_-_CvAyL+GFpMVDKBPi32A@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 00/26] BPF syscall, maps, verifier,
- samples, llvm
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: David Laight <David.Laight@aculab.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 13 Aug 2014 14:04:07 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH net-next,v2] hyperv: Increase the buffer length for netvsc_channel_cb()
+Date: Wed, 13 Aug 2014 18:03:44 +0000
+Message-Id: <1407953024-35191-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 10:40 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> But don't you need some kind of detection anyway to handle the case
-> where something jumps to the middle of the "load 64-bit immediate"?  I
+When the buffer is too small for a packet from VMBus, a bigger buffer will be
+allocated in netvsc_channel_cb() and retry reading the packet from VMBus.
+Increasing this buffer size will reduce the retry overhead.
 
-added few test cases to test_verifier to see that this case is caught
-and it looks ok, but you got me worried. May be few more checks needed.
-Thanks!
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: Dexuan Cui <decui@microsoft.com>
+---
+ drivers/net/hyperv/hyperv_net.h |    2 +-
+ drivers/net/hyperv/netvsc.c     |    6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+index d5e07de..b14a0ef 100644
+--- a/drivers/net/hyperv/hyperv_net.h
++++ b/drivers/net/hyperv/hyperv_net.h
+@@ -591,7 +591,7 @@ struct nvsp_message {
+ 
+ #define NETVSC_RECEIVE_BUFFER_ID		0xcafe
+ 
+-#define NETVSC_PACKET_SIZE                      2048
++#define NETVSC_PACKET_SIZE                      4096
+ 
+ #define VRSS_SEND_TAB_SIZE 16
+ 
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 66979cf..45899f2 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -38,7 +38,7 @@ static struct netvsc_device *alloc_net_device(struct hv_device *device)
+ 	struct netvsc_device *net_device;
+ 	struct net_device *ndev = hv_get_drvdata(device);
+ 
+-	net_device = kzalloc(sizeof(struct netvsc_device), GFP_KERNEL);
++	net_device = vzalloc(sizeof(*net_device));
+ 	if (!net_device)
+ 		return NULL;
+ 
+@@ -551,7 +551,7 @@ int netvsc_device_remove(struct hv_device *device)
+ 	if (net_device->sub_cb_buf)
+ 		vfree(net_device->sub_cb_buf);
+ 
+-	kfree(net_device);
++	vfree(net_device);
+ 	return 0;
+ }
+ 
+@@ -1093,7 +1093,7 @@ close:
+ 	vmbus_close(device->channel);
+ 
+ cleanup:
+-	kfree(net_device);
++	vfree(net_device);
+ 
+ 	return ret;
+ }
+-- 
+1.7.1
+
