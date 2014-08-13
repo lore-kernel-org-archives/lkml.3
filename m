@@ -1,35 +1,40 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965476AbaH1IFe (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 28 Aug 2014 04:05:34 -0400
-Received: from [203.64.3.250] ([203.64.3.250]:29639 "EHLO simpro.tnua.edu.tw"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S935486AbaH1IF3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Aug 2014 04:05:29 -0400
-X-Greylist: delayed 8098 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Aug 2014 04:05:28 EDT
-Message-Id: <201408280409.ATF74270@simpro.tnua.edu.tw>
-Content-Type: text/plain; charset="iso-8859-1"
+        id S1752698AbaHMWkM (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Wed, 13 Aug 2014 18:40:12 -0400
+Received: from mailserver.ausl.bologna.it ([212.210.92.253]:46233 "EHLO
+        pathfinder.internal.ausl.bologna.it" rhost-flags-OK-OK-OK-FAIL)
+        by vger.kernel.org with ESMTP id S1751500AbaHMWkL (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Wed, 13 Aug 2014 18:40:11 -0400
+X-Greylist: delayed 713 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Aug 2014 18:40:10 EDT
+Message-ID: <20140814002807.192852820jyh1njr@webmail.ausl.bologna.it>
+Date: Thu, 14 Aug 2014 00:28:07 +0200
+From: Liliane Bettencourt <donor@freeoffer.com>
+Reply-to: mslilianebettencourt@gmail.com
+To: undisclosed-recipients:;
+Subject: Hi
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Dear Webmail User,
-To: Recipients <info@simpro.tnua.edu.tw>
-From: "Taiwan Webmail Help Desk" <info@simpro.tnua.edu.tw>
-Date: Thu, 28 Aug 2014 11:55:14 +0800
-Reply-To: capitalholdingsglobl@outlook.com
+Content-Type: text/plain;
+ charset=UTF-8;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) 4.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Dear Webmail User, 
+Hi,
 
-This is to inform you that you have exceeded your quota limit of 325MB in our database e-mail and you need to increase your quota limit of email 
-because in less than 48hours your e-mail will be disabled. Increase the share of e-mail limit and continue to use your webmail account.
-To increase your quota limit of email to 2.2GB, click or copy the below link into your broswer now and fill your detail
+You should respond back to me if you are the owner of this email address.
+I Liliane write to you because I intend to give to you a portion of my  
+Net-worth which I have been banking. You can read about me on:  
+http://www.en.wikipedia.org/wiki/Liliane_Bettencourt  I willingly want  
+to cede it out as gift hoping it would be of help to you and others too.
 
-Click Link: http://www.jotform.me/form/42389052998470
+Liliane Bettencourt.
 
-Thank You. 
 
-Copyright © 2014 Taiwan Webmail Help Desk 
-Administrator All rights reserved.
+
