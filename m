@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075AbaHMOVo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:21:44 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:41183 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaHMOVl (ORCPT
+	id S1753190AbaHMOWM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:22:12 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:35813 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268AbaHMOWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:21:41 -0400
-Message-ID: <53EB746E.1020904@hitachi.com>
-Date: Wed, 13 Aug 2014 23:21:34 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 13 Aug 2014 10:22:10 -0400
+Date: Wed, 13 Aug 2014 15:22:07 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Mark Salter <msalter@redhat.com>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-efi@vger.kernel.org, rtc-linux@googlegroups.com
+Subject: Re: [PATCH 2/5] efi: add kernel param efi=noruntime
+Message-ID: <20140813142207.GR15082@console-pimps.org>
+References: <1407823822-23829-1-git-send-email-dyoung@redhat.com>
+ <1407823822-23829-2-git-send-email-dyoung@redhat.com>
+ <20140813081347.GA3977@darkstar.nay.redhat.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Naohiro Aota <naota@elisp.net>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] [BUGFIX] perf probe: Fix --list option to show events
- only with uprobe events
-References: <20140813005055.24360.73553.stgit@kbuild-fedora.novalocal> <87r40ldkv8.fsf@sejong.aot.lge.com>
-In-Reply-To: <87r40ldkv8.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140813081347.GA3977@darkstar.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/13 14:22), Namhyung Kim wrote:
-> Hi Masami,
+On Wed, 13 Aug, at 04:13:47PM, Dave Young wrote:
 > 
-> On Wed, 13 Aug 2014 00:50:55 +0000, Masami Hiramatsu wrote:
->> +	if (kp_fd < 0 && up_fd < 0) {
->> +		/* Both kprobes and uprobes are disabled, warn it. */
->> +		if (kp_fd == -ENOTSUP && up_fd == -ENOTSUP)
->> +			pr_warning("Debugfs is not mounted.\n");
->> +		else if (kp_fd == -ENOENT && up_fd == -ENOENT)
->> +			pr_warning("Please rebuild kernel with "
->> +				   "CONFIG_KPROBE_EVENTS or/and "
->> +				   "CONFIG_UPROBE_EVENTS.\n");
->> +		else
->> +			pr_warning("Failed to open kprobe events: %s.\n" \
->> +				   "Failed to open uprobe events: %s.\n",
->> +				   strerror(-kp_fd), strerror(-up_fd));
+> For sharing functions I moved old_map here, but rethinking about it maybe
+> it's better to keep it in arch code.
 > 
-> It seems the second strerror() might overwrite the message of the
-> first.  You'd better using strerror_r() IMHO.
-
-Oops, right, it must use the same buffer...
-But instead of using strerror_r, we can call pr_warning twice. Or should we
-better replace all strerror to strerror_r in perf? (it should be another series)
-
-Thank you,
-
+> Matt, I see you have some code for libstub option parsing, I will rebase
+> on your efi/next and I'm thinking to add a generic function for parsing
+> params like below (for old_map, but libstub can not use it):
+ 
+Makes sense to me.
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Matt Fleming, Intel Open Source Technology Center
