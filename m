@@ -1,87 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095AbaHMXqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 19:46:45 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56453 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351AbaHMXqn (ORCPT
+	id S1753255AbaHMXrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 19:47:12 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:57783 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822AbaHMXrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 19:46:43 -0400
+	Wed, 13 Aug 2014 19:47:10 -0400
+Date: Wed, 13 Aug 2014 16:47:06 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Matt Porter <mporter@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
+        Gregory Fong <gregory.0xf0@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 01/11] ARM: brcmstb: add infrastructure for ARM-based
+ Broadcom STB SoCs
+Message-ID: <20140813234706.GC18411@ld-irv-0074>
+References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
+ <1405976886-27807-2-git-send-email-computersforpeace@gmail.com>
+ <CAL_Jsq+Nbk7m9KXhG+Chdpvurp75RrvhFR2oE_LGxV444GSe9Q@mail.gmail.com>
+ <20140731022320.GM3711@ld-irv-0074>
+ <20140731084315.GJ30282@n2100.arm.linux.org.uk>
+ <20140731220642.GQ3711@ld-irv-0074>
+ <20140802092756.GZ30282@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrV4u3jup3pRjEJiPcvccvH84bYykLYxCCU7ek7yprt+Fg@mail.gmail.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-	<063D6719AE5E284EB5DD2968C1650D6D174760F3@AcuExch.aculab.com>
-	<20140813.162516.1876660483788283579.davem@davemloft.net>
-	<CALCETrV4u3jup3pRjEJiPcvccvH84bYykLYxCCU7ek7yprt+Fg@mail.gmail.com>
-Date: Wed, 13 Aug 2014 16:46:41 -0700
-Message-ID: <CAMEtUuxp8_VJYUShxLGUOew5s0VNY_hH+w7QqqSehbFHKQwmvg@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 00/26] BPF syscall, maps, verifier,
- samples, llvm
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: David Miller <davem@davemloft.net>, David Laight <David.Laight@aculab.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140802092756.GZ30282@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 4:34 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Wed, Aug 13, 2014 at 4:25 PM, David Miller <davem@davemloft.net> wrote:
->> From: David Laight <David.Laight@ACULAB.COM>
->> Date: Wed, 13 Aug 2014 08:52:30 +0000
->>
->>> From: Of Alexei Starovoitov
->>>> one more RFC...
->>>>
->>>> Major difference vs previous set is a new 'load 64-bit immediate' eBPF insn.
->>>> Which is first 16-byte instruction. It shows how eBPF ISA can be extended
->>>> while maintaining backward compatibility, but mainly it cleans up eBPF
->>>> program access to maps and improves run-time performance.
->>>
->>> Wouldn't it be more sensible to follow the scheme used by a lot of cpus
->>> and add a 'load high' instruction (follow with 'add' or 'or').
->>> It still takes 16 bytes to load a 64bit immediate value, but the instruction
->>> size remains constant.
->>> There is nothing to stop any JIT software detecting the instruction pair.
->>
->> The opposite argument is that JITs can expand the IMM64 load into whatever
->> sequence of instructions is most optimal.
->>
->> My only real gripe with IMM64 loads is that it's not mainly for
->> loading an immediate, it's for loading a pointer.  And this
->> distinction is important for some JITs.
->>
->> For example, on sparc64 all symbol based addresses are actually 32-bit
->> because of the code model we use to compile the kernel and all modules.
->> So if we knew this is a pointer load and it's to a symbol in a kernel
->> or module image, we could do a 32-bit load.
->
-> This is true for x86_64 as well, I think.
->
-> (Almost.  For x86_64 we have a choice between a sign-extended load of
-> a value in the top 2GB of the address space and lea reg,offset(%rip).)
+Hi Russell,
 
-That would be an interesting optimization. I did movabsq just
-because it was straightforward. JITs can play interesting tricks here.
-Since it's really a constant value, there is no difference whether
-it's a pointer or a constant. If JIT can use $rip trick on x64 or reduce
-number of sethi insns on sparc, it should try to do it regardless of
-how value in dst_reg will be used later on by the program.
-JITs can also allocate some read-only area for constants and
-do a relative load from there. Not sure that it will be faster though.
-JITs can get more complex and smarter as time goes by. They can
-even randomly do some ld_imm64 via movabsq and some via a
-sequence of mov, shift, or. That will through away JIT spraying attacks.
-If JITed code itself is random, that would be nice defense.
+Picking up this thread again, as things are now set for dropping this
+patch and resubmitting SMP support for 3.18.
+
+On Sat, Aug 02, 2014 at 10:27:56AM +0100, Russell King wrote:
+> On Thu, Jul 31, 2014 at 03:06:42PM -0700, Brian Norris wrote:
+> > Yes, I noticed this. What I meant is that smp_ops.cpu_die() and
+> > smp_ops.cpu_kill() are not synchronized.
+> ...
+> > We're not relying on the L1 cache, though. Don't sync_cache_{r,w}()
+> > ensure all reads/writes reach at least the L2?
+> 
+> What exactly are you trying to achieve here?
+
+Synchronization between v7_exit_coherency_flush() (on the dying CPU) and
+yanking the power (brcmstb_cpu_kill(), on the murderous CPU). The core
+completion-based synchronization is not sufficient, since it allows
+brcmstb_smp_ops.smp_kill and brcmstb_smp_ops.smp_die to race.
+
+Am I somehow not achieving what I intend here?
+
+> > How does that ensure that the CPU is down by the time the work is
+> > scheduled? It seems like this would just defer the work long enough that
+> > it *most likely* has quiesced, but I don't see how this gives us a
+> > better guarantee. Or maybe I'm missing something. (If so, please do
+> > enlighten!)
+> 
+> Note that I said a delayed work queue.  The dying CPU runs a predictable
+> sequence once cpu_die() has been entered - interrupts at the GIC have
+> been programmed to be routed to other CPUs, interrupts at the CPU are
+> masked, so the CPU isn't going to be doing anything else except executing
+> that code path.  So, it's going to be a predictable number of CPU cycles.
+> 
+> That allows you to arrange a delayed workqueue (or a timer) to fire
+> after a period of time that you can guarantee that the dying CPU has
+> reached that wfi().
+
+OK, that sounds workable for the active hotplug case.
+
+But what about for the suspend case? CPUs are hot-unplugged during
+disable_nonboot_cpus(), and I don't see that this would guarantee the
+workqueue will complete before we enter suspend.
+
+> Another point which raises itself in your patch is this:
+> 
+> +       /* Settle-time from Broadcom-internal DVT reference code */
+> +       udelay(7);
+> 
+> 7us looks very precise, but udelay() may not be that precise.  What is
+> the actual specification?  Does it say "you must wait at least 7us"?
+> 
+> udelay() _may_ return early, especially if it is using the CPU delay
+> loop to perform the delay - I've explained why this happens previously,
+> and why it isn't a bug.
+> 
+> If you're using a timer-based delay for udelay() (which you should be
+> using if you support cpufreq) then the delay should be more accurate,
+> but it's still good practise to give a little leeway on the figure.
+
+I'm looking into this specific delay. I'd bet it's just "wait at least
+7us." I could probably factor in some leeway to be safe.
+
+Thanks,
+Brian
