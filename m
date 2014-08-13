@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102AbaHMJSN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:18:13 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:60111 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaHMJSK (ORCPT
+	id S1752180AbaHMJSy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:18:54 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:55454 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343AbaHMJSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:18:10 -0400
-Date: Wed, 13 Aug 2014 14:48:04 +0530
+	Wed, 13 Aug 2014 05:18:52 -0400
+Date: Wed, 13 Aug 2014 14:48:47 +0530
 From: Himangi Saraogi <himangi774@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+To: enjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
 Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] ARM: integrator: Drop unnecessary continue
-Message-ID: <20140813091804.GA3043@himangi-Dell>
+Subject: [PATCH] powerpc/pseries: Drop unnecessary continue
+Message-ID: <20140813091847.GA3078@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -40,25 +42,22 @@ for (...;...;...) {
 Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- arch/arm/mach-integrator/impd1.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Not compile tested.
+ arch/powerpc/platforms/pseries/cmm.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/arm/mach-integrator/impd1.c b/arch/arm/mach-integrator/impd1.c
-index 3ce8807..c4eb8c9 100644
---- a/arch/arm/mach-integrator/impd1.c
-+++ b/arch/arm/mach-integrator/impd1.c
-@@ -376,10 +376,8 @@ static int __init_refok impd1_probe(struct lm_device *dev)
- 					    irq1, irq2,
- 					    idev->platform_data, idev->id,
- 					    &dev->resource);
--		if (IS_ERR(d)) {
-+		if (IS_ERR(d))
- 			dev_err(&dev->dev, "unable to register device: %ld\n", PTR_ERR(d));
--			continue;
--		}
- 	}
- 
- 	return 0;
+diff --git a/arch/powerpc/platforms/pseries/cmm.c b/arch/powerpc/platforms/pseries/cmm.c
+index 2d8bf15..fc44ad0 100644
+--- a/arch/powerpc/platforms/pseries/cmm.c
++++ b/arch/powerpc/platforms/pseries/cmm.c
+@@ -555,7 +555,6 @@ static int cmm_mem_going_offline(void *arg)
+ 				pa_last = pa_last->next;
+ 				free_page((unsigned long)cmm_page_list);
+ 				cmm_page_list = pa_last;
+-				continue;
+ 			}
+ 		}
+ 		pa_curr = pa_curr->next;
 -- 
 1.9.1
 
