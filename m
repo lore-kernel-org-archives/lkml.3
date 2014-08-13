@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891AbaHMRlV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:41:21 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:62736 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513AbaHMRlR (ORCPT
+	id S1753774AbaHMRoI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 13:44:08 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:34579 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752929AbaHMRoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 13:41:17 -0400
+	Wed, 13 Aug 2014 13:44:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuyULyzVb1nkJn_Tj_aKjokcBQaw_EnWBdDvtvf9iV7uXA@mail.gmail.com>
+In-Reply-To: <CALCETrXzZVxMGUgDPOKwN0DPLvupU=ew1z6D4U-jHg+RoyZyLg@mail.gmail.com>
 References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
- <063D6719AE5E284EB5DD2968C1650D6D174760F3@AcuExch.aculab.com> <CAMEtUuyULyzVb1nkJn_Tj_aKjokcBQaw_EnWBdDvtvf9iV7uXA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 13 Aug 2014 10:40:55 -0700
-Message-ID: <CALCETrVDJHOu7AFZqeGppxXykRhdG8qwwifpXcXVVr=argwoiQ@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 00/26] BPF syscall, maps, verifier,
- samples, llvm
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: David Laight <David.Laight@aculab.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
+	<1407916658-8731-2-git-send-email-ast@plumgrid.com>
+	<CALCETrXzZVxMGUgDPOKwN0DPLvupU=ew1z6D4U-jHg+RoyZyLg@mail.gmail.com>
+Date: Wed, 13 Aug 2014 10:44:04 -0700
+Message-ID: <CAMEtUuxog0w-XkYMHM=Zto_gejy8x5agxohAWOs1zPEtXTr0Sw@mail.gmail.com>
+Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit
+ immediate" eBPF instruction
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Daniel Borkmann <dborkman@redhat.com>,
@@ -28,53 +27,68 @@ Cc: David Laight <David.Laight@aculab.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 10:30 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Wed, Aug 13, 2014 at 1:52 AM, David Laight <David.Laight@aculab.com> wrote:
->> From: Of Alexei Starovoitov
->>> one more RFC...
->>>
->>> Major difference vs previous set is a new 'load 64-bit immediate' eBPF insn.
->>> Which is first 16-byte instruction. It shows how eBPF ISA can be extended
->>> while maintaining backward compatibility, but mainly it cleans up eBPF
->>> program access to maps and improves run-time performance.
->>
->> Wouldn't it be more sensible to follow the scheme used by a lot of cpus
->> and add a 'load high' instruction (follow with 'add' or 'or').
+On Wed, Aug 13, 2014 at 9:08 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Wed, Aug 13, 2014 at 12:57 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> add BPF_LD_IMM64 instruction to load 64-bit immediate value into register.
+>> All previous instructions were 8-byte. This is first 16-byte instruction.
+>> Two consecutive 'struct bpf_insn' blocks are interpreted as single instruction:
+>> insn[0/1].code = BPF_LD | BPF_DW | BPF_IMM
+>> insn[0/1].dst_reg = destination register
+>> insn[0].imm = lower 32-bit
+>> insn[1].imm = upper 32-bit
 >
-> that was what I used before in pred_tree_walker->ebpf patch
-> (4 existing instructions (2 movs, shift, or) to load 'pred' pointer)
-> It's slower in interpreter than single instruction.
->
->> It still takes 16 bytes to load a 64bit immediate value, but the instruction
->> size remains constant.
->
-> size of instruction is not important. 99% of instructions are 8 byte long
-> and one is 16 byte. Big deal. It doesn't affect interpreter performance,
-> easy for verifier and was straightforward to do in LLVM as well.
->
->> There is nothing to stop any JIT software detecting the instruction pair.
->
-> well, it's actually very complicated to detect a sequence of
-> instructions that compute single 64-bit value.
-> Patch #11 detects and patches pseudo BPF_LD_IMM64 in
-> a single 'for' loop (see replace_map_fd_with_map_ptr), because
-> it's _single_ instruction. Any sequence of insns would require
-> building control and data flow graphs for verifier and JIT.
-> If you remember I resisted initially when Chema proposed
-> 'load 64-bit immediate' equivalent, since back then the use cases
-> didn't require it. With maps done via FDs, the need has arisen.
+> This might be unnecessarily difficult for fancy static analysis tools
+> to reason about.  Would it make sense to assign two different codes
+> for this?  For example, insn[0].code = code_for_load_low,
+> insns[1].code = code_for_load_high, along with a verifier check that
+> they come in matched pairs and that code_for_load_high isn't a jump
+> target?
 
-But don't you need some kind of detection anyway to handle the case
-where something jumps to the middle of the "load 64-bit immediate"?  I
-think it would be fine to require a particular sequence to load 64-bit
-immediates if you want the JIT to optimize it well, though.
+see my reply to David for the same thing. Short answer is that
+sequence of instructions (even if it is a pair of instructions like this)
+is very hard to detect in verifier and JITs.
+As soon as we give compiler two instructions instead of one,
+compiler may optimize them in a fancy ways. Like two loads of
+64-bit immediate with upper 32-bit the same, may came out as
+4 instructions: load_high, load_low, load_low, mov.
+Or in some cases as single load_low, etc.
+load 64-bit imm has to stay as single instruction to be verifiable
+and patch-able easily.
+One can argue: force compiler to emit load_low and load_hi
+always together, but then that's exactly what I have. It's a single insn.
 
---Andy
+> (Something else that I find confusing about eBPF: the instruction
+> mnemonics are very strange.  Have you considered giving them real
+> names?  For example, load.imm.low instead of BPF_LD | BPF_DW | BPF_IMM
+> is easier to read and pronounce.)
+
+BPF_LD | BPF_DW | BPF_IMM is not really a name. It's macro
+for cases when instructions are generated from inside the kernel.
+Instructions mnemonics are not defined yet.
+llvm emits assembler code like:
+bpf_prog2:
+  ldw r1, 16(r1)
+  std -8(r10), r1
+  mov r1, 1
+  std -16(r10), r1
+  ld_64 r1, 1
+  mov r2, r10
+  addi r2, -8
+  call 4
+  jeqi r0, 0 goto .LBB1_2
+  ldd r1, 0(r0)
+  addi r1, 1
+  std 0(r0), r1
+.LBB1_3:
+  mov r0, 0
+  ret
+...
+I'm open to change assembler/disassembler mnemonics.
