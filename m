@@ -1,147 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184AbaHMPWA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:22:00 -0400
-Received: from relay.variantweb.net ([104.131.199.242]:53339 "EHLO
-	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751518AbaHMPV6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:21:58 -0400
-Date: Wed, 13 Aug 2014 10:21:48 -0500
-From: Seth Jennings <sjennings@variantweb.net>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [RFC 1/3] zsmalloc: move pages_allocated to zs_pool
-Message-ID: <20140813152148.GA2768@cerebellum.variantweb.net>
-References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
- <1407225723-23754-2-git-send-email-minchan@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407225723-23754-2-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753158AbaHMPY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:24:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45103 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751429AbaHMPY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 11:24:56 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: ebiederm@xmission.com, hpa@zytor.com, sruffell@digium.com,
+        kexec@lists.infradead.org, Vivek Goyal <vgoyal@redhat.com>
+Subject: [PATCH 1/2] kexec: Create a new config option CONFIG_KEXEC_FILE for new syscall
+Date: Wed, 13 Aug 2014 10:42:59 -0400
+Message-Id: <1407940980-7100-2-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1407940980-7100-1-git-send-email-vgoyal@redhat.com>
+References: <1407940980-7100-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 05:02:01PM +0900, Minchan Kim wrote:
-> Pages_allocated has counted in size_class structure and when user
-> want to see total_size_bytes, it gathers all of value from each
-> size_class to report the sum.
-> 
-> It's not bad if user don't see the value often but if user start
-> to see the value frequently, it would be not a good deal for
-> performance POV.
-> 
-> This patch moves the variable from size_class to zs_pool so it would
-> reduce memory footprint (from [255 * 8byte] to [sizeof(atomic_t)])
-> but it adds new locking overhead but it wouldn't be severe because
-> it's not a hot path in zs_malloc(ie, it is called only when new
-> zspage is created, not a object).
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  mm/zsmalloc.c | 30 ++++++++++++++++--------------
->  1 file changed, 16 insertions(+), 14 deletions(-)
-> 
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index fe78189624cf..a6089bd26621 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -198,9 +198,6 @@ struct size_class {
->  
->  	spinlock_t lock;
->  
-> -	/* stats */
-> -	u64 pages_allocated;
-> -
->  	struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
->  };
->  
-> @@ -216,9 +213,12 @@ struct link_free {
->  };
->  
->  struct zs_pool {
-> +	spinlock_t stat_lock;
-> +
->  	struct size_class size_class[ZS_SIZE_CLASSES];
->  
->  	gfp_t flags;	/* allocation flags used when growing pool */
-> +	unsigned long pages_allocated;
+Currently new system call kexec_file_load() and all the associated code
+compiles if CONFIG_KEXEC=y. But new syscall also compiles purgatory code
+which currently uses gcc option -mcmodel=large. This option seems to be
+available only gcc 4.4 onwards.
 
-As Dan was saying, I think this can be atomic to avoid the locking.
+Hiding new functionality behind a new config option will not break
+existing users of old gcc. Those who wish to enable new functionality
+will require new gcc. Having said that, I am trying to figure out how
+can I move away from using -mcmodel=large but that can take a while.
 
-Seth
+I think there are other advantages of introducing this new config
+option. As this option will be enabled only on x86_64, other arches
+don't have to compile generic kexec code which will never be used.
+This new code selects CRYPTO=y and CRYPTO_SHA256=y. And all other
+arches had to do this for CONFIG_KEXEC. Now with introduction
+of new config option, we can remove crypto dependency from other
+arches.
 
->  };
->  
->  /*
-> @@ -882,6 +882,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
->  
->  	}
->  
-> +	spin_lock_init(&pool->stat_lock);
->  	pool->flags = flags;
->  
->  	return pool;
-> @@ -943,8 +944,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
->  			return 0;
->  
->  		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
-> +		spin_lock(&pool->stat_lock);
-> +		pool->pages_allocated += class->pages_per_zspage;
-> +		spin_unlock(&pool->stat_lock);
->  		spin_lock(&class->lock);
-> -		class->pages_allocated += class->pages_per_zspage;
->  	}
->  
->  	obj = (unsigned long)first_page->freelist;
-> @@ -997,14 +1000,14 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
->  
->  	first_page->inuse--;
->  	fullness = fix_fullness_group(pool, first_page);
-> -
-> -	if (fullness == ZS_EMPTY)
-> -		class->pages_allocated -= class->pages_per_zspage;
-> -
->  	spin_unlock(&class->lock);
->  
-> -	if (fullness == ZS_EMPTY)
-> +	if (fullness == ZS_EMPTY) {
-> +		spin_lock(&pool->stat_lock);
-> +		pool->pages_allocated -= class->pages_per_zspage;
-> +		spin_unlock(&pool->stat_lock);
->  		free_zspage(first_page);
-> +	}
->  }
->  EXPORT_SYMBOL_GPL(zs_free);
->  
-> @@ -1100,12 +1103,11 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
->  
->  u64 zs_get_total_size_bytes(struct zs_pool *pool)
->  {
-> -	int i;
-> -	u64 npages = 0;
-> -
-> -	for (i = 0; i < ZS_SIZE_CLASSES; i++)
-> -		npages += pool->size_class[i].pages_allocated;
-> +	u64 npages;
->  
-> +	spin_lock(&pool->stat_lock);
-> +	npages = pool->pages_allocated;
-> +	spin_unlock(&pool->stat_lock);
->  	return npages << PAGE_SHIFT;
->  }
->  EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
-> -- 
-> 2.0.0
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Now CONFIG_KEXEC_FILE is available only on x86_64. So whereever I
+had CONFIG_X86_64 defined, I got rid of that.
+
+For CONFIG_KEXEC_FILE, instead of doing select CRYPTO=y, I changed
+it to "depends on CRYPTO=y". This should be safer as "select" is
+not recursive.
+
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ arch/x86/Kbuild                    |  4 +---
+ arch/x86/Kconfig                   | 18 ++++++++++++++----
+ arch/x86/Makefile                  |  5 +----
+ arch/x86/kernel/Makefile           |  2 +-
+ arch/x86/kernel/crash.c            |  6 ++----
+ arch/x86/kernel/machine_kexec_64.c | 11 +++++++++++
+ arch/x86/purgatory/Makefile        |  5 +----
+ kernel/kexec.c                     | 11 +++++++++++
+ 8 files changed, 42 insertions(+), 20 deletions(-)
+
+diff --git a/arch/x86/Kbuild b/arch/x86/Kbuild
+index 61b6d51..3942f74 100644
+--- a/arch/x86/Kbuild
++++ b/arch/x86/Kbuild
+@@ -17,6 +17,4 @@ obj-$(CONFIG_IA32_EMULATION) += ia32/
+ obj-y += platform/
+ obj-y += net/
+ 
+-ifeq ($(CONFIG_X86_64),y)
+-obj-$(CONFIG_KEXEC) += purgatory/
+-endif
++obj-$(CONFIG_KEXEC_FILE) += purgatory/
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 4aafd32..a4bb9d0 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1582,9 +1582,6 @@ source kernel/Kconfig.hz
+ 
+ config KEXEC
+ 	bool "kexec system call"
+-	select BUILD_BIN2C
+-	select CRYPTO
+-	select CRYPTO_SHA256
+ 	---help---
+ 	  kexec is a system call that implements the ability to shutdown your
+ 	  current kernel, and to start another kernel.  It is like a reboot
+@@ -1599,9 +1596,22 @@ config KEXEC
+ 	  interface is strongly in flux, so no good recommendation can be
+ 	  made.
+ 
++config KEXEC_FILE
++	bool "kexec file based system call"
++	select BUILD_BIN2C
++	depends on KEXEC
++	depends on X86_64
++	depends on CRYPTO=y
++	depends on CRYPTO_SHA256=y
++	---help---
++	  This is new version of kexec system call. This system call is
++	  file based and takes file descriptors as system call argument
++	  for kernel and initramfs as opposed to list of segments as
++	  accepted by previous system call.
++
+ config KEXEC_VERIFY_SIG
+ 	bool "Verify kernel signature during kexec_file_load() syscall"
+-	depends on KEXEC
++	depends on KEXEC_FILE
+ 	---help---
+ 	  This option makes kernel signature verification mandatory for
+ 	  kexec_file_load() syscall. If kernel is signature can not be
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index c1aa368..c96bcec 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -184,11 +184,8 @@ archheaders:
+ 	$(Q)$(MAKE) $(build)=arch/x86/syscalls all
+ 
+ archprepare:
+-ifeq ($(CONFIG_KEXEC),y)
+-# Build only for 64bit. No loaders for 32bit yet.
+- ifeq ($(CONFIG_X86_64),y)
++ifeq ($(CONFIG_KEXEC_FILE),y)
+ 	$(Q)$(MAKE) $(build)=arch/x86/purgatory arch/x86/purgatory/kexec-purgatory.c
+- endif
+ endif
+ 
+ ###
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index b5ea75c..ada2e2d 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -71,6 +71,7 @@ obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
+ obj-$(CONFIG_X86_TSC)		+= trace_clock.o
+ obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
+ obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
++obj-$(CONFIG_KEXEC_FILE)	+= kexec-bzimage64.o
+ obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
+ obj-y				+= kprobes/
+ obj-$(CONFIG_MODULES)		+= module.o
+@@ -118,5 +119,4 @@ ifeq ($(CONFIG_X86_64),y)
+ 
+ 	obj-$(CONFIG_PCI_MMCONFIG)	+= mmconf-fam10h_64.o
+ 	obj-y				+= vsmp_64.o
+-	obj-$(CONFIG_KEXEC)		+= kexec-bzimage64.o
+ endif
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index 0553a34..a618fcd 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -182,8 +182,7 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
+ 	crash_save_cpu(regs, safe_smp_processor_id());
+ }
+ 
+-#ifdef CONFIG_X86_64
+-
++#ifdef CONFIG_KEXEC_FILE
+ static int get_nr_ram_ranges_callback(unsigned long start_pfn,
+ 				unsigned long nr_pfn, void *arg)
+ {
+@@ -696,5 +695,4 @@ int crash_load_segments(struct kimage *image)
+ 
+ 	return ret;
+ }
+-
+-#endif /* CONFIG_X86_64 */
++#endif /* CONFIG_KEXEC_FILE */
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index 8b04018..4859810 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -25,9 +25,11 @@
+ #include <asm/debugreg.h>
+ #include <asm/kexec-bzimage64.h>
+ 
++#ifdef CONFIG_KEXEC_FILE
+ static struct kexec_file_ops *kexec_file_loaders[] = {
+ 		&kexec_bzImage64_ops,
+ };
++#endif
+ 
+ static void free_transition_pgtable(struct kimage *image)
+ {
+@@ -178,6 +180,7 @@ static void load_segments(void)
+ 		);
+ }
+ 
++#ifdef CONFIG_KEXEC_FILE
+ /* Update purgatory as needed after various image segments have been prepared */
+ static int arch_update_purgatory(struct kimage *image)
+ {
+@@ -209,6 +212,12 @@ static int arch_update_purgatory(struct kimage *image)
+ 
+ 	return ret;
+ }
++#else /* !CONFIG_KEXEC_FILE */
++static inline int arch_update_purgatory(struct kimage *image)
++{
++	return 0;
++}
++#endif /* CONFIG_KEXEC_FILE */
+ 
+ int machine_kexec_prepare(struct kimage *image)
+ {
+@@ -329,6 +338,7 @@ void arch_crash_save_vmcoreinfo(void)
+ 
+ /* arch-dependent functionality related to kexec file-based syscall */
+ 
++#ifdef CONFIG_KEXEC_FILE
+ int arch_kexec_kernel_image_probe(struct kimage *image, void *buf,
+ 				  unsigned long buf_len)
+ {
+@@ -522,3 +532,4 @@ overflow:
+ 	       (int)ELF64_R_TYPE(rel[i].r_info), value);
+ 	return -ENOEXEC;
+ }
++#endif /* CONFIG_KEXEC_FILE */
+diff --git a/arch/x86/purgatory/Makefile b/arch/x86/purgatory/Makefile
+index 7fde9ee..c4ae06e 100644
+--- a/arch/x86/purgatory/Makefile
++++ b/arch/x86/purgatory/Makefile
+@@ -24,7 +24,4 @@ $(obj)/kexec-purgatory.c: $(obj)/purgatory.ro FORCE
+ 	$(call if_changed,bin2c)
+ 
+ 
+-# No loaders for 32bits yet.
+-ifeq ($(CONFIG_X86_64),y)
+- obj-$(CONFIG_KEXEC)		+= kexec-purgatory.o
+-endif
++obj-$(CONFIG_KEXEC_FILE)	+= kexec-purgatory.o
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 0b49a0a..2bee072 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -64,7 +64,9 @@ bool kexec_in_progress = false;
+ char __weak kexec_purgatory[0];
+ size_t __weak kexec_purgatory_size = 0;
+ 
++#ifdef CONFIG_KEXEC_FILE
+ static int kexec_calculate_store_digests(struct kimage *image);
++#endif
+ 
+ /* Location of the reserved area for the crash kernel */
+ struct resource crashk_res = {
+@@ -341,6 +343,7 @@ out_free_image:
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_KEXEC_FILE
+ static int copy_file_from_fd(int fd, void **buf, unsigned long *buf_len)
+ {
+ 	struct fd f = fdget(fd);
+@@ -612,6 +615,9 @@ out_free_image:
+ 	kfree(image);
+ 	return ret;
+ }
++#else /* CONFIG_KEXEC_FILE */
++static inline void kimage_file_post_load_cleanup(struct kimage *image) { }
++#endif /* CONFIG_KEXEC_FILE */
+ 
+ static int kimage_is_destination_range(struct kimage *image,
+ 					unsigned long start,
+@@ -1375,6 +1381,7 @@ COMPAT_SYSCALL_DEFINE4(kexec_load, compat_ulong_t, entry,
+ }
+ #endif
+ 
++#ifdef CONFIG_KEXEC_FILE
+ SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
+ 		unsigned long, cmdline_len, const char __user *, cmdline_ptr,
+ 		unsigned long, flags)
+@@ -1451,6 +1458,8 @@ out:
+ 	return ret;
+ }
+ 
++#endif /* CONFIG_KEXEC_FILE */
++
+ void crash_kexec(struct pt_regs *regs)
+ {
+ 	/* Take the kexec_mutex here to prevent sys_kexec_load
+@@ -2006,6 +2015,7 @@ static int __init crash_save_vmcoreinfo_init(void)
+ 
+ subsys_initcall(crash_save_vmcoreinfo_init);
+ 
++#ifdef CONFIG_KEXEC_FILE
+ static int __kexec_add_segment(struct kimage *image, char *buf,
+ 			       unsigned long bufsz, unsigned long mem,
+ 			       unsigned long memsz)
+@@ -2682,6 +2692,7 @@ int kexec_purgatory_get_set_symbol(struct kimage *image, const char *name,
+ 
+ 	return 0;
+ }
++#endif /* CONFIG_KEXEC_FILE */
+ 
+ /*
+  * Move into place and start executing a preloaded standalone
+-- 
+1.9.0
+
