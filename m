@@ -1,89 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497AbaHMIKe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:10:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43126 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaHMIKa (ORCPT
+	id S1752331AbaHMILg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:11:36 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:33982 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaHMH6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:10:30 -0400
-Date: Wed, 13 Aug 2014 10:10:17 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/3] perf, x86: Add INST_RETIRED.PREC_DIST workarounds
-Message-ID: <20140813081017.GA9918@twins.programming.kicks-ass.net>
-References: <1407894315-15928-1-git-send-email-andi@firstfloor.org>
- <1407894315-15928-3-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yLiyLTwUsq1iSSyX"
-Content-Disposition: inline
-In-Reply-To: <1407894315-15928-3-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 13 Aug 2014 03:58:24 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC v4 net-next 12/26] bpf: verifier (add branch/goto checks)
+Date: Wed, 13 Aug 2014 00:57:23 -0700
+Message-Id: <1407916658-8731-13-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+check that control flow graph of eBPF program is a directed acyclic graph
 
---yLiyLTwUsq1iSSyX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+check_cfg() does:
+- detect loops
+- detect unreachable instructions
+- check that program terminates with BPF_EXIT insn
+- check that all branches are within program boundary
 
-On Tue, Aug 12, 2014 at 06:45:15PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->=20
-> On Broadwell INST_RETIRED.PREC_DIST cannot be used with any period
-> that doesn't have the lowest 6 bits cleared. And the period
-> should not be smaller than 128.
->=20
-> Add a new callback to enforce this, and set it for Broadwell.
->=20
-> This is erratum BDM57 and BDM11.
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ kernel/bpf/verifier.c |  183 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 183 insertions(+)
 
-Urgh, this blows.
+diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
+index f71d4c494aec..19c853f68c30 100644
+--- a/kernel/bpf/verifier.c
++++ b/kernel/bpf/verifier.c
+@@ -331,6 +331,185 @@ static struct bpf_map *ld_imm64_to_map_ptr(struct bpf_insn *insn)
+ 	return (struct bpf_map *) (unsigned long) imm64;
+ }
+ 
++/* non-recursive DFS pseudo code
++ * 1  procedure DFS-iterative(G,v):
++ * 2      label v as discovered
++ * 3      let S be a stack
++ * 4      S.push(v)
++ * 5      while S is not empty
++ * 6            t <- S.pop()
++ * 7            if t is what we're looking for:
++ * 8                return t
++ * 9            for all edges e in G.adjacentEdges(t) do
++ * 10               if edge e is already labelled
++ * 11                   continue with the next edge
++ * 12               w <- G.adjacentVertex(t,e)
++ * 13               if vertex w is not discovered and not explored
++ * 14                   label e as tree-edge
++ * 15                   label w as discovered
++ * 16                   S.push(w)
++ * 17                   continue at 5
++ * 18               else if vertex w is discovered
++ * 19                   label e as back-edge
++ * 20               else
++ * 21                   // vertex w is explored
++ * 22                   label e as forward- or cross-edge
++ * 23           label t as explored
++ * 24           S.pop()
++ *
++ * convention:
++ * 0x10 - discovered
++ * 0x11 - discovered and fall-through edge labelled
++ * 0x12 - discovered and fall-through and branch edges labelled
++ * 0x20 - explored
++ */
++
++enum {
++	DISCOVERED = 0x10,
++	EXPLORED = 0x20,
++	FALLTHROUGH = 1,
++	BRANCH = 2,
++};
++
++#define PUSH_INT(I) \
++	do { \
++		if (cur_stack >= insn_cnt) { \
++			ret = -E2BIG; \
++			goto free_st; \
++		} \
++		stack[cur_stack++] = I; \
++	} while (0)
++
++#define PEEK_INT() \
++	({ \
++		int _ret; \
++		if (cur_stack == 0) \
++			_ret = -1; \
++		else \
++			_ret = stack[cur_stack - 1]; \
++		_ret; \
++	 })
++
++#define POP_INT() \
++	({ \
++		int _ret; \
++		if (cur_stack == 0) \
++			_ret = -1; \
++		else \
++			_ret = stack[--cur_stack]; \
++		_ret; \
++	 })
++
++#define PUSH_INSN(T, W, E) \
++	do { \
++		int w = W; \
++		if (E == FALLTHROUGH && st[T] >= (DISCOVERED | FALLTHROUGH)) \
++			break; \
++		if (E == BRANCH && st[T] >= (DISCOVERED | BRANCH)) \
++			break; \
++		if (w < 0 || w >= insn_cnt) { \
++			verbose("jump out of range from insn %d to %d\n", T, w); \
++			ret = -EINVAL; \
++			goto free_st; \
++		} \
++		if (st[w] == 0) { \
++			/* tree-edge */ \
++			st[T] = DISCOVERED | E; \
++			st[w] = DISCOVERED; \
++			PUSH_INT(w); \
++			goto peek_stack; \
++		} else if ((st[w] & 0xF0) == DISCOVERED) { \
++			verbose("back-edge from insn %d to %d\n", T, w); \
++			ret = -EINVAL; \
++			goto free_st; \
++		} else if (st[w] == EXPLORED) { \
++			/* forward- or cross-edge */ \
++			st[T] = DISCOVERED | E; \
++		} else { \
++			verbose("insn state internal bug\n"); \
++			ret = -EFAULT; \
++			goto free_st; \
++		} \
++	} while (0)
++
++/* non-recursive depth-first-search to detect loops in BPF program
++ * loop == back-edge in directed graph
++ */
++static int check_cfg(struct verifier_env *env)
++{
++	struct bpf_insn *insns = env->prog->insnsi;
++	int insn_cnt = env->prog->len;
++	int cur_stack = 0;
++	int *stack;
++	int ret = 0;
++	int *st;
++	int i, t;
++
++	st = kzalloc(sizeof(int) * insn_cnt, GFP_KERNEL);
++	if (!st)
++		return -ENOMEM;
++
++	stack = kzalloc(sizeof(int) * insn_cnt, GFP_KERNEL);
++	if (!stack) {
++		kfree(st);
++		return -ENOMEM;
++	}
++
++	st[0] = DISCOVERED; /* mark 1st insn as discovered */
++	PUSH_INT(0);
++
++peek_stack:
++	while ((t = PEEK_INT()) != -1) {
++		if (BPF_CLASS(insns[t].code) == BPF_JMP) {
++			u8 opcode = BPF_OP(insns[t].code);
++
++			if (opcode == BPF_EXIT) {
++				goto mark_explored;
++			} else if (opcode == BPF_CALL) {
++				PUSH_INSN(t, t + 1, FALLTHROUGH);
++			} else if (opcode == BPF_JA) {
++				if (BPF_SRC(insns[t].code) != BPF_K) {
++					ret = -EINVAL;
++					goto free_st;
++				}
++				/* unconditional jump with single edge */
++				PUSH_INSN(t, t + insns[t].off + 1, FALLTHROUGH);
++			} else {
++				/* conditional jump with two edges */
++				PUSH_INSN(t, t + 1, FALLTHROUGH);
++				PUSH_INSN(t, t + insns[t].off + 1, BRANCH);
++			}
++		} else {
++			/* all other non-branch instructions with single
++			 * fall-through edge
++			 */
++			PUSH_INSN(t, t + 1, FALLTHROUGH);
++		}
++
++mark_explored:
++		st[t] = EXPLORED;
++		if (POP_INT() == -1) {
++			verbose("pop_int internal bug\n");
++			ret = -EFAULT;
++			goto free_st;
++		}
++	}
++
++
++	for (i = 0; i < insn_cnt; i++) {
++		if (st[i] != EXPLORED) {
++			verbose("unreachable insn %d\n", i);
++			ret = -EINVAL;
++			goto free_st;
++		}
++	}
++
++free_st:
++	kfree(st);
++	kfree(stack);
++	return ret;
++}
++
+ /* look for pseudo eBPF instructions that access map FDs and
+  * replace them with actual map pointers
+  */
+@@ -480,6 +659,10 @@ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
+ 	if (ret < 0)
+ 		goto skip_full_check;
+ 
++	ret = check_cfg(env);
++	if (ret < 0)
++		goto skip_full_check;
++
+ 	/* ret = do_check(env); */
+ 
+ skip_full_check:
+-- 
+1.7.9.5
 
-> +/*
-> + * Broadwell:
-> + * The INST_RETIRED.ALL period always needs to have lowest
-> + * 6bits cleared (BDM57). It shall not use a period smaller
-> + * than 100 (BDM11). We combine the two to enforce
-> + * a min-period of 128.
-> + */
-> +static unsigned bdw_limit_period(struct perf_event *event, unsigned left)
-> +{
-> +	if ((event->hw.config & 0xffff) =3D=3D 0x1c0) {
-
-ISTR we have actual proper defines for that.
-
-> +		if (left < 128)
-> +			left =3D 128;
-> +		left &=3D ~0x3fu;
-> +	}
-> +	return left;
-> +}
-
---yLiyLTwUsq1iSSyX
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT6x1pAAoJEHZH4aRLwOS6juQP/2zHdTJmlXbznqhJcFwf7JG7
-4APmQpaGUoh7hthPYBiR4cMcwTbo4siht5B8p1WVBm2kxSQuC0La23cyNtw9oTtz
-pt5WEu7PPyzQzEZH1ItsEE0SSD5DA485/QA9ZBqxnRzXYuodLKdlaCo/HADVXzd/
-oy+4vrO3CVqwl5djGdhz9ISZZHgPhdT9Ep+kMG6jSOb2xtmUsxYhulqgp1upvq8Y
-iUZjYE7HX6APnyeSEVeNlrbfdZ9qPq8ousownlayhomj6kY1+KR9wi7F0Cs/voDA
-ePgfa05brkOPWml9LH0QJZL09a8ufruSBIuNPAM5vRc0z8atCQ0uKAA+qYeIBomm
-+94PbRHQw5L1wS+0+EFM7TFr7MQiWSmvghTfchzeA30UwN1xhXd0vzR88bm6CQyt
-CJwwMINTxFqlcGKnRVTAEBYSjKKyKFbD47T7FfNCIZUW9erUEU+x53+OGOzv3sxU
-XuuFtKyhVGHIIHcMqZ+rVjWqCDdtoosS/dU2M20eTaQHmq7BxmnTsS3haIAVSDjO
-MVf4kLPzzc7zpIDlmu8tGFIINZNFaIxHpHW6wkdK+1Q4ecwse4M00zEnSmdxnulp
-/H0rv4p94D2k478Y49Ch0PBtStxQXPNRyOOKmykDqUzpSKQPUgQn1OivpZGQoujO
-o7/MUugapWp08OAD0Vyj
-=3Qjm
------END PGP SIGNATURE-----
-
---yLiyLTwUsq1iSSyX--
