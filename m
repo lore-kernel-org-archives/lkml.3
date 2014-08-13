@@ -1,61 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527AbaHMXZT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 19:25:19 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:48085 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866AbaHMXZS (ORCPT
+	id S1752765AbaHMX1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 19:27:13 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:63018 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaHMX1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 19:25:18 -0400
-Date: Wed, 13 Aug 2014 16:25:16 -0700 (PDT)
-Message-Id: <20140813.162516.1876660483788283579.davem@davemloft.net>
-To: David.Laight@ACULAB.COM
-Cc: ast@plumgrid.com, mingo@kernel.org, torvalds@linux-foundation.org,
-        luto@amacapital.net, rostedt@goodmis.org, dborkman@redhat.com,
-        chema@google.com, edumazet@google.com, a.p.zijlstra@chello.nl,
-        hpa@zytor.com, akpm@linux-foundation.org, keescook@chromium.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC v4 net-next 00/26] BPF syscall, maps, verifier,
- samples, llvm
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174760F3@AcuExch.aculab.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-	<063D6719AE5E284EB5DD2968C1650D6D174760F3@AcuExch.aculab.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 13 Aug 2014 16:25:17 -0700 (PDT)
+	Wed, 13 Aug 2014 19:27:11 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 14 Aug 2014 08:27:19 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: linux-mm@kvack.org, Jerome Marchand <jmarchan@redhat.com>,
+        linux-kernel@vger.kernel.org, juno.choi@lge.com, seungho1.park@lge.com,
+        Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [RFC 3/3] zram: limit memory size for zram
+Message-ID: <20140813232719.GD9227@bbox>
+References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
+ <1407225723-23754-4-git-send-email-minchan@kernel.org>
+ <20140805094859.GE27993@bbox>
+ <20140805131615.GA961@swordfish>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140805131615.GA961@swordfish>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Laight <David.Laight@ACULAB.COM>
-Date: Wed, 13 Aug 2014 08:52:30 +0000
+Hey Sergey,
 
-> From: Of Alexei Starovoitov
->> one more RFC...
->> 
->> Major difference vs previous set is a new 'load 64-bit immediate' eBPF insn.
->> Which is first 16-byte instruction. It shows how eBPF ISA can be extended
->> while maintaining backward compatibility, but mainly it cleans up eBPF
->> program access to maps and improves run-time performance.
+On Tue, Aug 05, 2014 at 10:16:15PM +0900, Sergey Senozhatsky wrote:
+> Hello,
 > 
-> Wouldn't it be more sensible to follow the scheme used by a lot of cpus
-> and add a 'load high' instruction (follow with 'add' or 'or').
-> It still takes 16 bytes to load a 64bit immediate value, but the instruction
-> size remains constant.
-> There is nothing to stop any JIT software detecting the instruction pair.
+> On (08/05/14 18:48), Minchan Kim wrote:
+> > Another idea: we could define void zs_limit_mem(unsinged long nr_pages)
+> > in zsmalloc and put the limit in zs_pool via new API from zram so that
+> > zs_malloc could be failed as soon as it exceeds the limit.
+> > 
+> > In the end, zram doesn't need to call zs_get_total_size_bytes on every
+> > write. It's more clean and right layer, IMHO.
+> 
+> yes, I think this one is better.
 
-The opposite argument is that JITs can expand the IMM64 load into whatever
-sequence of instructions is most optimal.
+Although I suggested this new one, a few days ago I changed the decision
+and was testing the new patchset.
 
-My only real gripe with IMM64 loads is that it's not mainly for
-loading an immediate, it's for loading a pointer.  And this
-distinction is important for some JITs.
+If we add new API for zsmalloc, it adds unnecessary overhead for users who
+doesn't care of limit. Although it's cheap, I'd like to avoid that.
 
-For example, on sparc64 all symbol based addresses are actually 32-bit
-because of the code model we use to compile the kernel and all modules.
-So if we knew this is a pointer load and it's to a symbol in a kernel
-or module image, we could do a 32-bit load.
+The zsmalloc is just allocator so anybody can use it if they want.
+But limitation is just requirement of zram who is a one of client
+being able to use zsmalloc potentially so accouting should be on zram,
+not zsmalloc.
+
+If we might have more users of zsmalloc in future and they all want this
+feature that limit of zsmalloc memory usage, we might move the feature
+from client to zsmalloc core so everybody would be happy for performance
+and readability but opposite would be painful.
+
+In summary, let's keep the accounting logic in client side of zsmalloc(ie,
+zram) at the moment but we could move it into zsmalloc core possibly
+in future.
+
+Any thoughts?
+
+> 
+> 	-ss
+> 
+> > On Tue, Aug 05, 2014 at 05:02:03PM +0900, Minchan Kim wrote:
+> > > I have received a request several time from zram users.
+> > > They want to limit memory size for zram because zram can consume
+> > > lot of memory on system without limit so it makes memory management
+> > > control hard.
+> > > 
+> > > This patch adds new knob to limit memory of zram.
+> > > 
+> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > > ---
+> > >  Documentation/blockdev/zram.txt |  1 +
+> > >  drivers/block/zram/zram_drv.c   | 41 +++++++++++++++++++++++++++++++++++++++++
+> > >  drivers/block/zram/zram_drv.h   |  1 +
+> > >  3 files changed, 43 insertions(+)
+> > > 
+> > > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+> > > index d24534bee763..fcb0561dfe2e 100644
+> > > --- a/Documentation/blockdev/zram.txt
+> > > +++ b/Documentation/blockdev/zram.txt
+> > > @@ -96,6 +96,7 @@ size of the disk when not in use so a huge zram is wasteful.
+> > >  		compr_data_size
+> > >  		mem_used_total
+> > >  		mem_used_max
+> > > +		mem_limit
+> > >  
+> > >  7) Deactivate:
+> > >  	swapoff /dev/zram0
+> > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > > index a4d637b4db7d..47f68bbb2c44 100644
+> > > --- a/drivers/block/zram/zram_drv.c
+> > > +++ b/drivers/block/zram/zram_drv.c
+> > > @@ -137,6 +137,37 @@ static ssize_t max_comp_streams_show(struct device *dev,
+> > >  	return scnprintf(buf, PAGE_SIZE, "%d\n", val);
+> > >  }
+> > >  
+> > > +static ssize_t mem_limit_show(struct device *dev,
+> > > +		struct device_attribute *attr, char *buf)
+> > > +{
+> > > +	u64 val;
+> > > +	struct zram *zram = dev_to_zram(dev);
+> > > +
+> > > +	down_read(&zram->init_lock);
+> > > +	val = zram->limit_bytes;
+> > > +	up_read(&zram->init_lock);
+> > > +
+> > > +	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
+> > > +}
+> > > +
+> > > +static ssize_t mem_limit_store(struct device *dev,
+> > > +		struct device_attribute *attr, const char *buf, size_t len)
+> > > +{
+> > > +	u64 limit;
+> > > +	struct zram *zram = dev_to_zram(dev);
+> > > +	int ret;
+> > > +
+> > > +	ret = kstrtoull(buf, 0, &limit);
+> > > +	if (ret < 0)
+> > > +		return ret;
+> > > +
+> > > +	down_write(&zram->init_lock);
+> > > +	zram->limit_bytes = limit;
+> > > +	ret = len;
+> > > +	up_write(&zram->init_lock);
+> > > +	return ret;
+> > > +}
+> > > +
+> > >  static ssize_t max_comp_streams_store(struct device *dev,
+> > >  		struct device_attribute *attr, const char *buf, size_t len)
+> > >  {
+> > > @@ -511,6 +542,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> > >  		ret = -ENOMEM;
+> > >  		goto out;
+> > >  	}
+> > > +
+> > > +	if (zram->limit_bytes &&
+> > > +		zs_get_total_size_bytes(meta->mem_pool) >= zram->limit_bytes) {
+> > > +		zs_free(meta->mem_pool, handle);
+> > > +		ret = -ENOMEM;
+> > > +		goto out;
+> > > +	}
+> > > +
+> > >  	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
+> > >  
+> > >  	if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
+> > > @@ -854,6 +893,7 @@ static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+> > >  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+> > >  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+> > >  static DEVICE_ATTR(mem_used_max, S_IRUGO, mem_used_max_show, NULL);
+> > > +static DEVICE_ATTR(mem_limit, S_IRUGO, mem_limit_show, mem_limit_store);
+> > >  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+> > >  		max_comp_streams_show, max_comp_streams_store);
+> > >  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
+> > > @@ -883,6 +923,7 @@ static struct attribute *zram_disk_attrs[] = {
+> > >  	&dev_attr_compr_data_size.attr,
+> > >  	&dev_attr_mem_used_total.attr,
+> > >  	&dev_attr_mem_used_max.attr,
+> > > +	&dev_attr_mem_limit.attr,
+> > >  	&dev_attr_max_comp_streams.attr,
+> > >  	&dev_attr_comp_algorithm.attr,
+> > >  	NULL,
+> > > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > > index 7f21c145e317..c0d497ff6efc 100644
+> > > --- a/drivers/block/zram/zram_drv.h
+> > > +++ b/drivers/block/zram/zram_drv.h
+> > > @@ -99,6 +99,7 @@ struct zram {
+> > >  	 * we can store in a disk.
+> > >  	 */
+> > >  	u64 disksize;	/* bytes */
+> > > +	u64 limit_bytes;
+> > >  	int max_comp_streams;
+> > >  	struct zram_stats stats;
+> > >  	char compressor[10];
+> > > -- 
+> > > 2.0.0
+> > 
+> > -- 
+> > Kind regards,
+> > Minchan Kim
+> > 
+
+-- 
+Kind regards,
+Minchan Kim
