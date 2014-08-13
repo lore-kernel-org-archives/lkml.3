@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882AbaHMVFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 17:05:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32670 "EHLO mx1.redhat.com"
+	id S1753925AbaHMVFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 17:05:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18811 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751675AbaHMVFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 17:05:03 -0400
-Date: Wed, 13 Aug 2014 17:03:24 -0400
+	id S1751675AbaHMVFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 17:05:12 -0400
+Date: Wed, 13 Aug 2014 17:03:37 -0400
 From: Rik van Riel <riel@redhat.com>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
@@ -17,7 +17,7 @@ Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
         Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
 Subject: [PATCH RFC] time,signal: protect resource use statistics with
  seqlock
-Message-ID: <20140813170324.544aaf2d@cuia.bos.redhat.com>
+Message-ID: <20140813170337.7f2b225a@cuia.bos.redhat.com>
 In-Reply-To: <20140813184511.GA9663@redhat.com>
 References: <20140812142539.01851e52@annuminas.surriel.com>
 	<20140812191218.GA15210@redhat.com>
