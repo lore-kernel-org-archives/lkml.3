@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347AbaHMKyh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 06:54:37 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:19638 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751438AbaHMKyd (ORCPT
+	id S1752426AbaHMKz5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 06:55:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53267 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759AbaHMKzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 06:54:33 -0400
-Date: Wed, 13 Aug 2014 11:53:58 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v9 12/12] PCI: Introduce pci_remap_iospace() for
- remapping PCI I/O bus resources into CPU space
-Message-ID: <20140813105358.GD18495@arm.com>
-References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
- <1407860725-25202-13-git-send-email-Liviu.Dudau@arm.com>
- <20140813100118.GC18495@arm.com>
- <20140813103311.GQ25761@e106497-lin.cambridge.arm.com>
+	Wed, 13 Aug 2014 06:55:55 -0400
+Date: Wed, 13 Aug 2014 03:54:53 -0700
+From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
+Message-ID: <tip-242489cfe97d44290e7f88b12591fab6c0819045@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de, davidlohr@hp.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de, davidlohr@hp.com
+In-Reply-To: <1406752916-3341-1-git-send-email-davidlohr@hp.com>
+References: <1406752916-3341-1-git-send-email-davidlohr@hp.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:locking/core] locking/mutexes: Standardize arguments in lock
+ /unlock slowpaths
+Git-Commit-ID: 242489cfe97d44290e7f88b12591fab6c0819045
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140813103311.GQ25761@e106497-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 11:33:11AM +0100, Liviu Dudau wrote:
-> On Wed, Aug 13, 2014 at 11:01:18AM +0100, Catalin Marinas wrote:
-> > On Tue, Aug 12, 2014 at 05:25:25PM +0100, Liviu Dudau wrote:
-> > > Introduce a default implementation for remapping PCI bus I/O resources
-> > > onto the CPU address space. Architectures with special needs may
-> > > provide their own version, but most should be able to use this one.
-> > > 
-> > > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > > Cc: Arnd Bergmann <arnd@arndb.de>
-> > > Cc: Rob Herring <robh+dt@kernel.org>
-> > > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > 
-> > I guess you could have added the generic pgprot_device definition to
-> > this patch and the arm64 specific one in the separate arm64 PCIe support
-> > (and one less patch in total). But not a big issue either way.
-> 
-> I went by the established history on that file, where a new interface gets
-> introduced together with its use. I guess it makes backing out the change
-> much easier?
+Commit-ID:  242489cfe97d44290e7f88b12591fab6c0819045
+Gitweb:     http://git.kernel.org/tip/242489cfe97d44290e7f88b12591fab6c0819045
+Author:     Davidlohr Bueso <davidlohr@hp.com>
+AuthorDate: Wed, 30 Jul 2014 13:41:50 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 13 Aug 2014 10:31:58 +0200
 
-The point is that the only user of pgprot_device is pci_remap_iospace()
-currently, so it makes sense to introduce the generic definition
-together with this patch.
+locking/mutexes: Standardize arguments in lock/unlock slowpaths
 
--- 
-Catalin
+Just how the locking-end behaves, when unlocking, go ahead and
+obtain the proper data structure immediately after the previous
+(asm-end) call exits and there are (probably) pending waiters.
+This simplifies a bit some of the layering.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: jason.low2@hp.com
+Cc: aswin@hp.com
+Cc: mingo@kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Link: http://lkml.kernel.org/r/1406752916-3341-1-git-send-email-davidlohr@hp.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/locking/mutex.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index ae712b2..ad0e333 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -679,9 +679,8 @@ EXPORT_SYMBOL_GPL(__ww_mutex_lock_interruptible);
+  * Release the lock, slowpath:
+  */
+ static inline void
+-__mutex_unlock_common_slowpath(atomic_t *lock_count, int nested)
++__mutex_unlock_common_slowpath(struct mutex *lock, int nested)
+ {
+-	struct mutex *lock = container_of(lock_count, struct mutex, count);
+ 	unsigned long flags;
+ 
+ 	/*
+@@ -716,7 +715,9 @@ __mutex_unlock_common_slowpath(atomic_t *lock_count, int nested)
+ __visible void
+ __mutex_unlock_slowpath(atomic_t *lock_count)
+ {
+-	__mutex_unlock_common_slowpath(lock_count, 1);
++	struct mutex *lock = container_of(lock_count, struct mutex, count);
++
++	__mutex_unlock_common_slowpath(lock, 1);
+ }
+ 
+ #ifndef CONFIG_DEBUG_LOCK_ALLOC
