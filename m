@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059AbaHMXGJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 19:06:09 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:41889 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750AbaHMXGH (ORCPT
+	id S1752351AbaHMXQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 19:16:59 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:40518 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529AbaHMXQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 19:06:07 -0400
-From: Andreas Noever <andreas.noever@gmail.com>
-To: Steven Noonan <steven@uplinklabs.net>
-Cc: Andreas Noever <andreas.noever@gmail.com>, Greg KH <greg@kroah.com>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Thunderbolt driver hotplug not working correctly
-Date: Thu, 14 Aug 2014 01:05:43 +0200
-Message-Id: <1407971143-2928-1-git-send-email-andreas.noever@gmail.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <CAMxnaaXjtk1LB9LA_H9UOKX2-XUBM=RP1p=9ctxsnDpMsr6f3w@mail.gmail.com>
+	Wed, 13 Aug 2014 19:16:58 -0400
+Date: Wed, 13 Aug 2014 16:16:56 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Fengguang Wu <fengguang.wu@intel.com>
+cc: x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: fix messed up page fault BUG messages
+In-Reply-To: <20140813112724.GA6338@localhost>
+Message-ID: <alpine.DEB.2.02.1408131615220.31428@chino.kir.corp.google.com>
+References: <20140813112724.GA6338@localhost>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Steven,
+On Wed, 13 Aug 2014, Fengguang Wu wrote:
 
-I think that there are two problems:
- - The Kernel does not notice that the device is gone.
- - The first hotplug operation, after removing a coldplugged device fails.
+> The 0day boot test robot hits messed up BUG lines like
+> 
+> [   25.732010] BUG: unable to handle kernel paging requestrun: /lkp/wfg/sr at 000000000000d908
+> [   24.986598] BUG: unable to handle kernel run: /lkp/wfg/srpaging request at 000000000000d908
+> [   24.914406] BUG: unable to handle kernel run: /lkp/wfg/srearly console in decompress_kernel
+> 
+> Which makes the generated bug ID not stable and hence not bisectable.
+> 
+> Fix it by printing the BUG message in one shot.
+> 
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+> ---
+>  arch/x86/mm/fault.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 3664279..f3e0e0a 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -599,13 +599,13 @@ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
+>  			printk(nx_warning, from_kuid(&init_user_ns, current_uid()));
+>  	}
+>  
+> -	printk(KERN_ALERT "BUG: unable to handle kernel ");
+>  	if (address < PAGE_SIZE)
+> -		printk(KERN_CONT "NULL pointer dereference");
+> +		printk(KERN_ALERT "BUG: unable to handle kernel NULL pointer dereference at %p\n",
+> +		       (void *) address);
+>  	else
+> -		printk(KERN_CONT "paging request");
+> +		printk(KERN_ALERT "BUG: unable to handle kernel NULL pointer paging request at %p\n",
+> +		       (void *) address);
+>  
+> -	printk(KERN_CONT " at %p\n", (void *) address);
+>  	printk(KERN_ALERT "IP:");
+>  	printk_address(regs->ip);
+>  
 
-For the first one could you check whether thie pciehp (sub)-driver is loaded?
-(dmesg | grep pciehp should show something, the config option is
-CONFIG_HOTPLUG_PCI_PCIE).
+That's been around forever, but I trust that an automated boot testing 
+robot would find it more troublesome than most, so I agree it needs to be 
+fixed.  One problem: it changes the message from
 
-I was able reproduce the second problem on my machine. Could you test whether
-this patch fixes the problem?
+	BUG: unable to handle kernel paging request at %p
 
-Thanks,
-Andreas
+to
 
----
- drivers/thunderbolt/path.c | 21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
+	BUG: unable to handle kernel NULL pointer paging request at %p
 
-diff --git a/drivers/thunderbolt/path.c b/drivers/thunderbolt/path.c
-index 8fcf8a7..9562cd0 100644
---- a/drivers/thunderbolt/path.c
-+++ b/drivers/thunderbolt/path.c
-@@ -150,7 +150,26 @@ int tb_path_activate(struct tb_path *path)
- 
- 	/* Activate hops. */
- 	for (i = path->path_length - 1; i >= 0; i--) {
--		struct tb_regs_hop hop;
-+		struct tb_regs_hop hop = { 0 };
-+
-+		/*
-+		 * We do (currently) not tear down paths setup by the firmeware.
-+		 * If a firmware device is unplugged and plugged in again then
-+		 * it can happen that we reuse some of the hops from the (now
-+		 * defunct) firmeware path. This causes the hotplug operation to
-+		 * fail (the pci device does not show up). Clearing the hop
-+		 * before overwriting it fixes the problem.
-+		 *
-+		 * Should be removed once we discover and tear down firmeware
-+		 * paths.
-+		 */
-+		res = tb_port_write(path->hops[i].in_port, &hop, TB_CFG_HOPS,
-+				    2 * path->hops[i].in_hop_index, 2);
-+		if (res) {
-+			__tb_path_deactivate_hops(path, i);
-+			__tb_path_deallocate_nfc(path, 0);
-+			goto err;
-+		}
- 
- 		/* dword 0 */
- 		hop.next_hop = path->hops[i].next_hop_index;
--- 
-2.0.4
+and the test for address < PAGE_SIZE is supposed to be the determining 
+factor on whether it is a "NULL pointer" or not.  When that's fixed:
 
+	Acked-by: David Rientjes <rientjes@google.com>
