@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaHMLWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 07:22:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44076 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134AbaHMLWu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 07:22:50 -0400
-Date: Wed, 13 Aug 2014 13:22:34 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Amit Kucheria <amit.kucheria@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "Gross, Mark" <mark.gross@intel.com>,
-        Paul McKenney <Paul.McKenney@us.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Juri Lelli <juri.lelli@arm.com>, sched-tools@linaro.org
-Subject: Re: [ANNOUNCE] Tools to analyse PM and scheduling behaviour
-Message-ID: <20140813112234.GK9918@twins.programming.kicks-ass.net>
-References: <CAP245DUSAHO_VBoBMy4KQaaA6_0a-i3Y3u4utnK8ji3UMVniyA@mail.gmail.com>
+	id S1751457AbaHML1Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 07:27:24 -0400
+Received: from mga14.intel.com ([192.55.52.115]:22309 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750751AbaHML1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 07:27:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,856,1400050800"; 
+   d="scan'208";a="576054605"
+Date: Wed, 13 Aug 2014 19:27:24 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: x86@kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: fix messed up page fault BUG messages
+Message-ID: <20140813112724.GA6338@localhost>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="o7SYQ77Phh4p2BTz"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAP245DUSAHO_VBoBMy4KQaaA6_0a-i3Y3u4utnK8ji3UMVniyA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The 0day boot test robot hits messed up BUG lines like
 
---o7SYQ77Phh4p2BTz
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[   25.732010] BUG: unable to handle kernel paging requestrun: /lkp/wfg/sr at 000000000000d908
+[   24.986598] BUG: unable to handle kernel run: /lkp/wfg/srpaging request at 000000000000d908
+[   24.914406] BUG: unable to handle kernel run: /lkp/wfg/srearly console in decompress_kernel
 
-On Fri, Aug 08, 2014 at 07:24:01PM +0530, Amit Kucheria wrote:
-> Workload Generator Details
-> --------------------------
-> The Workload Generator is based on rt-app. Shared resources, waits, signa=
-ls
-> and locking order can be specified for each thread in a JSON description =
-to
-> construct complex interdependencies. This allows simulation of interesting
-> use-cases. The repository contains examples of a mp3 and web-browsing
-> workload.
->=20
-> The method to construct the JSON description is quite manual currently. We
-> capture the trace of a workload of interest (say, on Android) and analyse
-> it in kernelshark. We then construct the JSON description by hand until i=
-ts
-> resultant trace looks similar to the trace from the real workload.
->=20
-> The immediate goal is to expand the library to cover the common mobile
-> workloads. We=E2=80=99re also working with the rt-app maintainer to get o=
-ur changes
-> merged.
+Which makes the generated bug ID not stable and hence not bisectable.
 
-With the end goal of having a program convert a trace into a JSON
-description I take it?
+Fix it by printing the BUG message in one shot.
 
---o7SYQ77Phh4p2BTz
-Content-Type: application/pgp-signature
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+ arch/x86/mm/fault.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 3664279..f3e0e0a 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -599,13 +599,13 @@ show_fault_oops(struct pt_regs *regs, unsigned long error_code,
+ 			printk(nx_warning, from_kuid(&init_user_ns, current_uid()));
+ 	}
+ 
+-	printk(KERN_ALERT "BUG: unable to handle kernel ");
+ 	if (address < PAGE_SIZE)
+-		printk(KERN_CONT "NULL pointer dereference");
++		printk(KERN_ALERT "BUG: unable to handle kernel NULL pointer dereference at %p\n",
++		       (void *) address);
+ 	else
+-		printk(KERN_CONT "paging request");
++		printk(KERN_ALERT "BUG: unable to handle kernel NULL pointer paging request at %p\n",
++		       (void *) address);
+ 
+-	printk(KERN_CONT " at %p\n", (void *) address);
+ 	printk(KERN_ALERT "IP:");
+ 	printk_address(regs->ip);
+ 
+-- 
+2.1.0.rc1
 
-iQIcBAEBAgAGBQJT60p6AAoJEHZH4aRLwOS6/3cQAIulGSX8fc5ulQXn5IDoNyr4
-zvz2Kjd5bvqMI+5ydLHwmrjfU2Lcg1Lgo0MG5A/PQESIwbwya4yWJkKDrIW//Lf2
-r+7uKvm7uctwcMmibxgKQkJK9sQG/bG4RSbqD3Q42FxRkuUmDcisdcI2koOdJGTp
-YaNSF6oga0JOnqx9tJ5xJ5wiCIt5He2/Puk3a5QfyexCaHEYYR+2sXet1T34IvMO
-j5mi/vyVvSApDqiD8p93Et2do+ftNDgn9ButuI1p3OblEMSxqgquTo/XbzJ4sk5K
-1wOVqBk2TEbfdxgF/asjgiT8iUzRah9ZF4SWwb57CMnnqYN6z8kyEwxmWdzfEaGr
-jFOHE7LkObCmnQcH+/KRopCNnJ1VFf8sl3VO3hYzEmVhthitLSKdmBaYNl9fPtO1
-m8uGzbMtT3tV0B2xTD1BjtomfG8i8wTpdkn9rSVVOHLRoWZQGcRc4FPCsuI5/NCu
-JUR7P2mYGK73QRi9jJkwvo9IIhaLqKeHHSUa+bWsJXNKBObc+p07Dinwai8c3DBM
-Z5Iwj1ajHBkl5Y8FkWXO8KCZsmHAI3C942MIW8I2d5FLgLUORQtBEe4e2ETidWYf
-qLlc7+8uV1z+zDTJxkUWFJeEjG1UCE0nSwX0CewtidAjToHWV0OD8QSVIN9T196Y
-brf7c8e5HrMaU0XDH21j
-=WWwd
------END PGP SIGNATURE-----
-
---o7SYQ77Phh4p2BTz--
