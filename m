@@ -1,187 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772AbaHMUVm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 16:21:42 -0400
-Received: from mail-oi0-f73.google.com ([209.85.218.73]:36162 "EHLO
-	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707AbaHMUVl (ORCPT
+	id S1753680AbaHMUY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 16:24:56 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:34650 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaHMUYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 16:21:41 -0400
-Date: Wed, 13 Aug 2014 13:14:33 -0700
-From: akpm@linux-foundation.org
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
-Subject: mmotm 2014-08-13-13-13 uploaded
-Message-ID: <53ebc729.Nj3LvIuMvJFj68+A%akpm@linux-foundation.org>
-User-Agent: Heirloom mailx 12.5 6/20/10
+	Wed, 13 Aug 2014 16:24:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Date: Wed, 13 Aug 2014 22:24:53 +0200
+Message-ID: <CAG-aW04-=7rvPjLGqAWZ2oWT4K4EZ5gc96ZWpBo101u=f2+6EQ@mail.gmail.com>
+Subject: Re: Kernel 3.16.0 USB crash
+From: Matt <jackdachef@gmail.com>
+To: claudio.bizzarri@gmail.com
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2014-08-13-13-13 has been uploaded to
+Hi Claudio,
 
-   http://www.ozlabs.org/~akpm/mmotm/
+this issue is clearly caused by UAS.
 
-mmotm-readme.txt says
+if
 
-README for mm-of-the-moment:
+zcat /proc/config.gz | grep UAS
+# CONFIG_USB_UAS is not set
 
-http://www.ozlabs.org/~akpm/mmotm/
+is de-selected, everything's fine
 
-This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-more than once a week.
+when this is selected (usb is compiled as a module here)
 
-You will need quilt to apply these patches to the latest Linus release (3.x
-or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-http://ozlabs.org/~akpm/mmotm/series
+the system crashes or hardlocks as soon as an USB 3.0 capable drive is
+connected.
 
-The file broken-out.tar.gz contains two datestamp files: .DATE and
-.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-followed by the base kernel version against which this patch series is to
-be applied.
+During bootup the system crashes as soon as the kernel module is loaded.
 
-This tree is partially included in linux-next.  To see which patches are
-included in linux-next, consult the `series' file.  Only the patches
-within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-linux-next.
+This happened for me with 3.15.6 and 3.16.0 kernel (and 3.16-rc6).
 
-A git tree which contains the memory management portion of this tree is
-maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-by Michal Hocko.  It contains the patches which are between the
-"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-file, http://www.ozlabs.org/~akpm/mmotm/series.
+I've a different chipset but the symptoms are similar:
+
+00:14.0 USB controller: Intel Corporation 8 Series/C220 Series Chipset
+Family USB xHCI (rev 05)
 
 
-A full copy of the full kernel tree with the linux-next and mmotm patches
-already applied is available through git within an hour of the mmotm
-release.  Individual mmotm releases are tagged.  The master branch always
-points to the latest release, so it's constantly rebasing.
-
-http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
-
-To develop on top of mmotm git:
-
-  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-  $ git remote update mmotm
-  $ git checkout -b topic mmotm/master
-  <make changes, commit>
-  $ git send-email mmotm/master.. [...]
-
-To rebase a branch with older patches to a new mmotm release:
-
-  $ git remote update mmotm
-  $ git rebase --onto mmotm/master <topic base> topic
+So the only solution to work with newer kernels right now is to
+de-select that option and re-compile the kernel. It doesn't help fix
+the problem but at least it mitigates the issues for now (crash).
 
 
+Regards
 
-
-The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
-contains daily snapshots of the -mm tree.  It is updated more frequently
-than mmotm, and is untested.
-
-A git copy of this tree is available at
-
-	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
-
-and use of this tree is similar to
-http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
-
-
-This mmotm tree contains the following patches against 3.16:
-(patches marked "*" will be included in linux-next)
-
-  origin.patch
-  i-need-old-gcc.patch
-  arch-alpha-kernel-systblss-remove-debug-check.patch
-  maintainers-akpm-maintenance.patch
-* mm-hugetlb_cgroup-align-hugetlb-cgroup-limit-to-hugepage-size.patch
-* rtsx_usb-export-device-table.patch
-* mm-fix-cross_memory_attach-help-text-grammar.patch
-* checkpatch-relax-check-for-length-of-git-commit-ids.patch
-* kernel-resourcec-fix-null-deref-with-no-iomem.patch
-* memblock-memhotplug-fix-wrong-type-in-memblock_find_in_range_node.patch
-* mm-actually-clear-pmd_numa-before-invalidating.patch
-* lib-turn-config_stacktrace-into-an-actual-option.patch
-* drivers-gpu-drm-nouveau-fix-build.patch
-* x86mem-hotplug-pass-sync_global_pgds-a-correct-argument-in-remove_pagetable.patch
-* x86mem-hotplug-modify-pgd-entry-when-removing-memory.patch
-* x86-numa-setup_node_data-drop-dead-code-and-rename-function.patch
-* fs-cifs-remove-obsolete-__constant.patch
-* fs-cifs-filec-replace-countsize-kzalloc-by-kcalloc.patch
-* fs-cifs-smb2filec-replace-countsize-kzalloc-by-kcalloc.patch
-* efi-bgrt-add-error-handling-inform-the-user-when-ignoring-the-bgrt.patch
-* kernel-posix-timersc-code-clean-up.patch
-* kernel-posix-timersc-code-clean-up-checkpatch-fixes.patch
-* input-route-kbd-leds-through-the-generic-leds-layer.patch
-* input-route-kbd-leds-through-the-generic-leds-layer-fix.patch
-* fs-ext4-fsyncc-generic_file_fsync-call-based-on-barrier-flag.patch
-* ocfs2-do-not-write-error-flag-to-user-structure-we-cannot-copy-from-to.patch
-* ocfs2-o2net-set-tcp-user-timeout-to-max-value.patch
-* ocfs2-quorum-add-a-log-for-node-not-fenced.patch
-* o2dlm-fix-null-pointer-dereference-in-o2dlm_blocking_ast_wrapper.patch
-* o2dlm-fix-null-pointer-dereference-in-o2dlm_blocking_ast_wrapper-checkpatch-fixes.patch
-* ocfs2-free-inode-when-i_count-becomes-zero.patch
-* ocfs2-o2net-dont-shutdown-connection-when-idle-timeout.patch
-* ocfs2-call-ocfs2_journal_access_di-before-ocfs2_journal_dirty-in-ocfs2_write_end_nolock.patch
-* ocfs2-avoid-access-invalid-address-when-read-o2dlm-debug-messages.patch
-* ocfs2-dlm-fix-race-between-dispatched_work-and-dlm_lockres_grab_inflight_worker.patch
-* ocfs2-reflink-fix-slow-unlink-for-refcounted-file.patch
-* ocfs2-fix-journal-commit-deadlock.patch
-* bio-integrity-remove-the-needless-fail-handle-of-bip_slab-creating.patch
-* block-restore-proc-partitions-to-not-display-non-partitionable-removable-devices.patch
-  mm.patch
-* vmstat-on-demand-vmstat-workers-v8.patch
-* vmstat-on-demand-vmstat-workers-v8-fix.patch
-* vmstat-on-demand-vmstat-workers-v8-do-not-open-code-alloc_cpumask_var.patch
-* vmstat-on-demand-vmstat-workers-v8-fix-2.patch
-* mm-hugetlb-take-refcount-under-page-table-lock-in-follow_huge_pmd.patch
-* mm-hugetlb-take-refcount-under-page-table-lock-in-follow_huge_pmd-fix.patch
-* mm-hugetlb-use-get_page_unless_zero-in-hugetlb_fault.patch
-* mm-hugetlb-add-migration-entry-check-in-hugetlb_change_protection.patch
-* mm-hugetlb-remove-unused-argument-of-follow_huge_pmdpud.patch
-* mm-introduce-do_shared_fault-and-drop-do_fault-fix-fix.patch
-* mm-compactionc-isolate_freepages_block-small-tuneup.patch
-* fs-mpagec-forgotten-write_sync-in-case-of-data-integrity-write.patch
-* m68k-call-find_vma-with-the-mmap_sem-held-in-sys_cacheflush.patch
-* m68k-call-find_vma-with-the-mmap_sem-held-in-sys_cacheflush-v2.patch
-* do_shared_fault-check-that-mmap_sem-is-held.patch
-* include-kernelh-rewrite-min3-max3-and-clamp-using-min-and-max.patch
-* include-kernelh-rewrite-min3-max3-and-clamp-using-min-and-max-fix.patch
-* drivers-misc-ti-st-st_corec-fix-null-dereference-on-protocol-type-check.patch
-* lib-vsprintf-add-%pt-format-specifier.patch
-* drivers-video-backlight-backlightc-remove-backlight-sysfs-uevent.patch
-* mm-utilc-add-kstrimdup.patch
-* lib-add-crc64-ecma-module.patch
-* hfsplus-fix-longname-handling.patch
-  linux-next.patch
-* drivers-gpio-gpio-zevioc-fix-build.patch
-* x86-vdso-fix-vdso2cs-special_pages-error-checking.patch
-* drivers-net-irda-donauboe-convert-to-module_pci_driver.patch
-* include-linux-remove-strict_strto-definitions.patch
-* mm-replace-remap_file_pages-syscall-with-emulation.patch
-* fat-add-i_disksize-to-represent-uninitialized-size-v4.patch
-* fat-add-fat_fallocate-operation-v4.patch
-* fat-zero-out-seek-range-on-_fat_get_block-v4.patch
-* fat-fallback-to-buffered-write-in-case-of-fallocated-region-on-direct-io-v4.patch
-* fat-permit-to-return-phy-block-number-by-fibmap-in-fallocated-region-v4.patch
-* documentation-filesystems-vfattxt-update-the-limitation-for-fat-fallocate-v4.patch
-* w1-call-put_device-if-device_register-fails.patch
-* mm-add-strictlimit-knob-v2.patch
-  debugging-keep-track-of-page-owners.patch
-  page-owners-correct-page-order-when-to-free-page.patch
-  make-sure-nobodys-leaking-resources.patch
-  journal_add_journal_head-debug.patch
-  journal_add_journal_head-debug-fix.patch
-  releasing-resources-with-children.patch
-  make-frame_pointer-default=y.patch
-  kernel-forkc-export-kernel_thread-to-modules.patch
-  mutex-subsystem-synchro-test-module.patch
-  slab-leaks3-default-y.patch
-  put_bh-debug.patch
-  add-debugging-aid-for-memory-initialisation-problems.patch
-  workaround-for-a-pci-restoring-bug.patch
-  single_open-seq_release-leak-diagnostics.patch
+Matt
