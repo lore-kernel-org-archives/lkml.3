@@ -1,49 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190AbaHMOWM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:22:12 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:35813 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268AbaHMOWK (ORCPT
+	id S1753155AbaHMOXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:23:12 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49150 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751518AbaHMOXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:22:10 -0400
-Date: Wed, 13 Aug 2014 15:22:07 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Mark Salter <msalter@redhat.com>, Randy Dunlap <rdunlap@infradead.org>,
+	Wed, 13 Aug 2014 10:23:11 -0400
+Date: Wed, 13 Aug 2014 15:22:57 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: Jason Cooper <jason@lakedaemon.net>, linux-arm-msm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-efi@vger.kernel.org, rtc-linux@googlegroups.com
-Subject: Re: [PATCH 2/5] efi: add kernel param efi=noruntime
-Message-ID: <20140813142207.GR15082@console-pimps.org>
-References: <1407823822-23829-1-git-send-email-dyoung@redhat.com>
- <1407823822-23829-2-git-send-email-dyoung@redhat.com>
- <20140813081347.GA3977@darkstar.nay.redhat.com>
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call
+	into scheduler
+Message-ID: <20140813142257.GK30401@n2100.arm.linux.org.uk>
+References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140813081347.GA3977@darkstar.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Aug, at 04:13:47PM, Dave Young wrote:
-> 
-> For sharing functions I moved old_map here, but rethinking about it maybe
-> it's better to keep it in arch code.
-> 
-> Matt, I see you have some code for libstub option parsing, I will rebase
-> on your efi/next and I'm thinking to add a generic function for parsing
-> params like below (for old_map, but libstub can not use it):
- 
-Makes sense to me.
+On Wed, Aug 13, 2014 at 06:57:18AM -0700, Stephen Boyd wrote:
+> Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
+> 2012-04-12) introduced an acquisition of the irq_controller_lock
+> in gic_raise_softirq() which can lead to a spinlock recursion if
+> the gic_arch_extn hooks call into the scheduler (via complete()
+> or wake_up(), etc.). This happens because gic_arch_extn hooks are
+> normally called with the irq_controller_lock held and calling
+> into the scheduler may cause us to call smp_send_reschedule()
+> which will grab the irq_controller_lock again. Here's an example
+> from a vendor kernel (note that the gic_arch_extn hook code here
+> isn't actually in mainline):
+
+Here's a question: why would you want to call into the scheduler from
+the gic_arch_extn code?
+
+Oh.  My.  God.  Thomas, what have you done to the generic IRQ layer?
+This is /totally/ unsafe:
+
+void disable_irq(unsigned int irq)
+{
+        if (!__disable_irq_nosync(irq))
+                synchronize_irq(irq);
+}
+
+static int __disable_irq_nosync(unsigned int irq)
+{
+        unsigned long flags;
+        struct irq_desc *desc = irq_get_desc_buslock(irq, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
+
+        if (!desc)
+                return -EINVAL;
+        __disable_irq(desc, irq, false);
+        irq_put_desc_busunlock(desc, flags);
+        return 0;
+}
+
+void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
+{
+        if (suspend) {
+                if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND))
+                        return;
+                desc->istate |= IRQS_SUSPENDED;
+        }
+
+        if (!desc->depth++)
+                irq_disable(desc);
+}
+
+You realise that disable_irq() and enable_irq() can be called by
+concurrently by different drivers for the /same/ interrupt.  For
+starters, that post-increment there is completely unprotected against
+races.  Secondly, the above is completely racy against a concurrent
+enable_irq() - what if we're in disable_irq(), we've incremented
+depth, but have yet to call irq_disable().  The count now has a
+value of 1.
+
+We then preempt, and run another thread which calls enable_irq()
+on it.  This results in the depth being decremented, and the IRQ
+is now enabled.
+
+We resume the original thread, and continue to call irq_disable(),
+resulting in the interrupt being disabled.
+
+That's not nice (the right answer is that it's strictly an unbalanced
+enable_irq(), but that's no excuse here.)
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
