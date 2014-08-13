@@ -1,90 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977AbaHMA5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 20:57:33 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52715 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaHMA5b (ORCPT
+	id S1752919AbaHMBDV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 21:03:21 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:62602 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152AbaHMBDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 20:57:31 -0400
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
-To: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        stepanm@codeaurora.org
-Subject: [PATCH] of: Deep-copy names of platform devices
-Date: Tue, 12 Aug 2014 17:57:24 -0700
-Message-Id: <1407891444-7311-1-git-send-email-stepanm@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Tue, 12 Aug 2014 21:03:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <53E9DCAC.6000108@redhat.com>
+References: <1407519880-6719-1-git-send-email-dvlasenk@redhat.com>
+ <1407519880-6719-18-git-send-email-dvlasenk@redhat.com> <CALCETrXDjOPR9kEwx9fJFFz=A1jRKPBbfpoe8XztchktrUaz0Q@mail.gmail.com>
+ <53E7890F.4070109@redhat.com> <CALCETrVTw5amX-v_C+Bp5Y0B0KbzNKEEq_ZMke-AC7cZopGd9Q@mail.gmail.com>
+ <53E8B5EF.9080209@redhat.com> <CALCETrWC7pFBbycJLgLck9_qzZfOa8x4hCKm3OrC-5XeGFc8_w@mail.gmail.com>
+ <53E9DCAC.6000108@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 12 Aug 2014 18:02:57 -0700
+Message-ID: <CALCETrVG4v0xHbM4SKoEa+6hrmQ8hUPQ0fX=DKgJbc1MwRq-Rg@mail.gmail.com>
+Subject: Re: [PATCH 17/17] x86: simplify iret stack handling on SYSCALL64 fastpath
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we parse the device tree and allocate platform
-devices, the 'name' of the newly-created platform_device
-is set to point to the 'name' field of the 'struct device'
-embedded within the platform_device. This is dangerous,
-because the name of the 'struct device' is dynamically
-allocated. Drivers may call dev_set_name() on the device,
-which will free and reallocate the name of the device,
-leaving the 'name' of the platform_device pointing to the
-now-freed memory.
+On Tue, Aug 12, 2014 at 2:21 AM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
+> On 08/11/2014 10:06 PM, Andy Lutomirski wrote:
+>> On Mon, Aug 11, 2014 at 5:24 AM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
+>>> On 08/11/2014 12:42 AM, Andy Lutomirski wrote:
+>>>> On Mon, Aug 11, 2014 at 12:00 AM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
+>>>>> On 08/09/2014 12:59 AM, Andy Lutomirski wrote:
+>>>>>>> + * When returning through fast path, userspace sees rcx = return address,
+>>>>>>> + * r11 = rflags. When returning through iret (e.g. if audit is active),
+>>>>>>> + * these registers may contain garbage.
+>>>>>>> + * For ptrace we manage to avoid that: when we hit slow path on entry,
+>>>>>>> + * we do save rcx and r11 in pt_regs, so ptrace on exit also sees them.
+>>>>>>> + * If slow path is entered only on exit, there will be garbage.
+>>>>>>
+>>>>>> I don't like this.  At least the current code puts something
+>>>>>> deterministic in there (-1) for the slow path, even though it's wrong
+>>>>>> and makes the slow path behave visibly differently from the fast path.
+>>>>>>
+>>>>>> Leaking uninitialized data here is extra bad, though.  Keep in mind
+>>>>>> that, when a syscall entry is interrupted before fully setting up
+>>>>>> pt_regs, the interrupt frame overlaps task_pt_regs, so it's possible,
+>>>>>> depending on the stack slot ordering, for a kernel secret
+>>>>>> (kernel_stack?) to end up somewhere in task_pt_regs.
+>>>>>
+>>>>> It's easy to fix. We jump off fast path to slow path here:
+>>>>>
+>>>>>         movl TI_flags+THREAD_INFO(%rsp,SIZEOF_PTREGS),%edx
+>>>>>         andl %edi,%edx
+>>>>>         jnz  sysret_careful
+>>>>>
+>>>>> This is the only use of "sysret_careful" label.
+>>>>> Therefore, there we don't need to think about any other scenarios
+>>>>> besides "we are returning from syscall here".
+>>>>
+>>>> I may be missing something here (on vacation, not really testing
+>>>> things, no big monitor, etc), but how is this compatible with things
+>>>> like rt_sigreturn?  rt_sigreturn is call from the fastpath, via a
+>>>> stub, and it returns through int_ret_from_syscall.  The C part needs
+>>>> to modify all the regs, and those regs need to stick, so fixing up rcx
+>>>> and r11 after rt_sigreturn can't work.
+>>>
+>>> Code at "sysret_careful" label is only reachable
+>>> on fast path return.
+>>> We don't go down this code path after rt_sigreturn.
+>>> stub_rt_sigreturn manually steers into iret code path instead:
+>>>
+>>> ENTRY(stub_rt_sigreturn)
+>>>         CFI_STARTPROC
+>>>         addq $8, %rsp
+>>>         DEFAULT_FRAME 0
+>>>         SAVE_EXTRA_REGS
+>>>         STORE_IRET_FRAME_CS_SS
+>>>         call sys_rt_sigreturn
+>>>         movq %rax,RAX(%rsp)
+>>>         RESTORE_EXTRA_REGS
+>>>         jmp int_ret_from_sys_call   <==== NOTE THIS
+>>>
+>>> So, we don't do any rcx/r11 fixups after sys_rt_sigreturn.
+>>
+>> Oh, right.  rt_sigreturn overwrites all regs, so it doesn't need a
+>> fixup in advance.
+>>
+>> That still leaves fork and everything that calls ptrace_event, though.
+>
+> I think I have it covered:
+>
+> [v]fork and clone have fully populated pt_regs.
+>
+> Syscall entry/exit ptrace stops are on slow path and therefore
+> also have fully populated pt_regs.
 
-Furthermore, if the dev_set_name() call is made from a
-driver's probe() function and a subsequent request results
-in probe deferral, the dangling 'name' reference may lead
-to the device being re-probed using the wrong driver.
+Heh.  I hope so, but CVE-2014-4699 was an exception to that rule...
 
-To mitigate these scenarios, we use kstrdup to perform a
-deep copy of the device name when assigning the name of the
-platform_device, so that the platform_device name is
-unaffected by any calls to dev_set_name() that might made
-by drivers to rename the embedded 'struct device'.
+Anyway, I'll see if I can beef up my test cases that are relevant to this stuff.
 
-Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
----
-This is technically a 'v2' patch, but it looks like I used
-an old version of MAINTAINERS, so I'll just re-send this
-as a new patch to avoid confusion for people who missed the
-original.
-
-I suppose creating a 'pdev_set_name' API may seem like
-another possibility, but I feel that dev.name and pdev.name
-have two different meanings. One is used for device/driver
-binding purposes, whereas the other serves a more general
-identification purpose, and is used for things like sysfs.
-Drivers might want to change dev.name while leaving the
-pdev.name alone. I guess yet another possibility would be
-to prohibit calling dev_set_name() on devices created from
-device tree, but a driver does not necessarily know how a
-given platform_device was allocated.
-
-Steve
-
- drivers/of/device.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/of/device.c b/drivers/of/device.c
-index f685e55..3e116f6 100644
---- a/drivers/of/device.c
-+++ b/drivers/of/device.c
-@@ -54,7 +54,7 @@ int of_device_add(struct platform_device *ofdev)
-
- 	/* name and id have to be set so that the platform bus doesn't get
- 	 * confused on matching */
--	ofdev->name = dev_name(&ofdev->dev);
-+	ofdev->name = kstrdup(dev_name(&ofdev->dev), GFP_KERNEL);
- 	ofdev->id = -1;
-
- 	/* device_add will assume that this device is on the same node as
-@@ -76,6 +76,7 @@ EXPORT_SYMBOL(of_device_register);
- void of_device_unregister(struct platform_device *ofdev)
- {
- 	device_unregister(&ofdev->dev);
-+	kfree(ofdev->name);
- }
- EXPORT_SYMBOL(of_device_unregister);
-
---
-The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+--Andy
