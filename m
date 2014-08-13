@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053AbaHMJce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:32:34 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53879 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751155AbaHMJcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:32:33 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, broonie@kernel.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2 RESEND] mfd: wm5102: Mark register write sequencer control 3 readable
-Date: Wed, 13 Aug 2014 10:23:52 +0100
-Message-Id: <1407921833-7818-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1751851AbaHMJgQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:36:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57086 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815AbaHMJgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 05:36:15 -0400
+Date: Wed, 13 Aug 2014 11:36:13 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, David Rientjes <rientjes@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch] x86,mm: check freeze request in page fault handler
+Message-ID: <20140813093613.GB2775@dhcp22.suse.cz>
+References: <1407804835-24763-1-git-send-email-xiyou.wangcong@gmail.com>
+ <1407804835-24763-2-git-send-email-xiyou.wangcong@gmail.com>
+ <20140812120905.GB7049@dhcp22.suse.cz>
+ <CAM_iQpWV8DRGBQ-Brz=_Nqen0fNPDk+6kn_Og3HnXnujmgA+JA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM_iQpWV8DRGBQ-Brz=_Nqen0fNPDk+6kn_Og3HnXnujmgA+JA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On Tue 12-08-14 17:47:02, Cong Wang wrote:
+[...]
+> Does the following updated patch make any sense to you? If not, I will just
+> drop it.
 
-During init the core checks if the wm5102 has finished starting by reading
-register 0x19 and looking at the value. This read always fails since this
-is not a readable register, mark it as being one. While we're at it provide
-a constant for the register name (as supplied by Charles Keepax).
+Not really to be honest. I do not see what problem you are trying to fix.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/mfd/arizona-core.c            |    3 ++-
- drivers/mfd/wm5102-tables.c           |    1 +
- include/linux/mfd/arizona/registers.h |    1 +
- 3 files changed, 4 insertions(+), 1 deletions(-)
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index a241946..8c0a7d8 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/hugetlb.h>             /* hstate_index_to_shift        */
+>  #include <linux/prefetch.h>            /* prefetchw                    */
+>  #include <linux/context_tracking.h>    /* exception_enter(), ...       */
+> +#include <linux/freezer.h>             /* try_to_freeze()              */
+> 
+>  #include <asm/traps.h>                 /* dotraplinkage, ...           */
+>  #include <asm/pgalloc.h>               /* pgd_*(), ...                 */
+> @@ -904,6 +905,9 @@ mm_fault_error(struct pt_regs *regs, unsigned long
+> error_code,
+>                  * oom-killed):
+>                  */
+>                 pagefault_out_of_memory();
+> +
+> +               if (signal_pending(current))
+> +                       try_to_freeze();
+>         } else {
+>                 if (fault & (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON|
+>                              VM_FAULT_HWPOISON_LARGE))
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 10a0cb9..7eabc36 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -784,7 +784,8 @@ int arizona_dev_init(struct arizona *arizona)
- 	/* Ensure device startup is complete */
- 	switch (arizona->type) {
- 	case WM5102:
--		ret = regmap_read(arizona->regmap, 0x19, &val);
-+		ret = regmap_read(arizona->regmap,
-+				  ARIZONA_WRITE_SEQUENCER_CTRL_3, &val);
- 		if (ret != 0)
- 			dev_err(dev,
- 				"Failed to check write sequencer state: %d\n",
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index fb4d4bb..c18d527 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -1016,6 +1016,7 @@ static bool wm5102_readable_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
- 	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
- 	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_3:
- 	case ARIZONA_WRITE_SEQUENCER_PROM:
- 	case ARIZONA_TONE_GENERATOR_1:
- 	case ARIZONA_TONE_GENERATOR_2:
-diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
-index dbd23c3..68913ec 100644
---- a/include/linux/mfd/arizona/registers.h
-+++ b/include/linux/mfd/arizona/registers.h
-@@ -27,6 +27,7 @@
- #define ARIZONA_WRITE_SEQUENCER_CTRL_0           0x16
- #define ARIZONA_WRITE_SEQUENCER_CTRL_1           0x17
- #define ARIZONA_WRITE_SEQUENCER_CTRL_2           0x18
-+#define ARIZONA_WRITE_SEQUENCER_CTRL_3           0x19
- #define ARIZONA_WRITE_SEQUENCER_PROM             0x1A
- #define ARIZONA_TONE_GENERATOR_1                 0x20
- #define ARIZONA_TONE_GENERATOR_2                 0x21
 -- 
-1.7.2.5
-
+Michal Hocko
+SUSE Labs
