@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaHMNWd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 09:22:33 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:37111 "EHLO relay.sw.ru"
+	id S1752667AbaHMNYm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 09:24:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42907 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752561AbaHMNWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 09:22:32 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrey Vagin <avagin@openvz.org>,
+	id S1751637AbaHMNYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 09:24:41 -0400
+Message-ID: <53EB66F6.2050304@redhat.com>
+Date: Wed, 13 Aug 2014 09:24:06 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Joe Perches <joe@perches.com>, Davidlohr Bueso <davidlohr@hp.com>
-Subject: [PATCH] ipc: always handle a new value of auto_msgmni
-Date: Wed, 13 Aug 2014 17:21:57 +0400
-Message-Id: <1407936117-2985-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.9.3
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time: drop do_sys_times spinlock
+References: <20140812142539.01851e52@annuminas.surriel.com> <20140812191218.GA15210@redhat.com> <1407913190.5542.50.camel@marge.simpson.net> <20140813111112.GJ9918@twins.programming.kicks-ass.net>
+In-Reply-To: <20140813111112.GJ9918@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-proc_dointvec_minmax() returns zero, if a new value has been set.
-So we don't need to check all charectes have been handled.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Below you can find two examples. In the new value has not been
-handled properly.
+On 08/13/2014 07:11 AM, Peter Zijlstra wrote:
+> On Wed, Aug 13, 2014 at 08:59:50AM +0200, Mike Galbraith wrote:
+> 
+>> I was told that clock_gettime(CLOCK_PROCESS_CPUTIME_ID) has
+>> scalability issues on BIG boxen
+> 
+>> I'm sure the real clock_gettime() using proggy that gummed up a
+>> ~1200 core box for "a while" wasn't the testcase below, which
+>> will gum it up for a long while, but looks to me like using
+>> CLOCK_PROCESS_CPUTIME_ID from LOTS of threads is a "Don't do
+>> that, it'll hurt a LOT".
+> 
+> Yes, don't do that. Its unavoidably slow and bad.
 
-$ strace ./a.out
-open("/proc/sys/kernel/auto_msgmni", O_WRONLY) = 3
-write(3, "0\n\0", 3)                    = 2
-close(3)                                = 0
-exit_group(0)
-$ cat /sys/kernel/debug/tracing/trace
+I don't see why that needs the tasklist_lock, when do_sys_times
+grabs a different lock.
 
-$strace ./a.out
-open("/proc/sys/kernel/auto_msgmni", O_WRONLY) = 3
-write(3, "0\n", 2)                      = 2
-close(3)                                = 0
+If the same bottleneck exists from multiple places, maybe it does
+make sense to have a seqlock for the statistics at the sighand
+level?
 
-$ cat /sys/kernel/debug/tracing/trace
-a.out-697   [000] ....  3280.998235: unregister_ipcns_notifier <-proc_ipcauto_dointvec_minmax
+I can code up a patch that does that, and throw it over the wall
+to people with big systems who hit that bottleneck on a regular
+basis...
 
-Fixes: 9eefe520c814 ("ipc: do not use a negative value to re-enable msgmni automatic recomputin")
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mathias Krause <minipli@googlemail.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- ipc/ipc_sysctl.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-diff --git a/ipc/ipc_sysctl.c b/ipc/ipc_sysctl.c
-index c3f0326..e8075b2 100644
---- a/ipc/ipc_sysctl.c
-+++ b/ipc/ipc_sysctl.c
-@@ -123,7 +123,6 @@ static int proc_ipcauto_dointvec_minmax(struct ctl_table *table, int write,
- 	void __user *buffer, size_t *lenp, loff_t *ppos)
- {
- 	struct ctl_table ipc_table;
--	size_t lenp_bef = *lenp;
- 	int oldval;
- 	int rc;
- 
-@@ -133,7 +132,7 @@ static int proc_ipcauto_dointvec_minmax(struct ctl_table *table, int write,
- 
- 	rc = proc_dointvec_minmax(&ipc_table, write, buffer, lenp, ppos);
- 
--	if (write && !rc && lenp_bef == *lenp) {
-+	if (write && !rc) {
- 		int newval = *((int *)(ipc_table.data));
- 		/*
- 		 * The file "auto_msgmni" has correctly been set.
--- 
-1.9.3
-
+iQEcBAEBAgAGBQJT62b2AAoJEM553pKExN6DBJ4H/AyVsN4N73Gp/wrm7waaNjpS
+kU5R2pIGzJqxJ4BZi+aeiuT09ZoSHCl3nvSsMNBm712NX1jyFVC4I91ON18tsB3o
+P/tipcCP9Q6QSW8+lPRNz459OsaXX+wyRxcdnUtZN7SVb+NTWlxZ4o8UiVljZYSV
+2mRr2ipd/0vKn7J9twaIP0UMddTpIrnMTCMKookoWXoHeJIXsYAs3XTRsoPJAddz
+0ba5H7OGjphOSCyMkDDo3GG+K8oHJIpD8PHT38pXfX+suNEGxMO7PGvvEyUcrJKx
+5355fnU6/1mksPlRD5DIwMowMjbY5zy71P8Lv4Eg+LY+C/kGjyrz9Maa0SyRMh8=
+=VQ/m
+-----END PGP SIGNATURE-----
