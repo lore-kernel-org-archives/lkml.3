@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaHMJ3O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:29:14 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:61252 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaHMJ3M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:29:12 -0400
+	id S1751944AbaHMJ37 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:29:59 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:45853 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750751AbaHMJ36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 05:29:58 -0400
+X-IronPort-AV: E=Sophos;i="5.01,855,1400025600"; 
+   d="scan'208";a="161284446"
+Message-ID: <53EB3014.8090008@citrix.com>
+Date: Wed, 13 Aug 2014 10:29:56 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZOB=9wQ3R3sfcBEiNXLVRtgob4iLZ9QWXyVrgjqyvGXQ@mail.gmail.com>
-References: <1406824943-24052-1-git-send-email-matthias.bgg@gmail.com>
-	<1406824943-24052-7-git-send-email-matthias.bgg@gmail.com>
-	<CACRpkdbRhGE8tcKj+W_4F9-xmcm-fxcYuCmLOqX-ESC+3PAmyA@mail.gmail.com>
-	<CABuKBe+Q3tnN0s22EMY-dK_6FeN_xN9SmrsW3dPONR6QDJ+V_w@mail.gmail.com>
-	<CACRpkdZOB=9wQ3R3sfcBEiNXLVRtgob4iLZ9QWXyVrgjqyvGXQ@mail.gmail.com>
-Date: Wed, 13 Aug 2014 11:29:12 +0200
-Message-ID: <CABuKBeJOgkDZ8drPf3LnT2jPH7PEWX2__HDM7_jZbg2BhDRy3g@mail.gmail.com>
-Subject: Re: [PATCH 6/7] arm: mediatek: enable gpt6 on boot up to make arch
- timer working
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        stefan@agner.ch, Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "Berg, Anders" <anders.berg@lsi.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: <jgross@suse.com>, <xen-devel@lists.xenproject.org>,
+        <david.vrabel@citrix.com>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] Make bind_interdomain_evtchn_to_irq() public
+References: <1407851024-18936-1-git-send-email-jgross@suse.com>
+In-Reply-To: <1407851024-18936-1-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-13 10:47 GMT+02:00 Linus Walleij <linus.walleij@linaro.org>:
-> On Tue, Aug 12, 2014 at 11:02 AM, Matthias Brugger
-> <matthias.bgg@gmail.com> wrote:
->> 2014-08-11 9:15 GMT+02:00 Linus Walleij <linus.walleij@linaro.org>:
->>> On Thu, Jul 31, 2014 at 6:42 PM, Matthias Brugger
->>> <matthias.bgg@gmail.com> wrote:
->>>
->>>> We enable GTP6 which ungates the arch timer clock. Apart we write the
->>>> frequency with which the timer is running in the CNTFREQ register.
->>>> In the future this should be done in the bootloader.
->>>>
->>>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
->>> (...)
->>>
->>>> +       if (of_machine_is_compatible("mediatek,mt6589")) {
->>>> +               /* set cntfreq register which is not done in bootloader */
->>>> +               asm volatile("mcr p15, 0, %0, c14, c0, 0" : : "r" (13000000));
->>>
->>> I guess this is for something like the ARM arch timer in
->>> drivers/clocksource/arm_arch_timer.c
->>>
->>> Instead of doing this, use the DT property "clock-frequency" on
->>> the ARM arch timer node, as that overrides the CP15 setting.
->>>
->>>> +
->>>> +               /* turn on GPT6 which ungates arch timer clocks */
->>>> +               gpt_base = ioremap(GPT6_CON_MT65xx, 0x04);
->>>> +       }
->>>> +
->>>> +       /* enabel clock and set to free-run */
->>>> +       if (gpt_base)
->>>> +               writel(0x31, gpt_base);
->>>
->>> Why is this not done properly in the GPT driver (I guess
->>> in drivers/clocksource/mtk_timer.c) instead of remapping
->>> it and fiddling around in the machine?
->>
->> I didn't put it in the GPT driver, because that would mean, that you
->> need to have the mtk_timer to be able to use the ARM arch timer.
->> From my understanding this are two independent blocks in the SoC.
->> Apart from that, as stated in the commit message, this patch is a
->> workaround until we have a bootloader which does this for us.
->> Therefore I thought the init_time function would be the better place to do this.
->
-> OK I get the point...
->
-> What about the ARM arch timer fixup then, will that also be
-> fixed in the boot loader eventually?
+On 12/08/14 14:43, jgross@suse.com wrote:
+> From: Juergen Gross <jgross@suse.com>
+> 
+> bind_interdomain_evtchn_to_irq() is currently a private function. It is used
+> only by bind_interdomain_evtchn_to_irqhandler() to register an irq-handler for
+> an event channel.
+> 
+> By making it public it is possible to use e.g. threaded interrupts with
+> interdomain event channels.
 
-Do you refer to clock frequency in the cntfreq register? I think that
-this should go in the DTS as you said.
-Same holds for the magic 0x31, which should be done through defines.
+Can you give an example of using this?  Maybe we want a
+bind_interdomain_evtchn_to_threaded_irqhandler() instead? Or add a flags
+field to the existing function.
 
-Cheers,
-Matthias
+David
 
->
-> Yours,
-> Linus Walleij
+> --- a/drivers/xen/events/events_base.c
+> +++ b/drivers/xen/events/events_base.c
+> @@ -900,8 +900,8 @@ static int bind_ipi_to_irq(unsigned int ipi, unsigned int cpu)
+>  	return irq;
+>  }
+>  
+> -static int bind_interdomain_evtchn_to_irq(unsigned int remote_domain,
+> -					  unsigned int remote_port)
+> +int bind_interdomain_evtchn_to_irq(unsigned int remote_domain,
+> +				   unsigned int remote_port)
+>  {
+>  	struct evtchn_bind_interdomain bind_interdomain;
+>  	int err;
+> @@ -914,6 +914,7 @@ static int bind_interdomain_evtchn_to_irq(unsigned int remote_domain,
+>  
+>  	return err ? : bind_evtchn_to_irq(bind_interdomain.local_port);
+>  }
+> +EXPORT_SYMBOL_GPL(bind_interdomain_evtchn_to_irq);
+>  
+>  static int find_virq(unsigned int virq, unsigned int cpu)
+>  {
+> diff --git a/include/xen/events.h b/include/xen/events.h
+> index 8bee7a7..5321cd9 100644
+> --- a/include/xen/events.h
+> +++ b/include/xen/events.h
+> @@ -28,6 +28,8 @@ int bind_ipi_to_irqhandler(enum ipi_vector ipi,
+>  			   unsigned long irqflags,
+>  			   const char *devname,
+>  			   void *dev_id);
+> +int bind_interdomain_evtchn_to_irq(unsigned int remote_domain,
+> +				   unsigned int remote_port);
+>  int bind_interdomain_evtchn_to_irqhandler(unsigned int remote_domain,
+>  					  unsigned int remote_port,
+>  					  irq_handler_t handler,
+> 
 
-
-
--- 
-motzblog.wordpress.com
