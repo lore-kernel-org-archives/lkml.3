@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789AbaHMKaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 06:30:10 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:46745 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607AbaHMK3R (ORCPT
+	id S1752863AbaHMKar (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 06:30:47 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:36478 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411AbaHMK3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 06:29:17 -0400
+	Wed, 13 Aug 2014 06:29:14 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Arnd Bergmann <arnd@arndb.de>
 Cc: Russell King <linux@arm.linux.org.uk>,
@@ -16,9 +16,9 @@ Cc: Russell King <linux@arm.linux.org.uk>,
         linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, x86@kernel.org,
         linux-serial@vger.kernel.org, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 7/8] ARM: Use include/asm-generic/io.h
-Date: Wed, 13 Aug 2014 12:28:57 +0200
-Message-Id: <1407925738-26170-8-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH v4 5/8] /dev/mem: Use more consistent data types
+Date: Wed, 13 Aug 2014 12:28:55 +0200
+Message-Id: <1407925738-26170-6-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com>
 References: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com>
@@ -28,194 +28,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-Include the generic I/O header file so that duplicate implementations
-can be removed. This will also help to establish consistency across more
-architectures regarding which accessors they support.
+The xlate_dev_{kmem,mem}_ptr() functions take either a physical address
+or a kernel virtual address, so data types should be phys_addr_t and
+void *. They both return a kernel virtual address which is only ever
+used in calls to copy_{from,to}_user(), so make variables that store it
+void * rather than char * for consistency.
+
+Also only define a weak unxlate_dev_mem_ptr() function if architectures
+haven't overridden them in the asm/io.h header file.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
 Changes in v4:
-- define xlate_dev_{kmem,mem}_ptr() before asm-generic/io.h include
+- new patch
 
-Changes in v3:
-- override io{read,write}{16,32}be() since the generic ones don't have
-  the required memory barriers
+ arch/s390/include/asm/io.h |  5 +++--
+ arch/s390/mm/maccess.c     |  4 ++--
+ arch/x86/include/asm/io.h  |  4 ++--
+ arch/x86/mm/ioremap.c      |  4 ++--
+ drivers/char/mem.c         | 13 ++++++++-----
+ 5 files changed, 17 insertions(+), 13 deletions(-)
 
- arch/arm/include/asm/io.h     | 75 ++++++++++++++++---------------------------
- arch/arm/include/asm/memory.h |  2 ++
- 2 files changed, 29 insertions(+), 48 deletions(-)
-
-diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-index 3d23418cbddd..d45cb6b9459a 100644
---- a/arch/arm/include/asm/io.h
-+++ b/arch/arm/include/asm/io.h
-@@ -69,6 +69,7 @@ extern void __raw_readsl(const void __iomem *addr, void *data, int longlen);
-  * writeback addressing modes as these incur a significant performance
-  * overhead (the address generation must be emulated in software).
+diff --git a/arch/s390/include/asm/io.h b/arch/s390/include/asm/io.h
+index cd6b9ee7b69c..d22c2eeae78f 100644
+--- a/arch/s390/include/asm/io.h
++++ b/arch/s390/include/asm/io.h
+@@ -13,9 +13,10 @@
+ #include <asm/page.h>
+ #include <asm/pci_io.h>
+ 
+-void *xlate_dev_mem_ptr(unsigned long phys);
+ #define xlate_dev_mem_ptr xlate_dev_mem_ptr
+-void unxlate_dev_mem_ptr(unsigned long phys, void *addr);
++void *xlate_dev_mem_ptr(phys_addr_t phys);
++#define unxlate_dev_mem_ptr unxlate_dev_mem_ptr
++void unxlate_dev_mem_ptr(phys_addr_t phys, void *addr);
+ 
+ /*
+  * Convert a virtual cached pointer to an uncached pointer
+diff --git a/arch/s390/mm/maccess.c b/arch/s390/mm/maccess.c
+index 2a2e35416d2f..2eb34bdfc613 100644
+--- a/arch/s390/mm/maccess.c
++++ b/arch/s390/mm/maccess.c
+@@ -176,7 +176,7 @@ static int is_swapped(unsigned long addr)
+  * For swapped prefix pages a new buffer is returned that contains a copy of
+  * the absolute memory. The buffer size is maximum one page large.
   */
-+#define __raw_writew __raw_writew
- static inline void __raw_writew(u16 val, volatile void __iomem *addr)
+-void *xlate_dev_mem_ptr(unsigned long addr)
++void *xlate_dev_mem_ptr(phys_addr_t addr)
  {
- 	asm volatile("strh %1, %0"
-@@ -76,6 +77,7 @@ static inline void __raw_writew(u16 val, volatile void __iomem *addr)
- 		     : "r" (val));
+ 	void *bounce = (void *) addr;
+ 	unsigned long size;
+@@ -197,7 +197,7 @@ void *xlate_dev_mem_ptr(unsigned long addr)
+ /*
+  * Free converted buffer for /dev/mem access (if necessary)
+  */
+-void unxlate_dev_mem_ptr(unsigned long addr, void *buf)
++void unxlate_dev_mem_ptr(phys_addr_t addr, void *buf)
+ {
+ 	if ((void *) addr != buf)
+ 		free_page((unsigned long) buf);
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index b8237d8a1e0c..ae2b593e7c6e 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -310,8 +310,8 @@ BUILDIO(b, b, char)
+ BUILDIO(w, w, short)
+ BUILDIO(l, , int)
+ 
+-extern void *xlate_dev_mem_ptr(unsigned long phys);
+-extern void unxlate_dev_mem_ptr(unsigned long phys, void *addr);
++extern void *xlate_dev_mem_ptr(phys_addr_t phys);
++extern void unxlate_dev_mem_ptr(phys_addr_t phys, void *addr);
+ 
+ extern int ioremap_change_attr(unsigned long vaddr, unsigned long size,
+ 				unsigned long prot_val);
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index baff1da354e0..6d9cc45123e5 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -315,7 +315,7 @@ EXPORT_SYMBOL(iounmap);
+  * Convert a physical pointer to a virtual kernel pointer for /dev/mem
+  * access
+  */
+-void *xlate_dev_mem_ptr(unsigned long phys)
++void *xlate_dev_mem_ptr(phys_addr_t phys)
+ {
+ 	void *addr;
+ 	unsigned long start = phys & PAGE_MASK;
+@@ -331,7 +331,7 @@ void *xlate_dev_mem_ptr(unsigned long phys)
+ 	return addr;
  }
  
-+#define __raw_readw __raw_readw
- static inline u16 __raw_readw(const volatile void __iomem *addr)
+-void unxlate_dev_mem_ptr(unsigned long phys, void *addr)
++void unxlate_dev_mem_ptr(phys_addr_t phys, void *addr)
  {
- 	u16 val;
-@@ -86,6 +88,7 @@ static inline u16 __raw_readw(const volatile void __iomem *addr)
+ 	if (page_is_ram(phys >> PAGE_SHIFT))
+ 		return;
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 917403fe10da..a304e8a6ebf2 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -84,9 +84,12 @@ static inline int range_is_allowed(unsigned long pfn, unsigned long size)
  }
  #endif
  
-+#define __raw_writeb __raw_writeb
- static inline void __raw_writeb(u8 val, volatile void __iomem *addr)
+-void __weak unxlate_dev_mem_ptr(unsigned long phys, void *addr)
++#ifndef unxlate_dev_mem_ptr
++#define unxlate_dev_mem_ptr unxlate_dev_mem_ptr
++void __weak unxlate_dev_mem_ptr(phys_addr_t phys, void *addr)
  {
- 	asm volatile("strb %1, %0"
-@@ -93,6 +96,7 @@ static inline void __raw_writeb(u8 val, volatile void __iomem *addr)
- 		     : "r" (val));
  }
++#endif
  
-+#define __raw_writel __raw_writel
- static inline void __raw_writel(u32 val, volatile void __iomem *addr)
+ /*
+  * This funcion reads the *physical* memory. The f_pos points directly to the
+@@ -97,7 +100,7 @@ static ssize_t read_mem(struct file *file, char __user *buf,
  {
- 	asm volatile("str %1, %0"
-@@ -100,6 +104,7 @@ static inline void __raw_writel(u32 val, volatile void __iomem *addr)
- 		     : "r" (val));
- }
+ 	phys_addr_t p = *ppos;
+ 	ssize_t read, sz;
+-	char *ptr;
++	void *ptr;
  
-+#define __raw_readb __raw_readb
- static inline u8 __raw_readb(const volatile void __iomem *addr)
- {
- 	u8 val;
-@@ -109,6 +114,7 @@ static inline u8 __raw_readb(const volatile void __iomem *addr)
- 	return val;
- }
+ 	if (p != *ppos)
+ 		return 0;
+@@ -400,7 +403,7 @@ static ssize_t read_kmem(struct file *file, char __user *buf,
+ 			 * uncached, then it must also be accessed uncached
+ 			 * by the kernel or data corruption may occur
+ 			 */
+-			kbuf = xlate_dev_kmem_ptr((char *)p);
++			kbuf = xlate_dev_kmem_ptr((void *)p);
  
-+#define __raw_readl __raw_readl
- static inline u32 __raw_readl(const volatile void __iomem *addr)
- {
- 	u32 val;
-@@ -266,20 +272,6 @@ extern int pci_ioremap_io(unsigned int offset, phys_addr_t phys_addr);
- #define insl(p,d,l)		__raw_readsl(__io(p),d,l)
+ 			if (copy_to_user(buf, kbuf, sz))
+ 				return -EFAULT;
+@@ -461,7 +464,7 @@ static ssize_t do_write_kmem(unsigned long p, const char __user *buf,
  #endif
  
--#define outb_p(val,port)	outb((val),(port))
--#define outw_p(val,port)	outw((val),(port))
--#define outl_p(val,port)	outl((val),(port))
--#define inb_p(port)		inb((port))
--#define inw_p(port)		inw((port))
--#define inl_p(port)		inl((port))
--
--#define outsb_p(port,from,len)	outsb(port,from,len)
--#define outsw_p(port,from,len)	outsw(port,from,len)
--#define outsl_p(port,from,len)	outsl(port,from,len)
--#define insb_p(port,to,len)	insb(port,to,len)
--#define insw_p(port,to,len)	insw(port,to,len)
--#define insl_p(port,to,len)	insl(port,to,len)
--
- /*
-  * String version of IO memory access ops:
-  */
-@@ -346,40 +338,38 @@ extern void _memset_io(volatile void __iomem *, int, size_t);
- #define iounmap				__arm_iounmap
+ 	while (count > 0) {
+-		char *ptr;
++		void *ptr;
  
- /*
-- * io{read,write}{8,16,32} macros
-+ * io{read,write}{16,32}be() macros
-  */
--#ifndef ioread8
--#define ioread8(p)	({ unsigned int __v = __raw_readb(p); __iormb(); __v; })
--#define ioread16(p)	({ unsigned int __v = le16_to_cpu((__force __le16)__raw_readw(p)); __iormb(); __v; })
--#define ioread32(p)	({ unsigned int __v = le32_to_cpu((__force __le32)__raw_readl(p)); __iormb(); __v; })
--
--#define ioread16be(p)	({ unsigned int __v = be16_to_cpu((__force __be16)__raw_readw(p)); __iormb(); __v; })
--#define ioread32be(p)	({ unsigned int __v = be32_to_cpu((__force __be32)__raw_readl(p)); __iormb(); __v; })
--
--#define iowrite8(v,p)	({ __iowmb(); __raw_writeb(v, p); })
--#define iowrite16(v,p)	({ __iowmb(); __raw_writew((__force __u16)cpu_to_le16(v), p); })
--#define iowrite32(v,p)	({ __iowmb(); __raw_writel((__force __u32)cpu_to_le32(v), p); })
-+#define ioread16be(p)		({ __u16 __v = be16_to_cpu((__force __be16)__raw_readw(p)); __iormb(); __v; })
-+#define ioread32be(p)		({ __u32 __v = be32_to_cpu((__force __be32)__raw_readl(p)); __iormb(); __v; })
+ 		sz = size_inside_page(p, count);
  
--#define iowrite16be(v,p) ({ __iowmb(); __raw_writew((__force __u16)cpu_to_be16(v), p); })
--#define iowrite32be(v,p) ({ __iowmb(); __raw_writel((__force __u32)cpu_to_be32(v), p); })
--
--#define ioread8_rep(p,d,c)	__raw_readsb(p,d,c)
--#define ioread16_rep(p,d,c)	__raw_readsw(p,d,c)
--#define ioread32_rep(p,d,c)	__raw_readsl(p,d,c)
--
--#define iowrite8_rep(p,s,c)	__raw_writesb(p,s,c)
--#define iowrite16_rep(p,s,c)	__raw_writesw(p,s,c)
--#define iowrite32_rep(p,s,c)	__raw_writesl(p,s,c)
-+#define iowrite16be(v,p)	({ __iowmb(); __raw_writew((__force __u16)cpu_to_be16(v), p); })
-+#define iowrite32be(v,p)	({ __iowmb(); __raw_writew((__force __u32)cpu_to_be32(v), p); })
+@@ -470,7 +473,7 @@ static ssize_t do_write_kmem(unsigned long p, const char __user *buf,
+ 		 * it must also be accessed uncached by the kernel or data
+ 		 * corruption may occur.
+ 		 */
+-		ptr = xlate_dev_kmem_ptr((char *)p);
++		ptr = xlate_dev_kmem_ptr((void *)p);
  
-+#define ioport_map ioport_map
- extern void __iomem *ioport_map(unsigned long port, unsigned int nr);
-+#define ioport_unmap ioport_unmap
- extern void ioport_unmap(void __iomem *addr);
--#endif
- 
- struct pci_dev;
- 
-+#define pci_iounmap pci_iounmap
- extern void pci_iounmap(struct pci_dev *dev, void __iomem *addr);
- 
- /*
-+ * Convert a physical pointer to a virtual kernel pointer for /dev/mem
-+ * access
-+ */
-+#define xlate_dev_mem_ptr(p)	__va(p)
-+
-+/*
-+ * Convert a virtual cached pointer to an uncached pointer
-+ */
-+#define xlate_dev_kmem_ptr(p)	p
-+
-+#include <asm-generic/io.h>
-+
-+/*
-  * can the hardware map this into one segment or not, given no other
-  * constraints.
-  */
-@@ -401,17 +391,6 @@ extern int devmem_is_allowed(unsigned long pfn);
- #endif
- 
- /*
-- * Convert a physical pointer to a virtual kernel pointer for /dev/mem
-- * access
-- */
--#define xlate_dev_mem_ptr(p)	__va(p)
--
--/*
-- * Convert a virtual cached pointer to an uncached pointer
-- */
--#define xlate_dev_kmem_ptr(p)	p
--
--/*
-  * Register ISA memory and port locations for glibc iopl/inb/outb
-  * emulation.
-  */
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index e731018869a7..1c187611d3c7 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -274,11 +274,13 @@ static inline unsigned long __phys_to_virt(phys_addr_t x)
-  * translation for translating DMA addresses.  Use the driver
-  * DMA support - see dma-mapping.h.
-  */
-+#define virt_to_phys virt_to_phys
- static inline phys_addr_t virt_to_phys(const volatile void *x)
- {
- 	return __virt_to_phys((unsigned long)(x));
- }
- 
-+#define phys_to_virt phys_to_virt
- static inline void *phys_to_virt(phys_addr_t x)
- {
- 	return (void *)__phys_to_virt(x);
+ 		copied = copy_from_user(ptr, buf, sz);
+ 		if (copied) {
 -- 
 2.0.4
 
