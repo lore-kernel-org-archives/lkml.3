@@ -1,39 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbaHMQMC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 12:12:02 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37805 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831AbaHMQL7 (ORCPT
+	id S1753464AbaHMQMx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 12:12:53 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:41793 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963AbaHMQMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 12:11:59 -0400
-Message-ID: <53EB8E5C.3030902@wwwdotorg.org>
-Date: Wed, 13 Aug 2014 10:12:12 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 13 Aug 2014 12:12:52 -0400
+X-AuditID: 85900ec0-d452db9000001514-80-53eb8e81db3c
+Subject: [PATCH v2 1/2] [BUGFIX] perf probe: Fix --list option to show
+ events only with uprobe events
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Naohiro Aota <naota@elisp.net>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 13 Aug 2014 16:12:48 +0000
+Message-ID: <20140813161248.26440.84370.stgit@kbuild-fedora.novalocal>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>
-CC: devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/6] ARM: dts: Create fragment for tps65090 PMU
-References: <1407861868-20097-1-git-send-email-javier.martinez@collabora.co.uk> <1407861868-20097-2-git-send-email-javier.martinez@collabora.co.uk>
-In-Reply-To: <1407861868-20097-2-git-send-email-javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2014 10:44 AM, Javier Martinez Canillas wrote:
-> The tps65090 is a Power Management Unit (PMU) used in several
-> boards so the same information is described on different DTS.
-> It is better to create a .dtsi fragment that can be included.
+Current perf probe --list doesn't work if only CONFIG_UPROBE_EVENTS=y
+because it aborts when it fails to open kprobe_events file before
+checking uprobe_events file.
 
-To be honest, I'm not sure that this file is useful. The entire content 
-of this file (with the exception of the compatible value and possibly 
-the charger sub-node) needs to be repeated in any file that includes it, 
-in order to add properties into all the nodes.
+This fixes --list option to show dynamic events if it can open
+either kprobe_events or uprobe_events. Only if it failed to open
+both of them, it shows an error message and aborts.
+
+Without this patch, if we run perf probe -l on the kernel configured
+with CONFIG_KPROBE_EVENTS=n and CONFIG_UPROBE_EVENTS=y,
+
+  # perf probe -l
+  /sys/kernel/debug/tracing/kprobe_events file does not exist - please rebuild ker
+    Error: Failed to show event list.
+
+With this patch,
+
+  # perf probe -l
+    probe_perf:alloc_event (on alloc_event@lib/traceevent/event-parse.c in /home/fedora/ksrc/linux-3/tools/perf/perf)
+
+Changes in v2:
+ - Use strerror_r instead of strerror.
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reported-by: Naohiro Aota <naota@elisp.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+---
+ tools/perf/util/probe-event.c |   89 +++++++++++++++++++++++++++--------------
+ 1 file changed, 59 insertions(+), 30 deletions(-)
+
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 9a0a183..50aa7f0 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -1780,10 +1780,11 @@ static void clear_probe_trace_event(struct probe_trace_event *tev)
+ 	memset(tev, 0, sizeof(*tev));
+ }
+ 
+-static void print_warn_msg(const char *file, bool is_kprobe)
++static void print_open_warning(int err, bool is_kprobe)
+ {
++	char sbuf[128];
+ 
+-	if (errno == ENOENT) {
++	if (err == -ENOENT) {
+ 		const char *config;
+ 
+ 		if (!is_kprobe)
+@@ -1791,25 +1792,26 @@ static void print_warn_msg(const char *file, bool is_kprobe)
+ 		else
+ 			config = "CONFIG_KPROBE_EVENTS";
+ 
+-		pr_warning("%s file does not exist - please rebuild kernel"
+-				" with %s.\n", file, config);
+-	} else
+-		pr_warning("Failed to open %s file: %s\n", file,
+-				strerror(errno));
++		pr_warning("%cprobe_events file does not exist"
++			   " - please rebuild kernel with %s.\n",
++			   is_kprobe ? 'k' : 'u', config);
++	} else if (err == -ENOTSUP)
++		pr_warning("Debugfs is not mounted.\n");
++	else
++		pr_warning("Failed to open %cprobe_events: %s\n",
++			   is_kprobe ? 'k' : 'u',
++			   strerror_r(-err, sbuf, sizeof(sbuf)));
+ }
+ 
+-static int open_probe_events(const char *trace_file, bool readwrite,
+-				bool is_kprobe)
++static int open_probe_events(const char *trace_file, bool readwrite)
+ {
+ 	char buf[PATH_MAX];
+ 	const char *__debugfs;
+ 	int ret;
+ 
+ 	__debugfs = debugfs_find_mountpoint();
+-	if (__debugfs == NULL) {
+-		pr_warning("Debugfs is not mounted.\n");
+-		return -ENOENT;
+-	}
++	if (__debugfs == NULL)
++		return -ENOTSUP;
+ 
+ 	ret = e_snprintf(buf, PATH_MAX, "%s/%s", __debugfs, trace_file);
+ 	if (ret >= 0) {
+@@ -1820,19 +1822,19 @@ static int open_probe_events(const char *trace_file, bool readwrite,
+ 			ret = open(buf, O_RDONLY, 0);
+ 
+ 		if (ret < 0)
+-			print_warn_msg(buf, is_kprobe);
++			ret = -errno;
+ 	}
+ 	return ret;
+ }
+ 
+ static int open_kprobe_events(bool readwrite)
+ {
+-	return open_probe_events("tracing/kprobe_events", readwrite, true);
++	return open_probe_events("tracing/kprobe_events", readwrite);
+ }
+ 
+ static int open_uprobe_events(bool readwrite)
+ {
+-	return open_probe_events("tracing/uprobe_events", readwrite, false);
++	return open_probe_events("tracing/uprobe_events", readwrite);
+ }
+ 
+ /* Get raw string list of current kprobe_events  or uprobe_events */
+@@ -1940,27 +1942,47 @@ static int __show_perf_probe_events(int fd, bool is_kprobe)
+ /* List up current perf-probe events */
+ int show_perf_probe_events(void)
+ {
+-	int fd, ret;
++	int kp_fd, up_fd, ret;
+ 
+ 	setup_pager();
+-	fd = open_kprobe_events(false);
+-
+-	if (fd < 0)
+-		return fd;
+ 
+ 	ret = init_symbol_maps(false);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = __show_perf_probe_events(fd, true);
+-	close(fd);
++	kp_fd = open_kprobe_events(false);
++	if (kp_fd >= 0) {
++		ret = __show_perf_probe_events(kp_fd, true);
++		close(kp_fd);
++		if (ret < 0)
++			goto out;
++	}
+ 
+-	fd = open_uprobe_events(false);
+-	if (fd >= 0) {
+-		ret = __show_perf_probe_events(fd, false);
+-		close(fd);
++	up_fd = open_uprobe_events(false);
++	if (kp_fd < 0 && up_fd < 0) {
++		/* Both kprobes and uprobes are disabled, warn it. */
++		if (kp_fd == -ENOTSUP && up_fd == -ENOTSUP)
++			pr_warning("Debugfs is not mounted.\n");
++		else if (kp_fd == -ENOENT && up_fd == -ENOENT)
++			pr_warning("Please rebuild kernel with "
++				   "CONFIG_KPROBE_EVENTS or/and "
++				   "CONFIG_UPROBE_EVENTS.\n");
++		else {
++			char sbuf[128];
++			pr_warning("Failed to open kprobe events: %s.\n",
++				   strerror_r(-kp_fd, sbuf, sizeof(sbuf)));
++			pr_warning("Failed to open uprobe events: %s.\n",
++				   strerror_r(-up_fd, sbuf, sizeof(sbuf)));
++		}
++		ret = kp_fd;
++		goto out;
+ 	}
+ 
++	if (up_fd >= 0) {
++		ret = __show_perf_probe_events(up_fd, false);
++		close(up_fd);
++	}
++out:
+ 	exit_symbol_maps();
+ 	return ret;
+ }
+@@ -2075,8 +2097,11 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 	else
+ 		fd = open_kprobe_events(true);
+ 
+-	if (fd < 0)
++	if (fd < 0) {
++		print_open_warning(fd, !pev->uprobes);
+ 		return fd;
++	}
++
+ 	/* Get current event names */
+ 	namelist = get_probe_trace_event_names(fd, false);
+ 	if (!namelist) {
+@@ -2449,13 +2474,17 @@ int del_perf_probe_events(struct strlist *dellist)
+ 
+ 	/* Get current event names */
+ 	kfd = open_kprobe_events(true);
+-	if (kfd < 0)
++	if (kfd < 0) {
++		print_open_warning(kfd, true);
+ 		return kfd;
++	}
+ 
+ 	namelist = get_probe_trace_event_names(kfd, true);
+ 	ufd = open_uprobe_events(true);
+ 
+-	if (ufd >= 0)
++	if (ufd < 0)
++		print_open_warning(ufd, false);
++	else
+ 		unamelist = get_probe_trace_event_names(ufd, true);
+ 
+ 	if (namelist == NULL && unamelist == NULL)
+
