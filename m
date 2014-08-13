@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaHMFRO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 01:17:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44996 "EHLO
+	id S1752145AbaHMFRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 01:17:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45008 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaHMFRL (ORCPT
+	with ESMTP id S1750846AbaHMFRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 01:17:11 -0400
-Date: Tue, 12 Aug 2014 22:16:51 -0700
+	Wed, 13 Aug 2014 01:17:22 -0400
+Date: Tue, 12 Aug 2014 22:17:04 -0700
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-7p3mnnopjvsp9nmk9msqcfkm@git.kernel.org>
+Message-ID: <tip-8q8794a8nlmpd1u8xrqmcyd2@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
         a.p.zijlstra@chello.nl, jean.pihet@linaro.org, namhyung@kernel.org,
@@ -22,8 +22,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf tools:
-  Add debug prints for ordered events queue
-Git-Commit-ID: cee3ab9caa7ae5ee81027e60c0109063664d9217
+  Allow out of order messages in forced flush
+Git-Commit-ID: b0a45203a75a800015828ac89f2945981019b65b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,24 +36,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cee3ab9caa7ae5ee81027e60c0109063664d9217
-Gitweb:     http://git.kernel.org/tip/cee3ab9caa7ae5ee81027e60c0109063664d9217
+Commit-ID:  b0a45203a75a800015828ac89f2945981019b65b
+Gitweb:     http://git.kernel.org/tip/b0a45203a75a800015828ac89f2945981019b65b
 Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Fri, 11 Jul 2014 14:49:54 +0200
+AuthorDate: Thu, 12 Jun 2014 09:50:11 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 12 Aug 2014 12:03:01 -0300
+CommitDate: Tue, 12 Aug 2014 12:03:02 -0300
 
-perf tools: Add debug prints for ordered events queue
+perf tools: Allow out of order messages in forced flush
 
-Adding some prints for ordered events queue, to help debug issues.
+In forced flush (OE_FLUSH__HALF) we break the rules of the flush
+timestamp via PERF_RECORD_FINISHED_ROUND event, so we could get out of
+order event.
 
-Adding debug_ordered_events debug variable to be able to enable ordered
-events debug messages using:
-
-  $ perf --debug ordered-events=2 report ...
-
-Also using oe pointer in perf_session__queue_event instead of chained
-session variable dereferencing.
+Do not force error in this case plus changing the output warning to use
+WARN_ONCE.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Acked-by: David Ahern <dsahern@gmail.com>
@@ -65,206 +62,91 @@ Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-7p3mnnopjvsp9nmk9msqcfkm@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-8q8794a8nlmpd1u8xrqmcyd2@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/debug.c          | 36 +++++++++++++++++++++++++++++++++++-
- tools/perf/util/debug.h          |  8 ++++++++
- tools/perf/util/ordered-events.c | 26 ++++++++++++++++++++++++++
- tools/perf/util/session.c        |  4 +++-
- 4 files changed, 72 insertions(+), 2 deletions(-)
+ tools/perf/util/ordered-events.c |  4 ++++
+ tools/perf/util/ordered-events.h |  2 ++
+ tools/perf/util/session.c        | 12 +++++++++---
+ 3 files changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
-index 71d4193..ba357f3 100644
---- a/tools/perf/util/debug.c
-+++ b/tools/perf/util/debug.c
-@@ -13,8 +13,12 @@
- #include "util.h"
- #include "target.h"
- 
-+#define NSECS_PER_SEC  1000000000ULL
-+#define NSECS_PER_USEC 1000ULL
-+
- int verbose;
- bool dump_trace = false, quiet = false;
-+int debug_ordered_events;
- 
- static int _eprintf(int level, int var, const char *fmt, va_list args)
- {
-@@ -42,6 +46,35 @@ int eprintf(int level, int var, const char *fmt, ...)
- 	return ret;
- }
- 
-+static int __eprintf_time(u64 t, const char *fmt, va_list args)
-+{
-+	int ret = 0;
-+	u64 secs, usecs, nsecs = t;
-+
-+	secs   = nsecs / NSECS_PER_SEC;
-+	nsecs -= secs  * NSECS_PER_SEC;
-+	usecs  = nsecs / NSECS_PER_USEC;
-+
-+	ret = fprintf(stderr, "[%13" PRIu64 ".%06" PRIu64 "] ",
-+		      secs, usecs);
-+	ret += vfprintf(stderr, fmt, args);
-+	return ret;
-+}
-+
-+int eprintf_time(int level, int var, u64 t, const char *fmt, ...)
-+{
-+	int ret = 0;
-+	va_list args;
-+
-+	if (var >= level) {
-+		va_start(args, fmt);
-+		ret = __eprintf_time(t, fmt, args);
-+		va_end(args);
-+	}
-+
-+	return ret;
-+}
-+
- /*
-  * Overloading libtraceevent standard info print
-  * function, display with -v in perf.
-@@ -110,7 +143,8 @@ static struct debug_variable {
- 	const char *name;
- 	int *ptr;
- } debug_variables[] = {
--	{ .name = "verbose", .ptr = &verbose },
-+	{ .name = "verbose",		.ptr = &verbose },
-+	{ .name = "ordered-events",	.ptr = &debug_ordered_events},
- 	{ .name = NULL, }
- };
- 
-diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index 89fb6b0..6944ea3 100644
---- a/tools/perf/util/debug.h
-+++ b/tools/perf/util/debug.h
-@@ -10,6 +10,7 @@
- 
- extern int verbose;
- extern bool quiet, dump_trace;
-+extern int debug_ordered_events;
- 
- #ifndef pr_fmt
- #define pr_fmt(fmt) fmt
-@@ -29,6 +30,12 @@ extern bool quiet, dump_trace;
- #define pr_debug3(fmt, ...) pr_debugN(3, pr_fmt(fmt), ##__VA_ARGS__)
- #define pr_debug4(fmt, ...) pr_debugN(4, pr_fmt(fmt), ##__VA_ARGS__)
- 
-+#define pr_time_N(n, var, t, fmt, ...) \
-+	eprintf_time(n, var, t, fmt, ##__VA_ARGS__)
-+
-+#define pr_oe_time(t, fmt, ...)  pr_time_N(1, debug_ordered_events, t, pr_fmt(fmt), ##__VA_ARGS__)
-+#define pr_oe_time2(t, fmt, ...) pr_time_N(2, debug_ordered_events, t, pr_fmt(fmt), ##__VA_ARGS__)
-+
- int dump_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
- void trace_event(union perf_event *event);
- 
-@@ -38,6 +45,7 @@ int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
- void pr_stat(const char *fmt, ...);
- 
- int eprintf(int level, int var, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
-+int eprintf_time(int level, int var, u64 t, const char *fmt, ...) __attribute__((format(printf, 4, 5)));
- 
- int perf_debug_option(const char *str);
- 
 diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
-index 381d5fe..8a8aeab 100644
+index 8a8aeab..706ce1a 100644
 --- a/tools/perf/util/ordered-events.c
 +++ b/tools/perf/util/ordered-events.c
-@@ -1,10 +1,16 @@
- #include <linux/list.h>
-+#include <linux/compiler.h>
- #include "ordered-events.h"
- #include "evlist.h"
- #include "session.h"
- #include "asm/bug.h"
- #include "debug.h"
- 
-+#define pr_N(n, fmt, ...) \
-+	eprintf(n, debug_ordered_events, fmt, ##__VA_ARGS__)
-+
-+#define pr(fmt, ...) pr_N(1, pr_fmt(fmt), ##__VA_ARGS__)
-+
- static void queue_event(struct ordered_events *oe, struct ordered_event *new)
- {
- 	struct ordered_event *last = oe->last;
-@@ -14,6 +20,8 @@ static void queue_event(struct ordered_events *oe, struct ordered_event *new)
- 	++oe->nr_events;
- 	oe->last = new;
- 
-+	pr_oe_time2(timestamp, "queue_event nr_events %u\n", oe->nr_events);
-+
- 	if (!last) {
- 		list_add(&new->list, &oe->events);
- 		oe->max_timestamp = timestamp;
-@@ -69,12 +77,17 @@ static struct ordered_event *alloc_event(struct ordered_events *oe)
- 		if (!oe->buffer)
- 			return NULL;
- 
-+		pr("alloc size %" PRIu64 "B (+%zu), max %" PRIu64 "B\n",
-+		   oe->cur_alloc_size, size, oe->max_alloc_size);
-+
- 		oe->cur_alloc_size += size;
- 		list_add(&oe->buffer->list, &oe->to_free);
- 
- 		/* First entry is abused to maintain the to_free list. */
- 		oe->buffer_idx = 2;
- 		new = oe->buffer + 1;
-+	} else {
-+		pr("allocation limit reached %" PRIu64 "B\n", oe->max_alloc_size);
- 	}
- 
- 	return new;
-@@ -155,6 +168,11 @@ int ordered_events__flush(struct perf_session *s, struct perf_tool *tool,
- 			  enum oe_flush how)
+@@ -169,6 +169,7 @@ int ordered_events__flush(struct perf_session *s, struct perf_tool *tool,
  {
  	struct ordered_events *oe = &s->ordered_events;
-+	static const char * const str[] = {
-+		"FINAL",
-+		"ROUND",
-+		"HALF ",
-+	};
- 	int err;
+ 	static const char * const str[] = {
++		"NONE",
+ 		"FINAL",
+ 		"ROUND",
+ 		"HALF ",
+@@ -198,6 +199,7 @@ int ordered_events__flush(struct perf_session *s, struct perf_tool *tool,
+ 	}
  
- 	switch (how) {
-@@ -184,6 +202,10 @@ int ordered_events__flush(struct perf_session *s, struct perf_tool *tool,
+ 	case OE_FLUSH__ROUND:
++	case OE_FLUSH__NONE:
+ 	default:
  		break;
  	};
- 
-+	pr_oe_time(oe->next_flush, "next_flush - ordered_events__flush PRE  %s, nr_events %u\n",
-+		   str[how], oe->nr_events);
-+	pr_oe_time(oe->max_timestamp, "max_timestamp\n");
-+
- 	err = __ordered_events__flush(s, tool);
- 
+@@ -211,6 +213,8 @@ int ordered_events__flush(struct perf_session *s, struct perf_tool *tool,
  	if (!err) {
-@@ -191,6 +213,10 @@ int ordered_events__flush(struct perf_session *s, struct perf_tool *tool,
+ 		if (how == OE_FLUSH__ROUND)
  			oe->next_flush = oe->max_timestamp;
++
++		oe->last_flush_type = how;
  	}
  
-+	pr_oe_time(oe->next_flush, "next_flush - ordered_events__flush POST %s, nr_events %u\n",
-+		   str[how], oe->nr_events);
-+	pr_oe_time(oe->last_flush, "last_flush\n");
-+
- 	return err;
- }
+ 	pr_oe_time(oe->next_flush, "next_flush - ordered_events__flush POST %s, nr_events %u\n",
+diff --git a/tools/perf/util/ordered-events.h b/tools/perf/util/ordered-events.h
+index 2ce847f..3b2f205 100644
+--- a/tools/perf/util/ordered-events.h
++++ b/tools/perf/util/ordered-events.h
+@@ -14,6 +14,7 @@ struct ordered_event {
+ };
  
+ enum oe_flush {
++	OE_FLUSH__NONE,
+ 	OE_FLUSH__FINAL,
+ 	OE_FLUSH__ROUND,
+ 	OE_FLUSH__HALF,
+@@ -32,6 +33,7 @@ struct ordered_events {
+ 	struct ordered_event	*last;
+ 	int			buffer_idx;
+ 	unsigned int		nr_events;
++	enum oe_flush		last_flush_type;
+ };
+ 
+ struct ordered_event *ordered_events__new(struct ordered_events *oe, u64 timestamp);
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 7d8dbf2..462be27 100644
+index 462be27..7e27f1e 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -499,8 +499,10 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 	if (!timestamp || timestamp == ~0ULL)
+@@ -14,6 +14,7 @@
+ #include "util.h"
+ #include "cpumap.h"
+ #include "perf_regs.h"
++#include "asm/bug.h"
+ 
+ static int perf_session__open(struct perf_session *session)
+ {
+@@ -500,10 +501,15 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
  		return -ETIME;
  
--	if (timestamp < s->ordered_events.last_flush) {
-+	if (timestamp < oe->last_flush) {
- 		printf("Warning: Timestamp below last timeslice flush\n");
-+		pr_oe_time(timestamp,      "out of order event");
-+		pr_oe_time(oe->last_flush, "last flush");
- 		return -EINVAL;
+ 	if (timestamp < oe->last_flush) {
+-		printf("Warning: Timestamp below last timeslice flush\n");
++		WARN_ONCE(1, "Timestamp below last timeslice flush\n");
++
+ 		pr_oe_time(timestamp,      "out of order event");
+-		pr_oe_time(oe->last_flush, "last flush");
+-		return -EINVAL;
++		pr_oe_time(oe->last_flush, "last flush, last_flush_type %d\n",
++			   oe->last_flush_type);
++
++		/* We could get out of order messages after forced flush. */
++		if (oe->last_flush_type != OE_FLUSH__HALF)
++			return -EINVAL;
  	}
  
+ 	new = ordered_events__new(oe, timestamp);
