@@ -1,40 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976AbaHMWHg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 18:07:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51068 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529AbaHMWHf (ORCPT
+	id S1753986AbaHMWKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 18:10:49 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:58791 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704AbaHMWKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 18:07:35 -0400
-Date: Thu, 14 Aug 2014 06:06:59 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: rbasukala <basukalaramesh@gmail.com>
-Cc: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: bmc: fix coding style warning
-Message-ID: <20140813220659.GG7908@kroah.com>
-References: <1407944219-14614-1-git-send-email-basukalaramesh@gmail.com>
+	Wed, 13 Aug 2014 18:10:48 -0400
+Date: Wed, 13 Aug 2014 15:10:44 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: falcon@meizu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] async: async device driver probing
+Message-ID: <20140813221044.GA11620@core.coreip.homeip.net>
+References: <1391857539-27782-1-git-send-email-falcon@meizu.com>
+ <20140208182729.GB10892@kroah.com>
+ <20140813172030.GA23628@core.coreip.homeip.net>
+ <20140813220223.GD7908@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407944219-14614-1-git-send-email-basukalaramesh@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140813220223.GD7908@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 11:36:59AM -0400, rbasukala wrote:
-> This a a patch to the vendorspecificextn.c that fixes coding style warning found by checkpatch.pl script. I am submitting this patch as required by Eudyptula Challenge.
+On Thu, Aug 14, 2014 at 06:02:23AM +0800, Greg KH wrote:
+> On Wed, Aug 13, 2014 at 10:20:33AM -0700, Dmitry Torokhov wrote:
+> > Hi Greg,
+> > 
+> > On Sat, Feb 08, 2014 at 10:27:29AM -0800, Greg KH wrote:
+> 
+> February?  That's an old thread to dig up...
 
-That's a very long line for a changelog entry, please wrap them at the
-proper lengths.
+Well, yes ;)
 
-You need to describe _what_ warning you are fixing here, please be
-specific.
+> 
+> 
+> > > On Sat, Feb 08, 2014 at 07:05:38PM +0800, falcon@meizu.com wrote:
+> > > > From: Wu Zhangjin <wuzhangjin@gmail.com>
+> > > > 
+> > > > [*Note*: NOT applicable, only for comments.]
+> > > > 
+> > > > To async the slow driver probing function of some devices, the device probing
+> > > > support is modified to support async scheduling.
+> > > > 
+> > > > In order to async your driver probing function, please mask the async_probe
+> > > > flag to 1, and to make sure one asynced probing is executed before an specified
+> > > > point, please call async_synchronize_full() in that point..
+> > > > 
+> > > > Usage:
+> > > > 
+> > > > 	static struct i2c_driver test_driver = {
+> > > > 		.driver = {
+> > > > 			.name   = TEST_DEV_NAME,
+> > > > 			.owner  = THIS_MODULE,
+> > > > 	+               .async_probe = 1,
+> > > > 		},
+> > > 
+> > > Why is this needed, we have defered probing and the container stuff, so
+> > > what problem is this solving?
+> > 
+> > Deferred probing only helps if resources are not ready yet, but
+> > sometimes we have a slow(ish) device which initialization stalls probing
+> > the rest of the system. For example a touchpad can take up to a second
+> > to calibrate itself after reset. One could try scheduling reset
+> > asynchronously, or try to offload it to open(), but that is not always
+> > best:
+> > 
+> > 1. Manual async: what to do when reset fails? Ideally we do not want to
+> > leave driver half-way bound with device not operable, but much rather
+> > signal the rest of the system that binding of the device failed and
+> > release all resources.
+> > 
+> > 2. Offload to open: the same issue as with manually doing async reset,
+> > plus sometimes we do not know all parameters that we should create input
+> > device with until after we reset physical device and queried it for
+> > capabilities.
+> > 
+> > Marking a driver to tell device core to execute probe asynchronously [at
+> > boot time] seems like a very appealing feature from driver author POV.
+> > 
+> > What is the container stuff you mention?
+> 
+> drivers/base/container.c
 
-Can you redo this patch please?
+I am not sure how that would help in the scenario described above, as it
+seems ACPI specific...
 
-thanks,
+Thanks.
 
-greg k-h
+-- 
+Dmitry
