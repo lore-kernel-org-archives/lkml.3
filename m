@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaHMKvi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 06:51:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54293 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750803AbaHMKvZ (ORCPT
+	id S1752149AbaHMKw3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 06:52:29 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:44400 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765AbaHMKw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 06:51:25 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, broonie@kernel.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2 v2] mfd: arizona: Mark additional registers as volatile
-Date: Wed, 13 Aug 2014 11:42:47 +0100
-Message-Id: <1407926567-10047-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1407926567-10047-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1407926567-10047-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Wed, 13 Aug 2014 06:52:27 -0400
+Date: Wed, 13 Aug 2014 12:52:22 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: hpa@zytor.com, paulus@samba.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, acme@kernel.org,
+        zheng.z.yan@intel.com, ak@linux.intel.com, tglx@linutronix.de,
+        bp@suse.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf/x86/uncore: move NHM-EX/ WSM-EX specific
+ code to seperate file
+Message-ID: <20140813105222.GA17669@gmail.com>
+References: <1406704935-27708-4-git-send-email-zheng.z.yan@intel.com>
+ <tip-c1e46580c3b7bf25053519cf39f01a2f9ea4d865@git.kernel.org>
+ <20140813104153.GB20522@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140813104153.GB20522@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark some additional registers as volatile. The write sequencer control
-registers should not be cached, as we don't ever want their value
-synchronised as this might cause a write sequence to be accidentally
-initiated.
 
-Additionally, the DAC_COMP registers require special preconditions to
-write so there values wouldn't be updated accurately during a register
-sync.
+* Borislav Petkov <bp@alien8.de> wrote:
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm5102-tables.c |   11 ++++++++---
- drivers/mfd/wm5110-tables.c |    6 +++---
- 2 files changed, 11 insertions(+), 6 deletions(-)
+> On Wed, Aug 13, 2014 at 01:23:12AM -0700, tip-bot for Yan, Zheng wrote:
+> > Commit-ID:  c1e46580c3b7bf25053519cf39f01a2f9ea4d865
+> > Gitweb:     http://git.kernel.org/tip/c1e46580c3b7bf25053519cf39f01a2f9ea4d865
+> > Author:     Yan, Zheng <zheng.z.yan@intel.com>
+> > AuthorDate: Wed, 30 Jul 2014 15:22:15 +0800
+> > Committer:  Ingo Molnar <mingo@kernel.org>
+> > CommitDate: Wed, 13 Aug 2014 07:51:08 +0200
+> > 
+> > perf/x86/uncore: move NHM-EX/WSM-EX specific code to seperate file
+> > 
+> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Andi Kleen <ak@linux.intel.com>
+> > Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> > Cc: Borislav Petkov <bp@suse.de>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Stephane Eranian <eranian@google.com>
+> > Link: http://lkml.kernel.org/r/1406704935-27708-4-git-send-email-zheng.z.yan@intel.com
+> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> > ---
+> >  arch/x86/kernel/cpu/Makefile                       |    2 +-
+> >  arch/x86/kernel/cpu/perf_event_intel_uncore.c      | 1038 +-------------
+> >  arch/x86/kernel/cpu/perf_event_intel_uncore.h      |  185 +--
+> >  ...el_uncore.c => perf_event_intel_uncore_nhmex.c} | 1483 +++-----------------
+> >  4 files changed, 196 insertions(+), 2512 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+> > index 7dee866..7e1fd4e 100644
+> > --- a/arch/x86/kernel/cpu/Makefile
+> > +++ b/arch/x86/kernel/cpu/Makefile
+> > @@ -37,7 +37,7 @@ endif
+> >  obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
+> >  obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
+> >  obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o perf_event_intel_uncore_snb.o
+> > -obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore_snbep.o
+> > +obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore_snbep.o perf_event_intel_uncore_nhmex.o
+> >  obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_rapl.o
+> 
+> These filenames are begging to go to a separate dir. arch/x86/perf/ 
+> would be a good one, peterz says.
 
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index c18d527..191f224 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -245,9 +245,6 @@ const struct regmap_irq_chip wm5102_irq = {
- static const struct reg_default wm5102_reg_default[] = {
- 	{ 0x00000008, 0x0019 },   /* R8     - Ctrl IF SPI CFG 1 */ 
- 	{ 0x00000009, 0x0001 },   /* R9     - Ctrl IF I2C1 CFG 1 */ 
--	{ 0x00000016, 0x0000 },   /* R22    - Write Sequencer Ctrl 0 */ 
--	{ 0x00000017, 0x0000 },   /* R23    - Write Sequencer Ctrl 1 */ 
--	{ 0x00000018, 0x0000 },   /* R24    - Write Sequencer Ctrl 2 */ 
- 	{ 0x00000020, 0x0000 },   /* R32    - Tone Generator 1 */ 
- 	{ 0x00000021, 0x1000 },   /* R33    - Tone Generator 2 */ 
- 	{ 0x00000022, 0x0000 },   /* R34    - Tone Generator 3 */ 
-@@ -1881,6 +1878,10 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
- 	switch (reg) {
- 	case ARIZONA_SOFTWARE_RESET:
- 	case ARIZONA_DEVICE_REVISION:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_3:
- 	case ARIZONA_OUTPUT_STATUS_1:
- 	case ARIZONA_RAW_OUTPUT_STATUS_1:
- 	case ARIZONA_SLIMBUS_RX_PORT_STATUS:
-@@ -1892,6 +1893,10 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_ASYNC_SAMPLE_RATE_1_STATUS:
- 	case ARIZONA_FLL1_NCO_TEST_0:
- 	case ARIZONA_FLL2_NCO_TEST_0:
-+	case ARIZONA_DAC_COMP_1:
-+	case ARIZONA_DAC_COMP_2:
-+	case ARIZONA_DAC_COMP_3:
-+	case ARIZONA_DAC_COMP_4:
- 	case ARIZONA_FX_CTRL2:
- 	case ARIZONA_INTERRUPT_STATUS_1:
- 	case ARIZONA_INTERRUPT_STATUS_2:
-diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
-index 9b98ee5..beae0a3 100644
---- a/drivers/mfd/wm5110-tables.c
-+++ b/drivers/mfd/wm5110-tables.c
-@@ -666,9 +666,6 @@ static const struct reg_default wm5110_reg_default[] = {
- 	{ 0x0000000A, 0x0001 },    /* R10    - Ctrl IF I2C2 CFG 1 */
- 	{ 0x0000000B, 0x0036 },    /* R11    - Ctrl IF I2C1 CFG 2 */
- 	{ 0x0000000C, 0x0036 },    /* R12    - Ctrl IF I2C2 CFG 2 */
--	{ 0x00000016, 0x0000 },    /* R22    - Write Sequencer Ctrl 0 */
--	{ 0x00000017, 0x0000 },    /* R23    - Write Sequencer Ctrl 1 */
--	{ 0x00000018, 0x0000 },    /* R24    - Write Sequencer Ctrl 2 */
- 	{ 0x00000020, 0x0000 },    /* R32    - Tone Generator 1 */
- 	{ 0x00000021, 0x1000 },    /* R33    - Tone Generator 2 */
- 	{ 0x00000022, 0x0000 },    /* R34    - Tone Generator 3 */
-@@ -2815,6 +2812,9 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
- 	switch (reg) {
- 	case ARIZONA_SOFTWARE_RESET:
- 	case ARIZONA_DEVICE_REVISION:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_0:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_1:
-+	case ARIZONA_WRITE_SEQUENCER_CTRL_2:
- 	case ARIZONA_HAPTICS_STATUS:
- 	case ARIZONA_SAMPLE_RATE_1_STATUS:
- 	case ARIZONA_SAMPLE_RATE_2_STATUS:
--- 
-1.7.2.5
+arch/x86/perf/ would be fine with me.
 
+Thanks,
+
+	Ingo
