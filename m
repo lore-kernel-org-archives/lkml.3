@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513AbaHMWvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 18:51:23 -0400
-Received: from mail.kernel.org ([198.145.19.201]:55742 "EHLO mail.kernel.org"
+	id S1754532AbaHMWv1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 18:51:27 -0400
+Received: from mail.kernel.org ([198.145.19.201]:55764 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754495AbaHMWvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 18:51:18 -0400
+	id S1754504AbaHMWvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 18:51:23 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 37/41] perf script python: Add helpers for calling Python objects
-Date: Wed, 13 Aug 2014 19:48:23 -0300
-Message-Id: <1407970107-24540-38-git-send-email-acme@kernel.org>
+Subject: [PATCH 38/41] perf tools: Identify which comms are from exec
+Date: Wed, 13 Aug 2014 19:48:24 -0300
+Message-Id: <1407970107-24540-39-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1407970107-24540-1-git-send-email-acme@kernel.org>
 References: <1407970107-24540-1-git-send-email-acme@kernel.org>
@@ -27,12 +27,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-The Python script API repeatedly uses the same lines of code to get and
-call objects.  Make that into helper functions instead.
-
-A side-effect is that some reference counting bugs disappear because the
-new call_object() function always decrements the reference count of
-'retval'.
+For grouping together all the data from a single execution, which is
+needed for pairing calls and returns e.g. any outstanding calls when a
+process exec's will never return.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -42,241 +39,171 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406786474-9306-19-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1406786474-9306-2-git-send-email-adrian.hunter@intel.com
+[ Remove testing if comm->exec is false before setting it to true ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../util/scripting-engines/trace-event-python.c    | 114 +++++++++------------
- 1 file changed, 47 insertions(+), 67 deletions(-)
+ tools/perf/util/comm.c    |  7 +++++--
+ tools/perf/util/comm.h    |  6 ++++--
+ tools/perf/util/machine.c |  4 +++-
+ tools/perf/util/thread.c  | 24 +++++++++++++++++++-----
+ tools/perf/util/thread.h  | 10 +++++++++-
+ 5 files changed, 40 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index cbce2545da45..26e5f14239ed 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -73,6 +73,35 @@ static void pydict_set_item_string_decref(PyObject *dict, const char *key, PyObj
- 	Py_DECREF(val);
+diff --git a/tools/perf/util/comm.c b/tools/perf/util/comm.c
+index f9e777629e21..b2bb59df65e1 100644
+--- a/tools/perf/util/comm.c
++++ b/tools/perf/util/comm.c
+@@ -74,7 +74,7 @@ static struct comm_str *comm_str__findnew(const char *str, struct rb_root *root)
+ 	return new;
  }
  
-+static PyObject *get_handler(const char *handler_name)
-+{
-+	PyObject *handler;
-+
-+	handler = PyDict_GetItemString(main_dict, handler_name);
-+	if (handler && !PyCallable_Check(handler))
-+		return NULL;
-+	return handler;
-+}
-+
-+static void call_object(PyObject *handler, PyObject *args, const char *die_msg)
-+{
-+	PyObject *retval;
-+
-+	retval = PyObject_CallObject(handler, args);
-+	if (retval == NULL)
-+		handler_call_die(die_msg);
-+	Py_DECREF(retval);
-+}
-+
-+static void try_call_object(const char *handler_name, PyObject *args)
-+{
-+	PyObject *handler;
-+
-+	handler = get_handler(handler_name);
-+	if (handler)
-+		call_object(handler, args, handler_name);
-+}
-+
- static void define_value(enum print_arg_type field_type,
- 			 const char *ev_name,
- 			 const char *field_name,
-@@ -80,7 +109,7 @@ static void define_value(enum print_arg_type field_type,
- 			 const char *field_str)
+-struct comm *comm__new(const char *str, u64 timestamp)
++struct comm *comm__new(const char *str, u64 timestamp, bool exec)
  {
- 	const char *handler_name = "define_flag_value";
--	PyObject *handler, *t, *retval;
-+	PyObject *t;
- 	unsigned long long value;
- 	unsigned n = 0;
+ 	struct comm *comm = zalloc(sizeof(*comm));
  
-@@ -98,13 +127,7 @@ static void define_value(enum print_arg_type field_type,
- 	PyTuple_SetItem(t, n++, PyInt_FromLong(value));
- 	PyTuple_SetItem(t, n++, PyString_FromString(field_str));
+@@ -82,6 +82,7 @@ struct comm *comm__new(const char *str, u64 timestamp)
+ 		return NULL;
  
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && PyCallable_Check(handler)) {
--		retval = PyObject_CallObject(handler, t);
--		if (retval == NULL)
--			handler_call_die(handler_name);
--		Py_DECREF(retval);
--	}
-+	try_call_object(handler_name, t);
+ 	comm->start = timestamp;
++	comm->exec = exec;
  
- 	Py_DECREF(t);
+ 	comm->comm_str = comm_str__findnew(str, &comm_str_root);
+ 	if (!comm->comm_str) {
+@@ -94,7 +95,7 @@ struct comm *comm__new(const char *str, u64 timestamp)
+ 	return comm;
  }
-@@ -127,7 +150,7 @@ static void define_field(enum print_arg_type field_type,
- 			 const char *delim)
+ 
+-int comm__override(struct comm *comm, const char *str, u64 timestamp)
++int comm__override(struct comm *comm, const char *str, u64 timestamp, bool exec)
  {
- 	const char *handler_name = "define_flag_field";
--	PyObject *handler, *t, *retval;
-+	PyObject *t;
- 	unsigned n = 0;
+ 	struct comm_str *new, *old = comm->comm_str;
  
- 	if (field_type == PRINT_SYMBOL)
-@@ -145,13 +168,7 @@ static void define_field(enum print_arg_type field_type,
- 	if (field_type == PRINT_FLAGS)
- 		PyTuple_SetItem(t, n++, PyString_FromString(delim));
+@@ -106,6 +107,8 @@ int comm__override(struct comm *comm, const char *str, u64 timestamp)
+ 	comm_str__put(old);
+ 	comm->comm_str = new;
+ 	comm->start = timestamp;
++	if (exec)
++		comm->exec = true;
  
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && PyCallable_Check(handler)) {
--		retval = PyObject_CallObject(handler, t);
--		if (retval == NULL)
--			handler_call_die(handler_name);
--		Py_DECREF(retval);
--	}
-+	try_call_object(handler_name, t);
- 
- 	Py_DECREF(t);
+ 	return 0;
  }
-@@ -362,7 +379,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
- 				      struct thread *thread,
- 				      struct addr_location *al)
- {
--	PyObject *handler, *retval, *context, *t, *obj, *callchain;
-+	PyObject *handler, *context, *t, *obj, *callchain;
- 	PyObject *dict = NULL;
- 	static char handler_name[256];
- 	struct format_field *field;
-@@ -387,9 +404,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
+diff --git a/tools/perf/util/comm.h b/tools/perf/util/comm.h
+index fac5bd51befc..51c10ab257f8 100644
+--- a/tools/perf/util/comm.h
++++ b/tools/perf/util/comm.h
+@@ -11,11 +11,13 @@ struct comm {
+ 	struct comm_str *comm_str;
+ 	u64 start;
+ 	struct list_head list;
++	bool exec;
+ };
  
- 	sprintf(handler_name, "%s__%s", event->system, event->name);
+ void comm__free(struct comm *comm);
+-struct comm *comm__new(const char *str, u64 timestamp);
++struct comm *comm__new(const char *str, u64 timestamp, bool exec);
+ const char *comm__str(const struct comm *comm);
+-int comm__override(struct comm *comm, const char *str, u64 timestamp);
++int comm__override(struct comm *comm, const char *str, u64 timestamp,
++		   bool exec);
  
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && !PyCallable_Check(handler))
--		handler = NULL;
-+	handler = get_handler(handler_name);
- 	if (!handler) {
- 		dict = PyDict_New();
- 		if (!dict)
-@@ -450,19 +465,9 @@ static void python_process_tracepoint(struct perf_sample *sample,
- 		Py_FatalError("error resizing Python tuple");
+ #endif  /* __PERF_COMM_H */
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 16bba9fff2c8..ea3e09f6a9c6 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -404,11 +404,13 @@ int machine__process_comm_event(struct machine *machine, union perf_event *event
+ 	struct thread *thread = machine__findnew_thread(machine,
+ 							event->comm.pid,
+ 							event->comm.tid);
++	bool exec = event->header.misc & PERF_RECORD_MISC_COMM_EXEC;
  
- 	if (handler) {
--		retval = PyObject_CallObject(handler, t);
--		if (retval == NULL)
--			handler_call_die(handler_name);
--		Py_DECREF(retval);
-+		call_object(handler, t, handler_name);
- 	} else {
--		handler = PyDict_GetItemString(main_dict, "trace_unhandled");
--		if (handler && PyCallable_Check(handler)) {
--
--			retval = PyObject_CallObject(handler, t);
--			if (retval == NULL)
--				handler_call_die("trace_unhandled");
--			Py_DECREF(retval);
--		}
-+		try_call_object("trace_unhandled", t);
- 		Py_DECREF(dict);
- 	}
+ 	if (dump_trace)
+ 		perf_event__fprintf_comm(event, stdout);
  
-@@ -474,7 +479,7 @@ static void python_process_general_event(struct perf_sample *sample,
- 					 struct thread *thread,
- 					 struct addr_location *al)
- {
--	PyObject *handler, *retval, *t, *dict, *callchain, *dict_sample;
-+	PyObject *handler, *t, *dict, *callchain, *dict_sample;
- 	static char handler_name[64];
- 	unsigned n = 0;
- 
-@@ -496,8 +501,8 @@ static void python_process_general_event(struct perf_sample *sample,
- 
- 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
- 
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (!handler || !PyCallable_Check(handler))
-+	handler = get_handler(handler_name);
-+	if (!handler)
- 		goto exit;
- 
- 	pydict_set_item_string_decref(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
-@@ -539,10 +544,7 @@ static void python_process_general_event(struct perf_sample *sample,
- 	if (_PyTuple_Resize(&t, n) == -1)
- 		Py_FatalError("error resizing Python tuple");
- 
--	retval = PyObject_CallObject(handler, t);
--	if (retval == NULL)
--		handler_call_die(handler_name);
--	Py_DECREF(retval);
-+	call_object(handler, t, handler_name);
- exit:
- 	Py_DECREF(dict);
- 	Py_DECREF(t);
-@@ -566,36 +568,24 @@ static void python_process_event(union perf_event *event __maybe_unused,
- 
- static int run_start_sub(void)
- {
--	PyObject *handler, *retval;
--	int err = 0;
--
- 	main_module = PyImport_AddModule("__main__");
- 	if (main_module == NULL)
+-	if (thread == NULL || thread__set_comm(thread, event->comm.comm, sample->time)) {
++	if (thread == NULL ||
++	    __thread__set_comm(thread, event->comm.comm, sample->time, exec)) {
+ 		dump_printf("problem processing PERF_RECORD_COMM, skipping event.\n");
  		return -1;
- 	Py_INCREF(main_module);
+ 	}
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 12c7a253a63c..a9df7f2c6dc9 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -42,7 +42,7 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+ 			goto err_thread;
  
- 	main_dict = PyModule_GetDict(main_module);
--	if (main_dict == NULL) {
--		err = -1;
-+	if (main_dict == NULL)
- 		goto error;
--	}
- 	Py_INCREF(main_dict);
- 
--	handler = PyDict_GetItemString(main_dict, "trace_begin");
--	if (handler == NULL || !PyCallable_Check(handler))
--		goto out;
-+	try_call_object("trace_begin", NULL);
- 
--	retval = PyObject_CallObject(handler, NULL);
--	if (retval == NULL)
--		handler_call_die("trace_begin");
-+	return 0;
- 
--	Py_DECREF(retval);
--	return err;
- error:
- 	Py_XDECREF(main_dict);
- 	Py_XDECREF(main_module);
--out:
--	return err;
-+	return -1;
+ 		snprintf(comm_str, 32, ":%d", tid);
+-		comm = comm__new(comm_str, 0);
++		comm = comm__new(comm_str, 0, false);
+ 		free(comm_str);
+ 		if (!comm)
+ 			goto err_thread;
+@@ -81,19 +81,33 @@ struct comm *thread__comm(const struct thread *thread)
+ 	return list_first_entry(&thread->comm_list, struct comm, list);
  }
  
- /*
-@@ -654,23 +644,13 @@ error:
-  */
- static int python_stop_script(void)
++struct comm *thread__exec_comm(const struct thread *thread)
++{
++	struct comm *comm, *last = NULL;
++
++	list_for_each_entry(comm, &thread->comm_list, list) {
++		if (comm->exec)
++			return comm;
++		last = comm;
++	}
++
++	return last;
++}
++
+ /* CHECKME: time should always be 0 if event aren't ordered */
+-int thread__set_comm(struct thread *thread, const char *str, u64 timestamp)
++int __thread__set_comm(struct thread *thread, const char *str, u64 timestamp,
++		       bool exec)
  {
--	PyObject *handler, *retval;
--	int err = 0;
-+	try_call_object("trace_end", NULL);
+ 	struct comm *new, *curr = thread__comm(thread);
+ 	int err;
  
--	handler = PyDict_GetItemString(main_dict, "trace_end");
--	if (handler == NULL || !PyCallable_Check(handler))
--		goto out;
--
--	retval = PyObject_CallObject(handler, NULL);
--	if (retval == NULL)
--		handler_call_die("trace_end");
--	Py_DECREF(retval);
--out:
- 	Py_XDECREF(main_dict);
- 	Py_XDECREF(main_module);
- 	Py_Finalize();
- 
--	return err;
-+	return 0;
+ 	/* Override latest entry if it had no specific time coverage */
+-	if (!curr->start) {
+-		err = comm__override(curr, str, timestamp);
++	if (!curr->start && !curr->exec) {
++		err = comm__override(curr, str, timestamp, exec);
+ 		if (err)
+ 			return err;
+ 	} else {
+-		new = comm__new(str, timestamp);
++		new = comm__new(str, timestamp, exec);
+ 		if (!new)
+ 			return -ENOMEM;
+ 		list_add(&new->list, &thread->comm_list);
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 716b7723cce2..8c75fa774706 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -38,9 +38,17 @@ static inline void thread__exited(struct thread *thread)
+ 	thread->dead = true;
  }
  
- static int python_generate_script(struct pevent *pevent, const char *outfile)
+-int thread__set_comm(struct thread *thread, const char *comm, u64 timestamp);
++int __thread__set_comm(struct thread *thread, const char *comm, u64 timestamp,
++		       bool exec);
++static inline int thread__set_comm(struct thread *thread, const char *comm,
++				   u64 timestamp)
++{
++	return __thread__set_comm(thread, comm, timestamp, false);
++}
++
+ int thread__comm_len(struct thread *thread);
+ struct comm *thread__comm(const struct thread *thread);
++struct comm *thread__exec_comm(const struct thread *thread);
+ const char *thread__comm_str(const struct thread *thread);
+ void thread__insert_map(struct thread *thread, struct map *map);
+ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp);
 -- 
 1.9.3
 
