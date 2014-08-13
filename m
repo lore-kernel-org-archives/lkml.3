@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149AbaHMPFx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:05:53 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49177 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751965AbaHMPFv (ORCPT
+	id S1753274AbaHMPGi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:06:38 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:46299 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752777AbaHMPGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:05:51 -0400
-Date: Wed, 13 Aug 2014 16:05:40 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call
-	into scheduler
-Message-ID: <20140813150540.GL30401@n2100.arm.linux.org.uk>
-References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org> <20140813142257.GK30401@n2100.arm.linux.org.uk> <20140813145526.GF32301@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140813145526.GF32301@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 13 Aug 2014 11:06:37 -0400
+Date: Wed, 13 Aug 2014 08:07:05 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Juergen Gross <jgross@suse.com>,
+        Ben Widawsky <benjamin.widawsky@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: Usage of _PAGE_PCD et al in i915 driver
+Message-ID: <20140813080705.31a0901a@jbarnes-desktop>
+In-Reply-To: <CAKMK7uEqfLudZbj1ArKJVXET69d+g+SA3=GtXQ0zXi+FeudAag@mail.gmail.com>
+References: <53E4B338.3040904@suse.com>
+	<CAKMK7uEqfLudZbj1ArKJVXET69d+g+SA3=GtXQ0zXi+FeudAag@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 07:55:26AM -0700, Stephen Boyd wrote:
-> On 08/13, Russell King - ARM Linux wrote:
-> > On Wed, Aug 13, 2014 at 06:57:18AM -0700, Stephen Boyd wrote:
-> > > Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
-> > > 2012-04-12) introduced an acquisition of the irq_controller_lock
-> > > in gic_raise_softirq() which can lead to a spinlock recursion if
-> > > the gic_arch_extn hooks call into the scheduler (via complete()
-> > > or wake_up(), etc.). This happens because gic_arch_extn hooks are
-> > > normally called with the irq_controller_lock held and calling
-> > > into the scheduler may cause us to call smp_send_reschedule()
-> > > which will grab the irq_controller_lock again. Here's an example
-> > > from a vendor kernel (note that the gic_arch_extn hook code here
-> > > isn't actually in mainline):
-> > 
-> > Here's a question: why would you want to call into the scheduler from
-> > the gic_arch_extn code?
+On Fri, 8 Aug 2014 15:14:15 +0200
+Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+
+> Adding relevant mailing lists.
 > 
-> In this case we want to send a message to another processor when
-> an interrupt is enabled that's only a wakeup interrupt in certain
-> low power states. It's done sort of indirectly, but basically we
-> block that low power state from being entered so we can ensure
-> that the interrupt wakes us up from a lighter version of suspend.
-
-No, that's not the correct answer for the question I asked.  I did not
-ask "why would you want to call into the IRQ code from the scheduler".
-I asked "why would you want to call into the scheduler from the
-gic_arch_extn code?"
-
-That's a completely different question.  Let me rephrase to try and get
-an answer to my question: Why are you calling complete() or wake_up()
-from the gic_arch_extn code?
-
-> > static int __disable_irq_nosync(unsigned int irq)
-> > {
-> >         unsigned long flags;
-> >         struct irq_desc *desc = irq_get_desc_buslock(irq, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
+> On Fri, Aug 8, 2014 at 1:23 PM, Juergen Gross <jgross@suse.com> wrote:
+> > I'm just about to create a patch for full PAT support in the Linux
+> > kernel, including Xen. For this purpose I introduce a translation
+> > between cache modes and pte bits.
+> >
+> > Scanning the kernel sources for usage of the cache mode bits in the
+> > pte I discovered  drivers/gpu/drm/i915/i915_gem_gtt.h is using
+> > _PAGE_PCD, _PAGE_PWT and _PAGE_PAT. I think those defines are used
+> > to create ptes not for usage by the main processor, but for the
+> > graphics processor. Is this true? In this case I'd suggest to define
+> > i915-specific macros instead of using the x86 ones.
 > 
-> We got the lock here.
+> Yeah, those are gpu specific PAT tables, but the hw engineers
+> specifically designed this to match, and we've tried to follow the cpu
+> side to match it. Especially in the future that will be somewhat
+> important, since we want to fully share the entire address space
+> between cpu and gpu on the next platform. Jesse is working on that.
 
-Yes, Daniel pointed that out, which makes this fine of course.
+Right, we have an x86 compatible MMU in the GPU itself, so re-using the
+defines makes sense.  I suppose with your work you'll move them and
+make them a bit more opaque?  If so, we'll still want a way to get at
+them directly, or access your mapping functions for generating PTE bits
+for the GPU MMU.
 
+Thanks,
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Jesse Barnes, Intel Open Source Technology Center
