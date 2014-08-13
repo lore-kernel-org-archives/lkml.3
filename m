@@ -1,138 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaHMOoR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:44:17 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35174 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177AbaHMOoP (ORCPT
+	id S1753251AbaHMOpN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:45:13 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55160 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875AbaHMOpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:44:15 -0400
-Date: Wed, 13 Aug 2014 23:43:04 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Chao Yu <chao2.yu@samsung.com>,
-        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
-Message-ID: <20140813144304.GB1091@swordfish>
-References: <009001cfb69a$a8470840$f8d518c0$@samsung.com>
- <53EB2271.1080002@redhat.com>
- <20140813113257.GA948@swordfish>
+	Wed, 13 Aug 2014 10:45:11 -0400
+Date: Wed, 13 Aug 2014 16:44:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, Matt Fleming <matt.fleming@intel.com>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firmware: Do not use WARN_ON(!spin_is_locked())
+Message-ID: <20140813144458.GS9918@twins.programming.kicks-ass.net>
+References: <1407729253-31341-1-git-send-email-linux@roeck-us.net>
+ <20140813141836.GQ15082@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="j6qW74gxMbs4kZr8"
 Content-Disposition: inline
-In-Reply-To: <20140813113257.GA948@swordfish>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140813141836.GQ15082@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On (08/13/14 20:32), Sergey Senozhatsky wrote:
-> On (08/13/14 10:31), Jerome Marchand wrote:
-> > Date: Wed, 13 Aug 2014 10:31:45 +0200
-> > From: Jerome Marchand <jmarchan@redhat.com>
-> > To: Chao Yu <chao2.yu@samsung.com>, minchan@kernel.org
-> > CC: ngupta@vflare.org, linux-kernel@vger.kernel.org, 'Sergey Senozhatsky'
-> >  <sergey.senozhatsky@gmail.com>, 'Andrew Morton'
-> >  <akpm@linux-foundation.org>
-> > Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
-> > User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
-> >  Thunderbird/24.6.0
-> > 
-> > On 08/13/2014 04:01 AM, Chao Yu wrote:
-> > > Since we allocate a temporary buffer in zram_bvec_read to handle partial page
-> > > operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
-> > > zram: allow partial page operations), our ->failed_reads value may be incorrect
-> > > as we do not increase its value when failed to allocate the temporary buffer.
-> > > 
-> > > Let's fix this issue and correct the annotation of failed_reads.
-> > > 
-> > >  v2: clean codes of failed_{reads,writes} stat pointed out by Minchan Kim, and
-> > > this cleanup also fix incorrectly stat when fail in zram_decompress_page.
-> > > 
-> > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > 
-> > Acked-by: Jerome Marchand <jmarchan@redhat.com>
-> 
-> Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> 
-> 	-ss
-> 
-> > > ---
-> > >  drivers/block/zram/zram_drv.c | 10 +++++++---
-> > >  drivers/block/zram/zram_drv.h |  2 +-
-> > >  2 files changed, 8 insertions(+), 4 deletions(-)
-> > > 
-> > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > > index dfa4024..d00831c 100644
-> > > --- a/drivers/block/zram/zram_drv.c
-> > > +++ b/drivers/block/zram/zram_drv.c
-> > > @@ -378,7 +378,6 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
-> > >  	/* Should NEVER happen. Return bio error if it does. */
-> > >  	if (unlikely(ret)) {
-> > >  		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
-> > > -		atomic64_inc(&zram->stats.failed_reads);
-> > >  		return ret;
-> > >  	}
-> > >  
-> > > @@ -547,8 +546,6 @@ out:
-> > >  		zcomp_strm_release(zram->comp, zstrm);
-> > >  	if (is_partial_io(bvec))
-> > >  		kfree(uncmem);
-> > > -	if (ret)
-> > > -		atomic64_inc(&zram->stats.failed_writes);
-> > >  	return ret;
-> > >  }
-> > >  
-> > > @@ -566,6 +563,13 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-> > >  		ret = zram_bvec_write(zram, bvec, index, offset);
-> > >  	}
-> > >  
-> > > +	if (unlikely(ret)) {
-> > > +		if (rw == READ)
-> > > +			atomic64_inc(&zram->stats.failed_reads);
-> > > +		else
-> > > +			atomic64_inc(&zram->stats.failed_writes);
-> > > +	}
-> > > +
-> > >  	return ret;
-> > >  }
-> > >  
-> > > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > > index 5b0afde..e0f725c 100644
-> > > --- a/drivers/block/zram/zram_drv.h
-> > > +++ b/drivers/block/zram/zram_drv.h
-> > > @@ -84,7 +84,7 @@ struct zram_stats {
-> > >  	atomic64_t compr_data_size;	/* compressed size of pages stored */
-> > >  	atomic64_t num_reads;	/* failed + successful */
-> > >  	atomic64_t num_writes;	/* --do-- */
-> > > -	atomic64_t failed_reads;	/* should NEVER! happen */
-> > > +	atomic64_t failed_reads;	/* can happen when memory is too low */
+--j6qW74gxMbs4kZr8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Wed, Aug 13, 2014 at 03:18:36PM +0100, Matt Fleming wrote:
+> On Sun, 10 Aug, at 08:54:13PM, Guenter Roeck wrote:
+> > spin_is_locked() always returns false for uniprocessor configurations,
+> > so do not use WARN_ON with it. WARN_ON_SMP() exists for that very
+> > purpose and must be used instead.
+> =20
+>=20
+> How about lockdep_assert_held()? That seems to be much more popular.
 
-this grabbed my attention.
+lockdep_assert_held() not only checks if the lock is taken, it also
+verifies its taken by the current context, so its a stronger assertion.
 
-	"failed_writes; /* can happen when memory is too low */"
+And, as a bonus, it doesn't emit _any_ code on a !DEBUG build ;-)
 
-theoretically, we can have a misbehaving compression algorithm. so the
-question is -- should we fail write() if compression has failed for any
-other reason, rather than -ENOMEM? alternatively, we can store uncompressed
-user mem, just the same way we do for `badly' compressed buffers, set a
-FAILED_COMPRESSION flag (so we will not leak kernel memory on read() if we
-failed to compress is_partial_io() bv_page), and on read() copy it out as is,
-just as we do for `badly' compessed pages.
+--j6qW74gxMbs4kZr8
+Content-Type: application/pgp-signature
 
-so, what do you think? /* I can take a look on it */
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-	-ss
+iQIcBAEBAgAGBQJT63nqAAoJEHZH4aRLwOS61CUP/jfEpSu6EkWaeDTUPnXCr0Gz
+yohcSD0bISzfQgI0kA39hQCPwCDoe5lxz/u1Rgu7zOucltZTUfzqJR3JbsVQGlJa
+rHV7fgkvw9RHERwzaAYEgYl1TDmT3W38v6haeVIt5r32B/E1CATuddvp72kB6M25
+G0UQugAYEfcrw684Co6EtfehGvdz5t+sK5sFp5B5hD6NptA5tH5vI5TTw3puQ6jH
+Th3FI894CD68WkJStKsgb0faXz3zx6OfJEU75rA76u9Y/EHzSK7y3T2Pv2msW7cF
+bVtDa4C0/wRv4lWwjOtGXs7GSxSEzya+ErpXV6O+1+eqdBHGiSFEMbH1bTt5/TNu
+zuHzCTbjtJodD6IxtEDhL6oSz+cArsqMxvtOoRpGaN8Mb2/b46SFsSETBWhe8O6S
+YCVpDFuIzvuEnsMu6PVLxEpCsx0iISbXjaBbJf5/pOcDZPIiHZysXw+yx8+cwtSo
+JNI30QnGWHl/9XcwkZ4Mxi8op0P1DlvItV4rW5Uz3c87NDAB31MFCGMIoag0aDXY
+rn5NiIbgO9EaojCJ1nUzQwzVuqpTaFMe+WK7bHivs3ALaJmKlerRsCG9THiZ8QnP
+35lyIZ66qoiDF/2oYorXJJD6kXyvoiGScpLb3X1GG6D8TVmcjO7VeWJitRGoIfN0
+Qnffsp6nrEAv4SYzbfYu
+=pzKI
+-----END PGP SIGNATURE-----
 
-> > >  	atomic64_t failed_writes;	/* can happen when memory is too low */
-> > >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
-> > >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
-> > > 
-> > 
-> > 
-> 
-> 
+--j6qW74gxMbs4kZr8--
