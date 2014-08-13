@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393AbaHMFN2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 01:13:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44702 "EHLO
+	id S1751448AbaHMFNk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 01:13:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44713 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343AbaHMFN0 (ORCPT
+	with ESMTP id S1750818AbaHMFNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 01:13:26 -0400
-Date: Tue, 12 Aug 2014 22:13:11 -0700
-From: tip-bot for Christian Borntraeger <tipbot@zytor.com>
-Message-ID: <tip-b048a24cc8f29dce1bad564aaeb8680020d3701c@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, jolsa@kernel.org, borntraeger@de.ibm.com,
-        pbonzini@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, jolsa@kernel.org, borntraeger@de.ibm.com,
-        pbonzini@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1406805231-10675-2-git-send-email-borntraeger@de.ibm.com>
-References: <1406805231-10675-2-git-send-email-borntraeger@de.ibm.com>
+	Wed, 13 Aug 2014 01:13:37 -0400
+Date: Tue, 12 Aug 2014 22:12:45 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-oh1ixo8m74rf295a05gfjw8b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de, dzickus@redhat.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm stat: Properly show submicrosecond times
-Git-Commit-ID: b048a24cc8f29dce1bad564aaeb8680020d3701c
+Subject: [tip:perf/core] perf evlist: Don't run workload if not told to
+Git-Commit-ID: 5f1c4225f6bcb20cc004b271dc72b96d0da29e9e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,53 +35,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b048a24cc8f29dce1bad564aaeb8680020d3701c
-Gitweb:     http://git.kernel.org/tip/b048a24cc8f29dce1bad564aaeb8680020d3701c
-Author:     Christian Borntraeger <borntraeger@de.ibm.com>
-AuthorDate: Thu, 31 Jul 2014 13:13:51 +0200
+Commit-ID:  5f1c4225f6bcb20cc004b271dc72b96d0da29e9e
+Gitweb:     http://git.kernel.org/tip/5f1c4225f6bcb20cc004b271dc72b96d0da29e9e
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 28 Jul 2014 12:39:50 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 2 Aug 2014 10:21:11 -0300
+CommitDate: Thu, 31 Jul 2014 09:57:20 -0300
 
-perf kvm stat: Properly show submicrosecond times
+perf evlist: Don't run workload if not told to
 
-For lots of exits the min time (and sometimes max) is 0 or 1. Lets
-increase the accurancy similar to what the average field alread does.
+The perf_evlist__prepare_workload() method works by forking and then
+waiting on a fd that must be written to to allow the workload to be
+exec()ed.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Acked-by: David Ahern <dsahern@gmail.com>
+But if the tool calling it fails to, say, set up the events with which
+it wants to sample the workload for, it will not call
+perf_evlist__start_workload(), but even in this case the workload ended
+up running:
+
+  [acme@zoo linux]$ trace /bin/echo workload ends up running, it should not...
+  Couldn't mmap the events: Operation not permitted
+  workload ends up running, it should not...
+  [acme@zoo linux]$
+
+So check if at least one byte was written before letting exec() be
+called.
+
+Now the expected behaviour:
+
+  [acme@zoo linux]$ trace /bin/echo workload ends up running, it should not...
+  Couldn't mmap the events: Operation not permitted
+  [acme@zoo linux]$
+
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org
-Link: http://lkml.kernel.org/r/1406805231-10675-2-git-send-email-borntraeger@de.ibm.com
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-oh1ixo8m74rf295a05gfjw8b@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ tools/perf/util/evlist.c | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 43367eb..fe92dfd 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -592,8 +592,8 @@ static void print_result(struct perf_kvm_stat *kvm)
- 	pr_info("%9s ", "Samples%");
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 814e954..3b366c0 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -1061,6 +1061,8 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist, struct target *tar
+ 	}
  
- 	pr_info("%9s ", "Time%");
--	pr_info("%10s ", "Min Time");
--	pr_info("%10s ", "Max Time");
-+	pr_info("%11s ", "Min Time");
-+	pr_info("%11s ", "Max Time");
- 	pr_info("%16s ", "Avg time");
- 	pr_info("\n\n");
+ 	if (!evlist->workload.pid) {
++		int ret;
++
+ 		if (pipe_output)
+ 			dup2(2, 1);
  
-@@ -610,8 +610,8 @@ static void print_result(struct perf_kvm_stat *kvm)
- 		pr_info("%10llu ", (unsigned long long)ecount);
- 		pr_info("%8.2f%% ", (double)ecount / kvm->total_count * 100);
- 		pr_info("%8.2f%% ", (double)etime / kvm->total_time * 100);
--		pr_info("%8" PRIu64 "us ", min / 1000);
--		pr_info("%8" PRIu64 "us ", max / 1000);
-+		pr_info("%9.2fus ", (double)min / 1e3);
-+		pr_info("%9.2fus ", (double)max / 1e3);
- 		pr_info("%9.2fus ( +-%7.2f%% )", (double)etime / ecount/1e3,
- 			kvm_event_rel_stddev(vcpu, event));
- 		pr_info("\n");
+@@ -1078,8 +1080,22 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist, struct target *tar
+ 		/*
+ 		 * Wait until the parent tells us to go.
+ 		 */
+-		if (read(go_pipe[0], &bf, 1) == -1)
+-			perror("unable to read pipe");
++		ret = read(go_pipe[0], &bf, 1);
++		/*
++		 * The parent will ask for the execvp() to be performed by
++		 * writing exactly one byte, in workload.cork_fd, usually via
++		 * perf_evlist__start_workload().
++		 *
++		 * For cancelling the workload without actuallin running it,
++		 * the parent will just close workload.cork_fd, without writing
++		 * anything, i.e. read will return zero and we just exit()
++		 * here.
++		 */
++		if (ret != 1) {
++			if (ret == -1)
++				perror("unable to read pipe");
++			exit(ret);
++		}
+ 
+ 		execvp(argv[0], (char **)argv);
+ 
