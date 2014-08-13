@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbaHMNYm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 09:24:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42907 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637AbaHMNYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 09:24:41 -0400
-Message-ID: <53EB66F6.2050304@redhat.com>
-Date: Wed, 13 Aug 2014 09:24:06 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752526AbaHMNeV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 09:34:21 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:38861 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634AbaHMNeT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 09:34:19 -0400
+Message-ID: <53EB6954.3040207@collabora.co.uk>
+Date: Wed, 13 Aug 2014 15:34:12 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time: drop do_sys_times spinlock
-References: <20140812142539.01851e52@annuminas.surriel.com> <20140812191218.GA15210@redhat.com> <1407913190.5542.50.camel@marge.simpson.net> <20140813111112.GJ9918@twins.programming.kicks-ass.net>
-In-Reply-To: <20140813111112.GJ9918@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] ARM: dts: Add tps65090 FETs constraints
+References: <1407861868-20097-1-git-send-email-javier.martinez@collabora.co.uk> <1407861868-20097-7-git-send-email-javier.martinez@collabora.co.uk> <20140812172552.GU17528@sirena.org.uk> <53EA61B9.2070805@collabora.co.uk> <20140812212757.GY17528@sirena.org.uk> <53EB4CA0.3010006@collabora.co.uk> <20140813122910.GQ17528@sirena.org.uk>
+In-Reply-To: <20140813122910.GQ17528@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 08/13/2014 07:11 AM, Peter Zijlstra wrote:
-> On Wed, Aug 13, 2014 at 08:59:50AM +0200, Mike Galbraith wrote:
+On 08/13/2014 02:29 PM, Mark Brown wrote:
 > 
->> I was told that clock_gettime(CLOCK_PROCESS_CPUTIME_ID) has
->> scalability issues on BIG boxen
+> Please fix your mailer to word wrap at less than 80 columns, it makes
+> your mails very hard to read when replying.
 > 
->> I'm sure the real clock_gettime() using proggy that gummed up a
->> ~1200 core box for "a while" wasn't the testcase below, which
->> will gum it up for a long while, but looks to me like using
->> CLOCK_PROCESS_CPUTIME_ID from LOTS of threads is a "Don't do
->> that, it'll hurt a LOT".
+
+Sorry I had my wrap length configured to 80 but just changed to 74 now.
+
+>> On 08/12/2014 11:27 PM, Mark Brown wrote:
 > 
-> Yes, don't do that. Its unavoidably slow and bad.
+> No, that makes no sense.  If the voltage isn't allowed to change why
+> should the constraints be specifying a range of voltages for it to be
+> set to, especially a range with more than one value in it?
+> 
+> Please try to think about what you're doing in design terms rather than
+> just bashing on things until you get something that works in your use
+> case, it's important that things are understandable so that we avoid
+> fragility and special casing.
+> 
+>> For fixed regulators (like fet4), mmc_regulator_set_ocr() just skips >> varying the regulator voltage but still expects to be able to obtain
+>> its voltage.
+> 
+> Which can be done with regulator_get_voltage().
+> 
 
-I don't see why that needs the tasklist_lock, when do_sys_times
-grabs a different lock.
+Indeed. I'll change mmc_regulator_get_ocrmask() in MMC core then to use
+regulator_can_change_voltage() to detect if the regulator is a fixed one
+and call regulator_get_voltage() instead of list_voltage() in that case.
 
-If the same bottleneck exists from multiple places, maybe it does
-make sense to have a seqlock for the statistics at the sighand
-level?
+Do you agree that this is the correct solution?
 
-I can code up a patch that does that, and throw it over the wall
-to people with big systems who hit that bottleneck on a regular
-basis...
-
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJT62b2AAoJEM553pKExN6DBJ4H/AyVsN4N73Gp/wrm7waaNjpS
-kU5R2pIGzJqxJ4BZi+aeiuT09ZoSHCl3nvSsMNBm712NX1jyFVC4I91ON18tsB3o
-P/tipcCP9Q6QSW8+lPRNz459OsaXX+wyRxcdnUtZN7SVb+NTWlxZ4o8UiVljZYSV
-2mRr2ipd/0vKn7J9twaIP0UMddTpIrnMTCMKookoWXoHeJIXsYAs3XTRsoPJAddz
-0ba5H7OGjphOSCyMkDDo3GG+K8oHJIpD8PHT38pXfX+suNEGxMO7PGvvEyUcrJKx
-5355fnU6/1mksPlRD5DIwMowMjbY5zy71P8Lv4Eg+LY+C/kGjyrz9Maa0SyRMh8=
-=VQ/m
------END PGP SIGNATURE-----
+Best regards,
+Javier
