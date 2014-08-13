@@ -1,113 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbaHMUrp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 16:47:45 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:48242 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457AbaHMUrn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 16:47:43 -0400
+	id S1753590AbaHMUtJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 16:49:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41328 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752426AbaHMUtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 16:49:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="372052707"
+Message-ID: <53EBCF42.8040706@linux.intel.com>
+Date: Wed, 13 Aug 2014 13:49:06 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <20140813203739.GL2718@kernel.org>
-References: <1407831366-28892-1-git-send-email-namhyung@kernel.org>
-	<1407831366-28892-2-git-send-email-namhyung@kernel.org>
-	<CABPqkBRirVbT05OhS4CVedpzt44hGijFSgdL+4XqjVW-ixcp7g@mail.gmail.com>
-	<20140813203739.GL2718@kernel.org>
-Date: Wed, 13 Aug 2014 22:47:43 +0200
-Message-ID: <CABPqkBTLgcoDvL9stCOpa7tE3eobN0Us5pfquWKGRy-d88cvjg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] perf top: Handle 'z' key for toggle zeroing samples
- in TUI
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, Amos Kong <akong@redhat.com>,
+        ricardo.neri-calderon@linux.intel.com, tytso@mit.edu,
+        Amit Shah <amit.shah@redhat.com>
+Subject: Re: [PATCH] virtio: rng: add derating factor for use by hwrng core
+References: <87zjf88awc.fsf@rustcorp.com.au>
+In-Reply-To: <87zjf88awc.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 10:37 PM, Arnaldo Carvalho de Melo
-<acme@kernel.org> wrote:
->
-> Em Wed, Aug 13, 2014 at 01:07:30AM +0200, Stephane Eranian escreveu:
-> > On Tue, Aug 12, 2014 at 10:16 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> > > The perf top TUI lacks 'z' key support to toggle sample zeroing.
-> > > Add it.
-> > >
-> > Works for me.
-> > Tested-by: Stephane Eranian <eranian@google.com>
->
-> One thing that can be improved: Make it trigger a refresh in the right
-> after 'z' is pressed.
->
-> Also, this toggles the zeroing before each sample, it would be nice to
-> have a visual cue that this is in effect, probably in the first line in
-> the screen, perhaps on the far right, something like [z] when this is in
-> effect and nothing when not.
->
-I agree. Had to run a test on the side to verify that it was actually doing
-the right thing.
+On 08/13/2014 12:09 PM, Rusty Russell wrote:
+> The khwrngd thread is started when a hwrng device of sufficient
+> quality is registered.  The virtio-rng device is backed by the
+> hypervisor, and we trust the hypervisor to provide real entropy.
+> 
+> A malicious hypervisor is a scenario that's irrelevant -- such a setup
+> is bound to cause all sorts of badness, and a compromised hwrng is not
+> the biggest threat.
+> 
+> Given this, we are certain the quality of randomness we receive is
+> perfectly trustworthy.  Hence, we use 100% for the factor, indicating
+> maximum confidence in the source.
+> 
+> Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> ---
+> Pretty small and contained patch; would be great if it is picked up for
+> 3.17.
+> 
+> v2: re-word commit msg
+> 
+> [Agreed, re-sending to Linus with SOB before jumping on plane]
 
->
-> Right now the way to figure this out is to observe the number of
-> samples, if it increases monotonically, zeroing before refresh is not in
-> effect, if it goes from a high number to a smaller or vice versa,
-> zeroing is in effect :-)
->
-> Anyway, applied, people wanting this feature can figure this out, what I
-> suggested is just polishing.
->
-We need to visual cue.
+Reviewed-by: H. Peter Anvin <hpa@linux.intel.com>
 
->
-> Thanks!
->
-> - Arnaldo
->
-> > > Reported-by: Stephane Eranian <eranian@google.com>
-> > > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> > > ---
-> > >  tools/perf/ui/browsers/hists.c | 9 +++++++++
-> > >  1 file changed, 9 insertions(+)
-> > >
-> > > diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-> > > index 045c1e16ac59..381c085a41b8 100644
-> > > --- a/tools/perf/ui/browsers/hists.c
-> > > +++ b/tools/perf/ui/browsers/hists.c
-> > > @@ -10,6 +10,7 @@
-> > >  #include "../../util/pstack.h"
-> > >  #include "../../util/sort.h"
-> > >  #include "../../util/util.h"
-> > > +#include "../../util/top.h"
-> > >  #include "../../arch/common.h"
-> > >
-> > >  #include "../browser.h"
-> > > @@ -1530,6 +1531,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
-> > >         "P             Print histograms to perf.hist.N\n"
-> > >         "t             Zoom into current Thread\n"
-> > >         "V             Verbose (DSO names in callchains, etc)\n"
-> > > +       "z             Toggle zeroing of samples\n"
-> > >         "/             Filter symbol by name";
-> > >
-> > >         if (browser == NULL)
-> > > @@ -1630,6 +1632,13 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
-> > >                 case 'F':
-> > >                         symbol_conf.filter_relative ^= 1;
-> > >                         continue;
-> > > +               case 'z':
-> > > +                       if (!is_report_browser(hbt)) {
-> > > +                               struct perf_top *top = hbt->arg;
-> > > +
-> > > +                               top->zero = !top->zero;
-> > > +                       }
-> > > +                       continue;
-> > >                 case K_F1:
-> > >                 case 'h':
-> > >                 case '?':
-> > > --
-> > > 2.0.0
-> > >
