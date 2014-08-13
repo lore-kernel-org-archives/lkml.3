@@ -1,83 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268AbaHMI2R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:28:17 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:50021 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919AbaHMI2N (ORCPT
+	id S1752602AbaHMI2w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:28:52 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:60524 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442AbaHMI2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:28:13 -0400
-Date: Wed, 13 Aug 2014 10:27:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Christopher Barry <christopher.r.barry@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: OT: Open letter to the Linux World
-Message-ID: <20140813082756.GB2923@twins.programming.kicks-ass.net>
-References: <20140812153812.2923046a@monolith.infinux.org>
- <20140812202129.GA20344@home.goodmis.org>
- <yw1xr40l2whi.fsf@unicorn.mansr.com>
+	Wed, 13 Aug 2014 04:28:48 -0400
+X-Original-SENDERIP: 10.177.222.172
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Wed, 13 Aug 2014 17:13:46 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org, tglx@linutronix.de,
+        cody@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/8] mm/page_alloc: fix pcp high, batch management
+Message-ID: <20140813081346.GB30451@js1304-P5Q-DELUXE>
+References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1407309517-3270-3-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140812012408.GA23418@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qlTNgmc+xy1dBmNv"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <yw1xr40l2whi.fsf@unicorn.mansr.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140812012408.GA23418@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 12, 2014 at 01:24:09AM +0000, Minchan Kim wrote:
+> Hey Joonsoo,
+> 
+> On Wed, Aug 06, 2014 at 04:18:28PM +0900, Joonsoo Kim wrote:
+> > per cpu pages structure, aka pcp, has high and batch values to control
+> > how many pages we perform caching. This values could be updated
+> > asynchronously and updater should ensure that this doesn't make any
+> > problem. For this purpose, pageset_update() is implemented and do some
+> > memory synchronization. But, it turns out to be wrong when I implemented
+> > new feature using this. There is no corresponding smp_rmb() in read-side
+> > so that it can't guarantee anything. Without correct updating, system
+> > could hang in free_pcppages_bulk() due to larger batch value than high.
+> > To properly update this values, we need to synchronization primitives on
+> > read-side, but, it hurts allocator's fastpath.
+> > 
+> > There is another choice for synchronization, that is, sending IPI. This
+> > is somewhat expensive, but, this is really rare case so I guess it has
+> > no problem here. However, reducing IPI is very helpful here. Current
+> > logic handles each CPU's pcp update one by one. To reduce sending IPI,
+> > we need to re-ogranize the code to handle all CPU's pcp update at one go.
+> > This patch implement these requirements.
+> 
+> Let's add right reviewer for the patch.
+> Cced Cody and Thomas.
 
---qlTNgmc+xy1dBmNv
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Okay. I will do it next time.
 
-On Tue, Aug 12, 2014 at 11:07:05PM +0100, M=E5ns Rullg=E5rd wrote:
-> Steven Rostedt <rostedt@goodmis.org> writes:
->=20
-> > Nice rant, I sympathize with you (just complaining about this on G+).
->=20
-> Made my day.
->=20
-> > I'm just waiting for Linus to get pissed enough to write his own init
-> > routine. Maybe he'll call it "Boot Init Through Computer Hardware".
->=20
-> The trouble is that most of the heavy-weight kernel developers don't
-> seem to care at all about what goes on in userspace.
+> 
+> > 
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > ---
+> >  mm/page_alloc.c |  139 ++++++++++++++++++++++++++++++++-----------------------
+> >  1 file changed, 80 insertions(+), 59 deletions(-)
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index b99643d4..44672dc 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -3797,7 +3797,7 @@ static void build_zonelist_cache(pg_data_t *pgdat)
+> >   * not check if the processor is online before following the pageset pointer.
+> >   * Other parts of the kernel may not check if the zone is available.
+> >   */
+> > -static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch);
+> > +static void setup_pageset(struct per_cpu_pageset __percpu *pcp);
+> >  static DEFINE_PER_CPU(struct per_cpu_pageset, boot_pageset);
+> >  static void setup_zone_pageset(struct zone *zone);
+> >  
+> > @@ -3843,9 +3843,9 @@ static int __build_all_zonelists(void *data)
+> >  	 * needs the percpu allocator in order to allocate its pagesets
+> >  	 * (a chicken-egg dilemma).
+> >  	 */
+> > -	for_each_possible_cpu(cpu) {
+> > -		setup_pageset(&per_cpu(boot_pageset, cpu), 0);
+> > +	setup_pageset(&boot_pageset);
+> >  
+> > +	for_each_possible_cpu(cpu) {
+> >  #ifdef CONFIG_HAVE_MEMORYLESS_NODES
+> >  		/*
+> >  		 * We now know the "local memory node" for each node--
+> > @@ -4227,24 +4227,59 @@ static int zone_batchsize(struct zone *zone)
+> >   * outside of boot time (or some other assurance that no concurrent updaters
+> >   * exist).
+> >   */
+> > -static void pageset_update(struct per_cpu_pages *pcp, unsigned long high,
+> > -		unsigned long batch)
+> > +static void pageset_update(struct zone *zone, int high, int batch)
+> >  {
+> > -       /* start with a fail safe value for batch */
+> > -	pcp->batch = 1;
+> > -	smp_wmb();
+> > +	int cpu;
+> > +	struct per_cpu_pages *pcp;
+> > +
+> > +	/* start with a fail safe value for batch */
+> > +	for_each_possible_cpu(cpu) {
+> > +		pcp = &per_cpu_ptr(zone->pageset, cpu)->pcp;
+> > +		pcp->batch = 1;
+> > +	}
+> > +	kick_all_cpus_sync();
+> > +
+> > +	/* Update high, then batch, in order */
+> > +	for_each_possible_cpu(cpu) {
+> > +		pcp = &per_cpu_ptr(zone->pageset, cpu)->pcp;
+> > +		pcp->high = high;
+> > +	}
+> > +	kick_all_cpus_sync();
+> >  
+> > -       /* Update high, then batch, in order */
+> > -	pcp->high = high;
+> > -	smp_wmb();
+> > +	for_each_possible_cpu(cpu) {
+> > +		pcp = &per_cpu_ptr(zone->pageset, cpu)->pcp;
+> > +		pcp->batch = batch;
+> > +	}
+> > +}
+> > +
+> > +/*
+> > + * pageset_get_values_by_high() gets the high water mark for
+> > + * hot per_cpu_pagelist to the value high for the pageset p.
+> > + */
+> > +static void pageset_get_values_by_high(int input_high,
+> > +				int *output_high, int *output_batch)
+> 
+> You don't use output_high so we could make it as follows,
 
-Well, I know for a fact that quite a number do; but so far most people
-who care have been able to steer clear of this trainwreck so we did.
+Yeah, it could be. But I want to make pageset_get_values_xxx variants
+consistent. I will remove output_high and leave output_batch as is.
 
-I'm about to switch all my machines to Gentoo (from Debian) because that
-will indeed allow you to build a distro without much of this nonsense
-in -- because as has been eloquently said; you simply don't need this
-fucking shite to run a 'normal' machine.
+> 
+> int pageset_batch(int high);
+> 
+> > +{
+> > +	*output_batch = max(1, input_high / 4);
+> > +	if ((input_high / 4) > (PAGE_SHIFT * 8))
+> > +		*output_batch = PAGE_SHIFT * 8;
+> > +}
+> >  
+> > -	pcp->batch = batch;
+> > +/* a companion to pageset_get_values_by_high() */
+> > +static void pageset_get_values_by_batch(int input_batch,
+> > +				int *output_high, int *output_batch)
+> > +{
+> > +	*output_high = 6 * input_batch;
+> > +	*output_batch = max(1, 1 * input_batch);
+> >  }
+> >  
+> > -/* a companion to pageset_set_high() */
+> > -static void pageset_set_batch(struct per_cpu_pageset *p, unsigned long batch)
+> > +static void pageset_get_values(struct zone *zone, int *high, int *batch)
+> >  {
+> > -	pageset_update(&p->pcp, 6 * batch, max(1UL, 1 * batch));
+> > +	if (percpu_pagelist_fraction) {
+> > +		pageset_get_values_by_high(
+> > +			(zone->managed_pages / percpu_pagelist_fraction),
+> > +			high, batch);
+> > +	} else
+> > +		pageset_get_values_by_batch(zone_batchsize(zone), high, batch);
+> >  }
+> >  
+> >  static void pageset_init(struct per_cpu_pageset *p)
+> > @@ -4260,51 +4295,38 @@ static void pageset_init(struct per_cpu_pageset *p)
+> >  		INIT_LIST_HEAD(&pcp->lists[migratetype]);
+> >  }
+> >  
+> > -static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+> > +/* Use this only in boot time, because it doesn't do any synchronization */
+> > +static void setup_pageset(struct per_cpu_pageset __percpu *pcp)
+> 
+> If we can use it with only boot_pages in boot time, let's make it more clear.
+> 
+> static void boot_setup_pageset(void)
+> {
+> 	boot_pageset;
+> 	XXX;
+> }
 
-And the thing is; we're all very busy so we tend to take the 'easy' way
-out for things like this; but wholesale switching all my machines is
-indeed painful, and I'm not liking.
+Okay.
 
---qlTNgmc+xy1dBmNv
-Content-Type: application/pgp-signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT6yGMAAoJEHZH4aRLwOS6vGcP/30GpOfN5l7ykldBF0NrWeWJ
-jxbImUfVDAdhiWWLnGAwdOCBWJhkA3RxVjNyadWcSvJjpedXDJ5XDhIOVuH/4K7A
-YtZ/HN9W+s+J8qWt1tuHgHWf74+WlaK6PqzmM8Ght43wISBjIac8nPi1NfqrZu2e
-SxxYRuFYK+DPKjPqwPCDQrEFzqFO51n7jJVWg/wNPovqriCrUIFLKbckGVX4HSsH
-RSUpGdYiGeSZJDurZnXJfxj+sivx7vTaI3QH8psUzLwo7L8ODHyR1EbT6bDNRHEi
-OYalUeNmcoQ1r2hdCWjB1hFxtgcaGVcPiFGAMH1hjh4E2NDwLY24UH0MxHT2pzyp
-eA0ttZh7sgV9ZwGl9BXFDbKGXnsFCaIoliQ3w9ZDDNg9ecq0fJFNDEtd2LBpA7vV
-sKUqkinzXYPql9NpX3bjx6PR0oNCwupau719AVsVcN/BeW/XVaaiMWwWRaZQAg78
-F7ksWq0dQlnROmExddvZJPimezeVGQS2QzDCXj5Qu2TlJx1leOQ8ybkgWGSM9N0y
-q3j4/arFtRJgLPrIYh0yP/4SYSd1qoV5qa08jDmgUoSijTltuTkBCBKFIeBfQfHS
-e1XOhkRf9TxPuMEdEjTAcTuUpSdc88R0Ga55j2Xv2zSOPMhY98sLizxFJnzlV40M
-EJPZ5tMfW1q+LbZZKdCp
-=INdq
------END PGP SIGNATURE-----
-
---qlTNgmc+xy1dBmNv--
