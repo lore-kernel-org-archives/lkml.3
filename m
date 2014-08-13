@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787AbaHMK5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 06:57:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53345 "EHLO
+	id S1751750AbaHMK5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 06:57:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53361 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaHMK5V (ORCPT
+	with ESMTP id S1750803AbaHMK5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 06:57:21 -0400
-Date: Wed, 13 Aug 2014 03:56:26 -0700
-From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
-Message-ID: <tip-0a7cbf9abe3198461de3d3e97268db32a646ba06@git.kernel.org>
+	Wed, 13 Aug 2014 06:57:35 -0400
+Date: Wed, 13 Aug 2014 03:56:40 -0700
+From: tip-bot for Bart Van Assche <tipbot@zytor.com>
+Message-ID: <tip-4999201a59ef555f9105d2bb2459ed895627f7aa@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        rdunlap@infradead.org, jason.low2@hp.com, tglx@linutronix.de,
-        davidlohr@hp.com
+        davem@davemloft.net, paulmck@linux.vnet.ibm.com, bvanassche@acm.org,
+        akpm@linux-foundation.org, oleg@redhat.com, tglx@linutronix.de,
+        rientjes@google.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        rdunlap@infradead.org, jason.low2@hp.com, tglx@linutronix.de,
-        davidlohr@hp.com
-In-Reply-To: <1406752916-3341-7-git-send-email-davidlohr@hp.com>
-References: <1406752916-3341-7-git-send-email-davidlohr@hp.com>
+        davem@davemloft.net, paulmck@linux.vnet.ibm.com, bvanassche@acm.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, oleg@redhat.com,
+        rientjes@google.com
+In-Reply-To: <53E4A7F8.1040700@acm.org>
+References: <53E4A7F8.1040700@acm.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] locking/Documentation: Update locking/
- mutex-design.txt disadvantages
-Git-Commit-ID: 0a7cbf9abe3198461de3d3e97268db32a646ba06
+Subject: [tip:locking/core] locking/spinlocks:
+  Always evaluate the second argument of spin_lock_nested()
+Git-Commit-ID: 4999201a59ef555f9105d2bb2459ed895627f7aa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,46 +38,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0a7cbf9abe3198461de3d3e97268db32a646ba06
-Gitweb:     http://git.kernel.org/tip/0a7cbf9abe3198461de3d3e97268db32a646ba06
-Author:     Davidlohr Bueso <davidlohr@hp.com>
-AuthorDate: Wed, 30 Jul 2014 13:41:56 -0700
+Commit-ID:  4999201a59ef555f9105d2bb2459ed895627f7aa
+Gitweb:     http://git.kernel.org/tip/4999201a59ef555f9105d2bb2459ed895627f7aa
+Author:     Bart Van Assche <bvanassche@acm.org>
+AuthorDate: Fri, 8 Aug 2014 12:35:36 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 13 Aug 2014 10:32:04 +0200
+CommitDate: Wed, 13 Aug 2014 10:32:38 +0200
 
-locking/Documentation: Update locking/mutex-design.txt disadvantages
+locking/spinlocks: Always evaluate the second argument of spin_lock_nested()
 
-Fortunately Jason was able to reduce some of the overhead we
-had introduced in the original rwsem optimistic spinning -
-an it is now the same size as mutexes. Update the documentation
-accordingly.
+Evaluating a macro argument only if certain configuration options
+have been selected is confusing and error-prone. Hence always
+evaluate the second argument of spin_lock_nested().
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Acked-by: Jason Low <jason.low2@hp.com>
+An intentional side effect of this patch is that it avoids that
+the following warning is reported for netif_addr_lock_nested()
+when building with CONFIG_DEBUG_LOCK_ALLOC=n and with W=1:
+
+  include/linux/netdevice.h: In function 'netif_addr_lock_nested':
+  include/linux/netdevice.h:2865:6: warning: variable 'subclass' set but not used [-Wunused-but-set-variable]
+    int subclass = SINGLE_DEPTH_NESTING;
+        ^
+
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: aswin@hp.com
+Cc: David Rientjes <rientjes@google.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Link: http://lkml.kernel.org/r/1406752916-3341-7-git-send-email-davidlohr@hp.com
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/53E4A7F8.1040700@acm.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/locking/mutex-design.txt | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/linux/spinlock.h | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/locking/mutex-design.txt b/Documentation/locking/mutex-design.txt
-index ee231ed..60c482d 100644
---- a/Documentation/locking/mutex-design.txt
-+++ b/Documentation/locking/mutex-design.txt
-@@ -145,9 +145,9 @@ Disadvantages
+diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
+index 3f2867f..262ba4e 100644
+--- a/include/linux/spinlock.h
++++ b/include/linux/spinlock.h
+@@ -197,7 +197,13 @@ static inline void do_raw_spin_unlock(raw_spinlock_t *lock) __releases(lock)
+ 		 _raw_spin_lock_nest_lock(lock, &(nest_lock)->dep_map);	\
+ 	 } while (0)
+ #else
+-# define raw_spin_lock_nested(lock, subclass)		_raw_spin_lock(lock)
++/*
++ * Always evaluate the 'subclass' argument to avoid that the compiler
++ * warns about set-but-not-used variables when building with
++ * CONFIG_DEBUG_LOCK_ALLOC=n and with W=1.
++ */
++# define raw_spin_lock_nested(lock, subclass)		\
++	_raw_spin_lock(((void)(subclass), (lock)))
+ # define raw_spin_lock_nest_lock(lock, nest_lock)	_raw_spin_lock(lock)
+ #endif
  
- Unlike its original design and purpose, 'struct mutex' is larger than
- most locks in the kernel. E.g: on x86-64 it is 40 bytes, almost twice
--as large as 'struct semaphore' (24 bytes) and 8 bytes shy of the
--'struct rw_semaphore' variant. Larger structure sizes mean more CPU
--cache and memory footprint.
-+as large as 'struct semaphore' (24 bytes) and tied, along with rwsems,
-+for the largest lock in the kernel. Larger structure sizes mean more
-+CPU cache and memory footprint.
- 
- When to use mutexes
- -------------------
