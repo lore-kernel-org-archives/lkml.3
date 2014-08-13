@@ -1,147 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbaHMW1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 18:27:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:9526 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751866AbaHMW1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 18:27:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,858,1400050800"; 
-   d="scan'208";a="468467458"
-Date: Wed, 13 Aug 2014 16:27:34 -0600 (MDT)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: =?ISO-8859-15?Q?Matias_Bj=F8rling?= <m@bjorling.me>
-cc: Matthew Wilcox <willy@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
-        Jens Axboe <axboe@fb.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-nvme <linux-nvme@lists.infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Rob Nelson <rlnelson@google.com>, Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [PATCH v11] NVMe: Convert to blk-mq
-In-Reply-To: <CAOu_J6mW-2e2Jgm+khodLPah_-RZrD599SmSH+Mszd0AjterrQ@mail.gmail.com>
-Message-ID: <alpine.LRH.2.03.1408131519590.14603@AMR>
-References: <1406365643-27020-1-git-send-email-m@bjorling.me> <1406365643-27020-2-git-send-email-m@bjorling.me> <CAOu_J6mW-2e2Jgm+khodLPah_-RZrD599SmSH+Mszd0AjterrQ@mail.gmail.com>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+	id S1752822AbaHMWon (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 18:44:43 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:38286 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719AbaHMWol (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 18:44:41 -0400
+Date: Wed, 13 Aug 2014 15:44:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <pranith@gatech.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Question regarding "Control Dependencies" in memory-barriers.txt
+Message-ID: <20140813224436.GA4752@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAJhHMCADiEsUC7GsYF7=qMNEyRJerfhC5zh7WQPgkQ0gJn5=5A@mail.gmail.com>
+ <20140804185226.GQ8101@linux.vnet.ibm.com>
+ <CAJhHMCBEprK9hp786cwguJR=JW7Xxgt4GKX5=E0vikO-D4qmZg@mail.gmail.com>
+ <20140805073237.GX3935@laptop>
+ <CAJhHMCBjub+_Gg_wC2EoR5OgzwT7JTHr-wzoGp_dePUBVwEG8g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1184881990-1407968856=:14603"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCBjub+_Gg_wC2EoR5OgzwT7JTHr-wzoGp_dePUBVwEG8g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081322-6688-0000-0000-000003FE68D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tue, Aug 05, 2014 at 08:13:54AM -0400, Pranith Kumar wrote:
+> On Tue, Aug 5, 2014 at 3:32 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >>
+> >> 685 This transformation loses the ordering between the load from variable 'a'
+> >> 686 and the store to variable 'b'.  If you are relying on this ordering, you
+> >> 687 should do something like the following:
+> >> 688
+> >> 689         q = ACCESS_ONCE(a);
+> >> 690         BUILD_BUG_ON(MAX <= 1); /* Order load from a with store to b. */
+> >> 691         if (q % MAX) {
+> >> 692                 ACCESS_ONCE(b) = p;
+> >> 693                 do_something();
+> >> 694         } else {
+> >> 695                 ACCESS_ONCE(b) = p;
+> >> 696                 do_something_else();
+> >> 697         }
+> >> 698
+> >>
+> >> How is the BUILD_BUG_ON(MAX <= 1) guaranteeing the ordering w.r.t 'a'
+> >> and 'b'. Shouldn't it have barrier() in both the legs of the if()
+> >> statement like follows:
+> >
+> > The BUILD_BUG_ON guarantees that 'q % MAX' isn't a constant, and
+> > therefore the compiler cannot take the conditional out.
+> >
+> > And no barrier() doesn't order anything except compiler output. The
+> > ordering here happens by the conditional, CPUs do not do speculative
+> > writes, this means it has to complete the load of q to compute the
+> > branch before it can execute the store of b.
+> >
+> >
+> 
+> I don't think the write to 'b' here is speculative since it is
+> happening in both the legs of the if() conditional. The write to b can
+> be pulled out to before the conditional. Without the barrier(), isn't
+> the following a valid transformation of the above?
+> 
+> BUILD_BUG_ON(MAX <= 1); /* this will be compiled out if MAX != 1*/
+> q = ACCESS_ONCE(a);
+> ACCESS_ONCE(b) = p; / *BUG: No ordering */
+> if (q % MAX) {
+>         do_something();
+> } else {
+>         do_something_else();
+> }
+> 
+> I don't see how it is preserving the ordering.
 
---8323328-1184881990-1407968856=:14603
-Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Well, let's try it with a real compiler.  I am running gcc version 4.6.3
+(yes, ancient).  Given the following:
 
-On Sun, 10 Aug 2014, Matias Bjørling wrote:
-> On Sat, Jul 26, 2014 at 11:07 AM, Matias Bjørling <m@bjorling.me> wrote:
->> This converts the NVMe driver to a blk-mq request-based driver.
->>
->
-> Willy, do you need me to make any changes to the conversion? Can you
-> pick it up for 3.17?
+	int a;
+	int b;
 
-Hi Matias,
+	#define MAX 10
+	#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+	#define barrier() __asm__ __volatile__("": : :"memory")
 
-I'm starting to get a little more spare time to look at this again. I
-think there are still some bugs here, or perhaps something better we
-can do. I'll just start with one snippet of the code:
+	void do_something(void);
+	void do_something_else(void);
 
-@@ -765,33 +619,49 @@ static int nvme_submit_bio_queue(struct nvme_queue *nvmeq, struct nvme_ns *ns,
-  submit_iod:
- 	spin_lock_irq(&nvmeq->q_lock);
- 	if (nvmeq->q_suspended) {
- 		spin_unlock_irq(&nvmeq->q_lock);
- 		goto finish_cmd;
+	void foo(void)
+	{
+		int q;
+
+		q = ACCESS_ONCE(a);
+		if (q % MAX) {
+			ACCESS_ONCE(b) = q;
+			do_something();
+		} else {
+			ACCESS_ONCE(b) = q;
+			do_something_else();
+		}
+	}
+
+cc -O3 -c controldep2.c gives the following:
+
+		.file	"controldep2.c"
+		.text
+		.p2align 4,,15
+		.globl	foo
+		.type	foo, @function
+	foo:
+	.LFB0:
+		.cfi_startproc
+		movl	a, %ecx
+		movl	$1717986919, %edx
+		movl	%ecx, %eax
+		imull	%edx
+		movl	%ecx, %eax
+		sarl	$31, %eax
+		movl	%ecx, b
+		sarl	$2, %edx
+		subl	%eax, %edx
+		leal	(%edx,%edx,4), %eax
+		addl	%eax, %eax
+		cmpl	%eax, %ecx
+		jne	.L4
+		jmp	do_something_else
+		.p2align 4,,7
+		.p2align 3
+	.L4:
+		jmp	do_something
+		.cfi_endproc
+	.LFE0:
+		.size	foo, .-foo
+		.comm	b,4,4
+		.comm	a,4,4
+		.ident	"GCC: (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3"
+		.section	.note.GNU-stack,"",@progbits
+
+As you can see, the assignment to "b" has been hoisted above the "if".
+And adding barrier() to each leg of the "if" statement doesn't help,
+the store to "b" still gets hoisted.
+
+So this whole "q % MAX" example is bogus...
+
+In fact, if you have the same store on both legs of the "if" statement,
+your ordering appears to be toast, at least at high optimization levels.
+
+You would think that I would have tested with -O3 initially.  :-(
+
+Patch below.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+memory-barriers: Fix description of 2-legged-if-based control dependencies
+
+Sad to say, current compilers really will hoist identical stores from both
+branches of an "if" statement to precede the conditional.  This commit
+therefore updates the description of control dependencies to reflect this
+ugly reality.
+
+Reported-by: Pranith Kumar <bobby.prani@gmail.com>
+Reported-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+index 600b45c6e2ad..6062f175abc6 100644
+--- a/Documentation/memory-barriers.txt
++++ b/Documentation/memory-barriers.txt
+@@ -574,30 +574,14 @@ However, stores are not speculated.  This means that ordering -is- provided
+ in the following example:
+ 
+ 	q = ACCESS_ONCE(a);
+-	if (ACCESS_ONCE(q)) {
+-		ACCESS_ONCE(b) = p;
+-	}
+-
+-Please note that ACCESS_ONCE() is not optional!  Without the ACCESS_ONCE(),
+-the compiler is within its rights to transform this example:
+-
+-	q = a;
+ 	if (q) {
+-		b = p;  /* BUG: Compiler can reorder!!! */
+-		do_something();
+-	} else {
+-		b = p;  /* BUG: Compiler can reorder!!! */
+-		do_something_else();
++		ACCESS_ONCE(b) = p;
  	}
+ 
+-into this, which of course defeats the ordering:
+-
+-	b = p;
+-	q = a;
+-	if (q)
+-		do_something();
+-	else
+-		do_something_else();
++Please note that ACCESS_ONCE() is not optional!  Without the
++ACCESS_ONCE(), might combine the load from 'a' with other loads from
++'a', and the store to 'b' with other stores to 'b', with possible highly
++counterintuitive effects on ordering.
+ 
+ Worse yet, if the compiler is able to prove (say) that the value of
+ variable 'a' is always non-zero, it would be well within its rights
+@@ -605,11 +589,12 @@ to optimize the original example by eliminating the "if" statement
+ as follows:
+ 
+ 	q = a;
+-	b = p;  /* BUG: Compiler can reorder!!! */
+-	do_something();
++	b = p;  /* BUG: Compiler and CPU can both reorder!!! */
++
++So don't leave out the ACCESS_ONCE().
+ 
+-The solution is again ACCESS_ONCE() and barrier(), which preserves the
+-ordering between the load from variable 'a' and the store to variable 'b':
++It is tempting to try to enforce ordering on identical stores on both
++branches of the "if" statement as follows:
+ 
+ 	q = ACCESS_ONCE(a);
+ 	if (q) {
+@@ -622,18 +607,11 @@ ordering between the load from variable 'a' and the store to variable 'b':
+ 		do_something_else();
+ 	}
+ 
+-The initial ACCESS_ONCE() is required to prevent the compiler from
+-proving the value of 'a', and the pair of barrier() invocations are
+-required to prevent the compiler from pulling the two identical stores
+-to 'b' out from the legs of the "if" statement.
+-
+-It is important to note that control dependencies absolutely require a
+-a conditional.  For example, the following "optimized" version of
+-the above example breaks ordering, which is why the barrier() invocations
+-are absolutely required if you have identical stores in both legs of
+-the "if" statement:
++Unfortunately, current compilers will transform this as follows at high
++optimization levels:
+ 
+ 	q = ACCESS_ONCE(a);
++	barrier();
+ 	ACCESS_ONCE(b) = p;  /* BUG: No ordering vs. load from a!!! */
+ 	if (q) {
+ 		/* ACCESS_ONCE(b) = p; -- moved up, BUG!!! */
+@@ -643,21 +621,25 @@ the "if" statement:
+ 		do_something_else();
+ 	}
+ 
+-It is of course legal for the prior load to be part of the conditional,
+-for example, as follows:
++Now there is no conditional between the load from 'a' and the store to
++'b', which means that the CPU is within its rights to reorder them:
++The conditional is absolutely required, and must be present in the
++assembly code even after all compiler optimizations have been applied.
+ 
+-	if (ACCESS_ONCE(a) > 0) {
+-		barrier();
+-		ACCESS_ONCE(b) = q / 2;
++So two-legged-if control ordering is guaranteed only when the stores
++differ, for example:
++
++	q = ACCESS_ONCE(a);
++	if (q) {
++		ACCESS_ONCE(b) = p;
+ 		do_something();
+ 	} else {
+-		barrier();
+-		ACCESS_ONCE(b) = q / 3;
++		ACCESS_ONCE(b) = r;
+ 		do_something_else();
+ 	}
+ 
+-This will again ensure that the load from variable 'a' is ordered before the
+-stores to variable 'b'.
++The initial ACCESS_ONCE() is still required to prevent the compiler from
++proving the value of 'a'.
+ 
+ In addition, you need to be careful what you do with the local variable 'q',
+ otherwise the compiler might be able to guess the value and again remove
+@@ -665,12 +647,10 @@ the needed conditional.  For example:
+ 
+ 	q = ACCESS_ONCE(a);
+ 	if (q % MAX) {
+-		barrier();
+ 		ACCESS_ONCE(b) = p;
+ 		do_something();
+ 	} else {
+-		barrier();
+-		ACCESS_ONCE(b) = p;
++		ACCESS_ONCE(b) = r;
+ 		do_something_else();
+ 	}
+ 
+@@ -679,15 +659,15 @@ equal to zero, in which case the compiler is within its rights to
+ transform the above code into the following:
+ 
+ 	q = ACCESS_ONCE(a);
+-	barrier();
+ 	ACCESS_ONCE(b) = p;
+ 	do_something_else();
+ 
+-This transformation fails to require that the CPU respect the ordering
+-between the load from variable 'a' and the store to variable 'b'.
+-Yes, the barrier() is still there, but it affects only the compiler,
+-not the CPU.  Therefore, if you are relying on this ordering, you should
+-do something like the following:
++Given this transformation, the CPU is not required to respect the ordering
++between the load from variable 'a' and the store to variable 'b'.  It is
++tempting to add a barrier(), but this does not help.  The conditional
++is gone, and the barrier won't bring it back.  Therefore, if you are
++relying on this ordering, you should make sure that MAX is greater than
++one, perhaps as follows:
+ 
+ 	q = ACCESS_ONCE(a);
+ 	BUILD_BUG_ON(MAX <= 1); /* Order load from a with store to b. */
+@@ -695,10 +675,14 @@ do something like the following:
+ 		ACCESS_ONCE(b) = p;
+ 		do_something();
+ 	} else {
+-		ACCESS_ONCE(b) = p;
++		ACCESS_ONCE(b) = r;
+ 		do_something_else();
+ 	}
+ 
++Please note once again that the stores to 'b' differ.  If they were
++identical, as noted earlier, the compiler could pull this store outside
++of the 'if' statement.
++
+ Finally, control dependencies do -not- provide transitivity.  This is
+ demonstrated by two related examples, with the initial values of
+ x and y both being zero:
 
-  <snip>
-
-  finish_cmd:
- 	nvme_finish_cmd(nvmeq, req->tag, NULL);
- 	nvme_free_iod(nvmeq->dev, iod);
- 	return result;
-}
-
-
-If the nvme queue is marked "suspended", this code just goto's the finish
-without setting "result", so I don't think that's right.
-
-But do we even need the "q_suspended" flag anymore? It was there because
-we couldn't prevent incoming requests as a bio based driver and we needed
-some way to mark that the h/w's IO queue was temporarily inactive, but
-blk-mq has ways to start/stop a queue at a higher level, right? If so,
-I think that's probably a better way than using this driver specific way.
-
-I haven't event tried debugging this next one: doing an insmod+rmmod
-caused this warning followed by a panic:
-
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207525] ------------[ cut here ]------------
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207538] WARNING: CPU: 8 PID: 5768 at mm/slab_common.c:491 kmalloc_slab+0x33/0x8b()
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207541] Modules linked in: nvme(-) parport_pc ppdev lp parport dlm sctp libcrc32c configfs nfsd auth_rpcgss oid_registry nfs_acl nfs lockd fscache sunrpc md4 hmac cifs bridge stp llc jfs joydev hid_generic usbhid hid loop md_mod x86_pkg_temp_thermal coretemp kvm_intel kvm iTCO_wdt iTCO_vendor_support microcode pcspkr ehci_pci ehci_hcd usbcore acpi_cpufreq lpc_ich usb_common ioatdma mfd_core i2c_i801 evdev wmi tpm_tis ipmi_si tpm ipmi_msghandler processor thermal_sys button ext4 crc16 jbd2 mbcache sg sr_mod cdrom sd_mod crct10dif_generic crc_t10dif crct10dif_common nbd dm_mod crc32c_intel ghash_clmulni_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul ablk_helper cryptd isci libsas igb ahci libahci scsi_transport_sas ptp pps_core libata i2c_algo_bit i2c_core scsi_mod dca
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207653] CPU: 8 PID: 5768 Comm: nvme1 Not tainted 3.16.0-rc6+ #24
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207656] Hardware name: Intel Corporation S2600GZ/S2600GZ, BIOS SE5C600.86B.02.02.0002.122320131210 12/23/2013
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207659]  0000000000000000 0000000000000009 ffffffff8139f9ba 0000000000000000
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207664]  ffffffff8103db86 ffffe8ffff601d80 ffffffff810f0d59 0000000000000246
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207669]  0000000000000000 ffff880827bf28c0 0000000000008020 ffff88082b8d9d00
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207674] Call Trace:
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207685]  [<ffffffff8139f9ba>] ? dump_stack+0x41/0x51
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207694]  [<ffffffff8103db86>] ? warn_slowpath_common+0x7d/0x95
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207699]  [<ffffffff810f0d59>] ? kmalloc_slab+0x33/0x8b
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207704]  [<ffffffff810f0d59>] ? kmalloc_slab+0x33/0x8b
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207710]  [<ffffffff81115329>] ? __kmalloc+0x28/0xf1
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207719]  [<ffffffff811d0daf>] ? blk_mq_tag_busy_iter+0x30/0x7c
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207728]  [<ffffffffa052c426>] ? nvme_init_hctx+0x49/0x49 [nvme]
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207733]  [<ffffffff811d0daf>] ? blk_mq_tag_busy_iter+0x30/0x7c
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207738]  [<ffffffffa052c98b>] ? nvme_clear_queue+0x72/0x7d [nvme]
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207744]  [<ffffffffa052c9a8>] ? nvme_del_queue_end+0x12/0x26 [nvme]
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207750]  [<ffffffff810576e3>] ? kthread_worker_fn+0xb1/0x111
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207754]  [<ffffffff81057632>] ? kthread_create_on_node+0x171/0x171
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207758]  [<ffffffff81057632>] ? kthread_create_on_node+0x171/0x171
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207762]  [<ffffffff810574b9>] ? kthread+0x9e/0xa6
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207766]  [<ffffffff8105741b>] ? __kthread_parkme+0x5c/0x5c
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207773]  [<ffffffff813a3a2c>] ? ret_from_fork+0x7c/0xb0
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207777]  [<ffffffff8105741b>] ? __kthread_parkme+0x5c/0x5c
-Aug 13 15:41:41 kbgrz1 kernel: [   89.207780] ---[ end trace 8dc4a4c97c467d4c ]---
-Aug 13 15:41:41 kbgrz1 kernel: [   89.223627] PGD 0 
-Aug 13 15:41:41 kbgrz1 kernel: [   89.226038] Oops: 0000 [#1] SMP 
-Aug 13 15:41:41 kbgrz1 kernel: [   89.229917] Modules linked in: nvme(-) parport_pc ppdev lp parport dlm sctp libcrc32c configfs nfsd auth_rpcgss oid_registry nfs_acl nfs lockd fscache sunrpc md4 hmac cifs bridge stp llc jfs joydev hid_generic usbhid hid loop md_mod x86_pkg_temp_thermal coretemp kvm_intel kvm iTCO_wdt iTCO_vendor_support microcode pcspkr ehci_pci ehci_hcd usbcore acpi_cpufreq lpc_ich usb_common ioatdma mfd_core i2c_i801 evdev wmi tpm_tis ipmi_si tpm ipmi_msghandler processor thermal_sys button ext4 crc16 jbd2 mbcache sg sr_mod cdrom sd_mod crct10dif_generic crc_t10dif crct10dif_common nbd dm_mod crc32c_intel ghash_clmulni_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul ablk_helper cryptd isci libsas igb ahci libahci scsi_transport_sas ptp pps_core libata i2c_algo_bit i2c_core scsi_mod dca
-Aug 13 15:41:41 kbgrz1 kernel: [   89.315211] CPU: 8 PID: 5768 Comm: nvme1 Tainted: G        W     3.16.0-rc6+ #24
-Aug 13 15:41:41 kbgrz1 kernel: [   89.323563] Hardware name: Intel Corporation S2600GZ/S2600GZ, BIOS SE5C600.86B.02.02.0002.122320131210 12/23/2013
-Aug 13 15:41:41 kbgrz1 kernel: [   89.335121] task: ffff88042ad92d70 ti: ffff880425ff0000 task.ti: ffff880425ff0000
-Aug 13 15:41:41 kbgrz1 kernel: [   89.343574] RIP: 0010:[<ffffffff811d0d38>]  [<ffffffff811d0d38>] bt_for_each_free+0x31/0x78
-Aug 13 15:41:41 kbgrz1 kernel: [   89.353144] RSP: 0018:ffff880425ff3de8  EFLAGS: 00010086
-Aug 13 15:41:41 kbgrz1 kernel: [   89.359189] RAX: 0000000000000010 RBX: ffffffffffffffff RCX: 0000000000000007
-Aug 13 15:41:41 kbgrz1 kernel: [   89.367276] RDX: 0000000000000000 RSI: 0000000000000010 RDI: ffff880827bf2850
-Aug 13 15:41:41 kbgrz1 kernel: [   89.375362] RBP: 0000000000000000 R08: 000000000000000f R09: 00000000fffffffe
-Aug 13 15:41:41 kbgrz1 kernel: [   89.383448] R10: 0000000000000000 R11: 0000000000000046 R12: ffff880827bf2850
-Aug 13 15:41:41 kbgrz1 kernel: [   89.391534] R13: 00000000ffffffff R14: 0000000000000010 R15: 0000000000000001
-Aug 13 15:41:41 kbgrz1 kernel: [   89.399622] FS:  0000000000000000(0000) GS:ffff88083f200000(0000) knlGS:0000000000000000
-Aug 13 15:41:41 kbgrz1 kernel: [   89.408805] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-Aug 13 15:41:41 kbgrz1 kernel: [   89.415340] CR2: 0000000000000007 CR3: 0000000001610000 CR4: 00000000000407e0
-Aug 13 15:41:41 kbgrz1 kernel: [   89.423426] Stack:
-Aug 13 15:41:41 kbgrz1 kernel: [   89.425775]  0000000000000007 0000000000000010 ffff880827bf2840 ffffffffa052c426
-Aug 13 15:41:41 kbgrz1 kernel: [   89.434515]  ffff88082b8d9f00 ffff88042ad92d70 0000000000000000 ffffffff811d0dc6
-Aug 13 15:41:41 kbgrz1 kernel: [   89.443254]  00000000fffffffe ffff88082b8d9f00 ffff88082b8d9f28 ffff88042ad92d70
-Aug 13 15:41:41 kbgrz1 kernel: [   89.452012] Call Trace:
-Aug 13 15:41:41 kbgrz1 kernel: [   89.454852]  [<ffffffffa052c426>] ? nvme_init_hctx+0x49/0x49 [nvme]
-Aug 13 15:41:41 kbgrz1 kernel: [   89.461968]  [<ffffffff811d0dc6>] ? blk_mq_tag_busy_iter+0x47/0x7c
-Aug 13 15:41:41 kbgrz1 kernel: [   89.468987]  [<ffffffffa052c98b>] ? nvme_clear_queue+0x72/0x7d [nvme]
-Aug 13 15:41:41 kbgrz1 kernel: [   89.476298]  [<ffffffffa052c9a8>] ? nvme_del_queue_end+0x12/0x26 [nvme]
-Aug 13 15:41:41 kbgrz1 kernel: [   89.483801]  [<ffffffff810576e3>] ? kthread_worker_fn+0xb1/0x111
-Aug 13 15:41:41 kbgrz1 kernel: [   89.490625]  [<ffffffff81057632>] ? kthread_create_on_node+0x171/0x171
-Aug 13 15:41:41 kbgrz1 kernel: [   89.498038]  [<ffffffff81057632>] ? kthread_create_on_node+0x171/0x171
-Aug 13 15:41:41 kbgrz1 kernel: [   89.505446]  [<ffffffff810574b9>] ? kthread+0x9e/0xa6
-Aug 13 15:41:41 kbgrz1 kernel: [   89.511200]  [<ffffffff8105741b>] ? __kthread_parkme+0x5c/0x5c
-Aug 13 15:41:41 kbgrz1 kernel: [   89.517833]  [<ffffffff813a3a2c>] ? ret_from_fork+0x7c/0xb0
-Aug 13 15:41:41 kbgrz1 kernel: [   89.524170]  [<ffffffff8105741b>] ? __kthread_parkme+0x5c/0x5c
-Aug 13 15:41:41 kbgrz1 kernel: [   89.530799] Code: 57 41 bf 01 00 00 00 41 56 49 89 f6 41 55 41 89 d5 41 54 49 89 fc 55 31 ed 53 51 eb 42 48 63 dd 31 d2 48 c1 e3 06 49 03 5c 24 10 <48> 8b 73 08 48 63 d2 48 89 df e8 e2 28 02 00 48 63 c8 48 3b 4b 
-Aug 13 15:41:41 kbgrz1 kernel: [   89.564696]  RSP <ffff880425ff3de8>
-Aug 13 15:41:41 kbgrz1 kernel: [   89.568699] CR2: 0000000000000007
-Aug 13 15:41:41 kbgrz1 kernel: [   89.572518] ---[ end trace 8dc4a4c97c467d4d ]---
---8323328-1184881990-1407968856=:14603--
