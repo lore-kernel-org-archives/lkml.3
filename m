@@ -1,115 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438AbaHMHfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 03:35:50 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:50903 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884AbaHMHfs (ORCPT
+	id S1751452AbaHMHhn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 03:37:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49252 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbaHMHhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:35:48 -0400
-Date: Wed, 13 Aug 2014 09:35:44 +0200
+	Wed, 13 Aug 2014 03:37:41 -0400
+Date: Wed, 13 Aug 2014 09:37:38 +0200
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Mikko Perttunen <mperttunen@nvidia.com>
 Cc: swarren@wwwdotorg.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 1/3] of: Add descriptions of thermtrip properties to
- Tegra PMC bindings
-Message-ID: <20140813073541.GA17466@ulmo>
+Subject: Re: [PATCH 2/3] ARM: tegra: Add PMC thermtrip programming to Jetson
+ TK1 device tree
+Message-ID: <20140813073736.GB17466@ulmo>
 References: <1407226380-747-1-git-send-email-mperttunen@nvidia.com>
- <1407226380-747-2-git-send-email-mperttunen@nvidia.com>
+ <1407226380-747-3-git-send-email-mperttunen@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wRRV7LY7NUeQGEoC"
+	protocol="application/pgp-signature"; boundary="mxv5cy4qt+RJ9ypb"
 Content-Disposition: inline
-In-Reply-To: <1407226380-747-2-git-send-email-mperttunen@nvidia.com>
+In-Reply-To: <1407226380-747-3-git-send-email-mperttunen@nvidia.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---wRRV7LY7NUeQGEoC
+--mxv5cy4qt+RJ9ypb
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Aug 05, 2014 at 11:12:58AM +0300, Mikko Perttunen wrote:
-> Hardware-triggered thermal reset requires configuring the I2C
-> reset procedure. This configuration is read from the device tree,
-> so document the relevant properties in the binding documentation.
+On Tue, Aug 05, 2014 at 11:12:59AM +0300, Mikko Perttunen wrote:
+> This adds the required information to reset the board during an overheati=
+ng
+> situation to the Jetson TK1 device tree. The thermal reset is handled by =
+the
+> PMC by sending an I2C message to the PMIC. The entries specify the I2C
+> message to be sent.
 >=20
 > Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
 > ---
->  .../devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt    | 13 +++++++=
-++++++
->  1 file changed, 13 insertions(+)
+>  arch/arm/boot/dts/tegra124-jetson-tk1.dts | 5 +++++
+>  1 file changed, 5 insertions(+)
 >=20
-> diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-p=
-mc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
-> index 68ac65f..140e2aa 100644
-> --- a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
-> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
-> @@ -38,6 +38,19 @@ Required properties when nvidia,suspend-mode is specif=
-ied:
->  			      Core power good time in uS.
->  - nvidia,core-pwr-off-time : Core power off time in uS.
-> =20
-> +Required properties for hardware-triggered thermal reset:
-> +    (only tegra30, tegra114, tegra124)
-> +- nvidia,thermtrip-pmu-i2c-addr : I2C address of the power management un=
-it.
-> +- nvidia,thermtrip-i2c-controller : Index of the I2C controller the PMU =
-is
-> +                                    attached to.
-
-This duplicates information already associated with the PMU device. Can
-this be turned into something like:
-
-	nvidia,thermtrip-pmu: phandle to Power Management Unit
-
-Then we can query the relevant information from the I2C client resolved
-=66rom the phandle.
-
-One problem with that might be that the I2C controller index may not
-match the hardware ID.
-
-> +- nvidia,thermtrip-reg-addr : Address (byte) to send reset command to.
-> +- nvidia,thermtrip-reg-data : Data (byte) to use as reset command.
+> diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dt=
+s/tegra124-jetson-tk1.dts
+> index 624b0fb..ee178c4 100644
+> --- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+> +++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+> @@ -1617,6 +1617,11 @@
+>  		nvidia,core-pwr-off-time =3D <61036>;
+>  		nvidia,core-power-req-active-high;
+>  		nvidia,sys-clock-req-active-high;
 > +
-> +Optional properties for hardware-triggered thermal reset:
-> +    (only tegra30, tegra114, tegra124)
-> +- nvidia,thermtrip-pinmux : Pinmux ID used for I2C access.
+> +		nvidia,thermtrip-pmu-i2c-addr =3D <0x40>;
+> +		nvidia,thermtrip-i2c-controller =3D <4>;
+> +		nvidia,thermtrip-reg-addr =3D <0x36>;
+> +		nvidia,thermtrip-reg-data =3D <0x2>;
 
-I suppose this takes a phandle? If so the description should probably
-say so.
+Given the number of properties that this can potentially have, I wonder
+if perhaps it would be a good idea to put this into a subnode, like
+this:
 
-> +- nvidia,thermtrip-pmu-16bit-ops : Use 16-bit operations.
-
-What exactly does "16-bit operations" mean? And isn't this a property of
-the I2C device, therefore could be queried from the I2C slave via the
-phandle?
+		thermtrip {
+			pmu-i2c-addr =3D <0x40>;
+			i2c-controller =3D <4>;
+			...
+		};
 
 Thierry
 
---wRRV7LY7NUeQGEoC
+--mxv5cy4qt+RJ9ypb
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJT6xVNAAoJEN0jrNd/PrOhLhoP/25rLq0IgBxLPoe1zapS8Nco
-Ok0kXocn87qNe8r6wTy2WXIIhgCvVLIj7TXt5gsE9c/rZyPnF0jAxXLfbrEWp2Ck
-Ac/D76dXFeIHDqj5jBpQCWwlJm2jYzDmrJ9z1ypL7mshj9Lq/C0NjO0F+o7Fa/R/
-XxjBr6HNWFFEudMDifItoYBBa2Xw5NDrnFnbFeKfvlNe+zi5ok07pDwmr30vTpGR
-aTetexMV+ANZtBSi9+2HRsHLVEZKMsO32BFAJ4sGFRVTPIBk9AtvoDZVHIhwLTs9
-mv9bfgNkmonyXX8zIenH6DsabKM0awaEdPex6YfrGTst/FRyyYnQeW8wh9leKzxt
-sbAJgxtvEzz4tlc2/LAsXPtDxds8tjMFR3V0A2IjVbXW9dDXSA2cFv4farX78ijr
-J3Ue/Et4gKQdXmZSZLM+cUneqO+nCiP2zceE8A8z0IQN34wgw8liYlHgH4Q33EFv
-gYLSUDWQwV4+wWW0DeTIEt6C0rzWW2fJJySMnL5fYb595aszlJR7uw9lJMFlToMO
-zxD0n038lV94fUTIafEsGoqWWYm8GYE7zJmWC90uRq55dUL8Kyuepvw9ReYmr0G/
-8vWH3lUgpoRH6hWQRv+UTBNUbj2OQ3y5ynW1D4QPPVztDpc70GJYJFJWZ1IsjJnH
-Ex4OWOopz+V6Z/nTmih3
-=ERs4
+iQIcBAEBAgAGBQJT6xXAAAoJEN0jrNd/PrOhVuEQAJGtXyrXJ6S1mOGT9sl7wXlk
+kjIxXS3ECkEVnJoaWrTtRsOOmIhbkQNBX4/j9b310HP6iwiZa7xWOrrxkf5XQM8i
+MD95BQERIak/LihVZ2NRvPTkESHSQyx0Aig4OAqQvcD99cztqZwEZTbGJ1Yoiy+z
+So5D+1Ye5MKO54SRPWILzHg14HkpiP456eg1BAq/J0RWZW8fNwmApyHoYF68Jtnz
+noJzfMAlRuFxLrw/fSaWolHegseVQ/V6oPAABobNWfeyhRxWTH+YMM5zi1PnxWlq
+H65z9DW1hGBjfVwhrsahiv9qoJ263uMem3nJOuyz7E15ehamTTk0yelLMYjutqjZ
+3UHipfKQSVTchqfxG6RonhN9vYrroHgIaeg2IdDB5R1D2XqzwMlweVz63ehsX9/w
++PNYrX2M01cuvGrkurxg++R0ldsH+WpdKndiOmpC1L9/TQcBdUIqIlmXe7XeJ4GO
+cyutFSG5oMZVJOkWckwOZboS9M/YgtJgO05CsiDpTbWZjCzARJceVBJ6WKLfgJRH
+iocbAK2C/cjMUGKi5kbRP07baMcsWXMfuyfLg7uzY5kwg3jSJ5Pyi/5nAHoVr0qG
+Suv3bpFVMLHuo3/zC+J37K9SPyT+2GKcce5ZyeMB5DjduK/lQx9EjLESrsGHP7Dk
+L/IZ9joKTdYlwfVCgTIk
+=PmKx
 -----END PGP SIGNATURE-----
 
---wRRV7LY7NUeQGEoC--
+--mxv5cy4qt+RJ9ypb--
