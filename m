@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaHMFRu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 01:17:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45027 "EHLO
+	id S1752184AbaHMFSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 01:18:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45056 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251AbaHMFRr (ORCPT
+	with ESMTP id S1750751AbaHMFSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 01:17:47 -0400
-Date: Tue, 12 Aug 2014 22:17:30 -0700
+	Wed, 13 Aug 2014 01:18:12 -0400
+Date: Tue, 12 Aug 2014 22:17:43 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-64c40908938953d7afa90e9363327875286349e5@git.kernel.org>
+Message-ID: <tip-56c7d79e49776084b852e451bda5f59dc3bcf894@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        tglx@linutronix.de
+        thomas.ilsche@tu-dresden.de, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        tglx@linutronix.de
-In-Reply-To: <1406872771-23933-1-git-send-email-namhyung@kernel.org>
-References: <1406872771-23933-1-git-send-email-namhyung@kernel.org>
+        namhyung.kim@lge.com, namhyung@kernel.org, thomas.ilsche@tu-dresden.de,
+        jolsa@redhat.com, tglx@linutronix.de
+In-Reply-To: <1406617040-26909-1-git-send-email-namhyung@kernel.org>
+References: <1406617040-26909-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kmem: Do not ignore mmap events
-Git-Commit-ID: 64c40908938953d7afa90e9363327875286349e5
+Subject: [tip:perf/core] perf tools: Fix make PYTHON override
+Git-Commit-ID: 56c7d79e49776084b852e451bda5f59dc3bcf894
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,55 +35,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  64c40908938953d7afa90e9363327875286349e5
-Gitweb:     http://git.kernel.org/tip/64c40908938953d7afa90e9363327875286349e5
+Commit-ID:  56c7d79e49776084b852e451bda5f59dc3bcf894
+Gitweb:     http://git.kernel.org/tip/56c7d79e49776084b852e451bda5f59dc3bcf894
 Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Fri, 1 Aug 2014 14:59:31 +0900
+AuthorDate: Tue, 29 Jul 2014 15:57:19 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 12 Aug 2014 12:03:03 -0300
+CommitDate: Tue, 12 Aug 2014 12:03:04 -0300
 
-perf kmem: Do not ignore mmap events
+perf tools: Fix make PYTHON override
 
-The perf kmem command didn't process mmap events for some unknown reason
-and it instead gets symbol info from a running kernel.  This is
-problematic if perf kmem record was run on a different kernel.
+Thomas reported that make PYTHON=python2 is not work on some systems.  I
+can reproduce it on my ArchLinux box too.
 
-This patch adds the mmap event handlers and reverts the commit
-e727ca73f85d ("perf kmem: Resolve kernel symbols again").
+This is because it's overridden by config/feature-checks/Makefile
+regardless of PYTHON setting.  I guess it's a bug slipped into during
+the feature checking change.
 
+Actually, we don't need to check python-config in the feature-checks.
+We can just pass appropriate FEATURE_CHECK_*FLAGS.
+
+Reported-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Tested-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1406872771-23933-1-git-send-email-namhyung@kernel.org
-[ Fixed up merge conflict with Jiri's ordered_events rename patch set ]
+Cc: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
+Link: http://lkml.kernel.org/r/1406617040-26909-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kmem.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ tools/perf/config/Makefile                | 34 ++++++++++++++++++++-----------
+ tools/perf/config/feature-checks/Makefile | 18 ++--------------
+ 2 files changed, 24 insertions(+), 28 deletions(-)
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index b572111..84b8239 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -256,6 +256,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- static struct perf_tool perf_kmem = {
- 	.sample		 = process_sample_event,
- 	.comm		 = perf_event__process_comm,
-+	.mmap		 = perf_event__process_mmap,
-+	.mmap2		 = perf_event__process_mmap2,
- 	.ordered_events	 = true,
- };
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 1f67aa0..e05d8f9 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -120,6 +120,23 @@ ifdef PARSER_DEBUG
+   CFLAGS             += -DPARSER_DEBUG
+ endif
  
-@@ -424,9 +426,6 @@ static int __cmd_kmem(void)
- 	if (session == NULL)
- 		return -ENOMEM;
++ifndef NO_LIBPYTHON
++  override PYTHON := \
++    $(call get-executable-or-default,PYTHON,python)
++  override PYTHON_CONFIG := \
++    $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
++
++  PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
++
++  PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
++  PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
++
++  FEATURE_CHECK_CFLAGS-libpython := $(PYTHON_EMBED_CCOPTS)
++  FEATURE_CHECK_LDFLAGS-libpython := $(PYTHON_EMBED_LDOPTS)
++  FEATURE_CHECK_CFLAGS-libpython-version := $(PYTHON_EMBED_CCOPTS)
++  FEATURE_CHECK_LDFLAGS-libpython-version := $(PYTHON_EMBED_LDOPTS)
++endif
++
+ CFLAGS += -fno-omit-frame-pointer
+ CFLAGS += -ggdb3
+ CFLAGS += -funwind-tables
+@@ -482,21 +499,14 @@ define disable-python_code
+   NO_LIBPYTHON := 1
+ endef
  
--	if (perf_session__create_kernel_maps(session) < 0)
--		goto out_delete;
+-override PYTHON := \
+-  $(call get-executable-or-default,PYTHON,python)
 -
- 	if (!perf_session__has_traces(session, "kmem record"))
- 		goto out_delete;
+-ifndef PYTHON
+-  $(call disable-python,python interpreter)
++ifdef NO_LIBPYTHON
++  $(call disable-python)
+ else
  
+-  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
+-
+-  ifdef NO_LIBPYTHON
+-    $(call disable-python)
++  ifndef PYTHON
++    $(call disable-python,python interpreter)
+   else
+-
+-    override PYTHON_CONFIG := \
+-      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
++    PYTHON_WORD := $(call shell-wordify,$(PYTHON))
+ 
+     ifndef PYTHON_CONFIG
+       $(call disable-python,python-config tool)
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 6088f8d..72ab298 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -101,25 +101,11 @@ FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
+ test-libperl.bin:
+ 	$(BUILD) $(FLAGS_PERL_EMBED)
+ 
+-override PYTHON := python
+-override PYTHON_CONFIG := python-config
+-
+-escape-for-shell-sq =  $(subst ','\'',$(1))
+-shell-sq = '$(escape-for-shell-sq)'
+-
+-PYTHON_CONFIG_SQ = $(call shell-sq,$(PYTHON_CONFIG))
+-
+-PYTHON_EMBED_LDOPTS = $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
+-PYTHON_EMBED_LDFLAGS = $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
+-PYTHON_EMBED_LIBADD = $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
+-PYTHON_EMBED_CCOPTS = $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
+-FLAGS_PYTHON_EMBED = $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
+-
+ test-libpython.bin:
+-	$(BUILD) $(FLAGS_PYTHON_EMBED)
++	$(BUILD)
+ 
+ test-libpython-version.bin:
+-	$(BUILD) $(FLAGS_PYTHON_EMBED)
++	$(BUILD)
+ 
+ test-libbfd.bin:
+ 	$(BUILD) -DPACKAGE='"perf"' -lbfd -lz -liberty -ldl
