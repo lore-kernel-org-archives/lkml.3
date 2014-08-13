@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbaHMQlL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 12:41:11 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:2858 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518AbaHMQlJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 12:41:09 -0400
-Message-ID: <53EB9522.2070804@hp.com>
-Date: Wed, 13 Aug 2014 12:41:06 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1753462AbaHMQnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 12:43:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65006 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752558AbaHMQnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 12:43:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,857,1400050800"; 
+   d="scan'208";a="587632049"
+Date: Wed, 13 Aug 2014 09:43:05 -0700
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, bobby.prani@gmail.com
+Subject: Re: [PATCH v5 tip/core/rcu 15/16] rcu: Make RCU-tasks wait for idle
+ tasks
+Message-ID: <20140813094305.225a4e1c@ultegra>
+In-Reply-To: <20140813163015.GT9918@twins.programming.kicks-ass.net>
+References: <20140811224840.GA25594@linux.vnet.ibm.com>
+	<1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	<1407797345-28227-15-git-send-email-paulmck@linux.vnet.ibm.com>
+	<20140813081215.GB9918@twins.programming.kicks-ass.net>
+	<20140813124818.GQ4752@linux.vnet.ibm.com>
+	<20140813134025.GN9918@twins.programming.kicks-ass.net>
+	<20140813095132.56d288f2@gandalf.local.home>
+	<20140813140705.GO9918@twins.programming.kicks-ass.net>
+	<20140813101301.08019895@gandalf.local.home>
+	<20140813144332.GW4752@linux.vnet.ibm.com>
+	<20140813163015.GT9918@twins.programming.kicks-ass.net>
+Organization: OTC
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH 2/7] locking/rwsem: more aggressive use of optimistic
- spinning
-References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com> <1407119782-41119-3-git-send-email-Waiman.Long@hp.com> <1407125450.4710.38.camel@j-VirtualBox> <53DFAA53.4010003@hp.com> <20140813055153.GD20518@dastard>
-In-Reply-To: <20140813055153.GD20518@dastard>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2014 01:51 AM, Dave Chinner wrote:
-> On Mon, Aug 04, 2014 at 11:44:19AM -0400, Waiman Long wrote:
->> On 08/04/2014 12:10 AM, Jason Low wrote:
->>> On Sun, 2014-08-03 at 22:36 -0400, Waiman Long wrote:
->>>> The rwsem_can_spin_on_owner() function currently allows optimistic
->>>> spinning only if the owner field is defined and is running. That is
->>>> too conservative as it will cause some tasks to miss the opportunity
->>>> of doing spinning in case the owner hasn't been able to set the owner
->>>> field in time or the lock has just become available.
->>>>
->>>> This patch enables more aggressive use of optimistic spinning by
->>>> assuming that the lock is spinnable unless proved otherwise.
->>>>
->>>> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
->>>> ---
->>>>   kernel/locking/rwsem-xadd.c |    2 +-
->>>>   1 files changed, 1 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
->>>> index d058946..dce22b8 100644
->>>> --- a/kernel/locking/rwsem-xadd.c
->>>> +++ b/kernel/locking/rwsem-xadd.c
->>>> @@ -285,7 +285,7 @@ static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
->>>>   static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
->>>>   {
->>>>   	struct task_struct *owner;
->>>> -	bool on_cpu = false;
->>>> +	bool on_cpu = true;	/* Assume spinnable unless proved not to be */
->>> Hi,
->>>
->>> So "on_cpu = true" was recently converted to "on_cpu = false" in order
->>> to address issues such as a 5x performance regression in the xfs_repair
->>> workload that was caused by the original rwsem optimistic spinning code.
->>>
->>> However, patch 4 in this patchset does address some of the problems with
->>> spinning when there are readers. CC'ing Dave Chinner, who did the
->>> testing with the xfs_repair workload.
->>>
->> This patch set enables proper reader spinning and so the problem
->> that we see with xfs_repair workload should go away. I should have
->> this patch after patch 4 to make it less confusing. BTW, patch 3 can
->> significantly reduce spinlock contention in rwsem. So I believe the
->> xfs_repair workload should run faster with this patch than both 3.15
->> and 3.16.
-> I see lots of handwaving. I documented the test I ran when I
-> reported the problem so anyone with a 16p system and an SSD can
-> reproduce it. I don't have the bandwidth to keep track of the lunacy
-> of making locks scale these days - that's what you guys are doing.
->
-> I gave you a simple, reliable workload that is extremely sensitive
-> to rwsem perturbations, so you should be adding it to your
-> regression tests rather than leaving it for others to notice you
-> screwed up....
->
-> Cheers,
->
-> Dave.
+On Wed, 13 Aug 2014 18:30:15 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-If you can send me a rwsem workload that I can use for testing purpose, 
-it will be highly appreciated.
+> On Wed, Aug 13, 2014 at 07:43:32AM -0700, Paul E. McKenney wrote:
+> > o	drivers/acpi/acpi_pad.c, power_saving_thread().
+> > 
+> > 	Looks like a kthread that does idle injection.  Currently,
+> > RCU sees it as not a quiescent state.  Would it kill these guys to
+> > 	put in a comment or two about what this is for???
+> > 
+> > 	So adding rcu_idle_enter() and rcu_idle_exit() here might
+> > 	actually fix a bug, though it is not clear how long this
+> > thing actually runs.  If only for a few milliseconds, no harm done.
+> > 
+> 
+> > o	drivers/thermal/intel_powerclamp.c, clamp_thread().
+> > 
+> > 	Looks similar to power_saving_thread(), but for thermal
+> > control. Probably short term, shouldn't be a problem either way.
+> > 
+> 
+> There's patches somewhere that make that go-away
+> 
+>   https://lkml.org/lkml/2014/6/4/56
+> 
+> Jacob was going to look at that.
 
--Longman
+yes, it is on my plate, plan to submit for 3.18. the idle period is
+only for a few miliseconds, default to 6ms.
+
+Thanks,
+
+Jacob
