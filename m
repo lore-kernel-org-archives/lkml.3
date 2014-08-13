@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705AbaHMRHh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:07:37 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:60067 "EHLO smtp.outflux.net"
+	id S1753834AbaHMRI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 13:08:28 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:39148 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753396AbaHMRHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753543AbaHMRHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Aug 2014 13:07:34 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Mark Salter <msalter@redhat.com>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
+Cc: Kees Cook <keescook@chromium.org>, Rob Herring <robh@kernel.org>,
+        Laura Abbott <lauraa@codeaurora.org>,
         Leif Lindholm <leif.lindholm@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Rabin Vincent <rabin@rab.in>,
-        Liu hua <sdu.liu@huawei.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Rabin Vincent <rabin@rab.in>, Liu hua <sdu.liu@huawei.com>,
         Nikolay Borisov <Nikolay.Borisov@arm.com>,
         Nicolas Pitre <nicolas.pitre@linaro.org>,
         Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
@@ -21,92 +21,68 @@ Cc: Kees Cook <keescook@chromium.org>, Mark Salter <msalter@redhat.com>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org
-Subject: [PATCH v4 1/8] arm: use generic fixmap.h
-Date: Wed, 13 Aug 2014 10:06:26 -0700
-Message-Id: <1407949593-16121-2-git-send-email-keescook@chromium.org>
+Subject: [PATCH v4 0/8] arm: support CONFIG_RODATA
+Date: Wed, 13 Aug 2014 10:06:25 -0700
+Message-Id: <1407949593-16121-1-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407949593-16121-1-git-send-email-keescook@chromium.org>
-References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Salter <msalter@redhat.com>
+This is a series of patches to support CONFIG_RODATA on ARM, so that
+the kernel text is RO, and non-text sections default to NX. To support
+on-the-fly kernel text patching (via ftrace, kprobes, etc), fixmap
+support has been finalized based on several versions of various patches
+that are floating around on the mailing list. This series attempts to
+include the least intrusive version, so that others can build on it for
+future fixmap work.
 
-ARM is different from other architectures in that fixmap pages are indexed
-with a positive offset from FIXADDR_START.  Other architectures index with
-a negative offset from FIXADDR_TOP.  In order to use the generic fixmap.h
-definitions, this patch redefines FIXADDR_TOP to be inclusive of the
-useable range.  That is, FIXADDR_TOP is the virtual address of the topmost
-fixed page.  The newly defined FIXADDR_END is the first virtual address
-past the fixed mappings.
+The series has been heavily tested, and appears to be working correctly:
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-[kees: update for a05e54c103b0 "ARM: 8031/2: change fixmap ..."]
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Laura Abbott <lauraa@codeaurora.org>
-Cc: Rob Herring <robh@kernel.org>
----
- arch/arm/include/asm/fixmap.h | 27 +++++++++------------------
- arch/arm/mm/init.c            |  2 +-
- 2 files changed, 10 insertions(+), 19 deletions(-)
+With CONFIG_ARM_PTDUMP, expected page table permissions are seen in
+/sys/kernel/debug/kernel_page_tables.
 
-diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-index 74124b0d0d79..a7add6f9315d 100644
---- a/arch/arm/include/asm/fixmap.h
-+++ b/arch/arm/include/asm/fixmap.h
-@@ -2,27 +2,18 @@
- #define _ASM_FIXMAP_H
- 
- #define FIXADDR_START		0xffc00000UL
--#define FIXADDR_TOP		0xffe00000UL
--#define FIXADDR_SIZE		(FIXADDR_TOP - FIXADDR_START)
-+#define FIXADDR_END		0xffe00000UL
-+#define FIXADDR_TOP		(FIXADDR_END - PAGE_SIZE)
- 
--#define FIX_KMAP_NR_PTES	(FIXADDR_SIZE >> PAGE_SHIFT)
-+#include <asm/kmap_types.h>
- 
--#define __fix_to_virt(x)	(FIXADDR_START + ((x) << PAGE_SHIFT))
--#define __virt_to_fix(x)	(((x) - FIXADDR_START) >> PAGE_SHIFT)
-+enum fixed_addresses {
-+	FIX_KMAP_BEGIN,
-+	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_TYPE_NR * NR_CPUS) - 1,
- 
--extern void __this_fixmap_does_not_exist(void);
-+	__end_of_fixed_addresses
-+};
- 
--static inline unsigned long fix_to_virt(const unsigned int idx)
--{
--	if (idx >= FIX_KMAP_NR_PTES)
--		__this_fixmap_does_not_exist();
--	return __fix_to_virt(idx);
--}
--
--static inline unsigned int virt_to_fix(const unsigned long vaddr)
--{
--	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
--	return __virt_to_fix(vaddr);
--}
-+#include <asm-generic/fixmap.h>
- 
- #endif
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 659c75d808dc..ad82c05bfc3a 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -570,7 +570,7 @@ void __init mem_init(void)
- 			MLK(DTCM_OFFSET, (unsigned long) dtcm_end),
- 			MLK(ITCM_OFFSET, (unsigned long) itcm_end),
- #endif
--			MLK(FIXADDR_START, FIXADDR_TOP),
-+			MLK(FIXADDR_START, FIXADDR_END),
- 			MLM(VMALLOC_START, VMALLOC_END),
- 			MLM(PAGE_OFFSET, (unsigned long)high_memory),
- #ifdef CONFIG_HIGHMEM
--- 
-1.9.1
+Using CONFIG_LKDTM, the kernel now correctly detects bad accesses for
+for the following lkdtm tests via /sys/kernel/debug/provoke-crash/DIRECT:
+        EXEC_DATA
+        WRITE_RO
+        WRITE_KERN
+
+ftrace works:
+        CONFIG_FTRACE_STARTUP_TEST passes
+        Enabling tracing works:
+                echo function > /sys/kernel/debug/tracing/current_tracer
+
+kprobes works:
+        CONFIG_ARM_KPROBES_TEST passes
+
+kexec works:
+        kexec will load and start a new kernel
+
+Built with and without CONFIG_HIGHMEM, CONFIG_HIGHMEM_DEBUG, and
+CONFIG_NR_CPUS=32.
+
+Thanks to everyone who has been testing this series and working on its
+various pieces!
+
+-Kees
+
+v4:
+- expanded fixmap to 3MB to support 32 CPUs (robh)
+- corrected pmd-finding via vaddr instead of FIXMAP_START (robh)
+- switched structure size test to BUILD_BUG_ON (sboyd)
+- added locking annotations to keep sparse happy (sboyd)
+- adding missing "static" declarations noticed by sparse
+- reorganized fixmap portion of patches
+
+v3:
+- more cleanups in switch to generic fixmap (lauraa, robh)
+- fixed kexec merge hunk glitch (will.deacon)
+- added tested-by tags where appropriate from v2 testing
+
+v2:
+- fix typo in kexec merge (buildbot)
+- flip index order for highmem pte access (lauraa)
+- added kgdb updates (dianders)
 
