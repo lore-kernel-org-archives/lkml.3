@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaHMQnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 12:43:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65006 "EHLO mga09.intel.com"
+	id S1753384AbaHMQon (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 12:44:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13560 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558AbaHMQnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 12:43:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,857,1400050800"; 
-   d="scan'208";a="587632049"
-Date: Wed, 13 Aug 2014 09:43:05 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v5 tip/core/rcu 15/16] rcu: Make RCU-tasks wait for idle
- tasks
-Message-ID: <20140813094305.225a4e1c@ultegra>
-In-Reply-To: <20140813163015.GT9918@twins.programming.kicks-ass.net>
-References: <20140811224840.GA25594@linux.vnet.ibm.com>
-	<1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	<1407797345-28227-15-git-send-email-paulmck@linux.vnet.ibm.com>
-	<20140813081215.GB9918@twins.programming.kicks-ass.net>
-	<20140813124818.GQ4752@linux.vnet.ibm.com>
-	<20140813134025.GN9918@twins.programming.kicks-ass.net>
-	<20140813095132.56d288f2@gandalf.local.home>
-	<20140813140705.GO9918@twins.programming.kicks-ass.net>
-	<20140813101301.08019895@gandalf.local.home>
-	<20140813144332.GW4752@linux.vnet.ibm.com>
-	<20140813163015.GT9918@twins.programming.kicks-ass.net>
-Organization: OTC
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1751145AbaHMQom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 12:44:42 -0400
+Message-ID: <53EB959B.5090003@redhat.com>
+Date: Wed, 13 Aug 2014 12:43:07 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH] fix sighand use after free
+References: <20140813115000.73da6136@cuia.bos.redhat.com> <20140813155802.GA2695@redhat.com> <53EB8DAC.1040605@redhat.com> <20140813161909.GA3479@redhat.com>
+In-Reply-To: <20140813161909.GA3479@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Aug 2014 18:30:15 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Wed, Aug 13, 2014 at 07:43:32AM -0700, Paul E. McKenney wrote:
-> > o	drivers/acpi/acpi_pad.c, power_saving_thread().
-> > 
-> > 	Looks like a kthread that does idle injection.  Currently,
-> > RCU sees it as not a quiescent state.  Would it kill these guys to
-> > 	put in a comment or two about what this is for???
-> > 
-> > 	So adding rcu_idle_enter() and rcu_idle_exit() here might
-> > 	actually fix a bug, though it is not clear how long this
-> > thing actually runs.  If only for a few milliseconds, no harm done.
-> > 
+On 08/13/2014 12:19 PM, Oleg Nesterov wrote:
+> On 08/13, Rik van Riel wrote:
+>>
+>> On 08/13/2014 11:58 AM, Oleg Nesterov wrote:
+>>> On 08/13, Rik van Riel wrote:
+>>>>
+>>>> @@ -1017,7 +1017,7 @@ void __cleanup_sighand(struct sighand_struct *sighand)
+>>>>  {
+>>>>  	if (atomic_dec_and_test(&sighand->count)) {
+>>>>  		signalfd_cleanup(sighand);
+>>>> -		kmem_cache_free(sighand_cachep, sighand);
+>>>> +		rcu_free(sighand_cachep, sighand);
+>>>
+>>> Please note that sighand_cachep is SLAB_DESTROY_BY_RCU.
+>>
+>> SLAB_DESTROY_BY_RCU means that the slab page is not given
+>> back to the system until after the RCU grace period has
+>> expired.
+>>
+>> However, the objects inside the slab can still be reused
+>> immediately!
 > 
-> > o	drivers/thermal/intel_powerclamp.c, clamp_thread().
-> > 
-> > 	Looks similar to power_saving_thread(), but for thermal
-> > control. Probably short term, shouldn't be a problem either way.
-> > 
-> 
-> There's patches somewhere that make that go-away
-> 
->   https://lkml.org/lkml/2014/6/4/56
-> 
-> Jacob was going to look at that.
+> Yes. This is fine. This memory won't be returned to system before rcu
+> gp pass, and this memory is still "struct sighand_struct" with the
+> properly initialized ->siglock (note the sighand_ctor()).
 
-yes, it is on my plate, plan to submit for 3.18. the idle period is
-only for a few miliseconds, default to 6ms.
+Fair enough, you are right.
 
-Thanks,
+The sighand_ctor does prevent any issues.
 
-Jacob
+The slub code also prevents slubs with constructor
+functions from ever getting merged, so this is all
+taken care of.
