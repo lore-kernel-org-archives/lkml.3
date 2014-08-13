@@ -1,97 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346AbaHMQHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 12:07:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40042 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751963AbaHMQHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 12:07:42 -0400
-Date: Wed, 13 Aug 2014 12:07:37 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Alasdair G Kergon <agk@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>, Jeff Moyer <jmoyer@redhat.com>
-Subject: [git pull] device mapper changes for 3.17
-Message-ID: <20140813160737.GA11779@redhat.com>
+	id S1753411AbaHMQIs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 12:08:48 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:62869 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaHMQIq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 12:08:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1407916658-8731-2-git-send-email-ast@plumgrid.com>
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com> <1407916658-8731-2-git-send-email-ast@plumgrid.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 13 Aug 2014 09:08:24 -0700
+Message-ID: <CALCETrXzZVxMGUgDPOKwN0DPLvupU=ew1z6D4U-jHg+RoyZyLg@mail.gmail.com>
+Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit
+ immediate" eBPF instruction
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Aug 13, 2014 at 12:57 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> add BPF_LD_IMM64 instruction to load 64-bit immediate value into register.
+> All previous instructions were 8-byte. This is first 16-byte instruction.
+> Two consecutive 'struct bpf_insn' blocks are interpreted as single instruction:
+> insn[0/1].code = BPF_LD | BPF_DW | BPF_IMM
+> insn[0/1].dst_reg = destination register
+> insn[0].imm = lower 32-bit
+> insn[1].imm = upper 32-bit
 
-The following changes since commit 44fa816bb778edbab6b6ddaaf24908dd6295937e:
+This might be unnecessarily difficult for fancy static analysis tools
+to reason about.  Would it make sense to assign two different codes
+for this?  For example, insn[0].code = code_for_load_low,
+insns[1].code = code_for_load_high, along with a verifier check that
+they come in matched pairs and that code_for_load_high isn't a jump
+target?
 
-  dm cache: fix race affecting dirty block count (2014-08-01 12:25:22 -0400)
+(Something else that I find confusing about eBPF: the instruction
+mnemonics are very strange.  Have you considered giving them real
+names?  For example, load.imm.low instead of BPF_LD | BPF_DW | BPF_IMM
+is easier to read and pronounce.)
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git tags/dm-3.17-changes
-
-for you to fetch changes up to 200612ec33e555a356eebc717630b866ae2b694f:
-
-  dm table: propagate QUEUE_FLAG_NO_SG_MERGE (2014-08-10 20:54:49 -0400)
-
-Please pull, thanks.
-Mike
-
-----------------------------------------------------------------
-. Allow the thin target to paired with any size external origin; also
-  allow thin snapshots to be larger than the external origin.
-
-. Add support for quickly loading a repetitive pattern into the
-  dm-switch target.
-
-. Use per-bio data in the dm-crypt target instead of always using a
-  mempool for each allocation.  Required switching to kmalloc alignment
-  for the bio slab.
-
-. Fix DM core to properly stack the QUEUE_FLAG_NO_SG_MERGE flag
-
-. Fix the dm-cache and dm-thin targets' export of the minimum_io_size to
-  match the data block size -- this fixes an issue where mkfs.xfs would
-  improperly infer raid striping was in place on the underlying storage.
-
-. Small cleanups in dm-io, dm-mpath and dm-cache
-
-----------------------------------------------------------------
-Jeff Moyer (1):
-      dm table: propagate QUEUE_FLAG_NO_SG_MERGE
-
-Joe Thornber (5):
-      dm io: simplify dec_count and sync_io
-      dm thin: switch to an atomic_t for tracking pending new block preparations
-      dm thin: relax external origin size constraints
-      dm cache: simplify deferred set reference count increments
-      dm cache: fail migrations in the do_worker error path
-
-Mike Snitzer (4):
-      dm mpath: eliminate pg_ready() wrapper
-      dm cache metadata: use dm-space-map-metadata.h defined size limits
-      dm thin: set minimum_io_size to pool's data block size
-      dm cache: set minimum_io_size to cache's data block size
-
-Mikulas Patocka (5):
-      dm table: make dm_table_supports_discards static
-      block: use kmalloc alignment for bio slab
-      dm crypt: use per-bio data
-      dm switch: factor out switch_region_table_read
-      dm switch: efficiently support repetitive patterns
-
- Documentation/device-mapper/switch.txt |  12 +++
- block/bio.c                            |   3 +-
- drivers/md/dm-cache-metadata.c         |   4 +-
- drivers/md/dm-cache-metadata.h         |   8 +-
- drivers/md/dm-cache-target.c           | 128 ++++++++++++++---------
- drivers/md/dm-crypt.c                  |  41 +++++---
- drivers/md/dm-io.c                     |  77 +++++++-------
- drivers/md/dm-mpath.c                  |   6 +-
- drivers/md/dm-switch.c                 |  67 ++++++++++--
- drivers/md/dm-table.c                  |  86 +++++++++-------
- drivers/md/dm-thin.c                   | 181 +++++++++++++++++++++++----------
- drivers/md/dm.h                        |   1 -
- 12 files changed, 408 insertions(+), 206 deletions(-)
+--Andy
