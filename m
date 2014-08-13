@@ -1,196 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994AbaHMVg4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 17:36:56 -0400
-Received: from mail-oi0-f73.google.com ([209.85.218.73]:38466 "EHLO
-	mail-oi0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704AbaHMVgz (ORCPT
+	id S1754040AbaHMVhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 17:37:17 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:38453 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754008AbaHMVhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 17:36:55 -0400
-Date: Wed, 13 Aug 2014 14:30:44 -0700
-From: akpm@linux-foundation.org
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
-Subject: mmotm 2014-08-13-14-29 uploaded
-Message-ID: <53ebd904.2Mcm8776rCbhNYjx%akpm@linux-foundation.org>
-User-Agent: Heirloom mailx 12.5 6/20/10
+	Wed, 13 Aug 2014 17:37:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALCETrVDrbD3goYmZsUdmEhVfaNxovyghCz6y+_q5+G+rVwtWg@mail.gmail.com>
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+	<1407916658-8731-2-git-send-email-ast@plumgrid.com>
+	<CALCETrXzZVxMGUgDPOKwN0DPLvupU=ew1z6D4U-jHg+RoyZyLg@mail.gmail.com>
+	<CAMEtUuxog0w-XkYMHM=Zto_gejy8x5agxohAWOs1zPEtXTr0Sw@mail.gmail.com>
+	<CALCETrXfp+7FmEzAoLiqzqY73NBzt8JsD40hzvhT3=gr-Scp=g@mail.gmail.com>
+	<CAMEtUuwx6Y4qxyz4TGK9=M2BH-dXnPsm+JrusqbyjzK20yUv6A@mail.gmail.com>
+	<CALCETrVDrbD3goYmZsUdmEhVfaNxovyghCz6y+_q5+G+rVwtWg@mail.gmail.com>
+Date: Wed, 13 Aug 2014 14:37:13 -0700
+Message-ID: <CAMEtUuyFF3Qvd8BHkbEqkjGx+UEC8KcowUYyyuBW2J_NcGA96Q@mail.gmail.com>
+Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit
+ immediate" eBPF instruction
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2014-08-13-14-29 has been uploaded to
+On Wed, Aug 13, 2014 at 2:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Wed, Aug 13, 2014 at 2:02 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> On Wed, Aug 13, 2014 at 11:35 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>
+>>> The compiler can still think of it as a single insn, though, but some
+>>> future compiler might not.
+>>
+>> I think that would be very dangerous.
+>> compiler (user space) and kernel interpreter must have the same
+>> understanding of ISA.
+>>
+>>> In any case, I think that, if you use the
+>>> same code for high and for low, you need logic in the JIT that's at
+>>> least as complicated.
+>>
+>> why do you think so? Handling of pseudo BPF_LD_IMM64 is done
+>> in single patch #11 which is one of the smallest...
+>>
+>>> For example, what happens if you have two
+>>> consecutive 64-bit immediate loads to the same register?  Now you have
+>>> four consecutive 8-byte insn words that differ only in their immediate
+>>> values, and you need to split them correctly.
+>>
+>> I don't need to do anything special in this case.
+>> Two 16-byte instructions back to back is not a problem.
+>> Interpreter or JIT don't care whether they move the same or different
+>> immediates into the same or different register. Interpreter and JITs
+>> are dumb on purpose.
+>> when verifier sees two back to back ld_imm64, the 2nd will simply
+>> override the value loaded by first one. It's not any different than
+>> two back to back 'mov dst_reg, imm32' instructions.
+>
+> But this patch makes the JIT code (and any interpreter) weirdly
+> stateful.  You have:
+>
+> +               case BPF_LD | BPF_IMM | BPF_DW:
+> +                       /* movabsq %rax, imm64 */
+> +                       EMIT2(add_1mod(0x48, dst_reg), add_1reg(0xB8, dst_reg));
+> +                       EMIT(insn->imm, 4);
+> +                       insn++;
+> +                       i++;
+> +                       EMIT(insn->imm, 4);
+> +                       break;
+>
+> If you have more than two BPF_LD | BPF_IMM | BPF_DW instructions in a
+> row, then the way in which they pair up depends on where you start.
 
-   http://www.ozlabs.org/~akpm/mmotm/
+For JIT it's not a problem, since it's doing a linear scan. So it always
+starts at instruction boundary.
+But thinking about it further you're right that it's a bug in verifier.
+I've tried it and indeed depending on type of branch verifier doesn't
+catch a case of two 16-byte instructions back to back and jump
+goes into 2nd half of 1st insn. I need to fix that.
 
-mmotm-readme.txt says
+> I think it would be a lot clearer if you made these be "load low" and
+> "load high", with JIT code like:
+>
+> +               case BPF_LOAD_LOW:
+> +                       /* movabsq %rax, imm64 */
+> +                       if (next insn is BPF_LOAD_HIGH) {
 
-README for mm-of-the-moment:
+such 'if' will be costly in interpreter. I want to avoid it.
 
-http://www.ozlabs.org/~akpm/mmotm/
+> (and you'd have to deal with whether load low by itself is illegal,
+> zero extends, sign extends, or preserves high bits).
 
-This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-more than once a week.
+I don't need an instruction that loads low 32-bit. It already exists.
+It's called 'mov'.
+I'm going to try encoding:
+insn[0].code = LD | IMM | DW
+insn[1].code = 0
+zero is invalid opcode, so it's your 'continuation'.
+and it is still single 16-byte instructions without any interpreter overhead.
 
-You will need quilt to apply these patches to the latest Linus release (3.x
-or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-http://ozlabs.org/~akpm/mmotm/series
+> This has a nice benefit for future-proofing: it gives you 119 bits of
+> payload for 16-byte instructions.
 
-The file broken-out.tar.gz contains two datestamp files: .DATE and
-.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-followed by the base kernel version against which this patch series is to
-be applied.
+It's already future proofed. We can add 24 byte instructions and so on
+just as well. There is no point to reserve 119 bits when no one is using
+them.
 
-This tree is partially included in linux-next.  To see which patches are
-included in linux-next, consult the `series' file.  Only the patches
-within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-linux-next.
+> On the other hand, a u8 for the opcode is kind of small, and killing
+> half of that space like this is probably bad.  Maybe reserve two high
+> bits, with:
 
-A git tree which contains the memory management portion of this tree is
-maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-by Michal Hocko.  It contains the patches which are between the
-"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-file, http://www.ozlabs.org/~akpm/mmotm/series.
-
-
-A full copy of the full kernel tree with the linux-next and mmotm patches
-already applied is available through git within an hour of the mmotm
-release.  Individual mmotm releases are tagged.  The master branch always
-points to the latest release, so it's constantly rebasing.
-
-http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
-
-To develop on top of mmotm git:
-
-  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-  $ git remote update mmotm
-  $ git checkout -b topic mmotm/master
-  <make changes, commit>
-  $ git send-email mmotm/master.. [...]
-
-To rebase a branch with older patches to a new mmotm release:
-
-  $ git remote update mmotm
-  $ git rebase --onto mmotm/master <topic base> topic
-
-
-
-
-The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
-contains daily snapshots of the -mm tree.  It is updated more frequently
-than mmotm, and is untested.
-
-A git copy of this tree is available at
-
-	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
-
-and use of this tree is similar to
-http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
-
-
-This mmotm tree contains the following patches against 3.16:
-(patches marked "*" will be included in linux-next)
-
-  origin.patch
-  i-need-old-gcc.patch
-  arch-alpha-kernel-systblss-remove-debug-check.patch
-  maintainers-akpm-maintenance.patch
-* mm-hugetlb_cgroup-align-hugetlb-cgroup-limit-to-hugepage-size.patch
-* rtsx_usb-export-device-table.patch
-* mm-fix-cross_memory_attach-help-text-grammar.patch
-* checkpatch-relax-check-for-length-of-git-commit-ids.patch
-* kernel-resourcec-fix-null-deref-with-no-iomem.patch
-* memblock-memhotplug-fix-wrong-type-in-memblock_find_in_range_node.patch
-* mm-actually-clear-pmd_numa-before-invalidating.patch
-* lib-turn-config_stacktrace-into-an-actual-option.patch
-* drivers-gpu-drm-nouveau-fix-build.patch
-* zram-fix-incorrectly-stat-with-failed_reads.patch
-* mm-zpool-use-prefixed-module-loading.patch
-* x86mem-hotplug-pass-sync_global_pgds-a-correct-argument-in-remove_pagetable.patch
-* x86mem-hotplug-modify-pgd-entry-when-removing-memory.patch
-* x86-numa-setup_node_data-drop-dead-code-and-rename-function.patch
-* fs-cifs-remove-obsolete-__constant.patch
-* fs-cifs-filec-replace-countsize-kzalloc-by-kcalloc.patch
-* fs-cifs-smb2filec-replace-countsize-kzalloc-by-kcalloc.patch
-* efi-bgrt-add-error-handling-inform-the-user-when-ignoring-the-bgrt.patch
-* kernel-posix-timersc-code-clean-up.patch
-* kernel-posix-timersc-code-clean-up-checkpatch-fixes.patch
-* input-route-kbd-leds-through-the-generic-leds-layer.patch
-* input-route-kbd-leds-through-the-generic-leds-layer-fix.patch
-* fs-ext4-fsyncc-generic_file_fsync-call-based-on-barrier-flag.patch
-* ocfs2-do-not-write-error-flag-to-user-structure-we-cannot-copy-from-to.patch
-* ocfs2-o2net-set-tcp-user-timeout-to-max-value.patch
-* ocfs2-quorum-add-a-log-for-node-not-fenced.patch
-* o2dlm-fix-null-pointer-dereference-in-o2dlm_blocking_ast_wrapper.patch
-* o2dlm-fix-null-pointer-dereference-in-o2dlm_blocking_ast_wrapper-checkpatch-fixes.patch
-* ocfs2-free-inode-when-i_count-becomes-zero.patch
-* ocfs2-o2net-dont-shutdown-connection-when-idle-timeout.patch
-* ocfs2-call-ocfs2_journal_access_di-before-ocfs2_journal_dirty-in-ocfs2_write_end_nolock.patch
-* ocfs2-avoid-access-invalid-address-when-read-o2dlm-debug-messages.patch
-* ocfs2-dlm-fix-race-between-dispatched_work-and-dlm_lockres_grab_inflight_worker.patch
-* ocfs2-reflink-fix-slow-unlink-for-refcounted-file.patch
-* ocfs2-fix-journal-commit-deadlock.patch
-* bio-integrity-remove-the-needless-fail-handle-of-bip_slab-creating.patch
-* block-restore-proc-partitions-to-not-display-non-partitionable-removable-devices.patch
-  mm.patch
-* fix-checkpatch-errors-for-mm-mmapc.patch
-* memory-hotplug-add-sysfs-zones_online_to-attribute.patch
-* memory-hotplug-add-sysfs-zones_online_to-attribute-fix.patch
-* vmstat-on-demand-vmstat-workers-v8.patch
-* vmstat-on-demand-vmstat-workers-v8-fix.patch
-* vmstat-on-demand-vmstat-workers-v8-do-not-open-code-alloc_cpumask_var.patch
-* vmstat-on-demand-vmstat-workers-v8-fix-2.patch
-* mm-hugetlb-take-refcount-under-page-table-lock-in-follow_huge_pmd.patch
-* mm-hugetlb-take-refcount-under-page-table-lock-in-follow_huge_pmd-fix.patch
-* mm-hugetlb-use-get_page_unless_zero-in-hugetlb_fault.patch
-* mm-hugetlb-add-migration-entry-check-in-hugetlb_change_protection.patch
-* mm-hugetlb-remove-unused-argument-of-follow_huge_pmdpud.patch
-* mm-introduce-do_shared_fault-and-drop-do_fault-fix-fix.patch
-* mm-compactionc-isolate_freepages_block-small-tuneup.patch
-* fs-mpagec-forgotten-write_sync-in-case-of-data-integrity-write.patch
-* m68k-call-find_vma-with-the-mmap_sem-held-in-sys_cacheflush.patch
-* m68k-call-find_vma-with-the-mmap_sem-held-in-sys_cacheflush-v2.patch
-* do_shared_fault-check-that-mmap_sem-is-held.patch
-* include-kernelh-rewrite-min3-max3-and-clamp-using-min-and-max.patch
-* include-kernelh-rewrite-min3-max3-and-clamp-using-min-and-max-fix.patch
-* drivers-misc-ti-st-st_corec-fix-null-dereference-on-protocol-type-check.patch
-* lib-vsprintf-add-%pt-format-specifier.patch
-* maintainers-assing-systemace-driver-to-xilinx.patch
-* drivers-video-backlight-backlightc-remove-backlight-sysfs-uevent.patch
-* mm-utilc-add-kstrimdup.patch
-* lib-add-crc64-ecma-module.patch
-* hfsplus-fix-longname-handling.patch
-* kexec-create-a-new-config-option-config_kexec_file-for-new-syscall.patch
-* kexec-remove-config_kexec-dependency-on-crypto.patch
-* ipc-always-handle-a-new-value-of-auto_msgmni.patch
-  linux-next.patch
-* drivers-gpio-gpio-zevioc-fix-build.patch
-* x86-vdso-fix-vdso2cs-special_pages-error-checking.patch
-* drivers-net-irda-donauboe-convert-to-module_pci_driver.patch
-* include-linux-remove-strict_strto-definitions.patch
-* mm-replace-remap_file_pages-syscall-with-emulation.patch
-* fat-add-i_disksize-to-represent-uninitialized-size-v4.patch
-* fat-add-fat_fallocate-operation-v4.patch
-* fat-zero-out-seek-range-on-_fat_get_block-v4.patch
-* fat-fallback-to-buffered-write-in-case-of-fallocated-region-on-direct-io-v4.patch
-* fat-permit-to-return-phy-block-number-by-fibmap-in-fallocated-region-v4.patch
-* documentation-filesystems-vfattxt-update-the-limitation-for-fat-fallocate-v4.patch
-* w1-call-put_device-if-device_register-fails.patch
-* mm-add-strictlimit-knob-v2.patch
-  debugging-keep-track-of-page-owners.patch
-  page-owners-correct-page-order-when-to-free-page.patch
-  make-sure-nobodys-leaking-resources.patch
-  journal_add_journal_head-debug.patch
-  journal_add_journal_head-debug-fix.patch
-  releasing-resources-with-children.patch
-  make-frame_pointer-default=y.patch
-  kernel-forkc-export-kernel_thread-to-modules.patch
-  mutex-subsystem-synchro-test-module.patch
-  slab-leaks3-default-y.patch
-  put_bh-debug.patch
-  add-debugging-aid-for-memory-initialisation-problems.patch
-  workaround-for-a-pci-restoring-bug.patch
-  single_open-seq_release-leak-diagnostics.patch
+That's an overkill. We use ~80 opcodes out of 256.
+There is plenty of room. I see no reason to switch to 16-bit opcodes
+until we get even close to half of u8 space.
+It feels that we're starting to bikeshed.
