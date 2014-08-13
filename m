@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836AbaHMOcU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:32:20 -0400
-Received: from imap.thunk.org ([74.207.234.97]:58385 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429AbaHMOcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:32:18 -0400
-Date: Wed, 13 Aug 2014 10:32:09 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
-Subject: Re: [PATCH v5 0/5] random,x86,kvm: Rework arch RNG seeds and get
- some from kvm
-Message-ID: <20140813143209.GD6437@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	kvm list <kvm@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
-	Daniel Borkmann <dborkman@redhat.com>,
-	Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-	Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-	Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-	Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
-References: <cover.1406177531.git.luto@amacapital.net>
- <CALCETrXtLf3ZFtyrbwj29C=t3PcTxRT2AJWZCUHdKC3AYyUVAA@mail.gmail.com>
- <20140812191723.GI12871@thunk.org>
- <CALCETrVmviT=upxHfPfmLy2aUOKdCuCbNg9WZQcx6f=8T8vv=g@mail.gmail.com>
- <53EB1859.6030800@zytor.com>
+	id S1753023AbaHMOcv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:32:51 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41608 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752727AbaHMOct (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 10:32:49 -0400
+Date: Wed, 13 Aug 2014 07:32:47 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        linux-arm-msm@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/6] pinctrl: Add documentation for SPMI PMIC pinctrl
+ driver bindings
+Message-ID: <20140813143247.GE32301@codeaurora.org>
+References: <1407771634-14946-1-git-send-email-iivanov@mm-sol.com>
+ <1407771634-14946-4-git-send-email-iivanov@mm-sol.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53EB1859.6030800@zytor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1407771634-14946-4-git-send-email-iivanov@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 12:48:41AM -0700, H. Peter Anvin wrote:
-> The proposed arch_get_rng_seed() is not really what it claims to be; it
-> most definitely does not produce seed-grade randomness, instead it seems
-> to be an arch function for best-effort initialization of the entropy
-> pools -- which is fine, it is just something quite different.
+On 08/11, Ivan T. Ivanov wrote:
+> diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,pmic-mpp.txt b/Documentation/devicetree/bindings/pinctrl/qcom,pmic-mpp.txt
+> new file mode 100644
+> index 0000000..0a64567
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pinctrl/qcom,pmic-mpp.txt
+> @@ -0,0 +1,179 @@
+> +Qualcomm PMIC Multi-Purpose Pin (MPP) block
+> +
+> +This binding describes the MPP block(s) found in the 8xxx series of pmics from
+> +Qualcomm.
+> +
+> +- compatible:
+> +	Usage: required
+> +	Value type: <string>
+> +	Definition: must be one of:
+> +		    "qcom,pm8841-mpp"
+> +		    "qcom,pm8941-mpp"
+> +		    "qcom,pma8084-mpp"
+> +
+> +- reg:
+> +	Usage: required
+> +	Value type: <u32>
+> +	Definition: Register base of the gpio block
 
-Without getting into an argument about which definition of "seed" is
-correct --- it's certainly confusing and different form the RDSEED
-usage of the word "seed".
+MPP?
 
-Do we expect that anyone else besides arch_get_rnd_seed() would
-actually want to use it?  I'd argue no; we want the rest of the kernel
-to either use get_random_bytes() or prandom_u32().  Given that, maybe
-we should just call it arch_random_init(), and expect that the only
-user of this interface would be drivers/char/random.c?
+> +
+> +- interrupts:
+> +	Usage: required
+> +	Value type: <prop-encoded-array>
+> +	Definition: Must contain an array of encoded interrupt specifiers for
+> +		    each available gpio
 
-					- Ted
+MPP? Maybe gpio makes sense.
+
+> +
+> +- gpio-controller:
+> +	Usage: required
+> +	Value type: <none>
+> +	Definition: Mark the device node as a GPIO controller
+> +
+> +- #gpio-cells:
+> +	Usage: required
+> +	Value type: <u32>
+> +	Definition: Must be 2;
+> +		    the first cell will be used to define gpio number and the
+> +		    second denotes the flags for this gpio
+> +
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
