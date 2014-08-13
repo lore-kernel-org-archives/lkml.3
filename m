@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbaHMR6X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:58:23 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:58470 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913AbaHMR6V (ORCPT
+	id S1753543AbaHMSA2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 14:00:28 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:57976 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516AbaHMSA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 13:58:21 -0400
-Date: Wed, 13 Aug 2014 10:58:16 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] watchdog: xilinx: Remove .owner field for driver
-Message-ID: <20140813175816.GA16662@roeck-us.net>
-References: <e8e4f914035bfd055525e224da9d3e62e70edb1b.1407930684.git.michal.simek@xilinx.com>
+	Wed, 13 Aug 2014 14:00:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e8e4f914035bfd055525e224da9d3e62e70edb1b.1407930684.git.michal.simek@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALCETrVDJHOu7AFZqeGppxXykRhdG8qwwifpXcXVVr=argwoiQ@mail.gmail.com>
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+	<063D6719AE5E284EB5DD2968C1650D6D174760F3@AcuExch.aculab.com>
+	<CAMEtUuyULyzVb1nkJn_Tj_aKjokcBQaw_EnWBdDvtvf9iV7uXA@mail.gmail.com>
+	<CALCETrVDJHOu7AFZqeGppxXykRhdG8qwwifpXcXVVr=argwoiQ@mail.gmail.com>
+Date: Wed, 13 Aug 2014 11:00:24 -0700
+Message-ID: <CAMEtUuxxEvQWHKTrTDazd3RaeYC1_-_CvAyL+GFpMVDKBPi32A@mail.gmail.com>
+Subject: Re: [PATCH RFC v4 net-next 00/26] BPF syscall, maps, verifier,
+ samples, llvm
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: David Laight <David.Laight@aculab.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 01:51:28PM +0200, Michal Simek wrote:
-> There is no need to init .owner field.
-> 
-> Based on the patch from Peter Griffin <peter.griffin@linaro.org>
-> "mmc: remove .owner field for drivers using module_platform_driver"
-> 
-> This patch removes the superflous .owner field for drivers which
-> use the module_platform_driver API, as this is overriden in
-> platform_driver_register anyway."
-> 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+On Wed, Aug 13, 2014 at 10:40 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> But don't you need some kind of detection anyway to handle the case
+> where something jumps to the middle of the "load 64-bit immediate"?  I
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-
-Guenter
+added few test cases to test_verifier to see that this case is caught
+and it looks ok, but you got me worried. May be few more checks needed.
+Thanks!
