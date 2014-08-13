@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651AbaHMMtl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 08:49:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45679 "EHLO mx1.redhat.com"
+	id S1751852AbaHMM7y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 08:59:54 -0400
+Received: from purkki.adurom.net ([80.68.90.206]:54028 "EHLO purkki.adurom.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757AbaHMMtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 08:49:40 -0400
-Date: Wed, 13 Aug 2014 14:49:25 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCHSET 00/13] perf tools: Fix vmlinux search path
- initialization
-Message-ID: <20140813124925.GF2370@krava.brq.redhat.com>
-References: <1407825645-24586-1-git-send-email-namhyung@kernel.org>
+	id S1750751AbaHMM7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 08:59:52 -0400
+From: Kalle Valo <kvalo@adurom.com>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: Simon Kelley <simon@thekelleys.org.uk>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] drivers/net/wireless: Remove typedef local_info_t
+References: <20140813091713.GA2995@himangi-Dell>
+Date: Wed, 13 Aug 2014 15:59:49 +0300
+In-Reply-To: <20140813091713.GA2995@himangi-Dell> (Himangi Saraogi's message
+	of "Wed, 13 Aug 2014 14:47:13 +0530")
+Message-ID: <87egwka6ka.fsf@purkki.adurom.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407825645-24586-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 03:40:32PM +0900, Namhyung Kim wrote:
+Himangi Saraogi <himangi774@gmail.com> writes:
 
-SNIP
+> The Linux kernel coding style guidelines suggest not using typedefs
+> for structure types. This patch gets rid of the typedef for
+> local_info_t. Also, the name of the struct is changed to drop the _t,
+> to make the name look less typedef-like.
 
-> Thanks,
-> Namhyung
-> 
-> 
-> Namhyung Kim (13):
->   perf script: Fix possible memory leaks
->   perf tools: Fix a memory leak in vmlinux_path__init()
->   perf annotate: Move session handling out of __cmd_annotate()
->   perf buildid-cache: Move session handling into cmd_buildid_cache()
->   perf inject: Move session handling out of __cmd_inject()
->   perf kmem: Move session handling out of __cmd_kmem()
->   perf kvm: Move call to symbol__init() after creating session
->   perf lock: Move call to symbol__init() after creating session
->   perf sched: Move call to symbol__init() after creating session
->   perf script: Move call to symbol__init() after creating session
->   perf timechart: Move call to symbol__init() after creating session
->   perf trace: Move call to symbol__init() after creating session
->   perf tools: Check recorded kernel version when finding vmlinux
+[...]
 
-apart from that issue found by Adrian
+>
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> ---
+>  drivers/net/wireless/atmel_cs.c | 22 +++++++++++-----------
 
-Acked-by: Jiri Olsa <jolsa@kernel.org>
+You should prefix the patch with "atmel_cs:", not
+"drivers/net/wireless".
 
-thanks,
-jirka
+-- 
+Kalle Valo
