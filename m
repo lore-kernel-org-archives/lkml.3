@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819AbaHMRI1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 13:08:27 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:41930 "EHLO smtp.outflux.net"
+	id S1753648AbaHMRJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 13:09:27 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:35254 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753658AbaHMRHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 13:07:34 -0400
+	id S1753069AbaHMRJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 13:09:25 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Rabin Vincent <rabin@rab.in>,
+Cc: Kees Cook <keescook@chromium.org>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
         Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
         Leif Lindholm <leif.lindholm@linaro.org>,
         Stephen Boyd <sboyd@codeaurora.org>, Mark Salter <msalter@redhat.com>,
-        Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Rabin Vincent <rabin@rab.in>, Liu hua <sdu.liu@huawei.com>,
         Nicolas Pitre <nicolas.pitre@linaro.org>,
         Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
         Jason Wessel <jason.wessel@windriver.com>,
@@ -21,9 +21,9 @@ Cc: Kees Cook <keescook@chromium.org>, Rabin Vincent <rabin@rab.in>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org
-Subject: [PATCH v4 4/8] arm: use fixmap for text patching when text is RO
-Date: Wed, 13 Aug 2014 10:06:29 -0700
-Message-Id: <1407949593-16121-5-git-send-email-keescook@chromium.org>
+Subject: [PATCH v4 5/8] ARM: kexec: Make .text R/W in machine_kexec
+Date: Wed, 13 Aug 2014 10:06:30 -0700
+Message-Id: <1407949593-16121-6-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1407949593-16121-1-git-send-email-keescook@chromium.org>
 References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
@@ -32,192 +32,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin@rab.in>
+From: Nikolay Borisov <Nikolay.Borisov@arm.com>
 
-Use fixmaps for text patching when the kernel text is read-only,
-inspired by x86.  This makes jump labels and kprobes work with the
-currently available CONFIG_DEBUG_SET_MODULE_RONX and the upcoming
-CONFIG_DEBUG_RODATA options.
+With the introduction of Kees Cook's patch to make the kernel .text
+read-only the existing method by which kexec works got broken since it
+directly pokes some values in the template code, which resides in the
+.text section.
 
-Signed-off-by: Rabin Vincent <rabin@rab.in>
-[kees: fixed up for merge with "arm: use generic fixmap.h"]
-[kees: added parse acquire/release annotations to pass C=1 builds]
+The current patch changes the way those values are inserted so that poking
+.text section occurs only in machine_kexec (e.g when we are about to nuke
+the old kernel and are beyond the point of return). This allows to use
+set_kernel_text_rw() to directly patch the values in the .text section.
+
+I had already sent a patch which achieved this but it was significantly
+more complicated, so this is a cleaner/straight-forward approach.
+
+Signed-off-by: Nikolay Borisov <Nikolay.Borisov@arm.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+[kees: collapsed kexec_boot_atags (will.daecon)]
+[kees: for bisectability, moved set_kernel_text_rw() to RODATA patch]
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/arm/include/asm/fixmap.h |  4 +++
- arch/arm/kernel/jump_label.c  |  2 +-
- arch/arm/kernel/patch.c       | 79 +++++++++++++++++++++++++++++++++++++++----
- arch/arm/kernel/patch.h       | 12 ++++++-
- 4 files changed, 88 insertions(+), 9 deletions(-)
+ arch/arm/kernel/machine_kexec.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-index 714606f70425..0415eae1df27 100644
---- a/arch/arm/include/asm/fixmap.h
-+++ b/arch/arm/include/asm/fixmap.h
-@@ -11,6 +11,10 @@ enum fixed_addresses {
- 	FIX_KMAP_BEGIN,
- 	FIX_KMAP_END = FIX_KMAP_BEGIN + (KM_TYPE_NR * NR_CPUS) - 1,
+diff --git a/arch/arm/kernel/machine_kexec.c b/arch/arm/kernel/machine_kexec.c
+index 8cf0996aa1a8..8f75250cbe30 100644
+--- a/arch/arm/kernel/machine_kexec.c
++++ b/arch/arm/kernel/machine_kexec.c
+@@ -29,6 +29,7 @@ extern unsigned long kexec_boot_atags;
  
-+	/* Support writing RO kernel text via kprobes, jump labels, etc. */
-+	FIX_TEXT_POKE0,
-+	FIX_TEXT_POKE1,
-+
- 	__end_of_fixed_addresses
- };
+ static atomic_t waiting_for_crash_ipi;
  
-diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
-index 4ce4f789446d..afeeb9ea6f43 100644
---- a/arch/arm/kernel/jump_label.c
-+++ b/arch/arm/kernel/jump_label.c
-@@ -19,7 +19,7 @@ static void __arch_jump_label_transform(struct jump_entry *entry,
- 		insn = arm_gen_nop();
++static unsigned long dt_mem;
+ /*
+  * Provide a dummy crash_notes definition while crash dump arrives to arm.
+  * This prevents breakage of crash_notes attribute in kernel/ksysfs.c.
+@@ -64,7 +65,7 @@ int machine_kexec_prepare(struct kimage *image)
+ 			return err;
  
- 	if (is_static)
--		__patch_text(addr, insn);
-+		__patch_text_early(addr, insn);
- 	else
- 		patch_text(addr, insn);
- }
-diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
-index 07314af47733..a1dce690446a 100644
---- a/arch/arm/kernel/patch.c
-+++ b/arch/arm/kernel/patch.c
-@@ -1,8 +1,11 @@
- #include <linux/kernel.h>
-+#include <linux/spinlock.h>
- #include <linux/kprobes.h>
-+#include <linux/mm.h>
- #include <linux/stop_machine.h>
- 
- #include <asm/cacheflush.h>
-+#include <asm/fixmap.h>
- #include <asm/smp_plat.h>
- #include <asm/opcodes.h>
- 
-@@ -13,21 +16,77 @@ struct patch {
- 	unsigned int insn;
- };
- 
--void __kprobes __patch_text(void *addr, unsigned int insn)
-+static DEFINE_SPINLOCK(patch_lock);
-+
-+static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
-+	__acquires(&patch_lock)
-+{
-+	unsigned int uintaddr = (uintptr_t) addr;
-+	bool module = !core_kernel_text(uintaddr);
-+	struct page *page;
-+
-+	if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX))
-+		page = vmalloc_to_page(addr);
-+	else if (!module && IS_ENABLED(CONFIG_DEBUG_RODATA))
-+		page = virt_to_page(addr);
-+	else
-+		return addr;
-+
-+	if (flags)
-+		spin_lock_irqsave(&patch_lock, *flags);
-+	else
-+		__acquire(&patch_lock);
-+
-+	set_fixmap(fixmap, page_to_phys(page));
-+
-+	return (void *) (__fix_to_virt(fixmap) + (uintaddr & ~PAGE_MASK));
-+}
-+
-+static void __kprobes patch_unmap(int fixmap, unsigned long *flags)
-+	__releases(&patch_lock)
-+{
-+	clear_fixmap(fixmap);
-+
-+	if (flags)
-+		spin_unlock_irqrestore(&patch_lock, *flags);
-+	else
-+		__release(&patch_lock);
-+}
-+
-+void __kprobes __patch_text_real(void *addr, unsigned int insn, bool remap)
- {
- 	bool thumb2 = IS_ENABLED(CONFIG_THUMB2_KERNEL);
-+	unsigned int uintaddr = (uintptr_t) addr;
-+	bool twopage = false;
-+	unsigned long flags;
-+	void *waddr = addr;
- 	int size;
- 
-+	if (remap)
-+		waddr = patch_map(addr, FIX_TEXT_POKE0, &flags);
-+	else
-+		__acquire(&patch_lock);
-+
- 	if (thumb2 && __opcode_is_thumb16(insn)) {
--		*(u16 *)addr = __opcode_to_mem_thumb16(insn);
-+		*(u16 *)waddr = __opcode_to_mem_thumb16(insn);
- 		size = sizeof(u16);
--	} else if (thumb2 && ((uintptr_t)addr & 2)) {
-+	} else if (thumb2 && (uintaddr & 2)) {
- 		u16 first = __opcode_thumb32_first(insn);
- 		u16 second = __opcode_thumb32_second(insn);
--		u16 *addrh = addr;
-+		u16 *addrh0 = waddr;
-+		u16 *addrh1 = waddr + 2;
-+
-+		twopage = (uintaddr & ~PAGE_MASK) == PAGE_SIZE - 2;
-+		if (twopage && remap)
-+			addrh1 = patch_map(addr + 2, FIX_TEXT_POKE1, NULL);
- 
--		addrh[0] = __opcode_to_mem_thumb16(first);
--		addrh[1] = __opcode_to_mem_thumb16(second);
-+		*addrh0 = __opcode_to_mem_thumb16(first);
-+		*addrh1 = __opcode_to_mem_thumb16(second);
-+
-+		if (twopage && addrh1 != addr + 2) {
-+			flush_kernel_vmap_range(addrh1, 2);
-+			patch_unmap(FIX_TEXT_POKE1, NULL);
-+		}
- 
- 		size = sizeof(u32);
- 	} else {
-@@ -36,10 +95,16 @@ void __kprobes __patch_text(void *addr, unsigned int insn)
- 		else
- 			insn = __opcode_to_mem_arm(insn);
- 
--		*(u32 *)addr = insn;
-+		*(u32 *)waddr = insn;
- 		size = sizeof(u32);
+ 		if (be32_to_cpu(header) == OF_DT_HEADER)
+-			kexec_boot_atags = current_segment->mem;
++			dt_mem = current_segment->mem;
  	}
- 
-+	if (waddr != addr) {
-+		flush_kernel_vmap_range(waddr, twopage ? size / 2 : size);
-+		patch_unmap(FIX_TEXT_POKE0, &flags);
-+	} else
-+		__release(&patch_lock);
-+
- 	flush_icache_range((uintptr_t)(addr),
- 			   (uintptr_t)(addr) + size);
+ 	return 0;
  }
-diff --git a/arch/arm/kernel/patch.h b/arch/arm/kernel/patch.h
-index b4731f2dac38..77e054c2f6cd 100644
---- a/arch/arm/kernel/patch.h
-+++ b/arch/arm/kernel/patch.h
-@@ -2,6 +2,16 @@
- #define _ARM_KERNEL_PATCH_H
+@@ -166,9 +167,8 @@ void machine_kexec(struct kimage *image)
+ 	kexec_start_address = image->start;
+ 	kexec_indirection_page = page_list;
+ 	kexec_mach_type = machine_arch_type;
+-	if (!kexec_boot_atags)
+-		kexec_boot_atags = image->start - KEXEC_ARM_ZIMAGE_OFFSET + KEXEC_ARM_ATAGS_OFFSET;
+-
++	kexec_boot_atags = dt_mem ?: image->start - KEXEC_ARM_ZIMAGE_OFFSET
++				     + KEXEC_ARM_ATAGS_OFFSET;
  
- void patch_text(void *addr, unsigned int insn);
--void __patch_text(void *addr, unsigned int insn);
-+void __patch_text_real(void *addr, unsigned int insn, bool remap);
-+
-+static inline void __patch_text(void *addr, unsigned int insn)
-+{
-+	__patch_text_real(addr, insn, true);
-+}
-+
-+static inline void __patch_text_early(void *addr, unsigned int insn)
-+{
-+	__patch_text_real(addr, insn, false);
-+}
- 
- #endif
+ 	/* copy our kernel relocation code to the control code page */
+ 	reboot_entry = fncpy(reboot_code_buffer,
 -- 
 1.9.1
 
