@@ -1,103 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663AbaHMIgX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:36:23 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:45150 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaHMIgU convert rfc822-to-8bit (ORCPT
+	id S1751714AbaHMIhZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:37:25 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:39987 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405AbaHMIhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:36:20 -0400
+	Wed, 13 Aug 2014 04:37:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <53C7E45E.2060102@neotion.com>
-References: <53C7E45E.2060102@neotion.com>
-Date: Wed, 13 Aug 2014 10:36:19 +0200
-Message-ID: <CAPDyKFoRpQBHGGCMPvEKdeVGjTO-rnyYVostLZGCV3dudD1rmA@mail.gmail.com>
-Subject: Re: [PATCH] mmc: check EXT_CSD_PARTITION_SETTING_COMPLETED before
- creating partitions
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: =?UTF-8?B?R3LDqWdvcnkgU291dGFkw6k=?= <gsoutade@neotion.com>
-Cc: Chris Ball <chris@printf.net>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <53EB1859.6030800@zytor.com>
+References: <cover.1406177531.git.luto@amacapital.net> <CALCETrXtLf3ZFtyrbwj29C=t3PcTxRT2AJWZCUHdKC3AYyUVAA@mail.gmail.com>
+ <20140812191723.GI12871@thunk.org> <CALCETrVmviT=upxHfPfmLy2aUOKdCuCbNg9WZQcx6f=8T8vv=g@mail.gmail.com>
+ <53EB1859.6030800@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 13 Aug 2014 01:37:01 -0700
+Message-ID: <CALCETrVA3Eefbhfu_pO28fFPLCZvMBZHj=vpGifkUcBPa0Np1w@mail.gmail.com>
+Subject: Re: [PATCH v5 0/5] random,x86,kvm: Rework arch RNG seeds and get some
+ from kvm
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, X86 ML <x86@kernel.org>,
+        Bandan Das <bsd@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm list <kvm@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Honig <ahonig@google.com>, Kees Cook <keescook@chromium.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 July 2014 16:57, Grégory Soutadé <gsoutade@neotion.com> wrote:
-> Create MMC general purpose partitions only if
-> EXT_CSD_PARTITION_SETTING_COMPLETED bit is set.
-> Some tools may set general purpose partition size(s) but fail or stop
-> without finalize.
-> Another case is to set invalid partition size(s).
+On Aug 13, 2014 12:48 AM, "H. Peter Anvin" <hpa@zytor.com> wrote:
 >
-> Signed-off-by: Grégory Soutadé <gsoutade@neotion.com>
-> ---
->  drivers/mmc/core/mmc.c  |   15 +++++++++++----
->  include/linux/mmc/mmc.h |    2 ++
->  2 files changed, 13 insertions(+), 4 deletions(-)
+> On 08/12/2014 12:22 PM, Andy Lutomirski wrote:
+> > On Tue, Aug 12, 2014 at 12:17 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> >> On Tue, Aug 12, 2014 at 12:11:29PM -0700, Andy Lutomirski wrote:
+> >>>
+> >>> What's the status of this series?  I assume that it's too late for at
+> >>> least patches 2-5 to make it into 3.17.
+> >>
+> >> Which tree were you hoping this patch series to go through?  I was
+> >> assuming it would go through the x86 tree since the bulk of the
+> >> changes in the x86 subsystem (hence my Acked-by).
+> >
+> > There's some argument that patch 1 should go through the kvm tree.
+> > There's no real need for patch 1 and 2-5 to end up in the same kernel
+> > release, either.
+> >
+> >>
+> >> IIRC, Peter had some concerns, and I don't remember if they were all
+> >> addressed.  Peter?
+> >>
+> >
+> > I don't know.  I rewrite one thing he didn't like and undid the other,
+> > but there's plenty of opportunity for this version to be problematic, too.
+> >
 >
-> From commit b6603fe574af289dbe9eb9fb4c540bca04f5a053 in master linux tree.
+> Sorry, I have been heads down on the current merge window.  I will look
+> at this for 3.18, presumably after Kernel Summit.
 >
-> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-> index 793c6f7..b9fe211 100644
-> --- a/drivers/mmc/core/mmc.c
-> +++ b/drivers/mmc/core/mmc.c
-> @@ -471,10 +471,17 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
->                                 ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3];
->                                 part_size *= (size_t)(hc_erase_grp_sz *
->                                         hc_wp_grp_sz);
-> -                               mmc_part_add(card, part_size << 19,
-> -                                       EXT_CSD_PART_CONFIG_ACC_GP0 + idx,
-> -                                       "gp%d", idx, false,
-> -                                       MMC_BLK_DATA_AREA_GP);
-> +                               if (ext_csd[EXT_CSD_PARTITION_SETTING_COMPLETED] &
-> +                               EXT_CSD_PART_SETTING_COMPLETED) {
+> The proposed arch_get_rng_seed() is not really what it claims to be; it
+> most definitely does not produce seed-grade randomness, instead it seems
+> to be an arch function for best-effort initialization of the entropy
+> pools -- which is fine, it is just something quite different.
 
-Some minor comments here.
+Fair enough.  I meant "seed" as in something that initialized a PRNG
+(think srand), not "seed" as in a
+promised-to-be-cryptographically-secure seed for a DRBG.
 
-I think you could move this if statement up and into the previous "if"
-where we check for "ext_csd[EXT_CSD_PARTITION_SUPPORT] &
-EXT_CSD_PART_SUPPORT_PART_EN".
+I can rename it, update the comment, or otherwise tweak it to make the
+intent clearer.
 
-Additionally, please run checkpatch.
-
-Kind regards
-Uffe
-
-> +                                       mmc_part_add(card, part_size << 19,
-> +                                               EXT_CSD_PART_CONFIG_ACC_GP0 + idx,
-> +                                               "gp%d", idx, false,
-> +                                               MMC_BLK_DATA_AREA_GP);
-> +                               } else {
-> +                                       pr_warn("%s: has partition size defined, but setting is not complete\n",
-> +                                               mmc_hostname(card->host));
-> +                                       break;
-> +                               }
->                         }
->                 }
->                 card->ext_csd.sec_trim_mult =
-> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-> index 64ec963..78753bc 100644
-> --- a/include/linux/mmc/mmc.h
-> +++ b/include/linux/mmc/mmc.h
-> @@ -281,6 +281,7 @@ struct _mmc_csd {
->  #define EXT_CSD_EXP_EVENTS_CTRL                56      /* R/W, 2 bytes */
->  #define EXT_CSD_DATA_SECTOR_SIZE       61      /* R */
->  #define EXT_CSD_GP_SIZE_MULT           143     /* R/W */
-> +#define EXT_CSD_PARTITION_SETTING_COMPLETED 155        /* R/W */
->  #define EXT_CSD_PARTITION_ATTRIBUTE    156     /* R/W */
->  #define EXT_CSD_PARTITION_SUPPORT      160     /* RO */
->  #define EXT_CSD_HPI_MGMT               161     /* R/W */
-> @@ -349,6 +350,7 @@ struct _mmc_csd {
->  #define EXT_CSD_PART_CONFIG_ACC_RPMB   (0x3)
->  #define EXT_CSD_PART_CONFIG_ACC_GP0    (0x4)
 >
-> +#define EXT_CSD_PART_SETTING_COMPLETED (0x1)
->  #define EXT_CSD_PART_SUPPORT_PART_EN   (0x1)
+> I want to look over it more carefully before acking it, though.
+
+It would also be nice for someone with a Haswell box (and an RDSEED
+box) to test it.  I have neither.
+
 >
->  #define EXT_CSD_CMD_SET_NORMAL         (1<<0)
-> --
-> 1.7.0.4
+> Andy, are you going to be in Chicago?
+
+Yes.
+
+>
+>         -hpa
+>
