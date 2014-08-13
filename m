@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564AbaHMWtU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 18:49:20 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54958 "EHLO mail.kernel.org"
+	id S1753629AbaHMWta (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 18:49:30 -0400
+Received: from mail.kernel.org ([198.145.19.201]:55007 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753528AbaHMWtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 18:49:17 -0400
+	id S1752102AbaHMWt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 18:49:27 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, Naohiro Aota <naota@elisp.net>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/41] perf probe: Fix --del option to delete events only with uprobe events
-Date: Wed, 13 Aug 2014 19:47:54 -0300
-Message-Id: <1407970107-24540-9-git-send-email-acme@kernel.org>
+Subject: [PATCH 11/41] perf tools: Fix one of the probe events to exclude kernel
+Date: Wed, 13 Aug 2014 19:47:57 -0300
+Message-Id: <1407970107-24540-12-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1407970107-24540-1-git-send-email-acme@kernel.org>
 References: <1407970107-24540-1-git-send-email-acme@kernel.org>
@@ -24,119 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Current perf probe --del doesn't work if only CONFIG_UPROBE_EVENTS=y
-because it aborts when it fails to open kprobe_events file before
-checking uprobe_events file.
+When probing the kernel API the kernel should be excluded otherwise the
+probe will fail for users with insufficient privilege to profile the
+kernel.
 
-This fixes --del option to delete dynamic events if it can open either
-kprobe_events or uprobe_events. Only if it failed to open both of them,
-it shows an error message and aborts.
-
-Without this patch, if we run perf probe -d on the kernel configured
-with CONFIG_KPROBE_EVENTS=n and CONFIG_UPROBE_EVENTS=y,
-
-  # perf probe -d \*
-  kprobe_events file does not exist - please rebuild kernel with CONFIG_KPROBE_EVENTS.
-    Error: Failed to delete events.
-
-With this patch,
-
-  # perf probe -d \*
-  Removed event: probe_perf:alloc_event
-
-Changes in v2:
- - Use strerror_r instead of strerror.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Naohiro Aota <naota@elisp.net>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Jiri Olsa <jolsa@kernel.org>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140813161250.26440.24028.stgit@kbuild-fedora.novalocal
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1407855871-15024-3-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-event.c | 49 +++++++++++++++++++++++--------------------
- 1 file changed, 26 insertions(+), 23 deletions(-)
+ tools/perf/util/record.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 50aa7f05ceb1..443225cb62f7 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1803,6 +1803,23 @@ static void print_open_warning(int err, bool is_kprobe)
- 			   strerror_r(-err, sbuf, sizeof(sbuf)));
- }
+diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
+index fe8079edbdc1..58267a85705f 100644
+--- a/tools/perf/util/record.c
++++ b/tools/perf/util/record.c
+@@ -47,7 +47,7 @@ out_delete:
  
-+static void print_both_open_warning(int kerr, int uerr)
-+{
-+	/* Both kprobes and uprobes are disabled, warn it. */
-+	if (kerr == -ENOTSUP && uerr == -ENOTSUP)
-+		pr_warning("Debugfs is not mounted.\n");
-+	else if (kerr == -ENOENT && uerr == -ENOENT)
-+		pr_warning("Please rebuild kernel with CONFIG_KPROBE_EVENTS "
-+			   "or/and CONFIG_UPROBE_EVENTS.\n");
-+	else {
-+		char sbuf[128];
-+		pr_warning("Failed to open kprobe events: %s.\n",
-+			   strerror_r(-kerr, sbuf, sizeof(sbuf)));
-+		pr_warning("Failed to open uprobe events: %s.\n",
-+			   strerror_r(-uerr, sbuf, sizeof(sbuf)));
-+	}
-+}
-+
- static int open_probe_events(const char *trace_file, bool readwrite)
+ static bool perf_probe_api(setup_probe_fn_t fn)
  {
- 	char buf[PATH_MAX];
-@@ -1960,20 +1977,7 @@ int show_perf_probe_events(void)
- 
- 	up_fd = open_uprobe_events(false);
- 	if (kp_fd < 0 && up_fd < 0) {
--		/* Both kprobes and uprobes are disabled, warn it. */
--		if (kp_fd == -ENOTSUP && up_fd == -ENOTSUP)
--			pr_warning("Debugfs is not mounted.\n");
--		else if (kp_fd == -ENOENT && up_fd == -ENOENT)
--			pr_warning("Please rebuild kernel with "
--				   "CONFIG_KPROBE_EVENTS or/and "
--				   "CONFIG_UPROBE_EVENTS.\n");
--		else {
--			char sbuf[128];
--			pr_warning("Failed to open kprobe events: %s.\n",
--				   strerror_r(-kp_fd, sbuf, sizeof(sbuf)));
--			pr_warning("Failed to open uprobe events: %s.\n",
--				   strerror_r(-up_fd, sbuf, sizeof(sbuf)));
--		}
-+		print_both_open_warning(kp_fd, up_fd);
- 		ret = kp_fd;
- 		goto out;
- 	}
-@@ -2474,19 +2478,18 @@ int del_perf_probe_events(struct strlist *dellist)
- 
- 	/* Get current event names */
- 	kfd = open_kprobe_events(true);
--	if (kfd < 0) {
--		print_open_warning(kfd, true);
--		return kfd;
--	}
-+	if (kfd >= 0)
-+		namelist = get_probe_trace_event_names(kfd, true);
- 
--	namelist = get_probe_trace_event_names(kfd, true);
- 	ufd = open_uprobe_events(true);
--
--	if (ufd < 0)
--		print_open_warning(ufd, false);
--	else
-+	if (ufd >= 0)
- 		unamelist = get_probe_trace_event_names(ufd, true);
- 
-+	if (kfd < 0 && ufd < 0) {
-+		print_both_open_warning(kfd, ufd);
-+		goto error;
-+	}
-+
- 	if (namelist == NULL && unamelist == NULL)
- 		goto error;
+-	const char *try[] = {"cycles:u", "instructions:u", "cpu-clock", NULL};
++	const char *try[] = {"cycles:u", "instructions:u", "cpu-clock:u", NULL};
+ 	struct cpu_map *cpus;
+ 	int cpu, ret, i = 0;
  
 -- 
 1.9.3
