@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaHMWuA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 18:50:00 -0400
-Received: from mail.kernel.org ([198.145.19.201]:55226 "EHLO mail.kernel.org"
+	id S1753913AbaHMWtw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 18:49:52 -0400
+Received: from mail.kernel.org ([198.145.19.201]:55148 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753810AbaHMWt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 18:49:57 -0400
+	id S1753844AbaHMWtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 18:49:49 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 18/41] perf inject: Move session handling out of __cmd_inject()
-Date: Wed, 13 Aug 2014 19:48:04 -0300
-Message-Id: <1407970107-24540-19-git-send-email-acme@kernel.org>
+Subject: [PATCH 16/41] perf annotate: Move session handling out of __cmd_annotate()
+Date: Wed, 13 Aug 2014 19:48:02 -0300
+Message-Id: <1407970107-24540-17-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1407970107-24540-1-git-send-email-acme@kernel.org>
 References: <1407970107-24540-1-git-send-email-acme@kernel.org>
@@ -40,87 +40,178 @@ Cc: Minchan Kim <minchan@kernel.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1407825645-24586-6-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1407825645-24586-4-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-inject.c | 29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+ tools/perf/builtin-annotate.c | 75 +++++++++++++++++++++++--------------------
+ 1 file changed, 40 insertions(+), 35 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index ee875cca13b1..18eaefd3cd0c 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -23,6 +23,7 @@
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 952b5ece6740..c0464dc38057 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -36,7 +36,8 @@
  
- struct perf_inject {
- 	struct perf_tool	tool;
-+	struct perf_session	*session;
- 	bool			build_ids;
- 	bool			sched_stat;
- 	const char		*input_name;
-@@ -340,12 +341,8 @@ static int perf_evsel__check_stype(struct perf_evsel *evsel,
- 
- static int __cmd_inject(struct perf_inject *inject)
+ struct perf_annotate {
+ 	struct perf_tool tool;
+-	bool	   force, use_tui, use_stdio, use_gtk;
++	struct perf_session *session;
++	bool	   use_tui, use_stdio, use_gtk;
+ 	bool	   full_paths;
+ 	bool	   print_line;
+ 	bool	   skip_missing;
+@@ -188,18 +189,9 @@ find_next:
+ static int __cmd_annotate(struct perf_annotate *ann)
  {
+ 	int ret;
 -	struct perf_session *session;
- 	int ret = -EINVAL;
++	struct perf_session *session = ann->session;
+ 	struct perf_evsel *pos;
+ 	u64 total_nr_samples;
 -	struct perf_data_file file = {
--		.path = inject->input_name,
--		.mode = PERF_DATA_MODE_READ,
+-		.path  = input_name,
+-		.mode  = PERF_DATA_MODE_READ,
+-		.force = ann->force,
 -	};
-+	struct perf_session *session = inject->session;
- 	struct perf_data_file *file_out = &inject->output;
- 
- 	signal(SIGINT, sig_handler);
-@@ -357,10 +354,6 @@ static int __cmd_inject(struct perf_inject *inject)
- 		inject->tool.tracing_data = perf_event__repipe_tracing_data;
- 	}
- 
--	session = perf_session__new(&file, true, &inject->tool);
+-
+-	session = perf_session__new(&file, false, &ann->tool);
 -	if (session == NULL)
 -		return -ENOMEM;
--
- 	if (inject->build_ids) {
- 		inject->tool.sample = perf_event__inject_buildid;
- 	} else if (inject->sched_stat) {
-@@ -396,8 +389,6 @@ static int __cmd_inject(struct perf_inject *inject)
- 		perf_session__write_header(session, session->evlist, file_out->fd, true);
+ 
+ 	machines__set_symbol_filter(&session->machines, symbol__annotate_init);
+ 
+@@ -207,22 +199,22 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 		ret = perf_session__cpu_bitmap(session, ann->cpu_list,
+ 					       ann->cpu_bitmap);
+ 		if (ret)
+-			goto out_delete;
++			goto out;
  	}
  
--	perf_session__delete(session);
--
+ 	if (!objdump_path) {
+ 		ret = perf_session_env__lookup_objdump(&session->header.env);
+ 		if (ret)
+-			goto out_delete;
++			goto out;
+ 	}
+ 
+ 	ret = perf_session__process_events(session, &ann->tool);
+ 	if (ret)
+-		goto out_delete;
++		goto out;
+ 
+ 	if (dump_trace) {
+ 		perf_session__fprintf_nr_events(session, stdout);
+-		goto out_delete;
++		goto out;
+ 	}
+ 
+ 	if (verbose > 3)
+@@ -250,8 +242,8 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 	}
+ 
+ 	if (total_nr_samples == 0) {
+-		ui__error("The %s file has no samples!\n", file.path);
+-		goto out_delete;
++		ui__error("The %s file has no samples!\n", session->file->path);
++		goto out;
+ 	}
+ 
+ 	if (use_browser == 2) {
+@@ -261,24 +253,12 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 					 "perf_gtk__show_annotations");
+ 		if (show_annotations == NULL) {
+ 			ui__error("GTK browser not found!\n");
+-			goto out_delete;
++			goto out;
+ 		}
+ 		show_annotations();
+ 	}
+ 
+-out_delete:
+-	/*
+-	 * Speed up the exit process, for large files this can
+-	 * take quite a while.
+-	 *
+-	 * XXX Enable this when using valgrind or if we ever
+-	 * librarize this command.
+-	 *
+-	 * Also experiment with obstacks to see how much speed
+-	 * up we'll get here.
+-	 *
+-	 * perf_session__delete(session);
+-	 */
++out:
  	return ret;
  }
  
-@@ -427,6 +418,11 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.mode = PERF_DATA_MODE_WRITE,
+@@ -301,6 +281,10 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			.ordering_requires_timestamps = true,
  		},
  	};
 +	struct perf_data_file file = {
-+		.mode = PERF_DATA_MODE_READ,
++		.path  = input_name,
++		.mode  = PERF_DATA_MODE_READ,
 +	};
-+	int ret;
-+
  	const struct option options[] = {
- 		OPT_BOOLEAN('b', "build-ids", &inject.build_ids,
- 			    "Inject build-ids into the output stream"),
-@@ -461,8 +457,17 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 		return -1;
- 	}
+ 	OPT_STRING('i', "input", &input_name, "file",
+ 		    "input file name"),
+@@ -308,7 +292,7 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "only consider symbols in these dsos"),
+ 	OPT_STRING('s', "symbol", &annotate.sym_hist_filter, "symbol",
+ 		    "symbol to annotate"),
+-	OPT_BOOLEAN('f', "force", &annotate.force, "don't complain, do it"),
++	OPT_BOOLEAN('f', "force", &file.force, "don't complain, do it"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show symbol address, etc)"),
+ 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
+@@ -341,6 +325,7 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "Show event group information together"),
+ 	OPT_END()
+ 	};
++	int ret;
  
-+	file.path = inject.input_name;
-+	inject.session = perf_session__new(&file, true, &inject.tool);
-+	if (inject.session == NULL)
+ 	argc = parse_options(argc, argv, options, annotate_usage, 0);
+ 
+@@ -353,11 +338,16 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	setup_browser(true);
+ 
++	annotate.session = perf_session__new(&file, false, &annotate.tool);
++	if (annotate.session == NULL)
 +		return -ENOMEM;
 +
- 	if (symbol__init() < 0)
- 		return -1;
+ 	symbol_conf.priv_size = sizeof(struct annotation);
+ 	symbol_conf.try_vmlinux_path = true;
  
--	return __cmd_inject(&inject);
-+	ret = __cmd_inject(&inject);
+-	if (symbol__init() < 0)
+-		return -1;
++	ret = symbol__init();
++	if (ret < 0)
++		goto out_delete;
+ 
+ 	if (setup_sorting() < 0)
+ 		usage_with_options(annotate_usage, options);
+@@ -373,5 +363,20 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		annotate.sym_hist_filter = argv[0];
+ 	}
+ 
+-	return __cmd_annotate(&annotate);
++	ret = __cmd_annotate(&annotate);
 +
-+	perf_session__delete(inject.session);
-+
++out_delete:
++	/*
++	 * Speed up the exit process, for large files this can
++	 * take quite a while.
++	 *
++	 * XXX Enable this when using valgrind or if we ever
++	 * librarize this command.
++	 *
++	 * Also experiment with obstacks to see how much speed
++	 * up we'll get here.
++	 *
++	 * perf_session__delete(session);
++	 */
 +	return ret;
  }
 -- 
