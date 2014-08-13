@@ -1,67 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206AbaHMJTM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:19:12 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:43610 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751722AbaHMJTL (ORCPT
+	id S1752151AbaHMJUE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:20:04 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:43938 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137AbaHMJUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:19:11 -0400
-Date: Wed, 13 Aug 2014 10:18:37 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "ksummit-discuss@lists.linuxfoundation.org" 
-	<ksummit-discuss@lists.linuxfoundation.org>,
-        "Joseph S. Myers" <joseph@codesourcery.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-discuss] (Resend) 2038 Kernel Summit Discussion Fodder
-Message-ID: <20140813091837.GA18495@arm.com>
-References: <53EAAC95.7080301@linaro.org>
- <20140813013342.GB6783@cloud>
- <CALCETrVP64FSJWyHHbm0R-2qTzN1Q5PwXh4k9+qjg1Q8bSud2w@mail.gmail.com>
+	Wed, 13 Aug 2014 05:20:02 -0400
+Date: Wed, 13 Aug 2014 14:49:56 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH] drivers/bluetooth: Remove typedef bt3c_info_t
+Message-ID: <20140813091956.GA3117@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALCETrVP64FSJWyHHbm0R-2qTzN1Q5PwXh4k9+qjg1Q8bSud2w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 02:37:11AM +0100, Andy Lutomirski wrote:
-> On Tue, Aug 12, 2014 at 6:33 PM,  <josh@joshtriplett.org> wrote:
-> > On Tue, Aug 12, 2014 at 05:08:53PM -0700, John Stultz wrote:
-> >> A more aggressive version of the previous proposal is what I’m calling the
-> >> “New Virtual-Architecture” approach, basically extending the versioning
-> >> control from the linker down into the kernel as well.  It would be adding a
-> >> new “virtual-architecture” to the kernel, not entirely unlike how x32 is
-> >> supported on x86_64 systems.  We would create entirely new ABI and
-> >> architecture name in the kernel (think something like “armllt” or
-> >> “i386llt”). We would preserve compatibility for legacy applications via
-> >> personalities, similar mechanism as the compat_ interface used to support
-> >> 32bit applications on 64bit kernels. In this case, we wouldn’t introduce
-> >> new 64 bit syscalls in the kernel, as the existing interfaces would just be
-> >> typed correctly for our new virtual architecture, but we would have
-> >> duplicate syscall interfaces via the compat interfaces. The extra
-> >> complexity would also be that we would have to support new 32bit compat
-> >> environment on 64bit systems. Userspace would be completely rebuilt to
-> >> support the new -llt architecture, and compatibility for legacy
-> >> applications would be done via the same multiarch packaging as is done now
-> >> for running 32bit applications on 64bit systems.
-> >
-> > I wonder: could we make this new architecture effectively use the
-> > signatures of the 64-bit syscalls (similar to x32), just with a 32-bit
-> > calling convention?
-> 
-> Doesn't x32 do the reverse?  It invokes *compat* syscalls using a
-> 64-bit calling convention.
+The Linux kernel coding style guidelines suggest not using typedefs
+for structure types. This patch gets rid of the typedef for
+bt3c_info_t. Also, the name of the struct is changed to drop the _t,
+to make the name look less typedef-like.
 
-Not entirely. It uses 64-bit syscalls primarily with compat only when
-sharing structures containing pointers. We are working on something
-similar for arm64 (called the ILP32 ABI).
+The following Coccinelle semantic patch detects the case:
 
+@tn@
+identifier i;
+type td;
+@@
+
+-typedef
+ struct i { ... }
+-td
+ ;
+
+@@
+type tn.td;
+identifier tn.i;
+@@
+
+-td
++ struct i
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/bluetooth/bt3c_cs.c | 27 ++++++++++++++-------------
+ 1 file changed, 14 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/bluetooth/bt3c_cs.c b/drivers/bluetooth/bt3c_cs.c
+index 1d82721..4f7e8d4 100644
+--- a/drivers/bluetooth/bt3c_cs.c
++++ b/drivers/bluetooth/bt3c_cs.c
+@@ -67,7 +67,7 @@ MODULE_FIRMWARE("BT3CPCC.bin");
+ /* ======================== Local structures ======================== */
+ 
+ 
+-typedef struct bt3c_info_t {
++struct bt3c_info {
+ 	struct pcmcia_device *p_dev;
+ 
+ 	struct hci_dev *hdev;
+@@ -80,7 +80,7 @@ typedef struct bt3c_info_t {
+ 	unsigned long rx_state;
+ 	unsigned long rx_count;
+ 	struct sk_buff *rx_skb;
+-} bt3c_info_t;
++};
+ 
+ 
+ static int bt3c_config(struct pcmcia_device *link);
+@@ -175,7 +175,7 @@ static int bt3c_write(unsigned int iobase, int fifo_size, __u8 *buf, int len)
+ }
+ 
+ 
+-static void bt3c_write_wakeup(bt3c_info_t *info)
++static void bt3c_write_wakeup(struct bt3c_info *info)
+ {
+ 	if (!info) {
+ 		BT_ERR("Unknown device");
+@@ -214,7 +214,7 @@ static void bt3c_write_wakeup(bt3c_info_t *info)
+ }
+ 
+ 
+-static void bt3c_receive(bt3c_info_t *info)
++static void bt3c_receive(struct bt3c_info *info)
+ {
+ 	unsigned int iobase;
+ 	int size = 0, avail;
+@@ -336,7 +336,7 @@ static void bt3c_receive(bt3c_info_t *info)
+ 
+ static irqreturn_t bt3c_interrupt(int irq, void *dev_inst)
+ {
+-	bt3c_info_t *info = dev_inst;
++	struct bt3c_info *info = dev_inst;
+ 	unsigned int iobase;
+ 	int iir;
+ 	irqreturn_t r = IRQ_NONE;
+@@ -388,7 +388,7 @@ static irqreturn_t bt3c_interrupt(int irq, void *dev_inst)
+ 
+ static int bt3c_hci_flush(struct hci_dev *hdev)
+ {
+-	bt3c_info_t *info = hci_get_drvdata(hdev);
++	struct bt3c_info *info = hci_get_drvdata(hdev);
+ 
+ 	/* Drop TX queue */
+ 	skb_queue_purge(&(info->txq));
+@@ -418,7 +418,7 @@ static int bt3c_hci_close(struct hci_dev *hdev)
+ 
+ static int bt3c_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
+ {
+-	bt3c_info_t *info = hci_get_drvdata(hdev);
++	struct bt3c_info *info = hci_get_drvdata(hdev);
+ 	unsigned long flags;
+ 
+ 	switch (bt_cb(skb)->pkt_type) {
+@@ -451,7 +451,8 @@ static int bt3c_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
+ /* ======================== Card services HCI interaction ======================== */
+ 
+ 
+-static int bt3c_load_firmware(bt3c_info_t *info, const unsigned char *firmware,
++static int bt3c_load_firmware(struct bt3c_info *info,
++			      const unsigned char *firmware,
+ 			      int count)
+ {
+ 	char *ptr = (char *) firmware;
+@@ -536,7 +537,7 @@ error:
+ }
+ 
+ 
+-static int bt3c_open(bt3c_info_t *info)
++static int bt3c_open(struct bt3c_info *info)
+ {
+ 	const struct firmware *firmware;
+ 	struct hci_dev *hdev;
+@@ -603,7 +604,7 @@ error:
+ }
+ 
+ 
+-static int bt3c_close(bt3c_info_t *info)
++static int bt3c_close(struct bt3c_info *info)
+ {
+ 	struct hci_dev *hdev = info->hdev;
+ 
+@@ -620,7 +621,7 @@ static int bt3c_close(bt3c_info_t *info)
+ 
+ static int bt3c_probe(struct pcmcia_device *link)
+ {
+-	bt3c_info_t *info;
++	struct bt3c_info *info;
+ 
+ 	/* Create new info device */
+ 	info = devm_kzalloc(&link->dev, sizeof(*info), GFP_KERNEL);
+@@ -683,7 +684,7 @@ static int bt3c_check_config_notpicky(struct pcmcia_device *p_dev,
+ 
+ static int bt3c_config(struct pcmcia_device *link)
+ {
+-	bt3c_info_t *info = link->priv;
++	struct bt3c_info *info = link->priv;
+ 	int i;
+ 	unsigned long try;
+ 
+@@ -724,7 +725,7 @@ failed:
+ 
+ static void bt3c_release(struct pcmcia_device *link)
+ {
+-	bt3c_info_t *info = link->priv;
++	struct bt3c_info *info = link->priv;
+ 
+ 	bt3c_close(info);
+ 
 -- 
-Catalin
+1.9.1
+
