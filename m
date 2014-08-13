@@ -1,211 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026AbaHMO7J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:59:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35821 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751557AbaHMO7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:59:07 -0400
-Date: Wed, 13 Aug 2014 16:59:04 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/4] mm: memcontrol: reduce reclaim invocations for
- higher order requests
-Message-ID: <20140813145904.GC2775@dhcp22.suse.cz>
-References: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
- <1407186897-21048-2-git-send-email-hannes@cmpxchg.org>
- <20140807130822.GB12730@dhcp22.suse.cz>
- <20140807153141.GD14734@cmpxchg.org>
- <20140808123258.GK4004@dhcp22.suse.cz>
- <20140808132635.GJ14734@cmpxchg.org>
+	id S1753110AbaHMPBI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:01:08 -0400
+Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:13608
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751963AbaHMPBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 11:01:04 -0400
+X-WSS-ID: 0NA931F-07-2DM-02
+X-M-MSG: 
+From: <suravee.suthikulpanit@amd.com>
+To: <marc.zyngier@arm.com>, <mark.rutland@arm.com>, <jason@lakedaemon.net>
+CC: <pawel.moll@arm.com>, <Catalin.Marinas@arm.com>, <Will.Deacon@arm.com>,
+        <tglx@linutronix.de>, <Harish.Kasiviswanathan@amd.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: [PATCH 0/2 V4] irqchip: gic: Introduce ARM GICv2m MSI(-X) support
+Date: Wed, 13 Aug 2014 10:00:39 -0500
+Message-ID: <1407942041-3291-1-git-send-email-suravee.suthikulpanit@amd.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140808132635.GJ14734@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019004)(6009001)(428002)(199003)(189002)(80022001)(86152002)(62966002)(92566001)(88136002)(85306004)(79102001)(33646002)(31966008)(106466001)(229853001)(19580405001)(53416004)(48376002)(2201001)(84676001)(20776003)(95666004)(89996001)(83072002)(93916002)(86362001)(50226001)(85852003)(105586002)(81342001)(92726001)(15975445006)(19580395003)(46102001)(4396001)(77096002)(87286001)(107046002)(101416001)(76482001)(47776003)(77982001)(81542001)(50986999)(99396002)(87936001)(97736001)(102836001)(104166001)(64706001)(36756003)(44976005)(50466002)(83322001)(77156001)(21056001)(74662001)(74502001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB044;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0302D4F392
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 08-08-14 09:26:35, Johannes Weiner wrote:
-> On Fri, Aug 08, 2014 at 02:32:58PM +0200, Michal Hocko wrote:
-> > On Thu 07-08-14 11:31:41, Johannes Weiner wrote:
-[...]
-> > > THP latencies are actually the same when comparing high limit nr_pages
-> > > reclaim with the current hard limit SWAP_CLUSTER_MAX reclaim,
-> > 
-> > Are you sure about this? I fail to see how they can be same as THP
-> > allocations/charges are __GFP_NORETRY so there is only one reclaim
-> > round for the hard limit reclaim followed by the charge failure if
-> > it is not successful.
-> 
-> I use this test program that faults in anon pages, reports average and
-> max for every 512-page chunk (THP size), then reports the aggregate at
-> the end:
-> 
-> memory.max:
-> 
-> avg=18729us max=450625us
-> 
-> real    0m14.335s
-> user    0m0.157s
-> sys     0m6.307s
-> 
-> memory.high:
-> 
-> avg=18676us max=457499us
-> 
-> real    0m14.375s
-> user    0m0.046s
-> sys     0m4.294s
+From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 
-I was playing with something like that as well. mmap 800MB anon mapping
-in 256MB memcg (kvm guest had 1G RAM and 2G swap so the global reclaim
-doesn't trigger and the host 2G free memory), start faulting in from
-THP aligned address and measured each fault. Then I was recording
-mm_vmscan_lru_shrink_inactive and mm_vmscan_memcg_reclaim_{begin,end}
-tracepoints to see how the reclaim went.
+This patch set introduces support for MSI(-X) in GICv2m specification,
+which is implemented in some variation of GIC400.
 
-I was testing two setups
-1) fault in every 4k page
-2) fault in only 2M aligned addresses.
+This depends on and has been tested with the V7 of"Add support for PCI in AArch64"
+(https://lkml.org/lkml/2014/3/14/320).
 
-The first simulates the case where successful THP allocation saves
-follow up 511 fallback charges and so the excessive reclaim might
-pay off.
-The second one simulates potential time wasting when memory is used
-extremely sparsely and any latencies would be unwelcome.
+Changes in V4:
+    * Rebase to git://git.infradead.org/users/jcooper/linux.git irqchip/core
+    * Remove patch 2 from previous version
+    * Merge patch 1 and 3 from previous version
+    * Reworks the GICv2m initialization based on Marc Zyngier review comments.
+    * Introduce "v2m" subnode in GIC binding
+    * Moves the "struct msi_chip" from "struct gic_chip_data" to "struct v2m_data".
 
-(new refers to nr_reclaim target, old to SWAP_CLUSTER_MAX, thponly
-faults only 2M aligned addresses, 4k pages are faulted otherwise)
+Suravee Suthikulpanit (2):
+  irqchip: gic: Add supports for ARM GICv2m MSI(-X)
+  irqchip: gicv2m: Add support for multiple MSI for ARM64 GICv2m
 
-vmstat says:
-out.256m.new-thponly.vmstat.after:pswpin 44
-out.256m.new-thponly.vmstat.after:pswpout 154681
-out.256m.new-thponly.vmstat.after:thp_fault_alloc 399
-out.256m.new-thponly.vmstat.after:thp_fault_fallback 0
-out.256m.new-thponly.vmstat.after:thp_split 302
+ Documentation/devicetree/bindings/arm/gic.txt |  32 +++
+ arch/arm64/include/asm/msi.h                  |  15 ++
+ arch/arm64/kernel/Makefile                    |   1 +
+ arch/arm64/kernel/msi.c                       |  57 +++++
+ drivers/irqchip/Kconfig                       |   7 +
+ drivers/irqchip/Makefile                      |   1 +
+ drivers/irqchip/irq-gic-v2m.c                 | 294 ++++++++++++++++++++++++++
+ drivers/irqchip/irq-gic.c                     |  75 ++++---
+ drivers/irqchip/irq-gic.h                     |  48 +++++
+ 9 files changed, 500 insertions(+), 30 deletions(-)
+ create mode 100644 arch/arm64/include/asm/msi.h
+ create mode 100644 arch/arm64/kernel/msi.c
+ create mode 100644 drivers/irqchip/irq-gic-v2m.c
+ create mode 100644 drivers/irqchip/irq-gic.h
 
-out.256m.old-thponly.vmstat.after:pswpin 28
-out.256m.old-thponly.vmstat.after:pswpout 31271
-out.256m.old-thponly.vmstat.after:thp_fault_alloc 149
-out.256m.old-thponly.vmstat.after:thp_fault_fallback 250
-out.256m.old-thponly.vmstat.after:thp_split 61
-
-out.256m.new.vmstat.after:pswpin 48
-out.256m.new.vmstat.after:pswpout 169530
-out.256m.new.vmstat.after:thp_fault_alloc 399
-out.256m.new.vmstat.after:thp_fault_fallback 0
-out.256m.new.vmstat.after:thp_split 331
-
-out.256m.old.vmstat.after:pswpin 47
-out.256m.old.vmstat.after:pswpout 156514
-out.256m.old.vmstat.after:thp_fault_alloc 127
-out.256m.old.vmstat.after:thp_fault_fallback 272
-out.256m.old.vmstat.after:thp_split 127
-
-As expected new managed to fault in all requests as THP without a single
-fallback allocation while with the old reclaim we got to the limit and
-then most of the THP charges failed and fallen back to single page
-charge.
-
-Note the increased swapout activity for new. It is almost 5x more for
-thponly and +8% with per-page faults. This looks like a fallout from the
-over-reclaim in smaller priorities.
-
-Tracepoints will tell us the priority at which we ended up the reclaim
-round:
-- trace.new-thponly
-  Count Priority
-      1 3
-      2 5
-    159 6
-     24 7
-- trace.old-thponly
-    230 10
-      1 11
-      1 12
-      1 3
-     39 9
-
-Again expected that the priority is falling down for the new much more.
-
-- trace.new
-    229 0
-      3 12
-- trace.old
-    294 0
-      2 1
-     25 10
-      1 11
-      3 12
-      8 2
-      8 3
-     20 4
-     33 5
-     21 6
-     43 7
-   1286 8
-   1279 9
-
-And here as well, we have to reclaim much more because we do much more
-charges so the load benefits a bit from the high reclaim target.
-
-mm_vmscan_memcg_reclaim_end tracepoint tells us also how many pages were
-reclaimed during each run and the cummulative numbers are:
-- trace.new-thponly: 139029
-- trace.old-thponly: 11344
-- trace.new: 139687
-- trace.old: 139887
-
-time -v says:
-out.256m.new-thponly.time:      System time (seconds): 1.50
-out.256m.new-thponly.time:      Elapsed (wall clock) time (h:mm:ss or m:ss): 0:13.56
-out.256m.old-thponly.time:      System time (seconds): 0.45
-out.256m.old-thponly.time:      Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.76
-
-out.256m.new.time:      System time (seconds): 1.45
-out.256m.new.time:      Elapsed (wall clock) time (h:mm:ss or m:ss): 0:15.12
-out.256m.old.time:      System time (seconds): 2.08
-out.256m.old.time:      Elapsed (wall clock) time (h:mm:ss or m:ss): 0:15.26
-
-I guess this is expected as well. Sparse access doesn't amortize the
-costly reclaim for each charged THP. On the other hand it can help a bit
-if the whole mmap is populated.
-
-If we compare fault latencies then we get the following:
-- the worst latency [ms]:
-out.256m.new-thponly 1991
-out.256m.old-thponly 1838
-out.256m.new 6197
-out.256m.old 5538
-
-- top 5 worst latencies (sum in [ms]):
-out.256m.new-thponly 5694
-out.256m.old-thponly 3168
-out.256m.new 9498
-out.256m.old 8291
-
-- top 10
-out.256m.new-thponly 7139
-out.256m.old-thponly 3193
-out.256m.new 11786
-out.256m.old 9347
-
-- top 100
-out.256m.new-thponly 13035
-out.256m.old-thponly 3434
-out.256m.new 14634
-out.256m.old 12881
-
-I think this shows up that my concern about excessive reclaim and stalls
-is real and it is worse when the memory is used sparsely. It is true it
-might help when the whole THP section is used and so the additional cost
-is amortized but the more sparsely each THP section is used the higher
-overhead you are adding without userspace actually asking for it.
 -- 
-Michal Hocko
-SUSE Labs
+1.9.0
+
