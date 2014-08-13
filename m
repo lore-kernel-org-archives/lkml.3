@@ -1,95 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188AbaHMNkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 09:40:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44571 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168AbaHMNkj (ORCPT
+	id S1753208AbaHMNlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 09:41:13 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:33730 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaHMNlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 09:40:39 -0400
-Date: Wed, 13 Aug 2014 15:40:25 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v5 tip/core/rcu 15/16] rcu: Make RCU-tasks wait for idle
- tasks
-Message-ID: <20140813134025.GN9918@twins.programming.kicks-ass.net>
-References: <20140811224840.GA25594@linux.vnet.ibm.com>
- <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1407797345-28227-15-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140813081215.GB9918@twins.programming.kicks-ass.net>
- <20140813124818.GQ4752@linux.vnet.ibm.com>
+	Wed, 13 Aug 2014 09:41:11 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="t9kF86vOGmrWaBDV"
-Content-Disposition: inline
-In-Reply-To: <20140813124818.GQ4752@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-Originating-IP: [89.139.17.117]
+In-Reply-To: <53EA3E78.6000304@ti.com>
+References: <1404420815-42108-1-git-send-email-s-anna@ti.com>
+ <CAK=WgbaRJNVXqbM+MyY+UtUYYCnR2t3CP5UdTXSpLJy=MTJKJQ@mail.gmail.com> <53EA3E78.6000304@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 13 Aug 2014 16:40:50 +0300
+Message-ID: <CAK=WgbYLUcnK1p0qUkfONavk+W1eXg5fcaTNcU4W3ova6wySuQ@mail.gmail.com>
+Subject: Re: [PATCH] rpmsg: compute number of buffers to allocate from vrings
+To: Suman Anna <s-anna@ti.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Suman,
 
---t9kF86vOGmrWaBDV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Aug 12, 2014 at 7:19 PM, Suman Anna <s-anna@ti.com> wrote:
+> Yes, I was playing around with using less buffers in the remoteproc
+> resource table for the vrings. The remoteproc virtio code creates the
+> vrings using the number of buffers based on .num field value of struct
+> fw_rsc_vdev_vring in the resource table. The virtio rpmsg probe code
+> though tries to set up the receive buffers for the same virtqueue based
+> on the current hard-coded value of 512 buffers and virtqueue_add_inbuf
+> would fail as the virtqueue is created with less number of buffers and
+> throws a WARN_ON.
 
-On Wed, Aug 13, 2014 at 05:48:18AM -0700, Paul E. McKenney wrote:
-> On Wed, Aug 13, 2014 at 10:12:15AM +0200, Peter Zijlstra wrote:
-> > On Mon, Aug 11, 2014 at 03:49:04PM -0700, Paul E. McKenney wrote:
-> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > >=20
-> > > Because idle-task code may need to be patched, RCU-tasks need to wait
-> > > for idle tasks to schedule.  This commit therefore detects this case
-> > > via context switch.  Block CPU hotplug during this time to avoid send=
-ing
-> > > IPIs to offline CPUs.
-> > >=20
-> > > Note that checking for changes in the dyntick-idle counters is tempti=
-ng,
-> > > but wrong.  The reason that it is wrong is that a interrupt or NMI can
-> > > increment these counters without necessarily allowing the idle tasks =
-to
-> > > make any forward progress.
-> >=20
-> > I'm going to NAK this.. with that rcu_idle patch I send there's
-> > typically only a single idle function thats out of bounds and if its
-> > more it can be made that with a bit of tlc to the cpuidle driver in
-> > question.
-> >=20
-> > This needs _FAR_ more justification than a maybe and a want.
->=20
-> Peter, your patch might be a good start, but I didn't see any reaction
-> from Steven or Masami and it did only x86.
+Gotcha - thanks for the details.
 
-That's not an excuse for doing horrible things. And inventing new infra
-that needs to wake all CPUs is horrible.
+Limiting the number of buffers in case the vrings are too small makes
+sense, but let's use RPMSG_NUM_BUFS as an upper bound, so wacky
+resource tables won't trigger unreasonable memory waste.
 
---t9kF86vOGmrWaBDV
-Content-Type: application/pgp-signature
+Something in the lines of:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+vrp->num_bufs = min(PMSG_NUM_BUFS, virtqueue_get_vring_size(vrp->rvq) * 2);
 
-iQIcBAEBAgAGBQJT62rJAAoJEHZH4aRLwOS6R/gQAJWfG+j8jN5xgk8NPk7hdrZ/
-jIvVzsxTX+GL2yYUza5rKRHl2AynPvgH92Au07ninkcHzSHFptHL7MxfKfqdztYW
-rcQnHXw0DRigY+LB86TkgEs7paLIt/Qjp6OtEjwyVqyVElCzgLhWx0aFGASR5usV
-DVv0ASYrRg9gaPzCSLsUilgyB9JeQEi/571YkDJRpkpedn3IXToWgz50AyQ5/eKJ
-jgKQ2t5dQzzFt3B/JQHP+je+4qJJ0uZdNKSf6ddHSvLc2nM3FzDs1yGgn28H6nSZ
-qLeekfKlmVj/gIGJLTe5GLCk/731FK43aQGYB+RXw+AmEy++jKP5PwShmCgTVEVo
-HDvMm90GsbuSBw6zTbbiuN8lyFllV5jjsokksa62fbo977p3+LeiB8i7eYkGMT8f
-hBEbNBGdZwkybW8MX/ZZtyZAzCQMHqMnnbO7+BesccTpD+vEnLwxc1PtvQTqheXs
-M7lDDNdwJkOKGxRTRyvBIJyeMaHnRXESRpsPgyGfoBgLG7uU6TwB6gDBj28+ttgt
-FD3N9OmxnUk410nCvHT83msda+P51lzdMQU8BwJGf9GjVWJju8iiTcPYQMl1TW/W
-guZ7wybD7o4ceIwJ32ZzBCiYIWJq+SdVzcAVQpntihTk/XytqpwQroLiHReg8SzW
-ADdrgu88eRpqdE2v1Czg
-=Ljva
------END PGP SIGNATURE-----
+Should probably do the trick.
 
---t9kF86vOGmrWaBDV--
+Does this satisfy your requirement?
+
+Thanks,
+Ohad.
