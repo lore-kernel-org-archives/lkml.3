@@ -1,62 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629AbaHMSZf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 14:25:35 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:49217 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518AbaHMSZd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 14:25:33 -0400
-Date: Wed, 13 Aug 2014 11:25:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com
-Subject: Re: [PATCH v5 tip/core/rcu 15/16] rcu: Make RCU-tasks wait for idle
- tasks
-Message-ID: <20140813182528.GF4752@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1407797345-28227-15-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140813081215.GB9918@twins.programming.kicks-ass.net>
- <20140813124818.GQ4752@linux.vnet.ibm.com>
- <20140813134025.GN9918@twins.programming.kicks-ass.net>
- <20140813095132.56d288f2@gandalf.local.home>
- <20140813140705.GO9918@twins.programming.kicks-ass.net>
- <20140813101301.08019895@gandalf.local.home>
- <20140813144332.GW4752@linux.vnet.ibm.com>
- <20140813163522.GU9918@twins.programming.kicks-ass.net>
+	id S1753554AbaHMS1d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 14:27:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58778 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750913AbaHMS1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 14:27:32 -0400
+Message-ID: <53EBADB1.2020403@redhat.com>
+Date: Wed, 13 Aug 2014 14:25:53 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140813163522.GU9918@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081318-1542-0000-0000-000003FAE903
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time: drop do_sys_times spinlock
+References: <20140812142539.01851e52@annuminas.surriel.com> <20140812191218.GA15210@redhat.com> <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com>
+In-Reply-To: <20140813180807.GA8098@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 06:35:22PM +0200, Peter Zijlstra wrote:
-> On Wed, Aug 13, 2014 at 07:43:32AM -0700, Paul E. McKenney wrote:
-> > So the first three look OK to hook rcu_idle_enter() and rcu_idle_exit()
-> > into, but the last two don't look so good.
-> > 
-> > That said, if you are OK not tracing the stuff under stop_critical_timings(),
-> > then I can use the RCU dyntick-idle state and not wake anything up.
+On 08/13/2014 02:08 PM, Oleg Nesterov wrote:
+> On 08/13, Rik van Riel wrote:
+>>
+>> On Wed, 13 Aug 2014 19:22:30 +0200
+>> Oleg Nesterov <oleg@redhat.com> wrote:
+>>
+>>> On 08/12, Rik van Riel wrote:
+>>>>
+>>>> Any other ideas?
+>>>
+>>> To simplify, lets suppose that we only need sum_exec_runtime.
+>>>
+>>> Perhaps we can do something like this
+>>
+>> That would probably work, indeed.
 > 
-> Either way, Steve could easily whip up a debug thing that could validate
-> that. Simply WARN whenever an __mcount happens when under rcu_idle.
+> OK, perhaps I'll try to make a patch tomorrow for review.
 > 
-> And if we make these idle functions small enough that should not be a
-> problem at all.
+>> However, it turns out that a seqcount doesn't look too badly either.
+> 
+> Well, I disagree. This is more complex, and this adds yet another lock
+> which only protects the stats...
 
-Right now, the CPU-idle drivers look quite hairy and error-prone.
+The other lock is what can tell us that there is a writer active
+NOW, which may be useful when it comes to guaranteeing forward
+progress for readers when there are lots of threads exiting...
 
-							Thanx, Paul
+>> --- a/include/linux/sched.h
+>> +++ b/include/linux/sched.h
+>> @@ -461,6 +461,7 @@ struct sighand_struct {
+>>  	atomic_t		count;
+>>  	struct k_sigaction	action[_NSIG];
+>>  	spinlock_t		siglock;
+>> +	seqcount_t		stats_seq; /* write nests inside spinlock */
+> 
+> No, no, at least it should go to signal_struct. Unlike ->sighand, ->signal
+> is stable as long as task_struct can't go away.
+
+I can move it to signal_struct, no problem.
+
+>>  void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+>>  {
+>>  	struct signal_struct *sig = tsk->signal;
+>> +	struct sighand_struct *sighand;
+>>  	cputime_t utime, stime;
+>>  	struct task_struct *t;
+>> -
+>> -	times->utime = sig->utime;
+>> -	times->stime = sig->stime;
+>> -	times->sum_exec_runtime = sig->sum_sched_runtime;
+>> +	int seq;
+>>  
+>>  	rcu_read_lock();
+>> -	/* make sure we can trust tsk->thread_group list */
+>> -	if (!likely(pid_alive(tsk)))
+>> +	sighand = rcu_dereference(tsk->sighand);
+>> +	if (unlikely(!sighand))
+>>  		goto out;
+>>  
+>> -	t = tsk;
+>>  	do {
+>> -		task_cputime(t, &utime, &stime);
+>> -		times->utime += utime;
+>> -		times->stime += stime;
+>> -		times->sum_exec_runtime += task_sched_runtime(t);
+>> -	} while_each_thread(tsk, t);
+>> +		seq = read_seqcount_begin(&sighand->stats_seq);
+>> +		times->utime = sig->utime;
+>> +		times->stime = sig->stime;
+>> +		times->sum_exec_runtime = sig->sum_sched_runtime;
+>> +
+>> +		/* make sure we can trust tsk->thread_group list */
+>> +		if (!likely(pid_alive(tsk)))
+>> +			goto out;
+> 
+> Whatever we do, we should convert thread_group_cputime() to use
+> for_each_thread() first().
+
+What is the advantage of for_each_thread over while_each_thread,
+besides getting rid of that t = tsk line?
+
+>> @@ -781,14 +781,14 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
+>>  		cpu_clock_sample(timer->it_clock, p, &now);
+>>  	} else {
+>>  		struct sighand_struct *sighand;
+>> -		unsigned long flags;
+>>
+>>  		/*
+>>  		 * Protect against sighand release/switch in exit/exec and
+>>  		 * also make timer sampling safe if it ends up calling
+>>  		 * thread_group_cputime().
+>>  		 */
+>> -		sighand = lock_task_sighand(p, &flags);
+>> +		rcu_read_lock();
+>> +		sighand = rcu_dereference(p->sighand);
+> 
+> This looks unneeded at first glance.
+
+You are right. This change should be made to posix_cpu_clock_get_task
+and not posix_cpu_timer_get. I think this is where I got distracted
+by the way the sighand struct was RCU freed.
+
+Sigh...
 
