@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155AbaHMJOU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:14:20 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:34303 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634AbaHMJMZ (ORCPT
+	id S1751810AbaHMJQN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:16:13 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:42907 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaHMJQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:12:25 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
-        pekon@pek-sem.com, linux-mtd@lists.infradead.org
-Subject: [PATCH 2/8] ARM: sti: Add two new clock definitions for use with ST's NAND controllers
-Date: Wed, 13 Aug 2014 10:12:01 +0100
-Message-Id: <1407921127-8590-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1407921127-8590-1-git-send-email-lee.jones@linaro.org>
-References: <1407921127-8590-1-git-send-email-lee.jones@linaro.org>
+	Wed, 13 Aug 2014 05:16:11 -0400
+Date: Wed, 13 Aug 2014 14:46:05 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH] net/udp_offload: Drop unnecessary continue
+Message-ID: <20140813091605.GA2947@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EMISS and NAND Control clocks are used when conducting operations
-on attached NAND Flash chips.
+Continue is not needed at the bottom of a loop.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+The Coccinelle semantic patch implementing this change is:
+
+@@
+@@
+
+for (...;...;...) {
+  ...
+  if (...) {
+    ...
+-   continue;
+  }
+}
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- include/dt-bindings/clock/stih416-clks.h | 2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/udp_offload.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/include/dt-bindings/clock/stih416-clks.h b/include/dt-bindings/clock/stih416-clks.h
-index f9bdbd1..3a8c979 100644
---- a/include/dt-bindings/clock/stih416-clks.h
-+++ b/include/dt-bindings/clock/stih416-clks.h
-@@ -7,10 +7,12 @@
+diff --git a/net/ipv4/udp_offload.c b/net/ipv4/udp_offload.c
+index 59035bc..62d5b9b 100644
+--- a/net/ipv4/udp_offload.c
++++ b/net/ipv4/udp_offload.c
+@@ -269,10 +269,8 @@ unflush:
+ 			continue;
  
- /* CLOCKGEN A0 */
- #define CLK_ICN_REG		0
-+#define CLK_EMISS		3
- #define CLK_ETH1_PHY		4
+ 		uh2 = (struct udphdr   *)(p->data + off);
+-		if ((*(u32 *)&uh->source != *(u32 *)&uh2->source)) {
++		if ((*(u32 *)&uh->source != *(u32 *)&uh2->source))
+ 			NAPI_GRO_CB(p)->same_flow = 0;
+-			continue;
+-		}
+ 	}
  
- /* CLOCKGEN A1 */
- #define CLK_ICN_IF_2		0
- #define CLK_GMAC0_PHY		3
-+#define CLK_NAND_CTRL		4
- 
- #endif
+ 	skb_gro_pull(skb, sizeof(struct udphdr)); /* pull encapsulating udp header */
 -- 
 1.9.1
 
