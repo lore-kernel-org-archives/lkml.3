@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaHMTLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 15:11:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43293 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbaHMTLS (ORCPT
+	id S1751750AbaHMTQH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 15:16:07 -0400
+Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:46987 "EHLO
+	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaHMTQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 15:11:18 -0400
-Message-ID: <53EBB851.9070505@canonical.com>
-Date: Wed, 13 Aug 2014 15:11:13 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Julius Werner <jwerner@chromium.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "mathias.nyman@linux.intel.com" <mathias.nyman@linux.intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Dustin Kirkland <dustin.kirkland@canonical.com>
-Subject: Re: [REVERT][v3.16-rc7][STABLE] usb: xhci: Prefer endpoint context
- dequeue pointer over stopped_trb
-References: <53D947F3.6010301@canonical.com> <CAODwPW-tf0D70v5La1z+-jo5rgKFW_Q2fMCZGWZkf0DnyTUuTA@mail.gmail.com> <53D9B664.4020401@canonical.com>
-In-Reply-To: <53D9B664.4020401@canonical.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Aug 2014 15:16:05 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH] dcache: use read_seqlock_excl() in d_set_mounted()
+Date: Wed, 13 Aug 2014 15:15:50 -0400
+Message-Id: <1407957350-37783-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2014 11:22 PM, Joseph Salisbury wrote:
-> On 07/30/2014 06:42 PM, Julius Werner wrote:
->> Hi Joseph,
->>
->>> Julius, I was hoping to get your feedback, since you are the patch
->>> author.  Do you think gathering any additional data will help diagnose
->>> this issue, or would it be best to continue with this revert request?
->> As I understand it, this crash will disappear with Mathias' new rework
->> for finding the cycle state bit in
->> http://www.spinics.net/lists/linux-usb/msg111259.html , so a revert
->> should not be necessary.
-> Hi Julius / Mathias,
->
-> I was able to built a test kernel with the patch against 3.16-rc7. 
-> However, the patch would not compile against the 3.13.y stable tree(I'll
-> debug why further).  Is there plans for a version of the patch that will
-> work with stable kernels?
->
-> Thanks,
->
-> Joe
->
->
->
-Just curious if there is an update on a version of the patch that will
-build against the stable kernels?  If not, I can dig deeper to find the
-build failure.
+The d_set_mounted() doesn't change anything in the filesystem other
+than setting the DCACHE_MOUNTED flag in the mount point's dentry
+which is protected by d_lock anyway. So we can safely replace
+write_seqlock/write_sequnlock by read_seqlock_excl/read_sequnlock_excl.
 
-Thanks,
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ fs/dcache.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Joe
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 06f6585..bfdd8af 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1207,7 +1207,7 @@ int d_set_mounted(struct dentry *dentry)
+ {
+ 	struct dentry *p;
+ 	int ret = -ENOENT;
+-	write_seqlock(&rename_lock);
++	read_seqlock_excl(&rename_lock);
+ 	for (p = dentry->d_parent; !IS_ROOT(p); p = p->d_parent) {
+ 		/* Need exclusion wrt. check_submounts_and_drop() */
+ 		spin_lock(&p->d_lock);
+@@ -1224,7 +1224,7 @@ int d_set_mounted(struct dentry *dentry)
+ 	}
+  	spin_unlock(&dentry->d_lock);
+ out:
+-	write_sequnlock(&rename_lock);
++	read_sequnlock_excl(&rename_lock);
+ 	return ret;
+ }
+ 
+-- 
+1.7.1
+
