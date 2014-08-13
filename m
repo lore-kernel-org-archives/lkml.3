@@ -1,165 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923AbaHMTyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 15:54:11 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50655 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaHMTyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 15:54:09 -0400
-Date: Wed, 13 Aug 2014 12:54:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, bobby.prani@gmail.com, rafael@kernel.org
-Subject: Re: [PATCH v5 tip/core/rcu 15/16] rcu: Make RCU-tasks wait for idle
- tasks
-Message-ID: <20140813195402.GO4752@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140811224840.GA25594@linux.vnet.ibm.com>
- <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1407797345-28227-15-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140813081215.GB9918@twins.programming.kicks-ass.net>
- <20140813124818.GQ4752@linux.vnet.ibm.com>
- <20140813134025.GN9918@twins.programming.kicks-ass.net>
- <20140813141217.GU4752@linux.vnet.ibm.com>
- <20140813144219.GQ9918@twins.programming.kicks-ass.net>
- <20140813182030.GD4752@linux.vnet.ibm.com>
- <20140813185529.GA16043@twins.programming.kicks-ass.net>
+	id S1752651AbaHMT5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 15:57:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5455 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750803AbaHMT5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 15:57:45 -0400
+Message-ID: <53EBC332.30507@redhat.com>
+Date: Wed, 13 Aug 2014 15:57:38 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140813185529.GA16043@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081319-9332-0000-0000-000001AEAB1C
+To: Saravana Kannan <skannan@codeaurora.org>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
+ to be held for duration of changing governors [v2]
+References: <1406634362-811-1-git-send-email-prarit@redhat.com> <2066166.pXm4lKLOID@vostro.rjw.lan> <53DA8389.80804@redhat.com> <1917362.abr2Y4p7vh@vostro.rjw.lan> <53DA8A41.2030601@redhat.com> <53DAA60B.6040802@codeaurora.org> <53DAA749.5080506@redhat.com> <53DAA95B.2040505@codeaurora.org> <53DAB038.3050007@redhat.com> <53DABFA6.6090503@codeaurora.org> <53DACA26.1000908@redhat.com> <53DAE592.2030909@codeaurora.org> <53DB6B81.6050400@redhat.com> <53DBCBE8.6010809@codeaurora.org> <53DBE764.8050109@redhat.com> <53DBEC27.7050803@codeaurora.org> <CAKohpombG3Gj4mbm02vPNnAxzaRvQP7rb=iQ14dCFH4_+71H3w@mail.gmail.com> <53E0B657.4070007@redhat.com> <CAKohponxBdYEgY2oYuzmdaqfSRS8Uq8bZOzcb1QDmKO-z5ZBFQ@mail.gmail.com> <53E1556B.5070304@codeaurora.org> <53E15DBB.7080800@redhat.com> <53E15FE7.4040808@codeaurora.org>
+In-Reply-To: <53E15FE7.4040808@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 08:55:29PM +0200, Peter Zijlstra wrote:
-> On Wed, Aug 13, 2014 at 11:20:30AM -0700, Paul E. McKenney wrote:
-> > cpuidle_idle_call() does a fastpath irq-enable/exit if need-resched,
-> > then does stop_critical_timings() and rcu_idle_enter().  Then we
-> > have the buried complexity with cpuidle_select(), but a negative
-> > return says to check need-resched and enable interrupts or to
-> > invoke arch_cpu_idle(), which executes various sleep instructions
-> > on various architectures.  Some notable variants:
+
+
+On 08/05/2014 06:51 PM, Saravana Kannan wrote:
+
 > 
-> > And various other architectures seem to work similarly, but lots of
-> > hair here.  So Steven, you OK with the underlying arch_cpu_idle()
-> > functions being off-limits to tracing?
+> I definitely have a fix for this and the original race you reported. It's
+> basically reverting that commit you reverted + a fix for the deadlock. That's
+> the only way to fix the scaling_governor issue.
 > 
-> I didn't find anything particularly hairy in the arch_cpu_idle()
-> implementations, lots of simple 'go sleep' or 'spin' like things.
-
-"Hairy" in terms of lots of assembly, in many cases apparently tightly
-coupled to a given SoC.
-
-> > Now, if cpuidle_select() returns non-negative, we are dealing with
-> > the CPU-idle governor, which is invoked at the later cpuidle_enter().
-> > 
-> > Hmmm...  On the CPU-idle drivers...
-> > 
-> > o	apm_idle_driver puts the idle loop into the ->enter() function,
-> > 	apm_cpu_idle().
+> You fix the deadlock by moving the governor attribute group removing to the
+> framework code and doing it before STOP+EXIT to governor without holding the
+> policy lock. And the reverse for INIT+STOP.
 > 
-> Yes, this one is creative. The best I came up with is
-> adding CPUIDLE_FLAG_RCU_IDLE which indicates that the driver will do the
-> rcu_idle calls and place them in apm_do_idle() around the
-> apm_bios_call_simple() thing.
-> 
-> Now, that apm_bios_call_simple() thing uses on_cpu0(), which schedules
-> work on cpu0, which to me seems to guarantee this won't be used on any
-> SMP system, because that simply _cannot_ work for idle.
-> 
-> And on UP its a few more function calls, we could sprinkle some
-> __always_inline()s around if we really care I suppose.
 
-Heh, I missed the UP-only pieces.
+I'm still not convinced of the deadlock so I did a bit of additional research
+and am pretty close to saying that this is a false positive from the lockdep
+code in the kernfs area.
 
-> > o	ACPI puts the idle loop in acpi_idle_do_entry(), and does call
-> > 	stop_critical_timings(), but not rcu_idle_enter().
-> > 	So presumably stop_critical_timings() can nest?  Not clear
-> > 	from the code.
-> 
-> Yeah, so I'm not sure I see that they nest properly..
-> 
-> Still ACPI does a lot of weird crap in the busmaster idle function,
-> again I'd suggest that CPUIDLE_FLAG_RCU_IDLE which would let the driver
-> do rcu_idle itself, and place it in appropriate sites.
-> 
-> Not too hard I think in this case.
+A few things that have caused me concern about the lockdep splat we're seeing:
 
-My main concern is avoiding situations where the driver manages to loop
-without passing through the rcu_idle_enter() and rcu_idle_exit().
-In case someone manages to misconfigure things so that the driver
-just endlessly shuttles among states without actually ever really
-going idle.
+1.  The splat occurs when we hit __kernfs_remove+0x25b/0x360 which resolves to
 
-> > o	The CPS driver is even stranger...  Is cps_gen_entry_code()
-> > 	really depositing assembly instructions into a buffer that is
-> > 	passed back as a function?
-> 
-> I had not yet looked at this one; its got that cpu_pm_{enter,exit}()
-> thing going.. we could do the same and place the manual RCU_IDLE around
-> cps_pm_enter_state()
+        if (kernfs_lockdep(kn)) {
+                rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);  <<< RIGHT HERE
+                if (atomic_read(&kn->active) != KN_DEACTIVATED_BIAS)
+                        lock_contended(&kn->dep_map, _RET_IP_);
+        }
 
-Again, as long as it avoids loops that don't include code under
-rcu_idle_enter().
+ie) the *ONLY* way we hit a "deadlock" in this code is if we have LOCKDEP
+configured in the kernfs.
 
-> > o	The intel_idle driver is the one with mwait_idle_with_hints(),
-> > 	so you covered it below.
-> 
-> Yeah, fairly straight fwd driver that, _lots_ saner than the ACPI one.
+It should be noted, that having kernfs_lockdep() always return 0 [1], results in
+NO additional lockdep warnings.
 
-Now -that- is damning with faint praise!  ;-)
+Additionally the splat contains
 
-> > Your patch covers the cpuidle_enter() transition, which means
-> > that functions like cpuidle_enter(), acpi_idle_enter_c1(), and
-> > acpi_idle_do_entry() would be off-limits to trampolining.  In the case
-> > of CPS, quite a bit of code.
-> 
-> So I think we can do this; sure lots of code, but typically 'simpler'
-> than RCU stuff.
+[  107.428421]        CPU0                    CPU1
+[  107.433482]        ----                    ----
+[  107.438544]   lock(&policy->rwsem);
+[  107.442459]                                lock(s_active#98);
+[  107.448916]                                lock(&policy->rwsem);
+[  107.455650]   lock(s_active#98);
 
-For some definition of "simpler".  ;-)
+which also points to the situation above (s_active is the default naming used in
+the kernfs lockdep code).
 
-> > > We should push the rcu_idle_{enter,exit}() down to around
-> > > mwait_idle_with_hints(), so we don't call half the word with RCU
-> > > disabled.
-> > 
-> > That would be for the intel_idle.c CPU-idle driver.  The other drivers
-> > also need rcu_idle_{enter,exit}().
-> 
-> Right, so simple drivers can use the generic rcu_idle bits from
-> kernel/sched/idle.c and difficult drivers can use CPUIDLE_FLAG_RCU_IDLE
-> and do some manual cleverness.
+In short -- there is no deadlock here.  It only happens in the lockdep code
+itself, not because lockdep has identified a real problem.
 
-OK, but in this case the relevant definition of "simple" is "never will
-need a trampoline".  Steven, thoughts?
+2.  I then started asking myself why this was occurring.  The reason appears to
+be that the attribute for scaling_governor is deleting other sysfs attributes
+and that got me to wondering if there were other areas where this occurred and I
+remembered it does!  In the USB code writing and reading to the  bConfiguration
+of a device may lead to the removal of "down stream" attributes.  The reading
+and writing of bConfiguration occurs in
+drivers/usb/core/sysfs.c:79
 
-> > > > I have already said that I will be happy to rip out the wakeup code
-> > > > when it is no longer needed, and I agree that it would be way better if
-> > > > not needed.
-> > > 
-> > > I'd prefer to dtrt now and not needing to fix it later.
-> > 
-> > Once it works, I might consider it "right" and adjust accordingly.
-> > At the moment, speculation.
-> 
-> I think its simpler than doing RCU, maybe a little more work, but hey,
-> I'm the idiot that does full arch/ sweeps on a semi regular basis.
 
-Hmmm...  Exactly what are you thinking could be enabled by this
-proposed change to the idle code?  From what I can see at the moment,
-it would allow me to drop the schedule-on-holdout-idle code and allow
-synchronize_sched() to be substituted on !CONFIG_PREEMPT kernels.
+/* configuration value is always present, and r/w */
+usb_actconfig_show(bConfigurationValue, "%u\n");
 
-							Thanx, Paul
+static ssize_t bConfigurationValue_store(struct device *dev,
+                                         struct device_attribute *attr,
+                                         const char *buf, size_t count)
+{
+        struct usb_device       *udev = to_usb_device(dev);
+        int                     config, value;
 
+        if (sscanf(buf, "%d", &config) != 1 || config < -1 || config > 255)
+                return -EINVAL;
+        usb_lock_device(udev);
+        value = usb_set_configuration(udev, config);
+        usb_unlock_device(udev);
+        return (value < 0) ? value : count;
+}
+
+... and the next lines are IMO important here:
+
+static DEVICE_ATTR_IGNORE_LOCKDEP(bConfigurationValue, S_IRUGO | S_IWUSR,
+                bConfigurationValue_show, bConfigurationValue_store);
+
+FWIW, it isn't *exactly* the same ... but commit
+356c05d58af05d582e634b54b40050c73609617b explains a similarity between what is
+happening with our lockdep splat and the lockdep issues seen in USB.
+
+3.  I came across this from an earlier discussion ...
+
+https://lkml.org/lkml/2010/1/29/306
+
+"We get false positives when the code of a sysfs attribute
+synchronously removes other sysfs attributes.  In general that is not
+safe due to hotplug etc, but there are specific instances of static
+sysfs entries like the pm_core where it appears to be safe."
+
+...
+
+
+So ... the question that I have is: is this lockdep splat "real"?  It seems to
+only occur because we enable the lockdep code in kernfs, that is it occurs as a
+side-effect and doesn't appear to be "real" to me.
+
+I only offer this in an effort to keep work to a minimum ;)
+
+P.
+
+[1] It wasn't that simple.  There are some other changes that have to be made.
+But you get the idea ...
