@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaHMNSl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 09:18:41 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44966 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145AbaHMNSj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 09:18:39 -0400
-Date: Wed, 13 Aug 2014 14:18:31 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, tytso@mit.edu
-Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15
-Message-ID: <20140813131831.GY18016@ZenIV.linux.org.uk>
-References: <87y4z8uzqw.fsf_-_@x220.int.ebiederm.org>
- <87ppkhc4pp.fsf@x220.int.ebiederm.org>
- <87ha5r3emw.fsf_-_@x220.int.ebiederm.org>
- <20140417202237.GA18016@ZenIV.linux.org.uk>
- <87tx9rwsz4.fsf@x220.int.ebiederm.org>
- <20140417221203.GC18016@ZenIV.linux.org.uk>
- <20140420054108.GQ18016@ZenIV.linux.org.uk>
- <20140511164530.GB18016@ZenIV.linux.org.uk>
- <20140809093412.GA23108@ZenIV.linux.org.uk>
- <87ha1ic8rd.fsf@x220.int.ebiederm.org>
+	id S1752652AbaHMNVm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 09:21:42 -0400
+Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:21829
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751557AbaHMNVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 09:21:40 -0400
+Date: Wed, 13 Aug 2014 15:21:29 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ha1ic8rd.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@kernel.org>, Michal Simek <michal.simek@xilinx.com>
+CC: <linux-kernel@vger.kernel.org>, <monstr@monstr.eu>,
+        <linux-spi@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] spi: xilinx: Remove .owner field for driver
+References: <d35c656e50eb7cc951499f13ef339d6aa1a23deb.1407930755.git.michal.simek@xilinx.com>
+ <20140813123343.GR17528@sirena.org.uk>
+In-Reply-To: <20140813123343.GR17528@sirena.org.uk>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="fNbvqeo5JA9pRX9lqDVIsH8MJji99pmRM"
+X-RCIS-Action: ALLOW
+Message-ID: <b172f93e-b2fb-4cf4-a2de-d2ca62cdb83f@BN1BFFO11FD016.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009004)(6009001)(438002)(51704005)(189002)(52044002)(164054003)(479174003)(24454002)(199003)(377454003)(44976005)(86362001)(81342001)(81542001)(92566001)(95666004)(107046002)(568964001)(6806004)(54356999)(99396002)(70736001)(85306004)(92726001)(76176999)(50986999)(4396001)(20776003)(46102001)(64706001)(1496007)(64126003)(71186001)(74502001)(87936001)(512944002)(74316001)(106466001)(102836001)(83072002)(85852003)(31696002)(31966008)(65956001)(83322001)(77982001)(19580405001)(76482001)(83506001)(84326002)(74662001)(104016003)(79102001)(80022001)(21056001)(33646002)(19580395003)(65826006)(142923001)(107986001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB008;H:xir-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0302D4F392
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 03:17:10AM -0700, Eric W. Biederman wrote:
-> I have rebased my changes against vfs.git#for-eric and my changes work
-> just fine on top of the base you have built.  The changes are avaiable
-> in user-namespace.git#vfs-detach-mounts10 so you just be able to just
-> pull the changes in.
-> 
-> Reading your pile #1 pull request to Linus it sounds like you are
-> planning to suck all of this into the vfs tree.
+--fNbvqeo5JA9pRX9lqDVIsH8MJji99pmRM
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-I am.  Questions:
-	* is there any reason why we need list instead of hlist for
-per-mountpoint list of mounts?  Looks like hlist would do just as
-well, and it's a bit less noise
-	* __d_unalias() change looks rather odd.  What we do there
-is _not_ "avoid leaking mounts", it's "don't get a bunch of existing
-mounts suddenly relocate".  What's up with that one?
+On 08/13/2014 02:33 PM, Mark Brown wrote:
+> On Wed, Aug 13, 2014 at 01:52:39PM +0200, Michal Simek wrote:
+>> There is no need to init .owner field.
+>>
+>> Based on the patch from Peter Griffin <peter.griffin@linaro.org>
+>> "mmc: remove .owner field for drivers using module_platform_driver"
+>>
+>> This patch removes the superflous .owner field for drivers which
+>> use the module_platform_driver API, as this is overriden in
+>> platform_driver_register anyway."
+>=20
+> Would it not be better to do this as a tree wide or at least subsystem
+> wide sweep with something like cocinelle?
+
+Feel free to use cocinelle for fixing this everywhere.
+For me was just easier to fix all xilinx drivers to ensure
+that none else will copy it for new drivers.
+
+Thanks,
+Michal
+
+
+
+
+--fNbvqeo5JA9pRX9lqDVIsH8MJji99pmRM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAlPrZloACgkQykllyylKDCHKaQCeMyiabih/7wXIWOat2m26XP6k
+HP8An2xwKezBcfPkTlCOVt4ioO2BSpVQ
+=Pyw1
+-----END PGP SIGNATURE-----
+
+--fNbvqeo5JA9pRX9lqDVIsH8MJji99pmRM--
