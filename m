@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750765AbaHMEDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 00:03:30 -0400
-Received: from ozlabs.org ([103.22.144.67]:53832 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750705AbaHMED3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 00:03:29 -0400
-Date: Wed, 13 Aug 2014 14:03:21 +1000
-From: Tony Breeds <tony@bakeyournoodle.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, sfr@canb.auug.org.au,
-        peterz@infradead.org, LKML <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@ozlabs.org, Paul Mackerras <paulus@samba.org>,
-        hpa@zytor.com, tglx@linutronix.de, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [tip:timers/core] timekeeping: Fixup typo in update_vsyscall_old
- definition
-Message-ID: <20140813040320.GE14290@thor.bakeyournoodle.com>
-Mail-Followup-To: John Stultz <john.stultz@linaro.org>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	sfr@canb.auug.org.au, peterz@infradead.org,
-	LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@ozlabs.org,
-	Paul Mackerras <paulus@samba.org>, hpa@zytor.com,
-	tglx@linutronix.de, Ingo Molnar <mingo@kernel.org>
-References: <1406349439-11785-1-git-send-email-john.stultz@linaro.org>
- <tip-953dec21aed4038464fec02f96a2f1b8701a5bce@git.kernel.org>
- <1407730744.4508.67.camel@pasglop>
- <53EA3320.90908@linaro.org>
+	id S1750880AbaHMEED (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 00:04:03 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:44667 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaHMEEB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 00:04:01 -0400
+Message-ID: <53EAE3AD.9040203@linaro.org>
+Date: Tue, 12 Aug 2014 21:03:57 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="vni90+aGYgRvsTuO"
-Content-Disposition: inline
-In-Reply-To: <53EA3320.90908@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: ksummit-discuss@lists.linuxfoundation.org,
+        "Joseph S. Myers" <joseph@codesourcery.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-discuss] 2038 Kernel Summit Discussion Fodder
+References: <CALAqxLUcfaJnxdmkn6mucepNk3QaCQdcSPLRjjeKsk_OTp=uLA@mail.gmail.com> <1407895613.3017.138.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1407895613.3017.138.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/12/2014 07:06 PM, Ben Hutchings wrote:
+> On Tue, 2014-08-12 at 17:01 -0700, John Stultz wrote:
+> [...]
+>> The downsides here are many. The distros will probably hate this idea,
+> I certainly hate the idea of adding another 32-bit port to Debian.
+> I think that it's OK for traditional distros to say 'just upgrade to
+> 64bit' while you solve the problem for 32-bit embedded systems where
+> there's probably little demand for supporting multiple ABIs at once.
 
---vni90+aGYgRvsTuO
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+So I don't necessarily disagree, but if the rule really is "we don't
+break userspace" we will need a solution that at least allows for
+multiple ABIs from the kernel side, and we can then let distros chose if
+they want to handle both or not.  Even in the embedded world, as usage
+grows with things like Android, we're starting to see more strict needs
+for ABI/platform stability (see the ARMv8 SWP discussion from last
+month).  Fancy android based dashboard infotainment systems probably
+want to both be 2038 safe and run today's unsafe applications (hoping
+that they get upgraded eventually).
 
-On Tue, Aug 12, 2014 at 08:30:40AM -0700, John Stultz wrote:
 
-> Thanks for pointing it out. I'll send a fix here shortly (though I only
-> have the ppc64le toolchain handy, so forgive me if its not quite right).
+>
+>>  as it requires rebuilding the world, and maintaining another legacy
+>> architecture support. I’m also not completely sure how robust
+>> multi-arch packaging is in the face of having to handle 3-4
+>> architectures on one system.
+> dpkg multiarch covers this just fine, while I believe RPM is limited to
+> biarch.
+>
+>> On the kernel side, it also adds more complexity, where we have to add
+>> even more complex compat support for 64bit systems to handle all the
+>> various 32bit applications possible.
+> [...]
+>
+> Didn't we need to do this already to support x32?  Have compat ioctls
+> involving time been botched?
+I'm not sure exactly what you mean here, but yea, its very much like
+supporting something like x32, but its one more to the list and has to
+be supported on both 32 and 64 architectures.
 
-/me pimps the kernel.org toolchains:
-https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/4.9.0/x86_64-gcc-4.9.0-nolibc_powerpc64-linux.tar.xz
+thanks
+-john
 
-and gets back in his box.
-
-Yours Tony
-
---vni90+aGYgRvsTuO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCAAGBQJT6uOIAAoJEPvNNsFAAoTBghoQAOkqAGogn4eajMUBf0GhXLfy
-ssEydHKZxOXIXg9Ers8FfHxvE7OPeyFmKjz4QLgVkjKyqJ11XrkHLKRWO/WO7fMf
-8cpDWZShPHSDujO63gg8Flj3gi1ddwAXe4R2p9zSIc+bg+9/Ocu0klv6UcPqVyx8
-X2jL80FNivTknM193ixneYQpAAfh+fAKxlwH/aVFve+mcF7jatoyDBJKKSqZocOa
-iVSOh5wjkPfHcE3/IVlLsw/sLG7xhqliE1CQK/yEzdfrv0ZL52klLE2VHVGKDpJw
-jxe91RcBJdl3O5kZxK6WDHKCD+tT51UrPpesJuEgDwwoEd1jLOpgRY6o4OKlXmsc
-vJhAc/572kQpYz4g87KpgjgABQps893ofQNFhAu5IBF1mi70qCGFXVu9xLvEU4gJ
-9MuNv4U82w9MLwPZ+pQY80q46Mq6oqgc1NQ/pk6h4sL/20qsbqENs3LrVdgv3WaW
-vQJurKt0tHA61mqP5pMMSefxnoHCxnRtdhOlQGjmArZlGRGzvc6xnk+/40IXPJ8i
-7GvrFLLH/dO5N1DLbnZYAqqN45nuZzvHufZGS820SW+XdLcyAoE2p00NmQdLlemo
-bqiCUeL/X2ILEh/eUJd6e9SCO+iEemkNXgRy51tzrNgxR4TLIdu7oMMNrYOsCW8W
-rOE4EBbrZiky3GfW340X
-=pS1r
------END PGP SIGNATURE-----
-
---vni90+aGYgRvsTuO--
