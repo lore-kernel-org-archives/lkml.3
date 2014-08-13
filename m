@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034AbaHMJqX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:46:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56602 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751930AbaHMJqW (ORCPT
+	id S1751404AbaHMJw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:52:28 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:9554 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaHMJw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:46:22 -0400
-Date: Wed, 13 Aug 2014 11:46:18 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        rabin@rab.in, Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 0/6] Per-user clock constraints
-Message-ID: <20140813114618.2466ade6@bbrezillon>
-In-Reply-To: <1407333368-31979-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1407333368-31979-1-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 13 Aug 2014 05:52:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 13 Aug 2014 02:39:08 -0700
+Message-ID: <53EB3556.9010504@nvidia.com>
+Date: Wed, 13 Aug 2014 12:52:22 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Thermal reset support in PMC
+References: <1407226380-747-1-git-send-email-mperttunen@nvidia.com> <20140813080744.GD7735@ulmo> <53EB1DF5.301@nvidia.com> <53EB250D.5070207@nvidia.com> <20140813085728.GF7735@ulmo>
+In-Reply-To: <20140813085728.GF7735@ulmo>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomeu,
+On 13/08/14 11:57, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+>
+> On Wed, Aug 13, 2014 at 11:42:53AM +0300, Mikko Perttunen wrote:
+>>
+>>
+>> On 13/08/14 11:12, Mikko Perttunen wrote:
+>>> On 13/08/14 11:07, Thierry Reding wrote:
+>>>>> Old Signed by an unknown key
+>>>>
+>>>> On Tue, Aug 05, 2014 at 11:12:57AM +0300, Mikko Perttunen wrote:
+>>>>> Hi,
+>>>>>
+>>>>> this series adds support for hardware-triggered thermal reset to the PMC
+>>>>> driver. Namely, it adds device tree properties for specifying the I2C
+>>>>> command to be sent when thermtrip is triggered. It is to be noted
+>>>>> that thermtrip won't be ever triggered without a soctherm driver to
+>>>>> calibrate the sensors, but I'll follow up with that patch.
+>>>>>
+>>>>> pmc.c required some juggling around to make the match data usable in
+>>>>> probe, since I didn't want to put the code into the initcall either, since
+>>>>> the soctherm driver won't be initialized by that point anyway.
+>>>>>
+>>>>> Series tested on Jetson-TK1. Should work on Tegra30 and Tegra114 too.
+>>>>
+>>>> Can you describe the procedure used to test this? We currently have a
+>>>> bunch of features in Tegra that some people have tested at some point
+>>>> during development but the test procedures never got documented. That
+>>>> means whenever we want to test something we need to go and reinvent a
+>>>> bunch of tests after the fact.
+>>>>
+>>>> So what I'd like to start doing is collect tests (preferably in some
+>>>> scripted way) so that they can be kept in a repository that people can
+>>>> easily clone and run on devices.
+>>>>
+>>>> Could you provide something like that for thermtrip?
+>>>
+>>> Sure. I'll see if I can make a just a test script or if a local patch is
+>>> needed to test. Btw, I also have a pretty nice test script for EMC
+>>> ready, and I agree that such a repository would be very nice.
+>>
+>> Here is a test program. It it works, the device with immediately shut down.
+>>
+>> https://gist.github.com/cyndis/66126c9c176b5f94a76f
+>
+> Is there a way to set the trip temperature without going through
+> /dev/mem? I'd expect the device to have a sysfs interface of some
+> sort.
 
-Sorry for the late reply.
+The thermtrip "device" isn't currently exposed in any way. If it were 
+exposed, I suppose it would be exposed as thermal zone devices, each 
+with one trip point. Even then, the thermal framework doesn't really 
+support this properly; none of the trip point types really apply to this 
+kind of trip point, and x86 systems don't expose their trips either. 
+Anyway, since debugging is pretty much the only use case for modifying 
+the trip temperature, I thought adding the tz_devices would be a bit 
+overkill.
 
-On Wed,  6 Aug 2014 15:56:03 +0200
-Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
-
-> Hi,
-> 
-> in this v5 of the patchset I have just moved the storage of the clock constraints to the struct clk, as suggested by Stephen. Follows the original cover letter blurb:
-> 
-> I'm retaking Rabin's patches [0] for splitting the clk API in two: one API for
-> clk consumers and another for providers. The consumer API uses a clk structure
-> that just keeps track of the consumer and has a reference to the actual
-> clk_core struct, which is used internally.
-> 
-> I have kept a patch from Rabin that aims to aid in debugging nested
-> enable/disable calls, though my personal aim is to allow more than one consumer
-> to influence the final, effective frequency rate. For now this is limited to
-> setting floor and ceiling constraints, with the short-term aim of allowing
-> devfreq and thermal drivers to set floor and ceiling frequencies on the memory
-> clock, respectively.
-> 
-> For those functions in the consumer clk API that were called from providers, I
-> have added variants to clk-provider.h that are the same only that accept a
-> clk_core instead. These functions are prefixed with clk_provider_.
-> 
-> Patch 1/6 just adds a bunch of defines with the goal of having all the renames
-> in their own commit while preserving git-bisectability, with patch 3/6
-> containing the rename itself as generated by the Coccinelle script in [1].
-> Patch 2/6 is needed because sound/soc/mxs/mxs-saif.c calls both the consumer
-> and the provider API. The actual implementation of the API split comes in patch
-> 4/6. I will be happy to organize the refactoring differently if anybody has a
-> better idea.
-> 
-> Patch 5/6 warns when there's an unbalanced usage of the enable and disable
-> APIs, and patch 6/6 adds the API for setting floor and ceiling frequencies, per
-> consumer.
-
-I tested your patch series on an at91 platform (sama5d3), and it works
-as expected, but I had to fix some conflicts when applying your patches
-on clk-next, and then got a few errors at compile time.
-
-Anyway here is my branch with all those conflicts resolved: [1]. The
-last commit [2] fixes the build errors (I'll let you squash/split the
-changes as you wish).
-
-Best Regards,
-
-Boris
-
-[1]https://github.com/bbrezillon/linux-at91/tree/per-clk-contraints
-[2]https://github.com/bbrezillon/linux-at91/commit/d366c37dcfa5f06de3e27fc3c2807017bece9a2f
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+>
+> Thierry
+>
+> * Unknown Key
+> * 0x7F3EB3A1
+>
