@@ -1,39 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005AbaHMNxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 09:53:21 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:38613 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896AbaHMNxG (ORCPT
+	id S1752698AbaHMN5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 09:57:25 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39774 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145AbaHMN5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 09:53:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407910961-7798-1-git-send-email-gong.chen@linux.intel.com>
-References: <1407910961-7798-1-git-send-email-gong.chen@linux.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 13 Aug 2014 07:52:45 -0600
-Message-ID: <CAErSpo4DZboL75xa1Ahxr9aoDg_wyad1gZpXeAAiqcmx=8N8sg@mail.gmail.com>
-Subject: Re: [RESEND 0/5] PCIe, AER: Misc cleanup
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 13 Aug 2014 09:57:24 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>
+Subject: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call into scheduler
+Date: Wed, 13 Aug 2014 06:57:18 -0700
+Message-Id: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 12:22 AM, Chen, Gong <gong.chen@linux.intel.com> wrote:
->
-> No response since last commit so spread it to a bigger range.
->
-> This patch series is for AER related cleanup & update based on PCIe
-> SPEC r3.0.
+Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
+2012-04-12) introduced an acquisition of the irq_controller_lock
+in gic_raise_softirq() which can lead to a spinlock recursion if
+the gic_arch_extn hooks call into the scheduler (via complete()
+or wake_up(), etc.). This happens because gic_arch_extn hooks are
+normally called with the irq_controller_lock held and calling
+into the scheduler may cause us to call smp_send_reschedule()
+which will grab the irq_controller_lock again. Here's an example
+from a vendor kernel (note that the gic_arch_extn hook code here
+isn't actually in mainline):
 
-I haven't responded because I've been on vacation for the past three
-weeks.  If there's no change in the patches themselves, and if they
-are still in http://patchwork.ozlabs.org/project/linux-pci/list, the
-only thing reposting them does is make more work for me.
+BUG: spinlock recursion on CPU#0, swapper/0/1
+ lock: irq_controller_lock+0x0/0x18, .magic: dead4ead, .owner: sw
+er_cpu: 0
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.10-00430-g3d433c4e
 
-Bjorn
+Call trace:
+[<ffffffc000087e1c>] dump_backtrace+0x0/0x140
+[<ffffffc000087f6c>] show_stack+0x10/0x1c
+[<ffffffc00064732c>] dump_stack+0x74/0xc4
+[<ffffffc0006446c0>] spin_dump+0x78/0x88
+[<ffffffc0006446f4>] spin_bug+0x24/0x34
+[<ffffffc0000d47d0>] do_raw_spin_lock+0x58/0x148
+[<ffffffc00064d398>] _raw_spin_lock_irqsave+0x24/0x38
+[<ffffffc0002c9d7c>] gic_raise_softirq+0x2c/0xbc
+[<ffffffc00008daa4>] smp_send_reschedule+0x34/0x40
+[<ffffffc0000c1e94>] try_to_wake_up+0x224/0x288
+[<ffffffc0000c1f4c>] default_wake_function+0xc/0x18
+[<ffffffc0000ceef0>] __wake_up_common+0x50/0x8c
+[<ffffffc0000cef3c>] __wake_up_locked+0x10/0x1c
+[<ffffffc0000cf734>] complete+0x3c/0x5c
+[<ffffffc0002f0e78>] msm_mpm_enable_irq_exclusive+0x1b8/0x1c8
+[<ffffffc0002f0f58>] __msm_mpm_enable_irq+0x4c/0x7c
+[<ffffffc0002f0f94>] msm_mpm_enable_irq+0xc/0x18
+[<ffffffc0002c9bb0>] gic_unmask_irq+0x40/0x7c
+[<ffffffc0000de5f4>] irq_enable+0x2c/0x48
+[<ffffffc0000de65c>] irq_startup+0x4c/0x74
+[<ffffffc0000dd2fc>] __setup_irq+0x264/0x3f0
+[<ffffffc0000dd5e0>] request_threaded_irq+0xcc/0x11c
+[<ffffffc0000df254>] devm_request_threaded_irq+0x68/0xb4
+[<ffffffc000471520>] msm_iommu_ctx_probe+0x124/0x2d4
+[<ffffffc000337374>] platform_drv_probe+0x20/0x54
+[<ffffffc00033598c>] driver_probe_device+0x158/0x340
+[<ffffffc000335c20>] __driver_attach+0x60/0x90
+[<ffffffc000333c9c>] bus_for_each_dev+0x6c/0x8c
+[<ffffffc000335304>] driver_attach+0x1c/0x28
+[<ffffffc000334f14>] bus_add_driver+0x120/0x204
+[<ffffffc0003362e4>] driver_register+0xbc/0x10c
+[<ffffffc000337348>] __platform_driver_register+0x5c/0x68
+[<ffffffc00094c478>] msm_iommu_driver_init+0x54/0x7c
+[<ffffffc0000813ec>] do_one_initcall+0xa4/0x130
+[<ffffffc00091d928>] kernel_init_freeable+0x138/0x1dc
+[<ffffffc000642578>] kernel_init+0xc/0xd4
+
+We really just want to synchronize the sending of an SGI with the
+update of the gic_cpu_map[], so introduce a new SGI lock that we
+can use to synchronize the two code paths. Three main events are
+happening that we have to consider:
+
+	1. We're updating the gic_cpu_mask to point to an
+	incoming CPU
+
+	2. We're (potentially) sending an SGI to the outgoing CPU
+
+	3. We're redirecting any pending SGIs for the outgoing
+	CPU to the incoming CPU.
+
+Events 1 and 3 are already ordered within the same CPU by means
+of program order and use of I/O accessors. Events 1 and 2 don't
+need to be ordered, but events 2 and 3 do because any SGIs for
+the outgoing CPU need to be pending before we can redirect them.
+Synchronize by acquiring a new lock around event 2 and before
+event 3. Use smp_mb__after_unlock_lock() before event 3 to ensure
+that event 1 is seen before event 3 on other CPUs that may be
+executing event 2. We put this all behind the b.L switcher config
+option so that if we're not using this feature we don't have to
+acquire any locks at all in the IPI path.
+
+Cc: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/irqchip/irq-gic.c | 23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 7c131cf7cc13..b9e669cb1c1e 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -81,6 +81,16 @@ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+ #define NR_GIC_CPU_IF 8
+ static u8 gic_cpu_map[NR_GIC_CPU_IF] __read_mostly;
+ 
++#ifdef CONFIG_BL_SWITCHER
++/* Synchronize switching CPU interface and sending SGIs */
++static DEFINE_RAW_SPINLOCK(gic_sgi_lock);
++#define sgi_map_lock(flags) raw_spin_lock_irqsave(&gic_sgi_lock, flags)
++#define sgi_map_unlock(flags) raw_spin_unlock_irqrestore(&gic_sgi_lock, flags)
++#else
++#define sgi_map_lock(flags) (void)(flags)
++#define sgi_map_unlock(flags) (void)(flags)
++#endif
++
+ /*
+  * Supported arch specific GIC irq extension.
+  * Default make them NULL.
+@@ -658,7 +668,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ 	int cpu;
+ 	unsigned long flags, map = 0;
+ 
+-	raw_spin_lock_irqsave(&irq_controller_lock, flags);
++	sgi_map_lock(flags);
+ 
+ 	/* Convert our logical CPU mask into a physical one. */
+ 	for_each_cpu(cpu, mask)
+@@ -673,7 +683,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ 	/* this always happens on GIC0 */
+ 	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
+ 
+-	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
++	sgi_map_unlock(flags);
+ }
+ #endif
+ 
+@@ -764,6 +774,15 @@ void gic_migrate_target(unsigned int new_cpu_id)
+ 
+ 	raw_spin_unlock(&irq_controller_lock);
+ 
++	raw_spin_lock(&gic_sgi_lock);
++	/*
++	 * Ensure that the gic_cpu_map update above is seen in
++	 * gic_raise_softirq() before we redirect any pending SGIs that
++	 * may have been raised for the outgoing CPU (cur_cpu_id)
++	 */
++	smp_mb__after_unlock_lock();
++	raw_spin_unlock(&gic_sgi_lock);
++
+ 	/*
+ 	 * Now let's migrate and clear any potential SGIs that might be
+ 	 * pending for us (cur_cpu_id).  Since GIC_DIST_SGI_PENDING_SET
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
