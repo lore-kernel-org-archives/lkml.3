@@ -1,241 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220AbaHMPaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:30:25 -0400
-Received: from relay.variantweb.net ([104.131.199.242]:53354 "EHLO
-	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751749AbaHMPaY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:30:24 -0400
-Date: Wed, 13 Aug 2014 10:30:20 -0500
-From: Seth Jennings <sjennings@variantweb.net>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, linux-mm@kvack.org,
-        Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org,
-        juno.choi@lge.com, seungho1.park@lge.com,
-        Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [RFC 3/3] zram: limit memory size for zram
-Message-ID: <20140813153020.GC2768@cerebellum.variantweb.net>
-References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
- <1407225723-23754-4-git-send-email-minchan@kernel.org>
- <20140805094859.GE27993@bbox>
- <20140805131615.GA961@swordfish>
- <20140806065253.GC3796@bbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753308AbaHMPaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:30:30 -0400
+Received: from rrzmta1.uni-regensburg.de ([194.94.155.51]:40674 "EHLO
+	rrzmta1.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168AbaHMPa0 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:1:1>);
+	Wed, 13 Aug 2014 11:30:26 -0400
+X-Greylist: delayed 484 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Aug 2014 11:30:26 EDT
+Message-Id: <53EB9EC9020000A100016A4D@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Wed, 13 Aug 2014 17:22:17 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: <linux-kernel@vger.kernel.org>
+Subject: Some problems with HP DL380 G8 BIOS and SLES11 SP3
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20140806065253.GC3796@bbox>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 06, 2014 at 03:52:53PM +0900, Minchan Kim wrote:
-> On Tue, Aug 05, 2014 at 10:16:15PM +0900, Sergey Senozhatsky wrote:
-> > Hello,
-> > 
-> > On (08/05/14 18:48), Minchan Kim wrote:
-> > > Another idea: we could define void zs_limit_mem(unsinged long nr_pages)
-> > > in zsmalloc and put the limit in zs_pool via new API from zram so that
-> > > zs_malloc could be failed as soon as it exceeds the limit.
-> > > 
-> > > In the end, zram doesn't need to call zs_get_total_size_bytes on every
-> > > write. It's more clean and right layer, IMHO.
-> > 
-> > yes, I think this one is better.
-> > 
-> > 	-ss
-> 
-> From 279c406b5a8eabd03edca55490ec92b539b39c76 Mon Sep 17 00:00:00 2001
-> From: Minchan Kim <minchan@kernel.org>
-> Date: Tue, 5 Aug 2014 16:24:57 +0900
-> Subject: [PATCH] zram: limit memory size for zram
-> 
-> I have received a request several time from zram users.
-> They want to limit memory size for zram because zram can consume
-> lot of memory on system without limit so it makes memory management
-> control hard.
-> 
-> This patch adds new knob to limit memory of zram.
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  Documentation/blockdev/zram.txt |  1 +
->  drivers/block/zram/zram_drv.c   | 39 +++++++++++++++++++++++++++++++++++++--
->  include/linux/zsmalloc.h        |  2 ++
->  mm/zsmalloc.c                   | 24 ++++++++++++++++++++++++
->  4 files changed, 64 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> index d24534bee763..fcb0561dfe2e 100644
-> --- a/Documentation/blockdev/zram.txt
-> +++ b/Documentation/blockdev/zram.txt
-> @@ -96,6 +96,7 @@ size of the disk when not in use so a huge zram is wasteful.
->  		compr_data_size
->  		mem_used_total
->  		mem_used_max
-> +		mem_limit
->  
->  7) Deactivate:
->  	swapoff /dev/zram0
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index a4d637b4db7d..069e81ef0c17 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -137,6 +137,41 @@ static ssize_t max_comp_streams_show(struct device *dev,
->  	return scnprintf(buf, PAGE_SIZE, "%d\n", val);
->  }
->  
-> +static ssize_t mem_limit_show(struct device *dev,
-> +		struct device_attribute *attr, char *buf)
-> +{
-> +	u64 val = 0;
-> +	struct zram *zram = dev_to_zram(dev);
-> +	struct zram_meta *meta = zram->meta;
-> +
-> +	down_read(&zram->init_lock);
-> +	if (init_done(zram))
-> +		val = zs_get_limit_size_bytes(meta->mem_pool);
-> +	up_read(&zram->init_lock);
-> +
-> +	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
-> +}
-> +
-> +static ssize_t mem_limit_store(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t len)
-> +{
-> +	int ret;
-> +	u64 limit;
-> +	struct zram *zram = dev_to_zram(dev);
-> +	struct zram_meta *meta = zram->meta;
-> +
-> +	ret = kstrtoull(buf, 0, &limit);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	down_write(&zram->init_lock);
-> +	if (init_done(zram))
-> +		zs_set_limit_size_bytes(meta->mem_pool, limit);
-> +	up_write(&zram->init_lock);
-> +	ret = len;
-> +	return ret;
-> +}
-> +
->  static ssize_t max_comp_streams_store(struct device *dev,
->  		struct device_attribute *attr, const char *buf, size_t len)
->  {
-> @@ -506,8 +541,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  
->  	handle = zs_malloc(meta->mem_pool, clen);
->  	if (!handle) {
-> -		pr_info("Error allocating memory for compressed page: %u, size=%zu\n",
-> -			index, clen);
->  		ret = -ENOMEM;
->  		goto out;
->  	}
-> @@ -854,6 +887,7 @@ static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
->  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
->  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
->  static DEVICE_ATTR(mem_used_max, S_IRUGO, mem_used_max_show, NULL);
-> +static DEVICE_ATTR(mem_limit, S_IRUGO, mem_limit_show, mem_limit_store);
->  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
->  		max_comp_streams_show, max_comp_streams_store);
->  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
-> @@ -883,6 +917,7 @@ static struct attribute *zram_disk_attrs[] = {
->  	&dev_attr_compr_data_size.attr,
->  	&dev_attr_mem_used_total.attr,
->  	&dev_attr_mem_used_max.attr,
-> +	&dev_attr_mem_limit.attr,
->  	&dev_attr_max_comp_streams.attr,
->  	&dev_attr_comp_algorithm.attr,
->  	NULL,
-> diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
-> index fb087ca06a88..41122251a2d0 100644
-> --- a/include/linux/zsmalloc.h
-> +++ b/include/linux/zsmalloc.h
-> @@ -49,4 +49,6 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
->  u64 zs_get_total_size_bytes(struct zs_pool *pool);
->  u64 zs_get_max_size_bytes(struct zs_pool *pool);
->  
-> +u64 zs_get_limit_size_bytes(struct zs_pool *pool);
-> +void zs_set_limit_size_bytes(struct zs_pool *pool, u64 limit);
+Hello!
 
-While having a function to change the limit is fine, the setting of the
-initial limit should be a parameter to zs_create_pool() since, if the
-user doesn't call zs_set_limit_size_bytes() after zs_create_pool(), the
-default size is 0.
+Running the current SLES11 SP3 kernel on a HP DL380 G8 server, there are some kernel messages that indicate a bug either in the kernel or in the HP BIOS. Maybe someone can explain, so I can try to get it fixed whatever party broke it...
 
-This also breaks zswap which does its pool size limiting in the zswap
-layer using zs_get_total_size_bytes() to poll for the pool size.
+Linux kernel is "3.0.101-0.35-default (geeko@buildhost) (gcc version 4.3.4 [gcc-4_3-branch revision 152973]" (latest).
+HP server is "HP ProLiant DL380p Gen8, BIOS P70 02/10/2014" (latest)
 
-It also has implications for the new zpool abstraction layer which
-doesn't have a handle for setting the pool limit.
+During ACPI init I see:
+[...]
+Reserving 128MB of memory at 752MB for crashkernel (System RAM: 132095MB)
+ACPI: RSDP 00000000000f4f00 00024 (v02 HP    )
+ACPI: XSDT 00000000bddaed00 000D4 (v01 HP     ProLiant 00000002   322? 0000162E)
+ACPI: FACP 00000000bddaee40 000F4 (v03 HP     ProLiant 00000002   322? 0000162E)
+ACPI Warning: Invalid length for Pm1aControlBlock: 32, using default 16 (2011041
+3/tbfadt-611)
+ACPI Warning: Invalid length for Pm2ControlBlock: 32, using default 8 (20110413/
+tbfadt-611)
+ACPI: DSDT 00000000bddaef40 026DC (v01 HP         DSDT 00000001 INTL 20030228)
+ACPI: FACS 00000000bddac140 00040
+ACPI: SPCR 00000000bddac180 00050 (v01 HP     SPCRRBSU 00000001   322? 0000162E)
+ACPI: MCFG 00000000bddac200 0003C (v01 HP     ProLiant 00000001      00000000)
+[...]
 
-Could you do what zswap does already and enforce the pool limit in the
-zram code?
+HPET id 0 under DRHD base 0xf4ffe000
+BIOS requests to not use x2apic
+Use 'intremap=no_x2apic_optout' to override BIOS request
+Enabled IRQ remapping in xapic mode
+x2apic not enabled, IRQ remapping is in xapic mode
+Switched APIC routing to physical flat.
+..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+CPU0: Intel(R) Xeon(R) CPU E5-2630 v2 @ 2.60GHz stepping 04
+Performance Events: PEBS fmt1+, 16-deep LBR, IvyBridge events, Broken BIOS detec
+ted, complain to your hardware vendor.
+[Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 38d is 330)
+Intel PMU driver.
+... version:                3
+... bit width:              48
+... generic registers:      4
+... value mask:             0000ffffffffffff
+... max period:             000000007fffffff
+... fixed-purpose events:   3
+... event mask:             000000070000000f
+NMI watchdog enabled, takes one hw-pmu counter.
+Booting Node   0, Processors  #1
+[...]
 
-Seth
+ pci0000:00: Requesting ACPI _OSC control (0x1d)
+ pci0000:00: ACPI _OSC request failed (AE_SUPPORT), returned control mask: 0x00
+ACPI _OSC control for PCIe not granted, disabling ASPM
+[...]
 
->  #endif
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index 3b5be076268a..8ca51118cf2b 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -220,6 +220,7 @@ struct zs_pool {
->  	gfp_t flags;	/* allocation flags used when growing pool */
->  	unsigned long pages_allocated;
->  	unsigned long max_pages_allocated;
-> +	unsigned long pages_limited;
->  };
->  
->  /*
-> @@ -940,6 +941,11 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
->  
->  	if (!first_page) {
->  		spin_unlock(&class->lock);
-> +
-> +		if (pool->pages_limited && (pool->pages_limited <
-> +			pool->pages_allocated + class->pages_per_zspage))
-> +			return 0;
-> +
->  		first_page = alloc_zspage(class, pool->flags);
->  		if (unlikely(!first_page))
->  			return 0;
-> @@ -1132,6 +1138,24 @@ u64 zs_get_max_size_bytes(struct zs_pool *pool)
->  }
->  EXPORT_SYMBOL_GPL(zs_get_max_size_bytes);
->  
-> +void zs_set_limit_size_bytes(struct zs_pool *pool, u64 limit)
-> +{
-> +	pool->pages_limited = round_down(limit, PAGE_SIZE) >> PAGE_SHIFT;
-> +}
-> +EXPORT_SYMBOL_GPL(zs_set_limit_size_bytes);
-> +
-> +u64 zs_get_limit_size_bytes(struct zs_pool *pool)
-> +{
-> +	u64 npages;
-> +
-> +	spin_lock(&pool->stat_lock);
-> +	npages = pool->pages_limited;
-> +	spin_unlock(&pool->stat_lock);
-> +	return npages << PAGE_SHIFT;
-> +
-> +}
-> +EXPORT_SYMBOL_GPL(zs_get_limit_size_bytes);
-> +
->  module_init(zs_init);
->  module_exit(zs_exit);
->  
-> -- 
-> 2.0.0
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+ pci0000:20: Requesting ACPI _OSC control (0x1d)
+ pci0000:20: ACPI _OSC request failed (AE_SUPPORT), returned control mask: 0x00
+ACPI _OSC control for PCIe not granted, disabling ASPM
+[...]
+
+Regards,
+Ulrich
+P.S. Please CC: me, as I'm not on LKML...
+
+
