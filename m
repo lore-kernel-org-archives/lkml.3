@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973AbaHMJSK (ORCPT <rfc822;w@1wt.eu>);
+	id S1752102AbaHMJSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:18:13 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:60111 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaHMJSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Aug 2014 05:18:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317AbaHMJSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:18:07 -0400
-Message-ID: <53EB2D31.8090204@redhat.com>
-Date: Wed, 13 Aug 2014 11:17:37 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+Date: Wed, 13 Aug 2014 14:48:04 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH] ARM: integrator: Drop unnecessary continue
+Message-ID: <20140813091804.GA3043@himangi-Dell>
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit immediate"
- eBPF instruction
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com> <1407916658-8731-2-git-send-email-ast@plumgrid.com>
-In-Reply-To: <1407916658-8731-2-git-send-email-ast@plumgrid.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2014 09:57 AM, Alexei Starovoitov wrote:
-> add BPF_LD_IMM64 instruction to load 64-bit immediate value into register.
-> All previous instructions were 8-byte. This is first 16-byte instruction.
-> Two consecutive 'struct bpf_insn' blocks are interpreted as single instruction:
-> insn[0/1].code = BPF_LD | BPF_DW | BPF_IMM
-> insn[0/1].dst_reg = destination register
-> insn[0].imm = lower 32-bit
-> insn[1].imm = upper 32-bit
->
-> Classic BPF has similar instruction: BPF_LD | BPF_W | BPF_IMM
-> which loads 32-bit immediate value into a register.
->
-> x64 JITs it as single 'movabsq %rax, imm64'
-> arm64 may JIT as sequence of four 'movk x0, #imm16, lsl #shift' insn
->
-> Note that old eBPF programs are binary compatible with new interpreter.
->
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Continue is not needed at the bottom of a loop.
 
-For follow-ups on this series, can you put the actual motivation
-for this change from the cover letter into this commit log as it
-otherwise doesn't say anything clearly why it is needed. Code and
-test case looks good to me.
+The Coccinelle semantic patch implementing this change is:
+
+@@
+@@
+
+for (...;...;...) {
+  ...
+  if (...) {
+    ...
+-   continue;
+  }
+}
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ arch/arm/mach-integrator/impd1.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/arch/arm/mach-integrator/impd1.c b/arch/arm/mach-integrator/impd1.c
+index 3ce8807..c4eb8c9 100644
+--- a/arch/arm/mach-integrator/impd1.c
++++ b/arch/arm/mach-integrator/impd1.c
+@@ -376,10 +376,8 @@ static int __init_refok impd1_probe(struct lm_device *dev)
+ 					    irq1, irq2,
+ 					    idev->platform_data, idev->id,
+ 					    &dev->resource);
+-		if (IS_ERR(d)) {
++		if (IS_ERR(d))
+ 			dev_err(&dev->dev, "unable to register device: %ld\n", PTR_ERR(d));
+-			continue;
+-		}
+ 	}
+ 
+ 	return 0;
+-- 
+1.9.1
+
