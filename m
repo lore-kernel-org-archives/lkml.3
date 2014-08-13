@@ -1,1333 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064AbaHMIX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:23:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51987 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565AbaHMIXU (ORCPT
+	id S1751382AbaHMI3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:29:46 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51373 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaHMI3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:23:20 -0400
-Date: Wed, 13 Aug 2014 01:22:35 -0700
-From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
-Message-ID: <tip-92807ffdf32c380a09cfa396c853e97303826103@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, acme@kernel.org,
-        zheng.z.yan@intel.com, ak@linux.intel.com, tglx@linutronix.de,
-        bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, acme@kernel.org,
-        zheng.z.yan@intel.com, ak@linux.intel.com, tglx@linutronix.de,
-        bp@suse.de
-In-Reply-To: <1406704935-27708-2-git-send-email-zheng.z.yan@intel.com>
-References: <1406704935-27708-2-git-send-email-zheng.z.yan@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86/uncore: Move NHM/SNB/
- IVB specific code to seperate file
-Git-Commit-ID: 92807ffdf32c380a09cfa396c853e97303826103
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 13 Aug 2014 04:29:43 -0400
+X-Original-SENDERIP: 10.177.222.172
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Wed, 13 Aug 2014 17:29:41 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/8] mm/isolation: close the two race problems related
+ to pageblock isolation
+Message-ID: <20140813082941.GE30451@js1304-P5Q-DELUXE>
+References: <1407309517-3270-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1407309517-3270-8-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140812051745.GC23418@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140812051745.GC23418@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  92807ffdf32c380a09cfa396c853e97303826103
-Gitweb:     http://git.kernel.org/tip/92807ffdf32c380a09cfa396c853e97303826103
-Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Wed, 30 Jul 2014 15:22:13 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 13 Aug 2014 07:51:06 +0200
+On Tue, Aug 12, 2014 at 05:17:45AM +0000, Minchan Kim wrote:
+> On Wed, Aug 06, 2014 at 04:18:33PM +0900, Joonsoo Kim wrote:
+> > 2. #1 requires IPI for synchronization and we can't hold the zone lock
+> > during processing IPI. In this time, some pages could be moved from buddy
+> > list to pcp list on page allocation path and later it could be moved again
+> > from pcp list to buddy list. In this time, this page would be on isolate
+> > pageblock, so, the hook is required on free_pcppages_bulk() to prevent
+> > misplacement. To remove this possibility, disabling and draining pcp
+> > list is needed during isolation. It guaratees that there is no page on pcp
+> > list on all cpus while isolation, so misplacement problem can't happen.
+> > 
+> > Note that this doesn't fix freepage counting problem. To fix it,
+> > we need more logic. Following patches will do it.
+> 
+> I hope to revise description in next spin. It's very hard to parse for
+> stupid me.
 
-perf/x86/uncore: Move NHM/SNB/IVB specific code to seperate file
+Okay. I will do it.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: eranian@google.com
-Link: http://lkml.kernel.org/r/1406704935-27708-2-git-send-email-zheng.z.yan@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/Makefile                      |   3 +-
- arch/x86/kernel/cpu/perf_event_intel_uncore.c     | 531 +------------------
- arch/x86/kernel/cpu/perf_event_intel_uncore.h     |  56 +-
- arch/x86/kernel/cpu/perf_event_intel_uncore_snb.c | 603 ++++++++++++++++++++++
- 4 files changed, 620 insertions(+), 573 deletions(-)
+> 
+> > 
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > ---
+> >  mm/internal.h       |    2 ++
+> >  mm/page_alloc.c     |   27 ++++++++++++++++++++-------
+> >  mm/page_isolation.c |   45 +++++++++++++++++++++++++++++++++------------
+> >  3 files changed, 55 insertions(+), 19 deletions(-)
+> > 
+> > diff --git a/mm/internal.h b/mm/internal.h
+> > index a1b651b..81b8884 100644
+> > --- a/mm/internal.h
+> > +++ b/mm/internal.h
+> > @@ -108,6 +108,8 @@ extern pmd_t *mm_find_pmd(struct mm_struct *mm, unsigned long address);
+> >  /*
+> >   * in mm/page_alloc.c
+> >   */
+> > +extern void zone_pcp_disable(struct zone *zone);
+> > +extern void zone_pcp_enable(struct zone *zone);
+> 
+> Nit: Some of pcp functions has prefix zone but others don't.
+> Which is better? If function has param zone as first argument,
+> I think it's clear unless the function don't have prefix zone.
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 7fd54f0..5ca8f4a 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -36,7 +36,8 @@ obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd_iommu.o
- endif
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
--obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o perf_event_intel_rapl.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o perf_event_intel_uncore_snb.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_rapl.o
- endif
- 
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index cfe2353..feb085c 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -37,8 +37,6 @@ DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
- DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
- DEFINE_UNCORE_FORMAT_ATTR(tid_en, tid_en, "config:19");
- DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
--DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
--DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
- DEFINE_UNCORE_FORMAT_ATTR(thresh8, thresh, "config:24-31");
- DEFINE_UNCORE_FORMAT_ATTR(thresh5, thresh, "config:24-28");
- DEFINE_UNCORE_FORMAT_ATTR(occ_sel, occ_sel, "config:14-15");
-@@ -1605,508 +1603,6 @@ static struct pci_driver ivt_uncore_pci_driver = {
- };
- /* end of IvyTown uncore support */
- 
--/* Sandy Bridge uncore support */
--static void snb_uncore_msr_enable_event(struct intel_uncore_box *box, struct perf_event *event)
--{
--	struct hw_perf_event *hwc = &event->hw;
--
--	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
--		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
--	else
--		wrmsrl(hwc->config_base, SNB_UNC_CTL_EN);
--}
--
--static void snb_uncore_msr_disable_event(struct intel_uncore_box *box, struct perf_event *event)
--{
--	wrmsrl(event->hw.config_base, 0);
--}
--
--static void snb_uncore_msr_init_box(struct intel_uncore_box *box)
--{
--	if (box->pmu->pmu_idx == 0) {
--		wrmsrl(SNB_UNC_PERF_GLOBAL_CTL,
--			SNB_UNC_GLOBAL_CTL_EN | SNB_UNC_GLOBAL_CTL_CORE_ALL);
--	}
--}
--
--static struct uncore_event_desc snb_uncore_events[] = {
--	INTEL_UNCORE_EVENT_DESC(clockticks, "event=0xff,umask=0x00"),
--	{ /* end: all zeroes */ },
--};
--
--static struct attribute *snb_uncore_formats_attr[] = {
--	&format_attr_event.attr,
--	&format_attr_umask.attr,
--	&format_attr_edge.attr,
--	&format_attr_inv.attr,
--	&format_attr_cmask5.attr,
--	NULL,
--};
--
--static struct attribute_group snb_uncore_format_group = {
--	.name		= "format",
--	.attrs		= snb_uncore_formats_attr,
--};
--
--static struct intel_uncore_ops snb_uncore_msr_ops = {
--	.init_box	= snb_uncore_msr_init_box,
--	.disable_event	= snb_uncore_msr_disable_event,
--	.enable_event	= snb_uncore_msr_enable_event,
--	.read_counter	= uncore_msr_read_counter,
--};
--
--static struct event_constraint snb_uncore_cbox_constraints[] = {
--	UNCORE_EVENT_CONSTRAINT(0x80, 0x1),
--	UNCORE_EVENT_CONSTRAINT(0x83, 0x1),
--	EVENT_CONSTRAINT_END
--};
--
--static struct intel_uncore_type snb_uncore_cbox = {
--	.name		= "cbox",
--	.num_counters   = 2,
--	.num_boxes	= 4,
--	.perf_ctr_bits	= 44,
--	.fixed_ctr_bits	= 48,
--	.perf_ctr	= SNB_UNC_CBO_0_PER_CTR0,
--	.event_ctl	= SNB_UNC_CBO_0_PERFEVTSEL0,
--	.fixed_ctr	= SNB_UNC_FIXED_CTR,
--	.fixed_ctl	= SNB_UNC_FIXED_CTR_CTRL,
--	.single_fixed	= 1,
--	.event_mask	= SNB_UNC_RAW_EVENT_MASK,
--	.msr_offset	= SNB_UNC_CBO_MSR_OFFSET,
--	.constraints	= snb_uncore_cbox_constraints,
--	.ops		= &snb_uncore_msr_ops,
--	.format_group	= &snb_uncore_format_group,
--	.event_descs	= snb_uncore_events,
--};
--
--static struct intel_uncore_type *snb_msr_uncores[] = {
--	&snb_uncore_cbox,
--	NULL,
--};
--
--enum {
--	SNB_PCI_UNCORE_IMC,
--};
--
--static struct uncore_event_desc snb_uncore_imc_events[] = {
--	INTEL_UNCORE_EVENT_DESC(data_reads,  "event=0x01"),
--	INTEL_UNCORE_EVENT_DESC(data_reads.scale, "6.103515625e-5"),
--	INTEL_UNCORE_EVENT_DESC(data_reads.unit, "MiB"),
--
--	INTEL_UNCORE_EVENT_DESC(data_writes, "event=0x02"),
--	INTEL_UNCORE_EVENT_DESC(data_writes.scale, "6.103515625e-5"),
--	INTEL_UNCORE_EVENT_DESC(data_writes.unit, "MiB"),
--
--	{ /* end: all zeroes */ },
--};
--
--#define SNB_UNCORE_PCI_IMC_EVENT_MASK		0xff
--#define SNB_UNCORE_PCI_IMC_BAR_OFFSET		0x48
--
--/* page size multiple covering all config regs */
--#define SNB_UNCORE_PCI_IMC_MAP_SIZE		0x6000
--
--#define SNB_UNCORE_PCI_IMC_DATA_READS		0x1
--#define SNB_UNCORE_PCI_IMC_DATA_READS_BASE	0x5050
--#define SNB_UNCORE_PCI_IMC_DATA_WRITES		0x2
--#define SNB_UNCORE_PCI_IMC_DATA_WRITES_BASE	0x5054
--#define SNB_UNCORE_PCI_IMC_CTR_BASE		SNB_UNCORE_PCI_IMC_DATA_READS_BASE
--
--static struct attribute *snb_uncore_imc_formats_attr[] = {
--	&format_attr_event.attr,
--	NULL,
--};
--
--static struct attribute_group snb_uncore_imc_format_group = {
--	.name = "format",
--	.attrs = snb_uncore_imc_formats_attr,
--};
--
--static void snb_uncore_imc_init_box(struct intel_uncore_box *box)
--{
--	struct pci_dev *pdev = box->pci_dev;
--	int where = SNB_UNCORE_PCI_IMC_BAR_OFFSET;
--	resource_size_t addr;
--	u32 pci_dword;
--
--	pci_read_config_dword(pdev, where, &pci_dword);
--	addr = pci_dword;
--
--#ifdef CONFIG_PHYS_ADDR_T_64BIT
--	pci_read_config_dword(pdev, where + 4, &pci_dword);
--	addr |= ((resource_size_t)pci_dword << 32);
--#endif
--
--	addr &= ~(PAGE_SIZE - 1);
--
--	box->io_addr = ioremap(addr, SNB_UNCORE_PCI_IMC_MAP_SIZE);
--	box->hrtimer_duration = UNCORE_SNB_IMC_HRTIMER_INTERVAL;
--}
--
--static void snb_uncore_imc_enable_box(struct intel_uncore_box *box)
--{}
--
--static void snb_uncore_imc_disable_box(struct intel_uncore_box *box)
--{}
--
--static void snb_uncore_imc_enable_event(struct intel_uncore_box *box, struct perf_event *event)
--{}
--
--static void snb_uncore_imc_disable_event(struct intel_uncore_box *box, struct perf_event *event)
--{}
--
--static u64 snb_uncore_imc_read_counter(struct intel_uncore_box *box, struct perf_event *event)
--{
--	struct hw_perf_event *hwc = &event->hw;
--
--	return (u64)*(unsigned int *)(box->io_addr + hwc->event_base);
--}
--
--/*
-- * custom event_init() function because we define our own fixed, free
-- * running counters, so we do not want to conflict with generic uncore
-- * logic. Also simplifies processing
-- */
--static int snb_uncore_imc_event_init(struct perf_event *event)
--{
--	struct intel_uncore_pmu *pmu;
--	struct intel_uncore_box *box;
--	struct hw_perf_event *hwc = &event->hw;
--	u64 cfg = event->attr.config & SNB_UNCORE_PCI_IMC_EVENT_MASK;
--	int idx, base;
--
--	if (event->attr.type != event->pmu->type)
--		return -ENOENT;
--
--	pmu = uncore_event_to_pmu(event);
--	/* no device found for this pmu */
--	if (pmu->func_id < 0)
--		return -ENOENT;
--
--	/* Sampling not supported yet */
--	if (hwc->sample_period)
--		return -EINVAL;
--
--	/* unsupported modes and filters */
--	if (event->attr.exclude_user   ||
--	    event->attr.exclude_kernel ||
--	    event->attr.exclude_hv     ||
--	    event->attr.exclude_idle   ||
--	    event->attr.exclude_host   ||
--	    event->attr.exclude_guest  ||
--	    event->attr.sample_period) /* no sampling */
--		return -EINVAL;
--
--	/*
--	 * Place all uncore events for a particular physical package
--	 * onto a single cpu
--	 */
--	if (event->cpu < 0)
--		return -EINVAL;
--
--	/* check only supported bits are set */
--	if (event->attr.config & ~SNB_UNCORE_PCI_IMC_EVENT_MASK)
--		return -EINVAL;
--
--	box = uncore_pmu_to_box(pmu, event->cpu);
--	if (!box || box->cpu < 0)
--		return -EINVAL;
--
--	event->cpu = box->cpu;
--
--	event->hw.idx = -1;
--	event->hw.last_tag = ~0ULL;
--	event->hw.extra_reg.idx = EXTRA_REG_NONE;
--	event->hw.branch_reg.idx = EXTRA_REG_NONE;
--	/*
--	 * check event is known (whitelist, determines counter)
--	 */
--	switch (cfg) {
--	case SNB_UNCORE_PCI_IMC_DATA_READS:
--		base = SNB_UNCORE_PCI_IMC_DATA_READS_BASE;
--		idx = UNCORE_PMC_IDX_FIXED;
--		break;
--	case SNB_UNCORE_PCI_IMC_DATA_WRITES:
--		base = SNB_UNCORE_PCI_IMC_DATA_WRITES_BASE;
--		idx = UNCORE_PMC_IDX_FIXED + 1;
--		break;
--	default:
--		return -EINVAL;
--	}
--
--	/* must be done before validate_group */
--	event->hw.event_base = base;
--	event->hw.config = cfg;
--	event->hw.idx = idx;
--
--	/* no group validation needed, we have free running counters */
--
--	return 0;
--}
--
--static int snb_uncore_imc_hw_config(struct intel_uncore_box *box, struct perf_event *event)
--{
--	return 0;
--}
--
--static void snb_uncore_imc_event_start(struct perf_event *event, int flags)
--{
--	struct intel_uncore_box *box = uncore_event_to_box(event);
--	u64 count;
--
--	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
--		return;
--
--	event->hw.state = 0;
--	box->n_active++;
--
--	list_add_tail(&event->active_entry, &box->active_list);
--
--	count = snb_uncore_imc_read_counter(box, event);
--	local64_set(&event->hw.prev_count, count);
--
--	if (box->n_active == 1)
--		uncore_pmu_start_hrtimer(box);
--}
--
--static void snb_uncore_imc_event_stop(struct perf_event *event, int flags)
--{
--	struct intel_uncore_box *box = uncore_event_to_box(event);
--	struct hw_perf_event *hwc = &event->hw;
--
--	if (!(hwc->state & PERF_HES_STOPPED)) {
--		box->n_active--;
--
--		WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
--		hwc->state |= PERF_HES_STOPPED;
--
--		list_del(&event->active_entry);
--
--		if (box->n_active == 0)
--			uncore_pmu_cancel_hrtimer(box);
--	}
--
--	if ((flags & PERF_EF_UPDATE) && !(hwc->state & PERF_HES_UPTODATE)) {
--		/*
--		 * Drain the remaining delta count out of a event
--		 * that we are disabling:
--		 */
--		uncore_perf_event_update(box, event);
--		hwc->state |= PERF_HES_UPTODATE;
--	}
--}
--
--static int snb_uncore_imc_event_add(struct perf_event *event, int flags)
--{
--	struct intel_uncore_box *box = uncore_event_to_box(event);
--	struct hw_perf_event *hwc = &event->hw;
--
--	if (!box)
--		return -ENODEV;
--
--	hwc->state = PERF_HES_UPTODATE | PERF_HES_STOPPED;
--	if (!(flags & PERF_EF_START))
--		hwc->state |= PERF_HES_ARCH;
--
--	snb_uncore_imc_event_start(event, 0);
--
--	box->n_events++;
--
--	return 0;
--}
--
--static void snb_uncore_imc_event_del(struct perf_event *event, int flags)
--{
--	struct intel_uncore_box *box = uncore_event_to_box(event);
--	int i;
--
--	snb_uncore_imc_event_stop(event, PERF_EF_UPDATE);
--
--	for (i = 0; i < box->n_events; i++) {
--		if (event == box->event_list[i]) {
--			--box->n_events;
--			break;
--		}
--	}
--}
--
--static int snb_pci2phy_map_init(int devid)
--{
--	struct pci_dev *dev = NULL;
--	int bus;
--
--	dev = pci_get_device(PCI_VENDOR_ID_INTEL, devid, dev);
--	if (!dev)
--		return -ENOTTY;
--
--	bus = dev->bus->number;
--
--	uncore_pcibus_to_physid[bus] = 0;
--
--	pci_dev_put(dev);
--
--	return 0;
--}
--
--static struct pmu snb_uncore_imc_pmu = {
--	.task_ctx_nr	= perf_invalid_context,
--	.event_init	= snb_uncore_imc_event_init,
--	.add		= snb_uncore_imc_event_add,
--	.del		= snb_uncore_imc_event_del,
--	.start		= snb_uncore_imc_event_start,
--	.stop		= snb_uncore_imc_event_stop,
--	.read		= uncore_pmu_event_read,
--};
--
--static struct intel_uncore_ops snb_uncore_imc_ops = {
--	.init_box	= snb_uncore_imc_init_box,
--	.enable_box	= snb_uncore_imc_enable_box,
--	.disable_box	= snb_uncore_imc_disable_box,
--	.disable_event	= snb_uncore_imc_disable_event,
--	.enable_event	= snb_uncore_imc_enable_event,
--	.hw_config	= snb_uncore_imc_hw_config,
--	.read_counter	= snb_uncore_imc_read_counter,
--};
--
--static struct intel_uncore_type snb_uncore_imc = {
--	.name		= "imc",
--	.num_counters   = 2,
--	.num_boxes	= 1,
--	.fixed_ctr_bits	= 32,
--	.fixed_ctr	= SNB_UNCORE_PCI_IMC_CTR_BASE,
--	.event_descs	= snb_uncore_imc_events,
--	.format_group	= &snb_uncore_imc_format_group,
--	.perf_ctr	= SNB_UNCORE_PCI_IMC_DATA_READS_BASE,
--	.event_mask	= SNB_UNCORE_PCI_IMC_EVENT_MASK,
--	.ops		= &snb_uncore_imc_ops,
--	.pmu		= &snb_uncore_imc_pmu,
--};
--
--static struct intel_uncore_type *snb_pci_uncores[] = {
--	[SNB_PCI_UNCORE_IMC]	= &snb_uncore_imc,
--	NULL,
--};
--
--static DEFINE_PCI_DEVICE_TABLE(snb_uncore_pci_ids) = {
--	{ /* IMC */
--		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SNB_IMC),
--		.driver_data = UNCORE_PCI_DEV_DATA(SNB_PCI_UNCORE_IMC, 0),
--	},
--	{ /* end: all zeroes */ },
--};
--
--static DEFINE_PCI_DEVICE_TABLE(ivb_uncore_pci_ids) = {
--	{ /* IMC */
--		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_IMC),
--		.driver_data = UNCORE_PCI_DEV_DATA(SNB_PCI_UNCORE_IMC, 0),
--	},
--	{ /* end: all zeroes */ },
--};
--
--static DEFINE_PCI_DEVICE_TABLE(hsw_uncore_pci_ids) = {
--	{ /* IMC */
--		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_HSW_IMC),
--		.driver_data = UNCORE_PCI_DEV_DATA(SNB_PCI_UNCORE_IMC, 0),
--	},
--	{ /* end: all zeroes */ },
--};
--
--static struct pci_driver snb_uncore_pci_driver = {
--	.name		= "snb_uncore",
--	.id_table	= snb_uncore_pci_ids,
--};
--
--static struct pci_driver ivb_uncore_pci_driver = {
--	.name		= "ivb_uncore",
--	.id_table	= ivb_uncore_pci_ids,
--};
--
--static struct pci_driver hsw_uncore_pci_driver = {
--	.name		= "hsw_uncore",
--	.id_table	= hsw_uncore_pci_ids,
--};
--
--/* end of Sandy Bridge uncore support */
--
--/* Nehalem uncore support */
--static void nhm_uncore_msr_disable_box(struct intel_uncore_box *box)
--{
--	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL, 0);
--}
--
--static void nhm_uncore_msr_enable_box(struct intel_uncore_box *box)
--{
--	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL, NHM_UNC_GLOBAL_CTL_EN_PC_ALL | NHM_UNC_GLOBAL_CTL_EN_FC);
--}
--
--static void nhm_uncore_msr_enable_event(struct intel_uncore_box *box, struct perf_event *event)
--{
--	struct hw_perf_event *hwc = &event->hw;
--
--	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
--		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
--	else
--		wrmsrl(hwc->config_base, NHM_UNC_FIXED_CTR_CTL_EN);
--}
--
--static struct attribute *nhm_uncore_formats_attr[] = {
--	&format_attr_event.attr,
--	&format_attr_umask.attr,
--	&format_attr_edge.attr,
--	&format_attr_inv.attr,
--	&format_attr_cmask8.attr,
--	NULL,
--};
--
--static struct attribute_group nhm_uncore_format_group = {
--	.name = "format",
--	.attrs = nhm_uncore_formats_attr,
--};
--
--static struct uncore_event_desc nhm_uncore_events[] = {
--	INTEL_UNCORE_EVENT_DESC(clockticks,                "event=0xff,umask=0x00"),
--	INTEL_UNCORE_EVENT_DESC(qmc_writes_full_any,       "event=0x2f,umask=0x0f"),
--	INTEL_UNCORE_EVENT_DESC(qmc_normal_reads_any,      "event=0x2c,umask=0x0f"),
--	INTEL_UNCORE_EVENT_DESC(qhl_request_ioh_reads,     "event=0x20,umask=0x01"),
--	INTEL_UNCORE_EVENT_DESC(qhl_request_ioh_writes,    "event=0x20,umask=0x02"),
--	INTEL_UNCORE_EVENT_DESC(qhl_request_remote_reads,  "event=0x20,umask=0x04"),
--	INTEL_UNCORE_EVENT_DESC(qhl_request_remote_writes, "event=0x20,umask=0x08"),
--	INTEL_UNCORE_EVENT_DESC(qhl_request_local_reads,   "event=0x20,umask=0x10"),
--	INTEL_UNCORE_EVENT_DESC(qhl_request_local_writes,  "event=0x20,umask=0x20"),
--	{ /* end: all zeroes */ },
--};
--
--static struct intel_uncore_ops nhm_uncore_msr_ops = {
--	.disable_box	= nhm_uncore_msr_disable_box,
--	.enable_box	= nhm_uncore_msr_enable_box,
--	.disable_event	= snb_uncore_msr_disable_event,
--	.enable_event	= nhm_uncore_msr_enable_event,
--	.read_counter	= uncore_msr_read_counter,
--};
--
--static struct intel_uncore_type nhm_uncore = {
--	.name		= "",
--	.num_counters   = 8,
--	.num_boxes	= 1,
--	.perf_ctr_bits	= 48,
--	.fixed_ctr_bits	= 48,
--	.event_ctl	= NHM_UNC_PERFEVTSEL0,
--	.perf_ctr	= NHM_UNC_UNCORE_PMC0,
--	.fixed_ctr	= NHM_UNC_FIXED_CTR,
--	.fixed_ctl	= NHM_UNC_FIXED_CTR_CTRL,
--	.event_mask	= NHM_UNC_RAW_EVENT_MASK,
--	.event_descs	= nhm_uncore_events,
--	.ops		= &nhm_uncore_msr_ops,
--	.format_group	= &nhm_uncore_format_group,
--};
--
--static struct intel_uncore_type *nhm_msr_uncores[] = {
--	&nhm_uncore,
--	NULL,
--};
--/* end of Nehalem uncore support */
--
- /* Nehalem-EX uncore support */
- DEFINE_UNCORE_FORMAT_ATTR(event5, event, "config:1-5");
- DEFINE_UNCORE_FORMAT_ATTR(counter, counter, "config:6-7");
-@@ -3869,31 +3365,22 @@ static int __init uncore_pci_init(void)
- 		uncore_pci_driver = &ivt_uncore_pci_driver;
- 		break;
- 	case 42: /* Sandy Bridge */
--		ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_SNB_IMC);
--		if (ret)
--			return ret;
--		uncore_pci_uncores = snb_pci_uncores;
--		uncore_pci_driver = &snb_uncore_pci_driver;
-+		ret = snb_uncore_pci_init();
- 		break;
- 	case 58: /* Ivy Bridge */
--		ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_IVB_IMC);
--		if (ret)
--			return ret;
--		uncore_pci_uncores = snb_pci_uncores;
--		uncore_pci_driver = &ivb_uncore_pci_driver;
-+		ret = ivb_uncore_pci_init();
- 		break;
- 	case 60: /* Haswell */
- 	case 69: /* Haswell Celeron */
--		ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_HSW_IMC);
--		if (ret)
--			return ret;
--		uncore_pci_uncores = snb_pci_uncores;
--		uncore_pci_driver = &hsw_uncore_pci_driver;
-+		ret = hsw_uncore_pci_init();
- 		break;
- 	default:
- 		return 0;
- 	}
- 
-+	if (ret)
-+		return ret;
-+
- 	ret = uncore_types_init(uncore_pci_uncores);
- 	if (ret)
- 		return ret;
-@@ -4169,13 +3656,11 @@ static int __init uncore_cpu_init(void)
- 	case 30:
- 	case 37: /* Westmere */
- 	case 44:
--		uncore_msr_uncores = nhm_msr_uncores;
-+		nhm_uncore_cpu_init();
- 		break;
- 	case 42: /* Sandy Bridge */
- 	case 58: /* Ivy Bridge */
--		if (snb_uncore_cbox.num_boxes > max_cores)
--			snb_uncore_cbox.num_boxes = max_cores;
--		uncore_msr_uncores = snb_msr_uncores;
-+		snb_uncore_cpu_init();
- 		break;
- 	case 45: /* Sandy Bridge-EP */
- 		if (snbep_uncore_cbox.num_boxes > max_cores)
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index e5b5fd7..86699ca 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -24,55 +24,6 @@
- 
- #define UNCORE_EVENT_CONSTRAINT(c, n) EVENT_CONSTRAINT(c, n, 0xff)
- 
--/* SNB event control */
--#define SNB_UNC_CTL_EV_SEL_MASK			0x000000ff
--#define SNB_UNC_CTL_UMASK_MASK			0x0000ff00
--#define SNB_UNC_CTL_EDGE_DET			(1 << 18)
--#define SNB_UNC_CTL_EN				(1 << 22)
--#define SNB_UNC_CTL_INVERT			(1 << 23)
--#define SNB_UNC_CTL_CMASK_MASK			0x1f000000
--#define NHM_UNC_CTL_CMASK_MASK			0xff000000
--#define NHM_UNC_FIXED_CTR_CTL_EN		(1 << 0)
--
--#define SNB_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
--						 SNB_UNC_CTL_UMASK_MASK | \
--						 SNB_UNC_CTL_EDGE_DET | \
--						 SNB_UNC_CTL_INVERT | \
--						 SNB_UNC_CTL_CMASK_MASK)
--
--#define NHM_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
--						 SNB_UNC_CTL_UMASK_MASK | \
--						 SNB_UNC_CTL_EDGE_DET | \
--						 SNB_UNC_CTL_INVERT | \
--						 NHM_UNC_CTL_CMASK_MASK)
--
--/* SNB global control register */
--#define SNB_UNC_PERF_GLOBAL_CTL                 0x391
--#define SNB_UNC_FIXED_CTR_CTRL                  0x394
--#define SNB_UNC_FIXED_CTR                       0x395
--
--/* SNB uncore global control */
--#define SNB_UNC_GLOBAL_CTL_CORE_ALL             ((1 << 4) - 1)
--#define SNB_UNC_GLOBAL_CTL_EN                   (1 << 29)
--
--/* SNB Cbo register */
--#define SNB_UNC_CBO_0_PERFEVTSEL0               0x700
--#define SNB_UNC_CBO_0_PER_CTR0                  0x706
--#define SNB_UNC_CBO_MSR_OFFSET                  0x10
--
--/* NHM global control register */
--#define NHM_UNC_PERF_GLOBAL_CTL                 0x391
--#define NHM_UNC_FIXED_CTR                       0x394
--#define NHM_UNC_FIXED_CTR_CTRL                  0x395
--
--/* NHM uncore global control */
--#define NHM_UNC_GLOBAL_CTL_EN_PC_ALL            ((1ULL << 8) - 1)
--#define NHM_UNC_GLOBAL_CTL_EN_FC                (1ULL << 32)
--
--/* NHM uncore register */
--#define NHM_UNC_PERFEVTSEL0                     0x3c0
--#define NHM_UNC_UNCORE_PMC0                     0x3b0
--
- /* SNB-EP Box level control */
- #define SNBEP_PMON_BOX_CTL_RST_CTRL	(1 << 0)
- #define SNBEP_PMON_BOX_CTL_RST_CTRS	(1 << 1)
-@@ -708,3 +659,10 @@ extern struct pci_driver *uncore_pci_driver;
- extern int uncore_pcibus_to_physid[256];
- extern struct pci_dev *uncore_extra_pci_dev[UNCORE_SOCKET_MAX][UNCORE_EXTRA_PCI_DEV_MAX];
- extern struct event_constraint uncore_constraint_empty;
-+
-+/* perf_event_intel_uncore_snb.c */
-+int snb_uncore_pci_init(void);
-+int ivb_uncore_pci_init(void);
-+int hsw_uncore_pci_init(void);
-+void snb_uncore_cpu_init(void);
-+void nhm_uncore_cpu_init(void);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore_snb.c b/arch/x86/kernel/cpu/perf_event_intel_uncore_snb.c
-new file mode 100644
-index 0000000..6e7811f
---- /dev/null
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore_snb.c
-@@ -0,0 +1,603 @@
-+/* Nehalem/SandBridge/Haswell uncore support */
-+#include "perf_event_intel_uncore.h"
-+
-+/* SNB event control */
-+#define SNB_UNC_CTL_EV_SEL_MASK			0x000000ff
-+#define SNB_UNC_CTL_UMASK_MASK			0x0000ff00
-+#define SNB_UNC_CTL_EDGE_DET			(1 << 18)
-+#define SNB_UNC_CTL_EN				(1 << 22)
-+#define SNB_UNC_CTL_INVERT			(1 << 23)
-+#define SNB_UNC_CTL_CMASK_MASK			0x1f000000
-+#define NHM_UNC_CTL_CMASK_MASK			0xff000000
-+#define NHM_UNC_FIXED_CTR_CTL_EN		(1 << 0)
-+
-+#define SNB_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
-+						 SNB_UNC_CTL_UMASK_MASK | \
-+						 SNB_UNC_CTL_EDGE_DET | \
-+						 SNB_UNC_CTL_INVERT | \
-+						 SNB_UNC_CTL_CMASK_MASK)
-+
-+#define NHM_UNC_RAW_EVENT_MASK			(SNB_UNC_CTL_EV_SEL_MASK | \
-+						 SNB_UNC_CTL_UMASK_MASK | \
-+						 SNB_UNC_CTL_EDGE_DET | \
-+						 SNB_UNC_CTL_INVERT | \
-+						 NHM_UNC_CTL_CMASK_MASK)
-+
-+/* SNB global control register */
-+#define SNB_UNC_PERF_GLOBAL_CTL                 0x391
-+#define SNB_UNC_FIXED_CTR_CTRL                  0x394
-+#define SNB_UNC_FIXED_CTR                       0x395
-+
-+/* SNB uncore global control */
-+#define SNB_UNC_GLOBAL_CTL_CORE_ALL             ((1 << 4) - 1)
-+#define SNB_UNC_GLOBAL_CTL_EN                   (1 << 29)
-+
-+/* SNB Cbo register */
-+#define SNB_UNC_CBO_0_PERFEVTSEL0               0x700
-+#define SNB_UNC_CBO_0_PER_CTR0                  0x706
-+#define SNB_UNC_CBO_MSR_OFFSET                  0x10
-+
-+/* NHM global control register */
-+#define NHM_UNC_PERF_GLOBAL_CTL                 0x391
-+#define NHM_UNC_FIXED_CTR                       0x394
-+#define NHM_UNC_FIXED_CTR_CTRL                  0x395
-+
-+/* NHM uncore global control */
-+#define NHM_UNC_GLOBAL_CTL_EN_PC_ALL            ((1ULL << 8) - 1)
-+#define NHM_UNC_GLOBAL_CTL_EN_FC                (1ULL << 32)
-+
-+/* NHM uncore register */
-+#define NHM_UNC_PERFEVTSEL0                     0x3c0
-+#define NHM_UNC_UNCORE_PMC0                     0x3b0
-+
-+DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
-+DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
-+DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
-+DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
-+DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
-+DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
-+
-+/* Sandy Bridge uncore support */
-+static void snb_uncore_msr_enable_event(struct intel_uncore_box *box, struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
-+		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
-+	else
-+		wrmsrl(hwc->config_base, SNB_UNC_CTL_EN);
-+}
-+
-+static void snb_uncore_msr_disable_event(struct intel_uncore_box *box, struct perf_event *event)
-+{
-+	wrmsrl(event->hw.config_base, 0);
-+}
-+
-+static void snb_uncore_msr_init_box(struct intel_uncore_box *box)
-+{
-+	if (box->pmu->pmu_idx == 0) {
-+		wrmsrl(SNB_UNC_PERF_GLOBAL_CTL,
-+			SNB_UNC_GLOBAL_CTL_EN | SNB_UNC_GLOBAL_CTL_CORE_ALL);
-+	}
-+}
-+
-+static struct uncore_event_desc snb_uncore_events[] = {
-+	INTEL_UNCORE_EVENT_DESC(clockticks, "event=0xff,umask=0x00"),
-+	{ /* end: all zeroes */ },
-+};
-+
-+static struct attribute *snb_uncore_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask5.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group snb_uncore_format_group = {
-+	.name		= "format",
-+	.attrs		= snb_uncore_formats_attr,
-+};
-+
-+static struct intel_uncore_ops snb_uncore_msr_ops = {
-+	.init_box	= snb_uncore_msr_init_box,
-+	.disable_event	= snb_uncore_msr_disable_event,
-+	.enable_event	= snb_uncore_msr_enable_event,
-+	.read_counter	= uncore_msr_read_counter,
-+};
-+
-+static struct event_constraint snb_uncore_cbox_constraints[] = {
-+	UNCORE_EVENT_CONSTRAINT(0x80, 0x1),
-+	UNCORE_EVENT_CONSTRAINT(0x83, 0x1),
-+	EVENT_CONSTRAINT_END
-+};
-+
-+static struct intel_uncore_type snb_uncore_cbox = {
-+	.name		= "cbox",
-+	.num_counters   = 2,
-+	.num_boxes	= 4,
-+	.perf_ctr_bits	= 44,
-+	.fixed_ctr_bits	= 48,
-+	.perf_ctr	= SNB_UNC_CBO_0_PER_CTR0,
-+	.event_ctl	= SNB_UNC_CBO_0_PERFEVTSEL0,
-+	.fixed_ctr	= SNB_UNC_FIXED_CTR,
-+	.fixed_ctl	= SNB_UNC_FIXED_CTR_CTRL,
-+	.single_fixed	= 1,
-+	.event_mask	= SNB_UNC_RAW_EVENT_MASK,
-+	.msr_offset	= SNB_UNC_CBO_MSR_OFFSET,
-+	.constraints	= snb_uncore_cbox_constraints,
-+	.ops		= &snb_uncore_msr_ops,
-+	.format_group	= &snb_uncore_format_group,
-+	.event_descs	= snb_uncore_events,
-+};
-+
-+static struct intel_uncore_type *snb_msr_uncores[] = {
-+	&snb_uncore_cbox,
-+	NULL,
-+};
-+
-+void snb_uncore_cpu_init(void)
-+{
-+	uncore_msr_uncores = snb_msr_uncores;
-+	if (snb_uncore_cbox.num_boxes > boot_cpu_data.x86_max_cores)
-+		snb_uncore_cbox.num_boxes = boot_cpu_data.x86_max_cores;
-+}
-+
-+enum {
-+	SNB_PCI_UNCORE_IMC,
-+};
-+
-+static struct uncore_event_desc snb_uncore_imc_events[] = {
-+	INTEL_UNCORE_EVENT_DESC(data_reads,  "event=0x01"),
-+	INTEL_UNCORE_EVENT_DESC(data_reads.scale, "6.103515625e-5"),
-+	INTEL_UNCORE_EVENT_DESC(data_reads.unit, "MiB"),
-+
-+	INTEL_UNCORE_EVENT_DESC(data_writes, "event=0x02"),
-+	INTEL_UNCORE_EVENT_DESC(data_writes.scale, "6.103515625e-5"),
-+	INTEL_UNCORE_EVENT_DESC(data_writes.unit, "MiB"),
-+
-+	{ /* end: all zeroes */ },
-+};
-+
-+#define SNB_UNCORE_PCI_IMC_EVENT_MASK		0xff
-+#define SNB_UNCORE_PCI_IMC_BAR_OFFSET		0x48
-+
-+/* page size multiple covering all config regs */
-+#define SNB_UNCORE_PCI_IMC_MAP_SIZE		0x6000
-+
-+#define SNB_UNCORE_PCI_IMC_DATA_READS		0x1
-+#define SNB_UNCORE_PCI_IMC_DATA_READS_BASE	0x5050
-+#define SNB_UNCORE_PCI_IMC_DATA_WRITES		0x2
-+#define SNB_UNCORE_PCI_IMC_DATA_WRITES_BASE	0x5054
-+#define SNB_UNCORE_PCI_IMC_CTR_BASE		SNB_UNCORE_PCI_IMC_DATA_READS_BASE
-+
-+static struct attribute *snb_uncore_imc_formats_attr[] = {
-+	&format_attr_event.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group snb_uncore_imc_format_group = {
-+	.name = "format",
-+	.attrs = snb_uncore_imc_formats_attr,
-+};
-+
-+static void snb_uncore_imc_init_box(struct intel_uncore_box *box)
-+{
-+	struct pci_dev *pdev = box->pci_dev;
-+	int where = SNB_UNCORE_PCI_IMC_BAR_OFFSET;
-+	resource_size_t addr;
-+	u32 pci_dword;
-+
-+	pci_read_config_dword(pdev, where, &pci_dword);
-+	addr = pci_dword;
-+
-+#ifdef CONFIG_PHYS_ADDR_T_64BIT
-+	pci_read_config_dword(pdev, where + 4, &pci_dword);
-+	addr |= ((resource_size_t)pci_dword << 32);
-+#endif
-+
-+	addr &= ~(PAGE_SIZE - 1);
-+
-+	box->io_addr = ioremap(addr, SNB_UNCORE_PCI_IMC_MAP_SIZE);
-+	box->hrtimer_duration = UNCORE_SNB_IMC_HRTIMER_INTERVAL;
-+}
-+
-+static void snb_uncore_imc_enable_box(struct intel_uncore_box *box)
-+{}
-+
-+static void snb_uncore_imc_disable_box(struct intel_uncore_box *box)
-+{}
-+
-+static void snb_uncore_imc_enable_event(struct intel_uncore_box *box, struct perf_event *event)
-+{}
-+
-+static void snb_uncore_imc_disable_event(struct intel_uncore_box *box, struct perf_event *event)
-+{}
-+
-+static u64 snb_uncore_imc_read_counter(struct intel_uncore_box *box, struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	return (u64)*(unsigned int *)(box->io_addr + hwc->event_base);
-+}
-+
-+/*
-+ * custom event_init() function because we define our own fixed, free
-+ * running counters, so we do not want to conflict with generic uncore
-+ * logic. Also simplifies processing
-+ */
-+static int snb_uncore_imc_event_init(struct perf_event *event)
-+{
-+	struct intel_uncore_pmu *pmu;
-+	struct intel_uncore_box *box;
-+	struct hw_perf_event *hwc = &event->hw;
-+	u64 cfg = event->attr.config & SNB_UNCORE_PCI_IMC_EVENT_MASK;
-+	int idx, base;
-+
-+	if (event->attr.type != event->pmu->type)
-+		return -ENOENT;
-+
-+	pmu = uncore_event_to_pmu(event);
-+	/* no device found for this pmu */
-+	if (pmu->func_id < 0)
-+		return -ENOENT;
-+
-+	/* Sampling not supported yet */
-+	if (hwc->sample_period)
-+		return -EINVAL;
-+
-+	/* unsupported modes and filters */
-+	if (event->attr.exclude_user   ||
-+	    event->attr.exclude_kernel ||
-+	    event->attr.exclude_hv     ||
-+	    event->attr.exclude_idle   ||
-+	    event->attr.exclude_host   ||
-+	    event->attr.exclude_guest  ||
-+	    event->attr.sample_period) /* no sampling */
-+		return -EINVAL;
-+
-+	/*
-+	 * Place all uncore events for a particular physical package
-+	 * onto a single cpu
-+	 */
-+	if (event->cpu < 0)
-+		return -EINVAL;
-+
-+	/* check only supported bits are set */
-+	if (event->attr.config & ~SNB_UNCORE_PCI_IMC_EVENT_MASK)
-+		return -EINVAL;
-+
-+	box = uncore_pmu_to_box(pmu, event->cpu);
-+	if (!box || box->cpu < 0)
-+		return -EINVAL;
-+
-+	event->cpu = box->cpu;
-+
-+	event->hw.idx = -1;
-+	event->hw.last_tag = ~0ULL;
-+	event->hw.extra_reg.idx = EXTRA_REG_NONE;
-+	event->hw.branch_reg.idx = EXTRA_REG_NONE;
-+	/*
-+	 * check event is known (whitelist, determines counter)
-+	 */
-+	switch (cfg) {
-+	case SNB_UNCORE_PCI_IMC_DATA_READS:
-+		base = SNB_UNCORE_PCI_IMC_DATA_READS_BASE;
-+		idx = UNCORE_PMC_IDX_FIXED;
-+		break;
-+	case SNB_UNCORE_PCI_IMC_DATA_WRITES:
-+		base = SNB_UNCORE_PCI_IMC_DATA_WRITES_BASE;
-+		idx = UNCORE_PMC_IDX_FIXED + 1;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/* must be done before validate_group */
-+	event->hw.event_base = base;
-+	event->hw.config = cfg;
-+	event->hw.idx = idx;
-+
-+	/* no group validation needed, we have free running counters */
-+
-+	return 0;
-+}
-+
-+static int snb_uncore_imc_hw_config(struct intel_uncore_box *box, struct perf_event *event)
-+{
-+	return 0;
-+}
-+
-+static void snb_uncore_imc_event_start(struct perf_event *event, int flags)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	u64 count;
-+
-+	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
-+		return;
-+
-+	event->hw.state = 0;
-+	box->n_active++;
-+
-+	list_add_tail(&event->active_entry, &box->active_list);
-+
-+	count = snb_uncore_imc_read_counter(box, event);
-+	local64_set(&event->hw.prev_count, count);
-+
-+	if (box->n_active == 1)
-+		uncore_pmu_start_hrtimer(box);
-+}
-+
-+static void snb_uncore_imc_event_stop(struct perf_event *event, int flags)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (!(hwc->state & PERF_HES_STOPPED)) {
-+		box->n_active--;
-+
-+		WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
-+		hwc->state |= PERF_HES_STOPPED;
-+
-+		list_del(&event->active_entry);
-+
-+		if (box->n_active == 0)
-+			uncore_pmu_cancel_hrtimer(box);
-+	}
-+
-+	if ((flags & PERF_EF_UPDATE) && !(hwc->state & PERF_HES_UPTODATE)) {
-+		/*
-+		 * Drain the remaining delta count out of a event
-+		 * that we are disabling:
-+		 */
-+		uncore_perf_event_update(box, event);
-+		hwc->state |= PERF_HES_UPTODATE;
-+	}
-+}
-+
-+static int snb_uncore_imc_event_add(struct perf_event *event, int flags)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (!box)
-+		return -ENODEV;
-+
-+	hwc->state = PERF_HES_UPTODATE | PERF_HES_STOPPED;
-+	if (!(flags & PERF_EF_START))
-+		hwc->state |= PERF_HES_ARCH;
-+
-+	snb_uncore_imc_event_start(event, 0);
-+
-+	box->n_events++;
-+
-+	return 0;
-+}
-+
-+static void snb_uncore_imc_event_del(struct perf_event *event, int flags)
-+{
-+	struct intel_uncore_box *box = uncore_event_to_box(event);
-+	int i;
-+
-+	snb_uncore_imc_event_stop(event, PERF_EF_UPDATE);
-+
-+	for (i = 0; i < box->n_events; i++) {
-+		if (event == box->event_list[i]) {
-+			--box->n_events;
-+			break;
-+		}
-+	}
-+}
-+
-+static int snb_pci2phy_map_init(int devid)
-+{
-+	struct pci_dev *dev = NULL;
-+	int bus;
-+
-+	dev = pci_get_device(PCI_VENDOR_ID_INTEL, devid, dev);
-+	if (!dev)
-+		return -ENOTTY;
-+
-+	bus = dev->bus->number;
-+
-+	uncore_pcibus_to_physid[bus] = 0;
-+
-+	pci_dev_put(dev);
-+
-+	return 0;
-+}
-+
-+static struct pmu snb_uncore_imc_pmu = {
-+	.task_ctx_nr	= perf_invalid_context,
-+	.event_init	= snb_uncore_imc_event_init,
-+	.add		= snb_uncore_imc_event_add,
-+	.del		= snb_uncore_imc_event_del,
-+	.start		= snb_uncore_imc_event_start,
-+	.stop		= snb_uncore_imc_event_stop,
-+	.read		= uncore_pmu_event_read,
-+};
-+
-+static struct intel_uncore_ops snb_uncore_imc_ops = {
-+	.init_box	= snb_uncore_imc_init_box,
-+	.enable_box	= snb_uncore_imc_enable_box,
-+	.disable_box	= snb_uncore_imc_disable_box,
-+	.disable_event	= snb_uncore_imc_disable_event,
-+	.enable_event	= snb_uncore_imc_enable_event,
-+	.hw_config	= snb_uncore_imc_hw_config,
-+	.read_counter	= snb_uncore_imc_read_counter,
-+};
-+
-+static struct intel_uncore_type snb_uncore_imc = {
-+	.name		= "imc",
-+	.num_counters   = 2,
-+	.num_boxes	= 1,
-+	.fixed_ctr_bits	= 32,
-+	.fixed_ctr	= SNB_UNCORE_PCI_IMC_CTR_BASE,
-+	.event_descs	= snb_uncore_imc_events,
-+	.format_group	= &snb_uncore_imc_format_group,
-+	.perf_ctr	= SNB_UNCORE_PCI_IMC_DATA_READS_BASE,
-+	.event_mask	= SNB_UNCORE_PCI_IMC_EVENT_MASK,
-+	.ops		= &snb_uncore_imc_ops,
-+	.pmu		= &snb_uncore_imc_pmu,
-+};
-+
-+static struct intel_uncore_type *snb_pci_uncores[] = {
-+	[SNB_PCI_UNCORE_IMC]	= &snb_uncore_imc,
-+	NULL,
-+};
-+
-+static DEFINE_PCI_DEVICE_TABLE(snb_uncore_pci_ids) = {
-+	{ /* IMC */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SNB_IMC),
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNB_PCI_UNCORE_IMC, 0),
-+	},
-+	{ /* end: all zeroes */ },
-+};
-+
-+static DEFINE_PCI_DEVICE_TABLE(ivb_uncore_pci_ids) = {
-+	{ /* IMC */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_IMC),
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNB_PCI_UNCORE_IMC, 0),
-+	},
-+	{ /* end: all zeroes */ },
-+};
-+
-+static DEFINE_PCI_DEVICE_TABLE(hsw_uncore_pci_ids) = {
-+	{ /* IMC */
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_HSW_IMC),
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNB_PCI_UNCORE_IMC, 0),
-+	},
-+	{ /* end: all zeroes */ },
-+};
-+
-+static struct pci_driver snb_uncore_pci_driver = {
-+	.name		= "snb_uncore",
-+	.id_table	= snb_uncore_pci_ids,
-+};
-+
-+static struct pci_driver ivb_uncore_pci_driver = {
-+	.name		= "ivb_uncore",
-+	.id_table	= ivb_uncore_pci_ids,
-+};
-+
-+static struct pci_driver hsw_uncore_pci_driver = {
-+	.name		= "hsw_uncore",
-+	.id_table	= hsw_uncore_pci_ids,
-+};
-+
-+int snb_uncore_pci_init(void)
-+{
-+	int ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_SNB_IMC);
-+	if (ret)
-+		return ret;
-+	uncore_pci_uncores = snb_pci_uncores;
-+	uncore_pci_driver = &snb_uncore_pci_driver;
-+	return 0;
-+}
-+
-+int ivb_uncore_pci_init(void)
-+{
-+	int ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_IVB_IMC);
-+	if (ret)
-+		return ret;
-+	uncore_pci_uncores = snb_pci_uncores;
-+	uncore_pci_driver = &ivb_uncore_pci_driver;
-+	return 0;
-+}
-+
-+int hsw_uncore_pci_init(void)
-+{
-+	int ret = snb_pci2phy_map_init(PCI_DEVICE_ID_INTEL_HSW_IMC);
-+	if (ret)
-+		return ret;
-+	uncore_pci_uncores = snb_pci_uncores;
-+	uncore_pci_driver = &hsw_uncore_pci_driver;
-+	return 0;
-+}
-+
-+/* end of Sandy Bridge uncore support */
-+
-+/* Nehalem uncore support */
-+static void nhm_uncore_msr_disable_box(struct intel_uncore_box *box)
-+{
-+	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL, 0);
-+}
-+
-+static void nhm_uncore_msr_enable_box(struct intel_uncore_box *box)
-+{
-+	wrmsrl(NHM_UNC_PERF_GLOBAL_CTL, NHM_UNC_GLOBAL_CTL_EN_PC_ALL | NHM_UNC_GLOBAL_CTL_EN_FC);
-+}
-+
-+static void nhm_uncore_msr_enable_event(struct intel_uncore_box *box, struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+
-+	if (hwc->idx < UNCORE_PMC_IDX_FIXED)
-+		wrmsrl(hwc->config_base, hwc->config | SNB_UNC_CTL_EN);
-+	else
-+		wrmsrl(hwc->config_base, NHM_UNC_FIXED_CTR_CTL_EN);
-+}
-+
-+static struct attribute *nhm_uncore_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask8.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group nhm_uncore_format_group = {
-+	.name = "format",
-+	.attrs = nhm_uncore_formats_attr,
-+};
-+
-+static struct uncore_event_desc nhm_uncore_events[] = {
-+	INTEL_UNCORE_EVENT_DESC(clockticks,                "event=0xff,umask=0x00"),
-+	INTEL_UNCORE_EVENT_DESC(qmc_writes_full_any,       "event=0x2f,umask=0x0f"),
-+	INTEL_UNCORE_EVENT_DESC(qmc_normal_reads_any,      "event=0x2c,umask=0x0f"),
-+	INTEL_UNCORE_EVENT_DESC(qhl_request_ioh_reads,     "event=0x20,umask=0x01"),
-+	INTEL_UNCORE_EVENT_DESC(qhl_request_ioh_writes,    "event=0x20,umask=0x02"),
-+	INTEL_UNCORE_EVENT_DESC(qhl_request_remote_reads,  "event=0x20,umask=0x04"),
-+	INTEL_UNCORE_EVENT_DESC(qhl_request_remote_writes, "event=0x20,umask=0x08"),
-+	INTEL_UNCORE_EVENT_DESC(qhl_request_local_reads,   "event=0x20,umask=0x10"),
-+	INTEL_UNCORE_EVENT_DESC(qhl_request_local_writes,  "event=0x20,umask=0x20"),
-+	{ /* end: all zeroes */ },
-+};
-+
-+static struct intel_uncore_ops nhm_uncore_msr_ops = {
-+	.disable_box	= nhm_uncore_msr_disable_box,
-+	.enable_box	= nhm_uncore_msr_enable_box,
-+	.disable_event	= snb_uncore_msr_disable_event,
-+	.enable_event	= nhm_uncore_msr_enable_event,
-+	.read_counter	= uncore_msr_read_counter,
-+};
-+
-+static struct intel_uncore_type nhm_uncore = {
-+	.name		= "",
-+	.num_counters   = 8,
-+	.num_boxes	= 1,
-+	.perf_ctr_bits	= 48,
-+	.fixed_ctr_bits	= 48,
-+	.event_ctl	= NHM_UNC_PERFEVTSEL0,
-+	.perf_ctr	= NHM_UNC_UNCORE_PMC0,
-+	.fixed_ctr	= NHM_UNC_FIXED_CTR,
-+	.fixed_ctl	= NHM_UNC_FIXED_CTR_CTRL,
-+	.event_mask	= NHM_UNC_RAW_EVENT_MASK,
-+	.event_descs	= nhm_uncore_events,
-+	.ops		= &nhm_uncore_msr_ops,
-+	.format_group	= &nhm_uncore_format_group,
-+};
-+
-+static struct intel_uncore_type *nhm_msr_uncores[] = {
-+	&nhm_uncore,
-+	NULL,
-+};
-+
-+void nhm_uncore_cpu_init(void)
-+{
-+	uncore_msr_uncores = nhm_msr_uncores;
-+}
-+
-+/* end of Nehalem uncore support */
+Okay.
+
+> 
+> >  extern void __free_pages_bootmem(struct page *page, unsigned int order);
+> >  extern void prep_compound_page(struct page *page, unsigned long order);
+> >  #ifdef CONFIG_MEMORY_FAILURE
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 3e1e344..4517b1d 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -726,11 +726,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+> >  			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+> >  			__free_one_page(page, page_to_pfn(page), zone, 0, mt);
+> >  			trace_mm_page_pcpu_drain(page, 0, mt);
+> > -			if (likely(!is_migrate_isolate_page(page))) {
+> > -				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
+> > -				if (is_migrate_cma(mt))
+> > -					__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
+> > -			}
+> > +			__mod_zone_freepage_state(zone, 1, mt);
+> >  		} while (--to_free && --batch_free && !list_empty(list));
+> >  	}
+> >  	spin_unlock(&zone->lock);
+> > @@ -789,8 +785,8 @@ static void __free_pages_ok(struct page *page, unsigned int order)
+> >  	if (!free_pages_prepare(page, order))
+> >  		return;
+> >  
+> > -	migratetype = get_pfnblock_migratetype(page, pfn);
+> >  	local_irq_save(flags);
+> > +	migratetype = get_pfnblock_migratetype(page, pfn);
+> 
+> Could you add some comment about page-isolated locking rule in somewhere?
+> I think it's valuable to add it in code rather than description.
+
+Will do.
+
+> In addition, as your description, get_pfnblock_migratetype should be
+> protected by irq_disabled. Then, it would be better to add a comment or
+> VM_BUG_ON check with irq_disabled in get_pfnblock_migratetype but I think
+> get_pfnblock_migratetype might be called for other purpose in future.
+> In that case, it's not necessary to disable irq so we could introduce
+> "get_freeing_page_migratetype" with irq disabled check and use it.
+
+Okay.
+
+> 
+> Question. soft_offline_page doesn't have any lock
+> for get_pageblock_migratetype. Is it okay?
+
+Hmm... I think it is okay. But, I guess that it need to check
+return value of set_migratetype_isolate().
+
+> 
+> >  	__count_vm_events(PGFREE, 1 << order);
+> >  	set_freepage_migratetype(page, migratetype);
+> >  	free_one_page(page_zone(page), page, pfn, order, migratetype);
+> > @@ -1410,9 +1406,9 @@ void free_hot_cold_page(struct page *page, bool cold)
+> >  	if (!free_pages_prepare(page, 0))
+> >  		return;
+> >  
+> > +	local_irq_save(flags);
+> >  	migratetype = get_pfnblock_migratetype(page, pfn);
+> >  	set_freepage_migratetype(page, migratetype);
+> > -	local_irq_save(flags);
+> >  	__count_vm_event(PGFREE);
+> >  
+> >  	/*
+> > @@ -6469,6 +6465,23 @@ void free_contig_range(unsigned long pfn, unsigned nr_pages)
+> >  }
+> >  #endif
+> >  
+> > +#ifdef CONFIG_MEMORY_ISOLATION
+> > +void zone_pcp_disable(struct zone *zone)
+> > +{
+> > +	mutex_lock(&pcp_batch_high_lock);
+> > +	pageset_update(zone, 1, 1);
+> > +}
+> > +
+> > +void zone_pcp_enable(struct zone *zone)
+> > +{
+> > +	int high, batch;
+> > +
+> > +	pageset_get_values(zone, &high, &batch);
+> > +	pageset_update(zone, high, batch);
+> > +	mutex_unlock(&pcp_batch_high_lock);
+> > +}
+> > +#endif
+> 
+> Nit:
+> It is used for only page_isolation.c so how about moving to page_isolation.c?
+
+I'd like to leave pcp management code in page_alloc.c.
+
+> > +
+> >  #ifdef CONFIG_MEMORY_HOTPLUG
+> >  /*
+> >   * The zone indicated has a new number of managed_pages; batch sizes and percpu
+> > diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+> > index 3100f98..439158d 100644
+> > --- a/mm/page_isolation.c
+> > +++ b/mm/page_isolation.c
+> > @@ -16,9 +16,10 @@ int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages)
+> >  	struct memory_isolate_notify arg;
+> >  	int notifier_ret;
+> >  	int ret = -EBUSY;
+> > +	unsigned long nr_pages;
+> > +	int migratetype;
+> >  
+> >  	zone = page_zone(page);
+> > -
+> 
+> Unnecessary change.
+
+Okay.
+
+> 
+> >  	spin_lock_irqsave(&zone->lock, flags);
+> >  
+> >  	pfn = page_to_pfn(page);
+> > @@ -55,20 +56,32 @@ int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages)
+> >  	 */
+> >  
+> >  out:
+> > -	if (!ret) {
+> > -		unsigned long nr_pages;
+> > -		int migratetype = get_pageblock_migratetype(page);
+> > +	if (ret) {
+> > +		spin_unlock_irqrestore(&zone->lock, flags);
+> > +		return ret;
+> > +	}
+> >  
+> > -		set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+> > -		nr_pages = move_freepages_block(zone, page, MIGRATE_ISOLATE);
+> > +	migratetype = get_pageblock_migratetype(page);
+> > +	set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+> > +	spin_unlock_irqrestore(&zone->lock, flags);
+> >  
+> > -		__mod_zone_freepage_state(zone, -nr_pages, migratetype);
+> > -	}
+> > +	zone_pcp_disable(zone);
+> 
+> You pcp disable/enable per pageblock so that overhead would be severe.
+> I believe your remaining patches will solve it. Anyway, let's add "
+> XXX: should save pcp disable/enable" and you could remove the comment
+> when your further patches handles it so reviewer could be happy with
+> fact which author already know the problem and someone could solve
+> the issue even though your furhter patches might reject.
+
+Okay.
+
+Thanks.
+
