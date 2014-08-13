@@ -1,40 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810AbaHMUgZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 16:36:25 -0400
-Received: from mail2.tridenttech.edu ([199.67.23.71]:56585 "EHLO
-	EXCHTMG2.tridentad.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751529AbaHMUgX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 16:36:23 -0400
-X-Greylist: delayed 322 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Aug 2014 16:36:23 EDT
-From: "Taylor,Shirley" <Shirley.Taylor@tridenttech.edu>
-To: "Taylor,Shirley" <Shirley.Taylor@tridenttech.edu>
-Subject: RE: FIF-2014
-Thread-Topic: FIF-2014
-Thread-Index: Ac+3M+WecoZwEvCmTCih+pE8T+lq0wAATk4C
-Date: Wed, 13 Aug 2014 20:30:54 +0000
-Message-ID: <FC0338E68966844E903F70BA660CAA499DD64EC8@MBX4.tridentad.org>
-References: <FC0338E68966844E903F70BA660CAA499DD6408A@MBX4.tridentad.org>
-In-Reply-To: <FC0338E68966844E903F70BA660CAA499DD6408A@MBX4.tridentad.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.0.23.53]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1753449AbaHMUhp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 16:37:45 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51278 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751429AbaHMUho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 16:37:44 -0400
+Date: Wed, 13 Aug 2014 17:37:39 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 2/2] perf top: Handle 'z' key for toggle zeroing samples
+ in TUI
+Message-ID: <20140813203739.GL2718@kernel.org>
+References: <1407831366-28892-1-git-send-email-namhyung@kernel.org>
+ <1407831366-28892-2-git-send-email-namhyung@kernel.org>
+ <CABPqkBRirVbT05OhS4CVedpzt44hGijFSgdL+4XqjVW-ixcp7g@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBRirVbT05OhS4CVedpzt44hGijFSgdL+4XqjVW-ixcp7g@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Wed, Aug 13, 2014 at 01:07:30AM +0200, Stephane Eranian escreveu:
+> On Tue, Aug 12, 2014 at 10:16 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> > The perf top TUI lacks 'z' key support to toggle sample zeroing.
+> > Add it.
+> >
+> Works for me.
+> Tested-by: Stephane Eranian <eranian@google.com>
 
+One thing that can be improved: Make it trigger a refresh in the right
+after 'z' is pressed.
 
-________________________________
-From: Taylor,Shirley
-Sent: Wednesday, August 13, 2014 4:19 PM
-To: Taylor,Shirley
-Subject: FIF-2014
+Also, this toggles the zeroing before each sample, it would be nice to
+have a visual cue that this is in effect, probably in the first line in
+the screen, perhaps on the far right, something like [z] when this is in
+effect and nothing when not.
 
-Contact Maria-Elisabeth Schaeffler For Info About Donation On (mariaelisabeth.s@outlook.com) About (€1.700.000)
+Right now the way to figure this out is to observe the number of
+samples, if it increases monotonically, zeroing before refresh is not in
+effect, if it goes from a high number to a smaller or vice versa,
+zeroing is in effect :-)
+
+Anyway, applied, people wanting this feature can figure this out, what I
+suggested is just polishing.
+
+Thanks!
+
+- Arnaldo
+ 
+> > Reported-by: Stephane Eranian <eranian@google.com>
+> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> > ---
+> >  tools/perf/ui/browsers/hists.c | 9 +++++++++
+> >  1 file changed, 9 insertions(+)
+> >
+> > diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+> > index 045c1e16ac59..381c085a41b8 100644
+> > --- a/tools/perf/ui/browsers/hists.c
+> > +++ b/tools/perf/ui/browsers/hists.c
+> > @@ -10,6 +10,7 @@
+> >  #include "../../util/pstack.h"
+> >  #include "../../util/sort.h"
+> >  #include "../../util/util.h"
+> > +#include "../../util/top.h"
+> >  #include "../../arch/common.h"
+> >
+> >  #include "../browser.h"
+> > @@ -1530,6 +1531,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+> >         "P             Print histograms to perf.hist.N\n"
+> >         "t             Zoom into current Thread\n"
+> >         "V             Verbose (DSO names in callchains, etc)\n"
+> > +       "z             Toggle zeroing of samples\n"
+> >         "/             Filter symbol by name";
+> >
+> >         if (browser == NULL)
+> > @@ -1630,6 +1632,13 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+> >                 case 'F':
+> >                         symbol_conf.filter_relative ^= 1;
+> >                         continue;
+> > +               case 'z':
+> > +                       if (!is_report_browser(hbt)) {
+> > +                               struct perf_top *top = hbt->arg;
+> > +
+> > +                               top->zero = !top->zero;
+> > +                       }
+> > +                       continue;
+> >                 case K_F1:
+> >                 case 'h':
+> >                 case '?':
+> > --
+> > 2.0.0
+> >
