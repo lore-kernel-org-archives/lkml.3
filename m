@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698AbaHMVM0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 17:12:26 -0400
-Received: from mga03.intel.com ([143.182.124.21]:61633 "EHLO mga03.intel.com"
+	id S1753909AbaHMVRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 17:17:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58467 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529AbaHMVMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 17:12:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,857,1400050800"; 
-   d="scan'208";a="468442830"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
-        mingo@kernel.org, peterz@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, tools: Add PERF_PID
-Date: Wed, 13 Aug 2014 14:12:17 -0700
-Message-Id: <1407964337-23952-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
+	id S1752109AbaHMVRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 17:17:13 -0400
+Message-ID: <53EBD5B3.10200@zytor.com>
+Date: Wed, 13 Aug 2014 14:16:35 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Alexei Starovoitov <ast@plumgrid.com>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit immediate"
+ eBPF instruction
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>	<1407916658-8731-2-git-send-email-ast@plumgrid.com>	<CALCETrXzZVxMGUgDPOKwN0DPLvupU=ew1z6D4U-jHg+RoyZyLg@mail.gmail.com>	<CAMEtUuxog0w-XkYMHM=Zto_gejy8x5agxohAWOs1zPEtXTr0Sw@mail.gmail.com>	<CALCETrXfp+7FmEzAoLiqzqY73NBzt8JsD40hzvhT3=gr-Scp=g@mail.gmail.com> <CAMEtUuwx6Y4qxyz4TGK9=M2BH-dXnPsm+JrusqbyjzK20yUv6A@mail.gmail.com>
+In-Reply-To: <CAMEtUuwx6Y4qxyz4TGK9=M2BH-dXnPsm+JrusqbyjzK20yUv6A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 08/13/2014 02:02 PM, Alexei Starovoitov wrote:
+> On Wed, Aug 13, 2014 at 11:35 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> The compiler can still think of it as a single insn, though, but some
+>> future compiler might not.
+> 
+> I think that would be very dangerous.
+> compiler (user space) and kernel interpreter must have the same
+> understanding of ISA.
+> 
 
-It's currently difficult to filter out perf itself using a filter.
-This can give cascading effects during IO tracing when the IO
-perf does itself causes more trace output.
+Only at the point of the interface layer.  The compiler can treat it as
+a single instruction internally, the JIT can do peephole optimization,
+but as long as the instruction stream at the boundary matches the
+official ISA spec everything is fine.
 
-The best way to filter is to use the pid. But it's difficult to get the pid
-of perf without using hacks.
-
-Add a PERF_PID meta variable to the perf filter that contains the current pid.
-
-With this patch the following works
-
-% perf record -e syscalls:sys_enter_write -a --filter 'common_pid != PERF_PID' ...
-
-This won't work for more complex perf pipe lines with multiple processes,
-but at least solves the problem nicely for a single perf.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-record.txt | 2 +-
- tools/perf/util/parse-events.c           | 9 +++++++++
- 2 files changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index d460049..b6c5e51 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -41,7 +41,7 @@ OPTIONS
-           'mem:0x1000:rw'.
- 
- --filter=<filter>::
--        Event filter.
-+        Event filter. PERF_PID represents the perf pid.
- 
- -a::
- --all-cpus::
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 1e15df1..90ed63f 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -967,6 +967,7 @@ int parse_filter(const struct option *opt, const char *str,
- {
- 	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
- 	struct perf_evsel *last = NULL;
-+	char *pid;
- 
- 	if (evlist->nr_entries > 0)
- 		last = perf_evlist__last(evlist);
-@@ -983,6 +984,14 @@ int parse_filter(const struct option *opt, const char *str,
- 		return -1;
- 	}
- 
-+	/* Assume a pid has not more than 8 characters */
-+	pid = strstr(last->filter, "PERF_PID");
-+	if (pid) {
-+		char buf[9];
-+		snprintf(buf, 9, "%08d", getpid());
-+		memcpy(pid, buf, 8);
-+	}
-+	fprintf(stderr, "filter |%s|\n", last->filter);
- 	return 0;
- }
- 
--- 
-1.9.3
+	-hpa
 
