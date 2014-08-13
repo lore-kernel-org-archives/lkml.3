@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaHMO1x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:27:53 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:64632 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518AbaHMO1w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:27:52 -0400
-Date: Wed, 13 Aug 2014 15:27:48 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Mark Salter <msalter@redhat.com>, Randy Dunlap <rdunlap@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-efi@vger.kernel.org, rtc-linux@googlegroups.com
-Subject: Re: [PATCH 4/5] efi x86: clear EFI_RUNTIME_SERVICES bit in case
- failures other than SetVirtualAddressMap
-Message-ID: <20140813142748.GS15082@console-pimps.org>
-References: <1407823822-23829-1-git-send-email-dyoung@redhat.com>
- <1407823822-23829-4-git-send-email-dyoung@redhat.com>
+	id S1752836AbaHMOcU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:32:20 -0400
+Received: from imap.thunk.org ([74.207.234.97]:58385 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751429AbaHMOcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 10:32:18 -0400
+Date: Wed, 13 Aug 2014 10:32:09 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, kvm list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
+Subject: Re: [PATCH v5 0/5] random,x86,kvm: Rework arch RNG seeds and get
+ some from kvm
+Message-ID: <20140813143209.GD6437@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Andy Lutomirski <luto@amacapital.net>,
+	kvm list <kvm@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
+	Daniel Borkmann <dborkman@redhat.com>,
+	Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+	Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+	Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+	Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
+References: <cover.1406177531.git.luto@amacapital.net>
+ <CALCETrXtLf3ZFtyrbwj29C=t3PcTxRT2AJWZCUHdKC3AYyUVAA@mail.gmail.com>
+ <20140812191723.GI12871@thunk.org>
+ <CALCETrVmviT=upxHfPfmLy2aUOKdCuCbNg9WZQcx6f=8T8vv=g@mail.gmail.com>
+ <53EB1859.6030800@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407823822-23829-4-git-send-email-dyoung@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53EB1859.6030800@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Aug, at 02:10:21PM, Dave Young wrote:
-> If enter virtual mode failed due to some reason other than the efi call
-> the EFI_RUNTIME_SERVICES bit in efi.flags should be cleared thus users
-> of efi runtime services can check the bit and handle the case instead of
-> assume efi runtime is ok.
-> 
-> Per Matt, if efi call SetVirtualAddressMap fails we will be not sure it's safe
-> to make any assumptions about the state of the system. so kernel panics instead
-> of clears EFI_RUNTIME_SERVICES bit.
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  arch/x86/platform/efi/efi.c | 10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
+On Wed, Aug 13, 2014 at 12:48:41AM -0700, H. Peter Anvin wrote:
+> The proposed arch_get_rng_seed() is not really what it claims to be; it
+> most definitely does not produce seed-grade randomness, instead it seems
+> to be an arch function for best-effort initialization of the entropy
+> pools -- which is fine, it is just something quite different.
 
-[...]
+Without getting into an argument about which definition of "seed" is
+correct --- it's certainly confusing and different form the RDSEED
+usage of the word "seed".
 
-> @@ -882,8 +886,10 @@ static void __init __efi_enter_virtual_mode(void)
->  
->  void __init efi_enter_virtual_mode(void)
->  {
-> -	if (efi_enabled(EFI_PARAVIRT))
-> +	if (efi_enabled(EFI_PARAVIRT)) {
-> +		clear_bit(EFI_RUNTIME_SERVICES, &efi.flags);
->  		return;
-> +	}
+Do we expect that anyone else besides arch_get_rnd_seed() would
+actually want to use it?  I'd argue no; we want the rest of the kernel
+to either use get_random_bytes() or prandom_u32().  Given that, maybe
+we should just call it arch_random_init(), and expect that the only
+user of this interface would be drivers/char/random.c?
 
-The EFI_PARAVIRT folks purposely do not set this bit, so there should be
-no reason to clear it here.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+					- Ted
