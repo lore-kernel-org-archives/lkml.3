@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633AbaHMALL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 20:11:11 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:55710 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400AbaHMALI (ORCPT
+	id S1752386AbaHMAUX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 20:20:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42513 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471AbaHMAUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 20:11:08 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: daniel.lezcano@linaro.org
-Cc: t.figa@samsung.com, k.chander@samsung.com, kgene.kim@samsung.com,
-        linaro-kernel@lists.linaro.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        linux-pm@vger.kernel.org (open list:CPUIDLE DRIVERS),
-        linux-arm-kernel@lists.infradead.org (open list:CPUIDLE DRIVER -...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] cpuidle: big.LITTLE: add Exynos5800 compatible string
-Date: Tue, 12 Aug 2014 17:11:05 -0700
-Message-Id: <1407888665-24603-1-git-send-email-khilman@linaro.org>
-X-Mailer: git-send-email 1.9.2
+	Tue, 12 Aug 2014 20:20:22 -0400
+Date: Wed, 13 Aug 2014 02:20:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH] timekeeping: Another fix to the VSYSCALL_OLD
+ update_vsyscall
+In-Reply-To: <1407858749-15422-1-git-send-email-john.stultz@linaro.org>
+Message-ID: <alpine.DEB.2.10.1408130216210.3323@nanos>
+References: <1407858749-15422-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exynos 5800 is big.LITTLE SoC compatible with the 5420.  Add the
-compatible string so this driver works on the 5800.
+On Tue, 12 Aug 2014, John Stultz wrote:
 
-Tested on exynos5800-peach-pi (aka Samsung Chromebook2)
+> Benjamin Herrenschmidt pointed out that I firuther missed
 
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
----
- drivers/cpuidle/cpuidle-big_little.c | 1 +
- 1 file changed, 1 insertion(+)
+s/firuther/further ?
 
-diff --git a/drivers/cpuidle/cpuidle-big_little.c b/drivers/cpuidle/cpuidle-big_little.c
-index 0a1f827308db..bf3ab66fdaaf 100644
---- a/drivers/cpuidle/cpuidle-big_little.c
-+++ b/drivers/cpuidle/cpuidle-big_little.c
-@@ -166,6 +166,7 @@ static int __init bl_idle_driver_init(struct cpuidle_driver *drv, int match_id)
- static const struct of_device_id compatible_machine_match[] = {
- 	{ .compatible = "arm,vexpress,v2p-ca15_a7" },
- 	{ .compatible = "samsung,exynos5420" },
-+	{ .compatible = "samsung,exynos5800" },
- 	{},
- };
- 
--- 
-1.9.2
+> modifying update_vsyscall after the wall_to_mono value was
+> changed to a timespec64. This causes issues on powerpc32,
+> which expects a 32bit timespec.
+> 
+> This patch fixes the problem my properly converting from
 
+s/my/by/ 
+
+> a timespec64 to a timespec before passing the value on to
+> the arch-specific vsyscall logic.
+
+Other than that, please add my Reviewed-by, and send it to Linus
+either as patch or pull request as I'm really in vacation mode NOW.
+
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  kernel/time/timekeeping.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index f36b028..fb4a9c2 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -338,10 +338,11 @@ EXPORT_SYMBOL_GPL(ktime_get_mono_fast_ns);
+>  
+>  static inline void update_vsyscall(struct timekeeper *tk)
+>  {
+> -	struct timespec xt;
+> +	struct timespec xt, wm;
+>  
+>  	xt = timespec64_to_timespec(tk_xtime(tk));
+> -	update_vsyscall_old(&xt, &tk->wall_to_monotonic, tk->tkr.clock, tk->tkr.mult,
+> +	wm = timespec64_to_timespec(tk->wall_to_monotonic);
+> +	update_vsyscall_old(&xt, &wm, tk->tkr.clock, tk->tkr.mult,
+>  			    tk->tkr.cycle_last);
+>  }
+>  
+> -- 
+> 1.9.1
+> 
+> 
