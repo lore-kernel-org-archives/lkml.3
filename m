@@ -1,117 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaHMLeM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 07:34:12 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:39865 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835AbaHMLeL (ORCPT
+	id S1752122AbaHMLef (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 07:34:35 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:51139 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014AbaHMLee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 07:34:11 -0400
-Date: Wed, 13 Aug 2014 20:32:57 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Chao Yu <chao2.yu@samsung.com>, minchan@kernel.org, ngupta@vflare.org,
-        linux-kernel@vger.kernel.org,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
-Message-ID: <20140813113257.GA948@swordfish>
-References: <009001cfb69a$a8470840$f8d518c0$@samsung.com>
- <53EB2271.1080002@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53EB2271.1080002@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 13 Aug 2014 07:34:34 -0400
+From: Guodong Xu <guodong.xu@linaro.org>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, sameo@linux.intel.com, lee.jones@linaro.org,
+        lgirdwood@gmail.com, broonie@kernel.org, grant.likely@linaro.org,
+        khilman@linaro.org, haojian.zhuang@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Guodong Xu <guodong.xu@linaro.org>
+Subject: [PATCH v5 0/7] Add MFD and regulator drivers for Hi6421 PMIC SoC
+Date: Wed, 13 Aug 2014 19:33:37 +0800
+Message-Id: <1407929624-8737-1-git-send-email-guodong.xu@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (08/13/14 10:31), Jerome Marchand wrote:
-> Date: Wed, 13 Aug 2014 10:31:45 +0200
-> From: Jerome Marchand <jmarchan@redhat.com>
-> To: Chao Yu <chao2.yu@samsung.com>, minchan@kernel.org
-> CC: ngupta@vflare.org, linux-kernel@vger.kernel.org, 'Sergey Senozhatsky'
->  <sergey.senozhatsky@gmail.com>, 'Andrew Morton'
->  <akpm@linux-foundation.org>
-> Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
-> User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
->  Thunderbird/24.6.0
-> 
-> On 08/13/2014 04:01 AM, Chao Yu wrote:
-> > Since we allocate a temporary buffer in zram_bvec_read to handle partial page
-> > operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
-> > zram: allow partial page operations), our ->failed_reads value may be incorrect
-> > as we do not increase its value when failed to allocate the temporary buffer.
-> > 
-> > Let's fix this issue and correct the annotation of failed_reads.
-> > 
-> >  v2: clean codes of failed_{reads,writes} stat pointed out by Minchan Kim, and
-> > this cleanup also fix incorrectly stat when fail in zram_decompress_page.
-> > 
-> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> 
-> Acked-by: Jerome Marchand <jmarchan@redhat.com>
+This patchset adds an MFD core driver and a regulator driver for Hi6421 PMIC
+SoC.
 
-Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Hi6421 is a PMIC SoC designed and manufactured by HiSilicon Ltd. It includes
+multi-functions, such as regulators, codec, ADCs, Coulomb counter, etc.
+Hi6421 can be used in various Hi3620 SoC based boards. Registers in Hi6421 are
+memory bus mapped, so in this design they are accessed by regmap-mmio APIs.
 
-	-ss
+Hi6421 has a requirement to keep a guard delay between its regulator's
+disable and next enable. Implement this requirement in regulator core,
+per Mark Brown's suggestion.
 
-> > ---
-> >  drivers/block/zram/zram_drv.c | 10 +++++++---
-> >  drivers/block/zram/zram_drv.h |  2 +-
-> >  2 files changed, 8 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index dfa4024..d00831c 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -378,7 +378,6 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
-> >  	/* Should NEVER happen. Return bio error if it does. */
-> >  	if (unlikely(ret)) {
-> >  		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
-> > -		atomic64_inc(&zram->stats.failed_reads);
-> >  		return ret;
-> >  	}
-> >  
-> > @@ -547,8 +546,6 @@ out:
-> >  		zcomp_strm_release(zram->comp, zstrm);
-> >  	if (is_partial_io(bvec))
-> >  		kfree(uncmem);
-> > -	if (ret)
-> > -		atomic64_inc(&zram->stats.failed_writes);
-> >  	return ret;
-> >  }
-> >  
-> > @@ -566,6 +563,13 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >  		ret = zram_bvec_write(zram, bvec, index, offset);
-> >  	}
-> >  
-> > +	if (unlikely(ret)) {
-> > +		if (rw == READ)
-> > +			atomic64_inc(&zram->stats.failed_reads);
-> > +		else
-> > +			atomic64_inc(&zram->stats.failed_writes);
-> > +	}
-> > +
-> >  	return ret;
-> >  }
-> >  
-> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > index 5b0afde..e0f725c 100644
-> > --- a/drivers/block/zram/zram_drv.h
-> > +++ b/drivers/block/zram/zram_drv.h
-> > @@ -84,7 +84,7 @@ struct zram_stats {
-> >  	atomic64_t compr_data_size;	/* compressed size of pages stored */
-> >  	atomic64_t num_reads;	/* failed + successful */
-> >  	atomic64_t num_writes;	/* --do-- */
-> > -	atomic64_t failed_reads;	/* should NEVER! happen */
-> > +	atomic64_t failed_reads;	/* can happen when memory is too low */
-> >  	atomic64_t failed_writes;	/* can happen when memory is too low */
-> >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
-> >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
-> > 
-> 
-> 
+---
+changes in v5:
+ * rename _regulator_delay to _regulator_enable_delay
+ * clean up hi6421_regulator_enable(), add 100us protective gap into
+     regulator_desc's .enable_time
+ * code clean up, fixes for style checking
+changes in v4:
+ * regulator: core:
+  - add const qualifier to ops in struct regulator_desc
+  - factor out _regulator_delay from _regulator_do_enable
+  - add guard delay between calling regulator_disable and _enable
+ * hi6421 regulator:
+  - bug fix: missing min_uV for linear regualtor BUCK0~2
+  - bug fix: wrong volt values in buck_3_voltages table
+  - add const to hi6421 regulator_ops
+  - use ldo_linear and ldo_linear_range in applicable LDOs.
+  - rename regulator-name to conform to names in board schematics.
+changes in v3:
+ * hi6421: regulator: remove setting of constraints on board-specific
+     capabilities
+ * delete unecessary compatible property "hisilicon,hi6421-regulators"
+ * change regulator enable/disable callback APIs to support protection
+gaps, as
+     required by hi6421 spec
+ * split regulator set_mode/get_mode callback APIs to LDOs and BUCKs
+ * delete hi6421.dtsi, mfd and regulator nodes are now in board config .dts
+changes in v2:
+ * use MFD APIs to manage sub-devices of Hi6421
+ * use regmap-mmio for register access
+ * use only generic regulator device tree property
+ * rewrite regulator driver using helper APIs from both regulator and regmap
+v1: first drop
 
+Guodong Xu (7):
+  regulator: core: add const qualifier to ops in struct regulator_desc
+  regulator: core: factor out delay function from _regulator_do_enable
+  regulator: core: add guard delay between calling regulator_disable and
+    _enable
+  mfd: Add hi6421 PMIC core driver
+  regulator: add driver for hi6421 voltage regulator
+  ARM: dts: hi3620-hi4511: Add HI6421 MFD and regulator nodes
+  ARM: hi3xxx_defconfig: Enable HI6421 MFD and Regulators
+
+ Documentation/devicetree/bindings/mfd/hi6421.txt |  37 ++
+ arch/arm/boot/dts/hi3620-hi4511.dts              | 233 ++++++++
+ arch/arm/configs/hi3xxx_defconfig                |   3 +
+ drivers/mfd/Kconfig                              |  13 +
+ drivers/mfd/Makefile                             |   1 +
+ drivers/mfd/hi6421-pmic-core.c                   | 119 ++++
+ drivers/regulator/Kconfig                        |  10 +
+ drivers/regulator/Makefile                       |   1 +
+ drivers/regulator/core.c                         | 129 +++--
+ drivers/regulator/hi6421-regulator.c             | 657 +++++++++++++++++++++++
+ include/linux/mfd/hi6421-pmic.h                  |  39 ++
+ include/linux/regulator/driver.h                 |   8 +-
+ 12 files changed, 1203 insertions(+), 47 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/hi6421.txt
+ create mode 100644 drivers/mfd/hi6421-pmic-core.c
+ create mode 100644 drivers/regulator/hi6421-regulator.c
+ create mode 100644 include/linux/mfd/hi6421-pmic.h
+
+-- 
+1.9.1
 
