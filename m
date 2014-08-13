@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaHMLps (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 07:45:48 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:49449 "EHLO smtp2.it.da.ut.ee"
+	id S1751899AbaHMLsk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 07:48:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51721 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835AbaHMLpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 07:45:46 -0400
-Date: Wed, 13 Aug 2014 14:44:42 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: David Miller <davem@davemloft.net>
-cc: aaro.koskinen@iki.fi, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hughd@google.com,
-        cat.schulze@alice-dsl.net
-Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
-In-Reply-To: <20140730.150722.861254999466992321.davem@davemloft.net>
-Message-ID: <alpine.SOC.1.00.1408131327250.18696@math.ut.ee>
-References: <alpine.SOC.1.00.1404170119550.20193@math.ut.ee> <20140729.162635.638786990787878495.davem@davemloft.net> <alpine.SOC.1.00.1407310101550.2065@math.ut.ee> <20140730.150722.861254999466992321.davem@davemloft.net>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1750751AbaHMLsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 07:48:39 -0400
+Date: Wed, 13 Aug 2014 13:48:22 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH 03/13] perf annotate: Move session handling out of
+ __cmd_annotate()
+Message-ID: <20140813114822.GD2370@krava.brq.redhat.com>
+References: <1407825645-24586-1-git-send-email-namhyung@kernel.org>
+ <1407825645-24586-4-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407825645-24586-4-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 12, 2014 at 03:40:35PM +0900, Namhyung Kim wrote:
 
-I tested the merged sparc64 fixes in current git.
+SNIP
 
-V100: with hugetlb, looping git clone still hangs the machine. RED 
-state on reboot has changed - before it gave the trace on reboot and 
-continued, now it contonues looping with the trace indefinitely, gcc 
-4.6.4
+>  
+> @@ -301,6 +281,10 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+>  			.ordering_requires_timestamps = true,
+>  		},
+>  	};
+> +	struct perf_data_file file = {
+> +		.path  = input_name,
+> +		.mode  = PERF_DATA_MODE_READ,
+> +	};
+>  	const struct option options[] = {
+>  	OPT_STRING('i', "input", &input_name, "file",
+>  		    "input file name"),
+> @@ -308,7 +292,7 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+>  		   "only consider symbols in these dsos"),
+>  	OPT_STRING('s', "symbol", &annotate.sym_hist_filter, "symbol",
+>  		    "symbol to annotate"),
+> -	OPT_BOOLEAN('f', "force", &annotate.force, "don't complain, do it"),
+> +	OPT_BOOLEAN('f', "force", &file.force, "don't complain, do it"),
+>  	OPT_INCR('v', "verbose", &verbose,
+>  		    "be more verbose (show symbol address, etc)"),
+>  	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
+> @@ -341,6 +325,7 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+>  		    "Show event group information together"),
+>  	OPT_END()
+>  	};
+> +	int ret;
+>  
+>  	argc = parse_options(argc, argv, options, annotate_usage, 0);
+>  
+> @@ -353,11 +338,16 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+>  
+>  	setup_browser(true);
+>  
+> +	annotate.session = perf_session__new(&file, false, &annotate.tool);
+> +	if (annotate.session == NULL)
+> +		return -ENOMEM;
 
-Netra X1: works fine with HugeTLB (but no hugetlbfs) and looping git 
-clone, gcc 4.6.4.
+I know you're just moving code, but perf_session__new could
+fail for more reasons than just ENOMEM, which is the most
+unlikely case ;-) -1 is probably better option here
 
-V440: fails to boot with 3.16 and gcc 4.9.1 (same message as before, in 
-fault_in_user_windows+0xe0/0x100). Tried latest git with gcc 4.9.1 but 
-it stops after before getting to the previous failure point:
-[   77.871887] console [tty0] enabled
-[   77.912630] bootconsole [earlyprom0] disabled
-
-T2000: works fine with gcc 4.9.1 and hugetlb, 3.16. Hangs at boot at the 
-same point.
-
-U2: looping git clone fails with 3.16, no hugetlb(!!!), gcc 4.6.4;
-
-E420R: works fine with gcc 4.6.4. 3.16, hugetlb, looping git clone; 
-fails to boot with current git
-
-E220R: works with gcc 4.6.4, no hugetlb, 3.16. Hangs on boot with 
-current git + hugetlb.
-
-Did not test current git more. Will test the patches on top of 3.16 
-separately to see if/which one of these is the culprit.
-
--- 
-Meelis Roos (mroos@linux.ee)
+jirka
