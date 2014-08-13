@@ -1,84 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975AbaHMJ5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:57:07 -0400
-Received: from unicorn.mansr.com ([81.2.72.234]:54925 "EHLO unicorn.mansr.com"
+	id S1752200AbaHMJ6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:58:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63165 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751060AbaHMJ5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:57:05 -0400
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Christopher Barry <christopher.r.barry@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: OT: Open letter to the Linux World
-References: <20140812153812.2923046a@monolith.infinux.org>
-	<yw1xr40l2whi.fsf@unicorn.mansr.com>
-	<20140813082756.GB2923@twins.programming.kicks-ass.net>
-	<2838655.H5W5zNkR37@merkaba>
-Date: Wed, 13 Aug 2014 10:57:01 +0100
-In-Reply-To: <2838655.H5W5zNkR37@merkaba> (Martin Steigerwald's message of
-	"Wed, 13 Aug 2014 11:37:28 +0200")
-Message-ID: <yw1xegwk3e6q.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751097AbaHMJ6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 05:58:24 -0400
+Message-ID: <53EB36BA.7050302@redhat.com>
+Date: Wed, 13 Aug 2014 05:58:18 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lenny Szubowicz <lszubowi@redhat.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq, store_scaling_governor requires policy->rwsem
+ to be held for duration of changing governors [v2]
+References: <53DB6B81.6050400@redhat.com> <53DBCBE8.6010809@codeaurora.org> <53DBE764.8050109@redhat.com> <53DBEC27.7050803@codeaurora.org> <CAKohpombG3Gj4mbm02vPNnAxzaRvQP7rb=iQ14dCFH4_+71H3w@mail.gmail.com> <53E0B657.4070007@redhat.com> <CAKohponxBdYEgY2oYuzmdaqfSRS8Uq8bZOzcb1QDmKO-z5ZBFQ@mail.gmail.com> <53E1556B.5070304@codeaurora.org> <CAKohpoky1-hj7cwnKc58svh8Z1Yas1=q4uJEK8mWcb56uqAcng@mail.gmail.com> <53E1FEE5.80305@redhat.com> <20140806150831.GB32301@codeaurora.org> <CAKohponBRn9mwpPMinsjqpHe3wTFj6aNpYk5gZaWDKht3bd5NQ@mail.gmail.com> <53E35122.3040806@redhat.com> <CAKohpokLsqMMxMwh_p+kUL=He9-8cSws6onG6DCBNBVzz1=5TA@mail.gmail.com> <CAKohpokebTdX-Ssdc4N+b09tZ35qkckiErypc0c0Nbe7v+Y5uQ@mail.gmail.com> <53E9FBA4.2080609@redhat.com> <CAKohponqFj5jSpvYbMD5d5zgCJAjCYkNg=_L+BKeMEDmBEWbyg@mail.gmail.com>
+In-Reply-To: <CAKohponqFj5jSpvYbMD5d5zgCJAjCYkNg=_L+BKeMEDmBEWbyg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Steigerwald <Martin@lichtvoll.de> writes:
 
-> Am Mittwoch, 13. August 2014, 10:27:56 schrieb Peter Zijlstra:
->> On Tue, Aug 12, 2014 at 11:07:05PM +0100, Måns Rullgård wrote:
->> > Steven Rostedt <rostedt@goodmis.org> writes:
->> > > Nice rant, I sympathize with you (just complaining about this on G+).
->> > 
->> > Made my day.
->> > 
->> > > I'm just waiting for Linus to get pissed enough to write his own init
->> > > routine. Maybe he'll call it "Boot Init Through Computer Hardware".
->> > 
->> > The trouble is that most of the heavy-weight kernel developers don't
->> > seem to care at all about what goes on in userspace.
->> 
->> Well, I know for a fact that quite a number do; but so far most people
->> who care have been able to steer clear of this trainwreck so we did.
->> 
->> I'm about to switch all my machines to Gentoo (from Debian) because that
->> will indeed allow you to build a distro without much of this nonsense
->> in -- because as has been eloquently said; you simply don't need this
->> fucking shite to run a 'normal' machine.
->> 
->> And the thing is; we're all very busy so we tend to take the 'easy' way
->> out for things like this; but wholesale switching all my machines is
->> indeed painful, and I'm not liking.
->
-> Just for record:
->
-> Debian continues and will (for now and supposedly Jessie lifetime)
-> continue to work without systemd as PID 1 using systemd-shim and
-> cgmanager.
 
-For now.  Non-systemd configurations will receive little testing, if
-any.  Once enough breakage accumulates, someone will issue an ultimatum
-for dropping such support entirely unless those who complain fix
-everything within an unreasonably short time.  Obviously most things
-will remain broken, because those who opposed systemd are not package
-maintainers and have other jobs to do, and non-systemd support will be
-removed.  I expect this to happen in unstable/testing within 18 months.
+On 08/13/2014 03:39 AM, Viresh Kumar wrote:
+> On 12 August 2014 17:03, Prarit Bhargava <prarit@redhat.com> wrote:
+>> Okay, this is what I have and I can reproduce this *easily* 100% of the time.
+>>
+>> I've used your above config options and have enabled LOCKDEP.
+>>
+>> In order to restore the locking, I've applied the following patch to the cpufreq
+>> core (sorry for the cut-and-paste):
+>>
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> index d9fdedd..dfda238 100644
+>> --- a/drivers/cpufreq/cpufreq.c
+>> +++ b/drivers/cpufreq/cpufreq.c
+>> @@ -2192,9 +2192,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *polic
+>>         /* end old governor */
+>>         if (old_gov) {
+>>                 __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+>> -               up_write(&policy->rwsem);
+>>                 __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
+>> -               down_write(&policy->rwsem);
+>>         }
+>>
+>>         /* start new governor */
+>> @@ -2203,9 +2201,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *polic
+>>                 if (!__cpufreq_governor(policy, CPUFREQ_GOV_START))
+>>                         goto out;
+>>
+>> -               up_write(&policy->rwsem);
+>>                 __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
+>> -               down_write(&policy->rwsem);
+>>         }
+>>
+>>         /* new governor failed, so re-start old one */
+>>
+>>
+>> I've modified the acpi-cpufreq driver to include (sorry for the cut-and-paste)
+>>
+>> diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+>> index b0c18ed..97653c3 100644
+>> --- a/drivers/cpufreq/acpi-cpufreq.c
+>> +++ b/drivers/cpufreq/acpi-cpufreq.c
+>> @@ -884,6 +884,9 @@ static struct freq_attr *acpi_cpufreq_attr[] = {
+>>  };
+>>
+>>  static struct cpufreq_driver acpi_cpufreq_driver = {
+>> +       .flags                  = CPUFREQ_STICKY |
+>> +                                       CPUFREQ_HAVE_GOVERNOR_PER_POLICY |
+>> +                                       CPUFREQ_NEED_INITIAL_FREQ_CHECK,
+>>         .verify         = cpufreq_generic_frequency_table_verify,
+>>         .target_index   = acpi_cpufreq_target,
+>>         .bios_limit     = acpi_processor_get_bios_limit,
+>>
+>> I do a
+>>
+>> cat /sys/devices/system/cpu/cpu2/cpufreq/conservative/*
+>> echo ondemand > /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor
+>>
+>> and then I immediately see the stack trace.
+> 
+> What's your system configuration? How many clusters/cpus/etc..
 
-> That all said: I believe that any feedback like this is best served on
-> systemd-devel mailing list – maybe in an attempt to express it in a
-> somewhat polite, yet also direct way. Instead of on LKML, debian-user,
-> debian-devel and you name it what other mailinglists. Cause that would
-> increase the chance of upstream noticing it.
+Anywhere from 2-4 sockets, 8 - 240 cpus (depending on # of sockets), x86 arch.
 
-This discussion is not aimed at systemd developers.  We already know
-they don't give a hoot.
-
--- 
-Måns Rullgård
-mans@mansr.com
+P.
+> 
