@@ -1,106 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240AbaHMOoT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:44:19 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55025 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100AbaHMOoO (ORCPT
+	id S1753217AbaHMOoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:44:17 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35174 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177AbaHMOoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:44:14 -0400
-Date: Wed, 13 Aug 2014 16:43:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com
-Subject: Re: [PATCH v5 tip/core/rcu 15/16] rcu: Make RCU-tasks wait for idle
- tasks
-Message-ID: <20140813144342.GR9918@twins.programming.kicks-ass.net>
-References: <20140811224840.GA25594@linux.vnet.ibm.com>
- <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1407797345-28227-15-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140813081215.GB9918@twins.programming.kicks-ass.net>
- <20140813124818.GQ4752@linux.vnet.ibm.com>
- <20140813134025.GN9918@twins.programming.kicks-ass.net>
- <20140813095132.56d288f2@gandalf.local.home>
- <20140813140705.GO9918@twins.programming.kicks-ass.net>
- <20140813101301.08019895@gandalf.local.home>
+	Wed, 13 Aug 2014 10:44:15 -0400
+Date: Wed, 13 Aug 2014 23:43:04 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Chao Yu <chao2.yu@samsung.com>,
+        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
+Message-ID: <20140813144304.GB1091@swordfish>
+References: <009001cfb69a$a8470840$f8d518c0$@samsung.com>
+ <53EB2271.1080002@redhat.com>
+ <20140813113257.GA948@swordfish>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tXjKu8zC63dF7Z1t"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140813101301.08019895@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140813113257.GA948@swordfish>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---tXjKu8zC63dF7Z1t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On (08/13/14 20:32), Sergey Senozhatsky wrote:
+> On (08/13/14 10:31), Jerome Marchand wrote:
+> > Date: Wed, 13 Aug 2014 10:31:45 +0200
+> > From: Jerome Marchand <jmarchan@redhat.com>
+> > To: Chao Yu <chao2.yu@samsung.com>, minchan@kernel.org
+> > CC: ngupta@vflare.org, linux-kernel@vger.kernel.org, 'Sergey Senozhatsky'
+> >  <sergey.senozhatsky@gmail.com>, 'Andrew Morton'
+> >  <akpm@linux-foundation.org>
+> > Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
+> > User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+> >  Thunderbird/24.6.0
+> > 
+> > On 08/13/2014 04:01 AM, Chao Yu wrote:
+> > > Since we allocate a temporary buffer in zram_bvec_read to handle partial page
+> > > operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
+> > > zram: allow partial page operations), our ->failed_reads value may be incorrect
+> > > as we do not increase its value when failed to allocate the temporary buffer.
+> > > 
+> > > Let's fix this issue and correct the annotation of failed_reads.
+> > > 
+> > >  v2: clean codes of failed_{reads,writes} stat pointed out by Minchan Kim, and
+> > > this cleanup also fix incorrectly stat when fail in zram_decompress_page.
+> > > 
+> > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > 
+> > Acked-by: Jerome Marchand <jmarchan@redhat.com>
+> 
+> Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> 
+> 	-ss
+> 
+> > > ---
+> > >  drivers/block/zram/zram_drv.c | 10 +++++++---
+> > >  drivers/block/zram/zram_drv.h |  2 +-
+> > >  2 files changed, 8 insertions(+), 4 deletions(-)
+> > > 
+> > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > > index dfa4024..d00831c 100644
+> > > --- a/drivers/block/zram/zram_drv.c
+> > > +++ b/drivers/block/zram/zram_drv.c
+> > > @@ -378,7 +378,6 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+> > >  	/* Should NEVER happen. Return bio error if it does. */
+> > >  	if (unlikely(ret)) {
+> > >  		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
+> > > -		atomic64_inc(&zram->stats.failed_reads);
+> > >  		return ret;
+> > >  	}
+> > >  
+> > > @@ -547,8 +546,6 @@ out:
+> > >  		zcomp_strm_release(zram->comp, zstrm);
+> > >  	if (is_partial_io(bvec))
+> > >  		kfree(uncmem);
+> > > -	if (ret)
+> > > -		atomic64_inc(&zram->stats.failed_writes);
+> > >  	return ret;
+> > >  }
+> > >  
+> > > @@ -566,6 +563,13 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+> > >  		ret = zram_bvec_write(zram, bvec, index, offset);
+> > >  	}
+> > >  
+> > > +	if (unlikely(ret)) {
+> > > +		if (rw == READ)
+> > > +			atomic64_inc(&zram->stats.failed_reads);
+> > > +		else
+> > > +			atomic64_inc(&zram->stats.failed_writes);
+> > > +	}
+> > > +
+> > >  	return ret;
+> > >  }
+> > >  
+> > > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > > index 5b0afde..e0f725c 100644
+> > > --- a/drivers/block/zram/zram_drv.h
+> > > +++ b/drivers/block/zram/zram_drv.h
+> > > @@ -84,7 +84,7 @@ struct zram_stats {
+> > >  	atomic64_t compr_data_size;	/* compressed size of pages stored */
+> > >  	atomic64_t num_reads;	/* failed + successful */
+> > >  	atomic64_t num_writes;	/* --do-- */
+> > > -	atomic64_t failed_reads;	/* should NEVER! happen */
+> > > +	atomic64_t failed_reads;	/* can happen when memory is too low */
 
-On Wed, Aug 13, 2014 at 10:13:01AM -0400, Steven Rostedt wrote:
-> On Wed, 13 Aug 2014 16:07:05 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
->=20
-> > On Wed, Aug 13, 2014 at 09:51:32AM -0400, Steven Rostedt wrote:
-> >=20
-> > > I still need to look at the patches, but if this is just for the idle
-> > > case, then we don't need it. The idle case can be solved with a simple
-> > > sched_on_each_cpu(). I need a way to solve waiting for processes to
-> > > finish from a preemption point.
-> > >=20
-> > > That's all I want, and if we can remove the "idle" case and document =
-it
-> > > well that it's not covered and a sched_on_each_cpu() may be needed,
-> > > then I'm fine with that.
-> > >=20
-> > > 	sched_on_each_cpu(dummy_op);
-> > > 	call_rcu_tasks(free_tramp);
-> >=20
-> > Sure, but why not dtrt and push rcu_idle hooks all the way down into the
-> > idle drivers if and where appropriate?
-> >=20
-> > There isn't _that_ much idle driver code. Also, some stuff should be
-> > cleaned up; we're already calling stop_critical_timings() in the generic
-> > idle code, and then calling it again in the cpuidle drivers.
-> >=20
-> >=20
->=20
-> True, perhaps the rcu code should hook into the stop_critical_timings
-> code?
 
-Not sure; the current proposal would have rcu_idle code be far narrower
-than the critical_timings thing, not sure if that's an accident or
-desired.
+this grabbed my attention.
 
-If they have similar requirements we could indeed merge them.
+	"failed_writes; /* can happen when memory is too low */"
 
---tXjKu8zC63dF7Z1t
-Content-Type: application/pgp-signature
+theoretically, we can have a misbehaving compression algorithm. so the
+question is -- should we fail write() if compression has failed for any
+other reason, rather than -ENOMEM? alternatively, we can store uncompressed
+user mem, just the same way we do for `badly' compressed buffers, set a
+FAILED_COMPRESSION flag (so we will not leak kernel memory on read() if we
+failed to compress is_partial_io() bv_page), and on read() copy it out as is,
+just as we do for `badly' compessed pages.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+so, what do you think? /* I can take a look on it */
 
-iQIcBAEBAgAGBQJT63meAAoJEHZH4aRLwOS6smgP/3Z21aUJSyOxfcVA+64XWEvx
-Dy7mBk3KCyrbVBtLEGuwXwck6c853QMKk6Yb8Y8o+zvCOABS4bPMVXAcEOEcuQTj
-ZNv355vVq+sc62XtRqsTX3sfEZHp+XkWrYgCAT1vbRdvIr5NqqzBvVcRB3s+ctXZ
-xldsCoJUxRFCceS6qReoqzFbcvmoX8mV/MYv56Qvueg3FcS3Ly+bIeU3elGrt20T
-qdGPGXqn0ZqaWF6UgEKpX3A4CxthkxO+EroAGFoTPh2mUWQIVjBeZ5IbQu+EDQIq
-99IjMde18HS5XhioO2K3DKrll3E3j4Rv4QNQMn6hEXzHiyyzlRFartynb8dm4Lii
-gFPjO5ybFnOc+O/7hq4I4p7a4ygOCkGn2qiVe2rsqWQ4HlgdngYk0c8BtRGatpJ2
-P7NC/L+izo+Ag0uThSDDyjQFHd4yx+a8aZc0qxj0evfKourqoIkk9xM9SjD73Giu
-XE8PofcVGcM21w0IeSIfNE6MoFFEAffa1sUfQ9OnG0ULjSqu95g/GDBf2GeYhZAU
-7X5sMD/tA4TKwH9zistvAGWuvh8I/uXcC4UVAOC1PSk636iG+GDMbZmIDxTPFgbD
-xSF5mt/9bwhdq9qwDNGf8CxB2VoS0W07pSxdfT+xRBsItCVEyRcu9oCZp0eReKWJ
-AwKKBKIOuVC0N6wypq42
-=xmb7
------END PGP SIGNATURE-----
+	-ss
 
---tXjKu8zC63dF7Z1t--
+> > >  	atomic64_t failed_writes;	/* can happen when memory is too low */
+> > >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+> > >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
+> > > 
+> > 
+> > 
+> 
+> 
