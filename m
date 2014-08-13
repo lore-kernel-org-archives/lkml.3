@@ -1,78 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069AbaHMWQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 18:16:27 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:37382 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707AbaHMWQZ (ORCPT
+	id S1753175AbaHMWWR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 18:22:17 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:49383 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704AbaHMWWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 18:16:25 -0400
+	Wed, 13 Aug 2014 18:22:15 -0400
+Date: Wed, 13 Aug 2014 15:22:12 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Marc Carino <marc.ceeeee@gmail.com>, kernel-janitors@vger.kernel.org,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        bcm-kernel-feedback-list@broadcom.com, linux-kernel@vger.kernel.org,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 11/14] ARM: brcmstb: delete unneeded test before
+ of_node_put
+Message-ID: <20140813222212.GB18411@ld-irv-0074>
+References: <1407492475-26283-11-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:ddbc:4bf2:aaa:f418]
-In-Reply-To: <CAN8TOE8w5bUT5byHiJrYr8AzaZ+EADzE+aoH6f2x2tFc1+1eQw@mail.gmail.com>
-References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
-	<1405976886-27807-4-git-send-email-computersforpeace@gmail.com>
-	<20140802083040.GY30282@n2100.arm.linux.org.uk>
-	<20140804165627.GT3711@ld-irv-0074>
-	<CAN8TOE8w5bUT5byHiJrYr8AzaZ+EADzE+aoH6f2x2tFc1+1eQw@mail.gmail.com>
-Date: Wed, 13 Aug 2014 15:16:24 -0700
-Message-ID: <CAOesGMh5wX5eaCmPvXQs4fmNQsD+370P=O8PSdH2oMHKL_neDQ@mail.gmail.com>
-Subject: Re: [PATCH v8 03/11] ARM: brcmstb: add debug UART for earlyprintk support
-From: Olof Johansson <olof@lixom.net>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Matt Porter <mporter@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Gregory Fong <gregory.0xf0@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Marc Carino <marc.ceeeee@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407492475-26283-11-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 3:11 PM, Brian Norris
-<computersforpeace@gmail.com> wrote:
-> Ping (Olof or Matt?)
->
-> On Mon, Aug 4, 2014 at 9:56 AM, Brian Norris
-> <computersforpeace@gmail.com> wrote:
->> On Sat, Aug 02, 2014 at 09:30:40AM +0100, Russell King wrote:
->>> On Mon, Jul 21, 2014 at 02:07:58PM -0700, Brian Norris wrote:
->>> > From: Marc Carino <marc.ceeeee@gmail.com>
->>> >
->>> > Add the UART definitions needed to support earlyprintk on brcmstb machines.
->>> >
->>> > Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
->>> > Acked-by: Florian Fainelli <f.fainelli@gmail.com>
->>> > Signed-off-by: Brian Norris <computersforpeace@gmail.com>
->>>
->>> I noticed that you sent this to the patch system.  I asked Olof last
->>> night whether he had anything in arm-soc touching Kconfig.debug, and
->>> he does (a number of other platforms have updated it.)  This means
->>> that if I apply it to my tree, it may conflict, so I'm reluctant to
->>> take it.
->>
->> OK... Matt told me that such patches go through you. So which is it?
->> Should all Kconfig.debug patches go through the arm-soc route?
->
-> How should this get in? Should I rebase/resend through Matt and
-> arm-soc? Or can you pick this up as-is?
+Hi Julia,
 
-Kconfig.debug is something that we usually merge new platforms for
-through arm-soc. The main exception has been release cycles when
-Russell has been doing major surgery on the file (one of those was a
-few releases ago), where we've backed off to avoid conflicts.
+On Fri, Aug 08, 2014 at 12:07:52PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Simplify the error path to avoid calling of_node_put when it is not needed.
+> 
+> The semantic patch that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression e;
+> @@
+> 
+> -if (e)
+>    of_node_put(e);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+>  arch/arm/mach-bcm/platsmp-brcmstb.c |   14 ++++++--------
 
-That's been the assumed arrangement from our side at least, we haven't
-had anything more formal than that.
+This file is being dropped temporarily, for rework/resubmission at a
+later time:
 
-So, go ahead and send it through us -- if we end up having a cycle
-where we can't apply it we can send it over to Russell for you.
+  https://lkml.org/lkml/2014/8/13/617
 
+But thanks for the patch. I'll take it into account in the future. A few
+comments below.
 
--Olof
+>  1 file changed, 6 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/arm/mach-bcm/platsmp-brcmstb.c b/arch/arm/mach-bcm/platsmp-brcmstb.c
+> index af780e9..c515ea1 100644
+> --- a/arch/arm/mach-bcm/platsmp-brcmstb.c
+> +++ b/arch/arm/mach-bcm/platsmp-brcmstb.c
+> @@ -227,7 +227,7 @@ static int __init setup_hifcpubiuctrl_regs(struct device_node *np)
+>  	if (!syscon_np) {
+>  		pr_err("can't find phandle %s\n", name);
+>  		rc = -EINVAL;
+> -		goto cleanup;
+> +		goto out;
+>  	}
+>  
+>  	cpubiuctrl_block = of_iomap(syscon_np, 0);
+> @@ -256,9 +256,8 @@ static int __init setup_hifcpubiuctrl_regs(struct device_node *np)
+>  	}
+>  
+>  cleanup:
+> -	if (syscon_np)
+> -		of_node_put(syscon_np);
+> -
+> +	of_node_put(syscon_np);
+> +out:
+
+Is there a good reason for this new label? I thought part of the point
+of this semantic patch is that the previous line (of_node_put()) is a
+no-op for NULL arguments.
+
+>  	return rc;
+>  }
+>  
+> @@ -274,7 +273,7 @@ static int __init setup_hifcont_regs(struct device_node *np)
+>  	if (!syscon_np) {
+>  		pr_err("can't find phandle %s\n", name);
+>  		rc = -EINVAL;
+> -		goto cleanup;
+> +		goto out;
+>  	}
+>  
+>  	hif_cont_block = of_iomap(syscon_np, 0);
+> @@ -288,9 +287,8 @@ static int __init setup_hifcont_regs(struct device_node *np)
+>  	hif_cont_reg = 0;
+>  
+>  cleanup:
+> -	if (syscon_np)
+> -		of_node_put(syscon_np);
+> -
+> +	of_node_put(syscon_np);
+> +out:
+
+Ditto.
+
+>  	return rc;
+>  }
+>  
+> 
+
+Brian
