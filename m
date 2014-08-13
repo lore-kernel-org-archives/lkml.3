@@ -1,98 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaHMA1V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 20:27:21 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50252 "EHLO
+	id S1752819AbaHMA1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 20:27:52 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50293 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080AbaHMA1T (ORCPT
+	with ESMTP id S1752080AbaHMA1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 20:27:19 -0400
-Message-ID: <53EAB0E6.2040204@codeaurora.org>
-Date: Tue, 12 Aug 2014 17:27:18 -0700
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 12 Aug 2014 20:27:50 -0400
+Message-ID: <53EAB104.1050208@codeaurora.org>
+Date: Tue, 12 Aug 2014 17:27:48 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: grant.likely@linaro.org, Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] of: Deep-copy names of platform devices
-References: <1407811356-24222-1-git-send-email-stepanm@codeaurora.org> <C248D37F-739E-477D-AF67-5C0187E5F8BF@codeaurora.org>
-In-Reply-To: <C248D37F-739E-477D-AF67-5C0187E5F8BF@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Kees Cook <keescook@chromium.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
+        Liu hua <sdu.liu@huawei.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Doug Anderson <dianders@google.com>, Rabin Vincent <rabin@rab.in>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Mark Salter <msalter@redhat.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 3/7] arm: use fixmap for text patching when text is
+ RO
+References: <1407867869-5194-1-git-send-email-keescook@chromium.org> <1407867869-5194-4-git-send-email-keescook@chromium.org> <53EA897D.8030901@codeaurora.org> <CAGXu5j+TPBs9h9YvVDt=g4WFykHgzcde9Ujuef=cRQAou8hZoA@mail.gmail.com>
+In-Reply-To: <CAGXu5j+TPBs9h9YvVDt=g4WFykHgzcde9Ujuef=cRQAou8hZoA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/12/2014 9:12 AM, Kumar Gala wrote:
+On 08/12/14 14:47, Kees Cook wrote:
+> On Tue, Aug 12, 2014 at 2:39 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> On 08/12/14 11:24, Kees Cook wrote:
+>>> diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
+>>> index 07314af47733..03dd4e39c833 100644
+>>> --- a/arch/arm/kernel/patch.c
+>>> +++ b/arch/arm/kernel/patch.c
+>>> @@ -13,21 +16,69 @@ struct patch {
+>>>       unsigned int insn;
+>>>  };
+>>>
+>>> -void __kprobes __patch_text(void *addr, unsigned int insn)
+>>> +static DEFINE_SPINLOCK(patch_lock);
+>>> +
+>>> +static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
+>>> +{
+>>> +     unsigned int uintaddr = (uintptr_t) addr;
+>>> +     bool module = !core_kernel_text(uintaddr);
+>>> +     struct page *page;
+>>> +
+>>> +     if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX))
+>>> +             page = vmalloc_to_page(addr);
+>>> +     else if (!module && IS_ENABLED(CONFIG_DEBUG_RODATA))
+>>> +             page = virt_to_page(addr);
+>>> +     else
+>>> +             return addr;
+>>> +
+>>> +     if (flags)
+>>> +             spin_lock_irqsave(&patch_lock, *flags);
+>>> +
+>>> +     set_fixmap(fixmap, page_to_phys(page));
+>>> +
+>>> +     return (void *) (__fix_to_virt(fixmap) + (uintaddr & ~PAGE_MASK));
+>>> +}
+>>> +
+>>> +static void __kprobes patch_unmap(int fixmap, unsigned long *flags)
+>>> +{
+>>> +     clear_fixmap(fixmap);
+>>> +
+>>> +     if (flags)
+>>> +             spin_unlock_irqrestore(&patch_lock, *flags);
+>>> +}
+>> Has the kbuildbot complained about this one yet?
+>>
+>>   CHECK  arch/arm/kernel/patch.c
+>>   arch/arm/kernel/patch.c:47:39: warning: context imbalance in
+>> 'patch_unmap' - unexpected unlock
+>>
+>> I guess we're going to ignore it.
+> No, nothing yet from buildbot, let me do a sparse run -- I think we
+> can just add annotation and we'll be okay.
 >
-> On Aug 11, 2014, at 9:42 PM, Stepan Moskovchenko <stepanm@codeaurora.org> wrote:
->
->> When we parse the device tree and allocate platform
->> devices, the 'name' of the newly-created platform_device
->> is set to point to the 'name' field of the 'struct device'
->> embedded within the platform_device. This is dangerous,
->> because the name of the 'struct device' is dynamically
->> allocated. Drivers may call dev_set_name() on the device,
->> which will free and reallocate the name of the device,
->> leaving the 'name' of the platform_device pointing to the
->> now-freed memory.
->>
->> Furthermore, if the dev_set_name() call is made from a
->> driver's probe() function and a subsequent request results
->> in probe deferral, the dangling 'name' reference may lead
->> to the device being re-probed using the wrong driver.
->>
->> To mitigate these scenarios, we use kstrdup to perform a
->> deep copy of the device name when assigning the name of the
->> platform_device, so that the platform_device name is
->> unaffected by any calls to dev_set_name() that might made
->> by drivers to rename the embedded 'struct device'.
->>
->> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
->> ---
->> I suppose creating a 'pdev_set_name' API may seem like
->> another possibility, but I feel that dev.name and pdev.name
->> have two different meanings. One is used for device/driver
->> binding purposes, whereas the other serves a more general
->> identification purpose, and is used for things like sysfs.
->> Drivers might want to change dev.name while leaving the
->> pdev.name alone. I guess yet another possibility would be
->> to prohibit calling dev_set_name() on devices created from
->> device tree, but a driver does not necessarily know how a
->> given platform_device was allocated.
->>
->> drivers/of/device.c | 2 +-
->> 1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/of/device.c b/drivers/of/device.c
->> index f685e55..fe5f025 100644
->> --- a/drivers/of/device.c
->> +++ b/drivers/of/device.c
->> @@ -54,7 +54,7 @@ int of_device_add(struct platform_device *ofdev)
->>
->> 	/* name and id have to be set so that the platform bus doesn't get
->> 	 * confused on matching */
->> -	ofdev->name = dev_name(&ofdev->dev);
->> +	ofdev->name = kstrdup(dev_name(&ofdev->dev), GFP_KERNEL);
->> 	ofdev->id = -1;
->>
->> 	/* device_add will assume that this device is on the same node as
->
-> Don’t we need to free this is of_device_unregister() now?
->
-> - k
 >
 
-Argh. I was confused by the asymmetric naming of the APIs, but after 
-digging through the callers outside from drivers/of/, it looks like 
-things do eventually filter down to of_device_add() in all the cases I 
-could find. So yes, this does need to be fixed. Expect v2 soon.
+Ok. I tried to move code around but sparse still complains because of
+conditional locking.
 
-Thanks
-Steve
+---8<---
+
+diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
+index 03dd4e39c833..f6d4de3826a0 100644
+--- a/arch/arm/kernel/patch.c
++++ b/arch/arm/kernel/patch.c
+@@ -18,33 +18,17 @@ struct patch {
+ 
+ static DEFINE_SPINLOCK(patch_lock);
+ 
+-static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
++static struct page __kprobes *patch_page(void *addr)
+ {
+ 	unsigned int uintaddr = (uintptr_t) addr;
+ 	bool module = !core_kernel_text(uintaddr);
+-	struct page *page;
+ 
+ 	if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX))
+-		page = vmalloc_to_page(addr);
++		return vmalloc_to_page(addr);
+ 	else if (!module && IS_ENABLED(CONFIG_DEBUG_RODATA))
+-		page = virt_to_page(addr);
+-	else
+-		return addr;
++		return virt_to_page(addr);
+ 
+-	if (flags)
+-		spin_lock_irqsave(&patch_lock, *flags);
+-
+-	set_fixmap(fixmap, page_to_phys(page));
+-
+-	return (void *) (__fix_to_virt(fixmap) + (uintaddr & ~PAGE_MASK));
+-}
+-
+-static void __kprobes patch_unmap(int fixmap, unsigned long *flags)
+-{
+-	clear_fixmap(fixmap);
+-
+-	if (flags)
+-		spin_unlock_irqrestore(&patch_lock, *flags);
++	return NULL;
+ }
+ 
+ void __kprobes __patch_text_real(void *addr, unsigned int insn, bool remap)
+@@ -54,10 +38,18 @@ void __kprobes __patch_text_real(void *addr, unsigned int insn, bool remap)
+ 	bool twopage = false;
+ 	unsigned long flags;
+ 	void *waddr = addr;
++	struct page *page = NULL;
+ 	int size;
+ 
+-	if (remap)
+-		waddr = patch_map(addr, FIX_TEXT_POKE0, &flags);
++	if (remap) {
++		page = patch_page(addr);
++		if (page) {
++			spin_lock_irqsave(&patch_lock, flags);
++			set_fixmap(FIX_TEXT_POKE0, page_to_phys(page));
++			waddr = (void *)(__fix_to_virt(FIX_TEXT_POKE0) +
++				(uintaddr & ~PAGE_MASK));
++		}
++	}
+ 
+ 	if (thumb2 && __opcode_is_thumb16(insn)) {
+ 		*(u16 *)waddr = __opcode_to_mem_thumb16(insn);
+@@ -69,15 +61,25 @@ void __kprobes __patch_text_real(void *addr, unsigned int insn, bool remap)
+ 		u16 *addrh1 = waddr + 2;
+ 
+ 		twopage = (uintaddr & ~PAGE_MASK) == PAGE_SIZE - 2;
+-		if (twopage && remap)
+-			addrh1 = patch_map(addr + 2, FIX_TEXT_POKE1, NULL);
++		if (twopage && remap) {
++			struct page *page2;
++
++			page2 = patch_page(addr + 2);
++			if (page2) {
++				set_fixmap(FIX_TEXT_POKE1, page_to_phys(page));
++				addrh1 = (u16 *)(__fix_to_virt(FIX_TEXT_POKE1) +
++						(uintaddr & ~PAGE_MASK));
++			} else {
++				addrh1 = addr + 2;
++			}
++		}
+ 
+ 		*addrh0 = __opcode_to_mem_thumb16(first);
+ 		*addrh1 = __opcode_to_mem_thumb16(second);
+ 
+ 		if (twopage && addrh1 != addr + 2) {
+ 			flush_kernel_vmap_range(addrh1, 2);
+-			patch_unmap(FIX_TEXT_POKE1, NULL);
++			clear_fixmap(FIX_TEXT_POKE1);
+ 		}
+ 
+ 		size = sizeof(u32);
+@@ -91,9 +93,10 @@ void __kprobes __patch_text_real(void *addr, unsigned int insn, bool remap)
+ 		size = sizeof(u32);
+ 	}
+ 
+-	if (waddr != addr) {
++	if (page) {
+ 		flush_kernel_vmap_range(waddr, twopage ? size / 2 : size);
+-		patch_unmap(FIX_TEXT_POKE0, &flags);
++		clear_fixmap(FIX_TEXT_POKE0);
++		spin_unlock_irqrestore(&patch_lock, flags);
+ 	}
+ 
+ 	flush_icache_range((uintptr_t)(addr),
 
 -- 
-  The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-  hosted by The Linux Foundation
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
