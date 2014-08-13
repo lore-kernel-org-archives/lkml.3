@@ -1,70 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaHMHtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 03:49:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51532 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751784AbaHMHs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:48:59 -0400
-Message-ID: <53EB1859.6030800@zytor.com>
-Date: Wed, 13 Aug 2014 00:48:41 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751860AbaHMHvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 03:51:08 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:4492 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787AbaHMHvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 03:51:06 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 13 Aug 2014 00:41:53 -0700
+Message-ID: <53EB18E6.3070203@nvidia.com>
+Date: Wed, 13 Aug 2014 10:51:02 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        kvm list <kvm@vger.kernel.org>,
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
-Subject: Re: [PATCH v5 0/5] random,x86,kvm: Rework arch RNG seeds and get
- some from kvm
-References: <cover.1406177531.git.luto@amacapital.net> <CALCETrXtLf3ZFtyrbwj29C=t3PcTxRT2AJWZCUHdKC3AYyUVAA@mail.gmail.com> <20140812191723.GI12871@thunk.org> <CALCETrVmviT=upxHfPfmLy2aUOKdCuCbNg9WZQcx6f=8T8vv=g@mail.gmail.com>
-In-Reply-To: <CALCETrVmviT=upxHfPfmLy2aUOKdCuCbNg9WZQcx6f=8T8vv=g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 1/3] of: Add descriptions of thermtrip properties to Tegra
+ PMC bindings
+References: <1407226380-747-1-git-send-email-mperttunen@nvidia.com> <1407226380-747-2-git-send-email-mperttunen@nvidia.com> <20140813073541.GA17466@ulmo>
+In-Reply-To: <20140813073541.GA17466@ulmo>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2014 12:22 PM, Andy Lutomirski wrote:
-> On Tue, Aug 12, 2014 at 12:17 PM, Theodore Ts'o <tytso@mit.edu> wrote:
->> On Tue, Aug 12, 2014 at 12:11:29PM -0700, Andy Lutomirski wrote:
->>>
->>> What's the status of this series?  I assume that it's too late for at
->>> least patches 2-5 to make it into 3.17.
+On 13/08/14 10:35, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+>
+> On Tue, Aug 05, 2014 at 11:12:58AM +0300, Mikko Perttunen wrote:
+>> Hardware-triggered thermal reset requires configuring the I2C
+>> reset procedure. This configuration is read from the device tree,
+>> so document the relevant properties in the binding documentation.
 >>
->> Which tree were you hoping this patch series to go through?  I was
->> assuming it would go through the x86 tree since the bulk of the
->> changes in the x86 subsystem (hence my Acked-by).
-> 
-> There's some argument that patch 1 should go through the kvm tree.
-> There's no real need for patch 1 and 2-5 to end up in the same kernel
-> release, either.
-> 
+>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+>> ---
+>>   .../devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt    | 13 +++++++++++++
+>>   1 file changed, 13 insertions(+)
 >>
->> IIRC, Peter had some concerns, and I don't remember if they were all
->> addressed.  Peter?
+>> diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>> index 68ac65f..140e2aa 100644
+>> --- a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+>> @@ -38,6 +38,19 @@ Required properties when nvidia,suspend-mode is specified:
+>>   			      Core power good time in uS.
+>>   - nvidia,core-pwr-off-time : Core power off time in uS.
 >>
-> 
-> I don't know.  I rewrite one thing he didn't like and undid the other,
-> but there's plenty of opportunity for this version to be problematic, too.
-> 
+>> +Required properties for hardware-triggered thermal reset:
+>> +    (only tegra30, tegra114, tegra124)
+>> +- nvidia,thermtrip-pmu-i2c-addr : I2C address of the power management unit.
+>> +- nvidia,thermtrip-i2c-controller : Index of the I2C controller the PMU is
+>> +                                    attached to.
+>
+> This duplicates information already associated with the PMU device. Can
+> this be turned into something like:
+>
+> 	nvidia,thermtrip-pmu: phandle to Power Management Unit
+>
+> Then we can query the relevant information from the I2C client resolved
+> from the phandle.
 
-Sorry, I have been heads down on the current merge window.  I will look
-at this for 3.18, presumably after Kernel Summit.
+True, that would look nicer.
 
-The proposed arch_get_rng_seed() is not really what it claims to be; it
-most definitely does not produce seed-grade randomness, instead it seems
-to be an arch function for best-effort initialization of the entropy
-pools -- which is fine, it is just something quite different.
+>
+> One problem with that might be that the I2C controller index may not
+> match the hardware ID.
 
-I want to look over it more carefully before acking it, though.
+Maybe we could resort to checking the controller address in this case. 
+This is a safety feature, so programming the wrong controller index 
+accidentally would be bad.
 
-Andy, are you going to be in Chicago?
+>
+>> +- nvidia,thermtrip-reg-addr : Address (byte) to send reset command to.
+>> +- nvidia,thermtrip-reg-data : Data (byte) to use as reset command.
+>> +
+>> +Optional properties for hardware-triggered thermal reset:
+>> +    (only tegra30, tegra114, tegra124)
+>> +- nvidia,thermtrip-pinmux : Pinmux ID used for I2C access.
+>
+> I suppose this takes a phandle? If so the description should probably
+> say so.
 
-	-hpa
+No, it takes a pinmux ID, described in the boot process (non-public in 
+T124 I guess..) section of the TRM. It seems, though, that all platforms 
+supported by the downstream kernel have pinmux == 0.
 
+>
+>> +- nvidia,thermtrip-pmu-16bit-ops : Use 16-bit operations.
+>
+> What exactly does "16-bit operations" mean? And isn't this a property of
+> the I2C device, therefore could be queried from the I2C slave via the
+> phandle?
+
+That's how it's described in the TRM, but I just found a comment in the 
+downstream kernel about it. Apparently it controls the amount of data 
+sent to the PMIC. The downstream kernel says, though, that the option is 
+not supported and must always be left as zero, so I guess it could be 
+dropped.
+
+>
+> Thierry
+>
+> * Unknown Key
+> * 0x7F3EB3A1
+>
+
+Cheers,
+Mikko
