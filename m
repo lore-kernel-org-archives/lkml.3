@@ -1,249 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbaHMILg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:11:36 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:33982 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaHMH6Y (ORCPT
+	id S1752580AbaHMIMD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:12:03 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:61155 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264AbaHMIL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:58:24 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Wed, 13 Aug 2014 04:11:57 -0400
+Message-ID: <53EB1EE0.20002@gmail.com>
+Date: Wed, 13 Aug 2014 16:16:32 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <jdelvare@suse.de>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Mark Salter <msalter@redhat.com>,
+        "a-jacquiot@ti.com" <a-jacquiot@ti.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v4 net-next 12/26] bpf: verifier (add branch/goto checks)
-Date: Wed, 13 Aug 2014 00:57:23 -0700
-Message-Id: <1407916658-8731-13-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+        the arch/x86 maintainers <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-c6x-dev@linux-c6x.org,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH v2] arch: Kconfig: Let all little endian architectures
+ define CPU_LITTLE_ENDIAN explicitly
+References: <53EA99C3.90203@gmail.com> <CAMuHMdV_2b-A+eE--cXEFA68=72HK6mqx8+TCXRMVkyhESLYxQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdV_2b-A+eE--cXEFA68=72HK6mqx8+TCXRMVkyhESLYxQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-check that control flow graph of eBPF program is a directed acyclic graph
 
-check_cfg() does:
-- detect loops
-- detect unreachable instructions
-- check that program terminates with BPF_EXIT insn
-- check that all branches are within program boundary
+On 8/13/14 16:03, Geert Uytterhoeven wrote:
+> CC kbuild
+> 
+> On Wed, Aug 13, 2014 at 12:48 AM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+>> index c49a775..0510a5d 100644
+>> --- a/arch/arm/Kconfig
+>> +++ b/arch/arm/Kconfig
+>> @@ -199,6 +199,11 @@ config NEED_DMA_MAP_STATE
+>>  config ARCH_SUPPORTS_UPROBES
+>>         def_bool y
+>>
+>> +config CPU_LITTLE_ENDIAN
+>> +       depends on !CPU_BIG_ENDIAN
+>> +       def_bool y
+>> +
+>> +
+>>  config ARCH_HAS_DMA_SET_COHERENT_MASK
+>>         bool
+> 
+> As this is a common symbol, and replicated for all affected architectures,
+> I'm wondering if we should have the "config CPU_LITTLE_ENDIAN" in
+> common Kconfig code instead, and make the individual architectures do a
+> "select CPU_LITTLE_ENDIAN"?
+> 
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- kernel/bpf/verifier.c |  183 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 183 insertions(+)
+That sounds a good idea to me.
 
-diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
-index f71d4c494aec..19c853f68c30 100644
---- a/kernel/bpf/verifier.c
-+++ b/kernel/bpf/verifier.c
-@@ -331,6 +331,185 @@ static struct bpf_map *ld_imm64_to_map_ptr(struct bpf_insn *insn)
- 	return (struct bpf_map *) (unsigned long) imm64;
- }
- 
-+/* non-recursive DFS pseudo code
-+ * 1  procedure DFS-iterative(G,v):
-+ * 2      label v as discovered
-+ * 3      let S be a stack
-+ * 4      S.push(v)
-+ * 5      while S is not empty
-+ * 6            t <- S.pop()
-+ * 7            if t is what we're looking for:
-+ * 8                return t
-+ * 9            for all edges e in G.adjacentEdges(t) do
-+ * 10               if edge e is already labelled
-+ * 11                   continue with the next edge
-+ * 12               w <- G.adjacentVertex(t,e)
-+ * 13               if vertex w is not discovered and not explored
-+ * 14                   label e as tree-edge
-+ * 15                   label w as discovered
-+ * 16                   S.push(w)
-+ * 17                   continue at 5
-+ * 18               else if vertex w is discovered
-+ * 19                   label e as back-edge
-+ * 20               else
-+ * 21                   // vertex w is explored
-+ * 22                   label e as forward- or cross-edge
-+ * 23           label t as explored
-+ * 24           S.pop()
-+ *
-+ * convention:
-+ * 0x10 - discovered
-+ * 0x11 - discovered and fall-through edge labelled
-+ * 0x12 - discovered and fall-through and branch edges labelled
-+ * 0x20 - explored
-+ */
-+
-+enum {
-+	DISCOVERED = 0x10,
-+	EXPLORED = 0x20,
-+	FALLTHROUGH = 1,
-+	BRANCH = 2,
-+};
-+
-+#define PUSH_INT(I) \
-+	do { \
-+		if (cur_stack >= insn_cnt) { \
-+			ret = -E2BIG; \
-+			goto free_st; \
-+		} \
-+		stack[cur_stack++] = I; \
-+	} while (0)
-+
-+#define PEEK_INT() \
-+	({ \
-+		int _ret; \
-+		if (cur_stack == 0) \
-+			_ret = -1; \
-+		else \
-+			_ret = stack[cur_stack - 1]; \
-+		_ret; \
-+	 })
-+
-+#define POP_INT() \
-+	({ \
-+		int _ret; \
-+		if (cur_stack == 0) \
-+			_ret = -1; \
-+		else \
-+			_ret = stack[--cur_stack]; \
-+		_ret; \
-+	 })
-+
-+#define PUSH_INSN(T, W, E) \
-+	do { \
-+		int w = W; \
-+		if (E == FALLTHROUGH && st[T] >= (DISCOVERED | FALLTHROUGH)) \
-+			break; \
-+		if (E == BRANCH && st[T] >= (DISCOVERED | BRANCH)) \
-+			break; \
-+		if (w < 0 || w >= insn_cnt) { \
-+			verbose("jump out of range from insn %d to %d\n", T, w); \
-+			ret = -EINVAL; \
-+			goto free_st; \
-+		} \
-+		if (st[w] == 0) { \
-+			/* tree-edge */ \
-+			st[T] = DISCOVERED | E; \
-+			st[w] = DISCOVERED; \
-+			PUSH_INT(w); \
-+			goto peek_stack; \
-+		} else if ((st[w] & 0xF0) == DISCOVERED) { \
-+			verbose("back-edge from insn %d to %d\n", T, w); \
-+			ret = -EINVAL; \
-+			goto free_st; \
-+		} else if (st[w] == EXPLORED) { \
-+			/* forward- or cross-edge */ \
-+			st[T] = DISCOVERED | E; \
-+		} else { \
-+			verbose("insn state internal bug\n"); \
-+			ret = -EFAULT; \
-+			goto free_st; \
-+		} \
-+	} while (0)
-+
-+/* non-recursive depth-first-search to detect loops in BPF program
-+ * loop == back-edge in directed graph
-+ */
-+static int check_cfg(struct verifier_env *env)
-+{
-+	struct bpf_insn *insns = env->prog->insnsi;
-+	int insn_cnt = env->prog->len;
-+	int cur_stack = 0;
-+	int *stack;
-+	int ret = 0;
-+	int *st;
-+	int i, t;
-+
-+	st = kzalloc(sizeof(int) * insn_cnt, GFP_KERNEL);
-+	if (!st)
-+		return -ENOMEM;
-+
-+	stack = kzalloc(sizeof(int) * insn_cnt, GFP_KERNEL);
-+	if (!stack) {
-+		kfree(st);
-+		return -ENOMEM;
-+	}
-+
-+	st[0] = DISCOVERED; /* mark 1st insn as discovered */
-+	PUSH_INT(0);
-+
-+peek_stack:
-+	while ((t = PEEK_INT()) != -1) {
-+		if (BPF_CLASS(insns[t].code) == BPF_JMP) {
-+			u8 opcode = BPF_OP(insns[t].code);
-+
-+			if (opcode == BPF_EXIT) {
-+				goto mark_explored;
-+			} else if (opcode == BPF_CALL) {
-+				PUSH_INSN(t, t + 1, FALLTHROUGH);
-+			} else if (opcode == BPF_JA) {
-+				if (BPF_SRC(insns[t].code) != BPF_K) {
-+					ret = -EINVAL;
-+					goto free_st;
-+				}
-+				/* unconditional jump with single edge */
-+				PUSH_INSN(t, t + insns[t].off + 1, FALLTHROUGH);
-+			} else {
-+				/* conditional jump with two edges */
-+				PUSH_INSN(t, t + 1, FALLTHROUGH);
-+				PUSH_INSN(t, t + insns[t].off + 1, BRANCH);
-+			}
-+		} else {
-+			/* all other non-branch instructions with single
-+			 * fall-through edge
-+			 */
-+			PUSH_INSN(t, t + 1, FALLTHROUGH);
-+		}
-+
-+mark_explored:
-+		st[t] = EXPLORED;
-+		if (POP_INT() == -1) {
-+			verbose("pop_int internal bug\n");
-+			ret = -EFAULT;
-+			goto free_st;
-+		}
-+	}
-+
-+
-+	for (i = 0; i < insn_cnt; i++) {
-+		if (st[i] != EXPLORED) {
-+			verbose("unreachable insn %d\n", i);
-+			ret = -EINVAL;
-+			goto free_st;
-+		}
-+	}
-+
-+free_st:
-+	kfree(st);
-+	kfree(stack);
-+	return ret;
-+}
-+
- /* look for pseudo eBPF instructions that access map FDs and
-  * replace them with actual map pointers
-  */
-@@ -480,6 +659,10 @@ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
- 	if (ret < 0)
- 		goto skip_full_check;
- 
-+	ret = check_cfg(env);
-+	if (ret < 0)
-+		goto skip_full_check;
-+
- 	/* ret = do_check(env); */
- 
- skip_full_check:
+> Also we could have "config CPU_BIG_ENDIAN", too, and error out
+> if none or both are selected (can Kconfig error out?).
+> 
+
+It is a good idea to me, welcome any members ideas, especially Kbuild
+members' ideas, suggestions or completions.
+
+
+Thanks.
 -- 
-1.7.9.5
+Chen Gang
 
+Open, share, and attitude like air, water, and life which God blessed
