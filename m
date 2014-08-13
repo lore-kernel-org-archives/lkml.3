@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242AbaHMS7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 14:59:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22754 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759AbaHMS7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 14:59:12 -0400
-Message-ID: <53EBB520.9040807@redhat.com>
-Date: Wed, 13 Aug 2014 14:57:36 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751987AbaHMTEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 15:04:47 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33833 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaHMTEp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 15:04:45 -0400
+Date: Wed, 13 Aug 2014 20:04:23 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Gyungoh Yoo <gyungoh@gmail.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140813190423.GI17528@sirena.org.uk>
+References: <1407489022-31130-1-git-send-email-jack.yoo@skyworksinc.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time: drop do_sys_times spinlock
-References: <20140812142539.01851e52@annuminas.surriel.com> <20140812191218.GA15210@redhat.com> <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com>
-In-Reply-To: <20140813184511.GA9663@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pAAyu2TyRXCvU+QI"
+Content-Disposition: inline
+In-Reply-To: <1407489022-31130-1-git-send-email-jack.yoo@skyworksinc.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/3] Adding Skyworks SKY81452 regulator driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2014 02:45 PM, Oleg Nesterov wrote:
-> On 08/13, Rik van Riel wrote:
->>
->> On 08/13/2014 02:08 PM, Oleg Nesterov wrote:
->>>
->>> Well, I disagree. This is more complex, and this adds yet another lock
->>> which only protects the stats...
->>
->> The other lock is what can tell us that there is a writer active
->> NOW, which may be useful when it comes to guaranteeing forward
->> progress for readers when there are lots of threads exiting...
-> 
-> I don't really understand why seqcount_t is better in this sense, either
-> way we need to to taking the lock if we want to guarantee a forward
-> progress. read_seqbegin_or_lock() doesn't even work "automagically",
-> and it can't be used in this case anyway.
 
-It allows subsequent readers to fall back into lockless mode,
-once the first reader (that got blocked behind writers) takes
-the lock, temporarily locking out writers.
+--pAAyu2TyRXCvU+QI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This protects forward progress, without the danger of
-permanently degrading throughput due to increased contention.
+On Fri, Aug 08, 2014 at 06:10:22PM +0900, Gyungoh Yoo wrote:
+> Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 
-> That said, it is not that I am really sure that seqcount_t in ->signal
-> is actually worse, not to mention that this is subjective anyway. IOW,
-> I am not going to really fight with your approach ;)
+Applied, thanks.  Please use subject lines matching the style for the
+subsystem you are submitting against.
 
-I agree that both approaches have their advantages and
-disadvantages.
+--pAAyu2TyRXCvU+QI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->>> Whatever we do, we should convert thread_group_cputime() to use
->>> for_each_thread() first().
->>
->> What is the advantage of for_each_thread over while_each_thread,
->> besides getting rid of that t = tsk line?
-> 
-> It is buggy and should die, see 0c740d0afc3bff0a097ad.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-I just got rid of it in the code that I touched.
+iQIcBAEBAgAGBQJT67a0AAoJELSic+t+oim9WmoP/i5RlkYLqmyLAfhAWTr781Be
+9DvTwefoHzEkwxuSYfPbJ8lUHHoGP+Bq9nJXt/P+q4HR5UIOC4zMF7GGFyOOes7Q
+JZVOnY7Hdn0+NMARPVbJn/LLitI0PWlsi3NVppHGwbAVq+2OBU+VJQXLan3vOK7d
+yTk7Nvdq7pnLUyWGj8ICASzg3brAKpOgpglvbf5vhjfKn13XiEacCNSrxPiKOWlF
+UPAHwrY6V7yVOWTfWhhtzVfql6/HHZfq8VRM/GYwk2pEQ2O78ZvJE+H5ViyR90Z2
+FuJwTsw6y+H19gvw9D+EFsbBblET7F8wai0JsSGCZduoWgu8xISefA1RE7VS1iHM
+Ww+qYmqRHOLdqLvefU3ZosjNLfjiEI+oN5aKmhBWQvRiXCMgGlGHZA7dcOcwheBJ
+25Kjjbfe79kLERpvafERMfkl92u9o3JJLzESSFwvlt9EPli2CnhMsGx+LCuXqRcV
+8sIePJh6zSHfnn5ah1ZanAPW0bcISLX/2KftUWPBEFnkqO/f8WG1WK0c979fKWUK
+YFRkvh6QM+qZ4iG98BzO7ng4kXy8UnLl0dw4x97hhgLuclBRpt62M+xFUlygLqBb
++0P840vLWPMyVMqnTHSfg7kPWzY+gDMswhRKU7322WJasRx3IFrZ+oEbPuim/Awc
+HTx+MfJ5BULzhN/6FIkI
+=fiw2
+-----END PGP SIGNATURE-----
 
-Thanks for pointing it out.
-
+--pAAyu2TyRXCvU+QI--
