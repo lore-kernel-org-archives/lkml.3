@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393AbaHMHWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 03:22:24 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52073 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaHMHWX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:22:23 -0400
-Message-ID: <53EB122E.3050407@infradead.org>
-Date: Wed, 13 Aug 2014 00:22:22 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751404AbaHMHZb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 03:25:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13360 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722AbaHMHZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 03:25:30 -0400
+Date: Wed, 13 Aug 2014 09:24:49 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
+        mingo@kernel.org, peterz@infradead.org
+Subject: Re: Implement lbr-as-callgraph v9
+Message-ID: <20140813072449.GA2370@krava.brq.redhat.com>
+References: <1406827029-7991-1-git-send-email-andi@firstfloor.org>
+ <20140812135017.GB13247@krava.brq.redhat.com>
+ <20140812205524.GF4120@two.firstfloor.org>
 MIME-Version: 1.0
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: [PATCH -next] extcon: fix extcon-sm5502 build when CONFIG_I2C=m
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140812205524.GF4120@two.firstfloor.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+On Tue, Aug 12, 2014 at 10:55:24PM +0200, Andi Kleen wrote:
+> On Tue, Aug 12, 2014 at 03:50:17PM +0200, Jiri Olsa wrote:
+> > On Thu, Jul 31, 2014 at 10:17:00AM -0700, Andi Kleen wrote:
+> > 
+> > SNIP
+> > 
+> > > v5:
+> > > - Rename functions
+> > > - Fix gtk build problem
+> > > - Fix crash without -g
+> > > - Improve error messages
+> > > - Improve srcline display in various ways
+> > > v6:
+> > > - Port to latest perf/core
+> > > v7:
+> > > - Really port to latest perf/core
+> > > v8:
+> > > - Rebased on 3.16-rc1
+> > > v9: 
+> > > - Forward ported to latest tip/perf/core
+> > > 
+> > > Example output:
+> > > 
+> > >     % perf record -b -g ./tsrc/tcall
+> > 
+> > Why do we need the '-g' in here.. '-b' should be enough right?
+> > I saw u fill the rest of the backtrace with callchain
+> > data (if needed), but thats not necessary right?
+> 
+> Right now the callgraph processing needs -g to enable itself.
+> I didn't try to fix it so far because we likely use -g in these
+> situations where --branch-history is useful.
+> 
+> If you think it's important it could be fixed I think.
+> 
+> > 
+> > 
+> > >     [ perf record: Woken up 1 times to write data ]
+> > >     [ perf record: Captured and wrote 0.044 MB perf.data (~1923 samples) ]
+> > >     % perf report --branch-history
+> > 
+> > When I captured data like you above and run pure 'perf report'
+> > I did not get callchains displayed at all.
+> > 
+> > Also using 'perf report --branch-history' enables filename:line
+> > suffix for callchain regardless of using '-b' for data capture
+> 
+> That's fine isn't it? If the user specifies that option
+> they should have used -b.
+> 
+> Or do you mean it should only do it for branch entries?
+> Right now the callgraph code doesn't distinguish between branch
+> entry and callgraph entry, so it can't know. 
 
-Fix build errors in extcon-sm5502.c by making EXTCON_SM5502 depend
-on I2C since it selects REGMAP_I2C.  The build errors happen when
-CONFIG_I2C=m and CONFIG_EXTCON_SM5502=y. This Kconfig change causes
-CONFIG_EXTCON_SM5502 to be =m when CONFIG_I2C=m.
+my concern was that '--branch-history' is changing report output
+even if there's no branch data.. but thats minor one, the bigger
+one is this:
 
-drivers/built-in.o: In function `regmap_smbus_byte_reg_read':
-regmap-i2c.c:(.text+0x5030a): undefined reference to `i2c_smbus_read_byte_data'
-drivers/built-in.o: In function `regmap_smbus_byte_reg_write':
-regmap-i2c.c:(.text+0x50338): undefined reference to `i2c_smbus_write_byte_data'
-drivers/built-in.o: In function `regmap_smbus_word_reg_read':
-regmap-i2c.c:(.text+0x50356): undefined reference to `i2c_smbus_read_word_data'
-drivers/built-in.o: In function `regmap_smbus_word_reg_write':
-regmap-i2c.c:(.text+0x50384): undefined reference to `i2c_smbus_write_word_data'
-drivers/built-in.o: In function `regmap_i2c_read':
-regmap-i2c.c:(.text+0x503cf): undefined reference to `i2c_transfer'
-drivers/built-in.o: In function `regmap_i2c_gather_write':
-regmap-i2c.c:(.text+0x50442): undefined reference to `i2c_transfer'
-drivers/built-in.o: In function `regmap_i2c_write':
-regmap-i2c.c:(.text+0x50474): undefined reference to `i2c_master_send'
-drivers/built-in.o: In function `sm5502_muic_i2c_init':
-extcon-sm5502.c:(.init.text+0x6630): undefined reference to `i2c_register_driver'
+> > When I captured data like you above and run pure 'perf report'
+> > I did not get callchains displayed at all.
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Cc:	MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc:	Chanwoo Choi <cw00.choi@samsung.com>
----
- drivers/extcon/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-Index: linux-next-20140813/drivers/extcon/Kconfig
-===================================================================
---- linux-next-20140813.orig/drivers/extcon/Kconfig
-+++ linux-next-20140813/drivers/extcon/Kconfig
-@@ -72,6 +72,7 @@ config EXTCON_PALMAS
- 
- config EXTCON_SM5502
- 	tristate "SM5502 EXTCON support"
-+	depends on I2C
- 	select IRQ_DOMAIN
- 	select REGMAP_I2C
- 	select REGMAP_IRQ
+jirka
