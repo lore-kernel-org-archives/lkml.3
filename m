@@ -1,166 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339AbaHMAyd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 20:54:33 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52255 "EHLO
+	id S1752977AbaHMA5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 20:57:33 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52715 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaHMAyb (ORCPT
+	with ESMTP id S1751471AbaHMA5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 20:54:31 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+	Tue, 12 Aug 2014 20:57:31 -0400
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+To: grant.likely@linaro.org, robh+dt@kernel.org, devicetree@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>
-Subject: [PATCH v3] irqchip: gic: Allow gic_arch_extn hooks to call into scheduler
-Date: Tue, 12 Aug 2014 17:54:24 -0700
-Message-Id: <1407891264-4826-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
+        stepanm@codeaurora.org
+Subject: [PATCH] of: Deep-copy names of platform devices
+Date: Tue, 12 Aug 2014 17:57:24 -0700
+Message-Id: <1407891444-7311-1-git-send-email-stepanm@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
-2012-04-12) introduced an acquisition of the irq_controller_lock
-in gic_raise_softirq() which can lead to a spinlock recursion if
-the gic_arch_extn hooks call into the scheduler (via complete()
-or wake_up(), etc.). This happens because gic_arch_extn hooks are
-normally called with the irq_controller_lock held and calling
-into the scheduler may cause us to call smp_send_reschedule()
-which will grab the irq_controller_lock again. Here's an example
-from a vendor kernel (note that the gic_arch_extn hook code here
-isn't actually in mainline):
+When we parse the device tree and allocate platform
+devices, the 'name' of the newly-created platform_device
+is set to point to the 'name' field of the 'struct device'
+embedded within the platform_device. This is dangerous,
+because the name of the 'struct device' is dynamically
+allocated. Drivers may call dev_set_name() on the device,
+which will free and reallocate the name of the device,
+leaving the 'name' of the platform_device pointing to the
+now-freed memory.
 
-BUG: spinlock recursion on CPU#0, swapper/0/1
- lock: irq_controller_lock+0x0/0x18, .magic: dead4ead, .owner: sw
-er_cpu: 0
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.10-00430-g3d433c4e
+Furthermore, if the dev_set_name() call is made from a
+driver's probe() function and a subsequent request results
+in probe deferral, the dangling 'name' reference may lead
+to the device being re-probed using the wrong driver.
 
-Call trace:
-[<ffffffc000087e1c>] dump_backtrace+0x0/0x140
-[<ffffffc000087f6c>] show_stack+0x10/0x1c
-[<ffffffc00064732c>] dump_stack+0x74/0xc4
-[<ffffffc0006446c0>] spin_dump+0x78/0x88
-[<ffffffc0006446f4>] spin_bug+0x24/0x34
-[<ffffffc0000d47d0>] do_raw_spin_lock+0x58/0x148
-[<ffffffc00064d398>] _raw_spin_lock_irqsave+0x24/0x38
-[<ffffffc0002c9d7c>] gic_raise_softirq+0x2c/0xbc
-[<ffffffc00008daa4>] smp_send_reschedule+0x34/0x40
-[<ffffffc0000c1e94>] try_to_wake_up+0x224/0x288
-[<ffffffc0000c1f4c>] default_wake_function+0xc/0x18
-[<ffffffc0000ceef0>] __wake_up_common+0x50/0x8c
-[<ffffffc0000cef3c>] __wake_up_locked+0x10/0x1c
-[<ffffffc0000cf734>] complete+0x3c/0x5c
-[<ffffffc0002f0e78>] msm_mpm_enable_irq_exclusive+0x1b8/0x1c8
-[<ffffffc0002f0f58>] __msm_mpm_enable_irq+0x4c/0x7c
-[<ffffffc0002f0f94>] msm_mpm_enable_irq+0xc/0x18
-[<ffffffc0002c9bb0>] gic_unmask_irq+0x40/0x7c
-[<ffffffc0000de5f4>] irq_enable+0x2c/0x48
-[<ffffffc0000de65c>] irq_startup+0x4c/0x74
-[<ffffffc0000dd2fc>] __setup_irq+0x264/0x3f0
-[<ffffffc0000dd5e0>] request_threaded_irq+0xcc/0x11c
-[<ffffffc0000df254>] devm_request_threaded_irq+0x68/0xb4
-[<ffffffc000471520>] msm_iommu_ctx_probe+0x124/0x2d4
-[<ffffffc000337374>] platform_drv_probe+0x20/0x54
-[<ffffffc00033598c>] driver_probe_device+0x158/0x340
-[<ffffffc000335c20>] __driver_attach+0x60/0x90
-[<ffffffc000333c9c>] bus_for_each_dev+0x6c/0x8c
-[<ffffffc000335304>] driver_attach+0x1c/0x28
-[<ffffffc000334f14>] bus_add_driver+0x120/0x204
-[<ffffffc0003362e4>] driver_register+0xbc/0x10c
-[<ffffffc000337348>] __platform_driver_register+0x5c/0x68
-[<ffffffc00094c478>] msm_iommu_driver_init+0x54/0x7c
-[<ffffffc0000813ec>] do_one_initcall+0xa4/0x130
-[<ffffffc00091d928>] kernel_init_freeable+0x138/0x1dc
-[<ffffffc000642578>] kernel_init+0xc/0xd4
+To mitigate these scenarios, we use kstrdup to perform a
+deep copy of the device name when assigning the name of the
+platform_device, so that the platform_device name is
+unaffected by any calls to dev_set_name() that might made
+by drivers to rename the embedded 'struct device'.
 
-We really just want to synchronize the sending of an SGI with the
-update of the gic_cpu_map[], so introduce a new SGI lock that we
-can use to synchronize the two code paths. Three main events are
-happening that we have to consider:
-
-  1. We're updating the gic_cpu_mask to point to an incoming CPU
-
-  2. We're (potentially) sending an SGI to the outgoing CPU
-
-  3. We're redirecting any pending SGIs for the outgoing CPU to the
-     incoming CPU.
-
-Events 1 and 3 are already ordered within the same CPU by means
-of program order and use of I/O accessors. Events 1 and 2 don't
-need to be ordered, but events 2 and 3 do because any SGIs for
-the outgoing CPU need to be pending before we can redirect them.
-Synchronize by acquiring a new lock around event 2 and before
-event 3. Use smp_mb__after_unlock_lock() before event 3 to ensure
-that event 1 is seen before event 3 on other CPUs that may be
-executing event 2. We put this all behind the b.L switcher config
-option so that if we're not using this feature we don't have to
-acquire any locks at all in the IPI path.
-
-Cc: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
 ---
- drivers/irqchip/irq-gic.c | 25 ++++++++++++++++++++++---
- 1 file changed, 22 insertions(+), 3 deletions(-)
+This is technically a 'v2' patch, but it looks like I used
+an old version of MAINTAINERS, so I'll just re-send this
+as a new patch to avoid confusion for people who missed the
+original.
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 7c131cf7cc13..c1dc65209899 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -81,6 +81,11 @@ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
- #define NR_GIC_CPU_IF 8
- static u8 gic_cpu_map[NR_GIC_CPU_IF] __read_mostly;
- 
-+#ifdef CONFIG_BL_SWITCHER
-+/* Synchronize switching CPU interface and sending SGIs */
-+static DEFINE_RAW_SPINLOCK(gic_sgi_lock);
-+#endif
-+
- /*
-  * Supported arch specific GIC irq extension.
-  * Default make them NULL.
-@@ -656,9 +661,12 @@ static void __init gic_pm_init(struct gic_chip_data *gic)
- static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+I suppose creating a 'pdev_set_name' API may seem like
+another possibility, but I feel that dev.name and pdev.name
+have two different meanings. One is used for device/driver
+binding purposes, whereas the other serves a more general
+identification purpose, and is used for things like sysfs.
+Drivers might want to change dev.name while leaving the
+pdev.name alone. I guess yet another possibility would be
+to prohibit calling dev_set_name() on devices created from
+device tree, but a driver does not necessarily know how a
+given platform_device was allocated.
+
+Steve
+
+ drivers/of/device.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/of/device.c b/drivers/of/device.c
+index f685e55..3e116f6 100644
+--- a/drivers/of/device.c
++++ b/drivers/of/device.c
+@@ -54,7 +54,7 @@ int of_device_add(struct platform_device *ofdev)
+
+ 	/* name and id have to be set so that the platform bus doesn't get
+ 	 * confused on matching */
+-	ofdev->name = dev_name(&ofdev->dev);
++	ofdev->name = kstrdup(dev_name(&ofdev->dev), GFP_KERNEL);
+ 	ofdev->id = -1;
+
+ 	/* device_add will assume that this device is on the same node as
+@@ -76,6 +76,7 @@ EXPORT_SYMBOL(of_device_register);
+ void of_device_unregister(struct platform_device *ofdev)
  {
- 	int cpu;
--	unsigned long flags, map = 0;
-+	unsigned long map = 0;
-+#ifdef CONFIG_BL_SWITCHER
-+	unsigned long flags;
- 
--	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-+	raw_spin_lock_irqsave(&gic_sgi_lock, flags);
-+#endif
- 
- 	/* Convert our logical CPU mask into a physical one. */
- 	for_each_cpu(cpu, mask)
-@@ -673,7 +681,9 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	/* this always happens on GIC0 */
- 	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
- 
--	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-+#ifdef CONFIG_BL_SWITCHER
-+	raw_spin_unlock_irqrestore(&gic_sgi_lock, flags);
-+#endif
+ 	device_unregister(&ofdev->dev);
++	kfree(ofdev->name);
  }
- #endif
- 
-@@ -764,6 +774,15 @@ void gic_migrate_target(unsigned int new_cpu_id)
- 
- 	raw_spin_unlock(&irq_controller_lock);
- 
-+	raw_spin_lock(&gic_sgi_lock);
-+	/*
-+	 * Ensure that the gic_cpu_map update above is seen in
-+	 * gic_raise_softirq() before we redirect any pending SGIs that
-+	 * may have been raised for the outgoing CPU (cur_cpu_id)
-+	 */
-+	smp_mb__after_unlock_lock();
-+	raw_spin_unlock(&gic_sgi_lock);
-+
- 	/*
- 	 * Now let's migrate and clear any potential SGIs that might be
- 	 * pending for us (cur_cpu_id).  Since GIC_DIST_SGI_PENDING_SET
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+ EXPORT_SYMBOL(of_device_unregister);
+
+--
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
 hosted by The Linux Foundation
 
