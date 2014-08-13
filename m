@@ -1,110 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417AbaHMG75 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 02:59:57 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:40573 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759AbaHMG74 (ORCPT
+	id S1751024AbaHMHF1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 03:05:27 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:40333 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbaHMHF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 02:59:56 -0400
-Message-ID: <1407913190.5542.50.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC] time: drop do_sys_times spinlock
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Date: Wed, 13 Aug 2014 08:59:50 +0200
-In-Reply-To: <20140812191218.GA15210@redhat.com>
-References: <20140812142539.01851e52@annuminas.surriel.com>
-	 <20140812191218.GA15210@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 13 Aug 2014 03:05:26 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH 01/13] perf script: Fix possible memory leaks
+References: <1407825645-24586-1-git-send-email-namhyung@kernel.org>
+	<1407825645-24586-2-git-send-email-namhyung@kernel.org>
+	<53EB03EB.4040606@intel.com>
+Date: Wed, 13 Aug 2014 16:05:24 +0900
+In-Reply-To: <53EB03EB.4040606@intel.com> (Adrian Hunter's message of "Wed, 13
+	Aug 2014 09:21:31 +0300")
+Message-ID: <87y4usdg3v.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-08-12 at 21:12 +0200, Oleg Nesterov wrote: 
-> On 08/12, Rik van Riel wrote:
-> >
-> > Back in 2009, Spencer Candland pointed out there is a race with
-> > do_sys_times, where multiple threads calling do_sys_times can
-> > sometimes get decreasing results.
-> >
-> > https://lkml.org/lkml/2009/11/3/522
-> >
-> > As a result of that discussion, some of the code in do_sys_times
-> > was moved under a spinlock.
-> >
-> > However, that does not seem to actually make the race go away on
-> > larger systems. One obvious remaining race is that after one thread
-> > is about to return from do_sys_times, it is preempted by another
-> > thread, which also runs do_sys_times, and stores a larger value in
-> > the shared variable than what the first thread got.
-> >
-> > This race is on the kernel/userspace boundary, and not fixable
-> > with spinlocks.
-> 
-> Not sure I understand...
-> 
-> Afaics, the problem is that a single thread can observe the decreasing
-> (say) sum_exec_runtime if it calls do_sys_times() twice without the lock.
-> 
-> This is because it can account the exiting sub-thread twice if it races
-> with __exit_signal() which increments sig->sum_sched_runtime, but this
-> exiting thread can still be visible to thread_group_cputime().
-> 
-> IOW, it is not actually about decreasing, the problem is that the lockless
-> thread_group_cputime() can return the wrong result, and the next ys_times()
-> can show the right value.
-> 
-> > Back in 2009, in changeset 2b5fe6de5 Oleg Nesterov already found
-> > that it should be safe to remove the spinlock.
-> 
-> Yes, it is safe but only in a sense that for_each_thread() is fine lockless.
-> So this change was reverted.
+On Wed, 13 Aug 2014 09:21:31 +0300, Adrian Hunter wrote:
+> On 08/12/2014 09:40 AM, Namhyung Kim wrote:
+>>  		input = open(file.path, O_RDONLY);	/* input_name */
+>>  		if (input < 0) {
+>>  			perror("failed to open file");
+>> -			return -1;
+>> +			err = -errno;
+>
+> Need to get errno before calling perror().
 
-Funny that thread_group_cputime() should come up just now..
+Argh, right.
 
-Could you take tasklist_lock ala posix_cpu_clock_get_task()?  If so,
-would that improve things at all?
+>
+>> +			goto out_delete;
+>>  		}
+>>  
+>>  		err = fstat(input, &perf_stat);
+>>  		if (err < 0) {
+>>  			perror("failed to stat file");
+>> -			return -1;
+>> +			goto out_delete;
+>>  		}
+>>  
+>>  		if (!perf_stat.st_size) {
+>>  			fprintf(stderr, "zero-sized file, nothing to do!\n");
+>> -			return 0;
+>> +			goto out_delete;
+>>  		}
+>>  
+>>  		scripting_ops = script_spec__lookup(generate_script_lang);
+>>  		if (!scripting_ops) {
+>>  			fprintf(stderr, "invalid language specifier");
+>> -			return -1;
+>> +			err = -ENOENT;
+>> +			goto out_delete;
+>>  		}
+>>  
+>>  		err = scripting_ops->generate_script(session->tevent.pevent,
+>>  						     "perf-script");
+>> -		goto out;
+>> +		goto out_delete;
+>>  	}
+>>  
+>>  	if (script_name) {
+>>  		err = scripting_ops->start_script(script_name, argc, argv);
+>>  		if (err)
+>> -			goto out;
+>> +			goto out_delete;
+>>  		pr_debug("perf script started with script %s\n\n", script_name);
+>> +		script_started = true;
+>>  	}
+>>  
+>>  
+>>  	err = perf_session__check_output_opt(session);
+>>  	if (err < 0)
+>> -		goto out;
+>> +		goto out_delete;
+>>  
+>>  	err = __cmd_script(&script);
+>>  
+>> +out_delete:
+>
+> I added a flush method in a patch which acme has stashed in his
+> tmp.perf/core branch.  It would go here:
+>
+> 	if (script_started)
+> 		flush_scripting();
 
-I was told that clock_gettime(CLOCK_PROCESS_CPUTIME_ID) has scalability
-issues on BIG boxen, but perhaps less so than times()?
+Thanks for the info.  I'll update once it's merged into acme/perf/core.
 
-I'm sure the real clock_gettime() using proggy that gummed up a ~1200
-core box for "a while" wasn't the testcase below, which will gum it up
-for a long while, but looks to me like using CLOCK_PROCESS_CPUTIME_ID
-from LOTS of threads is a "Don't do that, it'll hurt a LOT".
-
-#include <sys/time.h>
-#include <mpi.h>
-#include <stdio.h>
-#include <time.h>
-
-int
-main(int argc, char **argv){
-  struct timeval tv;
-  struct timespec tp;
-  int rc;
-  int i;
-
-  MPI_Init(&argc, &argv);
-  for(i=0;i<100000;i++){
-    rc = gettimeofday(&tv, NULL);
-    if(rc < 0) perror("gettimeofday");
-    rc = clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &tp);
-    if(rc < 0) perror("clock_gettime");
-  }
-  MPI_Finalize();
-  return 0;
-}
+Thanks,
+Namhyung
 
 
-
+>
+>>  	perf_session__delete(session);
+>> -	cleanup_scripting();
+>> +
+>> +	if (script_started)
+>> +		cleanup_scripting();
+>>  out:
+>>  	return err;
+>>  }
+>> 
