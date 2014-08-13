@@ -1,104 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbaHMUhp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 16:37:45 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51278 "EHLO mail.kernel.org"
+	id S1753424AbaHMUlo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 16:41:44 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58849 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429AbaHMUho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 16:37:44 -0400
-Date: Wed, 13 Aug 2014 17:37:39 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 2/2] perf top: Handle 'z' key for toggle zeroing samples
- in TUI
-Message-ID: <20140813203739.GL2718@kernel.org>
-References: <1407831366-28892-1-git-send-email-namhyung@kernel.org>
- <1407831366-28892-2-git-send-email-namhyung@kernel.org>
- <CABPqkBRirVbT05OhS4CVedpzt44hGijFSgdL+4XqjVW-ixcp7g@mail.gmail.com>
+	id S1751429AbaHMUln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 16:41:43 -0400
+Date: Wed, 13 Aug 2014 16:41:34 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4] mm: memcontrol: reduce reclaim invocations for
+ higher order requests
+Message-ID: <20140813204134.GA20932@cmpxchg.org>
+References: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
+ <1407186897-21048-2-git-send-email-hannes@cmpxchg.org>
+ <20140807130822.GB12730@dhcp22.suse.cz>
+ <20140807153141.GD14734@cmpxchg.org>
+ <20140808123258.GK4004@dhcp22.suse.cz>
+ <20140808132635.GJ14734@cmpxchg.org>
+ <20140813145904.GC2775@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBRirVbT05OhS4CVedpzt44hGijFSgdL+4XqjVW-ixcp7g@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140813145904.GC2775@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 13, 2014 at 01:07:30AM +0200, Stephane Eranian escreveu:
-> On Tue, Aug 12, 2014 at 10:16 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> > The perf top TUI lacks 'z' key support to toggle sample zeroing.
-> > Add it.
-> >
-> Works for me.
-> Tested-by: Stephane Eranian <eranian@google.com>
+On Wed, Aug 13, 2014 at 04:59:04PM +0200, Michal Hocko wrote:
+> On Fri 08-08-14 09:26:35, Johannes Weiner wrote:
+> > On Fri, Aug 08, 2014 at 02:32:58PM +0200, Michal Hocko wrote:
+> > > On Thu 07-08-14 11:31:41, Johannes Weiner wrote:
+> [...]
+> > > > THP latencies are actually the same when comparing high limit nr_pages
+> > > > reclaim with the current hard limit SWAP_CLUSTER_MAX reclaim,
+> > > 
+> > > Are you sure about this? I fail to see how they can be same as THP
+> > > allocations/charges are __GFP_NORETRY so there is only one reclaim
+> > > round for the hard limit reclaim followed by the charge failure if
+> > > it is not successful.
+> > 
+> > I use this test program that faults in anon pages, reports average and
+> > max for every 512-page chunk (THP size), then reports the aggregate at
+> > the end:
+> > 
+> > memory.max:
+> > 
+> > avg=18729us max=450625us
+> > 
+> > real    0m14.335s
+> > user    0m0.157s
+> > sys     0m6.307s
+> > 
+> > memory.high:
+> > 
+> > avg=18676us max=457499us
+> > 
+> > real    0m14.375s
+> > user    0m0.046s
+> > sys     0m4.294s
+> 
+> I was playing with something like that as well. mmap 800MB anon mapping
+> in 256MB memcg (kvm guest had 1G RAM and 2G swap so the global reclaim
+> doesn't trigger and the host 2G free memory), start faulting in from
+> THP aligned address and measured each fault. Then I was recording
+> mm_vmscan_lru_shrink_inactive and mm_vmscan_memcg_reclaim_{begin,end}
+> tracepoints to see how the reclaim went.
+> 
+> I was testing two setups
+> 1) fault in every 4k page
+> 2) fault in only 2M aligned addresses.
+>
+> The first simulates the case where successful THP allocation saves
+> follow up 511 fallback charges and so the excessive reclaim might
+> pay off.
+> The second one simulates potential time wasting when memory is used
+> extremely sparsely and any latencies would be unwelcome.
+> 
+> (new refers to nr_reclaim target, old to SWAP_CLUSTER_MAX, thponly
+> faults only 2M aligned addresses, 4k pages are faulted otherwise)
+> 
+> vmstat says:
+> out.256m.new-thponly.vmstat.after:pswpin 44
+> out.256m.new-thponly.vmstat.after:pswpout 154681
+> out.256m.new-thponly.vmstat.after:thp_fault_alloc 399
+> out.256m.new-thponly.vmstat.after:thp_fault_fallback 0
+> out.256m.new-thponly.vmstat.after:thp_split 302
+> 
+> out.256m.old-thponly.vmstat.after:pswpin 28
+> out.256m.old-thponly.vmstat.after:pswpout 31271
+> out.256m.old-thponly.vmstat.after:thp_fault_alloc 149
+> out.256m.old-thponly.vmstat.after:thp_fault_fallback 250
+> out.256m.old-thponly.vmstat.after:thp_split 61
+> 
+> out.256m.new.vmstat.after:pswpin 48
+> out.256m.new.vmstat.after:pswpout 169530
+> out.256m.new.vmstat.after:thp_fault_alloc 399
+> out.256m.new.vmstat.after:thp_fault_fallback 0
+> out.256m.new.vmstat.after:thp_split 331
+> 
+> out.256m.old.vmstat.after:pswpin 47
+> out.256m.old.vmstat.after:pswpout 156514
+> out.256m.old.vmstat.after:thp_fault_alloc 127
+> out.256m.old.vmstat.after:thp_fault_fallback 272
+> out.256m.old.vmstat.after:thp_split 127
+> 
+> As expected new managed to fault in all requests as THP without a single
+> fallback allocation while with the old reclaim we got to the limit and
+> then most of the THP charges failed and fallen back to single page
+> charge.
 
-One thing that can be improved: Make it trigger a refresh in the right
-after 'z' is pressed.
+In a more realistic workload, global reclaim and compaction have to
+invest a decent amount of work to create the 2MB page in the first
+place.  You would be wasting this work on the off-chance that only a
+small part of the THP is actually used.  Once that 2MB page is already
+assembled, I don't think the burden on memcg is high enough to justify
+wasting that work speculatively.
 
-Also, this toggles the zeroing before each sample, it would be nice to
-have a visual cue that this is in effect, probably in the first line in
-the screen, perhaps on the far right, something like [z] when this is in
-effect and nothing when not.
+If we really have a latency issue here, I think the right solution is
+to attempt the charge first - because it's much less work - and only
+if it succeeds allocate and commit an actual 2MB physical page.
 
-Right now the way to figure this out is to observe the number of
-samples, if it increases monotonically, zeroing before refresh is not in
-effect, if it goes from a high number to a smaller or vice versa,
-zeroing is in effect :-)
+But I have yet to be convinced that there is a practical issue here.
+Who uses only 4k out of every 2MB area and enables THP?  The 'thponly'
+scenario is absurd.
 
-Anyway, applied, people wanting this feature can figure this out, what I
-suggested is just polishing.
+> Note the increased swapout activity for new. It is almost 5x more for
+> thponly and +8% with per-page faults. This looks like a fallout from the
+> over-reclaim in smaller priorities.
+>
+> - trace.new
+>     229 0
+>       3 12
+> - trace.old
+>     294 0
+>       2 1
+>      25 10
+>       1 11
+>       3 12
+>       8 2
+>       8 3
+>      20 4
+>      33 5
+>      21 6
+>      43 7
+>    1286 8
+>    1279 9
+> 
+> And here as well, we have to reclaim much more because we do much more
+> charges so the load benefits a bit from the high reclaim target.
+>
+> mm_vmscan_memcg_reclaim_end tracepoint tells us also how many pages were
+> reclaimed during each run and the cummulative numbers are:
+> - trace.new-thponly: 139029
+> - trace.old-thponly: 11344
+> - trace.new: 139687
+> - trace.old: 139887
 
-Thanks!
+Here the number of reclaimed pages is actually lower in new, so I'm
+guessing the increase in swapouts above is variation between runs, as
+there doesn't seem to be a significant amount of cache in that group.
 
-- Arnaldo
- 
-> > Reported-by: Stephane Eranian <eranian@google.com>
-> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> > ---
-> >  tools/perf/ui/browsers/hists.c | 9 +++++++++
-> >  1 file changed, 9 insertions(+)
-> >
-> > diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-> > index 045c1e16ac59..381c085a41b8 100644
-> > --- a/tools/perf/ui/browsers/hists.c
-> > +++ b/tools/perf/ui/browsers/hists.c
-> > @@ -10,6 +10,7 @@
-> >  #include "../../util/pstack.h"
-> >  #include "../../util/sort.h"
-> >  #include "../../util/util.h"
-> > +#include "../../util/top.h"
-> >  #include "../../arch/common.h"
-> >
-> >  #include "../browser.h"
-> > @@ -1530,6 +1531,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
-> >         "P             Print histograms to perf.hist.N\n"
-> >         "t             Zoom into current Thread\n"
-> >         "V             Verbose (DSO names in callchains, etc)\n"
-> > +       "z             Toggle zeroing of samples\n"
-> >         "/             Filter symbol by name";
-> >
-> >         if (browser == NULL)
-> > @@ -1630,6 +1632,13 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
-> >                 case 'F':
-> >                         symbol_conf.filter_relative ^= 1;
-> >                         continue;
-> > +               case 'z':
-> > +                       if (!is_report_browser(hbt)) {
-> > +                               struct perf_top *top = hbt->arg;
-> > +
-> > +                               top->zero = !top->zero;
-> > +                       }
-> > +                       continue;
-> >                 case K_F1:
-> >                 case 'h':
-> >                 case '?':
-> > --
-> > 2.0.0
-> >
+> time -v says:
+> out.256m.new-thponly.time:      System time (seconds): 1.50
+> out.256m.new-thponly.time:      Elapsed (wall clock) time (h:mm:ss or m:ss): 0:13.56
+> out.256m.old-thponly.time:      System time (seconds): 0.45
+> out.256m.old-thponly.time:      Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.76
+> 
+> out.256m.new.time:      System time (seconds): 1.45
+> out.256m.new.time:      Elapsed (wall clock) time (h:mm:ss or m:ss): 0:15.12
+> out.256m.old.time:      System time (seconds): 2.08
+> out.256m.old.time:      Elapsed (wall clock) time (h:mm:ss or m:ss): 0:15.26
+> 
+> I guess this is expected as well. Sparse access doesn't amortize the
+> costly reclaim for each charged THP. On the other hand it can help a bit
+> if the whole mmap is populated.
+>
+> If we compare fault latencies then we get the following:
+> - the worst latency [ms]:
+> out.256m.new-thponly 1991
+> out.256m.old-thponly 1838
+> out.256m.new 6197
+> out.256m.old 5538
+> 
+> - top 5 worst latencies (sum in [ms]):
+> out.256m.new-thponly 5694
+> out.256m.old-thponly 3168
+> out.256m.new 9498
+> out.256m.old 8291
+> 
+> - top 10
+> out.256m.new-thponly 7139
+> out.256m.old-thponly 3193
+> out.256m.new 11786
+> out.256m.old 9347
+> 
+> - top 100
+> out.256m.new-thponly 13035
+> out.256m.old-thponly 3434
+> out.256m.new 14634
+> out.256m.old 12881
+> 
+> I think this shows up that my concern about excessive reclaim and stalls
+> is real and it is worse when the memory is used sparsely. It is true it
+> might help when the whole THP section is used and so the additional cost
+> is amortized but the more sparsely each THP section is used the higher
+> overhead you are adding without userspace actually asking for it.
+
+THP is expected to have some overhead in terms of initial fault cost
+and space efficiency, don't use it when you get little to no benefit
+from it.  It can be argued that my patch moves that breakeven point a
+little bit, but the THP-positive end of the spectrum is much better
+off: THP coverage goes from 37% to 100%, while reclaim efficiency is
+significantly improved and system time significantly reduced.
+
+You demonstrated a THP-workload that really benefits from my change,
+and another workload that shouldn't be using THP in the first place.
