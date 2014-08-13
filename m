@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaHMArF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 20:47:05 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:63176 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691AbaHMArD (ORCPT
+	id S1752804AbaHMAti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 20:49:38 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:56565 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132AbaHMAth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 20:47:03 -0400
+	Tue, 12 Aug 2014 20:49:37 -0400
+Date: Tue, 12 Aug 2014 20:49:34 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] irqchip: gic: Allow gic_arch_extn hooks to call into
+ scheduler
+In-Reply-To: <53EAB4BC.80205@codeaurora.org>
+Message-ID: <alpine.LFD.2.11.1408122048560.6061@knanqh.ubzr>
+References: <alpine.LFD.2.11.1408041858570.6061@knanqh.ubzr> <1407194837-27190-1-git-send-email-sboyd@codeaurora.org> <53E118EE.5040205@codeaurora.org> <alpine.LFD.2.11.1408051537250.6061@knanqh.ubzr> <53E14B33.9080701@codeaurora.org>
+ <alpine.LFD.2.11.1408052222350.6061@knanqh.ubzr> <53EA970C.9070003@codeaurora.org> <alpine.LFD.2.11.1408122038500.6061@knanqh.ubzr> <53EAB4BC.80205@codeaurora.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140812120905.GB7049@dhcp22.suse.cz>
-References: <1407804835-24763-1-git-send-email-xiyou.wangcong@gmail.com>
-	<1407804835-24763-2-git-send-email-xiyou.wangcong@gmail.com>
-	<20140812120905.GB7049@dhcp22.suse.cz>
-Date: Tue, 12 Aug 2014 17:47:02 -0700
-Message-ID: <CAM_iQpWV8DRGBQ-Brz=_Nqen0fNPDk+6kn_Og3HnXnujmgA+JA@mail.gmail.com>
-Subject: Re: [Patch] x86,mm: check freeze request in page fault handler
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 5:09 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Mon 11-08-14 17:53:55, Cong Wang wrote:
->> When a process triggers a page fault and kernel keeps
->> trying to retry the fault, there is no chance for this process
->> to be frozen, so the freeze request will always be pending.
->
-> The retry cannot happen indefinitely, no?
->
-> Besides that the patch is broken in at least 2 ways. You are not
-> releasing mmap_sem and this will break memcg OOM killer handling.
+On Tue, 12 Aug 2014, Stephen Boyd wrote:
 
-Ah, it's my bad to miss the up_read().
+> On 08/12/14 17:39, Nicolas Pitre wrote:
+> > On Tue, 12 Aug 2014, Stephen Boyd wrote:
+> >
+> >> On 08/05/14 19:34, Nicolas Pitre wrote:
+> >>>> It allows us to synchronize with another CPU that may be inside
+> >>>> gic_raise_softirq(). If the other CPU was in that function then this CPU
+> >>>> would wait until it was done sending the IPI to continue along and
+> >>>> reroute them. If the other CPU was just about to grab the sgi lock then
+> >>>> we would guarantee that the CPU would see the new gic_cpu_map value and
+> >>>> thus any redirection is not necessary.
+> >>> OK I get it now.
+> >>>
+> >>>> I hoped that the commit text explained this.
+> >>> I'm possibly not bright enough to get it the first time.
+> >>>
+> >>>> Honestly it probably isn't a noticeable performance boost either way 
+> >>>> but I think this is the best we can do.
+> >>> Sure, agreed.
+> >>>
+> >>>
+> >>>
+> >> Ok, so which patch is preferred?
+> > I'd say the later.
+> >
+> >
+> 
+> Sorry, it's not clear. I'll send v3 and hopefully it will be the right one.
 
->
-> If a memcg is under OOM (because of hard limit) then try_charge
-> calls mem_cgroup_oom which marks the current task with OOM
-> information. Notably takes a reference to memcg->css. The charge fail
-> will then gets up the pagefault stack until we get to mm_fault_error
-> where you put the task into freezer and then returns without
-> pagefault_out_of_memory which would handle memcg specific parts in
-> mem_cgroup_oom_synchronize. If the task wakes up and the page fault
-> retry succeeds (because some charges were released in the meantime) then
-> you leak a reference to memcg->css.
+Certainly the best way to disambiguate things.
 
-OK, I thought skipping pagefault_out_of_memory() is safe, you are right here,
-thanks for explanation.
 
->
-> Besides that the whole change would need a better justification. Why
-> other archs do not need this?
->
-
-They probably need this as well, just that I only have x86 to care and test. :)
-
-Does the following updated patch make any sense to you? If not, I will just
-drop it.
-
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index a241946..8c0a7d8 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -14,6 +14,7 @@
- #include <linux/hugetlb.h>             /* hstate_index_to_shift        */
- #include <linux/prefetch.h>            /* prefetchw                    */
- #include <linux/context_tracking.h>    /* exception_enter(), ...       */
-+#include <linux/freezer.h>             /* try_to_freeze()              */
-
- #include <asm/traps.h>                 /* dotraplinkage, ...           */
- #include <asm/pgalloc.h>               /* pgd_*(), ...                 */
-@@ -904,6 +905,9 @@ mm_fault_error(struct pt_regs *regs, unsigned long
-error_code,
-                 * oom-killed):
-                 */
-                pagefault_out_of_memory();
-+
-+               if (signal_pending(current))
-+                       try_to_freeze();
-        } else {
-                if (fault & (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON|
-                             VM_FAULT_HWPOISON_LARGE))
+Nicolas
