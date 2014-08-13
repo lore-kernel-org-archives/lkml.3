@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152AbaHMWuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 18:50:20 -0400
-Received: from mail.kernel.org ([198.145.19.201]:55346 "EHLO mail.kernel.org"
+	id S1754195AbaHMWu2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 18:50:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:55382 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754121AbaHMWuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 18:50:14 -0400
+	id S1754154AbaHMWuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 18:50:22 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 22/41] perf sched: Move call to symbol__init() after creating session
-Date: Wed, 13 Aug 2014 19:48:08 -0300
-Message-Id: <1407970107-24540-23-git-send-email-acme@kernel.org>
+Subject: [PATCH 24/41] perf timechart: Move call to symbol__init() after creating session
+Date: Wed, 13 Aug 2014 19:48:10 -0300
+Message-Id: <1407970107-24540-25-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1407970107-24540-1-git-send-email-acme@kernel.org>
 References: <1407970107-24540-1-git-send-email-acme@kernel.org>
@@ -40,33 +40,34 @@ Cc: Minchan Kim <minchan@kernel.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1407825645-24586-10-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1407825645-24586-12-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-sched.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ tools/perf/builtin-timechart.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 7c16aeb6b675..dcd9ebf5a7df 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1462,6 +1462,8 @@ static int perf_sched__read_events(struct perf_sched *sched,
- 		return -1;
- 	}
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 912e3b5bb22b..df3b1c5ae7b9 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -1607,6 +1607,8 @@ static int __cmd_timechart(struct timechart *tchart, const char *output_name)
+ 	if (session == NULL)
+ 		return -ENOMEM;
  
 +	symbol__init();
 +
- 	if (perf_session__set_tracepoints_handlers(session, handlers))
- 		goto out_delete;
- 
-@@ -1747,7 +1749,6 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (!strcmp(argv[0], "script"))
- 		return cmd_script(argc, argv, prefix);
+ 	(void)perf_header__process_sections(&session->header,
+ 					    perf_data_file__fd(session->file),
+ 					    tchart,
+@@ -1982,8 +1984,6 @@ int cmd_timechart(int argc, const char **argv,
+ 		return -1;
+ 	}
  
 -	symbol__init();
- 	if (!strncmp(argv[0], "rec", 3)) {
- 		return __cmd_record(argc, argv);
- 	} else if (!strncmp(argv[0], "lat", 3)) {
+-
+ 	if (argc && !strncmp(argv[0], "rec", 3)) {
+ 		argc = parse_options(argc, argv, record_options, record_usage,
+ 				     PARSE_OPT_STOP_AT_NON_OPTION);
 -- 
 1.9.3
 
