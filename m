@@ -1,424 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaHMH7V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 03:59:21 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:43482 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418AbaHMH67 (ORCPT
+	id S1752324AbaHMH6w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 03:58:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43040 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254AbaHMH6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:58:59 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v4 net-next 26/26] bpf: verifier test
-Date: Wed, 13 Aug 2014 00:57:37 -0700
-Message-Id: <1407916658-8731-27-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+	Wed, 13 Aug 2014 03:58:50 -0400
+Date: Wed, 13 Aug 2014 09:58:34 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] perf, x86: Remove incorrect model number from
+ Haswell perf
+Message-ID: <20140813075834.GY9918@twins.programming.kicks-ass.net>
+References: <1407894315-15928-1-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iyYSdTgI6uqGGfDx"
+Content-Disposition: inline
+In-Reply-To: <1407894315-15928-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-simple verifier test from user space. Tests valid and invalid programs
-and expects predefined error log messages from kernel
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- samples/bpf/Makefile        |    3 +-
- samples/bpf/test_verifier.c |  354 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 356 insertions(+), 1 deletion(-)
- create mode 100644 samples/bpf/test_verifier.c
+--iyYSdTgI6uqGGfDx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
-index b865a5df5c60..e39cb4f13be9 100644
---- a/samples/bpf/Makefile
-+++ b/samples/bpf/Makefile
-@@ -2,12 +2,13 @@
- obj- := dummy.o
- 
- # List of programs to build
--hostprogs-y := sock_example dropmon ex1 ex2
-+hostprogs-y := sock_example dropmon ex1 ex2 test_verifier
- 
- sock_example-objs := sock_example.o libbpf.o
- dropmon-objs := dropmon.o libbpf.o
- ex1-objs := bpf_load.o libbpf.o ex1_user.o
- ex2-objs := bpf_load.o libbpf.o ex2_user.o
-+test_verifier-objs := test_verifier.o libbpf.o
- 
- # Tell kbuild to always build the programs
- always := $(hostprogs-y) ex1_kern.o ex2_kern.o
-diff --git a/samples/bpf/test_verifier.c b/samples/bpf/test_verifier.c
-new file mode 100644
-index 000000000000..46cef16425e4
---- /dev/null
-+++ b/samples/bpf/test_verifier.c
-@@ -0,0 +1,354 @@
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <linux/bpf.h>
-+#include <errno.h>
-+#include <linux/unistd.h>
-+#include <string.h>
-+#include <linux/filter.h>
-+#include "libbpf.h"
-+
-+#define MAX_INSNS 512
-+#define ARRAY_SIZE(x) (sizeof(x) / sizeof(*(x)))
-+
-+struct bpf_test {
-+	const char *descr;
-+	struct bpf_insn	insns[MAX_INSNS];
-+	int fixup[32];
-+	const char *errstr;
-+	enum {
-+		ACCEPT,
-+		REJECT
-+	} result;
-+};
-+
-+static struct bpf_test tests[] = {
-+	{
-+		"add+sub+mul",
-+		.insns = {
-+			BPF_ALU64_IMM(BPF_MOV, BPF_REG_1, 1),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_1, 2),
-+			BPF_ALU64_IMM(BPF_MOV, BPF_REG_2, 3),
-+			BPF_ALU64_REG(BPF_SUB, BPF_REG_1, BPF_REG_2),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_1, -1),
-+			BPF_ALU64_IMM(BPF_MUL, BPF_REG_1, 3),
-+			BPF_ALU64_REG(BPF_MOV, BPF_REG_0, BPF_REG_1),
-+			BPF_EXIT_INSN(),
-+		},
-+		.result = ACCEPT,
-+	},
-+	{
-+		"dropmon",
-+		.insns = {
-+			BPF_LDX_MEM(BPF_DW, BPF_REG_2, BPF_REG_1, 8), /* r2 = *(u64 *)(r1 + 8) */
-+			BPF_STX_MEM(BPF_DW, BPF_REG_10, BPF_REG_2, -8), /* *(u64 *)(fp - 8) = r2 */
-+			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8), /* r2 = fp - 8 */
-+			BPF_LD_MAP_FD(BPF_REG_1, 0),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
-+			BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 3),
-+			BPF_MOV64_IMM(BPF_REG_1, 1), /* r1 = 1 */
-+			BPF_RAW_INSN(BPF_STX | BPF_XADD | BPF_DW, BPF_REG_0, BPF_REG_1, 0, 0), /* xadd r0 += r1 */
-+			BPF_EXIT_INSN(),
-+			BPF_ST_MEM(BPF_DW, BPF_REG_10, -16, 1), /* *(u64 *)(fp - 16) = 1 */
-+			BPF_MOV64_REG(BPF_REG_3, BPF_REG_10),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_3, -16), /* r3 = fp - 16 */
-+			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8), /* r2 = fp - 8 */
-+			BPF_LD_MAP_FD(BPF_REG_1, 0),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_update_elem),
-+			BPF_EXIT_INSN(),
-+		},
-+		.fixup = {4, 16},
-+		.result = ACCEPT,
-+	},
-+	{
-+		"dropmon2",
-+		.insns = {
-+			BPF_LDX_MEM(BPF_DW, BPF_REG_2, BPF_REG_1, 8), /* r2 = *(u64 *)(r1 + 8) */
-+			BPF_STX_MEM(BPF_DW, BPF_REG_10, BPF_REG_2, -8), /* *(u64 *)(fp - 8) = r2 */
-+			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8), /* r2 = fp - 8 */
-+			BPF_LD_MAP_FD(BPF_REG_1, 0),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
-+			BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 3),
-+			BPF_MOV64_IMM(BPF_REG_1, 1), /* r1 = 1 */
-+			BPF_RAW_INSN(BPF_STX | BPF_XADD | BPF_DW, BPF_REG_0, BPF_REG_1, 0, 0), /* xadd r0 += r1 */
-+			BPF_EXIT_INSN(),
-+			BPF_ST_MEM(BPF_DW, BPF_REG_10, -16, 1), /* *(u64 *)(fp - 16) = 1 */
-+			BPF_MOV64_REG(BPF_REG_3, BPF_REG_10),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_3, -16), /* r3 = fp - 16 */
-+			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8), /* r2 = fp - 8 */
-+			BPF_LD_MAP_FD(BPF_REG_1, 0),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_update_elem),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, -10),
-+		},
-+		.fixup = {4, 16},
-+		.result = ACCEPT,
-+	},
-+	{
-+		"unreachable",
-+		.insns = {
-+			BPF_EXIT_INSN(),
-+			BPF_EXIT_INSN(),
-+		},
-+		.errstr = "unreachable",
-+		.result = REJECT,
-+	},
-+	{
-+		"unreachable2",
-+		.insns = {
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 1),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 0),
-+			BPF_EXIT_INSN(),
-+		},
-+		.errstr = "unreachable",
-+		.result = REJECT,
-+	},
-+	{
-+		"out of range jump",
-+		.insns = {
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 1),
-+			BPF_EXIT_INSN(),
-+		},
-+		.errstr = "jump out of range",
-+		.result = REJECT,
-+	},
-+	{
-+		"out of range jump2",
-+		.insns = {
-+			BPF_JMP_IMM(BPF_JA, 0, 0, -2),
-+			BPF_EXIT_INSN(),
-+		},
-+		.errstr = "jump out of range",
-+		.result = REJECT,
-+	},
-+	{
-+		"no bpf_exit",
-+		.insns = {
-+			BPF_ALU64_REG(BPF_MOV, BPF_REG_0, BPF_REG_2),
-+		},
-+		.errstr = "jump out of range",
-+		.result = REJECT,
-+	},
-+	{
-+		"loop (back-edge)",
-+		.insns = {
-+			BPF_JMP_IMM(BPF_JA, 0, 0, -1),
-+			BPF_EXIT_INSN(),
-+		},
-+		.errstr = "back-edge",
-+		.result = REJECT,
-+	},
-+	{
-+		"loop2 (back-edge)",
-+		.insns = {
-+			BPF_MOV64_REG(BPF_REG_1, BPF_REG_0),
-+			BPF_MOV64_REG(BPF_REG_2, BPF_REG_0),
-+			BPF_MOV64_REG(BPF_REG_3, BPF_REG_0),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, -4),
-+			BPF_EXIT_INSN(),
-+		},
-+		.errstr = "back-edge",
-+		.result = REJECT,
-+	},
-+	{
-+		"conditional loop",
-+		.insns = {
-+			BPF_MOV64_REG(BPF_REG_1, BPF_REG_0),
-+			BPF_MOV64_REG(BPF_REG_2, BPF_REG_0),
-+			BPF_MOV64_REG(BPF_REG_3, BPF_REG_0),
-+			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 0, -3),
-+			BPF_EXIT_INSN(),
-+		},
-+		.errstr = "back-edge",
-+		.result = REJECT,
-+	},
-+	{
-+		"read uninitialized register",
-+		.insns = {
-+			BPF_ALU64_REG(BPF_MOV, BPF_REG_0, BPF_REG_2),
-+			BPF_EXIT_INSN(),
-+		},
-+		.errstr = "R2 !read_ok",
-+		.result = REJECT,
-+	},
-+	{
-+		"program doesn't init R0 before exit",
-+		.insns = {
-+			BPF_ALU64_REG(BPF_MOV, BPF_REG_2, BPF_REG_1),
-+			BPF_EXIT_INSN(),
-+		},
-+		.errstr = "R0 !read_ok",
-+		.result = REJECT,
-+	},
-+	{
-+		"stack out of bounds",
-+		.insns = {
-+			BPF_ST_MEM(BPF_DW, BPF_REG_10, 8, 0),
-+			BPF_EXIT_INSN(),
-+		},
-+		.errstr = "invalid stack",
-+		.result = REJECT,
-+	},
-+	{
-+		"uninitialized stack",
-+		.insns = {
-+			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
-+			BPF_LD_MAP_FD(BPF_REG_1, 0),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
-+			BPF_EXIT_INSN(),
-+		},
-+		.fixup = {2},
-+		.errstr = "invalid indirect read from stack",
-+		.result = REJECT,
-+	},
-+	{
-+		"invalid map_fd for function call",
-+		.insns = {
-+			BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
-+			BPF_ALU64_REG(BPF_MOV, BPF_REG_2, BPF_REG_10),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
-+			BPF_LD_MAP_FD(BPF_REG_1, 0),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
-+			BPF_EXIT_INSN(),
-+		},
-+		.errstr = "fd 0 is not pointing to valid bpf_map",
-+		.result = REJECT,
-+	},
-+	{
-+		"don't check return value before access",
-+		.insns = {
-+			BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
-+			BPF_ALU64_REG(BPF_MOV, BPF_REG_2, BPF_REG_10),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
-+			BPF_LD_MAP_FD(BPF_REG_1, 0),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
-+			BPF_ST_MEM(BPF_DW, BPF_REG_0, 0, 0),
-+			BPF_EXIT_INSN(),
-+		},
-+		.fixup = {3},
-+		.errstr = "R0 invalid mem access 'map_value_or_null'",
-+		.result = REJECT,
-+	},
-+	{
-+		"access memory with incorrect alignment",
-+		.insns = {
-+			BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
-+			BPF_ALU64_REG(BPF_MOV, BPF_REG_2, BPF_REG_10),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
-+			BPF_LD_MAP_FD(BPF_REG_1, 0),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
-+			BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 1),
-+			BPF_ST_MEM(BPF_DW, BPF_REG_0, 4, 0),
-+			BPF_EXIT_INSN(),
-+		},
-+		.fixup = {3},
-+		.errstr = "misaligned access",
-+		.result = REJECT,
-+	},
-+	{
-+		"sometimes access memory with incorrect alignment",
-+		.insns = {
-+			BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
-+			BPF_ALU64_REG(BPF_MOV, BPF_REG_2, BPF_REG_10),
-+			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
-+			BPF_LD_MAP_FD(BPF_REG_1, 0),
-+			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
-+			BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 2),
-+			BPF_ST_MEM(BPF_DW, BPF_REG_0, 0, 0),
-+			BPF_EXIT_INSN(),
-+			BPF_ST_MEM(BPF_DW, BPF_REG_0, 0, 1),
-+			BPF_EXIT_INSN(),
-+		},
-+		.fixup = {3},
-+		.errstr = "R0 invalid mem access",
-+		.result = REJECT,
-+	},
-+};
-+
-+static int probe_filter_length(struct bpf_insn *fp)
-+{
-+	int len = 0;
-+
-+	for (len = MAX_INSNS - 1; len > 0; --len)
-+		if (fp[len].code != 0)
-+			break;
-+
-+	return len + 1;
-+}
-+
-+static int create_map(void)
-+{
-+	long long key, value = 0;
-+	int map_fd;
-+
-+	map_fd = bpf_create_map(BPF_MAP_TYPE_HASH, sizeof(key), sizeof(value), 1024);
-+	if (map_fd < 0) {
-+		printf("failed to create map '%s'\n", strerror(errno));
-+	}
-+
-+	return map_fd;
-+}
-+
-+static int test(void)
-+{
-+	int prog_fd, i;
-+
-+	for (i = 0; i < ARRAY_SIZE(tests); i++) {
-+		struct bpf_insn *prog = tests[i].insns;
-+		int prog_len = probe_filter_length(prog);
-+		int *fixup = tests[i].fixup;
-+		int map_fd = -1;
-+
-+		if (*fixup) {
-+
-+			map_fd = create_map();
-+
-+			do {
-+				prog[*fixup].imm = map_fd;
-+				fixup++;
-+			} while (*fixup);
-+		}
-+		printf("#%d %s ", i, tests[i].descr);
-+
-+		prog_fd = bpf_prog_load(BPF_PROG_TYPE_TRACING_FILTER, prog,
-+					prog_len * sizeof(struct bpf_insn),
-+					"GPL");
-+
-+		if (tests[i].result == ACCEPT) {
-+			if (prog_fd < 0) {
-+				printf("FAIL\nfailed to load prog '%s'\n",
-+				       strerror(errno));
-+				printf("%s", bpf_log_buf);
-+				goto fail;
-+			}
-+		} else {
-+			if (prog_fd >= 0) {
-+				printf("FAIL\nunexpected success to load\n");
-+				printf("%s", bpf_log_buf);
-+				goto fail;
-+			}
-+			if (strstr(bpf_log_buf, tests[i].errstr) == 0) {
-+				printf("FAIL\nunexpected error message: %s",
-+				       bpf_log_buf);
-+				goto fail;
-+			}
-+		}
-+
-+		printf("OK\n");
-+fail:
-+		if (map_fd >= 0)
-+			close(map_fd);
-+		close(prog_fd);
-+
-+	}
-+
-+	return 0;
-+}
-+
-+int main(void)
-+{
-+	return test();
-+}
--- 
-1.7.9.5
+On Tue, Aug 12, 2014 at 06:45:13PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>=20
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel.c | 1 -
+>  1 file changed, 1 deletion(-)
+>=20
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu=
+/perf_event_intel.c
+> index 2502d0d..ef6c8b7 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -2541,7 +2541,6 @@ __init int intel_pmu_init(void)
+> =20
+>  	case 60: /* Haswell Client */
+>  	case 70:
+> -	case 71:
+>  	case 63:
+>  	case 69:
+>  		x86_pmu.late_ack =3D true;
 
+Can you properly describe the remaining model numbers? Surely there's a
+significant difference between these chips otherwise why give them
+difference model numbers.
+
+Looking at the wikipedia page for Haswell I suspect its things like:
+Haswell-{DT,MB,H,ULT}. If so can you but the right name with the right
+number?
+
+--iyYSdTgI6uqGGfDx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT6xqlAAoJEHZH4aRLwOS6LfoP/RZiULvhH2XeKJYF2t9QL+Vj
+XNHyA9pO/2mgNjSvPRoP2e5WXKlyuIgRnMGjABXABPBYyLwVS1MFAteIg7kA5pv/
+zogtZJkxdKs8ZIeUBCXML9T+eTRoqpKFRMdUH1817DQtBP9gwRBXUOw/SpbnDtsb
+Yh3DQdQhEqLCwA7si3swtLA/D65ULZ2ya6gP7FVTTaNb2XfdwGuLJODtnfo4492f
+T3XdeJQw1BOR7tXZ3oK+vkLOXLPwSoAUliBhhzrX0eaj9pOxQvB1N4lR3r+jt8D5
+JwB0fkTYH+6GBJ0WzGKaZFCGOUmHeW4NaMZS1aB1lu4Xl/5LGUjtoqWwPwLGZZ3b
+J6IFYXOCdmzy4eMC6V3n0MXwvG5+bud9fX/N7u/4UPmnptLHbjWJJR+mt5wr6gP4
+5y/7MfYLjLsxdmTu77xu2WMwI1LDkTYVM+il2h3W9rxAKX+PNCEW7km1upjWg0y0
+ra9BRiPwz7oMyekFwUH2akSHQ/FSDtVftCObmVLZ9JJpOwGAIcIoix6oBFZZXEU5
+NpJ6TXvVHcBqEFuMlfmMhXCe2sfQOcejjwWakSKMW9RIf77ATWhSYuUfoqDZJuZ1
+X0iKqSEMlU/2M8TEIskRuLz9f0efr3+tIWEq+ICOSA36VFkZhR/dNgGRGnY7R++g
+mO5IvL2DlmfPZLz6d48P
+=FS8u
+-----END PGP SIGNATURE-----
+
+--iyYSdTgI6uqGGfDx--
