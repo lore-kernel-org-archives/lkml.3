@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835AbaHMH6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 03:58:13 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:35155 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776AbaHMH6J (ORCPT
+	id S1751660AbaHMH6d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 03:58:33 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:63423 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013AbaHMH63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:58:09 -0400
+	Wed, 13 Aug 2014 03:58:29 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -20,9 +20,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v4 net-next 06/26] bpf: add hashtable type of BPF maps
-Date: Wed, 13 Aug 2014 00:57:17 -0700
-Message-Id: <1407916658-8731-7-git-send-email-ast@plumgrid.com>
+Subject: [PATCH RFC v4 net-next 14/26] bpf: verifier (add state prunning optimization)
+Date: Wed, 13 Aug 2014 00:57:25 -0700
+Message-Id: <1407916658-8731-15-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
 References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
@@ -30,414 +30,226 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add new map type: BPF_MAP_TYPE_HASH
-and its simple (not auto resizeable) hash table implementation
+since verifier walks all possible paths it's important to recognize
+equivalent verifier states to speed up verification.
+
+If one of the old states is more strict than the current state, it means
+the current state doesn't need to be explored further, since verifier already
+concluded that more strict state leads to valid bpf_exit.
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- include/uapi/linux/bpf.h |    1 +
- kernel/bpf/Makefile      |    2 +-
- kernel/bpf/hashtab.c     |  372 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 374 insertions(+), 1 deletion(-)
- create mode 100644 kernel/bpf/hashtab.c
+ kernel/bpf/verifier.c |  134 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 134 insertions(+)
 
-diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-index 804dd8b2ca19..828e873fa435 100644
---- a/include/uapi/linux/bpf.h
-+++ b/include/uapi/linux/bpf.h
-@@ -358,6 +358,7 @@ enum bpf_map_attributes {
- 
- enum bpf_map_type {
- 	BPF_MAP_TYPE_UNSPEC,
-+	BPF_MAP_TYPE_HASH,
+diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
+index 2dcfa5f76418..2c825c3a01cb 100644
+--- a/kernel/bpf/verifier.c
++++ b/kernel/bpf/verifier.c
+@@ -219,6 +219,7 @@ struct verifier_env {
+ 	struct verifier_stack_elem *head; /* stack of verifier states to be processed */
+ 	int stack_size;			/* number of states to be processed */
+ 	struct verifier_state cur_state; /* current verifier state */
++	struct verifier_state_list **branch_landing; /* search prunning optimization */
+ 	struct bpf_map *used_maps[MAX_USED_MAPS]; /* array of map's used by eBPF program */
+ 	u32 used_map_cnt;		/* number of used maps */
+ };
+@@ -1207,6 +1208,8 @@ enum {
+ 	BRANCH = 2,
  };
  
- #endif /* _UAPI__LINUX_BPF_H__ */
-diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
-index e9f7334ed07a..558e12712ebc 100644
---- a/kernel/bpf/Makefile
-+++ b/kernel/bpf/Makefile
-@@ -1 +1 @@
--obj-y := core.o syscall.o
-+obj-y := core.o syscall.o hashtab.o
-diff --git a/kernel/bpf/hashtab.c b/kernel/bpf/hashtab.c
-new file mode 100644
-index 000000000000..bc8d32f0f720
---- /dev/null
-+++ b/kernel/bpf/hashtab.c
-@@ -0,0 +1,372 @@
-+/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
++#define STATE_END ((struct verifier_state_list *) -1L)
++
+ #define PUSH_INT(I) \
+ 	do { \
+ 		if (cur_stack >= insn_cnt) { \
+@@ -1248,6 +1251,9 @@ enum {
+ 			ret = -EINVAL; \
+ 			goto free_st; \
+ 		} \
++		if (E == BRANCH) \
++			/* mark branch target for state pruning */ \
++			env->branch_landing[w] = STATE_END; \
+ 		if (st[w] == 0) { \
+ 			/* tree-edge */ \
+ 			st[T] = DISCOVERED | E; \
+@@ -1315,6 +1321,10 @@ peek_stack:
+ 				PUSH_INSN(t, t + 1, FALLTHROUGH);
+ 				PUSH_INSN(t, t + insns[t].off + 1, BRANCH);
+ 			}
++			/* tell verifier to check for equivalent verifier states
++			 * after every call and jump
++			 */
++			env->branch_landing[t + 1] = STATE_END;
+ 		} else {
+ 			/* all other non-branch instructions with single
+ 			 * fall-through edge
+@@ -1346,6 +1356,88 @@ free_st:
+ 	return ret;
+ }
+ 
++/* compare two verifier states
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of version 2 of the GNU General Public
-+ * License as published by the Free Software Foundation.
++ * all states stored in state_list are known to be valid, since
++ * verifier reached 'bpf_exit' instruction through them
 + *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
++ * this function is called when verifier exploring different branches of
++ * execution popped from the state stack. If it sees an old state that has
++ * more strict register state and more strict stack state then this execution
++ * branch doesn't need to be explored further, since verifier already
++ * concluded that more strict state leads to valid finish.
++ *
++ * Therefore two states are equivalent if register state is more conservative
++ * and explored stack state is more conservative than the current one.
++ * Example:
++ *       explored                   current
++ * (slot1=INV slot2=MISC) == (slot1=MISC slot2=MISC)
++ * (slot1=MISC slot2=MISC) != (slot1=INV slot2=MISC)
++ *
++ * In other words if current stack state (one being explored) has more
++ * valid slots than old one that already passed validation, it means
++ * the verifier can stop exploring and conclude that current state is valid too
++ *
++ * Similarly with registers. If explored state has register type as invalid
++ * whereas register type in current state is meaningful, it means that
++ * the current state will reach 'bpf_exit' instruction safely
 + */
-+#include <linux/bpf.h>
-+#include <net/netlink.h>
-+#include <linux/jhash.h>
-+
-+struct bpf_htab {
-+	struct bpf_map map;
-+	struct hlist_head *buckets;
-+	struct kmem_cache *elem_cache;
-+	spinlock_t lock;
-+	u32 count; /* number of elements in this hashtable */
-+	u32 n_buckets; /* number of hash buckets */
-+	u32 elem_size; /* size of each element in bytes */
-+};
-+
-+/* each htab element is struct htab_elem + key + value */
-+struct htab_elem {
-+	struct hlist_node hash_node;
-+	struct rcu_head rcu;
-+	struct bpf_htab *htab;
-+	u32 hash;
-+	u32 pad;
-+	char key[0];
-+};
-+
-+#define HASH_MAX_BUCKETS 1024
-+#define BPF_MAP_MAX_KEY_SIZE 256
-+static struct bpf_map *htab_map_alloc(struct nlattr *attr[BPF_MAP_ATTR_MAX + 1])
++static bool states_equal(struct verifier_state *old, struct verifier_state *cur)
 +{
-+	struct bpf_htab *htab;
-+	int err, i;
-+
-+	htab = kzalloc(sizeof(*htab), GFP_USER);
-+	if (!htab)
-+		return ERR_PTR(-ENOMEM);
-+
-+	/* look for mandatory map attributes */
-+	err = -EINVAL;
-+	if (!attr[BPF_MAP_KEY_SIZE])
-+		goto free_htab;
-+	htab->map.key_size = nla_get_u32(attr[BPF_MAP_KEY_SIZE]);
-+
-+	if (!attr[BPF_MAP_VALUE_SIZE])
-+		goto free_htab;
-+	htab->map.value_size = nla_get_u32(attr[BPF_MAP_VALUE_SIZE]);
-+
-+	if (!attr[BPF_MAP_MAX_ENTRIES])
-+		goto free_htab;
-+	htab->map.max_entries = nla_get_u32(attr[BPF_MAP_MAX_ENTRIES]);
-+
-+	htab->n_buckets = (htab->map.max_entries <= HASH_MAX_BUCKETS) ?
-+			  htab->map.max_entries : HASH_MAX_BUCKETS;
-+
-+	/* hash table size must be power of 2 */
-+	if ((htab->n_buckets & (htab->n_buckets - 1)) != 0)
-+		goto free_htab;
-+
-+	err = -E2BIG;
-+	if (htab->map.key_size > BPF_MAP_MAX_KEY_SIZE)
-+		goto free_htab;
-+
-+	err = -ENOMEM;
-+	htab->buckets = kmalloc_array(htab->n_buckets,
-+				      sizeof(struct hlist_head), GFP_USER);
-+
-+	if (!htab->buckets)
-+		goto free_htab;
-+
-+	for (i = 0; i < htab->n_buckets; i++)
-+		INIT_HLIST_HEAD(&htab->buckets[i]);
-+
-+	spin_lock_init(&htab->lock);
-+	htab->count = 0;
-+
-+	htab->elem_size = sizeof(struct htab_elem) +
-+			  round_up(htab->map.key_size, 8) +
-+			  htab->map.value_size;
-+
-+	htab->elem_cache = kmem_cache_create("bpf_htab", htab->elem_size, 0, 0,
-+					     NULL);
-+	if (!htab->elem_cache)
-+		goto free_buckets;
-+
-+	return &htab->map;
-+
-+free_buckets:
-+	kfree(htab->buckets);
-+free_htab:
-+	kfree(htab);
-+	return ERR_PTR(err);
-+}
-+
-+static inline u32 htab_map_hash(const void *key, u32 key_len)
-+{
-+	return jhash(key, key_len, 0);
-+}
-+
-+static inline struct hlist_head *select_bucket(struct bpf_htab *htab, u32 hash)
-+{
-+	return &htab->buckets[hash & (htab->n_buckets - 1)];
-+}
-+
-+static struct htab_elem *lookup_elem_raw(struct hlist_head *head, u32 hash,
-+					 void *key, u32 key_size)
-+{
-+	struct htab_elem *l;
-+
-+	hlist_for_each_entry_rcu(l, head, hash_node) {
-+		if (l->hash == hash && !memcmp(&l->key, key, key_size))
-+			return l;
-+	}
-+	return NULL;
-+}
-+
-+/* Must be called with rcu_read_lock. */
-+static void *htab_map_lookup_elem(struct bpf_map *map, void *key)
-+{
-+	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
-+	struct hlist_head *head;
-+	struct htab_elem *l;
-+	u32 hash, key_size;
-+
-+	WARN_ON_ONCE(!rcu_read_lock_held());
-+
-+	key_size = map->key_size;
-+
-+	hash = htab_map_hash(key, key_size);
-+
-+	head = select_bucket(htab, hash);
-+
-+	l = lookup_elem_raw(head, hash, key, key_size);
-+
-+	if (l)
-+		return l->key + round_up(map->key_size, 8);
-+	else
-+		return NULL;
-+}
-+
-+/* Must be called with rcu_read_lock. */
-+static int htab_map_get_next_key(struct bpf_map *map, void *key, void *next_key)
-+{
-+	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
-+	struct hlist_head *head;
-+	struct htab_elem *l, *next_l;
-+	u32 hash, key_size;
 +	int i;
 +
-+	WARN_ON_ONCE(!rcu_read_lock_held());
-+
-+	key_size = map->key_size;
-+
-+	hash = htab_map_hash(key, key_size);
-+
-+	head = select_bucket(htab, hash);
-+
-+	/* lookup the key */
-+	l = lookup_elem_raw(head, hash, key, key_size);
-+
-+	if (!l) {
-+		i = 0;
-+		goto find_first_elem;
++	for (i = 0; i < MAX_BPF_REG; i++) {
++		if (memcmp(&old->regs[i], &cur->regs[i],
++			   sizeof(old->regs[0])) != 0) {
++			if (old->regs[i].type == NOT_INIT ||
++			    old->regs[i].type == UNKNOWN_VALUE)
++				continue;
++			return false;
++		}
 +	}
 +
-+	/* key was found, get next key in the same bucket */
-+	next_l = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu(&l->hash_node)),
-+				  struct htab_elem, hash_node);
++	for (i = 0; i < MAX_BPF_STACK; i++) {
++		if (memcmp(&old->stack[i], &cur->stack[i],
++			   sizeof(old->stack[0])) != 0) {
++			if (old->stack[i].stype == STACK_INVALID)
++				continue;
++			return false;
++		}
++	}
++	return true;
++}
 +
-+	if (next_l) {
-+		/* if next elem in this hash list is non-zero, just return it */
-+		memcpy(next_key, next_l->key, key_size);
++static int is_state_visited(struct verifier_env *env, int insn_idx)
++{
++	struct verifier_state_list *new_sl;
++	struct verifier_state_list *sl;
++
++	sl = env->branch_landing[insn_idx];
++	if (!sl)
++		/* no branch jump to this insn, ignore it */
 +		return 0;
-+	} else {
-+		/* no more elements in this hash list, go to the next bucket */
-+		i = hash & (htab->n_buckets - 1);
-+		i++;
++
++	while (sl != STATE_END) {
++		if (states_equal(&sl->state, &env->cur_state))
++			/* reached equivalent register/stack state,
++			 * prune the search
++			 */
++			return 1;
++		sl = sl->next;
 +	}
++	new_sl = kmalloc(sizeof(struct verifier_state_list), GFP_KERNEL);
 +
-+find_first_elem:
-+	/* iterate over buckets */
-+	for (; i < htab->n_buckets; i++) {
-+		head = select_bucket(htab, i);
++	if (!new_sl)
++		/* ignore ENOMEM, it doesn't affect correctness */
++		return 0;
 +
-+		/* pick first element in the bucket */
-+		next_l = hlist_entry_safe(rcu_dereference_raw(hlist_first_rcu(head)),
-+					  struct htab_elem, hash_node);
-+		if (next_l) {
-+			/* if it's not empty, just return it */
-+			memcpy(next_key, next_l->key, key_size);
-+			return 0;
-+		}
-+	}
-+
-+	/* itereated over all buckets and all elements */
-+	return -ENOENT;
-+}
-+
-+static struct htab_elem *htab_alloc_elem(struct bpf_htab *htab)
-+{
-+	void *l;
-+
-+	l = kmem_cache_alloc(htab->elem_cache, GFP_ATOMIC);
-+	if (!l)
-+		return ERR_PTR(-ENOMEM);
-+	return l;
-+}
-+
-+static void free_htab_elem_rcu(struct rcu_head *rcu)
-+{
-+	struct htab_elem *l = container_of(rcu, struct htab_elem, rcu);
-+
-+	kmem_cache_free(l->htab->elem_cache, l);
-+}
-+
-+static void release_htab_elem(struct bpf_htab *htab, struct htab_elem *l)
-+{
-+	l->htab = htab;
-+	call_rcu(&l->rcu, free_htab_elem_rcu);
-+}
-+
-+/* Must be called with rcu_read_lock. */
-+static int htab_map_update_elem(struct bpf_map *map, void *key, void *value)
-+{
-+	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
-+	struct htab_elem *l_new, *l_old;
-+	struct hlist_head *head;
-+	unsigned long flags;
-+	u32 key_size;
-+
-+	WARN_ON_ONCE(!rcu_read_lock_held());
-+
-+	l_new = htab_alloc_elem(htab);
-+	if (IS_ERR(l_new))
-+		return -ENOMEM;
-+
-+	key_size = map->key_size;
-+
-+	memcpy(l_new->key, key, key_size);
-+	memcpy(l_new->key + round_up(key_size, 8), value, map->value_size);
-+
-+	l_new->hash = htab_map_hash(l_new->key, key_size);
-+
-+	/* bpf_map_update_elem() can be called in_irq() as well, so
-+	 * spin_lock() or spin_lock_bh() cannot be used
-+	 */
-+	spin_lock_irqsave(&htab->lock, flags);
-+
-+	head = select_bucket(htab, l_new->hash);
-+
-+	l_old = lookup_elem_raw(head, l_new->hash, key, key_size);
-+
-+	if (!l_old && unlikely(htab->count >= map->max_entries)) {
-+		/* if elem with this 'key' doesn't exist and we've reached
-+		 * max_entries limit, fail insertion of new elem
-+		 */
-+		spin_unlock_irqrestore(&htab->lock, flags);
-+		kmem_cache_free(htab->elem_cache, l_new);
-+		return -EFBIG;
-+	}
-+
-+	/* add new element to the head of the list, so that concurrent
-+	 * search will find it before old elem
-+	 */
-+	hlist_add_head_rcu(&l_new->hash_node, head);
-+	if (l_old) {
-+		hlist_del_rcu(&l_old->hash_node);
-+		release_htab_elem(htab, l_old);
-+	} else {
-+		htab->count++;
-+	}
-+	spin_unlock_irqrestore(&htab->lock, flags);
-+
++	/* add new state to the head of linked list */
++	memcpy(&new_sl->state, &env->cur_state, sizeof(env->cur_state));
++	new_sl->next = env->branch_landing[insn_idx];
++	env->branch_landing[insn_idx] = new_sl;
 +	return 0;
 +}
 +
-+/* Must be called with rcu_read_lock. */
-+static int htab_map_delete_elem(struct bpf_map *map, void *key)
+ static int do_check(struct verifier_env *env)
+ {
+ 	struct verifier_state *state = &env->cur_state;
+@@ -1377,6 +1469,17 @@ static int do_check(struct verifier_env *env)
+ 			return -E2BIG;
+ 		}
+ 
++		if (is_state_visited(env, insn_idx)) {
++			if (log_level) {
++				if (do_print_state)
++					verbose("\nfrom %d to %d: safe\n",
++						prev_insn_idx, insn_idx);
++				else
++					verbose("%d: safe\n", insn_idx);
++			}
++			goto process_bpf_exit;
++		}
++
+ 		if (log_level && do_print_state) {
+ 			verbose("\nfrom %d to %d:", prev_insn_idx, insn_idx);
+ 			print_verifier_state(env);
+@@ -1464,6 +1567,7 @@ static int do_check(struct verifier_env *env)
+ 				 * something into it earlier
+ 				 */
+ 				_(check_reg_arg(regs, BPF_REG_0, 1));
++process_bpf_exit:
+ 				insn_idx = pop_stack(env, &prev_insn_idx);
+ 				if (insn_idx < 0) {
+ 					break;
+@@ -1597,6 +1701,28 @@ static void convert_pseudo_ld_imm64(struct verifier_env *env)
+ 			insn->src_reg = 0;
+ }
+ 
++static void free_states(struct verifier_env *env)
 +{
-+	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
-+	struct hlist_head *head;
-+	struct htab_elem *l;
-+	unsigned long flags;
-+	u32 hash, key_size;
-+	int ret = -ESRCH;
-+
-+	WARN_ON_ONCE(!rcu_read_lock_held());
-+
-+	key_size = map->key_size;
-+
-+	hash = htab_map_hash(key, key_size);
-+
-+	spin_lock_irqsave(&htab->lock, flags);
-+
-+	head = select_bucket(htab, hash);
-+
-+	l = lookup_elem_raw(head, hash, key, key_size);
-+
-+	if (l) {
-+		hlist_del_rcu(&l->hash_node);
-+		htab->count--;
-+		release_htab_elem(htab, l);
-+		ret = 0;
-+	}
-+
-+	spin_unlock_irqrestore(&htab->lock, flags);
-+	return ret;
-+}
-+
-+static void delete_all_elements(struct bpf_htab *htab)
-+{
++	struct verifier_state_list *sl, *sln;
 +	int i;
 +
-+	for (i = 0; i < htab->n_buckets; i++) {
-+		struct hlist_head *head = select_bucket(htab, i);
-+		struct hlist_node *n;
-+		struct htab_elem *l;
++	if (!env->branch_landing)
++		return;
 +
-+		hlist_for_each_entry_safe(l, n, head, hash_node) {
-+			hlist_del_rcu(&l->hash_node);
-+			htab->count--;
-+			kmem_cache_free(htab->elem_cache, l);
-+		}
++	for (i = 0; i < env->prog->len; i++) {
++		sl = env->branch_landing[i];
++
++		if (sl)
++			while (sl != STATE_END) {
++				sln = sl->next;
++				kfree(sl);
++				sl = sln;
++			}
 +	}
++
++	kfree(env->branch_landing);
 +}
 +
-+/* called when map->refcnt goes to zero */
-+static void htab_map_free(struct bpf_map *map)
-+{
-+	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
+ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
+ {
+ 	void __user *log_ubuf = NULL;
+@@ -1646,6 +1772,13 @@ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
+ 	if (ret < 0)
+ 		goto skip_full_check;
+ 
++	env->branch_landing = kcalloc(prog->len,
++				      sizeof(struct verifier_state_list *),
++				      GFP_KERNEL);
++	ret = -ENOMEM;
++	if (!env->branch_landing)
++		goto skip_full_check;
 +
-+	/* wait for all outstanding updates to complete */
-+	synchronize_rcu();
-+
-+	/* kmem_cache_free all htab elements */
-+	delete_all_elements(htab);
-+
-+	/* and destroy cache, which might sleep */
-+	kmem_cache_destroy(htab->elem_cache);
-+
-+	kfree(htab->buckets);
-+	kfree(htab);
-+}
-+
-+static struct bpf_map_ops htab_ops = {
-+	.map_alloc = htab_map_alloc,
-+	.map_free = htab_map_free,
-+	.map_get_next_key = htab_map_get_next_key,
-+	.map_lookup_elem = htab_map_lookup_elem,
-+	.map_update_elem = htab_map_update_elem,
-+	.map_delete_elem = htab_map_delete_elem,
-+};
-+
-+static struct bpf_map_type_list tl = {
-+	.ops = &htab_ops,
-+	.type = BPF_MAP_TYPE_HASH,
-+};
-+
-+static int __init register_htab_map(void)
-+{
-+	bpf_register_map_type(&tl);
-+	return 0;
-+}
-+late_initcall(register_htab_map);
+ 	ret = check_cfg(env);
+ 	if (ret < 0)
+ 		goto skip_full_check;
+@@ -1654,6 +1787,7 @@ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
+ 
+ skip_full_check:
+ 	while (pop_stack(env, NULL) >= 0);
++	free_states(env);
+ 
+ 	if (log_level && log_len >= log_size - 1) {
+ 		BUG_ON(log_len >= log_size);
 -- 
 1.7.9.5
 
