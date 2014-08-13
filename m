@@ -1,52 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029AbaHMVnh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 17:43:37 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:43501 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050AbaHMVnf (ORCPT
+	id S1753963AbaHMVpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 17:45:47 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49483 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751852AbaHMVpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 17:43:35 -0400
+	Wed, 13 Aug 2014 17:45:45 -0400
+Date: Wed, 13 Aug 2014 22:45:25 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH v8 4/4] ARM: Add KGDB/KDB FIQ debugger generic code
+Message-ID: <20140813214525.GQ30401@n2100.arm.linux.org.uk>
+References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org> <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org> <1404979427-12943-5-git-send-email-daniel.thompson@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVUPofE2w2t-_iwcTim8kbdcx93yW==+CwoqVqsaNnXHg@mail.gmail.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-	<1407916658-8731-2-git-send-email-ast@plumgrid.com>
-	<CALCETrXzZVxMGUgDPOKwN0DPLvupU=ew1z6D4U-jHg+RoyZyLg@mail.gmail.com>
-	<CAMEtUuxog0w-XkYMHM=Zto_gejy8x5agxohAWOs1zPEtXTr0Sw@mail.gmail.com>
-	<CALCETrXfp+7FmEzAoLiqzqY73NBzt8JsD40hzvhT3=gr-Scp=g@mail.gmail.com>
-	<CAMEtUuwx6Y4qxyz4TGK9=M2BH-dXnPsm+JrusqbyjzK20yUv6A@mail.gmail.com>
-	<CALCETrVDrbD3goYmZsUdmEhVfaNxovyghCz6y+_q5+G+rVwtWg@mail.gmail.com>
-	<53EBD6D5.3050706@zytor.com>
-	<CALCETrUghSd-Z3+z_MUierWHQnA_dDOQcJ++EKryUeGTh5LbbA@mail.gmail.com>
-	<53EBD848.1060203@zytor.com>
-	<CALCETrVUPofE2w2t-_iwcTim8kbdcx93yW==+CwoqVqsaNnXHg@mail.gmail.com>
-Date: Wed, 13 Aug 2014 14:43:34 -0700
-Message-ID: <CAMEtUuxhYQ0R=1C9h9yVZFP5PxyS8dqB_KBs7QxJ9EHMJHo3vQ@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit
- immediate" eBPF instruction
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404979427-12943-5-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 2:41 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> I think this is moot on non-SMEP machines.  And I'm not entirely
-> convinced that it's worth worrying about in general, especially if we
-> take some care to randomize the location of the JIT mapping.
+On Thu, Jul 10, 2014 at 09:03:47AM +0100, Daniel Thompson wrote:
+> From: Anton Vorontsov <anton.vorontsov@linaro.org>
+> 
+> The FIQ debugger may be used to debug situations when the kernel stuck
+> in uninterruptable sections, e.g. the kernel infinitely loops or
+> deadlocked in an interrupt or with interrupts disabled.
+> 
+> By default KGDB FIQ is disabled in runtime, but can be enabled with
+> kgdb_fiq.enable=1 kernel command line option.
 
-JIT start address is already randomized...
+I know you've been around the loop on this patch set quite a number of
+times.  However, there are two issues.  The first is a simple concern,
+the second is more a design decision...
+
+I've recently been hitting a problem on iMX6Q with a irqs-off deadlock
+on CPU0 (somehow, it always hit CPU0 every time I tested.)  This wasn't
+particularly good as it prevented much in the way of diagnosis.
+
+Of course, things like the spinlock lockup fired... but nothing could
+give me a trace from CPU0.
+
+On x86, they have this fixed by using the NMI to trigger a backtrace
+on all CPUs when a RCU lockup or spinlock lockup occurs.  There's a
+generic hook for this called arch_trigger_all_cpu_backtrace().
+
+So, I set about using the contents of some of your patches to implement
+this for ARM, and I came out with something which works.  In doing this,
+I started wondering whether the default FIQ handler should not be just
+"subs pc, lr, #4" but mostly your FIQ assembly code you have below.
+This, along with your GIC patches to move all IRQs to group 1, then
+gives us a way to send a FIQ IPI to CPUs in the system - and the FIQ
+IPI could be caught and used to dump a backtrace.
+
+Here's the changes I did for that, which are a tad hacky:
+
+irq-gic.c - SGI 8 gets used to trigger a backtrace.  Note it must be
+high priority too.
+
+gic_cpu_init()
++       /*
++        * Set all PPI and SGI interrupts to be group 1.
++        *
++        * If grouping is not available (not implemented or prohibited by
++        * security mode) these registers are read-as-zero/write-ignored.
++        */
++       writel_relaxed(0xfffffeff, dist_base + GIC_DIST_IGROUP + 0);
++       writel_relaxed(0xa0a0a000, dist_base + GIC_DIST_PRI + 8);
+
+gic_raise_softirq()
++       softirq = map << 16 | irq;
++       if (irq != 8)
++               softirq |= 0x8000;
++
+
+arch/arm/kernel/smp.c:
++/* For reliability, we're prepared to waste bits here. */
++static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
++
+...
++static void ipi_cpu_backtrace(struct pt_regs *regs)
++{
++       int cpu = smp_processor_id();
++
++       if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
++               static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
++
++               arch_spin_lock(&lock);
++               printk(KERN_WARNING "FIQ backtrace for cpu %d\n", cpu);
++               show_regs(regs);
++               arch_spin_unlock(&lock);
++               cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
++       }
++}
++
+...
++void arch_trigger_all_cpu_backtrace(bool include_self)
++{
++       static unsigned long backtrace_flag;
++       int i, cpu = get_cpu();
++
++       if (test_and_set_bit(0, &backtrace_flag)) {
++               /*
++                * If there is already a trigger_all_cpu_backtrace() in progress
++                * (backtrace_flag == 1), don't output double cpu dump infos.
++                */
++               put_cpu();
++               return;
++       }
++
++       cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
++       if (!include_self)
++               cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
++
++       if (!cpumask_empty(to_cpumask(backtrace_mask))) {
++               pr_info("Sending FIQ to %s CPUs:\n",
++                       (include_self ? "all" : "other"));
++               smp_cross_call(to_cpumask(backtrace_mask), IPI_CPU_BACKTRACE);
++       }
++
++       /* Wait for up to 10 seconds for all CPUs to do the backtrace */
++       for (i = 0; i < 10 * 1000; i++) {
++               if (cpumask_empty(to_cpumask(backtrace_mask)))
++                       break;
++
++               mdelay(1);
++       }
++
++       clear_bit(0, &backtrace_flag);
++       smp_mb__after_atomic();
++       put_cpu();
++}
++
++void __fiq_handle(struct pt_regs *regs)
++{
++       ipi_cpu_backtrace(regs);
++}
+
+arch/arm/kernel/setup.c:
++static unsigned int fiq_stack[4][1024];
++
+...
+cpu_init()
+-       "msr    cpsr_c, %7"
++       "msr    cpsr_c, %7\n\t"
++       "mov    sp, %8\n\t"
++       "msr    cpsr_c, %9"
+...
++             PLC (PSR_F_BIT | PSR_I_BIT | FIQ_MODE),
++             "r" (&fiq_stack[cpu][1024]),
+
+The FIQ assembly code is basically the same as yours, but with:
+
++       .macro  fiq_handler
++       bl      __fiq_handle
++       .endm
+
+and the code in svc_exit_via_fiq testing the PSR I flag and calling
+trace_hardirqs_on removed.
+
+This does have one deficiency, and that is it doesn't EOI the FIQ
+interrupt - that's something which should be fixed, but for my
+purposes to track down where the locked CPU was, it wasn't strictly
+necessary that the system continued to work after this point.
+
+This brings me to my second concern, and is the reason I decided not
+to ask for it for this merge window.
+
+Calling the trace_* functions is a no-no from FIQ code.
+trace_hardirqs_on() can itself take locks, which can result in a
+deadlock.
+
+I thought I'd made it clear that FIQ code can't take locks because
+there's no way of knowing what state they're in at the point that the
+FIQ fires - _irq() variants won't save you - and that's kind of the
+point of FIQ.  It's almost never masked by the kernel.
+
+Now, You'll be forgiven if you now point out that in the code above,
+I'm taking a spinlock.  That's absolutely true.  Analyse the code
+a little closer and you'll notice it's done in a safe way.  There's
+only one time where that spinlock is taken and that's from FIQ code,
+never from any other code, and only once per CPU - notice how
+arch_trigger_all_cpu_backtrace() protects itself against multiple
+callers, and how ipi_cpu_backtrace() is careful to check that its
+CPU bit is set.  This is exactly the same method which x86 code uses
+(in fact, much of the above code was stolen from x86!)
+
+So, how about moving the FIQ assembly code to entry-armv.S and making
+it less kgdb specific?  (Though... we do want to keep a /very/ close
+eye on users to ensure that they don't do silly stuff with locking.)
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
