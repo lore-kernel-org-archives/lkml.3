@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550AbaHMH5z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 03:57:55 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:48619 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaHMH5x (ORCPT
+	id S1752025AbaHMH63 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 03:58:29 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:60311 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885AbaHMH6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:57:53 -0400
+	Wed, 13 Aug 2014 03:58:19 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -20,193 +20,311 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v4 net-next 00/26] BPF syscall, maps, verifier, samples, llvm
-Date: Wed, 13 Aug 2014 00:57:11 -0700
-Message-Id: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+Subject: [PATCH RFC v4 net-next 10/26] bpf: verifier (add ability to receive verification log)
+Date: Wed, 13 Aug 2014 00:57:21 -0700
+Message-Id: <1407916658-8731-11-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+add optional attributes for BPF_PROG_LOAD syscall:
+  BPF_PROG_LOG_LEVEL,     /* verbosity level of eBPF verifier */
+  BPF_PROG_LOG_BUF,       /* user supplied buffer */
+  BPF_PROG_LOG_SIZE,      /* size of user buffer */
 
-one more RFC...
+In such case the verifier will return its verification log in the user
+supplied buffer which can be used by humans to analyze why verifier
+rejected given program
 
-Major difference vs previous set is a new 'load 64-bit immediate' eBPF insn.
-Which is first 16-byte instruction. It shows how eBPF ISA can be extended
-while maintaining backward compatibility, but mainly it cleans up eBPF
-program access to maps and improves run-time performance.
-In V3 I've been using 'fixup' section in eBPF program to tell kernel
-which instructions are accessing maps. With new instruction 'fixup' is gone
-and map IDR (internal map_ids) are removed.
-To understand the logic behind new insn, I need to explain two main
-eBPF design constraints:
-1. eBPF interpreter must be generic. It should know nothing about maps or
-   any custom instructions or functions.
-2. llvm compiler backend must be generic. It also should know nothing about
-   maps, helper functions, sockets, tracing, etc. LLVM just takes normal C
-   and compiles it for some 'fake' HW that happened to be called eBPF ISA.
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ include/uapi/linux/bpf.h |    4 +
+ kernel/bpf/syscall.c     |    3 +
+ kernel/bpf/verifier.c    |  236 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 243 insertions(+)
 
-patch #1 implements BPF_LD_IMM64 insn. It's just a move of 64-bit immediate
-value into a register. Nothing fancy.
-
-The reason it improved eBPF program run-time is the following:
-in V3 the program used to look like:
-  bpf_mov r1, const_internal_map_id
-  bpf_call bpf_map_lookup
-so in-kernel bpf_map_lookup() helper would do map_id->map_ptr conversion via
-  map = idr_find(&bpf_map_id_idr, map_id);
-For the life of the program map_id is constant and that lookup was returning
-the same value, but there was no easy way to store pointer inside eBPF insn.
-
-With new insn the programs look like:
-  bpf_ld_imm64 r1, const_internal_map_ptr
-  bpf_call bpf_map_lookup
-and the bpf_map_lookup() helper does:
-  struct bpf_map *map = (struct bpf_map *) (unsigned long) r1;
-Though it's a small performance gain, every nsec counts.
-Also new insn allows further optimizations in JIT compilers.
-
-How does it help to cleanup program interface towards maps?
-Obviously user space doesn't know what kernel map pointer is associated
-with process-local map-FD.
-So it's using pseudo BPF_LD_IMM64 instruction.
-BPF_LD_IMM64 with src_reg == 0 -> generic move 64-bit immediate into dst_reg
-BPF_LD_IMM64 with src_reg == BPF_PSEUDO_MAP_FD -> mov map_fd into dst_reg
-Other values are reserved for now. (They will be used to implement
-global variables, strings and other constants and per-cpu areas in the future)
-So the programs look like:
-  BPF_LD_MAP_FD(BPF_REG_1, process_local_map_fd),
-  BPF_CALL(BPF_FUNC_map_lookup_elem),
-eBPF verifier scans the program for such pseudo instructions, converts
-process_local_map_fd -> in-kernel map pointer
-and drops 'pseudo' flag of BPF_LD_IMM64 instruction.
-eBPF interpreter stays generic and LLVM stays generic, since they know
-nothing about pseudo instructions.
-Another pseudo instruction is BPF_CALL. User space encodes one of
-BPF_FUNC_xxx function ids as part of 'imm' field of the instruction
-and eBPF program loader converts it to in-kernel helper function pointer.
-
-The idea to use special instructions to access maps was suggested by Jonathan ;)
-It took awhile to figure out how to do it within above two design constraints,
-but the end result I think is much cleaner than what I had in V2/V3.
-
-Another difference vs previous set is verifier split into 6 patches and
-verifier testsuite is added. Beyond old checks verifier got 'tidiness' checks
-to make sure all unused fields of instructions are zero.
-Unfortunately classic BPF doesn't check for this. Lesson learned.
-
-Tracing use case got some improvements as well. Now eBPF programs can be
-attached to tracepoint, syscall, kprobe and C examples are more usable:
-ex1_kern.c - demonstrate how programs can walk in-kernel data structures
-ex2_kern.c - in-kernel event accounting and user space histograms
-See patch #25
-
-TODO:
-- verifier is safe, but not secure, since it allows kernel address leaking.
-  fix that before lifting root-only restriction
-- allow seecomp to use eBPF
-- write manpage for eBPF syscall
-
-As always all patches are available at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ast/bpf master
-
-V3->V4:
-- introduced 'load 64-bit immediate' eBPF instruction
-- use BPF_LD_IMM64 in LLVM, verifier, programs
-- got rid of 'fixup' section in eBPF programs
-- got rid of map IDR and internal map_id
-- split verifier into 6 patches and added verifier testsuite
-- add verifier check for reserved instruction fields
-- fixed bug in LLVM eBPF backend (it was miscompiling __builtin_expect)
-- fixed race condition in htab_map_update_elem()
-- tracing filters can now attach to tracepoint, syscall, kprobe events
-- improved C examples 
-
-V2->V3:
-- fixed verifier register range bug and addressed other comments (Thanks Kees!)
-- re-added LLVM eBPF backend
-- added two examples in C
-- user space ELF parser and loader example
-
-V1->V2:
-- got rid of global id, everything now FD based (Thanks Andy!)
-- split type enum in verifier (as suggested by Andy and Namhyung)
-- switched gpl enforcement to be kmod like (as suggested by Andy and David)
-- addressed feedback from Namhyung, Chema, Joe
-- added more comments to verifier
-- renamed sock_filter_int -> bpf_insn
-- rebased on net-next
-
-FD approach made eBPF user interface much cleaner for sockets/seccomp/tracing
-use cases. Now socket and tracing examples (patch 15 and 16) can be Ctrl-C in
-the middle and kernel will auto cleanup everything including tracing filters.
-
-----
-
-Old V1 cover letter:
-
-'maps' is a generic storage of different types for sharing data between kernel
-and userspace. Maps are referrenced by file descriptor. Root process can create
-multiple maps of different types where key/value are opaque bytes of data.
-It's up to user space and eBPF program to decide what they store in the maps.
-
-eBPF programs are similar to kernel modules. They are loaded by the user space
-program and unload on closing of fd. Each program is a safe run-to-completion
-set of instructions. eBPF verifier statically determines that the program
-terminates and safe to execute. During verification the program takes a hold of
-maps that it intends to use, so selected maps cannot be removed until program is
-unloaded. The program can be attached to different events. These events can
-be packets, tracepoint events and other types in the future. New event triggers
-execution of the program which may store information about the event in the maps.
-Beyond storing data the programs may call into in-kernel helper functions
-which may, for example, dump stack, do trace_printk or other forms of live
-kernel debugging. Same program can be attached to multiple events. Different
-programs can access the same map:
-
-  tracepoint  tracepoint  tracepoint    sk_buff    sk_buff
-   event A     event B     event C      on eth0    on eth1
-    |             |          |            |          |
-    |             |          |            |          |
-    --> tracing <--      tracing       socket      socket
-         prog_1           prog_2       prog_3      prog_4
-         |  |               |            |
-      |---  -----|  |-------|           map_3
-    map_1       map_2
-
-User space (via syscall) and eBPF programs access maps concurrently.
-
-------
-
-Alexei Starovoitov (26):
-  net: filter: add "load 64-bit immediate" eBPF instruction
-  net: filter: split filter.h and expose eBPF to user space
-  bpf: introduce syscall(BPF, ...) and BPF maps
-  bpf: enable bpf syscall on x64
-  bpf: add lookup/update/delete/iterate methods to BPF maps
-  bpf: add hashtable type of BPF maps
-  bpf: expand BPF syscall with program load/unload
-  bpf: handle pseudo BPF_CALL insn
-  bpf: verifier (add docs)
-  bpf: verifier (add ability to receive verification log)
-  bpf: handle pseudo BPF_LD_IMM64 insn
-  bpf: verifier (add branch/goto checks)
-  bpf: verifier (add verifier core)
-  bpf: verifier (add state prunning optimization)
-  bpf: allow eBPF programs to use maps
-  net: sock: allow eBPF programs to be attached to sockets
-  tracing: allow eBPF programs to be attached to events
-  tracing: allow eBPF programs to be attached to kprobe/kretprobe
-  samples: bpf: add mini eBPF library to manipulate maps and programs
-  samples: bpf: example of stateful socket filtering
-  samples: bpf: example of tracing filters with eBPF
-  bpf: llvm backend
-  samples: bpf: elf file loader
-  samples: bpf: eBPF example in C
-  samples: bpf: counting eBPF example in C
-  bpf: verifier test
-
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index aa09ba084ebc..72bed3950bf1 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -372,6 +372,10 @@ enum bpf_prog_attributes {
+ 	BPF_PROG_UNSPEC,
+ 	BPF_PROG_TEXT,		/* array of eBPF instructions */
+ 	BPF_PROG_LICENSE,	/* license string */
++	/* optional program attributes */
++	BPF_PROG_LOG_LEVEL,	/* verbosity level of eBPF verifier */
++	BPF_PROG_LOG_BUF,	/* user supplied buffer */
++	BPF_PROG_LOG_SIZE,	/* size of user buffer */
+ 	__BPF_PROG_ATTR_MAX,
+ };
+ #define BPF_PROG_ATTR_MAX (__BPF_PROG_ATTR_MAX - 1)
+diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
+index a3581646ee11..60cb760cb423 100644
+--- a/kernel/bpf/syscall.c
++++ b/kernel/bpf/syscall.c
+@@ -443,6 +443,9 @@ struct bpf_prog *bpf_prog_get(u32 ufd)
+ static const struct nla_policy prog_policy[BPF_PROG_ATTR_MAX + 1] = {
+ 	[BPF_PROG_TEXT]      = { .type = NLA_BINARY },
+ 	[BPF_PROG_LICENSE]   = { .type = NLA_NUL_STRING },
++	[BPF_PROG_LOG_LEVEL] = { .type = NLA_U32 },
++	[BPF_PROG_LOG_BUF]   = { .len = sizeof(void *) },
++	[BPF_PROG_LOG_SIZE]  = { .type = NLA_U32 },
+ };
+ 
+ static int bpf_prog_load(enum bpf_prog_type type, struct nlattr __user *uattr,
+diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
+index cf8a0131cd91..27b34e1c8fbf 100644
+--- a/kernel/bpf/verifier.c
++++ b/kernel/bpf/verifier.c
+@@ -143,9 +143,245 @@
+  * load/store to bpf_context are checked against known fields
+  */
+ 
++/* single container for all structs
++ * one verifier_env per bpf_check() call
++ */
++struct verifier_env {
++};
++
++/* verbose verifier prints what it's seeing
++ * bpf_check() is called under lock, so no race to access these global vars
++ */
++static u32 log_level, log_size, log_len;
++static void *log_buf;
++
++static DEFINE_MUTEX(bpf_verifier_lock);
++
++/* log_level controls verbosity level of eBPF verifier.
++ * verbose() is used to dump the verification trace to the log, so the user
++ * can figure out what's wrong with the program
++ */
++static void verbose(const char *fmt, ...)
++{
++	va_list args;
++
++	if (log_level == 0 || log_len >= log_size - 1)
++		return;
++
++	va_start(args, fmt);
++	log_len += vscnprintf(log_buf + log_len, log_size - log_len, fmt, args);
++	va_end(args);
++}
++
++static const char *const bpf_class_string[] = {
++	[BPF_LD]    = "ld",
++	[BPF_LDX]   = "ldx",
++	[BPF_ST]    = "st",
++	[BPF_STX]   = "stx",
++	[BPF_ALU]   = "alu",
++	[BPF_JMP]   = "jmp",
++	[BPF_RET]   = "BUG",
++	[BPF_ALU64] = "alu64",
++};
++
++static const char *const bpf_alu_string[] = {
++	[BPF_ADD >> 4]  = "+=",
++	[BPF_SUB >> 4]  = "-=",
++	[BPF_MUL >> 4]  = "*=",
++	[BPF_DIV >> 4]  = "/=",
++	[BPF_OR  >> 4]  = "|=",
++	[BPF_AND >> 4]  = "&=",
++	[BPF_LSH >> 4]  = "<<=",
++	[BPF_RSH >> 4]  = ">>=",
++	[BPF_NEG >> 4]  = "neg",
++	[BPF_MOD >> 4]  = "%=",
++	[BPF_XOR >> 4]  = "^=",
++	[BPF_MOV >> 4]  = "=",
++	[BPF_ARSH >> 4] = "s>>=",
++	[BPF_END >> 4]  = "endian",
++};
++
++static const char *const bpf_ldst_string[] = {
++	[BPF_W >> 3]  = "u32",
++	[BPF_H >> 3]  = "u16",
++	[BPF_B >> 3]  = "u8",
++	[BPF_DW >> 3] = "u64",
++};
++
++static const char *const bpf_jmp_string[] = {
++	[BPF_JA >> 4]   = "jmp",
++	[BPF_JEQ >> 4]  = "==",
++	[BPF_JGT >> 4]  = ">",
++	[BPF_JGE >> 4]  = ">=",
++	[BPF_JSET >> 4] = "&",
++	[BPF_JNE >> 4]  = "!=",
++	[BPF_JSGT >> 4] = "s>",
++	[BPF_JSGE >> 4] = "s>=",
++	[BPF_CALL >> 4] = "call",
++	[BPF_EXIT >> 4] = "exit",
++};
++
++static void print_bpf_insn(struct bpf_insn *insn)
++{
++	u8 class = BPF_CLASS(insn->code);
++
++	if (class == BPF_ALU || class == BPF_ALU64) {
++		if (BPF_SRC(insn->code) == BPF_X)
++			verbose("(%02x) %sr%d %s %sr%d\n",
++				insn->code, class == BPF_ALU ? "(u32) " : "",
++				insn->dst_reg,
++				bpf_alu_string[BPF_OP(insn->code) >> 4],
++				class == BPF_ALU ? "(u32) " : "",
++				insn->src_reg);
++		else
++			verbose("(%02x) %sr%d %s %s%d\n",
++				insn->code, class == BPF_ALU ? "(u32) " : "",
++				insn->dst_reg,
++				bpf_alu_string[BPF_OP(insn->code) >> 4],
++				class == BPF_ALU ? "(u32) " : "",
++				insn->imm);
++	} else if (class == BPF_STX) {
++		if (BPF_MODE(insn->code) == BPF_MEM)
++			verbose("(%02x) *(%s *)(r%d %+d) = r%d\n",
++				insn->code,
++				bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
++				insn->dst_reg,
++				insn->off, insn->src_reg);
++		else if (BPF_MODE(insn->code) == BPF_XADD)
++			verbose("(%02x) lock *(%s *)(r%d %+d) += r%d\n",
++				insn->code,
++				bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
++				insn->dst_reg, insn->off,
++				insn->src_reg);
++		else
++			verbose("BUG_%02x\n", insn->code);
++	} else if (class == BPF_ST) {
++		if (BPF_MODE(insn->code) != BPF_MEM) {
++			verbose("BUG_st_%02x\n", insn->code);
++			return;
++		}
++		verbose("(%02x) *(%s *)(r%d %+d) = %d\n",
++			insn->code,
++			bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
++			insn->dst_reg,
++			insn->off, insn->imm);
++	} else if (class == BPF_LDX) {
++		if (BPF_MODE(insn->code) != BPF_MEM) {
++			verbose("BUG_ldx_%02x\n", insn->code);
++			return;
++		}
++		verbose("(%02x) r%d = *(%s *)(r%d %+d)\n",
++			insn->code, insn->dst_reg,
++			bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
++			insn->src_reg, insn->off);
++	} else if (class == BPF_LD) {
++		if (BPF_MODE(insn->code) == BPF_ABS) {
++			verbose("(%02x) r0 = *(%s *)skb[%d]\n",
++				insn->code,
++				bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
++				insn->imm);
++		} else if (BPF_MODE(insn->code) == BPF_IND) {
++			verbose("(%02x) r0 = *(%s *)skb[r%d + %d]\n",
++				insn->code,
++				bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
++				insn->src_reg, insn->imm);
++		} else if (BPF_MODE(insn->code) == BPF_IMM) {
++			verbose("(%02x) r%d = 0x%x\n",
++				insn->code, insn->dst_reg, insn->imm);
++		} else {
++			verbose("BUG_ld_%02x\n", insn->code);
++			return;
++		}
++	} else if (class == BPF_JMP) {
++		u8 opcode = BPF_OP(insn->code);
++
++		if (opcode == BPF_CALL) {
++			verbose("(%02x) call %d\n", insn->code, insn->imm);
++		} else if (insn->code == (BPF_JMP | BPF_JA)) {
++			verbose("(%02x) goto pc%+d\n",
++				insn->code, insn->off);
++		} else if (insn->code == (BPF_JMP | BPF_EXIT)) {
++			verbose("(%02x) exit\n", insn->code);
++		} else if (BPF_SRC(insn->code) == BPF_X) {
++			verbose("(%02x) if r%d %s r%d goto pc%+d\n",
++				insn->code, insn->dst_reg,
++				bpf_jmp_string[BPF_OP(insn->code) >> 4],
++				insn->src_reg, insn->off);
++		} else {
++			verbose("(%02x) if r%d %s 0x%x goto pc%+d\n",
++				insn->code, insn->dst_reg,
++				bpf_jmp_string[BPF_OP(insn->code) >> 4],
++				insn->imm, insn->off);
++		}
++	} else {
++		verbose("(%02x) %s\n", insn->code, bpf_class_string[class]);
++	}
++}
++
+ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
+ {
++	void __user *log_ubuf = NULL;
++	struct verifier_env *env;
+ 	int ret = -EINVAL;
+ 
++	if (prog->len <= 0 || prog->len > BPF_MAXINSNS)
++		return -E2BIG;
++
++	/* 'struct verifier_env' can be global, but since it's not small,
++	 * allocate/free it every time bpf_check() is called
++	 */
++	env = kzalloc(sizeof(struct verifier_env), GFP_KERNEL);
++	if (!env)
++		return -ENOMEM;
++
++	/* grab the mutex to protect few globals used by verifier */
++	mutex_lock(&bpf_verifier_lock);
++
++	if (tb[BPF_PROG_LOG_LEVEL] && tb[BPF_PROG_LOG_BUF] &&
++	    tb[BPF_PROG_LOG_SIZE]) {
++		/* user requested verbose verifier output
++		 * and supplied buffer to store the verification trace
++		 */
++		log_level = nla_get_u32(tb[BPF_PROG_LOG_LEVEL]);
++		log_ubuf = *(void __user **) nla_data(tb[BPF_PROG_LOG_BUF]);
++		log_size = nla_get_u32(tb[BPF_PROG_LOG_SIZE]);
++		log_len = 0;
++
++		ret = -EINVAL;
++		/* log_* values have to be sane */
++		if (log_size < 128 || log_size > UINT_MAX >> 8 ||
++		    log_level == 0 || log_ubuf == NULL)
++			goto free_env;
++
++		ret = -ENOMEM;
++		log_buf = vmalloc(log_size);
++		if (!log_buf)
++			goto free_env;
++	} else {
++		log_level = 0;
++	}
++
++	/* ret = do_check(env); */
++
++	if (log_level && log_len >= log_size - 1) {
++		BUG_ON(log_len >= log_size);
++		/* verifier log exceeded user supplied buffer */
++		ret = -ENOSPC;
++		/* fall through to return what was recorded */
++	}
++
++	/* copy verifier log back to user space including trailing zero */
++	if (log_level && copy_to_user(log_ubuf, log_buf, log_len + 1) != 0) {
++		ret = -EFAULT;
++		goto free_log_buf;
++	}
++
++
++free_log_buf:
++	if (log_level)
++		vfree(log_buf);
++free_env:
++	kfree(env);
++	mutex_unlock(&bpf_verifier_lock);
+ 	return ret;
+ }
 -- 
 1.7.9.5
 
