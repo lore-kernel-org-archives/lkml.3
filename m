@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013AbaHMJyU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 05:54:20 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46305 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaHMJyT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 05:54:19 -0400
-Date: Wed, 13 Aug 2014 11:54:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Christopher Barry <christopher.r.barry@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: OT: Open letter to the Linux World
-Message-ID: <20140813095402.GH9918@twins.programming.kicks-ass.net>
-References: <20140812153812.2923046a@monolith.infinux.org>
- <yw1xr40l2whi.fsf@unicorn.mansr.com>
- <20140813082756.GB2923@twins.programming.kicks-ass.net>
- <2838655.H5W5zNkR37@merkaba>
+	id S1752134AbaHMJzB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 05:55:01 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:9739 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557AbaHMJzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 05:55:00 -0400
+X-IronPort-AV: E=Sophos;i="5.01,856,1400025600"; 
+   d="scan'208";a="161913970"
+Message-ID: <53EB35F1.6000208@citrix.com>
+Date: Wed, 13 Aug 2014 10:54:57 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dJMCvz8ywNNMqcIT"
-Content-Disposition: inline
-In-Reply-To: <2838655.H5W5zNkR37@merkaba>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Juergen Gross <jgross@suse.com>, <xen-devel@lists.xenproject.org>,
+        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] Make bind_interdomain_evtchn_to_irq() public
+References: <1407851024-18936-1-git-send-email-jgross@suse.com> <53EB3014.8090008@citrix.com> <53EB3337.3030809@suse.com>
+In-Reply-To: <53EB3337.3030809@suse.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 13/08/14 10:43, Juergen Gross wrote:
+> 
+> static int scsiback_init_sring(struct vscsibk_info *info, grant_ref_t
+> ring_ref,
+>                         evtchn_port_t evtchn)
+> {
+> ...
+>         irq = bind_interdomain_evtchn_to_irq(info->domid, evtchn);
+>         request_threaded_irq(irq, NULL, scsiback_irq_fn,
+>                              IRQF_ONESHOT, "vscsiif-backend", info)
+> ...
 
---dJMCvz8ywNNMqcIT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This usage is fine.
 
-On Wed, Aug 13, 2014 at 11:37:28AM +0200, Martin Steigerwald wrote:
->=20
-> Also I think:
->=20
-> martin@merkaba:~> ls -l /sbin/init
-> -rwxr-xr-x 1 root root 40648 Aug  3 21:01 /sbin/init
-> martin@merkaba:~> ls -l /bin/systemd
-> lrwxrwxrwx 1 root root 20 Aug  6 13:41 /bin/systemd -> /lib/systemd/syste=
-md
-> martin@merkaba:~> ls -l /lib/systemd/systemd
-> -rwxr-xr-x 1 root root 1084816 Aug  6 13:42 /lib/systemd/systemd
->=20
-> martin@merkaba:~> apt list 2>&1 | egrep "(^systemd/|sysvinit-core)"
-> systemd/unstable,now 208-7 amd64 [installed]
-> sysvinit-core/unstable,now 2.88dsf-53.3 amd64 [installed,automatic]
->=20
-> is highly worrying. A one MiB binary as PID 1? Really?
+I assume the error checking of bind_interdomain_evtchn_to_irq() and
+request_threaded_irq() was omitted for clarity in this example?
 
-Yeah, utterly insane. PID 1 should not be doing these things; no single
-process should do as much as systemd does, PID 1 least of all.
-
---dJMCvz8ywNNMqcIT
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT6zW6AAoJEHZH4aRLwOS6JcwP/0xJAMXHHT49quzhc4xoi1WR
-smKD9yBZkQSUr0JFuhifYzpZB/wQf3VE3JjjOgNLVxSYX2IyzP9GGUfhQt2yvC0u
-EVMgF8Y2D6ICCXsicLer/QGlzMzULr4KeldhuhOYvmeMfqSW+6R4ZAxetsRE0Gmy
-K1+O6rbbE7/j7AiDCAL4QommdRCr/+SZf4Mr1dx/ZcTo1NvPXe5nic1BVrnH1Q9R
-GdMWK3X3RYVgkIqnuYm4sK6yqpk2snHmMVRY4d5AeomeaOM7Z7XtCjLsCqYzPM9R
-aOy17aSgQy5MJdxT4G21tVkZOtxCg9H1tW3L+1tVk7VRUZd0t9O2uutD17drVc+3
-KdoaXtFgbJdf38NoVsvvYxAZ+o+ppuKS/yXCMZGGkTlLzYGMBHwD53CHHIjoXU2B
-6c0/wtppe3xZvhFTmI22zsd3Vj//WIRU5CDiHI59eCtUg2LG3s7xhKESg9yw6LbP
-MZQ0gYX3zlq0GydHsxqwpNh1wRt+8OO4K0u0sls+uyB30yF6pjlYIlGqMX8iKbO9
-rrjSGNV3F5YIM7Lpe/4CprQ0FPhHPhr4DLJ6imJ2u9vi04yHFdetOIHfXFgAWmvL
-Q24YNvs6g+Q+diy13mawvYq+PihRnY2JwroGMN/2/FDwjUDFnoXgnltjPuXQ+BGG
-2lva9osfxbGhtvn3FesR
-=KjrH
------END PGP SIGNATURE-----
-
---dJMCvz8ywNNMqcIT--
+David
