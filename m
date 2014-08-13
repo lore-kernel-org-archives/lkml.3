@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaHMH6d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 03:58:33 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:63423 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013AbaHMH63 (ORCPT
+	id S1751773AbaHMH6H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 03:58:07 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:48768 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593AbaHMH6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 03:58:29 -0400
+	Wed, 13 Aug 2014 03:58:01 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -20,9 +20,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC v4 net-next 14/26] bpf: verifier (add state prunning optimization)
-Date: Wed, 13 Aug 2014 00:57:25 -0700
-Message-Id: <1407916658-8731-15-git-send-email-ast@plumgrid.com>
+Subject: [PATCH RFC v4 net-next 03/26] bpf: introduce syscall(BPF, ...) and BPF maps
+Date: Wed, 13 Aug 2014 00:57:14 -0700
+Message-Id: <1407916658-8731-4-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
 References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
@@ -30,226 +30,383 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-since verifier walks all possible paths it's important to recognize
-equivalent verifier states to speed up verification.
+BPF syscall is a demux for different BPF releated commands.
 
-If one of the old states is more strict than the current state, it means
-the current state doesn't need to be explored further, since verifier already
-concluded that more strict state leads to valid bpf_exit.
+'maps' is a generic storage of different types for sharing data between kernel
+and userspace.
+
+The maps can be created from user space via BPF syscall:
+- create a map with given type and attributes
+  fd = bpf_map_create(map_type, struct nlattr *attr, int len)
+  returns fd or negative error
+
+- close(fd) deletes the map
+
+Next patch allows userspace programs to populate/read maps that eBPF programs
+are concurrently updating.
+
+maps can have different types: hash, bloom filter, radix-tree, etc.
+
+The map is defined by:
+  . type
+  . max number of elements
+  . key size in bytes
+  . value size in bytes
+
+This patch establishes core infrastructure for BPF maps.
+Next patches implement lookup/update and hashtable type.
+More map types can be added in the future.
+
+syscall is using type-length-value style of passing arguments to be backwards
+compatible with future extensions to map attributes. Different map types may
+use different attributes as well.
+The concept of type-lenght-value is borrowed from netlink, but netlink itself
+is not applicable here, since BPF programs and maps can be used in NET-less
+configurations.
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- kernel/bpf/verifier.c |  134 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 134 insertions(+)
+ Documentation/networking/filter.txt |   71 ++++++++++++++++
+ include/linux/bpf.h                 |   42 ++++++++++
+ include/uapi/linux/bpf.h            |   24 ++++++
+ kernel/bpf/Makefile                 |    2 +-
+ kernel/bpf/syscall.c                |  156 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 294 insertions(+), 1 deletion(-)
+ create mode 100644 include/linux/bpf.h
+ create mode 100644 kernel/bpf/syscall.c
 
-diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
-index 2dcfa5f76418..2c825c3a01cb 100644
---- a/kernel/bpf/verifier.c
-+++ b/kernel/bpf/verifier.c
-@@ -219,6 +219,7 @@ struct verifier_env {
- 	struct verifier_stack_elem *head; /* stack of verifier states to be processed */
- 	int stack_size;			/* number of states to be processed */
- 	struct verifier_state cur_state; /* current verifier state */
-+	struct verifier_state_list **branch_landing; /* search prunning optimization */
- 	struct bpf_map *used_maps[MAX_USED_MAPS]; /* array of map's used by eBPF program */
- 	u32 used_map_cnt;		/* number of used maps */
- };
-@@ -1207,6 +1208,8 @@ enum {
- 	BRANCH = 2,
- };
+diff --git a/Documentation/networking/filter.txt b/Documentation/networking/filter.txt
+index 81916ab5d96f..27a0a6c6acb4 100644
+--- a/Documentation/networking/filter.txt
++++ b/Documentation/networking/filter.txt
+@@ -1001,6 +1001,77 @@ instruction that loads 64-bit immediate value into a dst_reg.
+ Classic BPF has similar instruction: BPF_LD | BPF_W | BPF_IMM which loads
+ 32-bit immediate value into a register.
  
-+#define STATE_END ((struct verifier_state_list *) -1L)
++eBPF maps
++---------
++'maps' is a generic storage of different types for sharing data between kernel
++and userspace.
 +
- #define PUSH_INT(I) \
- 	do { \
- 		if (cur_stack >= insn_cnt) { \
-@@ -1248,6 +1251,9 @@ enum {
- 			ret = -EINVAL; \
- 			goto free_st; \
- 		} \
-+		if (E == BRANCH) \
-+			/* mark branch target for state pruning */ \
-+			env->branch_landing[w] = STATE_END; \
- 		if (st[w] == 0) { \
- 			/* tree-edge */ \
- 			st[T] = DISCOVERED | E; \
-@@ -1315,6 +1321,10 @@ peek_stack:
- 				PUSH_INSN(t, t + 1, FALLTHROUGH);
- 				PUSH_INSN(t, t + insns[t].off + 1, BRANCH);
- 			}
-+			/* tell verifier to check for equivalent verifier states
-+			 * after every call and jump
-+			 */
-+			env->branch_landing[t + 1] = STATE_END;
- 		} else {
- 			/* all other non-branch instructions with single
- 			 * fall-through edge
-@@ -1346,6 +1356,88 @@ free_st:
- 	return ret;
- }
++The maps are accessed from user space via BPF syscall, which has commands:
++- create a map with given type and attributes
++  map_fd = bpf_map_create(map_type, struct nlattr *attr, int len)
++  returns process-local file descriptor or negative error
++
++- lookup key in a given map
++  err = bpf_map_lookup_elem(int fd, void *key, void *value)
++  returns zero and stores found elem into value or negative error
++
++- create or update key/value pair in a given map
++  err = bpf_map_update_elem(int fd, void *key, void *value)
++  returns zero or negative error
++
++- find and delete element by key in a given map
++  err = bpf_map_delete_elem(int fd, void *key)
++
++- to delete map: close(fd)
++  Exiting process will delete maps automatically
++
++userspace programs uses this API to create/populate/read maps that eBPF programs
++are concurrently updating.
++
++maps can have different types: hash, array, bloom filter, radix-tree, etc.
++
++The map is defined by:
++  . type
++  . max number of elements
++  . key size in bytes
++  . value size in bytes
++
++The maps are accesible from eBPF program with API:
++  void * bpf_map_lookup_elem(u32 map_fd, void *key);
++  int bpf_map_update_elem(u32 map_fd, void *key, void *value);
++  int bpf_map_delete_elem(u32 map_fd, void *key);
++
++The kernel replaces process-local map_fd with kernel internal map pointer,
++while loading eBPF program.
++
++If eBPF verifier is configured to recognize extra calls in the program
++bpf_map_lookup_elem() and bpf_map_update_elem() then access to maps looks like:
++  ...
++  ptr_to_value = bpf_map_lookup_elem(map_fd, key)
++  access memory range [ptr_to_value, ptr_to_value + value_size_in_bytes)
++  ...
++  prepare key2 and value2 on stack of key_size and value_size
++  err = bpf_map_update_elem(map_fd, key2, value2)
++  ...
++
++eBPF program cannot create or delete maps
++(such calls will be unknown to verifier)
++
++During program loading the refcnt of used maps is incremented, so they don't get
++deleted while program is running
++
++bpf_map_update_elem() can fail if maximum number of elements reached.
++if key2 already exists, bpf_map_update_elem() replaces it with value2 atomically
++
++bpf_map_lookup_elem() returns NULL or ptr_to_value, so program must do
++if (ptr_to_value != NULL) check before accessing it.
++NULL means that element with given 'key' was not found.
++
++The verifier will check that the program accesses map elements within specified
++size. It will not let programs pass junk values to bpf_map_*_elem() functions,
++so these functions (implemented in C inside kernel) can safely access
++the pointers in all cases.
++
+ Testing
+ -------
  
-+/* compare two verifier states
+diff --git a/include/linux/bpf.h b/include/linux/bpf.h
+new file mode 100644
+index 000000000000..607ca53fe2af
+--- /dev/null
++++ b/include/linux/bpf.h
+@@ -0,0 +1,42 @@
++/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
 + *
-+ * all states stored in state_list are known to be valid, since
-+ * verifier reached 'bpf_exit' instruction through them
-+ *
-+ * this function is called when verifier exploring different branches of
-+ * execution popped from the state stack. If it sees an old state that has
-+ * more strict register state and more strict stack state then this execution
-+ * branch doesn't need to be explored further, since verifier already
-+ * concluded that more strict state leads to valid finish.
-+ *
-+ * Therefore two states are equivalent if register state is more conservative
-+ * and explored stack state is more conservative than the current one.
-+ * Example:
-+ *       explored                   current
-+ * (slot1=INV slot2=MISC) == (slot1=MISC slot2=MISC)
-+ * (slot1=MISC slot2=MISC) != (slot1=INV slot2=MISC)
-+ *
-+ * In other words if current stack state (one being explored) has more
-+ * valid slots than old one that already passed validation, it means
-+ * the verifier can stop exploring and conclude that current state is valid too
-+ *
-+ * Similarly with registers. If explored state has register type as invalid
-+ * whereas register type in current state is meaningful, it means that
-+ * the current state will reach 'bpf_exit' instruction safely
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of version 2 of the GNU General Public
++ * License as published by the Free Software Foundation.
 + */
-+static bool states_equal(struct verifier_state *old, struct verifier_state *cur)
++#ifndef _LINUX_BPF_H
++#define _LINUX_BPF_H 1
++
++#include <uapi/linux/bpf.h>
++#include <linux/workqueue.h>
++
++struct bpf_map;
++struct nlattr;
++
++/* map is generic key/value storage optionally accesible by eBPF programs */
++struct bpf_map_ops {
++	/* funcs callable from userspace (via syscall) */
++	struct bpf_map *(*map_alloc)(struct nlattr *attrs[BPF_MAP_ATTR_MAX + 1]);
++	void (*map_free)(struct bpf_map *);
++};
++
++struct bpf_map {
++	atomic_t refcnt;
++	enum bpf_map_type map_type;
++	u32 key_size;
++	u32 value_size;
++	u32 max_entries;
++	struct bpf_map_ops *ops;
++	struct work_struct work;
++};
++
++struct bpf_map_type_list {
++	struct list_head list_node;
++	struct bpf_map_ops *ops;
++	enum bpf_map_type type;
++};
++
++void bpf_register_map_type(struct bpf_map_type_list *tl);
++void bpf_map_put(struct bpf_map *map);
++
++#endif /* _LINUX_BPF_H */
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index 6f6e10875e95..88b703d59b8c 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -311,4 +311,28 @@ struct bpf_insn {
+ 	__s32	imm;		/* signed immediate constant */
+ };
+ 
++/* BPF syscall commands */
++enum bpf_cmd {
++	/* create a map with given type and attributes
++	 * fd = bpf_map_create(bpf_map_type, struct nlattr *attr, int len)
++	 * returns fd or negative error
++	 * map is deleted when fd is closed
++	 */
++	BPF_MAP_CREATE,
++};
++
++enum bpf_map_attributes {
++	BPF_MAP_UNSPEC,
++	BPF_MAP_KEY_SIZE,	/* size of key in bytes */
++	BPF_MAP_VALUE_SIZE,	/* size of value in bytes */
++	BPF_MAP_MAX_ENTRIES,	/* maximum number of entries in a map */
++	__BPF_MAP_ATTR_MAX,
++};
++#define BPF_MAP_ATTR_MAX (__BPF_MAP_ATTR_MAX - 1)
++#define BPF_MAP_MAX_ATTR_SIZE 65535
++
++enum bpf_map_type {
++	BPF_MAP_TYPE_UNSPEC,
++};
++
+ #endif /* _UAPI__LINUX_BPF_H__ */
+diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
+index 6a71145e2769..e9f7334ed07a 100644
+--- a/kernel/bpf/Makefile
++++ b/kernel/bpf/Makefile
+@@ -1 +1 @@
+-obj-y := core.o
++obj-y := core.o syscall.o
+diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
+new file mode 100644
+index 000000000000..04cdf7948f8f
+--- /dev/null
++++ b/kernel/bpf/syscall.c
+@@ -0,0 +1,156 @@
++/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of version 2 of the GNU General Public
++ * License as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ */
++#include <linux/bpf.h>
++#include <linux/syscalls.h>
++#include <net/netlink.h>
++#include <linux/anon_inodes.h>
++
++static LIST_HEAD(bpf_map_types);
++
++static struct bpf_map *find_and_alloc_map(enum bpf_map_type type,
++					  struct nlattr *tb[BPF_MAP_ATTR_MAX + 1])
 +{
-+	int i;
++	struct bpf_map_type_list *tl;
++	struct bpf_map *map;
 +
-+	for (i = 0; i < MAX_BPF_REG; i++) {
-+		if (memcmp(&old->regs[i], &cur->regs[i],
-+			   sizeof(old->regs[0])) != 0) {
-+			if (old->regs[i].type == NOT_INIT ||
-+			    old->regs[i].type == UNKNOWN_VALUE)
-+				continue;
-+			return false;
++	list_for_each_entry(tl, &bpf_map_types, list_node) {
++		if (tl->type == type) {
++			map = tl->ops->map_alloc(tb);
++			if (IS_ERR(map))
++				return map;
++			map->ops = tl->ops;
++			map->map_type = type;
++			return map;
 +		}
 +	}
-+
-+	for (i = 0; i < MAX_BPF_STACK; i++) {
-+		if (memcmp(&old->stack[i], &cur->stack[i],
-+			   sizeof(old->stack[0])) != 0) {
-+			if (old->stack[i].stype == STACK_INVALID)
-+				continue;
-+			return false;
-+		}
-+	}
-+	return true;
++	return ERR_PTR(-EINVAL);
 +}
 +
-+static int is_state_visited(struct verifier_env *env, int insn_idx)
++/* boot time registration of different map implementations */
++void bpf_register_map_type(struct bpf_map_type_list *tl)
 +{
-+	struct verifier_state_list *new_sl;
-+	struct verifier_state_list *sl;
++	list_add(&tl->list_node, &bpf_map_types);
++}
 +
-+	sl = env->branch_landing[insn_idx];
-+	if (!sl)
-+		/* no branch jump to this insn, ignore it */
-+		return 0;
++/* called from workqueue */
++static void bpf_map_free_deferred(struct work_struct *work)
++{
++	struct bpf_map *map = container_of(work, struct bpf_map, work);
 +
-+	while (sl != STATE_END) {
-+		if (states_equal(&sl->state, &env->cur_state))
-+			/* reached equivalent register/stack state,
-+			 * prune the search
-+			 */
-+			return 1;
-+		sl = sl->next;
++	/* implementation dependent freeing */
++	map->ops->map_free(map);
++}
++
++/* decrement map refcnt and schedule it for freeing via workqueue
++ * (unrelying map implementation ops->map_free() might sleep)
++ */
++void bpf_map_put(struct bpf_map *map)
++{
++	if (atomic_dec_and_test(&map->refcnt)) {
++		INIT_WORK(&map->work, bpf_map_free_deferred);
++		schedule_work(&map->work);
 +	}
-+	new_sl = kmalloc(sizeof(struct verifier_state_list), GFP_KERNEL);
++}
 +
-+	if (!new_sl)
-+		/* ignore ENOMEM, it doesn't affect correctness */
-+		return 0;
++static int bpf_map_release(struct inode *inode, struct file *filp)
++{
++	struct bpf_map *map = filp->private_data;
 +
-+	/* add new state to the head of linked list */
-+	memcpy(&new_sl->state, &env->cur_state, sizeof(env->cur_state));
-+	new_sl->next = env->branch_landing[insn_idx];
-+	env->branch_landing[insn_idx] = new_sl;
++	bpf_map_put(map);
 +	return 0;
 +}
 +
- static int do_check(struct verifier_env *env)
- {
- 	struct verifier_state *state = &env->cur_state;
-@@ -1377,6 +1469,17 @@ static int do_check(struct verifier_env *env)
- 			return -E2BIG;
- 		}
- 
-+		if (is_state_visited(env, insn_idx)) {
-+			if (log_level) {
-+				if (do_print_state)
-+					verbose("\nfrom %d to %d: safe\n",
-+						prev_insn_idx, insn_idx);
-+				else
-+					verbose("%d: safe\n", insn_idx);
-+			}
-+			goto process_bpf_exit;
-+		}
++static const struct file_operations bpf_map_fops = {
++        .release = bpf_map_release,
++};
 +
- 		if (log_level && do_print_state) {
- 			verbose("\nfrom %d to %d:", prev_insn_idx, insn_idx);
- 			print_verifier_state(env);
-@@ -1464,6 +1567,7 @@ static int do_check(struct verifier_env *env)
- 				 * something into it earlier
- 				 */
- 				_(check_reg_arg(regs, BPF_REG_0, 1));
-+process_bpf_exit:
- 				insn_idx = pop_stack(env, &prev_insn_idx);
- 				if (insn_idx < 0) {
- 					break;
-@@ -1597,6 +1701,28 @@ static void convert_pseudo_ld_imm64(struct verifier_env *env)
- 			insn->src_reg = 0;
- }
- 
-+static void free_states(struct verifier_env *env)
++static const struct nla_policy map_policy[BPF_MAP_ATTR_MAX + 1] = {
++	[BPF_MAP_KEY_SIZE]    = { .type = NLA_U32 },
++	[BPF_MAP_VALUE_SIZE]  = { .type = NLA_U32 },
++	[BPF_MAP_MAX_ENTRIES] = { .type = NLA_U32 },
++};
++
++/* called via syscall */
++static int map_create(enum bpf_map_type type, struct nlattr __user *uattr, int len)
 +{
-+	struct verifier_state_list *sl, *sln;
-+	int i;
++	struct nlattr *tb[BPF_MAP_ATTR_MAX + 1];
++	struct bpf_map *map;
++	struct nlattr *attr;
++	int err;
 +
-+	if (!env->branch_landing)
-+		return;
++	if (len <= 0 || len > BPF_MAP_MAX_ATTR_SIZE)
++		return -EINVAL;
 +
-+	for (i = 0; i < env->prog->len; i++) {
-+		sl = env->branch_landing[i];
++	attr = kmalloc(len, GFP_USER);
++	if (!attr)
++		return -ENOMEM;
 +
-+		if (sl)
-+			while (sl != STATE_END) {
-+				sln = sl->next;
-+				kfree(sl);
-+				sl = sln;
-+			}
++	/* copy map attributes from user space */
++	err = -EFAULT;
++	if (copy_from_user(attr, uattr, len) != 0)
++		goto free_attr;
++
++	/* perform basic validation */
++	err = nla_parse(tb, BPF_MAP_ATTR_MAX, attr, len, map_policy);
++	if (err < 0)
++		goto free_attr;
++
++	/* find map type and init map: hashtable vs rbtree vs bloom vs ... */
++	map = find_and_alloc_map(type, tb);
++	if (IS_ERR(map)) {
++		err = PTR_ERR(map);
++		goto free_attr;
 +	}
 +
-+	kfree(env->branch_landing);
++	atomic_set(&map->refcnt, 1);
++
++	err = anon_inode_getfd("bpf-map", &bpf_map_fops, map, O_RDWR | O_CLOEXEC);
++
++	if (err < 0)
++		/* failed to allocate fd */
++		goto free_map;
++
++	/* user supplied array of map attributes is no longer needed */
++	kfree(attr);
++
++	return err;
++
++free_map:
++	map->ops->map_free(map);
++free_attr:
++	kfree(attr);
++	return err;
 +}
 +
- int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
- {
- 	void __user *log_ubuf = NULL;
-@@ -1646,6 +1772,13 @@ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
- 	if (ret < 0)
- 		goto skip_full_check;
- 
-+	env->branch_landing = kcalloc(prog->len,
-+				      sizeof(struct verifier_state_list *),
-+				      GFP_KERNEL);
-+	ret = -ENOMEM;
-+	if (!env->branch_landing)
-+		goto skip_full_check;
++SYSCALL_DEFINE5(bpf, int, cmd, unsigned long, arg2, unsigned long, arg3,
++		unsigned long, arg4, unsigned long, arg5)
++{
++	/* eBPF syscall is limited to root temporarily. This restriction will
++	 * be lifted when verifier has enough mileage and security audit is
++	 * clean. Note that tracing/networking analytics use cases will be
++	 * turning off 'secure' mode of verifier, since they need to pass
++	 * kernel data back to user space
++	 */
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
 +
- 	ret = check_cfg(env);
- 	if (ret < 0)
- 		goto skip_full_check;
-@@ -1654,6 +1787,7 @@ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
- 
- skip_full_check:
- 	while (pop_stack(env, NULL) >= 0);
-+	free_states(env);
- 
- 	if (log_level && log_len >= log_size - 1) {
- 		BUG_ON(log_len >= log_size);
++	if (arg5 != 0)
++		return -EINVAL;
++
++	switch (cmd) {
++	case BPF_MAP_CREATE:
++		return map_create((enum bpf_map_type) arg2,
++				  (struct nlattr __user *) arg3, (int) arg4);
++	default:
++		return -EINVAL;
++	}
++}
 -- 
 1.7.9.5
 
