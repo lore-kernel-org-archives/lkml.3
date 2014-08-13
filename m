@@ -1,131 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaHMIBq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:01:46 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:49064 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867AbaHMIBm (ORCPT
+	id S1752777AbaHMICE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:02:04 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:42881 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157AbaHMH6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:01:42 -0400
-Date: Wed, 13 Aug 2014 10:01:39 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 1/3] of: Add descriptions of thermtrip properties to
- Tegra PMC bindings
-Message-ID: <20140813080138.GB7735@ulmo>
-References: <1407226380-747-1-git-send-email-mperttunen@nvidia.com>
- <1407226380-747-2-git-send-email-mperttunen@nvidia.com>
- <20140813073541.GA17466@ulmo>
- <53EB18E6.3070203@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s2ZSL+KKDSLx8OML"
-Content-Disposition: inline
-In-Reply-To: <53EB18E6.3070203@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 13 Aug 2014 03:58:44 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC v4 net-next 20/26] samples: bpf: example of stateful socket filtering
+Date: Wed, 13 Aug 2014 00:57:31 -0700
+Message-Id: <1407916658-8731-21-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+this socket filter example does:
 
---s2ZSL+KKDSLx8OML
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+- creates a hashtable in kernel with key 4 bytes and value 8 bytes
 
-On Wed, Aug 13, 2014 at 10:51:02AM +0300, Mikko Perttunen wrote:
-> On 13/08/14 10:35, Thierry Reding wrote:
-> >On Tue, Aug 05, 2014 at 11:12:58AM +0300, Mikko Perttunen wrote:
-[...]
-> >>+Required properties for hardware-triggered thermal reset:
-> >>+    (only tegra30, tegra114, tegra124)
-> >>+- nvidia,thermtrip-pmu-i2c-addr : I2C address of the power management =
-unit.
-> >>+- nvidia,thermtrip-i2c-controller : Index of the I2C controller the PM=
-U is
-> >>+                                    attached to.
-> >
-> >This duplicates information already associated with the PMU device. Can
-> >this be turned into something like:
-> >
-> >	nvidia,thermtrip-pmu: phandle to Power Management Unit
-> >
-> >Then we can query the relevant information from the I2C client resolved
-> >from the phandle.
->=20
-> True, that would look nicer.
->=20
-> >
-> >One problem with that might be that the I2C controller index may not
-> >match the hardware ID.
->=20
-> Maybe we could resort to checking the controller address in this case. Th=
-is
-> is a safety feature, so programming the wrong controller index accidental=
-ly
-> would be bad.
+- populates map[6] = 0; map[17] = 0;  // 6 - tcp_proto, 17 - udp_proto
 
-What we've done in the past (for the display controllers) is to add a
-special property that has the "hardware index" of the controller. I
-think in this case it would be appropriate to add one as well. That way
-we could reach into the I2C adapter of the I2C client and parse it from
-the associated device tree node (client->adapter->dev.of_node).
+- loads eBPF program:
+  r0 = skb[14 + 9]; // load one byte of ip->proto
+  *(u32*)(fp - 4) = r0;
+  value = bpf_map_lookup_elem(map_fd, fp - 4);
+  if (value)
+       (*(u64*)value) += 1;
 
-> >>+- nvidia,thermtrip-reg-addr : Address (byte) to send reset command to.
-> >>+- nvidia,thermtrip-reg-data : Data (byte) to use as reset command.
-> >>+
-> >>+Optional properties for hardware-triggered thermal reset:
-> >>+    (only tegra30, tegra114, tegra124)
-> >>+- nvidia,thermtrip-pinmux : Pinmux ID used for I2C access.
-> >
-> >I suppose this takes a phandle? If so the description should probably
-> >say so.
->=20
-> No, it takes a pinmux ID, described in the boot process (non-public in T1=
-24
-> I guess..) section of the TRM. It seems, though, that all platforms
-> supported by the downstream kernel have pinmux =3D=3D 0.
+- attaches this program to eth0 raw socket
 
-Ugh... we'll need to get this documented publicly.
+- every second user space reads map[6] and map[17] to see how many
+  TCP and UDP packets were seen on eth0
 
-> >What exactly does "16-bit operations" mean? And isn't this a property of
-> >the I2C device, therefore could be queried from the I2C slave via the
-> >phandle?
->=20
-> That's how it's described in the TRM, but I just found a comment in the
-> downstream kernel about it. Apparently it controls the amount of data sent
-> to the PMIC. The downstream kernel says, though, that the option is not
-> supported and must always be left as zero, so I guess it could be dropped.
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ samples/bpf/.gitignore     |    1 +
+ samples/bpf/Makefile       |   12 ++++
+ samples/bpf/sock_example.c |  158 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 171 insertions(+)
+ create mode 100644 samples/bpf/.gitignore
+ create mode 100644 samples/bpf/Makefile
+ create mode 100644 samples/bpf/sock_example.c
 
-Indeed. If ever it becomes necessary we can add it then (and fall back
-to 8-bit "operations" if it's not present).
+diff --git a/samples/bpf/.gitignore b/samples/bpf/.gitignore
+new file mode 100644
+index 000000000000..5465c6e92a00
+--- /dev/null
++++ b/samples/bpf/.gitignore
+@@ -0,0 +1 @@
++sock_example
+diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
+new file mode 100644
+index 000000000000..63c65e5faf58
+--- /dev/null
++++ b/samples/bpf/Makefile
+@@ -0,0 +1,12 @@
++# kbuild trick to avoid linker error. Can be omitted if a module is built.
++obj- := dummy.o
++
++# List of programs to build
++hostprogs-y := sock_example
++
++sock_example-objs := sock_example.o libbpf.o
++
++# Tell kbuild to always build the programs
++always := $(hostprogs-y)
++
++HOSTCFLAGS += -I$(objtree)/usr/include
+diff --git a/samples/bpf/sock_example.c b/samples/bpf/sock_example.c
+new file mode 100644
+index 000000000000..a577ee64de5b
+--- /dev/null
++++ b/samples/bpf/sock_example.c
+@@ -0,0 +1,158 @@
++/* eBPF example program:
++ * - creates a hashtable in kernel with key 4 bytes and value 8 bytes
++ *
++ * - populates map[6] = 0; map[17] = 0;  // 6 - tcp_proto, 17 - udp_proto
++ *
++ * - loads eBPF program:
++ *   r0 = skb[14 + 9]; // load one byte of ip->proto
++ *   *(u32*)(fp - 4) = r0;
++ *   value = bpf_map_lookup_elem(map_id, fp - 4);
++ *   if (value)
++ *        (*(u64*)value) += 1;
++ *
++ * - attaches this program to eth0 raw socket
++ *
++ * - every second user space reads map[6] and map[17] to see how many
++ *   TCP and UDP packets were seen on eth0
++ */
++#include <stdio.h>
++#include <unistd.h>
++#include <asm-generic/socket.h>
++#include <linux/netlink.h>
++#include <net/ethernet.h>
++#include <net/if.h>
++#include <linux/sockios.h>
++#include <linux/if_packet.h>
++#include <linux/bpf.h>
++#include <errno.h>
++#include <sys/socket.h>
++#include <sys/ioctl.h>
++#include <linux/unistd.h>
++#include <string.h>
++#include <linux/filter.h>
++#include <stdlib.h>
++#include <arpa/inet.h>
++#include "libbpf.h"
++
++static int open_raw_sock(const char *name)
++{
++	struct sockaddr_ll sll;
++	struct packet_mreq mr;
++	struct ifreq ifr;
++	int sock;
++
++	sock = socket(PF_PACKET, SOCK_RAW | SOCK_NONBLOCK | SOCK_CLOEXEC, htons(ETH_P_ALL));
++	if (sock < 0) {
++		printf("cannot open socket!\n");
++		return -1;
++	}
++
++	memset(&ifr, 0, sizeof(ifr));
++	strncpy((char *)ifr.ifr_name, name, IFNAMSIZ);
++	if (ioctl(sock, SIOCGIFINDEX, &ifr) < 0) {
++		printf("ioctl: %s\n", strerror(errno));
++		close(sock);
++		return -1;
++	}
++
++	memset(&sll, 0, sizeof(sll));
++	sll.sll_family = AF_PACKET;
++	sll.sll_ifindex = ifr.ifr_ifindex;
++	sll.sll_protocol = htons(ETH_P_ALL);
++	if (bind(sock, (struct sockaddr *)&sll, sizeof(sll)) < 0) {
++		printf("bind: %s\n", strerror(errno));
++		close(sock);
++		return -1;
++	}
++
++	memset(&mr, 0, sizeof(mr));
++	mr.mr_ifindex = ifr.ifr_ifindex;
++	mr.mr_type = PACKET_MR_PROMISC;
++	if (setsockopt(sock, SOL_PACKET, PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr)) < 0) {
++		printf("set_promisc: %s\n", strerror(errno));
++		close(sock);
++		return -1;
++	}
++	return sock;
++}
++
++static int test_sock(void)
++{
++	static struct bpf_insn prog[] = {
++		BPF_MOV64_REG(BPF_REG_6, BPF_REG_1),
++		BPF_LD_ABS(BPF_B, 14 + 9 /* R0 = ip->proto */),
++		BPF_STX_MEM(BPF_W, BPF_REG_10, BPF_REG_0, -4), /* *(u32 *)(fp - 4) = r0 */
++		BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
++		BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -4), /* r2 = fp - 4 */
++		BPF_LD_MAP_FD(BPF_REG_1, 0),
++		BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
++		BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 2),
++		BPF_MOV64_IMM(BPF_REG_1, 1), /* r1 = 1 */
++		BPF_RAW_INSN(BPF_STX | BPF_XADD | BPF_DW, BPF_REG_0, BPF_REG_1, 0, 0), /* xadd r0 += r1 */
++		BPF_MOV64_IMM(BPF_REG_0, 0), /* r0 = 0 */
++		BPF_EXIT_INSN(),
++	};
++	int sock = -1, map_fd, prog_fd, i, key;
++	long long value = 0, tcp_cnt, udp_cnt;
++
++	map_fd = bpf_create_map(BPF_MAP_TYPE_HASH, sizeof(key), sizeof(value), 2);
++	if (map_fd < 0) {
++		printf("failed to create map '%s'\n", strerror(errno));
++		/* must have been left from previous aborted run, delete it */
++		goto cleanup;
++	}
++
++	key = 6; /* tcp */
++	if (bpf_update_elem(map_fd, &key, &value) < 0) {
++		printf("update err key=%d\n", key);
++		goto cleanup;
++	}
++
++	key = 17; /* udp */
++	if (bpf_update_elem(map_fd, &key, &value) < 0) {
++		printf("update err key=%d\n", key);
++		goto cleanup;
++	}
++
++	prog[5].imm = map_fd;
++
++	prog_fd = bpf_prog_load(BPF_PROG_TYPE_SOCKET_FILTER, prog, sizeof(prog),
++				"GPL");
++	if (prog_fd < 0) {
++		printf("failed to load prog '%s'\n", strerror(errno));
++		goto cleanup;
++	}
++
++	sock = open_raw_sock("eth0");
++
++	if (setsockopt(sock, SOL_SOCKET, SO_ATTACH_FILTER_EBPF, &prog_fd, sizeof(prog_fd)) < 0) {
++		printf("setsockopt %d\n", errno);
++		goto cleanup;
++	}
++
++	for (i = 0; i < 10; i++) {
++		key = 6;
++		if (bpf_lookup_elem(map_fd, &key, &tcp_cnt) < 0) {
++			printf("lookup err\n");
++			break;
++		}
++		key = 17;
++		if (bpf_lookup_elem(map_fd, &key, &udp_cnt) < 0) {
++			printf("lookup err\n");
++			break;
++		}
++		printf("TCP %lld UDP %lld packets\n", tcp_cnt, udp_cnt);
++		sleep(1);
++	}
++
++cleanup:
++	/* maps, programs, raw sockets will auto cleanup on process exit */
++
++	return 0;
++}
++
++int main(void)
++{
++	test_sock();
++	return 0;
++}
+-- 
+1.7.9.5
 
-Thierry
-
---s2ZSL+KKDSLx8OML
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT6xtiAAoJEN0jrNd/PrOh0l8P+QG9HsF0PlEAp+8yUNz+ws8p
-fQNhnyq3OoRirfV0ECeMpfjb6ibQ01fjAw/y4j88S2jqlhH72vveu3UCNPne+qYH
-cukvGohlJPH3QElGmQseV8FCv6mMw1vkdX/NmUhw02RU2KOASfG3uehfCiix805J
-cVXjHl2vxNQhqFZQmLZs7Li7bc666nN2MihtLiAYB3Gf7E2K0b9RIoujPzX90PZ0
-bj+u6knkySv+oN6s21mRE2dCES97wEV/0X6dMHfWVX8GaCaiKgQdVCNIKUmpdBKD
-YSMdPTH5vt8CaI1ZC0aJdRwtJq2MjhDGOYQNrQW0Dxoukt2vQtIJpklC6YwcfJVZ
-5VLjRe7MY0sVDxchr7aGnPrqla03YoEVh5LcYIF6AaP32hG+NPBhqsPHd1r/g/DX
-wnegxEahSeCaqun5itmNlUQIjFnhVUglv10jp9bcUZ4nFj7jjPXrWc13tk/w66Hd
-Rl7195VH4kiRknOdTJwIQqE7ZVyOqxMfaQdo61qf8Lfp7x+SMj5pUMsDzHFlI92e
-sXcAx+03jcTPyqDDUMnyuvLqlQxSmzIaH0dJKsPCCCEeHJHLMEa0nFX63r2mWx8H
-s1mGrJcESWv/PDuVHqC4uZanJjnwSR1lbqVvzbYSZTgYmVZoqloYoe4NuA9quJcb
-Wr+vW1oVKe5vLW7Exuz7
-=+L4g
------END PGP SIGNATURE-----
-
---s2ZSL+KKDSLx8OML--
