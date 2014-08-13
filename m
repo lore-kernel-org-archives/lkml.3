@@ -1,115 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517AbaHMIFY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 04:05:24 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:45558 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294AbaHMIFR (ORCPT
+	id S1752643AbaHMIGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 04:06:25 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:16114 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589AbaHMIGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 04:05:17 -0400
+	Wed, 13 Aug 2014 04:06:18 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 13 Aug 2014 00:57:05 -0700
+Message-ID: <53EB1C76.2000702@nvidia.com>
+Date: Wed, 13 Aug 2014 11:06:14 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <201407180931.32502.linux@rainbow-software.org>
-References: <1405667575-3291-1-git-send-email-matwey@sai.msu.ru>
- <1405667575-3291-3-git-send-email-matwey@sai.msu.ru> <201407180931.32502.linux@rainbow-software.org>
-From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
-Date: Wed, 13 Aug 2014 12:04:55 +0400
-X-Google-Sender-Auth: gMLgJYBlJInJOkzLbS0s5VTN1_E
-Message-ID: <CAJs94Ebr_39U4EEQYweuZvXeC0sMdrr7D1EPNae0ujFNTeLq8w@mail.gmail.com>
-Subject: Re: [PATCHv4 2/2] parport: parport_pc: Implement CPU model check to
- cut off false-positives
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-parport <linux-parport@lists.infradead.org>,
-        Heiko Andreas Sommer <hsommer@eso.org>, gnomes@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ARM: tegra: Add PMC thermtrip programming to Jetson
+ TK1 device tree
+References: <1407226380-747-1-git-send-email-mperttunen@nvidia.com> <1407226380-747-3-git-send-email-mperttunen@nvidia.com> <20140813073736.GB17466@ulmo> <53EB1932.9040601@nvidia.com> <20140813080324.GC7735@ulmo>
+In-Reply-To: <20140813080324.GC7735@ulmo>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-What do you think, would it be better just to left the check for all
-x86 32-bit hardware?.
 
 
-2014-07-18 11:31 GMT+04:00 Ondrej Zary <linux@rainbow-software.org>:
-> On Friday 18 July 2014, matwey@sai.msu.ru wrote:
->> From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
->>
->> The code in intel_bug_present is known to produce much false-positives.
->> It is believed that the affected by the bug hardware are used with either
->> Intel 80486 or Pentium.
->>
->> Perform the check only when the kernel configured as CONFIG_X86_32,
->> then use cpuinfo_x86 of the first available CPU to check the model
->> and run initial check code.
->>
->> Suggested-by: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
->> Tested-by: Heiko Andreas Sommer <hsommer@eso.org>
->> Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
->> ---
->>  drivers/parport/parport_pc.c | 21 ++++++++++++++++++++-
->>  1 file changed, 20 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
->> index a6eaafb..6b28f9f 100644
->> --- a/drivers/parport/parport_pc.c
->> +++ b/drivers/parport/parport_pc.c
->> @@ -65,6 +65,7 @@
->>  #include <linux/parport_pc.h>
->>  #include <linux/via.h>
->>  #include <asm/parport.h>
->> +#include <asm/processor.h>
->>
->>  #define PARPORT_PC_MAX_PORTS PARPORT_MAX
->>
->> @@ -1702,7 +1703,11 @@ static int parport_ECP_supported(struct parport *pb)
->>  }
->>  #endif
->>
->> -static int intel_bug_present(struct parport *pb)
->> +/*  It is believed that CPU model correlates with buggy LPT chipset model.
->> +    Here we check that or CPU is elder than Pentium Pro: either 80486 or
->> Pentium. +    If it is then we perform The Check. */
->> +#ifdef CONFIG_X86_32
->> +static int intel_bug_present_check_epp(struct parport *pb)
->>  {
->>       const struct parport_pc_private *priv = pb->private_data;
->>       int bug_present = 0;
->> @@ -1725,6 +1730,20 @@ static int intel_bug_present(struct parport *pb)
->>
->>       return bug_present;
->>  }
->> +static int intel_bug_present(struct parport *pb)
->> +{
->> +     struct cpuinfo_x86 *c = &cpu_data(0);
->> +
->> +     if (c->x86_vendor == X86_VENDOR_INTEL && (c->x86 == 4 || c->x86 == 5))
->> +             return intel_bug_present_check_epp(pb);
+On 13/08/14 11:03, Thierry Reding wrote:
+> * PGP Signed by an unknown key
 >
-> You can have a non-Intel CPU in a 486 or Pentium board.
->
->> +     return 0;
->> +}
->> +#else
->> +static int intel_bug_present(struct parport *pb)
->> +{
->> +     return 0;
->> +}
->> +#endif
+> On Wed, Aug 13, 2014 at 10:52:18AM +0300, Mikko Perttunen wrote:
+>> On 13/08/14 10:37, Thierry Reding wrote:
+>>>> Old Signed by an unknown key
+>>>
+>>> On Tue, Aug 05, 2014 at 11:12:59AM +0300, Mikko Perttunen wrote:
+>>>> This adds the required information to reset the board during an overheating
+>>>> situation to the Jetson TK1 device tree. The thermal reset is handled by the
+>>>> PMC by sending an I2C message to the PMIC. The entries specify the I2C
+>>>> message to be sent.
+>>>>
+>>>> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+>>>> ---
+>>>>   arch/arm/boot/dts/tegra124-jetson-tk1.dts | 5 +++++
+>>>>   1 file changed, 5 insertions(+)
+>>>>
+>>>> diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+>>>> index 624b0fb..ee178c4 100644
+>>>> --- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+>>>> +++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+>>>> @@ -1617,6 +1617,11 @@
+>>>>   		nvidia,core-pwr-off-time = <61036>;
+>>>>   		nvidia,core-power-req-active-high;
+>>>>   		nvidia,sys-clock-req-active-high;
+>>>> +
+>>>> +		nvidia,thermtrip-pmu-i2c-addr = <0x40>;
+>>>> +		nvidia,thermtrip-i2c-controller = <4>;
+>>>> +		nvidia,thermtrip-reg-addr = <0x36>;
+>>>> +		nvidia,thermtrip-reg-data = <0x2>;
+>>>
+>>> Given the number of properties that this can potentially have, I wonder
+>>> if perhaps it would be a good idea to put this into a subnode, like
+>>> this:
+>>>
+>>> 		thermtrip {
+>>> 			pmu-i2c-addr = <0x40>;
+>>> 			i2c-controller = <4>;
+>>> 			...
+>>> 		};
 >>
->>  static int parport_ECPPS2_supported(struct parport *pb)
->>  {
+>> I guess that'd look a bit nicer.
 >
+> Mind you, this may be somewhat on the edge of what's considered good
+> practice for DT content, so maybe wait for a second opinion before going
+> ahead with this.
 >
+> I don't have any objections to a set of nvidia,thermtrip-* properties, I
+> just think it's fairly redundant to keep repeating that prefix (and it
+> causes ugliness in drivers, too).
+
+Hmm, ok. I'll fix the other stuff first.
+
 >
-> --
-> Ondrej Zary
-
-
-
--- 
-With best regards,
-Matwey V. Kornilov.
-Sternberg Astronomical Institute, Lomonosov Moscow State University, Russia
+> Thierry
+>
+> * Unknown Key
+> * 0x7F3EB3A1
+>
