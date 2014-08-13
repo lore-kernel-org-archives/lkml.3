@@ -1,133 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027AbaHMAvU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 20:51:20 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:51315 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822AbaHMAvB (ORCPT
+	id S1753231AbaHMAxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 20:53:35 -0400
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:49390 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471AbaHMAxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 20:51:01 -0400
-X-AuditID: 85900ec0-d452db9000001514-00-53eab672efe2
-Subject: [PATCH 2/2] [BUGFIX] perf probe: Fix --del option to delete events
- only with uprobe events
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Naohiro Aota <naota@elisp.net>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 13 Aug 2014 00:50:57 +0000
-Message-ID: <20140813005057.24360.34033.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20140813005055.24360.73553.stgit@kbuild-fedora.novalocal>
-References: <20140813005055.24360.73553.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.17-dirty
+	Tue, 12 Aug 2014 20:53:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20140812114430.GA7049@dhcp22.suse.cz>
+References: <1407804835-24763-1-git-send-email-xiyou.wangcong@gmail.com>
+	<20140812114430.GA7049@dhcp22.suse.cz>
+Date: Tue, 12 Aug 2014 17:53:33 -0700
+Message-ID: <CAM_iQpUtvqnaSuzO9d+HSDhEwtwjP9J5JaZwYusdW157zCdhRw@mail.gmail.com>
+Subject: Re: [Patch v2] freezer: check OOM kill while being frozen
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current perf probe --del doesn't work if only CONFIG_UPROBE_EVENTS=y
-because it aborts when it fails to open kprobe_events file before
-checking uprobe_events file.
+On Tue, Aug 12, 2014 at 4:44 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> Has it stopped working as a result of a3201227f803 (freezer: make
+> freezing() test freeze conditions in effect instead of TIF_FREEZE)?
+> It removes clear_freeze_flag from __thaw_task and so the OOM victim
+> cannot escape from the refrigerator. But there were a lot of changes in
+> that area at the time so I might be missing some subtle details.
 
-This fixes --del option to delete dynamic events if it can open
-either kprobe_events or uprobe_events. Only if it failed to open
-both of them, it shows an error message and aborts.
+Probably, I don't have time to dig the history.
 
-Without this patch, if we run perf probe -d on the kernel configured
-with CONFIG_KPROBE_EVENTS=n and CONFIG_UPROBE_EVENTS=y,
+>
+>> __thaw_task() just checks if it's frozen and then wakes it up,
+>> but the frozen task, after waking up, will check if freezing()
+>> is still true and continue to freeze itself if so. __thaw_task()
+>> can't make freezing() return false since it doesn't change any
+>> of these conditions, especially cgroup_freezing().
+>>
+>> Fix this straightly by checking if the frozen process itself
+>> has been killed by OOM killer, so that the frozen process will
+>> recover itself and be killed finally.
+>
+> OK, this should work. I remember Tejun mentioned that he wanted frozen
+> tasks to be killable but I have no idea where this went. Maybe we want
+> to go with the OOM part now as it fixes a real bug.
 
-  # perf probe -d \*
-  kprobe_events file does not exist - please rebuild kernel with CONFIG_KPROBE_EVENTS.
-    Error: Failed to delete events.
 
-With this patch,
+I think he rejected the patch from Bart which makes frozen tasks killable.
 
-  # perf probe -d \*
-  Removed event: probe_perf:alloc_event
+>> +static bool i_should_thaw_myself(bool check_kthr_stop)
+>
+> should_thaw_current?
+>
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
----
- tools/perf/util/probe-event.c |   43 ++++++++++++++++++++++-------------------
- 1 file changed, 23 insertions(+), 20 deletions(-)
+I have no strong preference, whatever you prefer...
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index b4f6555..03108f6 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1801,6 +1801,20 @@ static void print_open_warning(int err, bool is_kprobe)
- 			   is_kprobe ? 'k' : 'u', strerror(-err));
- }
- 
-+static void print_both_open_warning(int kerr, int uerr)
-+{
-+	/* Both kprobes and uprobes are disabled, warn it. */
-+	if (kerr == -ENOTSUP && uerr == -ENOTSUP)
-+		pr_warning("Debugfs is not mounted.\n");
-+	else if (kerr == -ENOENT && uerr == -ENOENT)
-+		pr_warning("Please rebuild kernel with CONFIG_KPROBE_EVENTS "
-+			   "or/and CONFIG_UPROBE_EVENTS.\n");
-+	else
-+		pr_warning("Failed to open kprobe events: %s.\n" \
-+			   "Failed to open uprobe events: %s.\n",
-+			   strerror(-kerr), strerror(-uerr));
-+}
-+
- static int open_probe_events(const char *trace_file, bool readwrite)
- {
- 	char buf[PATH_MAX];
-@@ -1958,17 +1972,7 @@ int show_perf_probe_events(void)
- 
- 	up_fd = open_uprobe_events(false);
- 	if (kp_fd < 0 && up_fd < 0) {
--		/* Both kprobes and uprobes are disabled, warn it. */
--		if (kp_fd == -ENOTSUP && up_fd == -ENOTSUP)
--			pr_warning("Debugfs is not mounted.\n");
--		else if (kp_fd == -ENOENT && up_fd == -ENOENT)
--			pr_warning("Please rebuild kernel with "
--				   "CONFIG_KPROBE_EVENTS or/and "
--				   "CONFIG_UPROBE_EVENTS.\n");
--		else
--			pr_warning("Failed to open kprobe events: %s.\n" \
--				   "Failed to open uprobe events: %s.\n",
--				   strerror(-kp_fd), strerror(-up_fd));
-+		print_both_open_warning(kp_fd, up_fd);
- 		ret = kp_fd;
- 		goto out;
- 	}
-@@ -2469,19 +2473,18 @@ int del_perf_probe_events(struct strlist *dellist)
- 
- 	/* Get current event names */
- 	kfd = open_kprobe_events(true);
--	if (kfd < 0) {
--		print_open_warning(kfd, true);
--		return kfd;
--	}
-+	if (kfd >= 0)
-+		namelist = get_probe_trace_event_names(kfd, true);
- 
--	namelist = get_probe_trace_event_names(kfd, true);
- 	ufd = open_uprobe_events(true);
--
--	if (ufd < 0)
--		print_open_warning(ufd, false);
--	else
-+	if (ufd >= 0)
- 		unamelist = get_probe_trace_event_names(ufd, true);
- 
-+	if (kfd < 0 && ufd < 0) {
-+		print_both_open_warning(kfd, ufd);
-+		goto error;
-+	}
-+
- 	if (namelist == NULL && unamelist == NULL)
- 		goto error;
- 
+>> @@ -147,12 +156,6 @@ void __thaw_task(struct task_struct *p)
+>>  {
+>>       unsigned long flags;
+>>
+>> -     /*
+>> -      * Clear freezing and kick @p if FROZEN.  Clearing is guaranteed to
+>> -      * be visible to @p as waking up implies wmb.  Waking up inside
+>> -      * freezer_lock also prevents wakeups from leaking outside
+>> -      * refrigerator.
+>> -      */
+>
+> This is an unrelated change.
+>
 
+It is, because as I explained, __thaw_task() doesn't do what this comment
+says therefore needs this patch. Or you prefer to make it a separated patch?
+
+Thanks.
