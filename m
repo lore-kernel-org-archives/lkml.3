@@ -1,149 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750967AbaHMGaI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 02:30:08 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:20559 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaHMGaG (ORCPT
+	id S1751214AbaHMGc4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 02:32:56 -0400
+Received: from mail2.br-automation.com ([213.33.116.61]:48101 "EHLO
+	mail2.br-automation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaHMGcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 02:30:06 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-85-53eb05eb607a
-From: a.mathur@samsung.com
-To: jic23@kernel.org, lars@metafoo.de
-Cc: cpgs@samsung.com, linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        aniroop.mathur@gmail.com, p.shailesh@samsung.com, r.mahale@samsung.com,
-        vidushi.koul@samsung.com, narendra.m1@samsung.com
-Subject: [PATCH 1/1] IIO: Added write function in iio_buffer_fileops
-Date: Wed, 13 Aug 2014 11:59:51 +0530
-Message-id: <1407911391-26696-1-git-send-email-a.mathur@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkluLIzCtJLcpLzFFi42I5/e+xoO5r1tfBBv+m81j83D2DxeLlIU2L
-	B02rmCyWTJ7PajHvyDsWi8u75rBZLD1/htlix5RWFotT7xqYLP5evMTmwOWxc9Zddo9NqzrZ
-	PJa8OcTq0bdlFaPH501yAaxRXDYpqTmZZalF+nYJXBk9N+6xFUxWqFj/9Ad7A+N1qS5GTg4J
-	AROJtY8esULYYhIX7q1n62Lk4hASmM4ocWHvUhYI5yejxKTJF9hAqtgEpCTunL3NCGKLCKhK
-	fFn0mBWkiFngDKPEt43/wIqEBVwktv65CmazABW1HPwJ1MDBwQsU/zajDMSUEFCQmDPJZgIj
-	9wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwQH0THoH46oGi0OMAhyMSjy8O1xfBQux
-	JpYVV+YeYpTgYFYS4XXYAhTiTUmsrEotyo8vKs1JLT7EKM3BoiTOe7DVOlBIID2xJDU7NbUg
-	tQgmy8TBKdXAuGBFjcFi+di6/5yXNE/XeQvc32nGIXTCs3hP3/spN3Im5TBzb/wv7+95bve8
-	7Gux31arp/n6X165yasm2MPTQsd5zi6zDIVXqQltR9X57ry/aCcvXuSpUOfWduT2rw8vOTaG
-	nr9fecJU2TNOwff6zr0Me8IWH1vFx3dN4P2VRn699ulvCxTeKLEUZyQaajEXFScCAHvRMdkc	AgAA
+	Wed, 13 Aug 2014 02:32:54 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Aug 2014 02:32:53 EDT
+X-AuditID: c0a80110-f79fa6d000000f93-1c-53eb030e149a
+In-Reply-To: <20140812144625.GB9799@localhost>
+References: <20140809052828.GA28307@udknight> <20140812144625.GB9799@localhost>
+X-Disclaimed: 5742
+To: Johan Hovold <johan@kernel.org>
+Cc: andi@lisas.de, dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+        gregkh@linuxfoundation.org, jhovold@gmail.com,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-kernel-owner@vger.kernel.org, linux-usb@vger.kernel.org,
+        Wang YanQing <udknight@gmail.com>
+MIME-Version: 1.0
+Subject: Re: [PATCH v7] usb:serial:pl2303: add GPIOs interface on PL2303
+X-KeepSent: 3463CFCF:9AED608B-C1257D33:002239D7;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.2FP3 July 11, 2011
+Message-ID: <OF3463CFCF.9AED608B-ONC1257D33.002239D7-C1257D33.002297E8@br-automation.com>
+From: Hannes Petermaier <Hannes.Petermaier@br-automation.com>
+Date: Wed, 13 Aug 2014 08:17:50 +0200
+X-MIMETrack: Serialize by Router on BRSMTP01/Eggelsberg/AT/B&R(Release 9.0.1|October 14, 2013) at
+ 13.08.2014 08:17:50,
+	Serialize complete at 13.08.2014 08:17:50
+Content-Type: text/plain; charset="US-ASCII"
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsVyYAWjjS4/8+tggzU/2Swu/3vDYnF+4m4m
+	i0lT/rJZNC9ez2axd5W0RdONHlaLKX+WM1ksaxCzuLxrDpvFomWtzBbbp/xncuD22DnrLrvH
+	plWdbB53ru1h89g/dw27x5Kbah6tJzexenzeJBfAHsVlk5Kak1mWWqRvl8CVsfN6TsFt9oql
+	3+4xNzC2sHUxcnJICJhITN1yhwnCFpO4cG89UJyLQ0hgM6PE4hkt7CAJTgE9iQ+TO1hAbCEB
+	f4m3LV/YIRqEJF58mQoU5+AQEVCWmPJGEKSXWWAVk8T0y0vB6nkFBCVOznwCViMs4CHxoisd
+	otVTYuWFnewwN7y7uJsJojxS4kTDVLA4m4CtxN8J68BsFgFViSMXDjODzJcQWMIoseXlEbAG
+	ZgEdiROrjjFPYBSchWTdLCSpBYxMqxjFcxMzc4z0kop0E0tL8nMTSzLz8/SS83M3MUKiQ2AH
+	4+432ocYBTgYlXh4l397FSzEmlhWXJl7iFGCg1lJhNdhC1CINyWxsiq1KD++qDQntfgQozQH
+	i5I47/SghcFCAumJJanZqakFqUUwWSYOTqkGRkfZjI3/+pdqLnhRJH7Y7O1046B/Ve5n/UX/
+	PCh4wRUe8/jdw/gd7Qt+9n2W2/2CudMxg/3E7B55JuZFLkt/2HpaS3ApPnn/oOe0Lb+h3hSG
+	PS9266iUa65TMdt8yZVJ4oLvjZdnu9ZsU1zLvWEv8xvLWmertQnKEcclDhy5bFGSVHkk68O+
+	ICWW4oxEQy3mouJEAJp5oIiKAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aniroop Mathur <a.mathur@samsung.com>
+> > 
+> > Known issue:
+> > If gpios are in use(export to userspace through sysfs interface, etc),
+> > then call pl2303_release(unplug usb-serial convertor, modprobe -r, 
+etc),
+> > will cause trouble, so we need to make sure there is no gpio user 
+before
+> > call pl2303_release.
+> 
+> This is a real problem that we need to address. gpiolib isn't really
+> able to handle devices that just disappear. In fact, it's API claims 
+that
+> we must not call gpiochip_remove with requested gpios and this is
+> exactly what you might do in pl2303hx_gpio_release below.
+> 
+> As I mentioned earlier, this crashes the kernel when a new gpiochip is
+> later added (the gpiochip data structures are likely corrupted and we
+> get a NULL pointer deref in gpiochip_find_base).
+> 
+> Linus, any thoughts on this?
 
-Earlier, user space can only read from iio device node but cannot write to it.
-This patch adds write function in iio buffer file operations, 
-which will allow user-space applications/HAL to write the data 
-to iio device node.
-So now there will be two way communication between IIO subsystem 
-and user space. (userspace <--> kernel) 
+Hi,
+there are several USB to I2C bus adapters and I2C IO-Expanders,
+how is this handled there ?
 
-It can be used by HAL or any user-space application which wants to
-write data to iio device node/buffer upon receiving some data from it.
-As an example, 
-It is useful for iio device simulator application which need to record 
-the data by reading from iio device node and replay the recorded data 
-by writing back to iio device node.
+Maybe we you can take some idea from there.
 
-Signed-off-by: Aniroop Mathur <a.mathur@samsung.com>
----
- drivers/iio/iio_core.h            |    5 ++++-
- drivers/iio/industrialio-buffer.c |   34 ++++++++++++++++++++++++++++++++++
- drivers/iio/industrialio-core.c   |    1 +
- 3 files changed, 39 insertions(+), 1 deletion(-)
+best regards,
+Hannes
 
-diff --git a/drivers/iio/iio_core.h b/drivers/iio/iio_core.h
-index 5f0ea77..ba3fe53 100644
---- a/drivers/iio/iio_core.h
-+++ b/drivers/iio/iio_core.h
-@@ -47,10 +47,12 @@ unsigned int iio_buffer_poll(struct file *filp,
- 			     struct poll_table_struct *wait);
- ssize_t iio_buffer_read_first_n_outer(struct file *filp, char __user *buf,
- 				      size_t n, loff_t *f_ps);
--
-+ssize_t iio_buffer_write_first_n_outer(struct file *filp,
-+			     const char __user *buf, size_t n, loff_t *f_ps);
- 
- #define iio_buffer_poll_addr (&iio_buffer_poll)
- #define iio_buffer_read_first_n_outer_addr (&iio_buffer_read_first_n_outer)
-+#define iio_buffer_write_first_n_outer_addr (&iio_buffer_write_first_n_outer)
- 
- void iio_disable_all_buffers(struct iio_dev *indio_dev);
- void iio_buffer_wakeup_poll(struct iio_dev *indio_dev);
-@@ -59,6 +61,7 @@ void iio_buffer_wakeup_poll(struct iio_dev *indio_dev);
- 
- #define iio_buffer_poll_addr NULL
- #define iio_buffer_read_first_n_outer_addr NULL
-+#define iio_buffer_write_first_n_outer_addr NULL
- 
- static inline void iio_disable_all_buffers(struct iio_dev *indio_dev) {}
- static inline void iio_buffer_wakeup_poll(struct iio_dev *indio_dev) {}
-diff --git a/drivers/iio/industrialio-buffer.c b/drivers/iio/industrialio-buffer.c
-index 9f1a140..ef889af 100644
---- a/drivers/iio/industrialio-buffer.c
-+++ b/drivers/iio/industrialio-buffer.c
-@@ -21,6 +21,7 @@
- #include <linux/slab.h>
- #include <linux/poll.h>
- #include <linux/sched.h>
-+#include <asm/uaccess.h>
- 
- #include <linux/iio/iio.h>
- #include "iio_core.h"
-@@ -87,6 +88,39 @@ ssize_t iio_buffer_read_first_n_outer(struct file *filp, char __user *buf,
- }
- 
- /**
-+ * iio_buffer_write_first_n_outer() - chrdev write to buffer
-+ *
-+ * This function pushes the user space data to kernel iio buffer
-+ **/
-+ssize_t iio_buffer_write_first_n_outer(struct file *filp,
-+				const char __user *buf, size_t n, loff_t *f_ps)
-+{
-+	struct iio_dev *indio_dev = filp->private_data;
-+	struct iio_buffer *rb = indio_dev->buffer;
-+	int ret = -1;
-+	unsigned char *data = NULL;
-+
-+	if (!indio_dev->info)
-+		return -ENODEV;
-+
-+	if (n != 1)
-+		return -EINVAL;
-+
-+	data = kzalloc(1, GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	if (copy_from_user(data, buf, 1)) {
-+		kfree(data);
-+		return -EFAULT;
-+	}
-+
-+	ret = iio_push_to_buffer(rb, data);
-+	kfree(data);
-+	return ret;
-+}
-+
-+/**
-  * iio_buffer_poll() - poll the buffer to find out if it has data
-  */
- unsigned int iio_buffer_poll(struct file *filp,
-diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-index 4b1f375..a98dba9 100644
---- a/drivers/iio/industrialio-core.c
-+++ b/drivers/iio/industrialio-core.c
-@@ -1114,6 +1114,7 @@ static long iio_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 
- static const struct file_operations iio_buffer_fileops = {
- 	.read = iio_buffer_read_first_n_outer_addr,
-+	.write = iio_buffer_write_first_n_outer_addr,
- 	.release = iio_chrdev_release,
- 	.open = iio_chrdev_open,
- 	.poll = iio_buffer_poll_addr,
--- 
-1.7.9.5
 
