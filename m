@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004AbaHMMnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 08:43:00 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:15684 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831AbaHMMmV (ORCPT
+	id S1753040AbaHMMoQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 08:44:16 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:38735 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaHMMoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 08:42:21 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 13 Aug 2014 05:29:04 -0700
-From: Mikko Perttunen <mperttunen@nvidia.com>
-To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>, <wni@nvidia.com>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH v2 3/5] ARM: tegra124: Add I2C controller ids to device tree
-Date: Wed, 13 Aug 2014 15:41:23 +0300
-Message-ID: <1407933685-12404-4-git-send-email-mperttunen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1407933685-12404-1-git-send-email-mperttunen@nvidia.com>
-References: <1407933685-12404-1-git-send-email-mperttunen@nvidia.com>
-X-NVConfidentiality: public
+	Wed, 13 Aug 2014 08:44:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <20140606132541.30321.68679.stgit@localhost.localdomain>
+References: <20140606132541.30321.68679.stgit@localhost.localdomain>
+Date: Wed, 13 Aug 2014 14:44:14 +0200
+Message-ID: <CAJfpegts+jjLDqOYnK7SmcWnbmuwYBfgt4CXHWhVdxNjz1vA1g@mail.gmail.com>
+Subject: Re: [PATCH 0/5] fuse: close file synchronously (v2)
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I2C controller ids are required when programming hardware blocks
-that send messages to devices connected to an I2C bus, such as
-when the PMC sends a poweroff message to the PMIC. Add ids
-to all I2C controllers in Tegra124.
+On Fri, Jun 6, 2014 at 3:27 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
+> Hi,
+>
+> There is a long-standing demand for synchronous behaviour of fuse_release:
+>
+> http://sourceforge.net/mailarchive/message.php?msg_id=19343889
+> http://sourceforge.net/mailarchive/message.php?msg_id=29814693
+>
+> A year ago Avati and me explained why such a feature would be useful:
+>
+> http://sourceforge.net/mailarchive/message.php?msg_id=29889055
+> http://sourceforge.net/mailarchive/message.php?msg_id=29867423
+>
+> In short, the problem is that fuse_release (that's called on last user
+> close(2)) sends FUSE_RELEASE to userspace and returns without waiting for
+> ACK from userspace. Consequently, there is a gap when user regards the
+> file released while userspace fuse is still working on it. An attempt to
+> access the file from another node leads to complicated synchronization
+> problems because the first node still "holds" the file.
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
----
- arch/arm/boot/dts/tegra124.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+Tying RELEASE to close(2) is not going to work.  Look at all the
+places that call fput() (or fdput() in recent kernels), those are all
+potential triggers for RELEASE, some realistic, some not quite, but
+all are certainly places that a synchronous release could block
+*instead* of close.
 
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index 03916ef..a101960 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -289,6 +289,7 @@
- 		reset-names = "i2c";
- 		dmas = <&apbdma 21>, <&apbdma 21>;
- 		dma-names = "rx", "tx";
-+		nvidia,controller-id = <0>;
- 		status = "disabled";
- 	};
- 
-@@ -304,6 +305,7 @@
- 		reset-names = "i2c";
- 		dmas = <&apbdma 22>, <&apbdma 22>;
- 		dma-names = "rx", "tx";
-+		nvidia,controller-id = <1>;
- 		status = "disabled";
- 	};
- 
-@@ -319,6 +321,7 @@
- 		reset-names = "i2c";
- 		dmas = <&apbdma 23>, <&apbdma 23>;
- 		dma-names = "rx", "tx";
-+		nvidia,controller-id = <2>;
- 		status = "disabled";
- 	};
- 
-@@ -334,6 +337,7 @@
- 		reset-names = "i2c";
- 		dmas = <&apbdma 26>, <&apbdma 26>;
- 		dma-names = "rx", "tx";
-+		nvidia,controller-id = <3>;
- 		status = "disabled";
- 	};
- 
-@@ -349,6 +353,7 @@
- 		reset-names = "i2c";
- 		dmas = <&apbdma 24>, <&apbdma 24>;
- 		dma-names = "rx", "tx";
-+		nvidia,controller-id = <4>;
- 		status = "disabled";
- 	};
- 
-@@ -364,6 +369,7 @@
- 		reset-names = "i2c";
- 		dmas = <&apbdma 30>, <&apbdma 30>;
- 		dma-names = "rx", "tx";
-+		nvidia,controller-id = <5>;
- 		status = "disabled";
- 	};
- 
--- 
-1.8.1.5
+Which just means, that close will still be asynchronous with release
+some of the time.  So it's not clear to me what is to be gained from
+this patchset.
 
+Thanks,
+Miklos
