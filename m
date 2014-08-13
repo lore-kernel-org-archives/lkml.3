@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751196AbaHMEw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 00:52:56 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46596 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990AbaHMEwz (ORCPT
+	id S1751091AbaHME4Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 00:56:25 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:17040 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750765AbaHME4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 00:52:55 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC/PATCH 1/2] perf top: Fix -z option behavior
-References: <1407831366-28892-1-git-send-email-namhyung@kernel.org>
-	<53EA6495.4010600@gmail.com>
-Date: Wed, 13 Aug 2014 13:52:51 +0900
-In-Reply-To: <53EA6495.4010600@gmail.com> (David Ahern's message of "Tue, 12
-	Aug 2014 13:01:41 -0600")
-Message-ID: <87vbpxdm8s.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 13 Aug 2014 00:56:23 -0400
+X-IronPort-AV: E=Sophos;i="5.04,318,1406563200"; 
+   d="scan'208";a="34547254"
+Message-ID: <53EAF01C.3090404@cn.fujitsu.com>
+Date: Wed, 13 Aug 2014 12:57:00 +0800
+From: tangchen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <santosh.shilimkar@ti.com>, <grygorii.strashko@ti.com>,
+        <phacht@linux.vnet.ibm.com>, <yinghai@kernel.org>, <fabf@skynet.be>,
+        <Emilian.Medve@freescale.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] memblock, memhotplug: Fix wrong type in memblock_find_in_range_node().
+References: <1407651123-10994-1-git-send-email-tangchen@cn.fujitsu.com> <20140812150304.74a7da3f2491f3d8f8a30107@linux-foundation.org>
+In-Reply-To: <20140812150304.74a7da3f2491f3d8f8a30107@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
 
-On Tue, 12 Aug 2014 13:01:41 -0600, David Ahern wrote:
-> On 8/12/14, 2:16 AM, Namhyung Kim wrote:
->> The current -z option does almost nothing.  It doesn't zero the
->> existing samples so that we can see profiles of exited process after
->> last refresh.  It seems it only affects annotation.
->>
->> This patch clears existing entries before processing if -z option is
->> given.  For this original decaying logic also moved before processing.
+On 08/13/2014 06:03 AM, Andrew Morton wrote:
+> On Sun, 10 Aug 2014 14:12:03 +0800 Tang Chen <tangchen@cn.fujitsu.com> wrote:
 >
-> This option was broken somewhere recently. I am on vacation for
-> another week, so I can't do a git bisect myself but I recall it worked
-> a year or so ago. Try v3.4 as a start point.
+>> In memblock_find_in_range_node(), we defeind ret as int. But it shoule
+>> be phys_addr_t because it is used to store the return value from
+>> __memblock_find_range_bottom_up().
+>>
+>> The bug has not been triggered because when allocating low memory near
+>> the kernel end, the "int ret" won't turn out to be minus. When we started
+>> to allocate memory on other nodes, and the "int ret" could be minus.
+>> Then the kernel will panic.
+>>
+>> A simple way to reproduce this: comment out the following code in numa_init(),
+>>
+>>          memblock_set_bottom_up(false);
+>>
+>> and the kernel won't boot.
+> Which kernel versions need this fix?
 
-Are you sure?  I don't recall seeing any big change in this area so I
-guess the problem existed since long time ago.  In fact I couldn't find
-a logic to zero/clear out existing hist entries in a hists..
+This bug has been in the kernel since v3.13-rc1.
 
-Thanks,
-Namhyung
+Thanks.
