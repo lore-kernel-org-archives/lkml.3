@@ -1,78 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbaHMMCL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 08:02:11 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:51404 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaHMMCJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 08:02:09 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Jingoo Han <jg1.han@samsung.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] char: xilinx_hwicap: Remove .owner field for driver
-Date: Wed, 13 Aug 2014 14:02:05 +0200
-Message-Id: <b2fb97b7fe72ba11ce1bef74ad2038d4e932b5a9.1407931319.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-21524-1407931326-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1752520AbaHMMDl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 08:03:41 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:9820 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757AbaHMMDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 08:03:39 -0400
+From: Andrey Vagin <avagin@openvz.org>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andrey Vagin <avagin@openvz.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH] tcp: don't use timestamp from repaired skb-s to calculate RTT (v2)
+Date: Wed, 13 Aug 2014 16:03:10 +0400
+Message-Id: <1407931390-3162-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+We don't know right timestamp for repaired skb-s. Wrong RTT estimations
+isn't good, because some congestion modules heavily depends on it.
 
---=_mimegpg-monstr-desktop-21524-1407931326-0001
+This patch adds the TCPCB_REPAIRED flag, which is included in
+TCPCB_RETRANS.
 
-There is no need to init .owner field.
+Thanks to Eric for the advice how to fix this issue.
 
-Based on the patch from Peter Griffin <peter.griffin@linaro.org>
-"mmc: remove .owner field for drivers using module_platform_driver"
+This patch fixes the warning:
+[  879.562947] WARNING: CPU: 0 PID: 2825 at net/ipv4/tcp_input.c:3078 tcp_ack+0x11f5/0x1380()
+[  879.567253] CPU: 0 PID: 2825 Comm: socket-tcpbuf-l Not tainted 3.16.0-next-20140811 #1
+[  879.567829] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[  879.568177]  0000000000000000 00000000c532680c ffff880039643d00 ffffffff817aa2d2
+[  879.568776]  0000000000000000 ffff880039643d38 ffffffff8109afbd ffff880039d6ba80
+[  879.569386]  ffff88003a449800 000000002983d6bd 0000000000000000 000000002983d6bc
+[  879.569982] Call Trace:
+[  879.570264]  [<ffffffff817aa2d2>] dump_stack+0x4d/0x66
+[  879.570599]  [<ffffffff8109afbd>] warn_slowpath_common+0x7d/0xa0
+[  879.570935]  [<ffffffff8109b0ea>] warn_slowpath_null+0x1a/0x20
+[  879.571292]  [<ffffffff816d0a05>] tcp_ack+0x11f5/0x1380
+[  879.571614]  [<ffffffff816d10bd>] tcp_rcv_established+0x1ed/0x710
+[  879.571958]  [<ffffffff816dc9da>] tcp_v4_do_rcv+0x10a/0x370
+[  879.572315]  [<ffffffff81657459>] release_sock+0x89/0x1d0
+[  879.572642]  [<ffffffff816c81a0>] do_tcp_setsockopt.isra.36+0x120/0x860
+[  879.573000]  [<ffffffff8110a52e>] ? rcu_read_lock_held+0x6e/0x80
+[  879.573352]  [<ffffffff816c8912>] tcp_setsockopt+0x32/0x40
+[  879.573678]  [<ffffffff81654ac4>] sock_common_setsockopt+0x14/0x20
+[  879.574031]  [<ffffffff816537b0>] SyS_setsockopt+0x80/0xf0
+[  879.574393]  [<ffffffff817b40a9>] system_call_fastpath+0x16/0x1b
+[  879.574730] ---[ end trace a17cbc38eb8c5c00 ]---
 
-This patch removes the superflous .owner field for drivers which
-use the module_platform_driver API, as this is overriden in
-platform_driver_register anyway."
+v2: moving setting of skb->when for repaired skb-s in tcp_write_xmit,
+    where it's set for other skb-s.
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Fixes: 431a91242d8d ("tcp: timestamp SYN+DATA messages")
+Fixes: 740b0f1841f6 ("tcp: switch rtt estimations to usec resolution")
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
 ---
+ include/net/tcp.h     |  4 +++-
+ net/ipv4/tcp.c        | 14 +++++++-------
+ net/ipv4/tcp_output.c |  5 ++++-
+ 3 files changed, 14 insertions(+), 9 deletions(-)
 
- drivers/char/xilinx_hwicap/xilinx_hwicap.c | 1 -
- 1 file changed, 1 deletion(-)
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index dafa1cb..36f5525 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -705,8 +705,10 @@ struct tcp_skb_cb {
+ #define TCPCB_SACKED_RETRANS	0x02	/* SKB retransmitted		*/
+ #define TCPCB_LOST		0x04	/* SKB is lost			*/
+ #define TCPCB_TAGBITS		0x07	/* All tag bits			*/
++#define TCPCB_REPAIRED		0x10	/* SKB repaired (no skb_mstamp)	*/
+ #define TCPCB_EVER_RETRANS	0x80	/* Ever retransmitted frame	*/
+-#define TCPCB_RETRANS		(TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS)
++#define TCPCB_RETRANS		(TCPCB_SACKED_RETRANS|TCPCB_EVER_RETRANS| \
++				TCPCB_REPAIRED)
+ 
+ 	__u8		ip_dsfield;	/* IPv4 tos or IPv6 dsfield	*/
+ 	/* 1 byte hole */
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 181b70e..541f26a 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1188,13 +1188,6 @@ new_segment:
+ 					goto wait_for_memory;
+ 
+ 				/*
+-				 * All packets are restored as if they have
+-				 * already been sent.
+-				 */
+-				if (tp->repair)
+-					TCP_SKB_CB(skb)->when = tcp_time_stamp;
+-
+-				/*
+ 				 * Check whether we can use HW checksum.
+ 				 */
+ 				if (sk->sk_route_caps & NETIF_F_ALL_CSUM)
+@@ -1203,6 +1196,13 @@ new_segment:
+ 				skb_entail(sk, skb);
+ 				copy = size_goal;
+ 				max = size_goal;
++
++				/* All packets are restored as if they have
++				 * already been sent. skb_mstamp isn't set to
++				 * avoid wrong rtt estimation.
++				 */
++				if (tp->repair)
++					TCP_SKB_CB(skb)->sacked |= TCPCB_REPAIRED;
+ 			}
+ 
+ 			/* Try to append data to the end of skb. */
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 8fcfc91..a747f01 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1917,8 +1917,11 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
+ 		tso_segs = tcp_init_tso_segs(sk, skb, mss_now);
+ 		BUG_ON(!tso_segs);
+ 
+-		if (unlikely(tp->repair) && tp->repair_queue == TCP_SEND_QUEUE)
++		if (unlikely(tp->repair) && tp->repair_queue == TCP_SEND_QUEUE) {
++			/* "when" is used as a start point for the retransmit timer */
++			TCP_SKB_CB(skb)->when = tcp_time_stamp;
+ 			goto repair; /* Skip network transmission */
++		}
+ 
+ 		cwnd_quota = tcp_cwnd_test(tp, skb);
+ 		if (!cwnd_quota) {
+-- 
+1.9.3
 
-diff --git a/drivers/char/xilinx_hwicap/xilinx_hwicap.c b/drivers/char/xilinx_hwicap/xilinx_hwicap.c
-index 9b1a5ac4881d..c07dfe5c4da3 100644
---- a/drivers/char/xilinx_hwicap/xilinx_hwicap.c
-+++ b/drivers/char/xilinx_hwicap/xilinx_hwicap.c
-@@ -843,7 +843,6 @@ static struct platform_driver hwicap_platform_driver = {
- 	.probe = hwicap_drv_probe,
- 	.remove = hwicap_drv_remove,
- 	.driver = {
--		.owner = THIS_MODULE,
- 		.name = DRIVER_NAME,
- 		.of_match_table = hwicap_of_match,
- 	},
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-21524-1407931326-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlPrU74ACgkQykllyylKDCHTngCdGTqK7xVZokD2ObQnQtY9tKYn
-ZXYAnAq656fIzWNkILuFzHS3ss/6SEa8
-=6OgM
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-21524-1407931326-0001--
