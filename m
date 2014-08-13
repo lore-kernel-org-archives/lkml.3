@@ -1,130 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040AbaHMVhR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 17:37:17 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:38453 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754008AbaHMVhP (ORCPT
+	id S1754064AbaHMVho (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 17:37:44 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:60351 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753877AbaHMVhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 17:37:15 -0400
+	Wed, 13 Aug 2014 17:37:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVDrbD3goYmZsUdmEhVfaNxovyghCz6y+_q5+G+rVwtWg@mail.gmail.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-	<1407916658-8731-2-git-send-email-ast@plumgrid.com>
-	<CALCETrXzZVxMGUgDPOKwN0DPLvupU=ew1z6D4U-jHg+RoyZyLg@mail.gmail.com>
-	<CAMEtUuxog0w-XkYMHM=Zto_gejy8x5agxohAWOs1zPEtXTr0Sw@mail.gmail.com>
-	<CALCETrXfp+7FmEzAoLiqzqY73NBzt8JsD40hzvhT3=gr-Scp=g@mail.gmail.com>
-	<CAMEtUuwx6Y4qxyz4TGK9=M2BH-dXnPsm+JrusqbyjzK20yUv6A@mail.gmail.com>
-	<CALCETrVDrbD3goYmZsUdmEhVfaNxovyghCz6y+_q5+G+rVwtWg@mail.gmail.com>
-Date: Wed, 13 Aug 2014 14:37:13 -0700
-Message-ID: <CAMEtUuyFF3Qvd8BHkbEqkjGx+UEC8KcowUYyyuBW2J_NcGA96Q@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit
- immediate" eBPF instruction
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <53EA4357.5020602@infradead.org>
+References: <1407769416-13818-1-git-send-email-bobby.prani@gmail.com>
+ <alpine.DEB.2.11.1408111222340.14298@gentwo.org> <53EA4357.5020602@infradead.org>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Wed, 13 Aug 2014 17:37:10 -0400
+Message-ID: <CAJhHMCDRp1OF_EpmT2ut9HVTu40EoF0WXbxkhm8OqWUY5tov0Q@mail.gmail.com>
+Subject: Re: [PATCH 1/1] doc: this_cpu_ops.txt: Update description of this_cpu_ops
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Christoph Lameter <cl@linux.com>,
+        "open list:DOCUMENTATION <linux-doc@vger.kernel.org>, open list" 
+	<linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 2:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Wed, Aug 13, 2014 at 2:02 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->> On Wed, Aug 13, 2014 at 11:35 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>
->>> The compiler can still think of it as a single insn, though, but some
->>> future compiler might not.
+On Tue, Aug 12, 2014 at 12:39 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 08/11/14 10:22, Christoph Lameter wrote:
+>> On Mon, 11 Aug 2014, Pranith Kumar wrote:
 >>
->> I think that would be very dangerous.
->> compiler (user space) and kernel interpreter must have the same
->> understanding of ISA.
+>>> Update the description for per cpu operations to clarify use cases
+>>> of this_cpu operations and add considerations for remote access.
 >>
->>> In any case, I think that, if you use the
->>> same code for high and for low, you need logic in the JIT that's at
->>> least as complicated.
->>
->> why do you think so? Handling of pseudo BPF_LD_IMM64 is done
->> in single patch #11 which is one of the smallest...
->>
->>> For example, what happens if you have two
->>> consecutive 64-bit immediate loads to the same register?  Now you have
->>> four consecutive 8-byte insn words that differ only in their immediate
->>> values, and you need to split them correctly.
->>
->> I don't need to do anything special in this case.
->> Two 16-byte instructions back to back is not a problem.
->> Interpreter or JIT don't care whether they move the same or different
->> immediates into the same or different register. Interpreter and JITs
->> are dumb on purpose.
->> when verifier sees two back to back ld_imm64, the 2nd will simply
->> override the value loaded by first one. It's not any different than
->> two back to back 'mov dst_reg, imm32' instructions.
+>> Looks fine.
 >
-> But this patch makes the JIT code (and any interpreter) weirdly
-> stateful.  You have:
+> Applied.  Thanks.
 >
-> +               case BPF_LD | BPF_IMM | BPF_DW:
-> +                       /* movabsq %rax, imm64 */
-> +                       EMIT2(add_1mod(0x48, dst_reg), add_1reg(0xB8, dst_reg));
-> +                       EMIT(insn->imm, 4);
-> +                       insn++;
-> +                       i++;
-> +                       EMIT(insn->imm, 4);
-> +                       break;
->
-> If you have more than two BPF_LD | BPF_IMM | BPF_DW instructions in a
-> row, then the way in which they pair up depends on where you start.
 
-For JIT it's not a problem, since it's doing a linear scan. So it always
-starts at instruction boundary.
-But thinking about it further you're right that it's a bug in verifier.
-I've tried it and indeed depending on type of branch verifier doesn't
-catch a case of two 16-byte instructions back to back and jump
-goes into 2nd half of 1st insn. I need to fix that.
+Hi Randy, I just saw that this commit has been applied with the
+Changelog as the subject. Is it too late to correct that? The subject
+should be:
 
-> I think it would be a lot clearer if you made these be "load low" and
-> "load high", with JIT code like:
->
-> +               case BPF_LOAD_LOW:
-> +                       /* movabsq %rax, imm64 */
-> +                       if (next insn is BPF_LOAD_HIGH) {
+"doc: this_cpu_ops.txt: Update description of this_cpu_ops"
 
-such 'if' will be costly in interpreter. I want to avoid it.
-
-> (and you'd have to deal with whether load low by itself is illegal,
-> zero extends, sign extends, or preserves high bits).
-
-I don't need an instruction that loads low 32-bit. It already exists.
-It's called 'mov'.
-I'm going to try encoding:
-insn[0].code = LD | IMM | DW
-insn[1].code = 0
-zero is invalid opcode, so it's your 'continuation'.
-and it is still single 16-byte instructions without any interpreter overhead.
-
-> This has a nice benefit for future-proofing: it gives you 119 bits of
-> payload for 16-byte instructions.
-
-It's already future proofed. We can add 24 byte instructions and so on
-just as well. There is no point to reserve 119 bits when no one is using
-them.
-
-> On the other hand, a u8 for the opcode is kind of small, and killing
-> half of that space like this is probably bad.  Maybe reserve two high
-> bits, with:
-
-That's an overkill. We use ~80 opcodes out of 256.
-There is plenty of room. I see no reason to switch to 16-bit opcodes
-until we get even close to half of u8 space.
-It feels that we're starting to bikeshed.
+-- 
+Pranith
