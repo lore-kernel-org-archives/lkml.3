@@ -1,120 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263AbaHMOza (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 10:55:30 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42528 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393AbaHMOz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 10:55:28 -0400
-Date: Wed, 13 Aug 2014 07:55:26 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call into
- scheduler
-Message-ID: <20140813145526.GF32301@codeaurora.org>
-References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
- <20140813142257.GK30401@n2100.arm.linux.org.uk>
+	id S1753026AbaHMO7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 10:59:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35821 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557AbaHMO7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 10:59:07 -0400
+Date: Wed, 13 Aug 2014 16:59:04 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4] mm: memcontrol: reduce reclaim invocations for
+ higher order requests
+Message-ID: <20140813145904.GC2775@dhcp22.suse.cz>
+References: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
+ <1407186897-21048-2-git-send-email-hannes@cmpxchg.org>
+ <20140807130822.GB12730@dhcp22.suse.cz>
+ <20140807153141.GD14734@cmpxchg.org>
+ <20140808123258.GK4004@dhcp22.suse.cz>
+ <20140808132635.GJ14734@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140813142257.GK30401@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140808132635.GJ14734@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13, Russell King - ARM Linux wrote:
-> On Wed, Aug 13, 2014 at 06:57:18AM -0700, Stephen Boyd wrote:
-> > Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
-> > 2012-04-12) introduced an acquisition of the irq_controller_lock
-> > in gic_raise_softirq() which can lead to a spinlock recursion if
-> > the gic_arch_extn hooks call into the scheduler (via complete()
-> > or wake_up(), etc.). This happens because gic_arch_extn hooks are
-> > normally called with the irq_controller_lock held and calling
-> > into the scheduler may cause us to call smp_send_reschedule()
-> > which will grab the irq_controller_lock again. Here's an example
-> > from a vendor kernel (note that the gic_arch_extn hook code here
-> > isn't actually in mainline):
+On Fri 08-08-14 09:26:35, Johannes Weiner wrote:
+> On Fri, Aug 08, 2014 at 02:32:58PM +0200, Michal Hocko wrote:
+> > On Thu 07-08-14 11:31:41, Johannes Weiner wrote:
+[...]
+> > > THP latencies are actually the same when comparing high limit nr_pages
+> > > reclaim with the current hard limit SWAP_CLUSTER_MAX reclaim,
+> > 
+> > Are you sure about this? I fail to see how they can be same as THP
+> > allocations/charges are __GFP_NORETRY so there is only one reclaim
+> > round for the hard limit reclaim followed by the charge failure if
+> > it is not successful.
 > 
-> Here's a question: why would you want to call into the scheduler from
-> the gic_arch_extn code?
+> I use this test program that faults in anon pages, reports average and
+> max for every 512-page chunk (THP size), then reports the aggregate at
+> the end:
+> 
+> memory.max:
+> 
+> avg=18729us max=450625us
+> 
+> real    0m14.335s
+> user    0m0.157s
+> sys     0m6.307s
+> 
+> memory.high:
+> 
+> avg=18676us max=457499us
+> 
+> real    0m14.375s
+> user    0m0.046s
+> sys     0m4.294s
 
-In this case we want to send a message to another processor when
-an interrupt is enabled that's only a wakeup interrupt in certain
-low power states. It's done sort of indirectly, but basically we
-block that low power state from being entered so we can ensure
-that the interrupt wakes us up from a lighter version of suspend.
+I was playing with something like that as well. mmap 800MB anon mapping
+in 256MB memcg (kvm guest had 1G RAM and 2G swap so the global reclaim
+doesn't trigger and the host 2G free memory), start faulting in from
+THP aligned address and measured each fault. Then I was recording
+mm_vmscan_lru_shrink_inactive and mm_vmscan_memcg_reclaim_{begin,end}
+tracepoints to see how the reclaim went.
 
-> 
-> Oh.  My.  God.  Thomas, what have you done to the generic IRQ layer?
-> This is /totally/ unsafe:
-> 
-> void disable_irq(unsigned int irq)
-> {
->         if (!__disable_irq_nosync(irq))
->                 synchronize_irq(irq);
-> }
-> 
-> static int __disable_irq_nosync(unsigned int irq)
-> {
->         unsigned long flags;
->         struct irq_desc *desc = irq_get_desc_buslock(irq, &flags, IRQ_GET_DESC_CHECK_GLOBAL);
+I was testing two setups
+1) fault in every 4k page
+2) fault in only 2M aligned addresses.
 
-We got the lock here.
+The first simulates the case where successful THP allocation saves
+follow up 511 fallback charges and so the excessive reclaim might
+pay off.
+The second one simulates potential time wasting when memory is used
+extremely sparsely and any latencies would be unwelcome.
 
-> 
->         if (!desc)
->                 return -EINVAL;
->         __disable_irq(desc, irq, false);
->         irq_put_desc_busunlock(desc, flags);
->         return 0;
-> }
-> 
-> void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
-> {
->         if (suspend) {
->                 if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND))
->                         return;
->                 desc->istate |= IRQS_SUSPENDED;
->         }
-> 
->         if (!desc->depth++)
+(new refers to nr_reclaim target, old to SWAP_CLUSTER_MAX, thponly
+faults only 2M aligned addresses, 4k pages are faulted otherwise)
 
-We're still holding the lock here right?
+vmstat says:
+out.256m.new-thponly.vmstat.after:pswpin 44
+out.256m.new-thponly.vmstat.after:pswpout 154681
+out.256m.new-thponly.vmstat.after:thp_fault_alloc 399
+out.256m.new-thponly.vmstat.after:thp_fault_fallback 0
+out.256m.new-thponly.vmstat.after:thp_split 302
 
->                 irq_disable(desc);
-> }
-> 
-> You realise that disable_irq() and enable_irq() can be called by
-> concurrently by different drivers for the /same/ interrupt. 
+out.256m.old-thponly.vmstat.after:pswpin 28
+out.256m.old-thponly.vmstat.after:pswpout 31271
+out.256m.old-thponly.vmstat.after:thp_fault_alloc 149
+out.256m.old-thponly.vmstat.after:thp_fault_fallback 250
+out.256m.old-thponly.vmstat.after:thp_split 61
 
-Sure.
+out.256m.new.vmstat.after:pswpin 48
+out.256m.new.vmstat.after:pswpout 169530
+out.256m.new.vmstat.after:thp_fault_alloc 399
+out.256m.new.vmstat.after:thp_fault_fallback 0
+out.256m.new.vmstat.after:thp_split 331
 
-> For
-> starters, that post-increment there is completely unprotected against
-> races.  Secondly, the above is completely racy against a concurrent
-> enable_irq() - what if we're in disable_irq(), we've incremented
-> depth, but have yet to call irq_disable().  The count now has a
-> value of 1.
-> 
-> We then preempt, and run another thread which calls enable_irq()
-> on it.  This results in the depth being decremented, and the IRQ
-> is now enabled.
+out.256m.old.vmstat.after:pswpin 47
+out.256m.old.vmstat.after:pswpout 156514
+out.256m.old.vmstat.after:thp_fault_alloc 127
+out.256m.old.vmstat.after:thp_fault_fallback 272
+out.256m.old.vmstat.after:thp_split 127
 
-How? Aren't we holding the descriptor lock?
+As expected new managed to fault in all requests as THP without a single
+fallback allocation while with the old reclaim we got to the limit and
+then most of the THP charges failed and fallen back to single page
+charge.
 
-> 
-> We resume the original thread, and continue to call irq_disable(),
-> resulting in the interrupt being disabled.
-> 
-> That's not nice (the right answer is that it's strictly an unbalanced
-> enable_irq(), but that's no excuse here.)
-> 
+Note the increased swapout activity for new. It is almost 5x more for
+thponly and +8% with per-page faults. This looks like a fallout from the
+over-reclaim in smaller priorities.
 
+Tracepoints will tell us the priority at which we ended up the reclaim
+round:
+- trace.new-thponly
+  Count Priority
+      1 3
+      2 5
+    159 6
+     24 7
+- trace.old-thponly
+    230 10
+      1 11
+      1 12
+      1 3
+     39 9
+
+Again expected that the priority is falling down for the new much more.
+
+- trace.new
+    229 0
+      3 12
+- trace.old
+    294 0
+      2 1
+     25 10
+      1 11
+      3 12
+      8 2
+      8 3
+     20 4
+     33 5
+     21 6
+     43 7
+   1286 8
+   1279 9
+
+And here as well, we have to reclaim much more because we do much more
+charges so the load benefits a bit from the high reclaim target.
+
+mm_vmscan_memcg_reclaim_end tracepoint tells us also how many pages were
+reclaimed during each run and the cummulative numbers are:
+- trace.new-thponly: 139029
+- trace.old-thponly: 11344
+- trace.new: 139687
+- trace.old: 139887
+
+time -v says:
+out.256m.new-thponly.time:      System time (seconds): 1.50
+out.256m.new-thponly.time:      Elapsed (wall clock) time (h:mm:ss or m:ss): 0:13.56
+out.256m.old-thponly.time:      System time (seconds): 0.45
+out.256m.old-thponly.time:      Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.76
+
+out.256m.new.time:      System time (seconds): 1.45
+out.256m.new.time:      Elapsed (wall clock) time (h:mm:ss or m:ss): 0:15.12
+out.256m.old.time:      System time (seconds): 2.08
+out.256m.old.time:      Elapsed (wall clock) time (h:mm:ss or m:ss): 0:15.26
+
+I guess this is expected as well. Sparse access doesn't amortize the
+costly reclaim for each charged THP. On the other hand it can help a bit
+if the whole mmap is populated.
+
+If we compare fault latencies then we get the following:
+- the worst latency [ms]:
+out.256m.new-thponly 1991
+out.256m.old-thponly 1838
+out.256m.new 6197
+out.256m.old 5538
+
+- top 5 worst latencies (sum in [ms]):
+out.256m.new-thponly 5694
+out.256m.old-thponly 3168
+out.256m.new 9498
+out.256m.old 8291
+
+- top 10
+out.256m.new-thponly 7139
+out.256m.old-thponly 3193
+out.256m.new 11786
+out.256m.old 9347
+
+- top 100
+out.256m.new-thponly 13035
+out.256m.old-thponly 3434
+out.256m.new 14634
+out.256m.old 12881
+
+I think this shows up that my concern about excessive reclaim and stalls
+is real and it is worse when the memory is used sparsely. It is true it
+might help when the whole THP section is used and so the additional cost
+is amortized but the more sparsely each THP section is used the higher
+overhead you are adding without userspace actually asking for it.
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Michal Hocko
+SUSE Labs
