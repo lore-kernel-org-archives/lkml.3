@@ -1,107 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919AbaHMBDV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Aug 2014 21:03:21 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:62602 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152AbaHMBDT (ORCPT
+	id S1753241AbaHMBEe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Aug 2014 21:04:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39175 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867AbaHMBEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Aug 2014 21:03:19 -0400
+	Tue, 12 Aug 2014 21:04:32 -0400
+Date: Wed, 13 Aug 2014 09:03:55 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: "\"\\\"Luis R. Rodriguez\\\"\"" <mcgrof@do-not-panic.com>, tiwai@suse.de,
+        linux-kernel@vger.kernel.org,
+        "\"\\\"Luis R. Rodriguez\\\"\"" <mcgrof@suse.com>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init() and
+ module_long_probe_exit()
+Message-ID: <20140813010355.GA27894@kroah.com>
+References: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com>
+ <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com>
+ <201408122259.s7CMx6Bm042549@www262.sakura.ne.jp>
 MIME-Version: 1.0
-In-Reply-To: <53E9DCAC.6000108@redhat.com>
-References: <1407519880-6719-1-git-send-email-dvlasenk@redhat.com>
- <1407519880-6719-18-git-send-email-dvlasenk@redhat.com> <CALCETrXDjOPR9kEwx9fJFFz=A1jRKPBbfpoe8XztchktrUaz0Q@mail.gmail.com>
- <53E7890F.4070109@redhat.com> <CALCETrVTw5amX-v_C+Bp5Y0B0KbzNKEEq_ZMke-AC7cZopGd9Q@mail.gmail.com>
- <53E8B5EF.9080209@redhat.com> <CALCETrWC7pFBbycJLgLck9_qzZfOa8x4hCKm3OrC-5XeGFc8_w@mail.gmail.com>
- <53E9DCAC.6000108@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 12 Aug 2014 18:02:57 -0700
-Message-ID: <CALCETrVG4v0xHbM4SKoEa+6hrmQ8hUPQ0fX=DKgJbc1MwRq-Rg@mail.gmail.com>
-Subject: Re: [PATCH 17/17] x86: simplify iret stack handling on SYSCALL64 fastpath
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201408122259.s7CMx6Bm042549@www262.sakura.ne.jp>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 2:21 AM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
-> On 08/11/2014 10:06 PM, Andy Lutomirski wrote:
->> On Mon, Aug 11, 2014 at 5:24 AM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
->>> On 08/11/2014 12:42 AM, Andy Lutomirski wrote:
->>>> On Mon, Aug 11, 2014 at 12:00 AM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
->>>>> On 08/09/2014 12:59 AM, Andy Lutomirski wrote:
->>>>>>> + * When returning through fast path, userspace sees rcx = return address,
->>>>>>> + * r11 = rflags. When returning through iret (e.g. if audit is active),
->>>>>>> + * these registers may contain garbage.
->>>>>>> + * For ptrace we manage to avoid that: when we hit slow path on entry,
->>>>>>> + * we do save rcx and r11 in pt_regs, so ptrace on exit also sees them.
->>>>>>> + * If slow path is entered only on exit, there will be garbage.
->>>>>>
->>>>>> I don't like this.  At least the current code puts something
->>>>>> deterministic in there (-1) for the slow path, even though it's wrong
->>>>>> and makes the slow path behave visibly differently from the fast path.
->>>>>>
->>>>>> Leaking uninitialized data here is extra bad, though.  Keep in mind
->>>>>> that, when a syscall entry is interrupted before fully setting up
->>>>>> pt_regs, the interrupt frame overlaps task_pt_regs, so it's possible,
->>>>>> depending on the stack slot ordering, for a kernel secret
->>>>>> (kernel_stack?) to end up somewhere in task_pt_regs.
->>>>>
->>>>> It's easy to fix. We jump off fast path to slow path here:
->>>>>
->>>>>         movl TI_flags+THREAD_INFO(%rsp,SIZEOF_PTREGS),%edx
->>>>>         andl %edi,%edx
->>>>>         jnz  sysret_careful
->>>>>
->>>>> This is the only use of "sysret_careful" label.
->>>>> Therefore, there we don't need to think about any other scenarios
->>>>> besides "we are returning from syscall here".
->>>>
->>>> I may be missing something here (on vacation, not really testing
->>>> things, no big monitor, etc), but how is this compatible with things
->>>> like rt_sigreturn?  rt_sigreturn is call from the fastpath, via a
->>>> stub, and it returns through int_ret_from_syscall.  The C part needs
->>>> to modify all the regs, and those regs need to stick, so fixing up rcx
->>>> and r11 after rt_sigreturn can't work.
->>>
->>> Code at "sysret_careful" label is only reachable
->>> on fast path return.
->>> We don't go down this code path after rt_sigreturn.
->>> stub_rt_sigreturn manually steers into iret code path instead:
->>>
->>> ENTRY(stub_rt_sigreturn)
->>>         CFI_STARTPROC
->>>         addq $8, %rsp
->>>         DEFAULT_FRAME 0
->>>         SAVE_EXTRA_REGS
->>>         STORE_IRET_FRAME_CS_SS
->>>         call sys_rt_sigreturn
->>>         movq %rax,RAX(%rsp)
->>>         RESTORE_EXTRA_REGS
->>>         jmp int_ret_from_sys_call   <==== NOTE THIS
->>>
->>> So, we don't do any rcx/r11 fixups after sys_rt_sigreturn.
->>
->> Oh, right.  rt_sigreturn overwrites all regs, so it doesn't need a
->> fixup in advance.
->>
->> That still leaves fork and everything that calls ptrace_event, though.
->
-> I think I have it covered:
->
-> [v]fork and clone have fully populated pt_regs.
->
-> Syscall entry/exit ptrace stops are on slow path and therefore
-> also have fully populated pt_regs.
+On Wed, Aug 13, 2014 at 07:59:06AM +0900, Tetsuo Handa wrote:
+> Luis R. Rodriguez wrote:
+> > Tetsuo bisected and found that commit 786235ee \"kthread: make
+> > kthread_create() killable\" modified kthread_create() to bail as
+> > soon as SIGKILL is received.
+> 
+> I just wrote commit 786235ee. It is not Tetsuo who bisected it.
+> 
+> > @@ -128,4 +129,38 @@ bool queue_kthread_work(struct kthread_worker *worker,
+> > void flush_kthread_work(struct kthread_work *work);
+> > void flush_kthread_worker(struct kthread_worker *worker);
+> > 
+> > +#ifndef MODULE
+> > +
+> > +#define module_long_probe_init(x)      __initcall(x);
+> > +#define module_long_probe_exit(x)      __exitcall(x);
+> > +
+> > +#else
+> > +/* To be used by modules which can take over 30 seconds at probe */
+> > +#define module_long_probe_init(initfn)                    \\
+> > +     static struct task_struct *__init_thread;          \\
+> > +     static int _long_probe_##initfn(void *arg)          \\
+> > +     {                                   \\
+> > +          return initfn();                    \\
+> > +     }                                   \\
+> > +     static inline __init int __long_probe_##initfn(void)     \\
+> > +     {                                   \\
+> > +          __init_thread = kthread_run(_long_probe_##initfn,\\
+> > +                             NULL,          \\
+> > +                             #initfn);          \\
+> > +          if (IS_ERR(__init_thread))               \\
+> > +               return PTR_ERR(__init_thread);          \\
+> > +          return 0;                         \\
+> > +     }                                   \\
+> > +     module_init(__long_probe_##initfn);
+> > +/* To be used by modules that require module_long_probe_init() */
+> > +#define module_long_probe_exit(exitfn)                    \\
+> > +     static inline void __long_probe_##exitfn(void)          \\
+> > +     {                                   \\
+> > +          exitfn();                         \\
+> 
+> exitfn() must not be called if initfn() failed or has not
+> completed yet. You need a bool variable for indicating that
+> we are ready to call exitfn().
+> 
+> Also, subsequent userspace operations may fail if
+> we return to userspace before initfn() completes
+> (e.g. device nodes are not created yet).
 
-Heh.  I hope so, but CVE-2014-4699 was an exception to that rule...
+I doubt that this will be a problem, as device nodes are usually created
+_after_ module_init() returns.
 
-Anyway, I'll see if I can beef up my test cases that are relevant to this stuff.
+But the cleanup issues are real on error paths.  Given that these
+drivers will need "work" anyway, I don't think it's really a big deal.
 
---Andy
+thanks,
+
+greg k-h
