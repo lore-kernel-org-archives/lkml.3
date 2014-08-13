@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaHMG43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 02:56:29 -0400
-Received: from mga09.intel.com ([134.134.136.24]:45629 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751579AbaHMG41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 02:56:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,855,1400050800"; 
-   d="scan'208";a="557844784"
-From: "Chen, Gong" <gong.chen@linux.intel.com>
-To: bhelgaas@google.com, rdunlap@infradead.org
-Cc: bp@alien8.de, tony.luck@intel.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [RESEND 3/5] PCIe, trace: Replenish missed AER status bits for PCIE trace I/F
-Date: Wed, 13 Aug 2014 02:22:39 -0400
-Message-Id: <1407910961-7798-4-git-send-email-gong.chen@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1407910961-7798-1-git-send-email-gong.chen@linux.intel.com>
-References: <1407910961-7798-1-git-send-email-gong.chen@linux.intel.com>
+	id S1751171AbaHMG7I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 02:59:08 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:48055 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaHMG7G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 02:59:06 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/3] ftrace: Add a ftrace test collection
+References: <20140805024544.23693.66601.stgit@kbuild-fedora.novalocal>
+	<20140805173752.1de5f1c2@gandalf.local.home>
+Date: Wed, 13 Aug 2014 15:59:04 +0900
+In-Reply-To: <20140805173752.1de5f1c2@gandalf.local.home> (Steven Rostedt's
+	message of "Tue, 5 Aug 2014 17:37:52 -0400")
+Message-ID: <8738d0euyv.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds all missed AER error bits(CE & UC) existed in PCI-e
-SPEC r3.0 for trace interface.
+Hi Steve and Masami,
 
-Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
----
- include/ras/ras_event.h | 35 ++++++++++++++++++++++-------------
- 1 file changed, 22 insertions(+), 13 deletions(-)
+On Tue, 5 Aug 2014 17:37:52 -0400, Steven Rostedt wrote:
+> Hi Masami,
+>
+> This looks great. I'm a bit busy at the moment (just came back from
+> vacation, and digging myself out of the hole that left me). But I
+> definitely want this in. I have a bunch of tests too, that I can put on
+> top of this. My tests are rather hacky, and hard code a lot of stuff in
+> them, but they do test a bunch of features of ftrace. It shouldn't be
+> too hard to include them here.
+>
+>
+> On Tue, 05 Aug 2014 02:45:44 +0000
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+>
+>> Hi,
+>> 
+>> I'd like to introduce a collection of testcases for ftrace to
+>> avoid regressions.
+>> 
+>> For a long time, we've tried to stabilize and extend ftrace
+>> tracing infrastructure. This small test framework is a kind of
+>> stabilizing work for ftrace. For the first step, this series
+>> just introduces a few basic testcases. However, it is easy to
+>> add additional tests. I'd like to ask you, ftrace developers,
+>> to add tests for your features to ensure it will not be broken
+>> by future works.
+>> 
+>> ftracetest is a tiny bash script so that anyone can easily
+>> understand what it does. I think it is better to share and
+>> discuss this tests before growing it.
+>> 
+>>  - Is it enough to support bash script? (of course you can
+>>    invoke other commands from the script)
 
-diff --git a/include/ras/ras_event.h b/include/ras/ras_event.h
-index 0f2cca4ccbf0..0f04a9755d1e 100644
---- a/include/ras/ras_event.h
-+++ b/include/ras/ras_event.h
-@@ -174,25 +174,34 @@ TRACE_EVENT(mc_event,
-  * u8 severity -	error severity 0:NONFATAL 1:FATAL 2:CORRECTED
-  */
- 
--#define aer_correctable_errors		\
--	{PCI_ERR_COR_RCVR,	"Receiver Error"},	\
--	{PCI_ERR_COR_BAD_TLP,	"Bad TLP"},		\
--	{PCI_ERR_COR_BAD_DLLP,	"Bad DLLP"},		\
--	{PCI_ERR_COR_REP_ROLL,	"RELAY_NUM Rollover"},	\
--	{PCI_ERR_COR_REP_TIMER,	"Replay Timer Timeout"},\
--	{PCI_ERR_COR_ADV_NFAT,	"Advisory Non-Fatal"}
--
--#define aer_uncorrectable_errors		\
--	{PCI_ERR_UNC_DLP,	"Data Link Protocol"},		\
-+#define aer_correctable_errors					\
-+	{PCI_ERR_COR_RCVR,	"Receiver Error"},		\
-+	{PCI_ERR_COR_BAD_TLP,	"Bad TLP"},			\
-+	{PCI_ERR_COR_BAD_DLLP,	"Bad DLLP"},			\
-+	{PCI_ERR_COR_REP_ROLL,	"RELAY_NUM Rollover"},		\
-+	{PCI_ERR_COR_REP_TIMER,	"Replay Timer Timeout"},	\
-+	{PCI_ERR_COR_ADV_NFAT,	"Advisory Non-Fatal Error"},	\
-+	{PCI_ERR_COR_INTERNAL,	"Corrected Internal Error"},	\
-+	{PCI_ERR_COR_LOG_OVER,	"Header Log Overflow"}
-+
-+#define aer_uncorrectable_errors				\
-+	{PCI_ERR_UNC_TRAIN,	"Undefined"},			\
-+	{PCI_ERR_UNC_DLP,	"Data Link Protocol Error"},	\
-+	{PCI_ERR_UNC_SURPDN,	"Surprise Down Error"},		\
- 	{PCI_ERR_UNC_POISON_TLP,"Poisoned TLP"},		\
--	{PCI_ERR_UNC_FCP,	"Flow Control Protocol"},	\
-+	{PCI_ERR_UNC_FCP,	"Flow Control Protocol Error"},	\
- 	{PCI_ERR_UNC_COMP_TIME,	"Completion Timeout"},		\
- 	{PCI_ERR_UNC_COMP_ABORT,"Completer Abort"},		\
- 	{PCI_ERR_UNC_UNX_COMP,	"Unexpected Completion"},	\
- 	{PCI_ERR_UNC_RX_OVER,	"Receiver Overflow"},		\
- 	{PCI_ERR_UNC_MALF_TLP,	"Malformed TLP"},		\
--	{PCI_ERR_UNC_ECRC,	"ECRC"},			\
--	{PCI_ERR_UNC_UNSUP,	"Unsupported Request"}
-+	{PCI_ERR_UNC_ECRC,	"ECRC Error"},			\
-+	{PCI_ERR_UNC_UNSUP,	"Unsupported Request Error"},	\
-+	{PCI_ERR_UNC_ACSV,	"ACS Violation"},		\
-+	{PCI_ERR_UNC_INTN,	"Uncorrectable Internal Error"},\
-+	{PCI_ERR_UNC_MCBTLP,	"MC Blocked TLP"},		\
-+	{PCI_ERR_UNC_ATOMEG,	"AtomicOp Egress Blocked"},	\
-+	{PCI_ERR_UNC_TLPPRE,	"TLP Prefix Blocked Error"}
- 
- TRACE_EVENT(aer_event,
- 	TP_PROTO(const char *dev_name,
--- 
-2.0.0.rc2
+Btw, does it use any bash-specific feature?
 
+
+>>  - What's the good naming method of testcases?
+
+I'm okay with the ftracetest, but tracing-test may be an option. :)
+
+
+>>  - Is any dependency check required?
+
+I think we need to start from no/minimum external dependency.
+
+
+>> 
+>> BTW, I decided to put this under tools/testing/ftrace instead
+>> of tools/testing/selftests/, because all tests requires root
+>> privilege. It will be one of discussion points. Anyway,
+>> it is easy to integrate this to the selftests.
+>
+> I agree. I think having its own directory is a good idea. Lets see what
+> other people think. When I get time, I'll see if I can start a branch
+> that pulls this in and start adding my own tests on top of it.
+
+I also agree to have a separate directory and it's not a selftest :)
+
+Steve, I think you already have a lot of testcases that I want to add,
+I'll take a look if you setup the branch and try to add my own if
+needed.
+
+Thanks,
+Namhyung
