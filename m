@@ -1,157 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866AbaHMU1x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 16:27:53 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:49301 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405AbaHMU1u convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 16:27:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: ksummit-discuss@lists.linuxfoundation.org
-Cc: John Stultz <john.stultz@linaro.org>, josh@joshtriplett.org,
-        "Joseph S. Myers" <joseph@codesourcery.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-discuss] (Resend) 2038 Kernel Summit Discussion Fodder
-Date: Wed, 13 Aug 2014 22:27:46 +0200
-Message-ID: <2616114.Ne3BsHa212@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-23-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53EADF3F.20909@linaro.org>
-References: <53EAAC95.7080301@linaro.org> <20140813013342.GB6783@cloud> <53EADF3F.20909@linaro.org>
+	id S1753913AbaHMU2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 16:28:04 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51027 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751405AbaHMU2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 16:28:01 -0400
+Date: Wed, 13 Aug 2014 17:27:56 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [RFC/PATCH 1/2] perf top: Fix -z option behavior
+Message-ID: <20140813202756.GK2718@kernel.org>
+References: <1407831366-28892-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V02:K0:uNuupULPUMhEToltZjGSDZbvYpeDCb92y2Ne7ZpZ0iP
- jBqtinH58C6axLdSVLNP9k7O0gGX/DUcARiXDj9DyNxE2BG8Gy
- YF1KZ9aJwdLtgPgpH6Gbs0c6pNTK2Lsyz1oCkaddz7elTMQFbO
- vTIaAB5e7kPr+1q/poKG+5tIlrQtBbH/jMztjVBRJ/LPPVmg5c
- o/DGa2KGAQlp6pRWB+smVDanxg8B+xf0PLBgs1SOj+g8RyE1zo
- rxLWIxOH6xnvcE/cXAxtpBCrfXvmkbhPFmeLlRE0EDDDgFo66g
- ejVi3svBYWsLJJk656JwfgqrK2NCsb/BsTGx2YlWW2wT+9bHB0
- INdADZXPFAe5Yh2vPsXw=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407831366-28892-1-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 August 2014 20:45:03 John Stultz wrote:
-> On 08/12/2014 06:33 PM, josh@joshtriplett.org wrote:
-> > On Tue, Aug 12, 2014 at 05:08:53PM -0700, John Stultz wrote:
-> >> Also, just to clarify, as time related discussions can bring out a laundry
-> >> list of issues, I would like to focus this discussion on providing a 2038
-> >> solution for existing interfaces and applications in a way that ideally
-> >> doesn't require modifying application source code.  While there will be
-> >> plenty of places where applications have cast or stored time_t values
-> >> explicitly as longs, and for those applications, deep modifications will be
-> >> necessary. But I’d like to avoid getting into new-interface discussions,
-> >> like exporting ktime_t like nanosecond interfaces instead of timepsecs,
-> >> unifying time-stamping formats, or methods for avoiding leapseconds. Those
-> >> are all interesting issues, and I’d be up for discussing them separately,
-> >> but those issue apply equally to 32bit and 64bit systems, and really aren't
-> >> 2038 specific, so I think its best to separate them out.
-> > That's understandable.  However, I wonder to what extent we could
-> > support unmodified source code via libc wrappers (since code calling
-> > syscalls directly can't work completely unmodified), while using better
-> > interfaces for new syscalls.  Given syscalls written in terms of (for
-> > instance) nanoseconds rather than timespec values, it seems
-> > straightforward enough for libc to provide compatibility interfaces.
+Em Tue, Aug 12, 2014 at 05:16:05PM +0900, Namhyung Kim escreveu:
+> The current -z option does almost nothing.  It doesn't zero the
+> existing samples so that we can see profiles of exited process after
+> last refresh.  It seems it only affects annotation.
 > 
-> So we'd be then introducing new syscalls not just for 32bit but 64bit
-> systems as well, and its a fairly substantial list:
->     http://kernelnewbies.org/y2038
+> This patch clears existing entries before processing if -z option is
+> given.  For this original decaying logic also moved before processing.
+
+So, this is two things bolted into one, i.e. it is not stated here why
+decaying needs to be done before resorting. I bet its because since
+we're zeroing everything, no need to decay anything, right?
+
+Stating more clearly what is the intent and the reason for changes helps
+reviewing.
+
+Anyway, will add a note about that and apply the change.
+
+Also, the delete entries thing could zero total stats in struct hists,
+which is not a problem currently, because, IIRC, the collapse/resort
+logic will do that when it rotates the hists, but if we ever want to
+just delete events and then add a bunch of events without resorting, we
+will end up with bogus stats that will have the sum of the old events
+stats with the new ones.
+
+Thanks!
+
+- Arnaldo
+ 
+> Reported-by: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-top.c | 23 +++++++++++++++++------
+>  tools/perf/util/hist.c   | 22 ++++++++++++++++++++++
+>  tools/perf/util/hist.h   |  1 +
+>  3 files changed, 40 insertions(+), 6 deletions(-)
 > 
-> Again, I worry that just getting time_t to be 64bits is a big enough
-> problem to solve without trying to mix in interface preference
-> discussions along, adding totally new interfaces, coordinating all the
-> libcs out there to provide wrappers, and then deprecating the old
-> interfaces.
-> 
-> If there are more desirable interfaces wanted, I really think that needs
-> to be a separate topic from fixing the ones we have.
-
-Agreed. I originally argued the same ways as Josh in the conversations
-we had a few weeks ago, but I think you are right.
-
-It essentially comes down to the question what code paths we want to
-change. Introducing completely new syscall ABIs means we also have to
-change all 64-bit architectures to support those, while the plain
-1:1 replacement means we only impact the 32-bit native and compat
-(under a 64-bit kernel) cases that actually want this change.
-
-> > If we go this route, we should also provide a "depends on EMBEDDED"
-> > Kconfig option that omits all of the compatibility support, for systems
-> > that have fully migrated to new userspace.
-> 
-> Right, though I think for any of the solutions, having methods to
-> actually remove support for the 2038 unsafe interfaces is important to
-> help ensure systems are completely converted.
-
-Yes. The way I'd do this is to introduce a new 'CONFIG_COMPAT_TIME' symbol
-that initially designates the architectures that are have assigned syscall
-numbers to the newly introduced calls, turning e.g.
-
-SYSCALL_DEFINE4(clock_nanosleep, const clockid_t, which_clock, int, flags,
-                const struct timespec __user *, rqtp,
-                struct timespec __user *, rmtp)
-{
-	...
-}
-
-into this:
-
-#if defined(CONFIG_COMPAT_TIME) || defined(CONFIG_64BIT)
-#define __kernel_timespec __kernel_timespec64
-#else
-#define __kernel_timespec __kernel_timespec32
-#endif
-
-#ifdef CONFIG_COMPAT_TIME
-SYSCALL_DEFINE4(compat_clock_nanosleep, const clockid_t, which_clock, int, flags,
-                const struct __kernel_timespec32 __user *, rqtp,
-                struct __kernel_timespec32 __user *, rmtp)
-{
-	...
-}
-#endif
-
-SYSCALL_DEFINE4(clock_nanosleep, const clockid_t, which_clock, int, flags,
-                const struct __kernel_timespec __user *, rqtp,
-                struct __kernel_timespec __user *, rmtp)
-{
-	...
-}
-
-Each 32-bit architecture (one at a time) has to change its syscall table
-so the __NR_clock_nanosleep entry points to the sys_compat_clock_nanosleep
-function, and it needs to assign a new number for sys_clock_nanosleep,
-and also do the same thing for all other syscalls involving time, and then
-set CONFIG_COMPAT_TIME unconditionally.
-
-Once all architectures do this, we can turn CONFIG_COMPAT_TIME into a
-user-selectable option and turn it off for any system that wants to ensure
-it either works now or doesn't work, but does not break in 24 years from
-now.
-
-> > I wonder: could we make this new architecture effectively use the
-> > signatures of the 64-bit syscalls (similar to x32), just with a 32-bit
-> > calling convention?
-> 
-> So if you mean on 64bit systems, having the 2038-safe 32bit compat use
-> the same 64bit entry-points, I think that would be possible for some of
-> the syscalls, but there's some where other data fields in structures
-> won't be expected to be 64bit. But I might not be understanding what
-> your suggesting.
-
-Of the syscalls I've looked at, all would be able to do it this way:
-you already have to introduce a new data structure at the libc-kernel
-interface, with the libc potentially translating it into a different
-format at least for legacy applications. An interesting case is 'struct
-stat': All architectures that don't use the asm-generic/stat.h file
-have their own incompatible definition of this structure, and the
-asm-generic one gets it wrong too (this is my fault I admit). For the
-existing 32-bit architectures that also come with a 64-bit counterpart,
-we have the choice to make each one use whatever their 64-bit ABI
-uses, or alternatively make them all use the same structure. Either
-way makes sense to me.
-
-	Arnd
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index 4fb6f726271c..e486501b2067 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -276,11 +276,17 @@ static void perf_top__print_sym_table(struct perf_top *top)
+>  		return;
+>  	}
+>  
+> +	if (top->zero) {
+> +		hists__delete_entries(&top->sym_evsel->hists);
+> +	} else {
+> +		hists__decay_entries(&top->sym_evsel->hists,
+> +				     top->hide_user_symbols,
+> +				     top->hide_kernel_symbols);
+> +	}
+> +
+>  	hists__collapse_resort(&top->sym_evsel->hists, NULL);
+>  	hists__output_resort(&top->sym_evsel->hists);
+> -	hists__decay_entries(&top->sym_evsel->hists,
+> -			     top->hide_user_symbols,
+> -			     top->hide_kernel_symbols);
+> +
+>  	hists__output_recalc_col_len(&top->sym_evsel->hists,
+>  				     top->print_entries - printed);
+>  	putchar('\n');
+> @@ -542,11 +548,16 @@ static void perf_top__sort_new_samples(void *arg)
+>  	if (t->evlist->selected != NULL)
+>  		t->sym_evsel = t->evlist->selected;
+>  
+> +	if (t->zero) {
+> +		hists__delete_entries(&t->sym_evsel->hists);
+> +	} else {
+> +		hists__decay_entries(&t->sym_evsel->hists,
+> +				     t->hide_user_symbols,
+> +				     t->hide_kernel_symbols);
+> +	}
+> +
+>  	hists__collapse_resort(&t->sym_evsel->hists, NULL);
+>  	hists__output_resort(&t->sym_evsel->hists);
+> -	hists__decay_entries(&t->sym_evsel->hists,
+> -			     t->hide_user_symbols,
+> -			     t->hide_kernel_symbols);
+>  }
+>  
+>  static void *display_thread_tui(void *arg)
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index 30df6187ee02..86569fa3651d 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -277,6 +277,28 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
+>  	}
+>  }
+>  
+> +void hists__delete_entries(struct hists *hists)
+> +{
+> +	struct rb_node *next = rb_first(&hists->entries);
+> +	struct hist_entry *n;
+> +
+> +	while (next) {
+> +		n = rb_entry(next, struct hist_entry, rb_node);
+> +		next = rb_next(&n->rb_node);
+> +
+> +		rb_erase(&n->rb_node, &hists->entries);
+> +
+> +		if (sort__need_collapse)
+> +			rb_erase(&n->rb_node_in, &hists->entries_collapsed);
+> +
+> +		--hists->nr_entries;
+> +		if (!n->filtered)
+> +			--hists->nr_non_filtered_entries;
+> +
+> +		hist_entry__free(n);
+> +	}
+> +}
+> +
+>  /*
+>   * histogram, sorted on item, collects periods
+>   */
+> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+> index 95405a8fbd95..8c9c70e18cbb 100644
+> --- a/tools/perf/util/hist.h
+> +++ b/tools/perf/util/hist.h
+> @@ -152,6 +152,7 @@ void hists__output_resort(struct hists *hists);
+>  void hists__collapse_resort(struct hists *hists, struct ui_progress *prog);
+>  
+>  void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel);
+> +void hists__delete_entries(struct hists *hists);
+>  void hists__output_recalc_col_len(struct hists *hists, int max_rows);
+>  
+>  u64 hists__total_period(struct hists *hists);
+> -- 
+> 2.0.0
