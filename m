@@ -1,183 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaHMPox (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:44:53 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:56521 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753342AbaHMPow (ORCPT
+	id S1753281AbaHMPrw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:47:52 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42501 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557AbaHMPrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:44:52 -0400
-Date: Wed, 13 Aug 2014 11:44:48 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call into
- scheduler
-In-Reply-To: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
-Message-ID: <alpine.LFD.2.11.1408131139400.1133@knanqh.ubzr>
-References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Wed, 13 Aug 2014 11:47:51 -0400
+Message-ID: <53EB88A2.1070408@ti.com>
+Date: Wed, 13 Aug 2014 10:47:46 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] rpmsg: compute number of buffers to allocate from vrings
+References: <1404420815-42108-1-git-send-email-s-anna@ti.com> <CAK=WgbaRJNVXqbM+MyY+UtUYYCnR2t3CP5UdTXSpLJy=MTJKJQ@mail.gmail.com> <53EA3E78.6000304@ti.com> <CAK=WgbYLUcnK1p0qUkfONavk+W1eXg5fcaTNcU4W3ova6wySuQ@mail.gmail.com>
+In-Reply-To: <CAK=WgbYLUcnK1p0qUkfONavk+W1eXg5fcaTNcU4W3ova6wySuQ@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Aug 2014, Stephen Boyd wrote:
+Hi Ohad,
 
-> Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
-> 2012-04-12) introduced an acquisition of the irq_controller_lock
-> in gic_raise_softirq() which can lead to a spinlock recursion if
-> the gic_arch_extn hooks call into the scheduler (via complete()
-> or wake_up(), etc.). This happens because gic_arch_extn hooks are
-> normally called with the irq_controller_lock held and calling
-> into the scheduler may cause us to call smp_send_reschedule()
-> which will grab the irq_controller_lock again. Here's an example
-> from a vendor kernel (note that the gic_arch_extn hook code here
-> isn't actually in mainline):
+On 08/13/2014 08:40 AM, Ohad Ben-Cohen wrote:
+> Hi Suman,
 > 
-> BUG: spinlock recursion on CPU#0, swapper/0/1
->  lock: irq_controller_lock+0x0/0x18, .magic: dead4ead, .owner: sw
-> er_cpu: 0
-> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.10-00430-g3d433c4e
+> On Tue, Aug 12, 2014 at 7:19 PM, Suman Anna <s-anna@ti.com> wrote:
+>> Yes, I was playing around with using less buffers in the remoteproc
+>> resource table for the vrings. The remoteproc virtio code creates the
+>> vrings using the number of buffers based on .num field value of struct
+>> fw_rsc_vdev_vring in the resource table. The virtio rpmsg probe code
+>> though tries to set up the receive buffers for the same virtqueue based
+>> on the current hard-coded value of 512 buffers and virtqueue_add_inbuf
+>> would fail as the virtqueue is created with less number of buffers and
+>> throws a WARN_ON.
 > 
-> Call trace:
-> [<ffffffc000087e1c>] dump_backtrace+0x0/0x140
-> [<ffffffc000087f6c>] show_stack+0x10/0x1c
-> [<ffffffc00064732c>] dump_stack+0x74/0xc4
-> [<ffffffc0006446c0>] spin_dump+0x78/0x88
-> [<ffffffc0006446f4>] spin_bug+0x24/0x34
-> [<ffffffc0000d47d0>] do_raw_spin_lock+0x58/0x148
-> [<ffffffc00064d398>] _raw_spin_lock_irqsave+0x24/0x38
-> [<ffffffc0002c9d7c>] gic_raise_softirq+0x2c/0xbc
-> [<ffffffc00008daa4>] smp_send_reschedule+0x34/0x40
-> [<ffffffc0000c1e94>] try_to_wake_up+0x224/0x288
-> [<ffffffc0000c1f4c>] default_wake_function+0xc/0x18
-> [<ffffffc0000ceef0>] __wake_up_common+0x50/0x8c
-> [<ffffffc0000cef3c>] __wake_up_locked+0x10/0x1c
-> [<ffffffc0000cf734>] complete+0x3c/0x5c
-> [<ffffffc0002f0e78>] msm_mpm_enable_irq_exclusive+0x1b8/0x1c8
-> [<ffffffc0002f0f58>] __msm_mpm_enable_irq+0x4c/0x7c
-> [<ffffffc0002f0f94>] msm_mpm_enable_irq+0xc/0x18
-> [<ffffffc0002c9bb0>] gic_unmask_irq+0x40/0x7c
-> [<ffffffc0000de5f4>] irq_enable+0x2c/0x48
-> [<ffffffc0000de65c>] irq_startup+0x4c/0x74
-> [<ffffffc0000dd2fc>] __setup_irq+0x264/0x3f0
-> [<ffffffc0000dd5e0>] request_threaded_irq+0xcc/0x11c
-> [<ffffffc0000df254>] devm_request_threaded_irq+0x68/0xb4
-> [<ffffffc000471520>] msm_iommu_ctx_probe+0x124/0x2d4
-> [<ffffffc000337374>] platform_drv_probe+0x20/0x54
-> [<ffffffc00033598c>] driver_probe_device+0x158/0x340
-> [<ffffffc000335c20>] __driver_attach+0x60/0x90
-> [<ffffffc000333c9c>] bus_for_each_dev+0x6c/0x8c
-> [<ffffffc000335304>] driver_attach+0x1c/0x28
-> [<ffffffc000334f14>] bus_add_driver+0x120/0x204
-> [<ffffffc0003362e4>] driver_register+0xbc/0x10c
-> [<ffffffc000337348>] __platform_driver_register+0x5c/0x68
-> [<ffffffc00094c478>] msm_iommu_driver_init+0x54/0x7c
-> [<ffffffc0000813ec>] do_one_initcall+0xa4/0x130
-> [<ffffffc00091d928>] kernel_init_freeable+0x138/0x1dc
-> [<ffffffc000642578>] kernel_init+0xc/0xd4
+> Gotcha - thanks for the details.
 > 
-> We really just want to synchronize the sending of an SGI with the
-> update of the gic_cpu_map[], so introduce a new SGI lock that we
-> can use to synchronize the two code paths. Three main events are
-> happening that we have to consider:
+> Limiting the number of buffers in case the vrings are too small makes
+> sense, but let's use RPMSG_NUM_BUFS as an upper bound, so wacky
+> resource tables won't trigger unreasonable memory waste.
 > 
-> 	1. We're updating the gic_cpu_mask to point to an
-> 	incoming CPU
+> Something in the lines of:
 > 
-> 	2. We're (potentially) sending an SGI to the outgoing CPU
+> vrp->num_bufs = min(PMSG_NUM_BUFS, virtqueue_get_vring_size(vrp->rvq) * 2);
 > 
-> 	3. We're redirecting any pending SGIs for the outgoing
-> 	CPU to the incoming CPU.
+> Should probably do the trick.
 > 
-> Events 1 and 3 are already ordered within the same CPU by means
-> of program order and use of I/O accessors. Events 1 and 2 don't
-> need to be ordered, but events 2 and 3 do because any SGIs for
-> the outgoing CPU need to be pending before we can redirect them.
-> Synchronize by acquiring a new lock around event 2 and before
-> event 3. Use smp_mb__after_unlock_lock() before event 3 to ensure
-> that event 1 is seen before event 3 on other CPUs that may be
-> executing event 2. We put this all behind the b.L switcher config
-> option so that if we're not using this feature we don't have to
-> acquire any locks at all in the IPI path.
-> 
-> Cc: Nicolas Pitre <nico@linaro.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Does this satisfy your requirement?
 
-Russell's concerns notwithstanding, this is a worthwhile optimization 
-and cleanup.
+Yeah, this will work for me. I will go ahead and add a WARN_ON as well
+to detect above wacky condition, and if someone really needs more
+buffers in the future, we can revisit this.
 
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-
-Of course it would be good to clarify things wrt Russell's remark 
-independently from this patch.
-
-
-> ---
->  drivers/irqchip/irq-gic.c | 23 +++++++++++++++++++++--
->  1 file changed, 21 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 7c131cf7cc13..b9e669cb1c1e 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -81,6 +81,16 @@ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
->  #define NR_GIC_CPU_IF 8
->  static u8 gic_cpu_map[NR_GIC_CPU_IF] __read_mostly;
->  
-> +#ifdef CONFIG_BL_SWITCHER
-> +/* Synchronize switching CPU interface and sending SGIs */
-> +static DEFINE_RAW_SPINLOCK(gic_sgi_lock);
-> +#define sgi_map_lock(flags) raw_spin_lock_irqsave(&gic_sgi_lock, flags)
-> +#define sgi_map_unlock(flags) raw_spin_unlock_irqrestore(&gic_sgi_lock, flags)
-> +#else
-> +#define sgi_map_lock(flags) (void)(flags)
-> +#define sgi_map_unlock(flags) (void)(flags)
-> +#endif
-> +
->  /*
->   * Supported arch specific GIC irq extension.
->   * Default make them NULL.
-> @@ -658,7 +668,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	int cpu;
->  	unsigned long flags, map = 0;
->  
-> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-> +	sgi_map_lock(flags);
->  
->  	/* Convert our logical CPU mask into a physical one. */
->  	for_each_cpu(cpu, mask)
-> @@ -673,7 +683,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	/* this always happens on GIC0 */
->  	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
->  
-> -	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-> +	sgi_map_unlock(flags);
->  }
->  #endif
->  
-> @@ -764,6 +774,15 @@ void gic_migrate_target(unsigned int new_cpu_id)
->  
->  	raw_spin_unlock(&irq_controller_lock);
->  
-> +	raw_spin_lock(&gic_sgi_lock);
-> +	/*
-> +	 * Ensure that the gic_cpu_map update above is seen in
-> +	 * gic_raise_softirq() before we redirect any pending SGIs that
-> +	 * may have been raised for the outgoing CPU (cur_cpu_id)
-> +	 */
-> +	smp_mb__after_unlock_lock();
-> +	raw_spin_unlock(&gic_sgi_lock);
-> +
->  	/*
->  	 * Now let's migrate and clear any potential SGIs that might be
->  	 * pending for us (cur_cpu_id).  Since GIC_DIST_SGI_PENDING_SET
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-> 
+regards
+Suman
