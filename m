@@ -1,49 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaHMT2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 15:28:05 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48738 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751973AbaHMT2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752800AbaHMT2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 15:28:04 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:35513 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852AbaHMT2B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 13 Aug 2014 15:28:01 -0400
-Date: Wed, 13 Aug 2014 16:27:54 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH 01/13] perf script: Fix possible memory leaks
-Message-ID: <20140813192754.GF2718@kernel.org>
-References: <1407825645-24586-1-git-send-email-namhyung@kernel.org>
- <1407825645-24586-2-git-send-email-namhyung@kernel.org>
- <53EB03EB.4040606@intel.com>
- <87y4usdg3v.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
+Date: Wed, 13 Aug 2014 14:27:08 -0500
+From: scameron@beardog.cce.hp.com
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, iss_storagedev@hp.com,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
+        scameron@beardog.cce.hp.com
+Subject: Re: [PATCH v2 RESEND 10/23] hpsa: Use pci_enable_msix_range() instead of pci_enable_msix()
+Message-ID: <20140813192708.GD19666@beardog.cce.hp.com>
+References: <cover.1397461652.git.agordeev@redhat.com> <6e17ab33b0ddbe49f72bf0d9c5fd3019acf6d6ca.1397461652.git.agordeev@redhat.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87y4usdg3v.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <6e17ab33b0ddbe49f72bf0d9c5fd3019acf6d6ca.1397461652.git.agordeev@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 13, 2014 at 04:05:24PM +0900, Namhyung Kim escreveu:
-> On Wed, 13 Aug 2014 09:21:31 +0300, Adrian Hunter wrote:
-> > On 08/12/2014 09:40 AM, Namhyung Kim wrote:
-> >>  		input = open(file.path, O_RDONLY);	/* input_name */
-> >>  		if (input < 0) {
-> >>  			perror("failed to open file");
-> >> -			return -1;
-> >> +			err = -errno;
-> >
-> > Need to get errno before calling perror().
+On Mon, Apr 14, 2014 at 10:05:34AM +0200, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
 > 
-> Argh, right.
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+> Cc: iss_storagedev@hp.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/scsi/hpsa.c |   29 +++++++++++++----------------
+>  1 files changed, 13 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> index 3284edb..36bb1e4 100644
+> --- a/drivers/scsi/hpsa.c
+> +++ b/drivers/scsi/hpsa.c
+> @@ -6144,26 +6144,23 @@ static void hpsa_interrupt_mode(struct ctlr_info *h)
+>  		goto default_int_mode;
+>  	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSIX)) {
+>  		dev_info(&h->pdev->dev, "MSIX\n");
+> -		h->msix_vector = MAX_REPLY_QUEUES;
+> -		err = pci_enable_msix(h->pdev, hpsa_msix_entries,
+> -				      h->msix_vector);
+> -		if (err > 0) {
+> +		err = pci_enable_msix_range(h->pdev, hpsa_msix_entries,
+> +					    1, MAX_REPLY_QUEUES);
+> +		if (err < 0) {
+> +			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n", err);
+> +			h->msix_vector = 0;
+> +			goto single_msi_mode;
+> +		} else if (err < MAX_REPLY_QUEUES) {
+>  			dev_warn(&h->pdev->dev, "only %d MSI-X vectors "
+>  			       "available\n", err);
+> -			h->msix_vector = err;
+> -			err = pci_enable_msix(h->pdev, hpsa_msix_entries,
+> -					      h->msix_vector);
+> -		}
+> -		if (!err) {
+> -			for (i = 0; i < h->msix_vector; i++)
+> -				h->intr[i] = hpsa_msix_entries[i].vector;
+> -			return;
+> -		} else {
+> -			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n",
+> -			       err);
+> -			h->msix_vector = 0;
+>  		}
+> +
+> +		h->msix_vector = err;
+> +		for (i = 0; i < h->msix_vector; i++)
+> +			h->intr[i] = hpsa_msix_entries[i].vector;
+> +		return;
+>  	}
+> +single_msi_mode:
+>  	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSI)) {
+>  		dev_info(&h->pdev->dev, "MSI\n");
+>  		if (!pci_enable_msi(h->pdev))
+> -- 
+> 1.7.7.6
 
-I'll fix this up, no need to resubmit.
+Ack.
 
-- Arnaldo
+-- steve
+
