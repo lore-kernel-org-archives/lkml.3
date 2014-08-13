@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448AbaHMFNk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 01:13:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44713 "EHLO
+	id S1751478AbaHMFN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 01:13:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44733 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818AbaHMFNh (ORCPT
+	with ESMTP id S1750751AbaHMFN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 01:13:37 -0400
-Date: Tue, 12 Aug 2014 22:12:45 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-oh1ixo8m74rf295a05gfjw8b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de, dzickus@redhat.com
+	Wed, 13 Aug 2014 01:13:56 -0400
+Date: Tue, 12 Aug 2014 22:13:23 -0700
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-8affc2b8c27bfc2d6e70827b746f490b62c44eaa@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, ak@linux.intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1406789104-25863-10-git-send-email-zheng.z.yan@intel.com>
+References: <1406789104-25863-10-git-send-email-zheng.z.yan@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist: Don't run workload if not told to
-Git-Commit-ID: 5f1c4225f6bcb20cc004b271dc72b96d0da29e9e
+Subject: [tip:perf/core] perf record: Honour --no-time command line option
+Git-Commit-ID: 8affc2b8c27bfc2d6e70827b746f490b62c44eaa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,90 +33,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5f1c4225f6bcb20cc004b271dc72b96d0da29e9e
-Gitweb:     http://git.kernel.org/tip/5f1c4225f6bcb20cc004b271dc72b96d0da29e9e
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 28 Jul 2014 12:39:50 -0300
+Commit-ID:  8affc2b8c27bfc2d6e70827b746f490b62c44eaa
+Gitweb:     http://git.kernel.org/tip/8affc2b8c27bfc2d6e70827b746f490b62c44eaa
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Thu, 31 Jul 2014 14:45:04 +0800
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 31 Jul 2014 09:57:20 -0300
+CommitDate: Tue, 12 Aug 2014 12:00:03 -0300
 
-perf evlist: Don't run workload if not told to
+perf record: Honour --no-time command line option
 
-The perf_evlist__prepare_workload() method works by forking and then
-waiting on a fd that must be written to to allow the workload to be
-exec()ed.
+Time stamps are always implicitely enabled for record currently.  The
+old --time/-T option is a nop.
 
-But if the tool calling it fails to, say, set up the events with which
-it wants to sample the workload for, it will not call
-perf_evlist__start_workload(), but even in this case the workload ended
-up running:
+Allow the user to disable timestamps by using --no-time, honouring the
+existing option.
 
-  [acme@zoo linux]$ trace /bin/echo workload ends up running, it should not...
-  Couldn't mmap the events: Operation not permitted
-  workload ends up running, it should not...
-  [acme@zoo linux]$
+The defaults are unchanged.
 
-So check if at least one byte was written before letting exec() be
-called.
-
-Now the expected behaviour:
-
-  [acme@zoo linux]$ trace /bin/echo workload ends up running, it should not...
-  Couldn't mmap the events: Operation not permitted
-  [acme@zoo linux]$
-
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-oh1ixo8m74rf295a05gfjw8b@git.kernel.org
+Link: http://lkml.kernel.org/r/1406789104-25863-10-git-send-email-zheng.z.yan@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+ tools/perf/builtin-record.c | 1 +
+ tools/perf/util/evsel.c     | 9 ++++++---
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 814e954..3b366c0 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1061,6 +1061,8 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist, struct target *tar
- 	}
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 4869050..ca0251e 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -781,6 +781,7 @@ static const char * const record_usage[] = {
+  */
+ static struct record record = {
+ 	.opts = {
++		.sample_time	     = true,
+ 		.mmap_pages	     = UINT_MAX,
+ 		.user_freq	     = UINT_MAX,
+ 		.user_interval	     = ULLONG_MAX,
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 21a373e..92e5235 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -633,9 +633,12 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 	if (opts->period)
+ 		perf_evsel__set_sample_bit(evsel, PERIOD);
  
- 	if (!evlist->workload.pid) {
-+		int ret;
-+
- 		if (pipe_output)
- 			dup2(2, 1);
+-	if (!perf_missing_features.sample_id_all &&
+-	    (opts->sample_time || !opts->no_inherit ||
+-	     target__has_cpu(&opts->target) || per_cpu))
++	/*
++	 * When the user explicitely disabled time don't force it here.
++	 */
++	if (opts->sample_time &&
++	    (!perf_missing_features.sample_id_all &&
++	    (!opts->no_inherit || target__has_cpu(&opts->target) || per_cpu)))
+ 		perf_evsel__set_sample_bit(evsel, TIME);
  
-@@ -1078,8 +1080,22 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist, struct target *tar
- 		/*
- 		 * Wait until the parent tells us to go.
- 		 */
--		if (read(go_pipe[0], &bf, 1) == -1)
--			perror("unable to read pipe");
-+		ret = read(go_pipe[0], &bf, 1);
-+		/*
-+		 * The parent will ask for the execvp() to be performed by
-+		 * writing exactly one byte, in workload.cork_fd, usually via
-+		 * perf_evlist__start_workload().
-+		 *
-+		 * For cancelling the workload without actuallin running it,
-+		 * the parent will just close workload.cork_fd, without writing
-+		 * anything, i.e. read will return zero and we just exit()
-+		 * here.
-+		 */
-+		if (ret != 1) {
-+			if (ret == -1)
-+				perror("unable to read pipe");
-+			exit(ret);
-+		}
- 
- 		execvp(argv[0], (char **)argv);
- 
+ 	if (opts->raw_samples && !evsel->no_aux_samples) {
