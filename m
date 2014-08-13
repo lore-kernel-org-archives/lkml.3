@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474AbaHMFh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 01:37:59 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:55371 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaHMFh6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 01:37:58 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 3/4] perf tools: Fix probing the kernel API with cpu-wide events
-References: <1407855871-15024-1-git-send-email-adrian.hunter@intel.com>
-	<1407855871-15024-4-git-send-email-adrian.hunter@intel.com>
-Date: Wed, 13 Aug 2014 14:37:57 +0900
-In-Reply-To: <1407855871-15024-4-git-send-email-adrian.hunter@intel.com>
-	(Adrian Hunter's message of "Tue, 12 Aug 2014 18:04:30 +0300")
-Message-ID: <87egwldk5m.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1751227AbaHMFnj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 01:43:39 -0400
+Received: from natalenko.name ([78.47.77.148]:34536 "EHLO natalenko.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750743AbaHMFnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 01:43:37 -0400
+DMARC-Filter: OpenDMARC Filter v1.2.0 natalenko.name CF9BDAB79
+Authentication-Results: mail.natalenko.name; dmarc=none header.from=natalenko.name
+From: Oleksandr Natalenko <oleksandr@natalenko.name>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [BUG] oops in cpufreq driver with AMD Kaveri CPU
+Date: Wed, 13 Aug 2014 08:43:27 +0300
+Message-ID: <3895042.gWY0G31aDD@spock>
+User-Agent: KMail/4.13.3 (Linux/3.15.0-pf5; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <CAKohponLC=NqTUG-mENuJ5Tomx6xgCYEBocj2P5RXXZumZaPZQ@mail.gmail.com>
+References: <4708675.eITUXPv8Ih@spock> <2067094.cJOA1APdny@spock> <CAKohponLC=NqTUG-mENuJ5Tomx6xgCYEBocj2P5RXXZumZaPZQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Aug 2014 18:04:30 +0300, Adrian Hunter wrote:
-> Fall back to probing with the current pid if cpu-wide
-> probing fails.  This primarily affects the setting of
-> comm_exec flag when the user is un-privileged and
-> /proc/sys/kernel/perf_event_paranoid > 0.  The change
-> to comm_exec can be observed by using -vv with
-> perf record and a kernel that supports comm_exec.
+On Wednesday 13 August 2014 10:12:06 Viresh Kumar wrote: 
+> Also will it be possible for you to find the last working kernel after
+> which this
+> happened?
 
-Maybe I'm missing something - why not just try process-wide probing in
-the first place?
+I'll try to reproduce the issue with older kernels, but that could be 
+problematic and may take some time. So far, I can say that 3.13 and 3.15 are 
+also affected (haven't tried 3.14, though).
 
-Thanks,
-Namhyung
+-- 
+Oleksandr post-factum Natalenko, MSc
+pf-kernel community
+https://natalenko.name/
