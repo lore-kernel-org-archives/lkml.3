@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900AbaHMVv5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 17:51:57 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:18818 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704AbaHMVv4 (ORCPT
+	id S1753949AbaHMV4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 17:56:48 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:33794 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852AbaHMV4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 17:51:56 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 13 Aug 2014 14:38:37 -0700
-Message-ID: <53EBDF31.7010204@nvidia.com>
-Date: Wed, 13 Aug 2014 14:57:05 -0700
-From: Matt Longnecker <mlongnecker@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Wed, 13 Aug 2014 17:56:45 -0400
 MIME-Version: 1.0
-To: <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <mattias.nissler@gmx.de>
-Subject: debugfs_create_{u,x,s}{8,16,32,64}
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMEtUuwO028MV8TQXQew1SOQjUvSbQ_bazAqorGRxojXXYXEnA@mail.gmail.com>
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+	<1407916658-8731-2-git-send-email-ast@plumgrid.com>
+	<CALCETrXzZVxMGUgDPOKwN0DPLvupU=ew1z6D4U-jHg+RoyZyLg@mail.gmail.com>
+	<CAMEtUuxog0w-XkYMHM=Zto_gejy8x5agxohAWOs1zPEtXTr0Sw@mail.gmail.com>
+	<CALCETrXfp+7FmEzAoLiqzqY73NBzt8JsD40hzvhT3=gr-Scp=g@mail.gmail.com>
+	<CAMEtUuwx6Y4qxyz4TGK9=M2BH-dXnPsm+JrusqbyjzK20yUv6A@mail.gmail.com>
+	<CALCETrVDrbD3goYmZsUdmEhVfaNxovyghCz6y+_q5+G+rVwtWg@mail.gmail.com>
+	<53EBD6D5.3050706@zytor.com>
+	<CALCETrUghSd-Z3+z_MUierWHQnA_dDOQcJ++EKryUeGTh5LbbA@mail.gmail.com>
+	<53EBD848.1060203@zytor.com>
+	<CAMEtUuwO028MV8TQXQew1SOQjUvSbQ_bazAqorGRxojXXYXEnA@mail.gmail.com>
+Date: Wed, 13 Aug 2014 14:56:44 -0700
+Message-ID: <CAMEtUuzqjNnLRML=4Npda5FpU+B6-PCaKTySKfJw4Z+-Mg=KLQ@mail.gmail.com>
+Subject: Re: [PATCH RFC v4 net-next 01/26] net: filter: add "load 64-bit
+ immediate" eBPF instruction
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+On Wed, Aug 13, 2014 at 2:38 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> On Wed, Aug 13, 2014 at 2:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 08/13/2014 02:23 PM, Andy Lutomirski wrote:
+>>> On Wed, Aug 13, 2014 at 2:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>>> One thing about this that may be a serious concern: allowing the user to
+>>>> control 8 contiguous bytes of kernel memory may be a security hazard.
+>>>
+>>> I'm confused.  What kind of memory?  I can control a lot more than 8
+>>> bytes of stack very easily.
+>>>
+>>> Or are you concerned about 8 contiguous bytes of *executable* memory?
+>>>
+>>
+>> Yes.  Useful for some kinds of ROP custom gadgets.
+>
+> I don't get it. What is ROP ?
+> What is the concern about 8 bytes ?
 
-Back in December 2007 Mattias Nissler proposed a patch defining 
-debugfs_create_s32 and friends. In it he reworked the already existent u 
-and x versions. The subject of Mattias's mail was "[PATCH] debugfs: 
-Revamp debugfs_create_{u,x,s}{8,16,32,64} to support signed integers".
-
-As I'm writing a new driver related to thermal management, I'm finding 
-the absence of debugfs_create_s32 to be a stumbling block. I see at 
-least two other folks who have stumbled on the absence of 
-debugfs_create_s32 in the past few years.
-
-Why didn't we merge Mattias's patch? Would you entertain a similar patch 
-today?
-
-Thanks,
-Matt Longnecker
+looked it up. too many abbreviations now days.
+x64 jit spraying was fixed by Eric some time ago, so JIT emitting
+movabsq doesn't increase attack surface. various movs of 32-bit
+immediates can be used for 'custom gadget' just as well.
+Worst case JIT won't be enabled.
+In classic BPF we allow junk to be stored in used fields of
+'struct sock_filter' and so far that wasn't a problem.
+eBPF is more paranoid regarding verification.
