@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516AbaHMPhK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 11:37:10 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:43056 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557AbaHMPhI (ORCPT
+	id S1753403AbaHMPgS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 11:36:18 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:45547 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753103AbaHMPgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 11:37:08 -0400
-From: rbasukala <basukalaramesh@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, rbasukala <basukalaramesh@gmail.com>
-Subject: [PATCH] Staging: bmc: fix coding style warning
-Date: Wed, 13 Aug 2014 11:36:59 -0400
-Message-Id: <1407944219-14614-1-git-send-email-basukalaramesh@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 13 Aug 2014 11:36:13 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        alexandre torgue <alexandre.torgue@st.com>
+Subject: [PATCH 2/5] phy: miphy28lp: Add MiPHY28lp header file for DT x Driver defines
+Date: Wed, 13 Aug 2014 17:34:32 +0200
+Message-Id: <1407944075-8093-3-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1407944075-8093-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1407944075-8093-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-13_05:2014-08-13,2014-08-13,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This a a patch to the vendorspecificextn.c that fixes coding style warning found by checkpatch.pl script. I am submitting this patch as required by Eudyptula Challenge.
+This provides the shared header file which will be reference from both
+the MiPHY28lp driver and its associated Device Tree node(s).
 
-Signed-off-by: Ramesh Basukala <basukalaramesh@gmail.com>
+Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 ---
- drivers/staging/bcm/vendorspecificextn.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+ include/dt-bindings/phy/phy-miphy28lp.h | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+ create mode 100644 include/dt-bindings/phy/phy-miphy28lp.h
 
-diff --git a/drivers/staging/bcm/vendorspecificextn.c b/drivers/staging/bcm/vendorspecificextn.c
-index 2c57a16..1d9bef6 100644
---- a/drivers/staging/bcm/vendorspecificextn.c
-+++ b/drivers/staging/bcm/vendorspecificextn.c
-@@ -11,7 +11,8 @@
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  *
-  */
--INT vendorextnGetSectionInfo(PVOID  pContext, struct bcm_flash2x_vendor_info *pVendorInfo)
-+INT vendorextnGetSectionInfo(PVOID  pContext,
-+			struct bcm_flash2x_vendor_info *pVendorInfo)
- {
- 	return STATUS_FAILURE;
- }
-@@ -61,7 +62,8 @@ INT vendorextnExit(struct bcm_mini_adapter *Adapter)
-  *		arg	-input parameter sent by vendor
-  *
-  * Returns:
-- *		CONTINUE_COMMON_PATH in case it is not meant to be processed by vendor ioctls
-+ *		CONTINUE_COMMON_PATH in case it is not meant to be processed
-+ *		by vendor ioctls
-  *		STATUS_SUCCESS/STATUS_FAILURE as per the IOCTL return value
-  */
- 
-@@ -88,8 +90,8 @@ INT vendorextnIoctl(struct bcm_mini_adapter *Adapter, UINT cmd, ULONG arg)
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  */
- 
--INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
--			UINT offset, UINT numOfBytes)
-+INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer,
-+	enum bcm_flash2x_section_val SectionVal, UINT offset, UINT numOfBytes)
- {
- 	return STATUS_FAILURE;
- }
-@@ -112,8 +114,9 @@ INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_sect
-  * Returns:
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  */
--INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
--			UINT offset, UINT numOfBytes, bool bVerify)
-+INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer,
-+	enum bcm_flash2x_section_val SectionVal, UINT offset,
-+	UINT numOfBytes, bool bVerify)
- {
- 	return STATUS_FAILURE;
- }
-@@ -135,8 +138,8 @@ INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_sec
-  * Returns:
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  */
--INT vendorextnWriteSectionWithoutErase(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
--			UINT offset, UINT numOfBytes)
-+INT vendorextnWriteSectionWithoutErase(PVOID  pContext, PUCHAR pBuffer,
-+	enum bcm_flash2x_section_val SectionVal, UINT offset, UINT numOfBytes)
- {
- 	return STATUS_FAILURE;
- }
+diff --git a/include/dt-bindings/phy/phy-miphy28lp.h b/include/dt-bindings/phy/phy-miphy28lp.h
+new file mode 100644
+index 0000000..7cf9bce
+--- /dev/null
++++ b/include/dt-bindings/phy/phy-miphy28lp.h
+@@ -0,0 +1,12 @@
++/*
++ * This header provides constants for the phy framework
++ * based on the STMicroelectronics miph28lp.
++ */
++#ifndef _DT_BINDINGS_PHY_MIPHY28LP
++#define _DT_BINDINGS_PHY_MIPHY28LP
++
++#define MIPHY_TYPE_SATA		1
++#define MIPHY_TYPE_PCIE		2
++#define MIPHY_TYPE_USB		3
++
++#endif /* _DT_BINDINGS_PHY_MIPHY28LP */
 -- 
-1.7.1
+1.9.1
 
