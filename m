@@ -1,161 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431AbaHNS3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 14:29:43 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:48476 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754140AbaHNS3m (ORCPT
+	id S1754530AbaHNScB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 14:32:01 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:63685 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961AbaHNSb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 14:29:42 -0400
-X-AuditID: 85900ec0-d0927b9000001514-5b-53ed0013366f
-Subject: [PATCH] perf probe: Warn user to rebuild target with debuginfo
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Namhyung Kim <namhyung@gmail.com>, yrl.pp-manager.tt@hitachi.com,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>
-Date: Thu, 14 Aug 2014 18:29:38 +0000
-Message-ID: <20140814182938.13429.90615.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <53ECF7E9.3050200@hitachi.com>
-References: <53ECF7E9.3050200@hitachi.com>
-User-Agent: StGit/0.17-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 14 Aug 2014 14:31:59 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Miroslav Lichvar <mlichvar@redhat.com>, linux-ia64@vger.kernel.org
+Subject: [PATCH] [RFC] ia64: Attempt to update of fsyscall gettime to use modern vsyscall_update
+Date: Thu, 14 Aug 2014 11:31:42 -0700
+Message-Id: <1408041102-15524-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Warn user to rebuild target with debuginfo when the perf probe
-fails to find debug information in the target binary.
-Without this, perf probe just reports the failure, but it's
-no hint for users. This gives more hint for users.
+Sent this out awhile back, and only heard crickets. Figured it was time
+to update and resend it.
 
-Without this,
+Ia64 hasn't yet moved away from the old vsyscall_update to the newer
+implementation. This is in part due to the vsyscall being implemented
+in asm (via the ia64 fsyscall feature), which makes me want to run away.
 
-  $ strip perf
-  $ ./perf probe -x perf -L argv_split
-  Failed to open debuginfo file.
-    Error: Failed to show lines.
+The core logic change with the updated vsyscall method is that we
+preserve the base nanosecond value in shifted nanoseconds, which
+allows us to avoid truncating and rounding up to the next nanosecond
+every tick to avoid inconsistencies.
 
-With this,
+Thus the logic moved from
+nsec = ((cycle_delta * mult)>>shift) + base_nsec;
+to
+nsec = ((cycle_delta * mult) + base_snsec) >> shift;
 
-  $ strip perf
-  $ ./perf probe -x perf -L argv_split
-  The /home/fedora/ksrc/linux-3/tools/perf/perf file has no debug information, rebuild with -g.
-    Error: Failed to show lines.
+To try to get the discussion going, I've taken a swing at migrating
+the update logic and have naievely tried to change the asm logic,
+but its quite likely wrong.
 
-The "rebuild with ..." part changes to "rebuild with CONFIG_DEBUG_INFO"
-if the target is the kernel or a kernel module.
+NOT BUILD TESTED! (Well, actually I did get it to build, but I'm no
+more confident that the code is right here).
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Reported-by: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
+Feedback and thoughts would be appreciated!
+
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Miroslav Lichvar <mlichvar@redhat.com>
+Cc: linux-ia64@vger.kernel.org
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- tools/perf/util/probe-event.c |   40 ++++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
+ arch/ia64/Kconfig                     |  2 +-
+ arch/ia64/kernel/asm-offsets.c        | 12 ++++++++----
+ arch/ia64/kernel/fsys.S               |  8 ++++----
+ arch/ia64/kernel/fsyscall_gtod_data.h |  6 ++++--
+ arch/ia64/kernel/time.c               | 37 ++++++++++++++++++-----------------
+ 5 files changed, 36 insertions(+), 29 deletions(-)
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 784ea42..57eb343 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -258,21 +258,32 @@ static void clear_probe_trace_events(struct probe_trace_event *tevs, int ntevs)
- #ifdef HAVE_DWARF_SUPPORT
+diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+index 64aefb7..d60ebfb 100644
+--- a/arch/ia64/Kconfig
++++ b/arch/ia64/Kconfig
+@@ -43,7 +43,7 @@ config IA64
+ 	select ARCH_TASK_STRUCT_ALLOCATOR
+ 	select ARCH_THREAD_INFO_ALLOCATOR
+ 	select ARCH_CLOCKSOURCE_DATA
+-	select GENERIC_TIME_VSYSCALL_OLD
++	select GENERIC_TIME_VSYSCALL
+ 	select SYSCTL_ARCH_UNALIGN_NO_WARN
+ 	select HAVE_MOD_ARCH_SPECIFIC
+ 	select MODULES_USE_ELF_RELA
+diff --git a/arch/ia64/kernel/asm-offsets.c b/arch/ia64/kernel/asm-offsets.c
+index 60ef83e..a02bc6d 100644
+--- a/arch/ia64/kernel/asm-offsets.c
++++ b/arch/ia64/kernel/asm-offsets.c
+@@ -268,10 +268,14 @@ void foo(void)
+ 	/* used by fsys_gettimeofday in arch/ia64/kernel/fsys.S */
+ 	DEFINE(IA64_GTOD_SEQ_OFFSET,
+ 	       offsetof (struct fsyscall_gtod_data_t, seq));
+-	DEFINE(IA64_GTOD_WALL_TIME_OFFSET,
+-		offsetof (struct fsyscall_gtod_data_t, wall_time));
+-	DEFINE(IA64_GTOD_MONO_TIME_OFFSET,
+-		offsetof (struct fsyscall_gtod_data_t, monotonic_time));
++	DEFINE(IA64_GTOD_WALL_TIME_SEC_OFFSET,
++		offsetof (struct fsyscall_gtod_data_t, wall_time_sec));
++	DEFINE(IA64_GTOD_WALL_TIME_SNSEC_OFFSET,
++		offsetof (struct fsyscall_gtod_data_t, wall_time_snsec));
++	DEFINE(IA64_GTOD_MONO_TIME_SEC_OFFSET,
++		offsetof (struct fsyscall_gtod_data_t, monotonic_time_sec));
++	DEFINE(IA64_GTOD_MONO_TIME_SNSEC_OFFSET,
++		offsetof (struct fsyscall_gtod_data_t, monotonic_time_snsec));
+ 	DEFINE(IA64_CLKSRC_MASK_OFFSET,
+ 		offsetof (struct fsyscall_gtod_data_t, clk_mask));
+ 	DEFINE(IA64_CLKSRC_MULT_OFFSET,
+diff --git a/arch/ia64/kernel/fsys.S b/arch/ia64/kernel/fsys.S
+index abc6dee..acda4c5 100644
+--- a/arch/ia64/kernel/fsys.S
++++ b/arch/ia64/kernel/fsys.S
+@@ -197,13 +197,13 @@ ENTRY(fsys_gettimeofday)
+ 	;;
+ 	ld4 r2 = [r2]			// process work pending flags
+ 	movl r29 = itc_jitter_data	// itc_jitter
+-	add r22 = IA64_GTOD_WALL_TIME_OFFSET,r20	// wall_time
++	add r22 = IA64_GTOD_WALL_TIME_SEC_OFFSET,r20	// wall_time
+ 	add r21 = IA64_CLKSRC_MMIO_OFFSET,r20
+ 	mov pr = r30,0xc000	// Set predicates according to function
+ 	;;
+ 	and r2 = TIF_ALLWORK_MASK,r2
+ 	add r19 = IA64_ITC_LASTCYCLE_OFFSET,r29
+-(p15)	add r22 = IA64_GTOD_MONO_TIME_OFFSET,r20	// monotonic_time
++(p15)	add r22 = IA64_GTOD_MONO_TIME_SEC_OFFSET,r20	// monotonic_time
+ 	;;
+ 	add r26 = IA64_CLKSRC_CYCLE_LAST_OFFSET,r20	// clksrc_cycle_last
+ 	cmp.ne p6, p0 = 0, r2	// Fallback if work is scheduled
+@@ -265,9 +265,9 @@ EX(.fail_efault, probe.w.fault r31, 3)
+ 	mf
+ 	;;
+ 	ld4 r10 = [r20]		// gtod_lock.sequence
+-	shr.u r2 = r2,r23	// shift by factor
+-	;;
+ 	add r8 = r8,r2		// Add xtime.nsecs
++	;;
++	shr.u r8 = r8,r23	// shift by factor
+ 	cmp4.ne p7,p0 = r28,r10
+ (p7)	br.cond.dpnt.few .time_redo	// sequence number changed, redo
+ 	// End critical section.
+diff --git a/arch/ia64/kernel/fsyscall_gtod_data.h b/arch/ia64/kernel/fsyscall_gtod_data.h
+index 146b15b..ff292a9 100644
+--- a/arch/ia64/kernel/fsyscall_gtod_data.h
++++ b/arch/ia64/kernel/fsyscall_gtod_data.h
+@@ -7,8 +7,10 @@
  
- /* Open new debuginfo of given module */
--static struct debuginfo *open_debuginfo(const char *module)
-+static struct debuginfo *open_debuginfo(const char *module, bool silent)
+ struct fsyscall_gtod_data_t {
+ 	seqcount_t	seq;
+-	struct timespec	wall_time;
+-	struct timespec monotonic_time;
++	u64 wall_time_sec;
++	u64 wall_time_snsec;
++	u64 monotonic_time_sec;
++	u64 monotonic_time_snsec;
+ 	cycle_t		clk_mask;
+ 	u32		clk_mult;
+ 	u32		clk_shift;
+diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
+index 9a0104a..59c3f4a 100644
+--- a/arch/ia64/kernel/time.c
++++ b/arch/ia64/kernel/time.c
+@@ -425,30 +425,31 @@ void update_vsyscall_tz(void)
  {
- 	const char *path = module;
-+	struct debuginfo *ret;
- 
- 	if (!module || !strchr(module, '/')) {
- 		path = kernel_get_module_path(module);
- 		if (!path) {
--			pr_err("Failed to find path of %s module.\n",
--			       module ?: "kernel");
-+			if (!silent)
-+				pr_err("Failed to find path of %s module.\n",
-+				       module ?: "kernel");
- 			return NULL;
- 		}
- 	}
--	return debuginfo__new(path);
-+	ret = debuginfo__new(path);
-+	if (!ret && !silent) {
-+		pr_warning("The %s file has no debug information, ", path);
-+		if (!module || !strtailcmp(path, ".ko"))
-+			pr_warning("rebuild with CONFIG_DEBUG_INFO=y.\n");
-+		else
-+			pr_warning("rebuild with -g.\n");
-+	}
-+	return ret;
  }
  
-+
- static int get_text_start_address(const char *exec, unsigned long *address)
+-void update_vsyscall_old(struct timespec *wall, struct timespec *wtm,
+-			 struct clocksource *c, u32 mult, cycle_t cycle_last)
++void update_vsyscall(struct timekeeper *tk)
  {
- 	Elf *elf;
-@@ -333,15 +344,13 @@ static int find_perf_probe_point_from_dwarf(struct probe_trace_point *tp,
- 	pr_debug("try to find information at %" PRIx64 " in %s\n", addr,
- 		 tp->module ? : "kernel");
+ 	write_seqcount_begin(&fsyscall_gtod_data.seq);
+-
+-        /* copy fsyscall clock data */
+-        fsyscall_gtod_data.clk_mask = c->mask;
+-        fsyscall_gtod_data.clk_mult = mult;
+-        fsyscall_gtod_data.clk_shift = c->shift;
+-        fsyscall_gtod_data.clk_fsys_mmio = c->archdata.fsys_mmio;
+-        fsyscall_gtod_data.clk_cycle_last = cycle_last;
++	/* copy fsyscall clock data */
++	fsyscall_gtod_data.clk_mask = tk->tkr.clock->mask;
++	fsyscall_gtod_data.clk_mult = tk->tkr.mult;
++	fsyscall_gtod_data.clk_shift = tk->tkr.clock->shift;
++	fsyscall_gtod_data.clk_fsys_mmio = tk->tkr.clock->archdata.fsys_mmio;
++	fsyscall_gtod_data.clk_cycle_last = tk->tkr.cycle_last;
  
--	dinfo = open_debuginfo(tp->module);
-+	dinfo = open_debuginfo(tp->module, verbose == 0);
- 	if (dinfo) {
- 		ret = debuginfo__find_probe_point(dinfo,
- 						 (unsigned long)addr, pp);
- 		debuginfo__delete(dinfo);
--	} else {
--		pr_debug("Failed to open debuginfo at 0x%" PRIx64 "\n", addr);
-+	} else
- 		ret = -ENOENT;
--	}
+ 	/* copy kernel time structures */
+-        fsyscall_gtod_data.wall_time.tv_sec = wall->tv_sec;
+-        fsyscall_gtod_data.wall_time.tv_nsec = wall->tv_nsec;
+-	fsyscall_gtod_data.monotonic_time.tv_sec = wtm->tv_sec
+-							+ wall->tv_sec;
+-	fsyscall_gtod_data.monotonic_time.tv_nsec = wtm->tv_nsec
+-							+ wall->tv_nsec;
++	fsyscall_gtod_data.wall_time_sec = tk->xtime_sec;
++	fsyscall_gtod_data.wall_time_snsec = tk->tkr.xtime_nsec;
++	fsyscall_gtod_data.monotonic_time_sec = tk->wall_to_monotonic.tv_sec
++							+ tk->xtime_sec;
++	fsyscall_gtod_data.monotonic_time_snsec =
++			(tk->wall_to_monotonic.tv_nsec << tk->tkr.shift)
++			+ tk->tkr.xtime_nsec;
  
- 	if (ret > 0) {
- 		pp->retprobe = tp->retprobe;
-@@ -457,13 +466,11 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 	struct debuginfo *dinfo;
- 	int ntevs, ret = 0;
- 
--	dinfo = open_debuginfo(target);
-+	dinfo = open_debuginfo(target, !need_dwarf);
- 
- 	if (!dinfo) {
--		if (need_dwarf) {
--			pr_warning("Failed to open debuginfo file.\n");
-+		if (need_dwarf)
- 			return -ENOENT;
--		}
- 		pr_debug("Could not open debuginfo. Try to use symbols.\n");
- 		return 0;
+ 	/* normalize */
+-	while (fsyscall_gtod_data.monotonic_time.tv_nsec >= NSEC_PER_SEC) {
+-		fsyscall_gtod_data.monotonic_time.tv_nsec -= NSEC_PER_SEC;
+-		fsyscall_gtod_data.monotonic_time.tv_sec++;
++	while (fsyscall_gtod_data.monotonic_time_snsec >=
++					NSEC_PER_SEC << tk->tkr.shift) {
++		fsyscall_gtod_data.monotonic_time_snsec -=
++						NSEC_PER_SEC << tk->tkr.shift;
++		fsyscall_gtod_data.monotonic_time_sec++;
  	}
-@@ -620,11 +627,9 @@ static int __show_line_range(struct line_range *lr, const char *module)
- 	char *tmp;
  
- 	/* Search a line range */
--	dinfo = open_debuginfo(module);
--	if (!dinfo) {
--		pr_warning("Failed to open debuginfo file.\n");
-+	dinfo = open_debuginfo(module, false);
-+	if (!dinfo)
- 		return -ENOENT;
--	}
- 
- 	ret = debuginfo__find_line_range(dinfo, lr);
- 	debuginfo__delete(dinfo);
-@@ -772,9 +777,8 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
- 	if (ret < 0)
- 		return ret;
- 
--	dinfo = open_debuginfo(module);
-+	dinfo = open_debuginfo(module, false);
- 	if (!dinfo) {
--		pr_warning("Failed to open debuginfo file.\n");
- 		ret = -ENOENT;
- 		goto out;
- 	}
+ 	write_seqcount_end(&fsyscall_gtod_data.seq);
+-- 
+1.9.1
 
