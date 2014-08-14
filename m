@@ -1,170 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728AbaHNSz4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 14:55:56 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38852 "EHLO mail.kernel.org"
+	id S1754556AbaHNTF1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 15:05:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64235 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752879AbaHNSzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 14:55:55 -0400
-Date: Thu, 14 Aug 2014 15:55:49 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Namhyung Kim <namhyung@gmail.com>, yrl.pp-manager.tt@hitachi.com,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] perf probe: Warn user to rebuild target with debuginfo
-Message-ID: <20140814185549.GB2451@kernel.org>
-References: <53ECF7E9.3050200@hitachi.com>
- <20140814182938.13429.90615.stgit@kbuild-fedora.novalocal>
+	id S1752879AbaHNTFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 15:05:25 -0400
+Message-ID: <53ED080F.9010305@redhat.com>
+Date: Thu, 14 Aug 2014 15:03:43 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140814182938.13429.90615.stgit@kbuild-fedora.novalocal>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
+ seqlock
+References: <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814142404.GA28211@redhat.com> <53ECD7C8.6040202@redhat.com> <20140814161247.GA32715@redhat.com> <53ECF390.40403@redhat.com> <20140814181542.GB5091@redhat.com>
+In-Reply-To: <20140814181542.GB5091@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Aug 14, 2014 at 06:29:38PM +0000, Masami Hiramatsu escreveu:
-> Warn user to rebuild target with debuginfo when the perf probe
-> fails to find debug information in the target binary.
-> Without this, perf probe just reports the failure, but it's
-> no hint for users. This gives more hint for users.
+On 08/14/2014 02:15 PM, Oleg Nesterov wrote:
+> On 08/14, Rik van Riel wrote:
+>>
+>> On 08/14/2014 12:12 PM, Oleg Nesterov wrote:
+>>>
+>>> Or you can expand the scope of write_seqlock/write_sequnlock, so that
+>>> __unhash_process in called from inside the critical section. This looks
+>>> simpler at first glance.
+>>
+>> The problem with that is that wait_task_zombie() calls
+>> thread_group_cputime_adjusted() in that if() branch, and
+>> that code ends up taking the seqlock for read...
 > 
-> Without this,
+> Not sure I understand... This modifies parent->signal->c* counters,
+> and obviously the exiting thread is not the member of parent's thread
+> group, so thread_group_cputime_adjusted(parent) can never account the
+> exiting child twice simply because it won't see it?
 
-That was quick!
+You are right, the tree of processes only goes one way,
+so there should be no deadlock in taking psig->stats_lock
+and having thread_group_cputime_adjusted take sig->stats_lock
+for read within that section.
 
-The changelog also was nicely written, stating the problem, then
-providing an example to exhibit the problem before the patch, then the
-end result, with the intended behaviour, after the patch.
+However, it might need some lockdep annotation to keep
+lockdep from thinking we might the same lock recursively :)
 
-Thanks a lot!
+>> However, in __exit_signal that approach should work.
+> 
+> Yes,
+> 
+>>> Hmm, wait, it seems there is yet another problem ;) Afaics, you also
+>>> need to modify __exit_signal() so that ->sum_sched_runtime/etc are
+>>> accounted unconditionally, even if the group leader exits.
+>>>
+>>> Probably this is not a big problem, and sys_times() or clock_gettime()
+>>> do not care at all because they use current.
+>>>
+>>> But without this change thread_group_cputime(reaped_zombie) won't look
+>>> at this task_struct at all, this can lead to non-monotonic result if
+>>> it was previously called when this task was alive (non-reaped).
+>>
+>> You mean this whole block needs to run regardless of whether
+>> the group is dead?
+>>
+>>                 task_cputime(tsk, &utime, &stime);
+>>                 write_seqlock(&sig->stats_lock);
+>>                 sig->utime += utime;
+>>                 sig->stime += stime;
+>>                 sig->gtime += task_gtime(tsk);
+>>                 sig->min_flt += tsk->min_flt;
+>>                 sig->maj_flt += tsk->maj_flt;
+>>                 sig->nvcsw += tsk->nvcsw;
+>>                 sig->nivcsw += tsk->nivcsw;
+>>                 sig->inblock += task_io_get_inblock(tsk);
+>>                 sig->oublock += task_io_get_oublock(tsk);
+>>                 task_io_accounting_add(&sig->ioac, &tsk->ioac);
+>>                 sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
+> 
+> Yes.
 
-- Arnaldo
- 
->   $ strip perf
->   $ ./perf probe -x perf -L argv_split
->   Failed to open debuginfo file.
->     Error: Failed to show lines.
+Let me give that a try and see what happens :)
+
+>> How does that square with wait_task_zombie reaping the
+>> statistics of the whole group with thread_group_cputime_adjusted()
+>> when the group leader is exiting?
 > 
-> With this,
+> Again, not sure I understand... thread_group_cputime_adjusted() in
+> wait_task_zombie() is fine in any case. Nobody but us can reap this
+> zombie.
 > 
->   $ strip perf
->   $ ./perf probe -x perf -L argv_split
->   The /home/fedora/ksrc/linux-3/tools/perf/perf file has no debug information, rebuild with -g.
->     Error: Failed to show lines.
+> It seems that we misunderstood each other, let me try again. Just to
+> simplify, suppose we have, say,
 > 
-> The "rebuild with ..." part changes to "rebuild with CONFIG_DEBUG_INFO"
-> if the target is the kernel or a kernel module.
+> 	sys_times_by_pid(pid, ...)
+> 	{
+> 		rcu_read_lock();
+> 		task = find_task_by_vpid(pid);
+> 		if (task)
+> 			get_task_struct(task);
+> 		rcu_read_unlock();
 > 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Reported-by: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Namhyung Kim <namhyung@gmail.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> ---
->  tools/perf/util/probe-event.c |   40 ++++++++++++++++++++++------------------
->  1 file changed, 22 insertions(+), 18 deletions(-)
+> 		if (!task)
+> 			return -ESRCH;
 > 
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index 784ea42..57eb343 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -258,21 +258,32 @@ static void clear_probe_trace_events(struct probe_trace_event *tevs, int ntevs)
->  #ifdef HAVE_DWARF_SUPPORT
->  
->  /* Open new debuginfo of given module */
-> -static struct debuginfo *open_debuginfo(const char *module)
-> +static struct debuginfo *open_debuginfo(const char *module, bool silent)
->  {
->  	const char *path = module;
-> +	struct debuginfo *ret;
->  
->  	if (!module || !strchr(module, '/')) {
->  		path = kernel_get_module_path(module);
->  		if (!path) {
-> -			pr_err("Failed to find path of %s module.\n",
-> -			       module ?: "kernel");
-> +			if (!silent)
-> +				pr_err("Failed to find path of %s module.\n",
-> +				       module ?: "kernel");
->  			return NULL;
->  		}
->  	}
-> -	return debuginfo__new(path);
-> +	ret = debuginfo__new(path);
-> +	if (!ret && !silent) {
-> +		pr_warning("The %s file has no debug information, ", path);
-> +		if (!module || !strtailcmp(path, ".ko"))
-> +			pr_warning("rebuild with CONFIG_DEBUG_INFO=y.\n");
-> +		else
-> +			pr_warning("rebuild with -g.\n");
-> +	}
-> +	return ret;
->  }
->  
-> +
->  static int get_text_start_address(const char *exec, unsigned long *address)
->  {
->  	Elf *elf;
-> @@ -333,15 +344,13 @@ static int find_perf_probe_point_from_dwarf(struct probe_trace_point *tp,
->  	pr_debug("try to find information at %" PRIx64 " in %s\n", addr,
->  		 tp->module ? : "kernel");
->  
-> -	dinfo = open_debuginfo(tp->module);
-> +	dinfo = open_debuginfo(tp->module, verbose == 0);
->  	if (dinfo) {
->  		ret = debuginfo__find_probe_point(dinfo,
->  						 (unsigned long)addr, pp);
->  		debuginfo__delete(dinfo);
-> -	} else {
-> -		pr_debug("Failed to open debuginfo at 0x%" PRIx64 "\n", addr);
-> +	} else
->  		ret = -ENOENT;
-> -	}
->  
->  	if (ret > 0) {
->  		pp->retprobe = tp->retprobe;
-> @@ -457,13 +466,11 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
->  	struct debuginfo *dinfo;
->  	int ntevs, ret = 0;
->  
-> -	dinfo = open_debuginfo(target);
-> +	dinfo = open_debuginfo(target, !need_dwarf);
->  
->  	if (!dinfo) {
-> -		if (need_dwarf) {
-> -			pr_warning("Failed to open debuginfo file.\n");
-> +		if (need_dwarf)
->  			return -ENOENT;
-> -		}
->  		pr_debug("Could not open debuginfo. Try to use symbols.\n");
->  		return 0;
->  	}
-> @@ -620,11 +627,9 @@ static int __show_line_range(struct line_range *lr, const char *module)
->  	char *tmp;
->  
->  	/* Search a line range */
-> -	dinfo = open_debuginfo(module);
-> -	if (!dinfo) {
-> -		pr_warning("Failed to open debuginfo file.\n");
-> +	dinfo = open_debuginfo(module, false);
-> +	if (!dinfo)
->  		return -ENOENT;
-> -	}
->  
->  	ret = debuginfo__find_line_range(dinfo, lr);
->  	debuginfo__delete(dinfo);
-> @@ -772,9 +777,8 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
->  	if (ret < 0)
->  		return ret;
->  
-> -	dinfo = open_debuginfo(module);
-> +	dinfo = open_debuginfo(module, false);
->  	if (!dinfo) {
-> -		pr_warning("Failed to open debuginfo file.\n");
->  		ret = -ENOENT;
->  		goto out;
->  	}
+> 		thread_group_cputime(task, ...);
+> 		copy_to_user();
+> 		return 0;
+> 	}
+> 
+> Note that this task can exit right after rcu_read_unlock(), and it can
+> be also reaped (by its parent or by itself) and removed from the thread
+> list. In this case for_each_thread() will see no threads, and thus it
+> will only read task->signal->*time.
+> 
+> This means that sys_times_by_pid() can simply return the wrong result
+> instead of failure. Say, It can even return "all zeros" if this task was
+> single-threaded.
+
+Ahh, that makes sense.
+
