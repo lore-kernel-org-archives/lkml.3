@@ -1,199 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932AbaHNMNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 08:13:25 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49425 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754485AbaHNMMJ (ORCPT
+	id S1754976AbaHNMOZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 08:14:25 -0400
+Received: from relay.parallels.com ([195.214.232.42]:53528 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754322AbaHNMOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 08:12:09 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v6 1/6] clk: Add temporary mapping to the existing API
-Date: Thu, 14 Aug 2014 14:11:23 +0200
-Message-Id: <1408018287-14217-2-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408018287-14217-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1408018287-14217-1-git-send-email-tomeu.vizoso@collabora.com>
+	Thu, 14 Aug 2014 08:14:24 -0400
+Message-ID: <53ECA81D.7040805@parallels.com>
+Date: Thu, 14 Aug 2014 16:14:21 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] fuse: close file synchronously (v2)
+References: <20140606132541.30321.68679.stgit@localhost.localdomain> <CAJfpegts+jjLDqOYnK7SmcWnbmuwYBfgt4CXHWhVdxNjz1vA1g@mail.gmail.com>
+In-Reply-To: <CAJfpegts+jjLDqOYnK7SmcWnbmuwYBfgt4CXHWhVdxNjz1vA1g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.22.200]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To preserve git-bisectability, add aliases from the future provider API to the
-existing public API.
+On 08/13/2014 04:44 PM, Miklos Szeredi wrote:
+> On Fri, Jun 6, 2014 at 3:27 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
+>> Hi,
+>>
+>> There is a long-standing demand for synchronous behaviour of fuse_release:
+>>
+>> http://sourceforge.net/mailarchive/message.php?msg_id=19343889
+>> http://sourceforge.net/mailarchive/message.php?msg_id=29814693
+>>
+>> A year ago Avati and me explained why such a feature would be useful:
+>>
+>> http://sourceforge.net/mailarchive/message.php?msg_id=29889055
+>> http://sourceforge.net/mailarchive/message.php?msg_id=29867423
+>>
+>> In short, the problem is that fuse_release (that's called on last user
+>> close(2)) sends FUSE_RELEASE to userspace and returns without waiting for
+>> ACK from userspace. Consequently, there is a gap when user regards the
+>> file released while userspace fuse is still working on it. An attempt to
+>> access the file from another node leads to complicated synchronization
+>> problems because the first node still "holds" the file.
+> Tying RELEASE to close(2) is not going to work.  Look at all the
+> places that call fput() (or fdput() in recent kernels), those are all
+> potential triggers for RELEASE, some realistic, some not quite, but
+> all are certainly places that a synchronous release could block
+> *instead* of close.
+>
+> Which just means, that close will still be asynchronous with release
+> some of the time.  So it's not clear to me what is to be gained from
+> this patchset.
 
-Also includes clk-provider.h and clk-dev.h in a few places so the right
-functions are defined.
+The patch-set doesn't tie RELEASE to close(2), it ensures that we report 
+to user space exactly the last fput(). That's correct because this is 
+exactly the moment when any file system with sharing mode connected to 
+open/close must drop sharing mode. This is the case even for some local 
+filesystems, for example, ntfs-3g.
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Could you please look closely at your commit 
+5a18ec176c934ca1bc9dc61580a5e0e90a9b5733. It actually implemented two 
+different things: 1) synchronous release and 2) delayed path_put. The 
+latter was well explained by the comment:
 
----
-v6: * Include linux/clkdev.h in clk-conf.c (thanks to Boris Brezillon)
+ >        /*
+ >         * If this is a fuseblk mount, then it's possible that
+ >         * releasing the path will result in releasing the
+ >         * super block and sending the DESTROY request.  If
+ >         * the server is single threaded, this would hang.
+ >         * For this reason do the path_put() in a separate
+ >         * thread.
+ >         */
 
-v4: * Add more clk-provider.h includes to clk implementations
-    * Add mapping for clk_provider_round_rate
----
- arch/arm/mach-omap2/display.c                 |  1 +
- arch/arm/mach-omap2/omap_device.c             |  1 +
- arch/arm/plat-orion/common.c                  |  1 +
- drivers/clk/berlin/bg2.c                      |  1 +
- drivers/clk/berlin/bg2q.c                     |  1 +
- drivers/clk/clk-conf.c                        |  1 +
- drivers/clk/clkdev.c                          |  1 +
- drivers/media/platform/exynos4-is/media-dev.c |  1 +
- include/linux/clk-provider.h                  | 23 +++++++++++++++++++++++
- include/linux/clk/zynq.h                      |  1 +
- 10 files changed, 32 insertions(+)
+So it's clear why the delay needed and why it's bound to fuseblk 
+condition. But synchronous close was made under the same condition, 
+which is obviously wrong. I understand why you made that decision in 
+2011: otherwise, we could block in a wrong context (last decrement of 
+ff->count might happen in scope of read-ahead or mmap-ed writeback). But 
+now, with the approach implemented in this patch-set, this is impossible 
+-- we wait for completion of all async operations before triggering 
+synchronous release. Thus the patch-set untie a functionality which 
+already existed before (synchronous release) from wrong condition 
+(fuseblk mount) putting it under well-defined control (FUSE_CLOSE_WAIT).
 
-diff --git a/arch/arm/mach-omap2/display.c b/arch/arm/mach-omap2/display.c
-index bf852d7..0f9e479 100644
---- a/arch/arm/mach-omap2/display.c
-+++ b/arch/arm/mach-omap2/display.c
-@@ -21,6 +21,7 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/clk.h>
-+#include <linux/clk-provider.h>
- #include <linux/err.h>
- #include <linux/delay.h>
- #include <linux/of.h>
-diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
-index 01ef59d..fbe8cf0 100644
---- a/arch/arm/mach-omap2/omap_device.c
-+++ b/arch/arm/mach-omap2/omap_device.c
-@@ -32,6 +32,7 @@
- #include <linux/io.h>
- #include <linux/clk.h>
- #include <linux/clkdev.h>
-+#include <linux/clk-provider.h>
- #include <linux/pm_runtime.h>
- #include <linux/of.h>
- #include <linux/notifier.h>
-diff --git a/arch/arm/plat-orion/common.c b/arch/arm/plat-orion/common.c
-index 3ec6e8e..961b593 100644
---- a/arch/arm/plat-orion/common.c
-+++ b/arch/arm/plat-orion/common.c
-@@ -15,6 +15,7 @@
- #include <linux/serial_8250.h>
- #include <linux/ata_platform.h>
- #include <linux/clk.h>
-+#include <linux/clk-provider.h>
- #include <linux/clkdev.h>
- #include <linux/mv643xx_eth.h>
- #include <linux/mv643xx_i2c.h>
-diff --git a/drivers/clk/berlin/bg2.c b/drivers/clk/berlin/bg2.c
-index 515fb13..4c81e09 100644
---- a/drivers/clk/berlin/bg2.c
-+++ b/drivers/clk/berlin/bg2.c
-@@ -19,6 +19,7 @@
- 
- #include <linux/clk.h>
- #include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
- #include <linux/kernel.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
-index 21784e4..748da9b 100644
---- a/drivers/clk/berlin/bg2q.c
-+++ b/drivers/clk/berlin/bg2q.c
-@@ -19,6 +19,7 @@
- 
- #include <linux/clk.h>
- #include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
- #include <linux/kernel.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-diff --git a/drivers/clk/clk-conf.c b/drivers/clk/clk-conf.c
-index aad4796..d36a7b3 100644
---- a/drivers/clk/clk-conf.c
-+++ b/drivers/clk/clk-conf.c
-@@ -8,6 +8,7 @@
-  */
- 
- #include <linux/clk.h>
-+#include <linux/clkdev.h>
- #include <linux/clk-provider.h>
- #include <linux/clk/clk-conf.h>
- #include <linux/device.h>
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index da4bda8..c751d0c 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -18,6 +18,7 @@
- #include <linux/string.h>
- #include <linux/mutex.h>
- #include <linux/clk.h>
-+#include <linux/clk-provider.h>
- #include <linux/clkdev.h>
- #include <linux/of.h>
- 
-diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
-index 344718d..2620c48 100644
---- a/drivers/media/platform/exynos4-is/media-dev.c
-+++ b/drivers/media/platform/exynos4-is/media-dev.c
-@@ -13,6 +13,7 @@
- #include <linux/bug.h>
- #include <linux/clk.h>
- #include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
- #include <linux/device.h>
- #include <linux/errno.h>
- #include <linux/i2c.h>
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 411dd7e..b1a8633 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -16,6 +16,29 @@
- 
- #ifdef CONFIG_COMMON_CLK
- 
-+/* Temporarily map the to-be-added API to the old API, just so stuff compiles */
-+#define clk_core			clk
-+
-+#define __clk_create_clk
-+
-+#define clk_provider_get		clk_get
-+#define clk_provider_get_sys		clk_get_sys
-+#define devm_clk_provider_get		devm_clk_get
-+#define of_clk_provider_get		of_clk_get
-+#define of_clk_provider_get_by_name	of_clk_get_by_name
-+
-+#define clk_provider_set_rate		clk_set_rate
-+#define clk_provider_get_rate		clk_get_rate
-+#define clk_provider_round_rate		clk_round_rate
-+#define clk_provider_set_parent		clk_set_parent
-+#define clk_provider_get_parent		clk_get_parent
-+#define clk_provider_prepare		clk_prepare
-+#define clk_provider_unprepare		clk_unprepare
-+#define clk_provider_enable		clk_enable
-+#define clk_provider_disable		clk_disable
-+#define clk_provider_prepare_enable	clk_prepare_enable
-+#define clk_provider_disable_unprepare	clk_unprepare
-+
- /*
-  * flags used across common struct clk.  these flags should only affect the
-  * top-level framework.  custom flags for dealing with hardware specifics
-diff --git a/include/linux/clk/zynq.h b/include/linux/clk/zynq.h
-index 7a5633b..a990a59 100644
---- a/include/linux/clk/zynq.h
-+++ b/include/linux/clk/zynq.h
-@@ -21,6 +21,7 @@
- #define __LINUX_CLK_ZYNQ_H_
- 
- #include <linux/spinlock.h>
-+#include <linux/clk-provider.h>
- 
- void zynq_clock_init(void);
- 
--- 
-1.9.3
-
+Thanks,
+Maxim
