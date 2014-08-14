@@ -1,142 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645AbaHNUHm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 16:07:42 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:60062 "EHLO
+	id S932100AbaHNUJX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 16:09:23 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:37233 "EHLO
 	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174AbaHNUHj (ORCPT
+	with ESMTP id S1754070AbaHNUJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 16:07:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALZtONCSUZiNdZ12XJcSZPPOemGXyc27Fy=BKT6ZAFWwBFgu6w@mail.gmail.com>
-References: <1407978746-20587-1-git-send-email-minchan@kernel.org>
-	<1407978746-20587-3-git-send-email-minchan@kernel.org>
-	<CALZtONDB5q56f1TUHgqbiJ4ZaP6Yk=GcNQw9DhvLhNyExdfQ4w@mail.gmail.com>
-	<CAFdhcLQ11MnF7Py+X1wrJMiu0L15-JrV883oYGopdz1oag0njQ@mail.gmail.com>
-	<CAFdhcLQ2cU8APUP=qVQqQmWT8jouFvdSHPVsQ8RCXceaVWa4dQ@mail.gmail.com>
-	<CALZtONCSUZiNdZ12XJcSZPPOemGXyc27Fy=BKT6ZAFWwBFgu6w@mail.gmail.com>
-Date: Thu, 14 Aug 2014 16:07:39 -0400
-Message-ID: <CAFdhcLQ+LrVyqeBeXf++sV2RddBn2Rn6w7ZRX1szU+XW8+SPXA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] zram: add mem_used_max via sysfs
-From: David Horner <ds2horner@gmail.com>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 14 Aug 2014 16:09:21 -0400
+Date: Thu, 14 Aug 2014 13:09:51 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Colin Cross <ccross@google.com>, John Stultz <john.stultz@linaro.org>,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCH 2/2] android: add sync_fence_create_dma
+Message-ID: <20140814130951.7c5da411@jbarnes-desktop>
+In-Reply-To: <53EC876C.9050705@canonical.com>
+References: <53EC8722.4070407@canonical.com>
+	<53EC876C.9050705@canonical.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 3:11 PM, Dan Streetman <ddstreet@ieee.org> wrote:
-> On Thu, Aug 14, 2014 at 12:23 PM, David Horner <ds2horner@gmail.com> wrote:
->> On Thu, Aug 14, 2014 at 11:32 AM, David Horner <ds2horner@gmail.com> wrote:
->>> On Thu, Aug 14, 2014 at 11:09 AM, Dan Streetman <ddstreet@ieee.org> wrote:
->>>> On Wed, Aug 13, 2014 at 9:12 PM, Minchan Kim <minchan@kernel.org> wrote:
->>>>> -       if (zram->limit_bytes &&
->>>>> -               zs_get_total_size_bytes(meta->mem_pool) > zram->limit_bytes) {
->>>>> +       total_bytes = zs_get_total_size_bytes(meta->mem_pool);
->>>>> +       if (zram->limit_bytes && total_bytes > zram->limit_bytes) {
->>>>
->>>> do you need to take the init_lock to read limit_bytes here?  It could
->>>> be getting changed between these checks...
->>>
->>> There is no real danger in freeing with an error.
->>> It is more timing than a race.
->> I probably should explain my reasoning.
->>
->> any changes between getting the total value and the limit test are not
->> problematic (From race perspective).
->>
->> 1) If the actual total increases and the value returned under rates it, then
->> a) if this.total exceeds the limit - no problem it is rolled back as
->> it would if the actual total were used.
->> b) if this.total <= limit OK - as other process will be dinged (it
->> will see its own allocation)
->>
->> 2)  If the actual total decreases and the value returned overrates
->> rates it, then
->> a) if this.value <= limit then allocation great (actual has even more room)
->> b) if this.value > max it will be rolled back (as the other might be
->> as well) and process can compete again.
->
+On Thu, 14 Aug 2014 11:54:52 +0200
+Maarten Lankhorst <maarten.lankhorst@canonical.com> wrote:
 
-for completeness I should have mentioned the normal decrease case of
-deallocation
-and not roll back.
-(and of course it is also not a problem and does not race).
+> This allows users of dma fences to create a android fence.
+> 
+> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> Cc: Daniel Vetter <daniel@ffwll.ch>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> ---
+>  drivers/staging/android/sync.c | 24 ++++++++++++++++++++----
+>  drivers/staging/android/sync.h | 11 +++++++++++
+>  2 files changed, 31 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+> index 69139ce7420d..c9331250ac26 100644
+> --- a/drivers/staging/android/sync.c
+> +++ b/drivers/staging/android/sync.c
+> @@ -188,7 +188,7 @@ static void fence_check_cb_func(struct fence *f, struct fence_cb *cb)
+>  }
+>  
+>  /* TODO: implement a create which takes more that one sync_pt */
+> -struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt)
+> +static struct sync_fence *sync_fence_create_noref(const char *name, struct fence *pt)
+>  {
+>  	struct sync_fence *fence;
+>  
+> @@ -199,16 +199,32 @@ struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt)
+>  	fence->num_fences = 1;
+>  	atomic_set(&fence->status, 1);
+>  
+> -	fence->cbs[0].sync_pt = &pt->base;
+> +	fence->cbs[0].sync_pt = pt;
+>  	fence->cbs[0].fence = fence;
+> -	if (fence_add_callback(&pt->base, &fence->cbs[0].cb,
+> -			       fence_check_cb_func))
+> +	if (fence_add_callback(pt, &fence->cbs[0].cb, fence_check_cb_func))
+>  		atomic_dec(&fence->status);
+>  
+>  	sync_fence_debug_add(fence);
+>  
+>  	return fence;
+>  }
+> +
+> +struct sync_fence *sync_fence_create_dma(const char *name, struct fence *pt)
+> +{
+> +	struct sync_fence *fence;
 
-Are these typical situations in documentation folder
-(I know the related memory barriers is)
-It would be so much better to say scenario 23 is a potential problem
-rather than rewriting the essays.
+I ran into the same naming trouble in my implementation; I think I
+ended up with sfence for sync fence declarations.
 
+> +
+> +	fence = sync_fence_create_noref(name, fence_get(pt));
+> +	if (!fence)
+> +		fence_put(pt);
+> +
+> +	return fence;
+> +}
+> +EXPORT_SYMBOL(sync_fence_create_dma);
+> +
+> +struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt)
+> +{
+> +	return sync_fence_create_noref(name, &pt->base);
+> +}
+>  EXPORT_SYMBOL(sync_fence_create);
+>  
+>  struct sync_fence *sync_fence_fdget(int fd)
+> diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
+> index 66b0f431f63e..7b3bf560790c 100644
+> --- a/drivers/staging/android/sync.h
+> +++ b/drivers/staging/android/sync.h
+> @@ -254,6 +254,17 @@ void sync_pt_free(struct sync_pt *pt);
+>   */
+>  struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt);
+>  
+> +/**
+> + * sync_fence_create_dma() - creates a sync fence from a dma fence
+> + * @name:	name of fence to create
+> + * @pt:		dma fence to add to the sync fence
+> + *
+> + * Creates a fence containg @pt.  Once this is called, the fence takes
+> + * a reference on @pt, unlike sync_fence_create which doesn't add one.
+> + */
+> +struct sync_fence *sync_fence_create_dma(const char *name, struct fence *pt);
+> +
+> +
+>  /*
+>   * API for sync_fence consumers
+>   */
 
-> actually I wasn't thinking of total_bytes changing, i think it's ok to
-> check the total at that specific point in time, for the reasons you
-> point out above.
->
-> I was thinking about zram->limit_bytes changing, especially if it's
-> possible to disable the limit (i.e. set it to 0), e.g.:
->
-> assume currently total_bytes == 1G and limit_bytes == 2G, so there is
-> not currently any danger of going over the limit.  Then:
->
->
-> thread 1 : if (zram->limit_bytes  ...this is true
->
-> thread 2 : zram->limit_bytes = limit;    ...where limit == 0
->
-> thread 1 : && total_bytes > zram->limit_bytes) {   ...this is now also true
->
-> thread 1 : incorrectly return -ENOMEM failure
->
-> It's very unlikely, and a single failure isn't a big deal here since
-> the caller must be prepared to handle a failure.  And of course the
-> compiler might reorder those checks.  And if it's not possible to
-> disable the limit by setting it to 0 (besides a complete reset of the
-> zram device, which wouldn't happen while this function is running),
-> then there's not an issue here (although, I think being able to
-> disable the limit without having to reset the zram device is useful).
+Yeah, I've been using this, looks good.
 
-agreed on 7 of 8 assertions
- (not yet sure about reset not happening while function running).
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-That issue then arises in [PATCH 2/2] zram: limit memory size for zram
-and as you mention reordering the zero check after the limit comparison
-in the if statement could be reordered by the compiler
-
-As I see it this is also a timing issue - as you explained, and not a race.
-
-Perhaps we name it scenario 24?
-
-And especially I agree with allowing zero limit reset without device reset.
-The equivalent is currently possible (for all practical purposes)
-anyway by setting
-the limit to max_u64.
-So allowing zero is cleaner.
-
-
->
->
-> Also for setting the max_used_bytes, isn't non-atomically setting a
-> u64 value dangerous (on <64 bit systems) when it's not synchronized
-> between threads?
-
-perhaps it needs an atomic function - I will think some more on it.
-
->
-> That is, unless the entire zram_bvec_write() function or this section
-> is already thread-safe, and i missed it (which i may have :-)
-
-nor have I.checked.(on the to do).
-
->
->
->>
+-- 
+Jesse Barnes, Intel Open Source Technology Center
