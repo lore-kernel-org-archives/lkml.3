@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312AbaHNHWF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 03:22:05 -0400
-Received: from mga11.intel.com ([192.55.52.93]:28552 "EHLO mga11.intel.com"
+	id S1754261AbaHNHWD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 03:22:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38173 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753948AbaHNHWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 03:22:00 -0400
+	id S1754210AbaHNHWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 03:22:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,861,1400050800"; 
-   d="scan'208";a="584699199"
+   d="scan'208";a="587933547"
 From: "Chen, Gong" <gong.chen@linux.intel.com>
 To: bp@alien8.de
 Cc: tony.luck@intel.com, x86@kernel.org, linux-kernel@vger.kernel.org,
         "Chen, Gong" <gong.chen@linux.intel.com>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH v2 3/5] x86, MCE: Remove mce_ring for SRAO error
-Date: Thu, 14 Aug 2014 02:49:44 -0400
-Message-Id: <1407998986-1834-4-git-send-email-gong.chen@linux.intel.com>
+Subject: [PATCH v2 1/5] x86, MCE: Provide a lock-less memory pool to save error record
+Date: Thu, 14 Aug 2014 02:49:42 -0400
+Message-Id: <1407998986-1834-2-git-send-email-gong.chen@linux.intel.com>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
 References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
@@ -23,256 +23,219 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use unified genpool to save SRAO error events and put AO error
-handling in the same notification chain with mce error decoding.
+printk is not safe to use in MCE context. Add a lockless memory
+allocator pool to save error records in MCE context. Issuing those
+records will be delayed to a context safe to do printk. This idea is
+inspired by APEI/GHES driver.
+
+We're very conservative and allocate only two pages for it but since
+we're going to use those pages throughout the system's lifetime, we
+allocate them statically to avoid early boot time allocation woes.
 
 Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-Link: http://lkml.kernel.org/r/1406797523-28710-4-git-send-email-gong.chen@linux.intel.com
-[ Boris: correct a lot. ]
+Link: http://lkml.kernel.org/r/1407830375-11087-1-git-send-email-gong.chen@linux.intel.com
+[Boris: rewrite. ]
 Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- arch/x86/include/asm/mce.h       |   2 +-
- arch/x86/kernel/cpu/mcheck/mce.c | 110 ++++++++++++++-------------------------
- drivers/acpi/acpi_extlog.c       |   2 +-
- drivers/edac/i7core_edac.c       |   2 +-
- drivers/edac/mce_amd.c           |   2 +-
- drivers/edac/sb_edac.c           |   2 +-
- 6 files changed, 43 insertions(+), 77 deletions(-)
+ arch/x86/Kconfig                          |   1 +
+ arch/x86/include/uapi/asm/mce.h           |   3 +-
+ arch/x86/kernel/cpu/mcheck/Makefile       |   2 +-
+ arch/x86/kernel/cpu/mcheck/mce-genpool.c  | 102 ++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/mcheck/mce-internal.h |  11 ++++
+ arch/x86/kernel/cpu/mcheck/mce.c          |   6 ++
+ 6 files changed, 123 insertions(+), 2 deletions(-)
+ create mode 100644 arch/x86/kernel/cpu/mcheck/mce-genpool.c
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index 958b90f761e5..a713dabd000b 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -114,7 +114,7 @@ struct mca_config {
- };
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 4aafd322e21e..706dc3c8f6d6 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -866,6 +866,7 @@ config X86_REROUTE_FOR_BROKEN_BOOT_IRQS
  
- extern struct mca_config mca_cfg;
--extern void mce_register_decode_chain(struct notifier_block *nb);
-+extern void mce_register_decode_chain(struct notifier_block *nb, bool drain);
- extern void mce_unregister_decode_chain(struct notifier_block *nb);
+ config X86_MCE
+ 	bool "Machine Check / overheating reporting"
++	select GENERIC_ALLOCATOR
+ 	default y
+ 	---help---
+ 	  Machine Check support allows the processor to notify the
+diff --git a/arch/x86/include/uapi/asm/mce.h b/arch/x86/include/uapi/asm/mce.h
+index a0eab85ce7b8..577acacaf515 100644
+--- a/arch/x86/include/uapi/asm/mce.h
++++ b/arch/x86/include/uapi/asm/mce.h
+@@ -15,7 +15,8 @@ struct mce {
+ 	__u64 time;	/* wall time_t when error was detected */
+ 	__u8  cpuvendor;	/* cpu vendor as encoded in system.h */
+ 	__u8  inject_flags;	/* software inject flags */
+-	__u16  pad;
++	__u8  severity;
++	__u8  usable_addr;	/* addr is usable */
+ 	__u32 cpuid;	/* CPUID 1 EAX */
+ 	__u8  cs;		/* code segment */
+ 	__u8  bank;	/* machine check bank */
+diff --git a/arch/x86/kernel/cpu/mcheck/Makefile b/arch/x86/kernel/cpu/mcheck/Makefile
+index bb34b03af252..a3311c886194 100644
+--- a/arch/x86/kernel/cpu/mcheck/Makefile
++++ b/arch/x86/kernel/cpu/mcheck/Makefile
+@@ -1,4 +1,4 @@
+-obj-y				=  mce.o mce-severity.o
++obj-y				=  mce.o mce-severity.o mce-genpool.o
  
- #include <linux/percpu.h>
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 7534cfce43e9..0e64a3c69b2b 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -234,11 +234,18 @@ static void drain_mcelog_buffer(void)
- 	} while (next != prev);
- }
- 
-+static struct notifier_block mce_srao_nb;
- 
--void mce_register_decode_chain(struct notifier_block *nb)
-+void mce_register_decode_chain(struct notifier_block *nb, bool drain)
- {
-+	/* Ensure SRAO notifier has the highest priority in the decode chain. */
-+	if (nb != &mce_srao_nb && nb->priority == INT_MAX)
-+		nb->priority -= 1;
+ obj-$(CONFIG_X86_ANCIENT_MCE)	+= winchip.o p5.o
+ obj-$(CONFIG_X86_MCE_INTEL)	+= mce_intel.o
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-genpool.c b/arch/x86/kernel/cpu/mcheck/mce-genpool.c
+new file mode 100644
+index 000000000000..a0a0ad4b8778
+--- /dev/null
++++ b/arch/x86/kernel/cpu/mcheck/mce-genpool.c
+@@ -0,0 +1,102 @@
++/*
++ * MCE event pool management in MCE context
++ *
++ * Copyright (C) 2014 Intel Corp.
++ * Author: Chen, Gong <gong.chen@linux.intel.com>
++ *
++ * This file is licensed under GPLv2.
++ */
++#include <linux/smp.h>
++#include <linux/mm.h>
++#include <linux/genalloc.h>
++#include <linux/llist.h>
++#include "mce-internal.h"
 +
- 	atomic_notifier_chain_register(&x86_mce_decoder_chain, nb);
--	drain_mcelog_buffer();
++/*
++ * printk is not safe in MCE context thus a lock-less memory allocator
++ * (genpool) is used to save error information organized in a lock-less
++ * list.
++ */
 +
-+	if (drain)
-+		drain_mcelog_buffer();
- }
- EXPORT_SYMBOL_GPL(mce_register_decode_chain);
- 
-@@ -462,61 +469,6 @@ static inline void mce_gather_info(struct mce *m, struct pt_regs *regs)
- 	}
- }
- 
--/*
-- * Simple lockless ring to communicate PFNs from the exception handler with the
-- * process context work function. This is vastly simplified because there's
-- * only a single reader and a single writer.
-- */
--#define MCE_RING_SIZE 16	/* we use one entry less */
--
--struct mce_ring {
--	unsigned short start;
--	unsigned short end;
--	unsigned long ring[MCE_RING_SIZE];
--};
--static DEFINE_PER_CPU(struct mce_ring, mce_ring);
--
--/* Runs with CPU affinity in workqueue */
--static int mce_ring_empty(void)
--{
--	struct mce_ring *r = &__get_cpu_var(mce_ring);
--
--	return r->start == r->end;
--}
--
--static int mce_ring_get(unsigned long *pfn)
--{
--	struct mce_ring *r;
--	int ret = 0;
--
--	*pfn = 0;
--	get_cpu();
--	r = &__get_cpu_var(mce_ring);
--	if (r->start == r->end)
--		goto out;
--	*pfn = r->ring[r->start];
--	r->start = (r->start + 1) % MCE_RING_SIZE;
--	ret = 1;
--out:
--	put_cpu();
--	return ret;
--}
--
--/* Always runs in MCE context with preempt off */
--static int mce_ring_add(unsigned long pfn)
--{
--	struct mce_ring *r = &__get_cpu_var(mce_ring);
--	unsigned next;
--
--	next = (r->end + 1) % MCE_RING_SIZE;
--	if (next == r->start)
--		return -1;
--	r->ring[r->end] = pfn;
--	wmb();
--	r->end = next;
--	return 0;
--}
--
- int mce_available(struct cpuinfo_x86 *c)
- {
- 	if (mca_cfg.disabled)
-@@ -526,7 +478,7 @@ int mce_available(struct cpuinfo_x86 *c)
- 
- static void mce_schedule_work(void)
- {
--	if (!mce_ring_empty())
-+	if (!mce_genpool_empty())
- 		schedule_work(&mce_work);
- }
- 
-@@ -553,6 +505,27 @@ static void mce_report_event(struct pt_regs *regs)
- 	irq_work_queue(&mce_irq_work);
- }
- 
-+static int srao_decode_notifier(struct notifier_block *nb, unsigned long val,
-+				void *data)
++#define GENPOOL_BUFSZ	(2 * PAGE_SIZE)
++
++static struct gen_pool *mce_evt_pool;
++static LLIST_HEAD(mce_event_llist);
++static char genpool_buf[GENPOOL_BUFSZ];
++
++/*
++ * This memory pool is only to be used to save MCE records in MCE context.
++ * Since MCE events are rare so a fixed size memory pool should be enough.
++ * Keep 2 pages to save MCE events for now (~80 MCE records at most).
++ */
++static int mce_genpool_create(void)
 +{
-+	struct mce *mce = (struct mce *)data;
-+	unsigned long pfn;
++	struct gen_pool *tmpp;
++	int ret = -ENOMEM;
 +
-+	if (!mce)
-+		return NOTIFY_DONE;
++	tmpp = gen_pool_create(ilog2(sizeof(struct mce_evt_llist)), -1);
++	if (!tmpp)
++		goto out;
 +
-+	if (mce->usable_addr && (mce->severity == MCE_AO_SEVERITY)) {
-+		pfn = mce->addr >> PAGE_SHIFT;
-+		memory_failure(pfn, MCE_VECTOR, 0);
++	ret = gen_pool_add(tmpp, (unsigned long)genpool_buf, GENPOOL_BUFSZ, -1);
++	if (ret) {
++		gen_pool_destroy(tmpp);
++		goto out;
 +	}
 +
-+	return NOTIFY_OK;
++	mce_evt_pool = tmpp;
++
++out:
++	return ret;
 +}
-+static struct notifier_block mce_srao_nb = {
-+	.notifier_call	= srao_decode_notifier,
-+	.priority = INT_MAX,
++
++void mce_genpool_process(void)
++{
++	struct llist_node *head;
++	struct mce_evt_llist *node;
++	struct mce *mce;
++
++	head = llist_del_all(&mce_event_llist);
++	if (!head)
++		return;
++
++	head = llist_reverse_order(head);
++	llist_for_each_entry(node, head, llnode) {
++		mce = &node->mce;
++		atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, mce);
++		gen_pool_free(mce_evt_pool, (unsigned long)node, sizeof(*node));
++	}
++}
++
++bool mce_genpool_empty(void)
++{
++	return llist_empty(&mce_event_llist);
++}
++
++bool mce_genpool_add(struct mce *mce)
++{
++	struct mce_evt_llist *node;
++
++	if (!mce_evt_pool)
++		return false;
++
++	node = (void *)gen_pool_alloc(mce_evt_pool, sizeof(*node));
++	if (!node) {
++		pr_warn_ratelimited("MCE records pool overflow!\n");
++		return false;
++	}
++
++	memcpy(&node->mce, mce, sizeof(*mce));
++	llist_add(&node->llnode, &mce_event_llist);
++
++	return true;
++}
++
++int mce_genpool_init(void)
++{
++	/* Just init mce_genpool once. */
++	if (mce_evt_pool)
++		return 0;
++
++	return mce_genpool_create();
++}
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h b/arch/x86/kernel/cpu/mcheck/mce-internal.h
+index 09edd0b65fef..6f0ea3db02c8 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
++++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
+@@ -11,6 +11,8 @@ enum severity_level {
+ 	MCE_PANIC_SEVERITY,
+ };
+ 
++extern struct atomic_notifier_head x86_mce_decoder_chain;
++
+ #define ATTR_LEN		16
+ 
+ /* One object for each MCE bank, shared by all CPUs */
+@@ -21,6 +23,15 @@ struct mce_bank {
+ 	char			attrname[ATTR_LEN];	/* attribute name */
+ };
+ 
++struct mce_evt_llist {
++	struct llist_node llnode;
++	struct mce mce;
 +};
 +
- /*
-  * Read ADDR and MISC registers.
-  */
-@@ -1113,15 +1086,10 @@ void do_machine_check(struct pt_regs *regs, long error_code)
++void mce_genpool_process(void);
++bool mce_genpool_empty(void);
++bool mce_genpool_add(struct mce *mce);
++int mce_genpool_init(void);
+ int mce_severity(struct mce *a, int tolerant, char **msg);
+ struct dentry *mce_get_debugfs_dir(void);
  
- 		mce_read_aux(&m, i);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index bd9ccda8087f..b2c8bb83672a 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1686,6 +1686,12 @@ void mcheck_cpu_init(struct cpuinfo_x86 *c)
+ 	if (mca_cfg.disabled)
+ 		return;
  
--		/*
--		 * Action optional error. Queue address for later processing.
--		 * When the ring overflows we just ignore the AO error.
--		 * RED-PEN add some logging mechanism when
--		 * usable_address or mce_add_ring fails.
--		 * RED-PEN don't ignore overflow for mca_cfg.tolerant == 0
--		 */
--		if (severity == MCE_AO_SEVERITY && mce_usable_address(&m))
--			mce_ring_add(m.addr >> PAGE_SHIFT);
-+		/* assuming valid severity level != 0 */
-+		m.severity = severity;
-+		m.usable_addr = mce_usable_address(&m);
-+		mce_genpool_add(&m);
++	if (mce_genpool_init()) {
++		mca_cfg.disabled = true;
++		pr_emerg("Couldn't allocate MCE records pool!\n");
++		return;
++	}
++
+ 	if (__mcheck_cpu_ancient_init(c))
+ 		return;
  
- 		mce_log(&m);
- 
-@@ -1222,14 +1190,11 @@ void mce_notify_process(void)
- /*
-  * Action optional processing happens here (picking up
-  * from the list of faulting pages that do_machine_check()
-- * placed into the "ring").
-+ * placed into the genpool).
-  */
- static void mce_process_work(struct work_struct *dummy)
- {
--	unsigned long pfn;
--
--	while (mce_ring_get(&pfn))
--		memory_failure(pfn, MCE_VECTOR, 0);
-+	mce_genpool_process();
- }
- 
- #ifdef CONFIG_X86_MCE_INTEL
-@@ -2027,6 +1992,7 @@ __setup("mce", mcheck_enable);
- int __init mcheck_init(void)
- {
- 	mcheck_intel_therm_init();
-+	mce_register_decode_chain(&mce_srao_nb, false);
- 
- 	return 0;
- }
-diff --git a/drivers/acpi/acpi_extlog.c b/drivers/acpi/acpi_extlog.c
-index b3842ffc19ba..07e012e74c1b 100644
---- a/drivers/acpi/acpi_extlog.c
-+++ b/drivers/acpi/acpi_extlog.c
-@@ -286,7 +286,7 @@ static int __init extlog_init(void)
- 	 */
- 	old_edac_report_status = get_edac_report_status();
- 	set_edac_report_status(EDAC_REPORTING_DISABLED);
--	mce_register_decode_chain(&extlog_mce_dec);
-+	mce_register_decode_chain(&extlog_mce_dec, true);
- 	/* enable OS to be involved to take over management from BIOS */
- 	((struct extlog_l1_head *)extlog_l1_addr)->flags |= FLAG_OS_OPTIN;
- 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 9cd0b301f81b..7e347c4ce641 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -2432,7 +2432,7 @@ static int __init i7core_init(void)
- 	pci_rc = pci_register_driver(&i7core_driver);
- 
- 	if (pci_rc >= 0) {
--		mce_register_decode_chain(&i7_mce_dec);
-+		mce_register_decode_chain(&i7_mce_dec, true);
- 		return 0;
- 	}
- 
-diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
-index f78c1c54dbd5..718c41c41f07 100644
---- a/drivers/edac/mce_amd.c
-+++ b/drivers/edac/mce_amd.c
-@@ -914,7 +914,7 @@ static int __init mce_amd_init(void)
- 
- 	pr_info("MCE: In-kernel MCE decoding enabled.\n");
- 
--	mce_register_decode_chain(&amd_mce_dec_nb);
-+	mce_register_decode_chain(&amd_mce_dec_nb, true);
- 
- 	return 0;
- }
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index deea0dc9999b..d2dc2929568d 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -2153,7 +2153,7 @@ static int __init sbridge_init(void)
- 
- 	pci_rc = pci_register_driver(&sbridge_driver);
- 	if (pci_rc >= 0) {
--		mce_register_decode_chain(&sbridge_mce_dec);
-+		mce_register_decode_chain(&sbridge_mce_dec, true);
- 		if (get_edac_report_status() == EDAC_REPORTING_DISABLED)
- 			sbridge_printk(KERN_WARNING, "Loading driver, error reporting disabled.\n");
- 		return 0;
 -- 
 2.0.0.rc2
 
