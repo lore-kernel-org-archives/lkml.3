@@ -1,127 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100AbaHNUJX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 16:09:23 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:37233 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070AbaHNUJV (ORCPT
+	id S1754728AbaHNUJn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 16:09:43 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:53795 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753424AbaHNUJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 16:09:21 -0400
-Date: Thu, 14 Aug 2014 13:09:51 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Colin Cross <ccross@google.com>, John Stultz <john.stultz@linaro.org>,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH 2/2] android: add sync_fence_create_dma
-Message-ID: <20140814130951.7c5da411@jbarnes-desktop>
-In-Reply-To: <53EC876C.9050705@canonical.com>
-References: <53EC8722.4070407@canonical.com>
-	<53EC876C.9050705@canonical.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Aug 2014 16:09:41 -0400
+Date: Thu, 14 Aug 2014 13:09:36 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: broonie@kernel.org, heiko@sntech.de, dianders@chromium.org,
+        grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
+        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com
+Subject: Re: [PATCH] spi: rockchip: return 0 if tx_buf and rx_buf are NULL
+Message-ID: <20140814200936.GA13458@core.coreip.homeip.net>
+References: <1407977544-2989-1-git-send-email-addy.ke@rock-chips.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407977544-2989-1-git-send-email-addy.ke@rock-chips.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Aug 2014 11:54:52 +0200
-Maarten Lankhorst <maarten.lankhorst@canonical.com> wrote:
+Hi Addy,
 
-> This allows users of dma fences to create a android fence.
+On Thu, Aug 14, 2014 at 08:52:24AM +0800, Addy Ke wrote:
+> To do so, spi communication can use an empty buf to pull up CS.
 > 
-> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> Cc: Daniel Vetter <daniel@ffwll.ch>
-> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> This patch merged from ChromiumOS tree.
+> Cros_ec use this function to turn off CS and add a delay to ensure
+> the rising edge doesn't come too soon after the end of the data.
+> 
+> Tested-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
 > ---
->  drivers/staging/android/sync.c | 24 ++++++++++++++++++++----
->  drivers/staging/android/sync.h | 11 +++++++++++
->  2 files changed, 31 insertions(+), 4 deletions(-)
+>  drivers/spi/spi-rockchip.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
-> index 69139ce7420d..c9331250ac26 100644
-> --- a/drivers/staging/android/sync.c
-> +++ b/drivers/staging/android/sync.c
-> @@ -188,7 +188,7 @@ static void fence_check_cb_func(struct fence *f, struct fence_cb *cb)
->  }
+> diff --git a/drivers/spi/spi-rockchip.c b/drivers/spi/spi-rockchip.c
+> index 72fb287..1e3bcfa 100644
+> --- a/drivers/spi/spi-rockchip.c
+> +++ b/drivers/spi/spi-rockchip.c
+> @@ -511,8 +511,8 @@ static int rockchip_spi_transfer_one(struct spi_master *master,
+>  	WARN_ON((readl_relaxed(rs->regs + ROCKCHIP_SPI_SR) & SR_BUSY));
 >  
->  /* TODO: implement a create which takes more that one sync_pt */
-> -struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt)
-> +static struct sync_fence *sync_fence_create_noref(const char *name, struct fence *pt)
->  {
->  	struct sync_fence *fence;
->  
-> @@ -199,16 +199,32 @@ struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt)
->  	fence->num_fences = 1;
->  	atomic_set(&fence->status, 1);
->  
-> -	fence->cbs[0].sync_pt = &pt->base;
-> +	fence->cbs[0].sync_pt = pt;
->  	fence->cbs[0].fence = fence;
-> -	if (fence_add_callback(&pt->base, &fence->cbs[0].cb,
-> -			       fence_check_cb_func))
-> +	if (fence_add_callback(pt, &fence->cbs[0].cb, fence_check_cb_func))
->  		atomic_dec(&fence->status);
->  
->  	sync_fence_debug_add(fence);
->  
->  	return fence;
->  }
-> +
-> +struct sync_fence *sync_fence_create_dma(const char *name, struct fence *pt)
-> +{
-> +	struct sync_fence *fence;
+>  	if (!xfer->tx_buf && !xfer->rx_buf) {
+> -		dev_err(rs->dev, "No buffer for transfer\n");
+> -		return -EINVAL;
+> +		dev_dbg(rs->dev, "No buffer for transfer\n");
+> +		return 0;
+>  	}
 
-I ran into the same naming trouble in my implementation; I think I
-ended up with sfence for sync fence declarations.
+Maybe we should only return 0 if xfer->len is also 0, otherwise keep
+complaining loudly?
 
-> +
-> +	fence = sync_fence_create_noref(name, fence_get(pt));
-> +	if (!fence)
-> +		fence_put(pt);
-> +
-> +	return fence;
-> +}
-> +EXPORT_SYMBOL(sync_fence_create_dma);
-> +
-> +struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt)
-> +{
-> +	return sync_fence_create_noref(name, &pt->base);
-> +}
->  EXPORT_SYMBOL(sync_fence_create);
->  
->  struct sync_fence *sync_fence_fdget(int fd)
-> diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
-> index 66b0f431f63e..7b3bf560790c 100644
-> --- a/drivers/staging/android/sync.h
-> +++ b/drivers/staging/android/sync.h
-> @@ -254,6 +254,17 @@ void sync_pt_free(struct sync_pt *pt);
->   */
->  struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt);
->  
-> +/**
-> + * sync_fence_create_dma() - creates a sync fence from a dma fence
-> + * @name:	name of fence to create
-> + * @pt:		dma fence to add to the sync fence
-> + *
-> + * Creates a fence containg @pt.  Once this is called, the fence takes
-> + * a reference on @pt, unlike sync_fence_create which doesn't add one.
-> + */
-> +struct sync_fence *sync_fence_create_dma(const char *name, struct fence *pt);
-> +
-> +
->  /*
->   * API for sync_fence consumers
->   */
+	if (!xfer->tx_buf && !xfer->rx_buf) {
+		if (xfer->len == 0)
+			return 0;
 
-Yeah, I've been using this, looks good.
+		dev_err(rs->dev, "Missing transfer buffer\n");
+		return -EINVAL;
+	}
 
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Thanks.
 
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Dmitry
