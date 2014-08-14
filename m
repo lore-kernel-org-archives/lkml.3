@@ -1,128 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726AbaHNBOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 21:14:09 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:62549 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580AbaHNBOI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 21:14:08 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan.kim@lge.com
-Date: Thu, 14 Aug 2014 10:14:16 +0900
-From: Minchan Kim <minchan.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, juno.choi@lge.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Dan Streetman <ddstreet@ieee.org>, seungho1.park@lge.com,
-        Luigi Semenzato <semenzato@google.com>, ds2horner@gmail.com,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 1/2] zsmalloc: move pages_allocated to zs_pool
-Message-ID: <20140814011416.GI9227@bbox>
-References: <1407977877-18185-1-git-send-email-minchan@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1407977877-18185-1-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753925AbaHNBR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 21:17:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16641 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752104AbaHNBR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 21:17:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="372142693"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 3/5] perf, x86: Add Broadwell core support
+Date: Wed, 13 Aug 2014 18:17:47 -0700
+Message-Id: <1407979069-7121-4-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1407979069-7121-1-git-send-email-andi@firstfloor.org>
+References: <1407979069-7121-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just resent new one with correcting Seth's mail address and including the one
-omitted by mistake in this patchset.
+From: Andi Kleen <ak@linux.intel.com>
 
-On Thu, Aug 14, 2014 at 09:57:56AM +0900, Minchan Kim wrote:
-> Pages_allocated has counted in size_class structure and when user
-> want to see total_size_bytes, it gathers all of value from each
-> size_class to report the sum.
-> 
-> It's not bad if user don't see the value often but if user start
-> to see the value frequently, it would be not a good deal for
-> performance POV.
-> 
-> Even, this patch moves the variable from size_class to zs_pool
-> so it reduces memory footprint (from [255 * 8byte] to
-> [sizeof(atomic_t)]) but it introduce new atomic opearation
-> but it's not a big deal because atomic operation is called on
-> slow path of zsmalloc where it allocates/free zspage unit,
-> not object.
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  mm/zsmalloc.c | 21 +++++++--------------
->  1 file changed, 7 insertions(+), 14 deletions(-)
-> 
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index 4e2fc83cb394..2f21ea8921dc 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -199,9 +199,6 @@ struct size_class {
->  
->  	spinlock_t lock;
->  
-> -	/* stats */
-> -	u64 pages_allocated;
-> -
->  	struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
->  };
->  
-> @@ -220,6 +217,7 @@ struct zs_pool {
->  	struct size_class size_class[ZS_SIZE_CLASSES];
->  
->  	gfp_t flags;	/* allocation flags used when growing pool */
-> +	atomic_t pages_allocated;
->  };
->  
->  /*
-> @@ -1027,8 +1025,8 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
->  			return 0;
->  
->  		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
-> +		atomic_add(class->pages_per_zspage, &pool->pages_allocated);
->  		spin_lock(&class->lock);
-> -		class->pages_allocated += class->pages_per_zspage;
->  	}
->  
->  	obj = (unsigned long)first_page->freelist;
-> @@ -1081,14 +1079,12 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
->  
->  	first_page->inuse--;
->  	fullness = fix_fullness_group(pool, first_page);
-> -
-> -	if (fullness == ZS_EMPTY)
-> -		class->pages_allocated -= class->pages_per_zspage;
-> -
->  	spin_unlock(&class->lock);
->  
-> -	if (fullness == ZS_EMPTY)
-> +	if (fullness == ZS_EMPTY) {
-> +		atomic_sub(class->pages_per_zspage, &pool->pages_allocated);
->  		free_zspage(first_page);
-> +	}
->  }
->  EXPORT_SYMBOL_GPL(zs_free);
->  
-> @@ -1184,12 +1180,9 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
->  
->  u64 zs_get_total_size_bytes(struct zs_pool *pool)
->  {
-> -	int i;
-> -	u64 npages = 0;
-> -
-> -	for (i = 0; i < ZS_SIZE_CLASSES; i++)
-> -		npages += pool->size_class[i].pages_allocated;
-> +	u64 npages;
->  
-> +	npages = atomic_read(&pool->pages_allocated);
->  	return npages << PAGE_SHIFT;
->  }
->  EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
-> -- 
-> 2.0.0
+Add Broadwell support for Broadwell Client to perf.
+This is very similar to Haswell.  It uses a new cache event table,
+because there were various changes there.
 
+The constraint list has one new event that needs to be handled over Haswell.
+
+The PEBS event list is the same, so we reuse Haswell's.
+
+v2: Remove unnamed model numbers.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 150 +++++++++++++++++++++++++++++++++
+ 1 file changed, 150 insertions(+)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 03befdd..4bfb0ec 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -220,6 +220,15 @@ static struct event_constraint intel_hsw_event_constraints[] = {
+ 	EVENT_CONSTRAINT_END
+ };
+ 
++struct event_constraint intel_bdw_event_constraints[] = {
++	FIXED_EVENT_CONSTRAINT(0x00c0, 0),	/* INST_RETIRED.ANY */
++	FIXED_EVENT_CONSTRAINT(0x003c, 1),	/* CPU_CLK_UNHALTED.CORE */
++	FIXED_EVENT_CONSTRAINT(0x0300, 2),	/* CPU_CLK_UNHALTED.REF */
++	INTEL_UEVENT_CONSTRAINT(0x148, 0x4),	/* L1D_PEND_MISS.PENDING */
++	INTEL_EVENT_CONSTRAINT(0xa3, 0x4),	/* CYCLE_ACTIVITY.* */
++	EVENT_CONSTRAINT_END
++};
++
+ static u64 intel_pmu_event_map(int hw_event)
+ {
+ 	return intel_perfmon_event_map[hw_event];
+@@ -415,6 +424,126 @@ static __initconst const u64 snb_hw_cache_event_ids
+ 
+ };
+ 
++static __initconst const u64 bdw_hw_cache_event_ids
++				[PERF_COUNT_HW_CACHE_MAX]
++				[PERF_COUNT_HW_CACHE_OP_MAX]
++				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
++{
++ [ C(L1D ) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = 0x81d0, 	/* MEM_UOPS_RETIRED.ALL_LOADS */
++		[ C(RESULT_MISS)   ] = 0x151, 	/* L1D.REPLACEMENT */
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = 0x82d0, 	/* MEM_UOPS_RETIRED.ALL_STORES */
++		[ C(RESULT_MISS)   ] = 0x0,
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = 0x0,
++		[ C(RESULT_MISS)   ] = 0x0,
++	},
++ },
++ [ C(L1I ) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = 0x0,
++		[ C(RESULT_MISS)   ] = 0x280, 	/* ICACHE.MISSES */
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = -1,
++		[ C(RESULT_MISS)   ] = -1,
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = 0x0,
++		[ C(RESULT_MISS)   ] = 0x0,
++	},
++ },
++ [ C(LL  ) ] = {
++	[ C(OP_READ) ] = {
++		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD */
++		[ C(RESULT_ACCESS) ] = 0x1b7,
++		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD|SUPPLIER_NONE|
++                   L3_MISS|ANY_SNOOP */
++		[ C(RESULT_MISS)   ] = 0x1b7,
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = 0x1b7, 	/* OFFCORE_RESPONSE:ALL_RFO */
++		/* OFFCORE_RESPONSE:ALL_RFO|SUPPLIER_NONE|L3_MISS|ANY_SNOOP */
++		[ C(RESULT_MISS)   ] = 0x1b7,
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = 0x0,
++		[ C(RESULT_MISS)   ] = 0x0,
++	},
++ },
++ [ C(DTLB) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = 0x81d0, 	/* MEM_UOPS_RETIRED.ALL_LOADS */
++		[ C(RESULT_MISS)   ] = 0x108, 	/* DTLB_LOAD_MISSES.MISS_CAUSES_A_WALK */
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = 0x82d0, 	/* MEM_UOPS_RETIRED.ALL_STORES */
++		[ C(RESULT_MISS)   ] = 0x149, 	/* DTLB_STORE_MISSES.MISS_CAUSES_A_WALK */
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = 0x0,
++		[ C(RESULT_MISS)   ] = 0x0,
++	},
++ },
++ [ C(ITLB) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = 0x6085, 	/* ITLB_MISSES.STLB_HIT */
++		[ C(RESULT_MISS)   ] = 0x185, 	/* ITLB_MISSES.MISS_CAUSES_A_WALK */
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = -1,
++		[ C(RESULT_MISS)   ] = -1,
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = -1,
++		[ C(RESULT_MISS)   ] = -1,
++	},
++ },
++ [ C(BPU ) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = 0xc4, 	/* BR_INST_RETIRED.ALL_BRANCHES */
++		[ C(RESULT_MISS)   ] = 0xc5, 	/* BR_MISP_RETIRED.ALL_BRANCHES */
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = -1,
++		[ C(RESULT_MISS)   ] = -1,
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = -1,
++		[ C(RESULT_MISS)   ] = -1,
++	},
++ },
++};
++
++static __initconst const u64 bdw_hw_cache_extra_regs
++				[PERF_COUNT_HW_CACHE_MAX]
++				[PERF_COUNT_HW_CACHE_OP_MAX]
++				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
++{
++ [ C(LL  ) ] = {
++	[ C(OP_READ) ] = {
++		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD */
++		[ C(RESULT_ACCESS) ] = 0x2d5,
++		/* OFFCORE_RESPONSE:ALL_DATA_RD|ALL_CODE_RD|SUPPLIER_NONE|
++                   L3_MISS|ANY_SNOOP */
++		[ C(RESULT_MISS)   ] = 0x3fbc0202d5,
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = 0x122, 	/* OFFCORE_RESPONSE:ALL_RFO */
++		/* OFFCORE_RESPONSE:ALL_RFO|SUPPLIER_NONE|L3_MISS|ANY_SNOOP */
++		[ C(RESULT_MISS)   ] = 0x3fbc020122,
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = 0x0,
++		[ C(RESULT_MISS)   ] = 0x0,
++	},
++ },
++};
++
+ static __initconst const u64 westmere_hw_cache_event_ids
+ 				[PERF_COUNT_HW_CACHE_MAX]
+ 				[PERF_COUNT_HW_CACHE_OP_MAX]
+@@ -2564,6 +2693,27 @@ __init int intel_pmu_init(void)
+ 		pr_cont("Haswell events, ");
+ 		break;
+ 
++	case 61: /* Broadwell Client */
++		x86_pmu.late_ack = true;
++		memcpy(hw_cache_event_ids, bdw_hw_cache_event_ids, sizeof(hw_cache_event_ids));
++		memcpy(hw_cache_extra_regs, bdw_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
++
++		intel_pmu_lbr_init_snb();
++
++		x86_pmu.event_constraints = intel_bdw_event_constraints;
++		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
++		x86_pmu.extra_regs = intel_snbep_extra_regs;
++		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
++		/* all extra regs are per-cpu when HT is on */
++		x86_pmu.er_flags |= ERF_HAS_RSP_1;
++		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
++
++		x86_pmu.hw_config = hsw_hw_config;
++		x86_pmu.get_event_constraints = hsw_get_event_constraints;
++		x86_pmu.cpu_events = hsw_events_attrs;
++		pr_cont("Broadwell events, ");
++		break;
++
+ 	default:
+ 		switch (x86_pmu.version) {
+ 		case 1:
 -- 
-Kind regards,
-Minchan Kim
+1.9.3
+
