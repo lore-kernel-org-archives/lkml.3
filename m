@@ -1,130 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915AbaHNNwt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 09:52:49 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:51857 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220AbaHNNwr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 09:52:47 -0400
-From: Jeff Layton <jlayton@primarydata.com>
-To: Joe Perches <joe@perches.com>
-Cc: Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, cluster-devel@redhat.com,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Kinglong Mee <kinglongmee@gmail.com>
-Subject: [PATCH] locks: Remove unused conf argument from lm_grant
-Date: Thu, 14 Aug 2014 09:52:40 -0400
-Message-Id: <1408024360-5177-1-git-send-email-jlayton@primarydata.com>
-X-Mailer: git-send-email 1.9.3
+	id S1755044AbaHNNzt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 09:55:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60375 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754976AbaHNNzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 09:55:47 -0400
+Date: Thu, 14 Aug 2014 15:53:18 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
+	seqlock
+Message-ID: <20140814135318.GA26891@redhat.com>
+References: <20140812191218.GA15210@redhat.com> <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814132239.GA24465@redhat.com> <CAFTL4hwvPobNwm39qzLdP1mPLya7Wg-bLQnWn-Bt5mSV_i3QsA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hwvPobNwm39qzLdP1mPLya7Wg-bLQnWn-Bt5mSV_i3QsA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
+On 08/14, Frederic Weisbecker wrote:
+>
+> 2014-08-14 15:22 GMT+02:00 Oleg Nesterov <oleg@redhat.com>:
+> > On 08/13, Rik van Riel wrote:
+> >>
+> >> @@ -646,6 +646,7 @@ struct signal_struct {
+> >>        * Live threads maintain their own counters and add to these
+> >>        * in __exit_signal, except for the group leader.
+> >>        */
+> >> +     seqlock_t stats_lock;
+> >
+> > Ah. Somehow I thought that you were going to use seqcount_t and fallback
+> > to taking ->siglock if seqcount_retry, but this patch adds the "full blown"
+> > seqlock_t.
+> >
+> > OK, I won't argue, this can make the seqbegin_or_lock simpler...
+>
+> Is this really needed? seqlock are useful when we have concurrent
+> updaters. But updaters of thread stats should be under the thread lock
+> already, right? If we have only one updater at a time, seqcount should
+> be enough.
 
-This argument is always NULL so don't pass it around.
+Yes, this is what I meant. Although I can see 2 reasons to use seqlock_t:
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
----
- fs/dlm/plock.c     |  8 ++++----
- fs/lockd/svclock.c | 12 +++---------
- include/linux/fs.h |  2 +-
- 3 files changed, 8 insertions(+), 14 deletions(-)
+	1. It can simplify the seqbegin-or-lock logic. If nothing else,
+	   you simply can't use read_seqbegin_or_lock() to take ->siglock.
+	   But this is just syntactic sugar.
 
-diff --git a/fs/dlm/plock.c b/fs/dlm/plock.c
-index f704458ea5f5..e0ab3a93eeff 100644
---- a/fs/dlm/plock.c
-+++ b/fs/dlm/plock.c
-@@ -30,7 +30,7 @@ struct plock_op {
- 
- struct plock_xop {
- 	struct plock_op xop;
--	void *callback;
-+	int (*callback)(struct file_lock *fl, int result);
- 	void *fl;
- 	void *file;
- 	struct file_lock flc;
-@@ -190,7 +190,7 @@ static int dlm_plock_callback(struct plock_op *op)
- 	struct file *file;
- 	struct file_lock *fl;
- 	struct file_lock *flc;
--	int (*notify)(void *, void *, int) = NULL;
-+	int (*notify)(struct file_lock *fl, int result) = NULL;
- 	struct plock_xop *xop = (struct plock_xop *)op;
- 	int rv = 0;
- 
-@@ -209,7 +209,7 @@ static int dlm_plock_callback(struct plock_op *op)
- 	notify = xop->callback;
- 
- 	if (op->info.rv) {
--		notify(fl, NULL, op->info.rv);
-+		notify(fl, op->info.rv);
- 		goto out;
- 	}
- 
-@@ -228,7 +228,7 @@ static int dlm_plock_callback(struct plock_op *op)
- 			  (unsigned long long)op->info.number, file, fl);
- 	}
- 
--	rv = notify(fl, NULL, 0);
-+	rv = notify(fl, 0);
- 	if (rv) {
- 		/* XXX: We need to cancel the fs lock here: */
- 		log_print("dlm_plock_callback: lock granted after lock request "
-diff --git a/fs/lockd/svclock.c b/fs/lockd/svclock.c
-index ab798a88ec1d..2a6170133c1d 100644
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -667,22 +667,16 @@ nlmsvc_cancel_blocked(struct net *net, struct nlm_file *file, struct nlm_lock *l
-  * deferred rpc for GETLK and SETLK.
-  */
- static void
--nlmsvc_update_deferred_block(struct nlm_block *block, struct file_lock *conf,
--			     int result)
-+nlmsvc_update_deferred_block(struct nlm_block *block, int result)
- {
- 	block->b_flags |= B_GOT_CALLBACK;
- 	if (result == 0)
- 		block->b_granted = 1;
- 	else
- 		block->b_flags |= B_TIMED_OUT;
--	if (conf) {
--		if (block->b_fl)
--			__locks_copy_lock(block->b_fl, conf);
--	}
- }
- 
--static int nlmsvc_grant_deferred(struct file_lock *fl, struct file_lock *conf,
--					int result)
-+static int nlmsvc_grant_deferred(struct file_lock *fl, int result)
- {
- 	struct nlm_block *block;
- 	int rc = -ENOENT;
-@@ -697,7 +691,7 @@ static int nlmsvc_grant_deferred(struct file_lock *fl, struct file_lock *conf,
- 					rc = -ENOLCK;
- 					break;
- 				}
--				nlmsvc_update_deferred_block(block, conf, result);
-+				nlmsvc_update_deferred_block(block, result);
- 			} else if (result == 0)
- 				block->b_granted = 1;
- 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index f0890e4a7c25..6cb1f3d182ee 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -869,7 +869,7 @@ struct lock_manager_operations {
- 	int (*lm_compare_owner)(struct file_lock *, struct file_lock *);
- 	unsigned long (*lm_owner_key)(struct file_lock *);
- 	void (*lm_notify)(struct file_lock *);	/* unblock callback */
--	int (*lm_grant)(struct file_lock *, struct file_lock *, int);
-+	int (*lm_grant)(struct file_lock *, int);
- 	void (*lm_break)(struct file_lock *);
- 	int (*lm_change)(struct file_lock **, int);
- };
--- 
-1.9.3
+	2. If we use ->siglock in fallback path, we need to verify that
+	   thread_group_cputime() is never called with ->siglock held first.
+
+	   Or, we need a fat comment to explain that need_seqrtry == T is not
+	   possible if it is called under ->siglock, and thus "fallback to
+	   lock_task_sighand" must be always safe. But in this case we need
+	   to ensure that the caller didn't do write_seqcount_begin().
+
+So perhaps seqlock_t makes more sense at least initially...
+
+Oleg.
 
