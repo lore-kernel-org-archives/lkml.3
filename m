@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438AbaHNPvf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 11:51:35 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52961 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953AbaHNPvc (ORCPT
+	id S1755449AbaHNPvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 11:51:54 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:50268 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755064AbaHNPvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 11:51:32 -0400
+	Thu, 14 Aug 2014 11:51:52 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -15,11 +15,10 @@ Cc: Zach Brown <zab@zabbo.net>, Benjamin LaHaise <bcrl@kvack.org>,
         Christoph Hellwig <hch@infradead.org>,
         Kent Overstreet <kmo@daterainc.com>, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        Ming Lei <ming.lei@canonical.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH v1 2/9] fd/direct-io: introduce should_dirty for kernel aio
-Date: Thu, 14 Aug 2014 23:50:33 +0800
-Message-Id: <1408031441-31156-3-git-send-email-ming.lei@canonical.com>
+        Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH v1 3/9] blk-mq: export blk_mq_freeze_queue and blk_mq_unfreeze_queue
+Date: Thu, 14 Aug 2014 23:50:34 +0800
+Message-Id: <1408031441-31156-4-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
 References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
@@ -27,67 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For pages from kernel AIO, it is required to dirty
-them before direct IO.
+It is handy to use the two helpers for switching backend file
+in loop driver, so export them.
 
-The idea is borrowd from Dave previous post.
-
-Cc: Zach Brown <zab@zabbo.net>
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- fs/direct-io.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ block/blk-mq.c         |    4 +++-
+ block/blk-mq.h         |    1 -
+ include/linux/blk-mq.h |    2 ++
+ 3 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index c311640..f0460e0 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -121,6 +121,7 @@ struct dio {
- 	int page_errors;		/* errno from get_user_pages() */
- 	int is_async;			/* is IO async ? */
- 	bool defer_completion;		/* defer AIO completion to workqueue? */
-+	bool should_dirty;		/* if page should be dirty */
- 	int io_error;			/* IO error in completion path */
- 	unsigned long refcount;		/* direct_io_worker() and bios */
- 	struct bio *bio_list;		/* singly linked via bi_private */
-@@ -392,7 +393,7 @@ static inline void dio_bio_submit(struct dio *dio, struct dio_submit *sdio)
- 	dio->refcount++;
- 	spin_unlock_irqrestore(&dio->bio_lock, flags);
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index 5189cb1..07e1033 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -120,8 +120,9 @@ void blk_mq_freeze_queue(struct request_queue *q)
+ 	blk_mq_run_queues(q, false);
+ 	wait_event(q->mq_freeze_wq, percpu_ref_is_zero(&q->mq_usage_counter));
+ }
++EXPORT_SYMBOL(blk_mq_freeze_queue);
  
--	if (dio->is_async && dio->rw == READ)
-+	if (dio->is_async && dio->rw == READ && dio->should_dirty)
- 		bio_set_pages_dirty(bio);
+-static void blk_mq_unfreeze_queue(struct request_queue *q)
++void blk_mq_unfreeze_queue(struct request_queue *q)
+ {
+ 	bool wake = false;
  
- 	if (sdio->submit_io)
-@@ -463,13 +464,14 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
- 	if (!uptodate)
- 		dio->io_error = -EIO;
+@@ -134,6 +135,7 @@ static void blk_mq_unfreeze_queue(struct request_queue *q)
+ 		wake_up_all(&q->mq_freeze_wq);
+ 	}
+ }
++EXPORT_SYMBOL(blk_mq_unfreeze_queue);
  
--	if (dio->is_async && dio->rw == READ) {
-+	if (dio->is_async && dio->rw == READ && dio->should_dirty) {
- 		bio_check_pages_dirty(bio);	/* transfers ownership */
- 	} else {
- 		bio_for_each_segment_all(bvec, bio, i) {
- 			struct page *page = bvec->bv_page;
+ bool blk_mq_can_queue(struct blk_mq_hw_ctx *hctx)
+ {
+diff --git a/block/blk-mq.h b/block/blk-mq.h
+index ca4964a..3800316 100644
+--- a/block/blk-mq.h
++++ b/block/blk-mq.h
+@@ -28,7 +28,6 @@ struct blk_mq_ctx {
+ void __blk_mq_complete_request(struct request *rq);
+ void blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx, bool async);
+ void blk_mq_init_flush(struct request_queue *q);
+-void blk_mq_freeze_queue(struct request_queue *q);
+ void blk_mq_free_queue(struct request_queue *q);
+ void blk_mq_clone_flush_request(struct request *flush_rq,
+ 		struct request *orig_rq);
+diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
+index eb726b9..1cc1baa 100644
+--- a/include/linux/blk-mq.h
++++ b/include/linux/blk-mq.h
+@@ -175,6 +175,8 @@ void blk_mq_start_hw_queues(struct request_queue *q);
+ void blk_mq_start_stopped_hw_queues(struct request_queue *q, bool async);
+ void blk_mq_delay_queue(struct blk_mq_hw_ctx *hctx, unsigned long msecs);
+ void blk_mq_tag_busy_iter(struct blk_mq_tags *tags, void (*fn)(void *data, unsigned long *), void *data);
++void blk_mq_freeze_queue(struct request_queue *q);
++void blk_mq_unfreeze_queue(struct request_queue *q);
  
--			if (dio->rw == READ && !PageCompound(page))
-+			if (dio->rw == READ && !PageCompound(page) &&
-+					dio->should_dirty)
- 				set_page_dirty_lock(page);
- 			page_cache_release(page);
- 		}
-@@ -1217,6 +1219,7 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 
- 	spin_lock_init(&dio->bio_lock);
- 	dio->refcount = 1;
-+	dio->should_dirty = !is_kernel_kiocb(iocb);
- 
- 	sdio.iter = iter;
- 	sdio.final_block_in_request =
+ /*
+  * Driver command data is immediately after the request. So subtract request
 -- 
 1.7.9.5
 
