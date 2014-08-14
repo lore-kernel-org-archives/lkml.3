@@ -1,199 +1,521 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858AbaHNVW2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 17:22:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33788 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754370AbaHNVW1 (ORCPT
+	id S1754886AbaHNVWq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 17:22:46 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:54798 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754101AbaHNVWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 17:22:27 -0400
-Date: Thu, 14 Aug 2014 14:22:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        =?UTF-8?Q?=EC=9D=B4?= =?UTF-8?Q?=EA=B1=B4=ED=98=B8?= 
-	<gunho.lee@lge.com>
-Subject: Re: [PATCH 1/2] fs/buffer.c: allocate buffer cache from non-movable
- area
-Message-Id: <20140814142225.50911fd0a0bf65427a1a214f@linux-foundation.org>
-In-Reply-To: <53EC45FC.7050508@lge.com>
-References: <53EC4531.1000904@lge.com>
-	<53EC45FC.7050508@lge.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Aug 2014 17:22:45 -0400
+Date: Thu, 14 Aug 2014 14:22:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH v5 tip/core/rcu 01/16] rcu: Add call_rcu_tasks()
+Message-ID: <20140814212238.GW4752@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140811224840.GA25594@linux.vnet.ibm.com>
+ <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <CAJhHMCDXm7Zu0cehHzO2OKoZRm0oFqAgA5ZOM=_OJ3=uc3+79w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCDXm7Zu0cehHzO2OKoZRm0oFqAgA5ZOM=_OJ3=uc3+79w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081421-7164-0000-0000-000003D55DED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Aug 2014 14:15:40 +0900 Gioh Kim <gioh.kim@lge.com> wrote:
-
-> A buffer cache is allocated from movable area
-> because it is referred for a while and released soon.
-> But some filesystems are taking buffer cache for a long time
-> and it can disturb page migration.
+On Thu, Aug 14, 2014 at 04:46:34PM -0400, Pranith Kumar wrote:
+> On Mon, Aug 11, 2014 at 6:48 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> >
+> > This commit adds a new RCU-tasks flavor of RCU, which provides
+> > call_rcu_tasks().  This RCU flavor's quiescent states are voluntary
+> > context switch (not preemption!), userspace execution, and the idle loop.
+> > Note that unlike other RCU flavors, these quiescent states occur in tasks,
+> > not necessarily CPUs.  Includes fixes from Steven Rostedt.
+> >
+> > This RCU flavor is assumed to have very infrequent latency-tolerant
+> > updaters.  This assumption permits significant simplifications, including
+> > a single global callback list protected by a single global lock, along
+> > with a single linked list containing all tasks that have not yet passed
+> > through a quiescent state.  If experience shows this assumption to be
+> > incorrect, the required additional complexity will be added.
+> >
+> > Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> A new API should be introduced to allocate buffer cache from
-> non-movable area.
+> Please find comments below. I did not read all the ~100 emails in this
+> series, so please forgive if I ask something repetitive and just point
+> that out. I will go digging :)
 
-I think the API could and should be more flexible than this.
+;-)
 
-Rather than making the API be "movable or not movable", let's permit
-callers to specify the gfp_t and leave it at that.  That way, if
-someone later wants to allocate a buffer head with, I dunno,
-__GFP_NOTRACK then they can do so.
-
-So the word "movable" shouldn't appear in buffer.c at all, except in a
-single place.
-
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -993,7 +993,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
->   */
->  static int
->  grow_dev_page(struct block_device *bdev, sector_t block,
-> -               pgoff_t index, int size, int sizebits)
-> +             pgoff_t index, int size, int sizebits, gfp_t movable_mask)
-
-s/movable_mask/gfp/
-
->  {
->         struct inode *inode = bdev->bd_inode;
->         struct page *page;
-> @@ -1003,7 +1003,8 @@ grow_dev_page(struct block_device *bdev, sector_t block,
->         gfp_t gfp_mask;
+> > ---
+> >  include/linux/init_task.h |   9 +++
+> >  include/linux/rcupdate.h  |  36 ++++++++++
+> >  include/linux/sched.h     |  23 ++++---
+> >  init/Kconfig              |  10 +++
+> >  kernel/rcu/tiny.c         |   2 +
+> >  kernel/rcu/tree.c         |   2 +
+> >  kernel/rcu/update.c       | 171 ++++++++++++++++++++++++++++++++++++++++++++++
+> >  7 files changed, 242 insertions(+), 11 deletions(-)
+> >
+> > diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+> > index 6df7f9fe0d01..78715ea7c30c 100644
+> > --- a/include/linux/init_task.h
+> > +++ b/include/linux/init_task.h
+> > @@ -124,6 +124,14 @@ extern struct group_info init_groups;
+> >  #else
+> >  #define INIT_TASK_RCU_PREEMPT(tsk)
+> >  #endif
+> > +#ifdef CONFIG_TASKS_RCU
+> > +#define INIT_TASK_RCU_TASKS(tsk)                                       \
+> > +       .rcu_tasks_holdout = false,                                     \
+> > +       .rcu_tasks_holdout_list =                                       \
+> > +               LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),
+> > +#else
+> > +#define INIT_TASK_RCU_TASKS(tsk)
+> > +#endif
 > 
->         gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
-> -       gfp_mask |= __GFP_MOVABLE;
-> +       if (movable_mask & __GFP_MOVABLE)
-> +               gfp_mask |= __GFP_MOVABLE;
+> rcu_tasks_holdout is defined as an int. So use 0 may be?
 
-This becomes
+Good point.  I started with a bool, but then needed to do
+smp_store_release(), which doesn't support bool.
 
-	gfp_mask |= gfp;
+> I see that there are other locations which set it to 'false'. So may
+> just change the definition to bool, as it seems more appropriate.
 
->         /*
->          * XXX: __getblk_slow() can not really deal with failure and
->          * will endlessly loop on improvised global reclaim.  Prefer
-> @@ -1058,7 +1059,8 @@ failed:
->   * that page was dirty, the buffers are set dirty also.
->   */
->  static int
-> -grow_buffers(struct block_device *bdev, sector_t block, int size)
-> +grow_buffers(struct block_device *bdev, sector_t block,
-> +            int size, gfp_t movable_mask)
+If I no longer use smp_store_release, yep.
 
-gfp
+And it appears that I no longer do, so changed back to bool.
 
->  {
->         pgoff_t index;
->         int sizebits;
-> @@ -1085,11 +1087,12 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
->         }
+> Also why is rcu_tasks_nvcsw not being initialized? I see that it can
+> be read before initialized, no?
+
+It initialized by rcu_tasks_kthread() before putting a given task on the
+rcu_tasks_holdouts list.  It is only read for tasks on that list.  So
+there is not use before initialization.
+
+> >  extern struct cred init_cred;
+> >
+> > @@ -231,6 +239,7 @@ extern struct task_group root_task_group;
+> >         INIT_FTRACE_GRAPH                                               \
+> >         INIT_TRACE_RECURSION                                            \
+> >         INIT_TASK_RCU_PREEMPT(tsk)                                      \
+> > +       INIT_TASK_RCU_TASKS(tsk)                                        \
+> >         INIT_CPUSET_SEQ(tsk)                                            \
+> >         INIT_RT_MUTEXES(tsk)                                            \
+> >         INIT_VTIME(tsk)                                                 \
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 6a94cc8b1ca0..829efc99df3e 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -197,6 +197,26 @@ void call_rcu_sched(struct rcu_head *head,
+> >
+> >  void synchronize_sched(void);
+> >
+> > +/**
+> > + * call_rcu_tasks() - Queue an RCU for invocation task-based grace period
 > 
->         /* Create a page with the proper size buffers.. */
-> -       return grow_dev_page(bdev, block, index, size, sizebits);
-> +       return grow_dev_page(bdev, block, index, size, sizebits, movable_mask);
->  }
+> -ENOPARSE :(
 > 
->  static struct buffer_head *
-> -__getblk_slow(struct block_device *bdev, sector_t block, int size)
-> +__getblk_slow(struct block_device *bdev, sector_t block,
-> +             int size, gfp_t movable_mask)
-
-gfp
-
->  {
->         /* Size must be multiple of hard sectorsize */
->         if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
-> @@ -1111,7 +1114,7 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
->                 if (bh)
->                         return bh;
+> > + * @head: structure to be used for queueing the RCU updates.
+> > + * @func: actual callback function to be invoked after the grace period
+> > + *
+> > + * The callback function will be invoked some time after a full grace
+> > + * period elapses, in other words after all currently executing RCU
+> > + * read-side critical sections have completed. call_rcu_tasks() assumes
+> > + * that the read-side critical sections end at a voluntary context
+> > + * switch (not a preemption!), entry into idle, or transition to usermode
+> > + * execution.  As such, there are no read-side primitives analogous to
+> > + * rcu_read_lock() and rcu_read_unlock() because this primitive is intended
+> > + * to determine that all tasks have passed through a safe state, not so
+> > + * much for data-strcuture synchronization.
 > 
-> -               ret = grow_buffers(bdev, block, size);
-> +               ret = grow_buffers(bdev, block, size, movable_mask);
-
-gfp
-
->                 if (ret < 0)
->                         return NULL;
->                 if (ret == 0)
-> @@ -1385,11 +1388,34 @@ __getblk(struct block_device *bdev, sector_t block, unsigned size)
+> s/strcuture/structure
 > 
->         might_sleep();
->         if (bh == NULL)
-> -               bh = __getblk_slow(bdev, block, size);
-> +               bh = __getblk_slow(bdev, block, size, __GFP_MOVABLE);
-
-Here is the place where buffer.c. mentions "movable".
-
->         return bh;
->  }
->  EXPORT_SYMBOL(__getblk);
+> > + *
+> > + * See the description of call_rcu() for more detailed information on
+> > + * memory ordering guarantees.
+> > + */
+> > +void call_rcu_tasks(struct rcu_head *head, void (*func)(struct rcu_head *head));
+> > +
+> >  #ifdef CONFIG_PREEMPT_RCU
+> >
+> >  void __rcu_read_lock(void);
+> > @@ -294,6 +314,22 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+> >                 rcu_irq_exit(); \
+> >         } while (0)
+> >
+> > +/*
+> > + * Note a voluntary context switch for RCU-tasks benefit.  This is a
+> > + * macro rather than an inline function to avoid #include hell.
+> > + */
+> > +#ifdef CONFIG_TASKS_RCU
+> > +#define rcu_note_voluntary_context_switch(t) \
+> > +       do { \
+> > +               preempt_disable(); /* Exclude synchronize_sched(); */ \
+> > +               if (ACCESS_ONCE((t)->rcu_tasks_holdout)) \
+> > +                       ACCESS_ONCE((t)->rcu_tasks_holdout) = 0; \
+> > +               preempt_enable(); \
+> > +       } while (0)
+> > +#else /* #ifdef CONFIG_TASKS_RCU */
+> > +#define rcu_note_voluntary_context_switch(t)   do { } while (0)
+> > +#endif /* #else #ifdef CONFIG_TASKS_RCU */
+> > +
+> >  #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP)
+> >  bool __rcu_is_watching(void);
+> >  #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
+> > diff --git a/include/linux/sched.h b/include/linux/sched.h
+> > index 306f4f0c987a..3cf124389ec7 100644
+> > --- a/include/linux/sched.h
+> > +++ b/include/linux/sched.h
+> > @@ -1273,6 +1273,11 @@ struct task_struct {
+> >  #ifdef CONFIG_RCU_BOOST
+> >         struct rt_mutex *rcu_boost_mutex;
+> >  #endif /* #ifdef CONFIG_RCU_BOOST */
+> > +#ifdef CONFIG_TASKS_RCU
+> > +       unsigned long rcu_tasks_nvcsw;
+> > +       int rcu_tasks_holdout;
+> > +       struct list_head rcu_tasks_holdout_list;
+> > +#endif /* #ifdef CONFIG_TASKS_RCU */
+> >
+> >  #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+> >         struct sched_info sched_info;
+> > @@ -1998,31 +2003,27 @@ extern void task_clear_jobctl_pending(struct task_struct *task,
+> >                                       unsigned int mask);
+> >
+> >  #ifdef CONFIG_PREEMPT_RCU
+> > -
+> >  #define RCU_READ_UNLOCK_BLOCKED (1 << 0) /* blocked while in RCU read-side. */
+> >  #define RCU_READ_UNLOCK_NEED_QS (1 << 1) /* RCU core needs CPU response. */
+> > +#endif /* #ifdef CONFIG_PREEMPT_RCU */
+> >
+> >  static inline void rcu_copy_process(struct task_struct *p)
+> >  {
+> > +#ifdef CONFIG_PREEMPT_RCU
+> >         p->rcu_read_lock_nesting = 0;
+> >         p->rcu_read_unlock_special = 0;
+> > -#ifdef CONFIG_TREE_PREEMPT_RCU
+> >         p->rcu_blocked_node = NULL;
+> > -#endif /* #ifdef CONFIG_TREE_PREEMPT_RCU */
+> >  #ifdef CONFIG_RCU_BOOST
+> >         p->rcu_boost_mutex = NULL;
+> >  #endif /* #ifdef CONFIG_RCU_BOOST */
+> >         INIT_LIST_HEAD(&p->rcu_node_entry);
+> > +#endif /* #ifdef CONFIG_PREEMPT_RCU */
+> > +#ifdef CONFIG_TASKS_RCU
+> > +       p->rcu_tasks_holdout = false;
+> > +       INIT_LIST_HEAD(&p->rcu_tasks_holdout_list);
+> > +#endif /* #ifdef CONFIG_TASKS_RCU */
+> >  }
 > 
-> + /*
-> + * __getblk_nonmovable will locate (and, if necessary, create) the buffer_head
-> + * which corresponds to the passed block_device, block and size. The
-> + * returned buffer has its reference count incremented.
-> + *
-> + * The page cache is allocated from non-movable area
-> + * not to prevent page migration.
-> + *
-> + * __getblk()_nonmovable will lock up the machine
-> + * if grow_dev_page's try_to_free_buffers() attempt is failing. FIXME, perhaps?
-> + */
-> +struct buffer_head *
-> +__getblk_nonmovable(struct block_device *bdev, sector_t block, unsigned size)
-> +{
-> +       struct buffer_head *bh = __find_get_block(bdev, block, size);
-> +
-> +       might_sleep();
-> +       if (bh == NULL)
-> +               bh = __getblk_slow(bdev, block, size, 0);
-> +       return bh;
-> +}
-> +EXPORT_SYMBOL(__getblk_nonmovable);
+> I think rcu_tasks_nvcsw needs to be set here too.
 
-Suggest this be called __getblk_gfp(bdev, block, size, gfp) and then
-__getblk() be changed to call __getblk_gfp(..., __GFP_MOVABLE).
+Nope, just in rcu_tasks_kthread().
 
-We could then write a __getblk_nonmovable() which calls __getblk_gfp()
-(a static inlined one-line function) or we can just call
-__getblk_gfp(..., 0) directly from filesystems.
-
-> @@ -1423,6 +1450,28 @@ __bread(struct block_device *bdev, sector_t block, unsigned size)
->  }
->  EXPORT_SYMBOL(__bread);
+> >
+> > -#else
+> > -
+> > -static inline void rcu_copy_process(struct task_struct *p)
+> > -{
+> > -}
+> > -
+> > -#endif
+> > -
+> >  static inline void tsk_restore_flags(struct task_struct *task,
+> >                                 unsigned long orig_flags, unsigned long flags)
+> >  {
+> > diff --git a/init/Kconfig b/init/Kconfig
+> > index 9d76b99af1b9..c56cb62a2df1 100644
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -507,6 +507,16 @@ config PREEMPT_RCU
+> >           This option enables preemptible-RCU code that is common between
+> >           the TREE_PREEMPT_RCU and TINY_PREEMPT_RCU implementations.
+> >
+> > +config TASKS_RCU
+> > +       bool "Task_based RCU implementation using voluntary context switch"
+> > +       default n
+> > +       help
+> > +         This option enables a task-based RCU implementation that uses
+> > +         only voluntary context switch (not preemption!), idle, and
+> > +         user-mode execution as quiescent states.
+> > +
+> > +         If unsure, say N.
+> > +
+> >  config RCU_STALL_COMMON
+> >         def_bool ( TREE_RCU || TREE_PREEMPT_RCU || RCU_TRACE )
+> >         help
+> > diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
+> > index d9efcc13008c..717f00854fc0 100644
+> > --- a/kernel/rcu/tiny.c
+> > +++ b/kernel/rcu/tiny.c
+> > @@ -254,6 +254,8 @@ void rcu_check_callbacks(int cpu, int user)
+> >                 rcu_sched_qs(cpu);
+> >         else if (!in_softirq())
+> >                 rcu_bh_qs(cpu);
+> > +       if (user)
+> > +               rcu_note_voluntary_context_switch(current);
+> >  }
+> >
+> >  /*
+> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> > index 625d0b0cd75a..f958c52f644d 100644
+> > --- a/kernel/rcu/tree.c
+> > +++ b/kernel/rcu/tree.c
+> > @@ -2413,6 +2413,8 @@ void rcu_check_callbacks(int cpu, int user)
+> >         rcu_preempt_check_callbacks(cpu);
+> >         if (rcu_pending(cpu))
+> >                 invoke_rcu_core();
+> > +       if (user)
+> > +               rcu_note_voluntary_context_switch(current);
+> >         trace_rcu_utilization(TPS("End scheduler-tick"));
+> >  }
+> >
+> > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> > index bc7883570530..f6f164119a14 100644
+> > --- a/kernel/rcu/update.c
+> > +++ b/kernel/rcu/update.c
+> > @@ -47,6 +47,7 @@
+> >  #include <linux/hardirq.h>
+> >  #include <linux/delay.h>
+> >  #include <linux/module.h>
+> > +#include <linux/kthread.h>
+> >
+> >  #define CREATE_TRACE_POINTS
+> >
+> > @@ -350,3 +351,173 @@ static int __init check_cpu_stall_init(void)
+> >  early_initcall(check_cpu_stall_init);
+> >
+> >  #endif /* #ifdef CONFIG_RCU_STALL_COMMON */
+> > +
+> > +#ifdef CONFIG_TASKS_RCU
+> > +
+> > +/*
+> > + * Simple variant of RCU whose quiescent states are voluntary context switch,
+> > + * user-space execution, and idle.  As such, grace periods can take one good
+> > + * long time.  There are no read-side primitives similar to rcu_read_lock()
+> > + * and rcu_read_unlock() because this implementation is intended to get
+> > + * the system into a safe state for some of the manipulations involved in
+> > + * tracing and the like.  Finally, this implementation does not support
+> > + * high call_rcu_tasks() rates from multiple CPUs.  If this is required,
+> > + * per-CPU callback lists will be needed.
+> > + */
+> > +
+> > +/* Global list of callbacks and associated lock. */
+> > +static struct rcu_head *rcu_tasks_cbs_head;
+> > +static struct rcu_head **rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
+> > +static DEFINE_RAW_SPINLOCK(rcu_tasks_cbs_lock);
+> > +
+> > +/* Post an RCU-tasks callback. */
+> > +void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
+> > +{
+> > +       unsigned long flags;
+> > +
+> > +       rhp->next = NULL;
+> > +       rhp->func = func;
+> > +       raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
+> > +       *rcu_tasks_cbs_tail = rhp;
+> > +       rcu_tasks_cbs_tail = &rhp->next;
+> > +       raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
+> > +}
+> > +EXPORT_SYMBOL_GPL(call_rcu_tasks);
+> > +
+> > +/* See if tasks are still holding out, complain if so. */
+> > +static void check_holdout_task(struct task_struct *t)
+> > +{
+> > +       if (!ACCESS_ONCE(t->rcu_tasks_holdout) ||
+> > +           t->rcu_tasks_nvcsw != ACCESS_ONCE(t->nvcsw) ||
+> > +           !ACCESS_ONCE(t->on_rq)) {
+> > +               ACCESS_ONCE(t->rcu_tasks_holdout) = 0;
+> > +               list_del_rcu(&t->rcu_tasks_holdout_list);
+> > +               put_task_struct(t);
+> > +       }
+> > +}
+> > +
 > 
-> +/**
-> + *  __bread_nonmovable() - reads a specified block and returns the bh
-> + *  @bdev: the block_device to read from
-> + *  @block: number of block
-> + *  @size: size (in bytes) to read
-> + *
-> + *  Reads a specified block, and returns buffer head that contains it.
-> + *  The page cache is allocated from non-movable area
-> + *  not to prevent page migration.
-> + *  It returns NULL if the block was unreadable.
-> + */
-> +struct buffer_head *
-> +__bread_nonmovable(struct block_device *bdev, sector_t block, unsigned size)
-> +{
-> +       struct buffer_head *bh = __getblk_slow(bdev, block, size, 0);
-> +
-> +       if (likely(bh) && !buffer_uptodate(bh))
-> +               bh = __bread_slow(bh);
-> +       return bh;
-> +}
-> +EXPORT_SYMBOL(__bread_nonmovable);
+> I don't see a WARN() for the "complain if so" part. :)
 
-Treat this in the same fashion as __getblk_nonmovable().
+Indeed, that comes in a later patch.  Good catch, fixed the comment.
 
+> > +/* RCU-tasks kthread that detects grace periods and invokes callbacks. */
+> > +static int __noreturn rcu_tasks_kthread(void *arg)
+> > +{
+> > +       unsigned long flags;
+> > +       struct task_struct *g, *t;
+> > +       struct rcu_head *list;
+> > +       struct rcu_head *next;
+> > +       LIST_HEAD(rcu_tasks_holdouts);
+> > +
+> > +       /* FIXME: Add housekeeping affinity. */
+> > +
+> > +       /*
+> > +        * Each pass through the following loop makes one check for
+> > +        * newly arrived callbacks, and, if there are some, waits for
+> > +        * one RCU-tasks grace period and then invokes the callbacks.
+> > +        * This loop is terminated by the system going down.  ;-)
+> > +        */
+> > +       for (;;) {
+> > +
+> > +               /* Pick up any new callbacks. */
+> > +               raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
+> > +               list = rcu_tasks_cbs_head;
+> > +               rcu_tasks_cbs_head = NULL;
+> > +               rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
+> > +               raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
+> > +
+> > +               /* If there were none, wait a bit and start over. */
+> > +               if (!list) {
+> > +                       schedule_timeout_interruptible(HZ);
+> > +                       WARN_ON(signal_pending(current));
+> > +                       continue;
+> > +               }
+> 
+> Why not use a wait queue here? Since this is called very infrequently,
+> it should be a win when compared to periodically waking up and
+> checking, no?
+
+That comes in a later patch (rcu: Improve RCU-tasks energy efficiency).
+Brain-dead simple first, more sophisticated later.
+
+> > +
+> > +               /*
+> > +                * Wait for all pre-existing t->on_rq and t->nvcsw
+> > +                * transitions to complete.  Invoking synchronize_sched()
+> > +                * suffices because all these transitions occur with
+> > +                * interrupts disabled.  Without this synchronize_sched(),
+> > +                * a read-side critical section that started before the
+> > +                * grace period might be incorrectly seen as having started
+> > +                * after the grace period.
+> > +                *
+> > +                * This synchronize_sched() also dispenses with the
+> > +                * need for a memory barrier on the first store to
+> > +                * ->rcu_tasks_holdout, as it forces the store to happen
+> > +                * after the beginning of the grace period.
+> > +                */
+> > +               synchronize_sched();
+> > +
+> > +               /*
+> > +                * There were callbacks, so we need to wait for an
+> > +                * RCU-tasks grace period.  Start off by scanning
+> > +                * the task list for tasks that are not already
+> > +                * voluntarily blocked.  Mark these tasks and make
+> > +                * a list of them in rcu_tasks_holdouts.
+> > +                */
+> > +               rcu_read_lock();
+> > +               for_each_process_thread(g, t) {
+> > +                       if (t != current && ACCESS_ONCE(t->on_rq) &&
+> > +                           !is_idle_task(t)) {
+> > +                               get_task_struct(t);
+> > +                               t->rcu_tasks_nvcsw = ACCESS_ONCE(t->nvcsw);
+> > +                               ACCESS_ONCE(t->rcu_tasks_holdout) = 1;
+> > +                               list_add(&t->rcu_tasks_holdout_list,
+> > +                                        &rcu_tasks_holdouts);
+> > +                       }
+> > +               }
+> > +               rcu_read_unlock();
+> 
+> I don't see why this is a read side critical section. What am I missing?
+
+You are missing that it is not safe to traverse the tasks list without
+either holding the tasks lock or being in a read-side critical section.
+
+> > +
+> > +               /*
+> > +                * Each pass through the following loop scans the list
+> > +                * of holdout tasks, removing any that are no longer
+> > +                * holdouts.  When the list is empty, we are done.
+> > +                */
+> > +               while (!list_empty(&rcu_tasks_holdouts)) {
+> > +                       schedule_timeout_interruptible(HZ);
+> > +                       WARN_ON(signal_pending(current));
+> > +                       rcu_read_lock();
+> > +                       list_for_each_entry_rcu(t, &rcu_tasks_holdouts,
+> > +                                               rcu_tasks_holdout_list)
+> > +                               check_holdout_task(t);
+> > +                       rcu_read_unlock();
+> > +               }
+> > +
+> > +               /*
+> > +                * Because ->on_rq and ->nvcsw are not guaranteed
+> > +                * to have a full memory barriers prior to them in the
+> > +                * schedule() path, memory reordering on other CPUs could
+> > +                * cause their RCU-tasks read-side critical sections to
+> > +                * extend past the end of the grace period.  However,
+> > +                * because these ->nvcsw updates are carried out with
+> > +                * interrupts disabled, we can use synchronize_sched()
+> > +                * to force the needed ordering on all such CPUs.
+> > +                *
+> > +                * This synchronize_sched() also confines all
+> > +                * ->rcu_tasks_holdout accesses to be within the grace
+> > +                * period, avoiding the need for memory barriers for
+> > +                * ->rcu_tasks_holdout accesses.
+> > +                */
+> > +               synchronize_sched();
+> > +
+> > +               /* Invoke the callbacks. */
+> > +               while (list) {
+> > +                       next = list->next;
+> 
+> I think adding a prefetch(next) here should be helpful.
+
+We do have that on the tree and tiny callback invocation, which makes
+sense because those flavors can easily have a large number of callbacks.
+But SRCU and RCU-tasks dispense with the prefetch() because there are
+not likely to be very many callbacks.
+
+Might add the prefetch() for SRCU and RCU-tasks at some point if that
+changes.
+
+							Thanx, Paul
+
+> > +                       local_bh_disable();
+> > +                       list->func(list);
+> > +                       local_bh_enable();
+> > +                       list = next;
+> > +                       cond_resched();
+> > +               }
+> > +       }
+> > +}
+> > +
+> > +/* Spawn rcu_tasks_kthread() at boot time. */
+> > +static int __init rcu_spawn_tasks_kthread(void)
+> > +{
+> > +       struct task_struct __maybe_unused *t;
+> > +
+> > +       t = kthread_run(rcu_tasks_kthread, NULL, "rcu_tasks_kthread");
+> > +       BUG_ON(IS_ERR(t));
+> > +       return 0;
+> > +}
+> > +early_initcall(rcu_spawn_tasks_kthread);
+> > +
+> > +#endif /* #ifdef CONFIG_TASKS_RCU */
+> > --
+> > 1.8.1.5
+> >
+> 
+> 
+> 
+> -- 
+> Pranith
+> 
 
