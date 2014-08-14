@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643AbaHNIqI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 04:46:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36329 "EHLO
+	id S1754720AbaHNIqV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 04:46:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36346 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803AbaHNIqC (ORCPT
+	with ESMTP id S1754672AbaHNIqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 04:46:02 -0400
-Date: Thu, 14 Aug 2014 01:45:10 -0700
+	Thu, 14 Aug 2014 04:46:17 -0400
+Date: Thu, 14 Aug 2014 01:45:23 -0700
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-46ec69add5df60310147ce3ce01a662053d82a1e@git.kernel.org>
+Message-ID: <tip-f6edb53c4993ffe92ce521fb449d1c146cea6ec2@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
@@ -20,12 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         jolsa@kernel.org, peterz@infradead.org, namhyung@gmail.com,
         jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
         adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1407855871-15024-4-git-send-email-adrian.hunter@intel.com>
-References: <1407855871-15024-4-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1407855871-15024-5-git-send-email-adrian.hunter@intel.com>
+References: <1407855871-15024-5-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf tools:
-  Fix probing the kernel API with cpu-wide events
-Git-Commit-ID: 46ec69add5df60310147ce3ce01a662053d82a1e
+  Prefer to use a cpu-wide event for probing CLOEXEC
+Git-Commit-ID: f6edb53c4993ffe92ce521fb449d1c146cea6ec2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,21 +38,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  46ec69add5df60310147ce3ce01a662053d82a1e
-Gitweb:     http://git.kernel.org/tip/46ec69add5df60310147ce3ce01a662053d82a1e
+Commit-ID:  f6edb53c4993ffe92ce521fb449d1c146cea6ec2
+Gitweb:     http://git.kernel.org/tip/f6edb53c4993ffe92ce521fb449d1c146cea6ec2
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Tue, 12 Aug 2014 18:04:30 +0300
+AuthorDate: Tue, 12 Aug 2014 18:04:31 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 13 Aug 2014 16:22:06 -0300
+CommitDate: Wed, 13 Aug 2014 16:24:13 -0300
 
-perf tools: Fix probing the kernel API with cpu-wide events
+perf tools: Prefer to use a cpu-wide event for probing CLOEXEC
 
-Fall back to probing with the current pid if cpu-wide probing fails.
-This primarily affects the setting of comm_exec flag when the user is
-un-privileged and /proc/sys/kernel/perf_event_paranoid > 0.
+When doing a system-wide trace with Intel PT, the jump label set up as a
+result of probing CLOEXEC gets reset while the trace is running.  That
+causes an Intel PT decoding error because the object code (obtained from
+/proc/kcore) does not match the running code at that point.  While we
+can't expect there never to be jump label changes, we can avoid cases
+that the perf tool itself creates.
 
-The change to comm_exec can be observed by using -vv with perf record
-and a kernel that supports comm_exec.
+The problem is avoided by first trying a cpu-wide event (pid = -1) for
+probing the PERF_FLAG_FD_CLOEXEC flag and falling back to an event for
+the current process (pid = 0).
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Acked-by: Jiri Olsa <jolsa@kernel.org>
@@ -63,82 +67,54 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1407855871-15024-4-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1407855871-15024-5-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/record.c | 36 +++++++++++++++++++++++++++---------
- 1 file changed, 27 insertions(+), 9 deletions(-)
+ tools/perf/util/cloexec.c | 22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index 58267a8..e778afd 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -14,6 +14,7 @@ static int perf_do_probe_api(setup_probe_fn_t fn, int cpu, const char *str)
- 	struct perf_evsel *evsel;
- 	unsigned long flags = perf_event_open_cloexec_flag();
- 	int err = -EAGAIN, fd;
-+	static pid_t pid = -1;
+diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
+index 000047c..4945aa5 100644
+--- a/tools/perf/util/cloexec.c
++++ b/tools/perf/util/cloexec.c
+@@ -1,3 +1,4 @@
++#include <sched.h>
+ #include "util.h"
+ #include "../perf.h"
+ #include "cloexec.h"
+@@ -15,10 +16,23 @@ static int perf_flag_probe(void)
+ 	};
+ 	int fd;
+ 	int err;
++	int cpu;
++	pid_t pid = -1;
  
- 	evlist = perf_evlist__new();
- 	if (!evlist)
-@@ -24,14 +25,22 @@ static int perf_do_probe_api(setup_probe_fn_t fn, int cpu, const char *str)
- 
- 	evsel = perf_evlist__first(evlist);
- 
--	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, flags);
--	if (fd < 0)
--		goto out_delete;
+-	/* check cloexec flag */
+-	fd = sys_perf_event_open(&attr, 0, -1, -1,
+-				 PERF_FLAG_FD_CLOEXEC);
++	cpu = sched_getcpu();
++	if (cpu < 0)
++		cpu = 0;
++
 +	while (1) {
-+		fd = sys_perf_event_open(&evsel->attr, pid, cpu, -1, flags);
-+		if (fd < 0) {
-+			if (pid == -1 && errno == EACCES) {
-+				pid = 0;
-+				continue;
-+			}
-+			goto out_delete;
++		/* check cloexec flag */
++		fd = sys_perf_event_open(&attr, pid, cpu, -1,
++					 PERF_FLAG_FD_CLOEXEC);
++		if (fd < 0 && pid == -1 && errno == EACCES) {
++			pid = 0;
++			continue;
 +		}
 +		break;
 +	}
- 	close(fd);
+ 	err = errno;
  
- 	fn(evsel);
+ 	if (fd >= 0) {
+@@ -31,7 +45,7 @@ static int perf_flag_probe(void)
+ 		  err, strerror(err));
  
--	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, flags);
-+	fd = sys_perf_event_open(&evsel->attr, pid, cpu, -1, flags);
- 	if (fd < 0) {
- 		if (errno == EINVAL)
- 			err = -EINVAL;
-@@ -201,6 +210,7 @@ bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str)
- 	struct perf_evsel *evsel;
- 	int err, fd, cpu;
- 	bool ret = false;
-+	pid_t pid = -1;
+ 	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
+-	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
++	fd = sys_perf_event_open(&attr, pid, cpu, -1, 0);
+ 	err = errno;
  
- 	temp_evlist = perf_evlist__new();
- 	if (!temp_evlist)
-@@ -221,12 +231,20 @@ bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str)
- 		cpu = evlist->cpus->map[0];
- 	}
- 
--	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1,
--				 perf_event_open_cloexec_flag());
--	if (fd >= 0) {
--		close(fd);
--		ret = true;
-+	while (1) {
-+		fd = sys_perf_event_open(&evsel->attr, pid, cpu, -1,
-+					 perf_event_open_cloexec_flag());
-+		if (fd < 0) {
-+			if (pid == -1 && errno == EACCES) {
-+				pid = 0;
-+				continue;
-+			}
-+			goto out_delete;
-+		}
-+		break;
- 	}
-+	close(fd);
-+	ret = true;
- 
- out_delete:
- 	perf_evlist__delete(temp_evlist);
+ 	if (WARN_ONCE(fd < 0 && err != EBUSY,
