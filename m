@@ -1,149 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876AbaHNVf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 17:35:26 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:40501 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157AbaHNVfZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 17:35:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407797345-28227-6-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140811224840.GA25594@linux.vnet.ibm.com> <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1407797345-28227-6-git-send-email-paulmck@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Thu, 14 Aug 2014 17:34:53 -0400
-Message-ID: <CAJhHMCBVHR007FO11sajnw1n8fuCz6Sw_PnsDxgOXP3-AYXnbw@mail.gmail.com>
-Subject: Re: [PATCH v5 tip/core/rcu 06/16] rcutorture: Add torture tests for RCU-tasks
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755029AbaHNVji (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 17:39:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60262 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754876AbaHNVjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 17:39:36 -0400
+Date: Thu, 14 Aug 2014 14:39:29 -0700 (PDT)
+Message-Id: <20140814.143929.1671828120262010871.davem@redhat.com>
+To: avagin@openvz.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, edumazet@google.com,
+        xemul@parallels.com
+Subject: Re: [PATCH] tcp: don't use timestamp from repaired skb-s to
+ calculate RTT (v2)
+From: David Miller <davem@redhat.com>
+In-Reply-To: <1407931390-3162-1-git-send-email-avagin@openvz.org>
+References: <1407931390-3162-1-git-send-email-avagin@openvz.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 6:48 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->
-> This commit adds torture tests for RCU-tasks.  It also fixes a bug that
-> would segfault for an RCU flavor lacking a callback-barrier function.
->
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> ---
->  include/linux/rcupdate.h |  1 +
->  kernel/rcu/rcutorture.c  | 50 +++++++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 50 insertions(+), 1 deletion(-)
->
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index e6aea256ad39..f504f797c9c8 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -55,6 +55,7 @@ enum rcutorture_type {
->         RCU_FLAVOR,
->         RCU_BH_FLAVOR,
->         RCU_SCHED_FLAVOR,
-> +       RCU_TASKS_FLAVOR,
->         SRCU_FLAVOR,
->         INVALID_RCU_FLAVOR
->  };
-> diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-> index febe07062ac5..52423f2c74da 100644
-> --- a/kernel/rcu/rcutorture.c
-> +++ b/kernel/rcu/rcutorture.c
-> @@ -601,6 +601,52 @@ static struct rcu_torture_ops sched_ops = {
->         .name           = "sched"
->  };
->
-> +#ifdef CONFIG_TASKS_RCU
-> +
-> +/*
-> + * Definitions for RCU-tasks torture testing.
-> + */
-> +
-> +static int tasks_torture_read_lock(void)
-> +{
-> +       return 0;
-> +}
-> +
-> +static void tasks_torture_read_unlock(int idx)
-> +{
-> +}
-> +
-> +static void rcu_tasks_torture_deferred_free(struct rcu_torture *p)
-> +{
-> +       call_rcu_tasks(&p->rtort_rcu, rcu_torture_cb);
-> +}
-> +
-> +static struct rcu_torture_ops tasks_ops = {
-> +       .ttype          = RCU_TASKS_FLAVOR,
-> +       .init           = rcu_sync_torture_init,
-> +       .readlock       = tasks_torture_read_lock,
-> +       .read_delay     = rcu_read_delay,  /* just reuse rcu's version. */
-> +       .readunlock     = tasks_torture_read_unlock,
-> +       .completed      = rcu_no_completed,
-> +       .deferred_free  = rcu_tasks_torture_deferred_free,
-> +       .sync           = synchronize_rcu_tasks,
-> +       .exp_sync       = synchronize_rcu_tasks,
-> +       .call           = call_rcu_tasks,
-> +       .cb_barrier     = rcu_barrier_tasks,
-> +       .fqs            = NULL,
-> +       .stats          = NULL,
-> +       .irq_capable    = 1,
-> +       .name           = "tasks"
-> +};
-> +
-> +#define RCUTORTURE_TASKS_OPS &tasks_ops,
+From: Andrey Vagin <avagin@openvz.org>
+Date: Wed, 13 Aug 2014 16:03:10 +0400
 
+> We don't know right timestamp for repaired skb-s. Wrong RTT estimations
+> isn't good, because some congestion modules heavily depends on it.
+> 
+> This patch adds the TCPCB_REPAIRED flag, which is included in
+> TCPCB_RETRANS.
+> 
+> Thanks to Eric for the advice how to fix this issue.
+> 
+> This patch fixes the warning:
+ ...
+> v2: moving setting of skb->when for repaired skb-s in tcp_write_xmit,
+>     where it's set for other skb-s.
+> 
+> Fixes: 431a91242d8d ("tcp: timestamp SYN+DATA messages")
+> Fixes: 740b0f1841f6 ("tcp: switch rtt estimations to usec resolution")
+> Cc: Eric Dumazet <edumazet@google.com>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
 
-Not sure about the comma here, no harm but still... a minor nit :)
-
-> +
-> +#else /* #ifdef CONFIG_TASKS_RCU */
-> +
-> +#define RCUTORTURE_TASKS_OPS
-> +
-> +#endif /* #else #ifdef CONFIG_TASKS_RCU */
-> +
->  /*
->   * RCU torture priority-boost testing.  Runs one real-time thread per
->   * CPU for moderate bursts, repeatedly registering RCU callbacks and
-> @@ -1295,7 +1341,8 @@ static int rcu_torture_barrier_cbs(void *arg)
->                 if (atomic_dec_and_test(&barrier_cbs_count))
->                         wake_up(&barrier_wq);
->         } while (!torture_must_stop());
-> -       cur_ops->cb_barrier();
-> +       if (cur_ops->cb_barrier != NULL)
-> +               cur_ops->cb_barrier();
->         destroy_rcu_head_on_stack(&rcu);
->         torture_kthread_stopping("rcu_torture_barrier_cbs");
->         return 0;
-> @@ -1534,6 +1581,7 @@ rcu_torture_init(void)
->         int firsterr = 0;
->         static struct rcu_torture_ops *torture_ops[] = {
->                 &rcu_ops, &rcu_bh_ops, &rcu_busted_ops, &srcu_ops, &sched_ops,
-> +               RCUTORTURE_TASKS_OPS
->         };
->
->         if (!torture_init_begin(torture_type, verbose, &rcutorture_runnable))
-> --
-> 1.8.1.5
->
-
-
-
--- 
-Pranith
+Applied.
