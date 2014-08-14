@@ -1,108 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaHNRiR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 13:38:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54955 "EHLO mx1.redhat.com"
+	id S1753823AbaHNRkz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 13:40:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24616 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751110AbaHNRiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 13:38:16 -0400
-Message-ID: <53ECF390.40403@redhat.com>
-Date: Thu, 14 Aug 2014 13:36:16 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752350AbaHNRkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 13:40:53 -0400
+Date: Thu, 14 Aug 2014 19:40:23 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, oleg@redhat.com,
+        kamaleshb@in.ibm.com, hechjie@cn.ibm.com, akpm@linux-foundation.org,
+        dvlasenk@redhat.com, prarit@redhat.com, lwoodman@redhat.com,
+        hannsj_uhl@de.ibm.com
+Subject: Re: [PATCH 1/1] x86: add phys addr validity check for /dev/mem mmap
+Message-ID: <20140814174023.GA7575@localhost.localdomain>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1408025927-16826-1-git-send-email-fhrbata@redhat.com>
+ <1408025927-16826-2-git-send-email-fhrbata@redhat.com>
+ <53ECE573.1030405@intel.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
- seqlock
-References: <20140812191218.GA15210@redhat.com> <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814142404.GA28211@redhat.com> <53ECD7C8.6040202@redhat.com> <20140814161247.GA32715@redhat.com>
-In-Reply-To: <20140814161247.GA32715@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53ECE573.1030405@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2014 12:12 PM, Oleg Nesterov wrote:
-> On 08/14, Rik van Riel wrote:
->>
->> -----BEGIN PGP SIGNED MESSAGE-----
->> Hash: SHA1
->>
->> On 08/14/2014 10:24 AM, Oleg Nesterov wrote:
->>> On 08/13, Rik van Riel wrote:
->>>>
->>>> @@ -862,11 +862,9 @@ void do_sys_times(struct tms *tms) {
->>>> cputime_t tgutime, tgstime, cutime, cstime;
->>>>
->>>> -	spin_lock_irq(&current->sighand->siglock);
->>>> thread_group_cputime_adjusted(current, &tgutime, &tgstime);
->>>> cutime = current->signal->cutime; cstime =
->>>> current->signal->cstime; -
->>>> spin_unlock_irq(&current->sighand->siglock);
->>>
->>> Ah, wait, there is another problem afaics...
->>
->> Last night I worked on another problem with this code.
->>
->> After propagating the stats from a dying task to the signal struct,
->> we need to make sure that that task's stats are not counted twice.
+On Thu, Aug 14, 2014 at 09:36:03AM -0700, Dave Hansen wrote:
+> Thanks for dredging this back up!
 > 
-> Heh indeed ;) Can't understand how I missed that.
+> On 08/14/2014 07:18 AM, Frantisek Hrbata wrote:
+> > +int valid_phys_addr_range(phys_addr_t addr, size_t count)
+> > +{
+> > +	return addr + count <= __pa(high_memory);
+> > +}
 > 
->> This requires zeroing the stats under the write_seqlock, which was
->> easy enough to add.
+> Is this correct on 32-bit?  It would limit /dev/mem to memory below 896MB.
+
+Unfortunatelly this is how it works right now. Please note that at this moment
+x86 is using the default checks from drivers/char/mem.c. The
+valid_phys_addr_range is used just for read/write. Meaning yes, you cannot access
+/dev/mem above high_memory via read/write, which is 896MB on x86_32.
+
+I simply copied this generic check. There is no change compared to the current
+behaviour.
+
+BTW I think this can be simply fixed by moving the high_memory check directly to
+the xlate_dev_mem_ptr function.
+
+Something like the following. Please note this is not even compile tested.
+
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index baff1da..7ebc241 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -321,7 +321,7 @@ void *xlate_dev_mem_ptr(unsigned long phys)
+ 	unsigned long start = phys & PAGE_MASK;
+ 
+ 	/* If page is RAM, we can use __va. Otherwise ioremap and unmap. */
+-	if (page_is_ram(start >> PAGE_SHIFT))
++	if (page_is_ram(start >> PAGE_SHIFT) && phys <= __pa(high_memory))
+ 		return __va(phys);
+ 
+ 	addr = (void __force *)ioremap_cache(start, PAGE_SIZE);
+@@ -333,7 +333,7 @@ void *xlate_dev_mem_ptr(unsigned long phys)
+ 
+ void unxlate_dev_mem_ptr(unsigned long phys, void *addr)
+ {
+-	if (page_is_ram(phys >> PAGE_SHIFT))
++	if (page_is_ram(phys >> PAGE_SHIFT) && phys <= __pa(high_memory))
+ 		return;
+ 
+ 	iounmap((void __iomem *)((unsigned long)addr & PAGE_MASK));
+
+
+IIUIC the whole high_memory check is here only because of the kernel identity
+mapping and as a generic check because of the generic xlate_dev_mem_ptr.
+
+include/asm-generic/io.h: #define xlate_dev_mem_ptr(p)    __va(p)
+
 > 
-> Or you can expand the scope of write_seqlock/write_sequnlock, so that
-> __unhash_process in called from inside the critical section. This looks
-> simpler at first glance.
-
-The problem with that is that wait_task_zombie() calls
-thread_group_cputime_adjusted() in that if() branch, and
-that code ends up taking the seqlock for read...
-
-However, in __exit_signal that approach should work.
-
-> Hmm, wait, it seems there is yet another problem ;) Afaics, you also
-> need to modify __exit_signal() so that ->sum_sched_runtime/etc are
-> accounted unconditionally, even if the group leader exits.
+> > +int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
+> > +{
 > 
-> Probably this is not a big problem, and sys_times() or clock_gettime()
-> do not care at all because they use current.
+> Nit: please add units to things like "count".  len_bytes would be nice
+> for this kind of thing, especially since it's passed *with* a pfn it
+> would be easy to think it is a count in pages.
+
+Sure I have no problem with this. But please note that I just took the already
+used/presented interface from drivers/char/mem.c.
+
 > 
-> But without this change thread_group_cputime(reaped_zombie) won't look
-> at this task_struct at all, this can lead to non-monotonic result if
-> it was previously called when this task was alive (non-reaped).
+> > +	/* pgoff + count overflow is checked in do_mmap_pgoff */
+> > +	pfn += count >> PAGE_SHIFT;
+> > +
+> > +	if (pfn >> BITS_PER_LONG - PAGE_SHIFT)
+> > +		return -EOVERFLOW;
+> 
+> Is this -EOVERFLOW correct?  It is called like this:
+> 
+> > static int mmap_mem(struct file *file, struct vm_area_struct *vma)
+> > {
+> >         if (!valid_mmap_phys_addr_range(vma->vm_pgoff, size))
+> >                 return -EINVAL;
+> 
+> So I think we need to return true/false:0/1.  -EOVERFLOW would be true,
+> and that if() would pass.
 
-You mean this whole block needs to run regardless of whether
-the group is dead?
+Facepalm, sure this is completely wrong. We of course need to return zero. I
+thought it would be more descriptive to use -EOVERFLOW, even though we get
+-EINVAL in the end. I will fix this. Many thanks for pointing this out.
 
-                task_cputime(tsk, &utime, &stime);
-                write_seqlock(&sig->stats_lock);
-                sig->utime += utime;
-                sig->stime += stime;
-                sig->gtime += task_gtime(tsk);
-                sig->min_flt += tsk->min_flt;
-                sig->maj_flt += tsk->maj_flt;
-                sig->nvcsw += tsk->nvcsw;
-                sig->nivcsw += tsk->nivcsw;
-                sig->inblock += task_io_get_inblock(tsk);
-                sig->oublock += task_io_get_oublock(tsk);
-                task_io_accounting_add(&sig->ioac, &tsk->ioac);
-                sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
+> 
+> > +	return phys_addr_valid(pfn << PAGE_SHIFT);
+> > +}
+> 
+> Maybe I'm dumb, but it took me a minute to figure out what you were
+> trying to do with the: "(pfn >> BITS_PER_LONG - PAGE_SHIFT)".  In any
+> case, I think it is wrong on 32-bit.
+> 
+> On 32-bit, BITS_PER_LONG=32, and PAGE_SIZE=12, and a paddr=0x100000000
+> or pfn=0x100000 (4GB) is perfectly valid with PAE enabled.  But, this
+> code pfn>>(32-12) would result in 0x1 and return -EOVERFLOW.
 
-How does that square with wait_task_zombie reaping the
-statistics of the whole group with thread_group_cputime_adjusted()
-when the group leader is exiting?
+Right, I did not realized this.
 
-Could that lead to things being double-counted?
+> 
+> I think something like this would be easier to read and actually work on
+> 32-bit:
+> 
+> static inline int arch_pfn_possible(unsigned long pfn)
+> {
+>  	unsigned long max_arch_pfn = 1UL << (boot_cpu_data.x86_phys_bits -
+> PAGE_SHIFT);
+> 	return pfn < max_arch_pfn;
+> }
 
-Or do you mean ONLY ->sum_sched_runtime is unconditionally
-accounted in __exit_signal(), because wait_task_zombie() seems
-to be missing that one?
+Actually I wanted to use exactly this instead of calling phys_addr_valid, because
+we can avoid the whole overflow check, but it seemed natural to use what is
+already available. But you are right for sure. This needs to be fixed also.
+
+Dave, many thanks for your feedback, it's really appreciated!
+
+-- 
+Frantisek Hrbata
