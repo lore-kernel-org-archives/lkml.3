@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315AbaHNP3u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 11:29:50 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:39558 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755031AbaHNP3t (ORCPT
+	id S1755390AbaHNPav (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 11:30:51 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:41916 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754958AbaHNPau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 11:29:49 -0400
-Message-ID: <53ECD5E4.4090905@collabora.co.uk>
-Date: Thu, 14 Aug 2014 17:29:40 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Thu, 14 Aug 2014 11:30:50 -0400
 MIME-Version: 1.0
-To: Tim Kryger <tim.kryger@gmail.com>
-CC: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Haijun Zhang <Haijun.Zhang@freescale.com>,
-        Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] mmc: core: Use regulator_get_voltage() if OCR mask
- is empty.
-References: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk> <CAD7vxxKvzxvmzgx=S5ZZn54ts99ca2TqBYFvY1SXZQZDkhjq3w@mail.gmail.com>
-In-Reply-To: <CAD7vxxKvzxvmzgx=S5ZZn54ts99ca2TqBYFvY1SXZQZDkhjq3w@mail.gmail.com>
+In-Reply-To: <C4A61A5CA4AD2246942F4BA6F20ACB80435776D3@ALVA-EXMB04.alv.autoliv.int>
+References: <20140626151424.GT32514@n2100.arm.linux.org.uk>
+	<20140627112151.GF32514@n2100.arm.linux.org.uk>
+	<3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
+	<20140627163108.GP32514@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int>
+	<20140806095012.GN30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int>
+	<20140806125550.GO30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int>
+	<20140807121248.GY30282@n2100.arm.linux.org.uk>
+	<20140808180900.GG30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043576356@ALVA-EXMB04.alv.autoliv.int>
+	<CAOMZO5B8GR+ABBoJ=dJcFqw3Wagfaip7HM+C1FTz+aE4CmqiPw@mail.gmail.com>
+	<C4A61A5CA4AD2246942F4BA6F20ACB80435776D3@ALVA-EXMB04.alv.autoliv.int>
+Date: Thu, 14 Aug 2014 12:30:46 -0300
+Message-ID: <CAOMZO5B7FgzB7ThVyV2Vk7wTwYgjRWjEnkkAN5uwwKMaBKq1yg@mail.gmail.com>
+Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
+From: Fabio Estevam <festevam@gmail.com>
+To: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Fredrik Noring <fredrik.noring@autoliv.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tim,
+On Thu, Aug 14, 2014 at 11:43 AM, Mattis Lorentzon
+<Mattis.Lorentzon@autoliv.com> wrote:
 
-Thanks for your feedback.
+> After a few more tests we have finally been able to trigger the exact same stalls
+> on the Sabrelite board with a direct network connection (i.e. without the switch).
 
-On 08/14/2014 04:13 PM, Tim Kryger wrote:
-> 
-> https://lkml.org/lkml/2014/8/12/377
-> 
-> Perhaps I misunderstood the discussion in that thread but couldn't
-> this failure also be addressed by adding proper constraints for each
-> FET in individual DTS files to reflect the range of voltages that are
-> safe for all consumers of that supply on the board?
-> 
-> I thought the main concern with your other change was that the
-> constraints you listed in the DTSI represented the limits of the PMIC
-> and not the consumers.
-> 
-> -Tim
-> 
+Do the stalls also happen on a pure 3.16 kernel?
 
-Yes, if the child regulator has the constraints defined then
-regulator_voltage_list() won't filter the obtained parent voltage so it
-won't be necessary to call regulator_get_voltage() directly.
-
-But as Mark said on the thread you referred [0], if the voltage is not
-allowed to change for a regulator then it makes no sense to have their
-constraints specify a voltage range. And in this particular case the
-parent supply of the FET used as vmmc-supply is a fixed regulator.
-
-Now I wonder why mmc_regulator_get_ocrmask() even sets as a valid voltage
-in the OCR mask the voltage for a fixed regulator if
-mmc_regulator_set_ocr() is a no-op in this case but I guess is because
-users of this function shouldn't really care about this peculiarity. In
-any case, this change is consistent since with this patch FETs behaves the
-same as other fixed regulators whose voltage can't be changed but the
-voltage is still reported in the OCR mask.
-
-Best regards,
-Javier
-
-[0]: https://lkml.org/lkml/2014/8/13/364
+How can we reproduce the error?
