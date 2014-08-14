@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412AbaHNJcS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 05:32:18 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:45563 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196AbaHNJcR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 05:32:17 -0400
+	id S1754500AbaHNJeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 05:34:17 -0400
+Received: from mout.gmx.net ([212.227.15.15]:52621 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752726AbaHNJeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 05:34:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <1407996435.6245.15.camel@debian-rtk5880>
-References: <1407745936-18513-1-git-send-email-rogerable@realtek.com>
-	<CAPDyKFrTbiHxYgW5YCR48DKX8arxuxK3rz7k_H-waGEMiPFjSg@mail.gmail.com>
-	<1407996435.6245.15.camel@debian-rtk5880>
-Date: Thu, 14 Aug 2014 11:32:16 +0200
-Message-ID: <CAPDyKFo5W6_388f0kaFeOhi0q6LqBzWYUUDZ9MssTZHvVx+Ebg@mail.gmail.com>
-Subject: Re: [PATCH] mmc: rtsx: fix incorrect last byte in R2 response
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Roger Tseng <rogerable@realtek.com>
-Cc: Chris Ball <chris@printf.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        Wei_wang <wei_wang@realsil.com.cn>, micky <micky_ching@realsil.com.cn>
+In-Reply-To: <20140813215742.GA7908@kroah.com>
+References: <53EBDF31.7010204@nvidia.com> <20140813215742.GA7908@kroah.com>
+From: Mattias Nissler <mattias.nissler@gmx.de>
+Date: Thu, 14 Aug 2014 11:33:53 +0200
+Message-ID: <CAERLvmRXozQEa2kU=Uo3osGnZuLa-3nZV2-mFNDOiWk5vy2NOg@mail.gmail.com>
+Subject: Re: debugfs_create_{u,x,s}{8,16,32,64}
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Matt Longnecker <mlongnecker@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+X-Provags-ID: V03:K0:rAIkCo3cUx4C8xUTcbXVX4ewXjDTBG5Dshc02ZqJWGt2663H4aT
+ MCG7YWdWGpCbWo46ogkh5AprP+T8LMPKmkw8t1FdhwGTCidN9esrEQ2Q4yoervyL47KTz0o
+ bN/7f3fsj0qoIm9C0DKdCMfKEql0qdaJWo6Z2u3+C46J5fBAs6mikuwin3xCYs0beTs6xZO
+ BdpSV/fthFzcB4K/EsX/Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 August 2014 08:06, Roger Tseng <rogerable@realtek.com> wrote:
-> On Wed, 2014-08-13 at 17:09 +0200, Ulf Hansson wrote:
->> On 11 August 2014 10:32,  <rogerable@realtek.com> wrote:
->> > From: Roger Tseng <rogerable@realtek.com>
->> >
->> > Current code erroneously fill the last byte of R2 response with an undefined
->> > value. In addition, it is impossible to obtain the real values since the
->> > controller actually 'offloads' the last byte(CRC7, end bit) while receiving R2
->> > response. This could cause mmc stack to obtain inconsistent CID from the same
->> > card after resume and misidentify it as a different card.
->> >
->> > Fix by assigning a dummy value 0x01 to the last byte of R2 response.
->> >
->> > Signed-off-by: Roger Tseng <rogerable@realtek.com>
->>
->> Thanks! Queued for 3.18.
->>
->> I guess this should go for stable as well?
-> Yes. However, since rtsx_usb* is present in 3.16 and later, this patch
-> will not apply on 3.15.y or older. Should I separately send an adapted
-> version to stable?
+On Wed, Aug 13, 2014 at 11:57 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+> On Wed, Aug 13, 2014 at 02:57:05PM -0700, Matt Longnecker wrote:
+> > Greg,
+> >
+> > Back in December 2007 Mattias Nissler proposed a patch defining
+> > debugfs_create_s32 and friends. In it he reworked the already existent u and
+> > x versions. The subject of Mattias's mail was "[PATCH] debugfs: Revamp
+> > debugfs_create_{u,x,s}{8,16,32,64} to support signed integers".
+> >
+> > As I'm writing a new driver related to thermal management, I'm finding the
+> > absence of debugfs_create_s32 to be a stumbling block. I see at least two
+> > other folks who have stumbled on the absence of debugfs_create_s32 in the
+> > past few years.
+> >
+> > Why didn't we merge Mattias's patch?
+>
+> I can't remember why I didn't merge a patch from last week, let alone
+> from 2007, are you crazy?  :)
 
-I haven't pushed this externally yet. I will drop the patch from my 3.18 branch.
+Needless to say, I don't remember details either. It might just have
+been a case of not adding further debugfs API as long as there's
+little demand to justify the addition. The latter may have changed in
+the last 7 years (Matt hints at other potential consumers?), but I
+personally can't tell as I haven't done any kernel work in more recent
+times.
 
-Then, let's split the patch into two, one for usb and one for pci -
-that should simplify patch management.
-
-Additionally, you should include a Cc tag with proper hashmark telling
-which kernel each patch should be included into.
-
-Kind regards
-Uffe
+>
+>
+> > Would you entertain a similar patch today?
+>
+> I always entertain all patches, you never need to ask if you are allowed
+> to send a patch, that's like asking "Am I allowed to ask a question?"...
+>
+> greg k-h
