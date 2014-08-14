@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209AbaHNW73 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 18:59:29 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:5594 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754530AbaHNW72 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 18:59:28 -0400
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Kiran Padwal <kiran.padwal@smartplayin.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
-Subject: [PATCH] pinctrl: qcom: apq8064: Correct interrupts in example
-Date: Thu, 14 Aug 2014 15:59:21 -0700
-Message-ID: <1408057161-6940-1-git-send-email-bjorn.andersson@sonymobile.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932297AbaHNXAU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 19:00:20 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:33032 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932217AbaHNXAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 19:00:19 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Andrea Merello <andrea.merello@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH] at76c50x-usb: fix use after free on failure path in at76_probe()
+Date: Fri, 15 Aug 2014 03:00:06 +0400
+Message-Id: <1408057206-8854-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The example in the binding document indicates that interrupt 32 is used
-for the TLMM summary IRQ. Correct this to reduce the confusion.
+After commit 174beab7d445 ("at76c50x-usb: Don't perform DMA from stack memory")
+at76_delete_device() and usb_put_dev() are called both
+if at76_init_new_device() fails in at76_probe().
+But at76_delete_device() does usb_put_dev(priv->dev) itself
+that means double usb_put_dev().
 
-Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+The patch avoids the problem by moving usb_put_dev() from
+at76_delete_device() to at76_disconnect().
+
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- .../bindings/pinctrl/qcom,apq8064-pinctrl.txt      |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/at76c50x-usb.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,apq8064-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/qcom,apq8064-pinctrl.txt
-index 0211c6d..92fae82 100644
---- a/Documentation/devicetree/bindings/pinctrl/qcom,apq8064-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/qcom,apq8064-pinctrl.txt
-@@ -62,7 +62,7 @@ Example:
- 		#gpio-cells = <2>;
- 		interrupt-controller;
- 		#interrupt-cells = <2>;
--		interrupts = <0 32 0x4>;
-+		interrupts = <0 16 0x4>;
+diff --git a/drivers/net/wireless/at76c50x-usb.c b/drivers/net/wireless/at76c50x-usb.c
+index 334c2ece855a..da92bfa76b7c 100644
+--- a/drivers/net/wireless/at76c50x-usb.c
++++ b/drivers/net/wireless/at76c50x-usb.c
+@@ -2423,8 +2423,6 @@ static void at76_delete_device(struct at76_priv *priv)
  
- 		pinctrl-names = "default";
- 		pinctrl-0 = <&gsbi5_uart_default>;
+ 	kfree_skb(priv->rx_skb);
+ 
+-	usb_put_dev(priv->udev);
+-
+ 	at76_dbg(DBG_PROC_ENTRY, "%s: before freeing priv/ieee80211_hw",
+ 		 __func__);
+ 	ieee80211_free_hw(priv->hw);
+@@ -2558,6 +2556,7 @@ static void at76_disconnect(struct usb_interface *interface)
+ 
+ 	wiphy_info(priv->hw->wiphy, "disconnecting\n");
+ 	at76_delete_device(priv);
++	usb_put_dev(priv->udev);
+ 	dev_info(&interface->dev, "disconnected\n");
+ }
+ 
 -- 
-1.7.9.5
+1.9.1
 
