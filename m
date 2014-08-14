@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255AbaHNGTO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 02:19:14 -0400
-Received: from gate.crashing.org ([63.228.1.57]:48517 "EHLO gate.crashing.org"
+	id S1752473AbaHNGb0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 02:31:26 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:17123 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078AbaHNGTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 02:19:13 -0400
-Message-ID: <1407997135.5490.58.camel@pasglop>
-Subject: Re: [git pull] Please pull powerpc.git next branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michaele@au1.ibm.com>
-Date: Thu, 14 Aug 2014 16:18:55 +1000
-In-Reply-To: <1407996977.5490.56.camel@pasglop>
-References: <1407996977.5490.56.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
+	id S1750865AbaHNGbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 02:31:25 -0400
+Message-ID: <53EC57B9.8080903@c-s.fr>
+Date: Thu, 14 Aug 2014 08:31:21 +0200
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Issue with commit 33c133cc7598e60976a phy: IRQ cannot be shared
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-14 at 16:16 +1000, Benjamin Herrenschmidt wrote:
-> Another interesting one in the "OMG" category is the series from Michael
-> adding memory barriers to spin_is_locked(). That's also the result of many
-> days of debugging to figure out why the semaphore code would occasionally
-> crash in ways that made no sense. It ended up being some creative lock
-> stacking that was defeated by the fact that our locks allow a load inside
-> the locked section to be re-ordered with the load of the lock value itself
-> (I'm still of two mind about whether to kill that once and for all by putting
-> a heavier barrier back into our lock implementation...). The fixes come with
-> a long explanation in the cset comments, feel free to read it if you feel
-> like having a headache today.
+Hello Segei, Florian and David,
 
-Talking of which, I should have tagged that for stable... I'll forward them
-separately when you've pulled.
+I have an hardware with two ethernet interfaces, and with the two PHYs 
+inside the same component INTEL LXT973 which has only one interrupt.
+I also have another hardware with two ethernet interfaces and two 
+independant PHYs. But the two PHYs are wired to the same interrupt.
+This is working perfectly up to Linux 3.12.
 
-Michael: If I miss this while I'm away next week, can you take care of it ?
+But since your commit, introduced in Linux 3.13, my interfaces don't 
+work anymore as the second PHYs can't register IRQ.
 
-Cheers,
-Ben.
+Reading the commit log, I can't really understand the reason for the change.
+Is it really worth it, and therefore how shall my case be handled ?
 
+Christophe
 
