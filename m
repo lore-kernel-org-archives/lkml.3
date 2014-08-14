@@ -1,191 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152AbaHNW4K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 18:56:10 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:37084 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485AbaHNW4I (ORCPT
+	id S932209AbaHNW73 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 18:59:29 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:5594 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754530AbaHNW72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 18:56:08 -0400
+	Thu, 14 Aug 2014 18:59:28 -0400
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Kiran Padwal <kiran.padwal@smartplayin.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
+Subject: [PATCH] pinctrl: qcom: apq8064: Correct interrupts in example
+Date: Thu, 14 Aug 2014 15:59:21 -0700
+Message-ID: <1408057161-6940-1-git-send-email-bjorn.andersson@sonymobile.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <1407797345-28227-12-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140811224840.GA25594@linux.vnet.ibm.com> <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1407797345-28227-12-git-send-email-paulmck@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Thu, 14 Aug 2014 18:55:35 -0400
-Message-ID: <CAJhHMCAH6GB8Vz7tmaXkavXUiqSVfR+ot9Q4yOP7UJmL_C0KSg@mail.gmail.com>
-Subject: Re: [PATCH v5 tip/core/rcu 12/16] rcu: Make TASKS_RCU handle
- nohz_full= CPUs
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 6:49 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->
-> Currently TASKS_RCU would ignore a CPU running a task in nohz_full=
-> usermode execution.  There would be neither a context switch nor a
-> scheduling-clock interrupt to tell TASKS_RCU that the task in question
-> had passed through a quiescent state.  The grace period would therefore
-> extend indefinitely.  This commit therefore makes RCU's dyntick-idle
-> subsystem record the task_struct structure of the task that is running
-> in dyntick-idle mode on each CPU.  The TASKS_RCU grace period can
-> then access this information and record a quiescent state on
-> behalf of any CPU running in dyntick-idle usermode.
->
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->  include/linux/init_task.h |  3 ++-
->  include/linux/sched.h     |  2 ++
->  kernel/rcu/tree.c         |  2 ++
->  kernel/rcu/tree.h         |  2 ++
->  kernel/rcu/tree_plugin.h  | 16 ++++++++++++++++
->  kernel/rcu/update.c       |  4 +++-
->  6 files changed, 27 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-> index 78715ea7c30c..642828009324 100644
-> --- a/include/linux/init_task.h
-> +++ b/include/linux/init_task.h
-> @@ -128,7 +128,8 @@ extern struct group_info init_groups;
->  #define INIT_TASK_RCU_TASKS(tsk)                                       \
->         .rcu_tasks_holdout = false,                                     \
->         .rcu_tasks_holdout_list =                                       \
-> -               LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),
-> +               LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),             \
-> +       .rcu_tasks_idle_cpu = -1,
->  #else
->  #define INIT_TASK_RCU_TASKS(tsk)
->  #endif
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 3cf124389ec7..5fa041f7a034 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1277,6 +1277,7 @@ struct task_struct {
->         unsigned long rcu_tasks_nvcsw;
->         int rcu_tasks_holdout;
->         struct list_head rcu_tasks_holdout_list;
-> +       int rcu_tasks_idle_cpu;
->  #endif /* #ifdef CONFIG_TASKS_RCU */
->
->  #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
-> @@ -2021,6 +2022,7 @@ static inline void rcu_copy_process(struct task_struct *p)
->  #ifdef CONFIG_TASKS_RCU
->         p->rcu_tasks_holdout = false;
->         INIT_LIST_HEAD(&p->rcu_tasks_holdout_list);
-> +       p->rcu_tasks_idle_cpu = -1;
->  #endif /* #ifdef CONFIG_TASKS_RCU */
->  }
->
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index 645a33efc0d4..0d9ee1e4f446 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -526,6 +526,7 @@ static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
->         atomic_inc(&rdtp->dynticks);
->         smp_mb__after_atomic();  /* Force ordering with next sojourn. */
->         WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
-> +       rcu_dynticks_task_enter();
->
->         /*
->          * It is illegal to enter an extended quiescent state while
-> @@ -642,6 +643,7 @@ void rcu_irq_exit(void)
->  static void rcu_eqs_exit_common(struct rcu_dynticks *rdtp, long long oldval,
->                                int user)
->  {
-> +       rcu_dynticks_task_exit();
->         smp_mb__before_atomic();  /* Force ordering w/previous sojourn. */
->         atomic_inc(&rdtp->dynticks);
->         /* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
-> diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-> index 0f69a79c5b7d..37ff593b7725 100644
-> --- a/kernel/rcu/tree.h
-> +++ b/kernel/rcu/tree.h
-> @@ -579,6 +579,8 @@ static void rcu_sysidle_report_gp(struct rcu_state *rsp, int isidle,
->  static void rcu_bind_gp_kthread(void);
->  static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
->  static bool rcu_nohz_full_cpu(struct rcu_state *rsp);
-> +static void rcu_dynticks_task_enter(void);
-> +static void rcu_dynticks_task_exit(void);
->
->  #endif /* #ifndef RCU_TREE_NONCORE */
->
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index a86a363ea453..0d8ef5cb1976 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -2852,3 +2852,19 @@ static void rcu_bind_gp_kthread(void)
->                 set_cpus_allowed_ptr(current, cpumask_of(cpu));
->  #endif /* #ifdef CONFIG_NO_HZ_FULL */
->  }
-> +
-> +/* Record the current task on dyntick-idle entry. */
-> +static void rcu_dynticks_task_enter(void)
-> +{
-> +#if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
-> +       ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
-> +#endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
+The example in the binding document indicates that interrupt 32 is used
+for the TLMM summary IRQ. Correct this to reduce the confusion.
 
-Shouldn't we check that the cpu is actually a nohz_full cpu, like follows:
+Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+---
+ .../bindings/pinctrl/qcom,apq8064-pinctrl.txt      |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- static void rcu_dynticks_task_enter(void)
- {
- #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
--       ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
-+       if (tick_nohz_full_cpu(smp_processor_id())
-+                 ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
- #endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
- }
-
-> +}
-> +
-> +/* Record no current task on dyntick-idle exit. */
-> +static void rcu_dynticks_task_exit(void)
-> +{
-> +#if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
-> +       ACCESS_ONCE(current->rcu_tasks_idle_cpu) = -1;
-> +#endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
-> +}
-> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> index d997163c7e92..a4140f25cf1a 100644
-> --- a/kernel/rcu/update.c
-> +++ b/kernel/rcu/update.c
-> @@ -466,7 +466,9 @@ static void check_holdout_task(struct task_struct *t,
->  {
->         if (!ACCESS_ONCE(t->rcu_tasks_holdout) ||
->             t->rcu_tasks_nvcsw != ACCESS_ONCE(t->nvcsw) ||
-> -           !ACCESS_ONCE(t->on_rq)) {
-> +           !ACCESS_ONCE(t->on_rq) ||
-> +           (IS_ENABLED(CONFIG_NO_HZ_FULL) &&
-> +            !is_idle_task(t) && t->rcu_tasks_idle_cpu >= 0)) {
-
-rcu_tasks_idle_cpu will be -1 in CONFIG_NO_HZ_FULL is not enabled. Why
-are you checking both here?
-
->                 ACCESS_ONCE(t->rcu_tasks_holdout) = 0;
->                 list_del_rcu(&t->rcu_tasks_holdout_list);
->                 put_task_struct(t);
-> --
-> 1.8.1.5
->
-
-
-
+diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,apq8064-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/qcom,apq8064-pinctrl.txt
+index 0211c6d..92fae82 100644
+--- a/Documentation/devicetree/bindings/pinctrl/qcom,apq8064-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/qcom,apq8064-pinctrl.txt
+@@ -62,7 +62,7 @@ Example:
+ 		#gpio-cells = <2>;
+ 		interrupt-controller;
+ 		#interrupt-cells = <2>;
+-		interrupts = <0 32 0x4>;
++		interrupts = <0 16 0x4>;
+ 
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&gsbi5_uart_default>;
 -- 
-Pranith
+1.7.9.5
+
