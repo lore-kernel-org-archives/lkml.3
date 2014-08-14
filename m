@@ -1,55 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036AbaHNNlK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 09:41:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58649 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754770AbaHNNlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 09:41:08 -0400
-Message-ID: <53ECBC6B.5030507@suse.de>
-Date: Thu, 14 Aug 2014 15:40:59 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Michael Ellerman <mpe@ellerman.id.au>, kvm-ppc@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2] PC, KVM, CMA: Fix regression caused by wrong get_order()
- use
-References: <1407992587-9164-1-git-send-email-aik@ozlabs.ru> <87egwj64bz.fsf@linux.vnet.ibm.com>
-In-Reply-To: <87egwj64bz.fsf@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754915AbaHNNwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 09:52:49 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:51857 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754220AbaHNNwr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 09:52:47 -0400
+From: Jeff Layton <jlayton@primarydata.com>
+To: Joe Perches <joe@perches.com>
+Cc: Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Kinglong Mee <kinglongmee@gmail.com>
+Subject: [PATCH] locks: Remove unused conf argument from lm_grant
+Date: Thu, 14 Aug 2014 09:52:40 -0400
+Message-Id: <1408024360-5177-1-git-send-email-jlayton@primarydata.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Joe Perches <joe@perches.com>
 
-On 14.08.14 07:13, Aneesh Kumar K.V wrote:
-> Alexey Kardashevskiy <aik@ozlabs.ru> writes:
->
->> fc95ca7284bc54953165cba76c3228bd2cdb9591 claims that there is no
->> functional change but this is not true as it calls get_order() (which
->> takes bytes) where it should have called ilog2() and the kernel stops
->> on VM_BUG_ON().
->>
->> This replaces get_order() with order_base_2() (round-up version of ilog2).
->>
->> Suggested-by: Paul Mackerras <paulus@samba.org>
->> Cc: Alexander Graf <agraf@suse.de>
->> Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+This argument is always NULL so don't pass it around.
 
-So this affects 3.17?
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+---
+ fs/dlm/plock.c     |  8 ++++----
+ fs/lockd/svclock.c | 12 +++---------
+ include/linux/fs.h |  2 +-
+ 3 files changed, 8 insertions(+), 14 deletions(-)
 
-
-Alex
+diff --git a/fs/dlm/plock.c b/fs/dlm/plock.c
+index f704458ea5f5..e0ab3a93eeff 100644
+--- a/fs/dlm/plock.c
++++ b/fs/dlm/plock.c
+@@ -30,7 +30,7 @@ struct plock_op {
+ 
+ struct plock_xop {
+ 	struct plock_op xop;
+-	void *callback;
++	int (*callback)(struct file_lock *fl, int result);
+ 	void *fl;
+ 	void *file;
+ 	struct file_lock flc;
+@@ -190,7 +190,7 @@ static int dlm_plock_callback(struct plock_op *op)
+ 	struct file *file;
+ 	struct file_lock *fl;
+ 	struct file_lock *flc;
+-	int (*notify)(void *, void *, int) = NULL;
++	int (*notify)(struct file_lock *fl, int result) = NULL;
+ 	struct plock_xop *xop = (struct plock_xop *)op;
+ 	int rv = 0;
+ 
+@@ -209,7 +209,7 @@ static int dlm_plock_callback(struct plock_op *op)
+ 	notify = xop->callback;
+ 
+ 	if (op->info.rv) {
+-		notify(fl, NULL, op->info.rv);
++		notify(fl, op->info.rv);
+ 		goto out;
+ 	}
+ 
+@@ -228,7 +228,7 @@ static int dlm_plock_callback(struct plock_op *op)
+ 			  (unsigned long long)op->info.number, file, fl);
+ 	}
+ 
+-	rv = notify(fl, NULL, 0);
++	rv = notify(fl, 0);
+ 	if (rv) {
+ 		/* XXX: We need to cancel the fs lock here: */
+ 		log_print("dlm_plock_callback: lock granted after lock request "
+diff --git a/fs/lockd/svclock.c b/fs/lockd/svclock.c
+index ab798a88ec1d..2a6170133c1d 100644
+--- a/fs/lockd/svclock.c
++++ b/fs/lockd/svclock.c
+@@ -667,22 +667,16 @@ nlmsvc_cancel_blocked(struct net *net, struct nlm_file *file, struct nlm_lock *l
+  * deferred rpc for GETLK and SETLK.
+  */
+ static void
+-nlmsvc_update_deferred_block(struct nlm_block *block, struct file_lock *conf,
+-			     int result)
++nlmsvc_update_deferred_block(struct nlm_block *block, int result)
+ {
+ 	block->b_flags |= B_GOT_CALLBACK;
+ 	if (result == 0)
+ 		block->b_granted = 1;
+ 	else
+ 		block->b_flags |= B_TIMED_OUT;
+-	if (conf) {
+-		if (block->b_fl)
+-			__locks_copy_lock(block->b_fl, conf);
+-	}
+ }
+ 
+-static int nlmsvc_grant_deferred(struct file_lock *fl, struct file_lock *conf,
+-					int result)
++static int nlmsvc_grant_deferred(struct file_lock *fl, int result)
+ {
+ 	struct nlm_block *block;
+ 	int rc = -ENOENT;
+@@ -697,7 +691,7 @@ static int nlmsvc_grant_deferred(struct file_lock *fl, struct file_lock *conf,
+ 					rc = -ENOLCK;
+ 					break;
+ 				}
+-				nlmsvc_update_deferred_block(block, conf, result);
++				nlmsvc_update_deferred_block(block, result);
+ 			} else if (result == 0)
+ 				block->b_granted = 1;
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index f0890e4a7c25..6cb1f3d182ee 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -869,7 +869,7 @@ struct lock_manager_operations {
+ 	int (*lm_compare_owner)(struct file_lock *, struct file_lock *);
+ 	unsigned long (*lm_owner_key)(struct file_lock *);
+ 	void (*lm_notify)(struct file_lock *);	/* unblock callback */
+-	int (*lm_grant)(struct file_lock *, struct file_lock *, int);
++	int (*lm_grant)(struct file_lock *, int);
+ 	void (*lm_break)(struct file_lock *);
+ 	int (*lm_change)(struct file_lock **, int);
+ };
+-- 
+1.9.3
 
