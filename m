@@ -1,534 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955AbaHNEGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 00:06:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53535 "EHLO
+	id S1751542AbaHNETS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 00:19:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53622 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739AbaHNEGH (ORCPT
+	with ESMTP id S1751054AbaHNETR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 00:06:07 -0400
-Date: Thu, 14 Aug 2014 12:05:17 +0800
+	Thu, 14 Aug 2014 00:19:17 -0400
+Date: Thu, 14 Aug 2014 12:18:34 +0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.16.1
-Message-ID: <20140814040517.GB7306@kroah.com>
-References: <20140814040504.GA7306@kroah.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: falcon@meizu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] async: async device driver probing
+Message-ID: <20140814041834.GA7727@kroah.com>
+References: <1391857539-27782-1-git-send-email-falcon@meizu.com>
+ <20140208182729.GB10892@kroah.com>
+ <20140813172030.GA23628@core.coreip.homeip.net>
+ <20140813220223.GD7908@kroah.com>
+ <20140813221044.GA11620@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140814040504.GA7306@kroah.com>
+In-Reply-To: <20140813221044.GA11620@core.coreip.homeip.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 13, 2014 at 03:10:44PM -0700, Dmitry Torokhov wrote:
+> On Thu, Aug 14, 2014 at 06:02:23AM +0800, Greg KH wrote:
+> > On Wed, Aug 13, 2014 at 10:20:33AM -0700, Dmitry Torokhov wrote:
+> > > Hi Greg,
+> > > 
+> > > On Sat, Feb 08, 2014 at 10:27:29AM -0800, Greg KH wrote:
+> > 
+> > February?  That's an old thread to dig up...
+> 
+> Well, yes ;)
+> 
+> > 
+> > 
+> > > > On Sat, Feb 08, 2014 at 07:05:38PM +0800, falcon@meizu.com wrote:
+> > > > > From: Wu Zhangjin <wuzhangjin@gmail.com>
+> > > > > 
+> > > > > [*Note*: NOT applicable, only for comments.]
+> > > > > 
+> > > > > To async the slow driver probing function of some devices, the device probing
+> > > > > support is modified to support async scheduling.
+> > > > > 
+> > > > > In order to async your driver probing function, please mask the async_probe
+> > > > > flag to 1, and to make sure one asynced probing is executed before an specified
+> > > > > point, please call async_synchronize_full() in that point..
+> > > > > 
+> > > > > Usage:
+> > > > > 
+> > > > > 	static struct i2c_driver test_driver = {
+> > > > > 		.driver = {
+> > > > > 			.name   = TEST_DEV_NAME,
+> > > > > 			.owner  = THIS_MODULE,
+> > > > > 	+               .async_probe = 1,
+> > > > > 		},
+> > > > 
+> > > > Why is this needed, we have defered probing and the container stuff, so
+> > > > what problem is this solving?
+> > > 
+> > > Deferred probing only helps if resources are not ready yet, but
+> > > sometimes we have a slow(ish) device which initialization stalls probing
+> > > the rest of the system. For example a touchpad can take up to a second
+> > > to calibrate itself after reset. One could try scheduling reset
+> > > asynchronously, or try to offload it to open(), but that is not always
+> > > best:
+> > > 
+> > > 1. Manual async: what to do when reset fails? Ideally we do not want to
+> > > leave driver half-way bound with device not operable, but much rather
+> > > signal the rest of the system that binding of the device failed and
+> > > release all resources.
+> > > 
+> > > 2. Offload to open: the same issue as with manually doing async reset,
+> > > plus sometimes we do not know all parameters that we should create input
+> > > device with until after we reset physical device and queried it for
+> > > capabilities.
+> > > 
+> > > Marking a driver to tell device core to execute probe asynchronously [at
+> > > boot time] seems like a very appealing feature from driver author POV.
+> > > 
+> > > What is the container stuff you mention?
+> > 
+> > drivers/base/container.c
+> 
+> I am not sure how that would help in the scenario described above, as it
+> seems ACPI specific...
 
-diff --git a/Makefile b/Makefile
-index d0901b46b4bf..87663a2d1d10 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,8 +1,8 @@
- VERSION = 3
- PATCHLEVEL = 16
--SUBLEVEL = 0
-+SUBLEVEL = 1
- EXTRAVERSION =
--NAME = Shuffling Zombie Juror
-+NAME = Museum of Fishiegoodies
- 
- # *DOCUMENTATION*
- # To see a list of typical targets execute "make help"
-diff --git a/arch/sparc/include/asm/tlbflush_64.h b/arch/sparc/include/asm/tlbflush_64.h
-index 816d8202fa0a..dea1cfa2122b 100644
---- a/arch/sparc/include/asm/tlbflush_64.h
-+++ b/arch/sparc/include/asm/tlbflush_64.h
-@@ -34,6 +34,8 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
- {
- }
- 
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end);
-+
- #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
- 
- void flush_tlb_pending(void);
-@@ -48,11 +50,6 @@ void __flush_tlb_kernel_range(unsigned long start, unsigned long end);
- 
- #ifndef CONFIG_SMP
- 
--#define flush_tlb_kernel_range(start,end) \
--do {	flush_tsb_kernel_range(start,end); \
--	__flush_tlb_kernel_range(start,end); \
--} while (0)
--
- static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
- {
- 	__flush_tlb_page(CTX_HWBITS(mm->context), vaddr);
-@@ -63,11 +60,6 @@ static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vad
- void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end);
- void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr);
- 
--#define flush_tlb_kernel_range(start, end) \
--do {	flush_tsb_kernel_range(start,end); \
--	smp_flush_tlb_kernel_range(start, end); \
--} while (0)
--
- #define global_flush_tlb_page(mm, vaddr) \
- 	smp_flush_tlb_page(mm, vaddr)
- 
-diff --git a/arch/sparc/kernel/ldc.c b/arch/sparc/kernel/ldc.c
-index e01d75d40329..66dacd56bb10 100644
---- a/arch/sparc/kernel/ldc.c
-+++ b/arch/sparc/kernel/ldc.c
-@@ -1336,7 +1336,7 @@ int ldc_connect(struct ldc_channel *lp)
- 	if (!(lp->flags & LDC_FLAG_ALLOCED_QUEUES) ||
- 	    !(lp->flags & LDC_FLAG_REGISTERED_QUEUES) ||
- 	    lp->hs_state != LDC_HS_OPEN)
--		err = -EINVAL;
-+		err = ((lp->hs_state > LDC_HS_OPEN) ? 0 : -EINVAL);
- 	else
- 		err = start_handshake(lp);
- 
-diff --git a/arch/sparc/math-emu/math_32.c b/arch/sparc/math-emu/math_32.c
-index aa4d55b0bdf0..5ce8f2f64604 100644
---- a/arch/sparc/math-emu/math_32.c
-+++ b/arch/sparc/math-emu/math_32.c
-@@ -499,7 +499,7 @@ static int do_one_mathemu(u32 insn, unsigned long *pfsr, unsigned long *fregs)
- 		case 0: fsr = *pfsr;
- 			if (IR == -1) IR = 2;
- 			/* fcc is always fcc0 */
--			fsr &= ~0xc00; fsr |= (IR << 10); break;
-+			fsr &= ~0xc00; fsr |= (IR << 10);
- 			*pfsr = fsr;
- 			break;
- 		case 1: rd->s = IR; break;
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 16b58ff11e65..2cfb0f25e0ed 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -351,6 +351,10 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *
- 
- 	mm = vma->vm_mm;
- 
-+	/* Don't insert a non-valid PTE into the TSB, we'll deadlock.  */
-+	if (!pte_accessible(mm, pte))
-+		return;
-+
- 	spin_lock_irqsave(&mm->context.lock, flags);
- 
- #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
-@@ -2619,6 +2623,10 @@ void update_mmu_cache_pmd(struct vm_area_struct *vma, unsigned long addr,
- 
- 	pte = pmd_val(entry);
- 
-+	/* Don't insert a non-valid PMD into the TSB, we'll deadlock.  */
-+	if (!(pte & _PAGE_VALID))
-+		return;
-+
- 	/* We are fabricating 8MB pages using 4MB real hw pages.  */
- 	pte |= (addr & (1UL << REAL_HPAGE_SHIFT));
- 
-@@ -2699,3 +2707,26 @@ void hugetlb_setup(struct pt_regs *regs)
- 	}
- }
- #endif
-+
-+#ifdef CONFIG_SMP
-+#define do_flush_tlb_kernel_range	smp_flush_tlb_kernel_range
-+#else
-+#define do_flush_tlb_kernel_range	__flush_tlb_kernel_range
-+#endif
-+
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end)
-+{
-+	if (start < HI_OBP_ADDRESS && end > LOW_OBP_ADDRESS) {
-+		if (start < LOW_OBP_ADDRESS) {
-+			flush_tsb_kernel_range(start, LOW_OBP_ADDRESS);
-+			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
-+		}
-+		if (end > HI_OBP_ADDRESS) {
-+			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
-+			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
-+		}
-+	} else {
-+		flush_tsb_kernel_range(start, end);
-+		do_flush_tlb_kernel_range(start, end);
-+	}
-+}
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 8afa579e7c40..a3dd5dc64f4c 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -7830,17 +7830,18 @@ static int tigon3_dma_hwbug_workaround(struct tg3_napi *tnapi,
- 
- static netdev_tx_t tg3_start_xmit(struct sk_buff *, struct net_device *);
- 
--/* Use GSO to workaround a rare TSO bug that may be triggered when the
-- * TSO header is greater than 80 bytes.
-+/* Use GSO to workaround all TSO packets that meet HW bug conditions
-+ * indicated in tg3_tx_frag_set()
-  */
--static int tg3_tso_bug(struct tg3 *tp, struct sk_buff *skb)
-+static int tg3_tso_bug(struct tg3 *tp, struct tg3_napi *tnapi,
-+		       struct netdev_queue *txq, struct sk_buff *skb)
- {
- 	struct sk_buff *segs, *nskb;
- 	u32 frag_cnt_est = skb_shinfo(skb)->gso_segs * 3;
- 
- 	/* Estimate the number of fragments in the worst case */
--	if (unlikely(tg3_tx_avail(&tp->napi[0]) <= frag_cnt_est)) {
--		netif_stop_queue(tp->dev);
-+	if (unlikely(tg3_tx_avail(tnapi) <= frag_cnt_est)) {
-+		netif_tx_stop_queue(txq);
- 
- 		/* netif_tx_stop_queue() must be done before checking
- 		 * checking tx index in tg3_tx_avail() below, because in
-@@ -7848,13 +7849,14 @@ static int tg3_tso_bug(struct tg3 *tp, struct sk_buff *skb)
- 		 * netif_tx_queue_stopped().
- 		 */
- 		smp_mb();
--		if (tg3_tx_avail(&tp->napi[0]) <= frag_cnt_est)
-+		if (tg3_tx_avail(tnapi) <= frag_cnt_est)
- 			return NETDEV_TX_BUSY;
- 
--		netif_wake_queue(tp->dev);
-+		netif_tx_wake_queue(txq);
- 	}
- 
--	segs = skb_gso_segment(skb, tp->dev->features & ~(NETIF_F_TSO | NETIF_F_TSO6));
-+	segs = skb_gso_segment(skb, tp->dev->features &
-+				    ~(NETIF_F_TSO | NETIF_F_TSO6));
- 	if (IS_ERR(segs) || !segs)
- 		goto tg3_tso_bug_end;
- 
-@@ -7930,7 +7932,7 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 		if (!skb_is_gso_v6(skb)) {
- 			if (unlikely((ETH_HLEN + hdr_len) > 80) &&
- 			    tg3_flag(tp, TSO_BUG))
--				return tg3_tso_bug(tp, skb);
-+				return tg3_tso_bug(tp, tnapi, txq, skb);
- 
- 			ip_csum = iph->check;
- 			ip_tot_len = iph->tot_len;
-@@ -8061,7 +8063,7 @@ static netdev_tx_t tg3_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 				iph->tot_len = ip_tot_len;
- 			}
- 			tcph->check = tcp_csum;
--			return tg3_tso_bug(tp, skb);
-+			return tg3_tso_bug(tp, tnapi, txq, skb);
- 		}
- 
- 		/* If the workaround fails due to memory/mapping
-diff --git a/drivers/net/ethernet/brocade/bna/bnad.c b/drivers/net/ethernet/brocade/bna/bnad.c
-index 3a77f9ead004..556aab75f490 100644
---- a/drivers/net/ethernet/brocade/bna/bnad.c
-+++ b/drivers/net/ethernet/brocade/bna/bnad.c
-@@ -600,9 +600,9 @@ bnad_cq_process(struct bnad *bnad, struct bna_ccb *ccb, int budget)
- 	prefetch(bnad->netdev);
- 
- 	cq = ccb->sw_q;
--	cmpl = &cq[ccb->producer_index];
- 
- 	while (packets < budget) {
-+		cmpl = &cq[ccb->producer_index];
- 		if (!cmpl->valid)
- 			break;
- 		/* The 'valid' field is set by the adapter, only after writing
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 958df383068a..ef8a5c20236a 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -646,6 +646,7 @@ static int macvlan_init(struct net_device *dev)
- 				  (lowerdev->state & MACVLAN_STATE_MASK);
- 	dev->features 		= lowerdev->features & MACVLAN_FEATURES;
- 	dev->features		|= ALWAYS_ON_FEATURES;
-+	dev->vlan_features	= lowerdev->vlan_features & MACVLAN_FEATURES;
- 	dev->gso_max_size	= lowerdev->gso_max_size;
- 	dev->iflink		= lowerdev->ifindex;
- 	dev->hard_header_len	= lowerdev->hard_header_len;
-diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-index 203651ebccb0..4eaadcfcb0fe 100644
---- a/drivers/net/phy/mdio_bus.c
-+++ b/drivers/net/phy/mdio_bus.c
-@@ -255,7 +255,6 @@ int mdiobus_register(struct mii_bus *bus)
- 
- 	bus->dev.parent = bus->parent;
- 	bus->dev.class = &mdio_bus_class;
--	bus->dev.driver = bus->parent->driver;
- 	bus->dev.groups = NULL;
- 	dev_set_name(&bus->dev, "%s", bus->id);
- 
-diff --git a/drivers/sbus/char/bbc_envctrl.c b/drivers/sbus/char/bbc_envctrl.c
-index 160e7510aca6..0787b9756165 100644
---- a/drivers/sbus/char/bbc_envctrl.c
-+++ b/drivers/sbus/char/bbc_envctrl.c
-@@ -452,6 +452,9 @@ static void attach_one_temp(struct bbc_i2c_bus *bp, struct platform_device *op,
- 	if (!tp)
- 		return;
- 
-+	INIT_LIST_HEAD(&tp->bp_list);
-+	INIT_LIST_HEAD(&tp->glob_list);
-+
- 	tp->client = bbc_i2c_attach(bp, op);
- 	if (!tp->client) {
- 		kfree(tp);
-@@ -497,6 +500,9 @@ static void attach_one_fan(struct bbc_i2c_bus *bp, struct platform_device *op,
- 	if (!fp)
- 		return;
- 
-+	INIT_LIST_HEAD(&fp->bp_list);
-+	INIT_LIST_HEAD(&fp->glob_list);
-+
- 	fp->client = bbc_i2c_attach(bp, op);
- 	if (!fp->client) {
- 		kfree(fp);
-diff --git a/drivers/sbus/char/bbc_i2c.c b/drivers/sbus/char/bbc_i2c.c
-index c7763e482eb2..812b5f0361b6 100644
---- a/drivers/sbus/char/bbc_i2c.c
-+++ b/drivers/sbus/char/bbc_i2c.c
-@@ -300,13 +300,18 @@ static struct bbc_i2c_bus * attach_one_i2c(struct platform_device *op, int index
- 	if (!bp)
- 		return NULL;
- 
-+	INIT_LIST_HEAD(&bp->temps);
-+	INIT_LIST_HEAD(&bp->fans);
-+
- 	bp->i2c_control_regs = of_ioremap(&op->resource[0], 0, 0x2, "bbc_i2c_regs");
- 	if (!bp->i2c_control_regs)
- 		goto fail;
- 
--	bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
--	if (!bp->i2c_bussel_reg)
--		goto fail;
-+	if (op->num_resources == 2) {
-+		bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
-+		if (!bp->i2c_bussel_reg)
-+			goto fail;
-+	}
- 
- 	bp->waiting = 0;
- 	init_waitqueue_head(&bp->wq);
-diff --git a/drivers/tty/serial/sunsab.c b/drivers/tty/serial/sunsab.c
-index 2f57df9a71d9..a1e09c0d46f2 100644
---- a/drivers/tty/serial/sunsab.c
-+++ b/drivers/tty/serial/sunsab.c
-@@ -157,6 +157,15 @@ receive_chars(struct uart_sunsab_port *up,
- 	    (up->port.line == up->port.cons->index))
- 		saw_console_brk = 1;
- 
-+	if (count == 0) {
-+		if (unlikely(stat->sreg.isr1 & SAB82532_ISR1_BRK)) {
-+			stat->sreg.isr0 &= ~(SAB82532_ISR0_PERR |
-+					     SAB82532_ISR0_FERR);
-+			up->port.icount.brk++;
-+			uart_handle_break(&up->port);
-+		}
-+	}
-+
- 	for (i = 0; i < count; i++) {
- 		unsigned char ch = buf[i], flag;
- 
-diff --git a/include/net/ip_tunnels.h b/include/net/ip_tunnels.h
-index a4daf9eb8562..8dd8cab88b87 100644
---- a/include/net/ip_tunnels.h
-+++ b/include/net/ip_tunnels.h
-@@ -40,6 +40,7 @@ struct ip_tunnel_prl_entry {
- 
- struct ip_tunnel_dst {
- 	struct dst_entry __rcu 		*dst;
-+	__be32				 saddr;
- };
- 
- struct ip_tunnel {
-diff --git a/lib/iovec.c b/lib/iovec.c
-index 7a7c2da4cddf..df3abd1eaa4a 100644
---- a/lib/iovec.c
-+++ b/lib/iovec.c
-@@ -85,6 +85,10 @@ EXPORT_SYMBOL(memcpy_toiovecend);
- int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
- 			int offset, int len)
- {
-+	/* No data? Done! */
-+	if (len == 0)
-+		return 0;
-+
- 	/* Skip over the finished iovecs */
- 	while (offset >= iov->iov_len) {
- 		offset -= iov->iov_len;
-diff --git a/net/batman-adv/fragmentation.c b/net/batman-adv/fragmentation.c
-index f14e54a05691..022d18ab27a6 100644
---- a/net/batman-adv/fragmentation.c
-+++ b/net/batman-adv/fragmentation.c
-@@ -128,6 +128,7 @@ static bool batadv_frag_insert_packet(struct batadv_orig_node *orig_node,
- {
- 	struct batadv_frag_table_entry *chain;
- 	struct batadv_frag_list_entry *frag_entry_new = NULL, *frag_entry_curr;
-+	struct batadv_frag_list_entry *frag_entry_last = NULL;
- 	struct batadv_frag_packet *frag_packet;
- 	uint8_t bucket;
- 	uint16_t seqno, hdr_size = sizeof(struct batadv_frag_packet);
-@@ -180,11 +181,14 @@ static bool batadv_frag_insert_packet(struct batadv_orig_node *orig_node,
- 			ret = true;
- 			goto out;
- 		}
-+
-+		/* store current entry because it could be the last in list */
-+		frag_entry_last = frag_entry_curr;
- 	}
- 
--	/* Reached the end of the list, so insert after 'frag_entry_curr'. */
--	if (likely(frag_entry_curr)) {
--		hlist_add_after(&frag_entry_curr->list, &frag_entry_new->list);
-+	/* Reached the end of the list, so insert after 'frag_entry_last'. */
-+	if (likely(frag_entry_last)) {
-+		hlist_add_after(&frag_entry_last->list, &frag_entry_new->list);
- 		chain->size += skb->len - hdr_size;
- 		chain->timestamp = jiffies;
- 		ret = true;
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index c1a33033cbe2..58ff88edbefd 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2976,9 +2976,9 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
- 		tail = nskb;
- 
- 		__copy_skb_header(nskb, head_skb);
--		nskb->mac_len = head_skb->mac_len;
- 
- 		skb_headers_offset_update(nskb, skb_headroom(nskb) - headroom);
-+		skb_reset_mac_len(nskb);
- 
- 		skb_copy_from_linear_data_offset(head_skb, -tnl_hlen,
- 						 nskb->data - tnl_hlen,
-diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
-index 6f9de61dce5f..45920d928341 100644
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -69,23 +69,25 @@ static unsigned int ip_tunnel_hash(__be32 key, __be32 remote)
- }
- 
- static void __tunnel_dst_set(struct ip_tunnel_dst *idst,
--			     struct dst_entry *dst)
-+			     struct dst_entry *dst, __be32 saddr)
- {
- 	struct dst_entry *old_dst;
- 
- 	dst_clone(dst);
- 	old_dst = xchg((__force struct dst_entry **)&idst->dst, dst);
- 	dst_release(old_dst);
-+	idst->saddr = saddr;
- }
- 
--static void tunnel_dst_set(struct ip_tunnel *t, struct dst_entry *dst)
-+static void tunnel_dst_set(struct ip_tunnel *t,
-+			   struct dst_entry *dst, __be32 saddr)
- {
--	__tunnel_dst_set(this_cpu_ptr(t->dst_cache), dst);
-+	__tunnel_dst_set(this_cpu_ptr(t->dst_cache), dst, saddr);
- }
- 
- static void tunnel_dst_reset(struct ip_tunnel *t)
- {
--	tunnel_dst_set(t, NULL);
-+	tunnel_dst_set(t, NULL, 0);
- }
- 
- void ip_tunnel_dst_reset_all(struct ip_tunnel *t)
-@@ -93,20 +95,25 @@ void ip_tunnel_dst_reset_all(struct ip_tunnel *t)
- 	int i;
- 
- 	for_each_possible_cpu(i)
--		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL);
-+		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL, 0);
- }
- EXPORT_SYMBOL(ip_tunnel_dst_reset_all);
- 
--static struct rtable *tunnel_rtable_get(struct ip_tunnel *t, u32 cookie)
-+static struct rtable *tunnel_rtable_get(struct ip_tunnel *t,
-+					u32 cookie, __be32 *saddr)
- {
-+	struct ip_tunnel_dst *idst;
- 	struct dst_entry *dst;
- 
- 	rcu_read_lock();
--	dst = rcu_dereference(this_cpu_ptr(t->dst_cache)->dst);
-+	idst = this_cpu_ptr(t->dst_cache);
-+	dst = rcu_dereference(idst->dst);
- 	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
- 		dst = NULL;
- 	if (dst) {
--		if (dst->obsolete && dst->ops->check(dst, cookie) == NULL) {
-+		if (!dst->obsolete || dst->ops->check(dst, cookie)) {
-+			*saddr = idst->saddr;
-+		} else {
- 			tunnel_dst_reset(t);
- 			dst_release(dst);
- 			dst = NULL;
-@@ -367,7 +374,7 @@ static int ip_tunnel_bind_dev(struct net_device *dev)
- 
- 		if (!IS_ERR(rt)) {
- 			tdev = rt->dst.dev;
--			tunnel_dst_set(tunnel, &rt->dst);
-+			tunnel_dst_set(tunnel, &rt->dst, fl4.saddr);
- 			ip_rt_put(rt);
- 		}
- 		if (dev->type != ARPHRD_ETHER)
-@@ -610,7 +617,7 @@ void ip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev,
- 	init_tunnel_flow(&fl4, protocol, dst, tnl_params->saddr,
- 			 tunnel->parms.o_key, RT_TOS(tos), tunnel->parms.link);
- 
--	rt = connected ? tunnel_rtable_get(tunnel, 0) : NULL;
-+	rt = connected ? tunnel_rtable_get(tunnel, 0, &fl4.saddr) : NULL;
- 
- 	if (!rt) {
- 		rt = ip_route_output_key(tunnel->net, &fl4);
-@@ -620,7 +627,7 @@ void ip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev,
- 			goto tx_error;
- 		}
- 		if (connected)
--			tunnel_dst_set(tunnel, &rt->dst);
-+			tunnel_dst_set(tunnel, &rt->dst, fl4.saddr);
- 	}
- 
- 	if (rt->dst.dev == dev) {
-diff --git a/net/ipv4/tcp_vegas.c b/net/ipv4/tcp_vegas.c
-index 9a5e05f27f4f..b40ad897f945 100644
---- a/net/ipv4/tcp_vegas.c
-+++ b/net/ipv4/tcp_vegas.c
-@@ -218,7 +218,8 @@ static void tcp_vegas_cong_avoid(struct sock *sk, u32 ack, u32 acked)
- 			 * This is:
- 			 *     (actual rate in segments) * baseRTT
- 			 */
--			target_cwnd = tp->snd_cwnd * vegas->baseRTT / rtt;
-+			target_cwnd = (u64)tp->snd_cwnd * vegas->baseRTT;
-+			do_div(target_cwnd, rtt);
- 
- 			/* Calculate the difference between the window we had,
- 			 * and the window we would like to have. This quantity
-diff --git a/net/ipv4/tcp_veno.c b/net/ipv4/tcp_veno.c
-index 27b9825753d1..8276977d2c85 100644
---- a/net/ipv4/tcp_veno.c
-+++ b/net/ipv4/tcp_veno.c
-@@ -144,7 +144,7 @@ static void tcp_veno_cong_avoid(struct sock *sk, u32 ack, u32 acked)
- 
- 		rtt = veno->minrtt;
- 
--		target_cwnd = (tp->snd_cwnd * veno->basertt);
-+		target_cwnd = (u64)tp->snd_cwnd * veno->basertt;
- 		target_cwnd <<= V_PARAM_SHIFT;
- 		do_div(target_cwnd, rtt);
- 
-diff --git a/net/sctp/output.c b/net/sctp/output.c
-index 01ab8e0723f0..407ae2bf97b0 100644
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -599,7 +599,7 @@ out:
- 	return err;
- no_route:
- 	kfree_skb(nskb);
--	IP_INC_STATS_BH(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
-+	IP_INC_STATS(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
- 
- 	/* FIXME: Returning the 'err' will effect all the associations
- 	 * associated with a socket, although only one of the paths of the
+It is?  I thought the drm people were using it on ARM.  I really don't
+know, sorry, don't have the chance to check it right now...
+
+greg k-h
