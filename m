@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945AbaHNOMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 10:12:00 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:56046 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878AbaHNOL6 (ORCPT
+	id S1755052AbaHNONF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 10:13:05 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:49650 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754988AbaHNONB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 10:11:58 -0400
-From: Ramesh Basukala <basukalaramesh@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Ramesh Basukala <basukalaramesh@gmail.com>
-Subject: [PATCH] Staging: bmc: fix coding style warning
-Date: Thu, 14 Aug 2014 10:11:44 -0400
-Message-Id: <1408025504-19100-1-git-send-email-basukalaramesh@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20140814012006.GA8776@kroah.com>
-References: <20140814012006.GA8776@kroah.com>
+	Thu, 14 Aug 2014 10:13:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk>
+Date: Thu, 14 Aug 2014 07:13:00 -0700
+Message-ID: <CAD7vxxKvzxvmzgx=S5ZZn54ts99ca2TqBYFvY1SXZQZDkhjq3w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mmc: core: Use regulator_get_voltage() if OCR mask is empty.
+From: Tim Kryger <tim.kryger@gmail.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        Haijun Zhang <Haijun.Zhang@freescale.com>,
+        Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the vendorspecificextn.c that fixes coding style
-warning message line over 80 characters found by checkpatch.pl script.
-I am submitting this patch as required by Eudyptula Challenge.
+On Thu, Aug 14, 2014 at 5:39 AM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> The operation conditions register (OCR) stores the voltage
+> profile of the card, however the list of possible voltages
+> is restricted by the voltage range supported by the supply
+> used as VCC/VDD. So in mmc_vddrange_to_ocrmask() a OCR mask
+> is obtained to filter the not supported voltages, from the
+> value read in the host controller OCR register.
+>
+> For fixed regulators, regulator_list_voltage() returns the
+> fixed output for the first selector but this doesn't happen
+> for switch (FET) regulators that obtain their voltage from
+> their parent supply. A call to regulator_get_voltage() is
+> needed in this case so the regulator core can return the
+> FET's parent supply voltage output.
+>
+> This change is consistent with the fact that for other
+> fixed regulators (that are not FETs) the OCR mask is
+> returned even when mmc_regulator_set_ocr() checks if the
+> regulator is fixed before calling regulator_set_voltage().
+>
+> Without this patch, the following warning is reported when
+> a FET is used as a vmmc-supply:
+>
+> dwmmc_exynos 12220000.mmc: Failed getting OCR mask: -22
+>
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-Signed-off-by: Ramesh Basukala <basukalaramesh@gmail.com>
----
- drivers/staging/bcm/vendorspecificextn.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+https://lkml.org/lkml/2014/8/12/377
 
-diff --git a/drivers/staging/bcm/vendorspecificextn.c b/drivers/staging/bcm/vendorspecificextn.c
-index 2c57a16..1d9bef6 100644
---- a/drivers/staging/bcm/vendorspecificextn.c
-+++ b/drivers/staging/bcm/vendorspecificextn.c
-@@ -11,7 +11,8 @@
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  *
-  */
--INT vendorextnGetSectionInfo(PVOID  pContext, struct bcm_flash2x_vendor_info *pVendorInfo)
-+INT vendorextnGetSectionInfo(PVOID  pContext,
-+			struct bcm_flash2x_vendor_info *pVendorInfo)
- {
- 	return STATUS_FAILURE;
- }
-@@ -61,7 +62,8 @@ INT vendorextnExit(struct bcm_mini_adapter *Adapter)
-  *		arg	-input parameter sent by vendor
-  *
-  * Returns:
-- *		CONTINUE_COMMON_PATH in case it is not meant to be processed by vendor ioctls
-+ *		CONTINUE_COMMON_PATH in case it is not meant to be processed
-+ *		by vendor ioctls
-  *		STATUS_SUCCESS/STATUS_FAILURE as per the IOCTL return value
-  */
- 
-@@ -88,8 +90,8 @@ INT vendorextnIoctl(struct bcm_mini_adapter *Adapter, UINT cmd, ULONG arg)
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  */
- 
--INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
--			UINT offset, UINT numOfBytes)
-+INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer,
-+	enum bcm_flash2x_section_val SectionVal, UINT offset, UINT numOfBytes)
- {
- 	return STATUS_FAILURE;
- }
-@@ -112,8 +114,9 @@ INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_sect
-  * Returns:
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  */
--INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
--			UINT offset, UINT numOfBytes, bool bVerify)
-+INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer,
-+	enum bcm_flash2x_section_val SectionVal, UINT offset,
-+	UINT numOfBytes, bool bVerify)
- {
- 	return STATUS_FAILURE;
- }
-@@ -135,8 +138,8 @@ INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_sec
-  * Returns:
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  */
--INT vendorextnWriteSectionWithoutErase(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
--			UINT offset, UINT numOfBytes)
-+INT vendorextnWriteSectionWithoutErase(PVOID  pContext, PUCHAR pBuffer,
-+	enum bcm_flash2x_section_val SectionVal, UINT offset, UINT numOfBytes)
- {
- 	return STATUS_FAILURE;
- }
--- 
-1.7.1
+Perhaps I misunderstood the discussion in that thread but couldn't
+this failure also be addressed by adding proper constraints for each
+FET in individual DTS files to reflect the range of voltages that are
+safe for all consumers of that supply on the board?
 
+I thought the main concern with your other change was that the
+constraints you listed in the DTSI represented the limits of the PMIC
+and not the consumers.
+
+-Tim
