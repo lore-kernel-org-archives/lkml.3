@@ -1,195 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926AbaHNOdw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 10:33:52 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:46327 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436AbaHNOdu (ORCPT
+	id S1755110AbaHNOfb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 10:35:31 -0400
+Received: from smtprelay0162.hostedemail.com ([216.40.44.162]:51323 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754628AbaHNOfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 10:33:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407977877-18185-2-git-send-email-minchan@kernel.org>
-References: <1407977877-18185-1-git-send-email-minchan@kernel.org> <1407977877-18185-2-git-send-email-minchan@kernel.org>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Thu, 14 Aug 2014 10:33:29 -0400
-X-Google-Sender-Auth: X3z7QlTZbThw6hV7yUb5CoT308A
-Message-ID: <CALZtONB=t5nivxYTTjqjYO0EQDYvLofKO6kM_xRUn3FT1Dut6A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] zram: limit memory size for zram
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ds2horner@gmail.com
-Content-Type: text/plain; charset=UTF-8
+	Thu, 14 Aug 2014 10:35:30 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3867:3871:3872:3873:4250:4321:5007:7576:7652:10004:10400:10848:10967:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: watch11_86f14d02d3461
+X-Filterd-Recvd-Size: 1722
+Message-ID: <1408026925.2683.24.camel@joe-AO725>
+Subject: Re: [PATCH] locks: Remove unused conf argument from lm_grant
+From: Joe Perches <joe@perches.com>
+To: Jeff Layton <jeff.layton@primarydata.com>
+Cc: Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Kinglong Mee <kinglongmee@gmail.com>
+Date: Thu, 14 Aug 2014 07:35:25 -0700
+In-Reply-To: <20140814095658.1716c48e@tlielax.poochiereds.net>
+References: <1408024360-5177-1-git-send-email-jlayton@primarydata.com>
+	 <20140814095658.1716c48e@tlielax.poochiereds.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 8:57 PM, Minchan Kim <minchan@kernel.org> wrote:
-> Since zram has no control feature to limit memory usage,
-> it makes hard to manage system memrory.
->
-> This patch adds new knob "mem_limit" via sysfs to set up the
-> limit.
->
-> Note: I added the logic in zram, not zsmalloc because the limit
-> is requirement of zram, not zsmalloc so I'd like to avoid
-> unnecessary branch in zsmalloc.
->
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  Documentation/blockdev/zram.txt | 20 +++++++++++++++----
->  drivers/block/zram/zram_drv.c   | 43 +++++++++++++++++++++++++++++++++++++++++
->  drivers/block/zram/zram_drv.h   |  1 +
->  3 files changed, 60 insertions(+), 4 deletions(-)
->
-> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> index 0595c3f56ccf..9f239ff8c444 100644
-> --- a/Documentation/blockdev/zram.txt
-> +++ b/Documentation/blockdev/zram.txt
-> @@ -74,14 +74,26 @@ There is little point creating a zram of greater than twice the size of memory
->  since we expect a 2:1 compression ratio. Note that zram uses about 0.1% of the
->  size of the disk when not in use so a huge zram is wasteful.
->
-> -5) Activate:
-> +5) Set memory limit: Optional
-> +       Set memory limit by writing the value to sysfs node 'mem_limit'.
-> +       The value can be either in bytes or you can use mem suffixes.
-> +       Examples:
-> +           # limit /dev/zram0 with 50MB memory
-> +           echo $((50*1024*1024)) > /sys/block/zram0/mem_limit
-> +
-> +           # Using mem suffixes
-> +           echo 256K > /sys/block/zram0/mem_limit
-> +           echo 512M > /sys/block/zram0/mem_limit
-> +           echo 1G > /sys/block/zram0/mem_limit
-> +
-> +6) Activate:
->         mkswap /dev/zram0
->         swapon /dev/zram0
->
->         mkfs.ext4 /dev/zram1
->         mount /dev/zram1 /tmp
->
-> -6) Stats:
-> +7) Stats:
->         Per-device statistics are exported as various nodes under
->         /sys/block/zram<id>/
->                 disksize
-> @@ -96,11 +108,11 @@ size of the disk when not in use so a huge zram is wasteful.
->                 compr_data_size
->                 mem_used_total
->
-> -7) Deactivate:
-> +8) Deactivate:
->         swapoff /dev/zram0
->         umount /dev/zram1
->
-> -8) Reset:
-> +9) Reset:
->         Write any positive value to 'reset' sysfs node
->         echo 1 > /sys/block/zram0/reset
->         echo 1 > /sys/block/zram1/reset
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index d00831c3d731..b48a3d0e9031 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -122,6 +122,35 @@ static ssize_t max_comp_streams_show(struct device *dev,
->         return scnprintf(buf, PAGE_SIZE, "%d\n", val);
->  }
->
-> +static ssize_t mem_limit_show(struct device *dev,
-> +               struct device_attribute *attr, char *buf)
-> +{
-> +       u64 val;
-> +       struct zram *zram = dev_to_zram(dev);
-> +
-> +       down_read(&zram->init_lock);
-> +       val = zram->limit_bytes;
-> +       up_read(&zram->init_lock);
-> +
-> +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
-> +}
-> +
-> +static ssize_t mem_limit_store(struct device *dev,
-> +               struct device_attribute *attr, const char *buf, size_t len)
-> +{
-> +       u64 limit;
-> +       struct zram *zram = dev_to_zram(dev);
-> +
-> +       limit = memparse(buf, NULL);
-> +       if (!limit)
-> +               return -EINVAL;
+On Thu, 2014-08-14 at 09:56 -0400, Jeff Layton wrote:
+> On Thu, 14 Aug 2014 09:52:40 -0400
+> Jeff Layton <jlayton@primarydata.com> wrote:
+> > From: Joe Perches <joe@perches.com>
+> > This argument is always NULL so don't pass it around.
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+> > ---
+> >  fs/dlm/plock.c     |  8 ++++----
+> >  fs/lockd/svclock.c | 12 +++---------
+> >  include/linux/fs.h |  2 +-
+> >  3 files changed, 8 insertions(+), 14 deletions(-)
+> Joe, if this looks OK with you, I'll plan to merge this for v3.18.
 
-Shouldn't passing a 0 limit be allowed, to disable the limit?
+Looks fine, thanks Jeff.
 
-> +
-> +       down_write(&zram->init_lock);
-> +       zram->limit_bytes = limit;
-> +       up_write(&zram->init_lock);
-> +       return len;
-> +}
-> +
->  static ssize_t max_comp_streams_store(struct device *dev,
->                 struct device_attribute *attr, const char *buf, size_t len)
->  {
-> @@ -513,6 +542,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->                 ret = -ENOMEM;
->                 goto out;
->         }
-> +
-> +       if (zram->limit_bytes &&
-> +               zs_get_total_size_bytes(meta->mem_pool) > zram->limit_bytes) {
-> +               zs_free(meta->mem_pool, handle);
-> +               ret = -ENOMEM;
-> +               goto out;
-> +       }
-> +
->         cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
->
->         if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
-> @@ -617,6 +654,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
->         struct zram_meta *meta;
->
->         down_write(&zram->init_lock);
-> +
-> +       zram->limit_bytes = 0;
-> +
->         if (!init_done(zram)) {
->                 up_write(&zram->init_lock);
->                 return;
-> @@ -857,6 +897,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
->  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
->  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
->  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
-> +static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
-> +               mem_limit_store);
->  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
->                 max_comp_streams_show, max_comp_streams_store);
->  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
-> @@ -885,6 +927,7 @@ static struct attribute *zram_disk_attrs[] = {
->         &dev_attr_orig_data_size.attr,
->         &dev_attr_compr_data_size.attr,
->         &dev_attr_mem_used_total.attr,
-> +       &dev_attr_mem_limit.attr,
->         &dev_attr_max_comp_streams.attr,
->         &dev_attr_comp_algorithm.attr,
->         NULL,
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index e0f725c87cc6..086c51782e75 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -110,6 +110,7 @@ struct zram {
->          * we can store in a disk.
->          */
->         u64 disksize;   /* bytes */
-> +       u64 limit_bytes;
->         int max_comp_streams;
->         struct zram_stats stats;
->         char compressor[10];
-> --
-> 2.0.0
->
+
