@@ -1,185 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339AbaHNPNx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 11:13:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20755 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155AbaHNPNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 11:13:51 -0400
-Date: Thu, 14 Aug 2014 12:13:30 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: Re: mm: compaction: buffer overflow in isolate_migratepages_range
-Message-ID: <20140814151329.GA22187@optiplex.redhat.com>
-References: <53E6CEAA.9020105@oracle.com>
- <CAPAsAGxcC0+V1ZzR3LL=ASx=KXifPbw_cyvHCBBJT4mZ1grg+Q@mail.gmail.com>
- <20140813153501.GE21041@optiplex.redhat.com>
+	id S1755244AbaHNPRN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 11:17:13 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:50617 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754920AbaHNPRL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 11:17:11 -0400
+Message-ID: <53ECD2EE.6020101@codethink.co.uk>
+Date: Thu, 14 Aug 2014 16:17:02 +0100
+From: Rob Jones <rob.jones@codethink.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140813153501.GE21041@optiplex.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Javier Martinez Canillas <javier@dowhile0.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Himangi Saraogi <himangi774@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        patches@opensource.wolfsonmicro.com,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Paul Parsons <lost.distance@yahoo.com>,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 1/5] gpiolib: devres: Introduce the function devm_request_gpio_array
+References: <cover.1404665589.git.himangi774@gmail.com>	<1a1752ce7455bac8f2505a9790da891a830699f5.1404665589.git.himangi774@gmail.com>	<53BD2509.6070803@codethink.co.uk>	<CACRpkdZWfYN14aki-UqvWp1K0exVj-mMK92q431QueSVvjZFuA@mail.gmail.com>	<53BE7288.6060503@codethink.co.uk>	<CABxcv=mhMMQxqVRM28NucnSW62v_3ghnT58JqFxvK=2bjxizdw@mail.gmail.com>	<53BFB659.8050306@codethink.co.uk> <CABxcv==adT6YPEekjD1y3ncrj9ghWE8UMuc64AeVWCPVb0ywFw@mail.gmail.com>
+In-Reply-To: <CABxcv==adT6YPEekjD1y3ncrj9ghWE8UMuc64AeVWCPVb0ywFw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 12:35:02PM -0300, Rafael Aquini wrote:
-> On Sun, Aug 10, 2014 at 12:49:47PM +0400, Andrey Ryabinin wrote:
-> > 2014-08-10 5:45 GMT+04:00 Sasha Levin <sasha.levin@oracle.com>:
-> > > Hi all,
-> > >
-> > > While fuzzing with trinity inside a KVM tools guest running the latest -next
-> > > kernel with the KASAN patchset, I've stumbled on the following spew:
-> > >
-> > >
-> > > [ 3837.070452] ==================================================================
-> > > [ 3837.073101] AddressSanitizer: buffer overflow in isolate_migratepages_range+0x85f/0xd90 at addr ffff88051b70eb49
-> > > [ 3837.076310] page:ffffea00146dc380 count:0 mapcount:0 mapping:          (null) index:0x0
-> > > [ 3837.079876] page flags: 0xafffff80008000(tail)
-> > > [ 3837.114592] page dumped because: kasan error
-> > > [ 3837.115897] CPU: 4 PID: 29613 Comm: trinity-c467 Not tainted 3.16.0-next-20140808-sasha-00051-gf368221 #1051
-> > > [ 3837.118024]  00000000000000fc 0000000000000000 ffffea00146dc380 ffff8801f326f718
-> > > [ 3837.119837]  ffffffff97e0d344 ffff8801f326f7e8 ffff8801f326f7d8 ffffffff9342d5bc
-> > > [ 3837.121708]  ffffea00085163c0 0000000000000000 ffff8801f326f8e0 ffffffff93fe02fb
-> > > [ 3837.123704] Call Trace:
-> > > [ 3837.124272] dump_stack (lib/dump_stack.c:52)
-> > > [ 3837.125166] kasan_report_error (mm/kasan/report.c:98 mm/kasan/report.c:166)
-> > > [ 3837.126128] ? trace_hardirqs_on_thunk (arch/x86/lib/thunk_64.S:33)
-> > > [ 3837.127462] ? retint_restore_args (arch/x86/kernel/entry_64.S:828)
-> > > [ 3837.128753] __asan_load8 (mm/kasan/kasan.c:364)
-> > > [ 3837.129914] ? isolate_migratepages_range (./arch/x86/include/asm/bitops.h:311 include/linux/pagemap.h:70 include/linux/balloon_compaction.h:131 include/linux/balloon_compaction.h:156 mm/compaction.c:596)
-> > > [ 3837.131613] isolate_migratepages_range (./arch/x86/include/asm/bitops.h:311 include/linux/pagemap.h:70 include/linux/balloon_compaction.h:131 include/linux/balloon_compaction.h:156 mm/compaction.c:596)
-> > > [ 3837.132838] compact_zone (mm/compaction.c:877 mm/compaction.c:1044)
-> > > [ 3837.133818] compact_zone_order (mm/compaction.c:1106)
-> > > [ 3837.134982] try_to_compact_pages (mm/compaction.c:1161)
-> > > [ 3837.135970] __alloc_pages_direct_compact (mm/page_alloc.c:2313)
-> > > [ 3837.137217] ? next_zones_zonelist (mm/mmzone.c:72)
-> > > [ 3837.138861] __alloc_pages_nodemask (mm/page_alloc.c:2640 mm/page_alloc.c:2806)
-> > > [ 3837.139897] ? check_chain_key (kernel/locking/lockdep.c:2190)
-> > > [ 3837.141220] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-> > > [ 3837.142434] alloc_pages_vma (mm/mempolicy.c:2046)
-> > > [ 3837.143479] ? do_huge_pmd_wp_page (mm/huge_memory.c:774 mm/huge_memory.c:1123)
-> > > [ 3837.144663] do_huge_pmd_wp_page (mm/huge_memory.c:774 mm/huge_memory.c:1123)
-> > > [ 3837.145653] handle_mm_fault (mm/memory.c:3312 mm/memory.c:3370)
-> > > [ 3837.146717] ? vmacache_find (mm/vmacache.c:100 (discriminator 1))
-> > > [ 3837.147404] ? find_vma (mm/mmap.c:2024)
-> > > [ 3837.147982] __do_page_fault (arch/x86/mm/fault.c:1231)
-> > > [ 3837.148613] ? context_tracking_user_exit (kernel/context_tracking.c:184)
-> > > [ 3837.149388] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-> > > [ 3837.150212] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2641 (discriminator 8))
-> > > [ 3837.150977] ? trace_hardirqs_off (kernel/locking/lockdep.c:2647)
-> > > [ 3837.151686] trace_do_page_fault (arch/x86/mm/fault.c:1314 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1315)
-> > > [ 3837.152870] do_async_page_fault (arch/x86/kernel/kvm.c:279)
-> > > [ 3837.153886] async_page_fault (arch/x86/kernel/entry_64.S:1313)
-> > > [ 3837.155293] Read of size 8 by thread T29613:
-> > > [ 3837.156058] Memory state around the buggy address:
-> > > [ 3837.156885]  ffff88051b70e880: 00 00 00 00 00 00 00 fc fc fc fc fc fc fc fc fc
-> > > [ 3837.158141]  ffff88051b70e900: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-> > > [ 3837.159492]  ffff88051b70e980: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-> > > [ 3837.160863]  ffff88051b70ea00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > > [ 3837.162165]  ffff88051b70ea80: 00 00 00 00 00 00 00 fc fc fc fc fc fc fc fc fc
-> > > [ 3837.163552] >ffff88051b70eb00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-> > > [ 3837.164866]                                               ^
-> > > [ 3837.165914]  ffff88051b70eb80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
-> > > [ 3837.167317]  ffff88051b70ec00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> > > [ 3837.168616]  ffff88051b70ec80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> > > [ 3837.169898]  ffff88051b70ed00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> > > [ 3837.171298]  ffff88051b70ed80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
-> > > [ 3837.172611] ==================================================================
-> > >
-> > >
-> > > Thanks,
-> > > Sasha
-> 
-> Nice pick from the sanitizer bits!
-> 
-> > 
-> > Bad access happens when we read page->mapping->flags in mapping_ballon().
-> > Address of page->mapping->flags here is ffff88051b70eb49, so the
-> > lowest bit is set,
-> > which means that the lowest bit is also set in page->mapping pointer.
-> > So page->mapping is a pointer to anon_vma, not to address_space.
-> >
-> 
-> Yeah, it happens because I failed to anticipate a race window opening where
-> balloon_page_movable() can stumble across an anon page being released --
-> somewhere in the midway of __page_cache_release() & free_pages_prepare() 
-> down on the put_page() codepath -- while isolate_migratepages_range() performs
-> its loop in the (lru) unlocked case.
+I'm afraid too many other things have been landing on my plate and I
+don't think I will be able to get on this for the foreseeable future,
+sorry about this.
+
+On 11/07/14 11:07, Javier Martinez Canillas wrote:
+> Hello Rob,
+>
+> On Fri, Jul 11, 2014 at 12:03 PM, Rob Jones <rob.jones@codethink.co.uk> wrote:
+>>
+>>
+>> On 11/07/14 01:35, Javier Martinez Canillas wrote:
+>>>
+>>> Hello Rob,
+>>>
+>>> On Thu, Jul 10, 2014 at 1:01 PM, Rob Jones <rob.jones@codethink.co.uk>
+>>> wrote:
+>>
+>>
+>> <snip>
+>>
+>>
+>>>>
+>>>> I will certainly consider it. I'm in the middle of something else right
+>>>> now but I should be available in a day or two and I'll have a look.
+>>>>
+>>>>
+>>>
+>>> I'm working on a driver for a PMIC which uses a set of GPIO to select
+>>> a particular register. Right now I'm getting each GPIO independently
+>>> but Linus mentioned [0] the devm_gpio_request_array() patch you
+>>> posted.
+>>>
+>>> Now, I'm not using the integer-based GPIO API but the new
+>>> descriptor-based one so I was wondering if you are already
+>>> implementing a devm_gpiod_get_array() or if you want me to implement
+>>> it myself.
+>>>
+>>
+>> As I said, I'm deep in something else for the next day or two so if you
+>> need it urgently you should probably do it yourself but if you don't
+>> mind waiting until next week, I can have a go.
+>>
+>> Your call, let me know.
+>>
+>
+> I'm not in a hurry, just wanted to know if it was on your plate. I'll
+> wait for your patch then, thanks!
+>
+> Best regards,
+> Javier
+>
 >
 
-Giving it a second thought, I see my first analisys (above) isn't accurate, 
-as if we had raced against a page being released at the point I mentioned,
-balloon_page_movable() would have bailed out while performing its
-page_flags_cleared() checkpoint. 
-
-But I now can see from where this occurrence is coming from, actually.
-
-The real race window for this issue opens when balloon_page_movable() 
-checkpoint @ isolate_migratepages_range() stumbles across a (new) 
-page under migration at:
-
-static int move_to_new_page(struct page *newpage, struct page *page, ...
-{
-   ...
-   newpage->mapping = page->mapping;
-
-
-At this point, *newpage points to a fresh page coming out from the allocator
-(just as any other possible ballooned page), but it gets its ->mapping
-pointer set, which can create the conditions to the access (for mapping flag
-checking purposes only) KASAN is complaining about, if *page happens to
-be pointing to an anon page.
-
- 
-> Although harmless, IMO, as we only go for the isolation step if we hold the
-> lru lock (and the check is re-done under lock safety) this is an
-> annoying thing we have to get rid of to not defeat the purpose of having
-> the kasan in place.
->
-
-It still a harmless condition as before, but considering what goes above
-I'm now convinced & confident the patch proposed by Andrey is the real fix 
-for such occurrences.
-
-Cheers,
--- Rafael 
-
->  
-> > I guess this could be fixed with something like following (completely
-> > untested) patch:
-> >
-> Despite not having it tested, as well: yes, I belive this should be the way 
-> to sort out that warning, for the aforementioned unlocked iteration case of
-> isolate_migratepages_range(). 
->  
-> > --- a/include/linux/balloon_compaction.h
-> > +++ b/include/linux/balloon_compaction.h
-> > @@ -127,7 +127,7 @@ static inline bool page_flags_cleared(struct page *page)
-> >   */
-> >  static inline bool __is_movable_balloon_page(struct page *page)
-> >  {
-> > -       struct address_space *mapping = page->mapping;
-> > +       struct address_space *mapping = page_mapping(page);
-> >         return mapping_balloon(mapping);
-> >  }
-> > 
-> 
-> Please, keep me in the loop if things don't settle properly.
-> 
-> Cheers,
-> -- Rafael
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+-- 
+Rob Jones
+Codethink Ltd
+mailto:rob.jones@codethink.co.uk
+tel:+44 161 236 5575
