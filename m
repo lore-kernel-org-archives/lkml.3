@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaHNAN0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 20:13:26 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:48623 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042AbaHNANY (ORCPT
+	id S1753226AbaHNAQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 20:16:36 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:37047 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001AbaHNAQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 20:13:24 -0400
+	Wed, 13 Aug 2014 20:16:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <1786859.jGWg0DZRp1@wuerfel>
-References: <1407951153-918-1-git-send-email-abrestic@chromium.org>
-	<CAGOxZ51_cr_j5vWrNO_ZnfAQsvt8zfEjQZC2f-nWv4w9b5R1kQ@mail.gmail.com>
-	<1786859.jGWg0DZRp1@wuerfel>
-Date: Wed, 13 Aug 2014 17:13:23 -0700
-X-Google-Sender-Auth: KGxrZDI5gU7J2JkpcGHsojIPKrw
-Message-ID: <CAL1qeaFgySoDs_PWA5FtDK0JQMVoFFfgLbOBz6-dshEg7NCdhQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Remove architecture dependency
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alim Akhtar <alim.akhtar@gmail.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140813092659.GA2775@dhcp22.suse.cz>
+References: <1407804835-24763-1-git-send-email-xiyou.wangcong@gmail.com>
+	<20140812114430.GA7049@dhcp22.suse.cz>
+	<CAM_iQpUtvqnaSuzO9d+HSDhEwtwjP9J5JaZwYusdW157zCdhRw@mail.gmail.com>
+	<20140813092659.GA2775@dhcp22.suse.cz>
+Date: Wed, 13 Aug 2014 17:16:35 -0700
+Message-ID: <CAM_iQpUUD5v9LHDjpjR0tM4NkQehDYqoZ7UGDSmXvqf3uiEHjQ@mail.gmail.com>
+Subject: Re: [Patch v2] freezer: check OOM kill while being frozen
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In general, it's best to have specific dependencies on the subsystem
-> a driver uses. You probably need something like
+On Wed, Aug 13, 2014 at 2:26 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Tue 12-08-14 17:53:33, Cong Wang wrote:
+>> On Tue, Aug 12, 2014 at 4:44 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> [...]
+>> >> @@ -147,12 +156,6 @@ void __thaw_task(struct task_struct *p)
+>> >>  {
+>> >>       unsigned long flags;
+>> >>
+>> >> -     /*
+>> >> -      * Clear freezing and kick @p if FROZEN.  Clearing is guaranteed to
+>> >> -      * be visible to @p as waking up implies wmb.  Waking up inside
+>> >> -      * freezer_lock also prevents wakeups from leaking outside
+>> >> -      * refrigerator.
+>> >> -      */
+>> >
+>> > This is an unrelated change.
+>> >
+>>
+>> It is, because as I explained, __thaw_task() doesn't do what this comment
+>> says therefore needs this patch. Or you prefer to make it a separated patch?
 >
->         depends on HAS_IOMEM && COMMON_CLK && REGULATOR
->         depends on COMPILE_TEST || ARC || ARM || MIPS
+> It is outdated since a3201227f803. I would do it in a separate patch but
+> maybe just mention that the above commit has changed the implementation.
 >
-> to cover all the possible cases. The specific options are probably
-> not the ones I listed above, but you should get the idea. Most importantly,
-> you don't want to allow building the driver on architectures on which
-> it can't compile.
 
-The only compile-time dependencies I see are HAS_IOMEM (which MMC
-already depends on) and HAS_DMA.  There isn't any compile-time
-dependency on COMMON_CLK, REGULATOR, GPIOLIB, OF, etc.  I've compiled
-it successfully for a few non-ARM/ARC architectures, though that
-certainly isn't an exhaustive test.  To be safe though, perhaps I'll
-just update the architecture dependency to include MIPS ||
-COMPILE_TEST as you suggested.
+OK, I will split this patch.
