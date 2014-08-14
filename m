@@ -1,410 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942AbaHNM7o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 08:59:44 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:45995 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437AbaHNM7n (ORCPT
+	id S1754686AbaHNNE4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 09:04:56 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:36989 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368AbaHNNEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 08:59:43 -0400
+	Thu, 14 Aug 2014 09:04:55 -0400
+Date: Thu, 14 Aug 2014 22:03:43 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Minchan Kim <minchan@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [RFC 1/3] zsmalloc: move pages_allocated to zs_pool
+Message-ID: <20140814130343.GB966@swordfish>
+References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
+ <1407225723-23754-2-git-send-email-minchan@kernel.org>
+ <CALZtONDmvLDtceVW9AyiDwdSHQzPbay36JEts8iuZ4nvykWfeA@mail.gmail.com>
+ <20140813141413.GA1091@swordfish>
+ <CALZtONDgYRUwrsN_G7pds2QY6QTOr8G8jAHa6Zta2XDhDHV8_A@mail.gmail.com>
+ <20140813151354.GD1091@swordfish>
+ <20140813152504.GE1091@swordfish>
+ <CALZtONA9sJ3L8MxJ+gy_x5iktCxabStQK9BexF06XyOjRjoPNQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1407931799-25596-3-git-send-email-jenny.tc@intel.com>
-References: <1407931799-25596-1-git-send-email-jenny.tc@intel.com>
-	<1407931799-25596-3-git-send-email-jenny.tc@intel.com>
-Date: Thu, 14 Aug 2014 08:59:41 -0400
-Message-ID: <CAC-25o94=k3nUE+MPYUMcMqpKbgwOdzjhdsu7J4G65coxAL9rw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] power_supply: Introduce PSE compliant algorithm
-From: "edubezval@gmail.com" <edubezval@gmail.com>
-To: Jenny TC <jenny.tc@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Sebastian Reichel <sre@kernel.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALZtONA9sJ3L8MxJ+gy_x5iktCxabStQK9BexF06XyOjRjoPNQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jenny,
+On (08/13/14 12:11), Dan Streetman wrote:
+> >> > On Wed, Aug 13, 2014 at 10:14 AM, Sergey Senozhatsky
+> >> > <sergey.senozhatsky@gmail.com> wrote:
+> >> > > On (08/13/14 09:59), Dan Streetman wrote:
+> >> > >> On Tue, Aug 5, 2014 at 4:02 AM, Minchan Kim <minchan@kernel.org> wrote:
+> >> > >> > Pages_allocated has counted in size_class structure and when user
+> >> > >> > want to see total_size_bytes, it gathers all of value from each
+> >> > >> > size_class to report the sum.
+> >> > >> >
+> >> > >> > It's not bad if user don't see the value often but if user start
+> >> > >> > to see the value frequently, it would be not a good deal for
+> >> > >> > performance POV.
+> >> > >> >
+> >> > >> > This patch moves the variable from size_class to zs_pool so it would
+> >> > >> > reduce memory footprint (from [255 * 8byte] to [sizeof(atomic_t)])
+> >> > >> > but it adds new locking overhead but it wouldn't be severe because
+> >> > >> > it's not a hot path in zs_malloc(ie, it is called only when new
+> >> > >> > zspage is created, not a object).
+> >> > >>
+> >> > >> Would using an atomic64_t without locking be simpler?
+> >> > >
+> >> > > it would be racy.
+> >> >
+> >> > oh.  atomic operations aren't smp safe?  is that because other
+> >> > processors might use a stale value, and barriers must be added?  I
+> >> > guess I don't quite understand the value of atomic then. :-/
+> >>
+> >> pool not only set the value, it also read it and make some decisions
+> >> based on that value:
+> >>
+> >>       pages_allocated += X
+> >>       if (pages_allocated >= max_pages_allocated)
+> >>               return 0;
+> >
+> 
+> I'm missing where that is?  I don't see that in this patch?
+> 
+> >
+> > I mean, suppose this happens on two CPUs
+> >
+> > max_pages_allocated is 10; current pages_allocated is 8. now you have 2 zs_malloc()
+> > happenning on two CPUs. each of them will do `pages_allocated += 1'. the problem is
+> > that both will see 10 at `if (pages_allocated >= max_pages_allocated)', so we will
+> > fail 2 operations, while we only were supposed to fail one.
+> 
+> Do you mean this from the 2/3 patch:
 
-On Wed, Aug 13, 2014 at 8:09 AM, Jenny TC <jenny.tc@intel.com> wrote:
-> As per Product Safety Engineering (PSE) specification for battery charging, the
-> battery characteristics and thereby the charging rates can vary on different
-> temperature zones. This patch introduces a PSE compliant charging algorithm with
-> maintenance charging support. The algorithm can be selected by the power supply
-> charging driver based on the type of the battery charging profile.
->
-> Signed-off-by: Jenny TC <jenny.tc@intel.com>
-> ---
->  drivers/power/Kconfig                      |   15 ++
->  drivers/power/Makefile                     |    1 +
->  drivers/power/charging_algo_pse.c          |  216 ++++++++++++++++++++++++++++
->  include/linux/power/power_supply_charger.h |   66 +++++++++
->  4 files changed, 298 insertions(+)
->  create mode 100644 drivers/power/charging_algo_pse.c
->
-> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-> index f679f82..54a0321 100644
-> --- a/drivers/power/Kconfig
-> +++ b/drivers/power/Kconfig
-> @@ -22,6 +22,21 @@ config POWER_SUPPLY_CHARGER
->           drivers to keep the charging logic outside and the charger driver
->           just need to abstract the charger hardware.
->
-> +config POWER_SUPPLY_CHARGING_ALGO_PSE
-> +       bool "PSE compliant charging algorithm"
-> +       depends on POWER_SUPPLY_CHARGER
-> +       help
-> +         Say Y here to select Product Safety Engineering (PSE) compliant
-> +         charging algorithm. As per PSE standard the battery characteristics
-> +         and thereby the charging rates can vary on different temperature
-> +         zones. Select this if your charging algorithm need to change the
-> +         charging parameters based on the battery temperature and the battery
-> +         charging profile follows the struct psy_pse_chrg_prof definition.
-> +         This  config will enable PSE compliant charging algorithm with
-> +         maintenance charging support. At runtime the algorithm will be
-> +         selected by the psy charger driver based on the type of the battery
-> +         charging profile.
-> +
->  config PDA_POWER
->         tristate "Generic PDA/phone power driver"
->         depends on !S390
-> diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-> index 405f0f4..77535fd 100644
-> --- a/drivers/power/Makefile
-> +++ b/drivers/power/Makefile
-> @@ -8,6 +8,7 @@ obj-$(CONFIG_POWER_SUPPLY)      += power_supply.o
->  obj-$(CONFIG_GENERIC_ADC_BATTERY)      += generic-adc-battery.o
->
->  obj-$(CONFIG_POWER_SUPPLY_CHARGER) += power_supply_charger.o
-> +obj-$(CONFIG_POWER_SUPPLY_CHARGING_ALGO_PSE) += charging_algo_pse.o
->  obj-$(CONFIG_PDA_POWER)                += pda_power.o
->  obj-$(CONFIG_APM_POWER)                += apm_power.o
->  obj-$(CONFIG_MAX8925_POWER)    += max8925_power.o
-> diff --git a/drivers/power/charging_algo_pse.c b/drivers/power/charging_algo_pse.c
-> new file mode 100644
-> index 0000000..cbedebe
-> --- /dev/null
-> +++ b/drivers/power/charging_algo_pse.c
-> @@ -0,0 +1,216 @@
-> +/*
-> + * Copyright (C) 2014 Intel Corporation
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.        See the GNU
-> + * General Public License for more details.
-> + *
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + * Author: Jenny TC <jenny.tc@intel.com>
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/types.h>
-> +#include <linux/init.h>
-> +#include <linux/slab.h>
-> +#include <linux/device.h>
-> +#include <linux/err.h>
-> +#include <linux/power_supply.h>
-> +#include <linux/thermal.h>
+yeah. sorry for being unclear, I was really sleepy.
 
-Why do you need thermal.h here?
+> @@ -946,6 +947,8 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+>                 set_zspage_mapping(first_page, class->index, ZS_EMPTY);
+>                 spin_lock(&pool->stat_lock);
+>                 pool->pages_allocated += class->pages_per_zspage;
+> +               if (pool->max_pages_allocated < pool->pages_allocated)
+> +                       pool->max_pages_allocated = pool->pages_allocated;
+>                 spin_unlock(&pool->stat_lock);
+>                 spin_lock(&class->lock);
+>         }
+> 
+> I see, yeah the max > allocated check before setting is easiest done
+> with a spinlock.  I think pages_allocated could still be done as
+> atomic, just using atomic_add_return() to grab the current value to
+> check against, but keeping them the same type and both protected by
+> the same spinlock I guess simplifies things.  Although, if they were
+> both atomic, then the *only* place that would need a spinlock would be
+> this check - reading the (atomic) max_pages_allocated wouldn't need a
+> spinlock, nor would clearing it to 0.
 
-In theory, if you are creating thermal zones or cooling devices with
-your generic psi driver, then I agree, we need a link with thermal
-subsystem. But I cannot see how the code below is using the thermal
-code.
+makes sense.
 
+	-ss
 
-> +#include "power_supply.h"
-> +#include "power_supply_charger.h"
-> +
-> +/* 98% of CV is considered as voltage to detect Full */
-> +#define FULL_CV_MIN 98
-> +
-> +/*
-> + * Offset to exit from maintenance charging. In maintenance charging
-> + * if the volatge is less than the (maintenance_lower_threshold -
-> + * MAINT_EXIT_OFFSET) then system can switch to normal charging
-> + */
-> +
-> +#define MAINT_EXIT_OFFSET 50  /* mV */
-> +
-> +static int get_tempzone(struct psy_pse_chrg_prof *pse_mod_bprof,
-> +               int temp)
-> +{
-> +       int i = 0, temp_range_cnt;
-> +
-> +       temp_range_cnt =  pse_mod_bprof->temp_mon_ranges;
-> +
-> +       if (!temp_range_cnt || temp_range_cnt > BATT_TEMP_NR_RNG)
-> +               return -EINVAL;
-> +
-> +       /* Basic validity check. Ensure zones are in decreasing order */
-> +
-> +       for (i = 0; i < temp_range_cnt - 1; i++) {
-> +               if (pse_mod_bprof->temp_mon_range[i].temp_max <=
-> +                               pse_mod_bprof->temp_mon_range[i + 1].temp_max)
-> +                       return -EINVAL;
-> +       }
-> +
-> +       if (pse_mod_bprof->temp_mon_range[i].temp_max <=
-> +                                       pse_mod_bprof->temp_min)
-> +               return -EINVAL;
-> +
-> +       if ((temp < pse_mod_bprof->temp_min) ||
-> +                       (temp > pse_mod_bprof->temp_mon_range[0].temp_max))
-> +               return -EINVAL;
-> +
-> +       for (i = 0; i < temp_range_cnt; i++)
-> +               if (temp > pse_mod_bprof->temp_mon_range[i].temp_max)
-> +                       break;
-> +       return i-1;
-> +}
-> +
-> +static inline bool is_charge_terminated(long volt, long cur,
-> +                               long iterm, unsigned long cv)
-> +{
-> +       return (cur > 0) && (cur <= iterm) &&
-> +                               ((volt * 100)  >= (FULL_CV_MIN * cv));
-> +}
-> +
-> +static inline bool is_battery_full(struct psy_batt_context *batt_cxt,
-> +               struct psy_pse_chrg_prof *pse_mod_bprof, unsigned long cv)
-> +{
-> +       int i;
-> +       struct psy_batt_props batt_props;
-> +
-> +       batt_props =  batt_cxt->batt_props;
-> +
-> +       /*
-> +        * Software full detection. Check the battery charge current to detect
-> +        * battery Full. The voltage also verified to avoid false charge
-> +        * full detection.
-> +        */
-> +       for (i = MAX_CUR_VOLT_SAMPLES - 1; i >= 0; --i) {
-> +
-> +               if (!(is_charge_terminated(batt_cxt->voltage_now_cache[i],
-> +                               batt_cxt->current_now_cache[i],
-> +                               pse_mod_bprof->chrg_term_mA, cv)))
-> +                       return false;
-> +       }
-> +
-> +       return true;
-> +}
-> +
-> +static int  pse_get_bat_thresholds(struct psy_batt_chrg_prof  bprof,
-> +                       struct psy_batt_thresholds *bat_thresh)
-> +{
-> +       struct psy_pse_chrg_prof *pse_mod_bprof =
-> +                       (struct psy_pse_chrg_prof *) bprof.batt_prof;
-> +
-> +       if ((bprof.chrg_prof_type != PSY_CHRG_PROF_PSE) || (!pse_mod_bprof))
-> +               return -EINVAL;
-> +
-> +       bat_thresh->iterm = pse_mod_bprof->chrg_term_mA;
-> +       bat_thresh->temp_min = pse_mod_bprof->temp_min;
-> +       bat_thresh->temp_max = pse_mod_bprof->temp_mon_range[0].temp_max;
-> +
-> +       return 0;
-> +}
-> +
-> +static enum psy_algo_stat pse_get_next_cc_cv(struct psy_batt_context *batt_cxt,
-> +       struct psy_batt_chrg_prof  bprof, unsigned long *cc, unsigned long *cv)
-> +{
-> +       int tzone;
-> +       struct psy_pse_chrg_prof *pse_mod_bprof;
-> +       struct psy_batt_props batt_props;
-> +       enum psy_algo_stat algo_stat;
-> +       int maint_exit_volt;
-> +
-> +       pse_mod_bprof = (struct psy_pse_chrg_prof *) bprof.batt_prof;
-> +       algo_stat = batt_cxt->algo_stat;
-> +
-> +       batt_props = batt_cxt->batt_props;
-> +
-> +       *cc = *cv = 0;
-> +
-> +       /*
-> +        * If STATUS is discharging, assume that charger is not connected.
-> +        * If charger is not connected, no need to take any action.
-> +        * If charge profile type is not PSY_CHRG_PROF_PSE or the charge profile
-> +        * is not present, no need to take any action.
-> +        */
-> +
-> +       if (!pse_mod_bprof)
-> +               return PSY_ALGO_STAT_NOT_CHARGE;
-> +
-> +       tzone = get_tempzone(pse_mod_bprof, batt_props.temperature);
-> +       if (tzone < 0)
-> +               return PSY_ALGO_STAT_NOT_CHARGE;
-> +
-> +       /*
-> +        * Change the algo status to not charging, if battery is
-> +        * not really charging or less than maintenance exit threshold.
-> +        * This way algorithm can switch to normal charging if current
-> +        * status is full/maintenance.
-> +        */
-> +       maint_exit_volt = pse_mod_bprof->
-> +                               temp_mon_range[tzone].maint_chrg_volt_min -
-> +                               MAINT_EXIT_OFFSET;
-> +
-> +       if ((batt_props.status == POWER_SUPPLY_STATUS_DISCHARGING) ||
-> +               (batt_props.status == POWER_SUPPLY_STATUS_NOT_CHARGING) ||
-> +                       batt_props.voltage_now < maint_exit_volt) {
-> +
-> +               algo_stat = PSY_ALGO_STAT_NOT_CHARGE;
-> +
-> +       }
-> +
-> +       /* read cc and cv based on temperature and algorithm status */
-> +       if (algo_stat == PSY_ALGO_STAT_FULL ||
-> +                       algo_stat == PSY_ALGO_STAT_MAINT) {
-> +
-> +               /*
-> +                * if status is full and voltage is lower than maintenance lower
-> +                * threshold change status to maintenance
-> +                */
-> +
-> +               if (algo_stat == PSY_ALGO_STAT_FULL &&
-> +                       (batt_props.voltage_now <=
-> +                       pse_mod_bprof->temp_mon_range[tzone]
-> +                                               .maint_chrg_volt_min))
-> +                               algo_stat = PSY_ALGO_STAT_MAINT;
-> +
-> +               /* Read maintenance CC and CV */
-> +               if (algo_stat == PSY_ALGO_STAT_MAINT) {
-> +                       *cv = pse_mod_bprof->temp_mon_range
-> +                                       [tzone].maint_chrg_volt_max;
-> +                       *cc = pse_mod_bprof->temp_mon_range
-> +                                       [tzone].maint_chrg_cur;
-> +               }
-> +       } else {
-> +               *cv = pse_mod_bprof->temp_mon_range[tzone].full_chrg_vol;
-> +               *cc = pse_mod_bprof->temp_mon_range[tzone].full_chrg_cur;
-> +               algo_stat = PSY_ALGO_STAT_CHARGE;
-> +       }
-> +
-> +       if (is_battery_full(batt_cxt, pse_mod_bprof, *cv)) {
-> +               *cc = *cv = 0;
-> +               algo_stat = PSY_ALGO_STAT_FULL;
-> +       }
-> +
-> +       return algo_stat;
-> +}
-> +
-> +struct psy_charging_algo pse_algo = {
-> +       .name = "pse-algo",
-> +       .chrg_prof_type = PSY_CHRG_PROF_PSE,
-> +       .get_next_cc_cv = pse_get_next_cc_cv,
-> +       .get_batt_thresholds = pse_get_bat_thresholds,
-> +};
-> +static int __init pse_algo_init(void)
-> +{
-> +       power_supply_register_charging_algo(&pse_algo);
-> +       return 0;
-> +}
-> +
-> +module_init(pse_algo_init);
-> diff --git a/include/linux/power/power_supply_charger.h b/include/linux/power/power_supply_charger.h
-> index f1b9567..1718198 100644
-> --- a/include/linux/power/power_supply_charger.h
-> +++ b/include/linux/power/power_supply_charger.h
-> @@ -94,8 +94,74 @@ enum battery_events {
->
->  enum psy_batt_chrg_prof_type {
->         PSY_CHRG_PROF_NONE = 0,
-> +       PSY_CHRG_PROF_PSE,
->  };
->
-> +/* Product Safety Engineering (PSE) compliant charging profile */
-> +
-> +/**
-> + * struct psy_ps_temp_chg_table - charging temperature zones definition
-> + * @temp_max: upper temperature limit for each zone in Degree Celsius
-> + * @full_chrg_vol: charge voltage till battery full in mV
-> + * @full_chrg_cur: charge current till battery full in mA
-> + * @maint_chrg_volt_min: voltage at which maintenance charging should
-> + *             start in mV
-> + * @maint_chrg_volt_max: voltage at which maintenance charging should
-> + *     stop in mV. This is the charging voltage in maintenance charging mode
-> + * @maint_chrg_cur: charge current in maintenance charging mode
-> + *
-> + * Charging temperature zone definition to decide the charging parameters on
-> + * each zone. An array of the structure is used to define multiple temperature
-> + * zones
-> + */
-> +
-> +struct psy_ps_temp_chg_table {
-> +       short int temp_max;
-> +       short int full_chrg_vol;
-> +       short int full_chrg_cur;
-> +       short int maint_chrg_volt_min;
-> +       short int maint_chrg_volt_max;
-> +       short int maint_chrg_cur;
-> +} __packed;
-> +
-> +#define BATTID_STR_LEN         8
-> +#define BATT_TEMP_NR_RNG       6
-> +
-> +/**
-> + * struct psy_pse_chrg_prof - PSE charging profile structure
-> + * @batt_id: battery identifier
-> + * @battery_type: as defined in POWER_SUPPLY_TECHNOLOGY_*
-> + * @capacity: battery capacity in mAh
-> + * @voltage_max: maximum battery volatge in mV
-> + * @chrg_term_ma: charge termination current in mA
-> + * @low_batt_mv: Low battery level voltage in mV
-> + * @disch_temp_max: maximum operating temperature when battery is discharging
-> + *             in degree Celsius
-> + * @disch_temp_min: lowest operating temperature when battery is discharging
-> + *     in degree Celsius
-> + * @temp_mon_ranges: number of temperature zones
-> + * @psy_ps_temp_chg_table: temperature zone table array
-> + * @temp_min: minimum charging temperature
-> + *
-> + * PSE compliant charging profile which can be stored in battery EEPROM
-> + * (if digital battery interface like MIPI BIF/SDQ supported) or in secondary
-> + * storage to support analog battery (with BSI sensing support)
-> + */
-> +
-> +struct psy_pse_chrg_prof {
-> +       char batt_id[BATTID_STR_LEN];
-> +       u16 battery_type;
-> +       u16 capacity;
-> +       u16 voltage_max;
-> +       u16 chrg_term_mA;
-> +       u16 low_batt_mV;
-> +       s8 disch_temp_max;
-> +       s8 disch_temp_min;
-> +       u16 temp_mon_ranges;
-> +       struct psy_ps_temp_chg_table temp_mon_range[BATT_TEMP_NR_RNG];
-> +       s8 temp_min;
-> +} __packed;
-> +
->  /**
->   * struct psy_batt_chrg_prof - power supply charging profile structure
->   * @chrg_prof_type: charging profile type
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Eduardo Bezerra Valentin
+> >> > >>
+> >> > >> >
+> >> > >> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> >> > >> > ---
+> >> > >> >  mm/zsmalloc.c | 30 ++++++++++++++++--------------
+> >> > >> >  1 file changed, 16 insertions(+), 14 deletions(-)
+> >> > >> >
+> >> > >> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> >> > >> > index fe78189624cf..a6089bd26621 100644
+> >> > >> > --- a/mm/zsmalloc.c
+> >> > >> > +++ b/mm/zsmalloc.c
+> >> > >> > @@ -198,9 +198,6 @@ struct size_class {
+> >> > >> >
+> >> > >> >         spinlock_t lock;
+> >> > >> >
+> >> > >> > -       /* stats */
+> >> > >> > -       u64 pages_allocated;
+> >> > >> > -
+> >> > >> >         struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
+> >> > >> >  };
+> >> > >> >
+> >> > >> > @@ -216,9 +213,12 @@ struct link_free {
+> >> > >> >  };
+> >> > >> >
+> >> > >> >  struct zs_pool {
+> >> > >> > +       spinlock_t stat_lock;
+> >> > >> > +
+> >> > >> >         struct size_class size_class[ZS_SIZE_CLASSES];
+> >> > >> >
+> >> > >> >         gfp_t flags;    /* allocation flags used when growing pool */
+> >> > >> > +       unsigned long pages_allocated;
+> >> > >> >  };
+> >> > >> >
+> >> > >> >  /*
+> >> > >> > @@ -882,6 +882,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+> >> > >> >
+> >> > >> >         }
+> >> > >> >
+> >> > >> > +       spin_lock_init(&pool->stat_lock);
+> >> > >> >         pool->flags = flags;
+> >> > >> >
+> >> > >> >         return pool;
+> >> > >> > @@ -943,8 +944,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+> >> > >> >                         return 0;
+> >> > >> >
+> >> > >> >                 set_zspage_mapping(first_page, class->index, ZS_EMPTY);
+> >> > >> > +               spin_lock(&pool->stat_lock);
+> >> > >> > +               pool->pages_allocated += class->pages_per_zspage;
+> >> > >> > +               spin_unlock(&pool->stat_lock);
+> >> > >> >                 spin_lock(&class->lock);
+> >> > >> > -               class->pages_allocated += class->pages_per_zspage;
+> >> > >> >         }
+> >> > >> >
+> >> > >> >         obj = (unsigned long)first_page->freelist;
+> >> > >> > @@ -997,14 +1000,14 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+> >> > >> >
+> >> > >> >         first_page->inuse--;
+> >> > >> >         fullness = fix_fullness_group(pool, first_page);
+> >> > >> > -
+> >> > >> > -       if (fullness == ZS_EMPTY)
+> >> > >> > -               class->pages_allocated -= class->pages_per_zspage;
+> >> > >> > -
+> >> > >> >         spin_unlock(&class->lock);
+> >> > >> >
+> >> > >> > -       if (fullness == ZS_EMPTY)
+> >> > >> > +       if (fullness == ZS_EMPTY) {
+> >> > >> > +               spin_lock(&pool->stat_lock);
+> >> > >> > +               pool->pages_allocated -= class->pages_per_zspage;
+> >> > >> > +               spin_unlock(&pool->stat_lock);
+> >> > >> >                 free_zspage(first_page);
+> >> > >> > +       }
+> >> > >> >  }
+> >> > >> >  EXPORT_SYMBOL_GPL(zs_free);
+> >> > >> >
+> >> > >> > @@ -1100,12 +1103,11 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
+> >> > >> >
+> >> > >> >  u64 zs_get_total_size_bytes(struct zs_pool *pool)
+> >> > >> >  {
+> >> > >> > -       int i;
+> >> > >> > -       u64 npages = 0;
+> >> > >> > -
+> >> > >> > -       for (i = 0; i < ZS_SIZE_CLASSES; i++)
+> >> > >> > -               npages += pool->size_class[i].pages_allocated;
+> >> > >> > +       u64 npages;
+> >> > >> >
+> >> > >> > +       spin_lock(&pool->stat_lock);
+> >> > >> > +       npages = pool->pages_allocated;
+> >> > >> > +       spin_unlock(&pool->stat_lock);
+> >> > >> >         return npages << PAGE_SHIFT;
+> >> > >> >  }
+> >> > >> >  EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
+> >> > >> > --
+> >> > >> > 2.0.0
+> >> > >> >
+> >> > >> > --
+> >> > >> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >> > >> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> >> > >> > see: http://www.linux-mm.org/ .
+> >> > >> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >> > >>
+> >> >
+> >>
+> 
