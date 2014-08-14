@@ -1,122 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421AbaHNKfN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 06:35:13 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:38928 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473AbaHNKfK (ORCPT
+	id S1754520AbaHNKjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 06:39:14 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47168 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754312AbaHNKjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 06:35:10 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-fa-53ec90da11bf
-Message-id: <53EC90D9.6080702@samsung.com>
-Date: Thu, 14 Aug 2014 12:35:05 +0200
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, b.zolnierkie@samsung.com
-Subject: Re: [PATCH/RFC v4 00/21] LED / flash API integration
-References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
- <20140806065358.GC16460@valkosipuli.retiisi.org.uk>
- <53E336FA.2050306@samsung.com>
- <20140814050338.GO16460@valkosipuli.retiisi.org.uk>
-In-reply-to: <20140814050338.GO16460@valkosipuli.retiisi.org.uk>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t/xK7q3JrwJNmiYrmWxccZ6Vov5R86x
-	WpxtesNucXnXHDaLrW/WMVr0bNjKanFm/0o2B3aPw18Xsnj0bVnF6PF5k1wAcxSXTUpqTmZZ
-	apG+XQJXRt/UWWwFz+QqJn65w97A+Fuii5GDQ0LARGLHQfcuRk4gU0ziwr31bF2MXBxCAksZ
-	JRZ9fwzlfGSU2H7wJTtIFa+AlsTktQ+YQGwWAVWJxUuXsoLYbAKGEj9fvAaLiwpESPw5vY8V
-	ol5Q4sfkeywgtoiAmsTTTQ9ZQIYyC6xjlGjp6mADSQgL2Er8urKPHWLbVUaJaS/6mUESnAIO
-	EofPzgObxCxgLbFy0jZGCFteYvOat8wTGAVmIVkyC0nZLCRlCxiZVzGKppYmFxQnpeca6RUn
-	5haX5qXrJefnbmKEBPXXHYxLj1kdYhTgYFTi4X0x+3WwEGtiWXFl7iFGCQ5mJRHeVb1vgoV4
-	UxIrq1KL8uOLSnNSiw8xMnFwSjUwdmp/TGZdFlI3pX+rzhF5Te2g1p7Z5Q+Or5yicF7urEb/
-	adYeVaH8Kw5bH53oq9HcJq0s9H2hY2gA4/kfEfxMpdN8509gvXyv62Xtxq1THCpbvkz/auNZ
-	bbiv+NRSzwnTrxxb8Fub3yvl2jLVxo/RrVlScz4ceJ9vabeNq5gnwyjocvoJVwl/JZbijERD
-	Leai4kQA16q4WkgCAAA=
+	Thu, 14 Aug 2014 06:39:12 -0400
+Message-ID: <53EC91C1.8000906@pengutronix.de>
+Date: Thu, 14 Aug 2014 12:38:57 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Stefan Agner <stefan@agner.ch>
+CC: shawn.guo@freescale.com, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-can@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] can: flexcan: add vf610 support for FlexCAN
+References: <cover.1405428166.git.stefan@agner.ch> <ff2ea1726b13dc2ffa3519ce9244f3633cf1420d.1405428166.git.stefan@agner.ch> <53C5398F.2000005@pengutronix.de> <1b8a8ca03b4a160027a79b722f697e25@agner.ch> <601adb6fe47279c115c1cc607365a00e@agner.ch> <53D25C9D.5080803@pengutronix.de> <e88108c655e2c16dc9cf6c4194547e73@agner.ch> <53D67A46.3060202@pengutronix.de> <b815c5c1f7faed334d1ed5370d51c180@agner.ch> <53D8DB3D.7030403@pengutronix.de> <cd33e1b365502ec0cb3b5bee6dc4fb61@agner.ch> <53DF9865.9060407@pengutronix.de> <0baf18a56e6cee86cc02e0d2f4ac4d9e@agner.ch>
+In-Reply-To: <0baf18a56e6cee86cc02e0d2f4ac4d9e@agner.ch>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="E0SBRAoedIvawwkWNhe20nm5DxLVkfAc2"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2014 07:03 AM, Sakari Ailus wrote:
-> Hi Jacek,
->
-> On Thu, Aug 07, 2014 at 10:21:14AM +0200, Jacek Anaszewski wrote:
->> On 08/06/2014 08:53 AM, Sakari Ailus wrote:
->>> Hi Jacek,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--E0SBRAoedIvawwkWNhe20nm5DxLVkfAc2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+On 08/04/2014 06:01 PM, Stefan Agner wrote:
+> Am 2014-08-04 16:27, schrieb Marc Kleine-Budde:
+>> On 08/04/2014 03:43 PM, Stefan Agner wrote:
+>> [...]
+>>
+>>>> Thanks for the test, so far looks promising :) With this setup the o=
+ther
+>>>> CAN node repeats the CAN frame until it's ACKed. Because there is no=
+
+>>>> node with a compatible bitrate, there is no ACking CAN node.
+>>>>
+>>>> Can you add a third CAN node to the network. The second and third no=
+de
+>>>> should use the same bitrate, while your vf610 uses a different one. =
+With
+>>>> the new setup it should take more than one frame until the vf610 goe=
+s
+>>>> into error warning and even more frames to error passive. This way w=
+e
+>>>> can see it the error warning interrupt is connected or not. The erro=
+r
+>>>> counters should increase with each "wrong" bitrate frame it sees, yo=
+u
+>>>> can check with:
+>>>>
+>>>>     ip -details link show can0
+>>>>
+>>>> The output looks like this:
+>>>>
+>>>>> 4: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNK=
+NOWN mode DEFAULT qlen 10
+>>>>>     link/can
+>>>>>     can state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
+>>>>                               ^^^^^^^^^^^^^^^^^^^^^^
+>>>>>     bitrate 1000000 sample-point 0.750
+>>>>>     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+>>>>>     sja1000: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+>>>>>     clock 8000000
+>>>>
+>>>> When one of the berr-counter crosses 96 (and stays below 128) a warn=
+ing
+>>>> interrupt should be generated.
 >>>
->>> On Fri, Jul 11, 2014 at 04:04:03PM +0200, Jacek Anaszewski wrote:
->>> ...
->>>> 1) Who should register V4L2 Flash sub-device?
->>>>
->>>> LED Flash Class devices, after introduction of the Flash Manager,
->>>> are not tightly coupled with any media controller. They are maintained
->>>> by the Flash Manager and made available for dynamic assignment to
->>>> any media system they are connected to through multiplexing devices.
->>>>
->>>> In the proposed rough solution, when support for V4L2 Flash sub-devices
->>>> is enabled, there is a v4l2_device created for them to register in.
->>>> This however implies that V4L2 Flash device will not be available
->>>> in any media controller, which calls its existence into question.
->>>>
->>>> Therefore I'd like to consult possible ways of solving this issue.
->>>> The option I see is implementing a mechanism for moving V4L2 Flash
->>>> sub-devices between media controllers. A V4L2 Flash sub-device
->>>> would initially be assigned to one media system in the relevant
->>>> device tree binding, but it could be dynamically reassigned to
->>>> the other one. However I'm not sure if media controller design
->>>> is prepared for dynamic modifications of its graph and how many
->>>> modifications in the existing drivers this solution would require.
+>>> Ok, created this setup, could successfully communicate with all three=
+
+>>> nodes. I then set the Vybrid to half of the bitrate. When I send a fr=
+ame
+>>> from Vybrid, the berr-counter tx immediately ends up at 128 and the
+>>> device is in ERROR-PASSIVE:
+>>
+>> This is expected.
+>>
+>>> root@colibri-vf:~# ip -details link show can1
+>>> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNO=
+WN
+>>> mode DEFAULT group default qlen 10
+>>>     link/can  promiscuity 0
+>>>     can state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
+>>>     bitrate 124990 sample-point 0.739
+>>>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>>>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>>>     clock 83368421
+>>             ^^^^^^^^
+>>
+>> BTW: the can core has a really weird clock rate, have a look at the
+>> datasheet if you manage to route a 24 MHz clock (or another multiple o=
+f
+>> 8MHz) to the flexcan core. I had a quick glance at the datasheet, if I=
+
+>> understand it correctly the Fast OSC clock runs with 24 MHz.
+>>
+>=20
+> This pinmux is actually part of the IPs CTRL register (see CLKSRC).
+> Currently this is set unconditionally to peripheral clock, which is on
+> my device 83.3 MHz (500MHz/6). This would be a bit bigger change. Just
+> thinking how to implement this. Maybe we have to reference a third cloc=
+k
+> "osc" and a device tree property fsl,can-clock-osc which one can choose=
+
+> between "osc" and "per" what do you think?
+>=20
+>>> root@colibri-vf:~# cansend can1 1F334455#1122334455667788
+>>> interface =3D can1, family =3D 29, type =3D 3, proto =3D 1
+>>> root@colibri-vf:~# [  818.886664] flexcan_irq, esr=3D00062242
+>>> [  818.890365] flexcan_irq, ctrl=3D1c3dac57
 >>>
->>> Do you have a use case where you would need to strobe a flash from multiple
->>> media devices at different times, or is this entirely theoretical? Typically
->>> flash controllers are connected to a single source of hardware strobe (if
->>> there's one) since the flash LEDs are in fact mounted next to a specific
->>> camera sensor.
+>>> root@colibri-vf:~# ip -details link show can1
+>>> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNO=
+WN
+>>> mode DEFAULT group default qlen 10
+>>>     link/can  promiscuity 0
+>>>     can state ERROR-PASSIVE (berr-counter tx 128 rx 0) restart-ms 0
+>>>     bitrate 124990 sample-point 0.739
+>>>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>>>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>>>     clock 83368421
+>>>
+>>>
+>>> When I send the frames from another device on the bus, I can see the =
+rx
+>>> count incrementing by one on each frame I send. As you expected, the
+>>> device changes to ERROR-WARNING when crossing the 96 frame boundary:
 >>
->> I took into account such arrangements in response to your message
->> [1], where you were considering configurations like "one flash but
->> two
->> cameras", "one camera and two flashes". And you also called for
->> proposing generic solution.
+>> This is correct
 >>
->> One flash and two (or more) cameras case is easily conceivable -
->> You even mentioned stereo cameras. One camera and many flashes
->> arrangement might be useful in case of some professional devices which
->> might be designed so that they would be able to apply different scene
->> lighting. I haven't heard about such devices, but as you said
->> such a configuration isn't unthinkable.
->>
->>> If this is a real issue the way to solve it would be to have a single media
->>> device instead of many.
->>
->> I was considering adding media device, that would be a representation
->> of a flash manager, gathering all the registered flashes. Nonetheless,
->> finally I came to conclusion that a v4l2-device alone should suffice,
->> just to provide a Flash Manager representation allowing for
->> v4l2-flash sub-devices to register in.
->> All the features provided by the media device are useless in case
->> of a set of V4L2 Flash sub-devices. They couldn't have any linkage
->> in such a device. The only benefit from having media device gathering
->> V4L2 Flash devices would be possibility of listing them.
->
-> Not quite so. The flash is associated to the sensor (and lens) using the
-> group ID in the Media controller. The user space doesn't need to "know" this
-> association.
->
-> More complex use cases such as the above may need extensions to the Media
-> controller API.
+>=20
+> Just found out when using too high bitrate (500000 vs 125000), the erro=
+r
+> counter immediately goes up to 128 (or even beyond) and ends up in
+> ERROR-PASSIVE:
+>=20
+> # ip -details link show can1
+> [  292.164820] flexcan_get_berr_counter, esr=3D00000000
+> [  292.169715] flexcan_get_berr_counter, esr=3D00040190
+> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
 
-I think that I have unnecessarily complicated the issue. Generally
-there will be always one media controller created for all camera
-sensors available in the system. If there is a single media controller
-then we can easily use async subdev registration API. A media-dev
-driver would have to parse list of flash device phandles from
-the ISP device's DT node and register them as async sub-devices.
+> mode DEFAULT group default qlen 10
+>     link/can  promiscuity 0
+>     can state ERROR-PASSIVE (berr-counter tx 0 rx 135) restart-ms 0
+>     bitrate 298811 sample-point 0.777
+>     tq 371 prop-seg 3 phase-seg1 3 phase-seg2 2 sjw 1
+>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>     clock 83368421
+>=20
+>=20
+>=20
+>>> root@colibri-vf:~# ip -details link show can1
+>>> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNO=
+WN
+>>> mode DEFAULT group default qlen 10
+>>>     link/can  promiscuity 0
+>>>     can state ERROR-ACTIVE (berr-counter tx 0 rx 92) restart-ms 0
+>>>     bitrate 124990 sample-point 0.739
+>>>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>>>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>>>     clock 83368421
+>>> root@colibri-vf:~# [  448.331150] flexcan_irq, esr=3D0005050a
+>>> [  448.334851] flexcan_irq, ctrl=3D1c3dac57
+>>> ip -details link show can1
+>>> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNO=
+WN
+>>> mode DEFAULT group default qlen 10
+>>>     link/can  promiscuity 0
+>>>     can state ERROR-WARNING (berr-counter tx 0 rx 102) restart-ms 0
+>>>     bitrate 124990 sample-point 0.739
+>>>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>>>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>>>     clock 83368421
+>>
+>>> However, once reaching 128, I don't get another interrupt and the dev=
+ice
+>>> stays in ERROR-WARNING:
+>>
+>> The contents of the esr reg would be interesting, especially the
+>> FLT_CONF part.
+>>
+>=20
+> root@vybridvf61-v11:~# [  222.221651] flexcan_irq, esr=3D0005050a
+> [  222.225349] flexcan_irq, ctrl=3D1c3dac57
+> ip -details link show can1
+> [  223.791082] flexcan_get_berr_counter, esr=3D00000000
+> [  223.796246] flexcan_get_berr_counter, esr=3D00040180
+> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
 
-Best Regards,
-Jacek Anaszewski
+> mode DEFAULT group default qlen=20
+> 10
+>     link/can  promiscuity 0
+>     can state ERROR-WARNING (berr-counter tx 0 rx 96) restart-ms 0
+>     bitrate 124990 sample-point 0.739
+>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>     clock 83368421
+> root@vybridvf61-v11:~# ip -details link show can1
+> [  243.571175] flexcan_get_berr_counter, esr=3D00000000
+> [  243.576343] flexcan_get_berr_counter, esr=3D00040582
+> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
 
+> mode DEFAULT group default qlen=20
+> 10
+>     link/can  promiscuity 0
+>     can state ERROR-WARNING (berr-counter tx 0 rx 104) restart-ms 0
+>     bitrate 124990 sample-point 0.739
+>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>     clock 83368421
+>=20
+> ...
+>=20
+> root@vybridvf61-v11:~# ip -details link show can1
+> [  299.831192] flexcan_get_berr_counter, esr=3D00000000
+> [  299.836358] flexcan_get_berr_counter, esr=3D00040582
+> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
+
+> mode DEFAULT group default qlen 10
+>     link/can  promiscuity 0=20
+>     can state ERROR-WARNING (berr-counter tx 0 rx 126) restart-ms 0=20
+>     bitrate 124990 sample-point 0.739=20
+>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>     clock 83368421
+> root@vybridvf61-v11:~# ip -details link show can1
+> [  302.411025] flexcan_get_berr_counter, esr=3D00000000
+> [  302.416195] flexcan_get_berr_counter, esr=3D00040592
+> 3: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN=
+
+> mode DEFAULT group default qlen 10
+>     link/can  promiscuity 0=20
+>     can state ERROR-WARNING (berr-counter tx 0 rx 128) restart-ms 0=20
+>     bitrate 124990 sample-point 0.739=20
+>     tq 347 prop-seg 8 phase-seg1 8 phase-seg2 6 sjw 1
+>     flexcan: tseg1 4..16 tseg2 2..8 sjw 1..4 brp 1..256 brp-inc 1
+>     clock 83368421
+>=20
+> The FLTCONF is in Error Passive, however the stack did not received tha=
+t
+> information. I still have the printk in the interrupt, however I did no=
+t
+> get an interrupt here (while I get one when it switched to
+> ERROR-WARNING... But it looks like the ERRINT is still pending...
+
+Can you apply Alexander Stein's "[PATCH 2/4] can: flexcan: Detect error
+passive state change" and recheck?
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--E0SBRAoedIvawwkWNhe20nm5DxLVkfAc2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iEYEARECAAYFAlPskcIACgkQjTAFq1RaXHPa7QCcCvFwX3XAbuvzIpJFfqwB0Ya8
+kuIAniyw/wkejKjOvVDaHvL/bY7EvByJ
+=4oIY
+-----END PGP SIGNATURE-----
+
+--E0SBRAoedIvawwkWNhe20nm5DxLVkfAc2--
