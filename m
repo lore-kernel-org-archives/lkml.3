@@ -1,102 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319AbaHNXKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 19:10:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39140 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932072AbaHNXKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 19:10:36 -0400
-Date: Fri, 15 Aug 2014 01:10:28 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        tiwai@suse.de, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
+	id S1754753AbaHNXQQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 19:16:16 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:45934 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485AbaHNXQP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 19:16:15 -0400
+Date: Thu, 14 Aug 2014 16:16:08 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init()
-	and module_long_probe_exit()
-Message-ID: <20140814231028.GQ21930@wotan.suse.de>
-References: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com> <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com> <20140813175101.GA7156@redhat.com>
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH v5 tip/core/rcu 12/16] rcu: Make TASKS_RCU handle
+ nohz_full= CPUs
+Message-ID: <20140814231608.GC4752@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140811224840.GA25594@linux.vnet.ibm.com>
+ <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1407797345-28227-12-git-send-email-paulmck@linux.vnet.ibm.com>
+ <CAJhHMCAH6GB8Vz7tmaXkavXUiqSVfR+ot9Q4yOP7UJmL_C0KSg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140813175101.GA7156@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <CAJhHMCAH6GB8Vz7tmaXkavXUiqSVfR+ot9Q4yOP7UJmL_C0KSg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081423-6688-0000-0000-00000405E5FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 07:51:01PM +0200, Oleg Nesterov wrote:
-> On 08/12, Luis R. Rodriguez wrote:
+On Thu, Aug 14, 2014 at 06:55:35PM -0400, Pranith Kumar wrote:
+> On Mon, Aug 11, 2014 at 6:49 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > >
-> > +/* To be used by modules which can take over 30 seconds at probe */
+> > Currently TASKS_RCU would ignore a CPU running a task in nohz_full=
+> > usermode execution.  There would be neither a context switch nor a
+> > scheduling-clock interrupt to tell TASKS_RCU that the task in question
+> > had passed through a quiescent state.  The grace period would therefore
+> > extend indefinitely.  This commit therefore makes RCU's dyntick-idle
+> > subsystem record the task_struct structure of the task that is running
+> > in dyntick-idle mode on each CPU.  The TASKS_RCU grace period can
+> > then access this information and record a quiescent state on
+> > behalf of any CPU running in dyntick-idle usermode.
+> >
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  include/linux/init_task.h |  3 ++-
+> >  include/linux/sched.h     |  2 ++
+> >  kernel/rcu/tree.c         |  2 ++
+> >  kernel/rcu/tree.h         |  2 ++
+> >  kernel/rcu/tree_plugin.h  | 16 ++++++++++++++++
+> >  kernel/rcu/update.c       |  4 +++-
+> >  6 files changed, 27 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+> > index 78715ea7c30c..642828009324 100644
+> > --- a/include/linux/init_task.h
+> > +++ b/include/linux/init_task.h
+> > @@ -128,7 +128,8 @@ extern struct group_info init_groups;
+> >  #define INIT_TASK_RCU_TASKS(tsk)                                       \
+> >         .rcu_tasks_holdout = false,                                     \
+> >         .rcu_tasks_holdout_list =                                       \
+> > -               LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),
+> > +               LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),             \
+> > +       .rcu_tasks_idle_cpu = -1,
+> >  #else
+> >  #define INIT_TASK_RCU_TASKS(tsk)
+> >  #endif
+> > diff --git a/include/linux/sched.h b/include/linux/sched.h
+> > index 3cf124389ec7..5fa041f7a034 100644
+> > --- a/include/linux/sched.h
+> > +++ b/include/linux/sched.h
+> > @@ -1277,6 +1277,7 @@ struct task_struct {
+> >         unsigned long rcu_tasks_nvcsw;
+> >         int rcu_tasks_holdout;
+> >         struct list_head rcu_tasks_holdout_list;
+> > +       int rcu_tasks_idle_cpu;
+> >  #endif /* #ifdef CONFIG_TASKS_RCU */
+> >
+> >  #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+> > @@ -2021,6 +2022,7 @@ static inline void rcu_copy_process(struct task_struct *p)
+> >  #ifdef CONFIG_TASKS_RCU
+> >         p->rcu_tasks_holdout = false;
+> >         INIT_LIST_HEAD(&p->rcu_tasks_holdout_list);
+> > +       p->rcu_tasks_idle_cpu = -1;
+> >  #endif /* #ifdef CONFIG_TASKS_RCU */
+> >  }
+> >
+> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> > index 645a33efc0d4..0d9ee1e4f446 100644
+> > --- a/kernel/rcu/tree.c
+> > +++ b/kernel/rcu/tree.c
+> > @@ -526,6 +526,7 @@ static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
+> >         atomic_inc(&rdtp->dynticks);
+> >         smp_mb__after_atomic();  /* Force ordering with next sojourn. */
+> >         WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
+> > +       rcu_dynticks_task_enter();
+> >
+> >         /*
+> >          * It is illegal to enter an extended quiescent state while
+> > @@ -642,6 +643,7 @@ void rcu_irq_exit(void)
+> >  static void rcu_eqs_exit_common(struct rcu_dynticks *rdtp, long long oldval,
+> >                                int user)
+> >  {
+> > +       rcu_dynticks_task_exit();
+> >         smp_mb__before_atomic();  /* Force ordering w/previous sojourn. */
+> >         atomic_inc(&rdtp->dynticks);
+> >         /* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
+> > diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+> > index 0f69a79c5b7d..37ff593b7725 100644
+> > --- a/kernel/rcu/tree.h
+> > +++ b/kernel/rcu/tree.h
+> > @@ -579,6 +579,8 @@ static void rcu_sysidle_report_gp(struct rcu_state *rsp, int isidle,
+> >  static void rcu_bind_gp_kthread(void);
+> >  static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
+> >  static bool rcu_nohz_full_cpu(struct rcu_state *rsp);
+> > +static void rcu_dynticks_task_enter(void);
+> > +static void rcu_dynticks_task_exit(void);
+> >
+> >  #endif /* #ifndef RCU_TREE_NONCORE */
+> >
+> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> > index a86a363ea453..0d8ef5cb1976 100644
+> > --- a/kernel/rcu/tree_plugin.h
+> > +++ b/kernel/rcu/tree_plugin.h
+> > @@ -2852,3 +2852,19 @@ static void rcu_bind_gp_kthread(void)
+> >                 set_cpus_allowed_ptr(current, cpumask_of(cpu));
+> >  #endif /* #ifdef CONFIG_NO_HZ_FULL */
+> >  }
+> > +
+> > +/* Record the current task on dyntick-idle entry. */
+> > +static void rcu_dynticks_task_enter(void)
+> > +{
+> > +#if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
+> > +       ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
+> > +#endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
 > 
-> Probably the comment should explain that this hack should only be
-> used if the driver is buggy and is wating for "real fix".
+> Shouldn't we check that the cpu is actually a nohz_full cpu, like follows:
 > 
-> > +#define module_long_probe_init(initfn)				\
-> > +	static struct task_struct *__init_thread;		\
-> > +	static int _long_probe_##initfn(void *arg)		\
-> > +	{							\
-> > +		return initfn();				\
-> > +	}							\
-> > +	static inline __init int __long_probe_##initfn(void)	\
-> > +	{							\
-> > +		__init_thread = kthread_run(_long_probe_##initfn,\
-> > +					    NULL,		\
-> > +					    #initfn);		\
-> > +		if (IS_ERR(__init_thread))			\
-> > +			return PTR_ERR(__init_thread);		\
-> > +		return 0;					\
-> > +	}							\
-> > +	module_init(__long_probe_##initfn);
-> > +/* To be used by modules that require module_long_probe_init() */
-> > +#define module_long_probe_exit(exitfn)				\
-> > +	static inline void __long_probe_##exitfn(void)		\
-> > +	{							\
-> > +		exitfn();					\
-> > +		if (__init_thread)				\
-> > +			kthread_stop(__init_thread);		\
-> > +	}							\
+>  static void rcu_dynticks_task_enter(void)
+>  {
+>  #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
+> -       ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
+> +       if (tick_nohz_full_cpu(smp_processor_id())
+> +                 ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
+>  #endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
+>  }
+
+No need.  We put any required idle-task checks on the
+rcu_tasks_kthread() slow path, not on this fast path.  Keep in mind
+that the tick_nohz_full_cpu() check is not necessarily cheaper than just
+doing the store.
+
+> > +}
+> > +
+> > +/* Record no current task on dyntick-idle exit. */
+> > +static void rcu_dynticks_task_exit(void)
+> > +{
+> > +#if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
+> > +       ACCESS_ONCE(current->rcu_tasks_idle_cpu) = -1;
+> > +#endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
+> > +}
+> > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> > index d997163c7e92..a4140f25cf1a 100644
+> > --- a/kernel/rcu/update.c
+> > +++ b/kernel/rcu/update.c
+> > @@ -466,7 +466,9 @@ static void check_holdout_task(struct task_struct *t,
+> >  {
+> >         if (!ACCESS_ONCE(t->rcu_tasks_holdout) ||
+> >             t->rcu_tasks_nvcsw != ACCESS_ONCE(t->nvcsw) ||
+> > -           !ACCESS_ONCE(t->on_rq)) {
+> > +           !ACCESS_ONCE(t->on_rq) ||
+> > +           (IS_ENABLED(CONFIG_NO_HZ_FULL) &&
+> > +            !is_idle_task(t) && t->rcu_tasks_idle_cpu >= 0)) {
 > 
-> exitfn() should be called after kthread_stop(), and only if initfn()
-> returns 0. So it should probably do
+> rcu_tasks_idle_cpu will be -1 in CONFIG_NO_HZ_FULL is not enabled. Why
+> are you checking both here?
+
+If CONFIG_NO_HZ_FULL is not enabled, the remainder of the condition
+is dead code.  If CONFIG_NO_HZ_FULL -is- enabled, and if idle tasks
+got on the list somehow, this allows the stall warning code to
+complain about this.
+
+							Thanx, Paul
+
+> >                 ACCESS_ONCE(t->rcu_tasks_holdout) = 0;
+> >                 list_del_rcu(&t->rcu_tasks_holdout_list);
+> >                 put_task_struct(t);
+> > --
+> > 1.8.1.5
+> >
 > 
-> 	int err = kthread_stop(__init_thread);
-> 	if (!err)
-> 		exitfn();
+> 
+> 
+> -- 
+> Pranith
+> 
 
-Thanks! With the check for __init_thread as well as it can be
-ERR_PTR(-ENOMEM), ERR_PTR(-EINTR), or NULL (for whatever other
-reason).
-
-> But there is an additional complication, you can't use __init_thread
-> without get_task_struct(),
-
-Can you elaborate why ? kthread_stop() uses get_task_struct(), 
-wake_up_process() and finally put_task_struct(), and we're the
-only user of this thread. Also kthread_run() ensures wake_up_process()
-gets called on startup, so not sure where the race would be provided
-all users here and with the respective helpers on buggy drivers.
-
-> so  __long_probe_##initfn() can't use
-> kthread_run(). It needs kthread_create() + get_task_struct() + wakeup.
-
-I fail to see why we'd need to add get_task_struct() on
-module_long_probe_init(), can you clarify?
-
-  Luis
