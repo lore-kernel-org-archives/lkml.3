@@ -1,169 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998AbaHNGCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 02:02:30 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60531 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752218AbaHNGBn (ORCPT
+	id S1752463AbaHNGGw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 02:06:52 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:55048 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039AbaHNGGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 02:01:43 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 1/3] perf report: Relax -g option parsing not to limit the option order
-Date: Thu, 14 Aug 2014 15:01:38 +0900
-Message-Id: <1407996100-6359-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1407996100-6359-1-git-send-email-namhyung@kernel.org>
-References: <1407996100-6359-1-git-send-email-namhyung@kernel.org>
+	Thu, 14 Aug 2014 02:06:50 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s7E66KD0006909, This message is accepted by code: ctloc85258
+From: Roger Tseng <rogerable@realtek.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: Chris Ball <chris@printf.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        Wei_wang <wei_wang@realsil.com.cn>, micky <micky_ching@realsil.com.cn>
+Subject: Re: [PATCH] mmc: rtsx: fix incorrect last byte in R2 response
+Thread-Topic: [PATCH] mmc: rtsx: fix incorrect last byte in R2 response
+Thread-Index: AQHPtT6p2i8llYEFYkerTQKIjSGtNpvOIJiAgAD6y4A=
+Date: Thu, 14 Aug 2014 06:06:20 +0000
+Message-ID: <1407996435.6245.15.camel@debian-rtk5880>
+References: <1407745936-18513-1-git-send-email-rogerable@realtek.com>
+	 <CAPDyKFrTbiHxYgW5YCR48DKX8arxuxK3rz7k_H-waGEMiPFjSg@mail.gmail.com>
+In-Reply-To: <CAPDyKFrTbiHxYgW5YCR48DKX8arxuxK3rz7k_H-waGEMiPFjSg@mail.gmail.com>
+Accept-Language: en-US, zh-TW
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.81.121]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <8BD32206F24D7E48BDA853A613E1CBDE@realtek.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7E66vVK026107
 
-Current perf report -g/--call-graph option parser requires for option
-argument having following order:
+On Wed, 2014-08-13 at 17:09 +0200, Ulf Hansson wrote:
+> On 11 August 2014 10:32,  <rogerable@realtek.com> wrote:
+> > From: Roger Tseng <rogerable@realtek.com>
+> >
+> > Current code erroneously fill the last byte of R2 response with an undefined
+> > value. In addition, it is impossible to obtain the real values since the
+> > controller actually 'offloads' the last byte(CRC7, end bit) while receiving R2
+> > response. This could cause mmc stack to obtain inconsistent CID from the same
+> > card after resume and misidentify it as a different card.
+> >
+> > Fix by assigning a dummy value 0x01 to the last byte of R2 response.
+> >
+> > Signed-off-by: Roger Tseng <rogerable@realtek.com>
+> 
+> Thanks! Queued for 3.18.
+> 
+> I guess this should go for stable as well?
+Yes. However, since rtsx_usb* is present in 3.16 and later, this patch
+will not apply on 3.15.y or older. Should I separately send an adapted
+version to stable?
 
-  type,min_percent[,print_limit],order,key
+By the way, according to Dan's comment I would like to add a few word
+to explain the code. Would you help fix it up by following diff?
 
-But sometimes it's annoying to type all even if one just wants to
-change the "order" or "key" setting.
-
-This patch fixes it to remove the ordering restriction so that one can
-use just "-g caller", for instance.  The only remaining restriction is
-that the "print_limit" always comes after the "min_percent".
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/callchain.c | 95 ++++++++++++++++++---------------------------
- 1 file changed, 38 insertions(+), 57 deletions(-)
-
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 437ee09727e6..08f0fbf5527c 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -28,74 +28,55 @@ __thread struct callchain_cursor callchain_cursor;
- int
- parse_callchain_report_opt(const char *arg)
- {
--	char *tok, *tok2;
-+	char *tok;
- 	char *endptr;
-+	bool minpcnt_set = false;
- 
- 	symbol_conf.use_callchain = true;
- 
- 	if (!arg)
- 		return 0;
- 
--	tok = strtok((char *)arg, ",");
--	if (!tok)
--		return -1;
--
--	/* get the output mode */
--	if (!strncmp(tok, "graph", strlen(arg))) {
--		callchain_param.mode = CHAIN_GRAPH_ABS;
--
--	} else if (!strncmp(tok, "flat", strlen(arg))) {
--		callchain_param.mode = CHAIN_FLAT;
--	} else if (!strncmp(tok, "fractal", strlen(arg))) {
--		callchain_param.mode = CHAIN_GRAPH_REL;
--	} else if (!strncmp(tok, "none", strlen(arg))) {
--		callchain_param.mode = CHAIN_NONE;
--		symbol_conf.use_callchain = false;
--		return 0;
--	} else {
--		return -1;
--	}
--
--	/* get the min percentage */
--	tok = strtok(NULL, ",");
--	if (!tok)
--		goto setup;
--
--	callchain_param.min_percent = strtod(tok, &endptr);
--	if (tok == endptr)
--		return -1;
-+	while ((tok = strtok((char *)arg, ",")) != NULL) {
-+		if (!strncmp(tok, "none", strlen(tok))) {
-+			callchain_param.mode = CHAIN_NONE;
-+			symbol_conf.use_callchain = false;
-+			return 0;
-+		}
- 
--	/* get the print limit */
--	tok2 = strtok(NULL, ",");
--	if (!tok2)
--		goto setup;
-+		/* try to get the output mode */
-+		if (!strncmp(tok, "graph", strlen(tok)))
-+			callchain_param.mode = CHAIN_GRAPH_ABS;
-+		else if (!strncmp(tok, "flat", strlen(tok)))
-+			callchain_param.mode = CHAIN_FLAT;
-+		else if (!strncmp(tok, "fractal", strlen(tok)))
-+			callchain_param.mode = CHAIN_GRAPH_REL;
-+		/* try to get the call chain order */
-+		else if (!strncmp(tok, "caller", strlen(tok)))
-+			callchain_param.order = ORDER_CALLER;
-+		else if (!strncmp(tok, "callee", strlen(tok)))
-+			callchain_param.order = ORDER_CALLEE;
-+		/* try to get the sort key */
-+		else if (!strncmp(tok, "function", strlen(tok)))
-+			callchain_param.key = CCKEY_FUNCTION;
-+		else if (!strncmp(tok, "address", strlen(tok)))
-+			callchain_param.key = CCKEY_ADDRESS;
-+		/* try to get the min percent */
-+		else if (!minpcnt_set) {
-+			callchain_param.min_percent = strtod(tok, &endptr);
-+			if (tok == endptr)
-+				return -1;
-+			minpcnt_set = true;
-+		} else {
-+			/* try print limit at last */
-+			callchain_param.print_limit = strtoul(tok, &endptr, 0);
-+			if (tok == endptr)
-+				return -1;
-+		}
- 
--	if (tok2[0] != 'c') {
--		callchain_param.print_limit = strtoul(tok2, &endptr, 0);
--		tok2 = strtok(NULL, ",");
--		if (!tok2)
--			goto setup;
-+		arg = NULL;
+diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c
+b/drivers/mmc/host/rtsx_pci_sdmmc.c
+index 54849d8..ca31279 100644
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -412,7 +412,13 @@ static void sd_send_cmd_get_rsp(struct
+realtek_pci_sdmmc *host,
  	}
  
--	/* get the call chain order */
--	if (!strncmp(tok2, "caller", strlen("caller")))
--		callchain_param.order = ORDER_CALLER;
--	else if (!strncmp(tok2, "callee", strlen("callee")))
--		callchain_param.order = ORDER_CALLEE;
--	else
--		return -1;
--
--	/* Get the sort key */
--	tok2 = strtok(NULL, ",");
--	if (!tok2)
--		goto setup;
--	if (!strncmp(tok2, "function", strlen("function")))
--		callchain_param.key = CCKEY_FUNCTION;
--	else if (!strncmp(tok2, "address", strlen("address")))
--		callchain_param.key = CCKEY_ADDRESS;
--	else
--		return -1;
--setup:
- 	if (callchain_register_param(&callchain_param) < 0) {
- 		pr_err("Can't register callchain params\n");
- 		return -1;
--- 
-2.0.0
+ 	if (rsp_type == SD_RSP_TYPE_R2) {
++		/*
++		 * The controller offloads the last byte {CRC-7, stop bit 1'b1}
++		 * of response type R2. Assign a dummy CRC, 0, and stop bit to
++		 * the byte(ptr[16], goes into the LSB of resp[3] later).
++		 */
+ 		ptr[16] = 1;
++
+ 		for (i = 0; i < 4; i++) {
+ 			cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
+ 			dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
+diff --git a/drivers/mmc/host/rtsx_usb_sdmmc.c
+b/drivers/mmc/host/rtsx_usb_sdmmc.c
+index ca08df1..727a88d 100644
+--- a/drivers/mmc/host/rtsx_usb_sdmmc.c
++++ b/drivers/mmc/host/rtsx_usb_sdmmc.c
+@@ -435,7 +435,13 @@ static void sd_send_cmd_get_rsp(struct
+rtsx_usb_sdmmc *host,
+ 	}
+ 
+ 	if (rsp_type == SD_RSP_TYPE_R2) {
++		/*
++		 * The controller offloads the last byte {CRC-7, stop bit 1'b1}
++		 * of response type R2. Assign a dummy CRC, 0, and stop bit to
++		 * the byte(ptr[16], goes into the LSB of resp[3] later).
++		 */
+ 		ptr[16] = 1;
++
+ 		for (i = 0; i < 4; i++) {
+ 			cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
+ 			dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
 
+-- 
+Best regards,
+Roger Tseng
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
