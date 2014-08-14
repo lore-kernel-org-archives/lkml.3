@@ -1,212 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686AbaHNNE4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 09:04:56 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:36989 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368AbaHNNEz (ORCPT
+	id S1754760AbaHNNMh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 09:12:37 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33227 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753902AbaHNNMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 09:04:55 -0400
-Date: Thu, 14 Aug 2014 22:03:43 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Minchan Kim <minchan@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [RFC 1/3] zsmalloc: move pages_allocated to zs_pool
-Message-ID: <20140814130343.GB966@swordfish>
-References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
- <1407225723-23754-2-git-send-email-minchan@kernel.org>
- <CALZtONDmvLDtceVW9AyiDwdSHQzPbay36JEts8iuZ4nvykWfeA@mail.gmail.com>
- <20140813141413.GA1091@swordfish>
- <CALZtONDgYRUwrsN_G7pds2QY6QTOr8G8jAHa6Zta2XDhDHV8_A@mail.gmail.com>
- <20140813151354.GD1091@swordfish>
- <20140813152504.GE1091@swordfish>
- <CALZtONA9sJ3L8MxJ+gy_x5iktCxabStQK9BexF06XyOjRjoPNQ@mail.gmail.com>
+	Thu, 14 Aug 2014 09:12:35 -0400
+X-Sasl-enc: J8nnhUYy5oSL2yympiOtWSRSexAs4du5PfzHR5ULK6Us 1408021954
+Date: Thu, 14 Aug 2014 10:12:29 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Bill Davidsen <davidsen@tmr.com>
+Cc: Borislav Petkov <bp@alien8.de>, H Peter Anvin <hpa@zytor.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: BUG: early intel microcode update violating alignment rules
+Message-ID: <20140814131229.GB12624@khazad-dum.debian.net>
+References: <20140809231911.GA4843@khazad-dum.debian.net>
+ <20140811102245.GC4236@nazgul.tnic>
+ <20140811131613.GA4541@khazad-dum.debian.net>
+ <20140811140057.GA21693@pd.tnic>
+ <53E910F7.1040806@tmr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALZtONA9sJ3L8MxJ+gy_x5iktCxabStQK9BexF06XyOjRjoPNQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53E910F7.1040806@tmr.com>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (08/13/14 12:11), Dan Streetman wrote:
-> >> > On Wed, Aug 13, 2014 at 10:14 AM, Sergey Senozhatsky
-> >> > <sergey.senozhatsky@gmail.com> wrote:
-> >> > > On (08/13/14 09:59), Dan Streetman wrote:
-> >> > >> On Tue, Aug 5, 2014 at 4:02 AM, Minchan Kim <minchan@kernel.org> wrote:
-> >> > >> > Pages_allocated has counted in size_class structure and when user
-> >> > >> > want to see total_size_bytes, it gathers all of value from each
-> >> > >> > size_class to report the sum.
-> >> > >> >
-> >> > >> > It's not bad if user don't see the value often but if user start
-> >> > >> > to see the value frequently, it would be not a good deal for
-> >> > >> > performance POV.
-> >> > >> >
-> >> > >> > This patch moves the variable from size_class to zs_pool so it would
-> >> > >> > reduce memory footprint (from [255 * 8byte] to [sizeof(atomic_t)])
-> >> > >> > but it adds new locking overhead but it wouldn't be severe because
-> >> > >> > it's not a hot path in zs_malloc(ie, it is called only when new
-> >> > >> > zspage is created, not a object).
-> >> > >>
-> >> > >> Would using an atomic64_t without locking be simpler?
-> >> > >
-> >> > > it would be racy.
-> >> >
-> >> > oh.  atomic operations aren't smp safe?  is that because other
-> >> > processors might use a stale value, and barriers must be added?  I
-> >> > guess I don't quite understand the value of atomic then. :-/
-> >>
-> >> pool not only set the value, it also read it and make some decisions
-> >> based on that value:
-> >>
-> >>       pages_allocated += X
-> >>       if (pages_allocated >= max_pages_allocated)
-> >>               return 0;
-> >
-> 
-> I'm missing where that is?  I don't see that in this patch?
-> 
-> >
-> > I mean, suppose this happens on two CPUs
-> >
-> > max_pages_allocated is 10; current pages_allocated is 8. now you have 2 zs_malloc()
-> > happenning on two CPUs. each of them will do `pages_allocated += 1'. the problem is
-> > that both will see 10 at `if (pages_allocated >= max_pages_allocated)', so we will
-> > fail 2 operations, while we only were supposed to fail one.
-> 
-> Do you mean this from the 2/3 patch:
+On Mon, 11 Aug 2014, Bill Davidsen wrote:
+> Don't suppose you have anything in memory right after the microcode
+> which you could put on the stack (15 bytes) slide the image up into
+> alignment, load it, and put everything back. Haven't looked at the
+> code or data, just tossing out an idea I used for something else
+> back when.
 
-yeah. sorry for being unclear, I was really sleepy.
+Right after?  We don't know what will be there.  But we know what is right
+before: there's enough bytes worth of microcode metadata header to align the
+real microcode data to the previous 16-byte boundary.
 
-> @@ -946,6 +947,8 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
->                 set_zspage_mapping(first_page, class->index, ZS_EMPTY);
->                 spin_lock(&pool->stat_lock);
->                 pool->pages_allocated += class->pages_per_zspage;
-> +               if (pool->max_pages_allocated < pool->pages_allocated)
-> +                       pool->max_pages_allocated = pool->pages_allocated;
->                 spin_unlock(&pool->stat_lock);
->                 spin_lock(&class->lock);
->         }
-> 
-> I see, yeah the max > allocated check before setting is easiest done
-> with a spinlock.  I think pages_allocated could still be done as
-> atomic, just using atomic_add_return() to grab the current value to
-> check against, but keeping them the same type and both protected by
-> the same spinlock I guess simplifies things.  Although, if they were
-> both atomic, then the *only* place that would need a spinlock would be
-> this check - reading the (atomic) max_pages_allocated wouldn't need a
-> spinlock, nor would clearing it to 0.
+This is a fix I should be fully capable of writing, actually.  But it will
+be slower (two memcpy, two memove) and much nastier than the proper solution
+using a scratch area (one memcpy).
 
-makes sense.
+That said, it is reported[1] that an Intel microcode update will take
+anything from a couple hundred-thousand to several million cycles per
+processor core.  I wouldn't lose any sleep over adding two 16-byte memcpy
+and two ~32KiB memove to something that is already that expensive.  And it
+will be easy to backport.
 
-	-ss
+Anyway, I don't know enough to either add an initbss, or change the brk as
+HPA hinted, or how easy would it be to backport that, so I will wait for
+further directions.
 
-> >> > >>
-> >> > >> >
-> >> > >> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> >> > >> > ---
-> >> > >> >  mm/zsmalloc.c | 30 ++++++++++++++++--------------
-> >> > >> >  1 file changed, 16 insertions(+), 14 deletions(-)
-> >> > >> >
-> >> > >> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> >> > >> > index fe78189624cf..a6089bd26621 100644
-> >> > >> > --- a/mm/zsmalloc.c
-> >> > >> > +++ b/mm/zsmalloc.c
-> >> > >> > @@ -198,9 +198,6 @@ struct size_class {
-> >> > >> >
-> >> > >> >         spinlock_t lock;
-> >> > >> >
-> >> > >> > -       /* stats */
-> >> > >> > -       u64 pages_allocated;
-> >> > >> > -
-> >> > >> >         struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
-> >> > >> >  };
-> >> > >> >
-> >> > >> > @@ -216,9 +213,12 @@ struct link_free {
-> >> > >> >  };
-> >> > >> >
-> >> > >> >  struct zs_pool {
-> >> > >> > +       spinlock_t stat_lock;
-> >> > >> > +
-> >> > >> >         struct size_class size_class[ZS_SIZE_CLASSES];
-> >> > >> >
-> >> > >> >         gfp_t flags;    /* allocation flags used when growing pool */
-> >> > >> > +       unsigned long pages_allocated;
-> >> > >> >  };
-> >> > >> >
-> >> > >> >  /*
-> >> > >> > @@ -882,6 +882,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
-> >> > >> >
-> >> > >> >         }
-> >> > >> >
-> >> > >> > +       spin_lock_init(&pool->stat_lock);
-> >> > >> >         pool->flags = flags;
-> >> > >> >
-> >> > >> >         return pool;
-> >> > >> > @@ -943,8 +944,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
-> >> > >> >                         return 0;
-> >> > >> >
-> >> > >> >                 set_zspage_mapping(first_page, class->index, ZS_EMPTY);
-> >> > >> > +               spin_lock(&pool->stat_lock);
-> >> > >> > +               pool->pages_allocated += class->pages_per_zspage;
-> >> > >> > +               spin_unlock(&pool->stat_lock);
-> >> > >> >                 spin_lock(&class->lock);
-> >> > >> > -               class->pages_allocated += class->pages_per_zspage;
-> >> > >> >         }
-> >> > >> >
-> >> > >> >         obj = (unsigned long)first_page->freelist;
-> >> > >> > @@ -997,14 +1000,14 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
-> >> > >> >
-> >> > >> >         first_page->inuse--;
-> >> > >> >         fullness = fix_fullness_group(pool, first_page);
-> >> > >> > -
-> >> > >> > -       if (fullness == ZS_EMPTY)
-> >> > >> > -               class->pages_allocated -= class->pages_per_zspage;
-> >> > >> > -
-> >> > >> >         spin_unlock(&class->lock);
-> >> > >> >
-> >> > >> > -       if (fullness == ZS_EMPTY)
-> >> > >> > +       if (fullness == ZS_EMPTY) {
-> >> > >> > +               spin_lock(&pool->stat_lock);
-> >> > >> > +               pool->pages_allocated -= class->pages_per_zspage;
-> >> > >> > +               spin_unlock(&pool->stat_lock);
-> >> > >> >                 free_zspage(first_page);
-> >> > >> > +       }
-> >> > >> >  }
-> >> > >> >  EXPORT_SYMBOL_GPL(zs_free);
-> >> > >> >
-> >> > >> > @@ -1100,12 +1103,11 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
-> >> > >> >
-> >> > >> >  u64 zs_get_total_size_bytes(struct zs_pool *pool)
-> >> > >> >  {
-> >> > >> > -       int i;
-> >> > >> > -       u64 npages = 0;
-> >> > >> > -
-> >> > >> > -       for (i = 0; i < ZS_SIZE_CLASSES; i++)
-> >> > >> > -               npages += pool->size_class[i].pages_allocated;
-> >> > >> > +       u64 npages;
-> >> > >> >
-> >> > >> > +       spin_lock(&pool->stat_lock);
-> >> > >> > +       npages = pool->pages_allocated;
-> >> > >> > +       spin_unlock(&pool->stat_lock);
-> >> > >> >         return npages << PAGE_SHIFT;
-> >> > >> >  }
-> >> > >> >  EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
-> >> > >> > --
-> >> > >> > 2.0.0
-> >> > >> >
-> >> > >> > --
-> >> > >> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >> > >> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> >> > >> > see: http://www.linux-mm.org/ .
-> >> > >> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >> > >>
-> >> >
-> >>
-> 
+Meanwhile, I prepared an iucode-tool v1.0.3 release that works around this
+kernel issue for the benefit of the linux distros that use it[2].  It's at
+https://gitorious.org/iucode-tool if anyone around here is interested.
+
+[1] http://inertiawar.com/microcode/
+
+[2] Debian, Ubuntu and their derivatives.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
