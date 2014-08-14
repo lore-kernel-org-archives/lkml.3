@@ -1,101 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244AbaHNPRN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 11:17:13 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:50617 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754920AbaHNPRL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 11:17:11 -0400
-Message-ID: <53ECD2EE.6020101@codethink.co.uk>
-Date: Thu, 14 Aug 2014 16:17:02 +0100
-From: Rob Jones <rob.jones@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1755463AbaHNPU0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 11:20:26 -0400
+Received: from fieldses.org ([174.143.236.118]:59706 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755299AbaHNPUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 11:20:18 -0400
+Date: Thu, 14 Aug 2014 11:20:12 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@primarydata.com>
+Cc: Joe Perches <joe@perches.com>, Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Kinglong Mee <kinglongmee@gmail.com>
+Subject: Re: [PATCH] locks: Remove unused conf argument from lm_grant
+Message-ID: <20140814152012.GA15757@fieldses.org>
+References: <1408024360-5177-1-git-send-email-jlayton@primarydata.com>
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier@dowhile0.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        patches@opensource.wolfsonmicro.com,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 1/5] gpiolib: devres: Introduce the function devm_request_gpio_array
-References: <cover.1404665589.git.himangi774@gmail.com>	<1a1752ce7455bac8f2505a9790da891a830699f5.1404665589.git.himangi774@gmail.com>	<53BD2509.6070803@codethink.co.uk>	<CACRpkdZWfYN14aki-UqvWp1K0exVj-mMK92q431QueSVvjZFuA@mail.gmail.com>	<53BE7288.6060503@codethink.co.uk>	<CABxcv=mhMMQxqVRM28NucnSW62v_3ghnT58JqFxvK=2bjxizdw@mail.gmail.com>	<53BFB659.8050306@codethink.co.uk> <CABxcv==adT6YPEekjD1y3ncrj9ghWE8UMuc64AeVWCPVb0ywFw@mail.gmail.com>
-In-Reply-To: <CABxcv==adT6YPEekjD1y3ncrj9ghWE8UMuc64AeVWCPVb0ywFw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408024360-5177-1-git-send-email-jlayton@primarydata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm afraid too many other things have been landing on my plate and I
-don't think I will be able to get on this for the foreseeable future,
-sorry about this.
+ACK, and passes my usual tests too for what it's worth.
 
-On 11/07/14 11:07, Javier Martinez Canillas wrote:
-> Hello Rob,
->
-> On Fri, Jul 11, 2014 at 12:03 PM, Rob Jones <rob.jones@codethink.co.uk> wrote:
->>
->>
->> On 11/07/14 01:35, Javier Martinez Canillas wrote:
->>>
->>> Hello Rob,
->>>
->>> On Thu, Jul 10, 2014 at 1:01 PM, Rob Jones <rob.jones@codethink.co.uk>
->>> wrote:
->>
->>
->> <snip>
->>
->>
->>>>
->>>> I will certainly consider it. I'm in the middle of something else right
->>>> now but I should be available in a day or two and I'll have a look.
->>>>
->>>>
->>>
->>> I'm working on a driver for a PMIC which uses a set of GPIO to select
->>> a particular register. Right now I'm getting each GPIO independently
->>> but Linus mentioned [0] the devm_gpio_request_array() patch you
->>> posted.
->>>
->>> Now, I'm not using the integer-based GPIO API but the new
->>> descriptor-based one so I was wondering if you are already
->>> implementing a devm_gpiod_get_array() or if you want me to implement
->>> it myself.
->>>
->>
->> As I said, I'm deep in something else for the next day or two so if you
->> need it urgently you should probably do it yourself but if you don't
->> mind waiting until next week, I can have a go.
->>
->> Your call, let me know.
->>
->
-> I'm not in a hurry, just wanted to know if it was on your plate. I'll
-> wait for your patch then, thanks!
->
-> Best regards,
-> Javier
->
->
+--b.
 
--- 
-Rob Jones
-Codethink Ltd
-mailto:rob.jones@codethink.co.uk
-tel:+44 161 236 5575
+On Thu, Aug 14, 2014 at 09:52:40AM -0400, Jeff Layton wrote:
+> From: Joe Perches <joe@perches.com>
+> 
+> This argument is always NULL so don't pass it around.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+> ---
+>  fs/dlm/plock.c     |  8 ++++----
+>  fs/lockd/svclock.c | 12 +++---------
+>  include/linux/fs.h |  2 +-
+>  3 files changed, 8 insertions(+), 14 deletions(-)
+> 
+> diff --git a/fs/dlm/plock.c b/fs/dlm/plock.c
+> index f704458ea5f5..e0ab3a93eeff 100644
+> --- a/fs/dlm/plock.c
+> +++ b/fs/dlm/plock.c
+> @@ -30,7 +30,7 @@ struct plock_op {
+>  
+>  struct plock_xop {
+>  	struct plock_op xop;
+> -	void *callback;
+> +	int (*callback)(struct file_lock *fl, int result);
+>  	void *fl;
+>  	void *file;
+>  	struct file_lock flc;
+> @@ -190,7 +190,7 @@ static int dlm_plock_callback(struct plock_op *op)
+>  	struct file *file;
+>  	struct file_lock *fl;
+>  	struct file_lock *flc;
+> -	int (*notify)(void *, void *, int) = NULL;
+> +	int (*notify)(struct file_lock *fl, int result) = NULL;
+>  	struct plock_xop *xop = (struct plock_xop *)op;
+>  	int rv = 0;
+>  
+> @@ -209,7 +209,7 @@ static int dlm_plock_callback(struct plock_op *op)
+>  	notify = xop->callback;
+>  
+>  	if (op->info.rv) {
+> -		notify(fl, NULL, op->info.rv);
+> +		notify(fl, op->info.rv);
+>  		goto out;
+>  	}
+>  
+> @@ -228,7 +228,7 @@ static int dlm_plock_callback(struct plock_op *op)
+>  			  (unsigned long long)op->info.number, file, fl);
+>  	}
+>  
+> -	rv = notify(fl, NULL, 0);
+> +	rv = notify(fl, 0);
+>  	if (rv) {
+>  		/* XXX: We need to cancel the fs lock here: */
+>  		log_print("dlm_plock_callback: lock granted after lock request "
+> diff --git a/fs/lockd/svclock.c b/fs/lockd/svclock.c
+> index ab798a88ec1d..2a6170133c1d 100644
+> --- a/fs/lockd/svclock.c
+> +++ b/fs/lockd/svclock.c
+> @@ -667,22 +667,16 @@ nlmsvc_cancel_blocked(struct net *net, struct nlm_file *file, struct nlm_lock *l
+>   * deferred rpc for GETLK and SETLK.
+>   */
+>  static void
+> -nlmsvc_update_deferred_block(struct nlm_block *block, struct file_lock *conf,
+> -			     int result)
+> +nlmsvc_update_deferred_block(struct nlm_block *block, int result)
+>  {
+>  	block->b_flags |= B_GOT_CALLBACK;
+>  	if (result == 0)
+>  		block->b_granted = 1;
+>  	else
+>  		block->b_flags |= B_TIMED_OUT;
+> -	if (conf) {
+> -		if (block->b_fl)
+> -			__locks_copy_lock(block->b_fl, conf);
+> -	}
+>  }
+>  
+> -static int nlmsvc_grant_deferred(struct file_lock *fl, struct file_lock *conf,
+> -					int result)
+> +static int nlmsvc_grant_deferred(struct file_lock *fl, int result)
+>  {
+>  	struct nlm_block *block;
+>  	int rc = -ENOENT;
+> @@ -697,7 +691,7 @@ static int nlmsvc_grant_deferred(struct file_lock *fl, struct file_lock *conf,
+>  					rc = -ENOLCK;
+>  					break;
+>  				}
+> -				nlmsvc_update_deferred_block(block, conf, result);
+> +				nlmsvc_update_deferred_block(block, result);
+>  			} else if (result == 0)
+>  				block->b_granted = 1;
+>  
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index f0890e4a7c25..6cb1f3d182ee 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -869,7 +869,7 @@ struct lock_manager_operations {
+>  	int (*lm_compare_owner)(struct file_lock *, struct file_lock *);
+>  	unsigned long (*lm_owner_key)(struct file_lock *);
+>  	void (*lm_notify)(struct file_lock *);	/* unblock callback */
+> -	int (*lm_grant)(struct file_lock *, struct file_lock *, int);
+> +	int (*lm_grant)(struct file_lock *, int);
+>  	void (*lm_break)(struct file_lock *);
+>  	int (*lm_change)(struct file_lock **, int);
+>  };
+> -- 
+> 1.9.3
+> 
