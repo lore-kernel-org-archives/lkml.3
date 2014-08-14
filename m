@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaHNCVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 22:21:50 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:60710 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313AbaHNCUh (ORCPT
+	id S1754184AbaHNCWR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 22:22:17 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:51794 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908AbaHNCUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 22:20:37 -0400
-X-AuditID: 85900ec0-d312bb9000001514-ac-53ec1cf36692
-Subject: [PATCH 4/8] perf/util: Replace strerror with strerror_r for
- thread-safety
+	Wed, 13 Aug 2014 22:20:33 -0400
+X-AuditID: 85900ec0-d312bb9000001514-aa-53ec1cef4ea9
+Subject: [PATCH 2/8] perf: Use strerror_r instead of strerror
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Naohiro Aota <naota@elisp.net>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
         Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 14 Aug 2014 02:20:34 +0000
-Message-ID: <20140814022034.3140.93130.stgit@kbuild-fedora.novalocal>
+Date: Thu, 14 Aug 2014 02:20:30 +0000
+Message-ID: <20140814022030.3140.32103.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <20140814022025.3140.33134.stgit@kbuild-fedora.novalocal>
 References: <20140814022025.3140.33134.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.17-dirty
@@ -28,264 +27,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaces all strerror with strerror_r in util for making
-the perf lib thread-safe.
+Use strerror_r instead of strerror in error messages for
+thread-safety. This also introduce STRERR_BUFSIZE macro
+for the default size of message buffer for strerror_r.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- tools/perf/util/cloexec.c      |    6 ++++--
- tools/perf/util/data.c         |    8 ++++++--
- tools/perf/util/dso.c          |    8 ++++++--
- tools/perf/util/evlist.c       |    2 +-
- tools/perf/util/evsel.c        |    7 +++++--
- tools/perf/util/parse-events.c |    5 ++++-
- tools/perf/util/run-command.c  |    9 +++++++--
- tools/perf/util/util.c         |    5 +++--
- 8 files changed, 36 insertions(+), 14 deletions(-)
+ tools/perf/perf.c       |   10 +++++++---
+ tools/perf/util/debug.h |    3 +++
+ 2 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/cloexec.c b/tools/perf/util/cloexec.c
-index 4945aa5..47b78b3 100644
---- a/tools/perf/util/cloexec.c
-+++ b/tools/perf/util/cloexec.c
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 2282d41..452a847 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -313,6 +313,7 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
+ 	int status;
+ 	struct stat st;
+ 	const char *prefix;
++	char sbuf[STRERR_BUFSIZE];
+ 
+ 	prefix = NULL;
+ 	if (p->option & RUN_SETUP)
+@@ -343,7 +344,8 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
+ 	status = 1;
+ 	/* Check for ENOSPC and EIO errors.. */
+ 	if (fflush(stdout)) {
+-		fprintf(stderr, "write failure on standard output: %s", strerror(errno));
++		fprintf(stderr, "write failure on standard output: %s",
++			strerror_r(errno, sbuf, sizeof(sbuf)));
+ 		goto out;
+ 	}
+ 	if (ferror(stdout)) {
+@@ -351,7 +353,8 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
+ 		goto out;
+ 	}
+ 	if (fclose(stdout)) {
+-		fprintf(stderr, "close failed on standard output: %s", strerror(errno));
++		fprintf(stderr, "close failed on standard output: %s",
++			strerror_r(errno, sbuf, sizeof(sbuf)));
+ 		goto out;
+ 	}
+ 	status = 0;
+@@ -466,6 +469,7 @@ void pthread__unblock_sigwinch(void)
+ int main(int argc, const char **argv)
+ {
+ 	const char *cmd;
++	char sbuf[STRERR_BUFSIZE];
+ 
+ 	/* The page_size is placed in util object. */
+ 	page_size = sysconf(_SC_PAGE_SIZE);
+@@ -561,7 +565,7 @@ int main(int argc, const char **argv)
+ 	}
+ 
+ 	fprintf(stderr, "Failed to run command '%s': %s\n",
+-		cmd, strerror(errno));
++		cmd, strerror_r(errno, sbuf, sizeof(sbuf)));
+ out:
+ 	return 1;
+ }
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 6944ea3..be264d6 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
 @@ -3,6 +3,7 @@
- #include "../perf.h"
- #include "cloexec.h"
- #include "asm/bug.h"
-+#include "debug.h"
+ #define __PERF_DEBUG_H
  
- static unsigned long flag = PERF_FLAG_FD_CLOEXEC;
+ #include <stdbool.h>
++#include <string.h>
+ #include "event.h"
+ #include "../ui/helpline.h"
+ #include "../ui/progress.h"
+@@ -36,6 +37,8 @@ extern int debug_ordered_events;
+ #define pr_oe_time(t, fmt, ...)  pr_time_N(1, debug_ordered_events, t, pr_fmt(fmt), ##__VA_ARGS__)
+ #define pr_oe_time2(t, fmt, ...) pr_time_N(2, debug_ordered_events, t, pr_fmt(fmt), ##__VA_ARGS__)
  
-@@ -18,6 +19,7 @@ static int perf_flag_probe(void)
- 	int err;
- 	int cpu;
- 	pid_t pid = -1;
-+	char sbuf[STRERR_BUFSIZE];
- 
- 	cpu = sched_getcpu();
- 	if (cpu < 0)
-@@ -42,7 +44,7 @@ static int perf_flag_probe(void)
- 
- 	WARN_ONCE(err != EINVAL && err != EBUSY,
- 		  "perf_event_open(..., PERF_FLAG_FD_CLOEXEC) failed with unexpected error %d (%s)\n",
--		  err, strerror(err));
-+		  err, strerror_r(err, sbuf, sizeof(sbuf)));
- 
- 	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
- 	fd = sys_perf_event_open(&attr, pid, cpu, -1, 0);
-@@ -50,7 +52,7 @@ static int perf_flag_probe(void)
- 
- 	if (WARN_ONCE(fd < 0 && err != EBUSY,
- 		      "perf_event_open(..., 0) failed unexpectedly with error %d (%s)\n",
--		      err, strerror(err)))
-+		      err, strerror_r(err, sbuf, sizeof(sbuf))))
- 		return -1;
- 
- 	close(fd);
-diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
-index 29d720c..1921942f 100644
---- a/tools/perf/util/data.c
-+++ b/tools/perf/util/data.c
-@@ -50,12 +50,14 @@ static int open_file_read(struct perf_data_file *file)
- {
- 	struct stat st;
- 	int fd;
-+	char sbuf[STRERR_BUFSIZE];
- 
- 	fd = open(file->path, O_RDONLY);
- 	if (fd < 0) {
- 		int err = errno;
- 
--		pr_err("failed to open %s: %s", file->path, strerror(err));
-+		pr_err("failed to open %s: %s", file->path,
-+			strerror_r(err, sbuf, sizeof(sbuf)));
- 		if (err == ENOENT && !strcmp(file->path, "perf.data"))
- 			pr_err("  (try 'perf record' first)");
- 		pr_err("\n");
-@@ -88,6 +90,7 @@ static int open_file_read(struct perf_data_file *file)
- static int open_file_write(struct perf_data_file *file)
- {
- 	int fd;
-+	char sbuf[STRERR_BUFSIZE];
- 
- 	if (check_backup(file))
- 		return -1;
-@@ -95,7 +98,8 @@ static int open_file_write(struct perf_data_file *file)
- 	fd = open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
- 
- 	if (fd < 0)
--		pr_err("failed to open %s : %s\n", file->path, strerror(errno));
-+		pr_err("failed to open %s : %s\n", file->path,
-+			strerror_r(errno, sbuf, sizeof(sbuf)));
- 
- 	return fd;
- }
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index bdafd30..55e39dc 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -162,13 +162,15 @@ static void close_first_dso(void);
- static int do_open(char *name)
- {
- 	int fd;
-+	char sbuf[STRERR_BUFSIZE];
- 
- 	do {
- 		fd = open(name, O_RDONLY);
- 		if (fd >= 0)
- 			return fd;
- 
--		pr_debug("dso open failed, mmap: %s\n", strerror(errno));
-+		pr_debug("dso open failed, mmap: %s\n",
-+			 strerror_r(errno, sbuf, sizeof(sbuf)));
- 		if (!dso__data_open_cnt || errno != EMFILE)
- 			break;
- 
-@@ -530,10 +532,12 @@ static ssize_t cached_read(struct dso *dso, u64 offset, u8 *data, ssize_t size)
- static int data_file_size(struct dso *dso)
- {
- 	struct stat st;
-+	char sbuf[STRERR_BUFSIZE];
- 
- 	if (!dso->data.file_size) {
- 		if (fstat(dso->data.fd, &st)) {
--			pr_err("dso mmap failed, fstat: %s\n", strerror(errno));
-+			pr_err("dso mmap failed, fstat: %s\n",
-+				strerror_r(errno, sbuf, sizeof(sbuf)));
- 			return -1;
- 		}
- 		dso->data.file_size = st.st_size;
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 5dcd28c..a3e28b4 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1295,7 +1295,7 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
- 			       int err, char *buf, size_t size)
- {
- 	int printed, value;
--	char sbuf[128], *emsg = strerror_r(err, sbuf, sizeof(sbuf));
-+	char sbuf[STRERR_BUFSIZE], *emsg = strerror_r(err, sbuf, sizeof(sbuf));
- 
- 	switch (err) {
- 	case EACCES:
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 01ce14c..b38de58 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -2027,6 +2027,8 @@ bool perf_evsel__fallback(struct perf_evsel *evsel, int err,
- int perf_evsel__open_strerror(struct perf_evsel *evsel, struct target *target,
- 			      int err, char *msg, size_t size)
- {
-+	char sbuf[STRERR_BUFSIZE];
++#define STRERR_BUFSIZE	128	/* For the buffer size of strerror_r */
 +
- 	switch (err) {
- 	case EPERM:
- 	case EACCES:
-@@ -2072,8 +2074,9 @@ int perf_evsel__open_strerror(struct perf_evsel *evsel, struct target *target,
- 	}
+ int dump_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+ void trace_event(union perf_event *event);
  
- 	return scnprintf(msg, size,
--	"The sys_perf_event_open() syscall returned with %d (%s) for event (%s).  \n"
-+	"The sys_perf_event_open() syscall returned with %d (%s) for event (%s).\n"
- 	"/bin/dmesg may provide additional information.\n"
- 	"No CONFIG_PERF_EVENTS=y kernel support configured?\n",
--			 err, strerror(err), perf_evsel__name(evsel));
-+			 err, strerror_r(err, sbuf, sizeof(sbuf)),
-+			 perf_evsel__name(evsel));
- }
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 1e15df1..e34c81a 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -10,6 +10,7 @@
- #include "symbol.h"
- #include "cache.h"
- #include "header.h"
-+#include "debug.h"
- #include <api/fs/debugfs.h>
- #include "parse-events-bison.h"
- #define YY_EXTRA_TYPE int
-@@ -1006,9 +1007,11 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
- 	struct dirent *sys_next, *evt_next, sys_dirent, evt_dirent;
- 	char evt_path[MAXPATHLEN];
- 	char dir_path[MAXPATHLEN];
-+	char sbuf[STRERR_BUFSIZE];
- 
- 	if (debugfs_valid_mountpoint(tracing_events_path)) {
--		printf("  [ Tracepoints not available: %s ]\n", strerror(errno));
-+		printf("  [ Tracepoints not available: %s ]\n",
-+			strerror_r(errno, sbuf, sizeof(sbuf)));
- 		return;
- 	}
- 
-diff --git a/tools/perf/util/run-command.c b/tools/perf/util/run-command.c
-index da8e9b2..34622b5 100644
---- a/tools/perf/util/run-command.c
-+++ b/tools/perf/util/run-command.c
-@@ -1,6 +1,7 @@
- #include "cache.h"
- #include "run-command.h"
- #include "exec_cmd.h"
-+#include "debug.h"
- 
- static inline void close_pair(int fd[2])
- {
-@@ -19,6 +20,7 @@ int start_command(struct child_process *cmd)
- {
- 	int need_in, need_out, need_err;
- 	int fdin[2], fdout[2], fderr[2];
-+	char sbuf[STRERR_BUFSIZE];
- 
- 	/*
- 	 * In case of errors we must keep the promise to close FDs
-@@ -99,7 +101,7 @@ int start_command(struct child_process *cmd)
- 
- 		if (cmd->dir && chdir(cmd->dir))
- 			die("exec %s: cd to %s failed (%s)", cmd->argv[0],
--			    cmd->dir, strerror(errno));
-+			    cmd->dir, strerror_r(errno, sbuf, sizeof(sbuf)));
- 		if (cmd->env) {
- 			for (; *cmd->env; cmd->env++) {
- 				if (strchr(*cmd->env, '='))
-@@ -153,6 +155,8 @@ int start_command(struct child_process *cmd)
- 
- static int wait_or_whine(pid_t pid)
- {
-+	char sbuf[STRERR_BUFSIZE];
-+
- 	for (;;) {
- 		int status, code;
- 		pid_t waiting = waitpid(pid, &status, 0);
-@@ -160,7 +164,8 @@ static int wait_or_whine(pid_t pid)
- 		if (waiting < 0) {
- 			if (errno == EINTR)
- 				continue;
--			error("waitpid failed (%s)", strerror(errno));
-+			error("waitpid failed (%s)",
-+			      strerror_r(errno, sbuf, sizeof(sbuf)));
- 			return -ERR_RUN_COMMAND_WAITPID;
- 		}
- 		if (waiting != pid)
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 25822bd..24e8d87 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -456,6 +456,7 @@ int filename__read_str(const char *filename, char **buf, size_t *sizep)
- 	size_t size = 0, alloc_size = 0;
- 	void *bf = NULL, *nbf;
- 	int fd, n, err = 0;
-+	char sbuf[STRERR_BUFSIZE];
- 
- 	fd = open(filename, O_RDONLY);
- 	if (fd < 0)
-@@ -476,8 +477,8 @@ int filename__read_str(const char *filename, char **buf, size_t *sizep)
- 		n = read(fd, bf + size, alloc_size - size);
- 		if (n < 0) {
- 			if (size) {
--				pr_warning("read failed %d: %s\n",
--					   errno, strerror(errno));
-+				pr_warning("read failed %d: %s\n", errno,
-+					 strerror_r(errno, sbuf, sizeof(sbuf)));
- 				err = 0;
- 			} else
- 				err = -errno;
 
