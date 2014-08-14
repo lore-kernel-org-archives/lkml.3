@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbaHNRTz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 13:19:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41500 "EHLO
+	id S1753581AbaHNRUD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 13:20:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41505 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266AbaHNRTy (ORCPT
+	with ESMTP id S1753464AbaHNRT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 13:19:54 -0400
-Date: Thu, 14 Aug 2014 10:18:48 -0700
+	Thu, 14 Aug 2014 13:19:58 -0400
+Date: Thu, 14 Aug 2014 10:19:02 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-b93c7b8c5b281bf3646d6c5b6e05249b98cc5ab7@git.kernel.org>
+Message-ID: <tip-f7d11e93ee97a37da1947b7c4e1794705a6f360c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, mattst88@gmail.com,
-        ink@jurassic.park.msu.ru, tglx@linutronix.de, rth@twiddle.net
+        paulmck@linux.vnet.ibm.com, vgupta@synopsys.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, mattst88@gmail.com,
-        ink@jurassic.park.msu.ru, tglx@linutronix.de, rth@twiddle.net
-In-Reply-To: <20140508135851.832107183@infradead.org>
-References: <20140508135851.832107183@infradead.org>
+        paulmck@linux.vnet.ibm.com, vgupta@synopsys.com, tglx@linutronix.de
+In-Reply-To: <20140508135851.886055622@infradead.org>
+References: <20140508135851.886055622@infradead.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/arch] locking,arch,alpha: Fold atomic_ops
-Git-Commit-ID: b93c7b8c5b281bf3646d6c5b6e05249b98cc5ab7
+Subject: [tip:locking/arch] locking,arch,arc: Fold atomic_ops
+Git-Commit-ID: f7d11e93ee97a37da1947b7c4e1794705a6f360c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,265 +33,244 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b93c7b8c5b281bf3646d6c5b6e05249b98cc5ab7
-Gitweb:     http://git.kernel.org/tip/b93c7b8c5b281bf3646d6c5b6e05249b98cc5ab7
+Commit-ID:  f7d11e93ee97a37da1947b7c4e1794705a6f360c
+Gitweb:     http://git.kernel.org/tip/f7d11e93ee97a37da1947b7c4e1794705a6f360c
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Sun, 23 Mar 2014 16:25:53 +0100
+AuthorDate: Sun, 23 Mar 2014 16:29:31 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Thu, 14 Aug 2014 12:48:03 +0200
 
-locking,arch,alpha: Fold atomic_ops
+locking,arch,arc: Fold atomic_ops
 
 Many of the atomic op implementations are the same except for one
 instruction; fold the lot into a few CPP macros and reduce LoC.
 
 This also prepares for easy addition of new ops.
 
-Cc: Matt Turner <mattst88@gmail.com>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matt Turner <mattst88@gmail.com>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: linux-alpha@vger.kernel.org
-Link: http://lkml.kernel.org/r/20140508135851.832107183@infradead.org
+Cc: Vineet Gupta <vgupta@synopsys.com>
+Link: http://lkml.kernel.org/r/20140508135851.886055622@infradead.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/alpha/include/asm/atomic.h | 213 +++++++++++++++-------------------------
- 1 file changed, 80 insertions(+), 133 deletions(-)
+ arch/arc/include/asm/atomic.h | 184 +++++++++++++++---------------------------
+ 1 file changed, 63 insertions(+), 121 deletions(-)
 
-diff --git a/arch/alpha/include/asm/atomic.h b/arch/alpha/include/asm/atomic.h
-index ed60a1e..6fbb53a 100644
---- a/arch/alpha/include/asm/atomic.h
-+++ b/arch/alpha/include/asm/atomic.h
-@@ -29,145 +29,92 @@
-  * branch back to restart the operation.
-  */
+diff --git a/arch/arc/include/asm/atomic.h b/arch/arc/include/asm/atomic.h
+index 83f03ca..173f303 100644
+--- a/arch/arc/include/asm/atomic.h
++++ b/arch/arc/include/asm/atomic.h
+@@ -25,79 +25,36 @@
  
--static __inline__ void atomic_add(int i, atomic_t * v)
--{
--	unsigned long temp;
--	__asm__ __volatile__(
--	"1:	ldl_l %0,%1\n"
--	"	addl %0,%2,%0\n"
--	"	stl_c %0,%1\n"
--	"	beq %0,2f\n"
--	".subsection 2\n"
--	"2:	br 1b\n"
--	".previous"
--	:"=&r" (temp), "=m" (v->counter)
--	:"Ir" (i), "m" (v->counter));
--}
--
--static __inline__ void atomic64_add(long i, atomic64_t * v)
--{
--	unsigned long temp;
--	__asm__ __volatile__(
--	"1:	ldq_l %0,%1\n"
--	"	addq %0,%2,%0\n"
--	"	stq_c %0,%1\n"
--	"	beq %0,2f\n"
--	".subsection 2\n"
--	"2:	br 1b\n"
--	".previous"
--	:"=&r" (temp), "=m" (v->counter)
--	:"Ir" (i), "m" (v->counter));
--}
--
--static __inline__ void atomic_sub(int i, atomic_t * v)
--{
--	unsigned long temp;
--	__asm__ __volatile__(
--	"1:	ldl_l %0,%1\n"
--	"	subl %0,%2,%0\n"
--	"	stl_c %0,%1\n"
--	"	beq %0,2f\n"
--	".subsection 2\n"
--	"2:	br 1b\n"
--	".previous"
--	:"=&r" (temp), "=m" (v->counter)
--	:"Ir" (i), "m" (v->counter));
-+#define ATOMIC_OP(op)							\
-+static __inline__ void atomic_##op(int i, atomic_t * v)			\
-+{									\
-+	unsigned long temp;						\
-+	__asm__ __volatile__(						\
-+	"1:	ldl_l %0,%1\n"						\
-+	"	" #op "l %0,%2,%0\n"					\
-+	"	stl_c %0,%1\n"						\
-+	"	beq %0,2f\n"						\
-+	".subsection 2\n"						\
-+	"2:	br 1b\n"						\
-+	".previous"							\
-+	:"=&r" (temp), "=m" (v->counter)				\
-+	:"Ir" (i), "m" (v->counter));					\
-+}									\
-+
-+#define ATOMIC_OP_RETURN(op)						\
-+static inline int atomic_##op##_return(int i, atomic_t *v)		\
-+{									\
-+	long temp, result;						\
-+	smp_mb();							\
-+	__asm__ __volatile__(						\
-+	"1:	ldl_l %0,%1\n"						\
-+	"	" #op "l %0,%3,%2\n"					\
-+	"	" #op "l %0,%3,%0\n"					\
-+	"	stl_c %0,%1\n"						\
-+	"	beq %0,2f\n"						\
-+	".subsection 2\n"						\
-+	"2:	br 1b\n"						\
-+	".previous"							\
-+	:"=&r" (temp), "=m" (v->counter), "=&r" (result)		\
-+	:"Ir" (i), "m" (v->counter) : "memory");			\
-+	smp_mb();							\
-+	return result;							\
- }
+ #define atomic_set(v, i) (((v)->counter) = (i))
  
--static __inline__ void atomic64_sub(long i, atomic64_t * v)
+-static inline void atomic_add(int i, atomic_t *v)
 -{
--	unsigned long temp;
+-	unsigned int temp;
+-
 -	__asm__ __volatile__(
--	"1:	ldq_l %0,%1\n"
--	"	subq %0,%2,%0\n"
--	"	stq_c %0,%1\n"
--	"	beq %0,2f\n"
--	".subsection 2\n"
--	"2:	br 1b\n"
--	".previous"
--	:"=&r" (temp), "=m" (v->counter)
--	:"Ir" (i), "m" (v->counter));
+-	"1:	llock   %0, [%1]	\n"
+-	"	add     %0, %0, %2	\n"
+-	"	scond   %0, [%1]	\n"
+-	"	bnz     1b		\n"
+-	: "=&r"(temp)	/* Early clobber, to prevent reg reuse */
+-	: "r"(&v->counter), "ir"(i)
+-	: "cc");
 -}
 -
+-static inline void atomic_sub(int i, atomic_t *v)
+-{
+-	unsigned int temp;
 -
--/*
-- * Same as above, but return the result value
-- */
+-	__asm__ __volatile__(
+-	"1:	llock   %0, [%1]	\n"
+-	"	sub     %0, %0, %2	\n"
+-	"	scond   %0, [%1]	\n"
+-	"	bnz     1b		\n"
+-	: "=&r"(temp)
+-	: "r"(&v->counter), "ir"(i)
+-	: "cc");
+-}
+-
+-/* add and also return the new value */
 -static inline int atomic_add_return(int i, atomic_t *v)
 -{
--	long temp, result;
--	smp_mb();
+-	unsigned int temp;
+-
 -	__asm__ __volatile__(
--	"1:	ldl_l %0,%1\n"
--	"	addl %0,%3,%2\n"
--	"	addl %0,%3,%0\n"
--	"	stl_c %0,%1\n"
--	"	beq %0,2f\n"
--	".subsection 2\n"
--	"2:	br 1b\n"
--	".previous"
--	:"=&r" (temp), "=m" (v->counter), "=&r" (result)
--	:"Ir" (i), "m" (v->counter) : "memory");
--	smp_mb();
--	return result;
-+#define ATOMIC64_OP(op)							\
-+static __inline__ void atomic64_##op(long i, atomic64_t * v)		\
+-	"1:	llock   %0, [%1]	\n"
+-	"	add     %0, %0, %2	\n"
+-	"	scond   %0, [%1]	\n"
+-	"	bnz     1b		\n"
+-	: "=&r"(temp)
+-	: "r"(&v->counter), "ir"(i)
+-	: "cc");
+-
+-	return temp;
+-}
+-
+-static inline int atomic_sub_return(int i, atomic_t *v)
+-{
+-	unsigned int temp;
+-
+-	__asm__ __volatile__(
+-	"1:	llock   %0, [%1]	\n"
+-	"	sub     %0, %0, %2	\n"
+-	"	scond   %0, [%1]	\n"
+-	"	bnz     1b		\n"
+-	: "=&r"(temp)
+-	: "r"(&v->counter), "ir"(i)
+-	: "cc");
+-
+-	return temp;
+-}
+-
+-static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+-{
+-	unsigned int temp;
+-
+-	__asm__ __volatile__(
+-	"1:	llock   %0, [%1]	\n"
+-	"	bic     %0, %0, %2	\n"
+-	"	scond   %0, [%1]	\n"
+-	"	bnz     1b		\n"
+-	: "=&r"(temp)
+-	: "r"(addr), "ir"(mask)
+-	: "cc");
++#define ATOMIC_OP(op, c_op, asm_op)					\
++static inline void atomic_##op(int i, atomic_t *v)			\
 +{									\
-+	unsigned long temp;						\
++	unsigned int temp;						\
++									\
 +	__asm__ __volatile__(						\
-+	"1:	ldq_l %0,%1\n"						\
-+	"	" #op "q %0,%2,%0\n"					\
-+	"	stq_c %0,%1\n"						\
-+	"	beq %0,2f\n"						\
-+	".subsection 2\n"						\
-+	"2:	br 1b\n"						\
-+	".previous"							\
-+	:"=&r" (temp), "=m" (v->counter)				\
-+	:"Ir" (i), "m" (v->counter));					\
++	"1:	llock   %0, [%1]	\n"				\
++	"	" #asm_op " %0, %0, %2	\n"				\
++	"	scond   %0, [%1]	\n"				\
++	"	bnz     1b		\n"				\
++	: "=&r"(temp)	/* Early clobber, to prevent reg reuse */	\
++	: "r"(&v->counter), "ir"(i)					\
++	: "cc");							\
 +}									\
 +
-+#define ATOMIC64_OP_RETURN(op)						\
-+static __inline__ long atomic64_##op##_return(long i, atomic64_t * v)	\
++#define ATOMIC_OP_RETURN(op, c_op, asm_op)				\
++static inline int atomic_##op##_return(int i, atomic_t *v)		\
 +{									\
-+	long temp, result;						\
-+	smp_mb();							\
++	unsigned int temp;						\
++									\
 +	__asm__ __volatile__(						\
-+	"1:	ldq_l %0,%1\n"						\
-+	"	" #op "q %0,%3,%2\n"					\
-+	"	" #op "q %0,%3,%0\n"					\
-+	"	stq_c %0,%1\n"						\
-+	"	beq %0,2f\n"						\
-+	".subsection 2\n"						\
-+	"2:	br 1b\n"						\
-+	".previous"							\
-+	:"=&r" (temp), "=m" (v->counter), "=&r" (result)		\
-+	:"Ir" (i), "m" (v->counter) : "memory");			\
-+	smp_mb();							\
-+	return result;							\
++	"1:	llock   %0, [%1]	\n"				\
++	"	" #asm_op " %0, %0, %2	\n"				\
++	"	scond   %0, [%1]	\n"				\
++	"	bnz     1b		\n"				\
++	: "=&r"(temp)							\
++	: "r"(&v->counter), "ir"(i)					\
++	: "cc");							\
++									\
++	return temp;							\
  }
  
--static __inline__ long atomic64_add_return(long i, atomic64_t * v)
--{
--	long temp, result;
--	smp_mb();
--	__asm__ __volatile__(
--	"1:	ldq_l %0,%1\n"
--	"	addq %0,%3,%2\n"
--	"	addq %0,%3,%0\n"
--	"	stq_c %0,%1\n"
--	"	beq %0,2f\n"
--	".subsection 2\n"
--	"2:	br 1b\n"
--	".previous"
--	:"=&r" (temp), "=m" (v->counter), "=&r" (result)
--	:"Ir" (i), "m" (v->counter) : "memory");
--	smp_mb();
--	return result;
--}
-+#define ATOMIC_OPS(opg)							\
-+	ATOMIC_OP(opg)							\
-+	ATOMIC_OP_RETURN(opg)						\
-+	ATOMIC64_OP(opg)						\
-+	ATOMIC64_OP_RETURN(opg)
+ #else	/* !CONFIG_ARC_HAS_LLSC */
+@@ -126,6 +83,7 @@ static inline void atomic_set(atomic_t *v, int i)
+ 	v->counter = i;
+ 	atomic_ops_unlock(flags);
+ }
++
+ #endif
  
--static __inline__ long atomic_sub_return(int i, atomic_t * v)
--{
--	long temp, result;
--	smp_mb();
--	__asm__ __volatile__(
--	"1:	ldl_l %0,%1\n"
--	"	subl %0,%3,%2\n"
--	"	subl %0,%3,%0\n"
--	"	stl_c %0,%1\n"
--	"	beq %0,2f\n"
--	".subsection 2\n"
--	"2:	br 1b\n"
--	".previous"
--	:"=&r" (temp), "=m" (v->counter), "=&r" (result)
--	:"Ir" (i), "m" (v->counter) : "memory");
--	smp_mb();
--	return result;
--}
-+ATOMIC_OPS(add)
-+ATOMIC_OPS(sub)
+ /*
+@@ -133,62 +91,46 @@ static inline void atomic_set(atomic_t *v, int i)
+  * Locking would change to irq-disabling only (UP) and spinlocks (SMP)
+  */
  
--static __inline__ long atomic64_sub_return(long i, atomic64_t * v)
+-static inline void atomic_add(int i, atomic_t *v)
 -{
--	long temp, result;
--	smp_mb();
--	__asm__ __volatile__(
--	"1:	ldq_l %0,%1\n"
--	"	subq %0,%3,%2\n"
--	"	subq %0,%3,%0\n"
--	"	stq_c %0,%1\n"
--	"	beq %0,2f\n"
--	".subsection 2\n"
--	"2:	br 1b\n"
--	".previous"
--	:"=&r" (temp), "=m" (v->counter), "=&r" (result)
--	:"Ir" (i), "m" (v->counter) : "memory");
--	smp_mb();
--	return result;
+-	unsigned long flags;
+-
+-	atomic_ops_lock(flags);
+-	v->counter += i;
+-	atomic_ops_unlock(flags);
++#define ATOMIC_OP(op, c_op, asm_op)					\
++static inline void atomic_##op(int i, atomic_t *v)			\
++{									\
++	unsigned long flags;						\
++									\
++	atomic_ops_lock(flags);						\
++	v->counter c_op i;						\
++	atomic_ops_unlock(flags);					\
+ }
+ 
+-static inline void atomic_sub(int i, atomic_t *v)
+-{
+-	unsigned long flags;
+-
+-	atomic_ops_lock(flags);
+-	v->counter -= i;
+-	atomic_ops_unlock(flags);
++#define ATOMIC_OP_RETURN(op, c_op)					\
++static inline int atomic_##op##_return(int i, atomic_t *v)		\
++{									\
++	unsigned long flags;						\
++	unsigned long temp;						\
++									\
++	atomic_ops_lock(flags);						\
++	temp = v->counter;						\
++	temp c_op i;							\
++	v->counter = temp;						\
++	atomic_ops_unlock(flags);					\
++									\
++	return temp;							\
+ }
+ 
+-static inline int atomic_add_return(int i, atomic_t *v)
+-{
+-	unsigned long flags;
+-	unsigned long temp;
+-
+-	atomic_ops_lock(flags);
+-	temp = v->counter;
+-	temp += i;
+-	v->counter = temp;
+-	atomic_ops_unlock(flags);
+-
+-	return temp;
 -}
+-
+-static inline int atomic_sub_return(int i, atomic_t *v)
+-{
+-	unsigned long flags;
+-	unsigned long temp;
+-
+-	atomic_ops_lock(flags);
+-	temp = v->counter;
+-	temp -= i;
+-	v->counter = temp;
+-	atomic_ops_unlock(flags);
++#endif /* !CONFIG_ARC_HAS_LLSC */
+ 
+-	return temp;
+-}
++#define ATOMIC_OPS(op, c_op, asm_op)					\
++	ATOMIC_OP(op, c_op, asm_op)					\
++	ATOMIC_OP_RETURN(op, c_op, asm_op)
+ 
+-static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+-{
+-	unsigned long flags;
++ATOMIC_OPS(add, +=, add)
++ATOMIC_OPS(sub, -=, sub)
++ATOMIC_OP(and, &=, and)
+ 
+-	atomic_ops_lock(flags);
+-	*addr &= ~mask;
+-	atomic_ops_unlock(flags);
+-}
++#define atomic_clear_mask(mask, v) atomic_and(~(mask), (v))
+ 
+-#endif /* !CONFIG_ARC_HAS_LLSC */
 +#undef ATOMIC_OPS
-+#undef ATOMIC64_OP_RETURN
-+#undef ATOMIC64_OP
 +#undef ATOMIC_OP_RETURN
 +#undef ATOMIC_OP
  
- #define atomic64_cmpxchg(v, old, new) (cmpxchg(&((v)->counter), old, new))
- #define atomic64_xchg(v, new) (xchg(&((v)->counter), new))
+ /**
+  * __atomic_add_unless - add unless the number is a given value
