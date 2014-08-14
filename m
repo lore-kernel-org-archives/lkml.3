@@ -1,86 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433AbaHNFDf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 01:03:35 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:49580 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045AbaHNFDc (ORCPT
+	id S1752531AbaHNFDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 01:03:47 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:33270 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752460AbaHNFDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 01:03:32 -0400
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Michael Ellerman <mpe@ellerman.id.au>, kvm-ppc@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2] PC, KVM, CMA: Fix regression caused by wrong get_order() use
-Date: Thu, 14 Aug 2014 15:03:07 +1000
-Message-Id: <1407992587-9164-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 2.0.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081405-0260-0000-0000-000000126AAF
+	Thu, 14 Aug 2014 01:03:44 -0400
+Date: Thu, 14 Aug 2014 08:03:39 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com
+Subject: Re: [PATCH/RFC v4 00/21] LED / flash API integration
+Message-ID: <20140814050338.GO16460@valkosipuli.retiisi.org.uk>
+References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
+ <20140806065358.GC16460@valkosipuli.retiisi.org.uk>
+ <53E336FA.2050306@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E336FA.2050306@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fc95ca7284bc54953165cba76c3228bd2cdb9591 claims that there is no
-functional change but this is not true as it calls get_order() (which
-takes bytes) where it should have called ilog2() and the kernel stops
-on VM_BUG_ON().
+Hi Jacek,
 
-This replaces get_order() with order_base_2() (round-up version of ilog2).
+On Thu, Aug 07, 2014 at 10:21:14AM +0200, Jacek Anaszewski wrote:
+> On 08/06/2014 08:53 AM, Sakari Ailus wrote:
+> >Hi Jacek,
+> >
+> >On Fri, Jul 11, 2014 at 04:04:03PM +0200, Jacek Anaszewski wrote:
+> >...
+> >>1) Who should register V4L2 Flash sub-device?
+> >>
+> >>LED Flash Class devices, after introduction of the Flash Manager,
+> >>are not tightly coupled with any media controller. They are maintained
+> >>by the Flash Manager and made available for dynamic assignment to
+> >>any media system they are connected to through multiplexing devices.
+> >>
+> >>In the proposed rough solution, when support for V4L2 Flash sub-devices
+> >>is enabled, there is a v4l2_device created for them to register in.
+> >>This however implies that V4L2 Flash device will not be available
+> >>in any media controller, which calls its existence into question.
+> >>
+> >>Therefore I'd like to consult possible ways of solving this issue.
+> >>The option I see is implementing a mechanism for moving V4L2 Flash
+> >>sub-devices between media controllers. A V4L2 Flash sub-device
+> >>would initially be assigned to one media system in the relevant
+> >>device tree binding, but it could be dynamically reassigned to
+> >>the other one. However I'm not sure if media controller design
+> >>is prepared for dynamic modifications of its graph and how many
+> >>modifications in the existing drivers this solution would require.
+> >
+> >Do you have a use case where you would need to strobe a flash from multiple
+> >media devices at different times, or is this entirely theoretical? Typically
+> >flash controllers are connected to a single source of hardware strobe (if
+> >there's one) since the flash LEDs are in fact mounted next to a specific
+> >camera sensor.
+> 
+> I took into account such arrangements in response to your message
+> [1], where you were considering configurations like "one flash but
+> two
+> cameras", "one camera and two flashes". And you also called for
+> proposing generic solution.
+> 
+> One flash and two (or more) cameras case is easily conceivable -
+> You even mentioned stereo cameras. One camera and many flashes
+> arrangement might be useful in case of some professional devices which
+> might be designed so that they would be able to apply different scene
+> lighting. I haven't heard about such devices, but as you said
+> such a configuration isn't unthinkable.
+> 
+> >If this is a real issue the way to solve it would be to have a single media
+> >device instead of many.
+> 
+> I was considering adding media device, that would be a representation
+> of a flash manager, gathering all the registered flashes. Nonetheless,
+> finally I came to conclusion that a v4l2-device alone should suffice,
+> just to provide a Flash Manager representation allowing for
+> v4l2-flash sub-devices to register in.
+> All the features provided by the media device are useless in case
+> of a set of V4L2 Flash sub-devices. They couldn't have any linkage
+> in such a device. The only benefit from having media device gathering
+> V4L2 Flash devices would be possibility of listing them.
 
-Suggested-by: Paul Mackerras <paulus@samba.org>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
+Not quite so. The flash is associated to the sensor (and lens) using the
+group ID in the Media controller. The user space doesn't need to "know" this
+association.
 
-Changes:
-v2:
-* s/ilog2/order_base_2/
-* removed cc: <stable@vger.kernel.org> as I got wrong impression that v3.16 is
-broken
+More complex use cases such as the above may need extensions to the Media
+controller API.
 
----
- arch/powerpc/kvm/book3s_hv_builtin.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> >>2) Consequences of locking the Flash Manager during flash strobe
+> >>
+> >>In case a LED Flash Class device depends on muxes involved in
+> >>routing the other LED Flash Class device's strobe signals,
+> >>the Flash Manager must be locked for the time of strobing
+> >>to prevent reconfiguration of the strobe signal routing
+> >>by the other device.
+> >
+> >I wouldn't be concerned of this in particular. It's more important we do
+> >actully have V4L2 flash API supported by LED flash drivers and that they do
+> >implement the API correctly.
+> >
+> >It's at least debatable whether you should try to prevent user space from
+> >doing silly things or not. With complex devices it may relatively easily
+> >lead to wrecking havoc with actual use cases which we certainly do not want.
+> >
+> >In this case, if you just prevent changing the routing (do you have a use
+> >case for it?) while strobing, someone else could still change the routing
+> >just before you strobe.
+> 
+> Originally I started to implementing this so that strobe signal routing
+> was altered upon setting strobe source. With such an implementation
+> the use case would be as follows:
+> 
+> 1. Process 1 sets strobe source to external
+> 2. Process 2 sets strobe source to software
+> 3. Process 1 strobes the flash, unaware that strobe source setting has
+>    been changed
+> 
+> To avoid such problems I changed the implementation so that the
+> routing is set in the led_flash_manager_setup_strobe function called
+> from led_set_flash_strobe and led_set_external_strobe functions.
+> led_flash_manager_setup_strobe sets strobe signal routing
+> and strobes the flash under lock and holds it for the flash timeout
+> period, which prevents spurious reconfiguration.
+> 
+> Nonetheless, I agree that trying to handle this problem is troublesome,
+> and would affect current V4L2 Flash SPI semantics. If you don't share
+> my concerns I am happy to leave this locking solution out :)
 
-diff --git a/arch/powerpc/kvm/book3s_hv_builtin.c b/arch/powerpc/kvm/book3s_hv_builtin.c
-index 329d7fd..b9615ba 100644
---- a/arch/powerpc/kvm/book3s_hv_builtin.c
-+++ b/arch/powerpc/kvm/book3s_hv_builtin.c
-@@ -101,7 +101,7 @@ struct kvm_rma_info *kvm_alloc_rma()
- 	ri = kmalloc(sizeof(struct kvm_rma_info), GFP_KERNEL);
- 	if (!ri)
- 		return NULL;
--	page = cma_alloc(kvm_cma, kvm_rma_pages, get_order(kvm_rma_pages));
-+	page = cma_alloc(kvm_cma, kvm_rma_pages, order_base_2(kvm_rma_pages));
- 	if (!page)
- 		goto err_out;
- 	atomic_set(&ri->use_count, 1);
-@@ -135,12 +135,12 @@ struct page *kvm_alloc_hpt(unsigned long nr_pages)
- {
- 	unsigned long align_pages = HPT_ALIGN_PAGES;
- 
--	VM_BUG_ON(get_order(nr_pages) < KVM_CMA_CHUNK_ORDER - PAGE_SHIFT);
-+	VM_BUG_ON(order_base_2(nr_pages) < KVM_CMA_CHUNK_ORDER - PAGE_SHIFT);
- 
- 	/* Old CPUs require HPT aligned on a multiple of its size */
- 	if (!cpu_has_feature(CPU_FTR_ARCH_206))
- 		align_pages = nr_pages;
--	return cma_alloc(kvm_cma, nr_pages, get_order(align_pages));
-+	return cma_alloc(kvm_cma, nr_pages, order_base_2(align_pages));
- }
- EXPORT_SYMBOL_GPL(kvm_alloc_hpt);
- 
+I do propose leaving it out. If we should have such a thing we should think
+it in a larger scope than just flash strobing.
+
 -- 
-2.0.0
+Kind regards,
 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
