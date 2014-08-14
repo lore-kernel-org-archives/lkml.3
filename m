@@ -1,67 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370AbaHNSRw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 14:17:52 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:48851 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753758AbaHNSRu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 14:17:50 -0400
-Message-ID: <53ECFD4A.9030704@fb.com>
-Date: Thu, 14 Aug 2014 14:17:46 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932098AbaHNSSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 14:18:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18980 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754433AbaHNSSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 14:18:12 -0400
+Date: Thu, 14 Aug 2014 20:15:42 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
+	seqlock
+Message-ID: <20140814181542.GB5091@redhat.com>
+References: <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814142404.GA28211@redhat.com> <53ECD7C8.6040202@redhat.com> <20140814161247.GA32715@redhat.com> <53ECF390.40403@redhat.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Btrfs
-References: <53ECF8FB.1070106@fb.com> <CA+55aFwx1uPDngB5cASUQsfazt0Ry6yxd5aUuSRMawozj26vVA@mail.gmail.com>
-In-Reply-To: <CA+55aFwx1uPDngB5cASUQsfazt0Ry6yxd5aUuSRMawozj26vVA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-14_05:2014-08-14,2014-08-14,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=4.74060957156297e-10 kscore.compositescore=0
- circleOfTrustscore=29.4129509548051 compositescore=0.998049563855454
- urlsuspect_oldscore=0.998049563855454 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.998049563855454 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1408140213
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53ECF390.40403@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2014 02:10 PM, Linus Torvalds wrote:
-> On Thu, Aug 14, 2014 at 11:59 AM, Chris Mason <clm@fb.com> wrote:
->> Hi Linus,
->>
->> Please pull my for-linus branch:
-> 
-> Yeah, I think this will be for the next merge window.
-> 
-> This clearly got rebased today. At the end of the merge window. After
-> I told people that I was traveling, and asked people to send big
-> things early.
-> 
+On 08/14, Rik van Riel wrote:
+>
+> On 08/14/2014 12:12 PM, Oleg Nesterov wrote:
+> >
+> > Or you can expand the scope of write_seqlock/write_sequnlock, so that
+> > __unhash_process in called from inside the critical section. This looks
+> > simpler at first glance.
+>
+> The problem with that is that wait_task_zombie() calls
+> thread_group_cputime_adjusted() in that if() branch, and
+> that code ends up taking the seqlock for read...
 
-[ resend with full cc ]
+Not sure I understand... This modifies parent->signal->c* counters,
+and obviously the exiting thread is not the member of parent's thread
+group, so thread_group_cputime_adjusted(parent) can never account the
+exiting child twice simply because it won't see it?
 
-Hi Linus,
+> However, in __exit_signal that approach should work.
 
-This did get rebased this week (two days ago), but I've been running it
-through tests for some time.  It was delayed by my own schedule problems
-(vacation and others) that made it very difficult for me to have it
-ready early in the window.
+Yes,
 
-Aside from a small number of cleanup patches, these are all fixes.  I'm
-happy to pull out the cleanups and focus on the fixes.
+> > Hmm, wait, it seems there is yet another problem ;) Afaics, you also
+> > need to modify __exit_signal() so that ->sum_sched_runtime/etc are
+> > accounted unconditionally, even if the group leader exits.
+> >
+> > Probably this is not a big problem, and sys_times() or clock_gettime()
+> > do not care at all because they use current.
+> >
+> > But without this change thread_group_cputime(reaped_zombie) won't look
+> > at this task_struct at all, this can lead to non-monotonic result if
+> > it was previously called when this task was alive (non-reaped).
+>
+> You mean this whole block needs to run regardless of whether
+> the group is dead?
+>
+>                 task_cputime(tsk, &utime, &stime);
+>                 write_seqlock(&sig->stats_lock);
+>                 sig->utime += utime;
+>                 sig->stime += stime;
+>                 sig->gtime += task_gtime(tsk);
+>                 sig->min_flt += tsk->min_flt;
+>                 sig->maj_flt += tsk->maj_flt;
+>                 sig->nvcsw += tsk->nvcsw;
+>                 sig->nivcsw += tsk->nivcsw;
+>                 sig->inblock += task_io_get_inblock(tsk);
+>                 sig->oublock += task_io_get_oublock(tsk);
+>                 task_io_accounting_add(&sig->ioac, &tsk->ioac);
+>                 sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
 
--chris
+Yes.
+
+> How does that square with wait_task_zombie reaping the
+> statistics of the whole group with thread_group_cputime_adjusted()
+> when the group leader is exiting?
+
+Again, not sure I understand... thread_group_cputime_adjusted() in
+wait_task_zombie() is fine in any case. Nobody but us can reap this
+zombie.
+
+It seems that we misunderstood each other, let me try again. Just to
+simplify, suppose we have, say,
+
+	sys_times_by_pid(pid, ...)
+	{
+		rcu_read_lock();
+		task = find_task_by_vpid(pid);
+		if (task)
+			get_task_struct(task);
+		rcu_read_unlock();
+
+		if (!task)
+			return -ESRCH;
+
+		thread_group_cputime(task, ...);
+		copy_to_user();
+		return 0;
+	}
+
+Note that this task can exit right after rcu_read_unlock(), and it can
+be also reaped (by its parent or by itself) and removed from the thread
+list. In this case for_each_thread() will see no threads, and thus it
+will only read task->signal->*time.
+
+This means that sys_times_by_pid() can simply return the wrong result
+instead of failure. Say, It can even return "all zeros" if this task was
+single-threaded.
+
+Oleg.
+
