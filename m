@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853AbaHNIro (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 04:47:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36436 "EHLO
+	id S1754875AbaHNIsI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 04:48:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36454 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861AbaHNIrk (ORCPT
+	with ESMTP id S1754211AbaHNIsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 04:47:40 -0400
-Date: Thu, 14 Aug 2014 01:47:24 -0700
+	Thu, 14 Aug 2014 04:48:03 -0400
+Date: Thu, 14 Aug 2014 01:47:39 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-6fd6c6b462c55f33c20f38051f1116dc52054d67@git.kernel.org>
+Message-ID: <tip-0493410612486cadaa4e076caf4df3fa9cd20fde@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
         a.p.zijlstra@chello.nl, minchan@kernel.org, namhyung.kim@lge.com,
@@ -20,12 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         minchan@kernel.org, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
         namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
         adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1407825645-24586-9-git-send-email-namhyung@kernel.org>
-References: <1407825645-24586-9-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1407825645-24586-10-git-send-email-namhyung@kernel.org>
+References: <1407825645-24586-10-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf lock: Move call to symbol__init()
+Subject: [tip:perf/core] perf sched: Move call to symbol__init()
   after creating session
-Git-Commit-ID: 6fd6c6b462c55f33c20f38051f1116dc52054d67
+Git-Commit-ID: 0493410612486cadaa4e076caf4df3fa9cd20fde
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,14 +38,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6fd6c6b462c55f33c20f38051f1116dc52054d67
-Gitweb:     http://git.kernel.org/tip/6fd6c6b462c55f33c20f38051f1116dc52054d67
+Commit-ID:  0493410612486cadaa4e076caf4df3fa9cd20fde
+Gitweb:     http://git.kernel.org/tip/0493410612486cadaa4e076caf4df3fa9cd20fde
 Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 12 Aug 2014 15:40:40 +0900
+AuthorDate: Tue, 12 Aug 2014 15:40:41 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 13 Aug 2014 16:34:06 -0300
+CommitDate: Wed, 13 Aug 2014 16:34:29 -0300
 
-perf lock: Move call to symbol__init() after creating session
+perf sched: Move call to symbol__init() after creating session
 
 This is a preparation of fixing dso__load_kernel_sym().  It needs a
 session info before calling symbol__init().
@@ -60,30 +60,30 @@ Cc: Minchan Kim <minchan@kernel.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1407825645-24586-9-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1407825645-24586-10-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-lock.c | 3 ++-
+ tools/perf/builtin-sched.c | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index c8122d3..d73580b 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -865,6 +865,8 @@ static int __cmd_report(bool display_info)
- 		return -ENOMEM;
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 7c16aeb..dcd9ebf 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1462,6 +1462,8 @@ static int perf_sched__read_events(struct perf_sched *sched,
+ 		return -1;
  	}
  
 +	symbol__init();
 +
- 	if (!perf_session__has_traces(session, "lock record"))
+ 	if (perf_session__set_tracepoints_handlers(session, handlers))
  		goto out_delete;
  
-@@ -974,7 +976,6 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
- 	unsigned int i;
- 	int rc = 0;
+@@ -1747,7 +1749,6 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (!strcmp(argv[0], "script"))
+ 		return cmd_script(argc, argv, prefix);
  
 -	symbol__init();
- 	for (i = 0; i < LOCKHASH_SIZE; i++)
- 		INIT_LIST_HEAD(lockhash_table + i);
- 
+ 	if (!strncmp(argv[0], "rec", 3)) {
+ 		return __cmd_record(argc, argv);
+ 	} else if (!strncmp(argv[0], "lat", 3)) {
