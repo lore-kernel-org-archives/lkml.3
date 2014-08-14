@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358AbaHNJSP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 05:18:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50397 "EHLO mx1.redhat.com"
+	id S1754499AbaHNJS3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 05:18:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10637 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754255AbaHNJSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 05:18:11 -0400
+	id S1754275AbaHNJSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 05:18:14 -0400
 From: Dave Young <dyoung@redhat.com>
 To: Matt Fleming <matt.fleming@intel.com>
 Cc: Catalin Marinas <catalin.marinas@arm.com>,
@@ -18,56 +18,49 @@ Cc: Catalin Marinas <catalin.marinas@arm.com>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-efi@vger.kernel.org, Daniel Kiper <daniel.kiper@oracle.com>,
         Russ Anderson <rja@sgi.com>
-Subject: [PATCH 4/7] arm64/efi: uefi_init error handling fix
-Date: Thu, 14 Aug 2014 17:15:29 +0800
-Message-Id: <1408007731-15081-4-git-send-email-dyoung@redhat.com>
+Subject: [PATCH 5/7] arm64/efi: do not enter virtual mode in case booting with efi=noruntime or noefi
+Date: Thu, 14 Aug 2014 17:15:30 +0800
+Message-Id: <1408007731-15081-5-git-send-email-dyoung@redhat.com>
 In-Reply-To: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
 References: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's one early memmap leak in uefi_init error path, fix it and slightly tune
-the error handling code.
+In case efi runtime disabled via noefi kernel cmdline arm64_enter_virtual_mode
+should error out.
+
+At the same time move early_memunmap(memmap.map, mapsize) to the beginning of
+the function or it will leak early mem.
 
 Signed-off-by: Dave Young <dyoung@redhat.com>
 ---
- arch/arm64/kernel/efi.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/arm64/kernel/efi.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
-index e72f310..6ed0362 100644
+index 6ed0362..309fab1 100644
 --- a/arch/arm64/kernel/efi.c
 +++ b/arch/arm64/kernel/efi.c
-@@ -89,7 +89,8 @@ static int __init uefi_init(void)
- 	 */
- 	if (efi.systab->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE) {
- 		pr_err("System table signature incorrect\n");
--		return -EINVAL;
-+		retval = -EINVAL;
-+		goto out;
- 	}
- 	if ((efi.systab->hdr.revision >> 16) < 2)
- 		pr_warn("Warning: EFI system table version %d.%02d, expected 2.00 or greater\n",
-@@ -103,6 +104,7 @@ static int __init uefi_init(void)
- 		for (i = 0; i < (int) sizeof(vendor) - 1 && *c16; ++i)
- 			vendor[i] = c16[i];
- 		vendor[i] = '\0';
-+		early_memunmap(c16, sizeof(vendor));
+@@ -392,11 +392,16 @@ static int __init arm64_enter_virtual_mode(void)
+ 		return -1;
  	}
  
- 	pr_info("EFI v%u.%.02u by %s\n",
-@@ -113,9 +115,8 @@ static int __init uefi_init(void)
- 	if (retval == 0)
- 		set_bit(EFI_CONFIG_TABLES, &efi.flags);
++	mapsize = memmap.map_end - memmap.map;
++	if (efi_runtime_disabled()) {
++		early_memunmap(memmap.map, mapsize);
++		pr_info("EFI runtime services will be disabled.\n");
++		return -1;
++	}
++
+ 	pr_info("Remapping and enabling EFI services.\n");
  
--	early_memunmap(c16, sizeof(vendor));
-+out:
- 	early_memunmap(efi.systab,  sizeof(efi_system_table_t));
--
- 	return retval;
- }
- 
+ 	/* replace early memmap mapping with permanent mapping */
+-	mapsize = memmap.map_end - memmap.map;
+-	early_memunmap(memmap.map, mapsize);
+ 	memmap.map = (__force void *)ioremap_cache((phys_addr_t)memmap.phys_map,
+ 						   mapsize);
+ 	memmap.map_end = memmap.map + mapsize;
 -- 
 1.8.3.1
 
