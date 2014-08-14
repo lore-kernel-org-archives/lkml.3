@@ -1,89 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372AbaHNSgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 14:36:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24603 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752879AbaHNSgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 14:36:44 -0400
-Date: Thu, 14 Aug 2014 20:34:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
-	seqlock
-Message-ID: <20140814183413.GA6959@redhat.com>
-References: <20140812191218.GA15210@redhat.com> <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814132239.GA24465@redhat.com> <20140814174849.GA5091@redhat.com>
+	id S1754541AbaHNSh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 14:37:56 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:35924 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753350AbaHNShz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 14:37:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140814174849.GA5091@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CACsCDOP8DOnB0zZtT_WLhiBXjxXh1aH1eGF9_h0dRN1i9YDU-A@mail.gmail.com>
+References: <20140723113314.GA7798@chaz.gmail.com>
+	<53CFCD26.1020409@infradead.org>
+	<CACsCDOP8DOnB0zZtT_WLhiBXjxXh1aH1eGF9_h0dRN1i9YDU-A@mail.gmail.com>
+Date: Thu, 14 Aug 2014 11:37:53 -0700
+Message-ID: <CAHA+R7MLQtYF5vBN0D66Wk8iyGZABf5=Az293gUH6w=4THv8Gw@mail.gmail.com>
+Subject: Re: network interfaces called "all", "default" or "config"
+From: Cong Wang <cwang@twopensource.com>
+To: Stephane Chazelas <stephane.chazelas@gmail.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14, Oleg Nesterov wrote:
+On Thu, Aug 14, 2014 at 2:41 AM, Stephane Chazelas
+<stephane.chazelas@gmail.com> wrote:
+> By the way, this is related:
 >
-> But just for record, the "lockless" version doesn't look that bad to me,
->
-> 	void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
-> 	{
-> 		struct signal_struct *sig = tsk->signal;
-> 		bool lockless, is_dead;
-> 		struct task_struct *t;
-> 		unsigned long flags;
-> 		u64 exec;
->
-> 		lockless = true;
-> 		is_dead = !lock_task_sighand(p, &flags);
-> 	 retry:
-> 		times->utime = sig->utime;
-> 		times->stime = sig->stime;
-> 		times->sum_exec_runtime = exec = sig->sum_sched_runtime;
-> 		if (is_dead)
-> 			return;
->
-> 		if (lockless)
-> 			unlock_task_sighand(p, &flags);
->
-> 		rcu_read_lock();
-> 		for_each_thread(tsk, t) {
-> 			cputime_t utime, stime;
-> 			task_cputime(t, &utime, &stime);
-> 			times->utime += utime;
-> 			times->stime += stime;
-> 			times->sum_exec_runtime += task_sched_runtime(t);
-> 		}
-> 		rcu_read_unlock();
->
-> 		if (lockless) {
-> 			lockless = false;
-> 			is_dead = !lock_task_sighand(p, &flags);
-> 			if (is_dead || exec != sig->sum_sched_runtime)
-> 				goto retry;
-> 		}
-> 		unlock_task_sighand(p, &flags);
-> 	}
->
-> The obvious problem is that we should shift lock_task_sighand() from the
-> callers to thread_group_cputime() first, or add thread_group_cputime_lockless()
-> and change the current users one by one.
+> $ ip link add link eth0 eth0:123 type vlan id 123
+> $ ip link del link eth0 eth0:123
+> RTNETLINK answers: Operation not supported
 
-OTOH, it is simple to convert do_sys_times() and posix_cpu_clock_get_task()
-to use the lockless version, and avoid the new stats_lock and other changes
-it needs.
+Kernel reads "eth0:123" as an alias of "eth0", so it will just
+truncate the dev name into "eth0":
 
-> And of course, stats_lock is more generic.
 
-Yes, this is true in any case.
+        ifr.ifr_name[IFNAMSIZ-1] = 0;
 
-So I simply do not know.
-
-Oleg.
-
+        colon = strchr(ifr.ifr_name, ':');
+        if (colon)
+                *colon = 0;
