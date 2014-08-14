@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170AbaHNOlf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 10:41:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31047 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754668AbaHNOle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 10:41:34 -0400
-Date: Thu, 14 Aug 2014 16:39:02 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
-	seqlock
-Message-ID: <20140814143902.GA29052@redhat.com>
-References: <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814004318.GA2582@lerouge> <53EC176D.6080201@redhat.com> <CAFTL4hwfNyQPMfpca-=Ou7WoPjB6sE_7BVAcQrVDkBjjPVmPRw@mail.gmail.com>
+	id S1755039AbaHNOoC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 10:44:02 -0400
+Received: from mail6.autoliv.com ([195.33.130.243]:57920 "EHLO
+	mail6.autoliv.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbaHNOoA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 10:44:00 -0400
+From: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>
+To: Fabio Estevam <festevam@gmail.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Fredrik Noring <fredrik.noring@autoliv.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: Oops: 17 SMP ARM (v3.16-rc2)
+Thread-Topic: Oops: 17 SMP ARM (v3.16-rc2)
+Thread-Index: Ac+QeuMIv4ry9FBDTNKHf1ccZ0ioqQAu3GGAAAUkuuD//+tKAIABUVuA//+RU9CAAMUXAP/CyllwgHui4wD//8wREAAM+aMA//6IPID//QHtAP/4Df8A/+ub5xD/1wicgP+rMUjQ/1SejoA=
+Date: Thu, 14 Aug 2014 14:43:56 +0000
+Message-ID: <C4A61A5CA4AD2246942F4BA6F20ACB80435776D3@ALVA-EXMB04.alv.autoliv.int>
+References: <20140626151424.GT32514@n2100.arm.linux.org.uk>
+	<20140627112151.GF32514@n2100.arm.linux.org.uk>
+	<3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
+	<20140627163108.GP32514@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int>
+	<20140806095012.GN30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int>
+	<20140806125550.GO30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int>
+	<20140807121248.GY30282@n2100.arm.linux.org.uk>
+	<20140808180900.GG30282@n2100.arm.linux.org.uk>
+	<C4A61A5CA4AD2246942F4BA6F20ACB8043576356@ALVA-EXMB04.alv.autoliv.int>
+ <CAOMZO5B8GR+ABBoJ=dJcFqw3Wagfaip7HM+C1FTz+aE4CmqiPw@mail.gmail.com> 
+Accept-Language: sv-SE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.14.8.137]
+x-tm-as-product-ver: SMEX-10.2.0.2087-7.500.1018-20878.006
+x-tm-as-result: No--23.985700-8.000000-31
+x-tm-as-user-approved-sender: No
+x-tm-as-user-blocked-sender: No
+Content-Type: text/plain;
+	charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hwfNyQPMfpca-=Ou7WoPjB6sE_7BVAcQrVDkBjjPVmPRw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7EEi7b8028458
 
-On 08/14, Frederic Weisbecker wrote:
->
-> 2014-08-14 3:57 GMT+02:00 Rik van Riel <riel@redhat.com>:
-> > -----BEGIN PGP SIGNED MESSAGE-----
-> > Hash: SHA1
-> >
-> > On 08/13/2014 08:43 PM, Frederic Weisbecker wrote:
-> >> On Wed, Aug 13, 2014 at 05:03:24PM -0400, Rik van Riel wrote:
-> >>
-> >> I'm worried about such lockless solution based on RCU or read
-> >> seqcount because we lose the guarantee that an update is
-> >> immediately visible by all subsequent readers.
-> >>
-> >> Say CPU 0 updates the thread time and both CPU 1 and CPU 2 right
-> >> after that call clock_gettime(), with the spinlock we were
-> >> guaranteed to see the new update. Now with a pure seqlock read
-> >> approach, we guarantee a read sequence coherency but we don't
-> >> guarantee the freshest update result.
-> >>
-> >> So that looks like a source of non monotonic results.
-> >
-> > Which update are you worried about, specifically?
-> >
-> > The seq_write_lock to update the usage stat in p->signal will lock out
-> > the seqlock read side used to check those results.
-> >
-> > Is there another kind of thing read by cpu_clock_sample_group that you
-> > believe is not excluded by the seq_lock?
->
-> I mean the read side doesn't use a lock with seqlocks. It's only made
-> of barriers and sequence numbers to ensure the reader doesn't read
-> some half-complete update. But other than that it can as well see the
-> update n - 1 since barriers don't enforce latest results.
+Fabio and Russell,
 
-Yes, sure, read_seqcount_begin/read_seqcount_retry "right after"
-write_seqcount_begin-update-write_seqcount_begin can miss "update" part
-along with ->sequence modifications.
+> A working theory is that the switch (3Com Switch 4400) triggers the
+> degeneration of the network stack from which Linux does not seem to
+> recover, even if we later bypass the switch and directly connect the board to
+> the server machine.
 
-But I still can't understand how this can lead to non-monotonic results,
-could you spell?
+After a few more tests we have finally been able to trigger the exact same stalls
+on the Sabrelite board with a direct network connection (i.e. without the switch).
 
-Oleg.
+Best regards,
+Mattis Lorentzon
 
+***************************************************************
+Consider the environment before printing this message.
+
+To read Autoliv's Information and Confidentiality Notice, follow this link:
+http://www.autoliv.com/disclaimer.html
+***************************************************************ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
