@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390AbaHNPav (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 11:30:51 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:41916 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754958AbaHNPau (ORCPT
+	id S1755418AbaHNPci (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 11:32:38 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:41679 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329AbaHNPch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 11:30:50 -0400
+	Thu, 14 Aug 2014 11:32:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <C4A61A5CA4AD2246942F4BA6F20ACB80435776D3@ALVA-EXMB04.alv.autoliv.int>
-References: <20140626151424.GT32514@n2100.arm.linux.org.uk>
-	<20140627112151.GF32514@n2100.arm.linux.org.uk>
-	<3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
-	<20140627163108.GP32514@n2100.arm.linux.org.uk>
-	<C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int>
-	<20140806095012.GN30282@n2100.arm.linux.org.uk>
-	<C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int>
-	<20140806125550.GO30282@n2100.arm.linux.org.uk>
-	<C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int>
-	<20140807121248.GY30282@n2100.arm.linux.org.uk>
-	<20140808180900.GG30282@n2100.arm.linux.org.uk>
-	<C4A61A5CA4AD2246942F4BA6F20ACB8043576356@ALVA-EXMB04.alv.autoliv.int>
-	<CAOMZO5B8GR+ABBoJ=dJcFqw3Wagfaip7HM+C1FTz+aE4CmqiPw@mail.gmail.com>
-	<C4A61A5CA4AD2246942F4BA6F20ACB80435776D3@ALVA-EXMB04.alv.autoliv.int>
-Date: Thu, 14 Aug 2014 12:30:46 -0300
-Message-ID: <CAOMZO5B7FgzB7ThVyV2Vk7wTwYgjRWjEnkkAN5uwwKMaBKq1yg@mail.gmail.com>
-Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
-From: Fabio Estevam <festevam@gmail.com>
-To: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Fredrik Noring <fredrik.noring@autoliv.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <CALZtONDB5q56f1TUHgqbiJ4ZaP6Yk=GcNQw9DhvLhNyExdfQ4w@mail.gmail.com>
+References: <1407978746-20587-1-git-send-email-minchan@kernel.org>
+	<1407978746-20587-3-git-send-email-minchan@kernel.org>
+	<CALZtONDB5q56f1TUHgqbiJ4ZaP6Yk=GcNQw9DhvLhNyExdfQ4w@mail.gmail.com>
+Date: Thu, 14 Aug 2014 11:32:36 -0400
+Message-ID: <CAFdhcLQ11MnF7Py+X1wrJMiu0L15-JrV883oYGopdz1oag0njQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] zram: add mem_used_max via sysfs
+From: David Horner <ds2horner@gmail.com>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 11:43 AM, Mattis Lorentzon
-<Mattis.Lorentzon@autoliv.com> wrote:
+On Thu, Aug 14, 2014 at 11:09 AM, Dan Streetman <ddstreet@ieee.org> wrote:
+> On Wed, Aug 13, 2014 at 9:12 PM, Minchan Kim <minchan@kernel.org> wrote:
+>> -       if (zram->limit_bytes &&
+>> -               zs_get_total_size_bytes(meta->mem_pool) > zram->limit_bytes) {
+>> +       total_bytes = zs_get_total_size_bytes(meta->mem_pool);
+>> +       if (zram->limit_bytes && total_bytes > zram->limit_bytes) {
+>
+> do you need to take the init_lock to read limit_bytes here?  It could
+> be getting changed between these checks...
 
-> After a few more tests we have finally been able to trigger the exact same stalls
-> on the Sabrelite board with a direct network connection (i.e. without the switch).
+There is no real danger in freeing with an error.
+It is more timing than a race.
 
-Do the stalls also happen on a pure 3.16 kernel?
-
-How can we reproduce the error?
+The max calculation is still ok because committed allocations are
+added atomically.
