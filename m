@@ -1,207 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980AbaHNIlA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 04:41:00 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:53119 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243AbaHNIkz (ORCPT
+	id S1754071AbaHNInS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 04:43:18 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:43916 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861AbaHNInR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 04:40:55 -0400
-Date: Thu, 14 Aug 2014 10:40:49 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Alex Snast <asnast@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Minchan Kim <minchan@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Naohiro Aota <naota@elisp.net>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/41] perf/core improvements and fixes
-Message-ID: <20140814084049.GA7089@gmail.com>
-References: <1407970107-24540-1-git-send-email-acme@kernel.org>
+	Thu, 14 Aug 2014 04:43:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407970107-24540-1-git-send-email-acme@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAKszPgvjBE5y35guVRXu7kp3nVZa4KPgh=AezVL-UXq=idRc-Q@mail.gmail.com>
+References: <CAG-aW04-=7rvPjLGqAWZ2oWT4K4EZ5gc96ZWpBo101u=f2+6EQ@mail.gmail.com>
+ <CAG-aW06pKUeCddJCAN7cDDcs-T2jmjV33zxdh-jyVSx1uhq2Ww@mail.gmail.com> <CAKszPgvjBE5y35guVRXu7kp3nVZa4KPgh=AezVL-UXq=idRc-Q@mail.gmail.com>
+From: Claudio Bizzarri <claudio.bizzarri@gmail.com>
+Date: Thu, 14 Aug 2014 10:42:55 +0200
+Message-ID: <CAKszPguBSGVLwM13r0_b0fL0pCD2JvrtpataXB92jiv6k5+=UQ@mail.gmail.com>
+Subject: Fwd: Kernel 3.16.0 USB crash
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ciao,
 
-* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+thank you very much for replay, you are right: it's UAS module. Now
+I'm using Ubuntu 14.04 with kernel 3.16.1 from
+http://kernel.ubuntu.com/~kernel-ppa/mainline/, there is no
+/proc/config.gz, but but there is a config file in /boot:
 
-> Hi Ingo,
-> 
-> 	Please consider pulling, more to come! :-)
-> 
-> - Arnaldo
-> 
-> The following changes since commit ddcd0973fe02aad3d4bdc59dd0f1db90f51105a9:
-> 
->   perf/x86/uncore: Rename IvyTown to IvyBridge-EP (2014-08-13 07:51:18 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 1c65056c547141a0cb52fb8e6056f63524d2bbf2:
-> 
->   perf evlist: Add perf_evlist__enable_event_idx() (2014-08-13 19:23:48 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/probe fixes and improvements:
-> 
-> User visible changes:
-> 
-> . Do not show +/- callchain expansion when there are no childs (top/report) (Namhyung Kim)
-> 
-> . Fix -z and add respective 'z' hotkey to zero samples before refresh
->   in 'perf top' (Namhyung Kim)
-> 
-> . Capability probing fixes, improving the detection of
->   kernel features for non-priviledged users (Adrian Hunter)
-> 
-> . Add beautifier for mremap flags param in 'trace' (Alex Snast)
-> 
-> . Fix --list and --del options to show events when just uprobes is
->   enabled (Masami Hiramatsu)
-> 
-> . perf script: Allow callchains if any event samples them
-> 
-> . Don't look for kernel idle symbols in all DSOs in 'perf top' (Arnaldo Carvalho de Melo)
-> 
-> . Add cpu_startup_entry to the list of kernel idle symbols (Arnaldo Carvalho de Melo)
-> 
-> . 'perf top' terminal output fixes (Jiri Olsa)
-> 
-> . Fix stdin handling for 'perf kvm stat live' (Jiri Olsa)
-> 
-> . Fix missing label symbols (Adrian Hunter)
-> 
-> . Don't demangle C++ parameters and such by default, only in
->   --verbose mode (Namhyung Kim)
-> 
-> . Set proper sort__mode for the branch option (Naohiro Aota)
-> 
-> . Check recorded kernel version when finding vmlinux (Namhyung Kim)
-> 
-> Developer Stuff:
-> 
-> . More prep work for intel PT (Adrian Hunter)
-> 
-> . Fix possible memory leaks (Namhyung Kim)
-> 
-> . Fix a memory leak in vmlinux_path__init() (Namhyung Kim)
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Adrian Hunter (14):
->       perf tools: Fix CLOEXEC probe for perf_event_paranoid == 2
->       perf tools: Fix one of the probe events to exclude kernel
->       perf tools: Fix probing the kernel API with cpu-wide events
->       perf tools: Prefer to use a cpu-wide event for probing CLOEXEC
->       perf symbols: Fix missing label symbols
->       perf evlist: Add 'system_wide' option
->       perf evlist: Add perf_evlist__set_tracking_event()
->       perf session: Add perf_session__peek_event()
->       perf script: Allow callchains if any event samples them
->       perf script python: Add helpers for calling Python objects
->       perf tools: Identify which comms are from exec
->       perf machine: Add machine__thread_exec_comm()
->       perf tools: Add flags and insn_len to struct sample
->       perf evlist: Add perf_evlist__enable_event_idx()
-> 
-> Alex Snast (1):
->       perf trace: Add beautifier for mremap flags param
-> 
-> Arnaldo Carvalho de Melo (2):
->       perf top: Don't look for kernel idle symbols in all DSOs
->       perf tools: Add cpu_startup_entry to the list of kernel idle symbols
-> 
-> Jiri Olsa (4):
->       perf top: Join the display thread on exit
->       perf tools: Introduce set_term_quiet_input helper function
->       perf top: Setup signals for terminal output
->       perf kvm: Fix stdin handling for 'kvm stat live' command
-> 
-> Masami Hiramatsu (2):
->       perf probe: Fix --list option to show events only with uprobe events
->       perf probe: Fix --del option to delete events only with uprobe events
-> 
-> Namhyung Kim (17):
->       perf script: Fix possible memory leaks
->       perf symbols: Fix a memory leak in vmlinux_path__init()
->       perf annotate: Move session handling out of __cmd_annotate()
->       perf buildid-cache: Move session handling into cmd_buildid_cache()
->       perf inject: Move session handling out of __cmd_inject()
->       perf kmem: Move session handling out of __cmd_kmem()
->       perf kvm: Move call to symbol__init() after creating session
->       perf lock: Move call to symbol__init() after creating session
->       perf sched: Move call to symbol__init() after creating session
->       perf script: Move call to symbol__init() after creating session
->       perf timechart: Move call to symbol__init() after creating session
->       perf trace: Move call to symbol__init() after creating session
->       perf tools: Check recorded kernel version when finding vmlinux
->       perf hists browser: Fix a small callchain display bug
->       perf top: Fix -z option behavior
->       perf top: Handle 'z' key for toggle zeroing samples in TUI
->       perf symbols: Don't demangle parameters and such by default
-> 
-> naota@elisp.net (1):
->       perf report: Set proper sort__mode for the branch option
-> 
->  tools/perf/builtin-annotate.c                      |  75 +++++++-------
->  tools/perf/builtin-buildid-cache.c                 |  37 ++++---
->  tools/perf/builtin-diff.c                          |   2 +-
->  tools/perf/builtin-inject.c                        |  31 +++---
->  tools/perf/builtin-kmem.c                          |  49 +++++----
->  tools/perf/builtin-kvm.c                           |  24 ++---
->  tools/perf/builtin-lock.c                          |   3 +-
->  tools/perf/builtin-mem.c                           |   2 +-
->  tools/perf/builtin-record.c                        |   2 +-
->  tools/perf/builtin-report.c                        |   4 +-
->  tools/perf/builtin-sched.c                         |   3 +-
->  tools/perf/builtin-script.c                        |  57 +++++++----
->  tools/perf/builtin-timechart.c                     |   4 +-
->  tools/perf/builtin-top.c                           |  59 ++++++++---
->  tools/perf/builtin-trace.c                         |  34 +++++-
->  tools/perf/tests/builtin-test.c                    |   2 +-
->  tools/perf/ui/browsers/hists.c                     |  13 ++-
->  tools/perf/util/cloexec.c                          |  23 ++++-
->  tools/perf/util/comm.c                             |   7 +-
->  tools/perf/util/comm.h                             |   6 +-
->  tools/perf/util/event.h                            |   2 +
->  tools/perf/util/evlist.c                           | 109 ++++++++++++++++++--
->  tools/perf/util/evlist.h                           |   5 +
->  tools/perf/util/evsel.c                            |  34 ++++--
->  tools/perf/util/evsel.h                            |   2 +
->  tools/perf/util/hist.c                             |  22 ++++
->  tools/perf/util/hist.h                             |   1 +
->  tools/perf/util/machine.c                          |  30 +++++-
->  tools/perf/util/machine.h                          |   4 +
->  tools/perf/util/probe-event.c                      |  98 ++++++++++++------
->  tools/perf/util/record.c                           |  40 ++++++--
->  .../util/scripting-engines/trace-event-python.c    | 114 +++++++++------------
->  tools/perf/util/session.c                          |  79 +++++++++++++-
->  tools/perf/util/session.h                          |   5 +
->  tools/perf/util/symbol-elf.c                       |   9 +-
->  tools/perf/util/symbol.c                           |  31 ++++--
->  tools/perf/util/symbol.h                           |   4 +-
->  tools/perf/util/thread.c                           |  24 ++++-
->  tools/perf/util/thread.h                           |  10 +-
->  tools/perf/util/util.c                             |  13 +++
->  tools/perf/util/util.h                             |   2 +
->  41 files changed, 770 insertions(+), 305 deletions(-)
+b0@hp850ssd:~⟫ grep USB_UAS /boot/config-3.16.1-031601-generic
+CONFIG_USB_UAS=m
 
-Pulled, thanks a lot Arnaldo!
+When I attach my external USB disk I've 30 seconds before my laptop
+freeze, here is my dmesg output, disk is not mounted:
 
-	Ingo
+[ 1508.375855] usb 3-4: new SuperSpeed USB device number 3 using xhci_hcd
+[ 1508.392674] usb 3-4: New USB device found, idVendor=152d, idProduct=0567
+[ 1508.392683] usb 3-4: New USB device strings: Mfr=10, Product=11,
+SerialNumber=5
+[ 1508.392688] usb 3-4: Product: USB to ATA/ATAPI Bridge
+[ 1508.392692] usb 3-4: Manufacturer: JMicron
+[ 1508.392695] usb 3-4: SerialNumber: 152D00539000
+[ 1508.912469] usbcore: registered new interface driver usb-storage
+[ 1508.916444] scsi2 : uas
+[ 1508.916555] usbcore: registered new interface driver uas
+[ 1512.916445] scsi 2:0:0:0: Direct-Access     JMicron  Generic
+  0100 PQ: 0 ANSI: 6
+[ 1512.919131] sd 2:0:0:0: Attached scsi generic sg1 type 0
+[ 1512.919704] sd 2:0:0:0: [sdb] 976773168 512-byte logical blocks:
+(500 GB/465 GiB)
+[ 1512.919707] sd 2:0:0:0: [sdb] 4096-byte physical blocks
+[ 1512.922763] sd 2:0:0:0: [sdb] Write Protect is off
+[ 1512.922766] sd 2:0:0:0: [sdb] Mode Sense: 67 00 10 08
+[ 1512.923950] sd 2:0:0:0: [sdb] Write cache: enabled, read cache:
+enabled, supports DPO and FUA
+
+If I remove kernel/drivers/usb/storage/uas.ko there is not a crash,
+laptop keep working, disk is not mounted:
+
+[ 1628.808425] usb 3-4: new SuperSpeed USB device number 4 using xhci_hcd
+[ 1628.825188] usb 3-4: New USB device found, idVendor=152d, idProduct=0567
+[ 1628.825197] usb 3-4: New USB device strings: Mfr=10, Product=11,
+SerialNumber=5
+[ 1628.825201] usb 3-4: Product: USB to ATA/ATAPI Bridge
+[ 1628.825205] usb 3-4: Manufacturer: JMicron
+[ 1628.825208] usb 3-4: SerialNumber: 152D00539000
+
+ If I use a normal micro USB cable (not USB 3.0 one) I can mount my
+disk (with uas module):
+
+[ 2786.654048] usb 2-2: new high-speed USB device number 6 using xhci_hcd
+[ 2786.782930] usb 2-2: New USB device found, idVendor=152d, idProduct=0567
+[ 2786.782940] usb 2-2: New USB device strings: Mfr=10, Product=11,
+SerialNumber=5
+[ 2786.782945] usb 2-2: Product: USB to ATA/ATAPI Bridge
+[ 2786.782949] usb 2-2: Manufacturer: JMicron
+[ 2786.782953] usb 2-2: SerialNumber: 152D00539000
+[ 2864.810537] usb 2-2: USB disconnect, device number 6
+[ 2868.364551] usb 2-2: new high-speed USB device number 7 using xhci_hcd
+[ 2868.493558] usb 2-2: New USB device found, idVendor=152d, idProduct=0567
+[ 2868.493564] usb 2-2: New USB device strings: Mfr=10, Product=11,
+SerialNumber=5
+[ 2868.493566] usb 2-2: Product: USB to ATA/ATAPI Bridge
+[ 2868.493568] usb 2-2: Manufacturer: JMicron
+[ 2868.493570] usb 2-2: SerialNumber: 152D00539000
+[ 2869.018205] scsi4 : uas
+[ 2869.018294] usbcore: registered new interface driver uas
+[ 2873.017269] scsi 4:0:0:0: Direct-Access     JMicron  Generic
+  0100 PQ: 0 ANSI: 6
+[ 2873.018577] sd 4:0:0:0: Attached scsi generic sg1 type 0
+[ 2873.018665] sd 4:0:0:0: [sdb] 976773168 512-byte logical blocks:
+(500 GB/465 GiB)
+[ 2873.018670] sd 4:0:0:0: [sdb] 4096-byte physical blocks
+[ 2873.019474] sd 4:0:0:0: [sdb] Write Protect is off
+[ 2873.019477] sd 4:0:0:0: [sdb] Mode Sense: 67 00 10 08
+[ 2873.019796] sd 4:0:0:0: [sdb] Write cache: enabled, read cache:
+enabled, supports DPO and FUA
+[ 2873.059496]  sdb: sdb1
+[ 2873.061310] sd 4:0:0:0: [sdb] Attached SCSI disk
+
+I've another USB 3.0 disk (WD Element) and it's works with or without
+UAS module with USB 3.0 cable:
+
+[ 2326.896391] usb 3-2: new SuperSpeed USB device number 5 using xhci_hcd
+[ 2326.912963] usb 3-2: New USB device found, idVendor=1058, idProduct=1042
+[ 2326.912969] usb 3-2: New USB device strings: Mfr=1, Product=2, SerialNumber=5
+[ 2326.912972] usb 3-2: Product: Elements 1042
+[ 2326.912975] usb 3-2: Manufacturer: Western Digital
+[ 2326.912978] usb 3-2: SerialNumber: 575836314333323131343634
+[ 2326.913688] usb-storage 3-2:1.0: USB Mass Storage device detected
+[ 2326.914463] scsi3 : usb-storage 3-2:1.0
+[ 2327.912103] scsi 3:0:0:0: Direct-Access     WD       Elements 1042
+  1007 PQ: 0 ANSI: 6
+[ 2327.912829] sd 3:0:0:0: Attached scsi generic sg1 type 0
+[ 2327.916641] sd 3:0:0:0: [sdb] Spinning up disk...
+[ 2328.919251] .......ready
+[ 2334.941694] sd 3:0:0:0: [sdb] 1953519616 512-byte logical blocks:
+(1.00 TB/931 GiB)
+[ 2334.942058] sd 3:0:0:0: [sdb] Write Protect is off
+[ 2334.942064] sd 3:0:0:0: [sdb] Mode Sense: 47 00 10 08
+[ 2334.942362] sd 3:0:0:0: [sdb] No Caching mode page found
+[ 2334.942367] sd 3:0:0:0: [sdb] Assuming drive cache: write through
+[ 2334.955994]  sdb: sdb1
+[ 2334.957392] sd 3:0:0:0: [sdb] Attached SCSI disk
+
+I am available to send logs or to carry out the tests you want to do.
+
+Regards.
+Claudio
+
+
+
+2014-08-13 23:36 GMT+02:00 Matt <jackdachef@gmail.com>:
+
+> On Wed, Aug 13, 2014 at 10:24 PM, Matt <jackdachef@gmail.com> wrote:
+> > Hi Claudio,
+> >
+> > this issue is clearly caused by UAS.
+> >
+> > if
+> >
+> > zcat /proc/config.gz | grep UAS
+> > # CONFIG_USB_UAS is not set
+> >
+> > is de-selected, everything's fine
+> >
+> > when this is selected (usb is compiled as a module here)
+> >
+> > the system crashes or hardlocks as soon as an USB 3.0 capable drive is
+> > connected.
+> >
+> > During bootup the system crashes as soon as the kernel module is loaded.
+> >
+> > This happened for me with 3.15.6 and 3.16.0 kernel (and 3.16-rc6).
+> >
+> > I've a different chipset but the symptoms are similar:
+> >
+> > 00:14.0 USB controller: Intel Corporation 8 Series/C220 Series Chipset
+> > Family USB xHCI (rev 05)
+> >
+> >
+> > So the only solution to work with newer kernels right now is to
+> > de-select that option and re-compile the kernel. It doesn't help fix
+> > the problem but at least it mitigates the issues for now (crash).
+> >
+> >
+> > Regards
+> >
+> > Matt
