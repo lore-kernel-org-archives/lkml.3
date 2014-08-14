@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580AbaHNSvp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 14:51:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20903 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754021AbaHNSvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 14:51:44 -0400
-Date: Fri, 15 Aug 2014 02:51:28 +0800
-From: Amos Kong <akong@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, hpa@linux.intel.com,
-        ricardo.neri-calderon@linux.intel.com, tytso@mit.edu,
-        Amit Shah <amit.shah@redhat.com>
-Subject: Re: [PATCH] virtio: rng: add derating factor for use by hwrng core
-Message-ID: <20140814185128.GA1894@z.redhat.com>
-References: <87zjf88awc.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87zjf88awc.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754625AbaHNSxu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 14:53:50 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:55443 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754417AbaHNSxt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 14:53:49 -0400
+X-AuditID: cbfec373-b7f9d6d00000479f-8f-53ed05bbfcf1
+Date: Thu, 14 Aug 2014 15:53:42 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux EDAC Mailing List <linux-edac@vger.kernel.org>
+Subject: [GIT PULL for 3.17-rc1] EDAC updates for next
+Message-id: <20140814155342.40ac3582.m.chehab@samsung.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgluLIzCtJLcpLzFFi42I5/e9wsO5u1rfBBut/GljMWb+GzeLCqQYm
+	i8u75rBZPOp7y+7A4nFixm8Wj8+b5AKYorhsUlJzMstSi/TtErgyLv1/wVRwiKvi18E3zA2M
+	izm6GDk5JARMJFYfWcIIYYtJXLi3nq2LkYtDSGAJo8SOI/OZIZxmJomJh9eygFSxCKhKTDh9
+	BqyDTcBI4lVjCyuILQJkf35xBcxmFljIKHH8bTqILSxgJvGq9TsziM0rYCXR8342E8Q2Z4mf
+	MycxQsQFJX5MvscC0aslsXlbE9QceYnNa94yT2Dkm4WkbBaSsllIyhYwMq9iFC0tTi4oTkrP
+	NdIrTswtLs1L10vOz93ECAm94h2MLzZYHWIU4GBU4uGdcPRNsBBrYllxZe4hRgkOZiUR3oa/
+	QCHelMTKqtSi/Pii0pzU4kOMTBycUg2M3lJvF761jslstp+8W+rSqznsNp9WfRLTsg5MfRVY
+	bDgh8f/jIxemLnouFPnJMeF4pfcmbgdDDaXCf/cidV4/8zp9TONHCPOCHU2tZW8WSR0//6Lm
+	x+mEH4d9m6dnHPywpTapdFXTok1JAitehv6bGBqruUM3qUIzb+M2F+7YlDRGY1Wzyne5SizF
+	GYmGWsxFxYkAGq40exsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 04:39:07AM +0930, Rusty Russell wrote:
-> The khwrngd thread is started when a hwrng device of sufficient
-> quality is registered.  The virtio-rng device is backed by the
-> hypervisor, and we trust the hypervisor to provide real entropy.
-> 
-> A malicious hypervisor is a scenario that's irrelevant -- such a setup
-> is bound to cause all sorts of badness, and a compromised hwrng is not
-> the biggest threat.
-> 
-> Given this, we are certain the quality of randomness we receive is
-> perfectly trustworthy.  Hence, we use 100% for the factor, indicating
-> maximum confidence in the source.
-> 
-> Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
 
+  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
 
-Reviewed-by: Amos Kong <akong@redhat.com>
+are available in the git repository at:
 
-> ---
-> Pretty small and contained patch; would be great if it is picked up for
-> 3.17.
-> 
-> v2: re-word commit msg
-> 
-> [Agreed, re-sending to Linus with SOB before jumping on plane]
-> ---
->  drivers/char/hw_random/virtio-rng.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/char/hw_random/virtio-rng.c
-> b/drivers/char/hw_random/virtio-rng.c
-> index 0027137..2e3139e 100644
-> --- a/drivers/char/hw_random/virtio-rng.c
-> +++ b/drivers/char/hw_random/virtio-rng.c
-> @@ -116,6 +116,7 @@ static int probe_common(struct virtio_device *vdev)
-> 		.cleanup = virtio_cleanup,
-> 		.priv = (unsigned long)vi,
-> 		.name = vi->name,
-> +		.quality = 1000,
-> 	};
-> 	vdev->priv = vi;
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git linux_next
 
--- 
-			Amos.
+for you to fetch changes up to 50d1bb93672fa2f42cec6e06ce799fbe864f57e9:
+
+  sb_edac: add support for Haswell based systems (2014-06-26 15:47:01 -0300)
+
+----------------------------------------------------------------
+Aristeu Rozanski (10):
+      sb_edac: make memory type detection per memory controller
+      sb_edac: make node id retrieval per model
+      sb_edac: make RIR limit retrieval per model
+      sb_edac: search devices using product id
+      sb_edac: update Kconfig description
+      sb_edac: fix socket detection on Ivy Bridge controllers
+      sb_edac: make minimal use of channel_mask
+      sb_edac: remove bogus assumption on mc ordering
+      edac: add DDR4 and RDDR4
+      sb_edac: add support for Haswell based systems
+
+Mauro Carvalho Chehab (1):
+      sb_edac: Fix mix tab/spaces alignments
+
+ drivers/edac/Kconfig         |   4 +-
+ drivers/edac/edac_mc_sysfs.c |   4 +-
+ drivers/edac/sb_edac.c       | 810 +++++++++++++++++++++++++++++--------------
+ include/linux/edac.h         |   5 +
+ 4 files changed, 551 insertions(+), 272 deletions(-)
+
