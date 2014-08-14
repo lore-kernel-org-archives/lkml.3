@@ -1,81 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758AbaHNM0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 08:26:01 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:58207 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752368AbaHNM0A (ORCPT
+	id S1754563AbaHNMhJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 08:37:09 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:49802 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689AbaHNMhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 08:26:00 -0400
-Message-ID: <1408019158.21373.8.camel@hornet>
-Subject: Re: [PATCH v2] perf: Handle compat ioctl
-From: Pawel Moll <pawel.moll@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
+	Thu, 14 Aug 2014 08:37:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <53ECA866.2080306@linaro.org>
+References: <1407944075-8093-1-git-send-email-gabriel.fernandez@linaro.org>
+	<1407944075-8093-4-git-send-email-gabriel.fernandez@linaro.org>
+	<53ECA866.2080306@linaro.org>
+Date: Thu, 14 Aug 2014 14:37:06 +0200
+Message-ID: <CAG374jDFbXi+LEyXbqu_YgXT1Opp-Mb5Pp_5Jbug5Y9zEeSyYQ@mail.gmail.com>
+Subject: Re: [PATCH 3/5] phy: miphy28lp: Provide support for the MiPHY28lp
+ Generic PHY
+From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        alexandre torgue <alexandre.torgue@st.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Drew Richardson <Drew.Richardson@arm.com>
-Date: Thu, 14 Aug 2014 13:25:58 +0100
-In-Reply-To: <20140814105135.GG16043@twins.programming.kicks-ass.net>
-References: <20140617121328.GO3213@twins.programming.kicks-ass.net>
-	 <1403009029-30967-1-git-send-email-pawel.moll@arm.com>
-	 <1404230760.25766.5.camel@hornet>
-	 <20140707124315.GN6758@twins.programming.kicks-ass.net>
-	 <1408011468.21373.4.camel@hornet>
-	 <20140814105135.GG16043@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "kernel@stlinux.com" <kernel@stlinux.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-14 at 11:51 +0100, Peter Zijlstra wrote:
-> On Thu, Aug 14, 2014 at 11:17:48AM +0100, Pawel Moll wrote:
-> > Has it managed to hold on to the ground between the cracks then? ;-)
-> > 
-> > (asking because can't see it in your perf/core branch on git.kernel.org)
-> 
-> Damn this patch is cursed;
-
-So it seems :-)
-
->  I've no idea where it went. Lemme stick it in
-> perf/urgent, this is ridiculous.
-
-... but it was supposed to be v2, not v1 ;-) as v1 was missing an
-include...
-
-8<------------------------------------------------
->From 0ce6aa357790a3423751954d7f094cc53871cc72 Mon Sep 17 00:00:00 2001
-From: Pawel Moll <pawel.moll@arm.com>
-Date: Thu, 14 Aug 2014 13:25:07 +0100
-Subject: [PATCH] perf: Add missing compat header
-
-Patch 783c1428fa91798090a0ace57f35e9a72646088f "perf:
-Handle compat ioctl" is using a type defined in compat.h
-header, but wasn't including it. Fixed now.
-
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
----
- kernel/events/core.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 2c5cbda..cc7065c 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -41,6 +41,7 @@
- #include <linux/cgroup.h>
- #include <linux/module.h>
- #include <linux/mman.h>
-+#include <linux/compat.h>
- 
- #include "internal.h"
- 
--- 
-1.9.1
+Hi Srini,
 
 
+On 14 August 2014 14:15, Srinivas Kandagatla
+<srinivas.kandagatla@linaro.org> wrote:
+> Hi Gabi,
+>
+> I did not review the full patchset but this function caught my attention..
+>
+>
+>> +};
+>> +
+>> +static int miphy28lp_get_ressource_byname(struct device_node *child,
+>> +                                         char *name, struct resource
+>> *res)
+>> +{
+>
+>
+> s/miphy28lp_get_ressource_byname/miphy28lp_get_resource_byname
+ok
 
+>
+>
+>> +       int index, ret = 0, count = 0;
+>> +       int reg_tuple_size;
+>> +       const __be32 *p;
+>> +
+>> +       reg_tuple_size = (of_n_addr_cells(child) +
+>> +                       of_n_size_cells(child)) * sizeof(u32);
+>> +
+>> +       p = of_get_property(child, "reg", &count);
+>> +       if (count % reg_tuple_size != 0)
+>> +               ret = -EINVAL;
+>> +
+>> +       count /= reg_tuple_size;
+>> +
+>> +       for (index = 0; index < count; index++) {
+>> +               const char *rname = NULL;
+>> +
+>> +               ret = of_property_read_string_index(child, "reg-names",
+>> +                                                   index, &rname);
+>> +               if (!strcmp(name, rname))
+>> +                       return of_address_to_resource(child, index, res);
+>> +       }
+>> +
+>> +       return 1;
+>
+> This function looks bit complicated, can't we just use:
+>
+>         index = of_property_match_string(np, "reg-names", rname);
+>         if (index < 0)
+>                 return -ENODEV;
+>
+>         return of_address_to_resource(child, index, res);
+
+Indeed it's a little bit simpler... :)
+
+>
+>
+>
+> --srini
+
+Thanks a lot Srini
+
+Best Regards
+
+Gabriel
