@@ -1,28 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154AbaHNRWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 13:22:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41714 "EHLO
+	id S1754266AbaHNRXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 13:23:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41634 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753891AbaHNRWg (ORCPT
+	with ESMTP id S1753136AbaHNRV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 13:22:36 -0400
-Date: Thu, 14 Aug 2014 10:21:40 -0700
+	Thu, 14 Aug 2014 13:21:29 -0400
+Date: Thu, 14 Aug 2014 10:19:30 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-e69a0ef76627005e3e83d0e086e6bb1d247bb65b@git.kernel.org>
+Message-ID: <tip-92ba1f530b4f90db78eb45f4b6598e75939146bd@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        yasutake.koichi@jp.panasonic.com, paulmck@linux.vnet.ibm.com,
-        dhowells@redhat.com, tglx@linutronix.de
+        torvalds@linux-foundation.org, catalin.marinas@arm.com,
+        will.deacon@arm.com, rmk+kernel@arm.linux.org.uk, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, bhelgaas@google.com, gang.chen@asianux.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        will.deacon@arm.com, catalin.marinas@arm.com,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        yasutake.koichi@jp.panasonic.com, paulmck@linux.vnet.ibm.com,
-        dhowells@redhat.com, tglx@linutronix.de
-In-Reply-To: <20140508135852.605324173@infradead.org>
-References: <20140508135852.605324173@infradead.org>
+        rmk+kernel@arm.linux.org.uk, paulmck@linux.vnet.ibm.com,
+        bhelgaas@google.com, gang.chen@asianux.com, tglx@linutronix.de
+In-Reply-To: <20140508135851.995123148@infradead.org>
+References: <20140508135851.995123148@infradead.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/arch] locking,arch,mn10300: Fold atomic_ops
-Git-Commit-ID: e69a0ef76627005e3e83d0e086e6bb1d247bb65b
+Subject: [tip:locking/arch] locking,arch,arm64: Fold atomic_ops
+Git-Commit-ID: 92ba1f530b4f90db78eb45f4b6598e75939146bd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,186 +37,258 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e69a0ef76627005e3e83d0e086e6bb1d247bb65b
-Gitweb:     http://git.kernel.org/tip/e69a0ef76627005e3e83d0e086e6bb1d247bb65b
+Commit-ID:  92ba1f530b4f90db78eb45f4b6598e75939146bd
+Gitweb:     http://git.kernel.org/tip/92ba1f530b4f90db78eb45f4b6598e75939146bd
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 26 Mar 2014 17:59:04 +0100
+AuthorDate: Sun, 23 Mar 2014 16:57:20 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 14 Aug 2014 12:48:10 +0200
+CommitDate: Thu, 14 Aug 2014 12:48:04 +0200
 
-locking,arch,mn10300: Fold atomic_ops
+locking,arch,arm64: Fold atomic_ops
 
 Many of the atomic op implementations are the same except for one
 instruction; fold the lot into a few CPP macros and reduce LoC.
 
 This also prepares for easy addition of new ops.
 
+Requires the asm_op due to eor.
+
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Chen Gang <gang.chen@asianux.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: linux-am33-list@redhat.com
-Link: http://lkml.kernel.org/r/20140508135852.605324173@infradead.org
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Link: http://lkml.kernel.org/r/20140508135851.995123148@infradead.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/mn10300/include/asm/atomic.h | 125 +++++++++++++-------------------------
- 1 file changed, 42 insertions(+), 83 deletions(-)
+ arch/arm64/include/asm/atomic.h | 197 ++++++++++++++++------------------------
+ 1 file changed, 80 insertions(+), 117 deletions(-)
 
-diff --git a/arch/mn10300/include/asm/atomic.h b/arch/mn10300/include/asm/atomic.h
-index cadeb1e..5be655e 100644
---- a/arch/mn10300/include/asm/atomic.h
-+++ b/arch/mn10300/include/asm/atomic.h
-@@ -33,7 +33,6 @@
-  * @v: pointer of type atomic_t
-  *
-  * Atomically reads the value of @v.  Note that the guaranteed
-- * useful range of an atomic_t is only 24 bits.
+diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
+index 65f1569..b83c325 100644
+--- a/arch/arm64/include/asm/atomic.h
++++ b/arch/arm64/include/asm/atomic.h
+@@ -43,69 +43,51 @@
+  * store exclusive to ensure that these are atomic.  We may loop
+  * to ensure that the update happens.
   */
- #define atomic_read(v)	(ACCESS_ONCE((v)->counter))
- 
-@@ -43,102 +42,62 @@
-  * @i: required value
-  *
-  * Atomically sets the value of @v to @i.  Note that the guaranteed
-- * useful range of an atomic_t is only 24 bits.
-  */
- #define atomic_set(v, i) (((v)->counter) = (i))
- 
--/**
-- * atomic_add_return - add integer to atomic variable
-- * @i: integer value to add
-- * @v: pointer of type atomic_t
-- *
-- * Atomically adds @i to @v and returns the result
-- * Note that the guaranteed useful range of an atomic_t is only 24 bits.
-- */
+-static inline void atomic_add(int i, atomic_t *v)
+-{
+-	unsigned long tmp;
+-	int result;
+-
+-	asm volatile("// atomic_add\n"
+-"1:	ldxr	%w0, %2\n"
+-"	add	%w0, %w0, %w3\n"
+-"	stxr	%w1, %w0, %2\n"
+-"	cbnz	%w1, 1b"
+-	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
+-	: "Ir" (i));
+-}
+-
 -static inline int atomic_add_return(int i, atomic_t *v)
 -{
--	int retval;
--#ifdef CONFIG_SMP
--	int status;
+-	unsigned long tmp;
+-	int result;
 -
--	asm volatile(
--		"1:	mov	%4,(_AAR,%3)	\n"
--		"	mov	(_ADR,%3),%1	\n"
--		"	add	%5,%1		\n"
--		"	mov	%1,(_ADR,%3)	\n"
--		"	mov	(_ADR,%3),%0	\n"	/* flush */
--		"	mov	(_ASR,%3),%0	\n"
--		"	or	%0,%0		\n"
--		"	bne	1b		\n"
--		: "=&r"(status), "=&r"(retval), "=m"(v->counter)
--		: "a"(ATOMIC_OPS_BASE_ADDR), "r"(&v->counter), "r"(i)
--		: "memory", "cc");
+-	asm volatile("// atomic_add_return\n"
+-"1:	ldxr	%w0, %2\n"
+-"	add	%w0, %w0, %w3\n"
+-"	stlxr	%w1, %w0, %2\n"
+-"	cbnz	%w1, 1b"
+-	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
+-	: "Ir" (i)
+-	: "memory");
 -
--#else
--	unsigned long flags;
-+#define ATOMIC_OP(op)							\
+-	smp_mb();
+-	return result;
+-}
+-
+-static inline void atomic_sub(int i, atomic_t *v)
+-{
+-	unsigned long tmp;
+-	int result;
+ 
+-	asm volatile("// atomic_sub\n"
+-"1:	ldxr	%w0, %2\n"
+-"	sub	%w0, %w0, %w3\n"
+-"	stxr	%w1, %w0, %2\n"
+-"	cbnz	%w1, 1b"
+-	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
+-	: "Ir" (i));
++#define ATOMIC_OP(op, asm_op)						\
 +static inline void atomic_##op(int i, atomic_t *v)			\
 +{									\
-+	int retval, status;						\
++	unsigned long tmp;						\
++	int result;							\
 +									\
-+	asm volatile(							\
-+		"1:	mov	%4,(_AAR,%3)	\n"			\
-+		"	mov	(_ADR,%3),%1	\n"			\
-+		"	" #op "	%5,%1		\n"			\
-+		"	mov	%1,(_ADR,%3)	\n"			\
-+		"	mov	(_ADR,%3),%0	\n"	/* flush */	\
-+		"	mov	(_ASR,%3),%0	\n"			\
-+		"	or	%0,%0		\n"			\
-+		"	bne	1b		\n"			\
-+		: "=&r"(status), "=&r"(retval), "=m"(v->counter)	\
-+		: "a"(ATOMIC_OPS_BASE_ADDR), "r"(&v->counter), "r"(i)	\
-+		: "memory", "cc");					\
-+}
- 
--	flags = arch_local_cli_save();
--	retval = v->counter;
--	retval += i;
--	v->counter = retval;
--	arch_local_irq_restore(flags);
--#endif
--	return retval;
-+#define ATOMIC_OP_RETURN(op)						\
++	asm volatile("// atomic_" #op "\n"				\
++"1:	ldxr	%w0, %2\n"						\
++"	" #asm_op "	%w0, %w0, %w3\n"				\
++"	stxr	%w1, %w0, %2\n"						\
++"	cbnz	%w1, 1b"						\
++	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)		\
++	: "Ir" (i));							\
++}									\
++
++#define ATOMIC_OP_RETURN(op, asm_op)					\
 +static inline int atomic_##op##_return(int i, atomic_t *v)		\
 +{									\
-+	int retval, status;						\
++	unsigned long tmp;						\
++	int result;							\
 +									\
-+	asm volatile(							\
-+		"1:	mov	%4,(_AAR,%3)	\n"			\
-+		"	mov	(_ADR,%3),%1	\n"			\
-+		"	" #op "	%5,%1		\n"			\
-+		"	mov	%1,(_ADR,%3)	\n"			\
-+		"	mov	(_ADR,%3),%0	\n"	/* flush */	\
-+		"	mov	(_ASR,%3),%0	\n"			\
-+		"	or	%0,%0		\n"			\
-+		"	bne	1b		\n"			\
-+		: "=&r"(status), "=&r"(retval), "=m"(v->counter)	\
-+		: "a"(ATOMIC_OPS_BASE_ADDR), "r"(&v->counter), "r"(i)	\
-+		: "memory", "cc");					\
-+	return retval;							\
++	asm volatile("// atomic_" #op "_return\n"			\
++"1:	ldxr	%w0, %2\n"						\
++"	" #asm_op "	%w0, %w0, %w3\n"				\
++"	stlxr	%w1, %w0, %2\n"						\
++"	cbnz	%w1, 1b"						\
++	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)		\
++	: "Ir" (i)							\
++	: "memory");							\
++									\
++	smp_mb();							\
++	return result;							\
  }
  
--/**
-- * atomic_sub_return - subtract integer from atomic variable
-- * @i: integer value to subtract
-- * @v: pointer of type atomic_t
-- *
-- * Atomically subtracts @i from @v and returns the result
-- * Note that the guaranteed useful range of an atomic_t is only 24 bits.
-- */
 -static inline int atomic_sub_return(int i, atomic_t *v)
 -{
--	int retval;
--#ifdef CONFIG_SMP
--	int status;
-+#define ATOMIC_OPS(op) ATOMIC_OP(op) ATOMIC_OP_RETURN(op)
+-	unsigned long tmp;
+-	int result;
++#define ATOMIC_OPS(op, asm_op)						\
++	ATOMIC_OP(op, asm_op)						\
++	ATOMIC_OP_RETURN(op, asm_op)
  
--	asm volatile(
--		"1:	mov	%4,(_AAR,%3)	\n"
--		"	mov	(_ADR,%3),%1	\n"
--		"	sub	%5,%1		\n"
--		"	mov	%1,(_ADR,%3)	\n"
--		"	mov	(_ADR,%3),%0	\n"	/* flush */
--		"	mov	(_ASR,%3),%0	\n"
--		"	or	%0,%0		\n"
--		"	bne	1b		\n"
--		: "=&r"(status), "=&r"(retval), "=m"(v->counter)
--		: "a"(ATOMIC_OPS_BASE_ADDR), "r"(&v->counter), "r"(i)
--		: "memory", "cc");
-+ATOMIC_OPS(add)
-+ATOMIC_OPS(sub)
+-	asm volatile("// atomic_sub_return\n"
+-"1:	ldxr	%w0, %2\n"
+-"	sub	%w0, %w0, %w3\n"
+-"	stlxr	%w1, %w0, %2\n"
+-"	cbnz	%w1, 1b"
+-	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
+-	: "Ir" (i)
+-	: "memory");
++ATOMIC_OPS(add, add)
++ATOMIC_OPS(sub, sub)
  
--#else
--	unsigned long flags;
--	flags = arch_local_cli_save();
--	retval = v->counter;
--	retval -= i;
--	v->counter = retval;
--	arch_local_irq_restore(flags);
--#endif
--	return retval;
+-	smp_mb();
+-	return result;
 -}
 +#undef ATOMIC_OPS
 +#undef ATOMIC_OP_RETURN
 +#undef ATOMIC_OP
  
- static inline int atomic_add_negative(int i, atomic_t *v)
+ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
  {
- 	return atomic_add_return(i, v) < 0;
+@@ -160,69 +142,50 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+ #define atomic64_read(v)	(*(volatile long *)&(v)->counter)
+ #define atomic64_set(v,i)	(((v)->counter) = (i))
+ 
+-static inline void atomic64_add(u64 i, atomic64_t *v)
+-{
+-	long result;
+-	unsigned long tmp;
+-
+-	asm volatile("// atomic64_add\n"
+-"1:	ldxr	%0, %2\n"
+-"	add	%0, %0, %3\n"
+-"	stxr	%w1, %0, %2\n"
+-"	cbnz	%w1, 1b"
+-	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
+-	: "Ir" (i));
++#define ATOMIC64_OP(op, asm_op)						\
++static inline void atomic64_##op(long i, atomic64_t *v)			\
++{									\
++	long result;							\
++	unsigned long tmp;						\
++									\
++	asm volatile("// atomic64_" #op "\n"				\
++"1:	ldxr	%0, %2\n"						\
++"	" #asm_op "	%0, %0, %3\n"					\
++"	stxr	%w1, %0, %2\n"						\
++"	cbnz	%w1, 1b"						\
++	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)		\
++	: "Ir" (i));							\
++}									\
++
++#define ATOMIC64_OP_RETURN(op, asm_op)					\
++static inline long atomic64_##op##_return(long i, atomic64_t *v)	\
++{									\
++	long result;							\
++	unsigned long tmp;						\
++									\
++	asm volatile("// atomic64_" #op "_return\n"			\
++"1:	ldxr	%0, %2\n"						\
++"	" #asm_op "	%0, %0, %3\n"					\
++"	stlxr	%w1, %0, %2\n"						\
++"	cbnz	%w1, 1b"						\
++	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)		\
++	: "Ir" (i)							\
++	: "memory");							\
++									\
++	smp_mb();							\
++	return result;							\
  }
  
--static inline void atomic_add(int i, atomic_t *v)
+-static inline long atomic64_add_return(long i, atomic64_t *v)
 -{
--	atomic_add_return(i, v);
+-	long result;
+-	unsigned long tmp;
++#define ATOMIC64_OPS(op, asm_op)					\
++	ATOMIC64_OP(op, asm_op)						\
++	ATOMIC64_OP_RETURN(op, asm_op)
+ 
+-	asm volatile("// atomic64_add_return\n"
+-"1:	ldxr	%0, %2\n"
+-"	add	%0, %0, %3\n"
+-"	stlxr	%w1, %0, %2\n"
+-"	cbnz	%w1, 1b"
+-	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
+-	: "Ir" (i)
+-	: "memory");
++ATOMIC64_OPS(add, add)
++ATOMIC64_OPS(sub, sub)
+ 
+-	smp_mb();
+-	return result;
 -}
 -
--static inline void atomic_sub(int i, atomic_t *v)
+-static inline void atomic64_sub(u64 i, atomic64_t *v)
 -{
--	atomic_sub_return(i, v);
+-	long result;
+-	unsigned long tmp;
+-
+-	asm volatile("// atomic64_sub\n"
+-"1:	ldxr	%0, %2\n"
+-"	sub	%0, %0, %3\n"
+-"	stxr	%w1, %0, %2\n"
+-"	cbnz	%w1, 1b"
+-	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
+-	: "Ir" (i));
 -}
 -
- static inline void atomic_inc(atomic_t *v)
+-static inline long atomic64_sub_return(long i, atomic64_t *v)
+-{
+-	long result;
+-	unsigned long tmp;
+-
+-	asm volatile("// atomic64_sub_return\n"
+-"1:	ldxr	%0, %2\n"
+-"	sub	%0, %0, %3\n"
+-"	stlxr	%w1, %0, %2\n"
+-"	cbnz	%w1, 1b"
+-	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
+-	: "Ir" (i)
+-	: "memory");
+-
+-	smp_mb();
+-	return result;
+-}
++#undef ATOMIC64_OPS
++#undef ATOMIC64_OP_RETURN
++#undef ATOMIC64_OP
+ 
+ static inline long atomic64_cmpxchg(atomic64_t *ptr, long old, long new)
  {
- 	atomic_add_return(1, v);
