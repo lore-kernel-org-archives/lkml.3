@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263AbaHNVXJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 17:23:09 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:43864 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932092AbaHNVXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 17:23:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140814211656.GV19379@twins.programming.kicks-ass.net>
-References: <1407982309-4863-1-git-send-email-chuansheng.liu@intel.com>
- <CAKnoXLw3DrBAxCUWEkXtvCTf+E1w0xTHJSiSUY6Qd6xHXeGaoQ@mail.gmail.com>
- <20140814110040.GI16043@twins.programming.kicks-ass.net> <53EC9A29.8090408@linaro.org>
- <53ED263B.7030703@mit.edu> <20140814211656.GV19379@twins.programming.kicks-ass.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 14 Aug 2014 14:22:45 -0700
-Message-ID: <CALCETrUEWAbzk3S=T93qh-j4xhwoVrUCqhybr_rr1n-uynQTvw@mail.gmail.com>
-Subject: Re: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
- back to DEFAULT
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Chuansheng Liu <chuansheng.liu@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, changcheng.liu@intel.com,
-        xiaoming.wang@intel.com, souvik.k.chakravarty@intel.com
-Content-Type: text/plain; charset=UTF-8
+	id S932291AbaHNVXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 17:23:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38610 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754900AbaHNVXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 17:23:13 -0400
+Date: Thu, 14 Aug 2014 14:23:07 -0700 (PDT)
+Message-Id: <20140814.142307.1009368551221010220.davem@redhat.com>
+To: hau@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] r8169:add support for RTL8168H and RTL8107E
+From: David Miller <davem@redhat.com>
+In-Reply-To: <1407942373-17094-1-git-send-email-hau@realtek.com>
+References: <1407942373-17094-1-git-send-email-hau@realtek.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 2:16 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Aug 14, 2014 at 02:12:27PM -0700, Andy Lutomirski wrote:
->> On 08/14/2014 04:14 AM, Daniel Lezcano wrote:
->> > On 08/14/2014 01:00 PM, Peter Zijlstra wrote:
->> >>
->> >> So seeing how you're from @intel.com I'm assuming you're using x86 here.
->> >>
->> >> I'm not seeing how this can be possible, MWAIT is interrupted by IPIs
->> >> just fine, which means we'll fall out of the cpuidle_enter(), which
->> >> means we'll cpuidle_reflect(), and then leave cpuidle_idle_call().
->> >>
->> >> It will indeed not leave the cpu_idle_loop() function and go right back
->> >> into cpuidle_idle_call(), but that will then call cpuidle_select() which
->> >> should pick a new C state.
->> >>
->> >> So the interrupt _should_ work. If it doesn't you need to explain why.
->> >
->> > I think the issue is related to the poll_idle state, in
->> > drivers/cpuidle/driver.c. This state is x86 specific and inserted in the
->> > cpuidle table as the state 0 (POLL). There is no mwait for this state.
->> > It is a bit confusing because this state is not listed in the acpi /
->> > intel idle driver but inserted implicitly at the beginning of the idle
->> > table by the cpuidle framework when the driver is registered.
->> >
->> > static int poll_idle(struct cpuidle_device *dev,
->> >                 struct cpuidle_driver *drv, int index)
->> > {
->> >         local_irq_enable();
->> >         if (!current_set_polling_and_test()) {
->> >                 while (!need_resched())
->> >                         cpu_relax();
->> >         }
->> >         current_clr_polling();
->> >
->> >         return index;
->> > }
->>
->> As the most recent person to have modified this function, and as an
->> avowed hater of pointless IPIs, let me ask a rather different question:
->> why are you sending IPIs at all?  As of Linux 3.16, poll_idle actually
->> supports the polling idle interface :)
->>
->> Can't you just do:
->>
->> if (set_nr_if_polling(rq->idle)) {
->>       trace_sched_wake_idle_without_ipi(cpu);
->> } else {
->>       spin_lock_irqsave(&rq->lock, flags);
->>       if (rq->curr == rq->idle)
->>               smp_send_reschedule(cpu);
->>       // else the CPU wasn't idle; nothing to do
->>       raw_spin_unlock_irqrestore(&rq->lock, flags);
->> }
->>
->> In the common case (wake from C0, i.e. polling idle), this will skip the
->> IPI entirely unless you race with idle entry/exit, saving a few more
->> precious electrons and all of the latency involved in poking the APIC
->> registers.
->
-> They could and they probably should, but that logic should _not_ live in
-> the cpuidle driver.
+From: Chun-Hao Lin <hau@realtek.com>
+Date: Wed, 13 Aug 2014 23:06:13 +0800
 
-Sure.  My point is that fixing the IPI handler is, I think, totally
-bogus, because the IPI API isn't the right way to do this at all.
+> RTL8168H is Realtek PCIe Gigabit Ethernet controller.
+> RTL8107E is Realtek PCIe Fast Ethernet controller.
+> 
+> This patch add support for these two chips.
+> 
+> Signed-off-by: Chun-Hao Lin <hau@realtek.com>
 
-It would be straightforward to add a new function wake_if_idle(int
-cpu) to sched/core.c.
+Please don't break the indentation like you have here:
 
---Andy
+> +			rtl_w1w0_eri(tp,
+> +						0x0dc,
+> +						ERIAR_MASK_0100,
+> +						MagicPacket_v2,
+> +						0x0000,
+> +						ERIAR_EXGMAC);
+ ...
+> +			rtl_w1w0_eri(tp,
+> +						0x0dc,
+> +						ERIAR_MASK_0100,
+> +						0x0000,
+> +						MagicPacket_v2,
+> +						ERIAR_EXGMAC);
+ ...
+> @@ -4495,15 +4791,19 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
+>  	    tp->mac_version == RTL_GIGA_MAC_VER_31) {
+>  		rtl_udelay_loop_wait_low(tp, &rtl_npq_cond, 20, 42*42);
+>  	} else if (tp->mac_version == RTL_GIGA_MAC_VER_34 ||
+> -	           tp->mac_version == RTL_GIGA_MAC_VER_35 ||
+> -	           tp->mac_version == RTL_GIGA_MAC_VER_36 ||
+> -	           tp->mac_version == RTL_GIGA_MAC_VER_37 ||
+> -	           tp->mac_version == RTL_GIGA_MAC_VER_40 ||
+> -	           tp->mac_version == RTL_GIGA_MAC_VER_41 ||
+> -	           tp->mac_version == RTL_GIGA_MAC_VER_42 ||
+> -	           tp->mac_version == RTL_GIGA_MAC_VER_43 ||
+> -	           tp->mac_version == RTL_GIGA_MAC_VER_44 ||
+> -	           tp->mac_version == RTL_GIGA_MAC_VER_38) {
+> +				tp->mac_version == RTL_GIGA_MAC_VER_35 ||
+> +				tp->mac_version == RTL_GIGA_MAC_VER_36 ||
+> +				tp->mac_version == RTL_GIGA_MAC_VER_37 ||
+> +				tp->mac_version == RTL_GIGA_MAC_VER_38 ||
+> +				tp->mac_version == RTL_GIGA_MAC_VER_40 ||
+> +				tp->mac_version == RTL_GIGA_MAC_VER_41 ||
+> +				tp->mac_version == RTL_GIGA_MAC_VER_42 ||
+> +				tp->mac_version == RTL_GIGA_MAC_VER_43 ||
+> +				tp->mac_version == RTL_GIGA_MAC_VER_44 ||
+> +				tp->mac_version == RTL_GIGA_MAC_VER_45 ||
+> +				tp->mac_version == RTL_GIGA_MAC_VER_46 ||
+> +				tp->mac_version == RTL_GIGA_MAC_VER_47 ||
+> +				tp->mac_version == RTL_GIGA_MAC_VER_48) {
+>  		RTL_W8(ChipCmd, RTL_R8(ChipCmd) | StopReq);
+>  		rtl_udelay_loop_wait_high(tp, &rtl_txcfg_empty_cond, 100, 666);
+>  	} else {
+
+None of these changes are indented correctly, and in the last hunk the original
+code was perfectly indented and you should have not adjusted it.
+
+On a multi-line conditional or function call, the second and subsequent lines
+should start exactly at the first column after the openning parenthesis of
+the initial line.
+
+You must use the appropriate number of TAB then SPACE characters necessary
+to achieve this.
+
+If you are indenting these lines only using TAB characters, you are doing it
+incorrectly.
+
+Please audit your entire patch for this problem, thanks.
