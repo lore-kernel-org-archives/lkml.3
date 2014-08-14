@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898AbaHNMMk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 08:12:40 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:43798 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728AbaHNMMU (ORCPT
+	id S1754872AbaHNMMi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 08:12:38 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:38145 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813AbaHNMMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 08:12:20 -0400
+	Thu, 14 Aug 2014 08:12:21 -0400
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: Stephen Warren <swarren@wwwdotorg.org>,
@@ -16,9 +16,9 @@ Cc: Stephen Warren <swarren@wwwdotorg.org>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v6 5/6] clk: per-user clock accounting for debug
-Date: Thu, 14 Aug 2014 14:11:26 +0200
-Message-Id: <1408018287-14217-5-git-send-email-tomeu.vizoso@collabora.com>
+Subject: [PATCH v6 6/6] clk: Add floor and ceiling constraints to clock rates
+Date: Thu, 14 Aug 2014 14:11:27 +0200
+Message-Id: <1408018287-14217-6-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408018287-14217-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1408018287-14217-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -26,178 +26,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a clock has multiple users, the WARNING on imbalance of
-enable/disable may not show the guilty party since although they may
-have commited the error earlier, the warning is emitted later when some
-other user, presumably innocent, disables the clock.
-
-Provide per-user clock enable/disable accounting and disabler tracking
-in order to help debug these problems.
-
-Based on previous work by Rabin Vincent <rabin@rab.in>.
+Adds a way for clock consumers to set maximum and minimum rates. This can be
+used for thermal drivers to set ceiling rates, or by misc. drivers to set
+floor rates to assure a minimum performance level.
 
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+
 ---
- drivers/clk/clk.c           | 38 ++++++++++++++++++++++++++++++++++----
- drivers/clk/clk.h           |  3 ++-
- drivers/clk/clkdev.c        | 12 ++++++++----
+
+v5: * Move the storage of constraints to the per-user clk struct, as suggested
+      by Stephen Warren.
+---
+ drivers/clk/clk.c           | 36 ++++++++++++++++++++++++++++++++++++
+ drivers/clk/clk.h           |  1 +
+ drivers/clk/clkdev.c        |  2 +-
  include/linux/clk-private.h |  4 ++++
- 4 files changed, 48 insertions(+), 9 deletions(-)
+ include/linux/clk.h         | 18 ++++++++++++++++++
+ 5 files changed, 60 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index e6e333d..d48e828 100644
+index d48e828..32c7831 100644
 --- a/drivers/clk/clk.c
 +++ b/drivers/clk/clk.c
-@@ -543,7 +543,8 @@ static int clk_disable_unused(void)
- }
- late_initcall_sync(clk_disable_unused);
+@@ -560,6 +560,8 @@ struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
+ 	clk->dev_id = dev;
+ 	clk->con_id = con;
  
--struct clk *__clk_create_clk(struct clk_core *clk_core)
-+struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
-+			     const char *con)
- {
- 	struct clk *clk;
- 
-@@ -556,6 +557,8 @@ struct clk *__clk_create_clk(struct clk_core *clk_core)
- 		return ERR_PTR(-ENOMEM);
- 
- 	clk->core = clk_core;
-+	clk->dev_id = dev;
-+	clk->con_id = con;
- 
++	hlist_add_head(&clk->child_node, &clk_core->per_user_clks);
++
  	return clk;
  }
-@@ -936,10 +939,25 @@ EXPORT_SYMBOL_GPL(clk_provider_disable);
-  */
- void clk_disable(struct clk *clk_user)
- {
-+	struct clk_core *clk;
-+	unsigned long flags;
-+
- 	if (IS_ERR_OR_NULL(clk_user))
- 		return;
  
--	clk_provider_disable(clk_to_clk_core(clk_user));
-+	clk = clk_to_clk_core(clk_user);
+@@ -1625,6 +1627,7 @@ static void clk_change_rate(struct clk_core *clk)
+ int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
+ {
+ 	struct clk_core *top, *fail_clk;
++	struct clk *clk_user;
+ 	int ret = 0;
+ 
+ 	if (!clk)
+@@ -1633,6 +1636,13 @@ int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
+ 	/* prevent racing with updates to the clock topology */
+ 	clk_prepare_lock();
+ 
++	hlist_for_each_entry(clk_user, &clk->per_user_clks, child_node) {
++		rate = max(rate, clk_user->floor_constraint);
 +
-+	flags = clk_enable_lock();
-+	if (!WARN(clk_user->enable_count == 0,
-+		  "incorrect disable clk dev %s con %s last disabler %pF\n",
-+		  clk_user->dev_id, clk_user->con_id, clk_user->last_disable)) {
-+
-+		clk_user->last_disable = __builtin_return_address(0);
-+		clk_user->enable_count--;
-+
-+		__clk_disable(clk);
++		if (clk_user->ceiling_constraint > 0)
++			rate = min(rate, clk_user->ceiling_constraint);
 +	}
-+	clk_enable_unlock(flags);
++
+ 	/* bail early if nothing to do */
+ 	if (rate == clk_provider_get_rate(clk))
+ 		goto out;
+@@ -1699,6 +1709,24 @@ int clk_set_rate(struct clk *clk_user, unsigned long rate)
  }
- EXPORT_SYMBOL_GPL(clk_disable);
+ EXPORT_SYMBOL_GPL(clk_set_rate);
  
-@@ -1000,10 +1018,22 @@ EXPORT_SYMBOL_GPL(clk_provider_enable);
-  */
- int clk_enable(struct clk *clk_user)
++int clk_set_floor_rate(struct clk *clk_user, unsigned long rate)
++{
++	struct clk_core *clk = clk_to_clk_core(clk_user);
++
++	clk_user->floor_constraint = rate;
++	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
++}
++EXPORT_SYMBOL_GPL(clk_set_floor_rate);
++
++int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
++{
++	struct clk_core *clk = clk_to_clk_core(clk_user);
++
++	clk_user->ceiling_constraint = rate;
++	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
++}
++EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
++
+ struct clk_core *clk_provider_get_parent(struct clk_core *clk)
  {
-+	struct clk_core *clk;
-+	unsigned long flags;
-+	int ret;
-+
- 	if (!clk_user)
- 		return 0;
+ 	struct clk_core *parent;
+@@ -2043,6 +2071,8 @@ int __clk_init(struct device *dev, struct clk_core *clk)
+ 			}
+ 	 }
  
--	return clk_provider_enable(clk_to_clk_core(clk_user));
-+	clk = clk_to_clk_core(clk_user);
++	INIT_HLIST_HEAD(&clk->per_user_clks);
 +
-+	flags = clk_enable_lock();
-+	ret = __clk_enable(clk);
-+	if (!ret)
-+		clk_user->enable_count++;
-+	clk_enable_unlock(flags);
-+
-+	return ret;
+ 	/*
+ 	 * optional platform-specific magic
+ 	 *
+@@ -2479,6 +2509,12 @@ int clk_notifier_unregister(struct clk *clk_user, struct notifier_block *nb)
  }
- EXPORT_SYMBOL_GPL(clk_enable);
+ EXPORT_SYMBOL_GPL(clk_notifier_unregister);
  
-@@ -1698,7 +1728,7 @@ struct clk *clk_get_parent(struct clk *clk_user)
- 	clk = clk_to_clk_core(clk_user);
- 	parent = clk_provider_get_parent(clk);
- 
--	return __clk_create_clk(parent);
-+	return __clk_create_clk(parent, clk_user->dev_id, clk_user->con_id);
- }
- EXPORT_SYMBOL_GPL(clk_get_parent);
- 
++void __clk_free_clk(struct clk *clk_user)
++{
++	hlist_del(&clk_user->child_node);
++	kfree(clk_user);
++}
++
+ #ifdef CONFIG_OF
+ /**
+  * struct of_clk_provider - Clock provider registration structure
 diff --git a/drivers/clk/clk.h b/drivers/clk/clk.h
-index 3b3068b..49eff38 100644
+index 49eff38..005deb3 100644
 --- a/drivers/clk/clk.h
 +++ b/drivers/clk/clk.h
-@@ -19,5 +19,6 @@ void of_clk_unlock(void);
- #endif
- 
+@@ -21,4 +21,5 @@ void of_clk_unlock(void);
  #if defined(CONFIG_COMMON_CLK)
--struct clk *__clk_create_clk(struct clk_core *clk_core);
-+struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
-+			     const char *con);
+ struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
+ 			     const char *con);
++void __clk_free_clk(struct clk *clk_user);
  #endif
 diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 810935f..0752cc9 100644
+index 0752cc9..0db829c 100644
 --- a/drivers/clk/clkdev.c
 +++ b/drivers/clk/clkdev.c
-@@ -76,7 +76,9 @@ struct clk_core *of_clk_provider_get(struct device_node *np, int index)
- 
- struct clk *of_clk_get(struct device_node *np, int index)
- {
--	return __clk_create_clk(of_clk_provider_get(np, index));
-+	struct clk_core *clk = of_clk_provider_get(np, index);
-+
-+	return __clk_create_clk(clk, np->full_name, NULL);
- }
- EXPORT_SYMBOL(of_clk_get);
- 
-@@ -129,7 +131,9 @@ struct clk_core *of_clk_provider_get_by_name(struct device_node *np, const char
-  */
- struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
- {
--	return __clk_create_clk(of_clk_provider_get_by_name(np, name));
-+	struct clk_core *clk = of_clk_provider_get_by_name(np, name);
-+
-+	return __clk_create_clk(clk, np->full_name, NULL);
- }
- EXPORT_SYMBOL(of_clk_get_by_name);
- #endif
-@@ -201,7 +205,7 @@ struct clk *clk_get_sys(const char *dev_id, const char *con_id)
+@@ -270,7 +270,7 @@ void clk_put(struct clk *clk)
  #if defined(CONFIG_COMMON_CLK)
- 	struct clk_core *clk = clk_provider_get_sys(dev_id, con_id);
+ 	clk_core_t *core = clk_to_clk_core(clk);
  
--	return __clk_create_clk(clk);
-+	return __clk_create_clk(clk, dev_id, con_id);
+-	kfree(clk);
++	__clk_free_clk(clk);
+ 	__clk_put(core);
  #else
- 	struct clk_lookup *cl;
- 
-@@ -243,7 +247,7 @@ struct clk *clk_get(struct device *dev, const char *con_id)
- #if defined(CONFIG_COMMON_CLK)
- 	const char *dev_id = dev ? dev_name(dev) : NULL;
- 
--	return __clk_create_clk(clk_provider_get(dev, con_id));
-+	return __clk_create_clk(clk_provider_get(dev, con_id), dev_id, con_id);
- #else
- 	const char *dev_id = dev ? dev_name(dev) : NULL;
- 	struct clk *clk;
+ 	__clk_put(clk);
 diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index 2c1ece9..9657fc8 100644
+index 9657fc8..c59d000 100644
 --- a/include/linux/clk-private.h
 +++ b/include/linux/clk-private.h
-@@ -57,6 +57,10 @@ struct clk_core {
- 
- struct clk {
- 	struct clk_core	*core;
-+	unsigned int	enable_count;
-+	const char	*dev_id;
-+	const char	*con_id;
-+	void		*last_disable;
+@@ -48,6 +48,7 @@ struct clk_core {
+ 	unsigned long		accuracy;
+ 	struct hlist_head	children;
+ 	struct hlist_node	child_node;
++	struct hlist_head	per_user_clks;
+ 	unsigned int		notifier_count;
+ #ifdef CONFIG_DEBUG_FS
+ 	struct dentry		*dentry;
+@@ -61,6 +62,9 @@ struct clk {
+ 	const char	*dev_id;
+ 	const char	*con_id;
+ 	void		*last_disable;
++	unsigned long	floor_constraint;
++	unsigned long	ceiling_constraint;
++	struct hlist_node child_node;
  };
  
  /*
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index f46a2eb..066b100 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -275,6 +275,24 @@ long clk_round_rate(struct clk *clk, unsigned long rate);
+ int clk_set_rate(struct clk *clk, unsigned long rate);
+ 
+ /**
++ * clk_set_floor_rate - set a minimum clock rate for a clock source
++ * @clk: clock source
++ * @rate: desired minimum clock rate in Hz
++ *
++ * Returns success (0) or negative errno.
++ */
++int clk_set_floor_rate(struct clk *clk, unsigned long rate);
++
++/**
++ * clk_set_ceiling_rate - set a maximum clock rate for a clock source
++ * @clk: clock source
++ * @rate: desired maximum clock rate in Hz
++ *
++ * Returns success (0) or negative errno.
++ */
++int clk_set_ceiling_rate(struct clk *clk, unsigned long rate);
++
++/**
+  * clk_set_parent - set the parent clock source for this clock
+  * @clk: clock source
+  * @parent: parent clock source
 -- 
 1.9.3
 
