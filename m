@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821AbaHNIrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 04:47:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36410 "EHLO
+	id S1754836AbaHNIrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 04:47:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36423 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861AbaHNIrP (ORCPT
+	with ESMTP id S1751861AbaHNIr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 04:47:15 -0400
-Date: Thu, 14 Aug 2014 01:46:55 -0700
+	Thu, 14 Aug 2014 04:47:27 -0400
+Date: Thu, 14 Aug 2014 01:47:09 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-2b2b2c68c64fb9db392940b42355944064f2a4ca@git.kernel.org>
+Message-ID: <tip-14d37f38e956ba0dd4f2206f68534eb418ecd905@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        minchan@kernel.org, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
+        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
+        a.p.zijlstra@chello.nl, minchan@kernel.org, namhyung.kim@lge.com,
+        namhyung@kernel.org, jolsa@redhat.com, adrian.hunter@intel.com,
+        dsahern@gmail.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, minchan@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de
-In-Reply-To: <1407825645-24586-7-git-send-email-namhyung@kernel.org>
-References: <1407825645-24586-7-git-send-email-namhyung@kernel.org>
+        linux-kernel@vger.kernel.org, acme@redhat.com, jolsa@kernel.org,
+        minchan@kernel.org, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
+        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <1407825645-24586-8-git-send-email-namhyung@kernel.org>
+References: <1407825645-24586-8-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kmem:
-  Move session handling out of __cmd_kmem()
-Git-Commit-ID: 2b2b2c68c64fb9db392940b42355944064f2a4ca
+Subject: [tip:perf/core] perf kvm: Move call to symbol__init()
+  after creating session
+Git-Commit-ID: 14d37f38e956ba0dd4f2206f68534eb418ecd905
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,19 +38,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2b2b2c68c64fb9db392940b42355944064f2a4ca
-Gitweb:     http://git.kernel.org/tip/2b2b2c68c64fb9db392940b42355944064f2a4ca
+Commit-ID:  14d37f38e956ba0dd4f2206f68534eb418ecd905
+Gitweb:     http://git.kernel.org/tip/14d37f38e956ba0dd4f2206f68534eb418ecd905
 Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 12 Aug 2014 15:40:38 +0900
+AuthorDate: Tue, 12 Aug 2014 15:40:39 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 13 Aug 2014 16:33:07 -0300
+CommitDate: Wed, 13 Aug 2014 16:33:43 -0300
 
-perf kmem: Move session handling out of __cmd_kmem()
+perf kvm: Move call to symbol__init() after creating session
 
 This is a preparation of fixing dso__load_kernel_sym().  It needs a
 session info before calling symbol__init().
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -59,114 +60,31 @@ Cc: Minchan Kim <minchan@kernel.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1407825645-24586-7-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1407825645-24586-8-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kmem.c | 49 +++++++++++++++++++++++++++--------------------
- 1 file changed, 28 insertions(+), 21 deletions(-)
+ tools/perf/builtin-kvm.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index 84b8239..349d9b4 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -405,10 +405,9 @@ static void sort_result(void)
- 	__sort_result(&root_caller_stat, &root_caller_sorted, &caller_sort);
- }
- 
--static int __cmd_kmem(void)
-+static int __cmd_kmem(struct perf_session *session)
- {
- 	int err = -EINVAL;
--	struct perf_session *session;
- 	const struct perf_evsel_str_handler kmem_tracepoints[] = {
- 		{ "kmem:kmalloc",		perf_evsel__process_alloc_event, },
-     		{ "kmem:kmem_cache_alloc",	perf_evsel__process_alloc_event, },
-@@ -417,31 +416,22 @@ static int __cmd_kmem(void)
- 		{ "kmem:kfree",			perf_evsel__process_free_event, },
-     		{ "kmem:kmem_cache_free",	perf_evsel__process_free_event, },
- 	};
--	struct perf_data_file file = {
--		.path = input_name,
--		.mode = PERF_DATA_MODE_READ,
--	};
--
--	session = perf_session__new(&file, false, &perf_kmem);
--	if (session == NULL)
--		return -ENOMEM;
- 
- 	if (!perf_session__has_traces(session, "kmem record"))
--		goto out_delete;
-+		goto out;
- 
- 	if (perf_session__set_tracepoints_handlers(session, kmem_tracepoints)) {
- 		pr_err("Initializing perf session tracepoint handlers failed\n");
--		return -1;
-+		goto out;
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index ff40475..7f2b555 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1064,6 +1064,8 @@ static int read_events(struct perf_kvm_stat *kvm)
+ 		return -EINVAL;
  	}
  
- 	setup_pager();
- 	err = perf_session__process_events(session, &perf_kmem);
- 	if (err != 0)
--		goto out_delete;
-+		goto out;
- 	sort_result();
- 	print_result(session);
--out_delete:
--	perf_session__delete(session);
-+out:
- 	return err;
- }
++	symbol__init();
++
+ 	if (!perf_session__has_traces(kvm->session, "kvm record"))
+ 		return -EINVAL;
  
-@@ -688,29 +678,46 @@ int cmd_kmem(int argc, const char **argv, const char *prefix __maybe_unused)
- 		NULL,
+@@ -1193,8 +1195,6 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
  		NULL
  	};
-+	struct perf_session *session;
-+	struct perf_data_file file = {
-+		.path = input_name,
-+		.mode = PERF_DATA_MODE_READ,
-+	};
-+	int ret = -1;
-+
- 	argc = parse_options_subcommand(argc, argv, kmem_options,
- 					kmem_subcommands, kmem_usage, 0);
- 
- 	if (!argc)
- 		usage_with_options(kmem_usage, kmem_options);
  
 -	symbol__init();
 -
- 	if (!strncmp(argv[0], "rec", 3)) {
-+		symbol__init();
- 		return __cmd_record(argc, argv);
--	} else if (!strcmp(argv[0], "stat")) {
-+	}
-+
-+	session = perf_session__new(&file, false, &perf_kmem);
-+	if (session == NULL)
-+		return -ENOMEM;
-+
-+	symbol__init();
-+
-+	if (!strcmp(argv[0], "stat")) {
- 		if (cpu__setup_cpunode_map())
--			return -1;
-+			goto out_delete;
- 
- 		if (list_empty(&caller_sort))
- 			setup_sorting(&caller_sort, default_sort_order);
- 		if (list_empty(&alloc_sort))
- 			setup_sorting(&alloc_sort, default_sort_order);
- 
--		return __cmd_kmem();
-+		ret = __cmd_kmem(session);
- 	} else
- 		usage_with_options(kmem_usage, kmem_options);
- 
--	return 0;
-+out_delete:
-+	perf_session__delete(session);
-+
-+	return ret;
- }
- 
+ 	if (argc) {
+ 		argc = parse_options(argc, argv,
+ 				     kvm_events_report_options,
