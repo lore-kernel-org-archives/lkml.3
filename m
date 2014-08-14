@@ -1,68 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330AbaHNPKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 11:10:37 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36463 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755269AbaHNPKg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 11:10:36 -0400
-Date: Thu, 14 Aug 2014 17:10:19 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, eranian@google.com
-Subject: Re: [PATCH 3/5] perf, x86: Add Broadwell core support
-Message-ID: <20140814151019.GW6758@twins.programming.kicks-ass.net>
-References: <1407979069-7121-1-git-send-email-andi@firstfloor.org>
- <1407979069-7121-4-git-send-email-andi@firstfloor.org>
- <20140814070722.GD16043@twins.programming.kicks-ass.net>
- <20140814073210.GP3588@twins.programming.kicks-ass.net>
- <20140814145854.GQ5803@tassilo.jf.intel.com>
+	id S1755339AbaHNPNx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 11:13:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20755 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755155AbaHNPNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 11:13:51 -0400
+Date: Thu, 14 Aug 2014 12:13:30 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vlastimil Babka <vbabka@suse.cz>, David Rientjes <rientjes@google.com>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: Re: mm: compaction: buffer overflow in isolate_migratepages_range
+Message-ID: <20140814151329.GA22187@optiplex.redhat.com>
+References: <53E6CEAA.9020105@oracle.com>
+ <CAPAsAGxcC0+V1ZzR3LL=ASx=KXifPbw_cyvHCBBJT4mZ1grg+Q@mail.gmail.com>
+ <20140813153501.GE21041@optiplex.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="spoeDETjLz8hlzGT"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140814145854.GQ5803@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140813153501.GE21041@optiplex.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 13, 2014 at 12:35:02PM -0300, Rafael Aquini wrote:
+> On Sun, Aug 10, 2014 at 12:49:47PM +0400, Andrey Ryabinin wrote:
+> > 2014-08-10 5:45 GMT+04:00 Sasha Levin <sasha.levin@oracle.com>:
+> > > Hi all,
+> > >
+> > > While fuzzing with trinity inside a KVM tools guest running the latest -next
+> > > kernel with the KASAN patchset, I've stumbled on the following spew:
+> > >
+> > >
+> > > [ 3837.070452] ==================================================================
+> > > [ 3837.073101] AddressSanitizer: buffer overflow in isolate_migratepages_range+0x85f/0xd90 at addr ffff88051b70eb49
+> > > [ 3837.076310] page:ffffea00146dc380 count:0 mapcount:0 mapping:          (null) index:0x0
+> > > [ 3837.079876] page flags: 0xafffff80008000(tail)
+> > > [ 3837.114592] page dumped because: kasan error
+> > > [ 3837.115897] CPU: 4 PID: 29613 Comm: trinity-c467 Not tainted 3.16.0-next-20140808-sasha-00051-gf368221 #1051
+> > > [ 3837.118024]  00000000000000fc 0000000000000000 ffffea00146dc380 ffff8801f326f718
+> > > [ 3837.119837]  ffffffff97e0d344 ffff8801f326f7e8 ffff8801f326f7d8 ffffffff9342d5bc
+> > > [ 3837.121708]  ffffea00085163c0 0000000000000000 ffff8801f326f8e0 ffffffff93fe02fb
+> > > [ 3837.123704] Call Trace:
+> > > [ 3837.124272] dump_stack (lib/dump_stack.c:52)
+> > > [ 3837.125166] kasan_report_error (mm/kasan/report.c:98 mm/kasan/report.c:166)
+> > > [ 3837.126128] ? trace_hardirqs_on_thunk (arch/x86/lib/thunk_64.S:33)
+> > > [ 3837.127462] ? retint_restore_args (arch/x86/kernel/entry_64.S:828)
+> > > [ 3837.128753] __asan_load8 (mm/kasan/kasan.c:364)
+> > > [ 3837.129914] ? isolate_migratepages_range (./arch/x86/include/asm/bitops.h:311 include/linux/pagemap.h:70 include/linux/balloon_compaction.h:131 include/linux/balloon_compaction.h:156 mm/compaction.c:596)
+> > > [ 3837.131613] isolate_migratepages_range (./arch/x86/include/asm/bitops.h:311 include/linux/pagemap.h:70 include/linux/balloon_compaction.h:131 include/linux/balloon_compaction.h:156 mm/compaction.c:596)
+> > > [ 3837.132838] compact_zone (mm/compaction.c:877 mm/compaction.c:1044)
+> > > [ 3837.133818] compact_zone_order (mm/compaction.c:1106)
+> > > [ 3837.134982] try_to_compact_pages (mm/compaction.c:1161)
+> > > [ 3837.135970] __alloc_pages_direct_compact (mm/page_alloc.c:2313)
+> > > [ 3837.137217] ? next_zones_zonelist (mm/mmzone.c:72)
+> > > [ 3837.138861] __alloc_pages_nodemask (mm/page_alloc.c:2640 mm/page_alloc.c:2806)
+> > > [ 3837.139897] ? check_chain_key (kernel/locking/lockdep.c:2190)
+> > > [ 3837.141220] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> > > [ 3837.142434] alloc_pages_vma (mm/mempolicy.c:2046)
+> > > [ 3837.143479] ? do_huge_pmd_wp_page (mm/huge_memory.c:774 mm/huge_memory.c:1123)
+> > > [ 3837.144663] do_huge_pmd_wp_page (mm/huge_memory.c:774 mm/huge_memory.c:1123)
+> > > [ 3837.145653] handle_mm_fault (mm/memory.c:3312 mm/memory.c:3370)
+> > > [ 3837.146717] ? vmacache_find (mm/vmacache.c:100 (discriminator 1))
+> > > [ 3837.147404] ? find_vma (mm/mmap.c:2024)
+> > > [ 3837.147982] __do_page_fault (arch/x86/mm/fault.c:1231)
+> > > [ 3837.148613] ? context_tracking_user_exit (kernel/context_tracking.c:184)
+> > > [ 3837.149388] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> > > [ 3837.150212] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2641 (discriminator 8))
+> > > [ 3837.150977] ? trace_hardirqs_off (kernel/locking/lockdep.c:2647)
+> > > [ 3837.151686] trace_do_page_fault (arch/x86/mm/fault.c:1314 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1315)
+> > > [ 3837.152870] do_async_page_fault (arch/x86/kernel/kvm.c:279)
+> > > [ 3837.153886] async_page_fault (arch/x86/kernel/entry_64.S:1313)
+> > > [ 3837.155293] Read of size 8 by thread T29613:
+> > > [ 3837.156058] Memory state around the buggy address:
+> > > [ 3837.156885]  ffff88051b70e880: 00 00 00 00 00 00 00 fc fc fc fc fc fc fc fc fc
+> > > [ 3837.158141]  ffff88051b70e900: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+> > > [ 3837.159492]  ffff88051b70e980: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+> > > [ 3837.160863]  ffff88051b70ea00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > > [ 3837.162165]  ffff88051b70ea80: 00 00 00 00 00 00 00 fc fc fc fc fc fc fc fc fc
+> > > [ 3837.163552] >ffff88051b70eb00: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+> > > [ 3837.164866]                                               ^
+> > > [ 3837.165914]  ffff88051b70eb80: fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc fc
+> > > [ 3837.167317]  ffff88051b70ec00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> > > [ 3837.168616]  ffff88051b70ec80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> > > [ 3837.169898]  ffff88051b70ed00: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> > > [ 3837.171298]  ffff88051b70ed80: fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb fb
+> > > [ 3837.172611] ==================================================================
+> > >
+> > >
+> > > Thanks,
+> > > Sasha
+> 
+> Nice pick from the sanitizer bits!
+> 
+> > 
+> > Bad access happens when we read page->mapping->flags in mapping_ballon().
+> > Address of page->mapping->flags here is ffff88051b70eb49, so the
+> > lowest bit is set,
+> > which means that the lowest bit is also set in page->mapping pointer.
+> > So page->mapping is a pointer to anon_vma, not to address_space.
+> >
+> 
+> Yeah, it happens because I failed to anticipate a race window opening where
+> balloon_page_movable() can stumble across an anon page being released --
+> somewhere in the midway of __page_cache_release() & free_pages_prepare() 
+> down on the put_page() codepath -- while isolate_migratepages_range() performs
+> its loop in the (lru) unlocked case.
+>
 
---spoeDETjLz8hlzGT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Giving it a second thought, I see my first analisys (above) isn't accurate, 
+as if we had raced against a page being released at the point I mentioned,
+balloon_page_movable() would have bailed out while performing its
+page_flags_cleared() checkpoint. 
 
-On Thu, Aug 14, 2014 at 07:58:54AM -0700, Andi Kleen wrote:
+But I now can see from where this occurrence is coming from, actually.
 
-> Really, Peter, it's futile to try to reproduce http://ark.intel.com
-> in perf comments. If you need information on specific Intel
-> products please look it up there.
+The real race window for this issue opens when balloon_page_movable() 
+checkpoint @ isolate_migratepages_range() stumbles across a (new) 
+page under migration at:
 
-ark.intel.com is useless, I never can find anything there.
-The best I can find is wikipedia and they stopped listing model numbers
-long ago :/
+static int move_to_new_page(struct page *newpage, struct page *page, ...
+{
+   ...
+   newpage->mapping = page->mapping;
 
---spoeDETjLz8hlzGT
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+At this point, *newpage points to a fresh page coming out from the allocator
+(just as any other possible ballooned page), but it gets its ->mapping
+pointer set, which can create the conditions to the access (for mapping flag
+checking purposes only) KASAN is complaining about, if *page happens to
+be pointing to an anon page.
 
-iQIcBAEBAgAGBQJT7NFbAAoJEHZH4aRLwOS6E08P+wWS0BJGjnHO1WLU5ssq3YbB
-PISlXOGk+18wDrH4Z4+vHpAEv3azEykoPxuP6Q9lq/12fDmK75SI/y4CKFlH7Eze
-mNoVVpX3tA84k47x5skls2FdTA2gF3v1w7O6q9676psM+Vaz2jEfuS5+2OMzlAP2
-tltap4O6V1ur7U+tekFA3rIO75hOU/aOUDxxJRuWwsxagX85qDzcuSuvZpsTZQh/
-nkXE4JFpP4dcQYzn3dPwgSHtLnvJUDa6GSWKEYSCMlzPouVqraeqC57qTJpgCJI6
-z0+W1Ewq5+Gnh55U6m+eIf0Hd/f82C4+FXeDEvXgiXd8RIEyceiKZ5ltVX56KqCF
-3NK5INYtl0vLcLbXHwt5hATDZk7ZlzyvrQOg49ylELSMIr5hDGDRh+v56a4/0ucP
-gord1DvFi0aVbwFU+KycDwD/Q9ny19AodU6iqzW+wYrOwilAbWh0TrNQFe2Aflde
-1+wSnbVUPIQySD4qz6UJzoDkfW4kJ2XzS+ERh9Ct4751sxZQp/uDFddGaf4q012t
-5iOHSrlGDozYd9lVTRDNgHGMt36NfAzIuEPM65/vDuMMEJs/CZhi8c5BT0EaX6EB
-7AhcGl+C+AuCN9OGhO3v2wEwHllt1Z5i2VHe1LO3wJo0zW2ll3RHMHpjxPJpIjBE
-dAc+xWW9ysijifYTNuXI
-=SJ6T
------END PGP SIGNATURE-----
+ 
+> Although harmless, IMO, as we only go for the isolation step if we hold the
+> lru lock (and the check is re-done under lock safety) this is an
+> annoying thing we have to get rid of to not defeat the purpose of having
+> the kasan in place.
+>
 
---spoeDETjLz8hlzGT--
+It still a harmless condition as before, but considering what goes above
+I'm now convinced & confident the patch proposed by Andrey is the real fix 
+for such occurrences.
+
+Cheers,
+-- Rafael 
+
+>  
+> > I guess this could be fixed with something like following (completely
+> > untested) patch:
+> >
+> Despite not having it tested, as well: yes, I belive this should be the way 
+> to sort out that warning, for the aforementioned unlocked iteration case of
+> isolate_migratepages_range(). 
+>  
+> > --- a/include/linux/balloon_compaction.h
+> > +++ b/include/linux/balloon_compaction.h
+> > @@ -127,7 +127,7 @@ static inline bool page_flags_cleared(struct page *page)
+> >   */
+> >  static inline bool __is_movable_balloon_page(struct page *page)
+> >  {
+> > -       struct address_space *mapping = page->mapping;
+> > +       struct address_space *mapping = page_mapping(page);
+> >         return mapping_balloon(mapping);
+> >  }
+> > 
+> 
+> Please, keep me in the loop if things don't settle properly.
+> 
+> Cheers,
+> -- Rafael
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
