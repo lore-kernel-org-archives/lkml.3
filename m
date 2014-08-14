@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153AbaHNRr6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 13:47:58 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:45216 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866AbaHNRr5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 13:47:57 -0400
+	id S1753546AbaHNRvR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 13:51:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19018 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752316AbaHNRvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 13:51:16 -0400
+Date: Thu, 14 Aug 2014 19:48:49 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
+	seqlock
+Message-ID: <20140814174849.GA5091@redhat.com>
+References: <20140812142539.01851e52@annuminas.surriel.com> <20140812191218.GA15210@redhat.com> <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814132239.GA24465@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140814143009.GO5803@tassilo.jf.intel.com>
-References: <1407979069-7121-1-git-send-email-andi@firstfloor.org>
-	<1407979069-7121-5-git-send-email-andi@firstfloor.org>
-	<CABPqkBTnZ8SF8TPPMxcY+jPvwQhv+3gki86dnNVgBbAJ_RPdkg@mail.gmail.com>
-	<20140814143009.GO5803@tassilo.jf.intel.com>
-Date: Thu, 14 Aug 2014 19:47:56 +0200
-Message-ID: <CABPqkBQVwGH7GAVXAXjR1inWnWYeWuVG7Aj-aWAzAksdGq8oeg@mail.gmail.com>
-Subject: Re: [PATCH 4/5] perf, x86: Add INST_RETIRED.ALL workarounds
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140814132239.GA24465@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+perf tool maintainers]
-
-On Thu, Aug 14, 2014 at 4:30 PM, Andi Kleen <ak@linux.intel.com> wrote:
+On 08/14, Oleg Nesterov wrote:
 >
-> I understand all your points, but there's no alternative.
-> The only other way would be to disable INST_RETIRED.ALL.
->
-You cannot do that either. INST_RETIRED:ALL is important.
-I assume the bug applies whether or not the event is used
-with a filter.
+> OK, lets forget about alternative approach for now. We can reconsider
+> it later. At least I have to admit that seqlock is more straighforward.
 
-I think we need to ensure that by looking at the perf.data file,
-one can reconstruct the total number of inst_Retired:all
-occurrences for the run. With a fixed period, one would do
-num_samples * fixed_period. I know the Gooda tool does
-that. It is used to estimate the number of events captured
-vs. the number of events occurring.
+Yes.
 
-So what I am saying is that on BDW, we need to have
-perf force PERF_SAMPLE_PERIOD even with a fixed
-period is passed. The kernel cannot simply add
-PERF_SAMPLE_PERIOD to the event sample_format
-because the tool would get confused by the sample
-record size otherwise.
+But just for record, the "lockless" version doesn't look that bad to me,
 
-I understand this is not pretty. We'd need to have
-a on the evsel just before making the syscall. That
-callback would be for x86 and it would check the
-CPUID to force PERF_SAMPLE_PERIOD. That's
-my thinking but there may be a better way of doing
-this.
+	void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+	{
+		struct signal_struct *sig = tsk->signal;
+		bool lockless, is_dead;
+		struct task_struct *t;
+		unsigned long flags;
+		u64 exec;
+
+		lockless = true;
+		is_dead = !lock_task_sighand(p, &flags);
+	 retry:
+		times->utime = sig->utime;
+		times->stime = sig->stime;
+		times->sum_exec_runtime = exec = sig->sum_sched_runtime;
+		if (is_dead)
+			return;
+
+		if (lockless)
+			unlock_task_sighand(p, &flags);
+
+		rcu_read_lock();
+		for_each_thread(tsk, t) {
+			cputime_t utime, stime;
+			task_cputime(t, &utime, &stime);
+			times->utime += utime;
+			times->stime += stime;
+			times->sum_exec_runtime += task_sched_runtime(t);
+		}
+		rcu_read_unlock();
+
+		if (lockless) {
+			lockless = false;
+			is_dead = !lock_task_sighand(p, &flags);
+			if (is_dead || exec != sig->sum_sched_runtime)
+				goto retry;
+		}
+		unlock_task_sighand(p, &flags);
+	}
+
+The obvious problem is that we should shift lock_task_sighand() from the
+callers to thread_group_cputime() first, or add thread_group_cputime_lockless()
+and change the current users one by one.
+
+And of course, stats_lock is more generic.
+
+Oleg.
+
