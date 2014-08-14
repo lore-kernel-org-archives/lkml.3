@@ -1,53 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255AbaHNClz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 22:41:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32989 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527AbaHNCly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 22:41:54 -0400
-Message-ID: <53EC21E1.80502@zytor.com>
-Date: Wed, 13 Aug 2014 19:41:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753564AbaHNCmK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 22:42:10 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:40900 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527AbaHNCmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 22:42:07 -0400
+Message-ID: <53EC21FC.4000204@gmail.com>
+Date: Wed, 13 Aug 2014 19:42:04 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
-Subject: Re: [PATCH v5 0/5] random,x86,kvm: Rework arch RNG seeds and get
- some from kvm
-References: <cover.1406177531.git.luto@amacapital.net> <CALCETrXtLf3ZFtyrbwj29C=t3PcTxRT2AJWZCUHdKC3AYyUVAA@mail.gmail.com> <20140812191723.GI12871@thunk.org> <CALCETrVmviT=upxHfPfmLy2aUOKdCuCbNg9WZQcx6f=8T8vv=g@mail.gmail.com> <53EB1859.6030800@zytor.com> <20140813143209.GD6437@thunk.org> <CALCETrUQ8yRmmN1kbdCy99ae2+-Xp4caOBgrXvaQhCCUi=i0zg@mail.gmail.com> <53EBA435.3020207@zytor.com> <20140813182219.GE6437@thunk.org> <CALCETrVTsyq4u+G2Td7Gmi6pa6c1ePgavqN31mjo9_E5=7bGCg@mail.gmail.com> <53EBB214.4030102@zytor.com>
-In-Reply-To: <53EBB214.4030102@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+To: frowand.list@gmail.com
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH to be tested] serial: msm_serial: add missing sysrq handling
+References: <53E2C573.7090709@gmail.com> <53EAB01B.5030102@codeaurora.org> <53EC1FEA.5070907@gmail.com>
+In-Reply-To: <53EC1FEA.5070907@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2014 11:44 AM, H. Peter Anvin wrote:
-> On 08/13/2014 11:33 AM, Andy Lutomirski wrote:
->>
->> As for doing arch_random_init after clone/migration, I think we'll
->> need another KVM extension for that, since, AFAIK, we don't actually
->> get notified that we were cloned or migrated.  That will be
->> nontrivial.  Maybe we can figure that out at KS, too.
->>
-> 
-> We don't need a reset when migrated (although it might be a good idea
-> under some circumstances, i.e. if the pools might somehow have gotten
-> exposed) but definitely when cloned.
-> 
+On 8/13/2014 7:33 PM, Frank Rowand wrote:
+> On 8/12/2014 5:23 PM, Stephen Boyd wrote:
+>> On 08/06/14 17:16, Frank Rowand wrote:
 
-But yes, we need a notification.  For obvious reasons there is no
-suspend event (one can snapshot a running VM) but we need to be notified
-upon wakeup, *or* we need to give KVM a way to update the necessary state.
+< snip >
 
-	-hpa
+> The patches you sent are a little hard to read since they modify further code
+> that my patch modified.  So I have redone your patches, as if my patch was
+> not previously applied.  Hopefully I did not make any mistakes there.  I will
+> reply to this email with each of your redone patches.
+
+< snip >
+
+Stephen's patch alternative number 1:
 
 
+---
+ drivers/tty/serial/msm_serial.c |   44 ++++++++++++++++++++++++++++------------
+ drivers/tty/serial/msm_serial.h |    8 +++++++
+ 2 files changed, 39 insertions(+), 13 deletions(-)
+
+Index: b/drivers/tty/serial/msm_serial.c
+===================================================================
+--- a/drivers/tty/serial/msm_serial.c
++++ b/drivers/tty/serial/msm_serial.c
+@@ -125,25 +125,28 @@ static void handle_rx_dm(struct uart_por
+ 	port->icount.rx += count;
+ 
+ 	while (count > 0) {
+-		unsigned int c;
++		unsigned char buf[4];
++		unsigned char *p = buf;
++		int sysrq, r_count;
+ 
+ 		sr = msm_read(port, UART_SR);
+ 		if ((sr & UART_SR_RX_READY) == 0) {
+ 			msm_port->old_snap_state -= count;
+ 			break;
+ 		}
+-		c = msm_read(port, UARTDM_RF);
+-		if (sr & UART_SR_RX_BREAK) {
+-			port->icount.brk++;
+-			if (uart_handle_break(port))
+-				continue;
+-		} else if (sr & UART_SR_PAR_FRAME_ERR)
+-			port->icount.frame++;
++		readsl(port->membase + UARTDM_RF, p, 1);
+ 
+-		/* TODO: handle sysrq */
+-		tty_insert_flip_string(tport, (char *)&c,
+-				       (count > 4) ? 4 : count);
+-		count -= 4;
++		spin_unlock(&port->lock);
++		sysrq = uart_handle_sysrq_char(port, buf[0]);
++		spin_lock(&port->lock);
++		if (sysrq) {
++			p++;
++			count--;
++		}
++		r_count = min_t(int, count, sizeof(buf) - sysrq);
++		if (r_count)
++			tty_insert_flip_string(tport, p, r_count);
++		count -= r_count;
+ 	}
+ 
+ 	spin_unlock(&port->lock);
+@@ -285,6 +288,17 @@ static irqreturn_t msm_irq(int irq, void
+ 	misr = msm_read(port, UART_MISR);
+ 	msm_write(port, 0, UART_IMR); /* disable interrupt */
+ 
++	if (misr & UART_IMR_RXBREAK_END) {
++		uart_handle_break(port);
++		port->icount.brk++;
++		msm_write(port, UART_CR_CMD_RESET_RXBREAK_END, UART_CR);
++	}
++
++	if (misr & UART_IMR_PAR_FRAME_ERR) {
++		port->icount.frame++;
++		msm_write(port, UART_CR_CMD_RESET_PAR_FRAME_ERR, UART_CR);
++	}
++
+ 	if (misr & (UART_IMR_RXLEV | UART_IMR_RXSTALE)) {
+ 		if (msm_port->is_uartdm)
+ 			handle_rx_dm(port, misr);
+@@ -491,7 +505,8 @@ static int msm_startup(struct uart_port
+ 
+ 	/* turn on RX and CTS interrupts */
+ 	msm_port->imr = UART_IMR_RXLEV | UART_IMR_RXSTALE |
+-			UART_IMR_CURRENT_CTS;
++			UART_IMR_CURRENT_CTS | UART_IMR_RXBREAK_END |
++			UART_IMR_PAR_FRAME_ERR;
+ 
+ 	if (msm_port->is_uartdm) {
+ 		msm_write(port, 0xFFFFFF, UARTDM_DMRX);
+@@ -566,6 +581,9 @@ static void msm_set_termios(struct uart_
+ 	else
+ 		mr |= UART_MR2_STOP_BIT_LEN_ONE;
+ 
++	mr |= UART_MR2_RX_BREAK_ZERO_CHAR_OFF;
++	mr |= UART_MR2_RX_ERROR_CHAR_OFF;
++
+ 	/* set parity, bits per char, and stop bit */
+ 	msm_write(port, mr, UART_MR2);
+ 
+Index: b/drivers/tty/serial/msm_serial.h
+===================================================================
+--- a/drivers/tty/serial/msm_serial.h
++++ b/drivers/tty/serial/msm_serial.h
+@@ -24,6 +24,8 @@
+ #define UART_MR1_CTS_CTL       		(1 << 6)
+ 
+ #define UART_MR2			0x0004
++#define UART_MR2_RX_ERROR_CHAR_OFF	(1 << 9)
++#define UART_MR2_RX_BREAK_ZERO_CHAR_OFF	(1 << 8)
+ #define UART_MR2_ERROR_MODE		(1 << 6)
+ #define UART_MR2_BITS_PER_CHAR		0x30
+ #define UART_MR2_BITS_PER_CHAR_5	(0x0 << 4)
+@@ -65,6 +67,9 @@
+ #define UART_CR_TX_ENABLE		(1 << 2)
+ #define UART_CR_RX_DISABLE		(1 << 1)
+ #define UART_CR_RX_ENABLE		(1 << 0)
++#define UART_CR_CMD_RESET_RXBREAK_START	((1 << 11) | (2 << 4))
++#define UART_CR_CMD_RESET_RXBREAK_END	((1 << 11) | (3 << 4))
++#define UART_CR_CMD_RESET_PAR_FRAME_ERR	((1 << 11) | (4 << 4))
+ 
+ #define UART_IMR		0x0014
+ #define UART_IMR_TXLEV		(1 << 0)
+@@ -72,6 +77,9 @@
+ #define UART_IMR_RXLEV		(1 << 4)
+ #define UART_IMR_DELTA_CTS	(1 << 5)
+ #define UART_IMR_CURRENT_CTS	(1 << 6)
++#define UART_IMR_RXBREAK_START	(1 << 10)
++#define UART_IMR_RXBREAK_END	(1 << 11)
++#define UART_IMR_PAR_FRAME_ERR	(1 << 12)
+ 
+ #define UART_IPR_RXSTALE_LAST		0x20
+ #define UART_IPR_STALE_LSB		0x1F
