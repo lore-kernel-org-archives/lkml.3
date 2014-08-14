@@ -1,91 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218AbaHNEYB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 00:24:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49313 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751131AbaHNEX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 00:23:59 -0400
-Date: Thu, 14 Aug 2014 14:23:48 +1000
-From: NeilBrown <neilb@suse.de>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: linux-cachefs@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 2/3] FS-Cache: Reduce cookie ref count if submit fails.
-Message-ID: <20140814142348.161b2eca@notabene.brown>
-In-Reply-To: <53EB992D.6040608@adfin.com>
-References: <cover.1407948737.git.milosz@adfin.com>
-	<53EB992D.6040608@adfin.com>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1751803AbaHNEeo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 00:34:44 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:33195 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750737AbaHNEem (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 00:34:42 -0400
+Date: Thu, 14 Aug 2014 07:34:36 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH/RFC v4 15/21] media: Add registration helpers for V4L2
+ flash
+Message-ID: <20140814043436.GM16460@valkosipuli.retiisi.org.uk>
+References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
+ <1405087464-13762-16-git-send-email-j.anaszewski@samsung.com>
+ <53CCF59E.3070200@iki.fi>
+ <53DF9C2A.8060403@samsung.com>
+ <20140811122628.GG16460@valkosipuli.retiisi.org.uk>
+ <53E8C4BA.6050805@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/_gG7l_H9o05UjHtchm==euo"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53E8C4BA.6050805@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/_gG7l_H9o05UjHtchm==euo
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Jacek,
 
-On Wed, 13 Aug 2014 12:58:21 -0400 Milosz Tanski <milosz@adfin.com> wrote:
+On Mon, Aug 11, 2014 at 03:27:22PM +0200, Jacek Anaszewski wrote:
 
-> I've been seeing issues with disposing cookies under vma pressure. The sy=
-mptom
-> is that the refcount gets out of sync. In this case we fail to decrement =
-the
-> refcount if submit fails. I found this while auditing the error in and ar=
-ound
-> cookie operations.
->=20
-> Signed-off-by: Milosz Tanski <milosz@adfin.com>
-> ---
->  fs/fscache/object.c |    2 ++
->  1 file changed, 2 insertions(+)
->=20
-> diff --git a/fs/fscache/object.c b/fs/fscache/object.c
-> index d3b4539..e1eb1f5 100644
-> --- a/fs/fscache/object.c
-> +++ b/fs/fscache/object.c
-> @@ -982,6 +982,8 @@ nomem:
->  submit_op_failed:
->  	clear_bit(FSCACHE_OBJECT_IS_LIVE, &object->flags);
->  	spin_unlock(&cookie->lock);
-> +	if (__fscache_unuse_cookie(cookie))
-> +		__fscache_wake_unused_cookie(cookie);
->  	kfree(op);
->  	_leave(" [EIO]");
->  	return transit_to(KILL_OBJECT);
+...
 
-Should this simple by
-  +     fscache_unuse_cookie(cookie);
+> >>>>diff --git a/include/media/v4l2-flash.h b/include/media/v4l2-flash.h
+> >>>>new file mode 100644
+> >>>>index 0000000..effa46b
+> >>>>--- /dev/null
+> >>>>+++ b/include/media/v4l2-flash.h
+> >>>>@@ -0,0 +1,137 @@
+> >>>>+/*
+> >>>>+ * V4L2 Flash LED sub-device registration helpers.
+> >>>>+ *
+> >>>>+ *	Copyright (C) 2014 Samsung Electronics Co., Ltd
+> >>>>+ *	Author: Jacek Anaszewski <j.anaszewski@samsung.com>
+> >>>>+ *
+> >>>>+ * This program is free software; you can redistribute it and/or modify
+> >>>>+ * it under the terms of the GNU General Public License version 2 as
+> >>>>+ * published by the Free Software Foundation."
+> >>>>+ */
+> >>>>+
+> >>>>+#ifndef _V4L2_FLASH_H
+> >>>>+#define _V4L2_FLASH_H
+> >>>>+
+> >>>>+#include <media/v4l2-ctrls.h>
+> >>>>+#include <media/v4l2-device.h>
+> >>>>+#include <media/v4l2-dev.h>le
+> >>>>+#include <media/v4l2-event.h>
+> >>>>+#include <media/v4l2-ioctl.h>
+> >>>>+
+> >>>>+struct led_classdev_flash;
+> >>>>+struct led_classdev;
+> >>>>+enum led_brightness;
+> >>>>+
+> >>>>+struct v4l2_flash_ops {
+> >>>>+	int (*torch_brightness_set)(struct led_classdev *led_cdev,
+> >>>>+					enum led_brightness brightness);
+> >>>>+	int (*torch_brightness_update)(struct led_classdev *led_cdev);
+> >>>>+	int (*flash_brightness_set)(struct led_classdev_flash *flash,
+> >>>>+					u32 brightness);
+> >>>>+	int (*flash_brightness_update)(struct led_classdev_flash *flash);
+> >>>>+	int (*strobe_set)(struct led_classdev_flash *flash, bool state);
+> >>>>+	int (*strobe_get)(struct led_classdev_flash *flash, bool *state);
+> >>>>+	int (*timeout_set)(struct led_classdev_flash *flash, u32 timeout);
+> >>>>+	int (*indicator_brightness_set)(struct led_classdev_flash *flash,
+> >>>>+					u32 brightness);
+> >>>>+	int (*indicator_brightness_update)(struct led_classdev_flash *flash);
+> >>>>+	int (*external_strobe_set)(struct led_classdev_flash *flash,
+> >>>>+					bool enable);
+> >>>>+	int (*fault_get)(struct led_classdev_flash *flash, u32 *fault);
+> >>>>+	void (*sysfs_lock)(struct led_classdev *led_cdev);
+> >>>>+	void (*sysfs_unlock)(struct led_classdev *led_cdev);
+> >>>
+> >>>These functions are not driver specific and there's going to be just one
+> >>>implementation (I suppose). Could you refresh my memory regarding why
+> >>>the LED framework functions aren't called directly?
+> >>
+> >>These ops are required to make possible building led-class-flash as
+> >>a kernel module.
+> >
+> >Assuming you'd use the actual implementation directly, what would be the
+> >dependencies? I don't think the LED flash framework has any callbacks
+> >towards the V4L2 (LED) flash framework, does it? Please correct my
+> >understanding if I'm missing something. In Makefile format, assume all
+> >targets are .PHONY:
+> >
+> >led-flash-api: led-api
+> >
+> >v4l2-flash: led-flash-api
+> >
+> >driver: led-flash-api v4l2-flash
+> 
+> LED Class Flash driver gains V4L2 Flash API when
+> CONFIG_V4L2_FLASH_LED_CLASS is defined. This is accomplished in
+> the probe function by either calling v4l2_flash_init function
+> or the macro of this name, when the CONFIG_V4L2_FLASH_LED_CLASS
+> macro isn't defined.
+> 
+> If the v4l2-flash.c was to call the LED API directly, then the
+> led-class-flash module symbols would have to be available at
+> v4l2-flash.o linking time.
 
-it does both the "unuse" and the "wake".
+Is this an issue? EXPORT_SYMBOL_GPL() for the relevant symbols should be
+enough.
 
-Otherwise they all look good to me.
+> This requirement cannot be met if the led-class-flash is built
+> as a module.
+> 
+> Use of function pointers in the v4l2-flash.c allows to compile it
+> into the kernel and enables the possibility of adding the V4L2 Flash
+> support conditionally, during driver probing.
 
-NeilBrown
+I'd simply decide this during kernel compilation time. If you want
+something, just enable it. v4l2_flash_init() is called directly by the
+driver in any case, so unless that is also called through a wrapper the
+driver is still directly dependent on it.
 
---Sig_/_gG7l_H9o05UjHtchm==euo
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+-- 
+Kind regards,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU+w51Dnsnt1WYoG5AQJHxw//VUnzfyvLAjX/ZkDwjXJJaPCrXcHMDbov
-rKx8QBH8z0txjNRLWMjtHcSYWIpFajzE3AMKKYm+vIMNq6997cudC688Eaduw1HD
-h3zr4ILfJbQNAPrCzJGRQvjcswtL2JOf0/yUbXTCApG+yCdCyDOqWda96p4lpLx9
-B+0LBb0fR+zfx2I4bniSokfbFaurYQPokNw4rLgZsQRyZGm/JUBtVDoOdFR49tFq
-6e+26SEGwrbS8BAQjdYBtDJVMyDFqYqrK2mcFCXt2A4PfstWQUleLASebHh6kNsW
-cECW7GPxUXxECLbzwMvG1szrXRRfONszC8RGwlRfMKDlWZxRarNIZl2ehGU/XSAZ
-W2iHslDDjGTgP+PfDOMiaCg9A7Auoo4+FFakLz/VQgYuw9de0JJYWXOzAmKIUxfZ
-48GB08V8CH2Hg1/atBrzQrsitN6xCEaCrCB4b/30Z0VycDoSlFhGklNaxMtvh8+a
-whpvotcxgeACrr97BpylphrWSdUFM1NtySvSkgILkFFmqXiS6sZb+Sk9uY8YxbbV
-3xhyb30Uu2kU+9ioDEtBT/2E7GSoztZUkitGmbZRdUCPpu67bMUK7NNQsNFQt1fY
-lMVgDV8CovH4xezbMjltm/FjEPKXopiA8IXxfxqGcKpfKg4UHhk0+1rzhKLs+/a6
-MA2Wkh8StiU=
-=AnJ+
------END PGP SIGNATURE-----
-
---Sig_/_gG7l_H9o05UjHtchm==euo--
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
