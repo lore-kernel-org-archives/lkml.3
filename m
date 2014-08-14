@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172AbaHNV5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 17:57:55 -0400
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:39438
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754400AbaHNV5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 17:57:53 -0400
-X-WSS-ID: 0NABGZP-08-7D6-02
-X-M-MSG: 
-Message-ID: <53ED30BD.90403@amd.com>
-Date: Thu, 14 Aug 2014 16:57:17 -0500
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754953AbaHNWAo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 18:00:44 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:59709 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754728AbaHNWAg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 18:00:36 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>, Clemens Ladisch <clemens@ladisch.de>
-CC: Guenter Roeck <linux@roeck-us.net>, <jdelvare@suse.de>,
-        <rdunlap@infradead.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <dan.carpenter@oracle.com>,
-        <lm-sensors@lm-sensors.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] hwmon, k10temp: Add support for F15h M60h
-References: <1408035262-18026-1-git-send-email-aravind.gopalakrishnan@amd.com>
- <20140814201730.GA501@roeck-us.net> <53ED1A87.6000400@ladisch.de>
- <20140814210816.GC18887@pd.tnic>
-In-Reply-To: <20140814210816.GC18887@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019004)(6009001)(428002)(164054003)(377454003)(479174003)(189002)(24454002)(199003)(64706001)(83322001)(21056001)(97736001)(85852003)(65816999)(102836001)(95666004)(81542001)(44976005)(54356999)(107046002)(47776003)(36756003)(20776003)(33656002)(50986999)(83072002)(99396002)(85306004)(101416001)(105586002)(79102001)(23676002)(83506001)(65806001)(106466001)(87936001)(65956001)(76176999)(74502001)(92566001)(77982001)(93886004)(92726001)(74662001)(4396001)(46102001)(86362001)(81342001)(68736004)(84676001)(76482001)(31966008)(50466002)(80022001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB043;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03030B9493
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+In-Reply-To: <20140814215521.GZ4752@linux.vnet.ibm.com>
+References: <20140811224840.GA25594@linux.vnet.ibm.com> <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1407797345-28227-9-git-send-email-paulmck@linux.vnet.ibm.com>
+ <CAJhHMCDT1_Per3Qfx8qd23btnLmMVgPucL7OcUncUHWURGp6aQ@mail.gmail.com> <20140814215521.GZ4752@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Thu, 14 Aug 2014 18:00:04 -0400
+Message-ID: <CAJhHMCAzt-E09QBWn2D-hbWv7omxtky_oKjxt1Y9O_JG221enw@mail.gmail.com>
+Subject: Re: [PATCH v5 tip/core/rcu 09/16] rcu: Improve RCU-tasks energy efficiency
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/14/2014 4:08 PM, Borislav Petkov wrote:
-> On Thu, Aug 14, 2014 at 10:22:31PM +0200, Clemens Ladisch wrote:
->>>> +	depends on X86 && PCI && AMD_NB
->>> Is the added dependency acceptable ?
->> Yes, it is automatically set from CPU_SUP_AMD.
-> Well, we can always move that function to k10temp but I'll venture a
-> guess that Aravind wants to use it somewhere else too? Correct, Aravind?
+On Thu, Aug 14, 2014 at 5:55 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Thu, Aug 14, 2014 at 05:42:06PM -0400, Pranith Kumar wrote:
+>> On Mon, Aug 11, 2014 at 6:48 PM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+>> >
+>> > The current RCU-tasks implementation uses strict polling to detect
+>> > callback arrivals.  This works quite well, but is not so good for
+>> > energy efficiency.  This commit therefore replaces the strict polling
+>> > with a wait queue.
+>> >
+>> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> > ---
+>> >  kernel/rcu/update.c | 14 ++++++++++++--
+>> >  1 file changed, 12 insertions(+), 2 deletions(-)
+>> >
+>> > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+>> > index f1535404a79e..1256a900cd01 100644
+>> > --- a/kernel/rcu/update.c
+>> > +++ b/kernel/rcu/update.c
+>> > @@ -368,6 +368,7 @@ early_initcall(check_cpu_stall_init);
+>> >  /* Global list of callbacks and associated lock. */
+>> >  static struct rcu_head *rcu_tasks_cbs_head;
+>> >  static struct rcu_head **rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
+>> > +static DECLARE_WAIT_QUEUE_HEAD(rcu_tasks_cbs_wq);
+>> >  static DEFINE_RAW_SPINLOCK(rcu_tasks_cbs_lock);
+>> >
+>> >  /* Track exiting tasks in order to allow them to be waited for. */
+>> > @@ -381,13 +382,17 @@ module_param(rcu_task_stall_timeout, int, 0644);
+>> >  void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
+>> >  {
+>> >         unsigned long flags;
+>> > +       bool needwake;
+>> >
+>> >         rhp->next = NULL;
+>> >         rhp->func = func;
+>> >         raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
+>> > +       needwake = !rcu_tasks_cbs_head;
+>> >         *rcu_tasks_cbs_tail = rhp;
+>> >         rcu_tasks_cbs_tail = &rhp->next;
+>> >         raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
+>> > +       if (needwake)
+>> > +               wake_up(&rcu_tasks_cbs_wq);
+>> >  }
+>> >  EXPORT_SYMBOL_GPL(call_rcu_tasks);
+>>
+>> I think you want
+>>
+>> needwake = !!rcu_tasks_cbs_head;
+>>
+>> otherwise it will wake up when rcu_tasks_cbs_head is null, no?
+>
+> Well, that is exactly what we want.  Note that we do the test -before-
+> the enqueue.  This means that we do the wakeup if the list -was-
+> empty before the enqueue, which is exactly the case where the task
+> might be asleep without having already been sent a wakeup.
+>
+> Assuming that wakeups are reliably delivered, of course.  But if they
+> are not reliably delivered, that is a bug that needs to be fixed.
 >
 
-Actually I don't need it outside of k10temp as of now (or near future)
-I added it in amd_nb as that was Clemens, Guenter's suggestion on the 
-previous version;
-Besides, it made sense as it's an indirect access of NB_SMU register and 
-amd_nb seems a good place to put the function in case someone needs it 
-in the future.
+Ohk, I did not notice the modification through rcu_tasks_cbs_tail! All is well.
 
-I can move it locally to k10temp and remove the dependency if that's 
-more preferable. Do let me know.
-
-Thanks,
--Aravind.
+-- 
+Pranith
