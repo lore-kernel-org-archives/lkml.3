@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770AbaHNVDf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 17:03:35 -0400
-Received: from mail-pd0-f201.google.com ([209.85.192.201]:54362 "EHLO
-	mail-pd0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162AbaHNVD3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754707AbaHNVDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 17:03:34 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42453 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754536AbaHNVD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 14 Aug 2014 17:03:29 -0400
-From: Alex Converse <aconverse@google.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Alex Converse <aconverse@google.com>
-Subject: [PATCH] perf annotate: Don't truncate Intel style addresses
-Date: Thu, 14 Aug 2014 14:03:00 -0700
-Message-Id: <1408050180-14088-1-git-send-email-aconverse@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+Date: Thu, 14 Aug 2014 23:03:24 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] power: twl4030-madc-battery: Convert to iio consumer.
+Message-ID: <20140814210324.GA22572@earth.universe>
+References: <1394052739-8589-1-git-send-email-marek@goldelico.com>
+ <1394052739-8589-2-git-send-email-marek@goldelico.com>
+ <20140305232513.GA9542@earth.universe>
+ <CAAfyv34X1naNEyht0q+bD3QUjCxLJribmfWfZkP073WS7ve4kA@mail.gmail.com>
+ <CAAfyv35Hi-aE+SnTiN9O39ANi63gkNMz-Bz6hqCkkxJARSFcOg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="jI8keyz6grp/JLjh"
+Content-Disposition: inline
+In-Reply-To: <CAAfyv35Hi-aE+SnTiN9O39ANi63gkNMz-Bz6hqCkkxJARSFcOg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instructions like "mov r9,QWORD PTR [rdx+0x8]" were being truncated to
-"mov r9,QWORD" by code that assuemd operands cannot have spaces.
 
-Signed-off-by: Alex Converse <aconverse@google.com>
----
- tools/perf/util/annotate.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+--jI8keyz6grp/JLjh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 809b4c5..cc6f72c 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -232,9 +232,16 @@ static int mov__parse(struct ins_operands *ops)
- 		return -1;
- 
- 	target = ++s;
-+	comment = strchr(s, '#');
- 
--	while (s[0] != '\0' && !isspace(s[0]))
--		++s;
-+	if (comment != NULL)
-+		s = comment - 1;
-+	else
-+		s = strchr(s, '\0') - 1;
-+
-+	while (s > target && isspace(s[0]))
-+		--s;
-+	s++;
- 	prev = *s;
- 	*s = '\0';
- 
-@@ -244,7 +251,6 @@ static int mov__parse(struct ins_operands *ops)
- 	if (ops->target.raw == NULL)
- 		goto out_free_source;
- 
--	comment = strchr(s, '#');
- 	if (comment == NULL)
- 		return 0;
- 
--- 
-2.1.0.rc2.206.gedb03e5
+Hi Marek,
 
+On Mon, Aug 11, 2014 at 09:52:52PM +0200, Belisko Marek wrote:
+> can you please take this series (I'll post update version with
+> removing debug code). Thanks.
+
+mh. I will not pull this with "(dis)charging-calibration-data" as
+DT property name without an ACK from the DT binding maintainers.
+
+I would feel fine with pulling this when they are prefixed with
+"ti,". Otherwise the series looks good to me.
+
+-- Sebastian
+
+--jI8keyz6grp/JLjh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJT7SQcAAoJENju1/PIO/qaYAMP/jFo7UTndc6r/VmLDLSLBoTK
+zJuCkjL9720eX/vGGDYG/SkWMUzZtvn3NL9eU3lC9FBXdkYhIRKRFBzidYnRkms8
+JceS6BJsWa1S6RcEReFVK6fbzOCUTNCzR+HkUn+foc0kuEN/ChhffJXIBrDMGGGE
+8TBYSYYPvsADgQEc/po65kWVwpdg0dVkQXD1h7o+Xp0JOpOM3BPi0ESKwCxSLCJS
+CJEgwSrPO0NvOGT8vr8d8DbRa9esXnmfFCIuPmQQMURDuWiu4dWREGHkwniLC5yv
+t3A/lt69O9ffUM5dlI2K9q/FKp3HSrPfGtHdtVZvoMS9uFDRsYB8zbDSxcX9dUMU
+jMWVDNVRbbrRBmW6gqhNs3zLoUGs3rsoVEQEP6i46YyZWoDVyXNNPl+ERRdx4V4v
+Vrw3KVr/6nKhrJWJ1Ml4YnUy1HmuF4xEDuNtbpYKbIw4vrRp7AiD0AFEzRMkz1KW
+RIHxr+UxTlaOKUUfhSE3GUvmEn0cmf6dEBEdu6fQ1fIhC0VjIJeknnunjKuT0C0G
+Suy8uJSbZRQalXvXdR/hDGGo/B2IZfQTLYIXUj8wG/k/gsEjtbpNcHihc8tgI/yF
+LKnjJRXWghaJ0NhODj7NllQt4tsS6fSTE5yY+bhPKFDT1c/RoOyNkYFWaj1ZO/o2
+2BcBjnOnkPBrBpIicCa4
+=3rK3
+-----END PGP SIGNATURE-----
+
+--jI8keyz6grp/JLjh--
