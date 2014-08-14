@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480AbaHNFOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 01:14:06 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:52382 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865AbaHNFOD (ORCPT
+	id S1752916AbaHNFPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 01:15:17 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:37562 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421AbaHNFPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 01:14:03 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Michael Ellerman <mpe@ellerman.id.au>, kvm-ppc@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2] PC, KVM, CMA: Fix regression caused by wrong get_order() use
-In-Reply-To: <1407992587-9164-1-git-send-email-aik@ozlabs.ru>
-References: <1407992587-9164-1-git-send-email-aik@ozlabs.ru>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 14 Aug 2014 10:43:52 +0530
-Message-ID: <87egwj64bz.fsf@linux.vnet.ibm.com>
+	Thu, 14 Aug 2014 01:15:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081405-1618-0000-0000-000000BC71A0
+In-Reply-To: <53EC21E1.80502@zytor.com>
+References: <cover.1406177531.git.luto@amacapital.net> <CALCETrXtLf3ZFtyrbwj29C=t3PcTxRT2AJWZCUHdKC3AYyUVAA@mail.gmail.com>
+ <20140812191723.GI12871@thunk.org> <CALCETrVmviT=upxHfPfmLy2aUOKdCuCbNg9WZQcx6f=8T8vv=g@mail.gmail.com>
+ <53EB1859.6030800@zytor.com> <20140813143209.GD6437@thunk.org>
+ <CALCETrUQ8yRmmN1kbdCy99ae2+-Xp4caOBgrXvaQhCCUi=i0zg@mail.gmail.com>
+ <53EBA435.3020207@zytor.com> <20140813182219.GE6437@thunk.org>
+ <CALCETrVTsyq4u+G2Td7Gmi6pa6c1ePgavqN31mjo9_E5=7bGCg@mail.gmail.com>
+ <53EBB214.4030102@zytor.com> <53EC21E1.80502@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 13 Aug 2014 22:14:53 -0700
+Message-ID: <CALCETrUdqHPBOn_XEX3D7NUZSWTD8CcXpRK8RfiVYATJ5BuSjw@mail.gmail.com>
+Subject: Re: [PATCH v5 0/5] random,x86,kvm: Rework arch RNG seeds and get some
+ from kvm
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, kvm list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey Kardashevskiy <aik@ozlabs.ru> writes:
+On Wed, Aug 13, 2014 at 7:41 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 08/13/2014 11:44 AM, H. Peter Anvin wrote:
+>> On 08/13/2014 11:33 AM, Andy Lutomirski wrote:
+>>>
+>>> As for doing arch_random_init after clone/migration, I think we'll
+>>> need another KVM extension for that, since, AFAIK, we don't actually
+>>> get notified that we were cloned or migrated.  That will be
+>>> nontrivial.  Maybe we can figure that out at KS, too.
+>>>
+>>
+>> We don't need a reset when migrated (although it might be a good idea
+>> under some circumstances, i.e. if the pools might somehow have gotten
+>> exposed) but definitely when cloned.
+>>
+>
+> But yes, we need a notification.  For obvious reasons there is no
+> suspend event (one can snapshot a running VM) but we need to be notified
+> upon wakeup, *or* we need to give KVM a way to update the necessary state.
 
-> fc95ca7284bc54953165cba76c3228bd2cdb9591 claims that there is no
-> functional change but this is not true as it calls get_order() (which
-> takes bytes) where it should have called ilog2() and the kernel stops
-> on VM_BUG_ON().
->
-> This replaces get_order() with order_base_2() (round-up version of ilog2).
->
-> Suggested-by: Paul Mackerras <paulus@samba.org>
-> Cc: Alexander Graf <agraf@suse.de>
-> Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+This could presumably use the interrupt mechanism on virtio-rng if
+we're willing to depend on having host support for virtio-rng.
 
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+v6 (coming in a few minutes) will at least get it right when the
+kernel goes through the resume path (i.e. not KVM/QEMU suspend, and
+maybe not S0ix either).
 
-> ---
->
-> Changes:
-> v2:
-> * s/ilog2/order_base_2/
-> * removed cc: <stable@vger.kernel.org> as I got wrong impression that v3.16 is
-> broken
->
-> ---
->  arch/powerpc/kvm/book3s_hv_builtin.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/powerpc/kvm/book3s_hv_builtin.c b/arch/powerpc/kvm/book3s_hv_builtin.c
-> index 329d7fd..b9615ba 100644
-> --- a/arch/powerpc/kvm/book3s_hv_builtin.c
-> +++ b/arch/powerpc/kvm/book3s_hv_builtin.c
-> @@ -101,7 +101,7 @@ struct kvm_rma_info *kvm_alloc_rma()
->  	ri = kmalloc(sizeof(struct kvm_rma_info), GFP_KERNEL);
->  	if (!ri)
->  		return NULL;
-> -	page = cma_alloc(kvm_cma, kvm_rma_pages, get_order(kvm_rma_pages));
-> +	page = cma_alloc(kvm_cma, kvm_rma_pages, order_base_2(kvm_rma_pages));
->  	if (!page)
->  		goto err_out;
->  	atomic_set(&ri->use_count, 1);
-> @@ -135,12 +135,12 @@ struct page *kvm_alloc_hpt(unsigned long nr_pages)
->  {
->  	unsigned long align_pages = HPT_ALIGN_PAGES;
->
-> -	VM_BUG_ON(get_order(nr_pages) < KVM_CMA_CHUNK_ORDER - PAGE_SHIFT);
-> +	VM_BUG_ON(order_base_2(nr_pages) < KVM_CMA_CHUNK_ORDER - PAGE_SHIFT);
->
->  	/* Old CPUs require HPT aligned on a multiple of its size */
->  	if (!cpu_has_feature(CPU_FTR_ARCH_206))
->  		align_pages = nr_pages;
-> -	return cma_alloc(kvm_cma, nr_pages, get_order(align_pages));
-> +	return cma_alloc(kvm_cma, nr_pages, order_base_2(align_pages));
->  }
->  EXPORT_SYMBOL_GPL(kvm_alloc_hpt);
->
-> -- 
-> 2.0.0
-
+--Andy
