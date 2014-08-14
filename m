@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932297AbaHNWUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 18:20:36 -0400
-Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:53525
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932117AbaHNWUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 18:20:35 -0400
-X-WSS-ID: 0NABI1Q-08-8FN-02
-X-M-MSG: 
-Message-ID: <53ED361F.4010009@amd.com>
-Date: Thu, 14 Aug 2014 17:20:15 -0500
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932323AbaHNWVY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 18:21:24 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:37663 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601AbaHNWVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 18:21:23 -0400
+Date: Thu, 14 Aug 2014 15:21:19 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-kbuild@vger.kernel.org, Brian Norris <computersforpeace@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Subject: Overriding -Werror
+Message-ID: <20140814222119.GD18411@ld-irv-0074>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>
-CC: Clemens Ladisch <clemens@ladisch.de>, Guenter Roeck <linux@roeck-us.net>,
-        <jdelvare@suse.de>, <rdunlap@infradead.org>, <tglx@linutronix.de>,
-        <mingo@redhat.com>, <hpa@zytor.com>, <dan.carpenter@oracle.com>,
-        <lm-sensors@lm-sensors.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] hwmon, k10temp: Add support for F15h M60h
-References: <1408035262-18026-1-git-send-email-aravind.gopalakrishnan@amd.com>
- <20140814201730.GA501@roeck-us.net> <53ED1A87.6000400@ladisch.de>
- <20140814210816.GC18887@pd.tnic> <53ED30BD.90403@amd.com>
- <20140814220530.GD18887@pd.tnic>
-In-Reply-To: <20140814220530.GD18887@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019004)(6009001)(428002)(189002)(199003)(51704005)(479174003)(377454003)(24454002)(93886004)(33656002)(87266999)(21056001)(85306004)(76176999)(65956001)(65816999)(50986999)(54356999)(77982001)(110136001)(99396002)(76482001)(97736001)(102836001)(107046002)(74502001)(46102001)(106466001)(31966008)(95666004)(83506001)(80022001)(85852003)(47776003)(65806001)(50466002)(83322001)(44976005)(80316001)(83072002)(92726001)(74662001)(68736004)(87936001)(81342001)(23676002)(59896001)(101416001)(86362001)(84676001)(105586002)(4396001)(81542001)(20776003)(64706001)(92566001)(79102001)(36756003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB048;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03030B9493
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/14/2014 5:05 PM, Borislav Petkov wrote:
-> On Thu, Aug 14, 2014 at 04:57:17PM -0500, Aravind Gopalakrishnan wrote:
->> Actually I don't need it outside of k10temp as of now (or near future)
->> I added it in amd_nb as that was Clemens, Guenter's suggestion on the
->> previous version;
->> Besides, it made sense as it's an indirect access of NB_SMU register and
->> amd_nb seems a good place to put the function in case someone needs it in
->> the future.
-> Then someone can move it then. But until that happens it is pretty
-> pointless of having the Kconfig dependency just for one small function
-> with a single user.
->
->> I can move it locally to k10temp and remove the dependency if that's
->> more preferable.
-> Yeah, it looks like a fabricated and not true dependency, which doesn't
-> make any sense currently.
->
-> Thanks.
->
+Hi all,
 
-Ok, Will fix this and send V3.
+I'm interested in being able to build-test kernels on various
+architectures while enabling extra warnings (make W=[123]). I'd like to
+be able to finish the builds and see all warnings, rather than seeing a
+failed build. However, GCC's -Werror is incompatible with this. There is
+plenty of code that will produce at least one warning, when warning
+verbosity is turned up. And GCC's -Werror is not guaranteed to remain
+stable over time; new versions may develop new warnings that may or may
+not be legitimate.
 
--Aravind.
+It seems that there are a few problem ARCHes that enable -Werror by
+default: SuperH (orphaned), SPARC, and MIPS. There are also a few
+scattered Makefiles throughout the build tree. Developers have
+previously tried to remove some of the worst offenders [1], but were
+mostly rejected [2]. It doesn't seem like we can fully prevent
+maintainers from enabling -Werror on their code--or even on their entire
+ARCH build, as with MIPS--for better or worse, so I look to other
+alternatives.
+
+For the easiest approach, I considered how one might add -Wno-error to
+the CFLAGS. 'make KCFLAGS=-Wno-error' looked promising, but
+KBUILD_CFLAGS is applied before the sub-directory Makefiles add their
+own options to ccflags-y. So it seems like others have come to the same
+conclusion as me: that Kbuild doesn't seem to provide a way to override
+the -Werror behvaior from the top level. [3][4]
+
+So, how can we fix this? -Werror may be useful in some cases to
+encourage developers to fix up their code immediately, but it is
+decidedly unhelpful when running code through analysis tools.
+
+Possibilities include:
+
+1. make -Werror be applied only when we do not have W=[123]. [5]
+
+2. develop a top-level override for CFLAGS that is applied *after* all
+   sub-directory modifications
+
+3. make -Werror opt-in / configurable, like PPC's CONFIG_PPC_WERROR
+   (maybe make it a generic CONFIG_WERROR?), and prevent its
+   unconditional use in Makefiles
+
+4. better ideas?
+
+Regards,
+Brian
+
+[1] http://www.linux-mips.org/archives/linux-mips/2012-04/msg00179.html
+    http://patchwork.ozlabs.org/patch/146297/
+
+[2] http://www.linux-mips.org/archives/linux-mips/2012-05/msg00064.html
+
+[3] http://lists.linaro.org/pipermail/linaro-toolchain/2011-November/001869.html
+
+[4] http://lists.linaro.org/pipermail/linaro-dev/2011-December/008880.html
+
+[5] http://www.linux-mips.org/archives/linux-mips/2012-05/msg00070.html
