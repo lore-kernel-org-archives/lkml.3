@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076AbaHNO6T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 10:58:19 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:46381 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526AbaHNO6R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 10:58:17 -0400
-Date: Thu, 14 Aug 2014 22:58:04 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v9 02/12] PCI: OF: Parse and map the IRQ when adding the
- PCI device.
-Message-ID: <20140814145804.GA5586@richard>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
- <1407860725-25202-3-git-send-email-Liviu.Dudau@arm.com>
+	id S1755211AbaHNO64 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 10:58:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:40738 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754625AbaHNO6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 10:58:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="372400277"
+Date: Thu, 14 Aug 2014 07:58:54 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, eranian@google.com
+Subject: Re: [PATCH 3/5] perf, x86: Add Broadwell core support
+Message-ID: <20140814145854.GQ5803@tassilo.jf.intel.com>
+References: <1407979069-7121-1-git-send-email-andi@firstfloor.org>
+ <1407979069-7121-4-git-send-email-andi@firstfloor.org>
+ <20140814070722.GD16043@twins.programming.kicks-ass.net>
+ <20140814073210.GP3588@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407860725-25202-3-git-send-email-Liviu.Dudau@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081414-5564-0000-0000-000000C68005
+In-Reply-To: <20140814073210.GP3588@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 05:25:15PM +0100, Liviu Dudau wrote:
->Enhance the default implementation of pcibios_add_device() to
->parse and map the IRQ of the device if a DT binding is available.
->
->Cc: Bjorn Helgaas <bhelgaas@google.com>
->Cc: Grant Likely <grant.likely@linaro.org>
->Cc: Rob Herring <robh+dt@kernel.org>
->Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
->---
-> drivers/pci/pci.c | 3 +++
-> 1 file changed, 3 insertions(+)
->
->diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->index 1c8592b..29d1775 100644
->--- a/drivers/pci/pci.c
->+++ b/drivers/pci/pci.c
->@@ -17,6 +17,7 @@
-> #include <linux/spinlock.h>
-> #include <linux/string.h>
-> #include <linux/log2.h>
->+#include <linux/of_pci.h>
-> #include <linux/pci-aspm.h>
-> #include <linux/pm_wakeup.h>
-> #include <linux/interrupt.h>
->@@ -1453,6 +1454,8 @@ EXPORT_SYMBOL(pcim_pin_device);
->  */
-> int __weak pcibios_add_device(struct pci_dev *dev)
-> {
->+	dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
->+
-> 	return 0;
-> }
+On Thu, Aug 14, 2014 at 09:32:10AM +0200, Peter Zijlstra wrote:
+> On Thu, Aug 14, 2014 at 09:07:22AM +0200, Peter Zijlstra wrote:
+> > On Wed, Aug 13, 2014 at 06:17:47PM -0700, Andi Kleen wrote:
+> > 
+> > > v2: Remove unnamed model numbers.
+> > 
+> > > +	case 61: /* Broadwell Client */
+> > 
+> > Seriously? So 71 and 79 are fine as a number but you cannot name them?
+> 
+> would something like:
+> 
+> 	case 71: /* 14nm Broadwell TBA */
+> 
+> work? Where you then will update the description at the appropriate
+> time?
 
-Liviu,
+There won't be a single description, it will turn into all kinds 
+of products. The names I used are the ones we use.
 
-For this, my suggestion is to add arch dependent function to setup the irq
-line for pci devices. I can't find an obvious reason this won't work on other
-archs, but maybe this will hurt some of them?
-
->
->-- 
->2.0.4
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Really, Peter, it's futile to try to reproduce http://ark.intel.com
+in perf comments. If you need information on specific Intel
+products please look it up there.
+ 
+-Andi
 
 -- 
-Richard Yang
-Help you, Help me
-
+ak@linux.intel.com -- Speaking for myself only
