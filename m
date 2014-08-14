@@ -1,229 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157AbaHNHbh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 03:31:37 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23500 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751803AbaHNHbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 03:31:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,861,1400050800"; 
-   d="scan'208";a="576529503"
-From: "Chen, Gong" <gong.chen@linux.intel.com>
-To: bp@alien8.de
-Cc: tony.luck@intel.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [PATCH v2 4/5] x86/mce: Simplify flow when handling recoverable memory errors
-Date: Thu, 14 Aug 2014 02:49:45 -0400
-Message-Id: <1407998986-1834-5-git-send-email-gong.chen@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
-References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
+	id S1754240AbaHNHcY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 03:32:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48239 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803AbaHNHcX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 03:32:23 -0400
+Date: Thu, 14 Aug 2014 09:32:10 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 3/5] perf, x86: Add Broadwell core support
+Message-ID: <20140814073210.GP3588@twins.programming.kicks-ass.net>
+References: <1407979069-7121-1-git-send-email-andi@firstfloor.org>
+ <1407979069-7121-4-git-send-email-andi@firstfloor.org>
+ <20140814070722.GD16043@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sB5q8U+2Z60V3VP3"
+Content-Disposition: inline
+In-Reply-To: <20140814070722.GD16043@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tony Luck <tony.luck@intel.com>
 
-Handling of uncorrected, but s/w recoverable, errors is a two phase process:
+--sB5q8U+2Z60V3VP3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-1) In the machine check handler we identify the signature of a recoverable
-   error and use TIF_MCE_NOTIFY to mark the process so that we will not
-   return to ring3 and re-execute the instruction that accessed the failed
-   memory location.
-2) In process context we see TIF_MCE_NOTIFY set and call mce_notify_process()
-   to do all the recovery work that we could not do in machine check context.
+On Thu, Aug 14, 2014 at 09:07:22AM +0200, Peter Zijlstra wrote:
+> On Wed, Aug 13, 2014 at 06:17:47PM -0700, Andi Kleen wrote:
+>=20
+> > v2: Remove unnamed model numbers.
+>=20
+> > +	case 61: /* Broadwell Client */
+>=20
+> Seriously? So 71 and 79 are fine as a number but you cannot name them?
 
-We need to pass the memory address and a flag to say whether the faulting
-instruction can be continued from stage "1" to stage "2".  The existing
-code to do this is baroque.  We hunt through a fixed sized array of
-"mce_info" structures and use atomic_cmpxchg to claim a free one (we
-panic if all are busy). Then in phase 2 we scan back through the mce_info
-array looking for the one that matches the current process.
+would something like:
 
-We can do much better by admitting that the failing address found in
-phase 1 is a property of the current task. We can only recover from
-errors detected while trying to retire an instruction in ring3 (s/w
-limitation). So we know that MCE_AR_SEVERITY means that we are running
-on the cpu that was executing user code and hit an error that triggered
-this machine check.  This is the reason why TIF_MCE_NOTIFY has been set,
-and the memory error must be dealt with before we can either allow this
-process to continue (if we can replace the page) or not (signalling the
-process if the memory has been lost).
+	case 71: /* 14nm Broadwell TBA */
 
-So we add two fields to the task structure to be saved in phase 1 and
-retrieved in phase 2.  The mce_info[] array and routines to add/find/clear
-entried from it can all be deleted.
+work? Where you then will update the description at the appropriate
+time?
 
-Gong: Add missed CONFIG_MEMORY_FAILURE & '\n' to the end of printk
-message, while at it.
+--sB5q8U+2Z60V3VP3
+Content-Type: application/pgp-signature
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-Acked-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/include/asm/mce.h       |  2 ++
- arch/x86/kernel/cpu/mcheck/mce.c | 67 +++++++---------------------------------
- arch/x86/kernel/signal.c         |  2 +-
- include/linux/sched.h            |  4 +++
- 4 files changed, 19 insertions(+), 56 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index a713dabd000b..76e706767655 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -187,7 +187,9 @@ enum mcp_flags {
- void machine_check_poll(enum mcp_flags flags, mce_banks_t *b);
- 
- int mce_notify_irq(void);
-+#ifdef CONFIG_MEMORY_FAILURE
- void mce_notify_process(void);
-+#endif
- 
- DECLARE_PER_CPU(struct mce, injectm);
- 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 0e64a3c69b2b..b0a25d5f7185 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -928,51 +928,6 @@ static void mce_clear_state(unsigned long *toclear)
- }
- 
- /*
-- * Need to save faulting physical address associated with a process
-- * in the machine check handler some place where we can grab it back
-- * later in mce_notify_process()
-- */
--#define	MCE_INFO_MAX	16
--
--struct mce_info {
--	atomic_t		inuse;
--	struct task_struct	*t;
--	__u64			paddr;
--	int			restartable;
--} mce_info[MCE_INFO_MAX];
--
--static void mce_save_info(__u64 addr, int c)
--{
--	struct mce_info *mi;
--
--	for (mi = mce_info; mi < &mce_info[MCE_INFO_MAX]; mi++) {
--		if (atomic_cmpxchg(&mi->inuse, 0, 1) == 0) {
--			mi->t = current;
--			mi->paddr = addr;
--			mi->restartable = c;
--			return;
--		}
--	}
--
--	mce_panic("Too many concurrent recoverable errors", NULL, NULL);
--}
--
--static struct mce_info *mce_find_info(void)
--{
--	struct mce_info *mi;
--
--	for (mi = mce_info; mi < &mce_info[MCE_INFO_MAX]; mi++)
--		if (atomic_read(&mi->inuse) && mi->t == current)
--			return mi;
--	return NULL;
--}
--
--static void mce_clear_info(struct mce_info *mi)
--{
--	atomic_set(&mi->inuse, 0);
--}
--
--/*
-  * The actual machine check handler. This only handles real
-  * exceptions when something got corrupted coming in through int 18.
-  *
-@@ -1121,11 +1076,15 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	if (cfg->tolerant < 3) {
- 		if (no_way_out)
- 			mce_panic("Fatal machine check on current CPU", &m, msg);
-+#ifdef CONFIG_MEMORY_FAILURE
- 		if (worst == MCE_AR_SEVERITY) {
- 			/* schedule action before return to userland */
--			mce_save_info(m.addr, m.mcgstatus & MCG_STATUS_RIPV);
-+			current->paddr = m.addr;
-+			current->restartable = !!(m.mcgstatus & MCG_STATUS_RIPV);
- 			set_thread_flag(TIF_MCE_NOTIFY);
--		} else if (kill_it) {
-+		} else
-+#endif
-+		if (kill_it) {
- 			force_sig(SIGBUS, current);
- 		}
- 	}
-@@ -1159,33 +1118,31 @@ int memory_failure(unsigned long pfn, int vector, int flags)
-  * process any corrupted pages, and kill/signal current process if required.
-  * Action required errors are handled here.
-  */
-+#ifdef CONFIG_MEMORY_FAILURE
- void mce_notify_process(void)
- {
- 	unsigned long pfn;
--	struct mce_info *mi = mce_find_info();
- 	int flags = MF_ACTION_REQUIRED;
- 
--	if (!mi)
--		mce_panic("Lost physical address for unconsumed uncorrectable error", NULL, NULL);
--	pfn = mi->paddr >> PAGE_SHIFT;
-+	pfn = current->paddr >> PAGE_SHIFT;
- 
- 	clear_thread_flag(TIF_MCE_NOTIFY);
- 
--	pr_err("Uncorrected hardware memory error in user-access at %llx",
--		 mi->paddr);
-+	pr_err("Uncorrected hardware memory error in user-access at %llx\n",
-+		 current->paddr);
- 	/*
- 	 * We must call memory_failure() here even if the current process is
- 	 * doomed. We still need to mark the page as poisoned and alert any
- 	 * other users of the page.
- 	 */
--	if (!mi->restartable)
-+	if (!current->restartable)
- 		flags |= MF_MUST_KILL;
- 	if (memory_failure(pfn, MCE_VECTOR, flags) < 0) {
- 		pr_err("Memory error not recovered");
- 		force_sig(SIGBUS, current);
- 	}
--	mce_clear_info(mi);
- }
-+#endif
- 
- /*
-  * Action optional processing happens here (picking up
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 2851d63c1202..28fd70560b96 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -735,7 +735,7 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
- {
- 	user_exit();
- 
--#ifdef CONFIG_X86_MCE
-+#ifdef CONFIG_MEMORY_FAILURE
- 	/* notify userspace of pending MCEs */
- 	if (thread_info_flags & _TIF_MCE_NOTIFY)
- 		mce_notify_process();
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 857ba40426ba..b41e839b9e1e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1645,6 +1645,10 @@ struct task_struct {
- 	unsigned int	sequential_io;
- 	unsigned int	sequential_io_avg;
- #endif
-+#ifdef CONFIG_MEMORY_FAILURE
-+	__u64	paddr;
-+	int	restartable;
-+#endif
- };
- 
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
--- 
-2.0.0.rc2
+iQIcBAEBAgAGBQJT7GX6AAoJEHZH4aRLwOS6i+kQAJp3B9QVJquitRfo3GsQBKH9
++YiAVSXmNdF8eGAsAnkKEzCbV9ZwU03gHxr7QBdxtbV9JhdOXe+V9TbNlLD+peaH
+M4Hlw+lZ3c0kYbd3jSMzYEdHsDWCx/jQRvoEaVO++2NxVL7a/v5wFSno16cCYzcE
+PDbaYjf5d8d4iBSTt/gn/pRMtnX+EFxqJWMbrmKRH9CKtO3ZjhuvCpntYKxGThun
+L7dYe2lCbdvrXLNMmxPfu/D1FI+ciMjbl0684jghVrbxiUqOl0lZWfNvDN3vZfwr
+2N+gYvRvpM5eCfJ9DM/CIrxmV9XSLlCp97Tj510Zog9rxuPq0EANVf0y/JgSfxHO
+ROwNIJ5iEIC4Z8HIf58xzfIHrEZtqaUmAW2F33iswJvzkVmRQpZ4rRObKPT+yY/O
+y30GVj6/8pJ1SzaJf+GpI+06pVUslsqLmGZg7C3bjgVAWP7ZkMuhLZ+gu3Y8PhfM
+wW7+r/OMKsiyAmX6HUM5s10WN4EYMDSG2ysjQHsB221EIwyknZFLaG2vYzBuQ9Lv
+ueHVr7x1h8RxWHNWh9uLZk9EY8Aq1bZ3/uASXWiMxZ1seKlyIjqx6wzAAsVcx0NS
+kurnoxEz0DPQfwuULO7YFYY8lEAG6MTjnPutLhOtn2XRYDtsiDxyJAEEkWQz/9lk
+lBxJ2m/9SbrsHDUg3Qav
+=Ydse
+-----END PGP SIGNATURE-----
 
+--sB5q8U+2Z60V3VP3--
