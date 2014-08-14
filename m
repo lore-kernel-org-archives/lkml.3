@@ -1,183 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838AbaHNUMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 16:12:50 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:59110 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118AbaHNUMt (ORCPT
+	id S932169AbaHNUNE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 16:13:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33297 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754656AbaHNUNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 16:12:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <1408046230-16439-4-git-send-email-ashwin.chaugule@linaro.org>
-References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
-	<1408046230-16439-4-git-send-email-ashwin.chaugule@linaro.org>
-Date: Thu, 14 Aug 2014 16:12:47 -0400
-Message-ID: <CAJ5Y-eammFgLsZMJnbfdNUFUo84YTteJ4r1Dyhn3sG5bZKMaNA@mail.gmail.com>
-Subject: Re: [RFC 3/3] CPPC: Add ACPI accessors to CPC registers
-From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Mike Turquette <mike.turquette@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, mingo@kernel.org,
-        peterz@infradead.org, len.brown@intel.com,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
-        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>, rjw@rjwysocki.net
-Content-Type: text/plain; charset=UTF-8
+	Thu, 14 Aug 2014 16:13:00 -0400
+Date: Thu, 14 Aug 2014 13:12:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux MM <linux-mm@kvack.org>, Zhang Zhen <zhenzhang.zhang@huawei.com>
+Subject: Re: linux-next: Tree for Aug 14 (mm/memory_hotplug.c and
+ drivers/base/memory.c)
+Message-Id: <20140814131259.0e56829123ba1123bbe1685a@linux-foundation.org>
+In-Reply-To: <53ECCF7E.2090305@infradead.org>
+References: <20140814152749.24d43663@canb.auug.org.au>
+	<53ECCF7E.2090305@infradead.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Rafael [corrected email addr]
+On Thu, 14 Aug 2014 08:02:22 -0700 Randy Dunlap <rdunlap@infradead.org> wrote:
 
-On 14 August 2014 15:57, Ashwin Chaugule <ashwin.chaugule@linaro.org> wrote:
-> If the firmware supports CPPC natively in the firmware
-> then we can use the ACPI defined semantics to access
-> the CPPC specific registers.
->
-> Signed-off-by: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-> ---
->  drivers/cpufreq/Kconfig     |  9 +++++
->  drivers/cpufreq/Makefile    |  1 +
->  drivers/cpufreq/cppc.h      |  4 +--
->  drivers/cpufreq/cppc_acpi.c | 80 +++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 92 insertions(+), 2 deletions(-)
->  create mode 100644 drivers/cpufreq/cppc_acpi.c
->
-> diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-> index d8e8335..c5f3c0b 100644
-> --- a/drivers/cpufreq/Kconfig
-> +++ b/drivers/cpufreq/Kconfig
-> @@ -206,6 +206,15 @@ config CPPC_CPUFREQ
->         (e.g. BMC) interpret and optimize it for power and performance in a
->         platform specific manner.
->
-> +config CPPC_ACPI
-> +       bool "CPPC with ACPI accessors"
-> +       depends on ACPI && ACPI_PCC
-> +       default n
-> +       help
-> +       This driver implements the low level accessors to the registers as described
-> +       in the ACPI 5.1 spec. Select this driver if you know your platform supports CPPC
-> +       and PCC in the firmware.
-> +
->  menu "x86 CPU frequency scaling drivers"
->  depends on X86
->  source "drivers/cpufreq/Kconfig.x86"
-> diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-> index b392c8c..d49a999 100644
-> --- a/drivers/cpufreq/Makefile
-> +++ b/drivers/cpufreq/Makefile
-> @@ -15,6 +15,7 @@ obj-$(CONFIG_CPU_FREQ_GOV_COMMON)             += cpufreq_governor.o
->
->  obj-$(CONFIG_GENERIC_CPUFREQ_CPU0)     += cpufreq-cpu0.o
->  obj-$(CONFIG_CPPC_CPUFREQ)     += cppc.o
-> +obj-$(CONFIG_CPPC_ACPI)        += cppc_acpi.o
->
->  ##################################################################################
->  # x86 drivers.
-> diff --git a/drivers/cpufreq/cppc.h b/drivers/cpufreq/cppc.h
-> index 3adbd3d..a119c3b 100644
-> --- a/drivers/cpufreq/cppc.h
-> +++ b/drivers/cpufreq/cppc.h
-> @@ -175,7 +175,7 @@ struct cpc_funcs {
->  };
->
->  extern struct cpc_funcs *cppc_func_ops;
-> -extern u64 cpc_read64(struct cpc_register_resource *reg);
-> -extern int cpc_write64(u64 val, struct cpc_register_resource *reg);
-> +extern u64 cpc_read64(struct cpc_register_resource *reg, void __iomem *base_addr);
-> +extern int cpc_write64(u64 val, struct cpc_register_resource *reg, void __iomem *base_addr);
->
->  #endif /* _CPPC_H */
-> diff --git a/drivers/cpufreq/cppc_acpi.c b/drivers/cpufreq/cppc_acpi.c
-> new file mode 100644
-> index 0000000..1835fe7
-> --- /dev/null
-> +++ b/drivers/cpufreq/cppc_acpi.c
-> @@ -0,0 +1,80 @@
-> +/*
-> + *     Copyright (C) 2014 Linaro Ltd.
-> + *     Author: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#include <linux/acpi.h>
-> +
-> +#include "cppc.h"
-> +
-> +static u32 acpi_get_highest_perf(struct cpudata *cpu)
-> +{
-> +       struct cpc_register_resource *high_perf = &cpu->cpc_desc->cpc_regs[HIGHEST_PERF];
-> +
-> +       return cpc_read64(high_perf, cpu->pcc_comm_address);
-> +}
-> +
-> +static u64 acpi_get_ref_perf_ctr(struct cpudata *cpu)
-> +{
-> +       struct cpc_register_resource *ref_perf = &cpu->cpc_desc->cpc_regs[REFERENCE_CTR];
-> +       return cpc_read64(ref_perf, cpu->pcc_comm_address);
-> +}
-> +
-> +static u32 acpi_get_lowest_perf(struct cpudata *cpu)
-> +{
-> +       struct cpc_register_resource *low_perf = &cpu->cpc_desc->cpc_regs[LOWEST_PERF];
-> +       return cpc_read64(low_perf, cpu->pcc_comm_address);
-> +}
-> +
-> +static void acpi_set_desired_perf(struct cpudata *cpu, u32 val)
-> +{
-> +       struct cpc_register_resource *desired_perf = &cpu->cpc_desc->cpc_regs[DESIRED_PERF];
-> +       cpc_write64(val, desired_perf, cpu->pcc_comm_address);
-> +}
-> +
-> +static u64 acpi_get_delivered_ctr(struct cpudata *cpu)
-> +{
-> +       struct cpc_register_resource *delivered_ctr = &cpu->cpc_desc->cpc_regs[DELIVERED_CTR];
-> +       return cpc_read64(delivered_ctr, cpu->pcc_comm_address);
-> +}
-> +
-> +struct cpc_funcs acpi_cppc_func_ops = {
-> +       .pid_policy = {
-> +               .sample_rate_ms = 10,
-> +               .deadband = 0,
-> +               .setpoint = 97,
-> +               .p_gain_pct = 20,
-> +               .d_gain_pct = 0,
-> +               .i_gain_pct = 0,
-> +       },
-> +       .get_highest_perf       =       acpi_get_highest_perf,
-> +       .get_ref_perf_ctr       =       acpi_get_ref_perf_ctr,
-> +       .get_lowest_perf        =       acpi_get_lowest_perf,
-> +       .set_desired_perf       =       acpi_set_desired_perf,
-> +       .get_delivered_ctr      =       acpi_get_delivered_ctr,
-> +};
-> +
-> +static int __init acpi_cppc_init(void)
-> +{
-> +       if (acpi_disabled)
-> +               return 0;
-> +
-> +       cppc_func_ops = &acpi_cppc_func_ops;
-> +
-> +       pr_info("Registered ACPI CPPC function ops\n");
-> +
-> +       return 0;
-> +}
-> +early_initcall(acpi_cppc_init);
-> +
-> --
-> 1.9.1
->
+> On 08/13/14 22:27, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Please do not add code intended for v3.18 until after v3.17-rc1 is
+> > released.
+> > 
+> > Changes since 20140813:
+> > 
+> 
+> on x86_64:
+> 
+> drivers/built-in.o: In function `show_zones_online_to':
+> memory.c:(.text+0x13f306): undefined reference to `test_pages_in_a_zone'
+> 
+> in drivers/base/memory.c
+> 
+> when CONFIG_MEMORY_HOTREMOVE is not enabled.
+> 
+> The function implementation in mm/memory_hotplug.c is only built if
+> CONFIG_MEMORY_HOTREMOVE is enabled.
+
+Thanks.   This way, I suppose.
+
+--- a/drivers/base/memory.c~memory-hotplug-add-sysfs-zones_online_to-attribute-fix-2
++++ a/drivers/base/memory.c
+@@ -373,6 +373,7 @@ static ssize_t show_phys_device(struct d
+ 	return sprintf(buf, "%d\n", mem->phys_device);
+ }
+ 
++#ifdef CONFIG_MEMORY_HOTREMOVE
+ static int __zones_online_to(unsigned long end_pfn,
+ 				struct page *first_page, unsigned long nr_pages)
+ {
+@@ -432,12 +433,13 @@ static ssize_t show_zones_online_to(stru
+ 
+ 	return sprintf(buf, "%s\n", zone->name);
+ }
++static DEVICE_ATTR(zones_online_to, 0444, show_zones_online_to, NULL);
++#endif
+ 
+ static DEVICE_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
+ static DEVICE_ATTR(state, 0644, show_mem_state, store_mem_state);
+ static DEVICE_ATTR(phys_device, 0444, show_phys_device, NULL);
+ static DEVICE_ATTR(removable, 0444, show_mem_removable, NULL);
+-static DEVICE_ATTR(zones_online_to, 0444, show_zones_online_to, NULL);
+ 
+ /*
+  * Block size attribute stuff
+@@ -584,7 +586,9 @@ static struct attribute *memory_memblk_a
+ 	&dev_attr_state.attr,
+ 	&dev_attr_phys_device.attr,
+ 	&dev_attr_removable.attr,
++#ifdef CONFIG_MEMORY_HOTREMOVE
+ 	&dev_attr_zones_online_to.attr,
++#endif
+ 	NULL
+ };
+ 
+
