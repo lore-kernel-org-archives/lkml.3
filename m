@@ -1,103 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329AbaHNJll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 05:41:41 -0400
-Received: from mail-yk0-f173.google.com ([209.85.160.173]:41552 "EHLO
-	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795AbaHNJlj (ORCPT
+	id S1754530AbaHNJmE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 05:42:04 -0400
+Received: from smtp-out-215.synserver.de ([212.40.185.215]:1079 "EHLO
+	smtp-out-214.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754437AbaHNJmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 05:41:39 -0400
+	Thu, 14 Aug 2014 05:42:01 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 28574
+Message-ID: <53EC8463.2030802@metafoo.de>
+Date: Thu, 14 Aug 2014 11:41:55 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <53CFCD26.1020409@infradead.org>
-References: <20140723113314.GA7798@chaz.gmail.com>
-	<53CFCD26.1020409@infradead.org>
-Date: Thu, 14 Aug 2014 10:41:39 +0100
-Message-ID: <CACsCDOP8DOnB0zZtT_WLhiBXjxXh1aH1eGF9_h0dRN1i9YDU-A@mail.gmail.com>
-Subject: Re: network interfaces called "all", "default" or "config"
-From: Stephane Chazelas <stephane.chazelas@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Aniroop Mathur <aniroop.mathur@gmail.com>,
+        "jic23@kernel.org" <jic23@kernel.org>
+CC: a.mathur@samsung.com, "cpgs ." <cpgs@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        p.shailesh@samsung.com, r.mahale@samsung.com, vidushi.koul@samsung.com,
+        narendra.m1@samsung.com
+Subject: Re: [PATCH 1/1] IIO: Added write function in iio_buffer_fileops
+References: <1407911391-26696-1-git-send-email-a.mathur@samsung.com>	<53EB2AFE.10900@metafoo.de>	<CADYu309nTht96H077D6YGvhRYz6Xfux7Qri5Hi7dfgQMtOz-Pg@mail.gmail.com>	<53EB7AD9.9010602@metafoo.de> <CADYu30-RHmysR5vhvNLGXMBx2gnQ6rkdW-pPzyVY=E4KYg8g9w@mail.gmail.com>
+In-Reply-To: <CADYu30-RHmysR5vhvNLGXMBx2gnQ6rkdW-pPzyVY=E4KYg8g9w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By the way, this is related:
-
-$ ip link add link eth0 eth0:123 type vlan id 123
-$ ip link del link eth0 eth0:123
-RTNETLINK answers: Operation not supported
-
-vconfig rem eth0:123
-
-using a different API, is OK.
-
-ip link del:
-
-bind(3, {sa_family=AF_NETLINK, pid=0, groups=00000000}, 12) = 0
-getsockname(3, {sa_family=AF_NETLINK, pid=22135, groups=00000000}, [12]) = 0
-sendto(3, " \0\0\0\20\0\5\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-32, 0, NULL, 0) = 32
-recvmsg(3, {msg_name(12)={sa_family=AF_NETLINK, pid=0,
-groups=00000000},
-msg_iov(1)=[{"4\0\0\0\2\0\0\0\0\0\0\0wV\0\0\355\377\377\377
-\0\0\0\20\0\5\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-8192}], msg_controllen=0, msg_flags=0}, 0) = 52
-access("/proc/net", R_OK)               = 0
-access("/proc/net/unix", R_OK)          = 0
-socket(PF_LOCAL, SOCK_DGRAM|SOCK_CLOEXEC, 0) = 4
-ioctl(4, SIOCGIFINDEX, {ifr_name="eth0:123", ifr_index=2}) = 0
-close(4)                                = 0
-sendmsg(3, {msg_name(12)={sa_family=AF_NETLINK, pid=0,
-groups=00000000}, msg_iov(1)=[{"
-\0\0\0\21\0\5\0\305\202\354S\0\0\0\0\0\0\0\0\2\0\0\0\0\0\0\0\0\0\0\0",
-32}], msg_controllen=0, msg_flags=0}, 0) = 32
-recvmsg(3, {msg_name(12)={sa_family=AF_NETLINK, pid=0,
-groups=00000000},
-msg_iov(1)=[{"4\0\0\0\2\0\0\0\305\202\354SwV\0\0\241\377\377\377
-\0\0\0\21\0\5\0\305\202\354S\0\0\0\0\0\0\0\0\2\0\0\0\0\0\0\0\0\0\0\0",
-16384}], msg_controllen=0, msg_flags=0}, 0) = 52
-write(2, "RTNETLINK answers: Operation not supported\n", 43) = 43
-exit_group(2)                           = ?
-
-vconfig rem:
-
-socket(PF_INET, SOCK_STREAM, IPPROTO_IP) = 3
-ioctl(3, SIOCSIFVLAN, 0x7fff67a00110)   = 0
-
-
-Cheers,
-Stephane
-
-
-On 23 July 2014 15:56, Randy Dunlap <rdunlap@infradead.org> wrote:
+On 08/13/2014 06:33 PM, Aniroop Mathur wrote:
+> On Wed, Aug 13, 2014 at 8:18 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>> On 08/13/2014 03:42 PM, Aniroop Mathur wrote:
+>>>
+>>> On Wed, Aug 13, 2014 at 2:38 PM, Lars-Peter Clausen <lars@metafoo.de>
+>>> wrote:
+>>>>
+>>>> On 08/13/2014 08:29 AM, a.mathur@samsung.com wrote:
+>>>>>
+>>>>>
+>>>>> From: Aniroop Mathur <a.mathur@samsung.com>
+>>>>>
+>>>>> Earlier, user space can only read from iio device node but cannot write
+>>>>> to
+>>>>> it.
+>>>>> This patch adds write function in iio buffer file operations,
+>>>>> which will allow user-space applications/HAL to write the data
+>>>>> to iio device node.
+>>>>> So now there will be two way communication between IIO subsystem
+>>>>> and user space. (userspace <--> kernel)
+>>>>>
+>>>>> It can be used by HAL or any user-space application which wants to
+>>>>> write data to iio device node/buffer upon receiving some data from it.
+>>>>> As an example,
+>>>>> It is useful for iio device simulator application which need to record
+>>>>> the data by reading from iio device node and replay the recorded data
+>>>>> by writing back to iio device node.
+>>>>>
+>>>>
+>>>> I'm not convinced that this is something that should be added to the
+>>>> kernel.
+>>>> I'm wondering why can't this be done in userspace, e.g. by having a
+>>>> simulator mode for the application or by using LD_PRELOAD. Having this in
+>>>> userspace will be much more flexible and will be easier to implement
+>>>> correctly and you'll most likely want to simulate more than just buffer
+>>>> access, for example setting/getting properties of the device or channel.
+>>>> For
+>>>> the libiio[1] we are planning to implement a test backend that when
+>>>> activated will allow to simulate a whole device rather than just buffer
+>>>> support.
+>>>>
+>>>> [1] https://github.com/analogdevicesinc/libiio
+>>>>
+>>>>
+>>>
+>>> In normal Input Subsystem, there is two way communication between
+>>> kernel and userpace. It has both read and write functionality. :)
+>>> Why there is only one way communication in case of IIO ?
+>>
+>>
+>> I've not seen a compelling reason yet why this must be implemented in kernel
+>> space. In my opinion, as outlined above, userspace if both easier and more
+>> flexible.
+>>
+>>
+>>>
+>>> For Input devices, I completed simulation just by reading and writing at
+>>> input device node /dev/input/eventX.
+>>> But for IIO devices, I am stuck as there is no write function available
+>>> for iio device node /dev/iio:device0.
+>>>
+>>> As per my understanding, if we do the simulation in userspace
+>>> then we need to create one more buffer in userpace. This will lead to
+>>> extra memory usage. With write functionality in IIO just like
+>>> in Input subsystem, we can avoid extra memory space. :)
+>>
+>>
+>> No, you don't actually have to create a additional buffer. Just return the
+>> data that you'd otherwise have passed to write().
+>>
+>>
 >
-> [adding netdev]
+> If there is no buffer, then there is clearly a chance of data loss/miss. :)
+> Because if one application is reading the data with frequency 5 Hz
+> and other application is writing the data at frequency 50 Hz (20 ms delay)
+> so this reading application will miss reading a lot of data.
+> Like in this case, after every 200 ms, 9 out of 10 data will be missed.
+
+Not if implemented correctly. Even with the current kernel implementation 
+you'll have this issues as the buffer will simply overflow when you write 
+faster than you read.
+
+
+[...]
+>>>> Are you sure that this works? iio_push_to_buffer() expects a data buffer
+>>>> of
+>>>> size rb->bytes_per_datum bytes. On the other hand rb->bytes_per_datum is
+>>>> only valid when the buffer is enabled, so for this to work the buffer
+>>>> would
+>>>> need to be enabled. Which means you'd inject the fake data in the middle
+>>>> of
+>>>> the real data stream.
+>>>>
+>>>>
+>>>
+>>> Yes, It works :)
+>>> In one patch, bytes_per_datum has been removed from kifo_in.
+>>> Patch - iio:kfifo_buf Take advantage of the fixed record size used in IIO
+>>> commit c559afbfb08c7eac215ba417251225d3a8e01062
+>>> - ret = kfifo_in(&kf->kf, data, r->bytes_per_datum);
+>>> + ret = kfifo_in(&kf->kf, data, 1);
+>>> So, I think we can now write only one byte of data.
+>>
+>>
+>> No, we need to write 1 record and the size of one record is bytes_per_datum.
+>> If you only write one byte you'll cause a out of bounds access.
+>>
+>>
 >
-> On 07/23/2014 04:33 AM, Stephane Chazelas wrote:
-> > Hiya,
-> >
-> > you may want to forbid the creation of interfaces whose name is
-> > one of the special files in /proc/net and /proc/sys.
-> >
-> > I can see some characters (like space, tab, newline, slash,
-> > dot...) are alread forbidden in interface names (EINVAL), but
-> > one can do for instance:
-> >
-> > sudo ip link add link eth0 all type vlan id 2
-> > sudo ip link add link eth0 default type vlan id 3
-> > sudo ip link add link eth0 config type vlan id 4
-> >
-> > Interestingly, after you add a "all" or "default", the
-> > corresponding /proc/sys/net/ipv[46]/conf/(all|default) become
-> > empty, and remain so even after you've removed the interface.
-> >
-> > Adding an interface called "config" masks /proc/net/vlan/config
-> >
-> > (tested with 3.14-1-amd64 on debian)
-> >
+> This is the code flow below which I checked:
 >
+> kfifo_in(&kf->kf, data, 1);
+> so len=1
+> kfifo_copy_in(fifo, buf, len, fifo->in);
+> l = min(len, size - off);
+> memcpy(fifo->data + off, src, l);
 >
-> --
-> ~Randy
+> In memcpy, if l is 1, so it will copy one byte only.
+> So, how it is writing one record and not one byte ?
+You missed this part:
+
+     if (esize != 1) {
+         off *= esize;
+         size *= esize;
+         len *= esize;
+     }
+
+so len gets multiplied by the record size. len=1 means 1 record.
+
+>
+>>>
+>>> Initially, I wrote the code for write functionality in kernel version 3.6
+>>> using bytes_per_datum instead of fixed size of 1 byte.
+>>> It worked fine. :)
+>>> For this, we just need to replace size 1 by r->bytes_per_datum.
+>>>
+>>> We are not injecting data in middle of real data stream.
+>>> When we inject the recorded data, we disabled the hardware chip,
+>>> so no new/real data is pushed to the buffer during that time.
+>>>
+>>> To record, we enabled the buffer, read the real data and save it.
+>>> To replay, we disabled the hardware chip and injected saved data by
+>>> writing back to iio device node.
+>>> So, Buffer is still enabled at time of writing to iio device node. :)
+>>
+>>
+>> How do you disable the hardware without disabling the buffer?
+>>
+> I disabled the hardware by powering off the chip.
+> And after writing is complete, chip is powered on again. :)
+
+But how do you disable the device when the buffer is still active?
+IIO expects the device to be active when the buffer is active.
+
+- Lars
+
+
