@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648AbaHNJh7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 05:37:59 -0400
-Received: from sauhun.de ([89.238.76.85]:41947 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754530AbaHNJh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 05:37:57 -0400
-Date: Thu, 14 Aug 2014 04:37:44 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        torvalds@linux-foundation.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] I2C: Make I2C core able to be module when I2C_ACPI is
- selected.
-Message-ID: <20140814093743.GB2824@katana>
-References: <1407740455-21269-1-git-send-email-tianyu.lan@intel.com>
- <20140812095321.GU1657@lahna.fi.intel.com>
- <20140813020250.GA2853@katana>
- <53EAD278.2010003@intel.com>
- <20140813070759.GB1657@lahna.fi.intel.com>
- <53EB1251.1000401@intel.com>
+	id S1754329AbaHNJll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 05:41:41 -0400
+Received: from mail-yk0-f173.google.com ([209.85.160.173]:41552 "EHLO
+	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795AbaHNJlj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 05:41:39 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WYTEVAkct0FjGQmd"
-Content-Disposition: inline
-In-Reply-To: <53EB1251.1000401@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53CFCD26.1020409@infradead.org>
+References: <20140723113314.GA7798@chaz.gmail.com>
+	<53CFCD26.1020409@infradead.org>
+Date: Thu, 14 Aug 2014 10:41:39 +0100
+Message-ID: <CACsCDOP8DOnB0zZtT_WLhiBXjxXh1aH1eGF9_h0dRN1i9YDU-A@mail.gmail.com>
+Subject: Re: network interfaces called "all", "default" or "config"
+From: Stephane Chazelas <stephane.chazelas@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+By the way, this is related:
 
---WYTEVAkct0FjGQmd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+$ ip link add link eth0 eth0:123 type vlan id 123
+$ ip link del link eth0 eth0:123
+RTNETLINK answers: Operation not supported
 
-> > True, but only the I2C OpRegion parts needs to have I2C=3Dy. Does it ma=
-ke
-> > sense to name ACPI_I2C to ACPI_I2C_OPREGION (or something like that)
-> > and only enable it when I2C=3Dy? Then we would have ACPI I2C enumeration
-> > still in place.
-> >=20
->=20
-> Yes, this makes sense to me. I will rewrite the patch.
+vconfig rem eth0:123
 
-Ping. I'd like to send the fix to Linus during the merge-window.
+using a different API, is OK.
 
-Thanks,
+ip link del:
 
-   Wolfram
+bind(3, {sa_family=AF_NETLINK, pid=0, groups=00000000}, 12) = 0
+getsockname(3, {sa_family=AF_NETLINK, pid=22135, groups=00000000}, [12]) = 0
+sendto(3, " \0\0\0\20\0\5\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
+32, 0, NULL, 0) = 32
+recvmsg(3, {msg_name(12)={sa_family=AF_NETLINK, pid=0,
+groups=00000000},
+msg_iov(1)=[{"4\0\0\0\2\0\0\0\0\0\0\0wV\0\0\355\377\377\377
+\0\0\0\20\0\5\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
+8192}], msg_controllen=0, msg_flags=0}, 0) = 52
+access("/proc/net", R_OK)               = 0
+access("/proc/net/unix", R_OK)          = 0
+socket(PF_LOCAL, SOCK_DGRAM|SOCK_CLOEXEC, 0) = 4
+ioctl(4, SIOCGIFINDEX, {ifr_name="eth0:123", ifr_index=2}) = 0
+close(4)                                = 0
+sendmsg(3, {msg_name(12)={sa_family=AF_NETLINK, pid=0,
+groups=00000000}, msg_iov(1)=[{"
+\0\0\0\21\0\5\0\305\202\354S\0\0\0\0\0\0\0\0\2\0\0\0\0\0\0\0\0\0\0\0",
+32}], msg_controllen=0, msg_flags=0}, 0) = 32
+recvmsg(3, {msg_name(12)={sa_family=AF_NETLINK, pid=0,
+groups=00000000},
+msg_iov(1)=[{"4\0\0\0\2\0\0\0\305\202\354SwV\0\0\241\377\377\377
+\0\0\0\21\0\5\0\305\202\354S\0\0\0\0\0\0\0\0\2\0\0\0\0\0\0\0\0\0\0\0",
+16384}], msg_controllen=0, msg_flags=0}, 0) = 52
+write(2, "RTNETLINK answers: Operation not supported\n", 43) = 43
+exit_group(2)                           = ?
+
+vconfig rem:
+
+socket(PF_INET, SOCK_STREAM, IPPROTO_IP) = 3
+ioctl(3, SIOCSIFVLAN, 0x7fff67a00110)   = 0
 
 
---WYTEVAkct0FjGQmd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Cheers,
+Stephane
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
 
-iQIcBAEBAgAGBQJT7INnAAoJEBQN5MwUoCm2tvEP/inMeqMpDs6bwVLqQt/7vrQa
-mGV/ft1O9oVEj980Bs6VZ6/KSfWcDuwvambAbBuCcfrHCSfjjTpteGVFkaPuwCD8
-oN2XKjrCoEfcrvXo1D4/GX9xPXwBUIrk+2ksi2CsF77puZLjTvmebZfrFMxmlo0h
-ub6i21TRxbLdOrNNyL/IUhLAKi7DsIu0lqaEWJ9MD4KuX31LzMVVXO/wjEG2thZa
-fNiXzZEwl7X01lHNgWd24x7Lp5qnnYpSBnkbM4QEpTyCKUmpLS5BLIvrdaRsrq3A
-p6SyNoUQVD7nAppr2f8peiOXILlpAk7+J4i4v0BcJZ4Esdi7ebiMHWXbk5dafFCO
-WPyxrrXD9BzjLNEFPnSVjU096QnhNoyyw6XxK3WQ5J0oeYdNPC9mqkFz8awDQbaY
-HlriAiJeY5rM7sWljvL0VyTuDpOgPV3tCTCHUSpRwxLGKaHneVmKr6rNQTdo++NO
-BB9FnHooBjFGVK7//6EHJP0QVM47LuC3Y9qN/c2M+h2tehyIrX38E/b7hQjNKQIZ
-ouSZ84zL+Y0ixHUWYtWgCD50RSFHCv7+uCB7WugD36VjRCCJ6w3QK2GJw1BPkLU4
-bCKb4ahqfOQuyCzA5+ingrl7We57JGQAcP98AOG9YwQe+zyx9ERC+yesaO6qIzb6
-XkvaOvv2nZNcepR4+j4q
-=RjZf
------END PGP SIGNATURE-----
-
---WYTEVAkct0FjGQmd--
+On 23 July 2014 15:56, Randy Dunlap <rdunlap@infradead.org> wrote:
+>
+> [adding netdev]
+>
+> On 07/23/2014 04:33 AM, Stephane Chazelas wrote:
+> > Hiya,
+> >
+> > you may want to forbid the creation of interfaces whose name is
+> > one of the special files in /proc/net and /proc/sys.
+> >
+> > I can see some characters (like space, tab, newline, slash,
+> > dot...) are alread forbidden in interface names (EINVAL), but
+> > one can do for instance:
+> >
+> > sudo ip link add link eth0 all type vlan id 2
+> > sudo ip link add link eth0 default type vlan id 3
+> > sudo ip link add link eth0 config type vlan id 4
+> >
+> > Interestingly, after you add a "all" or "default", the
+> > corresponding /proc/sys/net/ipv[46]/conf/(all|default) become
+> > empty, and remain so even after you've removed the interface.
+> >
+> > Adding an interface called "config" masks /proc/net/vlan/config
+> >
+> > (tested with 3.14-1-amd64 on debian)
+> >
+>
+>
+> --
+> ~Randy
