@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaHNKCr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 06:02:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6198 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751243AbaHNKCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 06:02:46 -0400
-Date: Thu, 14 Aug 2014 12:02:36 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Namhyung Kim <namhyung@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Static build of libtraceevent failing on ubuntu13 x86_64
-Message-ID: <20140814100235.GA10997@krava.brq.redhat.com>
-References: <20140813225438.GM2718@kernel.org>
+	id S1754276AbaHNKFH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 06:05:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38315 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861AbaHNKFE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 06:05:04 -0400
+Message-ID: <53EC89C3.3070800@pengutronix.de>
+Date: Thu, 14 Aug 2014 12:04:51 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140813225438.GM2718@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Stefan Agner <stefan@agner.ch>, shawn.guo@freescale.com
+CC: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/4] ARM: vf610: add FlexCAN support
+References: <cover.1405428166.git.stefan@agner.ch> <53C532B0.9020507@pengutronix.de>
+In-Reply-To: <53C532B0.9020507@pengutronix.de>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="2QCju5bo6FjpRBPWLehdc7A8Rp4TLWgjo"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 07:54:38PM -0300, Arnaldo Carvalho de Melo wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--2QCju5bo6FjpRBPWLehdc7A8Rp4TLWgjo
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-SNIP
+On 07/15/2014 03:54 PM, Marc Kleine-Budde wrote:
+> On 07/15/2014 02:56 PM, Stefan Agner wrote:
+>> This series adds support for Vybrid (aka vf610) to the FlexCAN
+>> controller and extends the device tree accordingly.
+>>
+>> Changes in v3:
+>> - Return error number in flexcan_get_berr_counter if clock enabling fa=
+ils
+>> - Add the FLEXCANX_EN clocks as new clocks
+>>
+>> Changes in v2:
+>> - Split out patch (seperate dt, clocks and driver changes)
+>> - Use spaces for hardware feature flags table
+>> - Remove drive-by change of esdhc register length
+>> - Added related fix which enables clock in berr_counter
+>>
+>> Stefan Agner (4):
+>>   ARM: dts: vf610: add FlexCAN node
+>>   ARM: imx: clk-vf610: fix FlexCAN clock gating
+>>   can: flexcan: switch on clocks before accessing ecr register
+>>   can: flexcan: add vf610 support for FlexCAN
+>>
+>>  arch/arm/boot/dts/vf610.dtsi            | 23 +++++++++
+>>  arch/arm/mach-imx/clk-vf610.c           |  6 ++-
+>>  drivers/net/can/flexcan.c               | 91 ++++++++++++++++++++++++=
++++++----
+>>  include/dt-bindings/clock/vf610-clock.h |  4 +-
+>>  4 files changed, 110 insertions(+), 14 deletions(-)
+>=20
+> I'm taking patch 3+4 via the linux-can-next tree.
 
->   FLEX     util/parse-events-flex.c
->   CC       util/pmu.o
->   CC       util/pmu-flex.o
->   CC       util/parse-events.o
->   CC       util/parse-events-flex.o
->   AR       libperf.a
->   LINK     perf
-> /home/acme/git/linux/tools/lib/traceevent/libtraceevent.a(event-plugin.o): In function `load_plugin':
-> /home/acme/git/linux/tools/lib/traceevent/event-plugin.c:256: warning: Using 'dlopen' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
-> /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/libaudit.a(libaudit.o): In function `audit_rule_fieldpair_data':
-> (.text+0x191b): warning: Using 'getgrnam' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
-> /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/libaudit.a(libaudit.o): In function `audit_rule_fieldpair_data':
-> (.text+0x1978): warning: Using 'getpwnam' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
-> libperf.a(target.o): In function `target__parse_uid':
-> /home/acme/git/linux/tools/perf/util/target.c:79: warning: Using 'getpwnam_r' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
-> /home/acme/git/linux/tools/perf/util/target.c:91: warning: Using 'getpwuid_r' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
-> /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib/libnuma.a(affinity.o): In function `affinity_ip':
-> (.text+0x765): warning: Using 'getaddrinfo' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
-> /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib/libbfd.a(compress.o): In function `bfd_compress_section_contents':
-> /build/buildd/binutils-2.23.52.20130913/builddir-single/bfd/../../bfd/compress.c:100: undefined reference to `compressBound'
-> /build/buildd/binutils-2.23.52.20130913/builddir-single/bfd/../../bfd/compress.c:106: undefined reference to `compress'
+Applied to linux-can-next, with the modified version of the 3/4.
 
-hm, those seem to be from zlib ... found similar error here:
-http://stackoverflow.com/questions/7906152/error-while-building-binutils-2-21-1a-on-solaris
-due to zlib inclusion in bfd lib
+Thanks,
+Marc
 
-jirka
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--2QCju5bo6FjpRBPWLehdc7A8Rp4TLWgjo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iEYEARECAAYFAlPsicMACgkQjTAFq1RaXHPZ9wCfRpBQ7wPPqvV4JAPnoGxqo0Cu
+438AoJXPRO4+W//B2efDS58hmFdyL+Tt
+=kiAi
+-----END PGP SIGNATURE-----
+
+--2QCju5bo6FjpRBPWLehdc7A8Rp4TLWgjo--
