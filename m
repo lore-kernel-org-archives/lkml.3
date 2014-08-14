@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134AbaHNAIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 20:08:06 -0400
-Received: from ozlabs.org ([103.22.144.67]:41365 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752422AbaHNAIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 20:08:04 -0400
-Date: Thu, 14 Aug 2014 10:07:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: new stuff in the btrfs tree
-Message-ID: <20140814100750.5c6368f1@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/9_AEYAbPdzcGmqtO2B/LMsi"; protocol="application/pgp-signature"
+	id S1753286AbaHNAIX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 20:08:23 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:42068 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753158AbaHNAIU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 20:08:20 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>
+Cc: stefan@agner.ch, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Addy Ke <addy.ke@rock-chips.com>,
+        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dts: Add mmc0 and mmc1 aliases for rk3288
+Date: Wed, 13 Aug 2014 17:08:00 -0700
+Message-Id: <1407974880-30626-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/9_AEYAbPdzcGmqtO2B/LMsi
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+It's convenient (and less confusing to people reading logs) if the
+eMMC port on rk3288 is consistenly marked with mmc0 and the sdmmc port
+on rk3288 is consistently marked with mmc1.  Add the appropriate
+aliases.
 
-Hi all,
+These aliases only actually do something if a patch like
+(https://patchwork.kernel.org/patch/3925551/) lands, but they don't
+hurt even before that patch.
 
-Are all the commits just added to the btrfs tree really intended for
-v3.17?  If not then please remove them until after v3.17-rc1 is
-released.  If so, then they are very late :-(
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Sonny Rao <sonnyrao@chromium.org>
+---
+ arch/arm/boot/dts/rk3288.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
 
-I suspect the latter because some of them seem to date from June (and a
-few even from February).
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index 36be7bb..0b54b0d 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -29,6 +29,8 @@
+ 		i2c3 = &i2c3;
+ 		i2c4 = &i2c4;
+ 		i2c5 = &i2c5;
++		mmc0 = &emmc;
++		mmc1 = &sdmmc;
+ 		serial0 = &uart0;
+ 		serial1 = &uart1;
+ 		serial2 = &uart2;
+-- 
+2.1.0.rc2.206.gedb03e5
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/9_AEYAbPdzcGmqtO2B/LMsi
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT6/3hAAoJEMDTa8Ir7ZwVNssP/08mj8FUVa74aBZtM8Xxf+L9
-/0ipudRVDwRX1uEOW4pEitx66VfZ2pj5r65LCbOtsqQMeazqAwBcJmpSXHSlad2g
-2EaIM45Vv7l8AVSNJjxOAIepwxoM2rvlwXD96HQ80SYx9kKrYGtnnnogzOjNkGr0
-TKjvJ+dnczwJL5QtnTiK3eOlSgPnUAFAjP6DkOCQGzo5upFNZ1El8j4AtRd0pLeF
-QEi2lMcUgWas4AnZhXiKHBa2cJRfFKUH+ORgW5l8/idbk9IcrlDqFlBTbSiPlCDT
-Mtw/3VEtzyRhKQ+8UDkyfbBbh9fZOMwhvdwA3FwrT3U3nP2cgC+bg6zfZfxA89Mo
-1UrZkfPHAJliIpGgsQ7qiuYm3BEPqiHVIuer77fgK9bCRAMYsf9zt9j1jG9YYHwu
-JU/ChvqYMzDLZ3zsdSxrvUMGs+fi8fXcR0utngGGtc8fkG+P/t/9ZQOgz3j+hN1H
-wx5pRKyNnpXB5C+spAVLXZijC6e5l1y4LmI8zDC5ObGmkdjmfQV0RgaHNb29rvJN
-l4o6P5qMfwejeIPJmUfBoCMSvlKGJMJcU/nh6QmV7Ox+SHyTA4hEG8kMkAgE217k
-m6dWjoAEtcG9Qv1fTkZkICPbHnJyvnUbVBS3BD7IAKc15QcR2d2BhQzTB7C7MpJS
-gO5JQsUgN2l2cx6NZKwO
-=BhVX
------END PGP SIGNATURE-----
-
---Sig_/9_AEYAbPdzcGmqtO2B/LMsi--
