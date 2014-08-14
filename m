@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356AbaHNPYO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 11:24:14 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:36339 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754956AbaHNPYM (ORCPT
+	id S1755315AbaHNP3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 11:29:50 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:39558 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755031AbaHNP3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 11:24:12 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Ian Molton <ian.molton@codethink.co.uk>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH] mmc: tmio: Fix hang during suspend
-Date: Thu, 14 Aug 2014 17:23:53 +0200
-Message-Id: <1408029833-6970-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 14 Aug 2014 11:29:49 -0400
+Message-ID: <53ECD5E4.4090905@collabora.co.uk>
+Date: Thu, 14 Aug 2014 17:29:40 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Tim Kryger <tim.kryger@gmail.com>
+CC: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        Haijun Zhang <Haijun.Zhang@freescale.com>,
+        Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] mmc: core: Use regulator_get_voltage() if OCR mask
+ is empty.
+References: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk> <CAD7vxxKvzxvmzgx=S5ZZn54ts99ca2TqBYFvY1SXZQZDkhjq3w@mail.gmail.com>
+In-Reply-To: <CAD7vxxKvzxvmzgx=S5ZZn54ts99ca2TqBYFvY1SXZQZDkhjq3w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On R-Car Gen 2, the SDHI registers cannot be accessed while the SDHI
-module clock is disabled. Doing so will cause a lock-up.
+Hello Tim,
 
-When suspending, enable the module clock before disabling the SDHI
-interrupts, and disable the clock again afterwards.
+Thanks for your feedback.
 
-This fixes suspend and resume on r8a7791/koelsch.
+On 08/14/2014 04:13 PM, Tim Kryger wrote:
+> 
+> https://lkml.org/lkml/2014/8/12/377
+> 
+> Perhaps I misunderstood the discussion in that thread but couldn't
+> this failure also be addressed by adding proper constraints for each
+> FET in individual DTS files to reflect the range of voltages that are
+> safe for all consumers of that supply on the board?
+> 
+> I thought the main concern with your other change was that the
+> constraints you listed in the DTSI represented the limits of the PMIC
+> and not the consumers.
+> 
+> -Tim
+> 
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
- drivers/mmc/host/tmio_mmc_pio.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+Yes, if the child regulator has the constraints defined then
+regulator_voltage_list() won't filter the obtained parent voltage so it
+won't be necessary to call regulator_get_voltage() directly.
 
-diff --git a/drivers/mmc/host/tmio_mmc_pio.c b/drivers/mmc/host/tmio_mmc_pio.c
-index faf0924e71cb..83192420a7e3 100644
---- a/drivers/mmc/host/tmio_mmc_pio.c
-+++ b/drivers/mmc/host/tmio_mmc_pio.c
-@@ -1147,8 +1147,18 @@ int tmio_mmc_host_suspend(struct device *dev)
- {
- 	struct mmc_host *mmc = dev_get_drvdata(dev);
- 	struct tmio_mmc_host *host = mmc_priv(mmc);
-+	struct tmio_mmc_data *pdata = host->pdata;
-+
-+	if (pdata->clk_enable) {
-+		unsigned int f;
-+		pdata->clk_enable(host->pdev, &f);
-+	}
- 
- 	tmio_mmc_disable_mmc_irqs(host, TMIO_MASK_ALL);
-+
-+	if (pdata->clk_disable)
-+		pdata->clk_disable(host->pdev);
-+
- 	return 0;
- }
- EXPORT_SYMBOL(tmio_mmc_host_suspend);
--- 
-1.9.1
+But as Mark said on the thread you referred [0], if the voltage is not
+allowed to change for a regulator then it makes no sense to have their
+constraints specify a voltage range. And in this particular case the
+parent supply of the FET used as vmmc-supply is a fixed regulator.
 
+Now I wonder why mmc_regulator_get_ocrmask() even sets as a valid voltage
+in the OCR mask the voltage for a fixed regulator if
+mmc_regulator_set_ocr() is a no-op in this case but I guess is because
+users of this function shouldn't really care about this peculiarity. In
+any case, this change is consistent since with this patch FETs behaves the
+same as other fixed regulators whose voltage can't be changed but the
+voltage is still reported in the OCR mask.
+
+Best regards,
+Javier
+
+[0]: https://lkml.org/lkml/2014/8/13/364
