@@ -1,130 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819AbaHNNZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 09:25:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34146 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754648AbaHNNZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 09:25:07 -0400
-Date: Thu, 14 Aug 2014 15:22:40 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
-	seqlock
-Message-ID: <20140814132239.GA24465@redhat.com>
-References: <20140812142539.01851e52@annuminas.surriel.com> <20140812191218.GA15210@redhat.com> <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com>
+	id S1754848AbaHNN36 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 09:29:58 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:47752 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753902AbaHNN35 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 09:29:57 -0400
+Message-ID: <53ECB9CD.9040705@linaro.org>
+Date: Thu, 14 Aug 2014 15:29:49 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140813170324.544aaf2d@cuia.bos.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Chuansheng Liu <chuansheng.liu@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, changcheng.liu@intel.com,
+        xiaoming.wang@intel.com, souvik.k.chakravarty@intel.com
+Subject: Re: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
+ back to DEFAULT
+References: <1407982309-4863-1-git-send-email-chuansheng.liu@intel.com> <CAKnoXLw3DrBAxCUWEkXtvCTf+E1w0xTHJSiSUY6Qd6xHXeGaoQ@mail.gmail.com> <20140814110040.GI16043@twins.programming.kicks-ass.net> <53EC9A29.8090408@linaro.org> <20140814124135.GJ16043@twins.programming.kicks-ass.net>
+In-Reply-To: <20140814124135.GJ16043@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13, Rik van Riel wrote:
+On 08/14/2014 02:41 PM, Peter Zijlstra wrote:
+> On Thu, Aug 14, 2014 at 01:14:49PM +0200, Daniel Lezcano wrote:
+>> On 08/14/2014 01:00 PM, Peter Zijlstra wrote:
+>>> On Thu, Aug 14, 2014 at 12:29:32PM +0200, Daniel Lezcano wrote:
+>>>> Hi Chuansheng,
+>>>>
+>>>> On 14 August 2014 04:11, Chuansheng Liu <chuansheng.liu@intel.com> wrote:
+>>>>
+>>>>> We found sometimes even after we let PM_QOS back to DEFAULT,
+>>>>> the CPU still stuck at C0 for 2-3s, don't do the new suitable C-state
+>>>>> selection immediately after received the IPI interrupt.
+>>>>>
+>>>>> The code model is simply like below:
+>>>>> {
+>>>>>          pm_qos_update_request(&pm_qos, C1 - 1);
+>>>>>                  < == Here keep all cores at C0
+>>>>>          ...;
+>>>>>          pm_qos_update_request(&pm_qos, PM_QOS_DEFAULT_VALUE);
+>>>>>                  < == Here some cores still stuck at C0 for 2-3s
+>>>>> }
+>>>>>
+>>>>> The reason is when pm_qos come back to DEFAULT, there is IPI interrupt to
+>>>>> wake up the core, but when core is in poll idle state, the IPI interrupt
+>>>>> can not break the polling loop.
+>>>
+>>> So seeing how you're from @intel.com I'm assuming you're using x86 here.
+>>>
+>>> I'm not seeing how this can be possible, MWAIT is interrupted by IPIs
+>>> just fine, which means we'll fall out of the cpuidle_enter(), which
+>>> means we'll cpuidle_reflect(), and then leave cpuidle_idle_call().
+>>>
+>>> It will indeed not leave the cpu_idle_loop() function and go right back
+>>> into cpuidle_idle_call(), but that will then call cpuidle_select() which
+>>> should pick a new C state.
+>>>
+>>> So the interrupt _should_ work. If it doesn't you need to explain why.
+>>
+>> I think the issue is related to the poll_idle state, in
+>> drivers/cpuidle/driver.c. This state is x86 specific and inserted in the
+>> cpuidle table as the state 0 (POLL). There is no mwait for this state. It is
+>> a bit confusing because this state is not listed in the acpi / intel idle
+>> driver but inserted implicitly at the beginning of the idle table by the
+>> cpuidle framework when the driver is registered.
+>>
+>> static int poll_idle(struct cpuidle_device *dev,
+>>                  struct cpuidle_driver *drv, int index)
+>> {
+>>          local_irq_enable();
+>>          if (!current_set_polling_and_test()) {
+>>                  while (!need_resched())
+>>                          cpu_relax();
+>>          }
+>>          current_clr_polling();
+>>
+>>          return index;
+>> }
 >
-> On Wed, 13 Aug 2014 20:45:11 +0200
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > That said, it is not that I am really sure that seqcount_t in ->signal
-> > is actually worse, not to mention that this is subjective anyway. IOW,
-> > I am not going to really fight with your approach ;)
->
-> This is what it looks like, on top of your for_each_thread series
-> from yesterday:
+> Ah, well, in that case there's a ton more broken than just this.
+> kick_all_cpus_sync() won't work either, and cpuidle_reflect() pretty
+> much expects to be called after each interrupt.
 
-OK, lets forget about alternative approach for now. We can reconsider
-it later. At least I have to admit that seqlock is more straighforward.
+Agree.
 
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -646,6 +646,7 @@ struct signal_struct {
->  	 * Live threads maintain their own counters and add to these
->  	 * in __exit_signal, except for the group leader.
->  	 */
-> +	seqlock_t stats_lock;
+> Then again, not reflecting properly isn't really a problem, its not like
+> not accounting interrupts is going to safe power much.
 
-Ah. Somehow I thought that you were going to use seqcount_t and fallback
-to taking ->siglock if seqcount_retry, but this patch adds the "full blown"
-seqlock_t.
+I think the main issue here is to exit the poll_idle loop when an IPI is 
+received. IIUC, there is a pm_qos user, perhaps a driver (Chuansheng can 
+give more details), setting a very short latency, so the cpuidle 
+framework choose a shallow state like the poll_idle and then the driver 
+sets a bigger latency, leading to the IPI to wake all the cpus. As the 
+CPUs are in the poll_idle, they don't exit until an event make them to 
+exit the need_resched() loop (reschedule or whatever). This situation 
+can let the CPUs to stand in the infinite loop several seconds while we 
+are expecting them to exit the poll_idle and enter a deeper idle state, 
+thus with an extra energy consumption.
 
-OK, I won't argue, this can make the seqbegin_or_lock simpler...
 
-> @@ -288,18 +288,31 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
->  	struct signal_struct *sig = tsk->signal;
->  	cputime_t utime, stime;
->  	struct task_struct *t;
-> -
-> -	times->utime = sig->utime;
-> -	times->stime = sig->stime;
-> -	times->sum_exec_runtime = sig->sum_sched_runtime;
-> +	unsigned int seq, nextseq;
->
->  	rcu_read_lock();
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Almost cosmetic nit, but afaics this patch expands the rcu critical section
-for no reason. We only need rcu_read_lock/unlock around for_each_thread()
-below.
-
-> +	nextseq = 0;
-> +	do {
-> +		seq = nextseq;
-> +		read_seqbegin_or_lock(&sig->stats_lock, &seq);
-> +		times->utime = sig->utime;
-> +		times->stime = sig->stime;
-> +		times->sum_exec_runtime = sig->sum_sched_runtime;
-> +
-> +		for_each_thread(tsk, t) {
-> +			task_cputime(t, &utime, &stime);
-> +			times->utime += utime;
-> +			times->stime += stime;
-> +			times->sum_exec_runtime += task_sched_runtime(t);
-> +		}
-> +		/*
-> +		 * If a writer is currently active, seq will be odd, and
-> +		 * read_seqbegin_or_lock will take the lock.
-> +		 */
-> +		nextseq = raw_read_seqcount(&sig->stats_lock.seqcount);
-> +	} while (need_seqretry(&sig->stats_lock, seq));
-> +	done_seqretry(&sig->stats_lock, seq);
-
-Hmm. It seems that read_seqbegin_or_lock() is not used correctly. I mean,
-this code still can livelock in theory. Just suppose that anoter CPU does
-write_seqlock/write_sequnlock right after read_seqbegin_or_lock(). In this
-case "seq & 1" will be never true and thus "or_lock" will never happen.
-
-IMO, this should be fixed. Either we should guarantee the forward progress
-or we should not play with read_seqbegin_or_lock() at all. This code assumes
-that sooner or later "nextseq = raw_read_seqcount()" should return the odd
-counter, but in theory this can never happen.
-
-And if we want to fix this we do not need 2 counters, just we need to set
-"seq = 1" manually after need_seqretry() == T. Say, like __dentry_path() does.
-(but unlike __dentry_path() we do not need to worry about rcu_read_unlock so
-the code will be simpler).
-
-I am wondering if it makes sense to introduce
-
-	bool read_seqretry_or_lock(const seqlock_t *sl, int *seq)
-	{
-		if (*seq & 1) {
-			read_sequnlock_excl(lock);
-			return false;
-		}
-	
-		if (!read_seqretry(lock, *seq))
-			return false;
-	
-		*seq = 1;
-		return true;
-	}
-
-Oleg.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
