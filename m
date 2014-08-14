@@ -1,205 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530AbaHNScB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 14:32:01 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:63685 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961AbaHNSb7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 14:31:59 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Miroslav Lichvar <mlichvar@redhat.com>, linux-ia64@vger.kernel.org
-Subject: [PATCH] [RFC] ia64: Attempt to update of fsyscall gettime to use modern vsyscall_update
-Date: Thu, 14 Aug 2014 11:31:42 -0700
-Message-Id: <1408041102-15524-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1754372AbaHNSgp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 14:36:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24603 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752879AbaHNSgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 14:36:44 -0400
+Date: Thu, 14 Aug 2014 20:34:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
+	seqlock
+Message-ID: <20140814183413.GA6959@redhat.com>
+References: <20140812191218.GA15210@redhat.com> <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814132239.GA24465@redhat.com> <20140814174849.GA5091@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140814174849.GA5091@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sent this out awhile back, and only heard crickets. Figured it was time
-to update and resend it.
+On 08/14, Oleg Nesterov wrote:
+>
+> But just for record, the "lockless" version doesn't look that bad to me,
+>
+> 	void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+> 	{
+> 		struct signal_struct *sig = tsk->signal;
+> 		bool lockless, is_dead;
+> 		struct task_struct *t;
+> 		unsigned long flags;
+> 		u64 exec;
+>
+> 		lockless = true;
+> 		is_dead = !lock_task_sighand(p, &flags);
+> 	 retry:
+> 		times->utime = sig->utime;
+> 		times->stime = sig->stime;
+> 		times->sum_exec_runtime = exec = sig->sum_sched_runtime;
+> 		if (is_dead)
+> 			return;
+>
+> 		if (lockless)
+> 			unlock_task_sighand(p, &flags);
+>
+> 		rcu_read_lock();
+> 		for_each_thread(tsk, t) {
+> 			cputime_t utime, stime;
+> 			task_cputime(t, &utime, &stime);
+> 			times->utime += utime;
+> 			times->stime += stime;
+> 			times->sum_exec_runtime += task_sched_runtime(t);
+> 		}
+> 		rcu_read_unlock();
+>
+> 		if (lockless) {
+> 			lockless = false;
+> 			is_dead = !lock_task_sighand(p, &flags);
+> 			if (is_dead || exec != sig->sum_sched_runtime)
+> 				goto retry;
+> 		}
+> 		unlock_task_sighand(p, &flags);
+> 	}
+>
+> The obvious problem is that we should shift lock_task_sighand() from the
+> callers to thread_group_cputime() first, or add thread_group_cputime_lockless()
+> and change the current users one by one.
 
-Ia64 hasn't yet moved away from the old vsyscall_update to the newer
-implementation. This is in part due to the vsyscall being implemented
-in asm (via the ia64 fsyscall feature), which makes me want to run away.
+OTOH, it is simple to convert do_sys_times() and posix_cpu_clock_get_task()
+to use the lockless version, and avoid the new stats_lock and other changes
+it needs.
 
-The core logic change with the updated vsyscall method is that we
-preserve the base nanosecond value in shifted nanoseconds, which
-allows us to avoid truncating and rounding up to the next nanosecond
-every tick to avoid inconsistencies.
+> And of course, stats_lock is more generic.
 
-Thus the logic moved from
-nsec = ((cycle_delta * mult)>>shift) + base_nsec;
-to
-nsec = ((cycle_delta * mult) + base_snsec) >> shift;
+Yes, this is true in any case.
 
-To try to get the discussion going, I've taken a swing at migrating
-the update logic and have naievely tried to change the asm logic,
-but its quite likely wrong.
+So I simply do not know.
 
-NOT BUILD TESTED! (Well, actually I did get it to build, but I'm no
-more confident that the code is right here).
-
-Feedback and thoughts would be appreciated!
-
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Miroslav Lichvar <mlichvar@redhat.com>
-Cc: linux-ia64@vger.kernel.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- arch/ia64/Kconfig                     |  2 +-
- arch/ia64/kernel/asm-offsets.c        | 12 ++++++++----
- arch/ia64/kernel/fsys.S               |  8 ++++----
- arch/ia64/kernel/fsyscall_gtod_data.h |  6 ++++--
- arch/ia64/kernel/time.c               | 37 ++++++++++++++++++-----------------
- 5 files changed, 36 insertions(+), 29 deletions(-)
-
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 64aefb7..d60ebfb 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -43,7 +43,7 @@ config IA64
- 	select ARCH_TASK_STRUCT_ALLOCATOR
- 	select ARCH_THREAD_INFO_ALLOCATOR
- 	select ARCH_CLOCKSOURCE_DATA
--	select GENERIC_TIME_VSYSCALL_OLD
-+	select GENERIC_TIME_VSYSCALL
- 	select SYSCTL_ARCH_UNALIGN_NO_WARN
- 	select HAVE_MOD_ARCH_SPECIFIC
- 	select MODULES_USE_ELF_RELA
-diff --git a/arch/ia64/kernel/asm-offsets.c b/arch/ia64/kernel/asm-offsets.c
-index 60ef83e..a02bc6d 100644
---- a/arch/ia64/kernel/asm-offsets.c
-+++ b/arch/ia64/kernel/asm-offsets.c
-@@ -268,10 +268,14 @@ void foo(void)
- 	/* used by fsys_gettimeofday in arch/ia64/kernel/fsys.S */
- 	DEFINE(IA64_GTOD_SEQ_OFFSET,
- 	       offsetof (struct fsyscall_gtod_data_t, seq));
--	DEFINE(IA64_GTOD_WALL_TIME_OFFSET,
--		offsetof (struct fsyscall_gtod_data_t, wall_time));
--	DEFINE(IA64_GTOD_MONO_TIME_OFFSET,
--		offsetof (struct fsyscall_gtod_data_t, monotonic_time));
-+	DEFINE(IA64_GTOD_WALL_TIME_SEC_OFFSET,
-+		offsetof (struct fsyscall_gtod_data_t, wall_time_sec));
-+	DEFINE(IA64_GTOD_WALL_TIME_SNSEC_OFFSET,
-+		offsetof (struct fsyscall_gtod_data_t, wall_time_snsec));
-+	DEFINE(IA64_GTOD_MONO_TIME_SEC_OFFSET,
-+		offsetof (struct fsyscall_gtod_data_t, monotonic_time_sec));
-+	DEFINE(IA64_GTOD_MONO_TIME_SNSEC_OFFSET,
-+		offsetof (struct fsyscall_gtod_data_t, monotonic_time_snsec));
- 	DEFINE(IA64_CLKSRC_MASK_OFFSET,
- 		offsetof (struct fsyscall_gtod_data_t, clk_mask));
- 	DEFINE(IA64_CLKSRC_MULT_OFFSET,
-diff --git a/arch/ia64/kernel/fsys.S b/arch/ia64/kernel/fsys.S
-index abc6dee..acda4c5 100644
---- a/arch/ia64/kernel/fsys.S
-+++ b/arch/ia64/kernel/fsys.S
-@@ -197,13 +197,13 @@ ENTRY(fsys_gettimeofday)
- 	;;
- 	ld4 r2 = [r2]			// process work pending flags
- 	movl r29 = itc_jitter_data	// itc_jitter
--	add r22 = IA64_GTOD_WALL_TIME_OFFSET,r20	// wall_time
-+	add r22 = IA64_GTOD_WALL_TIME_SEC_OFFSET,r20	// wall_time
- 	add r21 = IA64_CLKSRC_MMIO_OFFSET,r20
- 	mov pr = r30,0xc000	// Set predicates according to function
- 	;;
- 	and r2 = TIF_ALLWORK_MASK,r2
- 	add r19 = IA64_ITC_LASTCYCLE_OFFSET,r29
--(p15)	add r22 = IA64_GTOD_MONO_TIME_OFFSET,r20	// monotonic_time
-+(p15)	add r22 = IA64_GTOD_MONO_TIME_SEC_OFFSET,r20	// monotonic_time
- 	;;
- 	add r26 = IA64_CLKSRC_CYCLE_LAST_OFFSET,r20	// clksrc_cycle_last
- 	cmp.ne p6, p0 = 0, r2	// Fallback if work is scheduled
-@@ -265,9 +265,9 @@ EX(.fail_efault, probe.w.fault r31, 3)
- 	mf
- 	;;
- 	ld4 r10 = [r20]		// gtod_lock.sequence
--	shr.u r2 = r2,r23	// shift by factor
--	;;
- 	add r8 = r8,r2		// Add xtime.nsecs
-+	;;
-+	shr.u r8 = r8,r23	// shift by factor
- 	cmp4.ne p7,p0 = r28,r10
- (p7)	br.cond.dpnt.few .time_redo	// sequence number changed, redo
- 	// End critical section.
-diff --git a/arch/ia64/kernel/fsyscall_gtod_data.h b/arch/ia64/kernel/fsyscall_gtod_data.h
-index 146b15b..ff292a9 100644
---- a/arch/ia64/kernel/fsyscall_gtod_data.h
-+++ b/arch/ia64/kernel/fsyscall_gtod_data.h
-@@ -7,8 +7,10 @@
- 
- struct fsyscall_gtod_data_t {
- 	seqcount_t	seq;
--	struct timespec	wall_time;
--	struct timespec monotonic_time;
-+	u64 wall_time_sec;
-+	u64 wall_time_snsec;
-+	u64 monotonic_time_sec;
-+	u64 monotonic_time_snsec;
- 	cycle_t		clk_mask;
- 	u32		clk_mult;
- 	u32		clk_shift;
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index 9a0104a..59c3f4a 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -425,30 +425,31 @@ void update_vsyscall_tz(void)
- {
- }
- 
--void update_vsyscall_old(struct timespec *wall, struct timespec *wtm,
--			 struct clocksource *c, u32 mult, cycle_t cycle_last)
-+void update_vsyscall(struct timekeeper *tk)
- {
- 	write_seqcount_begin(&fsyscall_gtod_data.seq);
--
--        /* copy fsyscall clock data */
--        fsyscall_gtod_data.clk_mask = c->mask;
--        fsyscall_gtod_data.clk_mult = mult;
--        fsyscall_gtod_data.clk_shift = c->shift;
--        fsyscall_gtod_data.clk_fsys_mmio = c->archdata.fsys_mmio;
--        fsyscall_gtod_data.clk_cycle_last = cycle_last;
-+	/* copy fsyscall clock data */
-+	fsyscall_gtod_data.clk_mask = tk->tkr.clock->mask;
-+	fsyscall_gtod_data.clk_mult = tk->tkr.mult;
-+	fsyscall_gtod_data.clk_shift = tk->tkr.clock->shift;
-+	fsyscall_gtod_data.clk_fsys_mmio = tk->tkr.clock->archdata.fsys_mmio;
-+	fsyscall_gtod_data.clk_cycle_last = tk->tkr.cycle_last;
- 
- 	/* copy kernel time structures */
--        fsyscall_gtod_data.wall_time.tv_sec = wall->tv_sec;
--        fsyscall_gtod_data.wall_time.tv_nsec = wall->tv_nsec;
--	fsyscall_gtod_data.monotonic_time.tv_sec = wtm->tv_sec
--							+ wall->tv_sec;
--	fsyscall_gtod_data.monotonic_time.tv_nsec = wtm->tv_nsec
--							+ wall->tv_nsec;
-+	fsyscall_gtod_data.wall_time_sec = tk->xtime_sec;
-+	fsyscall_gtod_data.wall_time_snsec = tk->tkr.xtime_nsec;
-+	fsyscall_gtod_data.monotonic_time_sec = tk->wall_to_monotonic.tv_sec
-+							+ tk->xtime_sec;
-+	fsyscall_gtod_data.monotonic_time_snsec =
-+			(tk->wall_to_monotonic.tv_nsec << tk->tkr.shift)
-+			+ tk->tkr.xtime_nsec;
- 
- 	/* normalize */
--	while (fsyscall_gtod_data.monotonic_time.tv_nsec >= NSEC_PER_SEC) {
--		fsyscall_gtod_data.monotonic_time.tv_nsec -= NSEC_PER_SEC;
--		fsyscall_gtod_data.monotonic_time.tv_sec++;
-+	while (fsyscall_gtod_data.monotonic_time_snsec >=
-+					NSEC_PER_SEC << tk->tkr.shift) {
-+		fsyscall_gtod_data.monotonic_time_snsec -=
-+						NSEC_PER_SEC << tk->tkr.shift;
-+		fsyscall_gtod_data.monotonic_time_sec++;
- 	}
- 
- 	write_seqcount_end(&fsyscall_gtod_data.seq);
--- 
-1.9.1
+Oleg.
 
