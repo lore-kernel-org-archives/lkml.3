@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087AbaHNRVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 13:21:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41643 "EHLO
+	id S932122AbaHNRVu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 13:21:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41662 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053AbaHNRVf (ORCPT
+	with ESMTP id S932092AbaHNRVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 13:21:35 -0400
-Date: Thu, 14 Aug 2014 10:20:39 -0700
+	Thu, 14 Aug 2014 13:21:48 -0400
+Date: Thu, 14 Aug 2014 10:20:53 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-c9ebe21b204f95e3aba84ee91c8b9347d73806f1@git.kernel.org>
+Message-ID: <tip-d839bae4269aea46bff4133066a411cfba5c7c46@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, takata@linux-m32r.org
+        paulmck@linux.vnet.ibm.com, geert@linux-m68k.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, takata@linux-m32r.org
-In-Reply-To: <20140508135852.318635136@infradead.org>
-References: <20140508135852.318635136@infradead.org>
+        paulmck@linux.vnet.ibm.com, geert@linux-m68k.org, tglx@linutronix.de
+In-Reply-To: <20140509091646.GO30445@twins.programming.kicks-ass.net>
+References: <20140509091646.GO30445@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/arch] locking,arch,m32r: Fold atomic_ops
-Git-Commit-ID: c9ebe21b204f95e3aba84ee91c8b9347d73806f1
+Subject: [tip:locking/arch] locking,arch,m68k: Fold atomic_ops
+Git-Commit-ID: d839bae4269aea46bff4133066a411cfba5c7c46
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,216 +33,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c9ebe21b204f95e3aba84ee91c8b9347d73806f1
-Gitweb:     http://git.kernel.org/tip/c9ebe21b204f95e3aba84ee91c8b9347d73806f1
+Commit-ID:  d839bae4269aea46bff4133066a411cfba5c7c46
+Gitweb:     http://git.kernel.org/tip/d839bae4269aea46bff4133066a411cfba5c7c46
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Sun, 23 Mar 2014 19:02:22 +0100
+AuthorDate: Sun, 23 Mar 2014 19:06:34 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Thu, 14 Aug 2014 12:48:08 +0200
 
-locking,arch,m32r: Fold atomic_ops
+locking,arch,m68k: Fold atomic_ops
 
 Many of the atomic op implementations are the same except for one
 instruction; fold the lot into a few CPP macros and reduce LoC.
 
 This also prepares for easy addition of new ops.
 
+Requires asm_op due to eor.
+
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: linux-m32r-ja@ml.linux-m32r.org
-Cc: linux-m32r@ml.linux-m32r.org
-Link: http://lkml.kernel.org/r/20140508135852.318635136@infradead.org
+Cc: linux-m68k@lists.linux-m68k.org
+Link: http://lkml.kernel.org/r/20140509091646.GO30445@twins.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/m32r/include/asm/atomic.h | 143 ++++++++++++++++-------------------------
- 1 file changed, 57 insertions(+), 86 deletions(-)
+ arch/m68k/include/asm/atomic.h | 109 ++++++++++++++++++-----------------------
+ 1 file changed, 47 insertions(+), 62 deletions(-)
 
-diff --git a/arch/m32r/include/asm/atomic.h b/arch/m32r/include/asm/atomic.h
-index 8ad0ed4..3946b2c 100644
---- a/arch/m32r/include/asm/atomic.h
-+++ b/arch/m32r/include/asm/atomic.h
-@@ -39,85 +39,64 @@
-  */
- #define atomic_set(v,i)	(((v)->counter) = (i))
+diff --git a/arch/m68k/include/asm/atomic.h b/arch/m68k/include/asm/atomic.h
+index 5569521..663d4ba 100644
+--- a/arch/m68k/include/asm/atomic.h
++++ b/arch/m68k/include/asm/atomic.h
+@@ -30,16 +30,57 @@
+ #define	ASM_DI	"di"
+ #endif
  
--/**
-- * atomic_add_return - add integer to atomic variable and return it
-- * @i: integer value to add
-- * @v: pointer of type atomic_t
-- *
-- * Atomically adds @i to @v and return (@i + @v).
-- */
--static __inline__ int atomic_add_return(int i, atomic_t *v)
+-static inline void atomic_add(int i, atomic_t *v)
 -{
--	unsigned long flags;
--	int result;
--
--	local_irq_save(flags);
--	__asm__ __volatile__ (
--		"# atomic_add_return		\n\t"
--		DCACHE_CLEAR("%0", "r4", "%1")
--		M32R_LOCK" %0, @%1;		\n\t"
--		"add	%0, %2;			\n\t"
--		M32R_UNLOCK" %0, @%1;		\n\t"
--		: "=&r" (result)
--		: "r" (&v->counter), "r" (i)
--		: "memory"
- #ifdef CONFIG_CHIP_M32700_TS1
--		, "r4"
--#endif	/* CONFIG_CHIP_M32700_TS1 */
--	);
--	local_irq_restore(flags);
--
--	return result;
-+#define __ATOMIC_CLOBBER	, "r4"
-+#else
-+#define __ATOMIC_CLOBBER
-+#endif
-+
-+#define ATOMIC_OP(op)							\
-+static __inline__ void atomic_##op(int i, atomic_t *v)			\
+-	__asm__ __volatile__("addl %1,%0" : "+m" (*v) : ASM_DI (i));
++#define ATOMIC_OP(op, c_op, asm_op)					\
++static inline void atomic_##op(int i, atomic_t *v)			\
 +{									\
-+	unsigned long flags;						\
-+	int result;							\
-+									\
-+	local_irq_save(flags);						\
-+	__asm__ __volatile__ (						\
-+		"# atomic_" #op "		\n\t"			\
-+		DCACHE_CLEAR("%0", "r4", "%1")				\
-+		M32R_LOCK" %0, @%1;		\n\t"			\
-+		#op " %0, %2;			\n\t"			\
-+		M32R_UNLOCK" %0, @%1;		\n\t"			\
-+		: "=&r" (result)					\
-+		: "r" (&v->counter), "r" (i)				\
-+		: "memory"						\
-+		__ATOMIC_CLOBBER					\
-+	);								\
-+	local_irq_restore(flags);					\
++	__asm__ __volatile__(#asm_op "l %1,%0" : "+m" (*v) : ASM_DI (i));\
 +}									\
 +
-+#define ATOMIC_OP_RETURN(op)						\
-+static __inline__ int atomic_##op##_return(int i, atomic_t *v)		\
++#ifdef CONFIG_RMW_INSNS
++
++#define ATOMIC_OP_RETURN(op, c_op, asm_op)				\
++static inline int atomic_##op##_return(int i, atomic_t *v)		\
 +{									\
-+	unsigned long flags;						\
-+	int result;							\
++	int t, tmp;							\
 +									\
-+	local_irq_save(flags);						\
-+	__asm__ __volatile__ (						\
-+		"# atomic_" #op "_return	\n\t"			\
-+		DCACHE_CLEAR("%0", "r4", "%1")				\
-+		M32R_LOCK" %0, @%1;		\n\t"			\
-+		#op " %0, %2;			\n\t"			\
-+		M32R_UNLOCK" %0, @%1;		\n\t"			\
-+		: "=&r" (result)					\
-+		: "r" (&v->counter), "r" (i)				\
-+		: "memory"						\
-+		__ATOMIC_CLOBBER					\
-+	);								\
-+	local_irq_restore(flags);					\
-+									\
-+	return result;							\
++	__asm__ __volatile__(						\
++			"1:	movel %2,%1\n"				\
++			"	" #asm_op "l %3,%1\n"			\
++			"	casl %2,%1,%0\n"			\
++			"	jne 1b"					\
++			: "+m" (*v), "=&d" (t), "=&d" (tmp)		\
++			: "g" (i), "2" (atomic_read(v)));		\
++	return t;							\
  }
  
--/**
-- * atomic_sub_return - subtract integer from atomic variable and return it
-- * @i: integer value to subtract
-- * @v: pointer of type atomic_t
-- *
-- * Atomically subtracts @i from @v and return (@v - @i).
-- */
--static __inline__ int atomic_sub_return(int i, atomic_t *v)
+-static inline void atomic_sub(int i, atomic_t *v)
 -{
--	unsigned long flags;
--	int result;
--
--	local_irq_save(flags);
--	__asm__ __volatile__ (
--		"# atomic_sub_return		\n\t"
--		DCACHE_CLEAR("%0", "r4", "%1")
--		M32R_LOCK" %0, @%1;		\n\t"
--		"sub	%0, %2;			\n\t"
--		M32R_UNLOCK" %0, @%1;		\n\t"
--		: "=&r" (result)
--		: "r" (&v->counter), "r" (i)
--		: "memory"
--#ifdef CONFIG_CHIP_M32700_TS1
--		, "r4"
--#endif	/* CONFIG_CHIP_M32700_TS1 */
--	);
--	local_irq_restore(flags);
--
--	return result;
--}
-+#define ATOMIC_OPS(op) ATOMIC_OP(op) ATOMIC_OP_RETURN(op)
+-	__asm__ __volatile__("subl %1,%0" : "+m" (*v) : ASM_DI (i));
++#else
++
++#define ATOMIC_OP_RETURN(op, c_op, asm_op)				\
++static inline int atomic_##op##_return(int i, atomic_t * v)		\
++{									\
++	unsigned long flags;						\
++	int t;								\
++									\
++	local_irq_save(flags);						\
++	t = (v->counter c_op i);					\
++	local_irq_restore(flags);					\
++									\
++	return t;							\
+ }
  
--/**
-- * atomic_add - add integer to atomic variable
-- * @i: integer value to add
-- * @v: pointer of type atomic_t
-- *
-- * Atomically adds @i to @v.
-- */
--#define atomic_add(i,v) ((void) atomic_add_return((i), (v)))
-+ATOMIC_OPS(add)
-+ATOMIC_OPS(sub)
- 
--/**
-- * atomic_sub - subtract the atomic variable
-- * @i: integer value to subtract
-- * @v: pointer of type atomic_t
-- *
-- * Atomically subtracts @i from @v.
-- */
--#define atomic_sub(i,v) ((void) atomic_sub_return((i), (v)))
++#endif /* CONFIG_RMW_INSNS */
++
++#define ATOMIC_OPS(op, c_op, asm_op)					\
++	ATOMIC_OP(op, c_op, asm_op)					\
++	ATOMIC_OP_RETURN(op, c_op, asm_op)
++
++ATOMIC_OPS(add, +=, add)
++ATOMIC_OPS(sub, -=, sub)
++
 +#undef ATOMIC_OPS
 +#undef ATOMIC_OP_RETURN
 +#undef ATOMIC_OP
++
+ static inline void atomic_inc(atomic_t *v)
+ {
+ 	__asm__ __volatile__("addql #1,%0" : "+m" (*v));
+@@ -76,67 +117,11 @@ static inline int atomic_inc_and_test(atomic_t *v)
  
- /**
-  * atomic_sub_and_test - subtract value from variable and test result
-@@ -151,9 +130,7 @@ static __inline__ int atomic_inc_return(atomic_t *v)
- 		: "=&r" (result)
- 		: "r" (&v->counter)
- 		: "memory"
--#ifdef CONFIG_CHIP_M32700_TS1
--		, "r4"
--#endif	/* CONFIG_CHIP_M32700_TS1 */
-+		__ATOMIC_CLOBBER
- 	);
- 	local_irq_restore(flags);
+ #ifdef CONFIG_RMW_INSNS
  
-@@ -181,9 +158,7 @@ static __inline__ int atomic_dec_return(atomic_t *v)
- 		: "=&r" (result)
- 		: "r" (&v->counter)
- 		: "memory"
--#ifdef CONFIG_CHIP_M32700_TS1
--		, "r4"
--#endif	/* CONFIG_CHIP_M32700_TS1 */
-+		__ATOMIC_CLOBBER
- 	);
- 	local_irq_restore(flags);
+-static inline int atomic_add_return(int i, atomic_t *v)
+-{
+-	int t, tmp;
+-
+-	__asm__ __volatile__(
+-			"1:	movel %2,%1\n"
+-			"	addl %3,%1\n"
+-			"	casl %2,%1,%0\n"
+-			"	jne 1b"
+-			: "+m" (*v), "=&d" (t), "=&d" (tmp)
+-			: "g" (i), "2" (atomic_read(v)));
+-	return t;
+-}
+-
+-static inline int atomic_sub_return(int i, atomic_t *v)
+-{
+-	int t, tmp;
+-
+-	__asm__ __volatile__(
+-			"1:	movel %2,%1\n"
+-			"	subl %3,%1\n"
+-			"	casl %2,%1,%0\n"
+-			"	jne 1b"
+-			: "+m" (*v), "=&d" (t), "=&d" (tmp)
+-			: "g" (i), "2" (atomic_read(v)));
+-	return t;
+-}
+-
+ #define atomic_cmpxchg(v, o, n) ((int)cmpxchg(&((v)->counter), (o), (n)))
+ #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
  
-@@ -280,9 +255,7 @@ static __inline__ void atomic_clear_mask(unsigned long  mask, atomic_t *addr)
- 		: "=&r" (tmp)
- 		: "r" (addr), "r" (~mask)
- 		: "memory"
--#ifdef CONFIG_CHIP_M32700_TS1
--		, "r5"
--#endif	/* CONFIG_CHIP_M32700_TS1 */
-+		__ATOMIC_CLOBBER
- 	);
- 	local_irq_restore(flags);
- }
-@@ -302,9 +275,7 @@ static __inline__ void atomic_set_mask(unsigned long  mask, atomic_t *addr)
- 		: "=&r" (tmp)
- 		: "r" (addr), "r" (mask)
- 		: "memory"
--#ifdef CONFIG_CHIP_M32700_TS1
--		, "r5"
--#endif	/* CONFIG_CHIP_M32700_TS1 */
-+		__ATOMIC_CLOBBER
- 	);
- 	local_irq_restore(flags);
- }
+ #else /* !CONFIG_RMW_INSNS */
+ 
+-static inline int atomic_add_return(int i, atomic_t * v)
+-{
+-	unsigned long flags;
+-	int t;
+-
+-	local_irq_save(flags);
+-	t = atomic_read(v);
+-	t += i;
+-	atomic_set(v, t);
+-	local_irq_restore(flags);
+-
+-	return t;
+-}
+-
+-static inline int atomic_sub_return(int i, atomic_t * v)
+-{
+-	unsigned long flags;
+-	int t;
+-
+-	local_irq_save(flags);
+-	t = atomic_read(v);
+-	t -= i;
+-	atomic_set(v, t);
+-	local_irq_restore(flags);
+-
+-	return t;
+-}
+-
+ static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
+ {
+ 	unsigned long flags;
