@@ -1,72 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834AbaHNDWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 23:22:25 -0400
-Received: from ozlabs.org ([103.22.144.67]:55405 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752726AbaHNDWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 23:22:24 -0400
-Date: Thu, 14 Aug 2014 13:22:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benoit Taine <benoit.taine@lip6.fr>
-Subject: Re: linux-next: manual merge of the tip tree with the pci-current
- tree
-Message-ID: <20140814132216.0e797236@canb.auug.org.au>
-In-Reply-To: <20140814131031.4ecce959@canb.auug.org.au>
-References: <20140814131031.4ecce959@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1754112AbaHNDXN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 23:23:13 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:43013 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753966AbaHNDXL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 23:23:11 -0400
+Message-ID: <53EC2B35.5010302@linaro.org>
+Date: Thu, 14 Aug 2014 11:21:25 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/JnkUsX86y2N8rDnLNrSsVbf"; protocol="application/pgp-signature"
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>
+CC: Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Brown <broonie@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
+        Lv Zheng <lv.zheng@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>
+Subject: Re: [PATCH 19/19] Documentation: ACPI for ARM64
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org> <CAOesGMjs1dM37ZoFA-xs7tYYaXP-XC3NjJsj291bCNoDwAXwiw@mail.gmail.com> <20140812182347.GA4100@arm.com> <2152407.NpXOMHAEH6@vostro.rjw.lan>
+In-Reply-To: <2152407.NpXOMHAEH6@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/JnkUsX86y2N8rDnLNrSsVbf
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 2014-8-14 7:41, Rafael J. Wysocki wrote:
+> On Tuesday, August 12, 2014 07:23:47 PM Catalin Marinas wrote:
+>> On Mon, Jul 28, 2014 at 07:27:52PM +0100, Olof Johansson wrote:
+>>> On Mon, Jul 28, 2014 at 10:00 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+>>>> On Mon, Jul 28, 2014 at 05:27:50PM +0100, Olof Johansson wrote:
+>>>>> On Mon, Jul 28, 2014 at 11:07:50AM +0200, Arnd Bergmann wrote:
+>>>>>> On Saturday 26 July 2014 19:34:48 Olof Johansson wrote:
+>>>>>>> On Thu, Jul 24, 2014 at 6:00 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+>>>>>>>> +Relationship with Device Tree
+>>>>>>>> +-----------------------------
+>>>>>>>> +
+>>>>>>>> +ACPI support in drivers and subsystems for ARMv8 should never be mutually
+>>>>>>>> +exclusive with DT support at compile time.
+>>>>>>>> +
+>>>>>>>> +At boot time the kernel will only use one description method depending on
+>>>>>>>> +parameters passed from the bootloader.
+>>>>>>>
+>>>>>>> Possibly overriden by kernel bootargs. And as debated for quite a
+>>>>>>> while earlier this year, acpi should still default to off -- if a DT
+>>>>>>> and ACPI are both passed in, DT should at this time be given priority.
+>>>>>>
+>>>>>> I think this would be harder to do with the way that ACPI is passed in
+>>>>>> to the kernel. IIRC, you always have a minimal DT information based on
+>>>>>> the ARM64 boot protocol, but in the case of ACPI, this contains pointers
+>>>>>> to the ACPI tables, which are then used for populating the Linux platform
+>>>>>> devices (unless acpi=disabled is set), while the other contents of the
+>>>>>> DTB may be present but we skip the of_platform_populate state.
+>>>>>
+>>>>> How can it be harder to do? If you support acpi=off, then you should support
+>>>>> acpi=on.
+>>>>>
+>>>>> Another alternative would be to have an early fixup that stubs out
+>>>>> the acpi properties from the DTB unless there's an 'acpi' or 'acpi=on'
+>>>>> argument on the cmdline. Not quite as tidy a solution, though.
+>>>>
+>>>> I don't follow:
+>>>>
+>>>> If you want to disable ACPI, you can pass acpi=off. This is your
+>>>> workaround for broken ACPI (and only if you happen to have wrirten your
+>>>> own DTB, because many/most ACPI systems WILL NOT have a DTB to begin
+>>>> with).
+>>>
+>>> All ACPI should be assumed broken at this time, so acpi=off _must_ be
+>>> the default.
+>>
+>> (catching up with emails after holiday and I may have missed some of
+>> your arguments)
+>>
+>> If we consider ACPI unusable on ARM but we still want to start merging
+>> patches, we should rather make the config option depend on BROKEN
+>> (though if it is that unusable that no real platform can use it, I would
+>> rather not merge it at all at this stage).
+> 
+> I agree here.
+> 
+> I would recommend creating a separate branch for that living outside of the
+> mainline kernel and merging it when there are real users.
 
-Hi all,
+Real users will coming soon, we already tested this patch set on real hardware
+(ARM64 Juno platform), and I think ARM64 server chips and platforms will show
+up before 3.18 is released.
 
-On Thu, 14 Aug 2014 13:10:31 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> I fixed it up (I used the latter version of this file and applied the
-> following merge fix patch) and can carry the fix as necessary (no
-> action is required).
+For this patch set, DT is the first class citizen at now:
 
-Apart from making sure Linus is informed when these things hit his tree ...
+a) We can always set CONFIG_ACPI as off in Kconfig, and use DT only;
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+b) Even if we set CONFIG_ACPI=Y, we also can use DT as normal:
 
---Sig_/JnkUsX86y2N8rDnLNrSsVbf
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+  - Pass DT blob without (valid) ACPI tables (just as we boot the kernel now),
+    ACPI will disabled in the very early stage and FDT will still to be
+    unflattened, so will not break DT booting.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+  - We can pass ACPI=off to disable ACPI and use DT even if we got valid
+    ACPI tables (in the v1 patch set);
 
-iQIcBAEBCAAGBQJT7CtuAAoJEMDTa8Ir7ZwV/dEP+wUmsv4yimd10IvJSY/hSHn2
-Vdyf8qV6TeH9Xl1j47JhiHJxhovKo0loVQMAMUwulCNP4pEjsfGWI2Kg6fDd6AAI
-i7idJxqn9bRzkrlN+0sSwYJhU7EOdZ6YAJhFnaduH2sPzi4BqYUdO9aUdHGL9niA
-PAIZOGfCrtpucd2WwBmM6i0JKNub27fSuFI7pT4x/R46VH4ZDnalA4sZzNqxCalp
-h1x7evwQIjAzBQ18gq9hUg0LPVEx3kdyqY2SiRGKEwXeoaPXYa/Asl3qOpovAwbb
-N9FqP5QmBFvFDNKdNHHBm8RTZCj0z4ToF3SZI17XHobcjfu5WrsMlFkeLJ+inivQ
-OMjads0FuPDHoglS+X0VxzSo633JurLazxY8gW/Lh9CBFbSEzJ0YM+ETBlfq9lE+
-UjyzN5kyFR1P9xv9FM98ufKKFn7c6vRdFKoBVNcBXjn/AmQkZMKzynRn8Jja0d08
-fnhQ8zJi40lRghhbBMVistZfFyhFOael6gWGHKIx4phv6V2LOc4/UYWX9Hmx3Ct0
-UII9WzhIev0yuxR+QCO/goP8pLKRruK3y0KtkT2aTQ7jytA09Ou8/fnL47fiO2GN
-FitJ1DLXCI2MR3QIIubc2dSQfPB0yv3pEuLG7XVbMmjvmFP4byMtuHl371JspTub
-cza/+H7ANFg9WJvoDgw5
-=sn4Y
------END PGP SIGNATURE-----
+So it is safe for people who want to use DT, and didn't change any behavior
+of DT booting except some extra test of if(acpi_disabled).
 
---Sig_/JnkUsX86y2N8rDnLNrSsVbf--
+Thanks
+Hanjun
