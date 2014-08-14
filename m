@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbaHNRTn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 13:19:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41478 "EHLO
+	id S1753449AbaHNRTz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 13:19:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41500 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbaHNRTl (ORCPT
+	with ESMTP id S1753266AbaHNRTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 13:19:41 -0400
-Date: Thu, 14 Aug 2014 10:18:34 -0700
+	Thu, 14 Aug 2014 13:19:54 -0400
+Date: Thu, 14 Aug 2014 10:18:48 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-f6b4ecee0eb7bfa66ae8d5652105ed4da53209a3@git.kernel.org>
+Message-ID: <tip-b93c7b8c5b281bf3646d6c5b6e05249b98cc5ab7@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        jesse.brandeburg@intel.com
+        paulmck@linux.vnet.ibm.com, mattst88@gmail.com,
+        ink@jurassic.park.msu.ru, tglx@linutronix.de, rth@twiddle.net
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        jesse.brandeburg@intel.com
-In-Reply-To: <20140508135851.768177189@infradead.org>
-References: <20140508135851.768177189@infradead.org>
+        paulmck@linux.vnet.ibm.com, mattst88@gmail.com,
+        ink@jurassic.park.msu.ru, tglx@linutronix.de, rth@twiddle.net
+In-Reply-To: <20140508135851.832107183@infradead.org>
+References: <20140508135851.832107183@infradead.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/arch] locking,x86: Kill atomic_or_long()
-Git-Commit-ID: f6b4ecee0eb7bfa66ae8d5652105ed4da53209a3
+Subject: [tip:locking/arch] locking,arch,alpha: Fold atomic_ops
+Git-Commit-ID: b93c7b8c5b281bf3646d6c5b6e05249b98cc5ab7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,50 +35,265 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f6b4ecee0eb7bfa66ae8d5652105ed4da53209a3
-Gitweb:     http://git.kernel.org/tip/f6b4ecee0eb7bfa66ae8d5652105ed4da53209a3
+Commit-ID:  b93c7b8c5b281bf3646d6c5b6e05249b98cc5ab7
+Gitweb:     http://git.kernel.org/tip/b93c7b8c5b281bf3646d6c5b6e05249b98cc5ab7
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 23 Apr 2014 17:02:18 +0200
+AuthorDate: Sun, 23 Mar 2014 16:25:53 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 14 Aug 2014 12:48:02 +0200
+CommitDate: Thu, 14 Aug 2014 12:48:03 +0200
 
-locking,x86: Kill atomic_or_long()
+locking,arch,alpha: Fold atomic_ops
 
-There are no users, kill it.
+Many of the atomic op implementations are the same except for one
+instruction; fold the lot into a few CPP macros and reduce LoC.
+
+This also prepares for easy addition of new ops.
+
+Cc: Matt Turner <mattst88@gmail.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matt Turner <mattst88@gmail.com>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20140508135851.768177189@infradead.org
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: linux-alpha@vger.kernel.org
+Link: http://lkml.kernel.org/r/20140508135851.832107183@infradead.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/atomic.h | 15 ---------------
- 1 file changed, 15 deletions(-)
+ arch/alpha/include/asm/atomic.h | 213 +++++++++++++++-------------------------
+ 1 file changed, 80 insertions(+), 133 deletions(-)
 
-diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
-index 6dd1c7d..bf20c81 100644
---- a/arch/x86/include/asm/atomic.h
-+++ b/arch/x86/include/asm/atomic.h
-@@ -219,21 +219,6 @@ static inline short int atomic_inc_short(short int *v)
- 	return *v;
+diff --git a/arch/alpha/include/asm/atomic.h b/arch/alpha/include/asm/atomic.h
+index ed60a1e..6fbb53a 100644
+--- a/arch/alpha/include/asm/atomic.h
++++ b/arch/alpha/include/asm/atomic.h
+@@ -29,145 +29,92 @@
+  * branch back to restart the operation.
+  */
+ 
+-static __inline__ void atomic_add(int i, atomic_t * v)
+-{
+-	unsigned long temp;
+-	__asm__ __volatile__(
+-	"1:	ldl_l %0,%1\n"
+-	"	addl %0,%2,%0\n"
+-	"	stl_c %0,%1\n"
+-	"	beq %0,2f\n"
+-	".subsection 2\n"
+-	"2:	br 1b\n"
+-	".previous"
+-	:"=&r" (temp), "=m" (v->counter)
+-	:"Ir" (i), "m" (v->counter));
+-}
+-
+-static __inline__ void atomic64_add(long i, atomic64_t * v)
+-{
+-	unsigned long temp;
+-	__asm__ __volatile__(
+-	"1:	ldq_l %0,%1\n"
+-	"	addq %0,%2,%0\n"
+-	"	stq_c %0,%1\n"
+-	"	beq %0,2f\n"
+-	".subsection 2\n"
+-	"2:	br 1b\n"
+-	".previous"
+-	:"=&r" (temp), "=m" (v->counter)
+-	:"Ir" (i), "m" (v->counter));
+-}
+-
+-static __inline__ void atomic_sub(int i, atomic_t * v)
+-{
+-	unsigned long temp;
+-	__asm__ __volatile__(
+-	"1:	ldl_l %0,%1\n"
+-	"	subl %0,%2,%0\n"
+-	"	stl_c %0,%1\n"
+-	"	beq %0,2f\n"
+-	".subsection 2\n"
+-	"2:	br 1b\n"
+-	".previous"
+-	:"=&r" (temp), "=m" (v->counter)
+-	:"Ir" (i), "m" (v->counter));
++#define ATOMIC_OP(op)							\
++static __inline__ void atomic_##op(int i, atomic_t * v)			\
++{									\
++	unsigned long temp;						\
++	__asm__ __volatile__(						\
++	"1:	ldl_l %0,%1\n"						\
++	"	" #op "l %0,%2,%0\n"					\
++	"	stl_c %0,%1\n"						\
++	"	beq %0,2f\n"						\
++	".subsection 2\n"						\
++	"2:	br 1b\n"						\
++	".previous"							\
++	:"=&r" (temp), "=m" (v->counter)				\
++	:"Ir" (i), "m" (v->counter));					\
++}									\
++
++#define ATOMIC_OP_RETURN(op)						\
++static inline int atomic_##op##_return(int i, atomic_t *v)		\
++{									\
++	long temp, result;						\
++	smp_mb();							\
++	__asm__ __volatile__(						\
++	"1:	ldl_l %0,%1\n"						\
++	"	" #op "l %0,%3,%2\n"					\
++	"	" #op "l %0,%3,%0\n"					\
++	"	stl_c %0,%1\n"						\
++	"	beq %0,2f\n"						\
++	".subsection 2\n"						\
++	"2:	br 1b\n"						\
++	".previous"							\
++	:"=&r" (temp), "=m" (v->counter), "=&r" (result)		\
++	:"Ir" (i), "m" (v->counter) : "memory");			\
++	smp_mb();							\
++	return result;							\
  }
  
--#ifdef CONFIG_X86_64
--/**
-- * atomic_or_long - OR of two long integers
-- * @v1: pointer to type unsigned long
-- * @v2: pointer to type unsigned long
-- *
-- * Atomically ORs @v1 and @v2
-- * Returns the result of the OR
-- */
--static inline void atomic_or_long(unsigned long *v1, unsigned long v2)
+-static __inline__ void atomic64_sub(long i, atomic64_t * v)
 -{
--	asm(LOCK_PREFIX "orq %1, %0" : "+m" (*v1) : "r" (v2));
+-	unsigned long temp;
+-	__asm__ __volatile__(
+-	"1:	ldq_l %0,%1\n"
+-	"	subq %0,%2,%0\n"
+-	"	stq_c %0,%1\n"
+-	"	beq %0,2f\n"
+-	".subsection 2\n"
+-	"2:	br 1b\n"
+-	".previous"
+-	:"=&r" (temp), "=m" (v->counter)
+-	:"Ir" (i), "m" (v->counter));
 -}
--#endif
 -
- /* These are x86-specific, used by some header files */
- #define atomic_clear_mask(mask, addr)				\
- 	asm volatile(LOCK_PREFIX "andl %0,%1"			\
+-
+-/*
+- * Same as above, but return the result value
+- */
+-static inline int atomic_add_return(int i, atomic_t *v)
+-{
+-	long temp, result;
+-	smp_mb();
+-	__asm__ __volatile__(
+-	"1:	ldl_l %0,%1\n"
+-	"	addl %0,%3,%2\n"
+-	"	addl %0,%3,%0\n"
+-	"	stl_c %0,%1\n"
+-	"	beq %0,2f\n"
+-	".subsection 2\n"
+-	"2:	br 1b\n"
+-	".previous"
+-	:"=&r" (temp), "=m" (v->counter), "=&r" (result)
+-	:"Ir" (i), "m" (v->counter) : "memory");
+-	smp_mb();
+-	return result;
++#define ATOMIC64_OP(op)							\
++static __inline__ void atomic64_##op(long i, atomic64_t * v)		\
++{									\
++	unsigned long temp;						\
++	__asm__ __volatile__(						\
++	"1:	ldq_l %0,%1\n"						\
++	"	" #op "q %0,%2,%0\n"					\
++	"	stq_c %0,%1\n"						\
++	"	beq %0,2f\n"						\
++	".subsection 2\n"						\
++	"2:	br 1b\n"						\
++	".previous"							\
++	:"=&r" (temp), "=m" (v->counter)				\
++	:"Ir" (i), "m" (v->counter));					\
++}									\
++
++#define ATOMIC64_OP_RETURN(op)						\
++static __inline__ long atomic64_##op##_return(long i, atomic64_t * v)	\
++{									\
++	long temp, result;						\
++	smp_mb();							\
++	__asm__ __volatile__(						\
++	"1:	ldq_l %0,%1\n"						\
++	"	" #op "q %0,%3,%2\n"					\
++	"	" #op "q %0,%3,%0\n"					\
++	"	stq_c %0,%1\n"						\
++	"	beq %0,2f\n"						\
++	".subsection 2\n"						\
++	"2:	br 1b\n"						\
++	".previous"							\
++	:"=&r" (temp), "=m" (v->counter), "=&r" (result)		\
++	:"Ir" (i), "m" (v->counter) : "memory");			\
++	smp_mb();							\
++	return result;							\
+ }
+ 
+-static __inline__ long atomic64_add_return(long i, atomic64_t * v)
+-{
+-	long temp, result;
+-	smp_mb();
+-	__asm__ __volatile__(
+-	"1:	ldq_l %0,%1\n"
+-	"	addq %0,%3,%2\n"
+-	"	addq %0,%3,%0\n"
+-	"	stq_c %0,%1\n"
+-	"	beq %0,2f\n"
+-	".subsection 2\n"
+-	"2:	br 1b\n"
+-	".previous"
+-	:"=&r" (temp), "=m" (v->counter), "=&r" (result)
+-	:"Ir" (i), "m" (v->counter) : "memory");
+-	smp_mb();
+-	return result;
+-}
++#define ATOMIC_OPS(opg)							\
++	ATOMIC_OP(opg)							\
++	ATOMIC_OP_RETURN(opg)						\
++	ATOMIC64_OP(opg)						\
++	ATOMIC64_OP_RETURN(opg)
+ 
+-static __inline__ long atomic_sub_return(int i, atomic_t * v)
+-{
+-	long temp, result;
+-	smp_mb();
+-	__asm__ __volatile__(
+-	"1:	ldl_l %0,%1\n"
+-	"	subl %0,%3,%2\n"
+-	"	subl %0,%3,%0\n"
+-	"	stl_c %0,%1\n"
+-	"	beq %0,2f\n"
+-	".subsection 2\n"
+-	"2:	br 1b\n"
+-	".previous"
+-	:"=&r" (temp), "=m" (v->counter), "=&r" (result)
+-	:"Ir" (i), "m" (v->counter) : "memory");
+-	smp_mb();
+-	return result;
+-}
++ATOMIC_OPS(add)
++ATOMIC_OPS(sub)
+ 
+-static __inline__ long atomic64_sub_return(long i, atomic64_t * v)
+-{
+-	long temp, result;
+-	smp_mb();
+-	__asm__ __volatile__(
+-	"1:	ldq_l %0,%1\n"
+-	"	subq %0,%3,%2\n"
+-	"	subq %0,%3,%0\n"
+-	"	stq_c %0,%1\n"
+-	"	beq %0,2f\n"
+-	".subsection 2\n"
+-	"2:	br 1b\n"
+-	".previous"
+-	:"=&r" (temp), "=m" (v->counter), "=&r" (result)
+-	:"Ir" (i), "m" (v->counter) : "memory");
+-	smp_mb();
+-	return result;
+-}
++#undef ATOMIC_OPS
++#undef ATOMIC64_OP_RETURN
++#undef ATOMIC64_OP
++#undef ATOMIC_OP_RETURN
++#undef ATOMIC_OP
+ 
+ #define atomic64_cmpxchg(v, old, new) (cmpxchg(&((v)->counter), old, new))
+ #define atomic64_xchg(v, new) (xchg(&((v)->counter), new))
