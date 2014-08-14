@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713AbaHNI6N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 04:58:13 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49838 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754946AbaHNI6J (ORCPT
+	id S1754680AbaHNIqR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 04:46:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36342 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803AbaHNIqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 04:58:09 -0400
-Date: Thu, 14 Aug 2014 09:57:53 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ludovic Desroches <ludovic.desroches@atmel.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        laurent.pinchart@ideasonboard.com,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
-	dma controller API
-Message-ID: <20140814085753.GS30401@n2100.arm.linux.org.uk>
-References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com> <20140814085301.GJ2452@ldesroches-Latitude-E6320>
+	Thu, 14 Aug 2014 04:46:14 -0400
+Date: Thu, 14 Aug 2014 01:45:54 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-e96c674fe2c228fd5c16fd7a7607c60dea4cdaa2@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
+        a.p.zijlstra@chello.nl, minchan@kernel.org, namhyung.kim@lge.com,
+        namhyung@kernel.org, jolsa@redhat.com, adrian.hunter@intel.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, jolsa@kernel.org,
+        minchan@kernel.org, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
+        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <1407825645-24586-3-git-send-email-namhyung@kernel.org>
+References: <1407825645-24586-3-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf symbols:
+  Fix a memory leak in vmlinux_path__init()
+Git-Commit-ID: e96c674fe2c228fd5c16fd7a7607c60dea4cdaa2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140814085301.GJ2452@ldesroches-Latitude-E6320>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 10:53:01AM +0200, Ludovic Desroches wrote:
-> On Wed, Jul 30, 2014 at 06:03:13PM +0200, Maxime Ripard wrote:
-> > The dmaengine is neither trivial nor properly documented at the moment, which
-> > means a lot of trial and error development, which is not that good for such a
-> > central piece of the system.
-> > 
-> > Attempt at making such a documentation.
-> 
-> Good idea, many questions are asked when writing a new dmaengine driver.
-> 
-> For instance I didn't find how to use the DMA_CTRL_ACK flags.
-> 
-> - How this flag has to be managed? For instance, async_tx_ack is used in
-> dmaengine driver but also in some devices.
-> - Is it mandatory to deal with this flag? It seems some dmaengine
-> drivers don't care about it.
+Commit-ID:  e96c674fe2c228fd5c16fd7a7607c60dea4cdaa2
+Gitweb:     http://git.kernel.org/tip/e96c674fe2c228fd5c16fd7a7607c60dea4cdaa2
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Tue, 12 Aug 2014 15:40:34 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 13 Aug 2014 16:30:22 -0300
 
-This is one part of the DMA engine API that even I don't understand.
+perf symbols: Fix a memory leak in vmlinux_path__init()
 
-It's got something to do with the async engine API, and seems to be
-something to do with whether a descriptor can have other transactions
-added to it, and whether a descriptor can be re-used (async-tx engines
-typically allocate a fixed set of descriptors and recycle them.)
+When uname() failed, it should free vmlinux_path.
 
-I was never able to get to the bottom of what that flag meant or how
-it should be used with the DMA slave API (and I suspect everyone else
-just gave up trying to understand it as well.)
+Acked-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1407825645-24586-3-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 581c568..009a9d0 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1772,7 +1772,7 @@ static int vmlinux_path__init(void)
+ 		return 0;
+ 
+ 	if (uname(&uts) < 0)
+-		return -1;
++		goto out_fail;
+ 
+ 	snprintf(bf, sizeof(bf), "/boot/vmlinux-%s", uts.release);
+ 	vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
