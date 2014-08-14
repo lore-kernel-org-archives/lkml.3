@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020AbaHNFod (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 01:44:33 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:57198 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947AbaHNFoa (ORCPT
+	id S1754092AbaHNFoi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 01:44:38 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:46062 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753947AbaHNFof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 01:44:30 -0400
+	Thu, 14 Aug 2014 01:44:35 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
         Andrew Honig <ahonig@google.com>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v6 4/7] x86,kvm: Add MSR_KVM_GET_RNG_SEED and a matching feature bit
-Date: Wed, 13 Aug 2014 22:43:58 -0700
-Message-Id: <d6fb35de2ccd90532f62d58016428fc91ca2dd8d.1407994704.git.luto@amacapital.net>
+Subject: [PATCH v6 5/7] x86,random: Add an x86 implementation of arch_rng_init
+Date: Wed, 13 Aug 2014 22:43:59 -0700
+Message-Id: <0e28d4cabb55a41f0e6b41912503cbc7760f167b.1407994704.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1407994704.git.luto@amacapital.net>
 References: <cover.1407994704.git.luto@amacapital.net>
@@ -29,99 +29,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a simple interface to allow a guest to request 64 bits of
-host nonblocking entropy.  This is independent of virtio-rng for a
-couple of reasons:
+This does the same thing as the generic implementation, except
+that it logs how many bits of each type it collected.  I want to
+know whether the initial seeding is working and, if so, whether
+the RNG is fast enough.
 
- - It's intended to be usable during early boot, when a trivial
-   synchronous interface is needed.
+(I know that hpa assures me that the hardware RNG is more than
+ fast enough, but I'd still like a direct way to verify this.)
 
- - virtio-rng gives blocking entropy, and making guest boot wait for
-   the host's /dev/random will cause problems.
+Arguably, arch_get_random_seed could be removed now: I'm having some
+trouble imagining a sensible non-architecture-specific use of it
+that wouldn't be better served by arch_rng_init.
 
-MSR_KVM_GET_RNG_SEED is intended to provide 64 bits of best-effort
-cryptographically secure data for use as a seed.  It provides no
-guarantee that the result contains any actual entropy.
-
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- Documentation/virtual/kvm/cpuid.txt  | 3 +++
- arch/x86/include/uapi/asm/kvm_para.h | 2 ++
- arch/x86/kvm/cpuid.c                 | 3 ++-
- arch/x86/kvm/x86.c                   | 4 ++++
- 4 files changed, 11 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/archrandom.h |  6 +++++
+ arch/x86/kernel/Makefile          |  2 ++
+ arch/x86/kernel/archrandom.c      | 51 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 59 insertions(+)
+ create mode 100644 arch/x86/kernel/archrandom.c
 
-diff --git a/Documentation/virtual/kvm/cpuid.txt b/Documentation/virtual/kvm/cpuid.txt
-index 3c65feb..0ab043b 100644
---- a/Documentation/virtual/kvm/cpuid.txt
-+++ b/Documentation/virtual/kvm/cpuid.txt
-@@ -54,6 +54,9 @@ KVM_FEATURE_PV_UNHALT              ||     7 || guest checks this feature bit
-                                    ||       || before enabling paravirtualized
-                                    ||       || spinlock support.
- ------------------------------------------------------------------------------
-+KVM_FEATURE_GET_RNG_SEED           ||     8 || host provides rng seed data via
-+                                   ||       || MSR_KVM_GET_RNG_SEED.
-+------------------------------------------------------------------------------
- KVM_FEATURE_CLOCKSOURCE_STABLE_BIT ||    24 || host will warn if no guest-side
-                                    ||       || per-cpu warps are expected in
-                                    ||       || kvmclock.
-diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
-index 94dc8ca..e2eaf93 100644
---- a/arch/x86/include/uapi/asm/kvm_para.h
-+++ b/arch/x86/include/uapi/asm/kvm_para.h
-@@ -24,6 +24,7 @@
- #define KVM_FEATURE_STEAL_TIME		5
- #define KVM_FEATURE_PV_EOI		6
- #define KVM_FEATURE_PV_UNHALT		7
-+#define KVM_FEATURE_GET_RNG_SEED	8
+diff --git a/arch/x86/include/asm/archrandom.h b/arch/x86/include/asm/archrandom.h
+index 69f1366..5611c21 100644
+--- a/arch/x86/include/asm/archrandom.h
++++ b/arch/x86/include/asm/archrandom.h
+@@ -117,6 +117,12 @@ GET_SEED(arch_get_random_seed_int, unsigned int, RDSEED_INT, ASM_NOP4);
+ #define arch_has_random()	static_cpu_has(X86_FEATURE_RDRAND)
+ #define arch_has_random_seed()	static_cpu_has(X86_FEATURE_RDSEED)
  
- /* The last 8 bits are used to indicate how to interpret the flags field
-  * in pvclock structure. If no bits are set, all flags are ignored.
-@@ -40,6 +41,7 @@
- #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
- #define MSR_KVM_STEAL_TIME  0x4b564d03
- #define MSR_KVM_PV_EOI_EN      0x4b564d04
-+#define MSR_KVM_GET_RNG_SEED 0x4b564d05
++#define __HAVE_ARCH_RNG_INIT
++extern void arch_rng_init(void *ctx,
++			  void (*seed)(void *ctx, u32 data),
++			  int bits_per_source,
++			  const char *log_prefix);
++
+ #else
  
- struct kvm_steal_time {
- 	__u64 steal;
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index 38a0afe..40d6763 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -479,7 +479,8 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 			     (1 << KVM_FEATURE_ASYNC_PF) |
- 			     (1 << KVM_FEATURE_PV_EOI) |
- 			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
--			     (1 << KVM_FEATURE_PV_UNHALT);
-+			     (1 << KVM_FEATURE_PV_UNHALT) |
-+			     (1 << KVM_FEATURE_GET_RNG_SEED);
+ static inline int rdrand_long(unsigned long *v)
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 047f9ff..0718bae 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -92,6 +92,8 @@ obj-$(CONFIG_PARAVIRT)		+= paravirt.o paravirt_patch_$(BITS).o
+ obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= paravirt-spinlocks.o
+ obj-$(CONFIG_PARAVIRT_CLOCK)	+= pvclock.o
  
- 		if (sched_info_on())
- 			entry->eax |= (1 << KVM_FEATURE_STEAL_TIME);
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index ef432f8..695b682 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -48,6 +48,7 @@
- #include <linux/pci.h>
- #include <linux/timekeeper_internal.h>
- #include <linux/pvclock_gtod.h>
-+#include <linux/random.h>
- #include <trace/events/kvm.h>
++obj-$(CONFIG_ARCH_RANDOM)	+= archrandom.o
++
+ obj-$(CONFIG_PCSPKR_PLATFORM)	+= pcspeaker.o
  
- #define CREATE_TRACE_POINTS
-@@ -2480,6 +2481,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
- 	case MSR_KVM_PV_EOI_EN:
- 		data = vcpu->arch.pv_eoi.msr_val;
- 		break;
-+	case MSR_KVM_GET_RNG_SEED:
-+		get_random_bytes(&data, sizeof(data));
-+		break;
- 	case MSR_IA32_P5_MC_ADDR:
- 	case MSR_IA32_P5_MC_TYPE:
- 	case MSR_IA32_MCG_CAP:
+ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
+diff --git a/arch/x86/kernel/archrandom.c b/arch/x86/kernel/archrandom.c
+new file mode 100644
+index 0000000..e8d2ffb
+--- /dev/null
++++ b/arch/x86/kernel/archrandom.c
+@@ -0,0 +1,51 @@
++/*
++ * This file is part of the Linux kernel.
++ *
++ * Copyright (c) 2014 Andy Lutomirski
++ * Authors: Andy Lutomirski <luto@amacapital.net>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ */
++
++#include <asm/archrandom.h>
++
++void arch_rng_init(void *ctx,
++		   void (*seed)(void *ctx, u32 data),
++		   int bits_per_source,
++		   const char *log_prefix)
++{
++	int i;
++	int rdseed_bits = 0, rdrand_bits = 0;
++	char buf[128] = "";
++	char *msgptr = buf;
++
++	for (i = 0; i < bits_per_source; i += 8 * sizeof(long)) {
++		unsigned long rv;
++
++		if (arch_get_random_seed_long(&rv))
++			rdseed_bits += 8 * sizeof(rv);
++		else if (arch_get_random_long(&rv))
++			rdrand_bits += 8 * sizeof(rv);
++		else
++			continue;	/* Don't waste time mixing. */
++
++		seed(ctx, (u32)rv);
++#if BITS_PER_LONG > 32
++		seed(ctx, (u32)(rv >> 32));
++#endif
++	}
++
++	if (rdseed_bits)
++		msgptr += sprintf(msgptr, ", %d bits from RDSEED", rdseed_bits);
++	if (rdrand_bits)
++		msgptr += sprintf(msgptr, ", %d bits from RDRAND", rdrand_bits);
++	if (buf[0])
++		pr_info("%s with %s\n", log_prefix, buf + 2);
++}
 -- 
 1.9.3
 
