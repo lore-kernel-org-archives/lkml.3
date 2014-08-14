@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480AbaHNQ0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 12:26:12 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:59472 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934AbaHNQ0K (ORCPT
+	id S1752769AbaHNQaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 12:30:10 -0400
+Received: from host171.canaca.com ([67.55.55.225]:40004 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaHNQaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 12:26:10 -0400
+	Thu, 14 Aug 2014 12:30:08 -0400
+Message-ID: <629e44bcbdb7061b2f004cf9125fed9b.squirrel@mungewell.org>
+In-Reply-To: <4338127.9nsJWYLUyM@sigyn>
+References: <3335238.KGDcEM6DjH@sigyn>
+    <f86b6b4fbf48ce4cbeb9b537794a4eb8.squirrel@mungewell.org>
+    <alpine.LNX.2.00.1408121509550.15220@pobox.suse.cz>
+    <4338127.9nsJWYLUyM@sigyn>
+Date: Thu, 14 Aug 2014 12:30:02 -0400
+Subject: Re: PATCH hid: Implement mode switching on Logitech gaming wheels
+ accordingly to the documentation
+From: simon@mungewell.org
+To: =?iso-8859-1?Q?=22Michal_Mal=FD=22?= 
+	<madcatxster@devoid-pointer.net>
+Cc: "Jiri Kosina" <jkosina@suse.cz>,
+        "simon@mungewell.org" <simon@mungewell.org>,
+        "linux-input" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        edwin@velds.nl, "elias.vds@gmail.com" <elias.vds@gmail.com>,
+        "Roland Bosa" <rbosa@logitech.com>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-In-Reply-To: <1407999713-3726-2-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-References: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1407999713-3726-2-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-From: David Matlack <dmatlack@google.com>
-Date: Thu, 14 Aug 2014 09:25:49 -0700
-Message-ID: <CALzav=f_DYTSUeX7a9HRMoY1JMb1bYJgd_7h-08=fDPZQOVxFg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] kvm: x86: fix stale mmio cache bug
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@kernel.org>, Avi Kivity <avi.kivity@gmail.com>,
-        mtosatti@redhat.com, Paolo Bonzini <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 12:01 AM, Xiao Guangrong
-<xiaoguangrong@linux.vnet.ibm.com> wrote:
-> From: David Matlack <dmatlack@google.com>
->
-> The following events can lead to an incorrect KVM_EXIT_MMIO bubbling
-> up to userspace:
->
-> (1) Guest accesses gpa X without a memory slot. The gfn is cached in
-> struct kvm_vcpu_arch (mmio_gfn). On Intel EPT-enabled hosts, KVM sets
-> the SPTE write-execute-noread so that future accesses cause
-> EPT_MISCONFIGs.
->
-> (2) Host userspace creates a memory slot via KVM_SET_USER_MEMORY_REGION
-> covering the page just accessed.
->
-> (3) Guest attempts to read or write to gpa X again. On Intel, this
-> generates an EPT_MISCONFIG. The memory slot generation number that
-> was incremented in (2) would normally take care of this but we fast
-> path mmio faults through quickly_check_mmio_pf(), which only checks
-> the per-vcpu mmio cache. Since we hit the cache, KVM passes a
-> KVM_EXIT_MMIO up to userspace.
->
-> This patch fixes the issue by using the memslot generation number
-> to validate the mmio cache.
->
-> [ xiaoguangrong: adjust the code to make it simpler for stable-tree fix. ]
 
-The adjustments look good. Thanks!
+> Simon mailed me his revised patchset which has the changes broken out into
+> four separate patches and allows to switch "extended compatibility" modes
+> on
+> the fly through sysfs. I looked them over and I they seem fine to me. I
+> suppose he'll submit them for review very soon.
+
+Whilst it is my intention to submit them, I might not achieve the 'very
+soon' part.... earliest I think would be mid next week as they still need
+a little tweaking.
+Simon
+
