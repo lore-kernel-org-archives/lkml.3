@@ -1,172 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228AbaHNPJd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 11:09:33 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:56087 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaHNPJc (ORCPT
+	id S1755263AbaHNPKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 11:10:22 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:36385 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754563AbaHNPKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 11:09:32 -0400
+	Thu, 14 Aug 2014 11:10:20 -0400
+Message-ID: <53ECD125.3080701@fb.com>
+Date: Thu, 14 Aug 2014 09:09:25 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1407978746-20587-3-git-send-email-minchan@kernel.org>
-References: <1407978746-20587-1-git-send-email-minchan@kernel.org> <1407978746-20587-3-git-send-email-minchan@kernel.org>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Thu, 14 Aug 2014 11:09:05 -0400
-X-Google-Sender-Auth: kSiMPdCjo5yCH7uUB49MJTM08I8
-Message-ID: <CALZtONDB5q56f1TUHgqbiJ4ZaP6Yk=GcNQw9DhvLhNyExdfQ4w@mail.gmail.com>
-Subject: Re: [PATCH 3/3] zram: add mem_used_max via sysfs
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>, ds2horner@gmail.com
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?TWF0aWFzIEJqw7hybGluZw==?= <m@bjorling.me>,
+        Keith Busch <keith.busch@intel.com>
+CC: Matthew Wilcox <willy@linux.intel.com>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-nvme <linux-nvme@lists.infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Rob Nelson <rlnelson@google.com>, Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH v11] NVMe: Convert to blk-mq
+References: <1406365643-27020-1-git-send-email-m@bjorling.me> <1406365643-27020-2-git-send-email-m@bjorling.me> <CAOu_J6mW-2e2Jgm+khodLPah_-RZrD599SmSH+Mszd0AjterrQ@mail.gmail.com> <alpine.LRH.2.03.1408131519590.14603@AMR> <53EC7273.5060303@bjorling.me>
+In-Reply-To: <53EC7273.5060303@bjorling.me>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-14_03:2014-08-14,2014-08-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.3251899577682e-11 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.533125042697551
+ urlsuspect_oldscore=0.533125042697551 suspectscore=2
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.533125042697551 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1408140187
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 9:12 PM, Minchan Kim <minchan@kernel.org> wrote:
-> Normally, zram user can get maximum memory zsmalloc consumed via
-> polling mem_used_total with sysfs in userspace.
->
-> But it has a critical problem because user can miss peak memory
-> usage during update interval of polling. For avoiding that,
-> user should poll it frequently with mlocking to avoid delay
-> when memory pressure is heavy so it would be handy if the
-> kernel supports the function.
->
-> This patch adds mem_used_max via sysfs.
->
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  Documentation/blockdev/zram.txt |  1 +
->  drivers/block/zram/zram_drv.c   | 35 +++++++++++++++++++++++++++++++++--
->  drivers/block/zram/zram_drv.h   |  2 ++
->  3 files changed, 36 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> index 9f239ff8c444..3b2247c2d4cf 100644
-> --- a/Documentation/blockdev/zram.txt
-> +++ b/Documentation/blockdev/zram.txt
-> @@ -107,6 +107,7 @@ size of the disk when not in use so a huge zram is wasteful.
->                 orig_data_size
->                 compr_data_size
->                 mem_used_total
-> +               mem_used_max
->
->  8) Deactivate:
->         swapoff /dev/zram0
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index b48a3d0e9031..311699f18bd5 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -109,6 +109,30 @@ static ssize_t mem_used_total_show(struct device *dev,
->         return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
->  }
->
-> +static ssize_t mem_used_max_reset(struct device *dev,
-> +               struct device_attribute *attr, const char *buf, size_t len)
-> +{
-> +       struct zram *zram = dev_to_zram(dev);
-> +
-> +       down_write(&zram->init_lock);
-> +       zram->max_used_bytes = 0;
-> +       up_write(&zram->init_lock);
-> +       return len;
-> +}
-> +
-> +static ssize_t mem_used_max_show(struct device *dev,
-> +               struct device_attribute *attr, char *buf)
-> +{
-> +       u64 max_used_bytes;
-> +       struct zram *zram = dev_to_zram(dev);
-> +
-> +       down_read(&zram->init_lock);
-> +       max_used_bytes = zram->max_used_bytes;
-> +       up_read(&zram->init_lock);
-> +
-> +       return scnprintf(buf, PAGE_SIZE, "%llu\n", max_used_bytes);
-> +}
-> +
->  static ssize_t max_comp_streams_show(struct device *dev,
->                 struct device_attribute *attr, char *buf)
->  {
-> @@ -474,6 +498,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->         struct zram_meta *meta = zram->meta;
->         struct zcomp_strm *zstrm;
->         bool locked = false;
-> +       u64 total_bytes;
->
->         page = bvec->bv_page;
->         if (is_partial_io(bvec)) {
-> @@ -543,8 +568,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->                 goto out;
->         }
->
-> -       if (zram->limit_bytes &&
-> -               zs_get_total_size_bytes(meta->mem_pool) > zram->limit_bytes) {
-> +       total_bytes = zs_get_total_size_bytes(meta->mem_pool);
-> +       if (zram->limit_bytes && total_bytes > zram->limit_bytes) {
+On 08/14/2014 02:25 AM, Matias Bjørling wrote:
+> On 08/14/2014 12:27 AM, Keith Busch wrote:
+>> On Sun, 10 Aug 2014, Matias Bjørling wrote:
+>>> On Sat, Jul 26, 2014 at 11:07 AM, Matias Bjørling <m@bjorling.me> wrote:
+>>>> This converts the NVMe driver to a blk-mq request-based driver.
+>>>>
+>>>
+>>> Willy, do you need me to make any changes to the conversion? Can you
+>>> pick it up for 3.17?
+>>
+>> Hi Matias,
+>>
+> 
+> Hi Keith, Thanks for taking the time to take another look.
+> 
+>> I'm starting to get a little more spare time to look at this again. I
+>> think there are still some bugs here, or perhaps something better we
+>> can do. I'll just start with one snippet of the code:
+>>
+>> @@ -765,33 +619,49 @@ static int nvme_submit_bio_queue(struct nvme_queue
+>> *nvmeq, struct nvme_ns *ns,
+>>   submit_iod:
+>>      spin_lock_irq(&nvmeq->q_lock);
+>>      if (nvmeq->q_suspended) {
+>>          spin_unlock_irq(&nvmeq->q_lock);
+>>          goto finish_cmd;
+>>      }
+>>
+>>   <snip>
+>>
+>>   finish_cmd:
+>>      nvme_finish_cmd(nvmeq, req->tag, NULL);
+>>      nvme_free_iod(nvmeq->dev, iod);
+>>      return result;
+>> }
+>>
+>>
+>> If the nvme queue is marked "suspended", this code just goto's the finish
+>> without setting "result", so I don't think that's right.
+> 
+> The result is set to BLK_MQ_RQ_QUEUE_ERROR, or am I mistaken?
 
-do you need to take the init_lock to read limit_bytes here?  It could
-be getting changed between these checks...
+Looks OK to me, looking at the code, 'result' is initialized to
+BLK_MQ_RQ_QUEUE_BUSY though. Which looks correct, we don't want to error
+on a suspended queue.
 
->                 zs_free(meta->mem_pool, handle);
->                 ret = -ENOMEM;
->                 goto out;
-> @@ -578,6 +603,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->         /* Update stats */
->         atomic64_add(clen, &zram->stats.compr_data_size);
->         atomic64_inc(&zram->stats.pages_stored);
-> +
-> +       zram->max_used_bytes = max(zram->max_used_bytes, total_bytes);
+>> But do we even need the "q_suspended" flag anymore? It was there because
+>> we couldn't prevent incoming requests as a bio based driver and we needed
+>> some way to mark that the h/w's IO queue was temporarily inactive, but
+>> blk-mq has ways to start/stop a queue at a higher level, right? If so,
+>> I think that's probably a better way than using this driver specific way.
+> 
+> Not really, its managed by the block layer. Its on purpose I haven't
+> removed it. The patch is already too big, and I want to keep the patch
+> free from extra noise that can be removed by later patches.
+> 
+> Should I remove it anyway?
 
-shouldn't max_used_bytes be atomic64_t?  Or take the init_lock here?
+No point in keeping it, if it's not needed...
 
->  out:
->         if (locked)
->                 zcomp_strm_release(zram->comp, zstrm);
-> @@ -656,6 +683,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
->         down_write(&zram->init_lock);
->
->         zram->limit_bytes = 0;
-> +       zram->max_used_bytes = 0;
->
->         if (!init_done(zram)) {
->                 up_write(&zram->init_lock);
-> @@ -897,6 +925,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
->  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
->  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
->  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
-> +static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show,
-> +               mem_used_max_reset);
->  static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
->                 mem_limit_store);
->  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
-> @@ -927,6 +957,7 @@ static struct attribute *zram_disk_attrs[] = {
->         &dev_attr_orig_data_size.attr,
->         &dev_attr_compr_data_size.attr,
->         &dev_attr_mem_used_total.attr,
-> +       &dev_attr_mem_used_max.attr,
->         &dev_attr_mem_limit.attr,
->         &dev_attr_max_comp_streams.attr,
->         &dev_attr_comp_algorithm.attr,
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index 086c51782e75..aca09b18fcbd 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -111,6 +111,8 @@ struct zram {
->          */
->         u64 disksize;   /* bytes */
->         u64 limit_bytes;
-> +       u64 max_used_bytes;
-> +
->         int max_comp_streams;
->         struct zram_stats stats;
->         char compressor[10];
-> --
-> 2.0.0
->
+>> I haven't event tried debugging this next one: doing an insmod+rmmod
+>> caused this warning followed by a panic:
+>>
+> 
+> I'll look into it. Thanks
+
+nr_tags must be uninitialized or screwed up somehow, otherwise I don't
+see how that kmalloc() could warn on being too large. Keith, are you
+running with slab debugging? Matias, might be worth trying.
+
+FWIW, in general, we've run a bunch of testing internally at FB, all on
+backported blk-mq stack and nvme-mq. No issues observed, and performance
+is good and overhead low. For other reasons that I can't go into here,
+this is the stack on which we'll run nvme hardware. Other features are
+much easily implemented on top of a blk-mq based driver as opposed to a
+bio based one, similarly to the suspended part above.
+
+-- 
+Jens Axboe
+
