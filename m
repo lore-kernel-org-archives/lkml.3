@@ -1,143 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889AbaHNM4T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 08:56:19 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:61616 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754732AbaHNM4J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 08:56:09 -0400
-Date: Thu, 14 Aug 2014 21:54:58 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, Chao Yu <chao2.yu@samsung.com>,
-        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
-Message-ID: <20140814125458.GA966@swordfish>
-References: <009001cfb69a$a8470840$f8d518c0$@samsung.com>
- <53EB2271.1080002@redhat.com>
- <20140813113257.GA948@swordfish>
- <20140813144304.GB1091@swordfish>
- <20140813230216.GC9227@bbox>
+	id S1754912AbaHNM7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 08:59:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41148 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754530AbaHNM7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 08:59:19 -0400
+Message-ID: <53ECB29C.7070703@ti.com>
+Date: Thu, 14 Aug 2014 15:59:08 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140813230216.GC9227@bbox>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Andrzej Hajda <a.hajda@samsung.com>
+CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        YoungJun Cho <yj44.cho@samsung.com>,
+        Ajay Kumar <ajaykumar.rs@samsung.com>,
+        <dri-devel@lists.freedesktop.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: Dual-channel DSI
+References: <20140805153923.GA3072@ulmo.nvidia.com> <53E3227B.1010000@samsung.com> <20140807072530.GE17340@ulmo> <53E33B48.1080401@samsung.com> <20140807085424.GC13315@ulmo.nvidia.com> <53E47B99.3040105@samsung.com> <20140808101447.GF15852@ulmo>
+In-Reply-To: <20140808101447.GF15852@ulmo>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="hQMgF89s0EuI6WejPqQw1AnMlD7WtpCW2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--hQMgF89s0EuI6WejPqQw1AnMlD7WtpCW2
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-On (08/14/14 08:02), Minchan Kim wrote:
-> On Wed, Aug 13, 2014 at 11:43:04PM +0900, Sergey Senozhatsky wrote:
-> > Hello,
-> > 
-> > On (08/13/14 20:32), Sergey Senozhatsky wrote:
-> > > On (08/13/14 10:31), Jerome Marchand wrote:
-> > > > Date: Wed, 13 Aug 2014 10:31:45 +0200
-> > > > From: Jerome Marchand <jmarchan@redhat.com>
-> > > > To: Chao Yu <chao2.yu@samsung.com>, minchan@kernel.org
-> > > > CC: ngupta@vflare.org, linux-kernel@vger.kernel.org, 'Sergey Senozhatsky'
-> > > >  <sergey.senozhatsky@gmail.com>, 'Andrew Morton'
-> > > >  <akpm@linux-foundation.org>
-> > > > Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
-> > > > User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
-> > > >  Thunderbird/24.6.0
-> > > > 
-> > > > On 08/13/2014 04:01 AM, Chao Yu wrote:
-> > > > > Since we allocate a temporary buffer in zram_bvec_read to handle partial page
-> > > > > operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
-> > > > > zram: allow partial page operations), our ->failed_reads value may be incorrect
-> > > > > as we do not increase its value when failed to allocate the temporary buffer.
-> > > > > 
-> > > > > Let's fix this issue and correct the annotation of failed_reads.
-> > > > > 
-> > > > >  v2: clean codes of failed_{reads,writes} stat pointed out by Minchan Kim, and
-> > > > > this cleanup also fix incorrectly stat when fail in zram_decompress_page.
-> > > > > 
-> > > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > > 
-> > > > Acked-by: Jerome Marchand <jmarchan@redhat.com>
-> > > 
-> > > Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > > 
-> > > 	-ss
-> > > 
-> > > > > ---
-> > > > >  drivers/block/zram/zram_drv.c | 10 +++++++---
-> > > > >  drivers/block/zram/zram_drv.h |  2 +-
-> > > > >  2 files changed, 8 insertions(+), 4 deletions(-)
-> > > > > 
-> > > > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > > > > index dfa4024..d00831c 100644
-> > > > > --- a/drivers/block/zram/zram_drv.c
-> > > > > +++ b/drivers/block/zram/zram_drv.c
-> > > > > @@ -378,7 +378,6 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
-> > > > >  	/* Should NEVER happen. Return bio error if it does. */
-> > > > >  	if (unlikely(ret)) {
-> > > > >  		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
-> > > > > -		atomic64_inc(&zram->stats.failed_reads);
-> > > > >  		return ret;
-> > > > >  	}
-> > > > >  
-> > > > > @@ -547,8 +546,6 @@ out:
-> > > > >  		zcomp_strm_release(zram->comp, zstrm);
-> > > > >  	if (is_partial_io(bvec))
-> > > > >  		kfree(uncmem);
-> > > > > -	if (ret)
-> > > > > -		atomic64_inc(&zram->stats.failed_writes);
-> > > > >  	return ret;
-> > > > >  }
-> > > > >  
-> > > > > @@ -566,6 +563,13 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-> > > > >  		ret = zram_bvec_write(zram, bvec, index, offset);
-> > > > >  	}
-> > > > >  
-> > > > > +	if (unlikely(ret)) {
-> > > > > +		if (rw == READ)
-> > > > > +			atomic64_inc(&zram->stats.failed_reads);
-> > > > > +		else
-> > > > > +			atomic64_inc(&zram->stats.failed_writes);
-> > > > > +	}
-> > > > > +
-> > > > >  	return ret;
-> > > > >  }
-> > > > >  
-> > > > > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > > > > index 5b0afde..e0f725c 100644
-> > > > > --- a/drivers/block/zram/zram_drv.h
-> > > > > +++ b/drivers/block/zram/zram_drv.h
-> > > > > @@ -84,7 +84,7 @@ struct zram_stats {
-> > > > >  	atomic64_t compr_data_size;	/* compressed size of pages stored */
-> > > > >  	atomic64_t num_reads;	/* failed + successful */
-> > > > >  	atomic64_t num_writes;	/* --do-- */
-> > > > > -	atomic64_t failed_reads;	/* should NEVER! happen */
-> > > > > +	atomic64_t failed_reads;	/* can happen when memory is too low */
-> > 
-> > 
-> > this grabbed my attention.
-> > 
-> > 	"failed_writes; /* can happen when memory is too low */"
-> > 
-> > theoretically, we can have a misbehaving compression algorithm. so the
-> > question is -- should we fail write() if compression has failed for any
-> > other reason, rather than -ENOMEM? alternatively, we can store uncompressed
-> > user mem, just the same way we do for `badly' compressed buffers, set a
-> > FAILED_COMPRESSION flag (so we will not leak kernel memory on read() if we
-> > failed to compress is_partial_io() bv_page), and on read() copy it out as is,
-> > just as we do for `badly' compessed pages.
-> > 
-> > so, what do you think? /* I can take a look on it */
-> 
-> How often does it happen?
-> I don't think it's valuable to maintain if it's too rare.
-> Rather, I'd like to remove the comment on failed_writes. :)
-> 
+On 08/08/14 13:14, Thierry Reding wrote:
+> On Fri, Aug 08, 2014 at 09:26:17AM +0200, Andrzej Hajda wrote:
+>> On 08/07/2014 10:54 AM, Thierry Reding wrote:
+>>> On Thu, Aug 07, 2014 at 10:39:36AM +0200, Andrzej Hajda wrote:
+>>>> On 08/07/2014 09:25 AM, Thierry Reding wrote:
+>>>>> On Thu, Aug 07, 2014 at 08:53:47AM +0200, Andrzej Hajda wrote:
+>>>>>> Hi Thierry,
+>>>>>>
+>>>>>> Nice case.
+>>>>>>
+>>>>>> On 08/05/2014 05:39 PM, Thierry Reding wrote:
+>>>>>>> Hi everyone,
+>>>>>>>
+>>>>>>> I've been working on adding support for a panel that uses what's
+>>>>>>> commonly known as dual-channel DSI. Sometimes this is referred to=
+ as
+>>>>>>> ganged-mode as well.
+>>>>>>>
+>>>>>>> What is it, you ask? It's essentially a hack to work around the b=
+and-
+>>>>>>> width restrictions of DSI, albeit one that's been commonly implem=
+ented
+>>>>>>> by several SoC vendors.
+>>>>>>>
+>>>>>>> This typically works by equipping a peripheral with two DSI inter=
+faces,
+>>>>>>> each of which driving one half of the screen (symmetric left-righ=
+t mode)
+>>>>>>> or every other line (symmetric odd-even mode). Apparently there c=
+an be
+>>>>>>> asymmetric modes in addition to those two, but they seem to be th=
+e
+>>>>>>> common ones. Often both of the DSI interfaces need to be configur=
+ed
+>>>>>>> using DCS commands and vendor specific registers.
+>>>>>>>
+>>>>>>> A single display controller is typically used video data transmis=
+sion.
+>>>>>>> This is necessary to provide synchronization and avoid tearing an=
+d all
+>>>>>>> kinds of other ugliness. For this to work both DSI controllers ne=
+ed to
+>>>>>>> be made aware of which chunk of the video data stream is addressi=
+ng
+>>>>>>> them.
+>>>>>>>
+>>>>>>> From a software perspective, this poses two problems:
+>>>>>>>
+>>>>>>> 1) A dual-channel device is composed of two DSI peripheral device=
+s which
+>>>>>>>    cannot be programmed independently of each other. A typical ex=
+ample
+>>>>>>>    is that the frame memory extents need to be configured differe=
+ntly
+>>>>>>>    for each of the devices (using the DCS set_column_address and
+>>>>>>>    set_page_address commands). Therefore each device must know of=
+ the
+>>>>>>>    other, or there must be a driver that binds against a dummy de=
+vice
+>>>>>>>    that pulls in the two real devices.
 
-I don't think I've ever observed any errors. and, apparently, lzo
-is always `return LZO_E_OK'. so let's just drop it.
+I once almost had to write a driver for similar panel, but luckily the pr=
+oject
+was canceled. =3D)
 
-	-ss
+Here are some thoughts:
+
+If we had a panel which is controlled via i2c, but receives the video str=
+eam
+from two DSI interfaces, I think the DT would look something like:
+
+&i2c1 {
+	display@48 {
+		compatible =3D "sharp,lq101r1sx01";
+		reg =3D <0x48>;
+
+		ports {
+			port@0 {
+				reg =3D <0>;
+				lcd_in0: endpoint {
+					remote-endpoint =3D <&dsi1_out_ep>;
+				};
+			};
+
+			port@1 {
+				reg =3D <1>;
+				lcd_in1: endpoint {
+					remote-endpoint =3D <&dsi2_out_ep>;
+				};
+			};
+		};
+	};
+};
+
+&dsi1 {
+	port {
+		dsi1_out_ep: endpoint {
+			remote-endpoint =3D <&lcd_in0>;
+			lanes =3D <0 1 2 3 4 5>;
+		};
+	};
+
+};
+
+&dsi2 {
+	port {
+		dsi2_out_ep: endpoint {
+			remote-endpoint =3D <&lcd_in1>;
+			lanes =3D <0 1 2 3 4 5>;
+		};
+	};
+};
+
+And similarly, if the panel would be controlled via DSI, but only via one=
+ DSI
+interface, I think the DT would look quite similar, except the "display" =
+node
+would be a child of "dsi1".
+
+Now, a panel controlled via two DSI interfaces. I have to say the design =
+sounds
+rather nasty. What were the HW people thinking about? I guess you are _su=
+re_
+that you cannot do the configuration via just a single interface? =3D)
+
+If you really need the control via two DSI interfaces, I'd suggest someth=
+ing
+like this:
+
+&dsi1 {
+	port {
+		dsi1_out_ep: endpoint {
+			remote-endpoint =3D <&lcd_in0>;
+			lanes =3D <0 1 2 3 4 5>;
+		};
+	};
+
+	display {
+		compatible =3D "sharp,lq101r1sx01";
+
+		secondary =3D <&panel_secondary>;
+
+		port {
+			lcd_in0: endpoint {
+				remote-endpoint =3D <&dsi1_out_ep>;
+			};
+		};
+	};
+};
+
+&dsi2 {
+	port {
+		dsi2_out_ep: endpoint {
+			remote-endpoint =3D <&lcd_in1>;
+			lanes =3D <0 1 2 3 4 5>;
+		};
+	};
+
+	panel_secondary: display {
+		compatible =3D "sharp,lq101r1sx01-secondary";
+
+		port {
+			lcd_in1: endpoint {
+				remote-endpoint =3D <&dsi2_out_ep>;
+			};
+		};
+	};
+};
+
+I guess the above was already more or less presented in the thread, but I=
+
+didn't see it written out.
+
+So there would two two devices, a master and a slave, and in the driver s=
+ide
+the slave would not do anything by itself.
+
+ Tomi
+
+
+
+--hQMgF89s0EuI6WejPqQw1AnMlD7WtpCW2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT7LKcAAoJEPo9qoy8lh71hQcP/jEJQvegRy7VhW+CnI8rMyv5
+MQKZxoBMBbOONPid+ha7rOaVmgLtcUad0uYaWHg5jh+TE9S0x+AItkMBuDOBgK2S
++0gnZIU1QUlOx/UGI34YyI3QQvOKKIZIo3mOHbVWj600GfuUrQ3cWPUI4+Fcu+QE
+Tu9M3zSy+D/lmZ9QcG5BhWXYJAH+km6MhjUXa9uklqcch1g199p4VIM9obin456x
+U5O89oBhveR3cHBf6sUHtK2Bpv11NGbWEbRwjXfTJQFoLp6Tu9wevSGotVMsITZH
+sNvFLfFXjxWpaiPzt/62AHJEa8PzlWjqaUtEE24TEEJgA2OG8ILYyCjB4VGf/okt
+jPrKSD3peJd941eY3ZBXSYo5NX4OHgX2fHy5jofLIp9Kws1cNK7wQ3MoCld0KzoO
+Hsb7gHQ7YsE0UOk8M34Fa9FicKAakWFvnSciV6hFDD/eJAwNyXnLJqoQLaekK/P5
+MRpLMSYHGE5lPFeHTQc/5FlXQzC8+K94mP25HSs1M/mBLxlQeT6Dp7Xe87shXyWG
+FR63Zk6pCMF4muSOsZWoGBstK2WJ0DPN93ig8nltMbNGU+xHGA5RY51WgoUSapWH
+cMCBoXAcDW9oQbHCIqnGudlRWHbbyBl9+Ae7wRvdT4tObUYWsyZ6iaMo++aRAO3g
+lziLHey+qX7WqOMdeTZz
+=7ovo
+-----END PGP SIGNATURE-----
+
+--hQMgF89s0EuI6WejPqQw1AnMlD7WtpCW2--
