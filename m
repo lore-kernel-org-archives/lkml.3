@@ -1,96 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaHNAyf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 20:54:35 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:40952 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984AbaHNAye (ORCPT
+	id S1753528AbaHNA5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 20:57:53 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:35103 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408AbaHNA5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 20:54:34 -0400
-From: Ramesh Basukala <basukalaramesh@gmail.com>
-X-Google-Original-From: Ramesh Basukala
-To: gregkh@linuxfoundation.org
-Cc: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, rbasukala <basukalaramesh@gmail.com>
-Subject: [PATCH] Staging: bmc: fix coding style warning
-Date: Wed, 13 Aug 2014 20:53:59 -0400
-Message-Id: <1407977639-18016-1-git-send-email-basukalaramesh@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20140813220659.GG7908@kroah.com>
-References: <20140813220659.GG7908@kroah.com>
+	Wed, 13 Aug 2014 20:57:51 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH 2/2] zram: limit memory size for zram
+Date: Thu, 14 Aug 2014 09:57:57 +0900
+Message-Id: <1407977877-18185-2-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1407977877-18185-1-git-send-email-minchan@kernel.org>
+References: <1407977877-18185-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: rbasukala <basukalaramesh@gmail.com>
+Since zram has no control feature to limit memory usage,
+it makes hard to manage system memrory.
 
-This is a patch to the vendorspecificextn.c that fixes coding style
-warning message line over 80 characters found by checkpatch.pl script.
-I am submitting this patch as required by Eudyptula Challenge.
+This patch adds new knob "mem_limit" via sysfs to set up the
+limit.
 
-Signed-off-by: Ramesh Basukala <basukalaramesh@gmail.com>
+Note: I added the logic in zram, not zsmalloc because the limit
+is requirement of zram, not zsmalloc so I'd like to avoid
+unnecessary branch in zsmalloc.
+
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- drivers/staging/bcm/vendorspecificextn.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+ Documentation/blockdev/zram.txt | 20 +++++++++++++++----
+ drivers/block/zram/zram_drv.c   | 43 +++++++++++++++++++++++++++++++++++++++++
+ drivers/block/zram/zram_drv.h   |  1 +
+ 3 files changed, 60 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/bcm/vendorspecificextn.c b/drivers/staging/bcm/vendorspecificextn.c
-index 2c57a16..1d9bef6 100644
---- a/drivers/staging/bcm/vendorspecificextn.c
-+++ b/drivers/staging/bcm/vendorspecificextn.c
-@@ -11,7 +11,8 @@
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  *
-  */
--INT vendorextnGetSectionInfo(PVOID  pContext, struct bcm_flash2x_vendor_info *pVendorInfo)
-+INT vendorextnGetSectionInfo(PVOID  pContext,
-+			struct bcm_flash2x_vendor_info *pVendorInfo)
- {
- 	return STATUS_FAILURE;
- }
-@@ -61,7 +62,8 @@ INT vendorextnExit(struct bcm_mini_adapter *Adapter)
-  *		arg	-input parameter sent by vendor
-  *
-  * Returns:
-- *		CONTINUE_COMMON_PATH in case it is not meant to be processed by vendor ioctls
-+ *		CONTINUE_COMMON_PATH in case it is not meant to be processed
-+ *		by vendor ioctls
-  *		STATUS_SUCCESS/STATUS_FAILURE as per the IOCTL return value
-  */
+diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+index 0595c3f56ccf..9f239ff8c444 100644
+--- a/Documentation/blockdev/zram.txt
++++ b/Documentation/blockdev/zram.txt
+@@ -74,14 +74,26 @@ There is little point creating a zram of greater than twice the size of memory
+ since we expect a 2:1 compression ratio. Note that zram uses about 0.1% of the
+ size of the disk when not in use so a huge zram is wasteful.
  
-@@ -88,8 +90,8 @@ INT vendorextnIoctl(struct bcm_mini_adapter *Adapter, UINT cmd, ULONG arg)
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  */
+-5) Activate:
++5) Set memory limit: Optional
++	Set memory limit by writing the value to sysfs node 'mem_limit'.
++	The value can be either in bytes or you can use mem suffixes.
++	Examples:
++	    # limit /dev/zram0 with 50MB memory
++	    echo $((50*1024*1024)) > /sys/block/zram0/mem_limit
++
++	    # Using mem suffixes
++	    echo 256K > /sys/block/zram0/mem_limit
++	    echo 512M > /sys/block/zram0/mem_limit
++	    echo 1G > /sys/block/zram0/mem_limit
++
++6) Activate:
+ 	mkswap /dev/zram0
+ 	swapon /dev/zram0
  
--INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
--			UINT offset, UINT numOfBytes)
-+INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer,
-+	enum bcm_flash2x_section_val SectionVal, UINT offset, UINT numOfBytes)
- {
- 	return STATUS_FAILURE;
+ 	mkfs.ext4 /dev/zram1
+ 	mount /dev/zram1 /tmp
+ 
+-6) Stats:
++7) Stats:
+ 	Per-device statistics are exported as various nodes under
+ 	/sys/block/zram<id>/
+ 		disksize
+@@ -96,11 +108,11 @@ size of the disk when not in use so a huge zram is wasteful.
+ 		compr_data_size
+ 		mem_used_total
+ 
+-7) Deactivate:
++8) Deactivate:
+ 	swapoff /dev/zram0
+ 	umount /dev/zram1
+ 
+-8) Reset:
++9) Reset:
+ 	Write any positive value to 'reset' sysfs node
+ 	echo 1 > /sys/block/zram0/reset
+ 	echo 1 > /sys/block/zram1/reset
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index d00831c3d731..b48a3d0e9031 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -122,6 +122,35 @@ static ssize_t max_comp_streams_show(struct device *dev,
+ 	return scnprintf(buf, PAGE_SIZE, "%d\n", val);
  }
-@@ -112,8 +114,9 @@ INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_sect
-  * Returns:
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  */
--INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
--			UINT offset, UINT numOfBytes, bool bVerify)
-+INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer,
-+	enum bcm_flash2x_section_val SectionVal, UINT offset,
-+	UINT numOfBytes, bool bVerify)
+ 
++static ssize_t mem_limit_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	u64 val;
++	struct zram *zram = dev_to_zram(dev);
++
++	down_read(&zram->init_lock);
++	val = zram->limit_bytes;
++	up_read(&zram->init_lock);
++
++	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
++}
++
++static ssize_t mem_limit_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t len)
++{
++	u64 limit;
++	struct zram *zram = dev_to_zram(dev);
++
++	limit = memparse(buf, NULL);
++	if (!limit)
++		return -EINVAL;
++
++	down_write(&zram->init_lock);
++	zram->limit_bytes = limit;
++	up_write(&zram->init_lock);
++	return len;
++}
++
+ static ssize_t max_comp_streams_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t len)
  {
- 	return STATUS_FAILURE;
- }
-@@ -135,8 +138,8 @@ INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_sec
-  * Returns:
-  *		STATUS_SUCCESS/STATUS_FAILURE
-  */
--INT vendorextnWriteSectionWithoutErase(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
--			UINT offset, UINT numOfBytes)
-+INT vendorextnWriteSectionWithoutErase(PVOID  pContext, PUCHAR pBuffer,
-+	enum bcm_flash2x_section_val SectionVal, UINT offset, UINT numOfBytes)
- {
- 	return STATUS_FAILURE;
- }
+@@ -513,6 +542,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		ret = -ENOMEM;
+ 		goto out;
+ 	}
++
++	if (zram->limit_bytes &&
++		zs_get_total_size_bytes(meta->mem_pool) > zram->limit_bytes) {
++		zs_free(meta->mem_pool, handle);
++		ret = -ENOMEM;
++		goto out;
++	}
++
+ 	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
+ 
+ 	if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
+@@ -617,6 +654,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ 	struct zram_meta *meta;
+ 
+ 	down_write(&zram->init_lock);
++
++	zram->limit_bytes = 0;
++
+ 	if (!init_done(zram)) {
+ 		up_write(&zram->init_lock);
+ 		return;
+@@ -857,6 +897,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+ static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+ static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+ static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
++static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
++		mem_limit_store);
+ static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+ 		max_comp_streams_show, max_comp_streams_store);
+ static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
+@@ -885,6 +927,7 @@ static struct attribute *zram_disk_attrs[] = {
+ 	&dev_attr_orig_data_size.attr,
+ 	&dev_attr_compr_data_size.attr,
+ 	&dev_attr_mem_used_total.attr,
++	&dev_attr_mem_limit.attr,
+ 	&dev_attr_max_comp_streams.attr,
+ 	&dev_attr_comp_algorithm.attr,
+ 	NULL,
+diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+index e0f725c87cc6..086c51782e75 100644
+--- a/drivers/block/zram/zram_drv.h
++++ b/drivers/block/zram/zram_drv.h
+@@ -110,6 +110,7 @@ struct zram {
+ 	 * we can store in a disk.
+ 	 */
+ 	u64 disksize;	/* bytes */
++	u64 limit_bytes;
+ 	int max_comp_streams;
+ 	struct zram_stats stats;
+ 	char compressor[10];
 -- 
-1.7.1
+2.0.0
 
