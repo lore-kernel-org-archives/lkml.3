@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170AbaHNIvd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 04:51:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36657 "EHLO
+	id S1755184AbaHNIvt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 04:51:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36673 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754351AbaHNIv3 (ORCPT
+	with ESMTP id S1754409AbaHNIvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 04:51:29 -0400
-Date: Thu, 14 Aug 2014 01:50:35 -0700
+	Thu, 14 Aug 2014 04:51:43 -0400
+Date: Thu, 14 Aug 2014 01:50:49 -0700
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-60b0896cc35243f515eda2085f9897e296177e45@git.kernel.org>
+Message-ID: <tip-5a52f33adf02a3e5eafdc1e597a3fe172e620bec@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
@@ -20,12 +20,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
         tglx@linutronix.de
-In-Reply-To: <1406786474-9306-10-git-send-email-adrian.hunter@intel.com>
-References: <1406786474-9306-10-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1406786474-9306-15-git-send-email-adrian.hunter@intel.com>
+References: <1406786474-9306-15-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist: Add perf_evlist__set_tracking_event(
- )
-Git-Commit-ID: 60b0896cc35243f515eda2085f9897e296177e45
+Subject: [tip:perf/core] perf session: Add perf_session__peek_event()
+Git-Commit-ID: 5a52f33adf02a3e5eafdc1e597a3fe172e620bec
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,21 +37,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  60b0896cc35243f515eda2085f9897e296177e45
-Gitweb:     http://git.kernel.org/tip/60b0896cc35243f515eda2085f9897e296177e45
+Commit-ID:  5a52f33adf02a3e5eafdc1e597a3fe172e620bec
+Gitweb:     http://git.kernel.org/tip/5a52f33adf02a3e5eafdc1e597a3fe172e620bec
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Thu, 31 Jul 2014 09:00:52 +0300
+AuthorDate: Thu, 31 Jul 2014 09:00:57 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 13 Aug 2014 19:21:32 -0300
+CommitDate: Wed, 13 Aug 2014 19:21:44 -0300
 
-perf evlist: Add perf_evlist__set_tracking_event()
+perf session: Add perf_session__peek_event()
 
-Add a function to change which event is used to track mmap, comm and
-task events.
-
-This is needed with Instruction Tracing because the Instruction Tracing
-event must come first but cannot be used for tracking because it will be
-disabled under some circumstances.
+Add a function to peek at other events in the event stream.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -62,103 +56,92 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406786474-9306-10-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1406786474-9306-15-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 17 +++++++++++++++++
- tools/perf/util/evlist.h |  3 +++
- tools/perf/util/evsel.c  |  3 ++-
- tools/perf/util/evsel.h  |  1 +
- tools/perf/util/record.c |  2 +-
- 5 files changed, 24 insertions(+), 2 deletions(-)
+ tools/perf/util/session.c | 55 +++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/session.h |  5 +++++
+ 2 files changed, 60 insertions(+)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index c74d8ec..9d863db 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -122,6 +122,7 @@ void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry)
- {
- 	list_add_tail(&entry->node, &evlist->entries);
- 	entry->idx = evlist->nr_entries;
-+	entry->tracking = !entry->idx;
- 
- 	if (!evlist->nr_entries++)
- 		perf_evlist__set_id_pos(evlist);
-@@ -1295,3 +1296,19 @@ void perf_evlist__to_front(struct perf_evlist *evlist,
- 
- 	list_splice(&move, &evlist->entries);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 7e27f1e..1b383bd 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -897,6 +897,61 @@ static void event_swap(union perf_event *event, bool sample_id_all)
+ 		swap(event, sample_id_all);
  }
-+
-+void perf_evlist__set_tracking_event(struct perf_evlist *evlist,
-+				     struct perf_evsel *tracking_evsel)
+ 
++int perf_session__peek_event(struct perf_session *session, off_t file_offset,
++			     void *buf, size_t buf_sz,
++			     union perf_event **event_ptr,
++			     struct perf_sample *sample)
 +{
-+	struct perf_evsel *evsel;
++	union perf_event *event;
++	size_t hdr_sz, rest;
++	int fd;
 +
-+	if (tracking_evsel->tracking)
-+		return;
-+
-+	evlist__for_each(evlist, evsel) {
-+		if (evsel != tracking_evsel)
-+			evsel->tracking = false;
++	if (session->one_mmap && !session->header.needs_swap) {
++		event = file_offset - session->one_mmap_offset +
++			session->one_mmap_addr;
++		goto out_parse_sample;
 +	}
 +
-+	tracking_evsel->tracking = true;
-+}
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index f5173cd..e0084f9 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -262,4 +262,7 @@ void perf_evlist__to_front(struct perf_evlist *evlist,
- #define evlist__for_each_safe(evlist, tmp, evsel) \
- 	__evlist__for_each_safe(&(evlist)->entries, tmp, evsel)
- 
-+void perf_evlist__set_tracking_event(struct perf_evlist *evlist,
-+				     struct perf_evsel *tracking_evsel);
++	if (perf_data_file__is_pipe(session->file))
++		return -1;
 +
- #endif /* __PERF_EVLIST_H */
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 66de9a7..01ce14c 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -162,6 +162,7 @@ void perf_evsel__init(struct perf_evsel *evsel,
- 		      struct perf_event_attr *attr, int idx)
- {
- 	evsel->idx	   = idx;
-+	evsel->tracking	   = !idx;
- 	evsel->attr	   = *attr;
- 	evsel->leader	   = evsel;
- 	evsel->unit	   = "";
-@@ -561,7 +562,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- {
- 	struct perf_evsel *leader = evsel->leader;
- 	struct perf_event_attr *attr = &evsel->attr;
--	int track = !evsel->idx; /* only the first counter needs these */
-+	int track = evsel->tracking;
- 	bool per_cpu = opts->target.default_per_cpu && !opts->target.per_thread;
++	fd = perf_data_file__fd(session->file);
++	hdr_sz = sizeof(struct perf_event_header);
++
++	if (buf_sz < hdr_sz)
++		return -1;
++
++	if (lseek(fd, file_offset, SEEK_SET) == (off_t)-1 ||
++	    readn(fd, &buf, hdr_sz) != (ssize_t)hdr_sz)
++		return -1;
++
++	event = (union perf_event *)buf;
++
++	if (session->header.needs_swap)
++		perf_event_header__bswap(&event->header);
++
++	if (event->header.size < hdr_sz)
++		return -1;
++
++	rest = event->header.size - hdr_sz;
++
++	if (readn(fd, &buf, rest) != (ssize_t)rest)
++		return -1;
++
++	if (session->header.needs_swap)
++		event_swap(event, perf_evlist__sample_id_all(session->evlist));
++
++out_parse_sample:
++
++	if (sample && event->header.type < PERF_RECORD_USER_TYPE_START &&
++	    perf_evlist__parse_sample(session->evlist, event, sample))
++		return -1;
++
++	*event_ptr = event;
++
++	return 0;
++}
++
+ static s64 perf_session__process_event(struct perf_session *session,
+ 				       union perf_event *event,
+ 				       struct perf_tool *tool,
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 0630e65..8dd41ca 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -45,6 +45,11 @@ void perf_session__delete(struct perf_session *session);
  
- 	attr->sample_id_all = perf_missing_features.sample_id_all ? 0 : 1;
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index dbb2a0d..7bc314b 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -86,6 +86,7 @@ struct perf_evsel {
- 	bool			no_aux_samples;
- 	bool			immediate;
- 	bool			system_wide;
-+	bool			tracking;
- 	/* parse modifier helper */
- 	int			exclude_GH;
- 	int			nr_members;
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index e778afd..cf69325 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -115,7 +115,7 @@ void perf_evlist__config(struct perf_evlist *evlist, struct record_opts *opts)
+ void perf_event_header__bswap(struct perf_event_header *hdr);
  
- 	evlist__for_each(evlist, evsel) {
- 		perf_evsel__config(evsel, opts);
--		if (!evsel->idx && use_comm_exec)
-+		if (evsel->tracking && use_comm_exec)
- 			evsel->attr.comm_exec = 1;
- 	}
- 
++int perf_session__peek_event(struct perf_session *session, off_t file_offset,
++			     void *buf, size_t buf_sz,
++			     union perf_event **event_ptr,
++			     struct perf_sample *sample);
++
+ int __perf_session__process_events(struct perf_session *session,
+ 				   u64 data_offset, u64 data_size, u64 size,
+ 				   struct perf_tool *tool);
