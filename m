@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606AbaHNJzH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 05:55:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47274 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376AbaHNJzC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 05:55:02 -0400
-Message-ID: <53EC876C.9050705@canonical.com>
-Date: Thu, 14 Aug 2014 11:54:52 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754051AbaHNKCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 06:02:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6198 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751243AbaHNKCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 06:02:46 -0400
+Date: Thu, 14 Aug 2014 12:02:36 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Static build of libtraceevent failing on ubuntu13 x86_64
+Message-ID: <20140814100235.GA10997@krava.brq.redhat.com>
+References: <20140813225438.GM2718@kernel.org>
 MIME-Version: 1.0
-To: Sumit Semwal <sumit.semwal@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>, Colin Cross <ccross@google.com>,
-        John Stultz <john.stultz@linaro.org>, devel@driverdev.osuosl.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH 2/2] android: add sync_fence_create_dma
-References: <53EC8722.4070407@canonical.com>
-In-Reply-To: <53EC8722.4070407@canonical.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140813225438.GM2718@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows users of dma fences to create a android fence.
+On Wed, Aug 13, 2014 at 07:54:38PM -0300, Arnaldo Carvalho de Melo wrote:
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- drivers/staging/android/sync.c | 24 ++++++++++++++++++++----
- drivers/staging/android/sync.h | 11 +++++++++++
- 2 files changed, 31 insertions(+), 4 deletions(-)
+SNIP
 
-diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
-index 69139ce7420d..c9331250ac26 100644
---- a/drivers/staging/android/sync.c
-+++ b/drivers/staging/android/sync.c
-@@ -188,7 +188,7 @@ static void fence_check_cb_func(struct fence *f, struct fence_cb *cb)
- }
- 
- /* TODO: implement a create which takes more that one sync_pt */
--struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt)
-+static struct sync_fence *sync_fence_create_noref(const char *name, struct fence *pt)
- {
- 	struct sync_fence *fence;
- 
-@@ -199,16 +199,32 @@ struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt)
- 	fence->num_fences = 1;
- 	atomic_set(&fence->status, 1);
- 
--	fence->cbs[0].sync_pt = &pt->base;
-+	fence->cbs[0].sync_pt = pt;
- 	fence->cbs[0].fence = fence;
--	if (fence_add_callback(&pt->base, &fence->cbs[0].cb,
--			       fence_check_cb_func))
-+	if (fence_add_callback(pt, &fence->cbs[0].cb, fence_check_cb_func))
- 		atomic_dec(&fence->status);
- 
- 	sync_fence_debug_add(fence);
- 
- 	return fence;
- }
-+
-+struct sync_fence *sync_fence_create_dma(const char *name, struct fence *pt)
-+{
-+	struct sync_fence *fence;
-+
-+	fence = sync_fence_create_noref(name, fence_get(pt));
-+	if (!fence)
-+		fence_put(pt);
-+
-+	return fence;
-+}
-+EXPORT_SYMBOL(sync_fence_create_dma);
-+
-+struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt)
-+{
-+	return sync_fence_create_noref(name, &pt->base);
-+}
- EXPORT_SYMBOL(sync_fence_create);
- 
- struct sync_fence *sync_fence_fdget(int fd)
-diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
-index 66b0f431f63e..7b3bf560790c 100644
---- a/drivers/staging/android/sync.h
-+++ b/drivers/staging/android/sync.h
-@@ -254,6 +254,17 @@ void sync_pt_free(struct sync_pt *pt);
-  */
- struct sync_fence *sync_fence_create(const char *name, struct sync_pt *pt);
- 
-+/**
-+ * sync_fence_create_dma() - creates a sync fence from a dma fence
-+ * @name:	name of fence to create
-+ * @pt:		dma fence to add to the sync fence
-+ *
-+ * Creates a fence containg @pt.  Once this is called, the fence takes
-+ * a reference on @pt, unlike sync_fence_create which doesn't add one.
-+ */
-+struct sync_fence *sync_fence_create_dma(const char *name, struct fence *pt);
-+
-+
- /*
-  * API for sync_fence consumers
-  */
--- 
-2.0.4
+>   FLEX     util/parse-events-flex.c
+>   CC       util/pmu.o
+>   CC       util/pmu-flex.o
+>   CC       util/parse-events.o
+>   CC       util/parse-events-flex.o
+>   AR       libperf.a
+>   LINK     perf
+> /home/acme/git/linux/tools/lib/traceevent/libtraceevent.a(event-plugin.o): In function `load_plugin':
+> /home/acme/git/linux/tools/lib/traceevent/event-plugin.c:256: warning: Using 'dlopen' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+> /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/libaudit.a(libaudit.o): In function `audit_rule_fieldpair_data':
+> (.text+0x191b): warning: Using 'getgrnam' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+> /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../x86_64-linux-gnu/libaudit.a(libaudit.o): In function `audit_rule_fieldpair_data':
+> (.text+0x1978): warning: Using 'getpwnam' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+> libperf.a(target.o): In function `target__parse_uid':
+> /home/acme/git/linux/tools/perf/util/target.c:79: warning: Using 'getpwnam_r' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+> /home/acme/git/linux/tools/perf/util/target.c:91: warning: Using 'getpwuid_r' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+> /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib/libnuma.a(affinity.o): In function `affinity_ip':
+> (.text+0x765): warning: Using 'getaddrinfo' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+> /usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../lib/libbfd.a(compress.o): In function `bfd_compress_section_contents':
+> /build/buildd/binutils-2.23.52.20130913/builddir-single/bfd/../../bfd/compress.c:100: undefined reference to `compressBound'
+> /build/buildd/binutils-2.23.52.20130913/builddir-single/bfd/../../bfd/compress.c:106: undefined reference to `compress'
 
+hm, those seem to be from zlib ... found similar error here:
+http://stackoverflow.com/questions/7906152/error-while-building-binutils-2-21-1a-on-solaris
+due to zlib inclusion in bfd lib
 
+jirka
