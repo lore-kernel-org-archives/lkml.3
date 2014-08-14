@@ -1,131 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580AbaHNKuJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 06:50:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60949 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753485AbaHNKuF (ORCPT
+	id S1754668AbaHNKvu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 06:51:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49007 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901AbaHNKvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 06:50:05 -0400
-Date: Thu, 14 Aug 2014 12:47:38 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Houcheng Lin <houcheng@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Gallimore <stephen.gallimore@st.com>,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, sre@kernel.org,
+	Thu, 14 Aug 2014 06:51:49 -0400
+Date: Thu, 14 Aug 2014 12:51:35 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Vikas Sajjan <vikas.sajjan@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v3] reset: Add a defer reset object to send board
- specific reset
-Message-ID: <20140814104738.GV15297@lukather>
-References: <1403098673-3058-1-git-send-email-houcheng@gmail.com>
- <CACRpkdYfu8HmVCkn9JFh+YP5OPdr8o9nTfoCnkJ7SSpGoenQUg@mail.gmail.com>
- <20140708080535.GJ13423@lukather>
- <CACRpkdbFPAsu1gE-AVyD=-RxyE7mUJPSbFga7HLh0mxjE-mQuQ@mail.gmail.com>
- <1407507789.3354.20.camel@paszta.hi.pengutronix.de>
- <20140811173356.GN15297@lukather>
- <1408008998.4035.43.camel@paszta.hi.pengutronix.de>
+        Drew Richardson <Drew.Richardson@arm.com>
+Subject: Re: [PATCH v2] perf: Handle compat ioctl
+Message-ID: <20140814105135.GG16043@twins.programming.kicks-ass.net>
+References: <20140617121328.GO3213@twins.programming.kicks-ass.net>
+ <1403009029-30967-1-git-send-email-pawel.moll@arm.com>
+ <1404230760.25766.5.camel@hornet>
+ <20140707124315.GN6758@twins.programming.kicks-ass.net>
+ <1408011468.21373.4.camel@hornet>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="A47bNRIYjYQgpFVi"
+	protocol="application/pgp-signature"; boundary="ahP6B03r4gLOj5uD"
 Content-Disposition: inline
-In-Reply-To: <1408008998.4035.43.camel@paszta.hi.pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408011468.21373.4.camel@hornet>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---A47bNRIYjYQgpFVi
+--ahP6B03r4gLOj5uD
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, Aug 14, 2014 at 11:36:38AM +0200, Philipp Zabel wrote:
-> Hi Maxime,
+On Thu, Aug 14, 2014 at 11:17:48AM +0100, Pawel Moll wrote:
+> Has it managed to hold on to the ground between the cracks then? ;-)
 >=20
-> Am Montag, den 11.08.2014, 19:33 +0200 schrieb Maxime Ripard:
-> > > Mostly because Maxime and I seem to have a completely different opini=
-on
-> > > and nobody else argued one way or the other.
-> >=20
-> > Yep, mostly because I don't see how a generic approach can work.
-> >=20
-> > The existing reset-gpios property only provide the gpio to use, but
-> > some informations are encoded in the driver, such as the reset
-> > duration, or a reset sequence if any.
->=20
-> The driver should provide the duration.
+> (asking because can't see it in your perf/core branch on git.kernel.org)
 
-How? This used to be in the code, and reset_control_reset doesn't take
-such argument.
+Damn this patch is cursed; I've no idea where it went. Lemme stick it in
+perf/urgent, this is ridiculous.
 
-> I'd really like to see an example where sequencing is necessary.
-
-Well, if you have several reset lines, the sequencing between each
-might be important.
-
-> I agree that as soon as things get significantly more complicated than
-> pulsing a single GPIO, the reset-gpios binding is too limited.
-
-While the generic reset bindings are perfect for that.
-
-> Still, I'm not happy to mandate a separate gpio reset device for each
-> reset line if most devices are simple enough for it to work without.
-
-Well, it's pretty much already the case for other subsystems, such as
-regulator.
-
-I guess we can treat this as a legacy option, but allow the reset-gpio
-code to be a full driver of its own, if we need more advanced use
-cases?
-
-> What about using reset-gpios for the majority of simple cases and have a
-> separate gpio-reset-sequencer driver when multiple GPIO resets have to
-> be timed?
-
-I don't know. I feel like it should be in the driver itself, rather
-than in a generic layer.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---A47bNRIYjYQgpFVi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--ahP6B03r4gLOj5uD
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJT7JPKAAoJEBx+YmzsjxAgqoUP/2YeD7cQIo3mFXzDDSqOahUo
-w6NYrevoNsau4/FG5IT3oqrnAlugln2HbGuALQLMcgOgYeEQzmc2oeJkqw8dKHBg
-vvXWV+HZkQeGj2LuW8J2ZcIA1ilX1RIb1/oiPMT0sv0+IRiFnpCk4PAnpty0QWQK
-K4ZDUi0Ki/zq/4ZYfRVzIWsLkKT1KprqjC+/tTWdkS9EnjVPBCnZiIopvhPsr5OM
-AKCGQIn0OpzcGJfynpps3RY9gN2uLTJ2+3JW+3qKWInZs+WimehIH/VuFYlo1k0C
-9qZS9FdBBco4poVynANKNiS2pb1erT/EGwb9PDpxh7CRGe2TtCjkk+XV6aO+HwEh
-kOGFwrWziALZBXmxtevqzchhZ8KmK0W6jOS6n/43HWuQaH16qAznmwxXCL6xtW/9
-fRfzOhPiljpE4dKnbUG9MwHfqrl+VKvKynjAYI7ztLr7HoNxHYi9Ue7t8RwKEx2I
-0sCLg2Jc+1dpmiOV6u0fs9m7O/iXQYEoHqTAPGBqtM3UtkiISWnxsoK+yBOEA7GH
-PYACjyAsuBoIiidELwYdgAyROO6/lS85TyDZND8Wlfan1k1uwibDfa/1hUzDa6bq
-i14WQndnFH4dO6LfRuPXQsGhymRnJCo94EbaQOMWYM9Rr/EwYEcu2RC7PSwy6gz2
-HcXCN1BxiQAfZrLx1cnM
-=gRc3
+iQIcBAEBAgAGBQJT7JSvAAoJEHZH4aRLwOS6tZoQAJcjmrpjbuv5FqwFH5pL0Udp
+jwnNVBsSjdm75pxgaxICiQ9snHaRtpSseCfKv5qMAR/+ddSE03ykRPSkYyuwRLtn
+SPs8EAfzrE3NJ7e0euTbKfwH+TYz59VpBoJP4JAO3gNl7rF1Ag8Ou7+Dit/YvViv
+ue7miVAzixvOMfwDrx7dTMj0ATWPnDkGzV3YNRzbcUegttWp49tn+A0i43es1ofa
+xWj1ADTnwyBCi//fXVDwfxhTsGPzEKDt4mt7ixhCmZZhHiDjnSl4/xHlSJqmCIU+
+8pHN82Jg83QoPjrJ7hellhqFeLF8t6+7YlKQs8QIvwLcmTvLY9GA43K8CWT2K75b
+foFCjggJguAMFTMB9pcjSqyHWEy+1wQ6wW0AB7L9wLg1qh7QPoGqtAuGhh1t7A9u
+hfYWLkVExxIX/wA8uQXOam0MvQzkINyiyodaoudmaIBQr8jx7SE+mxq65LUzBPzp
+tCZPJmmM/xuRPAkIkvM13NBZvdIGpKhVfzTZKB6fTpOrSmMw+xr92oz1cK35Nq6H
+03SzXIluEDj7yrKtj/BIePdli1Ps0zYljkrevs/RfpV/Bkt2f6vQB2B7oblgEcvw
+AfFsXnXtq/uzfmr77e5BEhnWJ29hV+m3GQfeGk8L7HQDETCDhx3JajSspI9/fWqR
+omqRMVfhij46qctR/NuZ
+=yZXp
 -----END PGP SIGNATURE-----
 
---A47bNRIYjYQgpFVi--
+--ahP6B03r4gLOj5uD--
