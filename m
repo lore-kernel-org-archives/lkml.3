@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184AbaHNCWR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 22:22:17 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:51794 "EHLO
+	id S1754228AbaHNCWe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 22:22:34 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:51955 "EHLO
 	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908AbaHNCUd (ORCPT
+	with ESMTP id S1752908AbaHNCWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 22:20:33 -0400
-X-AuditID: 85900ec0-d312bb9000001514-aa-53ec1cef4ea9
-Subject: [PATCH 2/8] perf: Use strerror_r instead of strerror
+	Wed, 13 Aug 2014 22:22:32 -0400
+X-AuditID: 85900ec0-d3b2cb9000001514-b1-53ec1d65202c
+Subject: [PATCH 00/13] perf: Replace strerror with strerror_r for
+ thread-safety
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Naohiro Aota <naota@elisp.net>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
         Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 14 Aug 2014 02:20:30 +0000
-Message-ID: <20140814022030.3140.32103.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20140814022025.3140.33134.stgit@kbuild-fedora.novalocal>
-References: <20140814022025.3140.33134.stgit@kbuild-fedora.novalocal>
+Date: Thu, 14 Aug 2014 02:22:28 +0000
+Message-ID: <20140814022228.3545.90481.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,84 +26,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use strerror_r instead of strerror in error messages for
-thread-safety. This also introduce STRERR_BUFSIZE macro
-for the default size of message buffer for strerror_r.
+Hi,
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+(sorry, ignore the previous series, this is complete one)
+
+Here is a series to get rid of thread-unsafe strerror() from
+perf tools. Of course, there maybe other thread-unsafe functions,
+so this goes just one step forward. :)
+
+This introduces STRERR_BUFSIZE(=128) macro for allocating local
+buffer, but some strerror_r()s don't use that. If there are
+already a local buffer on the stack, and if it is bigger than
+STRERR_BUFSIZE, I chose it for strerror_r()'s buffer.
+
+By the way, while doing this cleanup, I've found some confusions
+on the code. Currently perf has 3 ways to output messages except
+for standard (f)printf, pr_XXX, ui__XXX and warning/error functions.
+Is there any differences among those APIs? What is the expected
+use cases for them?
+For example, a pure printf is in kvm_live_open_events@builtin-kvm.c
+but it seems to be ui__error, because the error output next to it
+uses that. However, other parts use pr_XXX too. It seems inconsistent.
+
+Thank you,
+
 ---
- tools/perf/perf.c       |   10 +++++++---
- tools/perf/util/debug.h |    3 +++
- 2 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 2282d41..452a847 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -313,6 +313,7 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
- 	int status;
- 	struct stat st;
- 	const char *prefix;
-+	char sbuf[STRERR_BUFSIZE];
- 
- 	prefix = NULL;
- 	if (p->option & RUN_SETUP)
-@@ -343,7 +344,8 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
- 	status = 1;
- 	/* Check for ENOSPC and EIO errors.. */
- 	if (fflush(stdout)) {
--		fprintf(stderr, "write failure on standard output: %s", strerror(errno));
-+		fprintf(stderr, "write failure on standard output: %s",
-+			strerror_r(errno, sbuf, sizeof(sbuf)));
- 		goto out;
- 	}
- 	if (ferror(stdout)) {
-@@ -351,7 +353,8 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
- 		goto out;
- 	}
- 	if (fclose(stdout)) {
--		fprintf(stderr, "close failed on standard output: %s", strerror(errno));
-+		fprintf(stderr, "close failed on standard output: %s",
-+			strerror_r(errno, sbuf, sizeof(sbuf)));
- 		goto out;
- 	}
- 	status = 0;
-@@ -466,6 +469,7 @@ void pthread__unblock_sigwinch(void)
- int main(int argc, const char **argv)
- {
- 	const char *cmd;
-+	char sbuf[STRERR_BUFSIZE];
- 
- 	/* The page_size is placed in util object. */
- 	page_size = sysconf(_SC_PAGE_SIZE);
-@@ -561,7 +565,7 @@ int main(int argc, const char **argv)
- 	}
- 
- 	fprintf(stderr, "Failed to run command '%s': %s\n",
--		cmd, strerror(errno));
-+		cmd, strerror_r(errno, sbuf, sizeof(sbuf)));
- out:
- 	return 1;
- }
-diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
-index 6944ea3..be264d6 100644
---- a/tools/perf/util/debug.h
-+++ b/tools/perf/util/debug.h
-@@ -3,6 +3,7 @@
- #define __PERF_DEBUG_H
- 
- #include <stdbool.h>
-+#include <string.h>
- #include "event.h"
- #include "../ui/helpline.h"
- #include "../ui/progress.h"
-@@ -36,6 +37,8 @@ extern int debug_ordered_events;
- #define pr_oe_time(t, fmt, ...)  pr_time_N(1, debug_ordered_events, t, pr_fmt(fmt), ##__VA_ARGS__)
- #define pr_oe_time2(t, fmt, ...) pr_time_N(2, debug_ordered_events, t, pr_fmt(fmt), ##__VA_ARGS__)
- 
-+#define STRERR_BUFSIZE	128	/* For the buffer size of strerror_r */
-+
- int dump_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
- void trace_event(union perf_event *event);
- 
+Masami Hiramatsu (13):
+      perf probe: Don't use strerror if strlist__add failed
+      perf: Use strerror_r instead of strerror
+      perf probe: Make error messages thread-safe
+      perf/util: Replace strerror with strerror_r for thread-safety
+      perf top: Use strerror_r instead of strerror
+      perf trace: Use strerror_r instead of strerror
+      perf record: Use strerror_r instead of strerror
+      perf test: Use strerror_r instead of strerror
+      perf sched: Use strerror_r instead of strerror
+      perf buildid-cache: Use strerror_r instead of strerror
+      perf kvm: Use strerror_r instead of strerror
+      perf help: Use strerror_r instead of strerror
+      perf stat: Use strerror_r instead of strerror
+
+
+ tools/perf/builtin-buildid-cache.c        |    7 +++---
+ tools/perf/builtin-help.c                 |   20 ++++++++++++++---
+ tools/perf/builtin-kvm.c                  |    7 ++++--
+ tools/perf/builtin-probe.c                |    5 +++-
+ tools/perf/builtin-record.c               |    7 +++---
+ tools/perf/builtin-sched.c                |    4 +++
+ tools/perf/builtin-stat.c                 |    2 +-
+ tools/perf/builtin-top.c                  |    2 +-
+ tools/perf/builtin-trace.c                |    6 +++--
+ tools/perf/perf.c                         |   10 ++++++---
+ tools/perf/tests/builtin-test.c           |    4 +++
+ tools/perf/tests/mmap-basic.c             |    7 +++---
+ tools/perf/tests/open-syscall-all-cpus.c  |    5 +++-
+ tools/perf/tests/open-syscall-tp-fields.c |    7 ++++--
+ tools/perf/tests/open-syscall.c           |    3 ++-
+ tools/perf/tests/perf-record.c            |   13 ++++++++---
+ tools/perf/tests/rdpmc.c                  |    6 +++--
+ tools/perf/tests/sw-clock.c               |    6 +++--
+ tools/perf/tests/task-exit.c              |    6 +++--
+ tools/perf/util/cloexec.c                 |    6 +++--
+ tools/perf/util/data.c                    |    8 +++++--
+ tools/perf/util/debug.h                   |    3 +++
+ tools/perf/util/dso.c                     |    8 +++++--
+ tools/perf/util/evlist.c                  |    2 +-
+ tools/perf/util/evsel.c                   |    7 ++++--
+ tools/perf/util/parse-events.c            |    5 +++-
+ tools/perf/util/probe-event.c             |   34 ++++++++++++++++-------------
+ tools/perf/util/probe-finder.c            |    7 ++++--
+ tools/perf/util/run-command.c             |    9 ++++++--
+ tools/perf/util/util.c                    |    5 +++-
+ 30 files changed, 150 insertions(+), 71 deletions(-)
+
+--
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
