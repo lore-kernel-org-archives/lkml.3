@@ -1,31 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453AbaHNIoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 04:44:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36221 "EHLO
+	id S1754538AbaHNIos (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 04:44:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36245 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754378AbaHNIoI (ORCPT
+	with ESMTP id S1754502AbaHNIop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 04:44:08 -0400
-Date: Thu, 14 Aug 2014 01:43:48 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-d5b4130ae636e1fd0eaaea7152170198c34fbf62@git.kernel.org>
+	Thu, 14 Aug 2014 04:44:45 -0400
+Date: Thu, 14 Aug 2014 01:44:29 -0700
+From: tip-bot for Alex Snast <tipbot@zytor.com>
+Message-ID: <tip-86998dda5d244f4b1b994dfe34a677f3b70cfdd3@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, jean.pihet@linaro.org, namhyung@kernel.org,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, jean.pihet@linaro.org, namhyung@kernel.org,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1407747014-18394-16-git-send-email-jolsa@kernel.org>
-References: <1407747014-18394-16-git-send-email-jolsa@kernel.org>
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org, asnast@gmail.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, asnast@gmail.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de
+In-Reply-To: <1407944560-26924-1-git-send-email-asnast@gmail.com>
+References: <1407944560-26924-1-git-send-email-asnast@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm: Fix stdin handling for 'kvm stat live'
-  command
-Git-Commit-ID: d5b4130ae636e1fd0eaaea7152170198c34fbf62
+Subject: [tip:perf/core] perf trace: Add beautifier for mremap flags param
+Git-Commit-ID: 86998dda5d244f4b1b994dfe34a677f3b70cfdd3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,98 +33,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d5b4130ae636e1fd0eaaea7152170198c34fbf62
-Gitweb:     http://git.kernel.org/tip/d5b4130ae636e1fd0eaaea7152170198c34fbf62
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Mon, 11 Aug 2014 10:50:09 +0200
+Commit-ID:  86998dda5d244f4b1b994dfe34a677f3b70cfdd3
+Gitweb:     http://git.kernel.org/tip/86998dda5d244f4b1b994dfe34a677f3b70cfdd3
+Author:     Alex Snast <asnast@gmail.com>
+AuthorDate: Wed, 13 Aug 2014 18:42:40 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 13 Aug 2014 12:42:24 -0300
+CommitDate: Wed, 13 Aug 2014 15:55:26 -0300
 
-perf kvm: Fix stdin handling for 'kvm stat live' command
+perf trace: Add beautifier for mremap flags param
 
-Currently the initial ~(ICANON | ECHO) terminal mode is not set, so we
-dont get stdin data until we press ENTER.
+~/devel/kernel/tools/perf(branch:master*) » sudo ./perf trace ~/mremap_test
+     0.543 ( 0.003 ms): mprotect(start: 0x600000, len: 4096, prot: READ      ) = 0
+     0.550 ( 0.003 ms): mprotect(start: 0x7f441260d000, len: 4096, prot: READ) = 0
+     0.561 ( 0.010 ms): munmap(addr: 0x7f44125e2000, len: 165572             ) = 0
+     0.595 ( 0.012 ms): mmap(len: 12288, prot: READ|WRITE, flags: SHARED|ANONYMOUS|LOCKED, fd: -1) = 0x12608000
+     0.603 ( 0.006 ms): mremap(addr: 0x7f4412608000, old_len: 4096, new_len: 4096, flags: MAYMOVE|FIXED, new_addr: 0x7f16da295000) = 0xda295000
+     0.608 ( 0.003 ms): mremap(addr: 0x7f441260a000, old_len: 4096, new_len: 4096, flags: MAYMOVE|FIXED, new_addr: 0x7f16da297000) = 0xda297000
+     0.612 ( 0.003 ms): mremap(addr: 0x7f4412609000, old_len: 4096, new_len: 4096, flags: MAYMOVE|FIXED, new_addr: 0x7f16da296000) = 0xda296000
+     0.619 ( 0.000 ms): exit_group(
 
-Fixing this by early setting of the ~(ICANON | ECHO) mode and leaving
-this mode for whole life of the command, because canonical mode is not
-needed.
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Alex Snast <asnast@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1407747014-18394-16-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1407944560-26924-1-git-send-email-asnast@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c | 18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
+ tools/perf/builtin-trace.c | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 7cccead..ff40475 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -885,15 +885,11 @@ static int fd_set_nonblock(int fd)
- 	return 0;
- }
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 36ae51d..20fac50 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -402,6 +402,31 @@ static size_t syscall_arg__scnprintf_mmap_flags(char *bf, size_t size,
  
--static
--int perf_kvm__handle_stdin(struct termios *tc_now, struct termios *tc_save)
-+static int perf_kvm__handle_stdin(void)
+ #define SCA_MMAP_FLAGS syscall_arg__scnprintf_mmap_flags
+ 
++static size_t syscall_arg__scnprintf_mremap_flags(char *bf, size_t size,
++						  struct syscall_arg *arg)
++{
++	int printed = 0, flags = arg->val;
++
++#define P_MREMAP_FLAG(n) \
++	if (flags & MREMAP_##n) { \
++		printed += scnprintf(bf + printed, size - printed, "%s%s", printed ? "|" : "", #n); \
++		flags &= ~MREMAP_##n; \
++	}
++
++	P_MREMAP_FLAG(MAYMOVE);
++#ifdef MREMAP_FIXED
++	P_MREMAP_FLAG(FIXED);
++#endif
++#undef P_MREMAP_FLAG
++
++	if (flags)
++		printed += scnprintf(bf + printed, size - printed, "%s%#x", printed ? "|" : "", flags);
++
++	return printed;
++}
++
++#define SCA_MREMAP_FLAGS syscall_arg__scnprintf_mremap_flags
++
+ static size_t syscall_arg__scnprintf_madvise_behavior(char *bf, size_t size,
+ 						      struct syscall_arg *arg)
  {
- 	int c;
- 
--	tcsetattr(0, TCSANOW, tc_now);
- 	c = getc(stdin);
--	tcsetattr(0, TCSAFLUSH, tc_save);
--
- 	if (c == 'q')
- 		return 1;
- 
-@@ -904,7 +900,7 @@ static int kvm_events_live_report(struct perf_kvm_stat *kvm)
- {
- 	struct pollfd *pollfds = NULL;
- 	int nr_fds, nr_stdin, ret, err = -EINVAL;
--	struct termios tc, save;
-+	struct termios save;
- 
- 	/* live flag must be set first */
- 	kvm->live = true;
-@@ -919,14 +915,9 @@ static int kvm_events_live_report(struct perf_kvm_stat *kvm)
- 		goto out;
- 	}
- 
-+	set_term_quiet_input(&save);
- 	init_kvm_event_record(kvm);
- 
--	tcgetattr(0, &save);
--	tc = save;
--	tc.c_lflag &= ~(ICANON | ECHO);
--	tc.c_cc[VMIN] = 0;
--	tc.c_cc[VTIME] = 0;
--
- 	signal(SIGINT, sig_handler);
- 	signal(SIGTERM, sig_handler);
- 
-@@ -972,7 +963,7 @@ static int kvm_events_live_report(struct perf_kvm_stat *kvm)
- 			goto out;
- 
- 		if (pollfds[nr_stdin].revents & POLLIN)
--			done = perf_kvm__handle_stdin(&tc, &save);
-+			done = perf_kvm__handle_stdin();
- 
- 		if (!rc && !done)
- 			err = poll(pollfds, nr_fds, 100);
-@@ -989,6 +980,7 @@ out:
- 	if (kvm->timerfd >= 0)
- 		close(kvm->timerfd);
- 
-+	tcsetattr(0, TCSAFLUSH, &save);
- 	free(pollfds);
- 	return err;
- }
+@@ -1004,6 +1029,7 @@ static struct syscall_fmt {
+ 			     [2] = SCA_MMAP_PROT, /* prot */ }, },
+ 	{ .name	    = "mremap",	    .hexret = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */
++			     [3] = SCA_MREMAP_FLAGS, /* flags */
+ 			     [4] = SCA_HEX, /* new_addr */ }, },
+ 	{ .name	    = "munlock",    .errmsg = true,
+ 	  .arg_scnprintf = { [0] = SCA_HEX, /* addr */ }, },
