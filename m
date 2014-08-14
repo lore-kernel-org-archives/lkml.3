@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071AbaHNWhy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 18:37:54 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:45686 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813AbaHNWhw (ORCPT
+	id S932194AbaHNWkV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 18:40:21 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:48358 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754437AbaHNWkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 18:37:52 -0400
+	Thu, 14 Aug 2014 18:40:19 -0400
+Date: Thu, 14 Aug 2014 15:40:13 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 0/8] mtd: nand: Support for new DT NAND driver
+Message-ID: <20140814224013.GE18411@ld-irv-0074>
+References: <1407921127-8590-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1408000853-2764-1-git-send-email-kiran.padwal@smartplayin.com>
-References: <1408000853-2764-1-git-send-email-kiran.padwal@smartplayin.com>
-Date: Thu, 14 Aug 2014 15:37:51 -0700
-Message-ID: <CAJAp7OiXaumG1Bke2_uuCYX=KvEdckLCct56H4U+rttWhE2P5w@mail.gmail.com>
-Subject: Re: [PATCH] ARM: apq8064: Add pinmux and i2c pinctrl nodes
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Kiran Padwal <kiran.padwal@smartplayin.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407921127-8590-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 12:20 AM, Kiran Padwal
-<kiran.padwal@smartplayin.com> wrote:
-> diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
-> index 92bf793..fbebf5c 100644
-> --- a/arch/arm/boot/dts/qcom-apq8064.dtsi
-> +++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
-> @@ -70,6 +70,17 @@
->                 ranges;
->                 compatible = "simple-bus";
->
-> +               qcom_pinmux: pinmux@800000 {
+On Wed, Aug 13, 2014 at 10:11:59AM +0100, Lee Jones wrote:
+> Hi Brian, Pekon,
+> 
+> I believe all of your queries have either been answered or addressed
+> and I am hoping this will be the last submission. :)
+> 
+> /me crosses fingers!
+> 
+> Kind regards,
+> Lee
 
-There are (at least) three different pinmuxes in these platforms: TLMM, PMIC
-GPIO, PMIC MPP. Also this is the phandle that is used to reference the gpio
-chip throughout the board.
+I didn't look through the patches yet, but my build tools tell me you
+didn't compile-test this. Please compile, test, and resend your patches.
 
-So I would like to suggest that we name it "tlmm" or like in the downstream
-kernel "msmgpio".
+In file included from drivers/mtd/nand/stm_nand_bch.c:26:0:
+include/linux/mtd/stm_nand_bbt.h:16:13: warning: no previous prototype for 'nandi_dump_bad_blocks' [-Wmissing-prototypes]
+drivers/mtd/nand/stm_nand_bch.c: In function 'nandi_set_mtd_defaults':
+drivers/mtd/nand/stm_nand_bch.c:870:19: error: 'bch_scan_bbt' undeclared (first use in this function)
+drivers/mtd/nand/stm_nand_bch.c:870:19: note: each undeclared identifier is reported only once for each function it appears in
+drivers/mtd/nand/stm_nand_bch.c:871:20: error: 'bch_block_isbad' undeclared (first use in this function)
+drivers/mtd/nand/stm_nand_bch.c:872:24: error: 'bch_block_markbad' undeclared (first use in this function)
+drivers/mtd/nand/stm_nand_bch.c: In function 'bch_calc_timing_registers':
+drivers/mtd/nand/stm_nand_bch.c:1022:6: warning: variable 'ren_half_off' set but not used [-Wunused-but-set-variable]
+drivers/mtd/nand/stm_nand_bch.c:1021:6: warning: variable 'ren_half_on' set but not used [-Wunused-but-set-variable]
 
-> +                       compatible = "qcom,apq8064-pinctrl";
-> +                       reg = <0x800000 0x4000>;
-> +
-> +                       gpio-controller;
-> +                       #gpio-cells = <2>;
-> +                       interrupt-controller;
-> +                       #interrupt-cells = <2>;
-> +                       interrupts = <0 32 0x4>;
+Particularly, take a hard look at rewriting
+include/linux/mtd/stm_nand_bbt.h.
 
-I must have gotten this wrong in the dt binding example, sorry about that.
-interrupts should be <0 16 0x4>.
-
-> +               };
-
-Regards,
-Bjorn
+Thanks,
+Brian
