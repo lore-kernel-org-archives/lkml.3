@@ -1,83 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484AbaHNO0e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 10:26:34 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:55880 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951AbaHNO0b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 10:26:31 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-fe-53ecc6f341f5
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Mark Brown <broonie@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH 2/5] ARM: dts: remove old USB2 PHY node for Exynos5250
-Date: Thu, 14 Aug 2014 16:25:24 +0200
-Message-id: <1408026327-31437-3-git-send-email-b.zolnierkie@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1408026327-31437-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1408026327-31437-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jQd3Px94EG3xZZmmxccZ6VouD9+st
-	Nl2/zmrRduUgu8WP1xfYLHoXXGWzuPC0h83ibNMbdovLu+awWcw4v4/JYtGyVmYHbo871/aw
-	efRtWcXocfzGdiaPz5vkAliiuGxSUnMyy1KL9O0SuDJa539hLfjBWfFu5nLWBsbZHF2MnBwS
-	AiYSy66fZ4SwxSQu3FvP1sXIxSEkMJ1R4vH/fiini0ni6vouVpAqNgEriYntq8A6RATUJHoW
-	b2UEKWIWuM8ksfnhabAiYQE3iS9nG1hAbBYBVYn3y3vBbF4BD4kLV49CrVOU6H42gQ3E5hTw
-	lDg8ZxkziC0EVHPw8C72CYy8CxgZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEB90z6R2M
-	qxosDjEKcDAq8fA2bH8TLMSaWFZcmXuIUYKDWUmEd/puoBBvSmJlVWpRfnxRaU5q8SFGaQ4W
-	JXHeg63WgUIC6YklqdmpqQWpRTBZJg5OqQZGE4YHCzoO+P+ZMbu510ObM9MyKTaMUXGaO+ui
-	/daSL6aKvbyzu28j+/dzs4PT9qpn8Px9HlHH6lD+54JOwatttgstRA12yhlN7FZ2vq354GW9
-	T9VN+8k7hNwmbl+7+tSzI3wSnFyn9iZ1H30il35IeE6TwDev6tjKmx9kr7IeUF/xJZb9e5+M
-	EktxRqKhFnNRcSIAVvoVoDYCAAA=
+	id S1755151AbaHNO1R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 10:27:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22905 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754991AbaHNO1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 10:27:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,863,1400050800"; 
+   d="scan'208";a="558564154"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Liu, Changcheng" <changcheng.liu@intel.com>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
+        "Chakravarty, Souvik K" <souvik.k.chakravarty@intel.com>
+Subject: RE: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
+ back to DEFAULT
+Thread-Topic: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
+ back to DEFAULT
+Thread-Index: AQHPt8qQmxy8S16Lg0iTMo9Ud6Rbp5vQJqtQ
+Date: Thu, 14 Aug 2014 14:26:38 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01E5B762@SHSMSX101.ccr.corp.intel.com>
+References: <1407982309-4863-1-git-send-email-chuansheng.liu@intel.com>
+ <CAKnoXLw3DrBAxCUWEkXtvCTf+E1w0xTHJSiSUY6Qd6xHXeGaoQ@mail.gmail.com>
+ <20140814105336.GH16043@twins.programming.kicks-ass.net>
+ <27240C0AC20F114CBF8149A2696CBE4A01E5B61C@SHSMSX101.ccr.corp.intel.com>
+ <20140814131304.GK16043@twins.programming.kicks-ass.net>
+ <27240C0AC20F114CBF8149A2696CBE4A01E5B73B@SHSMSX101.ccr.corp.intel.com>
+ <53ECC4EB.20407@linaro.org>
+In-Reply-To: <53ECC4EB.20407@linaro.org>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7EERS1g028382
 
-drivers/usb/phy/phy-samsung-usb2 driver got replaced by
-drivers/phy/phy-samsung-usb2 one.  Remove the leftover
-USB2 PHY node (EHCI/OHCI USB nodes are using the new one
-already) from Exynos5250 dtsi file.
 
-Cc: Mark Brown <broonie@linaro.org>
-Cc: Kamil Debski <k.debski@samsung.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/boot/dts/exynos5250.dtsi | 15 ---------------
- 1 file changed, 15 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 492e1ef..f21b9aa 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -603,21 +603,6 @@
- 		};
- 	};
- 
--	usb2_phy: usbphy@12130000 {
--		compatible = "samsung,exynos5250-usb2phy";
--		reg = <0x12130000 0x100>;
--		clocks = <&clock CLK_FIN_PLL>, <&clock CLK_USB2>;
--		clock-names = "ext_xtal", "usbhost";
--		#address-cells = <1>;
--		#size-cells = <1>;
--		ranges;
--
--		usbphy-sys {
--			reg = <0x10040704 0x8>,
--			      <0x10050230 0x4>;
--		};
--	};
--
- 	usb2_phy_gen: phy@12130000 {
- 		compatible = "samsung,exynos5250-usb2-phy";
- 		reg = <0x12130000 0x100>;
--- 
-1.8.2.3
+> -----Original Message-----
+> From: Daniel Lezcano [mailto:daniel.lezcano@linaro.org]
+> Sent: Thursday, August 14, 2014 10:17 PM
+> To: Liu, Chuansheng; Peter Zijlstra
+> Cc: Rafael J. Wysocki; linux-pm@vger.kernel.org; LKML; Liu, Changcheng;
+> Wang, Xiaoming; Chakravarty, Souvik K
+> Subject: Re: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
+> back to DEFAULT
+> 
+> On 08/14/2014 04:10 PM, Liu, Chuansheng wrote:
+> >
+> >
+> >> -----Original Message-----
+> >> From: Peter Zijlstra [mailto:peterz@infradead.org]
+> >> Sent: Thursday, August 14, 2014 9:13 PM
+> >> To: Liu, Chuansheng
+> >> Cc: Daniel Lezcano; Rafael J. Wysocki; linux-pm@vger.kernel.org; LKML; Liu,
+> >> Changcheng; Wang, Xiaoming; Chakravarty, Souvik K
+> >> Subject: Re: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
+> >> back to DEFAULT
+> >>
+> >> On Thu, Aug 14, 2014 at 11:24:06AM +0000, Liu, Chuansheng wrote:
+> >>> If inspecting the polling flag, we can not fix the race between poll_idle and
+> >> smp_callback,
+> >>> since in poll_idle(), before set polling flag, if the smp_callback come in, then
+> >> no resched bit set,
+> >>> after that, poll_idle() will do the polling action, without reselection
+> >> immediately, it will bring power
+> >>> regression here.
+> >>
+> >> -ENOPARSE. Is there a question there?
+> >
+> > Lezcano suggest to inspect the polling flag, then code is like below:
+> > smp_callback() {
+> > if (polling_flag)
+> >    set_resched_bit;
+> > }
+> >
+> > And the poll_idle code is like below:
+> > static int poll_idle(struct cpuidle_device *dev,
+> >                  struct cpuidle_driver *drv, int index)
+> > {
+> >          local_irq_enable();
+> >          if (!current_set_polling_and_test()) {
+> >                  while (!need_resched())
+> 
+> Or alternatively, something like:
+> 
+> 	while (!need_resched() || kickme) {
+> 		...
+> 	}
+> 
+> 
+> smp_callback()
+> {
+> 	kickme = 1;
+> }
+> 
+> kickme is a percpu variable and set to zero when exiting the 'enter'
+> callback.
+> 
+> So we don't mess with the polling flag, which is already a bit tricky.
+> 
+> This patch is very straightforward to illustrate the idea.
+> 
+> >                          cpu_relax();
+> >          }
+> >          current_clr_polling();
+> >
+> >          return index;
+> > }
+> >
+Thanks Lezcano, the new flag kickme sounds making things simple,
+will try to send one new patch to review:)
 
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
