@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916AbaHNFoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 01:44:21 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:58701 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493AbaHNFoR (ORCPT
+	id S1753689AbaHNFoY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 01:44:24 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:42643 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082AbaHNFoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 01:44:17 -0400
+	Thu, 14 Aug 2014 01:44:22 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
@@ -16,10 +16,11 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
         Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
         Andrew Honig <ahonig@google.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v6 1/7] random: Add and use arch_rng_init
-Date: Wed, 13 Aug 2014 22:43:55 -0700
-Message-Id: <25547b897a7dd34173773e5ee0860720fefcc191.1407994704.git.luto@amacapital.net>
+        Andy Lutomirski <luto@amacapital.net>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH v6 2/7] random, timekeeping: Collect timekeeping entropy in the timekeeping code
+Date: Wed, 13 Aug 2014 22:43:56 -0700
+Message-Id: <532c68b54b1894b9da1d9807701872cab28f8a70.1407994704.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1407994704.git.luto@amacapital.net>
 References: <cover.1407994704.git.luto@amacapital.net>
@@ -29,112 +30,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, init_std_data contains its own logic for using arch
-random sources.  This replaces that logic with a generic function
-arch_rng_init that allows arch code to supply its own logic.  The
-default implementation tries arch_get_random_seed_long and
-arch_get_random_long individually.
+Currently, init_std_data calls ktime_get_real().  This imposes
+awkward constraints on when init_std_data can be called, and
+init_std_data is unlikely to collect the full unpredictable data
+available to the timekeeping code, especially after resume.
 
-The only functional change here is that random_get_entropy() is used
-unconditionally instead of being used only when the arch sources
-fail.  This may add a tiny amount of security.
+Remove this code from random.c and add the appropriate
+add_device_randomness calls to timekeeping.c instead.
 
-Acked-by: Theodore Ts'o <tytso@mit.edu>
+Cc: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- drivers/char/random.c  | 14 +++++++++++---
- include/linux/random.h | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 51 insertions(+), 3 deletions(-)
+ drivers/char/random.c     |  2 --
+ kernel/time/timekeeping.c | 11 +++++++++++
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 71529e1..7673e60 100644
+index 7673e60..8dc3e3a 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -1246,6 +1246,10 @@ void get_random_bytes_arch(void *buf, int nbytes)
- }
- EXPORT_SYMBOL(get_random_bytes_arch);
- 
-+static void seed_entropy_store(void *ctx, u32 data)
-+{
-+	mix_pool_bytes((struct entropy_store *)ctx, &data, sizeof(data), NULL);
-+}
- 
- /*
-  * init_std_data - initialize pool with system data
-@@ -1261,15 +1265,19 @@ static void init_std_data(struct entropy_store *r)
+@@ -1263,12 +1263,10 @@ static void seed_entropy_store(void *ctx, u32 data)
+ static void init_std_data(struct entropy_store *r)
+ {
  	int i;
- 	ktime_t now = ktime_get_real();
+-	ktime_t now = ktime_get_real();
  	unsigned long rv;
-+	char log_prefix[128];
+ 	char log_prefix[128];
  
  	r->last_pulled = jiffies;
- 	mix_pool_bytes(r, &now, sizeof(now), NULL);
+-	mix_pool_bytes(r, &now, sizeof(now), NULL);
  	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
--		if (!arch_get_random_seed_long(&rv) &&
--		    !arch_get_random_long(&rv))
--			rv = random_get_entropy();
-+		rv = random_get_entropy();
+ 		rv = random_get_entropy();
  		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
- 	}
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 32d8d6a..9609db9 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -23,6 +23,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/pvclock_gtod.h>
+ #include <linux/compiler.h>
++#include <linux/random.h>
+ 
+ #include "tick-internal.h"
+ #include "ntp_internal.h"
+@@ -835,6 +836,9 @@ void __init timekeeping_init(void)
+ 	memcpy(&shadow_timekeeper, &timekeeper, sizeof(timekeeper));
+ 
+ 	write_seqcount_end(&timekeeper_seq);
 +
-+	sprintf(log_prefix, "random: seeded %s pool", r->name);
-+	arch_rng_init(r, seed_entropy_store, 8 * r->poolinfo->poolbytes,
-+		      log_prefix);
++	add_device_randomness(tk, sizeof(tk));
 +
- 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
  }
  
-diff --git a/include/linux/random.h b/include/linux/random.h
-index 57fbbff..c8d692e 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -106,6 +106,46 @@ static inline int arch_has_random_seed(void)
- }
- #endif
+@@ -976,6 +980,13 @@ static void timekeeping_resume(void)
+ 	timekeeping_suspended = 0;
+ 	timekeeping_update(tk, TK_MIRROR | TK_CLOCK_WAS_SET);
+ 	write_seqcount_end(&timekeeper_seq);
++
++	/*
++	 * The timekeeping state has a decent chance of differing
++	 * between resumptions of the same image.
++	 */
++	add_device_randomness(tk, sizeof(tk));
++
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
  
-+#ifndef __HAVE_ARCH_RNG_INIT
-+
-+/**
-+ * arch_rng_init() - get architectural rng seed data
-+ * @ctx: context for the seed function
-+ * @seed: function to call for each u32 obtained
-+ * @bits_per_source: number of bits from each source to try to use
-+ * @log_prefix: beginning of log output (may be NULL)
-+ *
-+ * Synchronously load some architectural entropy or other best-effort
-+ * random seed data.  An arch-specific implementation should be no worse
-+ * than this generic implementation.  If the arch code does something
-+ * interesting, it may log something of the form "log_prefix with
-+ * 8 bits of stuff".
-+ *
-+ * No arch-specific implementation should be any worse than the generic
-+ * implementation.
-+ */
-+static inline void arch_rng_init(void *ctx,
-+				 void (*seed)(void *ctx, u32 data),
-+				 int bits_per_source,
-+				 const char *log_prefix)
-+{
-+	int i;
-+
-+	for (i = 0; i < bits_per_source; i += 8 * sizeof(long)) {
-+		unsigned long rv;
-+
-+		if (arch_get_random_seed_long(&rv) ||
-+		    arch_get_random_long(&rv)) {
-+			seed(ctx, (u32)rv);
-+#if BITS_PER_LONG > 32
-+			seed(ctx, (u32)(rv >> 32));
-+#endif
-+		}
-+	}
-+}
-+
-+#endif /* __HAVE_ARCH_RNG_INIT */
-+
- /* Pseudo random number generator from numerical recipes. */
- static inline u32 next_pseudo_random32(u32 seed)
- {
+ 	touch_softlockup_watchdog();
 -- 
 1.9.3
 
