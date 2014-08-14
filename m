@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024AbaHNBSQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 21:18:16 -0400
-Received: from mga03.intel.com ([143.182.124.21]:41694 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753483AbaHNBR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753730AbaHNBR6 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 13 Aug 2014 21:17:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:65466 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752042AbaHNBR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 21:17:56 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,859,1400050800"; 
-   d="scan'208";a="468512279"
+   d="scan'208";a="587829265"
 From: Andi Kleen <andi@firstfloor.org>
 To: peterz@infradead.org
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/5] perf, x86: Document all Haswell models
-Date: Wed, 13 Aug 2014 18:17:46 -0700
-Message-Id: <1407979069-7121-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 5/5] perf, x86: Use Broadwell cache event list for Haswell
+Date: Wed, 13 Aug 2014 18:17:49 -0700
+Message-Id: <1407979069-7121-6-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1407979069-7121-1-git-send-email-andi@firstfloor.org>
 References: <1407979069-7121-1-git-send-email-andi@firstfloor.org>
@@ -25,30 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add names for each Haswell model as requested by Peter.
+Use the newly added Broadwell cache event list for Haswell too.
+They are identical, but Haswell is very different from the Sandy Bridge
+list that was used previously. That fixes a wide range of mis-counting
+cache events.
+
+The prefetch events are gone now. They way the hardware counts
+them is very misleading (some prefetches included, others not), so
+it seemed best to leave them out.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index ef6c8b7..03befdd 100644
+index 66260e1..178ddc0 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2540,9 +2540,9 @@ __init int intel_pmu_init(void)
- 
- 
- 	case 60: /* Haswell Client */
--	case 70:
--	case 63:
--	case 69:
-+	case 70: /* Crystall Well */
-+	case 63: /* Haswell Server */
-+	case 69: /* Haswell ULT */
+@@ -2691,8 +2691,8 @@ __init int intel_pmu_init(void)
+ 	case 63: /* Haswell Server */
+ 	case 69: /* Haswell ULT */
  		x86_pmu.late_ack = true;
- 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids, sizeof(hw_cache_event_ids));
- 		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
+-		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids, sizeof(hw_cache_event_ids));
+-		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
++		memcpy(hw_cache_event_ids, bdw_hw_cache_event_ids, sizeof(hw_cache_event_ids));
++		memcpy(hw_cache_extra_regs, bdw_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
+ 
+ 		intel_pmu_lbr_init_snb();
+ 
 -- 
 1.9.3
 
