@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760AbaHNNMh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 09:12:37 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33227 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753902AbaHNNMf (ORCPT
+	id S1754878AbaHNNNV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 09:13:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49503 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813AbaHNNNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 09:12:35 -0400
-X-Sasl-enc: J8nnhUYy5oSL2yympiOtWSRSexAs4du5PfzHR5ULK6Us 1408021954
-Date: Thu, 14 Aug 2014 10:12:29 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Bill Davidsen <davidsen@tmr.com>
-Cc: Borislav Petkov <bp@alien8.de>, H Peter Anvin <hpa@zytor.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: BUG: early intel microcode update violating alignment rules
-Message-ID: <20140814131229.GB12624@khazad-dum.debian.net>
-References: <20140809231911.GA4843@khazad-dum.debian.net>
- <20140811102245.GC4236@nazgul.tnic>
- <20140811131613.GA4541@khazad-dum.debian.net>
- <20140811140057.GA21693@pd.tnic>
- <53E910F7.1040806@tmr.com>
+	Thu, 14 Aug 2014 09:13:19 -0400
+Date: Thu, 14 Aug 2014 15:13:04 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Liu, Changcheng" <changcheng.liu@intel.com>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
+        "Chakravarty, Souvik K" <souvik.k.chakravarty@intel.com>
+Subject: Re: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
+ back to DEFAULT
+Message-ID: <20140814131304.GK16043@twins.programming.kicks-ass.net>
+References: <1407982309-4863-1-git-send-email-chuansheng.liu@intel.com>
+ <CAKnoXLw3DrBAxCUWEkXtvCTf+E1w0xTHJSiSUY6Qd6xHXeGaoQ@mail.gmail.com>
+ <20140814105336.GH16043@twins.programming.kicks-ass.net>
+ <27240C0AC20F114CBF8149A2696CBE4A01E5B61C@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Qo8f1a4rgWw9S/zY"
 Content-Disposition: inline
-In-Reply-To: <53E910F7.1040806@tmr.com>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01E5B61C@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Aug 2014, Bill Davidsen wrote:
-> Don't suppose you have anything in memory right after the microcode
-> which you could put on the stack (15 bytes) slide the image up into
-> alignment, load it, and put everything back. Haven't looked at the
-> code or data, just tossing out an idea I used for something else
-> back when.
 
-Right after?  We don't know what will be there.  But we know what is right
-before: there's enough bytes worth of microcode metadata header to align the
-real microcode data to the previous 16-byte boundary.
+--Qo8f1a4rgWw9S/zY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This is a fix I should be fully capable of writing, actually.  But it will
-be slower (two memcpy, two memove) and much nastier than the proper solution
-using a scratch area (one memcpy).
+On Thu, Aug 14, 2014 at 11:24:06AM +0000, Liu, Chuansheng wrote:
+> If inspecting the polling flag, we can not fix the race between poll_idle and smp_callback,
+> since in poll_idle(), before set polling flag, if the smp_callback come in, then no resched bit set,
+> after that, poll_idle() will do the polling action, without reselection immediately, it will bring power
+> regression here.
 
-That said, it is reported[1] that an Intel microcode update will take
-anything from a couple hundred-thousand to several million cycles per
-processor core.  I wouldn't lose any sleep over adding two 16-byte memcpy
-and two ~32KiB memove to something that is already that expensive.  And it
-will be easy to backport.
+-ENOPARSE. Is there a question there?
 
-Anyway, I don't know enough to either add an initbss, or change the brk as
-HPA hinted, or how easy would it be to backport that, so I will wait for
-further directions.
+--Qo8f1a4rgWw9S/zY
+Content-Type: application/pgp-signature
 
-Meanwhile, I prepared an iucode-tool v1.0.3 release that works around this
-kernel issue for the benefit of the linux distros that use it[2].  It's at
-https://gitorious.org/iucode-tool if anyone around here is interested.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-[1] http://inertiawar.com/microcode/
+iQIcBAEBAgAGBQJT7LXgAAoJEHZH4aRLwOS69WEQALCrrYBMJA08zfgZYPTz5gyj
+Y/SFi98WmrcbobWns+17w03XM9iu79w2nqkrkAuBqAK/d46WOsBTV99+UynvFAE2
+NXTK+FKnJTfk9d4kchU53EWDqI5ruUZdlB9g+regvm9HSOwqboETA58+nvRdslVQ
+bf3scfjCLxSxam6cQnWF7eajPnoRPC9aB0g34hd62WCeq6prinuyF8RXAXz/sntH
+5LnHnDYCVPFUz/r+jCy9tiMVs8LsAr3gogVrb3SVjGErO9zj+RtlIBNnGG26QakF
+prFJg+JjucJyE2VpEqxn87aWbEXrZZSMqxVvoxP3R7C/7j6lQwaTV6bk9D50C8fn
+9WG1tQ0EhVLhqws2+wLECJmXEkyyV3jl11rL7qvR+O1beZyq0mG+AhRrawVk8B6u
+QReQJM2JDU9LQ//Qhmylt+bzbn6bYP86JI6Pfv45OqOyufgV4TkPJyTd+9gXIRsd
+688HsEjIOQWi2tNUUUN3EQAK78NMtZ5kSBBIMD9Sfw6QaQE/jMO9udbhQb00B4mH
+tJXfNfCx05n0pksdTvyOIZwXK1JuD51bhkKRfxKwxx/zi84PNTjpcT2e3OPaBxVE
+bYaGbby7DeItc+ULb9P72+GxffIMuqV/FsYen+4UTiA4ZhBvowA6gvRMWhxYYAZ0
+G7rLtUOwtxht0j2CqIwJ
+=oI5t
+-----END PGP SIGNATURE-----
 
-[2] Debian, Ubuntu and their derivatives.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+--Qo8f1a4rgWw9S/zY--
