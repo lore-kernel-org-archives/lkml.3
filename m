@@ -1,111 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210AbaHNK2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 06:28:00 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:56544 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752726AbaHNK16 (ORCPT
+	id S1754437AbaHNK3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 06:29:20 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:50994 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754303AbaHNK3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 06:27:58 -0400
-Date: Thu, 14 Aug 2014 11:27:23 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Olof Johansson <olof@lixom.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
-        Lv Zheng <lv.zheng@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH 19/19] Documentation: ACPI for ARM64
-Message-ID: <20140814102723.GB9039@arm.com>
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
- <CAOesGMjs1dM37ZoFA-xs7tYYaXP-XC3NjJsj291bCNoDwAXwiw@mail.gmail.com>
- <20140812182347.GA4100@arm.com>
- <2152407.NpXOMHAEH6@vostro.rjw.lan>
- <53EC2B35.5010302@linaro.org>
+	Thu, 14 Aug 2014 06:29:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53EC2B35.5010302@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407978746-20587-3-git-send-email-minchan@kernel.org>
+References: <1407978746-20587-1-git-send-email-minchan@kernel.org>
+	<1407978746-20587-3-git-send-email-minchan@kernel.org>
+Date: Thu, 14 Aug 2014 06:29:17 -0400
+Message-ID: <CAFdhcLTHv9Jhc6Z40dYG7YQFgLURrh5CUyD+ZNkMSb+FXdZocw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] zram: add mem_used_max via sysfs
+From: David Horner <ds2horner@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Dan Streetman <ddstreet@ieee.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 04:21:25AM +0100, Hanjun Guo wrote:
-> On 2014-8-14 7:41, Rafael J. Wysocki wrote:
-> > On Tuesday, August 12, 2014 07:23:47 PM Catalin Marinas wrote:
-> >> If we consider ACPI unusable on ARM but we still want to start merging
-> >> patches, we should rather make the config option depend on BROKEN
-> >> (though if it is that unusable that no real platform can use it, I would
-> >> rather not merge it at all at this stage).
-> > 
-> > I agree here.
-> > 
-> > I would recommend creating a separate branch for that living outside of the
-> > mainline kernel and merging it when there are real users.
-> 
-> Real users will coming soon, we already tested this patch set on real hardware
-> (ARM64 Juno platform),
+The introduction of a reset can cause the stale zero value to be
+retained in the show.
+Instead reset to current value.
 
-I don't consider Juno a server platform ;) (but it's good enough for
-development).
+On Wed, Aug 13, 2014 at 9:12 PM, Minchan Kim <minchan@kernel.org> wrote:
+> Normally, zram user can get maximum memory zsmalloc consumed via
+> polling mem_used_total with sysfs in userspace.
+>
+> But it has a critical problem because user can miss peak memory
+> usage during update interval of polling. For avoiding that,
+> user should poll it frequently with mlocking to avoid delay
+> when memory pressure is heavy so it would be handy if the
+> kernel supports the function.
+>
+> This patch adds mem_used_max via sysfs.
+>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  Documentation/blockdev/zram.txt |  1 +
+>  drivers/block/zram/zram_drv.c   | 35 +++++++++++++++++++++++++++++++++--
+>  drivers/block/zram/zram_drv.h   |  2 ++
+>  3 files changed, 36 insertions(+), 2 deletions(-)
+>
+> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+> index 9f239ff8c444..3b2247c2d4cf 100644
+> --- a/Documentation/blockdev/zram.txt
+> +++ b/Documentation/blockdev/zram.txt
+> @@ -107,6 +107,7 @@ size of the disk when not in use so a huge zram is wasteful.
+>                 orig_data_size
+>                 compr_data_size
+>                 mem_used_total
+> +               mem_used_max
+>
+>  8) Deactivate:
+>         swapoff /dev/zram0
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index b48a3d0e9031..311699f18bd5 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -109,6 +109,30 @@ static ssize_t mem_used_total_show(struct device *dev,
+>         return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
+>  }
+>
+> +static ssize_t mem_used_max_reset(struct device *dev,
+> +               struct device_attribute *attr, const char *buf, size_t len)
 
-> and I think ARM64 server chips and platforms will show up before 3.18
-> is released.
+perhaps these are local functions, but wouldn't the zs_ prefix still
+be appropriate?
+> +{
+> +       struct zram *zram = dev_to_zram(dev);
+> +
+> +       down_write(&zram->init_lock);
+> +       zram->max_used_bytes = 0;
 
-That's what I've heard/seen. The questions I have are (a) whether
-current ACPI patchset is enough to successfully run Linux on such
-_hardware_ platform (maybe not fully optimised, for example just WFI
-cpuidle) and (b) whether we still want to mandate a DT in the kernel for
-such platforms.
+           zram->max_used_bytes = zs_get_total_size_bytes(meta->mem_pool);
 
-Given the answer to (a) and what other features are needed, we may or
-may not mandate (b). We were pretty clear few months ago that (b) is
-still required but at the time we were only openly talking about ACPI
-5.0 which was lacking many features. I think we need to revisit that
-position based on how usable ACPI 5.1 for ARM (and current kernel
-implementation) is. Would you mind elaborating what an ACPI-only
-platform miss?
+           (where meta is set up as below  (beyond my skill level at
+the moment)).
 
-I would expect a new server platform designed with ACPI in mind to
-require minimal SoC specific code, so we may only see a few patches
-under drivers/ for such platforms adding ACPI-specific probing (possibly
-new drivers as well if it's a new component).
+> +       up_write(&zram->init_lock);
+> +       return len;
+> +}
+> +
+> +static ssize_t mem_used_max_show(struct device *dev,
+> +               struct device_attribute *attr, char *buf)
+> +{
+> +       u64 max_used_bytes;
+> +       struct zram *zram = dev_to_zram(dev);
+> +
+> +       down_read(&zram->init_lock);
 
-> For this patch set, DT is the first class citizen at now:
-> 
-> a) We can always set CONFIG_ACPI as off in Kconfig, and use DT only;
+if these are atomic operations, why the (read and write) locks?
 
-Not just off but, based on maturity, depend on EXPERT.
-
-> b) Even if we set CONFIG_ACPI=Y, we also can use DT as normal:
-> 
->   - Pass DT blob without (valid) ACPI tables (just as we boot the kernel now),
->     ACPI will disabled in the very early stage and FDT will still to be
->     unflattened, so will not break DT booting.
-> 
->   - We can pass ACPI=off to disable ACPI and use DT even if we got valid
->     ACPI tables (in the v1 patch set);
-> 
-> So it is safe for people who want to use DT, and didn't change any behavior
-> of DT booting except some extra test of if(acpi_disabled).
-
-But should we require SoC firmware to provide both valid DT and ACPI
-tables so that the user can decide which one to select at boot-time?
-
--- 
-Catalin
+> +       max_used_bytes = zram->max_used_bytes;
+> +       up_read(&zram->init_lock);
+> +
+> +       return scnprintf(buf, PAGE_SIZE, "%llu\n", max_used_bytes);
+> +}
+> +
+>  static ssize_t max_comp_streams_show(struct device *dev,
+>                 struct device_attribute *attr, char *buf)
+>  {
+> @@ -474,6 +498,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>         struct zram_meta *meta = zram->meta;
+>         struct zcomp_strm *zstrm;
+>         bool locked = false;
+> +       u64 total_bytes;
+>
+>         page = bvec->bv_page;
+>         if (is_partial_io(bvec)) {
+> @@ -543,8 +568,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>                 goto out;
+>         }
+>
+> -       if (zram->limit_bytes &&
+> -               zs_get_total_size_bytes(meta->mem_pool) > zram->limit_bytes) {
+> +       total_bytes = zs_get_total_size_bytes(meta->mem_pool);
+> +       if (zram->limit_bytes && total_bytes > zram->limit_bytes) {
+>                 zs_free(meta->mem_pool, handle);
+>                 ret = -ENOMEM;
+>                 goto out;
+> @@ -578,6 +603,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>         /* Update stats */
+>         atomic64_add(clen, &zram->stats.compr_data_size);
+>         atomic64_inc(&zram->stats.pages_stored);
+> +
+> +       zram->max_used_bytes = max(zram->max_used_bytes, total_bytes);
+>  out:
+>         if (locked)
+>                 zcomp_strm_release(zram->comp, zstrm);
+> @@ -656,6 +683,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>         down_write(&zram->init_lock);
+>
+>         zram->limit_bytes = 0;
+> +       zram->max_used_bytes = 0;
+>
+>         if (!init_done(zram)) {
+>                 up_write(&zram->init_lock);
+> @@ -897,6 +925,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+>  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+>  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+>  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+> +static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show,
+> +               mem_used_max_reset);
+>  static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
+>                 mem_limit_store);
+>  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+> @@ -927,6 +957,7 @@ static struct attribute *zram_disk_attrs[] = {
+>         &dev_attr_orig_data_size.attr,
+>         &dev_attr_compr_data_size.attr,
+>         &dev_attr_mem_used_total.attr,
+> +       &dev_attr_mem_used_max.attr,
+>         &dev_attr_mem_limit.attr,
+>         &dev_attr_max_comp_streams.attr,
+>         &dev_attr_comp_algorithm.attr,
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index 086c51782e75..aca09b18fcbd 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -111,6 +111,8 @@ struct zram {
+>          */
+>         u64 disksize;   /* bytes */
+>         u64 limit_bytes;
+> +       u64 max_used_bytes;
+> +
+>         int max_comp_streams;
+>         struct zram_stats stats;
+>         char compressor[10];
+> --
+> 2.0.0
+>
