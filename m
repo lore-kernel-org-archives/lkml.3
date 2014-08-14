@@ -1,63 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530AbaHNKR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 06:17:57 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:54033 "EHLO
+	id S1754210AbaHNK2A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 06:28:00 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:56544 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753913AbaHNKRz (ORCPT
+	by vger.kernel.org with ESMTP id S1752726AbaHNK16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 06:17:55 -0400
-Message-ID: <1408011468.21373.4.camel@hornet>
-Subject: Re: [PATCH v2] perf: Handle compat ioctl
-From: Pawel Moll <pawel.moll@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
+	Thu, 14 Aug 2014 06:27:58 -0400
+Date: Thu, 14 Aug 2014 11:27:23 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Olof Johansson <olof@lixom.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Brown <broonie@linaro.org>, Will Deacon <Will.Deacon@arm.com>,
+        Lv Zheng <lv.zheng@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Drew Richardson <Drew.Richardson@arm.com>
-Date: Thu, 14 Aug 2014 11:17:48 +0100
-In-Reply-To: <20140707124315.GN6758@twins.programming.kicks-ass.net>
-References: <20140617121328.GO3213@twins.programming.kicks-ass.net>
-	 <1403009029-30967-1-git-send-email-pawel.moll@arm.com>
-	 <1404230760.25766.5.camel@hornet>
-	 <20140707124315.GN6758@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Sudeep Holla <Sudeep.Holla@arm.com>
+Subject: Re: [PATCH 19/19] Documentation: ACPI for ARM64
+Message-ID: <20140814102723.GB9039@arm.com>
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
+ <CAOesGMjs1dM37ZoFA-xs7tYYaXP-XC3NjJsj291bCNoDwAXwiw@mail.gmail.com>
+ <20140812182347.GA4100@arm.com>
+ <2152407.NpXOMHAEH6@vostro.rjw.lan>
+ <53EC2B35.5010302@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53EC2B35.5010302@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-07 at 13:43 +0100, Peter Zijlstra wrote:
-> On Tue, Jul 01, 2014 at 05:06:00PM +0100, Pawel Moll wrote:
-> > On Tue, 2014-06-17 at 13:43 +0100, Pawel Moll wrote:
-> > > When running a 32-bit userspace on a 64-bit kernel (eg. i386
-> > > application on x86_64 kernel or 32-bit arm userspace on arm64
-> > > kernel) some of the perf ioctls must be treated with special
-> > > care, as they have a pointer size encoded in the command.
-> > > 
-> > > For example, PERF_EVENT_IOC_ID in 32-bit world will be encoded
-> > > as 0x80042407, but 64-bit kernel will expect 0x80082407. In
-> > > result the ioctl will fail returning -ENOTTY.
-> > > 
-> > > This patch solves the problem by adding code fixing up the
-> > > size as compat_ioctl file operation.
-> > > 
-> > > Reported-by: Drew Richardson <drew.richardson@arm.com>
-> > > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+On Thu, Aug 14, 2014 at 04:21:25AM +0100, Hanjun Guo wrote:
+> On 2014-8-14 7:41, Rafael J. Wysocki wrote:
+> > On Tuesday, August 12, 2014 07:23:47 PM Catalin Marinas wrote:
+> >> If we consider ACPI unusable on ARM but we still want to start merging
+> >> patches, we should rather make the config option depend on BROKEN
+> >> (though if it is that unusable that no real platform can use it, I would
+> >> rather not merge it at all at this stage).
 > > 
-> > This just is a polite and friendly nag...
+> > I agree here.
 > > 
-> > Any, strong or not, opinions on the matter?
+> > I would recommend creating a separate branch for that living outside of the
+> > mainline kernel and merging it when there are real users.
 > 
-> Sorry, travel, cracks, falling, etc..
+> Real users will coming soon, we already tested this patch set on real hardware
+> (ARM64 Juno platform),
+
+I don't consider Juno a server platform ;) (but it's good enough for
+development).
+
+> and I think ARM64 server chips and platforms will show up before 3.18
+> is released.
+
+That's what I've heard/seen. The questions I have are (a) whether
+current ACPI patchset is enough to successfully run Linux on such
+_hardware_ platform (maybe not fully optimised, for example just WFI
+cpuidle) and (b) whether we still want to mandate a DT in the kernel for
+such platforms.
+
+Given the answer to (a) and what other features are needed, we may or
+may not mandate (b). We were pretty clear few months ago that (b) is
+still required but at the time we were only openly talking about ACPI
+5.0 which was lacking many features. I think we need to revisit that
+position based on how usable ACPI 5.1 for ARM (and current kernel
+implementation) is. Would you mind elaborating what an ACPI-only
+platform miss?
+
+I would expect a new server platform designed with ACPI in mind to
+require minimal SoC specific code, so we may only see a few patches
+under drivers/ for such platforms adding ACPI-specific probing (possibly
+new drivers as well if it's a new component).
+
+> For this patch set, DT is the first class citizen at now:
 > 
-> Queued it, we'll see what happens with this one ;-)
+> a) We can always set CONFIG_ACPI as off in Kconfig, and use DT only;
 
-Has it managed to hold on to the ground between the cracks then? ;-)
+Not just off but, based on maturity, depend on EXPERT.
 
-(asking because can't see it in your perf/core branch on git.kernel.org)
+> b) Even if we set CONFIG_ACPI=Y, we also can use DT as normal:
+> 
+>   - Pass DT blob without (valid) ACPI tables (just as we boot the kernel now),
+>     ACPI will disabled in the very early stage and FDT will still to be
+>     unflattened, so will not break DT booting.
+> 
+>   - We can pass ACPI=off to disable ACPI and use DT even if we got valid
+>     ACPI tables (in the v1 patch set);
+> 
+> So it is safe for people who want to use DT, and didn't change any behavior
+> of DT booting except some extra test of if(acpi_disabled).
 
-Pawel
+But should we require SoC firmware to provide both valid DT and ACPI
+tables so that the user can decide which one to select at boot-time?
 
+-- 
+Catalin
