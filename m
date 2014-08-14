@@ -1,104 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007AbaHNH3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 03:29:39 -0400
-Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:36600 "EHLO
-	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751243AbaHNH3g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 03:29:36 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-Message-ID: <53EC6631.3020203@smartplayin.com>
-Date: Thu, 14 Aug 2014 13:03:05 +0530
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        linux-arm-msm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 5/6] ARM: dts: qcom: Add PM8941 and PM8841 pinctrl
- nodes
-References: <1407771634-14946-1-git-send-email-iivanov@mm-sol.com> <1407771634-14946-6-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1407771634-14946-6-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754157AbaHNHbh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 03:31:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23500 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751803AbaHNHbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 03:31:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,861,1400050800"; 
+   d="scan'208";a="576529503"
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: bp@alien8.de
+Cc: tony.luck@intel.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        "Chen, Gong" <gong.chen@linux.intel.com>
+Subject: [PATCH v2 4/5] x86/mce: Simplify flow when handling recoverable memory errors
+Date: Thu, 14 Aug 2014 02:49:45 -0400
+Message-Id: <1407998986-1834-5-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
+References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ivan,
-This patch fail to apply on linux-next Tree. Probably because this is
-based on Stanimir's older patch series "Support for Qualcomm QPNP
-PMIC's". He has posted v4 of them on which it fails to apply. Am I correct?
+From: Tony Luck <tony.luck@intel.com>
 
-Thanks
-Pramod
+Handling of uncorrected, but s/w recoverable, errors is a two phase process:
 
-On Monday 11 August 2014 09:10 PM, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> Add nodes for PM8941 and PM8841 GPIO and MPP PMIC subfunctions.
-> 
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> ---
->  arch/arm/boot/dts/qcom-msm8974.dtsi | 33 +++++++++++++++++++++++++++++++++
->  1 file changed, 33 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
-> index c7ae7ba..3967797 100644
-> --- a/arch/arm/boot/dts/qcom-msm8974.dtsi
-> +++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
-> @@ -267,6 +267,31 @@
->  					reg-names = "rtc", "alarm";
->  					interrupts = <0x0 0x61 0x1 IRQ_TYPE_EDGE_RISING>;
->  				};
-> +
-> +				pm8941_gpios: gpios@c000 {
-> +					compatible = "qcom,pm8941-gpio";
-> +					reg = <0xc000>;
-> +					gpio-controller;
-> +					#gpio-cells = <2>;
-> +					interrupts = <0 0xc0 0 0>, <0 0xc1 0 0>, <0 0xc2 0 0>, <0 0xc3 0 0>,
-> +						     <0 0xc4 0 0>, <0 0xc5 0 0>, <0 0xc6 0 0>, <0 0xc7 0 0>,
-> +						     <0 0xc8 0 0>, <0 0xc9 0 0>, <0 0xca 0 0>, <0 0xcb 0 0>,
-> +						     <0 0xcc 0 0>, <0 0xcd 0 0>, <0 0xce 0 0>, <0 0xcf 0 0>,
-> +						     <0 0xd0 0 0>, <0 0xd1 0 0>, <0 0xd2 0 0>, <0 0xd3 0 0>,
-> +						     <0 0xd4 0 0>, <0 0xd5 0 0>, <0 0xd6 0 0>, <0 0xd7 0 0>,
-> +						     <0 0xd8 0 0>, <0 0xd9 0 0>, <0 0xda 0 0>, <0 0xdb 0 0>,
-> +						     <0 0xdc 0 0>, <0 0xdd 0 0>, <0 0xde 0 0>, <0 0xdf 0 0>,
-> +						     <0 0xe0 0 0>, <0 0xe1 0 0>, <0 0xe2 0 0>, <0 0xe3 0 0>;
-> +				};
-> +
-> +				pm8941_mpps: mpps@a000 {
-> +					compatible = "qcom,pm8941-mpp";
-> +					reg = <0xa000>;
-> +					gpio-controller;
-> +					#gpio-cells = <2>;
-> +					interrupts = <0 0xa0 0 0>, <0 0xa1 0 0>, <0 0xa2 0 0>, <0 0xa3 0 0>,
-> +						     <0 0xa4 0 0>, <0 0xa5 0 0>, <0 0xa6 0 0>, <0 0xa7 0 0>;
-> +				};
->  			};
->  
->  			usid1: pm8941@1 {
-> @@ -281,6 +306,14 @@
->  				reg = <0x4 SPMI_USID>;
->  				#address-cells = <1>;
->  				#size-cells = <0>;
-> +
-> +				pm8841_mpps: mpps@a000 {
-> +					compatible = "qcom,pm8841-mpp";
-> +					reg = <0xa000>;
-> +					gpio-controller;
-> +					#gpio-cells = <2>;
-> +					interrupts = <4 0xa0 0 0>, <4 0xa1 0 0>, <4 0xa2 0 0>, <4 0xa3 0 0>;
-> +				};
->  			};
->  
->  			usid5: pm8841@5 {
-> 
+1) In the machine check handler we identify the signature of a recoverable
+   error and use TIF_MCE_NOTIFY to mark the process so that we will not
+   return to ring3 and re-execute the instruction that accessed the failed
+   memory location.
+2) In process context we see TIF_MCE_NOTIFY set and call mce_notify_process()
+   to do all the recovery work that we could not do in machine check context.
+
+We need to pass the memory address and a flag to say whether the faulting
+instruction can be continued from stage "1" to stage "2".  The existing
+code to do this is baroque.  We hunt through a fixed sized array of
+"mce_info" structures and use atomic_cmpxchg to claim a free one (we
+panic if all are busy). Then in phase 2 we scan back through the mce_info
+array looking for the one that matches the current process.
+
+We can do much better by admitting that the failing address found in
+phase 1 is a property of the current task. We can only recover from
+errors detected while trying to retire an instruction in ring3 (s/w
+limitation). So we know that MCE_AR_SEVERITY means that we are running
+on the cpu that was executing user code and hit an error that triggered
+this machine check.  This is the reason why TIF_MCE_NOTIFY has been set,
+and the memory error must be dealt with before we can either allow this
+process to continue (if we can replace the page) or not (signalling the
+process if the memory has been lost).
+
+So we add two fields to the task structure to be saved in phase 1 and
+retrieved in phase 2.  The mce_info[] array and routines to add/find/clear
+entried from it can all be deleted.
+
+Gong: Add missed CONFIG_MEMORY_FAILURE & '\n' to the end of printk
+message, while at it.
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/include/asm/mce.h       |  2 ++
+ arch/x86/kernel/cpu/mcheck/mce.c | 67 +++++++---------------------------------
+ arch/x86/kernel/signal.c         |  2 +-
+ include/linux/sched.h            |  4 +++
+ 4 files changed, 19 insertions(+), 56 deletions(-)
+
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index a713dabd000b..76e706767655 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -187,7 +187,9 @@ enum mcp_flags {
+ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b);
+ 
+ int mce_notify_irq(void);
++#ifdef CONFIG_MEMORY_FAILURE
+ void mce_notify_process(void);
++#endif
+ 
+ DECLARE_PER_CPU(struct mce, injectm);
+ 
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 0e64a3c69b2b..b0a25d5f7185 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -928,51 +928,6 @@ static void mce_clear_state(unsigned long *toclear)
+ }
+ 
+ /*
+- * Need to save faulting physical address associated with a process
+- * in the machine check handler some place where we can grab it back
+- * later in mce_notify_process()
+- */
+-#define	MCE_INFO_MAX	16
+-
+-struct mce_info {
+-	atomic_t		inuse;
+-	struct task_struct	*t;
+-	__u64			paddr;
+-	int			restartable;
+-} mce_info[MCE_INFO_MAX];
+-
+-static void mce_save_info(__u64 addr, int c)
+-{
+-	struct mce_info *mi;
+-
+-	for (mi = mce_info; mi < &mce_info[MCE_INFO_MAX]; mi++) {
+-		if (atomic_cmpxchg(&mi->inuse, 0, 1) == 0) {
+-			mi->t = current;
+-			mi->paddr = addr;
+-			mi->restartable = c;
+-			return;
+-		}
+-	}
+-
+-	mce_panic("Too many concurrent recoverable errors", NULL, NULL);
+-}
+-
+-static struct mce_info *mce_find_info(void)
+-{
+-	struct mce_info *mi;
+-
+-	for (mi = mce_info; mi < &mce_info[MCE_INFO_MAX]; mi++)
+-		if (atomic_read(&mi->inuse) && mi->t == current)
+-			return mi;
+-	return NULL;
+-}
+-
+-static void mce_clear_info(struct mce_info *mi)
+-{
+-	atomic_set(&mi->inuse, 0);
+-}
+-
+-/*
+  * The actual machine check handler. This only handles real
+  * exceptions when something got corrupted coming in through int 18.
+  *
+@@ -1121,11 +1076,15 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 	if (cfg->tolerant < 3) {
+ 		if (no_way_out)
+ 			mce_panic("Fatal machine check on current CPU", &m, msg);
++#ifdef CONFIG_MEMORY_FAILURE
+ 		if (worst == MCE_AR_SEVERITY) {
+ 			/* schedule action before return to userland */
+-			mce_save_info(m.addr, m.mcgstatus & MCG_STATUS_RIPV);
++			current->paddr = m.addr;
++			current->restartable = !!(m.mcgstatus & MCG_STATUS_RIPV);
+ 			set_thread_flag(TIF_MCE_NOTIFY);
+-		} else if (kill_it) {
++		} else
++#endif
++		if (kill_it) {
+ 			force_sig(SIGBUS, current);
+ 		}
+ 	}
+@@ -1159,33 +1118,31 @@ int memory_failure(unsigned long pfn, int vector, int flags)
+  * process any corrupted pages, and kill/signal current process if required.
+  * Action required errors are handled here.
+  */
++#ifdef CONFIG_MEMORY_FAILURE
+ void mce_notify_process(void)
+ {
+ 	unsigned long pfn;
+-	struct mce_info *mi = mce_find_info();
+ 	int flags = MF_ACTION_REQUIRED;
+ 
+-	if (!mi)
+-		mce_panic("Lost physical address for unconsumed uncorrectable error", NULL, NULL);
+-	pfn = mi->paddr >> PAGE_SHIFT;
++	pfn = current->paddr >> PAGE_SHIFT;
+ 
+ 	clear_thread_flag(TIF_MCE_NOTIFY);
+ 
+-	pr_err("Uncorrected hardware memory error in user-access at %llx",
+-		 mi->paddr);
++	pr_err("Uncorrected hardware memory error in user-access at %llx\n",
++		 current->paddr);
+ 	/*
+ 	 * We must call memory_failure() here even if the current process is
+ 	 * doomed. We still need to mark the page as poisoned and alert any
+ 	 * other users of the page.
+ 	 */
+-	if (!mi->restartable)
++	if (!current->restartable)
+ 		flags |= MF_MUST_KILL;
+ 	if (memory_failure(pfn, MCE_VECTOR, flags) < 0) {
+ 		pr_err("Memory error not recovered");
+ 		force_sig(SIGBUS, current);
+ 	}
+-	mce_clear_info(mi);
+ }
++#endif
+ 
+ /*
+  * Action optional processing happens here (picking up
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index 2851d63c1202..28fd70560b96 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -735,7 +735,7 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
+ {
+ 	user_exit();
+ 
+-#ifdef CONFIG_X86_MCE
++#ifdef CONFIG_MEMORY_FAILURE
+ 	/* notify userspace of pending MCEs */
+ 	if (thread_info_flags & _TIF_MCE_NOTIFY)
+ 		mce_notify_process();
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 857ba40426ba..b41e839b9e1e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1645,6 +1645,10 @@ struct task_struct {
+ 	unsigned int	sequential_io;
+ 	unsigned int	sequential_io_avg;
+ #endif
++#ifdef CONFIG_MEMORY_FAILURE
++	__u64	paddr;
++	int	restartable;
++#endif
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+-- 
+2.0.0.rc2
+
