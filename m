@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177AbaHNN6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 09:58:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:12549 "EHLO mga03.intel.com"
+	id S1754795AbaHNOKa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 10:10:30 -0400
+Received: from mga14.intel.com ([192.55.52.115]:15970 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755103AbaHNN56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 09:57:58 -0400
+	id S1754120AbaHNOK3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 10:10:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,863,1400050800"; 
-   d="scan'208";a="468704128"
+   d="scan'208";a="576679578"
 From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         "Liu, Changcheng" <changcheng.liu@intel.com>,
@@ -22,57 +23,79 @@ Subject: RE: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
  back to DEFAULT
 Thread-Topic: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
  back to DEFAULT
-Thread-Index: AQHPt70v5AdjnnUX70e/nlyx/xxV5JvPkg2AgACMF6A=
-Date: Thu, 14 Aug 2014 13:57:49 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01E5B70B@SHSMSX101.ccr.corp.intel.com>
+Thread-Index: AQHPt8F75AdjnnUX70e/nlyx/xxV5JvQIeMg
+Date: Thu, 14 Aug 2014 14:10:27 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01E5B73B@SHSMSX101.ccr.corp.intel.com>
 References: <1407982309-4863-1-git-send-email-chuansheng.liu@intel.com>
  <CAKnoXLw3DrBAxCUWEkXtvCTf+E1w0xTHJSiSUY6Qd6xHXeGaoQ@mail.gmail.com>
- <20140814110040.GI16043@twins.programming.kicks-ass.net>
- <53EC9A29.8090408@linaro.org>
- <20140814124135.GJ16043@twins.programming.kicks-ass.net>
- <53ECB9CD.9040705@linaro.org>
-In-Reply-To: <53ECB9CD.9040705@linaro.org>
+ <20140814105336.GH16043@twins.programming.kicks-ass.net>
+ <27240C0AC20F114CBF8149A2696CBE4A01E5B61C@SHSMSX101.ccr.corp.intel.com>
+ <20140814131304.GK16043@twins.programming.kicks-ass.net>
+In-Reply-To: <20140814131304.GK16043@twins.programming.kicks-ass.net>
 Accept-Language: zh-CN, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7EDw5ZC028245
 
 
 
 > -----Original Message-----
-> From: Daniel Lezcano [mailto:daniel.lezcano@linaro.org]
-> Sent: Thursday, August 14, 2014 9:30 PM
-> To: Peter Zijlstra
-> Cc: Liu, Chuansheng; Rafael J. Wysocki; linux-pm@vger.kernel.org; LKML; Liu,
+> From: Peter Zijlstra [mailto:peterz@infradead.org]
+> Sent: Thursday, August 14, 2014 9:13 PM
+> To: Liu, Chuansheng
+> Cc: Daniel Lezcano; Rafael J. Wysocki; linux-pm@vger.kernel.org; LKML; Liu,
 > Changcheng; Wang, Xiaoming; Chakravarty, Souvik K
 > Subject: Re: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
 > back to DEFAULT
-
-
-> I think the main issue here is to exit the poll_idle loop when an IPI is
-> received. IIUC, there is a pm_qos user, perhaps a driver (Chuansheng can
-> give more details), setting a very short latency, so the cpuidle
-> framework choose a shallow state like the poll_idle and then the driver
-> sets a bigger latency, leading to the IPI to wake all the cpus. As the
-> CPUs are in the poll_idle, they don't exit until an event make them to
-> exit the need_resched() loop (reschedule or whatever). This situation
-> can let the CPUs to stand in the infinite loop several seconds while we
-> are expecting them to exit the poll_idle and enter a deeper idle state,
-> thus with an extra energy consumption.
 > 
+> On Thu, Aug 14, 2014 at 11:24:06AM +0000, Liu, Chuansheng wrote:
+> > If inspecting the polling flag, we can not fix the race between poll_idle and
+> smp_callback,
+> > since in poll_idle(), before set polling flag, if the smp_callback come in, then
+> no resched bit set,
+> > after that, poll_idle() will do the polling action, without reselection
+> immediately, it will bring power
+> > regression here.
+> 
+> -ENOPARSE. Is there a question there?
 
-Exactly, no function error here. But do not enter the deeper C-state will bring more power
-consumption, in some mp3 standby mode, even 10% power can be saved.
+Lezcano suggest to inspect the polling flag, then code is like below:
+smp_callback() {
+if (polling_flag)
+  set_resched_bit;
+}
 
-And this is the patch's aim here.
+And the poll_idle code is like below:
+static int poll_idle(struct cpuidle_device *dev,
+                struct cpuidle_driver *drv, int index)
+{
+        local_irq_enable();
+        if (!current_set_polling_and_test()) {
+                while (!need_resched())
+                        cpu_relax();
+        }   
+        current_clr_polling();
+
+        return index;
+}
+
+The race is:
+Idle task:
+poll_idle
+  local_irq_enable()
+<== IPI interrupt coming, check the polling flag is not set yet, do nothing;
+Come back to poll_idle, it will stay in the poll loop for a while, instead break
+it immediately to let governor reselect the right C-state.
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+
+
+
