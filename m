@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169AbaHNUNE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 16:13:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33297 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754656AbaHNUNA (ORCPT
+	id S1754580AbaHNURg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 16:17:36 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:57085 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753174AbaHNURe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 16:13:00 -0400
-Date: Thu, 14 Aug 2014 13:12:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux MM <linux-mm@kvack.org>, Zhang Zhen <zhenzhang.zhang@huawei.com>
-Subject: Re: linux-next: Tree for Aug 14 (mm/memory_hotplug.c and
- drivers/base/memory.c)
-Message-Id: <20140814131259.0e56829123ba1123bbe1685a@linux-foundation.org>
-In-Reply-To: <53ECCF7E.2090305@infradead.org>
-References: <20140814152749.24d43663@canb.auug.org.au>
-	<53ECCF7E.2090305@infradead.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Aug 2014 16:17:34 -0400
+Date: Thu, 14 Aug 2014 13:17:30 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: clemens@ladisch.de, jdelvare@suse.de, rdunlap@infradead.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, bp@suse.de,
+        dan.carpenter@oracle.com, lm-sensors@lm-sensors.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] hwmon, k10temp: Add support for F15h M60h
+Message-ID: <20140814201730.GA501@roeck-us.net>
+References: <1408035262-18026-1-git-send-email-aravind.gopalakrishnan@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408035262-18026-1-git-send-email-aravind.gopalakrishnan@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Aug 2014 08:02:22 -0700 Randy Dunlap <rdunlap@infradead.org> wrote:
+On Thu, Aug 14, 2014 at 11:54:22AM -0500, Aravind Gopalakrishnan wrote:
+> This patch adds temperature monitoring support for F15h M60h processor.
+>  - Add new pci device id for the relevant processor
+>  - The functionality of REG_REPORTED_TEMPERATURE is moved to
+>    D0F0xBC_xD820_0CA4 [Reported Temperature Control]
+>    - So, use this to get CUR_TEMP value
+>    - Since we need an indirect register access, protect this with
+>      a mutex lock
+>  - Add Kconfig, Doc entries to indicate support for this processor.
+> 
+> Signed-off-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+> ---
+> Changes in V2:
+>  - Prevent race with other code that may require indirect NB_SMU_REG access
+>  - Fix some minor style issues
+> 
+>  Documentation/hwmon/k10temp   |  2 +-
+>  arch/x86/include/asm/amd_nb.h |  2 ++
+>  arch/x86/kernel/amd_nb.c      | 15 +++++++++++++++
+>  drivers/hwmon/Kconfig         |  6 +++---
+>  drivers/hwmon/k10temp.c       | 22 +++++++++++++++++++---
+>  5 files changed, 40 insertions(+), 7 deletions(-)
+> 
+[ ... ]
 
-> On 08/13/14 22:27, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Please do not add code intended for v3.18 until after v3.17-rc1 is
-> > released.
-> > 
-> > Changes since 20140813:
-> > 
-> 
-> on x86_64:
-> 
-> drivers/built-in.o: In function `show_zones_online_to':
-> memory.c:(.text+0x13f306): undefined reference to `test_pages_in_a_zone'
-> 
-> in drivers/base/memory.c
-> 
-> when CONFIG_MEMORY_HOTREMOVE is not enabled.
-> 
-> The function implementation in mm/memory_hotplug.c is only built if
-> CONFIG_MEMORY_HOTREMOVE is enabled.
+> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> index 02d3d85..0234a08 100644
+> --- a/drivers/hwmon/Kconfig
+> +++ b/drivers/hwmon/Kconfig
+> @@ -275,13 +275,13 @@ config SENSORS_K8TEMP
+>  
+>  config SENSORS_K10TEMP
+>  	tristate "AMD Family 10h+ temperature sensor"
+> -	depends on X86 && PCI
+> +	depends on X86 && PCI && AMD_NB
 
-Thanks.   This way, I suppose.
+Is the added dependency acceptable ?
 
---- a/drivers/base/memory.c~memory-hotplug-add-sysfs-zones_online_to-attribute-fix-2
-+++ a/drivers/base/memory.c
-@@ -373,6 +373,7 @@ static ssize_t show_phys_device(struct d
- 	return sprintf(buf, "%d\n", mem->phys_device);
- }
- 
-+#ifdef CONFIG_MEMORY_HOTREMOVE
- static int __zones_online_to(unsigned long end_pfn,
- 				struct page *first_page, unsigned long nr_pages)
- {
-@@ -432,12 +433,13 @@ static ssize_t show_zones_online_to(stru
- 
- 	return sprintf(buf, "%s\n", zone->name);
- }
-+static DEVICE_ATTR(zones_online_to, 0444, show_zones_online_to, NULL);
-+#endif
- 
- static DEVICE_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
- static DEVICE_ATTR(state, 0644, show_mem_state, store_mem_state);
- static DEVICE_ATTR(phys_device, 0444, show_phys_device, NULL);
- static DEVICE_ATTR(removable, 0444, show_mem_removable, NULL);
--static DEVICE_ATTR(zones_online_to, 0444, show_zones_online_to, NULL);
- 
- /*
-  * Block size attribute stuff
-@@ -584,7 +586,9 @@ static struct attribute *memory_memblk_a
- 	&dev_attr_state.attr,
- 	&dev_attr_phys_device.attr,
- 	&dev_attr_removable.attr,
-+#ifdef CONFIG_MEMORY_HOTREMOVE
- 	&dev_attr_zones_online_to.attr,
-+#endif
- 	NULL
- };
- 
-
+Guenter
