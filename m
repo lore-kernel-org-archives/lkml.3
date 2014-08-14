@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaHNDkJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 23:40:09 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:41738 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042AbaHNDkG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 23:40:06 -0400
+	id S1753155AbaHNDzQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 23:55:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49027 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752149AbaHNDzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 23:55:15 -0400
+Message-ID: <53EC331F.3000508@suse.com>
+Date: Thu, 14 Aug 2014 05:55:11 +0200
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <53EC177B.1080706@rock-chips.com>
-References: <1407974880-30626-1-git-send-email-dianders@chromium.org>
-	<53EC177B.1080706@rock-chips.com>
-Date: Wed, 13 Aug 2014 20:40:04 -0700
-X-Google-Sender-Auth: k3wZiv_0OKCZCxm-lZajw8SsB54
-Message-ID: <CAD=FV=XNJ9RRnOaJ5e-D60S5vjZu6UbphdWqqfRq_YfZaXoq+A@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: Add mmc0 and mmc1 aliases for rk3288
-From: Doug Anderson <dianders@chromium.org>
-To: Addy <addy.ke@rock-chips.com>
-Cc: Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        stefan@agner.ch,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: Ben Widawsky <benjamin.widawsky@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: Usage of _PAGE_PCD et al in i915 driver
+References: <53E4B338.3040904@suse.com>	<CAKMK7uEqfLudZbj1ArKJVXET69d+g+SA3=GtXQ0zXi+FeudAag@mail.gmail.com> <20140813080705.31a0901a@jbarnes-desktop>
+In-Reply-To: <20140813080705.31a0901a@jbarnes-desktop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addy,
+On 08/13/2014 05:07 PM, Jesse Barnes wrote:
+> On Fri, 8 Aug 2014 15:14:15 +0200
+> Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+>
+>> Adding relevant mailing lists.
+>>
+>> On Fri, Aug 8, 2014 at 1:23 PM, Juergen Gross <jgross@suse.com> wrote:
+>>> I'm just about to create a patch for full PAT support in the Linux
+>>> kernel, including Xen. For this purpose I introduce a translation
+>>> between cache modes and pte bits.
+>>>
+>>> Scanning the kernel sources for usage of the cache mode bits in the
+>>> pte I discovered  drivers/gpu/drm/i915/i915_gem_gtt.h is using
+>>> _PAGE_PCD, _PAGE_PWT and _PAGE_PAT. I think those defines are used
+>>> to create ptes not for usage by the main processor, but for the
+>>> graphics processor. Is this true? In this case I'd suggest to define
+>>> i915-specific macros instead of using the x86 ones.
+>>
+>> Yeah, those are gpu specific PAT tables, but the hw engineers
+>> specifically designed this to match, and we've tried to follow the cpu
+>> side to match it. Especially in the future that will be somewhat
+>> important, since we want to fully share the entire address space
+>> between cpu and gpu on the next platform. Jesse is working on that.
+>
+> Right, we have an x86 compatible MMU in the GPU itself, so re-using the
+> defines makes sense.  I suppose with your work you'll move them and
+> make them a bit more opaque?  If so, we'll still want a way to get at
+> them directly, or access your mapping functions for generating PTE bits
+> for the GPU MMU.
 
-On Wed, Aug 13, 2014 at 6:57 PM, Addy <addy.ke@rock-chips.com> wrote:
+Using the mapping functions I'm introducing should work, if the MMU has
+an x86 compatible MSR_IA32_CR_PAT which is configured the same way as
+on the x86 processor (be aware that Xen is using another MSR_IA32_CR_PAT
+setting as the Linux kernel).
 
-> I think maybe it is suitable as follows:
-> mmc0 = &sdmmc
-> mmc1 = &sdio0
-> mmc2 = &sdio1
-> mmc3 = &emmc
+Juergen
 
-Right, except the only ones that have landed in Heiko's tree are sdmmc
-and emmc, so we can't do sdio0 and sdio1 yet.  You could post support
-for sdio0 and adio1?
-
-Also: it's really handy if emmc is 0.  See below: I don't think it's
-great to use the ID to find the sysconfig registers.
-
-
-> So we can get ctrl_id:
-> ctrl_id = of_alias_get_id(host->dev->of_node, "mshc");
-
-Somehow I hadn't realized that was there.  I guess we could use that
-too.  I'd vote to remove that and use the standard "mmc" numbering
-(and get some momentum to land those patches).  If you want I'll
-repost using the mshc stuff, though.
-
-
-> and can get offset of registers:
-> offset = 0x200 + ctrl_id * 8 + 4 * drive_or_sample
-
-I thought the plan was to actually implement the phase stuff as a clock driver.
-
-...even if we didn't, I'd rather not rely on ID like this to find the
-right address.  It's really non-obvious.
