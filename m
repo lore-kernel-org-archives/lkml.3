@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487AbaHNQPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 12:15:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45601 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706AbaHNQPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 12:15:14 -0400
-Date: Thu, 14 Aug 2014 18:12:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
-	seqlock
-Message-ID: <20140814161247.GA32715@redhat.com>
-References: <20140812191218.GA15210@redhat.com> <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814142404.GA28211@redhat.com> <53ECD7C8.6040202@redhat.com>
+	id S1752007AbaHNQXZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 12:23:25 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:37727 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747AbaHNQXY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 12:23:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53ECD7C8.6040202@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAFdhcLQ11MnF7Py+X1wrJMiu0L15-JrV883oYGopdz1oag0njQ@mail.gmail.com>
+References: <1407978746-20587-1-git-send-email-minchan@kernel.org>
+	<1407978746-20587-3-git-send-email-minchan@kernel.org>
+	<CALZtONDB5q56f1TUHgqbiJ4ZaP6Yk=GcNQw9DhvLhNyExdfQ4w@mail.gmail.com>
+	<CAFdhcLQ11MnF7Py+X1wrJMiu0L15-JrV883oYGopdz1oag0njQ@mail.gmail.com>
+Date: Thu, 14 Aug 2014 12:23:23 -0400
+Message-ID: <CAFdhcLQ2cU8APUP=qVQqQmWT8jouFvdSHPVsQ8RCXceaVWa4dQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] zram: add mem_used_max via sysfs
+From: David Horner <ds2horner@gmail.com>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14, Rik van Riel wrote:
+On Thu, Aug 14, 2014 at 11:32 AM, David Horner <ds2horner@gmail.com> wrote:
+> On Thu, Aug 14, 2014 at 11:09 AM, Dan Streetman <ddstreet@ieee.org> wrote:
+>> On Wed, Aug 13, 2014 at 9:12 PM, Minchan Kim <minchan@kernel.org> wrote:
+>>> -       if (zram->limit_bytes &&
+>>> -               zs_get_total_size_bytes(meta->mem_pool) > zram->limit_bytes) {
+>>> +       total_bytes = zs_get_total_size_bytes(meta->mem_pool);
+>>> +       if (zram->limit_bytes && total_bytes > zram->limit_bytes) {
+>>
+>> do you need to take the init_lock to read limit_bytes here?  It could
+>> be getting changed between these checks...
 >
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->
-> On 08/14/2014 10:24 AM, Oleg Nesterov wrote:
-> > On 08/13, Rik van Riel wrote:
-> >>
-> >> @@ -862,11 +862,9 @@ void do_sys_times(struct tms *tms) {
-> >> cputime_t tgutime, tgstime, cutime, cstime;
-> >>
-> >> -	spin_lock_irq(&current->sighand->siglock);
-> >> thread_group_cputime_adjusted(current, &tgutime, &tgstime);
-> >> cutime = current->signal->cutime; cstime =
-> >> current->signal->cstime; -
-> >> spin_unlock_irq(&current->sighand->siglock);
-> >
-> > Ah, wait, there is another problem afaics...
->
-> Last night I worked on another problem with this code.
->
-> After propagating the stats from a dying task to the signal struct,
-> we need to make sure that that task's stats are not counted twice.
+> There is no real danger in freeing with an error.
+> It is more timing than a race.
+I probably should explain my reasoning.
 
-Heh indeed ;) Can't understand how I missed that.
+any changes between getting the total value and the limit test are not
+problematic (From race perspective).
 
-> This requires zeroing the stats under the write_seqlock, which was
-> easy enough to add.
+1) If the actual total increases and the value returned under rates it, then
+a) if this.total exceeds the limit - no problem it is rolled back as
+it would if the actual total were used.
+b) if this.total <= limit OK - as other process will be dinged (it
+will see its own allocation)
 
-Or you can expand the scope of write_seqlock/write_sequnlock, so that
-__unhash_process in called from inside the critical section. This looks
-simpler at first glance.
+2)  If the actual total decreases and the value returned overrates
+rates it, then
+a) if this.value <= limit then allocation great (actual has even more room)
+b) if this.value > max it will be rolled back (as the other might be
+as well) and process can compete again.
 
-Hmm, wait, it seems there is yet another problem ;) Afaics, you also
-need to modify __exit_signal() so that ->sum_sched_runtime/etc are
-accounted unconditionally, even if the group leader exits.
+Is there a denial of service possible if 2.b repeats indefinitely.
+Yes, but how to set it up reliably? And it is no different than a
+single user exhausting the limit before any other users.
+Yes, it is potentially a live false limit exhaustion, with one process
+requesting an amount exceeding the limit but able to be allocated.
+ But this is no worse than the rollback load we already have at the limit.
 
-Probably this is not a big problem, and sys_times() or clock_gettime()
-do not care at all because they use current.
+It would be better to check before the zs_malloc if the concern is
+avoiding heavy processing in that function (as an optimization),  as
+well as here.after allocation
 
-But without this change thread_group_cputime(reaped_zombie) won't look
-at this task_struct at all, this can lead to non-monotonic result if
-it was previously called when this task was alive (non-reaped).
-
-Oleg.
-
+But I see no real race or danger doing this unlocked.
