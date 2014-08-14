@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690AbaHNJna (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 05:43:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54031 "EHLO mx2.suse.de"
+	id S1754559AbaHNJql (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 05:46:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5453 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751861AbaHNJn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 05:43:28 -0400
-Date: Thu, 14 Aug 2014 11:43:25 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Andrew Duggan <aduggan@synaptics.com>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: Re: [PATCH] HID: rmi: print an error if F11 is not found instead of
- stopping the device
-In-Reply-To: <1407357460-9569-1-git-send-email-aduggan@synaptics.com>
-Message-ID: <alpine.LNX.2.00.1408141143130.15220@pobox.suse.cz>
-References: <1407357460-9569-1-git-send-email-aduggan@synaptics.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753901AbaHNJqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 05:46:39 -0400
+Message-ID: <53EC8579.1030008@redhat.com>
+Date: Thu, 14 Aug 2014 11:46:33 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Claudio Bizzarri <claudio.bizzarri@gmail.com>, Matt <jackdachef@gmail.com>
+CC: kraxel@redhat.com, sarah.a.sharp@linux.intel.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: Kernel 3.16.0 USB crash
+References: <CAG-aW04-=7rvPjLGqAWZ2oWT4K4EZ5gc96ZWpBo101u=f2+6EQ@mail.gmail.com> <CAG-aW06pKUeCddJCAN7cDDcs-T2jmjV33zxdh-jyVSx1uhq2Ww@mail.gmail.com> <CAKszPgvjBE5y35guVRXu7kp3nVZa4KPgh=AezVL-UXq=idRc-Q@mail.gmail.com>
+In-Reply-To: <CAKszPgvjBE5y35guVRXu7kp3nVZa4KPgh=AezVL-UXq=idRc-Q@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Aug 2014, Andrew Duggan wrote:
+Hi,
 
-> Currently rmi_probe will return -EIO if the device doesn't report that it has F11.
-> This would indicate that something happened and the device is in the bootloader.
-> We can recover the device using a userspace firmware update tool, but it needs
-> access to the device through the hidraw device file. If the probe returns -EIO
-> the hidraw device won't be created. So instead of failing the probe, just print
-> an error message, but leave the device accessible from userspace.
+On 08/14/2014 10:39 AM, Claudio Bizzarri wrote:
+> Ciao,
 > 
-> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
-> ---
->  drivers/hid/hid-rmi.c | 13 +++++++++----
->  1 file changed, 9 insertions(+), 4 deletions(-)
+> thank you very much for replay, you are right: it's UAS module. Now I'm
+> using Ubuntu 14.04 with kernel 3.16.1 from
+> http://kernel.ubuntu.com/~kernel-ppa/mainline/, there is no /proc/config.gz,
+> but but there is a config file in /boot:
 > 
-> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-> index 0dc2514..8389e81 100644
-> --- a/drivers/hid/hid-rmi.c
-> +++ b/drivers/hid/hid-rmi.c
-> @@ -909,10 +909,15 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  		return ret;
->  	}
->  
-> -	if (!test_bit(RMI_STARTED, &data->flags)) {
-> -		hid_hw_stop(hdev);
-> -		return -EIO;
-> -	}
-> +	if (!test_bit(RMI_STARTED, &data->flags))
-> +		/*
-> +		 * The device maybe in the bootloader if rmi_input_configured
-> +		 * failed to find F11 in the PDT. Print an error, but don't
-> +		 * return an error from rmi_probe so that hidraw will be
-> +		 * accessible from userspace. That way a userspace tool
-> +		 * can be used to reload working firmware on the touchpad.
-> +		 */
-> +		hid_err(hdev, "Device failed to be properly configured\n");
+> b0@hp850ssd:~⟫ grep USB_UAS /boot/config-3.16.1-031601-generic
+> CONFIG_USB_UAS=m
+> 
+> When I attach my external USB disk I've 30 seconds before my laptop freeze,
+> here is my dmesg output, disk is not mounted:
 
-Queued for 3.17 still. Thanks,
+Hmm, this sounds like a similar problem we've been having with JMicron UAS
+bridges over USB-2.
 
--- 
-Jiri Kosina
-SUSE Labs
+Can you collect "lsusb -v" output for the drive in question when connected
+through an usb-3 port (the uas module does not need to be loaded).
+
+Also can you try the following patch, and see if that makes uas work ? :
+
+diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
+index 511b229..6cdc1b9 100644
+--- a/drivers/usb/storage/uas.c
++++ b/drivers/usb/storage/uas.c
+@@ -1033,6 +1033,7 @@ static int uas_configure_endpoints(struct uas_dev_info *devinfo)
+ 						    3, 256, GFP_NOIO);
+ 		if (devinfo->qdepth < 0)
+ 			return devinfo->qdepth;
++		devinfo->qdepth = 32;
+ 		devinfo->use_streams = 1;
+ 	}
+
+
+This is in essence the fix we've done for using these devices with uas over usb-2,
+I would have expected this to not be be necessary at superspeed since there the number
+of streams the device supports is part of the usb descriptors, but maybe the device
+claims to support more streams then it can actually handle.
+
+Note I'm on vacation next week, so don't expect another reply from me in this thread
+for at least a week.
+
+Regards,
+
+Hans
