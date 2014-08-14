@@ -1,325 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473AbaHNIEM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 04:04:12 -0400
-Received: from regular1.263xmail.com ([211.150.99.134]:45486 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078AbaHNIEF (ORCPT
+	id S1753689AbaHNIZe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 04:25:34 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:47753 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383AbaHNIZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 04:04:05 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <f846784bac9bf233bb4cdcbbb497e072>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Addy Ke <addy.ke@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
-        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
-        heiko@sntech.de, olof@lixom.net, dianders@chromium.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        zhenfu.fang@rock-chips.com, cf@rock-chips.com, lintao@rock-chips.com,
-        chenfen@rock-chips.com, zyf@rock-chips.com, xjq@rock-chips.com,
-        huangtao@rock-chips.com, zyw@rock-chips.com, yzq@rock-chips.com,
-        hj@rock-chips.com, kever.yang@rock-chips.com, zhangqing@rock-chips.com,
-        hl@rock-chips.com, Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH] mmc: dw_mmc: move rockchip related code to a separate file
-Date: Thu, 14 Aug 2014 16:01:33 +0800
-Message-Id: <1408003293-27375-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1406786498-3935-1-git-send-email-addy.ke@rock-chips.com>
-References: <1406786498-3935-1-git-send-email-addy.ke@rock-chips.com>
+	Thu, 14 Aug 2014 04:25:29 -0400
+Message-ID: <53EC7273.5060303@bjorling.me>
+Date: Thu, 14 Aug 2014 10:25:23 +0200
+From: =?UTF-8?B?TWF0aWFzIEJqw7hybGluZw==?= <m@bjorling.me>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Keith Busch <keith.busch@intel.com>
+CC: Matthew Wilcox <willy@linux.intel.com>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        Jens Axboe <axboe@fb.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-nvme <linux-nvme@lists.infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Rob Nelson <rlnelson@google.com>, Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH v11] NVMe: Convert to blk-mq
+References: <1406365643-27020-1-git-send-email-m@bjorling.me> <1406365643-27020-2-git-send-email-m@bjorling.me> <CAOu_J6mW-2e2Jgm+khodLPah_-RZrD599SmSH+Mszd0AjterrQ@mail.gmail.com> <alpine.LRH.2.03.1408131519590.14603@AMR>
+In-Reply-To: <alpine.LRH.2.03.1408131519590.14603@AMR>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support HS200 and UHS-1, we need add a big hunk of code,
-as shown in the following patches. So a separate file for
-rockchip SOCs is suitable.
+On 08/14/2014 12:27 AM, Keith Busch wrote:
+> On Sun, 10 Aug 2014, Matias Bjørling wrote:
+>> On Sat, Jul 26, 2014 at 11:07 AM, Matias Bjørling <m@bjorling.me> wrote:
+>>> This converts the NVMe driver to a blk-mq request-based driver.
+>>>
+>>
+>> Willy, do you need me to make any changes to the conversion? Can you
+>> pick it up for 3.17?
+>
+> Hi Matias,
+>
 
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
----
- drivers/mmc/host/Kconfig           |   9 +++
- drivers/mmc/host/Makefile          |   1 +
- drivers/mmc/host/dw_mmc-pltfm.c    |  57 ---------------
- drivers/mmc/host/dw_mmc-rockchip.c | 146 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 156 insertions(+), 57 deletions(-)
- create mode 100644 drivers/mmc/host/dw_mmc-rockchip.c
+Hi Keith, Thanks for taking the time to take another look.
 
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index a565254..ae61df6 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -621,6 +621,15 @@ config MMC_DW_PCI
- 
- 	  If unsure, say N.
- 
-+config MMC_DW_ROCKCHIP
-+	tristate "Rockchip specific extensions for Synopsys DW Memory Card Interface"
-+	depends on MMC_DW
-+	select MMC_DW_PLTFM
-+	help
-+	  This selects support for Rockchip SoC specific extensions to the
-+	  Synopsys DesignWare Memory Card Interface driver. Select this option
-+	  for platforms based on RK3066, RK3188 and RK3288 SoC's.
-+
- config MMC_SH_MMCIF
- 	tristate "SuperH Internal MMCIF support"
- 	depends on MMC_BLOCK
-diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index 7f81ddf..5fce465 100644
---- a/drivers/mmc/host/Makefile
-+++ b/drivers/mmc/host/Makefile
-@@ -45,6 +45,7 @@ obj-$(CONFIG_MMC_DW_PLTFM)	+= dw_mmc-pltfm.o
- obj-$(CONFIG_MMC_DW_EXYNOS)	+= dw_mmc-exynos.o
- obj-$(CONFIG_MMC_DW_K3)		+= dw_mmc-k3.o
- obj-$(CONFIG_MMC_DW_PCI)	+= dw_mmc-pci.o
-+obj-$(CONFIG_MMC_DW_ROCKCHIP)	+= dw_mmc-rockchip.o
- obj-$(CONFIG_MMC_SH_MMCIF)	+= sh_mmcif.o
- obj-$(CONFIG_MMC_JZ4740)	+= jz4740_mmc.o
- obj-$(CONFIG_MMC_VUB300)	+= vub300.o
-diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-index b547f7a..0c56c41 100644
---- a/drivers/mmc/host/dw_mmc-pltfm.c
-+++ b/drivers/mmc/host/dw_mmc-pltfm.c
-@@ -26,64 +26,11 @@
- #include "dw_mmc.h"
- #include "dw_mmc-pltfm.h"
- 
--#define RK3288_CLKGEN_DIV	2
--
- static void dw_mci_pltfm_prepare_command(struct dw_mci *host, u32 *cmdr)
- {
- 	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
- }
- 
--static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
--{
--	host->bus_hz /= RK3288_CLKGEN_DIV;
--
--	return 0;
--}
--
--static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
--{
--	int ret;
--	unsigned int cclkin;
--	u32 bus_hz;
--
--	/*
--	 * cclkin: source clock of mmc controller.
--	 * bus_hz: card interface clock generated by CLKGEN.
--	 * bus_hz = cclkin / RK3288_CLKGEN_DIV;
--	 * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
--	 *
--	 * Note: div can only be 0 or 1
--	 *       if DDR50 8bit mode(only emmc work in 8bit mode),
--	 *       div must be set 1
--	 */
--	if ((ios->bus_width == MMC_BUS_WIDTH_8) &&
--	    (ios->timing == MMC_TIMING_MMC_DDR52))
--		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
--	else
--		cclkin = ios->clock * RK3288_CLKGEN_DIV;
--
--	ret = clk_set_rate(host->ciu_clk, cclkin);
--	if (ret)
--		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
--
--	bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
--	if (bus_hz != host->bus_hz) {
--		host->bus_hz = bus_hz;
--		/* force dw_mci_setup_bus() */
--		host->current_speed = 0;
--	}
--}
--
--static const struct dw_mci_drv_data rk2928_drv_data = {
--	.prepare_command	= dw_mci_pltfm_prepare_command,
--};
--
--static const struct dw_mci_drv_data rk3288_drv_data = {
--	.prepare_command	= dw_mci_pltfm_prepare_command,
--	.set_ios	= dw_mci_rk3288_set_ios,
--	.setup_clock	= dw_mci_rk3288_setup_clock,
--};
--
- static const struct dw_mci_drv_data socfpga_drv_data = {
- 	.prepare_command	= dw_mci_pltfm_prepare_command,
- };
-@@ -144,10 +91,6 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
- 
- static const struct of_device_id dw_mci_pltfm_match[] = {
- 	{ .compatible = "snps,dw-mshc", },
--	{ .compatible = "rockchip,rk2928-dw-mshc",
--		.data = &rk2928_drv_data },
--	{ .compatible = "rockchip,rk3288-dw-mshc",
--		.data = &rk3288_drv_data },
- 	{ .compatible = "altr,socfpga-dw-mshc",
- 		.data = &socfpga_drv_data },
- 	{},
-diff --git a/drivers/mmc/host/dw_mmc-rockchip.c b/drivers/mmc/host/dw_mmc-rockchip.c
-new file mode 100644
-index 0000000..3d86ef3
---- /dev/null
-+++ b/drivers/mmc/host/dw_mmc-rockchip.c
-@@ -0,0 +1,146 @@
-+/*
-+ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-+ * Author: addy ke <addy.ke@rock-chips.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/clk.h>
-+#include <linux/mmc/host.h>
-+#include <linux/mmc/dw_mmc.h>
-+#include <linux/of_address.h>
-+
-+#include "dw_mmc.h"
-+#include "dw_mmc-pltfm.h"
-+
-+#define RK3288_CLKGEN_DIV       2
-+
-+static void dw_mci_rockchip_prepare_command(struct dw_mci *host, u32 *cmdr)
-+{
-+	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
-+}
-+
-+static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
-+{
-+	host->bus_hz /= RK3288_CLKGEN_DIV;
-+
-+	return 0;
-+}
-+
-+static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
-+{
-+	int ret;
-+	unsigned int cclkin;
-+	u32 bus_hz;
-+
-+	/*
-+	 * cclkin: source clock of mmc controller
-+	 * bus_hz: card interface clock generated by CLKGEN
-+	 * bus_hz = cclkin / RK3288_CLKGEN_DIV
-+	 * os->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
-+	 *
-+	 * Note: div can only be 0 or 1
-+	 *       if DDR50 8bit mode(only emmc work in 8bit mode),
-+	 *       div must be set 1
-+	 */
-+	if (ios->bus_width == MMC_BUS_WIDTH_8 &&
-+	    ios->timing == MMC_TIMING_MMC_DDR52)
-+		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
-+	else
-+		cclkin = ios->clock * RK3288_CLKGEN_DIV;
-+
-+	ret = clk_set_rate(host->ciu_clk, cclkin);
-+	if (ret)
-+		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
-+
-+	bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
-+	if (bus_hz != host->bus_hz) {
-+		host->bus_hz = bus_hz;
-+		/* force dw_mci_setup_bus() */
-+		host->current_speed = 0;
-+	}
-+}
-+
-+static const struct dw_mci_drv_data rk2928_drv_data = {
-+	.prepare_command        = dw_mci_rockchip_prepare_command,
-+};
-+
-+static const struct dw_mci_drv_data rk3288_drv_data = {
-+	.prepare_command        = dw_mci_rockchip_prepare_command,
-+	.set_ios		= dw_mci_rk3288_set_ios,
-+	.setup_clock    = dw_mci_rk3288_setup_clock,
-+};
-+
-+static const struct of_device_id dw_mci_rockchip_match[] = {
-+	{ .compatible = "rockchip,rk2928-dw-mshc",
-+		.data = &rk2928_drv_data },
-+	{ .compatible = "rockchip,rk3288-dw-mshc",
-+		.data = &rk3288_drv_data },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, dw_mci_rockchip_match);
-+
-+static int dw_mci_rockchip_probe(struct platform_device *pdev)
-+{
-+	const struct dw_mci_drv_data *drv_data;
-+	const struct of_device_id *match;
-+
-+	match = of_match_node(dw_mci_rockchip_match, pdev->dev.of_node);
-+	drv_data = match->data;
-+
-+	return dw_mci_pltfm_register(pdev, drv_data);
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int dw_mci_rockchip_suspend(struct device *dev)
-+{
-+	struct dw_mci *host = dev_get_drvdata(dev);
-+	int ret;
-+
-+	ret = dw_mci_suspend(host);
-+	if (!ret)
-+		clk_disable_unprepare(host->ciu_clk);
-+
-+	return ret;
-+}
-+
-+static int dw_mci_rockchip_resume(struct device *dev)
-+{
-+	struct dw_mci *host = dev_get_drvdata(dev);
-+	int ret;
-+
-+	ret = clk_prepare_enable(host->ciu_clk);
-+	if (ret) {
-+		dev_err(host->dev, "failed to enable ciu clock\n");
-+		return ret;
-+	}
-+
-+	return dw_mci_resume(host);
-+}
-+#endif /* CONFIG_PM_SLEEP */
-+
-+static SIMPLE_DEV_PM_OPS(dw_mci_rockchip_pmops,
-+			 dw_mci_rockchip_suspend,
-+			 dw_mci_rockchip_resume);
-+
-+static struct platform_driver dw_mci_rockchip_pltfm_driver = {
-+	.probe		= dw_mci_rockchip_probe,
-+	.remove		= dw_mci_pltfm_remove,
-+	.driver		= {
-+		.name		= "dwmmc_rockchip",
-+		.of_match_table	= dw_mci_rockchip_match,
-+		.pm		= &dw_mci_rockchip_pmops,
-+	},
-+};
-+
-+module_platform_driver(dw_mci_rockchip_pltfm_driver);
-+
-+MODULE_AUTHOR("Addy Ke <addy.ke@rock-chips.com>");
-+MODULE_DESCRIPTION("Rockchip Specific DW-MSHC Driver Extension");
-+MODULE_ALIAS("platform:dwmmc-rockchip");
-+MODULE_LICENSE("GPL v2");
--- 
-1.8.3.2
+> I'm starting to get a little more spare time to look at this again. I
+> think there are still some bugs here, or perhaps something better we
+> can do. I'll just start with one snippet of the code:
+>
+> @@ -765,33 +619,49 @@ static int nvme_submit_bio_queue(struct nvme_queue
+> *nvmeq, struct nvme_ns *ns,
+>   submit_iod:
+>      spin_lock_irq(&nvmeq->q_lock);
+>      if (nvmeq->q_suspended) {
+>          spin_unlock_irq(&nvmeq->q_lock);
+>          goto finish_cmd;
+>      }
+>
+>   <snip>
+>
+>   finish_cmd:
+>      nvme_finish_cmd(nvmeq, req->tag, NULL);
+>      nvme_free_iod(nvmeq->dev, iod);
+>      return result;
+> }
+>
+>
+> If the nvme queue is marked "suspended", this code just goto's the finish
+> without setting "result", so I don't think that's right.
 
+The result is set to BLK_MQ_RQ_QUEUE_ERROR, or am I mistaken?
 
+>
+> But do we even need the "q_suspended" flag anymore? It was there because
+> we couldn't prevent incoming requests as a bio based driver and we needed
+> some way to mark that the h/w's IO queue was temporarily inactive, but
+> blk-mq has ways to start/stop a queue at a higher level, right? If so,
+> I think that's probably a better way than using this driver specific way.
+
+Not really, its managed by the block layer. Its on purpose I haven't 
+removed it. The patch is already too big, and I want to keep the patch 
+free from extra noise that can be removed by later patches.
+
+Should I remove it anyway?
+
+>
+> I haven't event tried debugging this next one: doing an insmod+rmmod
+> caused this warning followed by a panic:
+>
+
+I'll look into it. Thanks
+
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207525] ------------[ cut here
+> ]------------
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207538] WARNING: CPU: 8 PID: 5768
+> at mm/slab_common.c:491 kmalloc_slab+0x33/0x8b()
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207541] Modules linked in: nvme(-)
+> parport_pc ppdev lp parport dlm sctp libcrc32c configfs nfsd auth_rpcgss
+> oid_registry nfs_acl nfs lockd fscache sunrpc md4 hmac cifs bridge stp
+> llc jfs joydev hid_generic usbhid hid loop md_mod x86_pkg_temp_thermal
+> coretemp kvm_intel kvm iTCO_wdt iTCO_vendor_support microcode pcspkr
+> ehci_pci ehci_hcd usbcore acpi_cpufreq lpc_ich usb_common ioatdma
+> mfd_core i2c_i801 evdev wmi tpm_tis ipmi_si tpm ipmi_msghandler
+> processor thermal_sys button ext4 crc16 jbd2 mbcache sg sr_mod cdrom
+> sd_mod crct10dif_generic crc_t10dif crct10dif_common nbd dm_mod
+> crc32c_intel ghash_clmulni_intel aesni_intel aes_x86_64 glue_helper lrw
+> gf128mul ablk_helper cryptd isci libsas igb ahci libahci
+> scsi_transport_sas ptp pps_core libata i2c_algo_bit i2c_core scsi_mod dca
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207653] CPU: 8 PID: 5768 Comm:
+> nvme1 Not tainted 3.16.0-rc6+ #24
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207656] Hardware name: Intel
+> Corporation S2600GZ/S2600GZ, BIOS SE5C600.86B.02.02.0002.122320131210
+> 12/23/2013
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207659]  0000000000000000
+> 0000000000000009 ffffffff8139f9ba 0000000000000000
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207664]  ffffffff8103db86
+> ffffe8ffff601d80 ffffffff810f0d59 0000000000000246
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207669]  0000000000000000
+> ffff880827bf28c0 0000000000008020 ffff88082b8d9d00
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207674] Call Trace:
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207685]  [<ffffffff8139f9ba>] ?
+> dump_stack+0x41/0x51
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207694]  [<ffffffff8103db86>] ?
+> warn_slowpath_common+0x7d/0x95
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207699]  [<ffffffff810f0d59>] ?
+> kmalloc_slab+0x33/0x8b
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207704]  [<ffffffff810f0d59>] ?
+> kmalloc_slab+0x33/0x8b
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207710]  [<ffffffff81115329>] ?
+> __kmalloc+0x28/0xf1
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207719]  [<ffffffff811d0daf>] ?
+> blk_mq_tag_busy_iter+0x30/0x7c
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207728]  [<ffffffffa052c426>] ?
+> nvme_init_hctx+0x49/0x49 [nvme]
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207733]  [<ffffffff811d0daf>] ?
+> blk_mq_tag_busy_iter+0x30/0x7c
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207738]  [<ffffffffa052c98b>] ?
+> nvme_clear_queue+0x72/0x7d [nvme]
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207744]  [<ffffffffa052c9a8>] ?
+> nvme_del_queue_end+0x12/0x26 [nvme]
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207750]  [<ffffffff810576e3>] ?
+> kthread_worker_fn+0xb1/0x111
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207754]  [<ffffffff81057632>] ?
+> kthread_create_on_node+0x171/0x171
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207758]  [<ffffffff81057632>] ?
+> kthread_create_on_node+0x171/0x171
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207762]  [<ffffffff810574b9>] ?
+> kthread+0x9e/0xa6
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207766]  [<ffffffff8105741b>] ?
+> __kthread_parkme+0x5c/0x5c
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207773]  [<ffffffff813a3a2c>] ?
+> ret_from_fork+0x7c/0xb0
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207777]  [<ffffffff8105741b>] ?
+> __kthread_parkme+0x5c/0x5c
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.207780] ---[ end trace
+> 8dc4a4c97c467d4c ]---
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.223627] PGD 0 Aug 13 15:41:41
+> kbgrz1 kernel: [   89.226038] Oops: 0000 [#1] SMP Aug 13 15:41:41 kbgrz1
+> kernel: [   89.229917] Modules linked in: nvme(-) parport_pc ppdev lp
+> parport dlm sctp libcrc32c configfs nfsd auth_rpcgss oid_registry
+> nfs_acl nfs lockd fscache sunrpc md4 hmac cifs bridge stp llc jfs joydev
+> hid_generic usbhid hid loop md_mod x86_pkg_temp_thermal coretemp
+> kvm_intel kvm iTCO_wdt iTCO_vendor_support microcode pcspkr ehci_pci
+> ehci_hcd usbcore acpi_cpufreq lpc_ich usb_common ioatdma mfd_core
+> i2c_i801 evdev wmi tpm_tis ipmi_si tpm ipmi_msghandler processor
+> thermal_sys button ext4 crc16 jbd2 mbcache sg sr_mod cdrom sd_mod
+> crct10dif_generic crc_t10dif crct10dif_common nbd dm_mod crc32c_intel
+> ghash_clmulni_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul
+> ablk_helper cryptd isci libsas igb ahci libahci scsi_transport_sas ptp
+> pps_core libata i2c_algo_bit i2c_core scsi_mod dca
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.315211] CPU: 8 PID: 5768 Comm:
+> nvme1 Tainted: G        W     3.16.0-rc6+ #24
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.323563] Hardware name: Intel
+> Corporation S2600GZ/S2600GZ, BIOS SE5C600.86B.02.02.0002.122320131210
+> 12/23/2013
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.335121] task: ffff88042ad92d70 ti:
+> ffff880425ff0000 task.ti: ffff880425ff0000
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.343574] RIP:
+> 0010:[<ffffffff811d0d38>]  [<ffffffff811d0d38>] bt_for_each_free+0x31/0x78
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.353144] RSP:
+> 0018:ffff880425ff3de8  EFLAGS: 00010086
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.359189] RAX: 0000000000000010 RBX:
+> ffffffffffffffff RCX: 0000000000000007
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.367276] RDX: 0000000000000000 RSI:
+> 0000000000000010 RDI: ffff880827bf2850
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.375362] RBP: 0000000000000000 R08:
+> 000000000000000f R09: 00000000fffffffe
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.383448] R10: 0000000000000000 R11:
+> 0000000000000046 R12: ffff880827bf2850
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.391534] R13: 00000000ffffffff R14:
+> 0000000000000010 R15: 0000000000000001
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.399622] FS:
+> 0000000000000000(0000) GS:ffff88083f200000(0000) knlGS:0000000000000000
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.408805] CS:  0010 DS: 0000 ES:
+> 0000 CR0: 0000000080050033
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.415340] CR2: 0000000000000007 CR3:
+> 0000000001610000 CR4: 00000000000407e0
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.423426] Stack:
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.425775]  0000000000000007
+> 0000000000000010 ffff880827bf2840 ffffffffa052c426
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.434515]  ffff88082b8d9f00
+> ffff88042ad92d70 0000000000000000 ffffffff811d0dc6
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.443254]  00000000fffffffe
+> ffff88082b8d9f00 ffff88082b8d9f28 ffff88042ad92d70
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.452012] Call Trace:
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.454852]  [<ffffffffa052c426>] ?
+> nvme_init_hctx+0x49/0x49 [nvme]
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.461968]  [<ffffffff811d0dc6>] ?
+> blk_mq_tag_busy_iter+0x47/0x7c
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.468987]  [<ffffffffa052c98b>] ?
+> nvme_clear_queue+0x72/0x7d [nvme]
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.476298]  [<ffffffffa052c9a8>] ?
+> nvme_del_queue_end+0x12/0x26 [nvme]
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.483801]  [<ffffffff810576e3>] ?
+> kthread_worker_fn+0xb1/0x111
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.490625]  [<ffffffff81057632>] ?
+> kthread_create_on_node+0x171/0x171
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.498038]  [<ffffffff81057632>] ?
+> kthread_create_on_node+0x171/0x171
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.505446]  [<ffffffff810574b9>] ?
+> kthread+0x9e/0xa6
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.511200]  [<ffffffff8105741b>] ?
+> __kthread_parkme+0x5c/0x5c
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.517833]  [<ffffffff813a3a2c>] ?
+> ret_from_fork+0x7c/0xb0
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.524170]  [<ffffffff8105741b>] ?
+> __kthread_parkme+0x5c/0x5c
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.530799] Code: 57 41 bf 01 00 00 00
+> 41 56 49 89 f6 41 55 41 89 d5 41 54 49 89 fc 55 31 ed 53 51 eb 42 48 63
+> dd 31 d2 48 c1 e3 06 49 03 5c 24 10 <48> 8b 73 08 48 63 d2 48 89 df e8
+> e2 28 02 00 48 63 c8 48 3b 4b Aug 13 15:41:41 kbgrz1 kernel: [
+> 89.564696]  RSP <ffff880425ff3de8>
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.568699] CR2: 0000000000000007
+> Aug 13 15:41:41 kbgrz1 kernel: [   89.572518] ---[ end trace
+> 8dc4a4c97c467d4d ]---
