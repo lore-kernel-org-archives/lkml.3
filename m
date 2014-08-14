@@ -1,91 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132AbaHNPqB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 11:46:01 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:57026 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754563AbaHNPqA (ORCPT
+	id S1755289AbaHNPr1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 11:47:27 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:47671 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754878AbaHNPrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 11:46:00 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: move of AIC drivers for 3.17: fixes #1
-Date: Thu, 14 Aug 2014 17:45:56 +0200
-Message-ID: <1408031156-13573-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	Thu, 14 Aug 2014 11:47:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1407995360-26009-1-git-send-email-addy.ke@rock-chips.com>
+References: <1407995360-26009-1-git-send-email-addy.ke@rock-chips.com>
+Date: Thu, 14 Aug 2014 08:47:23 -0700
+X-Google-Sender-Auth: Z2th-F5vg4vhnH0zne9rv3qUOW0
+Message-ID: <CAD=FV=XxF0zTVtV75FRDbiVq1MCrWpXak-vkP0iofPXXtE_OHg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: dts: Add sdio0 and sdio1 to the rk3288
+From: Doug Anderson <dianders@chromium.org>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, han jiang <hj@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
+        Lin Huang <hl@rock-chips.com>, wei.luo@rock-chips.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+Addy,
 
-Boris moved both of our AIC drivers to their new home: the drivers/irqchip
-directory taking advantage of the genirc framework. For DT-enabled SoCs, we can
-use these drivers (aic and aic5) right now: Jason merged them and they are
-available in early 3.17 merge window.
-So, I build this pull-request for enabling the use of these drivers now as:
-- we are very early in 3.17 development
-- it allowed us to avoid having to depend on Jason's branch before the opening
-  of the merge window
-- it removes some code from the mach-at91 directory: including the whole
-  aic5 driver
-- we'd have quite a bit of time to solve issues if we found a bug
-- the code is basically moved so it should be error free.
+On Wed, Aug 13, 2014 at 10:49 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
+> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+> ---
+>  arch/arm/boot/dts/rk3288.dtsi | 76 +++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 76 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+> index 7a9173d..a440869 100644
+> --- a/arch/arm/boot/dts/rk3288.dtsi
+> +++ b/arch/arm/boot/dts/rk3288.dtsi
+> @@ -120,6 +120,32 @@
+>                 //fifo-depth = <0x100>;
+>         };
+>
+> +       sdio0: dwmmc@ff0d0000 {
+> +               compatible = "rockchip,rk3288-dw-mshc";
+> +               reg = <0xff0d0000 0x4000>;
+> +               interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +
+> +               clocks = <&cru HCLK_SDIO0>, <&cru SCLK_SDIO0>;
+> +               clock-names = "biu", "ciu";
+> +
+> +               fifo-depth = <0x100>;
+> +       };
 
-I base my pull-request on Linus' tree at the point you built your previous
-"3.17 fixes-for-linus" tag.
-Tell me if you think it can be integrated now.
+Please repost and match what's in Heiko's "wip/v3.18-next/dts" tree
+for the other dwmmc controllers.  Specifically:
 
-Thanks, best regards,
-
-The following changes since commit c309bfa9b481e7dbd3e1ab819271bf3009f44859:
-
-  Merge tag 'for-linus-20140808' of git://git.infradead.org/linux-mtd (2014-08-08 18:13:21 -0700)
-
-are available in the git repository at:
+* No more #address-cells and #size-cells.
+* By default status = "disabled".
+* Sort properties alphabetically.
 
 
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
+> +
+> +       sdio1: dwmmc@ff0e0000 {
+> +               compatible = "rockchip,rk3288-dw-mshc";
+> +               reg = <0xff0e0000 0x4000>;
+> +               interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +
+> +               clocks = <&cru HCLK_SDIO1>, <&cru SCLK_SDIO1>;
+> +               clock-names = "biu", "ciu";
+> +
+> +               fifo-depth = <0x100>;
+> +       };
+> +
+>         emmc: dwmmc@ff0f0000 {
+>                 compatible = "rockchip,rk3288-dw-mshc";
+>                 reg = <0xff0f0000 0x4000>;
+> @@ -589,6 +615,56 @@
+>                         };
+>                 };
+>
+> +               sdio0 {
+> +                       sdio0_clk: sdio0-clk {
+> +                               rockchip,pins = <4 25 RK_FUNC_1 &pcfg_pull_none>;
+> +                       };
+> +
+> +                       sdio0_cmd: sdio0-cmd {
+> +                               rockchip,pins = <4 24 RK_FUNC_1 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio0_pwr: sdio0-pwr {
+> +                               rockchip,pins = <4 28 RK_FUNC_1 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio0_bus1: sdio0-bus1 {
+> +                               rockchip,pins = <4 20 RK_FUNC_1 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio0_bus4: sdio0-bus4 {
+> +                               rockchip,pins = <4 20 RK_FUNC_1 &pcfg_pull_up>,
+> +                                               <4 21 RK_FUNC_1 &pcfg_pull_up>,
+> +                                               <4 22 RK_FUNC_1 &pcfg_pull_up>,
+> +                                               <4 23 RK_FUNC_1 &pcfg_pull_up>;
+> +                       };
 
-for you to fetch changes up to 98561f0d9e82682c4be74b6690cb605ccabec364:
+Can you add the card detect line here?  How about the write protect
+line?  What about the "bkpwr" and "int" lines?
 
-  ARM: at91: remove old irq material (2014-08-14 17:00:04 +0200)
 
-----------------------------------------------------------------
-AT91 irqchip enhancement for 3.17 (aka fixes #1)
-Following the merge of AIC/AIC5 code as standard irqchip drivers during early
-3.17 merge window, we can use these drivers for AT91 DT-enabled chips and
-boards.
+> +               };
+> +
+> +               sdio1 {
+> +                       sdio1_clk: sdio1-clk {
+> +                               rockchip,pins = <4 7 RK_FUNC_4 &pcfg_pull_none>;
 
-----------------------------------------------------------------
-Boris BREZILLON (4):
-      ARM: at91: introduce OLD_IRQ_AT91 Kconfig option
-      ARM: at91: enclose at91_aic_xx calls in IS_ENABLED(CONFIG_OLD_IRQ_AT91) blocks
-      ARM: at91: make use of the new AIC driver for dt enabled boards
-      ARM: at91: remove old irq material
+This requires that <https://patchwork.kernel.org/patch/4701721/> land
+in order to compile.  Since that hasn't landed you should explicitly
+reference it.
 
- arch/arm/mach-at91/Kconfig           |  17 +--
- arch/arm/mach-at91/Kconfig.non_dt    |   6 +
- arch/arm/mach-at91/Makefile          |   3 +-
- arch/arm/mach-at91/board-dt-rm9200.c |  13 --
- arch/arm/mach-at91/board-dt-sam9.c   |  13 --
- arch/arm/mach-at91/board-dt-sama5.c  |  13 --
- arch/arm/mach-at91/irq.c             | 270 +----------------------------------
- arch/arm/mach-at91/pm.c              |  32 +++--
- arch/arm/mach-at91/setup.c           |   3 +-
- 9 files changed, 45 insertions(+), 325 deletions(-)
 
--- 
-Nicolas Ferre
+
+> +                       };
+> +
+> +                       sdio1_cmd: sdio1-cmd {
+> +                               rockchip,pins = <4 6 RK_FUNC_4 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio1_pwr: sdio1-pwr {
+> +                               rockchip,pins = <4 9 RK_FUNC_4 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio1_bus1: sdio1-bus1 {
+> +                               rockchip,pins = <4 24 RK_FUNC_4 &pcfg_pull_up>;
+
+This is probably wrong and should be <3 24 ...>, not <4 24 ...>.
+
+> +                       };
+> +
+> +                       sdio1_bus4: sdio1-bus4 {
+> +                               rockchip,pins = <3 24 RK_FUNC_4 &pcfg_pull_up>,
+> +                                               <3 25 RK_FUNC_4 &pcfg_pull_up>,
+> +                                               <3 26 RK_FUNC_4 &pcfg_pull_up>,
+> +                                               <3 27 RK_FUNC_4 &pcfg_pull_up>;
+> +                       };
+> +               };
+> +
+>                 emmc {
+>                         emmc_clk: emmc-clk {
+>                                 rockchip,pins = <3 18 RK_FUNC_2 &pcfg_pull_none>;
