@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546AbaHNRvR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 13:51:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19018 "EHLO mx1.redhat.com"
+	id S1753629AbaHNRyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 13:54:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52726 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752316AbaHNRvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 13:51:16 -0400
-Date: Thu, 14 Aug 2014 19:48:49 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
-	seqlock
-Message-ID: <20140814174849.GA5091@redhat.com>
-References: <20140812142539.01851e52@annuminas.surriel.com> <20140812191218.GA15210@redhat.com> <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814132239.GA24465@redhat.com>
+	id S1751110AbaHNRyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 13:54:24 -0400
+Date: Thu, 14 Aug 2014 19:53:46 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, oleg@redhat.com, kamaleshb@in.ibm.com,
+        hechjie@cn.ibm.com, akpm@linux-foundation.org, dvlasenk@redhat.com,
+        prarit@redhat.com, lwoodman@redhat.com, hannsj_uhl@de.ibm.com
+Subject: Re: [PATCH 1/1] x86: add phys addr validity check for /dev/mem mmap
+Message-ID: <20140814175346.GB7575@localhost.localdomain>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1408025927-16826-1-git-send-email-fhrbata@redhat.com>
+ <1408025927-16826-2-git-send-email-fhrbata@redhat.com>
+ <53ECE573.1030405@intel.com>
+ <53ECEFF5.1040800@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140814132239.GA24465@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <53ECEFF5.1040800@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14, Oleg Nesterov wrote:
->
-> OK, lets forget about alternative approach for now. We can reconsider
-> it later. At least I have to admit that seqlock is more straighforward.
+On Thu, Aug 14, 2014 at 10:20:53AM -0700, H. Peter Anvin wrote:
+> On 08/14/2014 09:36 AM, Dave Hansen wrote:
+> > Thanks for dredging this back up!
+> > 
+> > On 08/14/2014 07:18 AM, Frantisek Hrbata wrote:
+> >> +int valid_phys_addr_range(phys_addr_t addr, size_t count)
+> >> +{
+> >> +	return addr + count <= __pa(high_memory);
+> >> +}
+> > 
+> > Is this correct on 32-bit?  It would limit /dev/mem to memory below 896MB.
+> > 
+> 
+> Last I checked, /dev/mem was already broken for highmem... which is
+> actually a problem.  I would prefer to see it fixed.
+> 
+> 	-hpa
+> 
 
-Yes.
+Hi Peter,
 
-But just for record, the "lockless" version doesn't look that bad to me,
+thank you for jumping in again. I'm not going to pretent I fully understand this
+code, as proven by Dave :), but wouldn't it help just to move the high_memory
+check directly to the xlate_dev_mem_ptr. Meaning no high_memory check in
+valid_phys_addr_range for x86. I sent more info in my reply to Dave's mail.
 
-	void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
-	{
-		struct signal_struct *sig = tsk->signal;
-		bool lockless, is_dead;
-		struct task_struct *t;
-		unsigned long flags;
-		u64 exec;
+Again many thanks.
 
-		lockless = true;
-		is_dead = !lock_task_sighand(p, &flags);
-	 retry:
-		times->utime = sig->utime;
-		times->stime = sig->stime;
-		times->sum_exec_runtime = exec = sig->sum_sched_runtime;
-		if (is_dead)
-			return;
 
-		if (lockless)
-			unlock_task_sighand(p, &flags);
-
-		rcu_read_lock();
-		for_each_thread(tsk, t) {
-			cputime_t utime, stime;
-			task_cputime(t, &utime, &stime);
-			times->utime += utime;
-			times->stime += stime;
-			times->sum_exec_runtime += task_sched_runtime(t);
-		}
-		rcu_read_unlock();
-
-		if (lockless) {
-			lockless = false;
-			is_dead = !lock_task_sighand(p, &flags);
-			if (is_dead || exec != sig->sum_sched_runtime)
-				goto retry;
-		}
-		unlock_task_sighand(p, &flags);
-	}
-
-The obvious problem is that we should shift lock_task_sighand() from the
-callers to thread_group_cputime() first, or add thread_group_cputime_lockless()
-and change the current users one by one.
-
-And of course, stats_lock is more generic.
-
-Oleg.
-
+-- 
+Frantisek Hrbata
