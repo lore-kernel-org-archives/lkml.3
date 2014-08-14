@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625AbaHNSxu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 14:53:50 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:55443 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754417AbaHNSxt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 14:53:49 -0400
-X-AuditID: cbfec373-b7f9d6d00000479f-8f-53ed05bbfcf1
-Date: Thu, 14 Aug 2014 15:53:42 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux EDAC Mailing List <linux-edac@vger.kernel.org>
-Subject: [GIT PULL for 3.17-rc1] EDAC updates for next
-Message-id: <20140814155342.40ac3582.m.chehab@samsung.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgluLIzCtJLcpLzFFi42I5/e9wsO5u1rfBBut/GljMWb+GzeLCqQYm
-	i8u75rBZPOp7y+7A4nFixm8Wj8+b5AKYorhsUlJzMstSi/TtErgyLv1/wVRwiKvi18E3zA2M
-	izm6GDk5JARMJFYfWcIIYYtJXLi3nq2LkYtDSGAJo8SOI/OZIZxmJomJh9eygFSxCKhKTDh9
-	BqyDTcBI4lVjCyuILQJkf35xBcxmFljIKHH8bTqILSxgJvGq9TsziM0rYCXR8342E8Q2Z4mf
-	MycxQsQFJX5MvscC0aslsXlbE9QceYnNa94yT2Dkm4WkbBaSsllIyhYwMq9iFC0tTi4oTkrP
-	NdIrTswtLs1L10vOz93ECAm94h2MLzZYHWIU4GBU4uGdcPRNsBBrYllxZe4hRgkOZiUR3oa/
-	QCHelMTKqtSi/Pii0pzU4kOMTBycUg2M3lJvF761jslstp+8W+rSqznsNp9WfRLTsg5MfRVY
-	bDgh8f/jIxemLnouFPnJMeF4pfcmbgdDDaXCf/cidV4/8zp9TONHCPOCHU2tZW8WSR0//6Lm
-	x+mEH4d9m6dnHPywpTapdFXTok1JAitehv6bGBqruUM3qUIzb+M2F+7YlDRGY1Wzyne5SizF
-	GYmGWsxFxYkAGq40exsCAAA=
+	id S1754681AbaHNSyu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 14:54:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18109 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753829AbaHNSyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 14:54:49 -0400
+Date: Thu, 14 Aug 2014 15:54:21 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vlastimil Babka <vbabka@suse.cz>, David Rientjes <rientjes@google.com>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: Re: mm: compaction: buffer overflow in isolate_migratepages_range
+Message-ID: <20140814185420.GA26367@optiplex.redhat.com>
+References: <53E6CEAA.9020105@oracle.com>
+ <CAPAsAGxcC0+V1ZzR3LL=ASx=KXifPbw_cyvHCBBJT4mZ1grg+Q@mail.gmail.com>
+ <20140813153501.GE21041@optiplex.redhat.com>
+ <20140814151329.GA22187@optiplex.redhat.com>
+ <CAPAsAGwk7kF6XtJNz6Y41zn0SHHzEt1Nwi_wC0gWgt0fpdp-ZQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPAsAGwk7kF6XtJNz6Y41zn0SHHzEt1Nwi_wC0gWgt0fpdp-ZQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
+On Thu, Aug 14, 2014 at 10:07:40PM +0400, Andrey Ryabinin wrote:
+> 2014-08-14 19:13 GMT+04:00 Rafael Aquini <aquini@redhat.com>:
+> > It still a harmless condition as before, but considering what goes above
+> > I'm now convinced & confident the patch proposed by Andrey is the real fix
+> > for such occurrences.
+> >
+> 
+> I don't think that it's harmless, because we could cross page boundary here and
+> try to read from a memory hole.
+>
+I think isolate_migratepages_range() skips over holes, doesn't it? 
 
-  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
 
-are available in the git repository at:
+> And this code has more potential problems like use after free. Since
+> we don't hold locks properly here,
+> page->mapping could point to freed struct address_space.
+>
+Thinking on how things go for isolate_migratepages_range() and balloon
+pages, I struggle to find a way where that could happen. OTOH, I failed
+to see things more blatant before, so I won't argue here. Defensive
+programming is always better than negating possibilities ;)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git linux_next
+ 
+> We discussed this with Konstantin and he suggested a better solution for this.
+> If I understood him correctly the main idea was to store bit
+> identifying ballon page
+> in struct page (special value in _mapcount), so we won't need to check
+> mapping->flags.
+>
+I liked it. Something in the line of PageBuddy()/PAGE_BUDDY_MAPCOUNT_VALUE scheme.
+This is clearly cleaner than what we have in place today, and I'm
+ashamed I didn't think of it before. Thanks for pointing that out.
 
-for you to fetch changes up to 50d1bb93672fa2f42cec6e06ce799fbe864f57e9:
-
-  sb_edac: add support for Haswell based systems (2014-06-26 15:47:01 -0300)
-
-----------------------------------------------------------------
-Aristeu Rozanski (10):
-      sb_edac: make memory type detection per memory controller
-      sb_edac: make node id retrieval per model
-      sb_edac: make RIR limit retrieval per model
-      sb_edac: search devices using product id
-      sb_edac: update Kconfig description
-      sb_edac: fix socket detection on Ivy Bridge controllers
-      sb_edac: make minimal use of channel_mask
-      sb_edac: remove bogus assumption on mc ordering
-      edac: add DDR4 and RDDR4
-      sb_edac: add support for Haswell based systems
-
-Mauro Carvalho Chehab (1):
-      sb_edac: Fix mix tab/spaces alignments
-
- drivers/edac/Kconfig         |   4 +-
- drivers/edac/edac_mc_sysfs.c |   4 +-
- drivers/edac/sb_edac.c       | 810 +++++++++++++++++++++++++++++--------------
- include/linux/edac.h         |   5 +
- 4 files changed, 551 insertions(+), 272 deletions(-)
-
+Cheers,
+-- Rafael
