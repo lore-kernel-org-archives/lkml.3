@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaHNLQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 07:16:06 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:35651 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754563AbaHNLQE (ORCPT
+	id S1754795AbaHNLQK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 07:16:10 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:57775 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754726AbaHNLQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 07:16:04 -0400
+	Thu, 14 Aug 2014 07:16:06 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
         Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Nicolas Pitre <nico@linaro.org>
-Subject: [RFC PATCH 1/3] arm: smp: Introduce a special IPI signalled using FIQ
-Date: Thu, 14 Aug 2014 12:15:49 +0100
-Message-Id: <1408014951-24820-2-git-send-email-daniel.thompson@linaro.org>
+Subject: [RFC PATCH 2/3] arm: kgdb: Add support for IPI FIQ roundup
+Date: Thu, 14 Aug 2014 12:15:50 +0100
+Message-Id: <1408014951-24820-3-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408014951-24820-1-git-send-email-daniel.thompson@linaro.org>
 References: <53EC9404.5010908@linaro.org>
@@ -33,140 +33,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cross CPU signalling based on FIQ is especially useful for kgdb since
-it makes stopping all the CPUs during breakpointing more robust (some
-of the other architectures already roundup the CPUs using NMIs).
-
-The approach taken provides infrastructure that can be called (or not) by
-the driver's FIQ handler depending upon it requirements. In other words
-nothing is added here that prevents the driver from accessing "bare metal"
-performance.
+Rounding up the other CPUs using FIQ improves debugger robustness.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 ---
- arch/arm/include/asm/hardirq.h |  2 +-
- arch/arm/include/asm/smp.h     | 11 +++++++++++
- arch/arm/kernel/smp.c          | 44 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 56 insertions(+), 1 deletion(-)
+ arch/arm/include/asm/kgdb.h |  1 +
+ arch/arm/kernel/kgdb.c      | 20 ++++++++++++++++----
+ arch/arm/kernel/kgdb_fiq.c  |  7 ++++++-
+ 3 files changed, 23 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/include/asm/hardirq.h b/arch/arm/include/asm/hardirq.h
-index fe3ea77..5df33e3 100644
---- a/arch/arm/include/asm/hardirq.h
-+++ b/arch/arm/include/asm/hardirq.h
-@@ -5,7 +5,7 @@
- #include <linux/threads.h>
- #include <asm/irq.h>
+diff --git a/arch/arm/include/asm/kgdb.h b/arch/arm/include/asm/kgdb.h
+index 5de21f01..ceb466f 100644
+--- a/arch/arm/include/asm/kgdb.h
++++ b/arch/arm/include/asm/kgdb.h
+@@ -50,6 +50,7 @@ static inline void arch_kgdb_breakpoint(void)
+ extern void kgdb_handle_bus_error(void);
+ extern int kgdb_fault_expected;
  
--#define NR_IPI	8
-+#define NR_IPI	9
++extern int kgdb_fiq_enabled;
+ extern char kgdb_fiq_handler;
+ extern char kgdb_fiq_handler_end;
+ asmlinkage void __exception_irq_entry kgdb_fiq_do_handle(struct pt_regs *regs);
+diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
+index a74b53c..e5c3ec0 100644
+--- a/arch/arm/kernel/kgdb.c
++++ b/arch/arm/kernel/kgdb.c
+@@ -175,14 +175,26 @@ static struct undef_hook kgdb_compiled_brkpt_hook = {
  
- typedef struct {
- 	unsigned int __softirq_pending;
-diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-index 2ec765c..6a969f8 100644
---- a/arch/arm/include/asm/smp.h
-+++ b/arch/arm/include/asm/smp.h
-@@ -20,6 +20,9 @@
- 
- #define raw_smp_processor_id() (current_thread_info()->cpu)
- 
-+/* bitmap of IPIs that must be signalled using FIQ */
-+#define SMP_IPI_FIQ_MASK 0x0100
-+
- struct seq_file;
- 
- /*
-@@ -87,6 +90,14 @@ extern void arch_send_wakeup_ipi_mask(const struct cpumask *mask);
- 
- extern int register_ipi_completion(struct completion *completion, int cpu);
- 
-+#ifdef CONFIG_FIQ
-+extern void send_fiq_ipi_mask(const struct cpumask *);
-+extern int __init register_fiq_ipi_notifier(struct notifier_block *nb);
-+void handle_IPI_FIQ(struct pt_regs *regs);
-+#else
-+#define register_fiq_ipi_notifier(nb)
-+#endif
-+
- struct smp_operations {
- #ifdef CONFIG_SMP
- 	/*
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 9388a3d..71557bc 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -72,6 +72,7 @@ enum ipi_msg_type {
- 	IPI_CPU_STOP,
- 	IPI_IRQ_WORK,
- 	IPI_COMPLETION,
-+	IPI_FIQ,
- };
- 
- static DECLARE_COMPLETION(cpu_running);
-@@ -451,6 +452,7 @@ static const char *ipi_types[NR_IPI] __tracepoint_string = {
- 	S(IPI_CPU_STOP, "CPU stop interrupts"),
- 	S(IPI_IRQ_WORK, "IRQ work interrupts"),
- 	S(IPI_COMPLETION, "completion interrupts"),
-+	S(IPI_FIQ, "FIQ interrupts"),
- };
- 
- static void smp_cross_call(const struct cpumask *target, unsigned int ipinr)
-@@ -552,6 +554,42 @@ static void ipi_complete(unsigned int cpu)
- 	complete(per_cpu(cpu_completion, cpu));
+ static void kgdb_call_nmi_hook(void *ignored)
+ {
+-       kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
++	kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
  }
  
+ void kgdb_roundup_cpus(unsigned long flags)
+ {
+-       local_irq_enable();
+-       smp_call_function(kgdb_call_nmi_hook, NULL, 0);
+-       local_irq_disable();
 +#ifdef CONFIG_FIQ
-+static ATOMIC_NOTIFIER_HEAD(fiq_ipi_chain);
++	struct cpumask mask;
 +
-+/*
-+ * Caller must ensure a FIQ handler that can clear the IPI is installed
-+ * before calling this function. This is normally achieved by calling
-+ * handle_IPI_FIQ() from the FIQ handler.
-+ */
-+void send_fiq_ipi_mask(const struct cpumask *mask)
-+{
-+	smp_cross_call(mask, IPI_FIQ);
-+}
-+
-+int __init register_fiq_ipi_notifier(struct notifier_block *nb)
-+{
-+	return atomic_notifier_chain_register(&fiq_ipi_chain, nb);
-+}
-+
-+void handle_IPI_FIQ(struct pt_regs *regs)
-+{
-+	unsigned int cpu = smp_processor_id();
-+	struct pt_regs *old_regs = set_irq_regs(regs);
-+
-+	/* Make sure the FIQ mask matches our assumptions */
-+	BUILD_BUG_ON(SMP_IPI_FIQ_MASK ^ (1 << IPI_FIQ));
-+
-+	__inc_irq_stat(cpu, ipi_irqs[IPI_FIQ]);
-+
-+	nmi_enter();
-+	atomic_notifier_call_chain(&fiq_ipi_chain, IPI_FIQ, NULL);
-+	nmi_exit();
-+
-+	set_irq_regs(old_regs);
-+}
++	if (kgdb_fiq_enabled) {
++		cpumask_copy(&mask, cpu_online_mask);
++		cpumask_clear_cpu(raw_smp_processor_id(), &mask);
++		if (!cpumask_empty(&mask))
++			send_fiq_ipi_mask(&mask);
++		return;
++	}
 +#endif
 +
- /*
-  * Main handler for inter-processor interrupts
-  */
-@@ -618,6 +656,12 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
- 		irq_exit();
- 		break;
++	local_irq_enable();
++	smp_call_function(kgdb_call_nmi_hook, NULL, 0);
++	local_irq_disable();
+ }
  
-+#ifdef CONFIG_FIQ
-+	case IPI_FIQ:
-+		pr_crit("CPU%u: IPI FIQ delivered via IRQ vector\n", cpu);
-+		break;
-+#endif
+ static int __kgdb_notify(struct die_args *args, unsigned long cmd)
+diff --git a/arch/arm/kernel/kgdb_fiq.c b/arch/arm/kernel/kgdb_fiq.c
+index a894dde..f7a2c3d 100644
+--- a/arch/arm/kernel/kgdb_fiq.c
++++ b/arch/arm/kernel/kgdb_fiq.c
+@@ -24,7 +24,7 @@
+ #include <asm/fiq.h>
+ #include <asm/exception.h>
+ 
+-static int kgdb_fiq_enabled;
++int kgdb_fiq_enabled;
+ module_param_named(enable, kgdb_fiq_enabled, int, 0600);
+ MODULE_PARM_DESC(enable, "set to 1 to enable FIQ KGDB");
+ 
+@@ -40,6 +40,11 @@ asmlinkage void __exception_irq_entry kgdb_fiq_do_handle(struct pt_regs *regs)
+ {
+ 	int actual;
+ 
++	if (!kgdb_nmicallback(raw_smp_processor_id(), regs)) {
++		handle_IPI_FIQ(regs);
++		return;
++	}
 +
- 	default:
- 		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
- 		       cpu, ipinr);
+ 	nmi_enter();
+ 	actual = ack_fiq(kgdb_fiq);
+ 	WARN_ON(actual != kgdb_fiq);
 -- 
 1.9.3
 
