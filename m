@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822AbaHNAxG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 20:53:06 -0400
-Received: from regular1.263xmail.com ([211.150.99.138]:59218 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984AbaHNAxE (ORCPT
+	id S1753350AbaHNAyf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 20:54:35 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:40952 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984AbaHNAye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 20:53:04 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: broonie@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <f69142f1fe8a611e666cb56ef3b613e4>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Addy Ke <addy.ke@rock-chips.com>
-To: broonie@kernel.org, heiko@sntech.de, dianders@chromium.org,
-        grant.likely@linaro.org, robh+dt@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
-        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH] spi: rockchip: return 0 if tx_buf and rx_buf are NULL
-Date: Thu, 14 Aug 2014 08:52:24 +0800
-Message-Id: <1407977544-2989-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 13 Aug 2014 20:54:34 -0400
+From: Ramesh Basukala <basukalaramesh@gmail.com>
+X-Google-Original-From: Ramesh Basukala
+To: gregkh@linuxfoundation.org
+Cc: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, rbasukala <basukalaramesh@gmail.com>
+Subject: [PATCH] Staging: bmc: fix coding style warning
+Date: Wed, 13 Aug 2014 20:53:59 -0400
+Message-Id: <1407977639-18016-1-git-send-email-basukalaramesh@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20140813220659.GG7908@kroah.com>
+References: <20140813220659.GG7908@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To do so, spi communication can use an empty buf to pull up CS.
+From: rbasukala <basukalaramesh@gmail.com>
 
-This patch merged from ChromiumOS tree.
-Cros_ec use this function to turn off CS and add a delay to ensure
-the rising edge doesn't come too soon after the end of the data.
+This is a patch to the vendorspecificextn.c that fixes coding style
+warning message line over 80 characters found by checkpatch.pl script.
+I am submitting this patch as required by Eudyptula Challenge.
 
-Tested-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+Signed-off-by: Ramesh Basukala <basukalaramesh@gmail.com>
 ---
- drivers/spi/spi-rockchip.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/bcm/vendorspecificextn.c |   19 +++++++++++--------
+ 1 files changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/spi/spi-rockchip.c b/drivers/spi/spi-rockchip.c
-index 72fb287..1e3bcfa 100644
---- a/drivers/spi/spi-rockchip.c
-+++ b/drivers/spi/spi-rockchip.c
-@@ -511,8 +511,8 @@ static int rockchip_spi_transfer_one(struct spi_master *master,
- 	WARN_ON((readl_relaxed(rs->regs + ROCKCHIP_SPI_SR) & SR_BUSY));
+diff --git a/drivers/staging/bcm/vendorspecificextn.c b/drivers/staging/bcm/vendorspecificextn.c
+index 2c57a16..1d9bef6 100644
+--- a/drivers/staging/bcm/vendorspecificextn.c
++++ b/drivers/staging/bcm/vendorspecificextn.c
+@@ -11,7 +11,8 @@
+  *		STATUS_SUCCESS/STATUS_FAILURE
+  *
+  */
+-INT vendorextnGetSectionInfo(PVOID  pContext, struct bcm_flash2x_vendor_info *pVendorInfo)
++INT vendorextnGetSectionInfo(PVOID  pContext,
++			struct bcm_flash2x_vendor_info *pVendorInfo)
+ {
+ 	return STATUS_FAILURE;
+ }
+@@ -61,7 +62,8 @@ INT vendorextnExit(struct bcm_mini_adapter *Adapter)
+  *		arg	-input parameter sent by vendor
+  *
+  * Returns:
+- *		CONTINUE_COMMON_PATH in case it is not meant to be processed by vendor ioctls
++ *		CONTINUE_COMMON_PATH in case it is not meant to be processed
++ *		by vendor ioctls
+  *		STATUS_SUCCESS/STATUS_FAILURE as per the IOCTL return value
+  */
  
- 	if (!xfer->tx_buf && !xfer->rx_buf) {
--		dev_err(rs->dev, "No buffer for transfer\n");
--		return -EINVAL;
-+		dev_dbg(rs->dev, "No buffer for transfer\n");
-+		return 0;
- 	}
+@@ -88,8 +90,8 @@ INT vendorextnIoctl(struct bcm_mini_adapter *Adapter, UINT cmd, ULONG arg)
+  *		STATUS_SUCCESS/STATUS_FAILURE
+  */
  
- 	rs->speed = xfer->speed_hz;
+-INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
+-			UINT offset, UINT numOfBytes)
++INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer,
++	enum bcm_flash2x_section_val SectionVal, UINT offset, UINT numOfBytes)
+ {
+ 	return STATUS_FAILURE;
+ }
+@@ -112,8 +114,9 @@ INT vendorextnReadSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_sect
+  * Returns:
+  *		STATUS_SUCCESS/STATUS_FAILURE
+  */
+-INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
+-			UINT offset, UINT numOfBytes, bool bVerify)
++INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer,
++	enum bcm_flash2x_section_val SectionVal, UINT offset,
++	UINT numOfBytes, bool bVerify)
+ {
+ 	return STATUS_FAILURE;
+ }
+@@ -135,8 +138,8 @@ INT vendorextnWriteSection(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_sec
+  * Returns:
+  *		STATUS_SUCCESS/STATUS_FAILURE
+  */
+-INT vendorextnWriteSectionWithoutErase(PVOID  pContext, PUCHAR pBuffer, enum bcm_flash2x_section_val SectionVal,
+-			UINT offset, UINT numOfBytes)
++INT vendorextnWriteSectionWithoutErase(PVOID  pContext, PUCHAR pBuffer,
++	enum bcm_flash2x_section_val SectionVal, UINT offset, UINT numOfBytes)
+ {
+ 	return STATUS_FAILURE;
+ }
 -- 
-1.8.3.2
-
+1.7.1
 
