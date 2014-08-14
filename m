@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538AbaHNBCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 21:02:05 -0400
-Received: from m12-12.163.com ([220.181.12.12]:39606 "EHLO m12-12.163.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752422AbaHNBCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 21:02:03 -0400
-X-Coremail-DSSMTP: 49.77.231.131
-From: weiyj_lk@163.com
-To: David Airlie <airlied@linux.ie>, Hai Li <hali@codeaurora.org>,
-        Rob Clark <robdclark@gmail.com>, Thierry Reding <treding@nvidia.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>,
-        "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drm/msm: Fix missing unlock on error in msm_fbdev_create()
-Date: Thu, 14 Aug 2014 09:01:40 +0800
-Message-Id: <1407978100-15947-1-git-send-email-weiyj_lk@163.com>
-X-Mailer: git-send-email 1.9.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-CM-TRANSID: DMCowEA5pT52CuxTFuqAAA--.1988S2
-X-Coremail-Antispam: 1Uf129KBjvdXoW7Wr4DCF4xGrWxXF4fWw4xXrb_yoW3uFX_W3
-	4ruwn7XwnFyFn8KF1akrWSyr13tF1Y9r4rWr1Fy3yftrnrtr1rXr9Iyr1UXrWUZF4UtF1D
-	A3WSqrs8Arn7GjkaLaAFLSUrUUUUUb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
-	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IU5K1vPUUUUU==
-X-Originating-IP: [49.77.231.131]
-X-CM-SenderInfo: pzhl5yxbonqiywtou0bp/1tbiGRfn1lEANy-imQAAsN
+	id S1753464AbaHNBDv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 21:03:51 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:45878 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279AbaHNBDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 21:03:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140814003559.GG4752@linux.vnet.ibm.com>
+References: <CAJhHMCADiEsUC7GsYF7=qMNEyRJerfhC5zh7WQPgkQ0gJn5=5A@mail.gmail.com>
+ <20140804185226.GQ8101@linux.vnet.ibm.com> <CAJhHMCBEprK9hp786cwguJR=JW7Xxgt4GKX5=E0vikO-D4qmZg@mail.gmail.com>
+ <20140805073237.GX3935@laptop> <CAJhHMCBjub+_Gg_wC2EoR5OgzwT7JTHr-wzoGp_dePUBVwEG8g@mail.gmail.com>
+ <20140813224436.GA4752@linux.vnet.ibm.com> <53EBFE6E.1060400@gmail.com> <20140814003559.GG4752@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Wed, 13 Aug 2014 21:03:18 -0400
+Message-ID: <CAJhHMCBes7Y2x-=M7or13_m07fR4+RBV4KMUpiZJVB0f9CPaqA@mail.gmail.com>
+Subject: Re: Question regarding "Control Dependencies" in memory-barriers.txt
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Wed, Aug 13, 2014 at 8:35 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>>
+>> If the stores to 'b' differ, then there is no issue. Why not document how to
+>> avoid re-ordering in the case where both the stores are the same? In that case
+>> using a stronger barrier like mb() should be sufficient for both the compiler
+>> and the CPU to avoid re-ordering, right?
+>
+> Like this?  (On top of the earlier patch.)
+>
 
-Add the missing unlock before return from function msm_fbdev_create()
-in the error handling case.
+That looks good, thank you!
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/gpu/drm/msm/msm_fbdev.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/msm/msm_fbdev.c b/drivers/gpu/drm/msm/msm_fbdev.c
-index 9c5221c..ab5bfd2 100644
---- a/drivers/gpu/drm/msm/msm_fbdev.c
-+++ b/drivers/gpu/drm/msm/msm_fbdev.c
-@@ -143,7 +143,7 @@ static int msm_fbdev_create(struct drm_fb_helper *helper,
- 	ret = msm_gem_get_iova_locked(fbdev->bo, 0, &paddr);
- 	if (ret) {
- 		dev_err(dev->dev, "failed to get buffer obj iova: %d\n", ret);
--		goto fail;
-+		goto fail_unlock;
- 	}
- 
- 	fbi = framebuffer_alloc(0, dev->dev);
+>                                                         Thanx, Paul
+>
+> ------------------------------------------------------------------------
+>
+> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+> index 6062f175abc6..22a969cdd476 100644
+> --- a/Documentation/memory-barriers.txt
+> +++ b/Documentation/memory-barriers.txt
+> @@ -625,9 +625,20 @@ Now there is no conditional between the load from 'a' and the store to
+>  'b', which means that the CPU is within its rights to reorder them:
+>  The conditional is absolutely required, and must be present in the
+>  assembly code even after all compiler optimizations have been applied.
+> +Therefore, if you need ordering in this example, you need explicit
+> +memory barriers, for example, smp_store_release():
+>
+> -So two-legged-if control ordering is guaranteed only when the stores
+> -differ, for example:
+> +       q = ACCESS_ONCE(a);
+> +       if (q) {
+> +               smp_store_release(&b, p);
+> +               do_something();
+> +       } else {
+> +               smp_store_release(&b, p);
+> +               do_something_else();
+> +       }
+> +
+> +In contrast, without explicit memory barriers, two-legged-if control
+> +ordering is guaranteed only when the stores differ, for example:
+>
+>         q = ACCESS_ONCE(a);
+>         if (q) {
+>
 
+-- 
+Pranith
