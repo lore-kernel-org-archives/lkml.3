@@ -1,117 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441AbaHNA5w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 20:57:52 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:35098 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149AbaHNA5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 20:57:51 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 1/2] zsmalloc: move pages_allocated to zs_pool
-Date: Thu, 14 Aug 2014 09:57:56 +0900
-Message-Id: <1407977877-18185-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 2.0.0
+	id S1753538AbaHNBCF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 21:02:05 -0400
+Received: from m12-12.163.com ([220.181.12.12]:39606 "EHLO m12-12.163.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752422AbaHNBCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 21:02:03 -0400
+X-Coremail-DSSMTP: 49.77.231.131
+From: weiyj_lk@163.com
+To: David Airlie <airlied@linux.ie>, Hai Li <hali@codeaurora.org>,
+        Rob Clark <robdclark@gmail.com>, Thierry Reding <treding@nvidia.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>,
+        "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drm/msm: Fix missing unlock on error in msm_fbdev_create()
+Date: Thu, 14 Aug 2014 09:01:40 +0800
+Message-Id: <1407978100-15947-1-git-send-email-weiyj_lk@163.com>
+X-Mailer: git-send-email 1.9.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-CM-TRANSID: DMCowEA5pT52CuxTFuqAAA--.1988S2
+X-Coremail-Antispam: 1Uf129KBjvdXoW7Wr4DCF4xGrWxXF4fWw4xXrb_yoW3uFX_W3
+	4ruwn7XwnFyFn8KF1akrWSyr13tF1Y9r4rWr1Fy3yftrnrtr1rXr9Iyr1UXrWUZF4UtF1D
+	A3WSqrs8Arn7GjkaLaAFLSUrUUUUUb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
+	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IU5K1vPUUUUU==
+X-Originating-IP: [49.77.231.131]
+X-CM-SenderInfo: pzhl5yxbonqiywtou0bp/1tbiGRfn1lEANy-imQAAsN
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pages_allocated has counted in size_class structure and when user
-want to see total_size_bytes, it gathers all of value from each
-size_class to report the sum.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-It's not bad if user don't see the value often but if user start
-to see the value frequently, it would be not a good deal for
-performance POV.
+Add the missing unlock before return from function msm_fbdev_create()
+in the error handling case.
 
-Even, this patch moves the variable from size_class to zs_pool
-so it reduces memory footprint (from [255 * 8byte] to
-[sizeof(atomic_t)]) but it introduce new atomic opearation
-but it's not a big deal because atomic operation is called on
-slow path of zsmalloc where it allocates/free zspage unit,
-not object.
-
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- mm/zsmalloc.c | 21 +++++++--------------
- 1 file changed, 7 insertions(+), 14 deletions(-)
+ drivers/gpu/drm/msm/msm_fbdev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-index 4e2fc83cb394..2f21ea8921dc 100644
---- a/mm/zsmalloc.c
-+++ b/mm/zsmalloc.c
-@@ -199,9 +199,6 @@ struct size_class {
- 
- 	spinlock_t lock;
- 
--	/* stats */
--	u64 pages_allocated;
--
- 	struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
- };
- 
-@@ -220,6 +217,7 @@ struct zs_pool {
- 	struct size_class size_class[ZS_SIZE_CLASSES];
- 
- 	gfp_t flags;	/* allocation flags used when growing pool */
-+	atomic_t pages_allocated;
- };
- 
- /*
-@@ -1027,8 +1025,8 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
- 			return 0;
- 
- 		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
-+		atomic_add(class->pages_per_zspage, &pool->pages_allocated);
- 		spin_lock(&class->lock);
--		class->pages_allocated += class->pages_per_zspage;
+diff --git a/drivers/gpu/drm/msm/msm_fbdev.c b/drivers/gpu/drm/msm/msm_fbdev.c
+index 9c5221c..ab5bfd2 100644
+--- a/drivers/gpu/drm/msm/msm_fbdev.c
++++ b/drivers/gpu/drm/msm/msm_fbdev.c
+@@ -143,7 +143,7 @@ static int msm_fbdev_create(struct drm_fb_helper *helper,
+ 	ret = msm_gem_get_iova_locked(fbdev->bo, 0, &paddr);
+ 	if (ret) {
+ 		dev_err(dev->dev, "failed to get buffer obj iova: %d\n", ret);
+-		goto fail;
++		goto fail_unlock;
  	}
  
- 	obj = (unsigned long)first_page->freelist;
-@@ -1081,14 +1079,12 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
- 
- 	first_page->inuse--;
- 	fullness = fix_fullness_group(pool, first_page);
--
--	if (fullness == ZS_EMPTY)
--		class->pages_allocated -= class->pages_per_zspage;
--
- 	spin_unlock(&class->lock);
- 
--	if (fullness == ZS_EMPTY)
-+	if (fullness == ZS_EMPTY) {
-+		atomic_sub(class->pages_per_zspage, &pool->pages_allocated);
- 		free_zspage(first_page);
-+	}
- }
- EXPORT_SYMBOL_GPL(zs_free);
- 
-@@ -1184,12 +1180,9 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
- 
- u64 zs_get_total_size_bytes(struct zs_pool *pool)
- {
--	int i;
--	u64 npages = 0;
--
--	for (i = 0; i < ZS_SIZE_CLASSES; i++)
--		npages += pool->size_class[i].pages_allocated;
-+	u64 npages;
- 
-+	npages = atomic_read(&pool->pages_allocated);
- 	return npages << PAGE_SHIFT;
- }
- EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
--- 
-2.0.0
+ 	fbi = framebuffer_alloc(0, dev->dev);
 
