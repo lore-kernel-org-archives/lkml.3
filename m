@@ -1,81 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128AbaHNIwy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 04:52:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36730 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754773AbaHNIwv (ORCPT
+	id S1755273AbaHNIxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 04:53:07 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:36026 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932130AbaHNIw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 04:52:51 -0400
-Date: Thu, 14 Aug 2014 01:51:59 -0700
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-bf4939027decde7aaaf8b5dbeee70126d2822eb6@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de
-In-Reply-To: <1406786474-9306-22-git-send-email-adrian.hunter@intel.com>
-References: <1406786474-9306-22-git-send-email-adrian.hunter@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Add flags and insn_len to struct sample
-Git-Commit-ID: bf4939027decde7aaaf8b5dbeee70126d2822eb6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 14 Aug 2014 04:52:58 -0400
+Date: Thu, 14 Aug 2014 10:53:01 +0200
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <dmaengine@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris Brezillon <boris@free-electrons.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        <laurent.pinchart@ideasonboard.com>, <ludovic.desroches@atmel.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
+ dma controller API
+Message-ID: <20140814085301.GJ2452@ldesroches-Latitude-E6320>
+Mail-Followup-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+	Dan Williams <dan.j.williams@intel.com>,
+	Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+	linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+	Russell King <linux@arm.linux.org.uk>,
+	Arnd Bergmann <arnd@arndb.de>,
+	Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+	Thomas Petazzoni <thomas@free-electrons.com>,
+	Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+	Boris Brezillon <boris@free-electrons.com>,
+	Matt Porter <matt.porter@linaro.org>,
+	laurent.pinchart@ideasonboard.com,
+	Gregory Clement <gregory.clement@free-electrons.com>,
+	Nicolas Ferre <nicolas.ferre@atmel.com>
+References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
+In-Reply-To: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bf4939027decde7aaaf8b5dbeee70126d2822eb6
-Gitweb:     http://git.kernel.org/tip/bf4939027decde7aaaf8b5dbeee70126d2822eb6
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Thu, 31 Jul 2014 09:01:04 +0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 13 Aug 2014 19:23:32 -0300
+On Wed, Jul 30, 2014 at 06:03:13PM +0200, Maxime Ripard wrote:
+> The dmaengine is neither trivial nor properly documented at the moment, which
+> means a lot of trial and error development, which is not that good for such a
+> central piece of the system.
+> 
+> Attempt at making such a documentation.
 
-perf tools: Add flags and insn_len to struct sample
+Good idea, many questions are asked when writing a new dmaengine driver.
 
-The flags will be used to export branch type and transaction status.
+For instance I didn't find how to use the DMA_CTRL_ACK flags.
 
-insn_len is preparation for pairing calls and returns because the return
-address equals the call address plus the instruction length (insn_len).
+- How this flag has to be managed? For instance, async_tx_ack is used in
+dmaengine driver but also in some devices.
+- Is it mandatory to deal with this flag? It seems some dmaengine
+drivers don't care about it.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406786474-9306-22-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/event.h | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 94d6976..7eb7107 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -156,6 +156,8 @@ struct perf_sample {
- 	u32 cpu;
- 	u32 raw_size;
- 	u64 data_src;
-+	u32 flags;
-+	u16 insn_len;
- 	void *raw_data;
- 	struct ip_callchain *callchain;
- 	struct branch_stack *branch_stack;
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  Documentation/dmaengine-driver.txt | 293 +++++++++++++++++++++++++++++++++++++
+>  1 file changed, 293 insertions(+)
+>  create mode 100644 Documentation/dmaengine-driver.txt
+> 
+> diff --git a/Documentation/dmaengine-driver.txt b/Documentation/dmaengine-driver.txt
+> new file mode 100644
+> index 000000000000..4828b50038c0
+> --- /dev/null
+> +++ b/Documentation/dmaengine-driver.txt
+> @@ -0,0 +1,293 @@
+> +DMAengine controller documentation
+> +==================================
+> +
+> +Hardware Introduction
+> ++++++++++++++++++++++
+> +
+> +Most of the Slave DMA controllers have the same general principles of
+> +operations.
+> +
+> +They have a given number of channels to use for the DMA transfers, and
+> +a given number of requests lines.
+> +
+> +Requests and channels are pretty much orthogonal. Channels can be used
+> +to serve several to any requests. To simplify, channels are the
+> +entities that will be doing the copy, and requests what endpoints are
+> +involved.
+> +
+> +The request lines actually correspond to physical lines going from the
+> +DMA-elligible devices to the controller itself. Whenever the device
+> +will want to start a transfer, it will assert a DMA request (DRQ) by
+> +asserting that request line.
+> +
+> +A very simple DMA controller would only take into account a single
+> +parameter: the transfer size. At each clock cycle, it would transfer a
+> +byte of data from one buffer to another, until the transfer size has
+> +been reached.
+> +
+> +That wouldn't work well in the real world, since slave devices might
+> +require to have to retrieve various number of bits from memory at a
+> +time. For example, we probably want to transfer 32 bits at a time when
+> +doing a simple memory copy operation, but our audio device will
+> +require to have 16 or 24 bits written to its FIFO. This is why most if
+> +not all of the DMA controllers can adjust this, using a parameter
+> +called the width.
+> +
+> +Moreover, some DMA controllers, whenever the RAM is involved, can
+> +group the reads or writes in memory into a buffer, so instead of
+> +having a lot of small memory accesses, which is not really efficient,
+> +you'll get several bigger transfers. This is done using a parameter
+> +called the burst size, that defines how many single reads/writes it's
+> +allowed to do in a single clock cycle.
+> +
+> +Our theorical DMA controller would then only be able to do transfers
+> +that involve a single contiguous block of data. However, some of the
+> +transfers we usually have are not, and want to copy data from
+> +non-contiguous buffers to a contiguous buffer, which is called
+> +scatter-gather.
+> +
+> +DMAEngine, at least for mem2dev transfers, require support for
+> +scatter-gather. So we're left with two cases here: either we have a
+> +quite simple DMA controller that doesn't support it, and we'll have to
+> +implement it in software, or we have a more advanced DMA controller,
+> +that implements in hardware scatter-gather.
+> +
+> +The latter are usually programmed using a collection of chunks to
+> +transfer, and whenever the transfer is started, the controller will go
+> +over that collection, doing whatever we programmed there.
+> +
+> +This collection is usually either a table or a linked list. You will
+> +then push either the address of the table and its number of elements,
+> +or the first item of the list to one channel of the DMA controller,
+> +and whenever a DRQ will be asserted, it will go through the collection
+> +to know where to fetch the data from.
+> +
+> +Either way, the format of this collection is completely dependent of
+> +your hardware. Each DMA controller will require a different structure,
+> +but all of them will require, for every chunk, at least the source and
+> +destination addresses, wether it should increment these addresses or
+> +not and the three parameters we saw earlier: the burst size, the bus
+> +width and the transfer size.
+> +
+> +The one last thing is that usually, slave devices won't issue DRQ by
+> +default, and you have to enable this in your slave device driver first
+> +whenever you're willing to use DMA.
+> +
+> +These were just the general memory-to-memory (also called mem2mem) or
+> +memory-to-device (mem2dev) transfers. Other kind of transfers might be
+> +offered by your DMA controller, and are probably already supported by
+> +dmaengine.
+> +
+> +DMAEngine Registration
+> +++++++++++++++++++++++
+> +
+> +struct dma_device Initialization
+> +--------------------------------
+> +
+> +Just like any other kernel framework, the whole DMAEngine registration
+> +relies on the driver filling a structure and registering against the
+> +framework. In our case, that structure is dma_device.
+> +
+> +The first thing you need to do in your driver is to allocate this
+> +structure. Any of the usual memory allocator will do, but you'll also
+> +need to initialize a few fields in there:
+> +
+> +  * chancnt:	should be the number of channels your driver is exposing
+> +		to the system.
+> +		This doesn't have to be the number of physical
+> +		channels: some DMA controllers also expose virtual
+> +		channels to the system to overcome the case where you
+> +		have more consumers than physical channels available.
+> +
+> +  * channels:	should be initialized as a list using the
+> +		INIT_LIST_HEAD macro for example
+> +
+> +  * dev: 	should hold the pointer to the struct device associated
+> +		to your current driver instance.
+> +
+> +Supported transaction types
+> +---------------------------
+> +The next thing you need is to actually set which transaction type your
+> +device (and driver) supports.
+> +
+> +Our dma_device structure has a field called caps_mask that holds the
+> +various type of transaction supported, and you need to modify this
+> +mask using the dma_cap_set function, with various flags depending on
+> +transaction types you support as an argument.
+> +
+> +All those capabilities are defined in the dma_transaction_type enum,
+> +in include/linux/dmaengine.h
+> +
+> +Currently, the types available are:
+> +  * DMA_MEMCPY
+> +    - The device is able to do memory to memory copies
+> +
+> +  * DMA_XOR
+> +    - The device is able to perform XOR operations on memory areas
+> +    - Particularly useful to accelerate XOR intensive tasks, such as
+> +      RAID5
+> +
+> +  * DMA_XOR_VAL
+> +    - The device is able to perform parity check using the XOR
+> +      algorithm against a memory buffer.
+> +
+> +  * DMA_PQ
+> +    - The device is able to perform RAID6 P+Q computations, P being a
+> +      simple XOR, and Q being a Reed-Solomon algorithm.
+> +
+> +  * DMA_PQ_VAL
+> +    - The device is able to perform parity check using RAID6 P+Q
+> +      algorithm against a memory buffer.
+> +
+> +  * DMA_INTERRUPT
+> +    /* TODO: Is it that the device has one interrupt per channel? */
+> +
+> +  * DMA_SG
+> +    - The device supports memory to memory scatter-gather
+> +      transfers.
+> +    - Even though a plain memcpy can look like a particular case of a
+> +      scatter-gather transfer, with a single chunk to transfer, it's a
+> +      distinct transaction type in the mem2mem transfers case
+> +
+> +  * DMA_PRIVATE
+> +    - The device can have several client at a time, most likely
+> +      because it has several parallel channels.
+> +
+> +  * DMA_ASYNC_TX
+> +    - Must not be set by the device, and will be set by the framework
+> +      if needed
+> +    - /* TODO: What is it about? */
+> +
+> +  * DMA_SLAVE
+> +    - The device can handle device to memory transfers, including
+> +      scatter-gather transfers.
+> +    - While in the mem2mem case we were having two distinct type to
+> +      deal with a single chunk to copy or a collection of them, here,
+> +      we just have a single transaction type that is supposed to
+> +      handle both.
+> +
+> +  * DMA_CYCLIC
+> +    - The device can handle cyclic transfers.
+> +    - A cyclic transfer is a transfer where the chunk collection will
+> +      loop over itself, with the last item pointing to the first. It's
+> +      usually used for audio transfers, where you want to operate on a
+> +      single big buffer that you will fill with your audio data.
+> +
+> +  * DMA_INTERLEAVE
+> +    - The device support interleaved transfer. Those transfers usually
+> +      involve an interleaved set of data, with chunks a few bytes
+> +      wide, where a scatter-gather transfer would be quite
+> +      inefficient.
+> +
+> +These various types will also affect how the source and destination
+> +addresses change over time, as DMA_SLAVE transfers will usually have
+> +one of the addresses that will increment, while the other will not,
+> +DMA_CYCLIC will have one address that will loop, while the other, will
+> +not change, etc.
+> +
+> +Device operations
+> +-----------------
+> +
+> +Our dma_device structure also requires a few function pointers in
+> +order to implement the actual logic, now that we described what
+> +operations we were able to perform.
+> +
+> +The functions that we have to fill in there, and hence have to
+> +implement, obviously depend on the transaction type you reported as
+> +supported.
+> +
+> +   * device_alloc_chan_resources
+> +   * device_free_chan_resources
+> +     - These functions will be called whenever a driver will call
+> +       dma_request_channel or dma_release_channel for the first/last
+> +       time on the channel associated to that driver.
+> +     - They are in charge of allocating/freeing all the needed
+> +       resources in order for that channel to be useful for your
+> +       driver.
+> +     - These functions can sleep.
+> +
+> +   * device_prep_dma_*
+> +     - These functions are matching the capabilities you registered
+> +       previously.
+> +     - These functions all take the buffer or the scatterlist relevant
+> +       for the transfer being prepared, and should create a hardware
+> +       descriptor or a list of descriptors from it
+> +     - These functions can be called from an interrupt context
+> +     - Any allocation you might do should be using the GFP_NOWAIT
+> +       flag, in order not to potentially sleep, but without depleting
+> +       the emergency pool either.
+> +
+> +     - It should return a unique instance of the
+> +       dma_async_tx_descriptor structure, that further represents this
+> +       particular transfer.
+> +
+> +     - This structure can be allocated using the function
+> +       dma_async_tx_descriptor_init.
+> +     - You'll also need to set two fields in this structure:
+> +       + flags:
+> +		TODO: Can it be modified by the driver itself, or
+> +		should it be always the flags passed in the arguments
+> +
+> +       + tx_submit:	A pointer to a function you have to implement,
+> +			that is supposed to push the current descriptor
+> +			to a pending queue, waiting for issue_pending to
+> +			be called.
+> +
+> +   * device_issue_pending
+> +     - Takes the first descriptor in the pending queue, and start the
+> +       transfer. Whenever that transfer is done, it should move to the
+> +       next transaction in the list.
+> +     - It should call the registered callback if any each time a
+> +       transaction is done.
+> +     - This function can be called in an interrupt context
+> +
+> +   * device_tx_status
+> +     - Should report the bytes left to go over in the current transfer
+> +       for the given channel
+> +     - Should use dma_set_residue to report it
+> +     - In the case of a cyclic transfer, it should only take into
+> +       account the current period.
+> +     - This function can be called in an interrupt context.
+> +
+> +   * device_control
+> +     - Used by client drivers to control and configure the channel it
+> +       has a handle on.
+> +     - Called with a command and an argument
+> +       + The command is one of the values listed by the enum
+> +         dma_ctrl_cmd. To this date, the valid commands are:
+> +         + DMA_RESUME
+> +           + Restarts a transfer on the channel
+> +         + DMA_PAUSE
+> +           + Pauses a transfer on the channel
+> +         + DMA_TERMINATE_ALL
+> +           + Aborts all the pending and ongoing transfers on the
+> +             channel
+> +         + DMA_SLAVE_CONFIG
+> +           + Reconfigures the channel with passed configuration
+> +         + FSLDMA_EXTERNAL_START
+> +           + TODO: Why does that even exist?
+> +       + The argument is an opaque unsigned long. This actually is a
+> +         pointer to a struct dma_slave_config that should be used only
+> +         in the DMA_SLAVE_CONFIG.
+> +
+> +Misc notes (stuff that should be documented, but don't really know
+> +what to say about it)
+> +------------------------------------------------------------------
+> +  * dma_run_dependencies
+> +    - What is it supposed to do/when should it be called?
+> +    - Some drivers seems to implement it at the end of a transfer, but
+> +      not all of them do, so it seems we can get away without it
+> +
+> +  * device_slave_caps
+> +    - Isn't that redundant with the cap_mask already?
+> +    - Only a few drivers seem to implement it
+> +
+> +  * dma cookies?
+> +
+> +Glossary
+> +--------
+> +
+> +Burst:		Usually a few contiguous bytes that will be transfered
+> +		at once by the DMA controller
+> +Chunk:		A contiguous collection of bursts
+> +Transfer:	A collection of chunks (be it contiguous or not)
+> -- 
+> 2.0.2
+> 
