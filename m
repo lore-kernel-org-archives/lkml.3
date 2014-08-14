@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968AbaHNFXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 01:23:17 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49722 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436AbaHNFXP (ORCPT
+	id S1753357AbaHNF0D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 01:26:03 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:50855 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304AbaHNF0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 01:23:15 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53EC47B4.8020408@lge.com>
-Date: Thu, 14 Aug 2014 14:23:00 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 14 Aug 2014 01:26:01 -0400
+Date: Thu, 14 Aug 2014 14:25:57 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>, linaro-kernel@lists.linaro.org,
+        Russell King <linux@arm.linux.org.uk>,
+        "open list:ARM/SHMOBILE ARM..." <linux-sh@vger.kernel.org>,
+        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: shmobile: defconfig: enable initrd and atag dtb
+ compat
+Message-ID: <20140814052557.GA27045@verge.net.au>
+References: <1407974835-11064-1-git-send-email-khilman@linaro.org>
 MIME-Version: 1.0
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-CC: Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>
-Subject: Re: [PATCH 0/2] new APIs to allocate buffer-cache for superblock
- in non-movable area
-References: <53EC4531.1000904@lge.com>
-In-Reply-To: <53EC4531.1000904@lge.com>
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407974835-11064-1-git-send-email-khilman@linaro.org>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 13, 2014 at 05:07:15PM -0700, Kevin Hilman wrote:
+> Enable ATAG_DTB_COMPAT support for passing commandline from bootloader.
+> Enable initrd support.
+> 
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
+> With this, I can finally integrate the kzm9d into the board farm because I use
+> initrafms for the primary rootfs, and set the command-line from u-boot.
+> 
+> Tested on next-20140813
 
+Thanks, I will queue this up for v3.18 and push it to next
+once v3.17-rc1 has been released.
 
-2014-08-14 오후 2:12, Gioh Kim 쓴 글:
-> Hello,
 > 
-> This patch try to solve problem that a long-lasting page caches of
-> ext4 superblock and journaling of superblock disturb page migration.
+>  arch/arm/configs/shmobile_defconfig | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> I've been testing CMA feature on my ARM-based platform
-> and found that two page caches cannot be migrated.
-> They are page caches of superblock of ext4 filesystem and its journaling data.
+> diff --git a/arch/arm/configs/shmobile_defconfig b/arch/arm/configs/shmobile_defconfig
+> index 3b136144cc83..d655f088ac58 100644
+> --- a/arch/arm/configs/shmobile_defconfig
+> +++ b/arch/arm/configs/shmobile_defconfig
+> @@ -3,6 +3,7 @@ CONFIG_NO_HZ=y
+>  CONFIG_IKCONFIG=y
+>  CONFIG_IKCONFIG_PROC=y
+>  CONFIG_LOG_BUF_SHIFT=16
+> +CONFIG_BLK_DEV_INITRD=y
+>  CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+>  CONFIG_SYSCTL_SYSCALL=y
+>  CONFIG_EMBEDDED=y
+> @@ -33,6 +34,7 @@ CONFIG_HIGHMEM=y
+>  CONFIG_ZBOOT_ROM_TEXT=0x0
+>  CONFIG_ZBOOT_ROM_BSS=0x0
+>  CONFIG_ARM_APPENDED_DTB=y
+> +CONFIG_ARM_ATAG_DTB_COMPAT=y
+>  CONFIG_KEXEC=y
+>  CONFIG_VFP=y
+>  CONFIG_NEON=y
+> -- 
+> 1.9.2
 > 
-> Current ext4 reads superblock with sb_bread() that allocates page
-> from movable area. But the problem is that ext4 hold the page until
-> it is unmounted. If root filesystem is ext4 the page cannot be migrated forever.
-> And also the journaling data for the superblock cannot be migreated.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> I introduce a new API for allocating page cache from non-movable area.
-> It is useful for ext4/ext3 and others that want to hold page cache for a long time.
-> 
-> I have 3 patchs:
-> 
-> 1. Patch 1/3: introduce a new API that create page cache from non-movable area
-> 2. Patch 2/3: have ext4 use the new API to read superblock
-> 3. Patch 3/3: have jbd/jbd2 use the new API to make journaling of superblock
-> 
-> This patchset is based on linux-next-20140814.
-> 
-> Thanks a lot.
-> 
-> Gioh Kim (3):
->   fs/buffer.c: allocate buffer cache from non-movable area
->   ext4: allocate buffer-cache for superblock in non-movable area
->   jbd-jbd2-allocate-buffer-cache-for-superblock-inode-.patch
-> 
->   fs/buffer.c                 |   63 ++++++++++++++++++++++++++++++----
->   fs/ext4/super.c             |    6 +--
->   fs/jbd/journal.c            |    2 -
->   fs/jbd2/journal.c           |    2 -
->   include/linux/buffer_head.h |   10 +++++
->   5 files changed, 71 insertions(+), 12 deletions(-)
-> 
-
-I'm sorry to forget mentioning that this is 2nd version of https://lkml.org/lkml/2014/7/22/34.
-
-
