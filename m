@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441AbaHNPdT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 11:33:19 -0400
-Received: from mail.kernel.org ([198.145.19.201]:59593 "EHLO mail.kernel.org"
+	id S1755473AbaHNPeD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 11:34:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29345 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754329AbaHNPdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 11:33:18 -0400
-Date: Thu, 14 Aug 2014 12:33:12 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        David Ahern <dsahern@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: perf probe: request: Better message when no debug info is found on
- vmlinux
-Message-ID: <20140814153312.GO2718@kernel.org>
+	id S1755256AbaHNPeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 11:34:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,863,1400050800"; 
+   d="scan'208";a="584896479"
+Date: Thu, 14 Aug 2014 09:33:38 -0600 (MDT)
+From: Keith Busch <keith.busch@intel.com>
+X-X-Sender: vmware@localhost.localdom
+To: Jens Axboe <axboe@fb.com>
+cc: =?ISO-8859-15?Q?Matias_Bj=F8rling?= <m@bjorling.me>,
+        Keith Busch <keith.busch@intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-nvme <linux-nvme@lists.infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Rob Nelson <rlnelson@google.com>, Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH v11] NVMe: Convert to blk-mq
+In-Reply-To: <53ECD125.3080701@fb.com>
+Message-ID: <alpine.LRH.2.03.1408140920520.14603@AMR>
+References: <1406365643-27020-1-git-send-email-m@bjorling.me> <1406365643-27020-2-git-send-email-m@bjorling.me> <CAOu_J6mW-2e2Jgm+khodLPah_-RZrD599SmSH+Mszd0AjterrQ@mail.gmail.com> <alpine.LRH.2.03.1408131519590.14603@AMR> <53EC7273.5060303@bjorling.me>
+ <53ECD125.3080701@fb.com>
+User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-799657267-1408030421=:14603"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-	I was trying to figure out why sys_perf_event_open was returning
-EACCES when trying to record, as a non priviledged user, a 'ping'
-process started by this user, while it has no problem doing the same
-thing if the monitored process is 'sleep' (reusing of ptrace perms seems
-to be what is causing this, but I digress), when I stumbled in something
-annoying:
+--8323328-799657267-1408030421=:14603
+Content-Type: TEXT/PLAIN; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 
-  [root@ssdandy ~]# perf probe -v -L icmp_rcv
-  Looking at the vmlinux_path (6 entries long)
-  Using /lib/modules/3.16.0+/build/vmlinux for symbols
-  Failed to open debuginfo file.
-    Error: Failed to show lines. (-2)
-  [root@ssdandy ~]# 
+On Thu, 14 Aug 2014, Jens Axboe wrote:
+> On 08/14/2014 02:25 AM, Matias Bjørling wrote:
+>> The result is set to BLK_MQ_RQ_QUEUE_ERROR, or am I mistaken?
+>
+> Looks OK to me, looking at the code, 'result' is initialized to
+> BLK_MQ_RQ_QUEUE_BUSY though. Which looks correct, we don't want to error
+> on a suspended queue.
 
-Huh? Why? So I went to look to see why it was "failing to open debuginfo
-file":
+My mistake missing how the result was initialized.
 
-  [root@ssdandy ~]# ls -la /lib/modules/3.16.0+/build/vmlinux
-  -rwxrwxr-x. 3 acme acme 22505817 Aug 13 11:54
-  /lib/modules/3.16.0+/build/vmlinux
-  [root@ssdandy ~]# ls -la /lib/modules/3.16.0+/build
-  lrwxrwxrwx. 1 root root 29 Aug 13 12:10 /lib/modules/3.16.0+/build ->
-  /home/acme/git/build/v3.16.0+
+> nr_tags must be uninitialized or screwed up somehow, otherwise I don't
+> see how that kmalloc() could warn on being too large. Keith, are you
+> running with slab debugging? Matias, might be worth trying.
 
-The file is there, but... I forgot I had disabled CONFIG_DEBUG_INFO on
-this machine:
+I'm not running with slab debugging. If it's any clue at all, blk-mq is
+using 16 of the 31 allocated h/w queues (which is okay as we discussed
+earlier), and the oops happens when clearing the first unused queue.
 
-  [root@ssdandy ~]# ls -la /lib/modules/3.16.0+/build/.config
-  -rw-rw-r--. 1 acme acme 136217 Aug 13 11:40
-  /lib/modules/3.16.0+/build/.config
-  [root@ssdandy ~]# grep CONFIG_DEBUG_INFO
-  /lib/modules/3.16.0+/build/.config
-  # CONFIG_DEBUG_INFO is not set
-  [root@ssdandy ~]# 
-
-So, only the CFI ELF section was there, not the other with the -g stuff:
-
-  [root@ssdandy ~]# readelf -SW /lib/modules/3.16.0+/build/vmlinux | grep \.debug_
-    [29] .debug_frame  PROGBITS  0000000000000000 1266030 0021d0 00  0   0  8
-  [root@ssdandy ~]#
-
-So, I suggest that we improve that error message to be more clear:
-
-  [root@ssdandy ~]# perf probe -L icmp_rcv
-  Failed to open debuginfo file.
-    Error: The /lib/modules/3.16.0+/build/vmlinux file has no
-           debugging information, rebuild with CONFIG_DEBUG_INFO=y
-
-  [root@ssdandy ~]# 
-
-Since it knows it is a kernel image file, and that the config option to
-enable it is CONFIG_DEBUG_INFO.
-
-Thanks,
-
-- Arnaldo
-
+I'll have time to mess with this more today, so I can either help find
+the problem or apply a patch if one becomes available.
+--8323328-799657267-1408030421=:14603--
