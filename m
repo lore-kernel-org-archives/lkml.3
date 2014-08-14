@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872AbaHNMMi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 08:12:38 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:38145 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813AbaHNMMV (ORCPT
+	id S1754932AbaHNMNZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 08:13:25 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49425 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754485AbaHNMMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 08:12:21 -0400
+	Thu, 14 Aug 2014 08:12:09 -0400
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: Stephen Warren <swarren@wwwdotorg.org>,
@@ -16,9 +16,9 @@ Cc: Stephen Warren <swarren@wwwdotorg.org>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v6 6/6] clk: Add floor and ceiling constraints to clock rates
-Date: Thu, 14 Aug 2014 14:11:27 +0200
-Message-Id: <1408018287-14217-6-git-send-email-tomeu.vizoso@collabora.com>
+Subject: [PATCH v6 1/6] clk: Add temporary mapping to the existing API
+Date: Thu, 14 Aug 2014 14:11:23 +0200
+Message-Id: <1408018287-14217-2-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408018287-14217-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1408018287-14217-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -26,180 +26,174 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a way for clock consumers to set maximum and minimum rates. This can be
-used for thermal drivers to set ceiling rates, or by misc. drivers to set
-floor rates to assure a minimum performance level.
+To preserve git-bisectability, add aliases from the future provider API to the
+existing public API.
+
+Also includes clk-provider.h and clk-dev.h in a few places so the right
+functions are defined.
 
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 
 ---
+v6: * Include linux/clkdev.h in clk-conf.c (thanks to Boris Brezillon)
 
-v5: * Move the storage of constraints to the per-user clk struct, as suggested
-      by Stephen Warren.
+v4: * Add more clk-provider.h includes to clk implementations
+    * Add mapping for clk_provider_round_rate
 ---
- drivers/clk/clk.c           | 36 ++++++++++++++++++++++++++++++++++++
- drivers/clk/clk.h           |  1 +
- drivers/clk/clkdev.c        |  2 +-
- include/linux/clk-private.h |  4 ++++
- include/linux/clk.h         | 18 ++++++++++++++++++
- 5 files changed, 60 insertions(+), 1 deletion(-)
+ arch/arm/mach-omap2/display.c                 |  1 +
+ arch/arm/mach-omap2/omap_device.c             |  1 +
+ arch/arm/plat-orion/common.c                  |  1 +
+ drivers/clk/berlin/bg2.c                      |  1 +
+ drivers/clk/berlin/bg2q.c                     |  1 +
+ drivers/clk/clk-conf.c                        |  1 +
+ drivers/clk/clkdev.c                          |  1 +
+ drivers/media/platform/exynos4-is/media-dev.c |  1 +
+ include/linux/clk-provider.h                  | 23 +++++++++++++++++++++++
+ include/linux/clk/zynq.h                      |  1 +
+ 10 files changed, 32 insertions(+)
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index d48e828..32c7831 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -560,6 +560,8 @@ struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
- 	clk->dev_id = dev;
- 	clk->con_id = con;
+diff --git a/arch/arm/mach-omap2/display.c b/arch/arm/mach-omap2/display.c
+index bf852d7..0f9e479 100644
+--- a/arch/arm/mach-omap2/display.c
++++ b/arch/arm/mach-omap2/display.c
+@@ -21,6 +21,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/clk.h>
++#include <linux/clk-provider.h>
+ #include <linux/err.h>
+ #include <linux/delay.h>
+ #include <linux/of.h>
+diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+index 01ef59d..fbe8cf0 100644
+--- a/arch/arm/mach-omap2/omap_device.c
++++ b/arch/arm/mach-omap2/omap_device.c
+@@ -32,6 +32,7 @@
+ #include <linux/io.h>
+ #include <linux/clk.h>
+ #include <linux/clkdev.h>
++#include <linux/clk-provider.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/of.h>
+ #include <linux/notifier.h>
+diff --git a/arch/arm/plat-orion/common.c b/arch/arm/plat-orion/common.c
+index 3ec6e8e..961b593 100644
+--- a/arch/arm/plat-orion/common.c
++++ b/arch/arm/plat-orion/common.c
+@@ -15,6 +15,7 @@
+ #include <linux/serial_8250.h>
+ #include <linux/ata_platform.h>
+ #include <linux/clk.h>
++#include <linux/clk-provider.h>
+ #include <linux/clkdev.h>
+ #include <linux/mv643xx_eth.h>
+ #include <linux/mv643xx_i2c.h>
+diff --git a/drivers/clk/berlin/bg2.c b/drivers/clk/berlin/bg2.c
+index 515fb13..4c81e09 100644
+--- a/drivers/clk/berlin/bg2.c
++++ b/drivers/clk/berlin/bg2.c
+@@ -19,6 +19,7 @@
  
-+	hlist_add_head(&clk->child_node, &clk_core->per_user_clks);
-+
- 	return clk;
- }
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/clkdev.h>
+ #include <linux/kernel.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
+index 21784e4..748da9b 100644
+--- a/drivers/clk/berlin/bg2q.c
++++ b/drivers/clk/berlin/bg2q.c
+@@ -19,6 +19,7 @@
  
-@@ -1625,6 +1627,7 @@ static void clk_change_rate(struct clk_core *clk)
- int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
- {
- 	struct clk_core *top, *fail_clk;
-+	struct clk *clk_user;
- 	int ret = 0;
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/clkdev.h>
+ #include <linux/kernel.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+diff --git a/drivers/clk/clk-conf.c b/drivers/clk/clk-conf.c
+index aad4796..d36a7b3 100644
+--- a/drivers/clk/clk-conf.c
++++ b/drivers/clk/clk-conf.c
+@@ -8,6 +8,7 @@
+  */
  
- 	if (!clk)
-@@ -1633,6 +1636,13 @@ int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
- 	/* prevent racing with updates to the clock topology */
- 	clk_prepare_lock();
- 
-+	hlist_for_each_entry(clk_user, &clk->per_user_clks, child_node) {
-+		rate = max(rate, clk_user->floor_constraint);
-+
-+		if (clk_user->ceiling_constraint > 0)
-+			rate = min(rate, clk_user->ceiling_constraint);
-+	}
-+
- 	/* bail early if nothing to do */
- 	if (rate == clk_provider_get_rate(clk))
- 		goto out;
-@@ -1699,6 +1709,24 @@ int clk_set_rate(struct clk *clk_user, unsigned long rate)
- }
- EXPORT_SYMBOL_GPL(clk_set_rate);
- 
-+int clk_set_floor_rate(struct clk *clk_user, unsigned long rate)
-+{
-+	struct clk_core *clk = clk_to_clk_core(clk_user);
-+
-+	clk_user->floor_constraint = rate;
-+	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
-+}
-+EXPORT_SYMBOL_GPL(clk_set_floor_rate);
-+
-+int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
-+{
-+	struct clk_core *clk = clk_to_clk_core(clk_user);
-+
-+	clk_user->ceiling_constraint = rate;
-+	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
-+}
-+EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
-+
- struct clk_core *clk_provider_get_parent(struct clk_core *clk)
- {
- 	struct clk_core *parent;
-@@ -2043,6 +2071,8 @@ int __clk_init(struct device *dev, struct clk_core *clk)
- 			}
- 	 }
- 
-+	INIT_HLIST_HEAD(&clk->per_user_clks);
-+
- 	/*
- 	 * optional platform-specific magic
- 	 *
-@@ -2479,6 +2509,12 @@ int clk_notifier_unregister(struct clk *clk_user, struct notifier_block *nb)
- }
- EXPORT_SYMBOL_GPL(clk_notifier_unregister);
- 
-+void __clk_free_clk(struct clk *clk_user)
-+{
-+	hlist_del(&clk_user->child_node);
-+	kfree(clk_user);
-+}
-+
- #ifdef CONFIG_OF
- /**
-  * struct of_clk_provider - Clock provider registration structure
-diff --git a/drivers/clk/clk.h b/drivers/clk/clk.h
-index 49eff38..005deb3 100644
---- a/drivers/clk/clk.h
-+++ b/drivers/clk/clk.h
-@@ -21,4 +21,5 @@ void of_clk_unlock(void);
- #if defined(CONFIG_COMMON_CLK)
- struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
- 			     const char *con);
-+void __clk_free_clk(struct clk *clk_user);
- #endif
+ #include <linux/clk.h>
++#include <linux/clkdev.h>
+ #include <linux/clk-provider.h>
+ #include <linux/clk/clk-conf.h>
+ #include <linux/device.h>
 diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 0752cc9..0db829c 100644
+index da4bda8..c751d0c 100644
 --- a/drivers/clk/clkdev.c
 +++ b/drivers/clk/clkdev.c
-@@ -270,7 +270,7 @@ void clk_put(struct clk *clk)
- #if defined(CONFIG_COMMON_CLK)
- 	clk_core_t *core = clk_to_clk_core(clk);
+@@ -18,6 +18,7 @@
+ #include <linux/string.h>
+ #include <linux/mutex.h>
+ #include <linux/clk.h>
++#include <linux/clk-provider.h>
+ #include <linux/clkdev.h>
+ #include <linux/of.h>
  
--	kfree(clk);
-+	__clk_free_clk(clk);
- 	__clk_put(core);
- #else
- 	__clk_put(clk);
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index 9657fc8..c59d000 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -48,6 +48,7 @@ struct clk_core {
- 	unsigned long		accuracy;
- 	struct hlist_head	children;
- 	struct hlist_node	child_node;
-+	struct hlist_head	per_user_clks;
- 	unsigned int		notifier_count;
- #ifdef CONFIG_DEBUG_FS
- 	struct dentry		*dentry;
-@@ -61,6 +62,9 @@ struct clk {
- 	const char	*dev_id;
- 	const char	*con_id;
- 	void		*last_disable;
-+	unsigned long	floor_constraint;
-+	unsigned long	ceiling_constraint;
-+	struct hlist_node child_node;
- };
+diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
+index 344718d..2620c48 100644
+--- a/drivers/media/platform/exynos4-is/media-dev.c
++++ b/drivers/media/platform/exynos4-is/media-dev.c
+@@ -13,6 +13,7 @@
+ #include <linux/bug.h>
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/clkdev.h>
+ #include <linux/device.h>
+ #include <linux/errno.h>
+ #include <linux/i2c.h>
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 411dd7e..b1a8633 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -16,6 +16,29 @@
  
+ #ifdef CONFIG_COMMON_CLK
+ 
++/* Temporarily map the to-be-added API to the old API, just so stuff compiles */
++#define clk_core			clk
++
++#define __clk_create_clk
++
++#define clk_provider_get		clk_get
++#define clk_provider_get_sys		clk_get_sys
++#define devm_clk_provider_get		devm_clk_get
++#define of_clk_provider_get		of_clk_get
++#define of_clk_provider_get_by_name	of_clk_get_by_name
++
++#define clk_provider_set_rate		clk_set_rate
++#define clk_provider_get_rate		clk_get_rate
++#define clk_provider_round_rate		clk_round_rate
++#define clk_provider_set_parent		clk_set_parent
++#define clk_provider_get_parent		clk_get_parent
++#define clk_provider_prepare		clk_prepare
++#define clk_provider_unprepare		clk_unprepare
++#define clk_provider_enable		clk_enable
++#define clk_provider_disable		clk_disable
++#define clk_provider_prepare_enable	clk_prepare_enable
++#define clk_provider_disable_unprepare	clk_unprepare
++
  /*
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index f46a2eb..066b100 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -275,6 +275,24 @@ long clk_round_rate(struct clk *clk, unsigned long rate);
- int clk_set_rate(struct clk *clk, unsigned long rate);
+  * flags used across common struct clk.  these flags should only affect the
+  * top-level framework.  custom flags for dealing with hardware specifics
+diff --git a/include/linux/clk/zynq.h b/include/linux/clk/zynq.h
+index 7a5633b..a990a59 100644
+--- a/include/linux/clk/zynq.h
++++ b/include/linux/clk/zynq.h
+@@ -21,6 +21,7 @@
+ #define __LINUX_CLK_ZYNQ_H_
  
- /**
-+ * clk_set_floor_rate - set a minimum clock rate for a clock source
-+ * @clk: clock source
-+ * @rate: desired minimum clock rate in Hz
-+ *
-+ * Returns success (0) or negative errno.
-+ */
-+int clk_set_floor_rate(struct clk *clk, unsigned long rate);
-+
-+/**
-+ * clk_set_ceiling_rate - set a maximum clock rate for a clock source
-+ * @clk: clock source
-+ * @rate: desired maximum clock rate in Hz
-+ *
-+ * Returns success (0) or negative errno.
-+ */
-+int clk_set_ceiling_rate(struct clk *clk, unsigned long rate);
-+
-+/**
-  * clk_set_parent - set the parent clock source for this clock
-  * @clk: clock source
-  * @parent: parent clock source
+ #include <linux/spinlock.h>
++#include <linux/clk-provider.h>
+ 
+ void zynq_clock_init(void);
+ 
 -- 
 1.9.3
 
