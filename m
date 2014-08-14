@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbaHNT1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 15:27:42 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:36111 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444AbaHNT1l (ORCPT
+	id S1754201AbaHNT3M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 15:29:12 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:34189 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007AbaHNT3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 15:27:41 -0400
-Date: Thu, 14 Aug 2014 21:27:20 +0200
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, hskinnemoen@gmail.com, tglx@linutronix.de
-Subject: Re: [tip:locking/arch] locking,arch,avr32: Fold atomic_ops
-Message-ID: <20140814192720.GA16175@samfundet.no>
-References: <20140531141445.GD16155@laptop.programming.kicks-ass.net>
- <tip-d325209b6000dcd13404ee946d2292e15a56718c@git.kernel.org>
+	Thu, 14 Aug 2014 15:29:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-d325209b6000dcd13404ee946d2292e15a56718c@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407916658-8731-24-git-send-email-ast@plumgrid.com>
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+	<1407916658-8731-24-git-send-email-ast@plumgrid.com>
+Date: Thu, 14 Aug 2014 12:29:09 -0700
+Message-ID: <CAE40pddG1e3Q8OZ8t5QQimGhHzS5FbqK3YuvKnFywEEoSUbGzQ@mail.gmail.com>
+Subject: Re: [PATCH RFC v4 net-next 23/26] samples: bpf: elf file loader
+From: Brendan Gregg <brendan.d.gregg@gmail.com>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Thu 14 Aug 2014 10:19:44 -0700 or thereabout, tip-bot for Peter Zijlstra wrote:
-> Commit-ID:  d325209b6000dcd13404ee946d2292e15a56718c
-> Gitweb:     http://git.kernel.org/tip/d325209b6000dcd13404ee946d2292e15a56718c
-> Author:     Peter Zijlstra <peterz@infradead.org>
-> AuthorDate: Wed, 9 Apr 2014 21:51:29 +0200
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Thu, 14 Aug 2014 12:48:05 +0200
-> 
-> locking,arch,avr32: Fold atomic_ops
-> 
-> Many of the atomic op implementations are the same except for one
-> instruction; fold the lot into a few CPP macros and reduce LoC.
-> 
-> This also prepares for easy addition of new ops.
-> 
-> Requires the asm_op because of eor.
-> 
-> AVR32 is a bit special in that its ADD/SUB instructions are not
-> symmetric. Its SUB instruction allows for an 21bit immediate.
+On Wed, Aug 13, 2014 at 12:57 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+[...]
+> +static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
+> +{
+> +       int fd, event_fd, err;
+> +       char fmt[32];
+> +       char path[256] = DEBUGFS;
+> +
+> +       fd = bpf_prog_load(BPF_PROG_TYPE_TRACING_FILTER, prog, size, license);
+> +
+> +       if (fd < 0) {
+> +               printf("err %d errno %d\n", fd, errno);
+> +               return fd;
+> +       }
 
-Fantastic, looks great.
+Minor suggestion: since this is sample code, I'd always print the bpf
+log after this this printf() error message:
 
-Do you have any plans for merge route? I'll happily do it through the avr32
-tree, but if it is part of another series, it makes most sense to do it
-there.
+printf("%s", bpf_log_buf);
 
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Link: http://lkml.kernel.org/r/20140531141445.GD16155@laptop.programming.kicks-ass.net
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Which has helped me debug my eBPF programs, as will be the case for
+anyone hacking on the examples. Or have a function for logdie(), if
+the log buffer may be populated with useful messages from other error
+paths as well.
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-
-> ---
->  arch/avr32/include/asm/atomic.h | 123 ++++++++++++++++++++--------------------
->  1 file changed, 62 insertions(+), 61 deletions(-)
-
-<snipp diff>
-
--- 
-mvh
-Hans-Christian Egtvedt
+Brendan
