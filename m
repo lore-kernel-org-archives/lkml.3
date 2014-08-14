@@ -1,153 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172AbaHNXJG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 19:09:06 -0400
-Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:48773
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754494AbaHNXJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 19:09:04 -0400
-X-WSS-ID: 0NABKAW-07-9IJ-02
-X-M-MSG: 
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-To: <clemens@ladisch.de>, <linux@roeck-us.net>, <jdelvare@suse.de>,
-        <rdunlap@infradead.org>, <bp@suse.de>
-CC: <lm-sensors@lm-sensors.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Subject: [PATCH V3] hwmon, k10temp: Add support for F15h M60h
-Date: Thu, 14 Aug 2014 18:15:27 -0500
-Message-ID: <1408058127-19374-1-git-send-email-aravind.gopalakrishnan@amd.com>
-X-Mailer: git-send-email 2.0.3
+	id S932263AbaHNXJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 19:09:28 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17903 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754494AbaHNXJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 19:09:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,866,1400050800"; 
+   d="scan'208";a="468903183"
+Date: Thu, 14 Aug 2014 17:09:25 -0600 (MDT)
+From: Keith Busch <keith.busch@intel.com>
+X-X-Sender: vmware@localhost.localdom
+To: Jens Axboe <axboe@fb.com>
+cc: =?ISO-8859-15?Q?Matias_Bj=F8rling?= <m@bjorling.me>,
+        Keith Busch <keith.busch@intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-nvme <linux-nvme@lists.infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Rob Nelson <rlnelson@google.com>, Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH v11] NVMe: Convert to blk-mq
+In-Reply-To: <53ECD125.3080701@fb.com>
+Message-ID: <alpine.LRH.2.03.1408141651300.14603@AMR>
+References: <1406365643-27020-1-git-send-email-m@bjorling.me> <1406365643-27020-2-git-send-email-m@bjorling.me> <CAOu_J6mW-2e2Jgm+khodLPah_-RZrD599SmSH+Mszd0AjterrQ@mail.gmail.com> <alpine.LRH.2.03.1408131519590.14603@AMR> <53EC7273.5060303@bjorling.me>
+ <53ECD125.3080701@fb.com>
+User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019004)(6009001)(428002)(199003)(189002)(92726001)(77156001)(48376002)(74662001)(74502001)(104166001)(106466001)(93916002)(97736001)(4396001)(62966002)(80022001)(102836001)(575784001)(88136002)(83072002)(68736004)(53416004)(87936001)(85852003)(31966008)(92566001)(2201001)(105586002)(46102001)(83322001)(50226001)(229853001)(50466002)(33646002)(81342001)(44976005)(47776003)(19580395003)(99396002)(107046002)(84676001)(77096002)(76482001)(87286001)(50986999)(81542001)(19580405001)(86362001)(89996001)(64706001)(101416001)(85306004)(77982001)(21056001)(36756003)(79102001)(95666004)(20776003)(19627235001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB038;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03030B9493
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds temperature monitoring support for F15h M60h processor.
- - Add new pci device id for the relevant processor
- - The functionality of REG_REPORTED_TEMPERATURE is moved to
-   D0F0xBC_xD820_0CA4 [Reported Temperature Control]
-   - So, use this to get CUR_TEMP value
-   - Since we need an indirect register access, protect this with
-     a mutex lock
- - Add Kconfig, Doc entries to indicate support for this processor.
+On Thu, 14 Aug 2014, Jens Axboe wrote:
+> nr_tags must be uninitialized or screwed up somehow, otherwise I don't
+> see how that kmalloc() could warn on being too large. Keith, are you
+> running with slab debugging? Matias, might be worth trying.
 
-Signed-off-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+The allocation and freeing of blk-mq parts seems a bit asymmetrical
+to me. The 'tags' belong to the tagset, but any request_queue using
+that tagset may free the tags. I looked to separate the tag allocation
+concerns, but that's more time than I have, so this is my quick-fix
+driver patch, forcing tag access through the hw_ctx.
+
 ---
-Changes in V3:
- - Move helper function that protects indirect register access locally
-   until a time when others outside k10temp may need it
-   
-Changes in V2:
- - Prevent race with other code that may require indirect NB_SMU_REG access
- - Fix some minor style issues
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index 384dc91..91432d2 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -109,7 +109,7 @@ struct nvme_queue {
+  	u8 cqe_seen;
+  	u8 q_suspended;
+  	struct async_cmd_info cmdinfo;
+-	struct blk_mq_tags *tags;
++	struct blk_mq_hw_ctx *hctx;
+  };
 
- Documentation/hwmon/k10temp |  2 +-
- drivers/hwmon/Kconfig       |  4 ++--
- drivers/hwmon/k10temp.c     | 35 ++++++++++++++++++++++++++++++++---
- 3 files changed, 35 insertions(+), 6 deletions(-)
+  /*
+@@ -148,6 +148,7 @@ static int nvme_admin_init_hctx(struct blk_mq_hw_ctx *hctx, void *data,
+  	struct nvme_queue *nvmeq = dev->queues[0];
 
-diff --git a/Documentation/hwmon/k10temp b/Documentation/hwmon/k10temp
-index ee6d30e..254d2f5 100644
---- a/Documentation/hwmon/k10temp
-+++ b/Documentation/hwmon/k10temp
-@@ -11,7 +11,7 @@ Supported chips:
-   Socket S1G2: Athlon (X2), Sempron (X2), Turion X2 (Ultra)
- * AMD Family 12h processors: "Llano" (E2/A4/A6/A8-Series)
- * AMD Family 14h processors: "Brazos" (C/E/G/Z-Series)
--* AMD Family 15h processors: "Bulldozer" (FX-Series), "Trinity", "Kaveri"
-+* AMD Family 15h processors: "Bulldozer" (FX-Series), "Trinity", "Kaveri", "Carrizo"
- * AMD Family 16h processors: "Kabini", "Mullins"
- 
-   Prefix: 'k10temp'
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 02d3d85..57ba400 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -280,8 +280,8 @@ config SENSORS_K10TEMP
- 	  If you say yes here you get support for the temperature
- 	  sensor(s) inside your CPU. Supported are later revisions of
- 	  the AMD Family 10h and all revisions of the AMD Family 11h,
--	  12h (Llano), 14h (Brazos), 15h (Bulldozer/Trinity/Kaveri) and
--	  16h (Kabini/Mullins) microarchitectures.
-+	  12h (Llano), 14h (Brazos), 15h (Bulldozer/Trinity/Kaveri/Carrizo)
-+	  and 16h (Kabini/Mullins) microarchitectures.
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called k10temp.
-diff --git a/drivers/hwmon/k10temp.c b/drivers/hwmon/k10temp.c
-index f7b46f6..36ea152 100644
---- a/drivers/hwmon/k10temp.c
-+++ b/drivers/hwmon/k10temp.c
-@@ -33,6 +33,9 @@ static bool force;
- module_param(force, bool, 0444);
- MODULE_PARM_DESC(force, "force loading on processors with erratum 319");
- 
-+/* Provide lock for writing to NB_SMU_IND_ADDR */
-+DEFINE_MUTEX(nb_smu_ind_mutex);
-+
- /* CPUID function 0x80000001, ebx */
- #define CPUID_PKGTYPE_MASK	0xf0000000
- #define CPUID_PKGTYPE_F		0x00000000
-@@ -51,13 +54,38 @@ MODULE_PARM_DESC(force, "force loading on processors with erratum 319");
- #define REG_NORTHBRIDGE_CAPABILITIES	0xe8
- #define  NB_CAP_HTC			0x00000400
- 
-+/*
-+ * For F15h M60h, functionality of REG_REPORTED_TEMPERATURE
-+ * has been moved to D0F0xBC_xD820_0CA4 [Reported Temperature
-+ * Control]
-+ */
-+#define F15H_M60H_REPORTED_TEMP_CTRL_OFFSET	0xd8200ca4
-+#define PCI_DEVICE_ID_AMD_15H_M60H_NB_F3	0x1573
-+
-+void amd_nb_smu_index_read(struct pci_dev *pdev, unsigned int devfn,
-+			   int offset, u32 *val)
-+{
-+	mutex_lock(&nb_smu_ind_mutex);
-+	pci_bus_write_config_dword(pdev->bus, devfn,
-+				   0xb8, offset);
-+	pci_bus_read_config_dword(pdev->bus, devfn,
-+				  0xbc, val);
-+	mutex_unlock(&nb_smu_ind_mutex);
-+}
-+
- static ssize_t show_temp(struct device *dev,
- 			 struct device_attribute *attr, char *buf)
- {
- 	u32 regval;
+  	hctx->driver_data = nvmeq;
++	nvmeq->hctx = hctx;
+  	return 0;
+  }
+
+@@ -174,6 +175,7 @@ static int nvme_init_hctx(struct blk_mq_hw_ctx *hctx, void *data,
+  	irq_set_affinity_hint(dev->entry[nvmeq->cq_vector].vector,
+  								hctx->cpumask);
+  	hctx->driver_data = nvmeq;
++	nvmeq->hctx = hctx;
+  	return 0;
+  }
+
+@@ -280,8 +282,7 @@ static void async_completion(struct nvme_queue *nvmeq, void *ctx,
+  static inline struct nvme_cmd_info *get_cmd_from_tag(struct nvme_queue *nvmeq,
+  				  unsigned int tag)
+  {
+-	struct request *req = blk_mq_tag_to_rq(nvmeq->tags, tag);
 -
--	pci_read_config_dword(to_pci_dev(dev),
--			      REG_REPORTED_TEMPERATURE, &regval);
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	if (boot_cpu_data.x86 == 0x15 && boot_cpu_data.x86_model == 0x60) {
-+		amd_nb_smu_index_read(pdev, PCI_DEVFN(0, 0),
-+				      F15H_M60H_REPORTED_TEMP_CTRL_OFFSET,
-+				      &regval);
-+	} else {
-+		pci_read_config_dword(pdev, REG_REPORTED_TEMPERATURE, &regval);
-+	}
- 	return sprintf(buf, "%u\n", (regval >> 21) * 125);
- }
- 
-@@ -211,6 +239,7 @@ static const struct pci_device_id k10temp_id_table[] = {
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M60H_NB_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F3) },
- 	{}
--- 
-2.0.3
++	struct request *req = blk_mq_tag_to_rq(nvmeq->hctx->tags, tag);
+  	return blk_mq_rq_to_pdu(req);
+  }
 
+@@ -654,8 +655,6 @@ static int nvme_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+  		nvme_submit_flush(nvmeq, ns, req->tag);
+  	else
+  		nvme_submit_iod(nvmeq, iod, ns);
+-
+- queued:
+  	nvme_process_cq(nvmeq);
+  	spin_unlock_irq(&nvmeq->q_lock);
+  	return BLK_MQ_RQ_QUEUE_OK;
+@@ -1051,9 +1050,8 @@ static void nvme_cancel_queue_ios(void *data, unsigned long *tag_map)
+  		if (tag >= qdepth)
+  			break;
+
+-		req = blk_mq_tag_to_rq(nvmeq->tags, tag++);
++		req = blk_mq_tag_to_rq(nvmeq->hctx->tags, tag++);
+  		cmd = blk_mq_rq_to_pdu(req);
+  		if (cmd->ctx == CMD_CTX_CANCELLED)
+  			continue;
+
+@@ -1132,8 +1130,8 @@ static void nvme_clear_queue(struct nvme_queue *nvmeq)
+  {
+  	spin_lock_irq(&nvmeq->q_lock);
+  	nvme_process_cq(nvmeq);
+-	if (nvmeq->tags)
+-		blk_mq_tag_busy_iter(nvmeq->tags, nvme_cancel_queue_ios, nvmeq);
++	if (nvmeq->hctx->tags)
++		blk_mq_tag_busy_iter(nvmeq->hctx->tags, nvme_cancel_queue_ios, nvmeq);
+  	spin_unlock_irq(&nvmeq->q_lock);
+  }
+
+@@ -1353,8 +1351,6 @@ static int nvme_alloc_admin_tags(struct nvme_dev *dev)
+  		if (blk_mq_alloc_tag_set(&dev->admin_tagset))
+  			return -ENOMEM;
+
+-		dev->queues[0]->tags = dev->admin_tagset.tags[0];
+-
+  		dev->admin_q = blk_mq_init_queue(&dev->admin_tagset);
+  		if (!dev->admin_q) {
+  			blk_mq_free_tag_set(&dev->admin_tagset);
+@@ -2055,9 +2051,6 @@ static int nvme_dev_add(struct nvme_dev *dev)
+  	if (blk_mq_alloc_tag_set(&dev->tagset))
+  		goto out;
+
+-	for (i = 1; i < dev->online_queues; i++)
+-		dev->queues[i]->tags = dev->tagset.tags[i - 1];
+-
+  	id_ns = mem;
+  	for (i = 1; i <= nn; i++) {
+  		res = nvme_identify(dev, i, 0, dma_addr);
