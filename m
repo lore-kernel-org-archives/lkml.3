@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062AbaHNV4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 17:56:13 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:43095 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754812AbaHNV4M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 17:56:12 -0400
+	id S932172AbaHNV5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 17:57:55 -0400
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:39438
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754400AbaHNV5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 17:57:53 -0400
+X-WSS-ID: 0NABGZP-08-7D6-02
+X-M-MSG: 
+Message-ID: <53ED30BD.90403@amd.com>
+Date: Thu, 14 Aug 2014 16:57:17 -0500
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140814205143.GY6758@twins.programming.kicks-ass.net>
-References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
-	<20140814205143.GY6758@twins.programming.kicks-ass.net>
-Date: Thu, 14 Aug 2014 17:56:10 -0400
-Message-ID: <CAJ5Y-ebgJi8Ngxg1X+h7KMundGZPFhYC0hr0Sog6htj=czszgQ@mail.gmail.com>
-Subject: Re: [RFC 0/3] Experimental patchset for CPPC
-From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mike Turquette <mike.turquette@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>, arjan@linux.intel.com,
-        mingo@kernel.org, len.brown@intel.com, rjw@rjwysocki.net,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
-        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
-        dirk.brandewie@gmail.com
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@suse.de>, Clemens Ladisch <clemens@ladisch.de>
+CC: Guenter Roeck <linux@roeck-us.net>, <jdelvare@suse.de>,
+        <rdunlap@infradead.org>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <dan.carpenter@oracle.com>,
+        <lm-sensors@lm-sensors.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] hwmon, k10temp: Add support for F15h M60h
+References: <1408035262-18026-1-git-send-email-aravind.gopalakrishnan@amd.com>
+ <20140814201730.GA501@roeck-us.net> <53ED1A87.6000400@ladisch.de>
+ <20140814210816.GC18887@pd.tnic>
+In-Reply-To: <20140814210816.GC18887@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019004)(6009001)(428002)(164054003)(377454003)(479174003)(189002)(24454002)(199003)(64706001)(83322001)(21056001)(97736001)(85852003)(65816999)(102836001)(95666004)(81542001)(44976005)(54356999)(107046002)(47776003)(36756003)(20776003)(33656002)(50986999)(83072002)(99396002)(85306004)(101416001)(105586002)(79102001)(23676002)(83506001)(65806001)(106466001)(87936001)(65956001)(76176999)(74502001)(92566001)(77982001)(93886004)(92726001)(74662001)(4396001)(46102001)(86362001)(81342001)(68736004)(84676001)(76482001)(31966008)(50466002)(80022001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB043;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03030B9493
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-On 14 August 2014 16:51, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Aug 14, 2014 at 03:57:07PM -0400, Ashwin Chaugule wrote:
->>
->>
->> What is CPPC:
->> =============
->>
->> CPPC is the new interface for CPU performance control between the OS and the
->> platform defined in ACPI 5.0+. The interface is built on an abstract
->> representation of CPU performance rather than raw frequency.  Basic operation
->> consists of:
+On 8/14/2014 4:08 PM, Borislav Petkov wrote:
+> On Thu, Aug 14, 2014 at 10:22:31PM +0200, Clemens Ladisch wrote:
+>>>> +	depends on X86 && PCI && AMD_NB
+>>> Is the added dependency acceptable ?
+>> Yes, it is automatically set from CPU_SUP_AMD.
+> Well, we can always move that function to k10temp but I'll venture a
+> guess that Aravind wants to use it somewhere else too? Correct, Aravind?
 >
-> Why do we want this? Typically we've ignored ACPI and gone straight to
-> MSR access, intel_pstate and intel_idle were created especially to avoid
-> ACPI, so why return to it.
->
-> Also, the whole interface sounds like trainwreck (one would not expect
-> anything else from ACPI).
->
-> So _why_?
 
-The overall idea is that tying the notion of CPU performance to CPU
-frequency is no longer true these days.[1]. So, using some direction
-from an OS , the platforms want to be able to decide how to adjust CPU
-performance by using knowledge that may be very platform specific.
-e.g. through the use of performance counters, thermal budgets and
-other system specific constraints. So, CPPC describes a way for the OS
-to request performance within certain bounds and then letting the
-platform optimize it within those constraints. Expressing CPU
-performance in an abstract way, should also help keep things uniform
-across various architecture implementations.
+Actually I don't need it outside of k10temp as of now (or near future)
+I added it in amd_nb as that was Clemens, Guenter's suggestion on the 
+previous version;
+Besides, it made sense as it's an indirect access of NB_SMU register and 
+amd_nb seems a good place to put the function in case someone needs it 
+in the future.
 
-I dont see CPPC as necessarily an ACPI specific thing. If the platform
-can provide the information which CPPC lays out via MSRs or other
-system IO, then the higher algorithms should still work. The CPPC
-table itself is nothing but register descriptions. It describes how
-and where to access the registers. The registers can be anything, from
-system I/O addresses, MSRs, CP15, or Mailbox type addresses(PCC). CPPC
-doesn't even you tell what to do with that information. So its really
-just a descriptor.
+I can move it locally to k10temp and remove the dependency if that's 
+more preferable. Do let me know.
 
-If you see the example in [2], the aperf and mperf reads directly go
-to MSR addresses as parsed from the tables. If the platform does not
-have ACPI, but knows how to provide the same information, then it can
-directly read its MSRs or other sys regs. e.g. as in the case of
-core_get_{min,max}_pstate(), which are used to get highest and lowest
-performance values.
-
-But I think the problem is that we dont have an algorithm that can
-make use of the information that CPPC supported platforms can provide,
-nor can we provide CPPC related information back to the platform.
-
-Cheers,
-Ashwin
-
-[1]- https://plus.google.com/+ArjanvandeVen/posts/dLn9T4ehywL
-[2] - http://git.linaro.org/people/ashwin.chaugule/leg-kernel.git/blob/236d901d31fb06fda798880c9ca09d65123c5dd9:/drivers/cpufreq/cppc_x86.c
+Thanks,
+-Aravind.
