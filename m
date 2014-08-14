@@ -1,98 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaHNHBn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 03:01:43 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60410 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885AbaHNHBm (ORCPT
+	id S1754084AbaHNHCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 03:02:09 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:56882 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753900AbaHNHCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 03:01:42 -0400
-Date: Thu, 14 Aug 2014 09:01:22 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/5] perf, x86: Document all Haswell models
-Message-ID: <20140814070122.GC16043@twins.programming.kicks-ass.net>
-References: <1407979069-7121-1-git-send-email-andi@firstfloor.org>
- <1407979069-7121-3-git-send-email-andi@firstfloor.org>
+	Thu, 14 Aug 2014 03:02:07 -0400
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+To: gleb@kernel.org
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        stable@vger.kernel.org, David Matlack <dmatlack@google.com>
+Subject: [PATCH 1/2] KVM: fix cache stale memslot info with correct mmio generation number
+Date: Thu, 14 Aug 2014 15:01:52 +0800
+Message-Id: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Izn7cH1Com+I3R9J"
-Content-Disposition: inline
-In-Reply-To: <1407979069-7121-3-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081407-5140-0000-0000-0000002958D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We may cache the current mmio generation number and stale memslot info
+into spte, like this scenario：
 
---Izn7cH1Com+I3R9J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+       CPU 0                                  CPU 1
+page fault:                                add a new memslot
+read memslot and detecting its a mmio access
+                                           update memslots
+                                           update generation number
+read generation number
+cache the gpa and current gen number into spte
 
-On Wed, Aug 13, 2014 at 06:17:46PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->=20
-> Add names for each Haswell model as requested by Peter.
->=20
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->=20
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu=
-/perf_event_intel.c
-> index ef6c8b7..03befdd 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -2540,9 +2540,9 @@ __init int intel_pmu_init(void)
-> =20
-> =20
->  	case 60: /* Haswell Client */
-> +	case 70: /* Crystall Well */
-> +	case 63: /* Haswell Server */
-> +	case 69: /* Haswell ULT */
+So, if guest accesses the gpa later, it will generate a incorrect
+mmio exit
 
-So I googled Crystalwell, and I'm not sure I understand; is that
-Haswell-H + GT3e or it that Haswell + GT3e, the distinction being that
-there are also Desktop parts with Iris Pro 5200, such like the
-Haswell-R.
+This patch fixes it by updating the generation number after
+synchronize_srcu_expedited() that makes sure the generation
+number updated only if memslots update is finished
 
-Haswell Server, is that the single socket one, or is it like IVB both
-the EP and EX parts?
+Cc: stable@vger.kernel.org
+Cc: David Matlack <dmatlack@google.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ virt/kvm/kvm_main.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-And is 69 only the ULT or also the ULX parts?
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 33712fb..bb40df3 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -96,7 +96,7 @@ static void hardware_disable_all(void);
+ 
+ static void kvm_io_bus_destroy(struct kvm_io_bus *bus);
+ static void update_memslots(struct kvm_memslots *slots,
+-			    struct kvm_memory_slot *new, u64 last_generation);
++			    struct kvm_memory_slot *new);
+ 
+ static void kvm_release_pfn_dirty(pfn_t pfn);
+ static void mark_page_dirty_in_slot(struct kvm *kvm,
+@@ -687,8 +687,7 @@ static void sort_memslots(struct kvm_memslots *slots)
+ }
+ 
+ static void update_memslots(struct kvm_memslots *slots,
+-			    struct kvm_memory_slot *new,
+-			    u64 last_generation)
++			    struct kvm_memory_slot *new)
+ {
+ 	if (new) {
+ 		int id = new->id;
+@@ -699,8 +698,6 @@ static void update_memslots(struct kvm_memslots *slots,
+ 		if (new->npages != npages)
+ 			sort_memslots(slots);
+ 	}
+-
+-	slots->generation = last_generation + 1;
+ }
+ 
+ static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
+@@ -722,9 +719,12 @@ static struct kvm_memslots *install_new_memslots(struct kvm *kvm,
+ {
+ 	struct kvm_memslots *old_memslots = kvm->memslots;
+ 
+-	update_memslots(slots, new, kvm->memslots->generation);
++	/* ensure generation number is always increased. */
++	slots->generation = old_memslots->generation;
++	update_memslots(slots, new);
+ 	rcu_assign_pointer(kvm->memslots, slots);
+ 	synchronize_srcu_expedited(&kvm->srcu);
++	slots->generation++;
+ 
+ 	kvm_arch_memslots_updated(kvm);
+ 
+-- 
+1.8.1.4
 
-Would something like this be accurate:?
-
-	case 60: /* 22nm Haswell                        */
-	case 70: /* 22nm Haswell + GT3e (Iris Pro 5200) */
-	case 69: /* 22nm Haswell ULT                    */
-	case 63: /* 22nm Haswell-EP/EX                  */
-
-
-
---Izn7cH1Com+I3R9J
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT7F68AAoJEHZH4aRLwOS6jgoP/ia/nerZAuix/n6nYM45pSKM
-Pv/tO4P5Y/aEj6vYLuZjlTNi/7pysHJZLQP+T1rl9kv6K2bMxtY+Gg1BB8U0o4oR
-i+8ZCnxdpayxOP0hlrGOiDzZH2PCMQKFCmOlzItZFBiErxGhKhnjbESB41sm/dCH
-/3taguMfIHWClNPZtzuElx3t2V2/kEML881PiVRS2dQkb4D1IIHfuvtBf64urY35
-tIZmjGqK7Oh+PwW7+LB8UScmRkq0tHRP+rQeif2rf6dmcL3RlCbN1GyQD6KB2Cab
-opDQ49Y6yxZ4ng5ZDM7inm4VLJD5WbemROmM7OGCB/3PMK4zmTWHY1ehxNF0cnZt
-KvUCcdX07alENu95gPI48JohvIMhFncWUkqfm8fW2nmlvmhp3DRMtvx/Md84p7Ie
-NL5MBfSZ/Wz5HyO5HLzp8wrFslKIEXxAw9G0ABg0hhIcqwOKBjijumWX8xzsGiWL
-jOZtOHGM1keB0P8BFx1KGLXbPZX7BMksHavpfz34HSlHr35wWzOMHB0JqkYUCXFb
-MCKc7gp5mOC8PojvBI6477wLu1QrWurD2OtGJN+zgcmLmB5Xf+mzYSs2adaRbCr9
-WVKSvSO9J9eNyoIzPUUV9uLvk06ZiJayOUkaZKJEIboxMb7BBVdxnL1DbTEmd4h5
-VQaj/alI7UdVIyPyyl8T
-=3jEI
------END PGP SIGNATURE-----
-
---Izn7cH1Com+I3R9J--
