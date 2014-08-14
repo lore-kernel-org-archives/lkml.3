@@ -1,67 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947AbaHNHkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 03:40:49 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49799 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751243AbaHNHks (ORCPT
+	id S1752473AbaHNIEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 04:04:12 -0400
+Received: from regular1.263xmail.com ([211.150.99.134]:45486 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078AbaHNIEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 03:40:48 -0400
-Date: Thu, 14 Aug 2014 08:40:23 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: santosh.shilimkar@ti.com, will.deacon@arm.com, catalin.marinas@arm.com,
-        akpm@linux-foundation.org, damm@opensource.se,
-        ard.biesheuvel@linaro.org, olof@lixom.net, kyungmin.park@samsung.com,
-        sw0312.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: Use 'model' property to set machine_name from
-	Device Tree
-Message-ID: <20140814074023.GR30401@n2100.arm.linux.org.uk>
-References: <1404697991-32191-1-git-send-email-cw00.choi@samsung.com> <53EC0B2A.2070308@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53EC0B2A.2070308@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 14 Aug 2014 04:04:05 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: robh+dt@kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <f846784bac9bf233bb4cdcbbb497e072>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Addy Ke <addy.ke@rock-chips.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
+        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
+        heiko@sntech.de, olof@lixom.net, dianders@chromium.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        zhenfu.fang@rock-chips.com, cf@rock-chips.com, lintao@rock-chips.com,
+        chenfen@rock-chips.com, zyf@rock-chips.com, xjq@rock-chips.com,
+        huangtao@rock-chips.com, zyw@rock-chips.com, yzq@rock-chips.com,
+        hj@rock-chips.com, kever.yang@rock-chips.com, zhangqing@rock-chips.com,
+        hl@rock-chips.com, Addy Ke <addy.ke@rock-chips.com>
+Subject: [PATCH] mmc: dw_mmc: move rockchip related code to a separate file
+Date: Thu, 14 Aug 2014 16:01:33 +0800
+Message-Id: <1408003293-27375-1-git-send-email-addy.ke@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1406786498-3935-1-git-send-email-addy.ke@rock-chips.com>
+References: <1406786498-3935-1-git-send-email-addy.ke@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 10:04:42AM +0900, Chanwoo Choi wrote:
-> On 07/07/2014 10:53 AM, Chanwoo Choi wrote:
-> > This patch use 'model' property from Device Tree to set machine_name.
-> > The arm64 has already got the machine_name from Device Tree.
-> > 
-> > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> > ---
-> >  arch/arm/kernel/setup.c | 4 ++++
-> >  1 file changed, 4 insertions(+)
-> > 
-> > diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-> > index 8a16ee5..698616f 100644
-> > --- a/arch/arm/kernel/setup.c
-> > +++ b/arch/arm/kernel/setup.c
-> > @@ -878,7 +878,11 @@ void __init setup_arch(char **cmdline_p)
-> >  	if (!mdesc)
-> >  		mdesc = setup_machine_tags(__atags_pointer, __machine_arch_type);
-> >  	machine_desc = mdesc;
-> > +#if CONFIG_OF
-> > +	machine_name = of_flat_dt_get_machine_name();
-> > +#else
-> >  	machine_name = mdesc->name;
-> > +#endif
-> >  
-> >  	if (mdesc->reboot_mode != REBOOT_HARD)
-> >  		reboot_mode = mdesc->reboot_mode;
-> > 
-> 
-> Ping.
+To support HS200 and UHS-1, we need add a big hunk of code,
+as shown in the following patches. So a separate file for
+rockchip SOCs is suitable.
 
-This has come up before, and the decision was against exposing this.
+Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+---
+ drivers/mmc/host/Kconfig           |   9 +++
+ drivers/mmc/host/Makefile          |   1 +
+ drivers/mmc/host/dw_mmc-pltfm.c    |  57 ---------------
+ drivers/mmc/host/dw_mmc-rockchip.c | 146 +++++++++++++++++++++++++++++++++++++
+ 4 files changed, 156 insertions(+), 57 deletions(-)
+ create mode 100644 drivers/mmc/host/dw_mmc-rockchip.c
 
-Thanks.
-
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index a565254..ae61df6 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -621,6 +621,15 @@ config MMC_DW_PCI
+ 
+ 	  If unsure, say N.
+ 
++config MMC_DW_ROCKCHIP
++	tristate "Rockchip specific extensions for Synopsys DW Memory Card Interface"
++	depends on MMC_DW
++	select MMC_DW_PLTFM
++	help
++	  This selects support for Rockchip SoC specific extensions to the
++	  Synopsys DesignWare Memory Card Interface driver. Select this option
++	  for platforms based on RK3066, RK3188 and RK3288 SoC's.
++
+ config MMC_SH_MMCIF
+ 	tristate "SuperH Internal MMCIF support"
+ 	depends on MMC_BLOCK
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index 7f81ddf..5fce465 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -45,6 +45,7 @@ obj-$(CONFIG_MMC_DW_PLTFM)	+= dw_mmc-pltfm.o
+ obj-$(CONFIG_MMC_DW_EXYNOS)	+= dw_mmc-exynos.o
+ obj-$(CONFIG_MMC_DW_K3)		+= dw_mmc-k3.o
+ obj-$(CONFIG_MMC_DW_PCI)	+= dw_mmc-pci.o
++obj-$(CONFIG_MMC_DW_ROCKCHIP)	+= dw_mmc-rockchip.o
+ obj-$(CONFIG_MMC_SH_MMCIF)	+= sh_mmcif.o
+ obj-$(CONFIG_MMC_JZ4740)	+= jz4740_mmc.o
+ obj-$(CONFIG_MMC_VUB300)	+= vub300.o
+diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
+index b547f7a..0c56c41 100644
+--- a/drivers/mmc/host/dw_mmc-pltfm.c
++++ b/drivers/mmc/host/dw_mmc-pltfm.c
+@@ -26,64 +26,11 @@
+ #include "dw_mmc.h"
+ #include "dw_mmc-pltfm.h"
+ 
+-#define RK3288_CLKGEN_DIV	2
+-
+ static void dw_mci_pltfm_prepare_command(struct dw_mci *host, u32 *cmdr)
+ {
+ 	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
+ }
+ 
+-static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
+-{
+-	host->bus_hz /= RK3288_CLKGEN_DIV;
+-
+-	return 0;
+-}
+-
+-static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
+-{
+-	int ret;
+-	unsigned int cclkin;
+-	u32 bus_hz;
+-
+-	/*
+-	 * cclkin: source clock of mmc controller.
+-	 * bus_hz: card interface clock generated by CLKGEN.
+-	 * bus_hz = cclkin / RK3288_CLKGEN_DIV;
+-	 * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
+-	 *
+-	 * Note: div can only be 0 or 1
+-	 *       if DDR50 8bit mode(only emmc work in 8bit mode),
+-	 *       div must be set 1
+-	 */
+-	if ((ios->bus_width == MMC_BUS_WIDTH_8) &&
+-	    (ios->timing == MMC_TIMING_MMC_DDR52))
+-		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
+-	else
+-		cclkin = ios->clock * RK3288_CLKGEN_DIV;
+-
+-	ret = clk_set_rate(host->ciu_clk, cclkin);
+-	if (ret)
+-		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
+-
+-	bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
+-	if (bus_hz != host->bus_hz) {
+-		host->bus_hz = bus_hz;
+-		/* force dw_mci_setup_bus() */
+-		host->current_speed = 0;
+-	}
+-}
+-
+-static const struct dw_mci_drv_data rk2928_drv_data = {
+-	.prepare_command	= dw_mci_pltfm_prepare_command,
+-};
+-
+-static const struct dw_mci_drv_data rk3288_drv_data = {
+-	.prepare_command	= dw_mci_pltfm_prepare_command,
+-	.set_ios	= dw_mci_rk3288_set_ios,
+-	.setup_clock	= dw_mci_rk3288_setup_clock,
+-};
+-
+ static const struct dw_mci_drv_data socfpga_drv_data = {
+ 	.prepare_command	= dw_mci_pltfm_prepare_command,
+ };
+@@ -144,10 +91,6 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
+ 
+ static const struct of_device_id dw_mci_pltfm_match[] = {
+ 	{ .compatible = "snps,dw-mshc", },
+-	{ .compatible = "rockchip,rk2928-dw-mshc",
+-		.data = &rk2928_drv_data },
+-	{ .compatible = "rockchip,rk3288-dw-mshc",
+-		.data = &rk3288_drv_data },
+ 	{ .compatible = "altr,socfpga-dw-mshc",
+ 		.data = &socfpga_drv_data },
+ 	{},
+diff --git a/drivers/mmc/host/dw_mmc-rockchip.c b/drivers/mmc/host/dw_mmc-rockchip.c
+new file mode 100644
+index 0000000..3d86ef3
+--- /dev/null
++++ b/drivers/mmc/host/dw_mmc-rockchip.c
+@@ -0,0 +1,146 @@
++/*
++ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
++ * Author: addy ke <addy.ke@rock-chips.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++#include <linux/mmc/host.h>
++#include <linux/mmc/dw_mmc.h>
++#include <linux/of_address.h>
++
++#include "dw_mmc.h"
++#include "dw_mmc-pltfm.h"
++
++#define RK3288_CLKGEN_DIV       2
++
++static void dw_mci_rockchip_prepare_command(struct dw_mci *host, u32 *cmdr)
++{
++	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
++}
++
++static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
++{
++	host->bus_hz /= RK3288_CLKGEN_DIV;
++
++	return 0;
++}
++
++static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
++{
++	int ret;
++	unsigned int cclkin;
++	u32 bus_hz;
++
++	/*
++	 * cclkin: source clock of mmc controller
++	 * bus_hz: card interface clock generated by CLKGEN
++	 * bus_hz = cclkin / RK3288_CLKGEN_DIV
++	 * os->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
++	 *
++	 * Note: div can only be 0 or 1
++	 *       if DDR50 8bit mode(only emmc work in 8bit mode),
++	 *       div must be set 1
++	 */
++	if (ios->bus_width == MMC_BUS_WIDTH_8 &&
++	    ios->timing == MMC_TIMING_MMC_DDR52)
++		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
++	else
++		cclkin = ios->clock * RK3288_CLKGEN_DIV;
++
++	ret = clk_set_rate(host->ciu_clk, cclkin);
++	if (ret)
++		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
++
++	bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
++	if (bus_hz != host->bus_hz) {
++		host->bus_hz = bus_hz;
++		/* force dw_mci_setup_bus() */
++		host->current_speed = 0;
++	}
++}
++
++static const struct dw_mci_drv_data rk2928_drv_data = {
++	.prepare_command        = dw_mci_rockchip_prepare_command,
++};
++
++static const struct dw_mci_drv_data rk3288_drv_data = {
++	.prepare_command        = dw_mci_rockchip_prepare_command,
++	.set_ios		= dw_mci_rk3288_set_ios,
++	.setup_clock    = dw_mci_rk3288_setup_clock,
++};
++
++static const struct of_device_id dw_mci_rockchip_match[] = {
++	{ .compatible = "rockchip,rk2928-dw-mshc",
++		.data = &rk2928_drv_data },
++	{ .compatible = "rockchip,rk3288-dw-mshc",
++		.data = &rk3288_drv_data },
++	{},
++};
++MODULE_DEVICE_TABLE(of, dw_mci_rockchip_match);
++
++static int dw_mci_rockchip_probe(struct platform_device *pdev)
++{
++	const struct dw_mci_drv_data *drv_data;
++	const struct of_device_id *match;
++
++	match = of_match_node(dw_mci_rockchip_match, pdev->dev.of_node);
++	drv_data = match->data;
++
++	return dw_mci_pltfm_register(pdev, drv_data);
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int dw_mci_rockchip_suspend(struct device *dev)
++{
++	struct dw_mci *host = dev_get_drvdata(dev);
++	int ret;
++
++	ret = dw_mci_suspend(host);
++	if (!ret)
++		clk_disable_unprepare(host->ciu_clk);
++
++	return ret;
++}
++
++static int dw_mci_rockchip_resume(struct device *dev)
++{
++	struct dw_mci *host = dev_get_drvdata(dev);
++	int ret;
++
++	ret = clk_prepare_enable(host->ciu_clk);
++	if (ret) {
++		dev_err(host->dev, "failed to enable ciu clock\n");
++		return ret;
++	}
++
++	return dw_mci_resume(host);
++}
++#endif /* CONFIG_PM_SLEEP */
++
++static SIMPLE_DEV_PM_OPS(dw_mci_rockchip_pmops,
++			 dw_mci_rockchip_suspend,
++			 dw_mci_rockchip_resume);
++
++static struct platform_driver dw_mci_rockchip_pltfm_driver = {
++	.probe		= dw_mci_rockchip_probe,
++	.remove		= dw_mci_pltfm_remove,
++	.driver		= {
++		.name		= "dwmmc_rockchip",
++		.of_match_table	= dw_mci_rockchip_match,
++		.pm		= &dw_mci_rockchip_pmops,
++	},
++};
++
++module_platform_driver(dw_mci_rockchip_pltfm_driver);
++
++MODULE_AUTHOR("Addy Ke <addy.ke@rock-chips.com>");
++MODULE_DESCRIPTION("Rockchip Specific DW-MSHC Driver Extension");
++MODULE_ALIAS("platform:dwmmc-rockchip");
++MODULE_LICENSE("GPL v2");
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.8.3.2
+
+
