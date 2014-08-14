@@ -1,86 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325AbaHNVc5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 17:32:57 -0400
-Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.89]:39149 "EHLO
-	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932180AbaHNVcy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 17:32:54 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: David Miller <davem@redhat.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-Subject: RE: [PATCH net-next,v2] hyperv: Increase the buffer length for
- netvsc_channel_cb()
-Thread-Topic: [PATCH net-next,v2] hyperv: Increase the buffer length for
- netvsc_channel_cb()
-Thread-Index: AQHPtyEABrnwbY+AyESxBlxt+dQx0ZvRFJgA//+LRMA=
-Date: Thu, 14 Aug 2014 21:32:38 +0000
-Message-ID: <bbf016f1772245a6a08f92ea8346b8ff@DFM-DB3MBX15-08.exchange.corp.microsoft.com>
-References: <1407953024-35191-1-git-send-email-haiyangz@microsoft.com>
- <20140814.142856.1220870703473741209.davem@redhat.com>
-In-Reply-To: <20140814.142856.1220870703473741209.davem@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754876AbaHNVf0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 17:35:26 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:40501 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157AbaHNVfZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 17:35:25 -0400
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.147.100;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454003)(164054003)(13464003)(51704005)(189002)(199003)(85306004)(106116001)(106466001)(86612001)(107046002)(110136001)(50986999)(99396002)(54356999)(76176999)(2656002)(81542001)(97756001)(92566001)(21056001)(97736001)(85852003)(83072002)(2009001)(83322001)(19580405001)(50466002)(46102001)(19580395003)(68736004)(6806004)(44976005)(46406003)(77982001)(87936001)(76482001)(84676001)(79102001)(81342001)(74502001)(80022001)(64706001)(4396001)(23726002)(33646002)(20776003)(584604001)(108616004)(74662001)(31966008)(66066001)(47776003)(142933001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BLUSR01MB591;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03030B9493
-Authentication-Results: spf=pass (sender IP is 131.107.147.100)
- smtp.mailfrom=haiyangz@microsoft.com; 
-X-OriginatorOrg: msft.ccsctp.net
+In-Reply-To: <1407797345-28227-6-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140811224840.GA25594@linux.vnet.ibm.com> <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1407797345-28227-6-git-send-email-paulmck@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Thu, 14 Aug 2014 17:34:53 -0400
+Message-ID: <CAJhHMCBVHR007FO11sajnw1n8fuCz6Sw_PnsDxgOXP3-AYXnbw@mail.gmail.com>
+Subject: Re: [PATCH v5 tip/core/rcu 06/16] rcutorture: Add torture tests for RCU-tasks
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 11, 2014 at 6:48 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+>
+> This commit adds torture tests for RCU-tasks.  It also fixes a bug that
+> would segfault for an RCU flavor lacking a callback-barrier function.
+>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> ---
+>  include/linux/rcupdate.h |  1 +
+>  kernel/rcu/rcutorture.c  | 50 +++++++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 50 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index e6aea256ad39..f504f797c9c8 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -55,6 +55,7 @@ enum rcutorture_type {
+>         RCU_FLAVOR,
+>         RCU_BH_FLAVOR,
+>         RCU_SCHED_FLAVOR,
+> +       RCU_TASKS_FLAVOR,
+>         SRCU_FLAVOR,
+>         INVALID_RCU_FLAVOR
+>  };
+> diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+> index febe07062ac5..52423f2c74da 100644
+> --- a/kernel/rcu/rcutorture.c
+> +++ b/kernel/rcu/rcutorture.c
+> @@ -601,6 +601,52 @@ static struct rcu_torture_ops sched_ops = {
+>         .name           = "sched"
+>  };
+>
+> +#ifdef CONFIG_TASKS_RCU
+> +
+> +/*
+> + * Definitions for RCU-tasks torture testing.
+> + */
+> +
+> +static int tasks_torture_read_lock(void)
+> +{
+> +       return 0;
+> +}
+> +
+> +static void tasks_torture_read_unlock(int idx)
+> +{
+> +}
+> +
+> +static void rcu_tasks_torture_deferred_free(struct rcu_torture *p)
+> +{
+> +       call_rcu_tasks(&p->rtort_rcu, rcu_torture_cb);
+> +}
+> +
+> +static struct rcu_torture_ops tasks_ops = {
+> +       .ttype          = RCU_TASKS_FLAVOR,
+> +       .init           = rcu_sync_torture_init,
+> +       .readlock       = tasks_torture_read_lock,
+> +       .read_delay     = rcu_read_delay,  /* just reuse rcu's version. */
+> +       .readunlock     = tasks_torture_read_unlock,
+> +       .completed      = rcu_no_completed,
+> +       .deferred_free  = rcu_tasks_torture_deferred_free,
+> +       .sync           = synchronize_rcu_tasks,
+> +       .exp_sync       = synchronize_rcu_tasks,
+> +       .call           = call_rcu_tasks,
+> +       .cb_barrier     = rcu_barrier_tasks,
+> +       .fqs            = NULL,
+> +       .stats          = NULL,
+> +       .irq_capable    = 1,
+> +       .name           = "tasks"
+> +};
+> +
+> +#define RCUTORTURE_TASKS_OPS &tasks_ops,
 
 
-> -----Original Message-----
-> From: David Miller [mailto:davem@redhat.com]
-> Sent: Thursday, August 14, 2014 5:29 PM
-> To: Haiyang Zhang
-> Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
-> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
-> devel@linuxdriverproject.org
-> Subject: Re: [PATCH net-next,v2] hyperv: Increase the buffer length for
-> netvsc_channel_cb()
-> 
-> From: Haiyang Zhang <haiyangz@microsoft.com>
-> Date: Wed, 13 Aug 2014 18:03:44 +0000
-> 
-> > When the buffer is too small for a packet from VMBus, a bigger buffer
-> will be
-> > allocated in netvsc_channel_cb() and retry reading the packet from
-> VMBus.
-> > Increasing this buffer size will reduce the retry overhead.
-> >
-> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > Reviewed-by: Dexuan Cui <decui@microsoft.com>
-> ...
-> > -	net_device = kzalloc(sizeof(struct netvsc_device), GFP_KERNEL);
-> > +	net_device = vzalloc(sizeof(*net_device));
-> 
-> This isn't what I suggested that you do.
-> 
-> I said that the buffer inside of netvsc_device should be made an
-> indirect pointer and thus allocated seperately.
-> 
-> Thus you're still kzalloc() net_device, but net_device->cb_buffer
-> becomes "unsigned char *" and another allocation is made for it.
+Not sure about the comma here, no harm but still... a minor nit :)
 
-I will change the patch to this way.
-Thanks,
+> +
+> +#else /* #ifdef CONFIG_TASKS_RCU */
+> +
+> +#define RCUTORTURE_TASKS_OPS
+> +
+> +#endif /* #else #ifdef CONFIG_TASKS_RCU */
+> +
+>  /*
+>   * RCU torture priority-boost testing.  Runs one real-time thread per
+>   * CPU for moderate bursts, repeatedly registering RCU callbacks and
+> @@ -1295,7 +1341,8 @@ static int rcu_torture_barrier_cbs(void *arg)
+>                 if (atomic_dec_and_test(&barrier_cbs_count))
+>                         wake_up(&barrier_wq);
+>         } while (!torture_must_stop());
+> -       cur_ops->cb_barrier();
+> +       if (cur_ops->cb_barrier != NULL)
+> +               cur_ops->cb_barrier();
+>         destroy_rcu_head_on_stack(&rcu);
+>         torture_kthread_stopping("rcu_torture_barrier_cbs");
+>         return 0;
+> @@ -1534,6 +1581,7 @@ rcu_torture_init(void)
+>         int firsterr = 0;
+>         static struct rcu_torture_ops *torture_ops[] = {
+>                 &rcu_ops, &rcu_bh_ops, &rcu_busted_ops, &srcu_ops, &sched_ops,
+> +               RCUTORTURE_TASKS_OPS
+>         };
+>
+>         if (!torture_init_begin(torture_type, verbose, &rcutorture_runnable))
+> --
+> 1.8.1.5
+>
 
-- Haiyang
 
+
+-- 
+Pranith
