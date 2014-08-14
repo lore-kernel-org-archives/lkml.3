@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178AbaHNFom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 01:44:42 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:55800 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119AbaHNFoj (ORCPT
+	id S1754235AbaHNFot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 01:44:49 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:49650 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754187AbaHNFoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 01:44:39 -0400
+	Thu, 14 Aug 2014 01:44:44 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
@@ -17,14 +17,14 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
         Andrew Honig <ahonig@google.com>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v6 6/7] x86,random,kvm: Use KVM_GET_RNG_SEED in arch_get_rng_seed
-Date: Wed, 13 Aug 2014 22:44:00 -0700
-Message-Id: <b7b98b6cbf2f0373f3f447f4bebd45409e42305c.1407994624.git.luto@amacapital.net>
+Subject: [PATCH v6 6/7] x86,random,kvm: Use KVM_GET_RNG_SEED in arch_rng_init
+Date: Wed, 13 Aug 2014 22:44:01 -0700
+Message-Id: <a388d4536ecf5427237482bf8f9003de40bbc7e9.1407994704.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1407994704.git.luto@amacapital.net>
 References: <cover.1407994704.git.luto@amacapital.net>
-In-Reply-To: <cover.1407994624.git.luto@amacapital.net>
-References: <cover.1407994624.git.luto@amacapital.net>
+In-Reply-To: <cover.1407994704.git.luto@amacapital.net>
+References: <cover.1407994704.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
