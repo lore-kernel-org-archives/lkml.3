@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689AbaHNFV6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 01:21:58 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:61258 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319AbaHNFV4 (ORCPT
+	id S1753968AbaHNFXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 01:23:17 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:49722 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbaHNFXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 01:21:56 -0400
+	Thu, 14 Aug 2014 01:23:15 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53EC47B4.8020408@lge.com>
+Date: Thu, 14 Aug 2014 14:23:00 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <87wqac87dq.fsf@rustcorp.com.au>
-References: <cover.1407764272.git.jani.nikula@intel.com>
-	<87wqac87dq.fsf@rustcorp.com.au>
-Date: Thu, 14 Aug 2014 07:21:55 +0200
-Message-ID: <CAKMK7uGrT6jvsetM2av26CBEgQBv4b9asAP9kGN_-WdtT1bdkQ@mail.gmail.com>
-Subject: Re: [PATCH 0/4] module: add support for unsafe, tainting parameters
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jani Nikula <jani.nikula@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Jean Delvare <khali@linux-fr.org>,
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Jon Mason <jon.mason@intel.com>
-Content-Type: text/plain; charset=UTF-8
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+CC: Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
+        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>
+Subject: Re: [PATCH 0/2] new APIs to allocate buffer-cache for superblock
+ in non-movable area
+References: <53EC4531.1000904@lge.com>
+In-Reply-To: <53EC4531.1000904@lge.com>
+Content-Type: text/plain; charset=EUC-KR
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 10:25 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Jani Nikula <jani.nikula@intel.com> writes:
->> This is a generic version of Daniel's patch [1] letting us have unsafe
->> module parameters (experimental, debugging, testing, etc.) that taint
->> the kernel when set. Quoting Daniel,
->
-> OK, I think the idea is fine, but we'll probably only want this for
-> a few types (eg. int and bool).  So for the moment I prefer a more
-> naive approach.
->
-> Does this work for you?
 
-Can you please discuss this with yourself from a few months back?
-We've done the general version since you suggested that just doing it
-for int is a bit lame ;-) And I actually agreed so asked Jani to look
-into that.
 
-http://mid.mail-archive.com/87r46gywul.fsf@rustcorp.com.au
+2014-08-14 오후 2:12, Gioh Kim 쓴 글:
+> Hello,
+> 
+> This patch try to solve problem that a long-lasting page caches of
+> ext4 superblock and journaling of superblock disturb page migration.
+> 
+> I've been testing CMA feature on my ARM-based platform
+> and found that two page caches cannot be migrated.
+> They are page caches of superblock of ext4 filesystem and its journaling data.
+> 
+> Current ext4 reads superblock with sb_bread() that allocates page
+> from movable area. But the problem is that ext4 hold the page until
+> it is unmounted. If root filesystem is ext4 the page cannot be migrated forever.
+> And also the journaling data for the superblock cannot be migreated.
+> 
+> I introduce a new API for allocating page cache from non-movable area.
+> It is useful for ext4/ext3 and others that want to hold page cache for a long time.
+> 
+> I have 3 patchs:
+> 
+> 1. Patch 1/3: introduce a new API that create page cache from non-movable area
+> 2. Patch 2/3: have ext4 use the new API to read superblock
+> 3. Patch 3/3: have jbd/jbd2 use the new API to make journaling of superblock
+> 
+> This patchset is based on linux-next-20140814.
+> 
+> Thanks a lot.
+> 
+> Gioh Kim (3):
+>   fs/buffer.c: allocate buffer cache from non-movable area
+>   ext4: allocate buffer-cache for superblock in non-movable area
+>   jbd-jbd2-allocate-buffer-cache-for-superblock-inode-.patch
+> 
+>   fs/buffer.c                 |   63 ++++++++++++++++++++++++++++++----
+>   fs/ext4/super.c             |    6 +--
+>   fs/jbd/journal.c            |    2 -
+>   fs/jbd2/journal.c           |    2 -
+>   include/linux/buffer_head.h |   10 +++++
+>   5 files changed, 71 insertions(+), 12 deletions(-)
+> 
 
-"If this is a good idea, you can write a macro module_param_unsafe_named
-which is a general wrapper."
+I'm sorry to forget mentioning that this is 2nd version of https://lkml.org/lkml/2014/7/22/34.
 
-Cheers, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+
