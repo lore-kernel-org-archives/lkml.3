@@ -1,93 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424AbaHNSHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 14:07:43 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:54190 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054AbaHNSHm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 14:07:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140814151329.GA22187@optiplex.redhat.com>
-References: <53E6CEAA.9020105@oracle.com>
-	<CAPAsAGxcC0+V1ZzR3LL=ASx=KXifPbw_cyvHCBBJT4mZ1grg+Q@mail.gmail.com>
-	<20140813153501.GE21041@optiplex.redhat.com>
-	<20140814151329.GA22187@optiplex.redhat.com>
-Date: Thu, 14 Aug 2014 22:07:40 +0400
-Message-ID: <CAPAsAGwk7kF6XtJNz6Y41zn0SHHzEt1Nwi_wC0gWgt0fpdp-ZQ@mail.gmail.com>
-Subject: Re: mm: compaction: buffer overflow in isolate_migratepages_range
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: Rafael Aquini <aquini@redhat.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
+	id S1754016AbaHNSHy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 14:07:54 -0400
+Received: from tetsuo.zabbo.net ([50.193.208.193]:53173 "EHLO tetsuo.zabbo.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753535AbaHNSHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 14:07:52 -0400
+Date: Thu, 14 Aug 2014 11:07:51 -0700
+From: Zach Brown <zab@zabbo.net>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Kent Overstreet <kmo@daterainc.com>, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v1 1/9] aio: add aio_kernel_() interface
+Message-ID: <20140814180751.GB429@lenny.home.zabbo.net>
+References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
+ <1408031441-31156-2-git-send-email-ming.lei@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408031441-31156-2-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-14 19:13 GMT+04:00 Rafael Aquini <aquini@redhat.com>:
->> Yeah, it happens because I failed to anticipate a race window opening where
->> balloon_page_movable() can stumble across an anon page being released --
->> somewhere in the midway of __page_cache_release() & free_pages_prepare()
->> down on the put_page() codepath -- while isolate_migratepages_range() performs
->> its loop in the (lru) unlocked case.
->>
->
-> Giving it a second thought, I see my first analisys (above) isn't accurate,
-> as if we had raced against a page being released at the point I mentioned,
-> balloon_page_movable() would have bailed out while performing its
-> page_flags_cleared() checkpoint.
->
-> But I now can see from where this occurrence is coming from, actually.
->
-> The real race window for this issue opens when balloon_page_movable()
-> checkpoint @ isolate_migratepages_range() stumbles across a (new)
-> page under migration at:
->
-> static int move_to_new_page(struct page *newpage, struct page *page, ...
-> {
->    ...
->    newpage->mapping = page->mapping;
->
->
-> At this point, *newpage points to a fresh page coming out from the allocator
-> (just as any other possible ballooned page), but it gets its ->mapping
-> pointer set, which can create the conditions to the access (for mapping flag
-> checking purposes only) KASAN is complaining about, if *page happens to
-> be pointing to an anon page.
->
->
->> Although harmless, IMO, as we only go for the isolation step if we hold the
->> lru lock (and the check is re-done under lock safety) this is an
->> annoying thing we have to get rid of to not defeat the purpose of having
->> the kasan in place.
->>
->
-> It still a harmless condition as before, but considering what goes above
-> I'm now convinced & confident the patch proposed by Andrey is the real fix
-> for such occurrences.
->
+On Thu, Aug 14, 2014 at 11:50:32PM +0800, Ming Lei wrote:
+> From: Dave Kleikamp <dave.kleikamp@oracle.com>
+> 
+> This adds an interface that lets kernel callers submit aio iocbs without
+> going through the user space syscalls.  This lets kernel callers avoid
+> the management limits and overhead of the context.  It will also let us
+> integrate aio operations with other kernel apis that the user space
+> interface doesn't have access to.
+> 
+> This patch is based on Dave's posts in below links:
+> 
+> 	https://lkml.org/lkml/2013/10/16/365
+> 	https://groups.google.com/forum/#!topic/linux.kernel/l7mogGJZoKQ
 
-I don't think that it's harmless, because we could cross page boundary here and
-try to read from a memory hole.
-And this code has more potential problems like use after free. Since
-we don't hold locks properly here,
-page->mapping could point to freed struct address_space.
+(And some other werido's posts, almost 5 entire earth years ago:
+ http://permalink.gmane.org/gmane.linux.file-systems/36246)
 
-We discussed this with Konstantin and he suggested a better solution for this.
-If I understood him correctly the main idea was to store bit
-identifying ballon page
-in struct page (special value in _mapcount), so we won't need to check
-mapping->flags.
+> +struct kiocb *aio_kernel_alloc(gfp_t gfp, unsigned extra)
+> +{
+> +	return kzalloc(sizeof(struct kiocb) + extra, gfp);
 
+Is kzalloc really necessary?  It's insane, but in the past we've had
+people whine about the cycle costs of zeroing fields that are to be
+initialized:
 
--- 
-Best regards,
-Andrey Ryabinin
+	commit 23aee091d804efa8cc732a31c1ae5d625e1ec886
+	Author: Jeff Moyer <jmoyer@redhat.com>
+	Date:   Tue Dec 15 16:47:49 2009 -0800
+
+	    dio: don't zero out the pages array inside struct dio
+
+Maybe add a guard value to the ctx and have submission freak out of it's
+called without being initialized?  If callers really want to zero they
+can pass in __GFP_ZERO.
+
+The extra allocation at the end that's freed is nice, but the callers
+having a clumsy manual cast to access it isn't nice at all.  Can you add
+a little helper to get a pointer to the extra allocation?    That'd let
+the aio bits allocation the iocbs however the like (slab, per-cpu,
+whatever) and have extra allocations separate if that ends up making
+sense.
+
+> +	iocb->ki_ctx = (void *)-1;
+
+The magic -1 is gross.  Use a constant?  (bonus points for having it use
+ERR_PTR() :))
+
+> +	/*
+> +	 * use same policy with userspace aio, req may have been
+> +	 * completed already, so release it by aio completion.
+> +	 */
+> +	if (ret != -EIOCBQUEUED)
+> +		iocb->ki_obj.complete(iocb->ki_user_data, ret);
+
+I wonder if this needs to handle the restarting error codes like
+aio_complete() does.
+
+	commit a0c42bac79731276c9b2f28d54f9e658fcf843a2
+	Author: Jan Kara <jack@suse.cz>
+	Date:   Wed Sep 22 13:05:03 2010 -0700
+
+	    aio: do not return ERESTARTSYS as a result of AIO
+
+I like how this has evolved to get rid of the magic key and commands..
+just the ki_ctx and calling iter methods, nice stuff.
+
+- z
