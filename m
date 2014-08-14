@@ -1,128 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784AbaHNMhX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 08:37:23 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50023 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754593AbaHNMhO (ORCPT
+	id S1754853AbaHNMjE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 08:39:04 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:8776 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760AbaHNMjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 08:37:14 -0400
-Date: Thu, 14 Aug 2014 13:36:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH v8 4/4] ARM: Add KGDB/KDB FIQ debugger generic code
-Message-ID: <20140814123655.GT30401@n2100.arm.linux.org.uk>
-References: <1404118391-3850-1-git-send-email-daniel.thompson@linaro.org> <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org> <1404979427-12943-5-git-send-email-daniel.thompson@linaro.org> <20140813214525.GQ30401@n2100.arm.linux.org.uk> <53EC9404.5010908@linaro.org>
+	Thu, 14 Aug 2014 08:39:01 -0400
+X-IronPort-AV: E=McAfee;i="5600,1067,7529"; a="149643102"
+X-IronPort-AV: E=Sophos;i="5.01,862,1400050800"; 
+   d="scan'208";a="731495909"
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+To: Hans Wennborg <hans@hanshq.net>
+CC: <linville@tuxdriver.com>, <linux-wireless@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <ath6kl@lists.infradead.org>
+Subject: Re: [PATCH 10/19] ath6kl: fix %d confusingly prefixed with 0x in format strings
+References: <1407111596-14944-1-git-send-email-hans@hanshq.net>
+Date: Thu, 14 Aug 2014 15:38:54 +0300
+In-Reply-To: <1407111596-14944-1-git-send-email-hans@hanshq.net> (Hans
+	Wennborg's message of "Sun, 3 Aug 2014 17:19:56 -0700")
+Message-ID: <8738czmejl.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53EC9404.5010908@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 11:48:36AM +0100, Daniel Thompson wrote:
-> Don't worry, you certainly did make it clear!
-> 
-> I actually went as far as removing the trace_* calls before having a
-> change of heart. As a result I spent some time looking at the
-> trace_hardirqs_on() code and, as far as I remember, I couldn't find a
-> lock in the code that wasn't bypassed when in_nmi() returned true.
-> 
-> However the code is pretty complex and its certainly possible that I
-> missed something. Are you in a position to point any particular lock to
-> show I messed this up or are you working from memory?
+Hans Wennborg <hans@hanshq.net> writes:
 
-The complexity alone is an argument against calling it from FIQ context,
-because there's no guarantee that what's there will stay that way.
+> Signed-off-by: Hans Wennborg <hans@hanshq.net>
+> ---
+>  drivers/net/wireless/ath/ath6kl/init.c | 2 +-
+>  drivers/net/wireless/ath/ath6kl/main.c | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/net/wireless/ath/ath6kl/init.c b/drivers/net/wireless/ath/ath6kl/init.c
+> index fffd523..91af845 100644
+> --- a/drivers/net/wireless/ath/ath6kl/init.c
+> +++ b/drivers/net/wireless/ath/ath6kl/init.c
+> @@ -1049,7 +1049,7 @@ static int ath6kl_fetch_fw_apin(struct ath6kl *ar, const char *name)
+>  			ar->hw.reserved_ram_size = le32_to_cpup(val);
+>  
+>  			ath6kl_dbg(ATH6KL_DBG_BOOT,
+> -				   "found reserved ram size ie 0x%d\n",
+> +				   "found reserved ram size ie 0x%x\n",
+>  				   ar->hw.reserved_ram_size);
 
-trace_hardirqs_on() is made more complex because there's not one function
-with that name, but two.  One is in the trace code, the other is in the
-lockdep code.  Here's the trace code, which has at least two problems:
+Actually the original intent here was to use %d.
 
-trace_hardirqs_on
- -> stop_critical_timing
-  -> check_critical_timing
-   -> raw_spin_lock_irqsave(&max_trace_lock, flags);
-   -> __trace_stack
-    -> __ftrace_trace_stack
-     -> save_stack_trace
-      -> __save_stack_trace
-       -> walk_stackframe
-        -> unwind_frame
-         -> unwind_find_idx
-          -> spin_lock_irqsave(&unwind_lock, flags);
+> diff --git a/drivers/net/wireless/ath/ath6kl/main.c b/drivers/net/wireless/ath/ath6kl/main.c
+> index 21516bc..933aef0 100644
+> --- a/drivers/net/wireless/ath/ath6kl/main.c
+> +++ b/drivers/net/wireless/ath/ath6kl/main.c
+> @@ -225,7 +225,7 @@ int ath6kl_diag_write32(struct ath6kl *ar, u32 address, __le32 value)
+>  	ret = ath6kl_hif_diag_write32(ar, address, value);
+>  
+>  	if (ret) {
+> -		ath6kl_err("failed to write 0x%x during diagnose window to 0x%d\n",
+> +		ath6kl_err("failed to write 0x%x during diagnose window to 0x%x\n",
+>  			   address, value);
 
-> > So, how about moving the FIQ assembly code to entry-armv.S and making
-> > it less kgdb specific?  (Though... we do want to keep a /very/ close
-> > eye on users to ensure that they don't do silly stuff with locking.)
-> 
-> I think I can do that.
-> 
-> Something like this?
-> 
-> 1. Install the current trap handler code by default (either with or
->    without trace_* calls).
-
-Without trace_* calls.  The FIQ should be transparent to tracing -
-tracing and lockdep is too much of an unknown (due to size and
-complexity) to ensure that it always follows the rules.
-
-> 2. Have default trap handler call an RCU notifier chain to allow it to
->    hook up with "normal" code without any hard coding (kgdb, IPI
->    handling, etc)
-
-Maybe... that sounds like it opens up FIQ for general purpose use which
-is something I want to avoid - I've little motivation to ensure that
-everyone plays by the rules.  Given the choice, I'd rather maintain our
-present stance that using FIQs is hard and requires a lot of thought.
-
-> 3. Retain existing install_fiq() behaviour for people who want FIQ
->    to be a fast-interrupt rather than an NMI (for example, the
->    Raspberry pi USB optimizations).
-
-Yes, arch/arm/kernel/fiq.c should be relatively untouched by the core
-mods I suggested - we're just replacing the default "subs" instruction
-(which just ignores the FIQ) with something which can do something
-with it.
-
-It should be noted that using arch/arm/kernel/fiq.c would override this
-default FIQ handler - and that's a feature of it - fiq.c is based on
-the premise that there is only one single owner of the FIQ at any one
-time and there is no sharing of it, and that's something we want to
-retain.
-
-> 4. Ensure default handler is an exported symbol to allow the meths
->    drinkers from #3 to chain to logic for NMI/debug features
->    if they want to.
-
-That's not something I particularly want to permit - especially as the
-requirements for each "handler" are different - this new default code
-relies upon r13 pointing at some storage to save some registers, which
-may not be true of other FIQ handlers.  Chaining it means that we
-force that use of r13 on others, and we then have to also come up with
-some way to export the correct r13 value.
-
-Given that fiq.c doesn't work with SMP, this isn't something I want to
-encourage.
-
-Further more, I can't get excited about Raspberry Pi "optimisations"
-using FIQ until I see the code, and I see no reason to think about
-catering for such stuff until the patches become visible here.
+This is ok.
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Kalle Valo
