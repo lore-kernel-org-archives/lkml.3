@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053AbaHNHQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 03:16:28 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:52633 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726AbaHNHQ0 (ORCPT
+	id S1754065AbaHNHUN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 03:20:13 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:43645 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078AbaHNHUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 03:16:26 -0400
-Date: Thu, 14 Aug 2014 09:16:14 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        linux-s390@vger.kernel.org,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Subject: Re: [PATCH v14 5/8] s390: add pmd_[dirty|mkclean] for THP
-Message-ID: <20140814091614.4a0d5178@mschwide>
-In-Reply-To: <1407981212-17818-6-git-send-email-minchan@kernel.org>
-References: <1407981212-17818-1-git-send-email-minchan@kernel.org>
-	<1407981212-17818-6-git-send-email-minchan@kernel.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081407-1948-0000-0000-000000CFC15F
+	Thu, 14 Aug 2014 03:20:12 -0400
+Date: Thu, 14 Aug 2014 12:50:04 +0530
+From: Hema Prathaban <hemaklnce@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        andreas.dilger@intel.com, oleg.drokin@intel.com
+Subject: [PATCH] staging: lustre: lustre: ptlrpc: Donot initialise null
+Message-ID: <20140814072003.GA3246@hema-Inspiron-3520>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Aug 2014 10:53:29 +0900
-Minchan Kim <minchan@kernel.org> wrote:
+This patch fixes the following error using checkpatch.pl
+Error: Do not initialise statics to 0 or NULL
 
-> MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
-> overwrite of the contents since MADV_FREE syscall is called for
-> THP page but for s390 pmds only referenced bit is available
-> because there is no free bit left in the pmd entry for the
-> software dirty bit so this patch adds dumb pmd_dirty which
-> returns always true by suggesting by Martin.
-> 
-> They finally find a solution in future.
-> http://marc.info/?l=linux-api&m=140440328820808&w=2
+Signed-off-by: Hema Prathaban <hemaklnce@gmail.com>
+---
+ drivers/staging/lustre/lustre/ptlrpc/connection.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The solution is already there, see git commit 152125b7a882df36.
-You can drop this patch.
-
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/connection.c b/drivers/staging/lustre/lustre/ptlrpc/connection.c
+index adff1ab..62154c4 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/connection.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/connection.c
+@@ -41,7 +41,7 @@
+ 
+ #include "ptlrpc_internal.h"
+ 
+-static struct cfs_hash *conn_hash = NULL;
++static struct cfs_hash *conn_hash;
+ static cfs_hash_ops_t conn_hash_ops;
+ 
+ struct ptlrpc_connection *
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+1.9.1
 
