@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611AbaHNL0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 07:26:41 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:8449 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068AbaHNL0j (ORCPT
+	id S1754593AbaHNLcu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 07:32:50 -0400
+Received: from mail2.tiolive.com ([94.23.229.207]:43110 "EHLO
+	mail2.tiolive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901AbaHNLct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 07:26:39 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 14 Aug 2014 04:17:23 -0700
-Message-ID: <53EC9CFA.8060701@nvidia.com>
-Date: Thu, 14 Aug 2014 19:26:50 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Mikko Perttunen <mperttunen@nvidia.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 0/5] Thermal reset support in PMC
-References: <1407933685-12404-1-git-send-email-mperttunen@nvidia.com>
-In-Reply-To: <1407933685-12404-1-git-send-email-mperttunen@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Aug 2014 07:32:49 -0400
+X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Aug 2014 07:32:48 EDT
+From: Kirill Smelkov <kirr@nexedi.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kirill Smelkov <kirr@nexedi.com>, Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH] vfs: fix typo in s_op->alloc_inode() documentation
+Date: Thu, 14 Aug 2014 15:25:10 +0400
+Message-Id: <1408015510-2563-1-git-send-email-kirr@nexedi.com>
+X-Mailer: git-send-email 2.1.0.rc2.234.ge4c5f60
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good to me, and I test it with soc-therm driver, the system can be
-shutdown when overheat.
+The function which calls s_op->alloc_inode() is not inode_alloc(), but
+instead alloc_inode() which lives in fs/inode.c .
 
-Thanks.
-Wei.
+The typo was there from the beginning from 5ea626aa (VFS: update
+documentation, 2005) - there was no standalone inode_alloc() for the
+whole kernel history.
 
-On 08/13/2014 08:41 PM, Mikko Perttunen wrote:
-> Hi,
-> 
-> this series adds support for hardware-triggered thermal reset to the PMC
-> driver. Namely, it adds device tree properties for specifying the I2C
-> command to be sent when thermtrip is triggered. It is to be noted
-> that thermtrip won't be ever triggered without a soctherm driver to
-> calibrate the sensors.
-> 
-> Git repo at
->   git://github.com/cyndis/linux.git pmc-thermtrip-v2
-> 
-> Testing script at https://gist.github.com/cyndis/66126c9c176b5f94a76f.
-> If your fan stops it is working.
-> 
-> Mikko Perttunen (5):
->   of: Add descriptions of thermtrip properties to Tegra PMC bindings
->   of: Add nvidia,controller-id property to Tegra I2C bindings
->   ARM: tegra124: Add I2C controller ids to device tree
->   ARM: tegra: Add PMC thermtrip programming to Jetson TK1 device tree
->   ARM: tegra: Add thermal reset (thermtrip) support to PMC
-> 
->  .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      |  21 ++
->  .../devicetree/bindings/i2c/nvidia,tegra20-i2c.txt |   5 +
->  arch/arm/boot/dts/tegra124-jetson-tk1.dts          |   6 +
->  arch/arm/boot/dts/tegra124.dtsi                    |   6 +
->  drivers/soc/tegra/pmc.c                            | 379 ++++++++++++++-------
->  5 files changed, 285 insertions(+), 132 deletions(-)
-> 
+Cc: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Kirill Smelkov <kirr@nexedi.com>
+---
+ Documentation/filesystems/vfs.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+index 61d65cc..02a766c 100644
+--- a/Documentation/filesystems/vfs.txt
++++ b/Documentation/filesystems/vfs.txt
+@@ -237,7 +237,7 @@ noted. This means that most methods can block safely. All methods are
+ only called from a process context (i.e. not from an interrupt handler
+ or bottom half).
+ 
+-  alloc_inode: this method is called by inode_alloc() to allocate memory
++  alloc_inode: this method is called by alloc_inode() to allocate memory
+  	for struct inode and initialize it.  If this function is not
+  	defined, a simple 'struct inode' is allocated.  Normally
+  	alloc_inode will be used to allocate a larger structure which
+-- 
+2.1.0.rc2.234.ge4c5f60
