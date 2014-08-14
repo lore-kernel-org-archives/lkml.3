@@ -1,64 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916AbaHNFPR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 01:15:17 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:37562 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421AbaHNFPP (ORCPT
+	id S1753564AbaHNFPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 01:15:45 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:52392 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752490AbaHNFPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 01:15:15 -0400
+	Thu, 14 Aug 2014 01:15:43 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53EC45FC.7050508@lge.com>
+Date: Thu, 14 Aug 2014 14:15:40 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <53EC21E1.80502@zytor.com>
-References: <cover.1406177531.git.luto@amacapital.net> <CALCETrXtLf3ZFtyrbwj29C=t3PcTxRT2AJWZCUHdKC3AYyUVAA@mail.gmail.com>
- <20140812191723.GI12871@thunk.org> <CALCETrVmviT=upxHfPfmLy2aUOKdCuCbNg9WZQcx6f=8T8vv=g@mail.gmail.com>
- <53EB1859.6030800@zytor.com> <20140813143209.GD6437@thunk.org>
- <CALCETrUQ8yRmmN1kbdCy99ae2+-Xp4caOBgrXvaQhCCUi=i0zg@mail.gmail.com>
- <53EBA435.3020207@zytor.com> <20140813182219.GE6437@thunk.org>
- <CALCETrVTsyq4u+G2Td7Gmi6pa6c1ePgavqN31mjo9_E5=7bGCg@mail.gmail.com>
- <53EBB214.4030102@zytor.com> <53EC21E1.80502@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 13 Aug 2014 22:14:53 -0700
-Message-ID: <CALCETrUdqHPBOn_XEX3D7NUZSWTD8CcXpRK8RfiVYATJ5BuSjw@mail.gmail.com>
-Subject: Re: [PATCH v5 0/5] random,x86,kvm: Rework arch RNG seeds and get some
- from kvm
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, X86 ML <x86@kernel.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Bandan Das <bsd@redhat.com>, Andrew Honig <ahonig@google.com>
-Content-Type: text/plain; charset=UTF-8
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+CC: Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
+        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>
+Subject: [PATCH 1/2] fs/buffer.c: allocate buffer cache from non-movable area
+References: <53EC4531.1000904@lge.com>
+In-Reply-To: <53EC4531.1000904@lge.com>
+Content-Type: text/plain; charset=EUC-KR
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 7:41 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 08/13/2014 11:44 AM, H. Peter Anvin wrote:
->> On 08/13/2014 11:33 AM, Andy Lutomirski wrote:
->>>
->>> As for doing arch_random_init after clone/migration, I think we'll
->>> need another KVM extension for that, since, AFAIK, we don't actually
->>> get notified that we were cloned or migrated.  That will be
->>> nontrivial.  Maybe we can figure that out at KS, too.
->>>
->>
->> We don't need a reset when migrated (although it might be a good idea
->> under some circumstances, i.e. if the pools might somehow have gotten
->> exposed) but definitely when cloned.
->>
->
-> But yes, we need a notification.  For obvious reasons there is no
-> suspend event (one can snapshot a running VM) but we need to be notified
-> upon wakeup, *or* we need to give KVM a way to update the necessary state.
+A buffer cache is allocated from movable area
+because it is referred for a while and released soon.
+But some filesystems are taking buffer cache for a long time
+and it can disturb page migration.
 
-This could presumably use the interrupt mechanism on virtio-rng if
-we're willing to depend on having host support for virtio-rng.
+A new API should be introduced to allocate buffer cache from
+non-movable area.
 
-v6 (coming in a few minutes) will at least get it right when the
-kernel goes through the resume path (i.e. not KVM/QEMU suspend, and
-maybe not S0ix either).
+Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+---
+ fs/buffer.c                 |   63 ++++++++++++++++++++++++++++++++++++++-----
+ include/linux/buffer_head.h |   10 +++++++
+ 2 files changed, 66 insertions(+), 7 deletions(-)
 
---Andy
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 8f05111..7ef658f 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -993,7 +993,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
+  */
+ static int
+ grow_dev_page(struct block_device *bdev, sector_t block,
+-               pgoff_t index, int size, int sizebits)
++             pgoff_t index, int size, int sizebits, gfp_t movable_mask)
+ {
+        struct inode *inode = bdev->bd_inode;
+        struct page *page;
+@@ -1003,7 +1003,8 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+        gfp_t gfp_mask;
+
+        gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
+-       gfp_mask |= __GFP_MOVABLE;
++       if (movable_mask & __GFP_MOVABLE)
++               gfp_mask |= __GFP_MOVABLE;
+        /*
+         * XXX: __getblk_slow() can not really deal with failure and
+         * will endlessly loop on improvised global reclaim.  Prefer
+@@ -1058,7 +1059,8 @@ failed:
+  * that page was dirty, the buffers are set dirty also.
+  */
+ static int
+-grow_buffers(struct block_device *bdev, sector_t block, int size)
++grow_buffers(struct block_device *bdev, sector_t block,
++            int size, gfp_t movable_mask)
+ {
+        pgoff_t index;
+        int sizebits;
+@@ -1085,11 +1087,12 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
+        }
+
+        /* Create a page with the proper size buffers.. */
+-       return grow_dev_page(bdev, block, index, size, sizebits);
++       return grow_dev_page(bdev, block, index, size, sizebits, movable_mask);
+ }
+
+ static struct buffer_head *
+-__getblk_slow(struct block_device *bdev, sector_t block, int size)
++__getblk_slow(struct block_device *bdev, sector_t block,
++             int size, gfp_t movable_mask)
+ {
+        /* Size must be multiple of hard sectorsize */
+        if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
+@@ -1111,7 +1114,7 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
+                if (bh)
+                        return bh;
+
+-               ret = grow_buffers(bdev, block, size);
++               ret = grow_buffers(bdev, block, size, movable_mask);
+                if (ret < 0)
+                        return NULL;
+                if (ret == 0)
+@@ -1385,11 +1388,34 @@ __getblk(struct block_device *bdev, sector_t block, unsigned size)
+
+        might_sleep();
+        if (bh == NULL)
+-               bh = __getblk_slow(bdev, block, size);
++               bh = __getblk_slow(bdev, block, size, __GFP_MOVABLE);
+        return bh;
+ }
+ EXPORT_SYMBOL(__getblk);
+
++ /*
++ * __getblk_nonmovable will locate (and, if necessary, create) the buffer_head
++ * which corresponds to the passed block_device, block and size. The
++ * returned buffer has its reference count incremented.
++ *
++ * The page cache is allocated from non-movable area
++ * not to prevent page migration.
++ *
++ * __getblk()_nonmovable will lock up the machine
++ * if grow_dev_page's try_to_free_buffers() attempt is failing. FIXME, perhaps?
++ */
++struct buffer_head *
++__getblk_nonmovable(struct block_device *bdev, sector_t block, unsigned size)
++{
++       struct buffer_head *bh = __find_get_block(bdev, block, size);
++
++       might_sleep();
++       if (bh == NULL)
++               bh = __getblk_slow(bdev, block, size, 0);
++       return bh;
++}
++EXPORT_SYMBOL(__getblk_nonmovable);
++
+ /*
+  * Do async read-ahead on a buffer..
+  */
+@@ -1410,6 +1436,7 @@ EXPORT_SYMBOL(__breadahead);
+  *  @size: size (in bytes) to read
+  *
+  *  Reads a specified block, and returns buffer head that contains it.
++ *  The page cache is allocated from movable area so that it can be migrated.
+  *  It returns NULL if the block was unreadable.
+  */
+ struct buffer_head *
+@@ -1423,6 +1450,28 @@ __bread(struct block_device *bdev, sector_t block, unsigned size)
+ }
+ EXPORT_SYMBOL(__bread);
+
++/**
++ *  __bread_nonmovable() - reads a specified block and returns the bh
++ *  @bdev: the block_device to read from
++ *  @block: number of block
++ *  @size: size (in bytes) to read
++ *
++ *  Reads a specified block, and returns buffer head that contains it.
++ *  The page cache is allocated from non-movable area
++ *  not to prevent page migration.
++ *  It returns NULL if the block was unreadable.
++ */
++struct buffer_head *
++__bread_nonmovable(struct block_device *bdev, sector_t block, unsigned size)
++{
++       struct buffer_head *bh = __getblk_slow(bdev, block, size, 0);
++
++       if (likely(bh) && !buffer_uptodate(bh))
++               bh = __bread_slow(bh);
++       return bh;
++}
++EXPORT_SYMBOL(__bread_nonmovable);
++
+ /*
+  * invalidate_bh_lrus() is called rarely - but not only at unmount.
+  * This doesn't race because it runs in each cpu either in irq
+diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
+index 324329c..3f52370 100644
+--- a/include/linux/buffer_head.h
++++ b/include/linux/buffer_head.h
+@@ -177,10 +177,14 @@ struct buffer_head *__find_get_block(struct block_device *bdev, sector_t block,
+                        unsigned size);
+ struct buffer_head *__getblk(struct block_device *bdev, sector_t block,
+                        unsigned size);
++struct buffer_head *__getblk_nonmovable(struct block_device *bdev,
++                                       sector_t block, unsigned size);
+ void __brelse(struct buffer_head *);
+ void __bforget(struct buffer_head *);
+ void __breadahead(struct block_device *, sector_t block, unsigned int size);
+ struct buffer_head *__bread(struct block_device *, sector_t block, unsigned size);
++struct buffer_head *__bread_nonmovable(struct block_device *,
++                                      sector_t block, unsigned size);
+ void invalidate_bh_lrus(void);
+ struct buffer_head *alloc_buffer_head(gfp_t gfp_flags);
+ void free_buffer_head(struct buffer_head * bh);
+@@ -298,6 +302,12 @@ sb_bread(struct super_block *sb, sector_t block)
+        return __bread(sb->s_bdev, block, sb->s_blocksize);
+ }
+
++static inline struct buffer_head *
++sb_bread_nonmovable(struct super_block *sb, sector_t block)
++{
++       return __bread_nonmovable(sb->s_bdev, block, sb->s_blocksize);
++}
++
+ static inline void
+ sb_breadahead(struct super_block *sb, sector_t block)
+ {
+--
+1.7.9.5
