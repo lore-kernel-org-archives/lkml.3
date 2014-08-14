@@ -1,15 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827AbaHNWxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 18:53:51 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:38240 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485AbaHNWxu (ORCPT
+	id S932152AbaHNW4K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 18:56:10 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:37084 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485AbaHNW4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 18:53:50 -0400
-Date: Thu, 14 Aug 2014 15:53:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
+	Thu, 14 Aug 2014 18:56:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <1407797345-28227-12-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140811224840.GA25594@linux.vnet.ibm.com> <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1407797345-28227-12-git-send-email-paulmck@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Thu, 14 Aug 2014 18:55:35 -0400
+Message-ID: <CAJhHMCAH6GB8Vz7tmaXkavXUiqSVfR+ot9Q4yOP7UJmL_C0KSg@mail.gmail.com>
+Subject: Re: [PATCH v5 tip/core/rcu 12/16] rcu: Make TASKS_RCU handle
+ nohz_full= CPUs
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         Dipankar Sarma <dipankar@in.ibm.com>,
@@ -21,159 +28,164 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         David Howells <dhowells@redhat.com>,
         Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
         Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH v5 tip/core/rcu 11/16] rcu: Defer rcu_tasks_kthread()
- creation till first call_rcu_tasks()
-Message-ID: <20140814225344.GB4752@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140811224840.GA25594@linux.vnet.ibm.com>
- <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1407797345-28227-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <CAJhHMCAvzXUgCuiO5nDB0oZYkFsyJ1bdJmz5JML4jrLrC5F0qw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCAvzXUgCuiO5nDB0oZYkFsyJ1bdJmz5JML4jrLrC5F0qw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081422-3532-0000-0000-000003DB8756
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 06:28:53PM -0400, Pranith Kumar wrote:
-> On Mon, Aug 11, 2014 at 6:49 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> >
-> > It is expected that many sites will have CONFIG_TASKS_RCU=y, but
-> > will never actually invoke call_rcu_tasks().  For such sites, creating
-> > rcu_tasks_kthread() at boot is wasteful.  This commit therefore defers
-> > creation of this kthread until the time of the first call_rcu_tasks().
-> >
-> > This of course means that the first call_rcu_tasks() must be invoked
-> > from process context after the scheduler is fully operational.
-> >
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  kernel/rcu/update.c | 33 ++++++++++++++++++++++++++-------
-> >  1 file changed, 26 insertions(+), 7 deletions(-)
-> >
-> > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> > index 1256a900cd01..d997163c7e92 100644
-> > --- a/kernel/rcu/update.c
-> > +++ b/kernel/rcu/update.c
-> > @@ -378,7 +378,12 @@ DEFINE_SRCU(tasks_rcu_exit_srcu);
-> >  static int rcu_task_stall_timeout __read_mostly = HZ * 60 * 10;
-> >  module_param(rcu_task_stall_timeout, int, 0644);
-> >
-> > -/* Post an RCU-tasks callback. */
-> > +static void rcu_spawn_tasks_kthread(void);
-> > +
-> > +/*
-> > + * Post an RCU-tasks callback.  First call must be from process context
-> > + * after the scheduler if fully operational.
-> > + */
-> >  void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
-> >  {
-> >         unsigned long flags;
-> > @@ -391,8 +396,10 @@ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
-> >         *rcu_tasks_cbs_tail = rhp;
-> >         rcu_tasks_cbs_tail = &rhp->next;
-> >         raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
-> > -       if (needwake)
-> > +       if (needwake) {
-> > +               rcu_spawn_tasks_kthread();
-> >                 wake_up(&rcu_tasks_cbs_wq);
-> > +       }
-> >  }
-> >  EXPORT_SYMBOL_GPL(call_rcu_tasks);
-> >
-> > @@ -618,15 +625,27 @@ static int __noreturn rcu_tasks_kthread(void *arg)
-> >         }
-> >  }
-> >
-> > -/* Spawn rcu_tasks_kthread() at boot time. */
-> > -static int __init rcu_spawn_tasks_kthread(void)
-> > +/* Spawn rcu_tasks_kthread() at first call to call_rcu_tasks(). */
-> > +static void rcu_spawn_tasks_kthread(void)
-> >  {
-> > -       struct task_struct __maybe_unused *t;
-> > +       static DEFINE_MUTEX(rcu_tasks_kthread_mutex);
-> > +       static struct task_struct *rcu_tasks_kthread_ptr;
-> > +       struct task_struct *t;
-> >
-> > +       if (ACCESS_ONCE(rcu_tasks_kthread_ptr)) {
-> > +               smp_mb(); /* Ensure caller sees full kthread. */
-> > +               return;
-> > +       }
-> 
-> I don't see the need for this smp_mb(). The caller has already seen
-> that rcu_tasks_kthread_ptr is assigned. What are we ensuring with this
-> barrier again?
+On Mon, Aug 11, 2014 at 6:49 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+>
+> Currently TASKS_RCU would ignore a CPU running a task in nohz_full=
+> usermode execution.  There would be neither a context switch nor a
+> scheduling-clock interrupt to tell TASKS_RCU that the task in question
+> had passed through a quiescent state.  The grace period would therefore
+> extend indefinitely.  This commit therefore makes RCU's dyntick-idle
+> subsystem record the task_struct structure of the task that is running
+> in dyntick-idle mode on each CPU.  The TASKS_RCU grace period can
+> then access this information and record a quiescent state on
+> behalf of any CPU running in dyntick-idle usermode.
+>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  include/linux/init_task.h |  3 ++-
+>  include/linux/sched.h     |  2 ++
+>  kernel/rcu/tree.c         |  2 ++
+>  kernel/rcu/tree.h         |  2 ++
+>  kernel/rcu/tree_plugin.h  | 16 ++++++++++++++++
+>  kernel/rcu/update.c       |  4 +++-
+>  6 files changed, 27 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+> index 78715ea7c30c..642828009324 100644
+> --- a/include/linux/init_task.h
+> +++ b/include/linux/init_task.h
+> @@ -128,7 +128,8 @@ extern struct group_info init_groups;
+>  #define INIT_TASK_RCU_TASKS(tsk)                                       \
+>         .rcu_tasks_holdout = false,                                     \
+>         .rcu_tasks_holdout_list =                                       \
+> -               LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),
+> +               LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),             \
+> +       .rcu_tasks_idle_cpu = -1,
+>  #else
+>  #define INIT_TASK_RCU_TASKS(tsk)
+>  #endif
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 3cf124389ec7..5fa041f7a034 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1277,6 +1277,7 @@ struct task_struct {
+>         unsigned long rcu_tasks_nvcsw;
+>         int rcu_tasks_holdout;
+>         struct list_head rcu_tasks_holdout_list;
+> +       int rcu_tasks_idle_cpu;
+>  #endif /* #ifdef CONFIG_TASKS_RCU */
+>
+>  #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+> @@ -2021,6 +2022,7 @@ static inline void rcu_copy_process(struct task_struct *p)
+>  #ifdef CONFIG_TASKS_RCU
+>         p->rcu_tasks_holdout = false;
+>         INIT_LIST_HEAD(&p->rcu_tasks_holdout_list);
+> +       p->rcu_tasks_idle_cpu = -1;
+>  #endif /* #ifdef CONFIG_TASKS_RCU */
+>  }
+>
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index 645a33efc0d4..0d9ee1e4f446 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -526,6 +526,7 @@ static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
+>         atomic_inc(&rdtp->dynticks);
+>         smp_mb__after_atomic();  /* Force ordering with next sojourn. */
+>         WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
+> +       rcu_dynticks_task_enter();
+>
+>         /*
+>          * It is illegal to enter an extended quiescent state while
+> @@ -642,6 +643,7 @@ void rcu_irq_exit(void)
+>  static void rcu_eqs_exit_common(struct rcu_dynticks *rdtp, long long oldval,
+>                                int user)
+>  {
+> +       rcu_dynticks_task_exit();
+>         smp_mb__before_atomic();  /* Force ordering w/previous sojourn. */
+>         atomic_inc(&rdtp->dynticks);
+>         /* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
+> diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+> index 0f69a79c5b7d..37ff593b7725 100644
+> --- a/kernel/rcu/tree.h
+> +++ b/kernel/rcu/tree.h
+> @@ -579,6 +579,8 @@ static void rcu_sysidle_report_gp(struct rcu_state *rsp, int isidle,
+>  static void rcu_bind_gp_kthread(void);
+>  static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
+>  static bool rcu_nohz_full_cpu(struct rcu_state *rsp);
+> +static void rcu_dynticks_task_enter(void);
+> +static void rcu_dynticks_task_exit(void);
+>
+>  #endif /* #ifndef RCU_TREE_NONCORE */
+>
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index a86a363ea453..0d8ef5cb1976 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -2852,3 +2852,19 @@ static void rcu_bind_gp_kthread(void)
+>                 set_cpus_allowed_ptr(current, cpumask_of(cpu));
+>  #endif /* #ifdef CONFIG_NO_HZ_FULL */
+>  }
+> +
+> +/* Record the current task on dyntick-idle entry. */
+> +static void rcu_dynticks_task_enter(void)
+> +{
+> +#if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
+> +       ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
+> +#endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
 
-We are ensuring that any later operations on rcu_tasks_kthread_ptr
-see a fully initialized thread.  Because these later operations
-might be loads, we cannot rely on control dependencies.
+Shouldn't we check that the cpu is actually a nohz_full cpu, like follows:
 
-> an smp_rmb() before this ACCESS_ONCE() and an smp_wmb() after
-> assigning to rcu_tasks_kthread_ptr should be enough, right?
+ static void rcu_dynticks_task_enter(void)
+ {
+ #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
+-       ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
++       if (tick_nohz_full_cpu(smp_processor_id())
++                 ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
+ #endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
+ }
 
-Probably.  But given that rcu_spawn_tasks_kthread() is only called
-when a CPU is onlined, I am not much inclined to weaken it.
+> +}
+> +
+> +/* Record no current task on dyntick-idle exit. */
+> +static void rcu_dynticks_task_exit(void)
+> +{
+> +#if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
+> +       ACCESS_ONCE(current->rcu_tasks_idle_cpu) = -1;
+> +#endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
+> +}
+> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> index d997163c7e92..a4140f25cf1a 100644
+> --- a/kernel/rcu/update.c
+> +++ b/kernel/rcu/update.c
+> @@ -466,7 +466,9 @@ static void check_holdout_task(struct task_struct *t,
+>  {
+>         if (!ACCESS_ONCE(t->rcu_tasks_holdout) ||
+>             t->rcu_tasks_nvcsw != ACCESS_ONCE(t->nvcsw) ||
+> -           !ACCESS_ONCE(t->on_rq)) {
+> +           !ACCESS_ONCE(t->on_rq) ||
+> +           (IS_ENABLED(CONFIG_NO_HZ_FULL) &&
+> +            !is_idle_task(t) && t->rcu_tasks_idle_cpu >= 0)) {
 
-> > +       mutex_lock(&rcu_tasks_kthread_mutex);
-> > +       if (rcu_tasks_kthread_ptr) {
-> > +               mutex_unlock(&rcu_tasks_kthread_mutex);
-> > +               return;
-> > +       }
-> >         t = kthread_run(rcu_tasks_kthread, NULL, "rcu_tasks_kthread");
-> >         BUG_ON(IS_ERR(t));
-> > -       return 0;
-> > +       smp_mb(); /* Ensure others see full kthread. */
-> > +       ACCESS_ONCE(rcu_tasks_kthread_ptr) = t;
-> 
-> Isn't it better to reverse these two statements and change as follows?
-> 
-> ACCESS_ONCE(rcu_tasks_kthread_ptr) = t;
-> smp_wmb();
+rcu_tasks_idle_cpu will be -1 in CONFIG_NO_HZ_FULL is not enabled. Why
+are you checking both here?
 
-This would break.  We need all the task creation stuff to be seen as
-having happened before the store to rcu_tasks_kthread_ptr.  Putting
-the barrier after the store to rcu_tasks_kthread_ptr would allow
-both compiler and CPU to reorder task-creation stuff to follow the
-store to the pointer, which would not be good.
+>                 ACCESS_ONCE(t->rcu_tasks_holdout) = 0;
+>                 list_del_rcu(&t->rcu_tasks_holdout_list);
+>                 put_task_struct(t);
+> --
+> 1.8.1.5
+>
 
-> or
-> 
-> smp_store_release(rcu_tasks_kthread_ptr, t);
-> 
-> will ensure that this write to rcu_task_kthread_ptr is ordered with
-> the previous read. I recently read memory-barriers.txt, so please
-> excuse me if I am totally wrong. But I am confused! :(
 
-Hmmm...  An smp_store_release() combined with smp_load_acquire()
-up earlier might be a good approach.  Maybe as a future cleanup.
 
-But please note that smp_store_release() puts the barrier -before-
-the store.  ;-)
-
-							Thanx, Paul
-
-> > +       mutex_unlock(&rcu_tasks_kthread_mutex);
-> >  }
-> > -early_initcall(rcu_spawn_tasks_kthread);
-> >
-> >  #endif /* #ifdef CONFIG_TASKS_RCU */
-> > --
-> > 1.8.1.5
-> >
-> 
-> 
-> 
-> -- 
-> Pranith
-> 
-
+-- 
+Pranith
