@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220AbaHNA0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 20:26:46 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:42080 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984AbaHNA0p (ORCPT
+	id S1753436AbaHNA0w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 20:26:52 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:50179 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243AbaHNA0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 20:26:45 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 14 Aug 2014 09:26:54 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: ngupta@vflare.org, linux-kernel@vger.kernel.org,
-        "'Jerome Marchand'" <jmarchan@redhat.com>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] zram: fix incorrectly stat with failed_reads
-Message-ID: <20140814002654.GH9227@bbox>
-References: <009001cfb69a$a8470840$f8d518c0$@samsung.com>
+	Wed, 13 Aug 2014 20:26:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <009001cfb69a$a8470840$f8d518c0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140813093613.GB2775@dhcp22.suse.cz>
+References: <1407804835-24763-1-git-send-email-xiyou.wangcong@gmail.com>
+	<1407804835-24763-2-git-send-email-xiyou.wangcong@gmail.com>
+	<20140812120905.GB7049@dhcp22.suse.cz>
+	<CAM_iQpWV8DRGBQ-Brz=_Nqen0fNPDk+6kn_Og3HnXnujmgA+JA@mail.gmail.com>
+	<20140813093613.GB2775@dhcp22.suse.cz>
+Date: Wed, 13 Aug 2014 17:26:48 -0700
+Message-ID: <CAM_iQpX2J8E_N0t5bxBVF_rO_FiFujKuXFMLg47fgL580u+gGw@mail.gmail.com>
+Subject: Re: [Patch] x86,mm: check freeze request in page fault handler
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, David Rientjes <rientjes@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 10:01:45AM +0800, Chao Yu wrote:
-> Since we allocate a temporary buffer in zram_bvec_read to handle partial page
-> operations in this commit 924bd88d703e53d30f393fac6117f8f1bc79aab6 (Staging:
-> zram: allow partial page operations), our ->failed_reads value may be incorrect
-> as we do not increase its value when failed to allocate the temporary buffer.
-> 
-> Let's fix this issue and correct the annotation of failed_reads.
-> 
->  v2: clean codes of failed_{reads,writes} stat pointed out by Minchan Kim, and
-> this cleanup also fix incorrectly stat when fail in zram_decompress_page.
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+On Wed, Aug 13, 2014 at 2:36 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Tue 12-08-14 17:47:02, Cong Wang wrote:
+> [...]
+>> Does the following updated patch make any sense to you? If not, I will just
+>> drop it.
+>
+> Not really to be honest. I do not see what problem you are trying to fix.
+>
 
-Acked-by: Minchan Kim <minchan@kernel.org>
+In my case, a page faulted process triggered OOM, kernel kept
+retrying this fault since without my fix oom killer couldn't kill a
+frozen process.
+This led to that this process is always running even after we tried to
+freeze it,
+the whole memory cgroup just stayed in FREEZING state.
 
-Thanks!
+Although with my fix, OOM will kill the frozen process so that the page faulted
+process could probably stop retrying the fault finally, the question
+is that is OOM
+the only case blocks page fault? Looking at the code, there could be other case
+blocking page fault handler as well, so instead of keep retrying for
+unknown times
+with ignoring freeze request, why not just freeze it since this is not
+dangerous?
 
--- 
-Kind regards,
-Minchan Kim
+Or I am missing anything?
