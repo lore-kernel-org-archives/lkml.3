@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbaHNFMY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 01:12:24 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:39880 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078AbaHNFMW (ORCPT
+	id S1752480AbaHNFOG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 01:14:06 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:52382 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865AbaHNFOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 01:12:22 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53EC4531.1000904@lge.com>
-Date: Thu, 14 Aug 2014 14:12:17 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 14 Aug 2014 01:14:03 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Michael Ellerman <mpe@ellerman.id.au>, kvm-ppc@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v2] PC, KVM, CMA: Fix regression caused by wrong get_order() use
+In-Reply-To: <1407992587-9164-1-git-send-email-aik@ozlabs.ru>
+References: <1407992587-9164-1-git-send-email-aik@ozlabs.ru>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Thu, 14 Aug 2014 10:43:52 +0530
+Message-ID: <87egwj64bz.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-CC: Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>
-Subject: [PATCH 0/2] new APIs to allocate buffer-cache for superblock in non-movable
- area
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081405-1618-0000-0000-000000BC71A0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Alexey Kardashevskiy <aik@ozlabs.ru> writes:
 
-This patch try to solve problem that a long-lasting page caches of
-ext4 superblock and journaling of superblock disturb page migration.
+> fc95ca7284bc54953165cba76c3228bd2cdb9591 claims that there is no
+> functional change but this is not true as it calls get_order() (which
+> takes bytes) where it should have called ilog2() and the kernel stops
+> on VM_BUG_ON().
+>
+> This replaces get_order() with order_base_2() (round-up version of ilog2).
+>
+> Suggested-by: Paul Mackerras <paulus@samba.org>
+> Cc: Alexander Graf <agraf@suse.de>
+> Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 
-I've been testing CMA feature on my ARM-based platform
-and found that two page caches cannot be migrated.
-They are page caches of superblock of ext4 filesystem and its journaling data.
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-Current ext4 reads superblock with sb_bread() that allocates page
-from movable area. But the problem is that ext4 hold the page until
-it is unmounted. If root filesystem is ext4 the page cannot be migrated forever.
-And also the journaling data for the superblock cannot be migreated.
-
-I introduce a new API for allocating page cache from non-movable area.
-It is useful for ext4/ext3 and others that want to hold page cache for a long time.
-
-I have 3 patchs:
-
-1. Patch 1/3: introduce a new API that create page cache from non-movable area
-2. Patch 2/3: have ext4 use the new API to read superblock
-3. Patch 3/3: have jbd/jbd2 use the new API to make journaling of superblock
-
-This patchset is based on linux-next-20140814.
-
-Thanks a lot.
-
-Gioh Kim (3):
- fs/buffer.c: allocate buffer cache from non-movable area
- ext4: allocate buffer-cache for superblock in non-movable area
- jbd-jbd2-allocate-buffer-cache-for-superblock-inode-.patch
-
- fs/buffer.c                 |   63 ++++++++++++++++++++++++++++++----
- fs/ext4/super.c             |    6 +--
- fs/jbd/journal.c            |    2 -
- fs/jbd2/journal.c           |    2 -
- include/linux/buffer_head.h |   10 +++++
- 5 files changed, 71 insertions(+), 12 deletions(-)
+> ---
+>
+> Changes:
+> v2:
+> * s/ilog2/order_base_2/
+> * removed cc: <stable@vger.kernel.org> as I got wrong impression that v3.16 is
+> broken
+>
+> ---
+>  arch/powerpc/kvm/book3s_hv_builtin.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/powerpc/kvm/book3s_hv_builtin.c b/arch/powerpc/kvm/book3s_hv_builtin.c
+> index 329d7fd..b9615ba 100644
+> --- a/arch/powerpc/kvm/book3s_hv_builtin.c
+> +++ b/arch/powerpc/kvm/book3s_hv_builtin.c
+> @@ -101,7 +101,7 @@ struct kvm_rma_info *kvm_alloc_rma()
+>  	ri = kmalloc(sizeof(struct kvm_rma_info), GFP_KERNEL);
+>  	if (!ri)
+>  		return NULL;
+> -	page = cma_alloc(kvm_cma, kvm_rma_pages, get_order(kvm_rma_pages));
+> +	page = cma_alloc(kvm_cma, kvm_rma_pages, order_base_2(kvm_rma_pages));
+>  	if (!page)
+>  		goto err_out;
+>  	atomic_set(&ri->use_count, 1);
+> @@ -135,12 +135,12 @@ struct page *kvm_alloc_hpt(unsigned long nr_pages)
+>  {
+>  	unsigned long align_pages = HPT_ALIGN_PAGES;
+>
+> -	VM_BUG_ON(get_order(nr_pages) < KVM_CMA_CHUNK_ORDER - PAGE_SHIFT);
+> +	VM_BUG_ON(order_base_2(nr_pages) < KVM_CMA_CHUNK_ORDER - PAGE_SHIFT);
+>
+>  	/* Old CPUs require HPT aligned on a multiple of its size */
+>  	if (!cpu_has_feature(CPU_FTR_ARCH_206))
+>  		align_pages = nr_pages;
+> -	return cma_alloc(kvm_cma, nr_pages, get_order(align_pages));
+> +	return cma_alloc(kvm_cma, nr_pages, order_base_2(align_pages));
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_alloc_hpt);
+>
+> -- 
+> 2.0.0
 
