@@ -1,175 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397AbaHNOZb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 10:25:31 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:61643 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755312AbaHNOYl (ORCPT
+	id S1755424AbaHNOZq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 10:25:46 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:42540 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755312AbaHNOZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 10:24:41 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, balbi@ti.com
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, gregkh@linuxfoundation.org,
-        stern@rowland.harvard.edu, jg1.han@samsung.com, s.nawrocki@samsung.com,
-        k.debski@samsung.com, Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH RFC 6/7] usb: host: ehci-exynos: Remove unnecessary usb-phy support
-Date: Thu, 14 Aug 2014 19:53:59 +0530
-Message-Id: <1408026240-28365-7-git-send-email-gautam.vivek@samsung.com>
+	Thu, 14 Aug 2014 10:25:44 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-3e-53ecc6e60782
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
+        Kamil Debski <k.debski@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Mark Brown <broonie@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
+Subject: [PATCH 0/5] usb: phy: samsung: remove old USB PHY code
+Date: Thu, 14 Aug 2014 16:25:22 +0200
+Message-id: <1408026327-31437-1-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1408026240-28365-1-git-send-email-gautam.vivek@samsung.com>
-References: <1408026240-28365-1-git-send-email-gautam.vivek@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e+xoO6zY2+CDfbM07DYOGM9q8XB+/UW
+	m65fZ7Vou3KQ3eLH6wtsFr0LrrJZXHjaw2ZxtukNu8XlXXPYLGac38dksWhZK7MDt8eda3vY
+	PPq2rGL0OH5jO5PH501yASxRXDYpqTmZZalF+nYJXBkH/55kL7jLXTHh8lnWBsZ+zi5GTg4J
+	AROJf0eb2CFsMYkL99azdTFycQgJTGeUeHzkBiOE08Uk0bH+IVgVm4CVxMT2VYwgtoiAmkTP
+	4q1gRcwC95kkNj88zQqSEBawl+j4fhvMZhFQlZj3YBZYM6+Ah0TTzp9MEOsUJbqfTWCbwMi9
+	gJFhFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwED2T2sG4ssHiEKMAB6MSD2/D9jfBQqyJ
+	ZcWVuYcYJTiYlUR4p+8GCvGmJFZWpRblxxeV5qQWH2KU5mBREuc90GodKCSQnliSmp2aWpBa
+	BJNl4uCUamBcP92jLM1s+y79urQ9H6+rvlL2m6KZtt/4Kg+L4dwHwkue9r8Xao6Y9KG5ZfL8
+	xTEKIuHC/6OXHJvPG7joiYm+VCxXte1xmUjh8+mrrkjWrFi7jcO/4MinaE5xb17WnC2M+7Sz
+	Fa0/8QgoLGVebns1rM2HKXylie42l/t7Pu391LZs8rkj77YrsRRnJBpqMRcVJwIAbWyQXh4C	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have completely moved from older USB-PHY drivers
-to newer GENERIC-PHY drivers for PHYs available with USB controllers
-on Exynos series of SoCs, we can remove the support for the same
-in our host drivers too.
-This should fix the issue on ehci-exynos, wherein in the absence of
-SAMSUNG_USB2PHY config symbol, we ended up getting the NOP_USB_XCEIV phy
-when the same is enabled. And thus the PHYs are not configured properly.
+Hi,
 
-Reported-by: Sachin Kamat <sachin.kamat@samsung.com>
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
----
- drivers/usb/host/ehci-exynos.c |   53 ++++++----------------------------------
- 1 file changed, 8 insertions(+), 45 deletions(-)
+This patch series removes the old Samsung USB PHY drivers that
+got replaced by the new ones using the generic PHY layer.
 
-diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
-index cda0a2f..54944cc 100644
---- a/drivers/usb/host/ehci-exynos.c
-+++ b/drivers/usb/host/ehci-exynos.c
-@@ -21,11 +21,8 @@
- #include <linux/of_gpio.h>
- #include <linux/phy/phy.h>
- #include <linux/platform_device.h>
--#include <linux/usb/phy.h>
--#include <linux/usb/samsung_usb_phy.h>
- #include <linux/usb.h>
- #include <linux/usb/hcd.h>
--#include <linux/usb/otg.h>
- 
- #include "ehci.h"
- 
-@@ -47,9 +44,7 @@ static struct hc_driver __read_mostly exynos_ehci_hc_driver;
- 
- struct exynos_ehci_hcd {
- 	struct clk *clk;
--	struct usb_phy *phy;
--	struct usb_otg *otg;
--	struct phy *phy_g[PHY_NUMBER];
-+	struct phy *phy[PHY_NUMBER];
- };
- 
- #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
-@@ -62,18 +57,6 @@ static int exynos_ehci_get_phy(struct device *dev,
- 	int phy_number;
- 	int ret = 0;
- 
--	exynos_ehci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
--	if (IS_ERR(exynos_ehci->phy)) {
--		ret = PTR_ERR(exynos_ehci->phy);
--		if (ret != -ENXIO && ret != -ENODEV) {
--			dev_err(dev, "no usb2 phy configured\n");
--			return ret;
--		}
--		dev_dbg(dev, "Failed to get usb2 phy\n");
--	} else {
--		exynos_ehci->otg = exynos_ehci->phy->otg;
--	}
--
- 	for_each_available_child_of_node(dev->of_node, child) {
- 		ret = of_property_read_u32(child, "reg", &phy_number);
- 		if (ret) {
-@@ -98,7 +81,7 @@ static int exynos_ehci_get_phy(struct device *dev,
- 			}
- 			dev_dbg(dev, "Failed to get usb2 phy\n");
- 		}
--		exynos_ehci->phy_g[phy_number] = phy;
-+		exynos_ehci->phy[phy_number] = phy;
- 	}
- 
- 	return ret;
-@@ -111,16 +94,13 @@ static int exynos_ehci_phy_enable(struct device *dev)
- 	int i;
- 	int ret = 0;
- 
--	if (!IS_ERR(exynos_ehci->phy))
--		return usb_phy_init(exynos_ehci->phy);
--
- 	for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
--		if (!IS_ERR(exynos_ehci->phy_g[i]))
--			ret = phy_power_on(exynos_ehci->phy_g[i]);
-+		if (!IS_ERR(exynos_ehci->phy[i]))
-+			ret = phy_power_on(exynos_ehci->phy[i]);
- 	if (ret)
- 		for (i--; i >= 0; i--)
--			if (!IS_ERR(exynos_ehci->phy_g[i]))
--				phy_power_off(exynos_ehci->phy_g[i]);
-+			if (!IS_ERR(exynos_ehci->phy[i]))
-+				phy_power_off(exynos_ehci->phy[i]);
- 
- 	return ret;
- }
-@@ -131,14 +111,9 @@ static void exynos_ehci_phy_disable(struct device *dev)
- 	struct exynos_ehci_hcd *exynos_ehci = to_exynos_ehci(hcd);
- 	int i;
- 
--	if (!IS_ERR(exynos_ehci->phy)) {
--		usb_phy_shutdown(exynos_ehci->phy);
--		return;
--	}
--
- 	for (i = 0; i < PHY_NUMBER; i++)
--		if (!IS_ERR(exynos_ehci->phy_g[i]))
--			phy_power_off(exynos_ehci->phy_g[i]);
-+		if (!IS_ERR(exynos_ehci->phy[i]))
-+			phy_power_off(exynos_ehci->phy[i]);
- }
- 
- static void exynos_setup_vbus_gpio(struct device *dev)
-@@ -231,9 +206,6 @@ skip_phy:
- 		goto fail_io;
- 	}
- 
--	if (exynos_ehci->otg)
--		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
--
- 	err = exynos_ehci_phy_enable(&pdev->dev);
- 	if (err) {
- 		dev_err(&pdev->dev, "Failed to enable USB phy\n");
-@@ -273,9 +245,6 @@ static int exynos_ehci_remove(struct platform_device *pdev)
- 
- 	usb_remove_hcd(hcd);
- 
--	if (exynos_ehci->otg)
--		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
--
- 	exynos_ehci_phy_disable(&pdev->dev);
- 
- 	clk_disable_unprepare(exynos_ehci->clk);
-@@ -298,9 +267,6 @@ static int exynos_ehci_suspend(struct device *dev)
- 	if (rc)
- 		return rc;
- 
--	if (exynos_ehci->otg)
--		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
--
- 	exynos_ehci_phy_disable(dev);
- 
- 	clk_disable_unprepare(exynos_ehci->clk);
-@@ -316,9 +282,6 @@ static int exynos_ehci_resume(struct device *dev)
- 
- 	clk_prepare_enable(exynos_ehci->clk);
- 
--	if (exynos_ehci->otg)
--		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
--
- 	ret = exynos_ehci_phy_enable(dev);
- 	if (ret) {
- 		dev_err(dev, "Failed to enable USB phy\n");
+Depends on:
+- next-20140813 branch of linux-next kernel
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+
+Bartlomiej Zolnierkiewicz (5):
+  ARM: dts: remove old USB2 PHY node hook for Arndale
+  ARM: dts: remove old USB2 PHY node for Exynos5250
+  usb: phy: samsung: remove old USB 2.0 PHY driver
+  usb: phy: samsung: remove old USB 3.0 PHY driver
+  usb: phy: samsung: remove old common USB PHY code
+
+ arch/arm/boot/dts/exynos5250-arndale.dts     |   4 -
+ arch/arm/boot/dts/exynos5250.dtsi            |  15 -
+ drivers/usb/phy/Kconfig                      |  23 --
+ drivers/usb/phy/Makefile                     |   3 -
+ drivers/usb/phy/phy-samsung-usb.c            | 241 ------------
+ drivers/usb/phy/phy-samsung-usb.h            | 349 -----------------
+ drivers/usb/phy/phy-samsung-usb2.c           | 541 ---------------------------
+ drivers/usb/phy/phy-samsung-usb3.c           | 350 -----------------
+ include/linux/platform_data/samsung-usbphy.h |  27 --
+ 9 files changed, 1553 deletions(-)
+ delete mode 100644 drivers/usb/phy/phy-samsung-usb.c
+ delete mode 100644 drivers/usb/phy/phy-samsung-usb.h
+ delete mode 100644 drivers/usb/phy/phy-samsung-usb2.c
+ delete mode 100644 drivers/usb/phy/phy-samsung-usb3.c
+ delete mode 100644 include/linux/platform_data/samsung-usbphy.h
+
 -- 
-1.7.10.4
+1.8.2.3
 
