@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436AbaHNA0w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 20:26:52 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:50179 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243AbaHNA0t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 20:26:49 -0400
+	id S1753513AbaHNA2D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 20:28:03 -0400
+Received: from ozlabs.org ([103.22.144.67]:53099 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752726AbaHNA2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 20:28:01 -0400
+Date: Thu, 14 Aug 2014 10:27:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: problem importing the akpm-current tree
+Message-ID: <20140814102754.29ecc247@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140813093613.GB2775@dhcp22.suse.cz>
-References: <1407804835-24763-1-git-send-email-xiyou.wangcong@gmail.com>
-	<1407804835-24763-2-git-send-email-xiyou.wangcong@gmail.com>
-	<20140812120905.GB7049@dhcp22.suse.cz>
-	<CAM_iQpWV8DRGBQ-Brz=_Nqen0fNPDk+6kn_Og3HnXnujmgA+JA@mail.gmail.com>
-	<20140813093613.GB2775@dhcp22.suse.cz>
-Date: Wed, 13 Aug 2014 17:26:48 -0700
-Message-ID: <CAM_iQpX2J8E_N0t5bxBVF_rO_FiFujKuXFMLg47fgL580u+gGw@mail.gmail.com>
-Subject: Re: [Patch] x86,mm: check freeze request in page fault handler
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/WEHDyBpc_iZeNH2ld3PU2BX"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 2:36 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Tue 12-08-14 17:47:02, Cong Wang wrote:
-> [...]
->> Does the following updated patch make any sense to you? If not, I will just
->> drop it.
->
-> Not really to be honest. I do not see what problem you are trying to fix.
->
+--Sig_/WEHDyBpc_iZeNH2ld3PU2BX
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-In my case, a page faulted process triggered OOM, kernel kept
-retrying this fault since without my fix oom killer couldn't kill a
-frozen process.
-This led to that this process is always running even after we tried to
-freeze it,
-the whole memory cgroup just stayed in FREEZING state.
+Hi Andrew,
 
-Although with my fix, OOM will kill the frozen process so that the page faulted
-process could probably stop retrying the fault finally, the question
-is that is OOM
-the only case blocks page fault? Looking at the code, there could be other case
-blocking page fault handler as well, so instead of keep retrying for
-unknown times
-with ignoring freeze request, why not just freeze it since this is not
-dangerous?
+While importing mmotm 2014-08-13-14-29, I get the following:
 
-Or I am missing anything?
+$ git am --patch-format=3Dmbox ../mmotm/broken-out/drivers-gpu-drm-nouveau-=
+fix-build.patch
+Applying: drivers/gpu/drm/nouveau: fix build
+error: patch failed: drivers/gpu/drm/nouveau/core/include/nvif/unpack.h:1
+error: drivers/gpu/drm/nouveau/core/include/nvif/unpack.h: patch does not a=
+pply
+Patch failed at 0001 drivers/gpu/drm/nouveau: fix build
+
+the problem is that the files altered by that patch are symlinks in the
+git tree and the patch tries to turn them into real files with #includes
+of the symlink target.
+
+I skipped the patch and I guess your problem arose from applying a git
+patch to a non git tree which created real files whose contents were
+just the symlink target names.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/WEHDyBpc_iZeNH2ld3PU2BX
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT7AKPAAoJEMDTa8Ir7ZwV1BYP/36PI+oLxx1sovXLMivUte09
+bmGpQPyttxA8e+OowCdljVaJDZsr/BuzRF9BdULadILB0dg0bUwabPvKqT9DnFcG
+W1P6NZ7sw3kicUHli0+UYrc8b/p0zT5zibSkFbwi8DM8+NkYX8SwX/yvBa010moK
+1qujR4LA+nGnOqo+W7uHoEArBGkHaBsTBpmqKB8rQ8oaEM+pi4Jrk6awgNsjYQvy
+E43hjiycmUsYNsqpznuk1nuu1Fu/LN1I83Rfef0za4UPBoWBrPXhoFqB4C7uJRp2
+D8P8F43S3OV5+Frw+RtGqZ4agIAIRtQINT0uSEnLCTisbiXeN8927ZZ/56spTux6
+LWxStbbYS61mGJTXZw6UUV1g0MSHPjK8EfBa7VpU8k1brbog1yWgiAxJ5JSiJPna
+aFNZ5//w+5WKsR8XX+fIbvBcJ16Ef81d3Pk1xrSkJocHPxXPxGhhN/dT3eyngMVK
+uSNffzPVBV0d3a9X8EzTOx9V7M1XNI0VPrr11NOvvNrU/nVVU72mGdQcP5JrsXHb
+iipSS22WyGalWavPgY8fd2hC9UJFtoZCZl1+xoBXbRZ1qUaqsokzdJ45X4oUt0V0
+uYkLRXmsGhRut5+DMBtGI2U83HV/Q+AAXExMFw8Bt3kIBXWNNrs02RjyVinKytI1
+vi5WPlk/7iDqdhhGVA+t
+=LGvV
+-----END PGP SIGNATURE-----
+
+--Sig_/WEHDyBpc_iZeNH2ld3PU2BX--
