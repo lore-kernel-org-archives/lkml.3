@@ -1,90 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655AbaHNGIe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 02:08:34 -0400
-Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:54894
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752450AbaHNGIc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 02:08:32 -0400
-From: Dexuan Cui <decui@microsoft.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH] Input: serio: make HYPERV_KEYBOARD depend on
- SERIO_I8042=y
-Thread-Topic: [PATCH] Input: serio: make HYPERV_KEYBOARD depend on
- SERIO_I8042=y
-Thread-Index: AQHPtfL80p5QO0TZ/0qF/qigPt99A5vMiCDwgAC47oCAAKTFcIAAzKIAgADqqjA=
-Date: Thu, 14 Aug 2014 06:07:11 +0000
-Message-ID: <EE124450C0AAF944A40DD71E61F878C9929597@SINEX14MBXC417.southpacific.corp.microsoft.com>
-References: <1407814240-4275-1-git-send-email-decui@microsoft.com>
- <20140812032148.GB6867@kroah.com>
- <EE124450C0AAF944A40DD71E61F878C9920A1C@SINEX14MBXC417.southpacific.corp.microsoft.com>
- <20140812060108.GA13231@kroah.com>
- <EE124450C0AAF944A40DD71E61F878C9920EAF@SINEX14MBXC417.southpacific.corp.microsoft.com>
- <20140812175435.GA22386@core.coreip.homeip.net>
- <EE124450C0AAF944A40DD71E61F878C9925D21@SINEX14MBXC417.southpacific.corp.microsoft.com>
- <20140813155644.GA6940@core.coreip.homeip.net>
-In-Reply-To: <20140813155644.GA6940@core.coreip.homeip.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.3.91]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(199003)(51704005)(189002)(164054003)(13464003)(84676001)(2656002)(87936001)(86612001)(4396001)(26826002)(79102001)(33656002)(97756001)(69596002)(83072002)(81542001)(50466002)(21056001)(64706001)(46102001)(85852003)(92726001)(23726002)(92566001)(77982001)(107046002)(99396002)(55846006)(16796002)(74662001)(31966008)(74502001)(77096002)(106116001)(76176999)(68736004)(86362001)(110136001)(46406003)(97736001)(83322001)(6806004)(76482001)(20776003)(47776003)(106466001)(95666004)(81342001)(85306004)(85806002)(54356999)(50986999)(81156004)(80022001)(93886004)(44976005);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB619;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 03030B9493
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=decui@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+	id S1753485AbaHNGQc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 02:16:32 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48485 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752419AbaHNGQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 02:16:31 -0400
+Message-ID: <1407996977.5490.56.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git next branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Thu, 14 Aug 2014 16:16:17 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Dmitry Torokhov
-> > How about this:
-> > in libps2.c let's add  and export a function pointer
-> > i8042_lock_chip_if_port_owner: it is used to replace the current
-> > 	if (i8042_check_port_owner(ps2dev->serio))
-> > 		i8042_lock_chip();
-> > The function pointer has a default value NULL, and in i8042.c: i8042_init()
-> > we set the function pointer if an i8042 device is found?
-> 
-> Hmm, that would make i8042 depend on libps2, which might be OK, but how
-> do you deal with the locking here? I.e. what happens if you unload i8042
-> right when we go through this sequence?
-Ok, I got it.
+Hi Linus !
 
-> Maybe we need to split i8042_lock_chip() and friends into a separate
-> module that always loads, even if i8042 is not present.
-> Dmitry
-Good idea!
+Here are some more powerpc bits for 3.17, essentially fixes.
 
-However the more difficult thing is 
-i8042_check_port_owner() -- used by  libps2.c too.
-Then  the separate module will also have to include and EXPORT
-	DEFINE_SPINLOCK(i8042_lock);
-	struct i8042_port i8042_ports[I8042_NUM_PORTS];
-?
+The biggest series, also aimed at -stable, is from Aneesh and is the result
+of weeks and weeks of debugging to find out why the heck or THP implementation
+was occasionally triggering multi-hit errors in our level 1 TLB. It ended up
+being a combination of issues including subtleties as to how we should
+invalidate those special 'MPSS' pages we use to allow the use of 16M pages
+inside 4K/64K "base page size" segments (you really have to love our MMU !)
 
-This seems a non-trivial change... :-(
+Another interesting one in the "OMG" category is the series from Michael
+adding memory barriers to spin_is_locked(). That's also the result of many
+days of debugging to figure out why the semaphore code would occasionally
+crash in ways that made no sense. It ended up being some creative lock
+stacking that was defeated by the fact that our locks allow a load inside
+the locked section to be re-ordered with the load of the lock value itself
+(I'm still of two mind about whether to kill that once and for all by putting
+a heavier barrier back into our lock implementation...). The fixes come with
+a long explanation in the cset comments, feel free to read it if you feel
+like having a headache today.
 
-Thanks,
--- Dexuan
+Cheers,
+Ben.
+
+The following changes since commit 58d08e3b2c2033354b91467da33deffa06360c28:
+
+  Merge tag 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/olof/chrome-platform (2014-08-10 11:13:58 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
+
+for you to fetch changes up to 9e813308a5c18c58f9ccae1ec72ed4e14eaf9025:
+
+  powerpc/thp: Add tracepoints to track hugepage invalidate (2014-08-13 18:20:42 +1000)
+
+----------------------------------------------------------------
+Alistair Popple (1):
+      powerpc/ppc476: Disable BTAC
+
+Aneesh Kumar K.V (8):
+      powerpc/thp: Add write barrier after updating the valid bit
+      powerpc/thp: Don't recompute vsid and ssize in loop on invalidate
+      powerpc/thp: Invalidate old 64K based hash page mapping before insert of 4k pte
+      powerpc/thp: Handle combo pages in invalidate
+      powerpc/thp: Invalidate with vpn in loop
+      powerpc/thp: Use ACCESS_ONCE when loading pmdp
+      powerpc/mm: Use read barrier when creating real_pte
+      powerpc/thp: Add tracepoints to track hugepage invalidate
+
+Anton Blanchard (1):
+      powerpc: Hard disable interrupts in xmon
+
+Benjamin Herrenschmidt (1):
+      powerpc/boot: Use correct zlib types for comparison
+
+Gavin Shan (3):
+      powerpc/powernv: Fix IOMMU group lost
+      powerpc/pseries: Failure on removing device node
+      powerpc/pseries: Avoid deadlock on removing ddw
+
+Guenter Roeck (1):
+      powerpc: Fix "attempt to move .org backwards" error
+
+Himangi Saraogi (1):
+      powerpc/perf/hv-24x7: Use kmem_cache_free
+
+Michael Ellerman (3):
+      powerpc: Add smp_mb() to arch_spin_is_locked()
+      powerpc: Add smp_mb()s to arch_spin_unlock_wait()
+      powerpc: Add POWER8 features to CPU_FTRS_POSSIBLE/ALWAYS
+
+Nishanth Aravamudan (2):
+      powerpc: remove duplicate definition of TEXASR_FS
+      powerpc: reorder per-cpu NUMA information's initialization
+
+Scott Wood (1):
+      powerpc/nohash: Split __early_init_mmu() into boot and secondary
+
+Thomas Falcon (1):
+      powerpc/pseries/hvcserver: Fix endian issue in hvcs_get_partner_info
+
+Vasant Hegde (2):
+      printk: Add function to return log buffer address and size
+      powerpc/powernv: Interface to register/unregister opal dump region
+
+ arch/powerpc/boot/gunzip_util.c                 |   4 +-
+ arch/powerpc/include/asm/cputable.h             |   6 +-
+ arch/powerpc/include/asm/machdep.h              |   6 +-
+ arch/powerpc/include/asm/opal.h                 |  11 +++
+ arch/powerpc/include/asm/pgtable-ppc64.h        |   2 +-
+ arch/powerpc/include/asm/pte-hash64-64k.h       |  30 +++++--
+ arch/powerpc/include/asm/reg.h                  |   3 +-
+ arch/powerpc/include/asm/spinlock.h             |   1 +
+ arch/powerpc/kernel/exceptions-64s.S            | 110 +++++++++++------------
+ arch/powerpc/kernel/head_44x.S                  |   4 +-
+ arch/powerpc/kernel/iommu.c                     |  38 ++++----
+ arch/powerpc/kernel/smp.c                       |  11 ++-
+ arch/powerpc/lib/locks.c                        |   4 +
+ arch/powerpc/mm/hash_native_64.c                |  40 +++------
+ arch/powerpc/mm/hugepage-hash64.c               |  88 ++++++++++++++++---
+ arch/powerpc/mm/numa.c                          |  13 ++-
+ arch/powerpc/mm/pgtable_64.c                    |  44 ++++++----
+ arch/powerpc/mm/tlb_hash64.c                    |   6 +-
+ arch/powerpc/mm/tlb_nohash.c                    | 111 ++++++++++++++----------
+ arch/powerpc/perf/hv-24x7.c                     |   2 +-
+ arch/powerpc/platforms/powernv/opal-wrappers.S  |   2 +
+ arch/powerpc/platforms/powernv/opal.c           |  23 +++++
+ arch/powerpc/platforms/powernv/pci-ioda.c       |   2 +-
+ arch/powerpc/platforms/pseries/hotplug-memory.c |   2 +-
+ arch/powerpc/platforms/pseries/hvcserver.c      |   4 +-
+ arch/powerpc/platforms/pseries/iommu.c          |  20 +++--
+ arch/powerpc/platforms/pseries/lpar.c           |  20 ++---
+ arch/powerpc/xmon/xmon.c                        |   3 +
+ include/linux/printk.h                          |   3 +
+ include/trace/events/thp.h                      |  88 +++++++++++++++++++
+ kernel/printk/printk.c                          |  12 +++
+ 31 files changed, 490 insertions(+), 223 deletions(-)
+ create mode 100644 include/trace/events/thp.h
+
+
