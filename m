@@ -1,148 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101AbaHNRa2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 13:30:28 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:57556 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379AbaHNRa1 (ORCPT
+	id S1754375AbaHNRaj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 13:30:39 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:38926 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524AbaHNRah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 13:30:27 -0400
-Message-ID: <1408037423.12776.6.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH -tip] locking/mutexes: Avoid bogus wakeups after lock
- stealing
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: peterz@infradead.org, mingo@kernel.org, jason.low2@hp.com,
-        scott.norton@hp.com, aswin@hp.com, linux-kernel@vger.kernel.org
-Date: Thu, 14 Aug 2014 10:30:23 -0700
-In-Reply-To: <53ECEF32.6010706@hp.com>
-References: <1407995870-4268-1-git-send-email-davidlohr@hp.com>
-	 <53ECEF32.6010706@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Thu, 14 Aug 2014 13:30:37 -0400
+Message-ID: <53ECF23A.1090704@kernel.org>
+Date: Thu, 14 Aug 2014 18:30:34 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Himangi Saraogi <himangi774@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Archana Patni <archana.patni@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+CC: Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] HID: hid-sensor-hub: use devm_ functions consistently
+References: <20140802221135.GA18239@himangi-Dell> <53DD7A5F.4000204@linux.intel.com>
+In-Reply-To: <53DD7A5F.4000204@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-14 at 13:17 -0400, Waiman Long wrote:
-> On 08/14/2014 01:57 AM, Davidlohr Bueso wrote:
-> > Mutexes lock-stealing functionality allows another task to
-> > skip its turn in the wait-queue and atomically acquire the lock.
-> > This is fine and a nice optimization, however, when releasing
-> > the mutex, we always wakeup the next task in FIFO order. When
-> > the lock has been stolen, this leads to wasting waking up a
-> > task just to immediately realize it cannot acquire the lock
-> > and just go back to sleep. While in practice this window is
-> > quite small, it is not about performance or avoid taking the
-> > wait_lock, but because avoiding bogus wakeups is the right thing
-> > to do.
-> >
-> > In order to deal with the race when potentially missing the
-> > unlock slowpath (details in the comments), we pessimistically set
-> > the lock to have waiters. The downside of this is that the task
-> > that now stole the lock would always have to acquire the mutex in
-> > its slowpath (as mutex_try_to_acquire() would never succeed.
-> > However, since this path is rarely called, the cost is really
-> > never noticed.
-> >
-> > Signed-off-by: Davidlohr Bueso<davidlohr@hp.com>
-> > ---
-> > Original thread: https://lkml.org/lkml/2014/8/8/37
-> >
-> >   kernel/locking/mutex.c | 43 +++++++++++++++++++++++++++++++++++++++++++
-> >   1 file changed, 43 insertions(+)
-> >
-> > diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> > index dadbf88..4570611 100644
-> > --- a/kernel/locking/mutex.c
-> > +++ b/kernel/locking/mutex.c
-> > @@ -383,12 +383,26 @@ done:
-> >
-> >   	return false;
-> >   }
-> > +
-> > +static inline bool mutex_has_owner(struct mutex *lock)
-> > +{
-> > +	struct task_struct *owner = ACCESS_ONCE(lock->owner);
-> > +
-> > +	return owner != NULL;
-> > +}
-> > +
-> >   #else
-> > +
-> >   static bool mutex_optimistic_spin(struct mutex *lock,
-> >   				  struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
-> >   {
-> >   	return false;
-> >   }
-> > +
-> > +static inline bool mutex_has_owner(struct mutex *lock)
-> > +{
-> > +	return false;
-> > +}
-> >   #endif
-> >
-> >   __visible __used noinline
-> > @@ -715,6 +729,35 @@ __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
-> >   {
-> >   	unsigned long flags;
-> >
-> > +/*
-> > + * Skipping the mutex_has_owner() check when DEBUG, allows us to
-> > + * avoid taking the wait_lock in order to do not call mutex_release()
-> > + * and debug_mutex_unlock() when !DEBUG. This can otherwise result in
-> > + * hung it a hung task when another one enters the lock's slowpath in
-> > + * mutex_lock().
-> > + */
-> > +#ifndef CONFIG_DEBUG_MUTEXES
-> > +	/*
-> > +	 * Abort the wakeup operation if there is an another mutex owner, as the
-> > +	 * lock was stolen. mutex_unlock() should have cleared the owner field
-> > +	 * before calling this function. If that field is now set, another task
-> > +	 * must have acquired the mutex. Note that this is a very tiny window.
-> > +	 */
-> > +	if (unlikely(mutex_has_owner(lock))) {
-> > +		/*
-> > +		 * Unconditionally set the lock to have waiters. Otherwise
-> > +		 * we can race with another task that grabbed the mutex via
-> > +		 * optimistic spinning and sets the lock to 0. When done,
-> > +		 * the unlock logic never reaches the slowpath, thus never
-> > +		 * waking the next task in the queue.
-> > +		 * Furthermore, this is safe as we've already acknowledged
-> > +		 * the fact that the lock was stolen and now a new owner
-> > +		 * exists.
-> > +		 */
-> > +		atomic_set(&lock->count, -1);
-> > +		return;
-> > +	}
-> > +#endif
-> >   	/*
-> >   	 * As a performance measurement, release the lock before doing other
-> >   	 * wakeup related duties to follow. This allows other tasks to acquire
+On 03/08/14 00:55, Srinivas Pandruvada wrote:
 > 
-> I still think it is better to do that after spin_lock_mutex(). 
+> On 08/02/2014 03:11 PM, Himangi Saraogi wrote:
+>> Use devm_kzalloc for all calls to kzalloc and not just the first.  Use
+>> devm functions for other allocations as well. The calls to free the
+>> allocated memory in the probe and remove functions are done away with
+>> and a label is removed in the probe function.
+>>
+>> The semantic match that finds the inconsistency is as follows:
+>>
+>> // <smpl>
+>> @@
+>> @@
+>>
+>> *devm_kzalloc(...)
+>> ...
+>> *kzalloc(...)
+>> // </smpl>
+>>
+>> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+>> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+>  Reviewed-by: Srinivas Pandruvada <srinivas.pandruvada@intel.com>
+> 
+Applied to thet togreg branch of iio.git. Pushed out as testing
+for the autobuilders to play.
 
-As mentioned, this causes all sorts of hung tasks when the another task
-enters the slowpath when locking. There's a big fat comment above.
-
-> In 
-> addition, the atomic_set() is racy. It is better to something like
-
-Why is it racy? Atomically setting the lock to -1 given that the lock
-was stolen should be safe. The alternative we discussed with Jason was
-to set the counter to -1 in the spinning path. But given that we need to
-serialize the counter check with the list_empty() check that would
-require the wait_lock. This is very messy and unnecessarily complicates
-things.
-
->    if (atomic_cmpxchg(&lock->count, 0, -1) <= 0)
->      return;
-
-Not really because some archs leave the lock at 1 after the unlock
-fastpath.
-
-Thanks,
-Davidlohr
-
+Thanks
+>> ---
+>>   drivers/hid/hid-sensor-hub.c | 33 +++++++++++----------------------
+>>   1 file changed, 11 insertions(+), 22 deletions(-)
+>>
+>> diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
+>> index e244e44..2ac2576 100644
+>> --- a/drivers/hid/hid-sensor-hub.c
+>> +++ b/drivers/hid/hid-sensor-hub.c
+>> @@ -604,9 +604,9 @@ static int sensor_hub_probe(struct hid_device *hdev,
+>>           ret = -EINVAL;
+>>           goto err_stop_hw;
+>>       }
+>> -    sd->hid_sensor_hub_client_devs = kzalloc(dev_cnt *
+>> -                        sizeof(struct mfd_cell),
+>> -                        GFP_KERNEL);
+>> +    sd->hid_sensor_hub_client_devs = devm_kzalloc(&hdev->dev, dev_cnt *
+>> +                              sizeof(struct mfd_cell),
+>> +                              GFP_KERNEL);
+>>       if (sd->hid_sensor_hub_client_devs == NULL) {
+>>           hid_err(hdev, "Failed to allocate memory for mfd cells\n");
+>>               ret = -ENOMEM;
+>> @@ -618,11 +618,12 @@ static int sensor_hub_probe(struct hid_device *hdev,
+>>             if (collection->type == HID_COLLECTION_PHYSICAL) {
+>>   -            hsdev = kzalloc(sizeof(*hsdev), GFP_KERNEL);
+>> +            hsdev = devm_kzalloc(&hdev->dev, sizeof(*hsdev),
+>> +                         GFP_KERNEL);
+>>               if (!hsdev) {
+>>                   hid_err(hdev, "cannot allocate hid_sensor_hub_device\n");
+>>                   ret = -ENOMEM;
+>> -                goto err_no_mem;
+>> +                goto err_stop_hw;
+>>               }
+>>               hsdev->hdev = hdev;
+>>               hsdev->vendor_id = hdev->vendor;
+>> @@ -631,13 +632,13 @@ static int sensor_hub_probe(struct hid_device *hdev,
+>>               if (last_hsdev)
+>>                   last_hsdev->end_collection_index = i;
+>>               last_hsdev = hsdev;
+>> -            name = kasprintf(GFP_KERNEL, "HID-SENSOR-%x",
+>> -                    collection->usage);
+>> +            name = devm_kasprintf(&hdev->dev, GFP_KERNEL,
+>> +                          "HID-SENSOR-%x",
+>> +                          collection->usage);
+>>               if (name == NULL) {
+>>                   hid_err(hdev, "Failed MFD device name\n");
+>>                       ret = -ENOMEM;
+>> -                    kfree(hsdev);
+>> -                    goto err_no_mem;
+>> +                    goto err_stop_hw;
+>>               }
+>>               sd->hid_sensor_hub_client_devs[
+>>                   sd->hid_sensor_client_cnt].id =
+>> @@ -661,16 +662,10 @@ static int sensor_hub_probe(struct hid_device *hdev,
+>>       ret = mfd_add_devices(&hdev->dev, 0, sd->hid_sensor_hub_client_devs,
+>>           sd->hid_sensor_client_cnt, NULL, 0, NULL);
+>>       if (ret < 0)
+>> -        goto err_no_mem;
+>> +        goto err_stop_hw;
+>>         return ret;
+>>   -err_no_mem:
+>> -    for (i = 0; i < sd->hid_sensor_client_cnt; ++i) {
+>> -        kfree(sd->hid_sensor_hub_client_devs[i].name);
+>> -        kfree(sd->hid_sensor_hub_client_devs[i].platform_data);
+>> -    }
+>> -    kfree(sd->hid_sensor_hub_client_devs);
+>>   err_stop_hw:
+>>       hid_hw_stop(hdev);
+>>   @@ -681,7 +676,6 @@ static void sensor_hub_remove(struct hid_device *hdev)
+>>   {
+>>       struct sensor_hub_data *data = hid_get_drvdata(hdev);
+>>       unsigned long flags;
+>> -    int i;
+>>         hid_dbg(hdev, " hardware removed\n");
+>>       hid_hw_close(hdev);
+>> @@ -691,11 +685,6 @@ static void sensor_hub_remove(struct hid_device *hdev)
+>>           complete(&data->pending.ready);
+>>       spin_unlock_irqrestore(&data->lock, flags);
+>>       mfd_remove_devices(&hdev->dev);
+>> -    for (i = 0; i < data->hid_sensor_client_cnt; ++i) {
+>> -        kfree(data->hid_sensor_hub_client_devs[i].name);
+>> -        kfree(data->hid_sensor_hub_client_devs[i].platform_data);
+>> -    }
+>> -    kfree(data->hid_sensor_hub_client_devs);
+>>       hid_set_drvdata(hdev, NULL);
+>>       mutex_destroy(&data->mutex);
+>>   }
+> 
