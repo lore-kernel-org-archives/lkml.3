@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655AbaHNTRm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 15:17:42 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:56642 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350AbaHNTRk (ORCPT
+	id S1754016AbaHNT1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 15:27:42 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:36111 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444AbaHNT1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 15:17:40 -0400
+	Thu, 14 Aug 2014 15:27:41 -0400
+Date: Thu, 14 Aug 2014 21:27:20 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, hskinnemoen@gmail.com, tglx@linutronix.de
+Subject: Re: [tip:locking/arch] locking,arch,avr32: Fold atomic_ops
+Message-ID: <20140814192720.GA16175@samfundet.no>
+References: <20140531141445.GD16155@laptop.programming.kicks-ass.net>
+ <tip-d325209b6000dcd13404ee946d2292e15a56718c@git.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-Date: Thu, 14 Aug 2014 12:17:39 -0700
-Message-ID: <CAE40pdcsEnCg-zVyYR-hkYZ9Zd4kmX2BS11cFWAKZK3=HfBUMg@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 00/26] BPF syscall, maps, verifier,
- samples, llvm
-From: Brendan Gregg <brendan.d.gregg@gmail.com>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-d325209b6000dcd13404ee946d2292e15a56718c@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 12:57 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-[...]
-> Tracing use case got some improvements as well. Now eBPF programs can be
-> attached to tracepoint, syscall, kprobe and C examples are more usable:
-> ex1_kern.c - demonstrate how programs can walk in-kernel data structures
-> ex2_kern.c - in-kernel event accounting and user space histograms
-> See patch #25
+Around Thu 14 Aug 2014 10:19:44 -0700 or thereabout, tip-bot for Peter Zijlstra wrote:
+> Commit-ID:  d325209b6000dcd13404ee946d2292e15a56718c
+> Gitweb:     http://git.kernel.org/tip/d325209b6000dcd13404ee946d2292e15a56718c
+> Author:     Peter Zijlstra <peterz@infradead.org>
+> AuthorDate: Wed, 9 Apr 2014 21:51:29 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Thu, 14 Aug 2014 12:48:05 +0200
+> 
+> locking,arch,avr32: Fold atomic_ops
+> 
+> Many of the atomic op implementations are the same except for one
+> instruction; fold the lot into a few CPP macros and reduce LoC.
+> 
+> This also prepares for easy addition of new ops.
+> 
+> Requires the asm_op because of eor.
+> 
+> AVR32 is a bit special in that its ADD/SUB instructions are not
+> symmetric. Its SUB instruction allows for an 21bit immediate.
 
-This is great, thanks! I've been using this new support, and
-successfully ported an an older tool of mine (bitesize) to eBPF. I was
-using the block:block_rq_issue tracepoint, and performing a custom
-in-kernel histogram, like in the ex2_kern.c example, for I/O size.
+Fantastic, looks great.
 
-I also did some quick overhead testing and found eBPF with JIT to be
-relatively fast. (I'd share numbers but it's platform specific.) The
-syscall tracepoints were a bit slower than hoped, for what I think is
-a well known issue.
+Do you have any plans for merge route? I'll happily do it through the avr32
+tree, but if it is part of another series, it makes most sense to do it
+there.
 
-Are there thoughts in general for how this might be used for embedded
-devices, where installing clang/llvm might be prohibitive? Compile on
-another system and move the binaries over? thanks,
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Link: http://lkml.kernel.org/r/20140531141445.GD16155@laptop.programming.kicks-ass.net
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
-Brendan
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+
+> ---
+>  arch/avr32/include/asm/atomic.h | 123 ++++++++++++++++++++--------------------
+>  1 file changed, 62 insertions(+), 61 deletions(-)
+
+<snipp diff>
+
+-- 
+mvh
+Hans-Christian Egtvedt
