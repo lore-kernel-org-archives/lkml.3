@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaHNSh7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 14:37:59 -0400
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:61694 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350AbaHNSh5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 14:37:57 -0400
-Date: Thu, 14 Aug 2014 13:37:54 -0500
-From: Shaun Ruffell <sruffell@digium.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        ebiederm@xmission.com, hpa@zytor.com, kexec@lists.infradead.org
-Subject: Re: [PATCH 1/2] kexec: Create a new config option CONFIG_KEXEC_FILE
- for new syscall
-Message-ID: <20140814183753.GA25199@digium.com>
-References: <1407940980-7100-1-git-send-email-vgoyal@redhat.com>
- <1407940980-7100-2-git-send-email-vgoyal@redhat.com>
+	id S1754645AbaHNSlb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 14:41:31 -0400
+Received: from mga03.intel.com ([143.182.124.21]:15046 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753829AbaHNSla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 14:41:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,864,1400050800"; 
+   d="scan'208";a="468820758"
+Date: Thu, 14 Aug 2014 11:41:15 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 4/5] perf, x86: Add INST_RETIRED.ALL workarounds
+Message-ID: <20140814184115.GS5803@tassilo.jf.intel.com>
+References: <1407979069-7121-1-git-send-email-andi@firstfloor.org>
+ <1407979069-7121-5-git-send-email-andi@firstfloor.org>
+ <CABPqkBTnZ8SF8TPPMxcY+jPvwQhv+3gki86dnNVgBbAJ_RPdkg@mail.gmail.com>
+ <20140814143009.GO5803@tassilo.jf.intel.com>
+ <CABPqkBQVwGH7GAVXAXjR1inWnWYeWuVG7Aj-aWAzAksdGq8oeg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407940980-7100-2-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBQVwGH7GAVXAXjR1inWnWYeWuVG7Aj-aWAzAksdGq8oeg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 10:42:59AM -0400, Vivek Goyal wrote:
-> Currently new system call kexec_file_load() and all the associated code
-> compiles if CONFIG_KEXEC=y. But new syscall also compiles purgatory code
-> which currently uses gcc option -mcmodel=large. This option seems to be
-> available only gcc 4.4 onwards.
+On Thu, Aug 14, 2014 at 07:47:56PM +0200, Stephane Eranian wrote:
+> [+perf tool maintainers]
 > 
-> Hiding new functionality behind a new config option will not break
-> existing users of old gcc. Those who wish to enable new functionality
-> will require new gcc. Having said that, I am trying to figure out how
-> can I move away from using -mcmodel=large but that can take a while.
-> 
-> I think there are other advantages of introducing this new config
-> option. As this option will be enabled only on x86_64, other arches
-> don't have to compile generic kexec code which will never be used.
-> This new code selects CRYPTO=y and CRYPTO_SHA256=y. And all other
-> arches had to do this for CONFIG_KEXEC. Now with introduction
-> of new config option, we can remove crypto dependency from other
-> arches.
-> 
-> Now CONFIG_KEXEC_FILE is available only on x86_64. So whereever I
-> had CONFIG_X86_64 defined, I got rid of that.
-> 
-> For CONFIG_KEXEC_FILE, instead of doing select CRYPTO=y, I changed
-> it to "depends on CRYPTO=y". This should be safer as "select" is
-> not recursive.
-> 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  arch/x86/Kbuild                    |  4 +---
->  arch/x86/Kconfig                   | 18 ++++++++++++++----
->  arch/x86/Makefile                  |  5 +----
->  arch/x86/kernel/Makefile           |  2 +-
->  arch/x86/kernel/crash.c            |  6 ++----
->  arch/x86/kernel/machine_kexec_64.c | 11 +++++++++++
->  arch/x86/purgatory/Makefile        |  5 +----
->  kernel/kexec.c                     | 11 +++++++++++
->  8 files changed, 42 insertions(+), 20 deletions(-)
+> On Thu, Aug 14, 2014 at 4:30 PM, Andi Kleen <ak@linux.intel.com> wrote:
+> >
+> > I understand all your points, but there's no alternative.
+> > The only other way would be to disable INST_RETIRED.ALL.
+> >
+> You cannot do that either. INST_RETIRED:ALL is important.
+> I assume the bug applies whether or not the event is used
+> with a filter.
 
+> 
+> I think we need to ensure that by looking at the perf.data file,
+> one can reconstruct the total number of inst_Retired:all
+> occurrences for the run. With a fixed period, one would do
+> num_samples * fixed_period. I know the Gooda tool does
+> that. It is used to estimate the number of events captured
+> vs. the number of events occurring.
 
-Thanks Vivek. It is no surprise but applying this patch resolved my
-issue.
+Is that really a problem?
 
-Shaun
+Normally periods are not that small, especially not for 
+instruction retired. I don't think you can run such
+a small period on instruction retired for
+any significant time without throttling.
+
+With sensible periods, let's say >10k, the error from
+losing a few bits is very small. It would surprise
+me if you can actually measure it.
+
+There will be always much more jitter just from standard
+system noise.
+
+-Andi
