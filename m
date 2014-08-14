@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007AbaHNQXZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 12:23:25 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:37727 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747AbaHNQXY (ORCPT
+	id S1752480AbaHNQ0M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 12:26:12 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:59472 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934AbaHNQ0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 12:23:24 -0400
+	Thu, 14 Aug 2014 12:26:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFdhcLQ11MnF7Py+X1wrJMiu0L15-JrV883oYGopdz1oag0njQ@mail.gmail.com>
-References: <1407978746-20587-1-git-send-email-minchan@kernel.org>
-	<1407978746-20587-3-git-send-email-minchan@kernel.org>
-	<CALZtONDB5q56f1TUHgqbiJ4ZaP6Yk=GcNQw9DhvLhNyExdfQ4w@mail.gmail.com>
-	<CAFdhcLQ11MnF7Py+X1wrJMiu0L15-JrV883oYGopdz1oag0njQ@mail.gmail.com>
-Date: Thu, 14 Aug 2014 12:23:23 -0400
-Message-ID: <CAFdhcLQ2cU8APUP=qVQqQmWT8jouFvdSHPVsQ8RCXceaVWa4dQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] zram: add mem_used_max via sysfs
-From: David Horner <ds2horner@gmail.com>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>
+In-Reply-To: <1407999713-3726-2-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+References: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1407999713-3726-2-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+From: David Matlack <dmatlack@google.com>
+Date: Thu, 14 Aug 2014 09:25:49 -0700
+Message-ID: <CALzav=f_DYTSUeX7a9HRMoY1JMb1bYJgd_7h-08=fDPZQOVxFg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] kvm: x86: fix stale mmio cache bug
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@kernel.org>, Avi Kivity <avi.kivity@gmail.com>,
+        mtosatti@redhat.com, Paolo Bonzini <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        stable@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 11:32 AM, David Horner <ds2horner@gmail.com> wrote:
-> On Thu, Aug 14, 2014 at 11:09 AM, Dan Streetman <ddstreet@ieee.org> wrote:
->> On Wed, Aug 13, 2014 at 9:12 PM, Minchan Kim <minchan@kernel.org> wrote:
->>> -       if (zram->limit_bytes &&
->>> -               zs_get_total_size_bytes(meta->mem_pool) > zram->limit_bytes) {
->>> +       total_bytes = zs_get_total_size_bytes(meta->mem_pool);
->>> +       if (zram->limit_bytes && total_bytes > zram->limit_bytes) {
->>
->> do you need to take the init_lock to read limit_bytes here?  It could
->> be getting changed between these checks...
+On Thu, Aug 14, 2014 at 12:01 AM, Xiao Guangrong
+<xiaoguangrong@linux.vnet.ibm.com> wrote:
+> From: David Matlack <dmatlack@google.com>
 >
-> There is no real danger in freeing with an error.
-> It is more timing than a race.
-I probably should explain my reasoning.
+> The following events can lead to an incorrect KVM_EXIT_MMIO bubbling
+> up to userspace:
+>
+> (1) Guest accesses gpa X without a memory slot. The gfn is cached in
+> struct kvm_vcpu_arch (mmio_gfn). On Intel EPT-enabled hosts, KVM sets
+> the SPTE write-execute-noread so that future accesses cause
+> EPT_MISCONFIGs.
+>
+> (2) Host userspace creates a memory slot via KVM_SET_USER_MEMORY_REGION
+> covering the page just accessed.
+>
+> (3) Guest attempts to read or write to gpa X again. On Intel, this
+> generates an EPT_MISCONFIG. The memory slot generation number that
+> was incremented in (2) would normally take care of this but we fast
+> path mmio faults through quickly_check_mmio_pf(), which only checks
+> the per-vcpu mmio cache. Since we hit the cache, KVM passes a
+> KVM_EXIT_MMIO up to userspace.
+>
+> This patch fixes the issue by using the memslot generation number
+> to validate the mmio cache.
+>
+> [ xiaoguangrong: adjust the code to make it simpler for stable-tree fix. ]
 
-any changes between getting the total value and the limit test are not
-problematic (From race perspective).
-
-1) If the actual total increases and the value returned under rates it, then
-a) if this.total exceeds the limit - no problem it is rolled back as
-it would if the actual total were used.
-b) if this.total <= limit OK - as other process will be dinged (it
-will see its own allocation)
-
-2)  If the actual total decreases and the value returned overrates
-rates it, then
-a) if this.value <= limit then allocation great (actual has even more room)
-b) if this.value > max it will be rolled back (as the other might be
-as well) and process can compete again.
-
-Is there a denial of service possible if 2.b repeats indefinitely.
-Yes, but how to set it up reliably? And it is no different than a
-single user exhausting the limit before any other users.
-Yes, it is potentially a live false limit exhaustion, with one process
-requesting an amount exceeding the limit but able to be allocated.
- But this is no worse than the rollback load we already have at the limit.
-
-It would be better to check before the zs_malloc if the concern is
-avoiding heavy processing in that function (as an optimization),  as
-well as here.after allocation
-
-But I see no real race or danger doing this unlocked.
+The adjustments look good. Thanks!
