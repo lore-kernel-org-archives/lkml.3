@@ -1,68 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932AbaHNJGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 05:06:21 -0400
-Received: from [14.139.216.62] ([14.139.216.62]:59271 "HELO
-	mail.wbhealth.gov.in" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with SMTP id S1751243AbaHNJGR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 05:06:17 -0400
-X-Greylist: delayed 1204 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Aug 2014 05:06:06 EDT
-Date: Thu, 14 Aug 2014 13:59:42 +0530 (IST)
-From: COMMISSION FEDERALE BOURSE ETUDES SUISSES 
-	<msvp_nrsmch@wbhealth.gov.in>
-Reply-To: COMMISSION FEDERALE BOURSE ETUDES SUISSES 
-	  <sboursesdetudes@yahoo.fr>
-Message-ID: <1375393067.1075678.1408004982062.JavaMail.zimbra@wbhealth.gov.in>
-Subject: UN APPEL A LA CANDIDATURE POUR BOURSES D'ETUDES SUISSES (2014-2015)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.216.48.17]
-X-Mailer: Zimbra 8.0.5_GA_5839 (zclient/8.0.5_GA_5839)
-Thread-Topic: UN APPEL A LA CANDIDATURE POUR BOURSES D'ETUDES SUISSES (2014-2015)
-Thread-Index: Ev+cuMiaBrYZmaboCnLjoxyrmGiO9w==
-To: unlisted-recipients:; (no To-header on input)
+	id S1754024AbaHNJSE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 05:18:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1441 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192AbaHNJSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 05:18:00 -0400
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Mark Salter <msalter@redhat.com>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-efi@vger.kernel.org, Daniel Kiper <daniel.kiper@oracle.com>,
+        Russ Anderson <rja@sgi.com>
+Subject: [PATCH 2/7] Add a generic cmdline parse function parse_option_str
+Date: Thu, 14 Aug 2014 17:15:27 +0800
+Message-Id: <1408007731-15081-2-git-send-email-dyoung@redhat.com>
+In-Reply-To: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
+References: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-                                                                            
+There should be a generic function to parse params like a=b,c
+Adding parse_option_str in lib/cmdline.c which will return true
+if there's specified option set in the params.
 
-PAR L’INTERMÉDIAIRE DE LA COMMISSION FÉDÉRALE DES BOURSES ÉTRANGÈRES 
-(CFBE-SUISSE) , LE SECRÉTARIAT D’ÉTAT A L’ÉTUDE ET A LA RECHERCHE DE LA 
-CONFÉDÉRATION LANCE UN APPEL A LA CANDIDATURE POUR 500 BOURSES D’ÉTUDES 
- SUISSES AU TITRE DE L’ANNÉE ACADÉMIQUE 2014-2015.  
-  PROCÉDURE DE SÉLECTION
- - RETIRER AUPRÈS  DE LA
- COMMISSION FÉDÉRALE DES BOURSES ÉTRANGÈRES Surisses(CFBES)LE FORMULAIRE DE DEMANDE DE BOURSE VIA  
-A LEUR ADRESSE ÉMAIL: sboursesdetudes@yahoo.fr
-   - REMPLIR ET ENVOYER PAR PIÈCE JOINTE LE FORMULAIRE.
- - LA COMMISSION FÉDÉRALE DES BOURSES ÉTRANGÈRES FERA ÉTUDIER VOTRE 
-DOSSIER PAR LA REPRÉSENTATION SUISSE DÉLÉGUÉE DE VOTRE ZONE .
-- LES CANDIDATS RETENUS RECEVRONT UNE ATTESTATION DU SECRÉTARIAT
- D’ÉTAT A L’ÉTUDE ET A LA RECHERCHE POUR NOTIFICATION DE LA BOURSE. LES 
-CANDIDATS DÉSIREUX DE PARTICIPER AUX BOURSES D’ÉTUDES 2014 - 2015 
-DOIVENT RETIRER LEUR FORMULAIRE A REMPLIR AUPRÈS DE LA CFBES EN PLUS DE 
-CELA TOUTES CANDIDATS RETENU RETROUVERA LA RÉPONSE DE NOTRE COOPÉRATION 
-AFRICAINE ET AUSSI AVOIR LEUR DEMANDE DE VISA SUISSES QU'IL DOIT REMPLIR
- ET LEUR ENVOYER CELA.
- A LEUR ADRESSE ÉMAIL: sboursesdetudes@yahoo.fr
-LA DATE LIMITE DE DEPÖT DES DOSSIERS EST PRÉVUE POUR LE 26 SEPTEMBRE 2014.
-LE PRÉSIDENT DE LA COMMISSION
- FÉDÉRALE
-DES BOURSES ÉTRANGÈRES SUISSES
-....................................
-THROUGH FEDERAL GRANTS FOREIGN (GFEC-SWITZERLAND) COMMISSION, THE SECRETARY OF STATE THE STUDY AND RESEARCH OF CONFEDERATION LAUNCHES A CALL TO CANDIDACY FOR 500 SCHOLARSHIPS FOR THE ACADEMIC YEAR 2014-2015 SWISS.  
-  SELECTION PROCEDURE
- -REMOVE the Federal grants foreign Commission Surisses (CFBES) scholarship application form VIA 
-At their EMAIL address: sboursesdetudes@yahoo.fr
- -COMPLETE AND SEND THE FORM BY ATTACHMENT.
-  -THE FEDERAL FOREIGN SCHOLARSHIPS COMMISSION WILL BE STUDYING YOUR FILE BY REPRESENTATION SWITZERLAND REPRESENTATIVE FOR YOUR AREA.
--SUCCESSFUL APPLICANTS WILL RECEIVE A CERTIFICATE FROM THE STATE SECRETARIAT FOR THE
- STUDY AND RESEARCH FOR NOTIFICATION OF THE STOCK EXCHANGE. CANDIDATES TO PARTICIPATE IN THE 2014-2015 SCHOLARSHIPS MUST REMOVE THEIR FORM IS TO BE COMPLETED WITH THE CFBES IN ADDITION TO THIS ALL RETAINED CANDIDATES WILL BE THE RESPONSE OF OUR AFRICAN COOPERATION AND ALSO HAVE THEIR SWISS VISA APPLICATION THAT HE MUST COMPLETE AND SEND THEM THIS.
- At their EMAIL address: sboursesdetudes@yahoo.fr
-THE DATE OF RECORDS DEADLINE IS SCHEDULED FOR SEPTEMBER 26, 2014.
-THE CHAIRMAN OF THE FEDERAL COMMISSION
-FOREIGN SWISS SCHOLARSHIPS
+Also updated efi=old_map parsing code to use the new function
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ arch/x86/platform/efi/efi.c | 22 ++--------------------
+ include/linux/kernel.h      |  1 +
+ lib/cmdline.c               | 29 +++++++++++++++++++++++++++++
+ 3 files changed, 32 insertions(+), 20 deletions(-)
+
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index c90d3cd..c73a7df5 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -932,26 +932,8 @@ u64 efi_mem_attributes(unsigned long phys_addr)
+ 
+ static int __init parse_efi_cmdline(char *str)
+ {
+-	if (*str == '=')
+-		str++;
+-
+-	while (*str) {
+-		if (!strncmp(str, "old_map", 7)) {
+-			set_bit(EFI_OLD_MEMMAP, &efi.flags);
+-			str += strlen("old_map");
+-		}
+-
+-		/*
+-		 * Skip any options we don't understand. Presumably
+-		 * they apply to the EFI boot stub.
+-		 */
+-		while (*str && *str != ',')
+-			str++;
+-
+-		/* If we hit a delimiter, skip it */
+-		if (*str == ',')
+-			str++;
+-	}
++	if (parse_option_str(str, "old_map"))
++		set_bit(EFI_OLD_MEMMAP, &efi.flags);
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 4c52907..d612718 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -407,6 +407,7 @@ int vsscanf(const char *, const char *, va_list);
+ extern int get_option(char **str, int *pint);
+ extern char *get_options(const char *str, int nints, int *ints);
+ extern unsigned long long memparse(const char *ptr, char **retptr);
++extern bool parse_option_str(const char *str, const char *option);
+ 
+ extern int core_kernel_text(unsigned long addr);
+ extern int core_kernel_data(unsigned long addr);
+diff --git a/lib/cmdline.c b/lib/cmdline.c
+index d4932f7..7f1a182 100644
+--- a/lib/cmdline.c
++++ b/lib/cmdline.c
+@@ -155,3 +155,32 @@ unsigned long long memparse(const char *ptr, char **retptr)
+ 	return ret;
+ }
+ EXPORT_SYMBOL(memparse);
++
++/**
++ *	parse_option_str - Parse a string and check an option is set or not
++ *	@str: String to be parsed
++ *	@option: option name
++ *
++ *	This function parses a string containing a comma-separated list of
++ *	strings like a=b,c.
++ *
++ *	Return true if there's such option in the string, or return false.
++ */
++bool parse_option_str(const char *str, const char *option)
++{
++	while (*str) {
++		if (!strncmp(str, option, strlen(option))) {
++			str += strlen(option);
++			if (!*str || *str == ',')
++				return true;
++		}
++
++		while (*str && *str != ',')
++			str++;
++
++		if (*str == ',')
++			str++;
++	}
++
++	return false;
++}
+-- 
+1.8.3.1
 
