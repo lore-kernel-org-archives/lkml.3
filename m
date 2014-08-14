@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232AbaHNPAd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 11:00:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41045 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754329AbaHNPAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 11:00:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="372401199"
-Date: Thu, 14 Aug 2014 08:00:31 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, eranian@google.com
-Subject: Re: [PATCH 2/5] perf, x86: Document all Haswell models
-Message-ID: <20140814150031.GR5803@tassilo.jf.intel.com>
-References: <1407979069-7121-1-git-send-email-andi@firstfloor.org>
- <1407979069-7121-3-git-send-email-andi@firstfloor.org>
- <20140814070122.GC16043@twins.programming.kicks-ass.net>
+	id S1755279AbaHNPC0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 11:02:26 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33836 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329AbaHNPCY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 11:02:24 -0400
+Message-ID: <53ECCF7E.2090305@infradead.org>
+Date: Thu, 14 Aug 2014 08:02:22 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140814070122.GC16043@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux MM <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: Tree for Aug 14 (mm/memory_hotplug.c and drivers/base/memory.c)
+References: <20140814152749.24d43663@canb.auug.org.au>
+In-Reply-To: <20140814152749.24d43663@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Would something like this be accurate:?
+On 08/13/14 22:27, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Please do not add code intended for v3.18 until after v3.17-rc1 is
+> released.
+> 
+> Changes since 20140813:
+> 
 
-I believe my version is more accurate, but feel free to use yours.
+on x86_64:
 
--Andi
+drivers/built-in.o: In function `show_zones_online_to':
+memory.c:(.text+0x13f306): undefined reference to `test_pages_in_a_zone'
+
+in drivers/base/memory.c
+
+when CONFIG_MEMORY_HOTREMOVE is not enabled.
+
+The function implementation in mm/memory_hotplug.c is only built if
+CONFIG_MEMORY_HOTREMOVE is enabled.
+
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+~Randy
