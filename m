@@ -1,61 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242AbaHNVUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 17:20:09 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:59522 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754521AbaHNVUH (ORCPT
+	id S1754858AbaHNVW2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 17:22:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33788 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754370AbaHNVW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 17:20:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407916658-8731-18-git-send-email-ast@plumgrid.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-	<1407916658-8731-18-git-send-email-ast@plumgrid.com>
-Date: Thu, 14 Aug 2014 14:20:05 -0700
-Message-ID: <CAE40pdf0pNYyazjpdkzxNJi7iC4LOOr_XEu078OUqP_uoCXnHg@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 17/26] tracing: allow eBPF programs to be
- attached to events
-From: Brendan Gregg <brendan.d.gregg@gmail.com>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 14 Aug 2014 17:22:27 -0400
+Date: Thu, 14 Aug 2014 14:22:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
+        =?UTF-8?Q?=EC=9D=B4?= =?UTF-8?Q?=EA=B1=B4=ED=98=B8?= 
+	<gunho.lee@lge.com>
+Subject: Re: [PATCH 1/2] fs/buffer.c: allocate buffer cache from non-movable
+ area
+Message-Id: <20140814142225.50911fd0a0bf65427a1a214f@linux-foundation.org>
+In-Reply-To: <53EC45FC.7050508@lge.com>
+References: <53EC4531.1000904@lge.com>
+	<53EC45FC.7050508@lge.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 12:57 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-[...]
-> +/* For tracing filters save first six arguments of tracepoint events.
-> + * On 64-bit architectures argN fields will match one to one to arguments passed
-> + * to tracepoint events.
-> + * On 32-bit architectures u64 arguments to events will be seen into two
-> + * consecutive argN, argN+1 fields. Pointers, u32, u16, u8, bool types will
-> + * match one to one
+On Thu, 14 Aug 2014 14:15:40 +0900 Gioh Kim <gioh.kim@lge.com> wrote:
+
+> A buffer cache is allocated from movable area
+> because it is referred for a while and released soon.
+> But some filesystems are taking buffer cache for a long time
+> and it can disturb page migration.
+> 
+> A new API should be introduced to allocate buffer cache from
+> non-movable area.
+
+I think the API could and should be more flexible than this.
+
+Rather than making the API be "movable or not movable", let's permit
+callers to specify the gfp_t and leave it at that.  That way, if
+someone later wants to allocate a buffer head with, I dunno,
+__GFP_NOTRACK then they can do so.
+
+So the word "movable" shouldn't appear in buffer.c at all, except in a
+single place.
+
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -993,7 +993,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
+>   */
+>  static int
+>  grow_dev_page(struct block_device *bdev, sector_t block,
+> -               pgoff_t index, int size, int sizebits)
+> +             pgoff_t index, int size, int sizebits, gfp_t movable_mask)
+
+s/movable_mask/gfp/
+
+>  {
+>         struct inode *inode = bdev->bd_inode;
+>         struct page *page;
+> @@ -1003,7 +1003,8 @@ grow_dev_page(struct block_device *bdev, sector_t block,
+>         gfp_t gfp_mask;
+> 
+>         gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
+> -       gfp_mask |= __GFP_MOVABLE;
+> +       if (movable_mask & __GFP_MOVABLE)
+> +               gfp_mask |= __GFP_MOVABLE;
+
+This becomes
+
+	gfp_mask |= gfp;
+
+>         /*
+>          * XXX: __getblk_slow() can not really deal with failure and
+>          * will endlessly loop on improvised global reclaim.  Prefer
+> @@ -1058,7 +1059,8 @@ failed:
+>   * that page was dirty, the buffers are set dirty also.
+>   */
+>  static int
+> -grow_buffers(struct block_device *bdev, sector_t block, int size)
+> +grow_buffers(struct block_device *bdev, sector_t block,
+> +            int size, gfp_t movable_mask)
+
+gfp
+
+>  {
+>         pgoff_t index;
+>         int sizebits;
+> @@ -1085,11 +1087,12 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
+>         }
+> 
+>         /* Create a page with the proper size buffers.. */
+> -       return grow_dev_page(bdev, block, index, size, sizebits);
+> +       return grow_dev_page(bdev, block, index, size, sizebits, movable_mask);
+>  }
+> 
+>  static struct buffer_head *
+> -__getblk_slow(struct block_device *bdev, sector_t block, int size)
+> +__getblk_slow(struct block_device *bdev, sector_t block,
+> +             int size, gfp_t movable_mask)
+
+gfp
+
+>  {
+>         /* Size must be multiple of hard sectorsize */
+>         if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
+> @@ -1111,7 +1114,7 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
+>                 if (bh)
+>                         return bh;
+> 
+> -               ret = grow_buffers(bdev, block, size);
+> +               ret = grow_buffers(bdev, block, size, movable_mask);
+
+gfp
+
+>                 if (ret < 0)
+>                         return NULL;
+>                 if (ret == 0)
+> @@ -1385,11 +1388,34 @@ __getblk(struct block_device *bdev, sector_t block, unsigned size)
+> 
+>         might_sleep();
+>         if (bh == NULL)
+> -               bh = __getblk_slow(bdev, block, size);
+> +               bh = __getblk_slow(bdev, block, size, __GFP_MOVABLE);
+
+Here is the place where buffer.c. mentions "movable".
+
+>         return bh;
+>  }
+>  EXPORT_SYMBOL(__getblk);
+> 
+> + /*
+> + * __getblk_nonmovable will locate (and, if necessary, create) the buffer_head
+> + * which corresponds to the passed block_device, block and size. The
+> + * returned buffer has its reference count incremented.
+> + *
+> + * The page cache is allocated from non-movable area
+> + * not to prevent page migration.
+> + *
+> + * __getblk()_nonmovable will lock up the machine
+> + * if grow_dev_page's try_to_free_buffers() attempt is failing. FIXME, perhaps?
 > + */
-> +struct bpf_context {
-> +       unsigned long arg1;
-> +       unsigned long arg2;
-> +       unsigned long arg3;
-> +       unsigned long arg4;
-> +       unsigned long arg5;
-> +       unsigned long arg6;
-> +       unsigned long ret;
-> +};
+> +struct buffer_head *
+> +__getblk_nonmovable(struct block_device *bdev, sector_t block, unsigned size)
+> +{
+> +       struct buffer_head *bh = __find_get_block(bdev, block, size);
+> +
+> +       might_sleep();
+> +       if (bh == NULL)
+> +               bh = __getblk_slow(bdev, block, size, 0);
+> +       return bh;
+> +}
+> +EXPORT_SYMBOL(__getblk_nonmovable);
 
-While this works, the argN+1 shift for 32-bit is a gotcha to learn.
-Lets say arg1 was 64-bit, and my program only examined arg2. I'd need
-two programs, one for 64-bit (using arg2) and 32-bit (arg3). If there
-was a way not to shift arguments, I could have one program for both.
-Eg, additional arg1hi, arg2hi, ... for the higher order u32s.
+Suggest this be called __getblk_gfp(bdev, block, size, gfp) and then
+__getblk() be changed to call __getblk_gfp(..., __GFP_MOVABLE).
 
-Brendan
+We could then write a __getblk_nonmovable() which calls __getblk_gfp()
+(a static inlined one-line function) or we can just call
+__getblk_gfp(..., 0) directly from filesystems.
+
+> @@ -1423,6 +1450,28 @@ __bread(struct block_device *bdev, sector_t block, unsigned size)
+>  }
+>  EXPORT_SYMBOL(__bread);
+> 
+> +/**
+> + *  __bread_nonmovable() - reads a specified block and returns the bh
+> + *  @bdev: the block_device to read from
+> + *  @block: number of block
+> + *  @size: size (in bytes) to read
+> + *
+> + *  Reads a specified block, and returns buffer head that contains it.
+> + *  The page cache is allocated from non-movable area
+> + *  not to prevent page migration.
+> + *  It returns NULL if the block was unreadable.
+> + */
+> +struct buffer_head *
+> +__bread_nonmovable(struct block_device *bdev, sector_t block, unsigned size)
+> +{
+> +       struct buffer_head *bh = __getblk_slow(bdev, block, size, 0);
+> +
+> +       if (likely(bh) && !buffer_uptodate(bh))
+> +               bh = __bread_slow(bh);
+> +       return bh;
+> +}
+> +EXPORT_SYMBOL(__bread_nonmovable);
+
+Treat this in the same fashion as __getblk_nonmovable().
+
+
