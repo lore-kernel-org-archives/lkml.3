@@ -1,152 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445AbaHNHWh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 03:22:37 -0400
-Received: from mga01.intel.com ([192.55.52.88]:21167 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754407AbaHNHWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 03:22:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="372236817"
-From: "Chen, Gong" <gong.chen@linux.intel.com>
-To: bp@alien8.de
-Cc: tony.luck@intel.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        "Chen, Gong" <gong.chen@linux.intel.com>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH v2 5/5] x86, MCE: Avoid potential deadlock in MCE context
-Date: Thu, 14 Aug 2014 02:49:46 -0400
-Message-Id: <1407998986-1834-6-git-send-email-gong.chen@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
-References: <1407998986-1834-1-git-send-email-gong.chen@linux.intel.com>
+	id S1754526AbaHNHX6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 03:23:58 -0400
+Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:33116 "EHLO
+	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753913AbaHNHX5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 03:23:57 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, davidb@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kiran Padwal <kiran.padwal@smartplayin.com>
+Subject: [PATCH] ARM: apq8064: Add pinmux and i2c pinctrl nodes
+Date: Thu, 14 Aug 2014 12:50:53 +0530
+Message-Id: <1408000853-2764-1-git-send-email-kiran.padwal@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Printing in MCE context is a no-no, currently, as printk is not
-NMI-safe. If some of the notifiers on the MCE chain call *printk*, we
-may deadlock. In order to avoid that, delay printk into process context
-to fix it.
+This patch adds pinmux and i2c pinctrl DT node for IFC6410 board.
+It also adds necessary DT support for i2c eeprom which is present on
+IFC6410.
 
-Background info at: https://lkml.org/lkml/2014/6/27/26
+Tested on IFC6410 board.
 
-Reported-by: Xie XiuQi <xiexiuqi@huawei.com>
-Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-Link: http://lkml.kernel.org/r/1406797523-28710-6-git-send-email-gong.chen@linux.intel.com
-[ Boris: rewrite a bit. ]
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
 ---
- arch/x86/include/asm/mce.h               |  1 +
- arch/x86/kernel/cpu/mcheck/mce-apei.c    |  2 +-
- arch/x86/kernel/cpu/mcheck/mce.c         | 11 ++++++-----
- arch/x86/kernel/cpu/mcheck/mce_intel.c   |  2 +-
- arch/x86/kernel/cpu/mcheck/therm_throt.c |  1 +
- arch/x86/kernel/cpu/mcheck/threshold.c   |  1 +
- 6 files changed, 11 insertions(+), 7 deletions(-)
+ arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   29 ++++++++++++++
+ arch/arm/boot/dts/qcom-apq8064.dtsi        |   59 ++++++++++++++++++++++++++++
+ 2 files changed, 88 insertions(+)
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index 76e706767655..be2ec2902830 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -187,6 +187,7 @@ enum mcp_flags {
- void machine_check_poll(enum mcp_flags flags, mce_banks_t *b);
+diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+index 7c2441d..d52ac3c 100644
+--- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
++++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+@@ -5,6 +5,15 @@
+ 	compatible = "qcom,apq8064-ifc6410", "qcom,apq8064";
  
- int mce_notify_irq(void);
-+void mce_queue_irq_work(void);
- #ifdef CONFIG_MEMORY_FAILURE
- void mce_notify_process(void);
- #endif
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-apei.c b/arch/x86/kernel/cpu/mcheck/mce-apei.c
-index a1aef9533154..380e3ac8fb62 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-apei.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-apei.c
-@@ -57,7 +57,7 @@ void apei_mce_report_mem_error(int severity, struct cper_sec_mem_err *mem_err)
- 
- 	m.addr = mem_err->physical_addr;
- 	mce_log(&m);
--	mce_notify_irq();
-+	mce_queue_irq_work();
- }
- EXPORT_SYMBOL_GPL(apei_mce_report_mem_error);
- 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index b0a25d5f7185..c7ac50d8c4b5 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -151,14 +151,11 @@ static struct mce_log mcelog = {
- void mce_log(struct mce *mce)
- {
- 	unsigned next, entry;
--	int ret = 0;
- 
- 	/* Emit the trace record: */
- 	trace_mce_record(mce);
- 
--	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, mce);
--	if (ret == NOTIFY_STOP)
--		return;
-+	mce_genpool_add(mce);
- 
- 	mce->finished = 0;
- 	wmb();
-@@ -488,6 +485,11 @@ static void mce_irq_work_cb(struct irq_work *entry)
- 	mce_schedule_work();
- }
- 
-+void mce_queue_irq_work(void)
-+{
-+	irq_work_queue(&mce_irq_work);
-+}
+ 	soc {
++		pinmux@800000 {
++			i2c1_pins: i2c1_pinmux {
++				mux {
++					pins = "gpio20", "gpio21";
++					function = "gsbi1";
++				};
++			};
++		};
 +
- static void mce_report_event(struct pt_regs *regs)
- {
- 	if (regs->flags & (X86_VM_MASK|X86_EFLAGS_IF)) {
-@@ -1044,7 +1046,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		/* assuming valid severity level != 0 */
- 		m.severity = severity;
- 		m.usable_addr = mce_usable_address(&m);
--		mce_genpool_add(&m);
- 
- 		mce_log(&m);
- 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 3bdb95ae8c43..ec2cf614152e 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -195,8 +195,8 @@ static void intel_threshold_interrupt(void)
- {
- 	if (cmci_storm_detect())
- 		return;
+ 		gsbi@16600000 {
+ 			status = "ok";
+ 			qcom,mode = <GSBI_PROT_I2C_UART>;
+@@ -12,5 +21,25 @@
+ 				status = "ok";
+ 			};
+ 		};
 +
- 	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
--	mce_notify_irq();
- }
++		gsbi1: gsbi@12440000 {
++			qcom,mode = <GSBI_PROT_I2C>;
++			status = "ok";
++
++			i2c1: i2c@12460000 {
++				status = "ok";
++
++				clock-frequency = <200000>;
++
++				pinctrl-0 = <&i2c1_pins>;
++				pinctrl-names = "default";
++
++				eeprom: eeprom@52 {
++					compatible = "atmel,24c128";
++					reg = <0x52>;
++					pagesize = <32>;
++				};
++			};
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
+index 92bf793..fbebf5c 100644
+--- a/arch/arm/boot/dts/qcom-apq8064.dtsi
++++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
+@@ -70,6 +70,17 @@
+ 		ranges;
+ 		compatible = "simple-bus";
  
- /*
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index 36a1bb6d1ee0..d100e2bb8ed7 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -427,6 +427,7 @@ static inline void __smp_thermal_interrupt(void)
- {
- 	inc_irq_stat(irq_thermal_count);
- 	smp_thermal_vector();
-+	mce_queue_irq_work();
- }
++		qcom_pinmux: pinmux@800000 {
++			compatible = "qcom,apq8064-pinctrl";
++			reg = <0x800000 0x4000>;
++
++			gpio-controller;
++			#gpio-cells = <2>;
++			interrupt-controller;
++			#interrupt-cells = <2>;
++			interrupts = <0 32 0x4>;
++		};
++
+ 		intc: interrupt-controller@2000000 {
+ 			compatible = "qcom,msm-qgic2";
+ 			interrupt-controller;
+@@ -133,6 +144,54 @@
+ 			regulator;
+ 		};
  
- asmlinkage __visible void smp_thermal_interrupt(struct pt_regs *regs)
-diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c b/arch/x86/kernel/cpu/mcheck/threshold.c
-index 7245980186ee..d695faa234eb 100644
---- a/arch/x86/kernel/cpu/mcheck/threshold.c
-+++ b/arch/x86/kernel/cpu/mcheck/threshold.c
-@@ -22,6 +22,7 @@ static inline void __smp_threshold_interrupt(void)
- {
- 	inc_irq_stat(irq_threshold_count);
- 	mce_threshold_vector();
-+	mce_queue_irq_work();
- }
- 
- asmlinkage __visible void smp_threshold_interrupt(void)
++		gsbi1: gsbi@12440000 {
++			compatible = "qcom,gsbi-v1.0.0";
++			reg = <0x12440000 0x100>;
++			clocks = <&gcc GSBI1_H_CLK>;
++			clock-names = "iface";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++			status = "disabled";
++
++			i2c@12460000 {
++				compatible = "qcom,i2c-qup-v1.1.1";
++				reg = <0x12460000 0x1000>;
++				interrupts = <0 194 0>;
++
++				clocks = <&gcc GSBI1_QUP_CLK>, <&gcc GSBI1_H_CLK>;
++				clock-names = "core", "iface";
++				status = "disabled";
++
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++		};
++
++		gsbi2: gsbi@12480000 {
++			compatible = "qcom,gsbi-v1.0.0";
++			reg = <0x12480000 0x100>;
++			clocks = <&gcc GSBI2_H_CLK>;
++			clock-names = "iface";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++			status = "disabled";
++
++			i2c@124a0000 {
++				compatible = "qcom,i2c-qup-v1.1.1";
++				reg = <0x124a0000 0x1000>;
++				interrupts = <0 196 0>;
++
++				clocks = <&gcc GSBI2_QUP_CLK>, <&gcc GSBI2_H_CLK>;
++				clock-names = "core", "iface";
++				status = "disabled";
++
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++		};
++
+ 		gsbi7: gsbi@16600000 {
+ 			status = "disabled";
+ 			compatible = "qcom,gsbi-v1.0.0";
 -- 
-2.0.0.rc2
+1.7.9.5
 
