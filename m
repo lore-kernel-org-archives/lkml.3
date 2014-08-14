@@ -1,209 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104AbaHNOqD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 10:46:03 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:43088 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaHNOqB (ORCPT
+	id S1755180AbaHNOuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 10:50:15 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:61794 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526AbaHNOuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 10:46:01 -0400
+	Thu, 14 Aug 2014 10:50:13 -0400
+Date: Thu, 14 Aug 2014 17:50:00 +0300
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2014-08-14
+Message-ID: <20140814145000.GA14226@t440s.P-661HNU-F1>
+Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20140813232719.GD9227@bbox>
-References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
- <1407225723-23754-4-git-send-email-minchan@kernel.org> <20140805094859.GE27993@bbox>
- <20140805131615.GA961@swordfish> <20140813232719.GD9227@bbox>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Thu, 14 Aug 2014 10:45:37 -0400
-X-Google-Sender-Auth: n7RG9JcUhgy2_S3f_jsiVV2CInk
-Message-ID: <CALZtONB-wLOp75fhv2_QoSrcg3CDkj_Zd_sRhfRiUH=czwbuog@mail.gmail.com>
-Subject: Re: [RFC 3/3] zram: limit memory size for zram
-To: Minchan Kim <minchan@kernel.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>, Jerome Marchand <jmarchan@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 7:27 PM, Minchan Kim <minchan@kernel.org> wrote:
-> Hey Sergey,
->
-> On Tue, Aug 05, 2014 at 10:16:15PM +0900, Sergey Senozhatsky wrote:
->> Hello,
->>
->> On (08/05/14 18:48), Minchan Kim wrote:
->> > Another idea: we could define void zs_limit_mem(unsinged long nr_pages)
->> > in zsmalloc and put the limit in zs_pool via new API from zram so that
->> > zs_malloc could be failed as soon as it exceeds the limit.
->> >
->> > In the end, zram doesn't need to call zs_get_total_size_bytes on every
->> > write. It's more clean and right layer, IMHO.
->>
->> yes, I think this one is better.
->
-> Although I suggested this new one, a few days ago I changed the decision
-> and was testing the new patchset.
->
-> If we add new API for zsmalloc, it adds unnecessary overhead for users who
-> doesn't care of limit. Although it's cheap, I'd like to avoid that.
->
-> The zsmalloc is just allocator so anybody can use it if they want.
-> But limitation is just requirement of zram who is a one of client
-> being able to use zsmalloc potentially so accouting should be on zram,
-> not zsmalloc.
->
-> If we might have more users of zsmalloc in future and they all want this
-> feature that limit of zsmalloc memory usage, we might move the feature
-> from client to zsmalloc core so everybody would be happy for performance
-> and readability but opposite would be painful.
->
-> In summary, let's keep the accounting logic in client side of zsmalloc(ie,
-> zram) at the moment but we could move it into zsmalloc core possibly
-> in future.
->
-> Any thoughts?
 
-I agree - the limit is useful, and right now is better to put in zram.
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Moving it into zsmalloc (and zbud, and zpool) should be possible in
-the future, if it makes sense, although it may be more complicated
-since different users might want different ways of controlling it -
-e.g. zram may want a hard limit of Xmb, while zswap currently wants a
-% of total mem limit.
+Hi John,
 
->
->>
->>       -ss
->>
->> > On Tue, Aug 05, 2014 at 05:02:03PM +0900, Minchan Kim wrote:
->> > > I have received a request several time from zram users.
->> > > They want to limit memory size for zram because zram can consume
->> > > lot of memory on system without limit so it makes memory management
->> > > control hard.
->> > >
->> > > This patch adds new knob to limit memory of zram.
->> > >
->> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
->> > > ---
->> > >  Documentation/blockdev/zram.txt |  1 +
->> > >  drivers/block/zram/zram_drv.c   | 41 +++++++++++++++++++++++++++++++++++++++++
->> > >  drivers/block/zram/zram_drv.h   |  1 +
->> > >  3 files changed, 43 insertions(+)
->> > >
->> > > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
->> > > index d24534bee763..fcb0561dfe2e 100644
->> > > --- a/Documentation/blockdev/zram.txt
->> > > +++ b/Documentation/blockdev/zram.txt
->> > > @@ -96,6 +96,7 @@ size of the disk when not in use so a huge zram is wasteful.
->> > >           compr_data_size
->> > >           mem_used_total
->> > >           mem_used_max
->> > > +         mem_limit
->> > >
->> > >  7) Deactivate:
->> > >   swapoff /dev/zram0
->> > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
->> > > index a4d637b4db7d..47f68bbb2c44 100644
->> > > --- a/drivers/block/zram/zram_drv.c
->> > > +++ b/drivers/block/zram/zram_drv.c
->> > > @@ -137,6 +137,37 @@ static ssize_t max_comp_streams_show(struct device *dev,
->> > >   return scnprintf(buf, PAGE_SIZE, "%d\n", val);
->> > >  }
->> > >
->> > > +static ssize_t mem_limit_show(struct device *dev,
->> > > +         struct device_attribute *attr, char *buf)
->> > > +{
->> > > + u64 val;
->> > > + struct zram *zram = dev_to_zram(dev);
->> > > +
->> > > + down_read(&zram->init_lock);
->> > > + val = zram->limit_bytes;
->> > > + up_read(&zram->init_lock);
->> > > +
->> > > + return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
->> > > +}
->> > > +
->> > > +static ssize_t mem_limit_store(struct device *dev,
->> > > +         struct device_attribute *attr, const char *buf, size_t len)
->> > > +{
->> > > + u64 limit;
->> > > + struct zram *zram = dev_to_zram(dev);
->> > > + int ret;
->> > > +
->> > > + ret = kstrtoull(buf, 0, &limit);
->> > > + if (ret < 0)
->> > > +         return ret;
->> > > +
->> > > + down_write(&zram->init_lock);
->> > > + zram->limit_bytes = limit;
->> > > + ret = len;
->> > > + up_write(&zram->init_lock);
->> > > + return ret;
->> > > +}
->> > > +
->> > >  static ssize_t max_comp_streams_store(struct device *dev,
->> > >           struct device_attribute *attr, const char *buf, size_t len)
->> > >  {
->> > > @@ -511,6 +542,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->> > >           ret = -ENOMEM;
->> > >           goto out;
->> > >   }
->> > > +
->> > > + if (zram->limit_bytes &&
->> > > +         zs_get_total_size_bytes(meta->mem_pool) >= zram->limit_bytes) {
->> > > +         zs_free(meta->mem_pool, handle);
->> > > +         ret = -ENOMEM;
->> > > +         goto out;
->> > > + }
->> > > +
->> > >   cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
->> > >
->> > >   if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
->> > > @@ -854,6 +893,7 @@ static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
->> > >  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
->> > >  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
->> > >  static DEVICE_ATTR(mem_used_max, S_IRUGO, mem_used_max_show, NULL);
->> > > +static DEVICE_ATTR(mem_limit, S_IRUGO, mem_limit_show, mem_limit_store);
->> > >  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
->> > >           max_comp_streams_show, max_comp_streams_store);
->> > >  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
->> > > @@ -883,6 +923,7 @@ static struct attribute *zram_disk_attrs[] = {
->> > >   &dev_attr_compr_data_size.attr,
->> > >   &dev_attr_mem_used_total.attr,
->> > >   &dev_attr_mem_used_max.attr,
->> > > + &dev_attr_mem_limit.attr,
->> > >   &dev_attr_max_comp_streams.attr,
->> > >   &dev_attr_comp_algorithm.attr,
->> > >   NULL,
->> > > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
->> > > index 7f21c145e317..c0d497ff6efc 100644
->> > > --- a/drivers/block/zram/zram_drv.h
->> > > +++ b/drivers/block/zram/zram_drv.h
->> > > @@ -99,6 +99,7 @@ struct zram {
->> > >    * we can store in a disk.
->> > >    */
->> > >   u64 disksize;   /* bytes */
->> > > + u64 limit_bytes;
->> > >   int max_comp_streams;
->> > >   struct zram_stats stats;
->> > >   char compressor[10];
->> > > --
->> > > 2.0.0
->> >
->> > --
->> > Kind regards,
->> > Minchan Kim
->> >
->
-> --
-> Kind regards,
-> Minchan Kim
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Here's our first bluetooth-next pull request for the 3.18 kernel. Our
+tree is based on net-next so you'd need to pull from there first before
+pulling from our tree.
+
+The changes consists of:
+
+	- Coding style fixes to HCI drivers
+	- Corrupted ack value fix for the H5 HCI driver
+	- A couple of Enhanced L2CAP fixes
+	- Conversion of SMP code to use common L2CAP channel API
+	- Page scan optimizations when using the kernel-side whitelist
+	- Various mac802154 and and ieee802154 6lowpan cleanups
+	- One new Atheros USB ID
+
+Please let me know if there are any issues pulling. Thanks.
+
+Johan
+
+---
+The following changes since commit f0094b28f3038936c1985be64dbe83f0e950b671:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-08-13 18:27:40 -0600)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+
+for you to fetch changes up to 13cac15296afe7e42088ecfcd0f1d4b658248c46:
+
+  Bluetooth: Fix ERTM L2CAP resend packet (2014-08-14 09:47:02 +0200)
+
+----------------------------------------------------------------
+Alexander Aring (1):
+      ieee802154: 6lowpan: remove unused function
+
+Himangi Saraogi (4):
+      Bluetooth: Remove typedef bluecard_info_t
+      Bluetooth: Remove typedef btuart_info_t
+      Bluetooth: Remove typedefs nsh_t and dtl1_info_t
+      Bluetooth: Remove typedef bt3c_info_t
+
+Johan Hedberg (35):
+      Bluetooth: Add convenience function to check for pending power off
+      Bluetooth: Create unified helper function for updating page scan
+      Bluetooth: Disable page scan if all whitelisted devices are connected
+      Bluetooth: Remove redundant check for remote_key_dist
+      Bluetooth: Fix confusion between parent and child channel for 6lowpan
+      Bluetooth: Fix reference counting of global L2CAP channels
+      Bluetooth: Fix __l2cap_no_conn_pending() usage with all channels
+      Bluetooth: Resume BT_CONNECTED state after LE security elevation
+      Bluetooth: Remove special handling of ATT in l2cap_security_cfm()
+      Bluetooth: Refactor l2cap_connect_cfm
+      Bluetooth: Move L2CAP fixed channel creation into l2cap_conn_cfm
+      Bluetooth: Improve fixed channel lookup based on link type
+      Bluetooth: Remove special ATT data channel handling
+      Bluetooth: Move parts of fixed channel initialization to l2cap_add_scid
+      Bluetooth: Call L2CAP teardown callback before clearing chan->conn
+      Bluetooth: Call l2cap_le_conn_ready after notifying channels
+      Bluetooth: Fix using HCI_CONN_LE_SMP_PEND to check for SMP context
+      Bluetooth: Fix hci_update_random_address() error return for no crypto
+      Bluetooth: Fix IRK lookup when tfm_aes is not available
+      Bluetooth: Refactor SMP (de)initialization into separate functions
+      Bluetooth: Move SMP initialization after HCI init
+      Bluetooth: Move SMP (de)initialization to smp.c
+      Bluetooth: Add more L2CAP convenience callbacks
+      Bluetooth: Add SMP L2CAP channel skeleton
+      Bluetooth: Make AES crypto context private to SMP
+      Bluetooth: Convert SMP to use l2cap_chan infrastructure
+      Bluetooth: Use L2CAP resume callback to call smp_distribute_keys
+      Bluetooth: Add public l2cap_conn_shutdown() API to request disconnection
+      Bluetooth: Call l2cap_conn_shutdown() when SMP recv callback fails
+      Bluetooth: Fix double free of SMP data skb
+      Bluetooth: Add SMP-internal timeout callback
+      Bluetooth: Remove unused l2cap_conn->security_timer
+      Bluetooth: Move canceling security_timer into smp_chan_destroy()
+      Bluetooth: Always call smp_distribute_keys() from a workqueue
+      Bluetooth: Make smp_chan_destroy() private to smp.c
+
+Loic Poulain (1):
+      Bluetooth: Fix HCI H5 corrupted ack value
+
+Lukasz Rymanowski (2):
+      Bluetooth: Improve data packing in SAR mode
+      Bluetooth: Fix ERTM L2CAP resend packet
+
+Varka Bhadram (4):
+      MAINTAINERS: update maintainers info
+      mac802154: cleanup in rx path
+      mac802154: common error path
+      mac802154: common tx error path
+
+Vincent Zwanenburg (1):
+      Add a new PID/VID 0227/0930 for AR3012.
+
+ MAINTAINERS                      |   9 +-
+ drivers/bluetooth/ath3k.c        |   2 +
+ drivers/bluetooth/bluecard_cs.c  |  35 +-
+ drivers/bluetooth/bt3c_cs.c      |  27 +-
+ drivers/bluetooth/btuart_cs.c    |  27 +-
+ drivers/bluetooth/btusb.c        |   1 +
+ drivers/bluetooth/dtl1_cs.c      |  36 +-
+ drivers/bluetooth/hci_h5.c       |   2 +-
+ include/net/bluetooth/hci_core.h |   8 +-
+ include/net/bluetooth/l2cap.h    |  33 +-
+ net/bluetooth/6lowpan.c          |  10 +-
+ net/bluetooth/hci_core.c         |  71 +++-
+ net/bluetooth/hci_event.c        |  11 +-
+ net/bluetooth/l2cap_core.c       | 309 +++++++--------
+ net/bluetooth/l2cap_sock.c       |  15 +-
+ net/bluetooth/mgmt.c             | 124 ++----
+ net/bluetooth/smp.c              | 726 +++++++++++++++++++++++------------
+ net/bluetooth/smp.h              |  10 +-
+ net/ieee802154/6lowpan_rtnl.c    |   8 -
+ net/mac802154/rx.c               |   5 +-
+ net/mac802154/tx.c               |  15 +-
+ net/mac802154/wpan.c             |  10 +-
+ 22 files changed, 877 insertions(+), 617 deletions(-)
+
+
+--BOKacYhQ+x31HxR3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT7MyYAAoJECQj9vv5qNQSMSYP/3SVBPoV3hkWmnfRY9l/C64h
+NsK1dnztqqvq8Z+wpZ0JmhkfmYnGz7QHXlhBdx7IKXqwYF/Xsz0MLvCj6n//kGRC
+mC+sPuBJSgZ0yqRSDa7CYh5VlhSled+cn09ffnwS1po+tgvLOs4saGts8NN7annN
+2gF5wRZysRZh7nCF/A11nttiL26RhHMDvRb70Fo66Gr4GE+O7ps8GXLOq6e1VuFn
+1X3nC1a8lzxFctdoqXmiKAd0Emv7D7HSagERWZtdnw9ugAX7bzh1HXvAfeUQNNcC
+Xj/MYErYkiOJKEncWIpwNDoXzLoL9j25S04khWrGB8s+yGR3SsH1ITzDPvo9Tv3U
+2MfkrdmXdIOZct8suwi/o4WMR1u05KmuKi80ntMyDtxkVPBovFQ0s+2vj/D2XkmV
+r54GbeqdG/iwJ2zvwakFSpSH9ERZQ4ryty66FcbR0yRU9Q+UFc9fUhSQBFa45esd
+DdRadC48iCUcOmyf7rF7L6diZMVQK+STk+MUJ/xgID7/V6weImBuvBt/+pgIXRey
+U4DliilN4Zr5v4aLw4V6v1HPExPrR98oEYVeyfGHD0MQFvrzCc1FhDztdYZivljv
+4L7pwfWaddMkMOeAuFNppOdJOx9A2feaTlZxgRMs5VEAyNB3Ix9MTssypWH5DvKn
+YKGjm77oiZfj14zevxB9
+=Jbds
+-----END PGP SIGNATURE-----
+
+--BOKacYhQ+x31HxR3--
