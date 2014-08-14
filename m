@@ -1,204 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaHNAJy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 20:09:54 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:56767 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149AbaHNAJx (ORCPT
+	id S1753418AbaHNAKF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 20:10:05 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:38128 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242AbaHNAKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 20:09:53 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 14 Aug 2014 09:09:59 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Dan Streetman <ddstreet@ieee.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [RFC 1/3] zsmalloc: move pages_allocated to zs_pool
-Message-ID: <20140814000959.GG9227@bbox>
-References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
- <1407225723-23754-2-git-send-email-minchan@kernel.org>
- <CALZtONDmvLDtceVW9AyiDwdSHQzPbay36JEts8iuZ4nvykWfeA@mail.gmail.com>
- <20140813141413.GA1091@swordfish>
- <CALZtONDgYRUwrsN_G7pds2QY6QTOr8G8jAHa6Zta2XDhDHV8_A@mail.gmail.com>
- <20140813151354.GD1091@swordfish>
- <20140813152504.GE1091@swordfish>
+	Wed, 13 Aug 2014 20:10:01 -0400
+Message-ID: <53EBFE6E.1060400@gmail.com>
+Date: Wed, 13 Aug 2014 20:10:22 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Question regarding "Control Dependencies" in memory-barriers.txt
+References: <CAJhHMCADiEsUC7GsYF7=qMNEyRJerfhC5zh7WQPgkQ0gJn5=5A@mail.gmail.com> <20140804185226.GQ8101@linux.vnet.ibm.com> <CAJhHMCBEprK9hp786cwguJR=JW7Xxgt4GKX5=E0vikO-D4qmZg@mail.gmail.com> <20140805073237.GX3935@laptop> <CAJhHMCBjub+_Gg_wC2EoR5OgzwT7JTHr-wzoGp_dePUBVwEG8g@mail.gmail.com> <20140813224436.GA4752@linux.vnet.ibm.com>
+In-Reply-To: <20140813224436.GA4752@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140813152504.GE1091@swordfish>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 12:25:04AM +0900, Sergey Senozhatsky wrote:
-> On (08/14/14 00:13), Sergey Senozhatsky wrote:
-> > > On Wed, Aug 13, 2014 at 10:14 AM, Sergey Senozhatsky
-> > > <sergey.senozhatsky@gmail.com> wrote:
-> > > > On (08/13/14 09:59), Dan Streetman wrote:
-> > > >> On Tue, Aug 5, 2014 at 4:02 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > > >> > Pages_allocated has counted in size_class structure and when user
-> > > >> > want to see total_size_bytes, it gathers all of value from each
-> > > >> > size_class to report the sum.
-> > > >> >
-> > > >> > It's not bad if user don't see the value often but if user start
-> > > >> > to see the value frequently, it would be not a good deal for
-> > > >> > performance POV.
-> > > >> >
-> > > >> > This patch moves the variable from size_class to zs_pool so it would
-> > > >> > reduce memory footprint (from [255 * 8byte] to [sizeof(atomic_t)])
-> > > >> > but it adds new locking overhead but it wouldn't be severe because
-> > > >> > it's not a hot path in zs_malloc(ie, it is called only when new
-> > > >> > zspage is created, not a object).
-> > > >>
-> > > >> Would using an atomic64_t without locking be simpler?
-> > > >
-> > > > it would be racy.
-> > > 
-> > > oh.  atomic operations aren't smp safe?  is that because other
-> > > processors might use a stale value, and barriers must be added?  I
-> > > guess I don't quite understand the value of atomic then. :-/
-> > 
-> > pool not only set the value, it also read it and make some decisions
-> > based on that value:
-> > 
-> > 	pages_allocated += X
-> > 	if (pages_allocated >= max_pages_allocated)
-> > 		return 0;
-> 
-> 
-> I mean, suppose this happens on two CPUs
-> 
-> max_pages_allocated is 10; current pages_allocated is 8. now you have 2 zs_malloc()
-> happenning on two CPUs. each of them will do `pages_allocated += 1'. the problem is
-> that both will see 10 at `if (pages_allocated >= max_pages_allocated)', so we will
-> fail 2 operations, while we only were supposed to fail one.
-
-Exactly speaking, you're saying not max_pages_allocated but pages_limited.
-But I admit the race could affect max_pages_allocated, too.
-
-I think it would be not severe if we move the feature into zram because
-zram's requirement is not strict and the gap is just bounded by the number
-of CPU so we could remove both spinlock and atomic.
 
 
-> 
-> 	-ss
-> 
-> > 
-> > > >>
-> > > >> >
-> > > >> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > > >> > ---
-> > > >> >  mm/zsmalloc.c | 30 ++++++++++++++++--------------
-> > > >> >  1 file changed, 16 insertions(+), 14 deletions(-)
-> > > >> >
-> > > >> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> > > >> > index fe78189624cf..a6089bd26621 100644
-> > > >> > --- a/mm/zsmalloc.c
-> > > >> > +++ b/mm/zsmalloc.c
-> > > >> > @@ -198,9 +198,6 @@ struct size_class {
-> > > >> >
-> > > >> >         spinlock_t lock;
-> > > >> >
-> > > >> > -       /* stats */
-> > > >> > -       u64 pages_allocated;
-> > > >> > -
-> > > >> >         struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
-> > > >> >  };
-> > > >> >
-> > > >> > @@ -216,9 +213,12 @@ struct link_free {
-> > > >> >  };
-> > > >> >
-> > > >> >  struct zs_pool {
-> > > >> > +       spinlock_t stat_lock;
-> > > >> > +
-> > > >> >         struct size_class size_class[ZS_SIZE_CLASSES];
-> > > >> >
-> > > >> >         gfp_t flags;    /* allocation flags used when growing pool */
-> > > >> > +       unsigned long pages_allocated;
-> > > >> >  };
-> > > >> >
-> > > >> >  /*
-> > > >> > @@ -882,6 +882,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
-> > > >> >
-> > > >> >         }
-> > > >> >
-> > > >> > +       spin_lock_init(&pool->stat_lock);
-> > > >> >         pool->flags = flags;
-> > > >> >
-> > > >> >         return pool;
-> > > >> > @@ -943,8 +944,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
-> > > >> >                         return 0;
-> > > >> >
-> > > >> >                 set_zspage_mapping(first_page, class->index, ZS_EMPTY);
-> > > >> > +               spin_lock(&pool->stat_lock);
-> > > >> > +               pool->pages_allocated += class->pages_per_zspage;
-> > > >> > +               spin_unlock(&pool->stat_lock);
-> > > >> >                 spin_lock(&class->lock);
-> > > >> > -               class->pages_allocated += class->pages_per_zspage;
-> > > >> >         }
-> > > >> >
-> > > >> >         obj = (unsigned long)first_page->freelist;
-> > > >> > @@ -997,14 +1000,14 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
-> > > >> >
-> > > >> >         first_page->inuse--;
-> > > >> >         fullness = fix_fullness_group(pool, first_page);
-> > > >> > -
-> > > >> > -       if (fullness == ZS_EMPTY)
-> > > >> > -               class->pages_allocated -= class->pages_per_zspage;
-> > > >> > -
-> > > >> >         spin_unlock(&class->lock);
-> > > >> >
-> > > >> > -       if (fullness == ZS_EMPTY)
-> > > >> > +       if (fullness == ZS_EMPTY) {
-> > > >> > +               spin_lock(&pool->stat_lock);
-> > > >> > +               pool->pages_allocated -= class->pages_per_zspage;
-> > > >> > +               spin_unlock(&pool->stat_lock);
-> > > >> >                 free_zspage(first_page);
-> > > >> > +       }
-> > > >> >  }
-> > > >> >  EXPORT_SYMBOL_GPL(zs_free);
-> > > >> >
-> > > >> > @@ -1100,12 +1103,11 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
-> > > >> >
-> > > >> >  u64 zs_get_total_size_bytes(struct zs_pool *pool)
-> > > >> >  {
-> > > >> > -       int i;
-> > > >> > -       u64 npages = 0;
-> > > >> > -
-> > > >> > -       for (i = 0; i < ZS_SIZE_CLASSES; i++)
-> > > >> > -               npages += pool->size_class[i].pages_allocated;
-> > > >> > +       u64 npages;
-> > > >> >
-> > > >> > +       spin_lock(&pool->stat_lock);
-> > > >> > +       npages = pool->pages_allocated;
-> > > >> > +       spin_unlock(&pool->stat_lock);
-> > > >> >         return npages << PAGE_SHIFT;
-> > > >> >  }
-> > > >> >  EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
-> > > >> > --
-> > > >> > 2.0.0
-> > > >> >
-> > > >> > --
-> > > >> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > > >> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > > >> > see: http://www.linux-mm.org/ .
-> > > >> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > > >>
-> > > 
-> > 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+On Wed, Aug 13, 2014 at 6:44 PM, Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+
+>         .LFB0:
+>                 .cfi_startproc
+>                 movl    a, %ecx
+>                 movl    $1717986919, %edx
+>                 movl    %ecx, %eax
+>                 imull   %edx
+>                 movl    %ecx, %eax
+>                 sarl    $31, %eax
+>                 movl    %ecx, b
+>                 sarl    $2, %edx
+>                 subl    %eax, %edx
+>                 leal    (%edx,%edx,4), %eax
+>                 addl    %eax, %eax
+>                 cmpl    %eax, %ecx
+>                 jne     .L4
+>                 jmp     do_something_else
+>                 .p2align 4,,7
+>                 .p2align 3
+>         .L4:
+>                 jmp     do_something
+>                 .cfi_endproc
+>         .LFE0:
+>                 .size   foo, .-foo
+>                 .comm   b,4,4
+>                 .comm   a,4,4
+>                 .ident  "GCC: (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3"
+>                 .section        .note.GNU-stack,"",@progbits
+>
+> As you can see, the assignment to "b" has been hoisted above the "if".
+> And adding barrier() to each leg of the "if" statement doesn't help,
+> the store to "b" still gets hoisted.
+
+That does not match to what I am seeing. I added barrier() to both the
+legs and this is the outcome with the same options you used:
+
+0000000000000000 <foo>:
+   0:	mov    0x0(%rip),%ecx        # 6 <foo+0x6>
+   6:	mov    $0x66666667,%edx
+   b:	mov    %ecx,%eax
+   d:	imul   %edx
+   f:	mov    %ecx,%eax
+  11:	sar    $0x1f,%eax
+  14:	sar    $0x2,%edx
+  17:	sub    %eax,%edx
+  19:	lea    (%rdx,%rdx,4),%eax
+  1c:	add    %eax,%eax
+  1e:	cmp    %eax,%ecx
+  20:	jne    30 <foo+0x30>
+  22:	mov    %ecx,0x0(%rip)        # 28 <foo+0x28> ACCESS_ONCE(b) = q
+  28:	jmpq   2d <foo+0x2d>
+  2d:	nopl   (%rax)
+  30:	mov    %ecx,0x0(%rip)        # 36 <foo+0x36> ACCESS_ONCE(b) = q
+  36:	jmpq   3b <foo+0x3b>
+
+My gcc version is 4.9.1. 
+
+Trying it out with 4.6.4 and 4.7.3 I see what you are seeing! So must be a bug
+in older compiler versions.
+
+>
+> So this whole "q % MAX" example is bogus...
+>
+> In fact, if you have the same store on both legs of the "if" statement,
+> your ordering appears to be toast, at least at high optimization levels.
+>
+> You would think that I would have tested with -O3 initially.  :-(
+
+Looks like it is even happening at -O2 with 4.6/4.7 version of gcc. 
+Btw, how are you generating the pretty output for assembly? I am using objdump
+and it is not as pretty.
+
+> ------------------------------------------------------------------------
+>
+> memory-barriers: Fix description of 2-legged-if-based control dependencies
+>
+> Sad to say, current compilers really will hoist identical stores from both
+> branches of an "if" statement to precede the conditional.  This commit
+> therefore updates the description of control dependencies to reflect this
+> ugly reality.
+>
+> Reported-by: Pranith Kumar <bobby.prani@gmail.com>
+> Reported-by: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+Please see one question below:
+
+>
+> +Given this transformation, the CPU is not required to respect the ordering
+> +between the load from variable 'a' and the store to variable 'b'.  It is
+> +tempting to add a barrier(), but this does not help.  The conditional
+> +is gone, and the barrier won't bring it back.  Therefore, if you are
+> +relying on this ordering, you should make sure that MAX is greater than
+> +one, perhaps as follows:
+>
+>         q = ACCESS_ONCE(a);
+>         BUILD_BUG_ON(MAX <= 1); /* Order load from a with store to b. */
+> @@ -695,10 +675,14 @@ do something like the following:
+>                 ACCESS_ONCE(b) = p;
+>                 do_something();
+>         } else {
+> -               ACCESS_ONCE(b) = p;
+> +               ACCESS_ONCE(b) = r;
+>                 do_something_else();
+>         }
+>
+> +Please note once again that the stores to 'b' differ.  If they were
+> +identical, as noted earlier, the compiler could pull this store outside
+> +of the 'if' statement.
+
+If the stores to 'b' differ, then there is no issue. Why not document how to
+avoid re-ordering in the case where both the stores are the same? In that case
+using a stronger barrier like mb() should be sufficient for both the compiler
+and the CPU to avoid re-ordering, right?
 
 -- 
-Kind regards,
-Minchan Kim
+Pranith
