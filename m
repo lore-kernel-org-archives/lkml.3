@@ -1,212 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbaHNRoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 13:44:20 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53452 "EHLO arroyo.ext.ti.com"
+	id S1753648AbaHNRrG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 13:47:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59831 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752445AbaHNRoQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 13:44:16 -0400
-From: "Murphy, Dan" <dmurphy@ti.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "madcatxster@devoid-pointer.net" <madcatxster@devoid-pointer.net>,
-        "simon@mungewell.org" <simon@mungewell.org>,
-        "elias.vds@gmail.com" <elias.vds@gmail.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH v5] input: drv260x: Add TI drv260x haptics driver
-Thread-Topic: [PATCH v5] input: drv260x: Add TI drv260x haptics driver
-Thread-Index: AQHPrPO0tYMQlTI4yUqEx0SWRNhMRw==
-Date: Thu, 14 Aug 2014 17:44:04 +0000
-Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49DE6FF3@DFLE09.ent.ti.com>
-References: <1406834089-15095-1-git-send-email-dmurphy@ti.com>
- <20140813092001.GB32644@leverpostej>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752350AbaHNRrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 13:47:03 -0400
+Date: Thu, 14 Aug 2014 13:46:58 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Some problems with HP DL380 G8 BIOS and SLES11 SP3
+Message-ID: <20140814174658.GV49576@redhat.com>
+References: <53EB9EC9020000A100016A4D@gwsmtp1.uni-regensburg.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53EB9EC9020000A100016A4D@gwsmtp1.uni-regensburg.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark
+On Wed, Aug 13, 2014 at 05:22:17PM +0200, Ulrich Windl wrote:
+> Hello!
+> 
+> Running the current SLES11 SP3 kernel on a HP DL380 G8 server, there are some kernel messages that indicate a bug either in the kernel or in the HP BIOS. Maybe someone can explain, so I can try to get it fixed whatever party broke it...
+> 
+> Linux kernel is "3.0.101-0.35-default (geeko@buildhost) (gcc version 4.3.4 [gcc-4_3-branch revision 152973]" (latest).
+> HP server is "HP ProLiant DL380p Gen8, BIOS P70 02/10/2014" (latest)
 
-On 08/13/2014 04:20 AM, Mark Rutland wrote:
-> Hi Dan,
-> 
-> Apologies for the delay.
-> 
+Yes, it is because you are letting the firmware dynamically control your
+cpu frequency.  In order to accomplish they need to use a perf counter or
+two, hence the conflict.  Set the firmware setting to OS control and the
+problem goes away.  Contact HP for those instructions, they are very aware
+of this problem and recommend OS control to all high end servers.
 
-No worries.  Thanks for the comments
-
-> On Thu, Jul 31, 2014 at 08:14:49PM +0100, Dan Murphy wrote:
->> Add the TI drv260x haptics/vibrator driver.
->> This device uses the input force feedback
->> to produce a wave form to driver an
->> ERM or LRA actuator device.
->>
->> The initial driver supports the devices
->> real time playback mode.  But the device
->> has additional wave patterns in ROM.
->>
->> This functionality will be added in
->> future patchsets.
->>
->> Product data sheet is located here:
->> http://www.ti.com/product/drv2605
->>
->> Signed-off-by: Dan Murphy <dmurphy@ti.com>
->> ---
->>
->> v5 - Move register defines to c file and rm header file, error check
->> init in probe, fixed identation, remove empty labels in probe
->> and just return on fail and removed the remove callback and function.
->> Did not factor out the suspend into a stop function. - https://patchwork.kernel.org/patch/4649631/
->> v4 - Convert regulator to devm, added error checking where required,
->> updated bindings doc, moved dt parsing to separate call and made platform
->> data the first data point, moved vibrator enable and mode programming from
->> play entry to worker thread, added user check and input mutex in suspend/resume
->> calls, moved platform data to individual file and into include platform-data directory,
->> removed file names from file headers - https://patchwork.kernel.org/patch/4642221/
->> v3 - Updated binding doc, changed to memless device, updated input alloc to
->> devm, removed mutex locking, add sanity checks for mode and library - https://patchwork.kernel.org/patch/4635421/
->> v2 - Fixed binding doc and patch headline - https://patchwork.kernel.org/patch/4619641/
->>
->>
->>  .../devicetree/bindings/input/ti,drv260x.txt       |   50 ++
->>  drivers/input/misc/Kconfig                         |    9 +
->>  drivers/input/misc/Makefile                        |    1 +
->>  drivers/input/misc/drv260x.c                       |  697 ++++++++++++++++++++
->>  include/dt-bindings/input/ti-drv260x.h             |   35 +
->>  include/linux/platform_data/drv260x-pdata.h        |   29 +
->>  6 files changed, 821 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/input/ti,drv260x.txt
->>  create mode 100644 drivers/input/misc/drv260x.c
->>  create mode 100644 include/dt-bindings/input/ti-drv260x.h
->>  create mode 100644 include/linux/platform_data/drv260x-pdata.h
->>
->> diff --git a/Documentation/devicetree/bindings/input/ti,drv260x.txt b/Documentation/devicetree/bindings/input/ti,drv260x.txt
->> new file mode 100644
->> index 0000000..8e6970d
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/input/ti,drv260x.txt
->> @@ -0,0 +1,50 @@
->> +Texas Instruments - drv260x Haptics driver family
->> +
->> +The drv260x family serial control bus communicates through I2C protocols
->> +
->> +Required properties:
->> +       - compatible - One of:
->> +               "ti,drv2604" - DRV2604
->> +               "ti,drv2605" - DRV2605
->> +               "ti,drv2605l" - DRV2605L
->> +       - reg -  I2C slave address
->> +       - supply- Required supply regulators are:
->> +               "vbat" - battery voltage
-> 
-> This looks a bit odd, and seems to imply the name would be supply-vbat,
-> which doesn't sound right. I assume this should be vbat-supply?
-> 
-> If so, just have this as:
-> 
-> - vbat-supply - regulator supplying battery voltage.
-
-Will change this.
+Cheers,
+Don
 
 > 
->> +       - mode - Power up mode of the chip (defined in include/dt-bindings/input/ti-drv260x.h)
->> +               DRV260X_LRA_MODE - Linear Resonance Actuator mode (Piezoelectric)
->> +               DRV260X_LRA_NO_CAL_MODE - This is a LRA Mode but there is no calibration
->> +                               sequence during init.  And the device is configured for real
->> +                               time playback mode (RTP mode).
->> +               DRV260X_ERM_MODE - Eccentric Rotating Mass mode (Rotary vibrator)
->> +       - library-sel - These are ROM based waveforms pre-programmed into the IC.
->> +                               This should be set to set the library to use at power up.
->> +                               (defined in include/dt-bindings/input/ti-drv260x.h)
->> +               DRV260X_LIB_A - Pre-programmed Library
->> +               DRV260X_LIB_B - Pre-programmed Library
->> +               DRV260X_LIB_C - Pre-programmed Library
->> +               DRV260X_LIB_D - Pre-programmed Library
->> +               DRV260X_LIB_E - Pre-programmed Library
->> +               DRV260X_LIB_F - Pre-programmed Library
-> 
-> In the datasheet these seem to be ERM libraries A-E, then LRA library
-> (not F).
-> 
-> How does the library selection interact with the mode? Surely it only
-> makes sense to select an ERM library in ERM mode?
-> 
-
-OK yeah.  I will update these to call out ERM vs LRA libraries and add a check in the code
-to make sure there is no mis-match of lib to mode
-
-
->> +
->> +Optional properties:
->> +       - enable-gpio - gpio pin to enable/disable the device.
->> +       - vib_rated_voltage - The rated voltage of the actuator in millivolts.
->> +                         If this is not set then the value will be defaulted to
->> +                         3.2 v.
->> +       - vib_overdrive_voltage - The overdrive voltage of the actuator in millivolts.
->> +                         If this is not set then the value will be defaulted to
->> +                         3.2 v.
-> 
-> It looks like you forogt to s/_/-/ here when the code was last updated.
-> 
-> These would be better suffixed with -mv given they are in millivolts
-> rather than volts.
-
-SGTM.  Will update
-
-> 
->> +               enable-gpio = <&gpio1 28 GPIO_ACTIVE_HIGH>;
->> +               mode = <DRV260X_LRA_MODE>;
->> +               library-sel = <DRV260X_LIB_SEL_DEFAULT>;
-> 
-> This value is not described above. What happens if
-> DRV260X_LIB_SEL_DEFAULT is selected?
-> 
-
-I removed the default and change to empty as that is what the
-default mode is is an empty library.
-
+> During ACPI init I see:
+> [...]
+> Reserving 128MB of memory at 752MB for crashkernel (System RAM: 132095MB)
+> ACPI: RSDP 00000000000f4f00 00024 (v02 HP    )
+> ACPI: XSDT 00000000bddaed00 000D4 (v01 HP     ProLiant 00000002   322? 0000162E)
+> ACPI: FACP 00000000bddaee40 000F4 (v03 HP     ProLiant 00000002   322? 0000162E)
+> ACPI Warning: Invalid length for Pm1aControlBlock: 32, using default 16 (2011041
+> 3/tbfadt-611)
+> ACPI Warning: Invalid length for Pm2ControlBlock: 32, using default 8 (20110413/
+> tbfadt-611)
+> ACPI: DSDT 00000000bddaef40 026DC (v01 HP         DSDT 00000001 INTL 20030228)
+> ACPI: FACS 00000000bddac140 00040
+> ACPI: SPCR 00000000bddac180 00050 (v01 HP     SPCRRBSU 00000001   322? 0000162E)
+> ACPI: MCFG 00000000bddac200 0003C (v01 HP     ProLiant 00000001      00000000)
 > [...]
 > 
->> +/**
->> + * Rated and Overdriver Voltages:
->> + * Calculated using the formula r = v * 255 / 5.6
->> + * where r is what will be written to the register
->> + * and v is the rated or overdriver voltage of the actuator
->> + **/
->> +#define DRV260X_DEF_RATED_VOLT         0x90
->> +#define DRV260X_DEF_OD_CLAMP_VOLT      0x90
->> +
->> +static int drv260x_calculate_voltage(int voltage)
->> +{
->> +       return (voltage * 255 / 5600);
->> +}
->> +
+> HPET id 0 under DRHD base 0xf4ffe000
+> BIOS requests to not use x2apic
+> Use 'intremap=no_x2apic_optout' to override BIOS request
+> Enabled IRQ remapping in xapic mode
+> x2apic not enabled, IRQ remapping is in xapic mode
+> Switched APIC routing to physical flat.
+> ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+> CPU0: Intel(R) Xeon(R) CPU E5-2630 v2 @ 2.60GHz stepping 04
+> Performance Events: PEBS fmt1+, 16-deep LBR, IvyBridge events, Broken BIOS detec
+> ted, complain to your hardware vendor.
+> [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 38d is 330)
+> Intel PMU driver.
+> ... version:                3
+> ... bit width:              48
+> ... generic registers:      4
+> ... value mask:             0000ffffffffffff
+> ... max period:             000000007fffffff
+> ... fixed-purpose events:   3
+> ... event mask:             000000070000000f
+> NMI watchdog enabled, takes one hw-pmu counter.
+> Booting Node   0, Processors  #1
+> [...]
 > 
-> Shouldn't the comment be attached to the function rather than the
-> defines?
-
-Moved
-
-Thanks Again
-Dan
-
+>  pci0000:00: Requesting ACPI _OSC control (0x1d)
+>  pci0000:00: ACPI _OSC request failed (AE_SUPPORT), returned control mask: 0x00
+> ACPI _OSC control for PCIe not granted, disabling ASPM
+> [...]
 > 
-> Thanks,
-> Mark.
+>  pci0000:20: Requesting ACPI _OSC control (0x1d)
+>  pci0000:20: ACPI _OSC request failed (AE_SUPPORT), returned control mask: 0x00
+> ACPI _OSC control for PCIe not granted, disabling ASPM
+> [...]
 > 
-
-
--- 
-------------------
-Dan Murphy
+> Regards,
+> Ulrich
+> P.S. Please CC: me, as I'm not on LKML...
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
