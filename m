@@ -1,143 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440AbaHNFvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 01:51:39 -0400
-Received: from regular1.263xmail.com ([211.150.99.134]:60882 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718AbaHNFvi (ORCPT
+	id S1752327AbaHNF6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 01:58:38 -0400
+Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:45641 "EHLO
+	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaHNF6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 01:51:38 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <29e7ee190b21c16db758e4990f708331>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Addy Ke <addy.ke@rock-chips.com>
-To: heiko@sntech.de, dianders@chromium.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
-        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH] ARM: dts: Add sdio0 and sdio1 to the rk3288
-Date: Thu, 14 Aug 2014 13:49:20 +0800
-Message-Id: <1407995360-26009-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 14 Aug 2014 01:58:37 -0400
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: peterz@infradead.org, mingo@kernel.org
+Cc: jason.low2@hp.com, Waiman.Long@hp.com, davidlohr@hp.com,
+        scott.norton@hp.com, aswin@hp.com, linux-kernel@vger.kernel.org
+Subject: [PATCH -tip] locking/mutexes: Avoid bogus wakeups after lock stealing
+Date: Wed, 13 Aug 2014 22:57:50 -0700
+Message-Id: <1407995870-4268-1-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+Mutexes lock-stealing functionality allows another task to
+skip its turn in the wait-queue and atomically acquire the lock.
+This is fine and a nice optimization, however, when releasing
+the mutex, we always wakeup the next task in FIFO order. When
+the lock has been stolen, this leads to wasting waking up a
+task just to immediately realize it cannot acquire the lock
+and just go back to sleep. While in practice this window is
+quite small, it is not about performance or avoid taking the
+wait_lock, but because avoiding bogus wakeups is the right thing
+to do.
+
+In order to deal with the race when potentially missing the
+unlock slowpath (details in the comments), we pessimistically set
+the lock to have waiters. The downside of this is that the task
+that now stole the lock would always have to acquire the mutex in
+its slowpath (as mutex_try_to_acquire() would never succeed.
+However, since this path is rarely called, the cost is really
+never noticed.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
- arch/arm/boot/dts/rk3288.dtsi | 76 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 76 insertions(+)
+Original thread: https://lkml.org/lkml/2014/8/8/37
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 7a9173d..a440869 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -120,6 +120,32 @@
- 		//fifo-depth = <0x100>;
- 	};
+ kernel/locking/mutex.c | 43 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index dadbf88..4570611 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -383,12 +383,26 @@ done:
  
-+	sdio0: dwmmc@ff0d0000 {
-+		compatible = "rockchip,rk3288-dw-mshc";
-+		reg = <0xff0d0000 0x4000>;
-+		interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
+ 	return false;
+ }
 +
-+		clocks = <&cru HCLK_SDIO0>, <&cru SCLK_SDIO0>;
-+		clock-names = "biu", "ciu";
++static inline bool mutex_has_owner(struct mutex *lock)
++{
++	struct task_struct *owner = ACCESS_ONCE(lock->owner);
 +
-+		fifo-depth = <0x100>;
-+	};
++	return owner != NULL;
++}
 +
-+	sdio1: dwmmc@ff0e0000 {
-+		compatible = "rockchip,rk3288-dw-mshc";
-+		reg = <0xff0e0000 0x4000>;
-+		interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
+ #else
 +
-+		clocks = <&cru HCLK_SDIO1>, <&cru SCLK_SDIO1>;
-+		clock-names = "biu", "ciu";
+ static bool mutex_optimistic_spin(struct mutex *lock,
+ 				  struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
+ {
+ 	return false;
+ }
 +
-+		fifo-depth = <0x100>;
-+	};
-+
- 	emmc: dwmmc@ff0f0000 {
- 		compatible = "rockchip,rk3288-dw-mshc";
- 		reg = <0xff0f0000 0x4000>;
-@@ -589,6 +615,56 @@
- 			};
- 		};
++static inline bool mutex_has_owner(struct mutex *lock)
++{
++	return false;
++}
+ #endif
  
-+		sdio0 {
-+			sdio0_clk: sdio0-clk {
-+				rockchip,pins = <4 25 RK_FUNC_1 &pcfg_pull_none>;
-+			};
-+
-+			sdio0_cmd: sdio0-cmd {
-+				rockchip,pins = <4 24 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_pwr: sdio0-pwr {
-+				rockchip,pins = <4 28 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_bus1: sdio0-bus1 {
-+				rockchip,pins = <4 20 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_bus4: sdio0-bus4 {
-+				rockchip,pins = <4 20 RK_FUNC_1 &pcfg_pull_up>,
-+						<4 21 RK_FUNC_1 &pcfg_pull_up>,
-+						<4 22 RK_FUNC_1 &pcfg_pull_up>,
-+						<4 23 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+		};
-+
-+		sdio1 {
-+			sdio1_clk: sdio1-clk {
-+				rockchip,pins = <4 7 RK_FUNC_4 &pcfg_pull_none>;
-+			};
-+
-+			sdio1_cmd: sdio1-cmd {
-+				rockchip,pins = <4 6 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_pwr: sdio1-pwr {
-+				rockchip,pins = <4 9 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_bus1: sdio1-bus1 {
-+				rockchip,pins = <4 24 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_bus4: sdio1-bus4 {
-+				rockchip,pins = <3 24 RK_FUNC_4 &pcfg_pull_up>,
-+						<3 25 RK_FUNC_4 &pcfg_pull_up>,
-+						<3 26 RK_FUNC_4 &pcfg_pull_up>,
-+						<3 27 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+		};
-+
- 		emmc {
- 			emmc_clk: emmc-clk {
- 				rockchip,pins = <3 18 RK_FUNC_2 &pcfg_pull_none>;
+ __visible __used noinline
+@@ -715,6 +729,35 @@ __mutex_unlock_common_slowpath(struct mutex *lock, int nested)
+ {
+ 	unsigned long flags;
+ 
++/*
++ * Skipping the mutex_has_owner() check when DEBUG, allows us to
++ * avoid taking the wait_lock in order to do not call mutex_release()
++ * and debug_mutex_unlock() when !DEBUG. This can otherwise result in
++ * hung it a hung task when another one enters the lock's slowpath in
++ * mutex_lock().
++ */
++#ifndef CONFIG_DEBUG_MUTEXES
++	/*
++	 * Abort the wakeup operation if there is an another mutex owner, as the
++	 * lock was stolen. mutex_unlock() should have cleared the owner field
++	 * before calling this function. If that field is now set, another task
++	 * must have acquired the mutex. Note that this is a very tiny window.
++	 */
++	if (unlikely(mutex_has_owner(lock))) {
++		/*
++		 * Unconditionally set the lock to have waiters. Otherwise
++		 * we can race with another task that grabbed the mutex via
++		 * optimistic spinning and sets the lock to 0. When done,
++		 * the unlock logic never reaches the slowpath, thus never
++		 * waking the next task in the queue.
++		 * Furthermore, this is safe as we've already acknowledged
++		 * the fact that the lock was stolen and now a new owner
++		 * exists.
++		 */
++		atomic_set(&lock->count, -1);
++		return;
++	}
++#endif
+ 	/*
+ 	 * As a performance measurement, release the lock before doing other
+ 	 * wakeup related duties to follow. This allows other tasks to acquire
 -- 
-1.8.3.2
-
+1.8.1.4
 
