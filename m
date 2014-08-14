@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581AbaHNRUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 13:20:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41505 "EHLO
+	id S1753774AbaHNRU4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 13:20:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41571 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464AbaHNRT6 (ORCPT
+	with ESMTP id S1753277AbaHNRUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 13:19:58 -0400
-Date: Thu, 14 Aug 2014 10:19:02 -0700
+	Thu, 14 Aug 2014 13:20:55 -0400
+Date: Thu, 14 Aug 2014 10:19:44 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-f7d11e93ee97a37da1947b7c4e1794705a6f360c@git.kernel.org>
+Message-ID: <tip-d325209b6000dcd13404ee946d2292e15a56718c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, vgupta@synopsys.com, tglx@linutronix.de
+        paulmck@linux.vnet.ibm.com, hskinnemoen@gmail.com, tglx@linutronix.de,
+        egtvedt@samfundet.no
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, vgupta@synopsys.com, tglx@linutronix.de
-In-Reply-To: <20140508135851.886055622@infradead.org>
-References: <20140508135851.886055622@infradead.org>
+        paulmck@linux.vnet.ibm.com, hskinnemoen@gmail.com, tglx@linutronix.de,
+        egtvedt@samfundet.no
+In-Reply-To: <20140531141445.GD16155@laptop.programming.kicks-ass.net>
+References: <20140531141445.GD16155@laptop.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/arch] locking,arch,arc: Fold atomic_ops
-Git-Commit-ID: f7d11e93ee97a37da1947b7c4e1794705a6f360c
+Subject: [tip:locking/arch] locking,arch,avr32: Fold atomic_ops
+Git-Commit-ID: d325209b6000dcd13404ee946d2292e15a56718c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,244 +35,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f7d11e93ee97a37da1947b7c4e1794705a6f360c
-Gitweb:     http://git.kernel.org/tip/f7d11e93ee97a37da1947b7c4e1794705a6f360c
+Commit-ID:  d325209b6000dcd13404ee946d2292e15a56718c
+Gitweb:     http://git.kernel.org/tip/d325209b6000dcd13404ee946d2292e15a56718c
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Sun, 23 Mar 2014 16:29:31 +0100
+AuthorDate: Wed, 9 Apr 2014 21:51:29 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 14 Aug 2014 12:48:03 +0200
+CommitDate: Thu, 14 Aug 2014 12:48:05 +0200
 
-locking,arch,arc: Fold atomic_ops
+locking,arch,avr32: Fold atomic_ops
 
 Many of the atomic op implementations are the same except for one
 instruction; fold the lot into a few CPP macros and reduce LoC.
 
 This also prepares for easy addition of new ops.
 
+Requires the asm_op because of eor.
+
+AVR32 is a bit special in that its ADD/SUB instructions are not
+symmetric. Its SUB instruction allows for an 21bit immediate.
+
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Vineet Gupta <vgupta@synopsys.com>
-Link: http://lkml.kernel.org/r/20140508135851.886055622@infradead.org
+Link: http://lkml.kernel.org/r/20140531141445.GD16155@laptop.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/arc/include/asm/atomic.h | 184 +++++++++++++++---------------------------
- 1 file changed, 63 insertions(+), 121 deletions(-)
+ arch/avr32/include/asm/atomic.h | 123 ++++++++++++++++++++--------------------
+ 1 file changed, 62 insertions(+), 61 deletions(-)
 
-diff --git a/arch/arc/include/asm/atomic.h b/arch/arc/include/asm/atomic.h
-index 83f03ca..173f303 100644
---- a/arch/arc/include/asm/atomic.h
-+++ b/arch/arc/include/asm/atomic.h
-@@ -25,79 +25,36 @@
+diff --git a/arch/avr32/include/asm/atomic.h b/arch/avr32/include/asm/atomic.h
+index 0780f3f..83e980a 100644
+--- a/arch/avr32/include/asm/atomic.h
++++ b/arch/avr32/include/asm/atomic.h
+@@ -22,30 +22,43 @@
+ #define atomic_read(v)		(*(volatile int *)&(v)->counter)
+ #define atomic_set(v, i)	(((v)->counter) = i)
  
- #define atomic_set(v, i) (((v)->counter) = (i))
- 
--static inline void atomic_add(int i, atomic_t *v)
--{
--	unsigned int temp;
--
--	__asm__ __volatile__(
--	"1:	llock   %0, [%1]	\n"
--	"	add     %0, %0, %2	\n"
--	"	scond   %0, [%1]	\n"
--	"	bnz     1b		\n"
--	: "=&r"(temp)	/* Early clobber, to prevent reg reuse */
--	: "r"(&v->counter), "ir"(i)
--	: "cc");
--}
--
--static inline void atomic_sub(int i, atomic_t *v)
--{
--	unsigned int temp;
--
--	__asm__ __volatile__(
--	"1:	llock   %0, [%1]	\n"
--	"	sub     %0, %0, %2	\n"
--	"	scond   %0, [%1]	\n"
--	"	bnz     1b		\n"
--	: "=&r"(temp)
--	: "r"(&v->counter), "ir"(i)
--	: "cc");
--}
--
--/* add and also return the new value */
--static inline int atomic_add_return(int i, atomic_t *v)
--{
--	unsigned int temp;
--
--	__asm__ __volatile__(
--	"1:	llock   %0, [%1]	\n"
--	"	add     %0, %0, %2	\n"
--	"	scond   %0, [%1]	\n"
--	"	bnz     1b		\n"
--	: "=&r"(temp)
--	: "r"(&v->counter), "ir"(i)
--	: "cc");
--
--	return temp;
--}
--
++#define ATOMIC_OP_RETURN(op, asm_op, asm_con)				\
++static inline int __atomic_##op##_return(int i, atomic_t *v)		\
++{									\
++	int result;							\
++									\
++	asm volatile(							\
++		"/* atomic_" #op "_return */\n"				\
++		"1:	ssrf	5\n"					\
++		"	ld.w	%0, %2\n"				\
++		"	" #asm_op "	%0, %3\n"			\
++		"	stcond	%1, %0\n"				\
++		"	brne	1b"					\
++		: "=&r" (result), "=o" (v->counter)			\
++		: "m" (v->counter), #asm_con (i)			\
++		: "cc");						\
++									\
++	return result;							\
++}
++
++ATOMIC_OP_RETURN(sub, sub, rKs21)
++ATOMIC_OP_RETURN(add, add, r)
++
++#undef ATOMIC_OP_RETURN
++
+ /*
+- * atomic_sub_return - subtract the atomic variable
+- * @i: integer value to subtract
+- * @v: pointer of type atomic_t
++ * Probably found the reason why we want to use sub with the signed 21-bit
++ * limit, it uses one less register than the add instruction that can add up to
++ * 32-bit values.
+  *
+- * Atomically subtracts @i from @v. Returns the resulting value.
++ * Both instructions are 32-bit, to use a 16-bit instruction the immediate is
++ * very small; 4 bit.
++ *
++ * sub 32-bit, type IV, takes a register and subtracts a 21-bit immediate.
++ * add 32-bit, type II, adds two register values together.
+  */
 -static inline int atomic_sub_return(int i, atomic_t *v)
 -{
--	unsigned int temp;
+-	int result;
 -
--	__asm__ __volatile__(
--	"1:	llock   %0, [%1]	\n"
--	"	sub     %0, %0, %2	\n"
--	"	scond   %0, [%1]	\n"
--	"	bnz     1b		\n"
--	: "=&r"(temp)
--	: "r"(&v->counter), "ir"(i)
--	: "cc");
+-	asm volatile(
+-		"/* atomic_sub_return */\n"
+-		"1:	ssrf	5\n"
+-		"	ld.w	%0, %2\n"
+-		"	sub	%0, %3\n"
+-		"	stcond	%1, %0\n"
+-		"	brne	1b"
+-		: "=&r"(result), "=o"(v->counter)
+-		: "m"(v->counter), "rKs21"(i)
+-		: "cc");
 -
--	return temp;
+-	return result;
 -}
--
--static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
--{
--	unsigned int temp;
--
--	__asm__ __volatile__(
--	"1:	llock   %0, [%1]	\n"
--	"	bic     %0, %0, %2	\n"
--	"	scond   %0, [%1]	\n"
--	"	bnz     1b		\n"
--	: "=&r"(temp)
--	: "r"(addr), "ir"(mask)
--	: "cc");
-+#define ATOMIC_OP(op, c_op, asm_op)					\
-+static inline void atomic_##op(int i, atomic_t *v)			\
-+{									\
-+	unsigned int temp;						\
-+									\
-+	__asm__ __volatile__(						\
-+	"1:	llock   %0, [%1]	\n"				\
-+	"	" #asm_op " %0, %0, %2	\n"				\
-+	"	scond   %0, [%1]	\n"				\
-+	"	bnz     1b		\n"				\
-+	: "=&r"(temp)	/* Early clobber, to prevent reg reuse */	\
-+	: "r"(&v->counter), "ir"(i)					\
-+	: "cc");							\
-+}									\
-+
-+#define ATOMIC_OP_RETURN(op, c_op, asm_op)				\
-+static inline int atomic_##op##_return(int i, atomic_t *v)		\
-+{									\
-+	unsigned int temp;						\
-+									\
-+	__asm__ __volatile__(						\
-+	"1:	llock   %0, [%1]	\n"				\
-+	"	" #asm_op " %0, %0, %2	\n"				\
-+	"	scond   %0, [%1]	\n"				\
-+	"	bnz     1b		\n"				\
-+	: "=&r"(temp)							\
-+	: "r"(&v->counter), "ir"(i)					\
-+	: "cc");							\
-+									\
-+	return temp;							\
- }
- 
- #else	/* !CONFIG_ARC_HAS_LLSC */
-@@ -126,6 +83,7 @@ static inline void atomic_set(atomic_t *v, int i)
- 	v->counter = i;
- 	atomic_ops_unlock(flags);
- }
-+
- #endif
++#define IS_21BIT_CONST(i)						\
++	(__builtin_constant_p(i) && ((i) >= -1048575) && ((i) <= 1048576))
  
  /*
-@@ -133,62 +91,46 @@ static inline void atomic_set(atomic_t *v, int i)
-  * Locking would change to irq-disabling only (UP) and spinlocks (SMP)
+  * atomic_add_return - add integer to atomic variable
+@@ -56,51 +69,25 @@ static inline int atomic_sub_return(int i, atomic_t *v)
   */
- 
--static inline void atomic_add(int i, atomic_t *v)
--{
--	unsigned long flags;
+ static inline int atomic_add_return(int i, atomic_t *v)
+ {
+-	int result;
 -
--	atomic_ops_lock(flags);
--	v->counter += i;
--	atomic_ops_unlock(flags);
-+#define ATOMIC_OP(op, c_op, asm_op)					\
-+static inline void atomic_##op(int i, atomic_t *v)			\
-+{									\
-+	unsigned long flags;						\
-+									\
-+	atomic_ops_lock(flags);						\
-+	v->counter c_op i;						\
-+	atomic_ops_unlock(flags);					\
+-	if (__builtin_constant_p(i) && (i >= -1048575) && (i <= 1048576))
+-		result = atomic_sub_return(-i, v);
+-	else
+-		asm volatile(
+-			"/* atomic_add_return */\n"
+-			"1:	ssrf	5\n"
+-			"	ld.w	%0, %1\n"
+-			"	add	%0, %3\n"
+-			"	stcond	%2, %0\n"
+-			"	brne	1b"
+-			: "=&r"(result), "=o"(v->counter)
+-			: "m"(v->counter), "r"(i)
+-			: "cc", "memory");
++	if (IS_21BIT_CONST(i))
++		return __atomic_sub_return(-i, v);
+ 
+-	return result;
++	return __atomic_add_return(i, v);
  }
  
--static inline void atomic_sub(int i, atomic_t *v)
--{
--	unsigned long flags;
--
--	atomic_ops_lock(flags);
--	v->counter -= i;
--	atomic_ops_unlock(flags);
-+#define ATOMIC_OP_RETURN(op, c_op)					\
-+static inline int atomic_##op##_return(int i, atomic_t *v)		\
-+{									\
-+	unsigned long flags;						\
-+	unsigned long temp;						\
-+									\
-+	atomic_ops_lock(flags);						\
-+	temp = v->counter;						\
-+	temp c_op i;							\
-+	v->counter = temp;						\
-+	atomic_ops_unlock(flags);					\
-+									\
-+	return temp;							\
+ /*
+- * atomic_sub_unless - sub unless the number is a given value
++ * atomic_sub_return - subtract the atomic variable
++ * @i: integer value to subtract
+  * @v: pointer of type atomic_t
+- * @a: the amount to subtract from v...
+- * @u: ...unless v is equal to u.
+  *
+- * Atomically subtract @a from @v, so long as it was not @u.
+- * Returns the old value of @v.
+-*/
+-static inline void atomic_sub_unless(atomic_t *v, int a, int u)
++ * Atomically subtracts @i from @v. Returns the resulting value.
++ */
++static inline int atomic_sub_return(int i, atomic_t *v)
+ {
+-	int tmp;
++	if (IS_21BIT_CONST(i))
++		return __atomic_sub_return(i, v);
+ 
+-	asm volatile(
+-		"/* atomic_sub_unless */\n"
+-		"1:	ssrf	5\n"
+-		"	ld.w	%0, %2\n"
+-		"	cp.w	%0, %4\n"
+-		"	breq	1f\n"
+-		"	sub	%0, %3\n"
+-		"	stcond	%1, %0\n"
+-		"	brne	1b\n"
+-		"1:"
+-		: "=&r"(tmp), "=o"(v->counter)
+-		: "m"(v->counter), "rKs21"(a), "rKs21"(u)
+-		: "cc", "memory");
++	return __atomic_add_return(-i, v);
  }
  
--static inline int atomic_add_return(int i, atomic_t *v)
--{
--	unsigned long flags;
--	unsigned long temp;
--
--	atomic_ops_lock(flags);
--	temp = v->counter;
--	temp += i;
--	v->counter = temp;
--	atomic_ops_unlock(flags);
--
--	return temp;
--}
--
--static inline int atomic_sub_return(int i, atomic_t *v)
--{
--	unsigned long flags;
--	unsigned long temp;
--
--	atomic_ops_lock(flags);
--	temp = v->counter;
--	temp -= i;
--	v->counter = temp;
--	atomic_ops_unlock(flags);
-+#endif /* !CONFIG_ARC_HAS_LLSC */
+ /*
+@@ -116,9 +103,21 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+ {
+ 	int tmp, old = atomic_read(v);
  
--	return temp;
--}
-+#define ATOMIC_OPS(op, c_op, asm_op)					\
-+	ATOMIC_OP(op, c_op, asm_op)					\
-+	ATOMIC_OP_RETURN(op, c_op, asm_op)
+-	if (__builtin_constant_p(a) && (a >= -1048575) && (a <= 1048576))
+-		atomic_sub_unless(v, -a, u);
+-	else {
++	if (IS_21BIT_CONST(a)) {
++		asm volatile(
++			"/* __atomic_sub_unless */\n"
++			"1:	ssrf	5\n"
++			"	ld.w	%0, %2\n"
++			"	cp.w	%0, %4\n"
++			"	breq	1f\n"
++			"	sub	%0, %3\n"
++			"	stcond	%1, %0\n"
++			"	brne	1b\n"
++			"1:"
++			: "=&r"(tmp), "=o"(v->counter)
++			: "m"(v->counter), "rKs21"(-a), "rKs21"(u)
++			: "cc", "memory");
++	} else {
+ 		asm volatile(
+ 			"/* __atomic_add_unless */\n"
+ 			"1:	ssrf	5\n"
+@@ -137,6 +136,8 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+ 	return old;
+ }
  
--static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
--{
--	unsigned long flags;
-+ATOMIC_OPS(add, +=, add)
-+ATOMIC_OPS(sub, -=, sub)
-+ATOMIC_OP(and, &=, and)
- 
--	atomic_ops_lock(flags);
--	*addr &= ~mask;
--	atomic_ops_unlock(flags);
--}
-+#define atomic_clear_mask(mask, v) atomic_and(~(mask), (v))
- 
--#endif /* !CONFIG_ARC_HAS_LLSC */
-+#undef ATOMIC_OPS
-+#undef ATOMIC_OP_RETURN
-+#undef ATOMIC_OP
- 
- /**
-  * __atomic_add_unless - add unless the number is a given value
++#undef IS_21BIT_CONST
++
+ /*
+  * atomic_sub_if_positive - conditionally subtract integer from atomic variable
+  * @i: integer value to subtract
