@@ -1,131 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556AbaHNTF1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 15:05:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64235 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752879AbaHNTFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 15:05:25 -0400
-Message-ID: <53ED080F.9010305@redhat.com>
-Date: Thu, 14 Aug 2014 15:03:43 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754636AbaHNTIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 15:08:39 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:55541 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963AbaHNTIi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 15:08:38 -0400
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
+In-Reply-To: <1407797345-28227-5-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140811224840.GA25594@linux.vnet.ibm.com> <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1407797345-28227-5-git-send-email-paulmck@linux.vnet.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Thu, 14 Aug 2014 15:08:06 -0400
+Message-ID: <CAJhHMCA3xgLPx8Riy1xhEEy-zC-UHTE=hjST-ktV8jh11xnxsw@mail.gmail.com>
+Subject: Re: [PATCH v5 tip/core/rcu 05/16] rcu: Export RCU-tasks APIs to GPL modules
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
- seqlock
-References: <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814142404.GA28211@redhat.com> <53ECD7C8.6040202@redhat.com> <20140814161247.GA32715@redhat.com> <53ECF390.40403@redhat.com> <20140814181542.GB5091@redhat.com>
-In-Reply-To: <20140814181542.GB5091@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2014 02:15 PM, Oleg Nesterov wrote:
-> On 08/14, Rik van Riel wrote:
->>
->> On 08/14/2014 12:12 PM, Oleg Nesterov wrote:
->>>
->>> Or you can expand the scope of write_seqlock/write_sequnlock, so that
->>> __unhash_process in called from inside the critical section. This looks
->>> simpler at first glance.
->>
->> The problem with that is that wait_task_zombie() calls
->> thread_group_cputime_adjusted() in that if() branch, and
->> that code ends up taking the seqlock for read...
-> 
-> Not sure I understand... This modifies parent->signal->c* counters,
-> and obviously the exiting thread is not the member of parent's thread
-> group, so thread_group_cputime_adjusted(parent) can never account the
-> exiting child twice simply because it won't see it?
+On Mon, Aug 11, 2014 at 6:48 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> From: Steven Rostedt <rostedt@goodmis.org>
+>
+> This commit exports the RCU-tasks APIs, call_rcu_tasks(),
+> synchronize_rcu_tasks(), and rcu_barrier_tasks(), to GPL-licensed
+> kernel modules.
 
-You are right, the tree of processes only goes one way,
-so there should be no deadlock in taking psig->stats_lock
-and having thread_group_cputime_adjusted take sig->stats_lock
-for read within that section.
+Only two of these are being exported in this patch. Patch 1 is adding
+the export for call_rcu_tasks().
 
-However, it might need some lockdep annotation to keep
-lockdep from thinking we might the same lock recursively :)
 
->> However, in __exit_signal that approach should work.
-> 
-> Yes,
-> 
->>> Hmm, wait, it seems there is yet another problem ;) Afaics, you also
->>> need to modify __exit_signal() so that ->sum_sched_runtime/etc are
->>> accounted unconditionally, even if the group leader exits.
->>>
->>> Probably this is not a big problem, and sys_times() or clock_gettime()
->>> do not care at all because they use current.
->>>
->>> But without this change thread_group_cputime(reaped_zombie) won't look
->>> at this task_struct at all, this can lead to non-monotonic result if
->>> it was previously called when this task was alive (non-reaped).
->>
->> You mean this whole block needs to run regardless of whether
->> the group is dead?
->>
->>                 task_cputime(tsk, &utime, &stime);
->>                 write_seqlock(&sig->stats_lock);
->>                 sig->utime += utime;
->>                 sig->stime += stime;
->>                 sig->gtime += task_gtime(tsk);
->>                 sig->min_flt += tsk->min_flt;
->>                 sig->maj_flt += tsk->maj_flt;
->>                 sig->nvcsw += tsk->nvcsw;
->>                 sig->nivcsw += tsk->nivcsw;
->>                 sig->inblock += task_io_get_inblock(tsk);
->>                 sig->oublock += task_io_get_oublock(tsk);
->>                 task_io_accounting_add(&sig->ioac, &tsk->ioac);
->>                 sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
-> 
-> Yes.
+>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> ---
+>  kernel/rcu/update.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> index 4cece6e886ee..8f53a41dd9ee 100644
+> --- a/kernel/rcu/update.c
+> +++ b/kernel/rcu/update.c
+> @@ -433,6 +433,7 @@ void synchronize_rcu_tasks(void)
+>         /* Wait for the grace period. */
+>         wait_rcu_gp(call_rcu_tasks);
+>  }
+> +EXPORT_SYMBOL_GPL(synchronize_rcu_tasks);
+>
+>  /**
+>   * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
+> @@ -445,6 +446,7 @@ void rcu_barrier_tasks(void)
+>         /* There is only one callback queue, so this is easy.  ;-) */
+>         synchronize_rcu_tasks();
+>  }
+> +EXPORT_SYMBOL_GPL(rcu_barrier_tasks);
+>
+>  /* See if tasks are still holding out, complain if so. */
+>  static void check_holdout_task(struct task_struct *t)
+> --
+> 1.8.1.5
+>
 
-Let me give that a try and see what happens :)
 
->> How does that square with wait_task_zombie reaping the
->> statistics of the whole group with thread_group_cputime_adjusted()
->> when the group leader is exiting?
-> 
-> Again, not sure I understand... thread_group_cputime_adjusted() in
-> wait_task_zombie() is fine in any case. Nobody but us can reap this
-> zombie.
-> 
-> It seems that we misunderstood each other, let me try again. Just to
-> simplify, suppose we have, say,
-> 
-> 	sys_times_by_pid(pid, ...)
-> 	{
-> 		rcu_read_lock();
-> 		task = find_task_by_vpid(pid);
-> 		if (task)
-> 			get_task_struct(task);
-> 		rcu_read_unlock();
-> 
-> 		if (!task)
-> 			return -ESRCH;
-> 
-> 		thread_group_cputime(task, ...);
-> 		copy_to_user();
-> 		return 0;
-> 	}
-> 
-> Note that this task can exit right after rcu_read_unlock(), and it can
-> be also reaped (by its parent or by itself) and removed from the thread
-> list. In this case for_each_thread() will see no threads, and thus it
-> will only read task->signal->*time.
-> 
-> This means that sys_times_by_pid() can simply return the wrong result
-> instead of failure. Say, It can even return "all zeros" if this task was
-> single-threaded.
 
-Ahh, that makes sense.
-
+-- 
+Pranith
