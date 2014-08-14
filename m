@@ -1,39 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489AbaHNJhv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 05:37:51 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:64103 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530AbaHNJht (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 05:37:49 -0400
-Message-ID: <53EC8369.8030406@colorfullife.com>
-Date: Thu, 14 Aug 2014 11:37:45 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1754648AbaHNJh7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 05:37:59 -0400
+Received: from sauhun.de ([89.238.76.85]:41947 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754530AbaHNJh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 05:37:57 -0400
+Date: Thu, 14 Aug 2014 04:37:44 -0500
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        torvalds@linux-foundation.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] I2C: Make I2C core able to be module when I2C_ACPI is
+ selected.
+Message-ID: <20140814093743.GB2824@katana>
+References: <1407740455-21269-1-git-send-email-tianyu.lan@intel.com>
+ <20140812095321.GU1657@lahna.fi.intel.com>
+ <20140813020250.GA2853@katana>
+ <53EAD278.2010003@intel.com>
+ <20140813070759.GB1657@lahna.fi.intel.com>
+ <53EB1251.1000401@intel.com>
 MIME-Version: 1.0
-To: Andrey Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Mathias Krause <minipli@googlemail.com>, Joe Perches <joe@perches.com>,
-        Davidlohr Bueso <davidlohr@hp.com>
-Subject: Re: [PATCH] ipc: always handle a new value of auto_msgmni
-References: <1407936117-2985-1-git-send-email-avagin@openvz.org>
-In-Reply-To: <1407936117-2985-1-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WYTEVAkct0FjGQmd"
+Content-Disposition: inline
+In-Reply-To: <53EB1251.1000401@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrey,
 
-On 08/13/2014 03:21 PM, Andrey Vagin wrote:
-> proc_dointvec_minmax() returns zero, if a new value has been set.
-> So we don't need to check all charectes have been handled.
-What do you use auto_msgmni for?
+--WYTEVAkct0FjGQmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I would propose to remove the whole logic - just always allow 32000 
-message queues.
+> > True, but only the I2C OpRegion parts needs to have I2C=3Dy. Does it ma=
+ke
+> > sense to name ACPI_I2C to ACPI_I2C_OPREGION (or something like that)
+> > and only enable it when I2C=3Dy? Then we would have ACPI I2C enumeration
+> > still in place.
+> >=20
+>=20
+> Yes, this makes sense to me. I will rewrite the patch.
 
---
-     Manfred
+Ping. I'd like to send the fix to Linus during the merge-window.
+
+Thanks,
+
+   Wolfram
+
+
+--WYTEVAkct0FjGQmd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT7INnAAoJEBQN5MwUoCm2tvEP/inMeqMpDs6bwVLqQt/7vrQa
+mGV/ft1O9oVEj980Bs6VZ6/KSfWcDuwvambAbBuCcfrHCSfjjTpteGVFkaPuwCD8
+oN2XKjrCoEfcrvXo1D4/GX9xPXwBUIrk+2ksi2CsF77puZLjTvmebZfrFMxmlo0h
+ub6i21TRxbLdOrNNyL/IUhLAKi7DsIu0lqaEWJ9MD4KuX31LzMVVXO/wjEG2thZa
+fNiXzZEwl7X01lHNgWd24x7Lp5qnnYpSBnkbM4QEpTyCKUmpLS5BLIvrdaRsrq3A
+p6SyNoUQVD7nAppr2f8peiOXILlpAk7+J4i4v0BcJZ4Esdi7ebiMHWXbk5dafFCO
+WPyxrrXD9BzjLNEFPnSVjU096QnhNoyyw6XxK3WQ5J0oeYdNPC9mqkFz8awDQbaY
+HlriAiJeY5rM7sWljvL0VyTuDpOgPV3tCTCHUSpRwxLGKaHneVmKr6rNQTdo++NO
+BB9FnHooBjFGVK7//6EHJP0QVM47LuC3Y9qN/c2M+h2tehyIrX38E/b7hQjNKQIZ
+ouSZ84zL+Y0ixHUWYtWgCD50RSFHCv7+uCB7WugD36VjRCCJ6w3QK2GJw1BPkLU4
+bCKb4ahqfOQuyCzA5+ingrl7We57JGQAcP98AOG9YwQe+zyx9ERC+yesaO6qIzb6
+XkvaOvv2nZNcepR4+j4q
+=RjZf
+-----END PGP SIGNATURE-----
+
+--WYTEVAkct0FjGQmd--
