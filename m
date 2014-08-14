@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474AbaHNFoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 01:44:14 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:34388 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaHNFoN (ORCPT
+	id S1752916AbaHNFoV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 01:44:21 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:58701 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493AbaHNFoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 01:44:13 -0400
+	Thu, 14 Aug 2014 01:44:17 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: kvm@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
@@ -17,91 +17,124 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
         Andrew Honig <ahonig@google.com>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v6 0/7] random,x86,kvm: Rework arch RNG seeds and get some from kvm
-Date: Wed, 13 Aug 2014 22:43:54 -0700
-Message-Id: <cover.1407994704.git.luto@amacapital.net>
+Subject: [PATCH v6 1/7] random: Add and use arch_rng_init
+Date: Wed, 13 Aug 2014 22:43:55 -0700
+Message-Id: <25547b897a7dd34173773e5ee0860720fefcc191.1407994704.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1407994704.git.luto@amacapital.net>
+References: <cover.1407994704.git.luto@amacapital.net>
+In-Reply-To: <cover.1407994704.git.luto@amacapital.net>
+References: <cover.1407994704.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This introduces and uses a very simple synchronous mechanism to get
-/dev/urandom-style bits appropriate for initial KVM PV guest RNG
-seeding.
+Currently, init_std_data contains its own logic for using arch
+random sources.  This replaces that logic with a generic function
+arch_rng_init that allows arch code to supply its own logic.  The
+default implementation tries arch_get_random_seed_long and
+arch_get_random_long individually.
 
-It also re-works the way that architectural random data is fed into
-random.c's pools.  Timekeeping randomness now comes directly from
-the timekeeping core rather than being pulled in from init_std_data,
-and timekeeping randomness is added both on boot and on resume.  I
-added a new arch hook called arch_rng_init.  The default
-implementation is more or less the same as the current code, except
-that random_get_entropy is now called unconditionally.  We now also
-call init_std_data on resume.
+The only functional change here is that random_get_entropy() is used
+unconditionally instead of being used only when the arch sources
+fail.  This may add a tiny amount of security.
 
-x86 gets a custom arch_rng_init.  It will use KVM_GET_RNG_SEED if
-available, and, if it does anything, it will log the number of bits
-collected from each available architectural source.  If more
-paravirt seed sources show up, it will be a natural place to add
-them.
+Acked-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ drivers/char/random.c  | 14 +++++++++++---
+ include/linux/random.h | 40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 51 insertions(+), 3 deletions(-)
 
-I sent the corresponding kvm-unit-tests and qemu changes separately.
-
-Changes from v5:
- - Moved the generic changes to the beginning.
- - Renamed arch_get_rng_seed to arch_rng_init.
- - The timekeeping change is new.
- - random.c registers a syscore callback to reseed on resume.
-
-Changes from v4:
- - Got rid of the RDRAND behavior change.  If this series is accepted,
-   I may resend it separately, but I think it's an unrelated issue.
- - Fix up the changelog entries -- I misunderstood how the old code
-   worked.
- - Avoid lots of failed attempts to use KVM_GET_RNG_SEED if it's not
-   available.
-
-Changes from v3:
- - Other than KASLR, the guest pieces are completely rewritten.
-   Patches 2-4 have essentially nothing in common with v2.
-
-Changes from v2:
- - Bisection fix (patch 2 had a misplaced brace).  The final states is
-   identical to that of v2.
- - Improve the 0/5 description a little bit.
-
-Changes from v1:
- - Split patches 2 and 3
- - Log all arch sources in init_std_data
- - Fix the 32-bit kaslr build
-
-Andy Lutomirski (7):
-  random: Add and use arch_rng_init
-  random, timekeeping: Collect timekeeping entropy in the timekeeping
-    code
-  random: Reseed pools on resume
-  x86,kvm: Add MSR_KVM_GET_RNG_SEED and a matching feature bit
-  x86,random: Add an x86 implementation of arch_rng_init
-  x86,random,kvm: Use KVM_GET_RNG_SEED in arch_rng_init
-  x86,kaslr: Use MSR_KVM_GET_RNG_SEED for KASLR if available
-
- Documentation/virtual/kvm/cpuid.txt  |  3 ++
- arch/x86/Kconfig                     |  4 ++
- arch/x86/boot/compressed/aslr.c      | 27 +++++++++++++
- arch/x86/include/asm/archrandom.h    |  6 +++
- arch/x86/include/asm/kvm_guest.h     |  9 +++++
- arch/x86/include/asm/processor.h     | 21 ++++++++--
- arch/x86/include/uapi/asm/kvm_para.h |  2 +
- arch/x86/kernel/Makefile             |  2 +
- arch/x86/kernel/archrandom.c         | 74 ++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/kvm.c                | 10 +++++
- arch/x86/kvm/cpuid.c                 |  3 +-
- arch/x86/kvm/x86.c                   |  4 ++
- drivers/char/random.c                | 42 ++++++++++++++++----
- include/linux/random.h               | 40 +++++++++++++++++++
- kernel/time/timekeeping.c            | 11 ++++++
- 15 files changed, 246 insertions(+), 12 deletions(-)
- create mode 100644 arch/x86/kernel/archrandom.c
-
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 71529e1..7673e60 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1246,6 +1246,10 @@ void get_random_bytes_arch(void *buf, int nbytes)
+ }
+ EXPORT_SYMBOL(get_random_bytes_arch);
+ 
++static void seed_entropy_store(void *ctx, u32 data)
++{
++	mix_pool_bytes((struct entropy_store *)ctx, &data, sizeof(data), NULL);
++}
+ 
+ /*
+  * init_std_data - initialize pool with system data
+@@ -1261,15 +1265,19 @@ static void init_std_data(struct entropy_store *r)
+ 	int i;
+ 	ktime_t now = ktime_get_real();
+ 	unsigned long rv;
++	char log_prefix[128];
+ 
+ 	r->last_pulled = jiffies;
+ 	mix_pool_bytes(r, &now, sizeof(now), NULL);
+ 	for (i = r->poolinfo->poolbytes; i > 0; i -= sizeof(rv)) {
+-		if (!arch_get_random_seed_long(&rv) &&
+-		    !arch_get_random_long(&rv))
+-			rv = random_get_entropy();
++		rv = random_get_entropy();
+ 		mix_pool_bytes(r, &rv, sizeof(rv), NULL);
+ 	}
++
++	sprintf(log_prefix, "random: seeded %s pool", r->name);
++	arch_rng_init(r, seed_entropy_store, 8 * r->poolinfo->poolbytes,
++		      log_prefix);
++
+ 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())), NULL);
+ }
+ 
+diff --git a/include/linux/random.h b/include/linux/random.h
+index 57fbbff..c8d692e 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -106,6 +106,46 @@ static inline int arch_has_random_seed(void)
+ }
+ #endif
+ 
++#ifndef __HAVE_ARCH_RNG_INIT
++
++/**
++ * arch_rng_init() - get architectural rng seed data
++ * @ctx: context for the seed function
++ * @seed: function to call for each u32 obtained
++ * @bits_per_source: number of bits from each source to try to use
++ * @log_prefix: beginning of log output (may be NULL)
++ *
++ * Synchronously load some architectural entropy or other best-effort
++ * random seed data.  An arch-specific implementation should be no worse
++ * than this generic implementation.  If the arch code does something
++ * interesting, it may log something of the form "log_prefix with
++ * 8 bits of stuff".
++ *
++ * No arch-specific implementation should be any worse than the generic
++ * implementation.
++ */
++static inline void arch_rng_init(void *ctx,
++				 void (*seed)(void *ctx, u32 data),
++				 int bits_per_source,
++				 const char *log_prefix)
++{
++	int i;
++
++	for (i = 0; i < bits_per_source; i += 8 * sizeof(long)) {
++		unsigned long rv;
++
++		if (arch_get_random_seed_long(&rv) ||
++		    arch_get_random_long(&rv)) {
++			seed(ctx, (u32)rv);
++#if BITS_PER_LONG > 32
++			seed(ctx, (u32)(rv >> 32));
++#endif
++		}
++	}
++}
++
++#endif /* __HAVE_ARCH_RNG_INIT */
++
+ /* Pseudo random number generator from numerical recipes. */
+ static inline u32 next_pseudo_random32(u32 seed)
+ {
 -- 
 1.9.3
 
