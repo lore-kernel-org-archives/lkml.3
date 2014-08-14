@@ -1,105 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986AbaHNCm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 22:42:27 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:50696 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689AbaHNCmY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 22:42:24 -0400
-Message-ID: <53EC220D.5050908@gmail.com>
-Date: Wed, 13 Aug 2014 19:42:21 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1753148AbaHNCzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 22:55:13 -0400
+Received: from mx0a-0016ce01.pphosted.com ([67.231.148.157]:12086 "EHLO
+	mx0a-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752200AbaHNCzK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Aug 2014 22:55:10 -0400
+From: Anil Gurumurthy <Anil.Gurumurthy@qlogic.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Sudarsana Kalluru <Sudarsana.Kalluru@qlogic.com>
+Subject: RE: [PATCH v2 RESEND 04/23] bfa: Use pci_enable_msix_exact()
+ instead of pci_enable_msix()
+Thread-Topic: [PATCH v2 RESEND 04/23] bfa: Use pci_enable_msix_exact()
+ instead of pci_enable_msix()
+Thread-Index: AQHPoSElBU1/NNORdUmpsXLfnYwbVJvLoboA///DjKCAAgQ0AIACKaqg
+Date: Thu, 14 Aug 2014 02:55:06 +0000
+Message-ID: <20B1A3CBD98F3845B3F5F56D8597EF59FA1586@avmb2.qlogic.org>
+References: <cover.1405533479.git.agordeev@redhat.com>
+ <bc13ddf17d035921de994d2f8a52902e0a5d1a60.1405533479.git.agordeev@redhat.com>
+ <20140811073902.GB16504@dhcp-27-160.brq.redhat.com>
+ <20B1A3CBD98F3845B3F5F56D8597EF59FA0CF6@avmb2.qlogic.org>
+ <20140812105014.GB1674@agordeev.usersys.redhat.com>
+In-Reply-To: <20140812105014.GB1674@agordeev.usersys.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.4.10]
+disclaimer: bypass
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: frowand.list@gmail.com
-CC: Stephen Boyd <sboyd@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH to be tested] serial: msm_serial: add missing sysrq handling
-References: <53E2C573.7090709@gmail.com> <53EAB01B.5030102@codeaurora.org> <53EC1FEA.5070907@gmail.com>
-In-Reply-To: <53EC1FEA.5070907@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7529 signatures=670498
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1408140036
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/13/2014 7:33 PM, Frank Rowand wrote:
-> On 8/12/2014 5:23 PM, Stephen Boyd wrote:
->> On 08/06/14 17:16, Frank Rowand wrote:
+Hi Alexander,
+  I believe I acked the series already, if not, I am acking all the bfa patches in this series.
 
-< snip >
- 
-> The patches you sent are a little hard to read since they modify further code
-> that my patch modified.  So I have redone your patches, as if my patch was
-> not previously applied.  Hopefully I did not make any mistakes there.  I will
-> reply to this email with each of your redone patches.
+Thanks,
+Anil
 
-Stephen's patch alternative number 2:
+-----Original Message-----
+From: Alexander Gordeev [mailto:agordeev@redhat.com] 
+Sent: 12 August 2014 16:20
+To: Anil Gurumurthy
+Cc: linux-kernel; Anil Gurumurthy; Vijaya Mohan Guvva; linux-scsi; linux-pci; Sudarsana Kalluru
+Subject: Re: [PATCH v2 RESEND 04/23] bfa: Use pci_enable_msix_exact() instead of pci_enable_msix()
 
----
- drivers/tty/serial/msm_serial.c |   41 +++++++++++++++++++++++++++-------------
- 1 file changed, 28 insertions(+), 13 deletions(-)
+On Mon, Aug 11, 2014 at 11:02:56AM +0000, Anil Gurumurthy wrote:
+> Acked-by: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
 
-Index: b/drivers/tty/serial/msm_serial.c
-===================================================================
---- a/drivers/tty/serial/msm_serial.c
-+++ b/drivers/tty/serial/msm_serial.c
-@@ -125,25 +125,40 @@ static void handle_rx_dm(struct uart_por
- 	port->icount.rx += count;
- 
- 	while (count > 0) {
--		unsigned int c;
-+		unsigned char buf[4];
-+		int sysrq, r_count, i;
- 
- 		sr = msm_read(port, UART_SR);
- 		if ((sr & UART_SR_RX_READY) == 0) {
- 			msm_port->old_snap_state -= count;
- 			break;
- 		}
--		c = msm_read(port, UARTDM_RF);
--		if (sr & UART_SR_RX_BREAK) {
--			port->icount.brk++;
--			if (uart_handle_break(port))
--				continue;
--		} else if (sr & UART_SR_PAR_FRAME_ERR)
--			port->icount.frame++;
--
--		/* TODO: handle sysrq */
--		tty_insert_flip_string(tport, (char *)&c,
--				       (count > 4) ? 4 : count);
--		count -= 4;
-+		readsl(port->membase + UARTDM_RF, buf, 1);
-+
-+		r_count = min_t(int, count, sizeof(buf));
-+
-+		for (i = 0; i < r_count; i++) {
-+			char flag = TTY_NORMAL;
-+
-+			if (sr & UART_SR_RX_BREAK) {
-+				if (buf[i] == 0) {
-+					port->icount.brk++;
-+					flag = TTY_BREAK;
-+					if (uart_handle_break(port))
-+						continue;
-+				}
-+			}
-+
-+			if (!(port->read_status_mask & UART_SR_RX_BREAK))
-+				flag = TTY_NORMAL;
-+
-+			spin_unlock(&port->lock);
-+			sysrq = uart_handle_sysrq_char(port, buf[i]);
-+			spin_lock(&port->lock);
-+			if (!sysrq)
-+				tty_insert_flip_char(tport, buf[i], flag);
-+		}
-+		count -= r_count;
- 	}
- 
- 	spin_unlock(&port->lock);
+Many thanks, Anil!
+
+If your Ack apply to this patch only or to all three 'bfa' patches in this series?
+
+Thanks!
+
+> -----Original Message-----
+> From: Alexander Gordeev [mailto:agordeev@redhat.com]
+> Sent: 11 August 2014 13:09
+> To: linux-kernel
+> Cc: Anil Gurumurthy; Vijaya Mohan Guvva; linux-scsi; linux-pci; Anil 
+> Gurumurthy; Sudarsana Kalluru
+> Subject: Re: [PATCH v2 RESEND 04/23] bfa: Use pci_enable_msix_exact() 
+> instead of pci_enable_msix()
+> 
+> On Wed, Jul 16, 2014 at 08:05:08PM +0200, Alexander Gordeev wrote:
+> > As result of deprecation of MSI-X/MSI enablement functions
+> > pci_enable_msix() and pci_enable_msi_block() all drivers using these 
+> > two interfaces need to be updated to use the new
+> > pci_enable_msi_range()  or pci_enable_msi_exact() and
+> > pci_enable_msix_range() or pci_enable_msix_exact() interfaces.
+> 
+> Anil, Sudarsana,
+> 
+> Could you please review bfa patches in this series?
+> 
+> Thanks!
+> 
+> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> > Cc: Anil Gurumurthy <agurumur@brocade.com>
+> > Cc: Vijaya Mohan Guvva <vmohan@brocade.com>
+> > Cc: linux-scsi@vger.kernel.org
+> > Cc: linux-pci@vger.kernel.org
+> > Acked-by: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
+> > ---
+> >  drivers/scsi/bfa/bfad.c |   20 ++++++--------------
+> >  1 files changed, 6 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c index
+> > c18279f..e90a374 100644
+> > --- a/drivers/scsi/bfa/bfad.c
+> > +++ b/drivers/scsi/bfa/bfad.c
+> > @@ -1234,29 +1234,21 @@ bfad_setup_intr(struct bfad_s *bfad)
+> >  	if ((bfa_asic_id_ctc(pdev->device) && !msix_disable_ct) ||
+> >  	   (bfa_asic_id_cb(pdev->device) && !msix_disable_cb)) {
+> >  
+> > -		error = pci_enable_msix(bfad->pcidev, msix_entries, bfad->nvec);
+> > +		error = pci_enable_msix_exact(bfad->pcidev,
+> > +					      msix_entries, bfad->nvec);
+> >  		/* In CT1 & CT2, try to allocate just one vector */
+> > -		if (error > 0 && bfa_asic_id_ctc(pdev->device)) {
+> > +		if (error == -ENOSPC && bfa_asic_id_ctc(pdev->device)) {
+> >  			printk(KERN_WARNING "bfa %s: trying one msix "
+> >  			       "vector failed to allocate %d[%d]\n",
+> >  			       bfad->pci_name, bfad->nvec, error);
+> >  			bfad->nvec = 1;
+> > -			error = pci_enable_msix(bfad->pcidev,
+> > -						msix_entries, bfad->nvec);
+> > +			error = pci_enable_msix_exact(bfad->pcidev,
+> > +						      msix_entries, 1);
+> >  		}
+> >  
+> > -		/*
+> > -		 * Only error number of vector is available.
+> > -		 * We don't have a mechanism to map multiple
+> > -		 * interrupts into one vector, so even if we
+> > -		 * can try to request less vectors, we don't
+> > -		 * know how to associate interrupt events to
+> > -		 *  vectors. Linux doesn't duplicate vectors
+> > -		 * in the MSIX table for this case.
+> > -		 */
+> >  		if (error) {
+> >  			printk(KERN_WARNING "bfad%d: "
+> > -			       "pci_enable_msix failed (%d), "
+> > +			       "pci_enable_msix_exact failed (%d), "
+> >  			       "use line based.\n",
+> >  				bfad->inst_no, error);
+> >  			goto line_based;
+> > --
+> > 1.7.7.6
+> > 
+
+--
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
