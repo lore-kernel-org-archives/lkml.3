@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379AbaHNQMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 12:12:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33928 "EHLO mx2.suse.de"
+	id S1752487AbaHNQPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 12:15:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45601 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751054AbaHNQMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 12:12:47 -0400
-Date: Thu, 14 Aug 2014 18:12:44 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/4] mm: memcontrol: reduce reclaim invocations for
- higher order requests
-Message-ID: <20140814161244.GC19405@dhcp22.suse.cz>
-References: <1407186897-21048-1-git-send-email-hannes@cmpxchg.org>
- <1407186897-21048-2-git-send-email-hannes@cmpxchg.org>
- <20140807130822.GB12730@dhcp22.suse.cz>
- <20140807153141.GD14734@cmpxchg.org>
- <20140808123258.GK4004@dhcp22.suse.cz>
- <20140808132635.GJ14734@cmpxchg.org>
- <20140813145904.GC2775@dhcp22.suse.cz>
- <20140813204134.GA20932@cmpxchg.org>
+	id S1750706AbaHNQPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 12:15:14 -0400
+Date: Thu, 14 Aug 2014 18:12:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
+	seqlock
+Message-ID: <20140814161247.GA32715@redhat.com>
+References: <20140812191218.GA15210@redhat.com> <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814142404.GA28211@redhat.com> <53ECD7C8.6040202@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140813204134.GA20932@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53ECD7C8.6040202@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 13-08-14 16:41:34, Johannes Weiner wrote:
-> On Wed, Aug 13, 2014 at 04:59:04PM +0200, Michal Hocko wrote:
-[...]
-> > I think this shows up that my concern about excessive reclaim and stalls
-> > is real and it is worse when the memory is used sparsely. It is true it
-> > might help when the whole THP section is used and so the additional cost
-> > is amortized but the more sparsely each THP section is used the higher
-> > overhead you are adding without userspace actually asking for it.
-> 
-> THP is expected to have some overhead in terms of initial fault cost
+On 08/14, Rik van Riel wrote:
+>
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>
+> On 08/14/2014 10:24 AM, Oleg Nesterov wrote:
+> > On 08/13, Rik van Riel wrote:
+> >>
+> >> @@ -862,11 +862,9 @@ void do_sys_times(struct tms *tms) {
+> >> cputime_t tgutime, tgstime, cutime, cstime;
+> >>
+> >> -	spin_lock_irq(&current->sighand->siglock);
+> >> thread_group_cputime_adjusted(current, &tgutime, &tgstime);
+> >> cutime = current->signal->cutime; cstime =
+> >> current->signal->cstime; -
+> >> spin_unlock_irq(&current->sighand->siglock);
+> >
+> > Ah, wait, there is another problem afaics...
+>
+> Last night I worked on another problem with this code.
+>
+> After propagating the stats from a dying task to the signal struct,
+> we need to make sure that that task's stats are not counted twice.
 
-yes, but that overhead should be as small as possible. Direct reclaim
-with such a big target will lead to all types of problems.
+Heh indeed ;) Can't understand how I missed that.
 
-> and space efficiency, don't use it when you get little to no benefit
-> from it. 
+> This requires zeroing the stats under the write_seqlock, which was
+> easy enough to add.
 
-Do you really expect that all such users will use MADV_NOHUGEPAGE just
-to prevent from reclaim stalls? This sounds unrealistic to me. Instead
-we will end up with THP disabled globally. The same way we have seen it
-when THP has been introduced and caused all kinds of reclaim issues.
+Or you can expand the scope of write_seqlock/write_sequnlock, so that
+__unhash_process in called from inside the critical section. This looks
+simpler at first glance.
 
-> It can be argued that my patch moves that breakeven point a
-> little bit, but the THP-positive end of the spectrum is much better
-> off: THP coverage goes from 37% to 100%, while reclaim efficiency is
-> significantly improved and system time significantly reduced.
+Hmm, wait, it seems there is yet another problem ;) Afaics, you also
+need to modify __exit_signal() so that ->sum_sched_runtime/etc are
+accounted unconditionally, even if the group leader exits.
 
-I didn't see significantly improved reclaim efficiency the only
-difference was that the reclaim happen less times.
-The system time is reduced but the elapsed time is less than 1% improved
-in the per-page walk but more than 3 times worse for the other extreme.
+Probably this is not a big problem, and sys_times() or clock_gettime()
+do not care at all because they use current.
 
-> You demonstrated a THP-workload that really benefits from my change,
-> and another workload that shouldn't be using THP in the first place.
+But without this change thread_group_cputime(reaped_zombie) won't look
+at this task_struct at all, this can lead to non-monotonic result if
+it was previously called when this task was alive (non-reaped).
 
-I do not think that the presented test case is appropriate for any
-reclaim decision evaluation. Linear used-once walker usually benefits
-from excessive reclaim in general.
-The only point I wanted to raise is that the numbers look much worse
-when the memory is used sparsely and thponly is the obvious worst case.
+Oleg.
 
-So if you want to increase THP charge success rate then back it by real
-numbers from real loads and prove that the potential regressions are
-unlikely and biased by the overall improvements. Until then NACK to this
-patch from me. The change is too risky.
-
-Besides that I do believe that you do not need this change for the high
-limit as it can fail the charge for excessive THP charges same like the
-hard limit. So you do not have the high limit escape problem.
-As mentioned in other email, reclaiming the whole high limit excess as a
-target is even more risky because heavy parallel load on many CPUs can
-cause large excess and direct reclaim much more than 512 pages.
--- 
-Michal Hocko
-SUSE Labs
