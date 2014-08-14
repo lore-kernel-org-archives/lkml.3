@@ -1,108 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861AbaHNLSA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 07:18:00 -0400
-Received: from mga14.intel.com ([192.55.52.115]:1347 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754508AbaHNLR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 07:17:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,862,1400050800"; 
-   d="scan'208";a="576615976"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Liu, Changcheng" <changcheng.liu@intel.com>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        "Chakravarty, Souvik K" <souvik.k.chakravarty@intel.com>
-Subject: RE: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
- back to DEFAULT
-Thread-Topic: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
- back to DEFAULT
-Thread-Index: AQHPt7D9LFYUDjq6M0WfHt459I0U05vP8sfg
-Date: Thu, 14 Aug 2014 11:17:52 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01E5B5FB@SHSMSX101.ccr.corp.intel.com>
-References: <1407982309-4863-1-git-send-email-chuansheng.liu@intel.com>
- <CAKnoXLw3DrBAxCUWEkXtvCTf+E1w0xTHJSiSUY6Qd6xHXeGaoQ@mail.gmail.com>
- <20140814110040.GI16043@twins.programming.kicks-ass.net>
- <53EC9A29.8090408@linaro.org>
-In-Reply-To: <53EC9A29.8090408@linaro.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1754766AbaHNLUS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 07:20:18 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:43589 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071AbaHNLUP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 07:20:15 -0400
+From: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
+To: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org
+Cc: <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] cpufreq: powernv: Register the driver with reboot notifier
+Date: Thu, 14 Aug 2014 16:49:38 +0530
+Message-Id: <1408015178-21745-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.3
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081411-2674-0000-0000-00000166F591
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7EBI7ce027530
 
+This patch ensures the cpus to kexec/reboot at nominal frequency.
+Nominal frequency is the highest cpu frequency on PowerPC at
+which the cores can run without getting throttled.
 
+If the host kernel had set the cpus to a low pstate and then it
+kexecs/reboots to a cpufreq disabled kernel it would cause the target
+kernel to perform poorly. It will also increase the boot up time of
+the target kernel. So set the cpus to high pstate, in this case to
+nominal frequency before rebooting to avoid such scenarios.
 
-> -----Original Message-----
-> From: Daniel Lezcano [mailto:daniel.lezcano@linaro.org]
-> Sent: Thursday, August 14, 2014 7:15 PM
-> To: Peter Zijlstra
-> Cc: Liu, Chuansheng; Rafael J. Wysocki; linux-pm@vger.kernel.org; LKML; Liu,
-> Changcheng; Wang, Xiaoming; Chakravarty, Souvik K
-> Subject: Re: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
-> back to DEFAULT
-> 
-> On 08/14/2014 01:00 PM, Peter Zijlstra wrote:
-> > On Thu, Aug 14, 2014 at 12:29:32PM +0200, Daniel Lezcano wrote:
-> >> Hi Chuansheng,
-> >>
-> >> On 14 August 2014 04:11, Chuansheng Liu <chuansheng.liu@intel.com>
-> wrote:
-> >>
-> >>> We found sometimes even after we let PM_QOS back to DEFAULT,
-> >>> the CPU still stuck at C0 for 2-3s, don't do the new suitable C-state
-> >>> selection immediately after received the IPI interrupt.
-> >>>
-> >>> The code model is simply like below:
-> >>> {
-> >>>          pm_qos_update_request(&pm_qos, C1 - 1);
-> >>>                  < == Here keep all cores at C0
-> >>>          ...;
-> >>>          pm_qos_update_request(&pm_qos,
-> PM_QOS_DEFAULT_VALUE);
-> >>>                  < == Here some cores still stuck at C0 for 2-3s
-> >>> }
-> >>>
-> >>> The reason is when pm_qos come back to DEFAULT, there is IPI interrupt to
-> >>> wake up the core, but when core is in poll idle state, the IPI interrupt
-> >>> can not break the polling loop.
-> >
-> > So seeing how you're from @intel.com I'm assuming you're using x86 here.
-> >
-> > I'm not seeing how this can be possible, MWAIT is interrupted by IPIs
-> > just fine, which means we'll fall out of the cpuidle_enter(), which
-> > means we'll cpuidle_reflect(), and then leave cpuidle_idle_call().
-> >
-> > It will indeed not leave the cpu_idle_loop() function and go right back
-> > into cpuidle_idle_call(), but that will then call cpuidle_select() which
-> > should pick a new C state.
-> >
-> > So the interrupt _should_ work. If it doesn't you need to explain why.
-> 
-> I think the issue is related to the poll_idle state, in
-> drivers/cpuidle/driver.c. This state is x86 specific and inserted in the
-> cpuidle table as the state 0 (POLL). There is no mwait for this state.
-> It is a bit confusing because this state is not listed in the acpi /
-> intel idle driver but inserted implicitly at the beginning of the idle
-> table by the cpuidle framework when the driver is registered.
+The reboot notifier will suspend the cpufreq governor and enable
+nominal frequency to be set during a reboot/kexec similar to the
+suspend operartion.
 
-Yes, I am talking about the poll_idle() function which didn't use the mwait,
-If we want the reselection happening immediately, we need to break the poll while loop
-with setting schedule bit, insteadly we didn't care if real re-schedule happening or not.
+Signed-off-by: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
+Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+---
+ drivers/cpufreq/powernv-cpufreq.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
+diff --git a/drivers/cpufreq/powernv-cpufreq.c b/drivers/cpufreq/powernv-cpufreq.c
+index 379c083..e9f3d3a 100644
+--- a/drivers/cpufreq/powernv-cpufreq.c
++++ b/drivers/cpufreq/powernv-cpufreq.c
+@@ -26,6 +26,7 @@
+ #include <linux/cpufreq.h>
+ #include <linux/smp.h>
+ #include <linux/of.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/cputhreads.h>
+ #include <asm/firmware.h>
+@@ -314,9 +315,21 @@ static int powernv_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 	for (i = 0; i < threads_per_core; i++)
+ 		cpumask_set_cpu(base + i, policy->cpus);
+ 
++	policy->suspend_freq = pstate_id_to_freq(powernv_pstate_info.nominal);
+ 	return cpufreq_table_validate_and_show(policy, powernv_freqs);
+ }
+ 
++static int powernv_cpufreq_reboot_notifier(struct notifier_block *nb,
++				unsigned long action, void *unused)
++{
++	cpufreq_suspend();
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block powernv_cpufreq_reboot_nb = {
++	.notifier_call = powernv_cpufreq_reboot_notifier,
++};
++
+ static struct cpufreq_driver powernv_cpufreq_driver = {
+ 	.name		= "powernv-cpufreq",
+ 	.flags		= CPUFREQ_CONST_LOOPS,
+@@ -325,6 +338,7 @@ static struct cpufreq_driver powernv_cpufreq_driver = {
+ 	.target_index	= powernv_cpufreq_target_index,
+ 	.get		= powernv_cpufreq_get,
+ 	.attr		= powernv_cpu_freq_attr,
++	.suspend        = cpufreq_generic_suspend,
+ };
+ 
+ static int __init powernv_cpufreq_init(void)
+@@ -342,12 +356,14 @@ static int __init powernv_cpufreq_init(void)
+ 		return rc;
+ 	}
+ 
++	register_reboot_notifier(&powernv_cpufreq_reboot_nb);
+ 	return cpufreq_register_driver(&powernv_cpufreq_driver);
+ }
+ module_init(powernv_cpufreq_init);
+ 
+ static void __exit powernv_cpufreq_exit(void)
+ {
++	unregister_reboot_notifier(&powernv_cpufreq_reboot_nb);
+ 	cpufreq_unregister_driver(&powernv_cpufreq_driver);
+ }
+ module_exit(powernv_cpufreq_exit);
+-- 
+1.9.3
 
-
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
