@@ -1,57 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbaHNAIX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Aug 2014 20:08:23 -0400
-Received: from mail-qa0-f73.google.com ([209.85.216.73]:42068 "EHLO
-	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158AbaHNAIU (ORCPT
+	id S1753344AbaHNAJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Aug 2014 20:09:54 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:56767 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752149AbaHNAJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Aug 2014 20:08:20 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>
-Cc: stefan@agner.ch, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Addy Ke <addy.ke@rock-chips.com>,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dts: Add mmc0 and mmc1 aliases for rk3288
-Date: Wed, 13 Aug 2014 17:08:00 -0700
-Message-Id: <1407974880-30626-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Wed, 13 Aug 2014 20:09:53 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 14 Aug 2014 09:09:59 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Dan Streetman <ddstreet@ieee.org>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [RFC 1/3] zsmalloc: move pages_allocated to zs_pool
+Message-ID: <20140814000959.GG9227@bbox>
+References: <1407225723-23754-1-git-send-email-minchan@kernel.org>
+ <1407225723-23754-2-git-send-email-minchan@kernel.org>
+ <CALZtONDmvLDtceVW9AyiDwdSHQzPbay36JEts8iuZ4nvykWfeA@mail.gmail.com>
+ <20140813141413.GA1091@swordfish>
+ <CALZtONDgYRUwrsN_G7pds2QY6QTOr8G8jAHa6Zta2XDhDHV8_A@mail.gmail.com>
+ <20140813151354.GD1091@swordfish>
+ <20140813152504.GE1091@swordfish>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140813152504.GE1091@swordfish>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's convenient (and less confusing to people reading logs) if the
-eMMC port on rk3288 is consistenly marked with mmc0 and the sdmmc port
-on rk3288 is consistently marked with mmc1.  Add the appropriate
-aliases.
+On Thu, Aug 14, 2014 at 12:25:04AM +0900, Sergey Senozhatsky wrote:
+> On (08/14/14 00:13), Sergey Senozhatsky wrote:
+> > > On Wed, Aug 13, 2014 at 10:14 AM, Sergey Senozhatsky
+> > > <sergey.senozhatsky@gmail.com> wrote:
+> > > > On (08/13/14 09:59), Dan Streetman wrote:
+> > > >> On Tue, Aug 5, 2014 at 4:02 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > > >> > Pages_allocated has counted in size_class structure and when user
+> > > >> > want to see total_size_bytes, it gathers all of value from each
+> > > >> > size_class to report the sum.
+> > > >> >
+> > > >> > It's not bad if user don't see the value often but if user start
+> > > >> > to see the value frequently, it would be not a good deal for
+> > > >> > performance POV.
+> > > >> >
+> > > >> > This patch moves the variable from size_class to zs_pool so it would
+> > > >> > reduce memory footprint (from [255 * 8byte] to [sizeof(atomic_t)])
+> > > >> > but it adds new locking overhead but it wouldn't be severe because
+> > > >> > it's not a hot path in zs_malloc(ie, it is called only when new
+> > > >> > zspage is created, not a object).
+> > > >>
+> > > >> Would using an atomic64_t without locking be simpler?
+> > > >
+> > > > it would be racy.
+> > > 
+> > > oh.  atomic operations aren't smp safe?  is that because other
+> > > processors might use a stale value, and barriers must be added?  I
+> > > guess I don't quite understand the value of atomic then. :-/
+> > 
+> > pool not only set the value, it also read it and make some decisions
+> > based on that value:
+> > 
+> > 	pages_allocated += X
+> > 	if (pages_allocated >= max_pages_allocated)
+> > 		return 0;
+> 
+> 
+> I mean, suppose this happens on two CPUs
+> 
+> max_pages_allocated is 10; current pages_allocated is 8. now you have 2 zs_malloc()
+> happenning on two CPUs. each of them will do `pages_allocated += 1'. the problem is
+> that both will see 10 at `if (pages_allocated >= max_pages_allocated)', so we will
+> fail 2 operations, while we only were supposed to fail one.
 
-These aliases only actually do something if a patch like
-(https://patchwork.kernel.org/patch/3925551/) lands, but they don't
-hurt even before that patch.
+Exactly speaking, you're saying not max_pages_allocated but pages_limited.
+But I admit the race could affect max_pages_allocated, too.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Sonny Rao <sonnyrao@chromium.org>
----
- arch/arm/boot/dts/rk3288.dtsi | 2 ++
- 1 file changed, 2 insertions(+)
+I think it would be not severe if we move the feature into zram because
+zram's requirement is not strict and the gap is just bounded by the number
+of CPU so we could remove both spinlock and atomic.
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 36be7bb..0b54b0d 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -29,6 +29,8 @@
- 		i2c3 = &i2c3;
- 		i2c4 = &i2c4;
- 		i2c5 = &i2c5;
-+		mmc0 = &emmc;
-+		mmc1 = &sdmmc;
- 		serial0 = &uart0;
- 		serial1 = &uart1;
- 		serial2 = &uart2;
+
+> 
+> 	-ss
+> 
+> > 
+> > > >>
+> > > >> >
+> > > >> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > > >> > ---
+> > > >> >  mm/zsmalloc.c | 30 ++++++++++++++++--------------
+> > > >> >  1 file changed, 16 insertions(+), 14 deletions(-)
+> > > >> >
+> > > >> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> > > >> > index fe78189624cf..a6089bd26621 100644
+> > > >> > --- a/mm/zsmalloc.c
+> > > >> > +++ b/mm/zsmalloc.c
+> > > >> > @@ -198,9 +198,6 @@ struct size_class {
+> > > >> >
+> > > >> >         spinlock_t lock;
+> > > >> >
+> > > >> > -       /* stats */
+> > > >> > -       u64 pages_allocated;
+> > > >> > -
+> > > >> >         struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
+> > > >> >  };
+> > > >> >
+> > > >> > @@ -216,9 +213,12 @@ struct link_free {
+> > > >> >  };
+> > > >> >
+> > > >> >  struct zs_pool {
+> > > >> > +       spinlock_t stat_lock;
+> > > >> > +
+> > > >> >         struct size_class size_class[ZS_SIZE_CLASSES];
+> > > >> >
+> > > >> >         gfp_t flags;    /* allocation flags used when growing pool */
+> > > >> > +       unsigned long pages_allocated;
+> > > >> >  };
+> > > >> >
+> > > >> >  /*
+> > > >> > @@ -882,6 +882,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+> > > >> >
+> > > >> >         }
+> > > >> >
+> > > >> > +       spin_lock_init(&pool->stat_lock);
+> > > >> >         pool->flags = flags;
+> > > >> >
+> > > >> >         return pool;
+> > > >> > @@ -943,8 +944,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+> > > >> >                         return 0;
+> > > >> >
+> > > >> >                 set_zspage_mapping(first_page, class->index, ZS_EMPTY);
+> > > >> > +               spin_lock(&pool->stat_lock);
+> > > >> > +               pool->pages_allocated += class->pages_per_zspage;
+> > > >> > +               spin_unlock(&pool->stat_lock);
+> > > >> >                 spin_lock(&class->lock);
+> > > >> > -               class->pages_allocated += class->pages_per_zspage;
+> > > >> >         }
+> > > >> >
+> > > >> >         obj = (unsigned long)first_page->freelist;
+> > > >> > @@ -997,14 +1000,14 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+> > > >> >
+> > > >> >         first_page->inuse--;
+> > > >> >         fullness = fix_fullness_group(pool, first_page);
+> > > >> > -
+> > > >> > -       if (fullness == ZS_EMPTY)
+> > > >> > -               class->pages_allocated -= class->pages_per_zspage;
+> > > >> > -
+> > > >> >         spin_unlock(&class->lock);
+> > > >> >
+> > > >> > -       if (fullness == ZS_EMPTY)
+> > > >> > +       if (fullness == ZS_EMPTY) {
+> > > >> > +               spin_lock(&pool->stat_lock);
+> > > >> > +               pool->pages_allocated -= class->pages_per_zspage;
+> > > >> > +               spin_unlock(&pool->stat_lock);
+> > > >> >                 free_zspage(first_page);
+> > > >> > +       }
+> > > >> >  }
+> > > >> >  EXPORT_SYMBOL_GPL(zs_free);
+> > > >> >
+> > > >> > @@ -1100,12 +1103,11 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
+> > > >> >
+> > > >> >  u64 zs_get_total_size_bytes(struct zs_pool *pool)
+> > > >> >  {
+> > > >> > -       int i;
+> > > >> > -       u64 npages = 0;
+> > > >> > -
+> > > >> > -       for (i = 0; i < ZS_SIZE_CLASSES; i++)
+> > > >> > -               npages += pool->size_class[i].pages_allocated;
+> > > >> > +       u64 npages;
+> > > >> >
+> > > >> > +       spin_lock(&pool->stat_lock);
+> > > >> > +       npages = pool->pages_allocated;
+> > > >> > +       spin_unlock(&pool->stat_lock);
+> > > >> >         return npages << PAGE_SHIFT;
+> > > >> >  }
+> > > >> >  EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
+> > > >> > --
+> > > >> > 2.0.0
+> > > >> >
+> > > >> > --
+> > > >> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > >> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > >> > see: http://www.linux-mm.org/ .
+> > > >> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > > >>
+> > > 
+> > 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-2.1.0.rc2.206.gedb03e5
-
+Kind regards,
+Minchan Kim
