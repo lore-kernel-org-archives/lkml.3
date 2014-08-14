@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207AbaHNIwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 04:52:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36700 "EHLO
+	id S1755251AbaHNIwr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 04:52:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36723 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509AbaHNIwP (ORCPT
+	with ESMTP id S1755216AbaHNIwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 04:52:15 -0400
-Date: Thu, 14 Aug 2014 01:51:16 -0700
+	Thu, 14 Aug 2014 04:52:42 -0400
+Date: Thu, 14 Aug 2014 01:51:43 -0700
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-a5563edfa1bd25d052d81f5ad7fe74ba71c3d44e@git.kernel.org>
+Message-ID: <tip-cfe1c41405fe9a559f8b3c24c904b2bb42d4a6e8@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
@@ -20,12 +20,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
         tglx@linutronix.de
-In-Reply-To: <1406786474-9306-19-git-send-email-adrian.hunter@intel.com>
-References: <1406786474-9306-19-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1406786474-9306-3-git-send-email-adrian.hunter@intel.com>
+References: <1406786474-9306-3-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf script python:
-  Add helpers for calling Python objects
-Git-Commit-ID: a5563edfa1bd25d052d81f5ad7fe74ba71c3d44e
+Subject: [tip:perf/core] perf machine: Add machine__thread_exec_comm()
+Git-Commit-ID: cfe1c41405fe9a559f8b3c24c904b2bb42d4a6e8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,21 +37,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a5563edfa1bd25d052d81f5ad7fe74ba71c3d44e
-Gitweb:     http://git.kernel.org/tip/a5563edfa1bd25d052d81f5ad7fe74ba71c3d44e
+Commit-ID:  cfe1c41405fe9a559f8b3c24c904b2bb42d4a6e8
+Gitweb:     http://git.kernel.org/tip/cfe1c41405fe9a559f8b3c24c904b2bb42d4a6e8
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Thu, 31 Jul 2014 09:01:01 +0300
+AuthorDate: Thu, 31 Jul 2014 09:00:45 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 13 Aug 2014 19:22:01 -0300
+CommitDate: Wed, 13 Aug 2014 19:23:21 -0300
 
-perf script python: Add helpers for calling Python objects
+perf machine: Add machine__thread_exec_comm()
 
-The Python script API repeatedly uses the same lines of code to get and
-call objects.  Make that into helper functions instead.
-
-A side-effect is that some reference counting bugs disappear because the
-new call_object() function always decrements the reference count of
-'retval'.
+Add machine__thread_exec_comm() to return the comm that matches the last
+exec, if the comm_exec flag is present, or the last comm otherwise.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -62,238 +57,148 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406786474-9306-19-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1406786474-9306-3-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../util/scripting-engines/trace-event-python.c    | 114 +++++++++------------
- 1 file changed, 47 insertions(+), 67 deletions(-)
+ tools/perf/util/machine.c | 26 ++++++++++++++++++++++++++
+ tools/perf/util/machine.h |  4 ++++
+ tools/perf/util/session.c | 24 +++++++++++++++++++++++-
+ 3 files changed, 53 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index cbce254..26e5f14 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -73,6 +73,35 @@ static void pydict_set_item_string_decref(PyObject *dict, const char *key, PyObj
- 	Py_DECREF(val);
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index ea3e09f..b093b93 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -31,6 +31,7 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ 
+ 	machine->symbol_filter = NULL;
+ 	machine->id_hdr_size = 0;
++	machine->comm_exec = false;
+ 
+ 	machine->root_dir = strdup(root_dir);
+ 	if (machine->root_dir == NULL)
+@@ -179,6 +180,19 @@ void machines__set_symbol_filter(struct machines *machines,
+ 	}
  }
  
-+static PyObject *get_handler(const char *handler_name)
++void machines__set_comm_exec(struct machines *machines, bool comm_exec)
 +{
-+	PyObject *handler;
++	struct rb_node *nd;
 +
-+	handler = PyDict_GetItemString(main_dict, handler_name);
-+	if (handler && !PyCallable_Check(handler))
-+		return NULL;
-+	return handler;
++	machines->host.comm_exec = comm_exec;
++
++	for (nd = rb_first(&machines->guests); nd; nd = rb_next(nd)) {
++		struct machine *machine = rb_entry(nd, struct machine, rb_node);
++
++		machine->comm_exec = comm_exec;
++	}
 +}
 +
-+static void call_object(PyObject *handler, PyObject *args, const char *die_msg)
-+{
-+	PyObject *retval;
-+
-+	retval = PyObject_CallObject(handler, args);
-+	if (retval == NULL)
-+		handler_call_die(die_msg);
-+	Py_DECREF(retval);
-+}
-+
-+static void try_call_object(const char *handler_name, PyObject *args)
-+{
-+	PyObject *handler;
-+
-+	handler = get_handler(handler_name);
-+	if (handler)
-+		call_object(handler, args, handler_name);
-+}
-+
- static void define_value(enum print_arg_type field_type,
- 			 const char *ev_name,
- 			 const char *field_name,
-@@ -80,7 +109,7 @@ static void define_value(enum print_arg_type field_type,
- 			 const char *field_str)
+ struct machine *machines__find(struct machines *machines, pid_t pid)
  {
- 	const char *handler_name = "define_flag_value";
--	PyObject *handler, *t, *retval;
-+	PyObject *t;
- 	unsigned long long value;
- 	unsigned n = 0;
- 
-@@ -98,13 +127,7 @@ static void define_value(enum print_arg_type field_type,
- 	PyTuple_SetItem(t, n++, PyInt_FromLong(value));
- 	PyTuple_SetItem(t, n++, PyString_FromString(field_str));
- 
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && PyCallable_Check(handler)) {
--		retval = PyObject_CallObject(handler, t);
--		if (retval == NULL)
--			handler_call_die(handler_name);
--		Py_DECREF(retval);
--	}
-+	try_call_object(handler_name, t);
- 
- 	Py_DECREF(t);
+ 	struct rb_node **p = &machines->guests.rb_node;
+@@ -398,6 +412,15 @@ struct thread *machine__find_thread(struct machine *machine, pid_t pid,
+ 	return __machine__findnew_thread(machine, pid, tid, false);
  }
-@@ -127,7 +150,7 @@ static void define_field(enum print_arg_type field_type,
- 			 const char *delim)
+ 
++struct comm *machine__thread_exec_comm(struct machine *machine,
++				       struct thread *thread)
++{
++	if (machine->comm_exec)
++		return thread__exec_comm(thread);
++	else
++		return thread__comm(thread);
++}
++
+ int machine__process_comm_event(struct machine *machine, union perf_event *event,
+ 				struct perf_sample *sample)
  {
- 	const char *handler_name = "define_flag_field";
--	PyObject *handler, *t, *retval;
-+	PyObject *t;
- 	unsigned n = 0;
+@@ -406,6 +429,9 @@ int machine__process_comm_event(struct machine *machine, union perf_event *event
+ 							event->comm.tid);
+ 	bool exec = event->header.misc & PERF_RECORD_MISC_COMM_EXEC;
  
- 	if (field_type == PRINT_SYMBOL)
-@@ -145,13 +168,7 @@ static void define_field(enum print_arg_type field_type,
- 	if (field_type == PRINT_FLAGS)
- 		PyTuple_SetItem(t, n++, PyString_FromString(delim));
++	if (exec)
++		machine->comm_exec = true;
++
+ 	if (dump_trace)
+ 		perf_event__fprintf_comm(event, stdout);
  
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && PyCallable_Check(handler)) {
--		retval = PyObject_CallObject(handler, t);
--		if (retval == NULL)
--			handler_call_die(handler_name);
--		Py_DECREF(retval);
--	}
-+	try_call_object(handler_name, t);
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index b972824..61216e0 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -26,6 +26,7 @@ struct machine {
+ 	struct rb_node	  rb_node;
+ 	pid_t		  pid;
+ 	u16		  id_hdr_size;
++	bool		  comm_exec;
+ 	char		  *root_dir;
+ 	struct rb_root	  threads;
+ 	struct list_head  dead_threads;
+@@ -47,6 +48,8 @@ struct map *machine__kernel_map(struct machine *machine, enum map_type type)
  
- 	Py_DECREF(t);
+ struct thread *machine__find_thread(struct machine *machine, pid_t pid,
+ 				    pid_t tid);
++struct comm *machine__thread_exec_comm(struct machine *machine,
++				       struct thread *thread);
+ 
+ int machine__process_comm_event(struct machine *machine, union perf_event *event,
+ 				struct perf_sample *sample);
+@@ -88,6 +91,7 @@ char *machine__mmap_name(struct machine *machine, char *bf, size_t size);
+ 
+ void machines__set_symbol_filter(struct machines *machines,
+ 				 symbol_filter_t symbol_filter);
++void machines__set_comm_exec(struct machines *machines, bool comm_exec);
+ 
+ struct machine *machine__new_host(void);
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 1b383bd..6d2d50d 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -67,6 +67,25 @@ static void perf_session__destroy_kernel_maps(struct perf_session *session)
+ 	machines__destroy_kernel_maps(&session->machines);
  }
-@@ -362,7 +379,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
- 				      struct thread *thread,
- 				      struct addr_location *al)
+ 
++static bool perf_session__has_comm_exec(struct perf_session *session)
++{
++	struct perf_evsel *evsel;
++
++	evlist__for_each(session->evlist, evsel) {
++		if (evsel->attr.comm_exec)
++			return true;
++	}
++
++	return false;
++}
++
++static void perf_session__set_comm_exec(struct perf_session *session)
++{
++	bool comm_exec = perf_session__has_comm_exec(session);
++
++	machines__set_comm_exec(&session->machines, comm_exec);
++}
++
+ struct perf_session *perf_session__new(struct perf_data_file *file,
+ 				       bool repipe, struct perf_tool *tool)
  {
--	PyObject *handler, *retval, *context, *t, *obj, *callchain;
-+	PyObject *handler, *context, *t, *obj, *callchain;
- 	PyObject *dict = NULL;
- 	static char handler_name[256];
- 	struct format_field *field;
-@@ -387,9 +404,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
+@@ -90,6 +109,7 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
+ 				goto out_close;
  
- 	sprintf(handler_name, "%s__%s", event->system, event->name);
- 
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && !PyCallable_Check(handler))
--		handler = NULL;
-+	handler = get_handler(handler_name);
- 	if (!handler) {
- 		dict = PyDict_New();
- 		if (!dict)
-@@ -450,19 +465,9 @@ static void python_process_tracepoint(struct perf_sample *sample,
- 		Py_FatalError("error resizing Python tuple");
- 
- 	if (handler) {
--		retval = PyObject_CallObject(handler, t);
--		if (retval == NULL)
--			handler_call_die(handler_name);
--		Py_DECREF(retval);
-+		call_object(handler, t, handler_name);
- 	} else {
--		handler = PyDict_GetItemString(main_dict, "trace_unhandled");
--		if (handler && PyCallable_Check(handler)) {
--
--			retval = PyObject_CallObject(handler, t);
--			if (retval == NULL)
--				handler_call_die("trace_unhandled");
--			Py_DECREF(retval);
--		}
-+		try_call_object("trace_unhandled", t);
- 		Py_DECREF(dict);
+ 			perf_session__set_id_hdr_size(session);
++			perf_session__set_comm_exec(session);
+ 		}
  	}
  
-@@ -474,7 +479,7 @@ static void python_process_general_event(struct perf_sample *sample,
- 					 struct thread *thread,
- 					 struct addr_location *al)
- {
--	PyObject *handler, *retval, *t, *dict, *callchain, *dict_sample;
-+	PyObject *handler, *t, *dict, *callchain, *dict_sample;
- 	static char handler_name[64];
- 	unsigned n = 0;
- 
-@@ -496,8 +501,8 @@ static void python_process_general_event(struct perf_sample *sample,
- 
- 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
- 
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (!handler || !PyCallable_Check(handler))
-+	handler = get_handler(handler_name);
-+	if (!handler)
- 		goto exit;
- 
- 	pydict_set_item_string_decref(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
-@@ -539,10 +544,7 @@ static void python_process_general_event(struct perf_sample *sample,
- 	if (_PyTuple_Resize(&t, n) == -1)
- 		Py_FatalError("error resizing Python tuple");
- 
--	retval = PyObject_CallObject(handler, t);
--	if (retval == NULL)
--		handler_call_die(handler_name);
--	Py_DECREF(retval);
-+	call_object(handler, t, handler_name);
- exit:
- 	Py_DECREF(dict);
- 	Py_DECREF(t);
-@@ -566,36 +568,24 @@ static void python_process_event(union perf_event *event __maybe_unused,
- 
- static int run_start_sub(void)
- {
--	PyObject *handler, *retval;
--	int err = 0;
--
- 	main_module = PyImport_AddModule("__main__");
- 	if (main_module == NULL)
- 		return -1;
- 	Py_INCREF(main_module);
- 
- 	main_dict = PyModule_GetDict(main_module);
--	if (main_dict == NULL) {
--		err = -1;
-+	if (main_dict == NULL)
- 		goto error;
--	}
- 	Py_INCREF(main_dict);
- 
--	handler = PyDict_GetItemString(main_dict, "trace_begin");
--	if (handler == NULL || !PyCallable_Check(handler))
--		goto out;
-+	try_call_object("trace_begin", NULL);
- 
--	retval = PyObject_CallObject(handler, NULL);
--	if (retval == NULL)
--		handler_call_die("trace_begin");
-+	return 0;
- 
--	Py_DECREF(retval);
--	return err;
- error:
- 	Py_XDECREF(main_dict);
- 	Py_XDECREF(main_module);
--out:
--	return err;
-+	return -1;
- }
- 
- /*
-@@ -654,23 +644,13 @@ error:
-  */
- static int python_stop_script(void)
- {
--	PyObject *handler, *retval;
--	int err = 0;
-+	try_call_object("trace_end", NULL);
- 
--	handler = PyDict_GetItemString(main_dict, "trace_end");
--	if (handler == NULL || !PyCallable_Check(handler))
--		goto out;
--
--	retval = PyObject_CallObject(handler, NULL);
--	if (retval == NULL)
--		handler_call_die("trace_end");
--	Py_DECREF(retval);
--out:
- 	Py_XDECREF(main_dict);
- 	Py_XDECREF(main_module);
- 	Py_Finalize();
- 
--	return err;
-+	return 0;
- }
- 
- static int python_generate_script(struct pevent *pevent, const char *outfile)
+@@ -866,8 +886,10 @@ static s64 perf_session__process_user_event(struct perf_session *session,
+ 	switch (event->header.type) {
+ 	case PERF_RECORD_HEADER_ATTR:
+ 		err = tool->attr(tool, event, &session->evlist);
+-		if (err == 0)
++		if (err == 0) {
+ 			perf_session__set_id_hdr_size(session);
++			perf_session__set_comm_exec(session);
++		}
+ 		return err;
+ 	case PERF_RECORD_HEADER_EVENT_TYPE:
+ 		/*
