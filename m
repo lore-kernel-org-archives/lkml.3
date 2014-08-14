@@ -1,214 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753AbaHNXQQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 19:16:16 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:45934 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485AbaHNXQP (ORCPT
+	id S932263AbaHNXQb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 19:16:31 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33716 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932143AbaHNXQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 19:16:15 -0400
-Date: Thu, 14 Aug 2014 16:16:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH v5 tip/core/rcu 12/16] rcu: Make TASKS_RCU handle
- nohz_full= CPUs
-Message-ID: <20140814231608.GC4752@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140811224840.GA25594@linux.vnet.ibm.com>
- <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1407797345-28227-12-git-send-email-paulmck@linux.vnet.ibm.com>
- <CAJhHMCAH6GB8Vz7tmaXkavXUiqSVfR+ot9Q4yOP7UJmL_C0KSg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCAH6GB8Vz7tmaXkavXUiqSVfR+ot9Q4yOP7UJmL_C0KSg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081423-6688-0000-0000-00000405E5FD
+	Thu, 14 Aug 2014 19:16:22 -0400
+Date: Thu, 14 Aug 2014 16:16:19 -0700 (PDT)
+Message-Id: <20140814.161619.481143718108046707.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 14 Aug 2014 16:16:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 06:55:35PM -0400, Pranith Kumar wrote:
-> On Mon, Aug 11, 2014 at 6:49 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> >
-> > Currently TASKS_RCU would ignore a CPU running a task in nohz_full=
-> > usermode execution.  There would be neither a context switch nor a
-> > scheduling-clock interrupt to tell TASKS_RCU that the task in question
-> > had passed through a quiescent state.  The grace period would therefore
-> > extend indefinitely.  This commit therefore makes RCU's dyntick-idle
-> > subsystem record the task_struct structure of the task that is running
-> > in dyntick-idle mode on each CPU.  The TASKS_RCU grace period can
-> > then access this information and record a quiescent state on
-> > behalf of any CPU running in dyntick-idle usermode.
-> >
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  include/linux/init_task.h |  3 ++-
-> >  include/linux/sched.h     |  2 ++
-> >  kernel/rcu/tree.c         |  2 ++
-> >  kernel/rcu/tree.h         |  2 ++
-> >  kernel/rcu/tree_plugin.h  | 16 ++++++++++++++++
-> >  kernel/rcu/update.c       |  4 +++-
-> >  6 files changed, 27 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-> > index 78715ea7c30c..642828009324 100644
-> > --- a/include/linux/init_task.h
-> > +++ b/include/linux/init_task.h
-> > @@ -128,7 +128,8 @@ extern struct group_info init_groups;
-> >  #define INIT_TASK_RCU_TASKS(tsk)                                       \
-> >         .rcu_tasks_holdout = false,                                     \
-> >         .rcu_tasks_holdout_list =                                       \
-> > -               LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),
-> > +               LIST_HEAD_INIT(tsk.rcu_tasks_holdout_list),             \
-> > +       .rcu_tasks_idle_cpu = -1,
-> >  #else
-> >  #define INIT_TASK_RCU_TASKS(tsk)
-> >  #endif
-> > diff --git a/include/linux/sched.h b/include/linux/sched.h
-> > index 3cf124389ec7..5fa041f7a034 100644
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -1277,6 +1277,7 @@ struct task_struct {
-> >         unsigned long rcu_tasks_nvcsw;
-> >         int rcu_tasks_holdout;
-> >         struct list_head rcu_tasks_holdout_list;
-> > +       int rcu_tasks_idle_cpu;
-> >  #endif /* #ifdef CONFIG_TASKS_RCU */
-> >
-> >  #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
-> > @@ -2021,6 +2022,7 @@ static inline void rcu_copy_process(struct task_struct *p)
-> >  #ifdef CONFIG_TASKS_RCU
-> >         p->rcu_tasks_holdout = false;
-> >         INIT_LIST_HEAD(&p->rcu_tasks_holdout_list);
-> > +       p->rcu_tasks_idle_cpu = -1;
-> >  #endif /* #ifdef CONFIG_TASKS_RCU */
-> >  }
-> >
-> > diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> > index 645a33efc0d4..0d9ee1e4f446 100644
-> > --- a/kernel/rcu/tree.c
-> > +++ b/kernel/rcu/tree.c
-> > @@ -526,6 +526,7 @@ static void rcu_eqs_enter_common(struct rcu_dynticks *rdtp, long long oldval,
-> >         atomic_inc(&rdtp->dynticks);
-> >         smp_mb__after_atomic();  /* Force ordering with next sojourn. */
-> >         WARN_ON_ONCE(atomic_read(&rdtp->dynticks) & 0x1);
-> > +       rcu_dynticks_task_enter();
-> >
-> >         /*
-> >          * It is illegal to enter an extended quiescent state while
-> > @@ -642,6 +643,7 @@ void rcu_irq_exit(void)
-> >  static void rcu_eqs_exit_common(struct rcu_dynticks *rdtp, long long oldval,
-> >                                int user)
-> >  {
-> > +       rcu_dynticks_task_exit();
-> >         smp_mb__before_atomic();  /* Force ordering w/previous sojourn. */
-> >         atomic_inc(&rdtp->dynticks);
-> >         /* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
-> > diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-> > index 0f69a79c5b7d..37ff593b7725 100644
-> > --- a/kernel/rcu/tree.h
-> > +++ b/kernel/rcu/tree.h
-> > @@ -579,6 +579,8 @@ static void rcu_sysidle_report_gp(struct rcu_state *rsp, int isidle,
-> >  static void rcu_bind_gp_kthread(void);
-> >  static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
-> >  static bool rcu_nohz_full_cpu(struct rcu_state *rsp);
-> > +static void rcu_dynticks_task_enter(void);
-> > +static void rcu_dynticks_task_exit(void);
-> >
-> >  #endif /* #ifndef RCU_TREE_NONCORE */
-> >
-> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > index a86a363ea453..0d8ef5cb1976 100644
-> > --- a/kernel/rcu/tree_plugin.h
-> > +++ b/kernel/rcu/tree_plugin.h
-> > @@ -2852,3 +2852,19 @@ static void rcu_bind_gp_kthread(void)
-> >                 set_cpus_allowed_ptr(current, cpumask_of(cpu));
-> >  #endif /* #ifdef CONFIG_NO_HZ_FULL */
-> >  }
-> > +
-> > +/* Record the current task on dyntick-idle entry. */
-> > +static void rcu_dynticks_task_enter(void)
-> > +{
-> > +#if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
-> > +       ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
-> > +#endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
-> 
-> Shouldn't we check that the cpu is actually a nohz_full cpu, like follows:
-> 
->  static void rcu_dynticks_task_enter(void)
->  {
->  #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
-> -       ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
-> +       if (tick_nohz_full_cpu(smp_processor_id())
-> +                 ACCESS_ONCE(current->rcu_tasks_idle_cpu) = smp_processor_id();
->  #endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
->  }
 
-No need.  We put any required idle-task checks on the
-rcu_tasks_kthread() slow path, not on this fast path.  Keep in mind
-that the tick_nohz_full_cpu() check is not necessarily cheaper than just
-doing the store.
+I'm sending this out, in particular, to get the iwlwifi fix propagated:
 
-> > +}
-> > +
-> > +/* Record no current task on dyntick-idle exit. */
-> > +static void rcu_dynticks_task_exit(void)
-> > +{
-> > +#if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL)
-> > +       ACCESS_ONCE(current->rcu_tasks_idle_cpu) = -1;
-> > +#endif /* #if defined(CONFIG_TASKS_RCU) && defined(CONFIG_NO_HZ_FULL) */
-> > +}
-> > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> > index d997163c7e92..a4140f25cf1a 100644
-> > --- a/kernel/rcu/update.c
-> > +++ b/kernel/rcu/update.c
-> > @@ -466,7 +466,9 @@ static void check_holdout_task(struct task_struct *t,
-> >  {
-> >         if (!ACCESS_ONCE(t->rcu_tasks_holdout) ||
-> >             t->rcu_tasks_nvcsw != ACCESS_ONCE(t->nvcsw) ||
-> > -           !ACCESS_ONCE(t->on_rq)) {
-> > +           !ACCESS_ONCE(t->on_rq) ||
-> > +           (IS_ENABLED(CONFIG_NO_HZ_FULL) &&
-> > +            !is_idle_task(t) && t->rcu_tasks_idle_cpu >= 0)) {
-> 
-> rcu_tasks_idle_cpu will be -1 in CONFIG_NO_HZ_FULL is not enabled. Why
-> are you checking both here?
+1) Fix build due to missing include in i40e driver, from Lucas Tanure.
 
-If CONFIG_NO_HZ_FULL is not enabled, the remainder of the condition
-is dead code.  If CONFIG_NO_HZ_FULL -is- enabled, and if idle tasks
-got on the list somehow, this allows the stall warning code to
-complain about this.
+2) Memory leak in openvswitch port allocation, from Chirstoph Jaeger.
 
-							Thanx, Paul
+3) Check DMA mapping errors in myri10ge, from Stanislaw Gruszka.
 
-> >                 ACCESS_ONCE(t->rcu_tasks_holdout) = 0;
-> >                 list_del_rcu(&t->rcu_tasks_holdout_list);
-> >                 put_task_struct(t);
-> > --
-> > 1.8.1.5
-> >
-> 
-> 
-> 
-> -- 
-> Pranith
-> 
+4) Fix various deadlock scenerios in sunvnet driver, from Sowmini Varadhan.
 
+5) Fix cxgb4i build failures with incompatible Kconfig settings of the
+   driver vs. ipv6, from Anish Bhatt.
+
+6) Fix generation of ACK packet timestamps in the presence of TSO which
+   will be split up, from Willem de Bruijn.
+
+7) Don't enable sched scan in iwlwifi driver, it causes firmware crashes
+   in some revisions.  From Emmanuel Grumbach.
+
+8) Revert a macvlan simplification that causes crashes.
+
+9) Handle RTT calculations properly in the presence of repair'd SKBs,
+   from Andrey Vagin.
+
+10) SIT tunnel lookup uses wrong device index in compares, from
+    Shmulik Ladkani.
+
+11) Handle MTU reductions in TCP properly for ipv4 mapped ipv6 sockets,
+    from Neal Cardwell.
+
+12) Add missing annotations in rhashtable code, from Thomas Graf.
+
+13) Fix false interpretation of two RTOs as being from the same TCP
+    loss event in the FRTO code, from Neal Cardwell.
+
+Please pull, thanks a lot!
+
+The following changes since commit f0094b28f3038936c1985be64dbe83f0e950b671:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-08-13 18:27:40 -0600)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to a61ebdfdb13a051f707b408d464f63b991aa21e3:
+
+  Merge tag 'master-2014-08-14' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless (2014-08-14 15:17:37 -0700)
+
+----------------------------------------------------------------
+
+Andreas Ruprecht (1):
+      net: ethernet: ibm: ehea: Remove duplicate object from Makefile
+
+Andrey Vagin (1):
+      tcp: don't use timestamp from repaired skb-s to calculate RTT (v2)
+
+Anish Bhatt (1):
+      libcxgbi/cxgb4i : Fix ipv6 build failure caught with randconfig
+
+Arend van Spriel (2):
+      brcmfmac: fix curly brace mistake in brcmf_pcie_handle_mb_data()
+      brcmfmac: fix memory leakage in msgbuf
+
+Christoph Jaeger (1):
+      openvswitch: Fix memory leak in ovs_vport_alloc() error path
+
+David S. Miller (5):
+      Merge branch 'xen-netback-debugfs'
+      Merge branch 'xen-netback-synchronization'
+      Merge git://git.kernel.org/.../jkirsher/net
+      Revert "macvlan: simplify the structure port"
+      Merge tag 'master-2014-08-14' of git://git.kernel.org/.../linville/wireless
+
+Emmanuel Grumbach (1):
+      iwlwifi: mvm: disable scheduled scan to prevent firmware crash
+
+Govindarajulu Varadarajan (1):
+      tg3: fix return value in tg3_get_stats64
+
+Hannes Frederic Sowa (1):
+      tcp: don't allow syn packets without timestamps to pass tcp_tw_recycle logic
+
+Jean Sacren (2):
+      e1000e: fix trivial kernel doc typos
+      e1000e: delete excessive space character in debug message
+
+Julia Lawall (1):
+      i40e: use correct structure type name in sizeof
+
+Libo Chen (1):
+      drivers/net/irda/donauboe.c: convert to module_pci_driver
+
+Lucas Tanure (1):
+      i40e: Fix missing uapi/linux/dcbnl.h include in i40e_fcoe.c
+
+Maks Naumov (1):
+      irda: Fix rd_frame control field initialization in irlap_send_rd_frame()
+
+Michal Simek (1):
+      net: xilinx: Remove .owner field for driver
+
+Neal Cardwell (2):
+      tcp: fix tcp_release_cb() to dispatch via address family for mtu_reduced()
+      tcp: fix ssthresh and undo for consecutive short FRTO episodes
+
+Rickard Strandqvist (2):
+      net: wireless: ipw2x00: ipw2200.c: Cleaning up missing null-terminate after strncpy call
+      i40e: Cleaning up missing null-terminate in conjunction with strncpy
+
+Ronald Wahl (1):
+      carl9170: fix sending URBs with wrong type when using full-speed
+
+Shmulik Ladkani (1):
+      sit: Fix ipip6_tunnel_lookup device matching criteria
+
+Sowmini Varadhan (3):
+      sunvnet: Do not ask for an ACK for every dring transmit
+      sunvnet: Do not spin in an infinite loop when vio_ldc_send() returns EAGAIN
+      sunvnet: Schedule maybe_tx_wakeup() as a tasklet from ldc_rx path
+
+Stanislaw Gruszka (1):
+      myri10ge: check for DMA mapping errors
+
+Thomas Graf (4):
+      rhashtable: RCU annotations for next pointers
+      rhashtable: unexport and make rht_obj() static
+      rhashtable: fix annotations for rht_for_each_entry_rcu()
+      netlink: Annotate RCU locking for seq_file walker
+
+Tobias Klauser (1):
+      net: xgene: Check negative return value of xgene_enet_get_ring_size()
+
+Wei Liu (5):
+      xen-netback: fix debugfs write length check
+      xen-netback: fix debugfs entry creation
+      xen-netback: move NAPI add/remove calls
+      xen-netback: don't stop dealloc kthread too early
+      xen-netback: remove loop waiting function
+
+Wei Yongjun (1):
+      i40e: fix sparse non static symbol warning
+
+Willem de Bruijn (2):
+      net-timestamp: fix missing ACK timestamp
+      net-timestamp: fix missing tcp fragmentation cases
+
+chas williams - CONTRACTOR (2):
+      atm/svc: Fix blocking in wait loop
+      lec: Fix bug introduced by b67bfe0d42cac56c512dd5da4b1b347a23f4b70a
+
+ drivers/net/ethernet/apm/xgene/xgene_enet_main.c  |  7 +++--
+ drivers/net/ethernet/broadcom/tg3.c               |  3 ++-
+ drivers/net/ethernet/ibm/ehea/Makefile            |  2 +-
+ drivers/net/ethernet/intel/e1000e/manage.c        |  4 +--
+ drivers/net/ethernet/intel/i40e/i40e_fcoe.c       |  1 +
+ drivers/net/ethernet/intel/i40e/i40e_main.c       | 18 ++++++-------
+ drivers/net/ethernet/intel/i40e/i40e_nvm.c        |  6 ++---
+ drivers/net/ethernet/myricom/myri10ge/myri10ge.c  | 88 ++++++++++++++++++++++++++++++++++++++++---------------------
+ drivers/net/ethernet/sun/sunvnet.c                | 38 +++++++++++++++++++++++---
+ drivers/net/ethernet/sun/sunvnet.h                |  4 +++
+ drivers/net/ethernet/xilinx/ll_temac_main.c       |  1 -
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c |  1 -
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c     |  1 -
+ drivers/net/irda/donauboe.c                       | 15 +----------
+ drivers/net/macvlan.c                             | 12 +++++----
+ drivers/net/wireless/ath/carl9170/carl9170.h      |  1 +
+ drivers/net/wireless/ath/carl9170/usb.c           | 31 +++++++++++++++++++---
+ drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c  |  4 +++
+ drivers/net/wireless/brcm80211/brcmfmac/pcie.c    |  3 ++-
+ drivers/net/wireless/ipw2x00/ipw2200.c            |  1 +
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c       |  3 ++-
+ drivers/net/xen-netback/common.h                  |  5 ++++
+ drivers/net/xen-netback/interface.c               | 56 ++++++++++++++++-----------------------
+ drivers/net/xen-netback/netback.c                 | 26 +++++++++++++-----
+ drivers/net/xen-netback/xenbus.c                  | 17 +++++++-----
+ drivers/scsi/cxgbi/cxgb3i/Kconfig                 |  2 +-
+ drivers/scsi/cxgbi/cxgb4i/Kconfig                 |  2 +-
+ include/linux/rhashtable.h                        | 17 +++++-------
+ include/net/inet_connection_sock.h                |  1 +
+ include/net/sock.h                                |  1 -
+ include/net/tcp.h                                 |  7 +++--
+ lib/rhashtable.c                                  | 10 ++-----
+ net/atm/lec.c                                     |  5 +---
+ net/atm/svc.c                                     | 60 +++++++++++++++++++++--------------------
+ net/ipv4/tcp.c                                    | 14 +++++-----
+ net/ipv4/tcp_input.c                              | 27 ++++++++++---------
+ net/ipv4/tcp_ipv4.c                               |  5 ++--
+ net/ipv4/tcp_metrics.c                            |  6 +++--
+ net/ipv4/tcp_output.c                             | 24 +++++++++++++++--
+ net/ipv6/sit.c                                    |  6 ++---
+ net/ipv6/tcp_ipv6.c                               |  3 ++-
+ net/irda/irlap_frame.c                            |  2 +-
+ net/netlink/af_netlink.c                          |  2 ++
+ net/openvswitch/vport.c                           |  4 ++-
+ 44 files changed, 332 insertions(+), 214 deletions(-)
