@@ -1,83 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660AbaHNWtz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 18:49:55 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:51437 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498AbaHNWty (ORCPT
+	id S1754827AbaHNWxv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 18:53:51 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:38240 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485AbaHNWxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 18:49:54 -0400
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-nfs@vger.kernel.org, Cong Wang <xiyou.wangcong@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Subject: [PATCH] nfs: fix kernel warning when removing proc entry
-Date: Thu, 14 Aug 2014 15:49:39 -0700
-Message-Id: <1408056579-25255-1-git-send-email-xiyou.wangcong@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Thu, 14 Aug 2014 18:53:50 -0400
+Date: Thu, 14 Aug 2014 15:53:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH v5 tip/core/rcu 11/16] rcu: Defer rcu_tasks_kthread()
+ creation till first call_rcu_tasks()
+Message-ID: <20140814225344.GB4752@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140811224840.GA25594@linux.vnet.ibm.com>
+ <1407797345-28227-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1407797345-28227-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <CAJhHMCAvzXUgCuiO5nDB0oZYkFsyJ1bdJmz5JML4jrLrC5F0qw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCAvzXUgCuiO5nDB0oZYkFsyJ1bdJmz5JML4jrLrC5F0qw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081422-3532-0000-0000-000003DB8756
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I saw the following kernel warning:
+On Thu, Aug 14, 2014 at 06:28:53PM -0400, Pranith Kumar wrote:
+> On Mon, Aug 11, 2014 at 6:49 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> >
+> > It is expected that many sites will have CONFIG_TASKS_RCU=y, but
+> > will never actually invoke call_rcu_tasks().  For such sites, creating
+> > rcu_tasks_kthread() at boot is wasteful.  This commit therefore defers
+> > creation of this kthread until the time of the first call_rcu_tasks().
+> >
+> > This of course means that the first call_rcu_tasks() must be invoked
+> > from process context after the scheduler is fully operational.
+> >
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/rcu/update.c | 33 ++++++++++++++++++++++++++-------
+> >  1 file changed, 26 insertions(+), 7 deletions(-)
+> >
+> > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> > index 1256a900cd01..d997163c7e92 100644
+> > --- a/kernel/rcu/update.c
+> > +++ b/kernel/rcu/update.c
+> > @@ -378,7 +378,12 @@ DEFINE_SRCU(tasks_rcu_exit_srcu);
+> >  static int rcu_task_stall_timeout __read_mostly = HZ * 60 * 10;
+> >  module_param(rcu_task_stall_timeout, int, 0644);
+> >
+> > -/* Post an RCU-tasks callback. */
+> > +static void rcu_spawn_tasks_kthread(void);
+> > +
+> > +/*
+> > + * Post an RCU-tasks callback.  First call must be from process context
+> > + * after the scheduler if fully operational.
+> > + */
+> >  void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
+> >  {
+> >         unsigned long flags;
+> > @@ -391,8 +396,10 @@ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
+> >         *rcu_tasks_cbs_tail = rhp;
+> >         rcu_tasks_cbs_tail = &rhp->next;
+> >         raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
+> > -       if (needwake)
+> > +       if (needwake) {
+> > +               rcu_spawn_tasks_kthread();
+> >                 wake_up(&rcu_tasks_cbs_wq);
+> > +       }
+> >  }
+> >  EXPORT_SYMBOL_GPL(call_rcu_tasks);
+> >
+> > @@ -618,15 +625,27 @@ static int __noreturn rcu_tasks_kthread(void *arg)
+> >         }
+> >  }
+> >
+> > -/* Spawn rcu_tasks_kthread() at boot time. */
+> > -static int __init rcu_spawn_tasks_kthread(void)
+> > +/* Spawn rcu_tasks_kthread() at first call to call_rcu_tasks(). */
+> > +static void rcu_spawn_tasks_kthread(void)
+> >  {
+> > -       struct task_struct __maybe_unused *t;
+> > +       static DEFINE_MUTEX(rcu_tasks_kthread_mutex);
+> > +       static struct task_struct *rcu_tasks_kthread_ptr;
+> > +       struct task_struct *t;
+> >
+> > +       if (ACCESS_ONCE(rcu_tasks_kthread_ptr)) {
+> > +               smp_mb(); /* Ensure caller sees full kthread. */
+> > +               return;
+> > +       }
+> 
+> I don't see the need for this smp_mb(). The caller has already seen
+> that rcu_tasks_kthread_ptr is assigned. What are we ensuring with this
+> barrier again?
 
-[ 1852.321222] ------------[ cut here ]------------
-[ 1852.326527] WARNING: CPU: 0 PID: 118 at fs/proc/generic.c:521 remove_proc_entry+0x154/0x16b()
-[ 1852.335630] remove_proc_entry: removing non-empty directory 'fs/nfsfs', leaking at least 'volumes'
-[ 1852.344084] CPU: 0 PID: 118 Comm: kworker/u8:2 Not tainted 3.16.0+ #540
-[ 1852.350036] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[ 1852.354992] Workqueue: netns cleanup_net
-[ 1852.358701]  0000000000000000 ffff880116f2fbd0 ffffffff819c03e9 ffff880116f2fc18
-[ 1852.366474]  ffff880116f2fc08 ffffffff810744ee ffffffff811e0e6e ffff8800d4e96238
-[ 1852.373507]  ffffffff81dbe665 ffff8800d46a5948 0000000000000005 ffff880116f2fc68
-[ 1852.380224] Call Trace:
-[ 1852.381976]  [<ffffffff819c03e9>] dump_stack+0x4d/0x66
-[ 1852.385495]  [<ffffffff810744ee>] warn_slowpath_common+0x7a/0x93
-[ 1852.389869]  [<ffffffff811e0e6e>] ? remove_proc_entry+0x154/0x16b
-[ 1852.393987]  [<ffffffff8107457b>] warn_slowpath_fmt+0x4c/0x4e
-[ 1852.397999]  [<ffffffff811e0e6e>] remove_proc_entry+0x154/0x16b
-[ 1852.402034]  [<ffffffff8129c73d>] nfs_fs_proc_net_exit+0x53/0x56
-[ 1852.406136]  [<ffffffff812a103b>] nfs_net_exit+0x12/0x1d
-[ 1852.409774]  [<ffffffff81785bc9>] ops_exit_list+0x44/0x55
-[ 1852.413529]  [<ffffffff81786389>] cleanup_net+0xee/0x182
-[ 1852.417198]  [<ffffffff81088c9e>] process_one_work+0x209/0x40d
-[ 1852.502320]  [<ffffffff81088bf7>] ? process_one_work+0x162/0x40d
-[ 1852.587629]  [<ffffffff810890c1>] worker_thread+0x1f0/0x2c7
-[ 1852.673291]  [<ffffffff81088ed1>] ? process_scheduled_works+0x2f/0x2f
-[ 1852.759470]  [<ffffffff8108e079>] kthread+0xc9/0xd1
-[ 1852.843099]  [<ffffffff8109427f>] ? finish_task_switch+0x3a/0xce
-[ 1852.926518]  [<ffffffff8108dfb0>] ? __kthread_parkme+0x61/0x61
-[ 1853.008565]  [<ffffffff819cbeac>] ret_from_fork+0x7c/0xb0
-[ 1853.076477]  [<ffffffff8108dfb0>] ? __kthread_parkme+0x61/0x61
-[ 1853.140653] ---[ end trace 69c4c6617f78e32d ]---
+We are ensuring that any later operations on rcu_tasks_kthread_ptr
+see a fully initialized thread.  Because these later operations
+might be loads, we cannot rely on control dependencies.
 
-It looks wrong that we add "/proc/net/nfsfs" in nfs_fs_proc_net_init()
-while remove "/proc/fs/nfsfs" in nfs_fs_proc_net_exit().
+> an smp_rmb() before this ACCESS_ONCE() and an smp_wmb() after
+> assigning to rcu_tasks_kthread_ptr should be enough, right?
 
-Fixes: commit 65b38851a17 (NFS: Fix /proc/fs/nfsfs/servers and /proc/fs/nfsfs/volumes)
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
----
- fs/nfs/client.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Probably.  But given that rcu_spawn_tasks_kthread() is only called
+when a CPU is onlined, I am not much inclined to weaken it.
 
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index 1c5ff6d..1c57202 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -1429,7 +1429,7 @@ void nfs_fs_proc_net_exit(struct net *net)
- 
- 	remove_proc_entry("volumes", nn->proc_nfsfs);
- 	remove_proc_entry("servers", nn->proc_nfsfs);
--	remove_proc_entry("fs/nfsfs", NULL);
-+	remove_proc_entry("nfsfs", net->proc_net);
- }
- 
- /*
--- 
-1.8.3.1
+> > +       mutex_lock(&rcu_tasks_kthread_mutex);
+> > +       if (rcu_tasks_kthread_ptr) {
+> > +               mutex_unlock(&rcu_tasks_kthread_mutex);
+> > +               return;
+> > +       }
+> >         t = kthread_run(rcu_tasks_kthread, NULL, "rcu_tasks_kthread");
+> >         BUG_ON(IS_ERR(t));
+> > -       return 0;
+> > +       smp_mb(); /* Ensure others see full kthread. */
+> > +       ACCESS_ONCE(rcu_tasks_kthread_ptr) = t;
+> 
+> Isn't it better to reverse these two statements and change as follows?
+> 
+> ACCESS_ONCE(rcu_tasks_kthread_ptr) = t;
+> smp_wmb();
+
+This would break.  We need all the task creation stuff to be seen as
+having happened before the store to rcu_tasks_kthread_ptr.  Putting
+the barrier after the store to rcu_tasks_kthread_ptr would allow
+both compiler and CPU to reorder task-creation stuff to follow the
+store to the pointer, which would not be good.
+
+> or
+> 
+> smp_store_release(rcu_tasks_kthread_ptr, t);
+> 
+> will ensure that this write to rcu_task_kthread_ptr is ordered with
+> the previous read. I recently read memory-barriers.txt, so please
+> excuse me if I am totally wrong. But I am confused! :(
+
+Hmmm...  An smp_store_release() combined with smp_load_acquire()
+up earlier might be a good approach.  Maybe as a future cleanup.
+
+But please note that smp_store_release() puts the barrier -before-
+the store.  ;-)
+
+							Thanx, Paul
+
+> > +       mutex_unlock(&rcu_tasks_kthread_mutex);
+> >  }
+> > -early_initcall(rcu_spawn_tasks_kthread);
+> >
+> >  #endif /* #ifdef CONFIG_TASKS_RCU */
+> > --
+> > 1.8.1.5
+> >
+> 
+> 
+> 
+> -- 
+> Pranith
+> 
 
