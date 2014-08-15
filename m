@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536AbaHOSEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 14:04:34 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57819 "EHLO
+	id S1751634AbaHOSE5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 14:04:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57826 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaHOSEc (ORCPT
+	with ESMTP id S1751573AbaHOSEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 14:04:32 -0400
+	Fri, 15 Aug 2014 14:04:55 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-serial@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         Vinod Koul <vinod.koul@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 10/15] tty: serial: 8250_dma: Add a TX trigger workaround for AM33xx
-Date: Fri, 15 Aug 2014 19:42:38 +0200
-Message-Id: <1408124563-31541-11-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 11/15] tty: serial: 8250_dma: handle the when UART response while DMA remains idle
+Date: Fri, 15 Aug 2014 19:42:39 +0200
+Message-Id: <1408124563-31541-12-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
 References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
@@ -27,80 +27,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At least on AM335x the following problem exists: Even if the TX FIFO is
-empty and a TX transfer is programmed (and started) the UART does not
-trigger the DMA transfer.
-After $TRESHOLD number of bytes have been written to the FIFO manually the
-UART reevaluates the whole situation and decides that now there is enough
-room in the FIFO and so the transfer begins.
-This problem has not been seen on DRA7 or beaglebone (OMAP3).
+The OMAP UART needs the RX-DMA programmed right away. If we receive a BREAK
+then we have to cancel the DMA transfer before we can handle the break
+condition. Otherwise, after we handled the "break condition" the DMA
+engine will start reading bytes from the FIFO while we also purge the
+FIFO manually. The order of what we receive is random.
 
-The workaround is to use a threshold of one byte, program the DMA
-transfer minus one byte and then to put the first byte into the FIFO to
-kick start the transfer.
+Also sometimes the OMAP UART does not signal the DMA engine to unload
+the FIFO. Usually this happens when we have >threshold bytes in the FIFO
+and start the DMA transfer. It seems that in those cases the UART won't
+trigger the transfer once the requested threshold is reached. In some
+rare cases the UART does not trigger the DMA transfer even if programmed
+while the FIFO was empty.
+In those cases the UART drops an RDI event and we have to empty the FIFO
+manually. If we ignore it because the DMA transfer is programmed then we
+will enter the function a few times until we receive the RX_TIMEOUT
+event. At that point the FIFO is usually full and we risk to overflow
+the FIFO.
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/tty/serial/8250/8250.h     |  1 +
- drivers/tty/serial/8250/8250_dma.c | 18 +++++++++++++++---
- 2 files changed, 16 insertions(+), 3 deletions(-)
+ drivers/tty/serial/8250/8250_dma.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
-index 1bcb4b2..d6a3f5c 100644
---- a/drivers/tty/serial/8250/8250.h
-+++ b/drivers/tty/serial/8250/8250.h
-@@ -79,6 +79,7 @@ struct serial8250_config {
- #define UART_BUG_NOMSR	(1 << 2)	/* UART has buggy MSR status bits (Au1x00) */
- #define UART_BUG_THRE	(1 << 3)	/* UART has buggy THRE reassertion */
- #define UART_BUG_PARITY	(1 << 4)	/* UART mishandles parity if FIFO enabled */
-+#define UART_BUG_DMATX	(1 << 5)	/* UART needs one byte in FIFO for kickstart */
- 
- #define PROBE_RSA	(1 << 0)
- #define PROBE_ANY	(~0)
 diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
-index 7417ed5..dc1294b 100644
+index dc1294b..cfc83d4 100644
 --- a/drivers/tty/serial/8250/8250_dma.c
 +++ b/drivers/tty/serial/8250/8250_dma.c
-@@ -83,6 +83,7 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 	struct uart_8250_dma		*dma = p->dma;
- 	struct circ_buf			*xmit = &p->port.state->xmit;
- 	struct dma_async_tx_descriptor	*desc;
-+	unsigned int			skip_byte = 0;
- 	int ret;
- 
- 	if (uart_tx_stopped(&p->port) || dma->tx_running ||
-@@ -91,10 +92,18 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 
- 	dma->tx_size = CIRC_CNT_TO_END(xmit->head, xmit->tail, UART_XMIT_SIZE);
- 
-+	if (p->bugs & UART_BUG_DMATX) {
-+		if (dma->tx_size < 4) {
-+			ret = -EINVAL;
-+			goto err;
-+		}
-+		skip_byte = 1;
-+	}
-+
- 	desc = dmaengine_prep_slave_single(dma->txchan,
--					   dma->tx_addr + xmit->tail,
--					   dma->tx_size, DMA_MEM_TO_DEV,
--					   DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-+			dma->tx_addr + xmit->tail + skip_byte,
-+			dma->tx_size - skip_byte, DMA_MEM_TO_DEV,
-+			DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc) {
- 		ret = -EBUSY;
- 		goto err;
-@@ -118,6 +127,9 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 			serial_out(p, UART_IER, p->ier);
+@@ -149,6 +149,13 @@ int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
+ 	switch (iir & 0x3f) {
+ 	case UART_IIR_RLSI:
+ 		/* 8250_core handles errors and break interrupts */
++		if (p->port.type == PORT_OMAP_16750)
++			/*
++			 * The OMAP has its DMA transfer started before we get
++			 * here. Keeping it enabled will result in data beeing
++			 * read out of order (DMA + manuall FIFO read).
++			 */
++			__dma_rx_do_complete(p, true);
+ 		return -EIO;
+ 	case UART_IIR_RX_TIMEOUT:
+ 		/*
+@@ -160,6 +167,21 @@ int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
+ 			__dma_rx_do_complete(p, true);
  		}
- 	}
-+	if (skip_byte)
-+		serial_out(p, UART_TX, xmit->buf[xmit->tail]);
+ 		return -ETIMEDOUT;
++	case UART_IIR_RDI:
++		if (p->port.type != PORT_OMAP_16750)
++			break;
++		/*
++		 * The OMAP UART is a special BEAST. If we receive RDI we _have_
++		 * a DMA transfer programmed but it didn't worked. One reason is
++		 * that we were too slow and there were too many bytes in the
++		 * FIFO, the UART counted wrong and never kicked the DMA engine
++		 * to do anything. That means once we receive RDI on OMAP than
++		 * the DMA won't do anything soon so we have to cancel the DMA
++		 * transfer and purge the FIFO manually.
++		 */
++		__dma_rx_do_complete(p, true);
++		return -ETIMEDOUT;
 +
- 	return 0;
- err:
- 	p->dma_tx_err = 1;
+ 	default:
+ 		break;
+ 	}
 -- 
 2.0.1
 
