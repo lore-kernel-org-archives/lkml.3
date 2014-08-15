@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833AbaHOF0B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 01:26:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750725AbaHOF0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 01:26:00 -0400
-Date: Fri, 15 Aug 2014 10:54:11 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
- kthread wakeups
-Message-ID: <20140815052411.GF1934@grmbl.mre>
-References: <20140811201102.GD5821@linux.vnet.ibm.com>
- <20140811201845.GG4184@grmbl.mre>
- <20140811203421.GE5821@linux.vnet.ibm.com>
- <20140812034531.GA13801@linux.vnet.ibm.com>
- <20140812053321.GK4184@grmbl.mre>
- <20140812160621.GC4752@linux.vnet.ibm.com>
- <20140812213936.GA3106@linux.vnet.ibm.com>
- <20140812214151.GB3106@linux.vnet.ibm.com>
- <20140813054439.GA29913@grmbl.mre>
- <20140813130049.GS4752@linux.vnet.ibm.com>
+	id S1751605AbaHOFgV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 01:36:21 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:57103 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778AbaHOFgT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 01:36:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140813130049.GS4752@linux.vnet.ibm.com>
+In-Reply-To: <20140814151958.GY17528@sirena.org.uk>
+References: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk>
+	<CAD7vxxKvzxvmzgx=S5ZZn54ts99ca2TqBYFvY1SXZQZDkhjq3w@mail.gmail.com>
+	<20140814151958.GY17528@sirena.org.uk>
+Date: Thu, 14 Aug 2014 22:36:18 -0700
+Message-ID: <CAD7vxxLHtk2ywHGoBtDp6x3-5BtDdaFnCdc_pfgMwq63Cg8Qow@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mmc: core: Use regulator_get_voltage() if OCR mask is empty.
+From: Tim Kryger <tim.kryger@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Haijun Zhang <Haijun.Zhang@freescale.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) 13 Aug 2014 [06:00:49], Paul E. McKenney wrote:
-> On Wed, Aug 13, 2014 at 11:14:39AM +0530, Amit Shah wrote:
-> > On (Tue) 12 Aug 2014 [14:41:51], Paul E. McKenney wrote:
-> > > On Tue, Aug 12, 2014 at 02:39:36PM -0700, Paul E. McKenney wrote:
-> > > > On Tue, Aug 12, 2014 at 09:06:21AM -0700, Paul E. McKenney wrote:
-> > > > > On Tue, Aug 12, 2014 at 11:03:21AM +0530, Amit Shah wrote:
-> > > > 
-> > > > [ . . . ]
-> > > > 
-> > > > > > I know of only virtio-console doing this (via userspace only,
-> > > > > > though).
-> > > > > 
-> > > > > As in userspace within the guest?  That would not work.  The userspace
-> > > > > that the qemu is running in might.  There is a way to extract ftrace info
-> > > > > from crash dumps, so one approach would be "sendkey alt-sysrq-c", then
-> > > > > pull the buffer from the resulting dump.  For all I know, there might also
-> > > > > be some script that uses the qemu "x" command to get at the ftrace buffer.
-> > > > > 
-> > > > > Again, I cannot reproduce this, and I have been through the code several
-> > > > > times over the past few days, and am not seeing it.  I could start
-> > > > > sending you random diagnostic patches, but it would be much better if
-> > > > > we could get the trace data from the failure.
-> > 
-> > I think the only recourse I now have is to dump the guest state from
-> > qemu, and attempt to find the ftrace buffers by poking pages and
-> > finding some ftrace-like struct... and then dumping the buffers.
-> 
-> The data exists in the qemu guest state, so it would be good to have
-> it one way or another.  My current (perhaps self-serving) guess is that
-> you have come up with a way to trick qemu into dropping IPIs.
+On Thu, Aug 14, 2014 at 8:19 AM, Mark Brown <broonie@kernel.org> wrote:
 
-I didn't get around to doing this yet; will get to it next week.
+> Right, there's two things going on here.  One is that as you describe we
+> shouldn't be putting constraints in .dtsi files if we don't know they're
+> OK for a given board.  The other thing is that on this particular board
+> it turns out that there's no support for varying the voltages at all so
+> it doesn't make sense to have to specify a range, there's only one value
+> anyway so the software really should be able to figure out that fixed
+> value all by itself.
 
-In the meantime, I tried this on RHEL6 (with RHEL6 qemu and gcc and
-seabios), and that exhibits the problem similarly with my .config.
+If constraints are truly irrelevant when the voltage supplied to
+consumers is fixed, why doesn't regulator_list_voltage honor this
+exemption and skip the voltage filtering that uses (potentially
+unspecified) constraints when output is entirely determined by a
+parent (or grandparent) supply that can't change its voltage?
 
-<snip>
-
-> > > +
-> > >  	return true;
-> > 
-> > I have return 1; here.
-> > 
-> > I'm on linux.git, c8d6637d0497d62093dbba0694c7b3a80b79bfe1.
-> 
-> I am working on top of my -rcu tree, which contains the fix from "1" to
-> "true" compared to current mainline.  So this will resolve itself, and
-> you should be OK fixing up conflict in either direction.
-
-Yep, I did do that.  Just noted here that the hunk didn't directly
-apply.
+It seems odd to make callers be the ones to handle this subtlety.
 
 Thanks,
-
-		Amit
+Tim Kryger
