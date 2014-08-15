@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652AbaHOIiU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 04:38:20 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51103 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaHOIiR (ORCPT
+	id S1754055AbaHOIif (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 04:38:35 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:22971 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaHOIie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 04:38:17 -0400
-Message-ID: <53EDC6E7.4070101@pengutronix.de>
-Date: Fri, 15 Aug 2014 10:37:59 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Fri, 15 Aug 2014 04:38:34 -0400
+Message-ID: <53EDC6F4.80001@huawei.com>
+Date: Fri, 15 Aug 2014 16:38:12 +0800
+From: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Himangi Saraogi <himangi774@gmail.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Stefano Babic <sbabic@denx.de>, Jingoo Han <jg1.han@samsung.com>,
-        Christian Pellegrin <chripell@fsfe.org>, linux-kernel@vger.kernel.org
-CC: julia.lawall@lip6.fr
-Subject: Re: [PATCH] can: mcp251x: Use dmam_alloc_coherent
-References: <20140802135204.GA7635@himangi-Dell>
-In-Reply-To: <20140802135204.GA7635@himangi-Dell>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="WajkRJqFCfTIvB4Ks3QUJtAq3pTEWkTsA"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Ingo Molnar <mingo@kernel.org>
+CC: <mingo@redhat.com>, <peterz@infradead.org>, <juri.lelli@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <xiaofeng.yan2012@gmail.com>
+Subject: Re: [PATCH v3] sched/deadline: overrun could happen in start_hrtick_dl
+References: <1407316094-18207-1-git-send-email-xiaofeng.yan@huawei.com> <20140812145254.GA7103@gmail.com>
+In-Reply-To: <20140812145254.GA7103@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.68.133]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---WajkRJqFCfTIvB4Ks3QUJtAq3pTEWkTsA
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 2014/8/12 22:52, Ingo Molnar wrote:
+> * xiaofeng.yan <xiaofeng.yan@huawei.com> wrote:
+>
+>> It could be wrong for the precision of runtime and deadline
+>> when the precision is within microsecond level. For example:
+>> Task runtime deadline period
+>>   P1   200us   500us   500us
+>>
+>> This case need enbale HRTICK feature by the next command
+>>
+>> PC#echo "HRTICK" > /sys/kernel/debug/sched_features
+>> PC#trace-cmd record -e sched_switch &
+>> PC#./schedtool -E -t 200000:500000 -e ./test
+>>
+>> Some of runtime and deadline run with millisecond level by
+>> reading kernershark. Some pieces of trace.dat are as follows:
+>> (remove some irrelevant information)
+>> <idle>-0   157.603157: sched_switch: :R ==> 2481:4294967295: test
+>> test-2481  157.603203: sched_switch:  2481:R ==> 0:120: swapper/2
+>> <idle>-0   157.605657: sched_switch:  :R ==> 2481:4294967295: test
+>> test-2481  157.608183: sched_switch:  2481:R ==> 2483:120: trace-cmd
+>> trace-cmd-2483 157.609656: sched_switch:2483:R==>2481:4294967295: test
+>>
+>> We can get the runtime from the information at some point.
+>> runtime = 157.605657 - 157.608183
+>> runtime = 0.002526(2.526ms)
+>> The correct runtime should be less than or equal to 200us at some point.
+>>
+>> The problem is caused by a conditional judgment "delta > 10000".
+>> Because no hrtimer start up to control the runtime when runtime is less than 10us.
+>> So the process will continue to run until tick-period coming.
+>>
+>> Move the code with the limit of the least time slice
+>> from hrtick_start_fair() to hrtick_start() because
+>> EDF schedule class also need this function in start_hrtick_dl().
+>>
+>> To fix this problem, we call hrtimer_start() unconditionally in start_hrtick_dl(),
+>> and make sure schedule slice won't be smaller than 10us in hrtimer_start().
+>>
+>> Signed-off-by: Xiaofeng Yan <xiaofeng.yan@huawei.com>
+>> Reviewed-by:   Peter Zijlstra <peterz@infradead.org>
+>> Reviewed-by:   Li Zefan <lizefan@huawei.com>
+> The whole changelog is very hard to read and isn't proper English, nor
+> is it truly explanatory. Could you please fix the changelog, or bounce
+> it to someone who will fix it for you?
+>
+> Thanks,
+>
+> 	Ingo
 
-On 08/02/2014 03:52 PM, Himangi Saraogi wrote:
-> This patch moves the data allocated using dma_alloc_coherent to the
-> corresponding managed interface and does away with the calls to free th=
-e
-> allocated memory in the probe and remove functions.
->=20
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-
-Applied to can-next.
-
-Thanks,
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Thanks for your reply. I will fix my change log with proper English.
+Thanks
+Yan
+> .
+>
 
 
---WajkRJqFCfTIvB4Ks3QUJtAq3pTEWkTsA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iEYEARECAAYFAlPtxucACgkQjTAFq1RaXHMTZwCfc/jtAIAOHaOal3OQwrDLztYO
-mR0An0C7f4HAE3Zm/2L+ZmXOSoCVz7QG
-=f6YB
------END PGP SIGNATURE-----
-
---WajkRJqFCfTIvB4Ks3QUJtAq3pTEWkTsA--
