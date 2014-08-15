@@ -1,100 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006AbaHOJog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 05:44:36 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44636 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319AbaHOJof (ORCPT
+	id S1754532AbaHOJpr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 05:45:47 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:50449 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752769AbaHOJpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 05:44:35 -0400
-Date: Fri, 15 Aug 2014 11:44:16 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
- seqlock
-Message-ID: <20140815094416.GD19379@twins.programming.kicks-ass.net>
-References: <20140813133526.1eb5526f@cuia.bos.redhat.com>
- <20140813180807.GA8098@redhat.com>
- <53EBADB1.2020403@redhat.com>
- <20140813184511.GA9663@redhat.com>
- <20140813170324.544aaf2d@cuia.bos.redhat.com>
- <20140814132239.GA24465@redhat.com>
- <20140814174849.GA5091@redhat.com>
- <1408079971.5536.37.camel@marge.simpson.net>
- <20140815062819.GY19379@twins.programming.kicks-ass.net>
- <1408095453.5567.6.camel@marge.simpson.net>
+	Fri, 15 Aug 2014 05:45:45 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: Sudeep Holla <sudeep.holla@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 15 Aug 2014 02:45:09 -0700
+Subject: RE: [PATCH] arm: irq: fix the affinity when migrate a irq
+Thread-Topic: [PATCH] arm: irq: fix the affinity when migrate a irq
+Thread-Index: Ac+4ZQqgOmi7NuOFRViXEqfdQAAQ1wACHiOw
+Message-ID: <9034CBD80F070943B59700D7F8149ED9020D8CC38A@SC-VEXCH4.marvell.com>
+References: <1408087917-22603-1-git-send-email-zhangwm@marvell.com>
+ <53EDC89F.4020300@arm.com>
+In-Reply-To: <53EDC89F.4020300@arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ojZBYePqDcGaG1TE"
-Content-Disposition: inline
-In-Reply-To: <1408095453.5567.6.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-15_03:2014-08-14,2014-08-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1408150117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7F9jqmN032711
 
 
---ojZBYePqDcGaG1TE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, Aug 15, 2014 at 11:37:33AM +0200, Mike Galbraith wrote:
-> On Fri, 2014-08-15 at 08:28 +0200, Peter Zijlstra wrote:=20
-> > On Fri, Aug 15, 2014 at 07:19:31AM +0200, Mike Galbraith wrote:
-> > > For the N threads doing this on N cores case, seems rq->lock hammering
-> > > will still be a source of major box wide pain.  Is there any correctn=
-ess
-> > > reason to add up unaccounted ->on_cpu beans, or is that just value
-> > > added? =20
-> >=20
-> > That delta can be arbitrarily large with nohz_full. And without
-> > nohz_full the error is nr_cpus*TICK_NSEC, which I bet is larger than the
-> > reported clock resolution.
-> >=20
-> > Having a non-constant error bound is annoying for you never quite know
-> > what to expect.
->=20
-> Ah, yeah, that could get rather large.
->=20
-> > Also; why do we care about PROCESS_CPUTIME? People should really not use
-> > it. What are the 'valid' usecases you guys care about?
->=20
-> I don't care much, said "don't do that" before I saw a similar big box
-> problem had popped up with times().
+> -----Original Message-----
+> From: Sudeep Holla [mailto:sudeep.holla@arm.com]
+> Sent: 2014ƒÍ8‘¬15»’ 16:45
+> To: Neil Zhang; linux@arm.linux.org.uk
+> Cc: Sudeep Holla; linux-kernel@vger.kernel.org;
+> linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH] arm: irq: fix the affinity when migrate a irq
+> 
+> Hi Neil,
+> 
+> On 15/08/14 08:31, Neil Zhang wrote:
+> > Commit ffde1de64012 ("irqchip: Gic: Support forced affinity setting")
+> > has enable the forcing cpu affinity of interrupts for gic.
+> >
+> > The current code of migrate_one_irq will pass the current affinity
+> > mask to irq_set_affinity with force is true, it may select the cpu
+> > being offlined as the target CPU again, then the interrupt won't be
+> > migrated correctly.
+> >
+> 
+> I had posted similar patch [1] a while ago and the discussion[2] did not
+> conclude. We need feedback from Thomas Gleixner.
+> 
+> Regards,
+> Sudeep
+> 
+> [1]
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-May/254838.html
+> [2]
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/265191.html
 
-Urgh, yes times().. Now I don't think we do very accurate accounting of
-those particular numbers, so we could fudge some of that. Typically we
-only do TICK_NSEC granularity accounting on user/system divide anyhow,
-seeing how putting timestamp reads in the kernel<>user switch is
-_expensive_ -- see NOHZ_FULL.
+I see, thanks.
 
---ojZBYePqDcGaG1TE
-Content-Type: application/pgp-signature
+> 
+> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> > ---
+> >   arch/arm/kernel/irq.c |    5 ++---
+> >   1 file changed, 2 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c index
+> > 2c42576..6f5a878 100644
+> > --- a/arch/arm/kernel/irq.c
+> > +++ b/arch/arm/kernel/irq.c
+> > @@ -167,11 +167,10 @@ static bool migrate_one_irq(struct irq_desc *desc)
+> >   	if (irqd_is_per_cpu(d) || !cpumask_test_cpu(smp_processor_id(), affinity))
+> >   		return false;
+> >
+> > -	if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids) {
+> > -		affinity = cpu_online_mask;
+> > +	if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids)
+> >   		ret = true;
+> > -	}
+> >
+> > +	affinity = cpu_online_mask;
+> >   	c = irq_data_get_irq_chip(d);
+> >   	if (!c->irq_set_affinity)
+> >   		pr_debug("IRQ%u: unable to set affinity\n", d->irq);
+> >
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT7dZwAAoJEHZH4aRLwOS6dB0QAKCee+iIgRmgnw2R3w6TP6KR
-3UnRfEtSbe5hB1ivrM4q12/CQjuFjWjHVhSGSGe5D0Sn0tyUcovl3OjTuLdCMnwD
-BxELncgtSX+RzsDBN57jAwo0dP1snUjLCYTxNLpXeZbutgNx19gKDz86qD4ZA8gy
-2lOTwDdbklQlJo0oPs4XLNP74jtyZWygsh4hGPWut6CnPJyR3LvgamEkTObBL3g5
-HJ9vl+8kPw6QSUrT6c1ZjscNBfTHzJEVnML17nwJFLTP0HBDalu96StL8+9pN7q7
-JiEWYSkHPzzspVNhFV4m2fDF17QnLS4rWuSuK9masBY40SO7O4xwKY/o/Q0qDd6q
-EyRI6GteLSWZP5rgge1NCytgdDBo8FXRQiu249uJIrm1Zxv/pf4nlH9396e5vupt
-dvAhfnGTuhFyzX/5+o2gqM1LYe2OO73HK1Z7ZeOdW6xx5M61Tvb8SlK12ccTAQQ4
-wLRfpaRxEF/+EAy53UK3+t9AyvtlcJ/6RnSss7NHtjf68UIhEa1s3oZ8EWYxzxS3
-KHDQf0nhjeHr09CjCSaGDNQTVeBCAfQ6+38BCv9nOx6Hv/vDJb68yWXjXbjcF/2B
-a1LJK6uLJJIq8wzEQESsO1KUxbl/VL4AYG37I5XbocRs6qaXD0xdaxm1h4hb3hqS
-WDfgx+ZxN0n5hkx7nRmy
-=F5pj
------END PGP SIGNATURE-----
-
---ojZBYePqDcGaG1TE--
+Best Regards,
+Neil Zhang
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
