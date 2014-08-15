@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333AbaHOOWf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 10:22:35 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:10726 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaHOOWd (ORCPT
+	id S1751428AbaHOOYg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 10:24:36 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:47039 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196AbaHOOYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 10:22:33 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18azU7Yy4piCGnUhvF55EwYrbx6hz4KzyU=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 3529E5C654B
-Date: Fri, 15 Aug 2014 10:22:25 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        arm@kernel.org, Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: move of AIC drivers for 3.17: fixes #1
-Message-ID: <20140815142225.GF5063@titan.lakedaemon.net>
-References: <1408031156-13573-1-git-send-email-nicolas.ferre@atmel.com>
+	Fri, 15 Aug 2014 10:24:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408031156-13573-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <53EE10CB.7040001@linux.intel.com>
+References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
+	<20140814205143.GY6758@twins.programming.kicks-ass.net>
+	<CAJ5Y-ebgJi8Ngxg1X+h7KMundGZPFhYC0hr0Sog6htj=czszgQ@mail.gmail.com>
+	<20140815061917.GX19379@twins.programming.kicks-ass.net>
+	<CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
+	<53EE0E5B.3050004@linux.intel.com>
+	<53EE10CB.7040001@linux.intel.com>
+Date: Fri, 15 Aug 2014 10:24:32 -0400
+Message-ID: <CAJ5Y-eZiRyGroems7J2oH05ybbbivM-okm3gFz7Mkuu8ceeCDQ@mail.gmail.com>
+Subject: Re: [RFC 0/3] Experimental patchset for CPPC
+From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, lkml <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mike Turquette <mike.turquette@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
+        len.brown@intel.com, rjw@rjwysocki.net,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
+        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas,
+Hi Arjan,
 
-On Thu, Aug 14, 2014 at 05:45:56PM +0200, Nicolas Ferre wrote:
-> Arnd, Olof, Kevin,
-> 
-> Boris moved both of our AIC drivers to their new home: the drivers/irqchip
-> directory taking advantage of the genirc framework. For DT-enabled SoCs, we can
-> use these drivers (aic and aic5) right now: Jason merged them and they are
-> available in early 3.17 merge window.
-> So, I build this pull-request for enabling the use of these drivers now as:
-> - we are very early in 3.17 development
-> - it allowed us to avoid having to depend on Jason's branch before the opening
->   of the merge window
+On 15 August 2014 09:53, Arjan van de Ven <arjan@linux.intel.com> wrote:
+> On 8/15/2014 6:42 AM, Arjan van de Ven wrote:
+>> On 8/15/2014 6:08 AM, Ashwin Chaugule wrote:
+>>> (b) we come up with ways to provide the bounds around a Desired value
+>>> using the information from the platform. (long term)
+>>>
+>>> I briefly looked at the x86 HWP (Hardware Performance States) in the
+>>> s/w manual again. Its essentially an implementation of CPPC. It seems
+>>> like X86 has implemented most if not all these registers as MSRs. I'm
+>>> really interested in knowing if anyone there is/has been working on
+>>> using them and what they found.
+>>
+>>
+>> we've found that so far that there are two reasonable options
+>> 1) Let the OS device (old style)
+>> 2) Let the hardware decide (new style)
+>>
+>> 2) is there in practice today in the turbo range (which is increasingly
+>> the whole thing)
+>> and the hardware can make decisions about power budgetting on a timescale
+>> the OS
+>> can never even dream of, so once you give control the the hardware (with
+>> CPPC or native)
+>> it's normally better to just get out of the way as OS.
+>>
+>
 
-Then why did I create a topic branch for you to base on?
+Interesting. This sounds like X86 plans to use the Autonomous bits
+that got added to the CPPC spec. (v5.1)? I agree that the platform can
+make decisions on a much finer timescale. But even in the
+non-Autonomous mode, by providing the bounds around a Desired Value,
+the OS can get out of the way knowing that the platform would deliver
+something in the range it requested. If the OS can provide bounds, it
+seems to me that the platform can make more optimum decisions, rather
+than trying to guess whats running (or not).
 
-  git://git.infradead.org/users/jcooper/linux.git irqchip/atmel-aic
+> I should clarify this; with increasing number of cores, you end up with much
+> more dynamic maximums
+> (e.g. turbo in Intel speak) and the hardware already controls this (yes the
+> OS gives hints, but
+> that's mostly a lot of OS work for little value)
+>
 
-> - it removes some code from the mach-at91 directory: including the whole
->   aic5 driver
-> - we'd have quite a bit of time to solve issues if we found a bug
-> - the code is basically moved so it should be error free.
+Going completely Autonomous (i.e. letting the platform decide whats
+best w/o OS hints) may be possible only for some platforms. There will
+be several ones which dont have that kind of logic built into the
+hardware. In such cases getting OS hints would be the only option.
 
-Well, this is certainly up to Arnd, Olof and Kevin, but it seems a bit
-unusual.  You're basically asking to merge changes into the current window
-that has had _no_ time in -next...  Sounds like a recipe for trouble to
-me.
+>
+> in a single or even dual core situation you may have a different ballgame
+> with a small turbo range, but even in phones
+> octocores seem to be the norm nowadays ;-)
+> (just finished reading the Samsung announcement)
 
-In the future, please let me know if you're not going to need a topic
-branch.
+Yea, its getting crazy out there.
 
-thx,
-
-Jason.
+Cheers,
+Ashwin
