@@ -1,123 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748AbaHOTJL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:09:11 -0400
-Received: from mail-pd0-f202.google.com ([209.85.192.202]:49283 "EHLO
-	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751714AbaHOTJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:09:06 -0400
-From: Vincent Palatin <vpalatin@chromium.org>
-To: Hans de Goede <hdegoede@redhat.com>, Pawel Osciak <posciak@chromium.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Olof Johansson <olofj@chromium.org>,
-        Zach Kuznia <zork@chromium.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Vincent Palatin <vpalatin@chromium.org>
-Subject: [PATCH v2 1/2] [media] V4L: Add camera pan/tilt speed controls
-Date: Fri, 15 Aug 2014 12:08:44 -0700
-Message-Id: <1408129724-17669-1-git-send-email-vpalatin@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <CACHYQ-rtHfVmF4DstxhWe0zWNH3ujjniVBwONBGW3f4Uw=rvkg@mail.gmail.com>
-References: <CACHYQ-rtHfVmF4DstxhWe0zWNH3ujjniVBwONBGW3f4Uw=rvkg@mail.gmail.com>
+	id S1751818AbaHOTKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:10:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34714 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751210AbaHOTKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 15:10:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,872,1400050800"; 
+   d="scan'208";a="588727707"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 00/24] perf tools: Still more preparation for Intel PT
+Date: Fri, 15 Aug 2014 22:08:35 +0300
+Message-Id: <1408129739-17368-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The V4L2_CID_PAN_SPEED and V4L2_CID_TILT_SPEED controls allow to move the
-camera by setting its rotation speed around its axis.
+Hi
 
-Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
----
-Changes from v1:
-- update the documentation wording according to Pawel suggestion.
+Here is the next selection of patches.  That are based on top of
+759e612bf96627b64fcafe4174b3f6f2dedf2c0d perf stat: Use strerror_r instead of strerror
 
- Documentation/DocBook/media/v4l/compat.xml   | 10 ++++++++++
- Documentation/DocBook/media/v4l/controls.xml | 21 +++++++++++++++++++++
- drivers/media/v4l2-core/v4l2-ctrls.c         |  2 ++
- include/uapi/linux/v4l2-controls.h           |  2 ++
- 4 files changed, 35 insertions(+)
+They can also be found here:
 
-diff --git a/Documentation/DocBook/media/v4l/compat.xml b/Documentation/DocBook/media/v4l/compat.xml
-index eee6f0f..21910e9 100644
---- a/Documentation/DocBook/media/v4l/compat.xml
-+++ b/Documentation/DocBook/media/v4l/compat.xml
-@@ -2545,6 +2545,16 @@ fields changed from _s32 to _u32.
-       </orderedlist>
-     </section>
- 
-+    <section>
-+      <title>V4L2 in Linux 3.17</title>
-+      <orderedlist>
-+	<listitem>
-+	  <para>Added <constant>V4L2_CID_PAN_SPEED</constant> and
-+ <constant>V4L2_CID_TILT_SPEED</constant> camera controls.</para>
-+	</listitem>
-+      </orderedlist>
-+    </section>
-+
-     <section id="other">
-       <title>Relation of V4L2 to other Linux multimedia APIs</title>
- 
-diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-index 47198ee..be88e64 100644
---- a/Documentation/DocBook/media/v4l/controls.xml
-+++ b/Documentation/DocBook/media/v4l/controls.xml
-@@ -3914,6 +3914,27 @@ by exposure, white balance or focus controls.</entry>
- 	  </row>
- 	  <row><entry></entry></row>
- 
-+	  <row>
-+	    <entry spanname="id"><constant>V4L2_CID_PAN_SPEED</constant>&nbsp;</entry>
-+	    <entry>integer</entry>
-+	  </row><row><entry spanname="descr">This control turns the
-+camera horizontally at the specific speed. The unit is undefined. A
-+positive value moves the camera to the right (clockwise when viewed
-+from above), a negative value to the left. A value of zero stops the motion
-+if one is in progress and has no effect otherwise.</entry>
-+	  </row>
-+	  <row><entry></entry></row>
-+
-+	  <row>
-+	    <entry spanname="id"><constant>V4L2_CID_TILT_SPEED</constant>&nbsp;</entry>
-+	    <entry>integer</entry>
-+	  </row><row><entry spanname="descr">This control turns the
-+camera vertically at the specified speed. The unit is undefined. A
-+positive value moves the camera up, a negative value down. A value of zero
-+stops the motion if one is in progress and has no effect otherwise.</entry>
-+	  </row>
-+	  <row><entry></entry></row>
-+
- 	</tbody>
-       </tgroup>
-     </table>
-diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-index 55c6832..57ddaf4 100644
---- a/drivers/media/v4l2-core/v4l2-ctrls.c
-+++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-@@ -787,6 +787,8 @@ const char *v4l2_ctrl_get_name(u32 id)
- 	case V4L2_CID_AUTO_FOCUS_STOP:		return "Auto Focus, Stop";
- 	case V4L2_CID_AUTO_FOCUS_STATUS:	return "Auto Focus, Status";
- 	case V4L2_CID_AUTO_FOCUS_RANGE:		return "Auto Focus, Range";
-+	case V4L2_CID_PAN_SPEED:		return "Pan, Speed";
-+	case V4L2_CID_TILT_SPEED:		return "Tilt, Speed";
- 
- 	/* FM Radio Modulator control */
- 	/* Keep the order of the 'case's the same as in videodev2.h! */
-diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
-index 2ac5597..5576044 100644
---- a/include/uapi/linux/v4l2-controls.h
-+++ b/include/uapi/linux/v4l2-controls.h
-@@ -745,6 +745,8 @@ enum v4l2_auto_focus_range {
- 	V4L2_AUTO_FOCUS_RANGE_INFINITY		= 3,
- };
- 
-+#define V4L2_CID_PAN_SPEED			(V4L2_CID_CAMERA_CLASS_BASE+32)
-+#define V4L2_CID_TILT_SPEED			(V4L2_CID_CAMERA_CLASS_BASE+33)
- 
- /* FM Modulator class control IDs */
- 
--- 
-2.1.0.rc2.206.gedb03e5
+	http://git.infradead.org/users/ahunter/linux-perf.git/shortlog/refs/heads/for-acme
+
+
+Adrian Hunter (23):
+      perf tools: Add a test for tracking with sched_switch
+      perf scripting: Add 'flush' callback to scripting API
+      perf tools: Rename machine__get_kernel_start_addr()
+      perf tools: Add machine__kernel_ip()
+      perf tools: Let a user specify a PMU event without any config terms
+      perf tools: Let default config be defined for a PMU
+      perf tools: Add perf_pmu__scan_file()
+      perf tools: Add id index
+      perf pmu: Let pmu's with no events show up on perf list
+      perf session: Add perf_session__deliver_synth_event()
+      perf tools: Add a thread stack for synthesizing call chains
+      perf tools: Add facility to export data in database-friendly way
+      perf tools: Extend Python script interface to export data in a database-friendly way
+      perf tools: Add Python script to export to postgresql
+      perf tools: Add branch type to db export
+      perf tools: Add branch_type and in_tx to Python export
+      perf tools: Enhance the thread stack to output call/return data
+      perf tools: Add call information to the database export API
+      perf tools: Add call information to Python export
+      perf tools: Defer export of comms that were not 'set'
+      perf tools: Add perf-with-kcore script
+      perf tools: Build programs to copy 32-bit compatibility VDSOs
+      perf tools: Add support for 32-bit compatibility VDSOs
+
+Alexander Shishkin (1):
+      perf tools: Add feature checks to .gitignore
+
+ tools/perf/.gitignore                              |   2 +
+ tools/perf/Makefile.perf                           |  48 +-
+ tools/perf/builtin-inject.c                        |   1 +
+ tools/perf/builtin-script.c                        |  13 +
+ tools/perf/config/Makefile                         |  25 +-
+ tools/perf/config/Makefile.arch                    |   8 +
+ tools/perf/config/feature-checks/Makefile          |  10 +-
+ tools/perf/config/feature-checks/test-compile.c    |   4 +
+ tools/perf/perf-read-vdso.c                        |  34 +
+ tools/perf/perf-with-kcore.sh                      | 259 ++++++++
+ .../scripts/python/bin/export-to-postgresql-record |   8 +
+ .../scripts/python/bin/export-to-postgresql-report |  29 +
+ tools/perf/scripts/python/export-to-postgresql.py  | 444 +++++++++++++
+ tools/perf/tests/builtin-test.c                    |   4 +
+ tools/perf/tests/pmu.c                             |   2 +-
+ tools/perf/tests/switch-tracking.c                 | 572 +++++++++++++++++
+ tools/perf/tests/tests.h                           |   1 +
+ tools/perf/util/comm.h                             |   1 +
+ tools/perf/util/db-export.c                        | 426 +++++++++++++
+ tools/perf/util/db-export.h                        | 107 ++++
+ tools/perf/util/dso.h                              |   1 +
+ tools/perf/util/event.c                            |   7 +-
+ tools/perf/util/event.h                            |  41 ++
+ tools/perf/util/evlist.c                           |  26 +-
+ tools/perf/util/evsel.h                            |   4 +
+ tools/perf/util/find-vdso-map.c                    |  30 +
+ tools/perf/util/machine.c                          |  31 +-
+ tools/perf/util/machine.h                          |  18 +
+ tools/perf/util/parse-events.c                     |  13 +-
+ tools/perf/util/parse-events.y                     |  10 +
+ tools/perf/util/pmu.c                              |  92 ++-
+ tools/perf/util/pmu.h                              |  13 +-
+ .../perf/util/scripting-engines/trace-event-perl.c |   6 +
+ .../util/scripting-engines/trace-event-python.c    | 399 +++++++++++-
+ tools/perf/util/session.c                          | 136 ++++
+ tools/perf/util/session.h                          |  15 +
+ tools/perf/util/symbol.h                           |   1 +
+ tools/perf/util/thread-stack.c                     | 690 +++++++++++++++++++++
+ tools/perf/util/thread-stack.h                     |  79 +++
+ tools/perf/util/thread.c                           |   3 +
+ tools/perf/util/thread.h                           |   4 +
+ tools/perf/util/tool.h                             |   3 +-
+ tools/perf/util/trace-event-scripting.c            |   7 +
+ tools/perf/util/trace-event.h                      |   1 +
+ tools/perf/util/vdso.c                             | 207 ++++++-
+ tools/perf/util/vdso.h                             |   4 +-
+ 46 files changed, 3765 insertions(+), 74 deletions(-)
+ create mode 100644 tools/perf/config/feature-checks/test-compile.c
+ create mode 100644 tools/perf/perf-read-vdso.c
+ create mode 100644 tools/perf/perf-with-kcore.sh
+ create mode 100644 tools/perf/scripts/python/bin/export-to-postgresql-record
+ create mode 100644 tools/perf/scripts/python/bin/export-to-postgresql-report
+ create mode 100644 tools/perf/scripts/python/export-to-postgresql.py
+ create mode 100644 tools/perf/tests/switch-tracking.c
+ create mode 100644 tools/perf/util/db-export.c
+ create mode 100644 tools/perf/util/db-export.h
+ create mode 100644 tools/perf/util/find-vdso-map.c
+ create mode 100644 tools/perf/util/thread-stack.c
+ create mode 100644 tools/perf/util/thread-stack.h
+
+Regards
+Adrian
 
