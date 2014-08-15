@@ -1,143 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbaHOQuT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:50:19 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44601 "EHLO mail.kernel.org"
+	id S1752014AbaHOQuY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:50:24 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44613 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751359AbaHOQuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:50:16 -0400
+	id S1751976AbaHOQuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 12:50:20 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alex Converse <aconverse@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Arun Sharma <asharma@fb.com>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Elliott Hughes <enh@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Haren Myneni <hbabu@us.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
-        linuxppc-dev@lists.ozlabs.org,
+Cc: linux-kernel@vger.kernel.org,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Naohiro Aota <naota@elisp.net>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>,
-        Stephane Eranian <eranian@google.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        yrl.pp-manager.tt@hitachi.com,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, yrl.pp-manager.tt@hitachi.com,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 00/18] perf/core improvements and fixes
-Date: Fri, 15 Aug 2014 13:49:45 -0300
-Message-Id: <1408121403-11919-1-git-send-email-acme@kernel.org>
+Subject: [PATCH 01/18] perf probe: Warn user to rebuild target with debuginfo
+Date: Fri, 15 Aug 2014 13:49:46 -0300
+Message-Id: <1408121403-11919-2-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1408121403-11919-1-git-send-email-acme@kernel.org>
+References: <1408121403-11919-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-	Please consider pulling,
+Warn user to rebuild target with debuginfo when the perf probe fails to
+find debug information in the target binary.
 
-- Arnaldo
+Without this, perf probe just reports the failure, but it's no hint for
+users. This gives more hint for users.
 
-The following changes since commit f373da34282560c60f0c197690eecb1b2dc49fc0:
+Without this:
 
-  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2014-08-14 10:38:40 +0200)
+  $ strip perf
+  $ ./perf probe -x perf -L argv_split
+  Failed to open debuginfo file.
+    Error: Failed to show lines.
 
-are available in the git repository at:
+With this:
 
+  $ strip perf
+  $ ./perf probe -x perf -L argv_split
+  The /home/fedora/ksrc/linux-3/tools/perf/perf file has no debug information.
+  Rebuild with -g, or install an appropriate debuginfo package.
+    Error: Failed to show lines.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+The "rebuild with ..." part changes to "rebuild with CONFIG_DEBUG_INFO"
+if the target is the kernel or a kernel module.
 
-for you to fetch changes up to 759e612bf96627b64fcafe4174b3f6f2dedf2c0d:
-
-  perf stat: Use strerror_r instead of strerror (2014-08-15 13:08:40 -0300)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-User visible:
-
-. Warn user to rebuild target with debuginfo in 'perf probe' (Masami Hiramatsu)
-
-. Don't truncate Intel style addresses in 'annotate'. (Alex Converse)
-
-Developer stuff:
-
-. Annotate PMU related list_head members with type info. (Cody P Schafer)
-
-. Add the triplet used for arm64 by Android (Elliott Hughes)
-
-. Replace thread unsafe strerror() with strerror_r() accross the
-  whole tools/perf/ tree (Masami Hiramatsu)
-
+Suggested-by: Arnaldo Carvalho de Melo <acme@kernel.org>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Brendan Gregg <brendan.d.gregg@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: yrl.pp-manager.tt@hitachi.com
+Link: http://lkml.kernel.org/r/20140815014432.29869.57941.stgit@kbuild-fedora.novalocal
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/probe-event.c | 41 +++++++++++++++++++++++------------------
+ 1 file changed, 23 insertions(+), 18 deletions(-)
 
-----------------------------------------------------------------
-Alex Converse (1):
-      perf annotate: Don't truncate Intel style addresses
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 784ea42ad8cb..ac15ff780009 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -258,21 +258,33 @@ static void clear_probe_trace_events(struct probe_trace_event *tevs, int ntevs)
+ #ifdef HAVE_DWARF_SUPPORT
+ 
+ /* Open new debuginfo of given module */
+-static struct debuginfo *open_debuginfo(const char *module)
++static struct debuginfo *open_debuginfo(const char *module, bool silent)
+ {
+ 	const char *path = module;
++	struct debuginfo *ret;
+ 
+ 	if (!module || !strchr(module, '/')) {
+ 		path = kernel_get_module_path(module);
+ 		if (!path) {
+-			pr_err("Failed to find path of %s module.\n",
+-			       module ?: "kernel");
++			if (!silent)
++				pr_err("Failed to find path of %s module.\n",
++				       module ?: "kernel");
+ 			return NULL;
+ 		}
+ 	}
+-	return debuginfo__new(path);
++	ret = debuginfo__new(path);
++	if (!ret && !silent) {
++		pr_warning("The %s file has no debug information.\n", path);
++		if (!module || !strtailcmp(path, ".ko"))
++			pr_warning("Rebuild with CONFIG_DEBUG_INFO=y, ");
++		else
++			pr_warning("Rebuild with -g, ");
++		pr_warning("or install an appropriate debuginfo package.\n");
++	}
++	return ret;
+ }
+ 
++
+ static int get_text_start_address(const char *exec, unsigned long *address)
+ {
+ 	Elf *elf;
+@@ -333,15 +345,13 @@ static int find_perf_probe_point_from_dwarf(struct probe_trace_point *tp,
+ 	pr_debug("try to find information at %" PRIx64 " in %s\n", addr,
+ 		 tp->module ? : "kernel");
+ 
+-	dinfo = open_debuginfo(tp->module);
++	dinfo = open_debuginfo(tp->module, verbose == 0);
+ 	if (dinfo) {
+ 		ret = debuginfo__find_probe_point(dinfo,
+ 						 (unsigned long)addr, pp);
+ 		debuginfo__delete(dinfo);
+-	} else {
+-		pr_debug("Failed to open debuginfo at 0x%" PRIx64 "\n", addr);
++	} else
+ 		ret = -ENOENT;
+-	}
+ 
+ 	if (ret > 0) {
+ 		pp->retprobe = tp->retprobe;
+@@ -457,13 +467,11 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 	struct debuginfo *dinfo;
+ 	int ntevs, ret = 0;
+ 
+-	dinfo = open_debuginfo(target);
++	dinfo = open_debuginfo(target, !need_dwarf);
+ 
+ 	if (!dinfo) {
+-		if (need_dwarf) {
+-			pr_warning("Failed to open debuginfo file.\n");
++		if (need_dwarf)
+ 			return -ENOENT;
+-		}
+ 		pr_debug("Could not open debuginfo. Try to use symbols.\n");
+ 		return 0;
+ 	}
+@@ -620,11 +628,9 @@ static int __show_line_range(struct line_range *lr, const char *module)
+ 	char *tmp;
+ 
+ 	/* Search a line range */
+-	dinfo = open_debuginfo(module);
+-	if (!dinfo) {
+-		pr_warning("Failed to open debuginfo file.\n");
++	dinfo = open_debuginfo(module, false);
++	if (!dinfo)
+ 		return -ENOENT;
+-	}
+ 
+ 	ret = debuginfo__find_line_range(dinfo, lr);
+ 	debuginfo__delete(dinfo);
+@@ -772,9 +778,8 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	dinfo = open_debuginfo(module);
++	dinfo = open_debuginfo(module, false);
+ 	if (!dinfo) {
+-		pr_warning("Failed to open debuginfo file.\n");
+ 		ret = -ENOENT;
+ 		goto out;
+ 	}
+-- 
+1.9.3
 
-Cody P Schafer (1):
-      perf tools: Annotate PMU related list_head members with type info
-
-Elliott Hughes (1):
-      perf tools: Add arm64 triplets
-
-Masami Hiramatsu (14):
-      perf probe: Warn user to rebuild target with debuginfo
-      perf probe: Don't use strerror if strlist__add failed
-      perf: Use strerror_r instead of strerror
-      perf probe: Make error messages thread-safe
-      perf util: Replace strerror with strerror_r for thread-safety
-      perf top: Use strerror_r instead of strerror
-      perf trace: Use strerror_r instead of strerror
-      perf record: Use strerror_r instead of strerror
-      perf test: Use strerror_r instead of strerror
-      perf sched: Use strerror_r instead of strerror
-      perf buildid-cache: Use strerror_r instead of strerror
-      perf kvm: Use strerror_r instead of strerror
-      perf help: Use strerror_r instead of strerror
-      perf stat: Use strerror_r instead of strerror
-
-Namhyung Kim (1):
-      perf report: Relax -g option parsing not to limit the option order
-
- tools/perf/arch/common.c                  |  9 +++
- tools/perf/builtin-buildid-cache.c        |  7 ++-
- tools/perf/builtin-help.c                 | 20 +++++--
- tools/perf/builtin-kvm.c                  |  7 ++-
- tools/perf/builtin-probe.c                |  5 +-
- tools/perf/builtin-record.c               |  7 ++-
- tools/perf/builtin-sched.c                |  4 +-
- tools/perf/builtin-stat.c                 |  2 +-
- tools/perf/builtin-top.c                  |  2 +-
- tools/perf/builtin-trace.c                |  6 +-
- tools/perf/perf.c                         | 10 +++-
- tools/perf/tests/builtin-test.c           |  4 +-
- tools/perf/tests/mmap-basic.c             |  7 ++-
- tools/perf/tests/open-syscall-all-cpus.c  |  5 +-
- tools/perf/tests/open-syscall-tp-fields.c |  7 ++-
- tools/perf/tests/open-syscall.c           |  3 +-
- tools/perf/tests/perf-record.c            | 13 +++--
- tools/perf/tests/rdpmc.c                  |  6 +-
- tools/perf/tests/sw-clock.c               |  6 +-
- tools/perf/tests/task-exit.c              |  6 +-
- tools/perf/util/annotate.c                | 12 +++-
- tools/perf/util/callchain.c               | 95 +++++++++++++------------------
- tools/perf/util/cloexec.c                 |  6 +-
- tools/perf/util/data.c                    |  8 ++-
- tools/perf/util/debug.h                   |  3 +
- tools/perf/util/dso.c                     |  8 ++-
- tools/perf/util/evlist.c                  |  2 +-
- tools/perf/util/evsel.c                   |  7 ++-
- tools/perf/util/parse-events.c            |  5 +-
- tools/perf/util/pmu.c                     |  4 +-
- tools/perf/util/pmu.h                     |  6 +-
- tools/perf/util/probe-event.c             | 75 +++++++++++++-----------
- tools/perf/util/probe-finder.c            |  7 ++-
- tools/perf/util/run-command.c             |  9 ++-
- tools/perf/util/util.c                    |  5 +-
- 35 files changed, 234 insertions(+), 154 deletions(-)
