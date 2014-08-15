@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509AbaHOTOz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:14:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59432 "EHLO mga09.intel.com"
+	id S1751836AbaHOTOy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:14:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59490 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752019AbaHOTLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752025AbaHOTLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Aug 2014 15:11:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,872,1400050800"; 
-   d="scan'208";a="588727939"
+   d="scan'208";a="588727943"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 12/24] perf tools: Add facility to export data in database-friendly way
-Date: Fri, 15 Aug 2014 22:08:47 +0300
-Message-Id: <1408129739-17368-13-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 13/24] perf tools: Extend Python script interface to export data in a database-friendly way
+Date: Fri, 15 Aug 2014 22:08:48 +0300
+Message-Id: <1408129739-17368-14-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1408129739-17368-1-git-send-email-adrian.hunter@intel.com>
 References: <1408129739-17368-1-git-send-email-adrian.hunter@intel.com>
@@ -27,494 +27,388 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces an abstraction for exporting sample
-data in a database-friendly way.  The abstraction does not
-implement the actual output.  A subsequent patch takes this
-facility into use for extending the script interface.
+Use the new db_export facility to export data in a
+database-friendly way.
 
-The abstraction is needed because static data like symbols,
-dsos, comms etc need to be exported only once.  That means
-allocating them a unique identifier and recording it on each
-structure.  The member 'db_id' is used for that.  'db_id'
-is just a 64-bit sequence number.
+A Python script selects the db_export mode by setting
+a global variable 'perf_db_export_mode' to True.  The
+script then optionally implements functions to receive
+table rows.  The functions are:
 
-Exporting centres around the db_export__sample() function
-which exports the associated data structures if they have
-not yet been allocated a db_id.
+	evsel_table
+	machine_table
+	thread_table
+	comm_table
+	dso_table
+	symbol_table
+	sample_table
+
+An example script is provided in a subsequent patch.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/Makefile.perf    |   2 +
- tools/perf/util/comm.h      |   1 +
- tools/perf/util/db-export.c | 268 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/db-export.h |  86 ++++++++++++++
- tools/perf/util/dso.h       |   1 +
- tools/perf/util/evsel.h     |   1 +
- tools/perf/util/machine.h   |   1 +
- tools/perf/util/symbol.h    |   1 +
- tools/perf/util/thread.h    |   1 +
- 9 files changed, 362 insertions(+)
- create mode 100644 tools/perf/util/db-export.c
- create mode 100644 tools/perf/util/db-export.h
+ .../util/scripting-engines/trace-event-python.c    | 281 ++++++++++++++++++++-
+ 1 file changed, 279 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index f754067..df1b164 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -304,6 +304,7 @@ LIB_H += ui/ui.h
- LIB_H += util/data.h
- LIB_H += util/kvm-stat.h
- LIB_H += util/thread-stack.h
-+LIB_H += util/db-export.h
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 56ba07c..400c7d6 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -24,6 +24,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <stdbool.h>
+ #include <errno.h>
  
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -381,6 +382,7 @@ LIB_OBJS += $(OUTPUT)util/data.o
- LIB_OBJS += $(OUTPUT)util/tsc.o
- LIB_OBJS += $(OUTPUT)util/cloexec.o
- LIB_OBJS += $(OUTPUT)util/thread-stack.o
-+LIB_OBJS += $(OUTPUT)util/db-export.o
+ #include "../../perf.h"
+@@ -32,6 +33,9 @@
+ #include "../util.h"
+ #include "../event.h"
+ #include "../thread.h"
++#include "../comm.h"
++#include "../machine.h"
++#include "../db-export.h"
+ #include "../trace-event.h"
+ #include "../machine.h"
  
- LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
-diff --git a/tools/perf/util/comm.h b/tools/perf/util/comm.h
-index 51c10ab..99e7021 100644
---- a/tools/perf/util/comm.h
-+++ b/tools/perf/util/comm.h
-@@ -10,6 +10,7 @@ struct comm_str;
- struct comm {
- 	struct comm_str *comm_str;
- 	u64 start;
-+	u64 db_id;
- 	struct list_head list;
- 	bool exec;
- };
-diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
-new file mode 100644
-index 0000000..53d0e75
---- /dev/null
-+++ b/tools/perf/util/db-export.c
-@@ -0,0 +1,268 @@
-+/*
-+ * db-export.c: Support for exporting data suitable for import to a database
-+ * Copyright (c) 2014, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#include <errno.h>
-+
-+#include "evsel.h"
-+#include "machine.h"
-+#include "thread.h"
-+#include "comm.h"
-+#include "symbol.h"
-+#include "event.h"
-+#include "db-export.h"
-+
-+int db_export__init(struct db_export *dbe)
-+{
-+	memset(dbe, 0, sizeof(struct db_export));
-+	return 0;
-+}
-+
-+void db_export__exit(struct db_export *dbe __maybe_unused)
-+{
-+}
-+
-+int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel)
-+{
-+	if (evsel->db_id)
-+		return 0;
-+
-+	evsel->db_id = ++dbe->evsel_last_db_id;
-+
-+	if (dbe->export_evsel)
-+		return dbe->export_evsel(dbe, evsel);
-+
-+	return 0;
-+}
-+
-+int db_export__machine(struct db_export *dbe, struct machine *machine)
-+{
-+	if (machine->db_id)
-+		return 0;
-+
-+	machine->db_id = ++dbe->machine_last_db_id;
-+
-+	if (dbe->export_machine)
-+		return dbe->export_machine(dbe, machine);
-+
-+	return 0;
-+}
-+
-+int db_export__thread(struct db_export *dbe, struct thread *thread,
-+		      struct machine *machine, struct comm *comm)
-+{
-+	u64 main_thread_db_id = 0;
-+	int err;
-+
-+	if (thread->db_id)
-+		return 0;
-+
-+	thread->db_id = ++dbe->thread_last_db_id;
-+
-+	if (thread->pid_ != -1) {
-+		struct thread *main_thread;
-+
-+		if (thread->pid_ == thread->tid) {
-+			main_thread = thread;
-+		} else {
-+			main_thread = machine__findnew_thread(machine,
-+							      thread->pid_,
-+							      thread->pid_);
-+			if (!main_thread)
-+				return -ENOMEM;
-+			err = db_export__thread(dbe, main_thread, machine,
-+						comm);
-+			if (err)
-+				return err;
-+			if (comm) {
-+				err = db_export__comm_thread(dbe, comm, thread);
-+				if (err)
-+					return err;
-+			}
-+		}
-+		main_thread_db_id = main_thread->db_id;
-+	}
-+
-+	if (dbe->export_thread)
-+		return dbe->export_thread(dbe, thread, main_thread_db_id,
-+					  machine);
-+
-+	return 0;
-+}
-+
-+int db_export__comm(struct db_export *dbe, struct comm *comm,
-+		    struct thread *main_thread)
-+{
-+	int err;
-+
-+	if (comm->db_id)
-+		return 0;
-+
-+	comm->db_id = ++dbe->comm_last_db_id;
-+
-+	if (dbe->export_comm) {
-+		err = dbe->export_comm(dbe, comm);
-+		if (err)
-+			return err;
-+	}
-+
-+	return db_export__comm_thread(dbe, comm, main_thread);
-+}
-+
-+int db_export__comm_thread(struct db_export *dbe, struct comm *comm,
-+			   struct thread *thread)
-+{
-+	u64 db_id;
-+
-+	db_id = ++dbe->comm_thread_last_db_id;
-+
-+	if (dbe->export_comm_thread)
-+		return dbe->export_comm_thread(dbe, db_id, comm, thread);
-+
-+	return 0;
-+}
-+
-+int db_export__dso(struct db_export *dbe, struct dso *dso,
-+		   struct machine *machine)
-+{
-+	if (dso->db_id)
-+		return 0;
-+
-+	dso->db_id = ++dbe->dso_last_db_id;
-+
-+	if (dbe->export_dso)
-+		return dbe->export_dso(dbe, dso, machine);
-+
-+	return 0;
-+}
-+
-+int db_export__symbol(struct db_export *dbe, struct symbol *sym,
-+		      struct dso *dso)
-+{
-+	if (sym->db_id)
-+		return 0;
-+
-+	sym->db_id = ++dbe->symbol_last_db_id;
-+
-+	if (dbe->export_symbol)
-+		return dbe->export_symbol(dbe, sym, dso);
-+
-+	return 0;
-+}
-+
-+static struct thread *get_main_thread(struct machine *machine,
-+				      struct thread *thread)
-+{
-+	if (thread->pid_ == thread->tid)
-+		return thread;
-+
-+	if (thread->pid_ == -1)
-+		return NULL;
-+
-+	return machine__find_thread(machine, thread->pid_, thread->pid_);
-+}
-+
-+static int db_ids_from_al(struct db_export *dbe, struct addr_location *al,
-+			  u64 *dso_db_id, u64 *sym_db_id, u64 *offset)
-+{
-+	int err;
-+
-+	if (al->map) {
-+		struct dso *dso = al->map->dso;
-+
-+		err = db_export__dso(dbe, dso, al->machine);
-+		if (err)
-+			return err;
-+		*dso_db_id = dso->db_id;
-+
-+		if (!al->sym) {
-+			al->sym = symbol__new(al->addr, 0, 0, "unknown");
-+			if (al->sym)
-+				symbols__insert(&dso->symbols[al->map->type],
-+						al->sym);
-+		}
-+
-+		if (al->sym) {
-+			err = db_export__symbol(dbe, al->sym, dso);
-+			if (err)
-+				return err;
-+			*sym_db_id = al->sym->db_id;
-+			*offset = al->addr - al->sym->start;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+int db_export__sample(struct db_export *dbe, union perf_event *event,
-+		      struct perf_sample *sample, struct perf_evsel *evsel,
-+		      struct thread *thread, struct addr_location *al)
-+{
-+	struct export_sample es = {
-+		.event = event,
-+		.sample = sample,
-+		.evsel = evsel,
-+		.thread = thread,
-+		.al = al,
-+	};
-+	struct thread *main_thread;
-+	struct comm *comm = NULL;
-+	int err;
-+
-+	err = db_export__evsel(dbe, evsel);
-+	if (err)
-+		return err;
-+
-+	err = db_export__machine(dbe, al->machine);
-+	if (err)
-+		return err;
-+
-+	main_thread = get_main_thread(al->machine, thread);
-+	if (main_thread)
-+		comm = machine__thread_exec_comm(al->machine, main_thread);
-+
-+	err = db_export__thread(dbe, thread, al->machine, comm);
-+	if (err)
-+		return err;
-+
-+	if (comm) {
-+		err = db_export__comm(dbe, comm, main_thread);
-+		if (err)
-+			return err;
-+		es.comm_db_id = comm->db_id;
-+	}
-+
-+	es.db_id = ++dbe->sample_last_db_id;
-+
-+	err = db_ids_from_al(dbe, al, &es.dso_db_id, &es.sym_db_id, &es.offset);
-+	if (err)
-+		return err;
-+
-+	if ((evsel->attr.sample_type & PERF_SAMPLE_ADDR) &&
-+	    sample_addr_correlates_sym(&evsel->attr)) {
-+		struct addr_location addr_al;
-+
-+		perf_event__preprocess_sample_addr(event, sample, al->machine,
-+						   thread, &addr_al);
-+		err = db_ids_from_al(dbe, &addr_al, &es.addr_dso_db_id,
-+				     &es.addr_sym_db_id, &es.addr_offset);
-+		if (err)
-+			return err;
-+	}
-+
-+	if (dbe->export_sample)
-+		return dbe->export_sample(dbe, &es);
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
-new file mode 100644
-index 0000000..b3643e8
---- /dev/null
-+++ b/tools/perf/util/db-export.h
-@@ -0,0 +1,86 @@
-+/*
-+ * db-export.h: Support for exporting data suitable for import to a database
-+ * Copyright (c) 2014, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#ifndef __PERF_DB_EXPORT_H
-+#define __PERF_DB_EXPORT_H
-+
-+#include <linux/types.h>
-+
-+struct perf_evsel;
-+struct machine;
-+struct thread;
-+struct comm;
-+struct dso;
-+struct perf_sample;
-+struct addr_location;
-+
-+struct export_sample {
-+	union perf_event	*event;
-+	struct perf_sample	*sample;
-+	struct perf_evsel	*evsel;
-+	struct thread		*thread;
-+	struct addr_location	*al;
-+	u64			db_id;
-+	u64			comm_db_id;
-+	u64			dso_db_id;
-+	u64			sym_db_id;
-+	u64			offset; /* ip offset from symbol start */
-+	u64			addr_dso_db_id;
-+	u64			addr_sym_db_id;
-+	u64			addr_offset; /* addr offset from symbol start */
+@@ -52,6 +56,21 @@ static int zero_flag_atom;
+ 
+ static PyObject *main_module, *main_dict;
+ 
++struct tables {
++	struct db_export	dbe;
++	PyObject		*evsel_handler;
++	PyObject		*machine_handler;
++	PyObject		*thread_handler;
++	PyObject		*comm_handler;
++	PyObject		*comm_thread_handler;
++	PyObject		*dso_handler;
++	PyObject		*symbol_handler;
++	PyObject		*sample_handler;
++	bool			db_export_mode;
 +};
 +
-+struct db_export {
-+	int (*export_evsel)(struct db_export *dbe, struct perf_evsel *evsel);
-+	int (*export_machine)(struct db_export *dbe, struct machine *machine);
-+	int (*export_thread)(struct db_export *dbe, struct thread *thread,
-+			     u64 main_thread_db_id, struct machine *machine);
-+	int (*export_comm)(struct db_export *dbe, struct comm *comm);
-+	int (*export_comm_thread)(struct db_export *dbe, u64 db_id,
-+				  struct comm *comm, struct thread *thread);
-+	int (*export_dso)(struct db_export *dbe, struct dso *dso,
-+			  struct machine *machine);
-+	int (*export_symbol)(struct db_export *dbe, struct symbol *sym,
-+			     struct dso *dso);
-+	int (*export_sample)(struct db_export *dbe, struct export_sample *es);
-+	u64 evsel_last_db_id;
-+	u64 machine_last_db_id;
-+	u64 thread_last_db_id;
-+	u64 comm_last_db_id;
-+	u64 comm_thread_last_db_id;
-+	u64 dso_last_db_id;
-+	u64 symbol_last_db_id;
-+	u64 sample_last_db_id;
-+};
++static struct tables tables_global;
 +
-+int db_export__init(struct db_export *dbe);
-+void db_export__exit(struct db_export *dbe);
-+int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel);
-+int db_export__machine(struct db_export *dbe, struct machine *machine);
-+int db_export__thread(struct db_export *dbe, struct thread *thread,
-+		      struct machine *machine, struct comm *comm);
-+int db_export__comm(struct db_export *dbe, struct comm *comm,
-+		    struct thread *main_thread);
-+int db_export__comm_thread(struct db_export *dbe, struct comm *comm,
-+			   struct thread *thread);
-+int db_export__dso(struct db_export *dbe, struct dso *dso,
-+		   struct machine *machine);
-+int db_export__symbol(struct db_export *dbe, struct symbol *sym,
-+		      struct dso *dso);
-+int db_export__sample(struct db_export *dbe, union perf_event *event,
-+		      struct perf_sample *sample, struct perf_evsel *evsel,
-+		      struct thread *thread, struct addr_location *al);
+ static void handler_call_die(const char *handler_name) NORETURN;
+ static void handler_call_die(const char *handler_name)
+ {
+@@ -474,6 +493,210 @@ static void python_process_tracepoint(struct perf_sample *sample,
+ 	Py_DECREF(t);
+ }
+ 
++static PyObject *tuple_new(unsigned int sz)
++{
++	PyObject *t;
 +
++	t = PyTuple_New(sz);
++	if (!t)
++		Py_FatalError("couldn't create Python tuple");
++	return t;
++}
++
++static int tuple_set_u64(PyObject *t, unsigned int pos, u64 val)
++{
++#if BITS_PER_LONG == 64
++	return PyTuple_SetItem(t, pos, PyInt_FromLong(val));
 +#endif
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 5e463c0..1c72a33 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -101,6 +101,7 @@ struct dso {
- 	enum dso_swap_type	needs_swap;
- 	enum dso_binary_type	symtab_type;
- 	enum dso_binary_type	binary_type;
-+	u64		 db_id;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 has_srcline:1;
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index d46d28e..378e670 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -96,6 +96,7 @@ struct perf_evsel {
- 	int			sample_read;
- 	struct perf_evsel	*leader;
- 	char			*group_name;
-+	u64			db_id;
- };
++#if BITS_PER_LONG == 32
++	return PyTuple_SetItem(t, pos, PyLong_FromLongLong(val));
++#endif
++}
++
++static int tuple_set_s32(PyObject *t, unsigned int pos, s32 val)
++{
++	return PyTuple_SetItem(t, pos, PyInt_FromLong(val));
++}
++
++static int tuple_set_string(PyObject *t, unsigned int pos, const char *s)
++{
++	return PyTuple_SetItem(t, pos, PyString_FromString(s));
++}
++
++static int python_export_evsel(struct db_export *dbe, struct perf_evsel *evsel)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(2);
++
++	tuple_set_u64(t, 0, evsel->db_id);
++	tuple_set_string(t, 1, perf_evsel__name(evsel));
++
++	call_object(tables->evsel_handler, t, "evsel_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_machine(struct db_export *dbe,
++				 struct machine *machine)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(3);
++
++	tuple_set_u64(t, 0, machine->db_id);
++	tuple_set_s32(t, 1, machine->pid);
++	tuple_set_string(t, 2, machine->root_dir ? machine->root_dir : "");
++
++	call_object(tables->machine_handler, t, "machine_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_thread(struct db_export *dbe, struct thread *thread,
++				u64 main_thread_db_id, struct machine *machine)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(5);
++
++	tuple_set_u64(t, 0, thread->db_id);
++	tuple_set_u64(t, 1, machine->db_id);
++	tuple_set_u64(t, 2, main_thread_db_id);
++	tuple_set_s32(t, 3, thread->pid_);
++	tuple_set_s32(t, 4, thread->tid);
++
++	call_object(tables->thread_handler, t, "thread_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_comm(struct db_export *dbe, struct comm *comm)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(2);
++
++	tuple_set_u64(t, 0, comm->db_id);
++	tuple_set_string(t, 1, comm__str(comm));
++
++	call_object(tables->comm_handler, t, "comm_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_comm_thread(struct db_export *dbe, u64 db_id,
++				     struct comm *comm, struct thread *thread)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(3);
++
++	tuple_set_u64(t, 0, db_id);
++	tuple_set_u64(t, 1, comm->db_id);
++	tuple_set_u64(t, 2, thread->db_id);
++
++	call_object(tables->comm_thread_handler, t, "comm_thread_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_dso(struct db_export *dbe, struct dso *dso,
++			     struct machine *machine)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
++	PyObject *t;
++
++	build_id__sprintf(dso->build_id, sizeof(dso->build_id), sbuild_id);
++
++	t = tuple_new(5);
++
++	tuple_set_u64(t, 0, dso->db_id);
++	tuple_set_u64(t, 1, machine->db_id);
++	tuple_set_string(t, 2, dso->short_name);
++	tuple_set_string(t, 3, dso->long_name);
++	tuple_set_string(t, 4, sbuild_id);
++
++	call_object(tables->dso_handler, t, "dso_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_symbol(struct db_export *dbe, struct symbol *sym,
++				struct dso *dso)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(6);
++
++	tuple_set_u64(t, 0, sym->db_id);
++	tuple_set_u64(t, 1, dso->db_id);
++	tuple_set_u64(t, 2, sym->start);
++	tuple_set_u64(t, 3, sym->end);
++	tuple_set_s32(t, 4, sym->binding);
++	tuple_set_string(t, 5, sym->name);
++
++	call_object(tables->symbol_handler, t, "symbol_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
++static int python_export_sample(struct db_export *dbe,
++				struct export_sample *es)
++{
++	struct tables *tables = container_of(dbe, struct tables, dbe);
++	PyObject *t;
++
++	t = tuple_new(19);
++
++	tuple_set_u64(t, 0, es->db_id);
++	tuple_set_u64(t, 1, es->evsel->db_id);
++	tuple_set_u64(t, 2, es->al->machine->db_id);
++	tuple_set_u64(t, 3, es->thread->db_id);
++	tuple_set_u64(t, 4, es->comm_db_id);
++	tuple_set_u64(t, 5, es->dso_db_id);
++	tuple_set_u64(t, 6, es->sym_db_id);
++	tuple_set_u64(t, 7, es->offset);
++	tuple_set_u64(t, 8, es->sample->ip);
++	tuple_set_u64(t, 9, es->sample->time);
++	tuple_set_s32(t, 10, es->sample->cpu);
++	tuple_set_u64(t, 11, es->addr_dso_db_id);
++	tuple_set_u64(t, 12, es->addr_sym_db_id);
++	tuple_set_u64(t, 13, es->addr_offset);
++	tuple_set_u64(t, 14, es->sample->addr);
++	tuple_set_u64(t, 15, es->sample->period);
++	tuple_set_u64(t, 16, es->sample->weight);
++	tuple_set_u64(t, 17, es->sample->transaction);
++	tuple_set_u64(t, 18, es->sample->data_src);
++
++	call_object(tables->sample_handler, t, "sample_table");
++
++	Py_DECREF(t);
++
++	return 0;
++}
++
+ static void python_process_general_event(struct perf_sample *sample,
+ 					 struct perf_evsel *evsel,
+ 					 struct thread *thread,
+@@ -550,19 +773,25 @@ exit:
+ 	Py_DECREF(t);
+ }
  
- union u64_swap {
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 6a6bcc1..f385f23 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -39,6 +39,7 @@ struct machine {
- 	u64		  kernel_start;
- 	symbol_filter_t	  symbol_filter;
- 	pid_t		  *current_tid;
-+	u64		  db_id;
- };
+-static void python_process_event(union perf_event *event __maybe_unused,
++static void python_process_event(union perf_event *event,
+ 				 struct perf_sample *sample,
+ 				 struct perf_evsel *evsel,
+ 				 struct thread *thread,
+ 				 struct addr_location *al)
+ {
++	struct tables *tables = &tables_global;
++
+ 	switch (evsel->attr.type) {
+ 	case PERF_TYPE_TRACEPOINT:
+ 		python_process_tracepoint(sample, evsel, thread, al);
+ 		break;
+ 	/* Reserve for future process_hw/sw/raw APIs */
+ 	default:
+-		python_process_general_event(sample, evsel, thread, al);
++		if (tables->db_export_mode)
++			db_export__sample(&tables->dbe, event, sample, evsel,
++					  thread, al);
++		else
++			python_process_general_event(sample, evsel, thread, al);
+ 	}
+ }
  
- static inline
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 3f95ea0..45e277b 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -73,6 +73,7 @@ struct symbol {
- 	struct rb_node	rb_node;
- 	u64		start;
- 	u64		end;
-+	u64		db_id;
- 	u16		namelen;
- 	u8		binding;
- 	bool		ignore;
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index a057820..a3ebb21 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -25,6 +25,7 @@ struct thread {
- 	bool			dead; /* if set thread has exited */
- 	struct list_head	comm_list;
- 	int			comm_len;
-+	u64			db_id;
+@@ -588,11 +817,53 @@ error:
+ 	return -1;
+ }
  
- 	void			*priv;
- 	struct thread_stack	*ts;
++#define SET_TABLE_HANDLER_(name, handler_name, table_name) do {		\
++	tables->handler_name = get_handler(#table_name);		\
++	if (tables->handler_name)					\
++		tables->dbe.export_ ## name = python_export_ ## name;	\
++} while (0)
++
++#define SET_TABLE_HANDLER(name) \
++	SET_TABLE_HANDLER_(name, name ## _handler, name ## _table)
++
++static void set_table_handlers(struct tables *tables)
++{
++	const char *perf_db_export_mode = "perf_db_export_mode";
++	PyObject *db_export_mode;
++	int ret;
++
++	memset(tables, 0, sizeof(struct tables));
++	if (db_export__init(&tables->dbe))
++		Py_FatalError("failed to initialize export");
++
++	db_export_mode = PyDict_GetItemString(main_dict, perf_db_export_mode);
++	if (!db_export_mode)
++		return;
++
++	ret = PyObject_IsTrue(db_export_mode);
++	if (ret == -1)
++		handler_call_die(perf_db_export_mode);
++	if (!ret)
++		return;
++
++	tables->db_export_mode = true;
++
++	SET_TABLE_HANDLER(evsel);
++	SET_TABLE_HANDLER(machine);
++	SET_TABLE_HANDLER(thread);
++	SET_TABLE_HANDLER(comm);
++	SET_TABLE_HANDLER(comm_thread);
++	SET_TABLE_HANDLER(dso);
++	SET_TABLE_HANDLER(symbol);
++	SET_TABLE_HANDLER(sample);
++}
++
+ /*
+  * Start trace script
+  */
+ static int python_start_script(const char *script, int argc, const char **argv)
+ {
++	struct tables *tables = &tables_global;
+ 	const char **command_line;
+ 	char buf[PATH_MAX];
+ 	int i, err = 0;
+@@ -631,6 +902,8 @@ static int python_start_script(const char *script, int argc, const char **argv)
+ 
+ 	free(command_line);
+ 
++	set_table_handlers(tables);
++
+ 	return err;
+ error:
+ 	Py_Finalize();
+@@ -649,8 +922,12 @@ static int python_flush_script(void)
+  */
+ static int python_stop_script(void)
+ {
++	struct tables *tables = &tables_global;
++
+ 	try_call_object("trace_end", NULL);
+ 
++	db_export__exit(&tables->dbe);
++
+ 	Py_XDECREF(main_dict);
+ 	Py_XDECREF(main_module);
+ 	Py_Finalize();
 -- 
 1.8.3.2
 
