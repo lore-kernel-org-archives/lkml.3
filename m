@@ -1,454 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaHOWqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 18:46:42 -0400
-Received: from smtp.pobox.com ([208.72.237.35]:53909 "EHLO smtp.pobox.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268AbaHOWqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 18:46:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type; q=dns; s=
-	sasl; b=Q/eygeE4N7KNVN1PQsP7XiglTctIqCSYD63f89CEAfWOcBhwYAa+9Eop
-	7l3NB/AbzI/9tIoFcHUl8tpkX6zUXQ9/C3As4CIsopvPmm372pCm5xMObdyDWCT3
-	gMNVhOU3Bi5lLRUa4YcIb9NaXwy8k0Pr6zHBWOOmVx+3nqcvVGE=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v2.1.0
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Fri, 15 Aug 2014 15:46:29 -0700
-Message-ID: <xmqqd2c1z7zu.fsf@gitster.dls.corp.google.com>
+	id S1751380AbaHOXDa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 19:03:30 -0400
+Received: from mail-la0-f67.google.com ([209.85.215.67]:36273 "EHLO
+	mail-la0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaHOXD3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 19:03:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 003C714C-24CE-11E4-BAEA-9903E9FBB39C-77302942!pb-smtp0.pobox.com
+Reply-To: mr.cedriclizin@gmail.com
+Date: Fri, 15 Aug 2014 15:39:42 -0700
+Message-ID: <CAFCuK1gcnSpQFqyHhq5N_R2dv5m7j-FMEG0=9S6PqrPjYjfJFQ@mail.gmail.com>
+Subject: GREETINGS FROM DUBAI
+From: "Mr. Cedric Lizin" <mr.bobdodo11@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest feature release Git v2.1.0 is now available at the
-usual places.
-
-The tarballs are found at:
-
-    https://www.kernel.org/pub/software/scm/git/
-
-The following public repositories all have a copy of the 'v2.1.0'
-tag and the 'master' branch that the tag points at:
-
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Git v2.1 Release Notes
-======================
-
-Backward compatibility notes
-----------------------------
-
- * The default value we give to the environment variable LESS has been
-   changed from "FRSX" to "FRX", losing "S" (chop long lines instead
-   of wrapping).  Existing users who prefer not to see line-wrapped
-   output may want to set
-
-     $ git config core.pager "less -S"
-
-   to restore the traditional behaviour.  It is expected that people
-   find output from most subcommands easier to read with the new
-   default, except for "blame" which tends to produce really long
-   lines.  To override the new default only for "git blame", you can
-   do this:
-
-     $ git config pager.blame "less -S"
-
- * A few disused directories in contrib/ have been retired.
-
-
-Updates since v2.0
-------------------
-
-UI, Workflows & Features
-
- * Since the very beginning of Git, we gave the LESS environment a
-   default value "FRSX" when we spawn "less" as the pager.  "S" (chop
-   long lines instead of wrapping) has been removed from this default
-   set of options, because it is more or less a personal taste thing,
-   as opposed to the others that have good justifications (i.e. "R" is
-   very much justified because many kinds of output we produce are
-   colored and "FX" is justified because output we produce is often
-   shorter than a page).
-
- * The logic and data used to compute the display width needed for
-   UTF-8 strings have been updated to match Unicode 7.0 better.
-
- * HTTP-based transports learned to better propagate the error messages from
-   the webserver to the client coming over the HTTP transport.
-
- * The completion script for bash (in contrib/) has been updated to
-   better handle aliases that define a complex sequence of commands.
-
- * The "core.preloadindex" configuration variable is enabled by default,
-   allowing modern platforms to take advantage of their
-   multiple cores.
-
- * "git clone" applies the "if cloning from a local disk, physically
-   copy the repository using hardlinks, unless otherwise told not to with
-   --no-local" optimization when the url.*.insteadOf mechanism rewrites a
-   remote-repository "git clone $URL" into a
-   clone from a local disk.
-
- * "git commit --date=<date>" option learned more
-   timestamp formats, including "--date=now".
-
- * The `core.commentChar` configuration variable is used to specify a
-   custom comment character (other than the default "#") for
-   the commit message editor.  This can be set to `auto` to attempt to
-   choose a different character that does not conflict with any that
-   already starts a line in the message being edited, for cases like
-   "git commit --amend".
-
- * "git format-patch" learned --signature-file=<file> to add the contents
-   of a file as a signature to the mail message it produces.
-
- * "git grep" learned the grep.fullname configuration variable to force
-   "--full-name" to be the default.  This may cause regressions for
-   scripted users who do not expect this new behaviour.
-
- * "git imap-send" learned to ask the credential helper for auth
-   material.
-
- * "git log" and friends now understand the value "auto" for the
-   "log.decorate" configuration variable to enable the "--decorate"
-   option automatically when the output is sent to tty.
-
- * "git merge" without an argument, even when there is an upstream
-   defined for the current branch, refused to run until
-   merge.defaultToUpstream is set to true.  Flip the default of that
-   configuration variable to true.
-
- * "git mergetool" learned to drive the vimdiff3 backend.
-
- * mergetool.prompt used to default to 'true', always asking "do you
-   really want to run the tool on this path?".  The default has been
-   changed to 'false'.  However, the prompt will still appear if
-   mergetool used its autodetection system to guess which tool to use.
-   Users who explicitly specify or configure a tool will no longer see
-   the prompt by default.
-
-   Strictly speaking, this is a backward incompatible change and
-   users need to explicitly set the variable to 'true' if they want
-   to be prompted to confirm running the tool on each path.
-
- * "git replace" learned the "--edit" subcommand to create a
-   replacement by editing an existing object.
-
- * "git replace" learned a "--graft" option to rewrite the parents of a
-   commit.
-
- * "git send-email" learned "--to-cover" and "--cc-cover" options, to
-   tell it to copy To: and Cc: headers found in the first input file
-   when emitting later input files.
-
- * "git svn" learned to cope with malformed timestamps with only one
-   digit in the hour part, e.g. 2014-01-07T5:01:02.048176Z, emitted
-   by some broken subversion server implementations.
-
- * "git tag" when editing the tag message shows the name of the tag
-   being edited as a comment in the editor.
-
- * "git tag" learned to pay attention to "tag.sort" configuration, to
-   be used as the default sort order when no --sort=<value> option
-   is given.
-
- * A new "git verify-commit" command, to check GPG signatures in signed
-   commits, in a way similar to "git verify-tag" is used to check
-   signed tags, was added.
-
-
-Performance, Internal Implementation, etc.
-
- * Build procedure for 'subtree' (in contrib/) has been cleaned up.
-
- * Support for the profile-feedback build, which has
-   bit-rotted for quite a while, has been updated.
-
- * An experimental format to use two files (the base file and
-   incremental changes relative to it) to represent the index has been
-   introduced; this may reduce I/O cost of rewriting a large index
-   when only small part of the working tree changes.
-
- * Effort to shrink the size of patches Windows folks maintain on top
-   by upstreaming them continues.  More tests that are not applicable
-   to the Windows environment are identified and either skipped or
-   made more portable.
-
- * Eradication of "test $condition -a $condition" from our scripts
-   continues.
-
- * The `core.deltabasecachelimit` used to default to 16 MiB , but this
-   proved to be too small, and has been bumped to 96 MiB.
-
- * "git blame" has been optimized greatly by reorganising the data
-   structure that is used to keep track of the work to be done.
-
- * "git diff" that compares 3-or-more trees (e.g. parents and the
-   result of a merge) has been optimized.
-
- * The API to update/delete references are being converted to handle
-   updates to multiple references in a transactional way.  As an
-   example, "update-ref --stdin [-z]" has been updated to use this
-   API.
-
- * skip_prefix() and strip_suffix() API functions are used a lot more
-   widely throughout the codebase now.
-
- * Parts of the test scripts can be skipped by using a range notation,
-   e.g. "sh t1234-test.sh --run='1-4 6 8-'" to omit test piece 5 and 7
-   and run everything else.
-
-
-Also contains various documentation updates and code clean-ups.
-
-
-Fixes since v2.0
-----------------
-
-Unless otherwise noted, all the fixes since v2.0 in the maintenance
-track are contained in this release (see the maintenance releases'
-notes for details).
-
- * We used to unconditionally disable the pager in the pager process
-   we spawn to feed out output, but that prevented people who want to
-   run "less" within "less" from doing so.
-   (merge c0459ca je/pager-do-not-recurse later to maint).
-
- * Tools that read diagnostic output in our standard error stream do
-   not want to see terminal control sequence (e.g. erase-to-eol).
-   Detect them by checking if the standard error stream is connected
-   to a tty.
-   (merge 38de156 mn/sideband-no-ansi later to maint).
-
- * Mishandling of patterns in .gitignore that have trailing SPs quoted
-   with backslashes (e.g. ones that end with "\ ") has been
-   corrected.
-   (merge 97c1364be6b pb/trim-trailing-spaces later to maint).
-
- * Reworded the error message given upon a failure to open an existing
-   loose object file due to e.g. permission issues; it was reported as
-   the object being corrupt, but that is not quite true.
-   (merge d6c8a05 jk/report-fail-to-read-objects-better later to maint).
-
- * "git log -2master" is a common typo that shows two commits starting
-   from whichever random branch that is not 'master' that happens to
-   be checked out currently.
-   (merge e3fa568 jc/revision-dash-count-parsing later to maint).
-
- * Code to avoid adding the same alternate object store twice was
-   subtly broken for a long time, but nobody seems to have noticed.
-   (merge 80b4785 rs/fix-alt-odb-path-comparison later to maint).
-   (merge 539e750 ek/alt-odb-entry-fix later to maint).
-
- * The "%<(10,trunc)%s" pretty format specifier in the log family of
-   commands is used to truncate the string to a given length (e.g. 10
-   in the example) with padding to column-align the output, but did
-   not take into account that number of bytes and number of display
-   columns are different.
-   (merge 7d50987 as/pretty-truncate later to maint).
-
- * "%G" (nothing after G) is an invalid pretty format specifier, but
-   the parser did not notice it as garbage.
-   (merge 958b2eb jk/pretty-G-format-fixes later to maint).
-
- * A handful of code paths had to read the commit object more than
-   once when showing header fields that are usually not parsed.  The
-   internal data structure to keep track of the contents of the commit
-   object has been updated to reduce the need for this double-reading,
-   and to allow the caller find the length of the object.
-   (merge 218aa3a jk/commit-buffer-length later to maint).
-
- * The "mailmap.file" configuration option did not support tilde
-   expansion (i.e. ~user/path and ~/path).
-   (merge 9352fd5 ow/config-mailmap-pathname later to maint).
-
- * The completion scripts (in contrib/) did not know about quite a few
-   options that are common between "git merge" and "git pull", and a
-   couple of options unique to "git merge".
-   (merge 8fee872 jk/complete-merge-pull later to maint).
-
- * The unix-domain socket used by the sample credential cache daemon
-   tried to unlink an existing stale one at a wrong path, if the path
-   to the socket was given as an overlong path that does not fit in
-   the sun_path member of the sockaddr_un structure.
-   (merge 2869b3e rs/fix-unlink-unix-socket later to maint).
-
- * An ancient rewrite passed a wrong pointer to a curl library
-   function in a rarely used code path.
-   (merge 479eaa8 ah/fix-http-push later to maint).
-
- * "--ignore-space-change" option of "git apply" ignored the spaces
-   at the beginning of lines too aggressively, which is inconsistent
-   with the option of the same name that "diff" and "git diff" have.
-   (merge 14d3bb4 jc/apply-ignore-whitespace later to maint).
-
- * "git blame" miscounted the number of columns needed to show localized
-   timestamps, resulting in a jaggy left-side-edge for the source code
-   lines in its output.
-   (merge dd75553 jx/blame-align-relative-time later to maint).
-
- * "git blame" assigned the blame to the copy in the working-tree if
-   the repository is set to core.autocrlf=input and the file used CRLF
-   line endings.
-   (merge 4d4813a bc/blame-crlf-test later to maint).
-
- * "git clone -b brefs/tags/bar" would have mistakenly thought we were
-   following a single tag, even though it was a name of the branch,
-   because it incorrectly used strstr().
-   (merge 60a5f5f jc/fix-clone-single-starting-at-a-tag later to maint).
-
- * "git commit --allow-empty-message -C $commit" did not work when the
-   commit did not have any log message.
-   (merge 076cbd6 jk/commit-C-pick-empty later to maint).
-
- * "git diff --find-copies-harder" sometimes pretended as if the mode
-   bits have changed for paths that are marked with the assume-unchanged
-   bit.
-   (merge 5304810 jk/diff-files-assume-unchanged later to maint).
-
- * "filter-branch" left an empty single-parent commit that results when
-   all parents of a merge commit get mapped to the same commit, even
-   under "--prune-empty".
-   (merge 79bc4ef cb/filter-branch-prune-empty-degenerate-merges later to maint).
-
- * "git format-patch" did not enforce the rule that the "--follow"
-   option from the log/diff family of commands must be used with
-   exactly one pathspec.
-   (merge dd63f16 jk/diff-follow-must-take-one-pathspec later to maint).
-
- * "git gc --auto" was recently changed to run in the background to
-   give control back early to the end-user sitting in front of the
-   terminal, but it forgot that housekeeping involving reflogs should
-   be done without other processes competing for accesses to the refs.
-   (merge 62aad18 nd/daemonize-gc later to maint).
-
- * "git grep -O" to show the lines that hit in the pager did not work
-   well with case insensitive search.  We now spawn "less" with its
-   "-I" option when it is used as the pager (which is the default).
-   (merge f7febbe sk/spawn-less-case-insensitively-from-grep-O-i later to maint).
-
- * We used to disable threaded "git index-pack" on platforms without
-   thread-safe pread(); use a different workaround for such
-   platforms to allow threaded "git index-pack".
-   (merge 3953949 nd/index-pack-one-fd-per-thread later to maint).
-
- * The error reporting from "git index-pack" has been improved to
-   distinguish missing objects from type errors.
-   (merge 77583e7 jk/index-pack-report-missing later to maint).
-
- * "log --show-signature" incorrectly decided the color to paint a
-   mergetag that was and was not correctly validated.
-   (merge 42c55ce mg/fix-log-mergetag-color later to maint).
-
- * "log --show-signature" did not pay attention to the "--graph" option.
-   (merge cf3983d zk/log-graph-showsig later to maint).
-
- * "git mailinfo" used to read beyond the ends of header strings while
-   parsing an incoming e-mail message to extract the patch.
-   (merge b1a013d rs/mailinfo-header-cmp later to maint).
-
- * On a case insensitive filesystem, merge-recursive incorrectly
-   deleted the file that is to be renamed to a name that is the same
-   except for case differences.
-   (merge baa37bf dt/merge-recursive-case-insensitive later to maint).
-
- * Merging changes into a file that ends in an incomplete line made the
-   last line into a complete one, even when the other branch did not
-   change anything around the end of file.
-   (merge ba31180 mk/merge-incomplete-files later to maint).
-
- * "git pack-objects" unnecessarily copied the previous contents when
-   extending the hashtable, even though it will populate the table
-   from scratch anyway.
-   (merge fb79947 rs/pack-objects-no-unnecessary-realloc later to maint).
-
- * Recent updates to "git repack" started to duplicate objects that
-   are in packfiles marked with the .keep flag into the new packfile by
-   mistake.
-   (merge d078d85 jk/repack-pack-keep-objects later to maint).
-
- * "git rerere forget" did not work well when merge.conflictstyle
-   was set to a non-default value.
-   (merge de3d8bb fc/rerere-conflict-style later to maint).
-
- * "git remote rm" and "git remote prune" can involve removing many
-   refs at once, which is not a very efficient thing to do when very
-   many refs exist in the packed-refs file.
-   (merge e6bea66 jl/remote-rm-prune later to maint).
-
- * "git log --exclude=<glob> --all | git shortlog" worked as expected,
-   but "git shortlog --exclude=<glob> --all", which is supposed to be
-   identical to the above pipeline, was not accepted at the command
-   line argument parser level.
-   (merge eb07774 jc/shortlog-ref-exclude later to maint).
-
- * The autostash mode of "git rebase -i" did not restore the dirty
-   working tree state if the user aborted the interactive rebase by
-   emptying the insn sheet.
-   (merge ddb5432 rr/rebase-autostash-fix later to maint).
-
- * "git rebase --fork-point" did not filter out patch-identical
-   commits correctly.
-
- * During "git rebase --merge", a conflicted patch could not be
-   skipped with "--skip" if the next one also conflicted.
-   (merge 95104c7 bc/fix-rebase-merge-skip later to maint).
-
- * "git show -s" (i.e. show log message only) used to incorrectly emit
-   an extra blank line after a merge commit.
-   (merge ad2f725 mk/show-s-no-extra-blank-line-for-merges later to maint).
-
- * "git status", even though it is a read-only operation, tries to
-   update the index with refreshed lstat(2) info to optimize future
-   accesses to the working tree opportunistically, but this could
-   race with a "read-write" operation that modifies the index while it
-   is running.  Detect such a race and avoid overwriting the index.
-   (merge 426ddee ym/fix-opportunistic-index-update-race later to maint).
-
- * "git status" (and "git commit") behaved as if changes in a modified
-   submodule are not there if submodule.*.ignore configuration is set,
-   which was misleading.  The configuration is only to unclutter diff
-   output during the course of development, and not to hide
-   changes in the "status" output to cause the users forget to commit
-   them.
-   (merge c215d3d jl/status-added-submodule-is-never-ignored later to maint).
-
- * Documentation for "git submodule sync" forgot to say that the subcommand
-   can take the "--recursive" option.
-   (merge 9393ae7 mc/doc-submodule-sync-recurse later to maint).
-
- * "git update-index --cacheinfo" in 2.0 release crashed on a
-   malformed command line.
-   (merge c8e1ee4 jc/rev-parse-argh-dashed-multi-words later to maint).
-
- * The mode to run tests with HTTP server tests disabled was broken.
-   (merge afa53fe na/no-http-test-in-the-middle later to maint).
-
-----------------------------------------------------------------
-
-Changes since v2.1.0-rc2 are as follows:
-
-Alexander Shopov (1):
-      gitk: Updated Bulgarian translation (302t,0f,0u)
-
-Johannes Sixt (1):
-      tests: fix negated test_i18ngrep calls
-
-Junio C Hamano (1):
-      Git 2.1
-
-Max Kirillov (1):
-      gitk: Add keybinding to switch to parent commit
-
-
-
+Good day Friend,
+
+I am Cedric Lizin,Managing Director of Barclays Bank in United Arab
+Emirates .I write you this proposal in good faith hoping that I will
+rely on you in a business transaction that require absolute
+confidentiality and of great interest and benefit to our both
+families.
+
+In 2007,one Mr. Weimin, an Emirati Citizen whose surname is same as
+yours and has your country in his file as his place of origin, made a
+fixed deposit for 36 months, valued at $26,700,000.00 with my bank. I
+was his account officer before I rose to the position of Managing
+Director. The maturity date for this deposit contract was 27th of
+September 2010.Sadly Mr. Weimin was among the death victims in the
+September 2009 earthquake in Indonesia that left over 1,200 people
+dead while he was there on business trip.
+
+Since the last quarter of 2010 until today, the management of my bank
+has been finding means to reach him so as ascertain if he will roll
+over the Deposit or have the contract sum withdrawn. When I discovered
+that this will happen, I have tried to think up a procedure to
+preserve this fund and use the proceeds for business.
+
+Some directors here have been trying to find out from me the
+information about this account and the owner, but I have kept it
+closed because, I know that if they become aware that Mr. Weimin is
+late, they will corner the funds for themselves. Therefore, am seeking
+your co-operation to present you as the one to benefit from his fund
+at his death since you have the same name, so that my bank
+headquarters will pay the funds to you. I have done enough inside bank
+arrangement and you only have to put in your details into the
+information network in the bank computers and reflect you as his next
+of kin.
+
+If you concur with this proposal, I intend for you to retain 50% of
+the funds while 50% shall be for me. Kindly forward your response to
+me.
+Mr. Cedric Lizin
+Managing Director (Head of Barclays Wealth and Investment Management)
+Email: mr.cedriclizin@gmail.com
