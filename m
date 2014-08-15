@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419AbaHOQv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:51:29 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44878 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752387AbaHOQv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:51:27 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Naohiro Aota <naota@elisp.net>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 18/18] perf stat: Use strerror_r instead of strerror
-Date: Fri, 15 Aug 2014 13:50:03 -0300
-Message-Id: <1408121403-11919-19-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408121403-11919-1-git-send-email-acme@kernel.org>
-References: <1408121403-11919-1-git-send-email-acme@kernel.org>
+	id S1752472AbaHOQvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:51:43 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:36198 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752440AbaHOQvk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 12:51:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140815153353.GG17769@csclub.uwaterloo.ca>
+References: <20140814222119.GD18411@ld-irv-0074>
+	<20140815153353.GG17769@csclub.uwaterloo.ca>
+Date: Fri, 15 Aug 2014 18:51:38 +0200
+X-Google-Sender-Auth: m1rnlc2GVbcIeV-FckgobTamWwk
+Message-ID: <CAMuHMdXicLNuBy+vkGFaaMYrK5OivkpLJaPmCkYZx33P_abHfw@mail.gmail.com>
+Subject: Re: Overriding -Werror
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+On Fri, Aug 15, 2014 at 5:33 PM, Lennart Sorensen
+<lsorense@csclub.uwaterloo.ca> wrote:
+> On Thu, Aug 14, 2014 at 03:21:19PM -0700, Brian Norris wrote:
+>> I'm interested in being able to build-test kernels on various
+>> architectures while enabling extra warnings (make W=[123]). I'd like to
+>> be able to finish the builds and see all warnings, rather than seeing a
+>> failed build. However, GCC's -Werror is incompatible with this. There is
+>> plenty of code that will produce at least one warning, when warning
+>> verbosity is turned up. And GCC's -Werror is not guaranteed to remain
+>> stable over time; new versions may develop new warnings that may or may
+>> not be legitimate.
+>
+> What ever is wrong with using '-k' with your make command?
 
-Use strerror_r instead of strerror in error message for thread-safety.
+While -k helps to get more compiled, and thus see more warnings, you'll still
+be missing the report of missing symbols in the final link/modpost stage.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Naohiro Aota <naota@elisp.net>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140814022255.3545.81549.stgit@kbuild-fedora.novalocal
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-stat.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Gr{oetje,eeting}s,
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 3e80aa10cfd8..5fe0edb1de5d 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -593,7 +593,7 @@ static int __run_perf_stat(int argc, const char **argv)
- 
- 	if (perf_evlist__apply_filters(evsel_list)) {
- 		error("failed to set filter with %d (%s)\n", errno,
--			strerror(errno));
-+			strerror_r(errno, msg, sizeof(msg)));
- 		return -1;
- 	}
- 
--- 
-1.9.3
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
