@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751052AbaHOEgb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 00:36:31 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:37459 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750771AbaHOEga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 00:36:30 -0400
-Date: Fri, 15 Aug 2014 05:36:27 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes (mostly nouveau)
-Message-ID: <alpine.DEB.2.00.1408150535000.21689@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751104AbaHOEsw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 00:48:52 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:38847 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750725AbaHOEsu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 00:48:50 -0400
+Date: Fri, 15 Aug 2014 07:48:12 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        laurent.pinchart@ideasonboard.com
+Subject: Re: [PATCH/RFC v4 00/21] LED / flash API integration
+Message-ID: <20140815044811.GP16460@valkosipuli.retiisi.org.uk>
+References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
+ <20140806065358.GC16460@valkosipuli.retiisi.org.uk>
+ <53E336FA.2050306@samsung.com>
+ <20140814050338.GO16460@valkosipuli.retiisi.org.uk>
+ <53EC90D9.6080702@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53EC90D9.6080702@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 14, 2014 at 12:35:05PM +0200, Jacek Anaszewski wrote:
+> On 08/14/2014 07:03 AM, Sakari Ailus wrote:
+> >Hi Jacek,
+> >
+> >On Thu, Aug 07, 2014 at 10:21:14AM +0200, Jacek Anaszewski wrote:
+> >>On 08/06/2014 08:53 AM, Sakari Ailus wrote:
+> >>>Hi Jacek,
+> >>>
+> >>>On Fri, Jul 11, 2014 at 04:04:03PM +0200, Jacek Anaszewski wrote:
+> >>>...
+> >>>>1) Who should register V4L2 Flash sub-device?
+> >>>>
+> >>>>LED Flash Class devices, after introduction of the Flash Manager,
+> >>>>are not tightly coupled with any media controller. They are maintained
+> >>>>by the Flash Manager and made available for dynamic assignment to
+> >>>>any media system they are connected to through multiplexing devices.
+> >>>>
+> >>>>In the proposed rough solution, when support for V4L2 Flash sub-devices
+> >>>>is enabled, there is a v4l2_device created for them to register in.
+> >>>>This however implies that V4L2 Flash device will not be available
+> >>>>in any media controller, which calls its existence into question.
+> >>>>
+> >>>>Therefore I'd like to consult possible ways of solving this issue.
+> >>>>The option I see is implementing a mechanism for moving V4L2 Flash
+> >>>>sub-devices between media controllers. A V4L2 Flash sub-device
+> >>>>would initially be assigned to one media system in the relevant
+> >>>>device tree binding, but it could be dynamically reassigned to
+> >>>>the other one. However I'm not sure if media controller design
+> >>>>is prepared for dynamic modifications of its graph and how many
+> >>>>modifications in the existing drivers this solution would require.
+> >>>
+> >>>Do you have a use case where you would need to strobe a flash from multiple
+> >>>media devices at different times, or is this entirely theoretical? Typically
+> >>>flash controllers are connected to a single source of hardware strobe (if
+> >>>there's one) since the flash LEDs are in fact mounted next to a specific
+> >>>camera sensor.
+> >>
+> >>I took into account such arrangements in response to your message
+> >>[1], where you were considering configurations like "one flash but
+> >>two
+> >>cameras", "one camera and two flashes". And you also called for
+> >>proposing generic solution.
+> >>
+> >>One flash and two (or more) cameras case is easily conceivable -
+> >>You even mentioned stereo cameras. One camera and many flashes
+> >>arrangement might be useful in case of some professional devices which
+> >>might be designed so that they would be able to apply different scene
+> >>lighting. I haven't heard about such devices, but as you said
+> >>such a configuration isn't unthinkable.
+> >>
+> >>>If this is a real issue the way to solve it would be to have a single media
+> >>>device instead of many.
+> >>
+> >>I was considering adding media device, that would be a representation
+> >>of a flash manager, gathering all the registered flashes. Nonetheless,
+> >>finally I came to conclusion that a v4l2-device alone should suffice,
+> >>just to provide a Flash Manager representation allowing for
+> >>v4l2-flash sub-devices to register in.
+> >>All the features provided by the media device are useless in case
+> >>of a set of V4L2 Flash sub-devices. They couldn't have any linkage
+> >>in such a device. The only benefit from having media device gathering
+> >>V4L2 Flash devices would be possibility of listing them.
+> >
+> >Not quite so. The flash is associated to the sensor (and lens) using the
+> >group ID in the Media controller. The user space doesn't need to "know" this
+> >association.
+> >
+> >More complex use cases such as the above may need extensions to the Media
+> >controller API.
+> 
+> I think that I have unnecessarily complicated the issue. Generally
+> there will be always one media controller created for all camera
+> sensors available in the system. If there is a single media controller
+> then we can easily use async subdev registration API. A media-dev
+> driver would have to parse list of flash device phandles from
+> the ISP device's DT node and register them as async sub-devices.
 
-Hi Linus,
+Currently the media device is created by a driver which is most of the time
+the ISP driver on embedded systems. This driver is also responsible for
+registering the flash device (nodes) to the media device. So "will" is the
+word, I think.
 
-one doc buidling fixes for a file that moved, along with a bunch of 
-nouveau fixes, one a build problem on ARM.
-
-Dave.
-
-The following changes since commit 899552d6e84babd24611fd36ac7051068cb1eb2d:
-
-  Merge branch 'misc' of git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild (2014-08-14 11:14:29 -0600)
-
-are available in the git repository at:
-
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 251964845fbf539781dd2c6406cb2ba1bf9eddd0:
-
-  drm/doc: Refer to proper source file (2014-08-15 09:50:41 +1000)
-
-----------------------------------------------------------------
-Alexandre Courbot (2):
-      drm/nouveau/gk20a: add LTC device
-      drm/nouveau/platform: fix compilation error
-
-Ben Skeggs (9):
-      drm/nouveau/nvif: fix a number of notify thinkos
-      drm/nouveau: kill unused variable warning if !__OS_HAS_AGP
-      drm/nouveau/bar: behave better if ioremap failed
-      drm/nvc0-/fb/ram: fix use of non-existant ram if partitions aren't uniform
-      drm/nouveau/ltc: fix tag base address getting truncated if above 4GiB
-      drm/nouveau/nvif: return null pointers on failure, in addition to ret != 0
-      drm/gf100-/gr: fix -ENOSPC detection when allocating zbc table entries
-      drm/nouveau/nvif: fix dac load detect method definition
-      drm/nouveau: warn if we fail to re-pin fb on resume
-
-Dave Airlie (1):
-      Merge branch 'linux-3.17' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
-
-Fengguang Wu (1):
-      drm/nouveau/kms: nouveau_fbcon_accel_fini can be static
-
-Thierry Reding (1):
-      drm/doc: Refer to proper source file
-
- Documentation/DocBook/drm.tmpl                     |  2 +-
- drivers/gpu/drm/nouveau/core/core/client.c         |  4 +--
- drivers/gpu/drm/nouveau/core/engine/device/nve0.c  |  1 +
- drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c   |  6 +++++
- drivers/gpu/drm/nouveau/core/include/core/client.h |  2 +-
- drivers/gpu/drm/nouveau/core/subdev/bar/base.c     | 14 ++++++++---
- drivers/gpu/drm/nouveau/core/subdev/fb/ramnvc0.c   |  4 +--
- drivers/gpu/drm/nouveau/core/subdev/ltc/gf100.c    |  2 +-
- drivers/gpu/drm/nouveau/nouveau_bo.c               |  3 +--
- drivers/gpu/drm/nouveau/nouveau_display.c          |  4 ++-
- drivers/gpu/drm/nouveau/nouveau_fbcon.c            |  4 +--
- drivers/gpu/drm/nouveau/nouveau_platform.c         |  3 ++-
- drivers/gpu/drm/nouveau/nvif/class.h               |  4 +--
- drivers/gpu/drm/nouveau/nvif/notify.c              | 29 +++++++++++++++-------
- drivers/gpu/drm/nouveau/nvif/object.c              |  4 ++-
- 15 files changed, 58 insertions(+), 28 deletions(-)
+-- 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
