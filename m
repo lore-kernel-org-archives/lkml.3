@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbaHOT0z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:26:55 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50824 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaHOT0x (ORCPT
+	id S1751925AbaHOT1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:27:16 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:44199 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbaHOT1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:26:53 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53EE5EFA.30102@roeck-us.net>
-Date: Fri, 15 Aug 2014 12:26:50 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 15 Aug 2014 15:27:14 -0400
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>, Webb Scales <webbnh@hp.com>
-Subject: Re: [PATCH] scsi: Fix qemu boot hang problem
-References: <1407675265-29192-1-git-send-email-linux@roeck-us.net> <53EE4FDE.2070904@roeck-us.net> <53EE52AE.4050006@kernel.dk> <20140815192253.GA22752@lst.de>
-In-Reply-To: <20140815192253.GA22752@lst.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87ha1d8u6o.fsf@rustcorp.com.au>
+References: <8c275067bad7333e82cb80c993ce23216f41002e.1408065737.git.luto@amacapital.net>
+ <87ha1d8u6o.fsf@rustcorp.com.au>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 15 Aug 2014 12:26:52 -0700
+Message-ID: <CALCETrUxfxNv5E1=Fo8TGEwBeb=7Xz6ZcZHKouon=wh5iMuScw@mail.gmail.com>
+Subject: Re: [PATCH] module: Clean up ro/nx after early module load failures
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2014 12:22 PM, Christoph Hellwig wrote:
-> On Fri, Aug 15, 2014 at 12:34:22PM -0600, Jens Axboe wrote:
->> On 2014-08-15 12:22, Guenter Roeck wrote:
->>> ping ... the problem fixed by this patch still affects the upstream kernel
->>> (v3.16-11383-gc9d2642) as well as -next (20140815).
+On Fri, Aug 15, 2014 at 11:49 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>> The commit
 >>
->> James, could you upstream this one in time for -rc1?
+>>     4982223e51e8 module: set nx before marking module MODULE_STATE_COMING.
+>>
+>> introduced a regression: if a module fails to parse its arguments or
+>> if mod_sysfs_setup fails, then the module's memory will be freed
+>> while still read-only.  Anything that reuses that memory will crash
+>> as soon as it tries to write to it.
 >
-> It's in the core-for-3.17 updates I sent to James yesterday, just needs to
-> be forwarded..
+> Thanks, good catch.
+
+Catching it was easy.  Figuring out wtf was happening to my poor
+computer, on the other hand... :)
+
 >
+> Applied,
+> Rusty.
 
-Great, thanks a lot!
 
-Guenter
 
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
