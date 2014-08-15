@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779AbaHOTi7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:38:59 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55937 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751210AbaHOTi5 (ORCPT
+	id S1751468AbaHOTpw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:45:52 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:5610 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171AbaHOTpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:38:57 -0400
-Message-ID: <1408131535.11617.27.camel@HansenPartnership.com>
-Subject: [GIT PULL] Final round of SCSI updates for the 3.16+ merge window
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 15 Aug 2014 12:38:55 -0700
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Aug 2014 15:45:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 15 Aug 2014 12:36:28 -0700
+Date: Fri, 15 Aug 2014 22:45:46 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Mikko Perttunen <mperttunen@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c: i2c-tegra: Move clk_prepare/clk_set_rate to probe
+Message-ID: <20140815194546.GI1626@tbergstrom-lnx.Nvidia.com>
+References: <1408096034-17270-1-git-send-email-mperttunen@nvidia.com>
+ <53EE32C7.6000500@wwwdotorg.org>
+ <20140815180218.GH1626@tbergstrom-lnx.Nvidia.com>
+ <53EE4C45.5080805@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <53EE4C45.5080805@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a note, we do have a couple of bug fixes coming under separate
-cover, but they don't have to be part of the merge window
+On Fri, Aug 15, 2014 at 08:07:01PM +0200, Stephen Warren wrote:
+> >> However, the new code sets the clock rate after the clock is prepared. I
+> >> think the rate should be set first, then the clock prepared. While this
+> >> likely doesn't apply to the Tegra clock controller, prepare() is allowed
+> >> to enable the clock if enable() can't be implemented in an atomic
+> >> fashion (in which case enable/disable would be no-ops), and we should
+> >> make sure that the driver correctly configures the clock before
+> >> potentially enabling it.
+> >>
+> >> I'm not sure if a similar change to our SPI drivers is possible; after
+> >> all, the SPI transfer rate can vary per message, so if clk_set_rate()
+> >> acquires a lock, it seems there's no way to avoid the issue there.
+> >
+> > Even for i2c this could be the case I think if you use the highspeed (3.4Mhz)
+> > mode? From what I remember, a highspeed i2c transaction starts with a lower
+> > speed preamble to make sure non highspeed slaves don't get confused? Which
+> > means you could change the bus speed depending on the slave you're addressing.
+> 
+> Since there's no separate chip-select for I2C, I believe all I2C devices 
+> need to be able to understand the entire transaction, so the I2C bus 
+> speed is fixed.
+> 
 
-This is a small set of updates which missed the first pull.  It's more
-msix updates, some iscsi and qla4xxx fixes, we also have some string
-null termination fixes a return value fix and a couple of pm8001
-firmware fixes.
+Does it? I would assume the slave only needs to check if the address matches
+its own address after a START condition and if not can just wait until the
+STOP condition appears on the bus?
 
-The patch is available here:
+> At least, that's my understanding between 100KHz and 400KHz I2C. I don't 
+> know if 3.4MHz I2C introduced something new, although considering that 
+> slower I2C never had anything about being compatible with fast stuff in 
+> the spec AFAIK, and such speed-switching would only be useful for 
+> backwards-compatibility, I don't see how that would work.
+> 
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-misc
+Looking at http://www.i2c-bus.org/highspeed/ they at least claim some form
+of backwards compatibility ('High-speed IC devices are downward compatible
+allowing for mixed bus systems. ')
 
-The short changelog is:
+> >> Luckily, we don't have any SPI-based chips that do anything related to
+> >> clocks on any of our current boards...
+> >
+> > And we don't use SPI to talk to the PMIC, which is the usecase were actually
+> > run into problems with the locking.
+> 
+> IIRC, the I2C-based clock provider (or consumer?) issue was something 
+> mentioned (later on?) in the email thread linked by the patch description.
 
-Alexander Gordeev (2):
-      qla4xxx: Use pci_enable_msix_exact() instead of pci_enable_msix()
-      pm8001: Use pci_enable_msix_exact() instead of pci_enable_msix()
+Yes, that's another usecase, but we don't have that on Tegra. I was refering
+to Tegra usecases here.
 
-Maurizio Lombardi (1):
-      qla4xxx: check the return value of dma_alloc_coherent()
+Cheers,
 
-Mike Christie (5):
-      iscsi class: Fix freeing of skb in get host error path
-      libiscsi: return new error code when nop times out
-      iscsi class: fix get_host_stats return code when not supported
-      iscsi class: fix get_host_stats error handling
-      qla4xxx: fix get_host_stats error propagation
-
-Randy Dunlap (1):
-      scsi: fix u14-34f printk format warnings
-
-Rickard Strandqvist (2):
-      scsi: qla4xxx: ql4_mbx.c: Cleaning up missing null-terminate in conjunction with strncpy
-      scsi: qla4xxx: ql4_os.c: Cleaning up missing null-terminate in conjunction with strncpy
-
-Suresh Thiagarajan (1):
-      pm8001: Update MAINTAINERS list
-
-Tomas Henzl (2):
-      pm8001: fix pm8001_store_update_fw
-      pm8001: Fix erratic calculation in update_flash
-
-And the diffstat
-
- MAINTAINERS                         |   1 +
- drivers/scsi/libiscsi.c             |   2 +-
- drivers/scsi/pm8001/pm8001_ctl.c    | 144 ++++++++++++++++++------------------
- drivers/scsi/pm8001/pm8001_hwi.c    |   4 +-
- drivers/scsi/pm8001/pm8001_init.c   |  39 +++++-----
- drivers/scsi/qla4xxx/ql4_init.c     |   6 ++
- drivers/scsi/qla4xxx/ql4_mbx.c      |  14 ++--
- drivers/scsi/qla4xxx/ql4_nx.c       |   2 +-
- drivers/scsi/qla4xxx/ql4_os.c       |  16 ++--
- drivers/scsi/scsi_transport_iscsi.c |   6 +-
- drivers/scsi/u14-34f.c              |   4 +-
- include/scsi/iscsi_if.h             |   1 +
- 12 files changed, 125 insertions(+), 114 deletions(-)
-
-James
-
-
+Peter.
