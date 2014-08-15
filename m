@@ -1,114 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaHOH0c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 03:26:32 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:34781 "EHLO e9.ny.us.ibm.com"
+	id S1754881AbaHOH0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 03:26:42 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:37974 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752307AbaHOH0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 03:26:30 -0400
+	id S1754188AbaHOH0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 03:26:40 -0400
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
         Jiri Olsa <jolsa@redhat.com>, peterz@infradead.org, eranian@google.com
 Cc: dev@codyps.com, Michael Ellerman <michaele@au1.ibm.com>,
         Anshuman Khandual <khandual@linux.vnet.ibm.com>,
         <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2 03/14] perf Documentation: sysfs events/ interfaces
-Date: Fri, 15 Aug 2014 00:26:11 -0700
-Message-Id: <1408087583-32239-3-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [PATCH v2 08/14] tools/perf: document parameterized events and note symbolically formed events
+Date: Fri, 15 Aug 2014 00:26:17 -0700
+Message-Id: <1408087583-32239-9-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1408087583-32239-1-git-send-email-sukadev@linux.vnet.ibm.com>
 References: <1408087583-32239-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081507-7182-0000-0000-000000359F91
+x-cbid: 14081507-5806-0000-0000-000000394950
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cody P Schafer <dev@codyps.com>
 
-Add documentation for the <event>, <event>.scale, and <event>.unit
-files in sysfs.
-
-<event>.scale and <event>.unit were undocumented.
-<event> was previously documented only for specific powerpc pmu events.
-
 CC: Haren Myneni <hbabu@us.ibm.com>
 CC: Cody P Schafer <dev@codyps.com>
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
- .../testing/sysfs-bus-event_source-devices-events  | 60 ++++++++++++++++++++++
- 1 file changed, 60 insertions(+)
+ tools/perf/Documentation/perf-list.txt   | 13 +++++++++++++
+ tools/perf/Documentation/perf-record.txt |  5 +++++
+ 2 files changed, 18 insertions(+)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-index 7b40a3c..a5226f0 100644
---- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-@@ -599,3 +599,63 @@ Description:	POWER-systems specific performance monitoring events
- 		Further, multiple terms like 'event=0xNNNN' can be specified
- 		and separated with comma. All available terms are defined in
- 		the /sys/bus/event_source/devices/<dev>/format file.
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index 6fce6a6..626818b 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -89,6 +89,19 @@ raw encoding of 0x1A8 can be used:
+ You should refer to the processor specific documentation for getting these
+ details. Some of them are referenced in the SEE ALSO section below.
+ 
++PARAMETERIZED EVENTS
++--------------------
 +
-+What: /sys/bus/event_source/devices/<pmu>/events/<event>
-+Date: 2014/02/24
-+Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-+Description:	Per-pmu performance monitoring events specific to the running system
++Some pmu events listed by 'perf-list' will be displayed with '?' in them. For
++example:
 +
-+		Each file (except for some of those with a '.' in them, '.unit'
-+		and '.scale') in the 'events' directory describes a single
-+		performance monitoring event supported by the <pmu>. The name
-+		of the file is the name of the event.
++  hv_gpci/dtbp_ptitc,phys_processor_idx=?/
 +
-+		File contents:
++This means that when provided as an event, a value for phys_processor_idx must
++also be supplied. For example:
 +
-+			<term>[=<value>][,<term>[=<value>]]...
++  perf stat -e 'hv_gpci/dtbp_ptitc,phys_processor_idx=0x2/' ...
 +
-+		Where <term> is one of the terms listed under
-+		/sys/bus/event_source/devices/<pmu>/format/ and <value> is
-+		a number is base-16 format with a '0x' prefix (lowercase only).
-+		If a <term> is specified alone (without an assigned value), it
-+		is implied that 0x1 is assigned to that <term>.
+ OPTIONS
+ -------
+ 
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index d460049..664f852 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -33,6 +33,11 @@ OPTIONS
+         - a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a
+ 	  hexadecimal event descriptor.
+ 
++	- a symbolicly formed PMU event like 'pmu/value1=0x3,value2/' where
++	  'value1' and 'value2' are defined as formats in
++	  /sys/bus/event_sources/devices/pmu/format/* OR are one of 'config',
++	  'config1', 'config2'.
 +
-+		Examples (each of these lines would be in a seperate file):
-+
-+			event=0x2abc
-+			event=0x423,inv,cmask=0x3
-+			domain=0x1,offset=0x8,starting_index=0xffff
-+
-+		Each of the assignments indicates a value to be assigned to a
-+		particular set of bits (as defined by the format file
-+		corresponding to the <term>) in the perf_event structure passed
-+		to the perf_open syscall.
-+
-+What: /sys/bus/event_source/devices/<pmu>/events/<event>.unit
-+Date: 2014/02/24
-+Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-+Description:	Perf event units
-+
-+		A string specifying the English plural numerical unit that <event>
-+		(once multiplied by <event>.scale) represents.
-+
-+		Example:
-+
-+			Joules
-+
-+What: /sys/bus/event_source/devices/<pmu>/events/<event>.scale
-+Date: 2014/02/24
-+Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-+Description:	Perf event scaling factors
-+
-+		A string representing a floating point value expressed in
-+		scientific notation to be multiplied by the event count
-+		recieved from the kernel to match the unit specified in the
-+		<event>.unit file.
-+
-+		Example:
-+
-+			2.3283064365386962890625e-10
-+
-+		This is provided to avoid performing floating point arithmetic
-+		in the kernel.
+         - a hardware breakpoint event in the form of '\mem:addr[:access]'
+           where addr is the address in memory you want to break in.
+           Access is the memory access type (read, write, execute) it can
 -- 
 1.8.3.1
 
