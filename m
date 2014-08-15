@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaHOSlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 14:41:24 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:61262 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaHOSlX (ORCPT
+	id S1751625AbaHOSl0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 14:41:26 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:40804 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751027AbaHOSlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 14:41:23 -0400
+	Fri, 15 Aug 2014 14:41:24 -0400
+Date: Fri, 15 Aug 2014 14:41:20 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Anand Moon <moon.linux@yahoo.com>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vaibhav Hiremath <hvaibhav@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Robert Nelson <robertcnelson@gmail.com>
+Subject: Re: Random MAC address on my BeagleBone White
+Message-ID: <20140815144120.58597f37@gandalf.local.home>
+In-Reply-To: <53EE5233.6000605@yahoo.com>
+References: <20140815134221.08c546a0@gandalf.local.home>
+	<53EE5233.6000605@yahoo.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140812153812.2923046a@monolith.infinux.org>
-References: <20140812153812.2923046a@monolith.infinux.org>
-Date: Sat, 16 Aug 2014 00:11:22 +0530
-Message-ID: <CANyBo6TKCMON6+k5LRhHk6CDqihEF3_sHhS2_XmJ7E_oF8X_hw@mail.gmail.com>
-Subject: Re: OT: Open letter to the Linux World
-From: Jaswinder Singh <jaswinderlinux@gmail.com>
-To: Christopher Barry <christopher.r.barry@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sat, 16 Aug 2014 00:02:19 +0530
+Anand Moon <moon.linux@yahoo.com> wrote:
 
-On Wed, Aug 13, 2014 at 1:08 AM, Christopher Barry
-<christopher.r.barry@gmail.com> wrote:
->
->
-> What is intelligence? Not exactly the spook kind, but rather what is
-> the definition of intelligence in humans? This is pretty good:
-> http://en.wikipedia.org/wiki/Intelligence#Definitions
->
+> Hi Steven,
+> 
+> Please follow the bellow link to set mac address.
+> 
+> http://www.armadeus.com/wiki/index.php?title=Ethernet_MAC_address
+> 
+> -Anand Moon
 
-Do you want to see bigger picture ?
+Hi,
 
-Ideal intelligent application software:
-1. Software which can automatically add/modify/delete functions.
-2. Software which can automatically fix bugs.
+My U-Boot already has a ethaddr defined. It's what is used by the
+default kernel that came with the board (3.2).
 
-Ideal intelligent operating software:
-1. Software which can automatically add/modify/delete hardware.
-2. Software which can automatically add/modify/delete drivers.
-3. Software which can automatically add/modify/delete service packs.
-4. Software which can automatically add/modify/delete functions.
-5. Software which can automatically fix bugs.
+U-Boot# printenv
+[...]
+ethaddr=d4:94:a1:8b:ec:78
 
-Thanks,
---
-Jaswinder Singh.
+The problem is that this is ignored by the latest kernel and it
+replaces it with some random mac.
+
+Note, I boot via bootp, thus it has to have a mac. That mac is what
+tells my dhcp server what kernel image to load this board.
+
+-- Steve
+
