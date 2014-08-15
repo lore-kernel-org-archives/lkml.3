@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295AbaHOLJw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 07:09:52 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:53280 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaHOLJv (ORCPT
+	id S1751968AbaHOLNu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 07:13:50 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:40092 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaHOLNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 07:09:51 -0400
-From: Peter Griffin <peter.griffin@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        lgirdwood@gmail.com, broonie@kernel.org, ldewangan@nvidia.com
-Cc: peter.griffin@linaro.org, patches@linaro.org, lee.jones@linaro.org
-Subject: [PATCH] regulator: as3722: .name field initialized twice differently
-Date: Fri, 15 Aug 2014 12:09:44 +0100
-Message-Id: <1408100984-11757-1-git-send-email-peter.griffin@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Fri, 15 Aug 2014 07:13:49 -0400
+Message-ID: <53EDEB66.1040304@collabora.co.uk>
+Date: Fri, 15 Aug 2014 13:13:42 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: Tim Kryger <tim.kryger@gmail.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Chris Ball <chris@printf.net>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Haijun Zhang <Haijun.Zhang@freescale.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] mmc: core: Use regulator_get_voltage() if OCR mask
+ is empty.
+References: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk> <CAD7vxxKvzxvmzgx=S5ZZn54ts99ca2TqBYFvY1SXZQZDkhjq3w@mail.gmail.com> <20140814151958.GY17528@sirena.org.uk> <CAD7vxxLHtk2ywHGoBtDp6x3-5BtDdaFnCdc_pfgMwq63Cg8Qow@mail.gmail.com> <53EDBB5B.4000209@collabora.co.uk> <20140815095528.GH17528@sirena.org.uk>
+In-Reply-To: <20140815095528.GH17528@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regulator AS3722_REGULATOR_ID_LDO3 and AS3722_REGULATOR_ID_LDO4
-have there .name field initialised twice with different values.
+Hello Mark,
 
-Looking at the code the second entry should have been .sname
-which is what this patch corrects.
+On 08/15/2014 11:55 AM, Mark Brown wrote:
+> On Fri, Aug 15, 2014 at 09:48:43AM +0200, Javier Martinez Canillas wrote:
+> 
+>> But now I wonder why regulator_list_voltage() even list the voltage for
+>> fixed regulators (desc->fixed_uV) since they don't have the ability to
+> 
+> That's because it's very cheap to do and there is a comprehensible thing
+> we can return - if we have to read the voltage that means potentially
+> asking the hardware in an I2C transaction which is not cheap.
+> 
 
-Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
----
- drivers/regulator/as3722-regulator.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Thanks a lot for the explanation, that does make a lot of sense.
 
-diff --git a/drivers/regulator/as3722-regulator.c b/drivers/regulator/as3722-regulator.c
-index ad9e0c9..b68f05f 100644
---- a/drivers/regulator/as3722-regulator.c
-+++ b/drivers/regulator/as3722-regulator.c
-@@ -219,7 +219,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_LDO3,
- 		.name = "as3722-ldo3",
--		.name = "vin-ldo3-4",
-+		.sname = "vin-ldo3-4",
- 		.vsel_reg = AS3722_LDO3_VOLTAGE_REG,
- 		.vsel_mask = AS3722_LDO3_VSEL_MASK,
- 		.enable_reg = AS3722_LDOCONTROL0_REG,
-@@ -231,7 +231,7 @@ static const struct as3722_register_mapping as3722_reg_lookup[] = {
- 	{
- 		.regulator_id = AS3722_REGULATOR_ID_LDO4,
- 		.name = "as3722-ldo4",
--		.name = "vin-ldo3-4",
-+		.sname = "vin-ldo3-4",
- 		.vsel_reg = AS3722_LDO4_VOLTAGE_REG,
- 		.vsel_mask = AS3722_LDO_VSEL_MASK,
- 		.enable_reg = AS3722_LDOCONTROL0_REG,
--- 
-1.9.1
+> 
+> There's plenty of potentially variable regulators used in these
+> situations, I expect it's more likely that people were just ignoring the
+> warning since it has no practical effect.
+> 
 
+Indeed.
+
+Best regards,
+Javier
