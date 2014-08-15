@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaHOXWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 19:22:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44432 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaHOXWY (ORCPT
+	id S1751431AbaHOXgM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 19:36:12 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58327 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaHOXgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 19:22:24 -0400
-Date: Fri, 15 Aug 2014 16:21:48 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Hema Prathaban <hemaklnce@gmail.com>
-Cc: devel@driverdev.osuosl.org, oleg.drokin@intel.com,
-        andreas.dilger@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: lustre: lustre: libcfs: pr_warn instead printk
-Message-ID: <20140815232148.GA10600@kroah.com>
-References: <20140815181805.GA4709@hema-Inspiron-3520>
+	Fri, 15 Aug 2014 19:36:11 -0400
+Message-ID: <53EE9968.1000800@infradead.org>
+Date: Fri, 15 Aug 2014 16:36:08 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140815181805.GA4709@hema-Inspiron-3520>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH -next] extcon: fix extcon-sm5502 build when CONFIG_I2C=m
+References: <53EB122E.3050407@infradead.org> <53EB1681.9040602@samsung.com>
+In-Reply-To: <53EB1681.9040602@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 11:48:05PM +0530, Hema Prathaban wrote:
-> This patch fixes the following warning using checkpatch.pl
-> WARNING: Prefer [subsystem eg: netdev]_warn([subsystem]dev, ... then
-> dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
+On 08/13/14 00:40, Chanwoo Choi wrote:
+> Dear Randy,
 > 
-> Signed-off-by: Hema Prathaban <hemaklnce@gmail.com>
-> ---
->  drivers/staging/lustre/lustre/libcfs/debug.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+> Thanks for your report.
 > 
-> diff --git a/drivers/staging/lustre/lustre/libcfs/debug.c b/drivers/staging/lustre/lustre/libcfs/debug.c
-> index 6b58469..8143ebe 100644
-> --- a/drivers/staging/lustre/lustre/libcfs/debug.c
-> +++ b/drivers/staging/lustre/lustre/libcfs/debug.c
-> @@ -344,7 +344,7 @@ void libcfs_debug_dumplog_internal(void *arg)
->  		snprintf(debug_file_name, sizeof(debug_file_name) - 1,
->  			 "%s.%ld.%ld", libcfs_debug_file_path_arr,
->  			 get_seconds(), (long_ptr_t)arg);
-> -		printk(KERN_ALERT "LustreError: dumping log to %s\n",
-> +		pr_alert(KERN_ALERT "LustreError: dumping log to %s\n",
->  		       debug_file_name);
->  		cfs_tracefile_dump_all_pages(debug_file_name);
->  		libcfs_run_debug_log_upcall(debug_file_name);
-> @@ -376,7 +376,7 @@ void libcfs_debug_dumplog(void)
->  			     (void *)(long)current_pid(),
->  			     "libcfs_debug_dumper");
->  	if (IS_ERR(dumper))
-> -		printk(KERN_ERR "LustreError: cannot start log dump thread:"
-> +		pr_err(KERN_ERR "LustreError: cannot start log dump thread:"
+> I catched this issue. So, I fix this bug already. You can check it on following url:
+> - http://git.kernel.org/cgit/linux/kernel/git/chanwoo/extcon.git/commit/?h=extcon-test&id=5e519b04db6c5b42f8d8ee246c16903c130b5fd5
+> 
 
-You need to take the printk prefix off of these types of lines if you
-are using the pr_*() macro, otherwise you will get a mess in the system
-log.
+linux-next of 20140815 still has this build error.
+Please get this patch into linux-next.
 
-thanks,
+Thanks.
 
-greg k-h
+> 
+> Best Regards,
+> Chanwoo Choi
+> 
+> On 08/13/2014 04:22 PM, Randy Dunlap wrote:
+>> From: Randy Dunlap <rdunlap@infradead.org>
+>>
+>> Fix build errors in extcon-sm5502.c by making EXTCON_SM5502 depend
+>> on I2C since it selects REGMAP_I2C.  The build errors happen when
+>> CONFIG_I2C=m and CONFIG_EXTCON_SM5502=y. This Kconfig change causes
+>> CONFIG_EXTCON_SM5502 to be =m when CONFIG_I2C=m.
+>>
+>> drivers/built-in.o: In function `regmap_smbus_byte_reg_read':
+>> regmap-i2c.c:(.text+0x5030a): undefined reference to `i2c_smbus_read_byte_data'
+>> drivers/built-in.o: In function `regmap_smbus_byte_reg_write':
+>> regmap-i2c.c:(.text+0x50338): undefined reference to `i2c_smbus_write_byte_data'
+>> drivers/built-in.o: In function `regmap_smbus_word_reg_read':
+>> regmap-i2c.c:(.text+0x50356): undefined reference to `i2c_smbus_read_word_data'
+>> drivers/built-in.o: In function `regmap_smbus_word_reg_write':
+>> regmap-i2c.c:(.text+0x50384): undefined reference to `i2c_smbus_write_word_data'
+>> drivers/built-in.o: In function `regmap_i2c_read':
+>> regmap-i2c.c:(.text+0x503cf): undefined reference to `i2c_transfer'
+>> drivers/built-in.o: In function `regmap_i2c_gather_write':
+>> regmap-i2c.c:(.text+0x50442): undefined reference to `i2c_transfer'
+>> drivers/built-in.o: In function `regmap_i2c_write':
+>> regmap-i2c.c:(.text+0x50474): undefined reference to `i2c_master_send'
+>> drivers/built-in.o: In function `sm5502_muic_i2c_init':
+>> extcon-sm5502.c:(.init.text+0x6630): undefined reference to `i2c_register_driver'
+>>
+>> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+>> Cc:	MyungJoo Ham <myungjoo.ham@samsung.com>
+>> Cc:	Chanwoo Choi <cw00.choi@samsung.com>
+>> ---
+>>  drivers/extcon/Kconfig |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> Index: linux-next-20140813/drivers/extcon/Kconfig
+>> ===================================================================
+>> --- linux-next-20140813.orig/drivers/extcon/Kconfig
+>> +++ linux-next-20140813/drivers/extcon/Kconfig
+>> @@ -72,6 +72,7 @@ config EXTCON_PALMAS
+>>  
+>>  config EXTCON_SM5502
+>>  	tristate "SM5502 EXTCON support"
+>> +	depends on I2C
+>>  	select IRQ_DOMAIN
+>>  	select REGMAP_I2C
+>>  	select REGMAP_IRQ
+>>
+> 
+> --
+
+
+-- 
+~Randy
