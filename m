@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbaHOPK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 11:10:58 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:40610 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808AbaHOPKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 11:10:55 -0400
+	id S1751537AbaHOPNc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 11:13:32 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40242 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751005AbaHOPNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 11:13:30 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <davem@davemloft.net>, <netdev@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
+        <devicetree@vger.kernel.org>, <sandeep_n@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH v2 0/3] net: Add Keystone NetCP ethernet driver support
+Date: Fri, 15 Aug 2014 11:12:39 -0400
+Message-ID: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFpuCyRVJe_oRTukoryDAMK9iN5qoR4VU2wrjnvjMA-+Bg@mail.gmail.com>
-References: <1408029833-6970-1-git-send-email-geert+renesas@glider.be>
-	<CAPDyKFpuCyRVJe_oRTukoryDAMK9iN5qoR4VU2wrjnvjMA-+Bg@mail.gmail.com>
-Date: Fri, 15 Aug 2014 17:10:53 +0200
-X-Google-Sender-Auth: lcXf9hJILOAt6L_g_G3V1XyqJoM
-Message-ID: <CAMuHMdVpAJdFEpGsXmf2kVUZ4_qRwW8QS9c=iTtDkYu-XFX8OQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: tmio: Fix hang during suspend
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Ian Molton <ian.molton@codethink.co.uk>, Chris Ball <chris@printf.net>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
+Update version after incorporating David Miller's comment from earlier
+posting [1]. I would like to get these merged for upcoming 3.18 merge
+window if there are no concerns on this version.
 
-On Fri, Aug 15, 2014 at 4:42 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 14 August 2014 17:23, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
->> On R-Car Gen 2, the SDHI registers cannot be accessed while the SDHI
->> module clock is disabled. Doing so will cause a lock-up.
->>
->> When suspending, enable the module clock before disabling the SDHI
->> interrupts, and disable the clock again afterwards.
->>
->> This fixes suspend and resume on r8a7791/koelsch.
->
-> Out of curiosity, are you using CONFIG_PM_RUNTIME to trigger this bug?
+The network coprocessor (NetCP) is a hardware accelerator that processes
+Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsystem with a ethernet
+switch sub-module to send and receive packets. NetCP also includes a packet
+accelerator (PA) module to perform packet classification operations such as
+header matching, and packet modification operations such as checksum
+generation. NetCP can also optionally include a Security Accelerator(SA)
+capable of performing IPSec operations on ingress/egress packets.
+    
+Keystone SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
+includes a 3-port Ethernet switch sub-module capable of 10Gb/s and
+1Gb/s rates per Ethernet port.
+    
+NetCP driver has a plug-in module architecture where each of the NetCP
+sub-modules exist as a loadable kernel module which plug in to the netcp
+core. These sub-modules are represented as "netcp-devices" in the dts
+bindings. It is mandatory to have the ethernet switch sub-module for
+the ethernet interface to be operational. Any other sub-module like the
+PA is optional.
 
-Yes I am:
+Both GBE and XGBE network processors supported using common driver. It
+is also designed to handle future variants of NetCP.
 
-$ grep CONFIG_PM .config
-CONFIG_PM_SLEEP=y
-CONFIG_PM_SLEEP_SMP=y
-# CONFIG_PM_AUTOSLEEP is not set
-# CONFIG_PM_WAKELOCKS is not set
-CONFIG_PM_RUNTIME=y
-CONFIG_PM=y
-CONFIG_PM_DEBUG=y
-CONFIG_PM_ADVANCED_DEBUG=y
-# CONFIG_PM_TEST_SUSPEND is not set
-CONFIG_PM_SLEEP_DEBUG=y
-CONFIG_PM_OPP=y
-CONFIG_PM_CLK=y
-# CONFIG_PMIC_ADP5520 is not set
-# CONFIG_PMIC_DA903X is not set
-# CONFIG_PM_DEVFREQ is not set
-$
+Cc: David Miller <davem@davemloft.net>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Sandeep Nair <sandeep_n@ti.com>
 
-Gr{oetje,eeting}s,
+Sandeep Nair (3):
+  Documentation: dt: net: Add binding doc for Keystone NetCP ethernet
+    driver
+  net: Add Keystone NetCP ethernet driver
+  MAINTAINER: net: Add TI NETCP Ethernet driver entry
 
-                        Geert
+ .../devicetree/bindings/net/keystone-netcp.txt     |  197 ++
+ MAINTAINERS                                        |    6 +
+ drivers/net/ethernet/ti/Kconfig                    |   15 +-
+ drivers/net/ethernet/ti/Makefile                   |    4 +
+ drivers/net/ethernet/ti/netcp.h                    |  227 ++
+ drivers/net/ethernet/ti/netcp_core.c               | 2276 ++++++++++++++++++++
+ drivers/net/ethernet/ti/netcp_ethss.c              | 2178 +++++++++++++++++++
+ drivers/net/ethernet/ti/netcp_sgmii.c              |  130 ++
+ drivers/net/ethernet/ti/netcp_xgbepcsr.c           |  502 +++++
+ 9 files changed, 5532 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/keystone-netcp.txt
+ create mode 100644 drivers/net/ethernet/ti/netcp.h
+ create mode 100644 drivers/net/ethernet/ti/netcp_core.c
+ create mode 100644 drivers/net/ethernet/ti/netcp_ethss.c
+ create mode 100644 drivers/net/ethernet/ti/netcp_sgmii.c
+ create mode 100644 drivers/net/ethernet/ti/netcp_xgbepcsr.c
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+regards,
+Santosh
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+[1] https://lkml.org/lkml/2014/4/22/805
+
+-- 
+1.7.9.5
+
